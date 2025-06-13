@@ -1,0 +1,13 @@
+{
+    "display_name": "STMemoryBooks",
+    "loading_order": 99,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "aikohanasaki",
+    "version": "1.0.0",
+    "homePage": "https://github.com/aikohanasaki/STMemoryBooks",
+    "auto_update": false,
+    "description": "Creates and saves chat memories to SillyTavern lorebooks."
+}

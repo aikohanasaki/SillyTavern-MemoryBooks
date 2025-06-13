@@ -1,0 +1,5 @@
+{
+    "name": "Summarize",
+    "description": "Detailed summary in bullet points with OOC framing and timeline estimation",
+    "systemPrompt": "Write a detailed summary for this roleplay in bullet points. Estimate where this stands in the timeline (day X). Narrate story beats/events that happened, key interaction highlights, notable details, and outcome. Also provide a few comma-delimited keywords that would trigger retrieval of this summary in a vectorized database."
+}

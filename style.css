@@ -1,0 +1,399 @@
+/* STMemoryBooks Extension Styles */
+
+/* Scene marker buttons */
+.stmb-start-btn,
+.stmb-end-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin: 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    background: rgba(var(--SmartThemeBodyColor), 0.1);
+    color: rgba(var(--SmartThemeBodyColor), 0.6);
+    font-size: 12px;
+}
+
+.stmb-start-btn:hover,
+.stmb-end-btn:hover {
+    background: rgba(var(--SmartThemeBodyColor), 0.15);
+    color: rgba(var(--SmartThemeBodyColor), 0.8);
+    border-color: rgba(var(--SmartThemeBodyColor), 0.2);
+    transform: scale(1.05);
+}
+
+/* Active scene markers */
+.stmb-start-btn.on,
+.stmb-end-btn.on {
+    background: rgba(var(--SmartThemeQuoteColor), 0.8);
+    color: var(--SmartThemeBorderColor);
+    border-color: var(--SmartThemeQuoteColor);
+    box-shadow: 0 0 8px rgba(var(--SmartThemeQuoteColor), 0.3);
+}
+
+.stmb-start-btn.on:hover,
+.stmb-end-btn.on:hover {
+    background: var(--SmartThemeQuoteColor);
+    transform: scale(1.1);
+}
+
+/* Valid selection points */
+.stmb-start-btn.valid-start-point,
+.stmb-end-btn.valid-end-point {
+    background: rgba(var(--SmartThemeEmphasisColor), 0.6);
+    color: var(--SmartThemeBorderColor);
+    border-color: var(--SmartThemeEmphasisColor);
+    animation: pulse 2s infinite;
+}
+
+.stmb-start-btn.valid-start-point:hover,
+.stmb-end-btn.valid-end-point:hover {
+    background: var(--SmartThemeEmphasisColor);
+    animation: none;
+    transform: scale(1.1);
+}
+
+/* In-scene range markers */
+.stmb-start-btn.in-scene,
+.stmb-end-btn.in-scene {
+    background: rgba(var(--SmartThemeQuoteColor), 0.4);
+    color: rgba(var(--SmartThemeBodyColor), 0.9);
+    border-color: rgba(var(--SmartThemeQuoteColor), 0.6);
+}
+
+.stmb-start-btn.in-scene:hover,
+.stmb-end-btn.in-scene:hover {
+    background: rgba(var(--SmartThemeQuoteColor), 0.6);
+    transform: scale(1.05);
+}
+
+/* Pulse animation for valid selection points */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--SmartThemeEmphasisColor), 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(var(--SmartThemeEmphasisColor), 0.3);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--SmartThemeEmphasisColor), 0);
+    }
+}
+
+/* Main extension menu button */
+#stmb-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    margin: 2px 0;
+}
+
+#stmb-menu-item:hover {
+    background: rgba(var(--SmartThemeEmphasisColor), 0.1);
+}
+
+#stmb-menu-item i {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+}
+
+/* Settings popup container */
+.stmb-settings-container {
+    max-width: 100%;
+}
+
+.stmb-settings-container .completion_prompt_manager_popup_entry {
+    margin-bottom: 15px;
+}
+
+.stmb-settings-container .completion_prompt_manager_popup_entry:last-child {
+    margin-bottom: 0;
+}
+
+/* Profile management section */
+.stmb-settings-container #stmb-profile-select {
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.stmb-settings-container .menu_button {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Import/Export section */
+.stmb-settings-container #stmb-import-file {
+    display: none;
+}
+
+/* Profile edit form styling */
+.stmb-profile-edit label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: rgba(var(--SmartThemeBodyColor), 0.9);
+}
+
+.stmb-profile-edit label:first-child {
+    margin-top: 0;
+}
+
+.stmb-profile-edit input,
+.stmb-profile-edit select,
+.stmb-profile-edit textarea {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.stmb-profile-edit textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Scene preview styling */
+.stmb-scene-preview {
+    background: rgba(var(--SmartThemeBlurTintColor), 0.3);
+    border: 1px solid rgba(var(--SmartThemeBodyColor), 0.2);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Warning styling */
+.stmb-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.4);
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    color: rgba(255, 193, 7, 0.9);
+    font-size: 14px;
+}
+
+.stmb-warning i {
+    margin-right: 6px;
+}
+
+/* Confirmation popup styling */
+.stmb-confirmation-container {
+    max-width: 100%;
+}
+
+.stmb-confirmation-container .mes_file_container {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.stmb-confirmation-container select {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* Processing state styling */
+.stmb-processing {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.stmb-processing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(var(--SmartThemeBodyColor), 0.1) 10px,
+        rgba(var(--SmartThemeBodyColor), 0.1) 20px
+    );
+    animation: processing 1s linear infinite;
+}
+
+@keyframes processing {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 28px 0;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stmb-start-btn,
+    .stmb-end-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+    
+    .stmb-settings-container .menu_button {
+        display: block;
+        margin: 4px 0;
+        text-align: center;
+    }
+    
+    .stmb-scene-preview {
+        font-size: 11px;
+        max-height: 200px;
+    }
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+    .stmb-start-btn,
+    .stmb-end-btn {
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .stmb-start-btn:hover,
+    .stmb-end-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .stmb-scene-preview {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Accessibility improvements */
+.stmb-start-btn:focus,
+.stmb-end-btn:focus {
+    outline: 2px solid var(--SmartThemeEmphasisColor);
+    outline-offset: 2px;
+}
+
+.stmb-start-btn[aria-pressed="true"],
+.stmb-end-btn[aria-pressed="true"] {
+    background: rgba(var(--SmartThemeQuoteColor), 0.8);
+    color: var(--SmartThemeBorderColor);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .stmb-start-btn,
+    .stmb-end-btn {
+        border-width: 2px;
+    }
+    
+    .stmb-start-btn.on,
+    .stmb-end-btn.on {
+        border-width: 3px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .stmb-start-btn,
+    .stmb-end-btn {
+        transition: none;
+    }
+    
+    .stmb-start-btn.valid-start-point,
+    .stmb-end-btn.valid-end-point {
+        animation: none;
+        background: var(--SmartThemeEmphasisColor);
+    }
+    
+    .stmb-processing::after {
+        animation: none;
+    }
+}
+
+/* Tooltip styling for buttons */
+.stmb-start-btn[title]:hover::after,
+.stmb-end-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 4px;
+}
+
+/* Loading spinner for memory creation */
+.stmb-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(var(--SmartThemeBodyColor), 0.3);
+    border-radius: 50%;
+    border-top-color: var(--SmartThemeEmphasisColor);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Status indicators */
+.stmb-status-success {
+    color: #28a745;
+}
+
+.stmb-status-warning {
+    color: #ffc107;
+}
+
+.stmb-status-error {
+    color: #dc3545;
+}
+
+.stmb-status-info {
+    color: #17a2b8;
+}
+
+/* Custom scrollbar for scene preview */
+.stmb-scene-preview::-webkit-scrollbar {
+    width: 8px;
+}
+
+.stmb-scene-preview::-webkit-scrollbar-track {
+    background: rgba(var(--SmartThemeBodyColor), 0.1);
+    border-radius: 4px;
+}
+
+.stmb-scene-preview::-webkit-scrollbar-thumb {
+    background: rgba(var(--SmartThemeBodyColor), 0.3);
+    border-radius: 4px;
+}
+
+.stmb-scene-preview::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--SmartThemeBodyColor), 0.5);
+}

@@ -1,0 +1,5 @@
+{
+    "name": "Sum Up",
+    "description": "Beat summary with timeline estimation and vectorized database optimization",
+    "systemPrompt": "Write a beat summary that captures this scene. Estimate where this stands in the timeline (day X). Narrate important story beats/events that happened, key interaction highlights, notable details, memorable quotes, and outcome. At the end, provide a comma-delimited list of keywords that would help a vectorized database find the summary again if a keyword is mentioned."
+}

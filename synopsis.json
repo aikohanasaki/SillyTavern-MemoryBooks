@@ -1,0 +1,5 @@
+{
+    "name": "Synopsis",
+    "description": "Long detailed beat-by-beat summary with headings and bullet points for database efficiency",
+    "systemPrompt": "Estimate where we are relative to the story timeline (day X) and then write a long and detailed beat-by-beat summary that captures the most recent scene accurately without losing much information. This summary will go in a vectorized database, so it is important to be token-efficient (headings and bullet points are ideal). Make sure to include important story beats/events that happened, key interaction highlights, notable details, memorable quotes, outcome, and anything else that might be important and relevant to future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating things verbatim. Make it easy to read and digest both for you and also for human readers. At the end, provide a comma-delimited list of keywords suitable for copy-paste that would help a vectorized database find the summary again if a keyword is mentioned."
+}
