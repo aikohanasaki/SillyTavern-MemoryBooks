@@ -9,16 +9,18 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **Multiple Usage Methods**: Use slash commands or visual markers to define scenes
 - **5 Built-in Presets**: Production-quality prompts optimized for vectorized databases
 - **Automatic Keyword Extraction**: AI-generated keywords parsed from responses with fallback generation
+- **AI Title Extraction**: Automatically extracts titles from AI responses for use in memory formatting
 - **Token Warning System**: Alerts for large scenes (>30k tokens) before processing
 - **Profile Management**: Create, edit, and manage multiple memory generation profiles
 - **Import/Export**: Backup and share your profiles as JSON files
 - **Visual Feedback**: Clear indicators showing selected scenes and valid marker positions
+- **Smart Memory Detection**: Uses configured title format as primary filter to identify previous memories
 
 ## Initial Setup 🛠️
 
 First you must set up the extension! On first run, it will ask you to select your preferred settings. If you don't do this, it will not do anything 🤣 You can change them in the future by going to the wand menu and clicking on Memory Settings.
 
-The first set of settings you create will become your default, but you can always choose a different default later. You can set more than one type, but you must have at least one.
+The first set of settings you create will become your default, but you can always choose a different type, but you must have at least one.
 
 ## Built-in Presets
 
@@ -37,7 +39,7 @@ The first set of settings you create will become your default, but you can alway
 ### Keywords
 **Keywords Only** - Generates comma-delimited keywords optimized for vectorized database retrieval without summary content.
 
-## How to Use
+## How It Works
 
 **Before you start**: The chat MUST have a lorebook bound to it. Check the character card--if there is no chat lorebook, you need to make one and bind the lorebook to the chat.
 
@@ -46,8 +48,8 @@ The first set of settings you create will become your default, but you can alway
 1. **Mark Your Scene**: Click the chevron-right (►) button on the first message of your scene, then click the chevron-left (◄) button on the last message
 2. **Open Settings**: Click "Memory Settings" in the Extensions menu  
 3. **Create Memory**: Click the "🧠 Create Memory" button or use `/creatememory`
-4. **Choose Options**: Select your preferred preset and choose 0-7 previous summaries to include as context (helps AI understand ongoing storylines)
-5. **Confirm**: The pop-up will confirm which messages and context summaries to use, click OK to confirm
+4. **Choose Options**: Select your preferred preset and choose 0-7 previous memories to include as context (helps AI understand ongoing storylines)
+5. **Confirm**: The pop-up will confirm which messages and context memories to use, click OK to confirm
 6. **Wait**: The AI will respond and a message will appear confirming that the memory has been created and saved
 
 ### Method Two: Slash Commands
@@ -63,18 +65,26 @@ The first set of settings you create will become your default, but you can alway
 
 ## Previous Scene Context
 
-When creating memories, you can include 0-7 previous summaries as context to help the AI understand ongoing storylines, character development, and plot continuity. The extension automatically:
+When creating memories, you can include 0-7 previous memories as context to help the AI understand ongoing storylines, character development, and plot continuity. The extension automatically:
 
-- **Finds existing summaries** in your lorebook (numbered entries like [001], [002], etc.)
+- **Finds existing memories** in your lorebook using your configured title format pattern
 - **Orders them chronologically** based on their sequential numbers 
-- **Includes them as context** marked clearly as "DO NOT SUMMARIZE" so the AI uses them for understanding but doesn't include them in the new summary
-- **Handles missing summaries gracefully** - if you request 5 but only 2 exist, it uses all available with a warning
+- **Includes them as context** marked clearly as "DO NOT SUMMARIZE" so the AI uses them for understanding but doesn't include them in the new memory
+- **Handles missing memories gracefully** - if you request 5 but only 2 exist, it uses all available with a warning
+- **Calculates exact token counts** - fetches actual memory content to provide accurate token estimates instead of guessing
 
-This feature is especially useful for long-running chats where character relationships and story elements evolve over time.
+This feature is especially useful for long-running chats where character relationships and story elements evolve over time. The token estimation includes both the scene content and actual selected context memories to give you precise usage predictions.
 
-## Allows Mixed Lorebooks 
+## Memory Detection System
 
-STMemoryBooks will use your configured memory title format to locate previous memories and also to filter out anything that is not a memory (but is in the same lorebook as the memories).
+The extension uses your configured **Memory Title Format** as the primary method to identify existing memories in your lorebook. This smart detection system:
+
+- **Converts your title format into a regex pattern** to match existing memories precisely
+- **Filters out non-memory entries** that don't match your format (like manual lorebook entries, character descriptions, etc.)
+- **Provides accurate numbering** by only counting entries that match your memory format
+- **Falls back to secondary detection** for borderline cases when pattern matching fails
+
+This ensures that only actual auto-generated memories are counted when determining the next memory number and when fetching previous summaries for context.
 
 ## Customizable Details
 
@@ -86,7 +96,7 @@ STMemoryBooks will use your configured memory title format to locate previous me
 ### Title Formatting
 - **Allowed characters**: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`
 - **Allowed emoji**: Standard emoji only. If it's not in the default emoji of your operating system, it should not be used
-- **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook? 📚)
+- **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook?)
 - **Template Placeholders**: 
   - **{{title}}**: AI-generated title (extracted from AI response headings, markdown, or first line)
   - **{{scene}}**: The message range of the scene (e.g., "Scene 15-23")
@@ -150,6 +160,8 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 ### Module Settings
 - **Always Use Default**: Skip confirmation dialog and use default profile
 - **Show Notifications**: Display success/error notifications
+- **Refresh Editor**: Refresh lorebook editor after adding memories
+- **Token Warning Threshold**: Show confirmation dialog when estimated tokens exceed this value (default: 30,000)
 
 ### Profile Settings
 - **Name**: Display name for the profile
@@ -158,6 +170,8 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Temperature**: Response randomness (currently uses global SillyTavern settings)
 - **Preset**: Select from built-in presets or use custom prompt
 
+> **Note**: Connection settings are stored for future use but currently SillyTavern's global API settings are used for all requests.
+
 ## Advanced Features
 
 - **Profile Management**: Create custom profiles with specific models and temperature settings
@@ -165,6 +179,7 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Auto-Keywords**: AI extracts keywords from responses, with fallback generation
 - **Import/Export**: Share profiles between installations
 - **Scene Validation**: Automatic cleanup of invalid marker ranges
+- **Smart Memory Detection**: Uses title format patterns to accurately identify memories vs. other lorebook entries
 
 ## Prerequisites
 
@@ -181,8 +196,8 @@ STMemoryBooks will collect the chat history from the beginning of the scene to t
 ### Memory Generation Process
 
 1. **Scene Compilation**: Extract and validate messages in marked range
-2. **Context Retrieval**: Fetch requested previous summaries in chronological order (if any) using title format pattern matching
-3. **Token Estimation**: Calculate approximate token usage with warnings (including context)
+2. **Context Retrieval**: Fetch requested previous memories in chronological order (if any) using title format pattern matching
+3. **Token Estimation**: Calculate exact token usage with warnings (including actual context memory content)
 4. **AI Generation**: Use SillyTavern's `generateQuietPrompt` with preset/custom prompts and context
 5. **Response Processing**: Parse content, extract title and keywords from AI response
 6. **Lorebook Integration**: Format using configured title template and add to bound lorebook
@@ -206,7 +221,7 @@ The extension converts your configured title format into a regex pattern to iden
 
 ## Error Handling
 
-- **Token Warnings**: Scenes >30k tokens show confirmation dialog
+- **Token Warnings**: Scenes exceeding your configured token threshold show confirmation dialog
 - **Invalid Scenes**: Automatic cleanup of invalid marker ranges
 - **Missing Lorebook**: Clear error messages with guidance
 - **API Failures**: Standard SillyTavern error handling
@@ -220,11 +235,13 @@ The extension converts your configured title format into a regex pattern to iden
 
 **"No scene selected"**: Mark both start (►) and end (◄) points before creating memories.
 
-**"Token warning"**: Large scenes may take time to process. You can continue or select a smaller range.
+**"Token warning"**: Large scenes may take time to process. You can continue, select a smaller range, or adjust the token warning threshold in Memory Settings if you frequently work with large scenes.
 
 **"AI generation failed"**: Check your SillyTavern API configuration and ensure your selected model is available.
 
 **Missing buttons**: Refresh the page or check that the extension loaded properly in the Extensions menu.
+
+**Wrong memory count**: If the extension isn't detecting your existing memories correctly, check that your title format matches your existing entries. The extension uses your configured title format as the primary method to identify memories.
 
 ---
 

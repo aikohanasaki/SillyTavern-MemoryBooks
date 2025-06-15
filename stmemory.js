@@ -22,9 +22,6 @@ const AVAILABLE_PRESETS = ['summary', 'summarize', 'synopsis', 'sumup', 'keyword
 // Cache for loaded presets
 const presetCache = new Map();
 
-// Token limit for warnings as per spec
-const TOKEN_WARNING_THRESHOLD = 30000;
-
 // --- Custom Error Types for Better UI Handling ---
 class TokenWarningError extends Error {
     constructor(message, tokenCount) {
@@ -55,6 +52,7 @@ class InvalidProfileError extends Error {
  * @param {Object} compiledScene - Scene data from chatcompile.js. Conforms to the data contract in the spec.
  * @param {Object} profile - The user-selected memory generation profile from settings.
  * @param {Object} options - Additional generation options.
+ * @param {number} options.tokenWarningThreshold - Token threshold for warnings (default: 30000).
  * @returns {Promise<Object>} The generated memory result, ready for lorebook insertion.
  * @throws {TokenWarningError} If the estimated token count exceeds the warning threshold.
  * @throws {InvalidProfileError} If the provided profile is incomplete.
@@ -78,7 +76,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
         const tokenEstimate = await estimateTokenUsage(promptString);
         console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total} (input: ${tokenEstimate.input}, output: ${tokenEstimate.output})`);
         
-        if (tokenEstimate.total > TOKEN_WARNING_THRESHOLD) {
+        const tokenWarningThreshold = options.tokenWarningThreshold || 30000;
+        if (tokenEstimate.total > tokenWarningThreshold) {
             throw new TokenWarningError(
                 'Token warning threshold exceeded.',
                 tokenEstimate.total
@@ -292,17 +291,17 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
         ""
     ];
     
-    // Add previous summaries context if available
+    // Add previous memories context if available
     if (previousSummariesContext && previousSummariesContext.length > 0) {
         sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===");
-        sceneHeader.push("These are previous summaries for context only. Do NOT include them in your new summary:");
+        sceneHeader.push("These are previous memories for context only. Do NOT include them in your new memory:");
         sceneHeader.push("");
         
-        previousSummariesContext.forEach((summary, index) => {
-            sceneHeader.push(`Context ${index + 1} - ${summary.title}:`);
-            sceneHeader.push(summary.content);
-            if (summary.keywords && summary.keywords.length > 0) {
-                sceneHeader.push(`Keywords: ${summary.keywords.join(', ')}`);
+        previousSummariesContext.forEach((memory, index) => {
+            sceneHeader.push(`Context ${index + 1} - ${memory.title}:`);
+            sceneHeader.push(memory.content);
+            if (memory.keywords && memory.keywords.length > 0) {
+                sceneHeader.push(`Keywords: ${memory.keywords.join(', ')}`);
             }
             sceneHeader.push("");
         });

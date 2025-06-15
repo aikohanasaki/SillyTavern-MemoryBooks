@@ -25,7 +25,6 @@ import { addMemoryToLorebook, getDefaultTitleFormats, validateTitleFormat, previ
 
 const MODULE_NAME = 'STMemoryBooks';
 const SAVE_DEBOUNCE_TIME = 1000;
-const TOKEN_WARNING_THRESHOLD = 30000;
 const CHARS_PER_TOKEN = 4; // Rough estimation
 
 // Centralized DOM selectors
@@ -63,6 +62,7 @@ const defaultSettings = {
         alwaysUseDefault: true,
         showNotifications: true,
         refreshEditor: true,
+        tokenWarningThreshold: 30000,
     },
     titleFormat: '[000] - Auto Memory',
     profiles: [
@@ -323,6 +323,12 @@ function validateSettings(settings) {
     // Ensure module settings exist
     if (!settings.moduleSettings) {
         settings.moduleSettings = lodash.cloneDeep(defaultSettings.moduleSettings);
+    }
+    
+    // Ensure tokenWarningThreshold exists and has a reasonable value
+    if (!settings.moduleSettings.tokenWarningThreshold || 
+        settings.moduleSettings.tokenWarningThreshold < 1000) {
+        settings.moduleSettings.tokenWarningThreshold = 30000;
     }
     
     return settings;
@@ -750,6 +756,14 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
 
         <div class="completion_prompt_manager_popup_entry_form_control">
+            <label for="stmb-token-warning-threshold">Token Warning Threshold:</label>
+            <input type="number" id="stmb-token-warning-threshold" class="text_pole" 
+                value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
+                placeholder="30000">
+            <small style="opacity: 0.7;">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
+        </div>
+
+        <div class="completion_prompt_manager_popup_entry_form_control">
             <h5>Memory Title Format:</h5>
             <select id="stmb-title-format-select" class="text_pole">
                 {{#each titleFormats}}
@@ -840,7 +854,8 @@ const confirmationTemplate = Handlebars.compile(`
 End: Message #{{sceneEnd}} ({{endSpeaker}})
 {{endExcerpt}}
 
-Messages: {{messageCount}} | Estimated tokens: {{estimatedTokens}}</pre>
+Messages: {{messageCount}} | Base tokens: {{estimatedTokens}}
+<span id="stmb-total-tokens" style="font-weight: bold;">Total estimated tokens: {{estimatedTokens}}</span></pre>
         </div>
         
         {{#if showProfileSelect}}
@@ -853,32 +868,32 @@ Messages: {{messageCount}} | Estimated tokens: {{estimatedTokens}}</pre>
         {{/if}}
         
         <div class="completion_prompt_manager_popup_entry_form_control" style="margin-top: 15px;">
-            <h5>Include Previous Scene Summaries as Context:</h5>
+            <h5>Include Previous Scene Memories as Context:</h5>
             <select id="stmb-summary-count" class="text_pole">
-                <option value="0">None (0 summaries)</option>
-                <option value="1">Last 1 summary</option>
-                <option value="2">Last 2 summaries</option>
-                <option value="3">Last 3 summaries</option>
-                <option value="4">Last 4 summaries</option>
-                <option value="5">Last 5 summaries</option>
-                <option value="6">Last 6 summaries</option>
-                <option value="7">Last 7 summaries</option>
+                <option value="0">None (0 memories)</option>
+                <option value="1">Last 1 memory</option>
+                <option value="2">Last 2 memories</option>
+                <option value="3">Last 3 memories</option>
+                <option value="4">Last 4 memories</option>
+                <option value="5">Last 5 memories</option>
+                <option value="6">Last 6 memories</option>
+                <option value="7">Last 7 memories</option>
             </select>
             <small style="opacity: 0.7; display: block; margin-top: 5px;">
-                Previous summaries will be included as context to help the AI understand the ongoing story, but will NOT be part of the new summary.
-                {{#if availableSummaries}}
-                <br>Found {{availableSummaries}} existing {{#if (eq availableSummaries 1)}}summary{{else}}summaries{{/if}} in lorebook.
-                {{#if (lt availableSummaries 7)}}
-                <br><em>Note: Selecting more than {{availableSummaries}} will use all available summaries.</em>
+                Previous memories will be included as context to help the AI understand the ongoing story, but will NOT be part of the new memory.
+                {{#if availableMemories}}
+                <br>Found {{availableMemories}} existing {{#if (eq availableMemories 1)}}memory{{else}}memories{{/if}} in lorebook.
+                {{#if (lt availableMemories 7)}}
+                <br><em>Note: Selecting more than {{availableMemories}} will use all available memories.</em>
                 {{/if}}
                 {{else}}
-                <br>No existing summaries found in lorebook.
+                <br>No existing memories found in lorebook.
                 {{/if}}
             </small>
         </div>
         
         {{#if showWarning}}
-        <div class="completion_prompt_manager_error caution" style="margin-top: 10px;">
+        <div class="completion_prompt_manager_error caution" style="margin-top: 10px;" id="stmb-token-warning">
             <span>⚠️ This is a very large scene and may take some time to process.</span>
         </div>
         {{/if}}
@@ -943,11 +958,12 @@ async function showSettingsPopup() {
         sceneData: sceneData,
         alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
         showNotifications: settings.moduleSettings.showNotifications,
+        refreshEditor: settings.moduleSettings.refreshEditor,
+        tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
             isDefault: index === settings.defaultProfile
         })),
-        refreshEditor: settings.moduleSettings.refreshEditor,
         titleFormat: settings.titleFormat,
         titleFormats: getDefaultTitleFormats().map(format => ({
             value: format,
@@ -1047,6 +1063,16 @@ function setupSettingsEventListeners() {
         settings.titleFormat = e.target.value;
         saveSettingsDebounced();
     }, 1000));
+
+    // Token warning threshold input
+    popupElement.querySelector('#stmb-token-warning-threshold')?.addEventListener('input', lodash.debounce((e) => {
+        const settings = initializeSettings();
+        const value = parseInt(e.target.value);
+        if (!isNaN(value) && value >= 1000) {
+            settings.moduleSettings.tokenWarningThreshold = value;
+            saveSettingsDebounced();
+        }
+    }, 1000));
 }
 
 /**
@@ -1061,15 +1087,23 @@ function handleSettingsPopupClose(popup) {
         const alwaysUseDefault = popupElement.querySelector('#stmb-always-use-default')?.checked ?? settings.moduleSettings.alwaysUseDefault;
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
         const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
+        
+        // Save token warning threshold
+        const tokenWarningThresholdInput = popupElement.querySelector('#stmb-token-warning-threshold');
+        const tokenWarningThreshold = tokenWarningThresholdInput ? 
+            parseInt(tokenWarningThresholdInput.value) || 30000 : 
+            settings.moduleSettings.tokenWarningThreshold || 30000;
 
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
                           showNotifications !== settings.moduleSettings.showNotifications ||
-                          refreshEditor !== settings.moduleSettings.refreshEditor;
+                          refreshEditor !== settings.moduleSettings.refreshEditor ||
+                          tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
             settings.moduleSettings.showNotifications = showNotifications;
             settings.moduleSettings.refreshEditor = refreshEditor;
+            settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
             saveSettingsDebounced();
             console.log('STMemoryBooks: Settings updated');
         }
@@ -1097,6 +1131,8 @@ function refreshPopupContent() {
             sceneData: sceneData,
             alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
             showNotifications: settings.moduleSettings.showNotifications,
+            refreshEditor: settings.moduleSettings.refreshEditor,
+            tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
                 isDefault: index === settings.defaultProfile
@@ -1435,8 +1471,27 @@ function setupKeywordSelectionEventListeners(popup, resolve) {
 }
 
 /**
- * Get available summaries count using the new title format matching
+ * Calculate actual token count including real context memories
  */
+async function calculateTokensWithContext(sceneData, memories) {
+    let baseTokens = sceneData.estimatedTokens;
+    
+    if (memories && memories.length > 0) {
+        // Calculate actual tokens from memory content
+        let contextTokens = 200; // Headers and formatting overhead
+        
+        for (const memory of memories) {
+            const memoryContent = memory.content || '';
+            const memoryTokens = Math.ceil(memoryContent.length / 4); // Rough estimation
+            contextTokens += memoryTokens;
+        }
+        
+        console.log(`STMemoryBooks: Calculated ${contextTokens} actual tokens for ${memories.length} context memories`);
+        return baseTokens + contextTokens;
+    }
+    
+    return baseTokens;
+}
 async function getAvailableSummariesCount() {
     try {
         const lorebookValidation = await validateLorebook();
@@ -1525,8 +1580,9 @@ async function initiateMemoryCreation() {
     const settings = initializeSettings();
     
     // Show confirmation if not using default or if large scene
+    const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
     const shouldShowConfirmation = !settings.moduleSettings.alwaysUseDefault || 
-                                  sceneData.estimatedTokens > TOKEN_WARNING_THRESHOLD;
+                                  sceneData.estimatedTokens > tokenThreshold;
     
     let selectedProfileIndex = settings.defaultProfile;
     let summaryCount = 0; // Default to no previous summaries
@@ -1567,27 +1623,27 @@ async function initiateMemoryCreation() {
         // Compile scene using chatcompile.js
         const compiledScene = compileScene(sceneRequest);
         
-        // Fetch previous summaries if requested
-        let previousSummaries = [];
-        let summaryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
+        // Fetch previous memories if requested
+        let previousMemories = [];
+        let memoryFetchResult = { memories: [], actualCount: 0, requestedCount: 0 };
         if (summaryCount > 0) {
-            toastr.info(`Fetching ${summaryCount} previous summaries for context...`, 'STMemoryBooks');
-            summaryFetchResult = await fetchPreviousSummaries(summaryCount);
-            previousSummaries = summaryFetchResult.summaries;
+            toastr.info(`Fetching ${summaryCount} previous memories for context...`, 'STMemoryBooks');
+            memoryFetchResult = await fetchPreviousMemories(summaryCount);
+            previousMemories = memoryFetchResult.memories;
             
-            if (summaryFetchResult.actualCount > 0) {
-                if (summaryFetchResult.actualCount < summaryFetchResult.requestedCount) {
-                    toastr.warning(`Only ${summaryFetchResult.actualCount} of ${summaryFetchResult.requestedCount} requested summaries available`, 'STMemoryBooks');
+            if (memoryFetchResult.actualCount > 0) {
+                if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
+                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
                 }
-                console.log(`STMemoryBooks: Including ${summaryFetchResult.actualCount} previous summaries as context`);
+                console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
             } else {
-                toastr.warning('No previous summaries found in lorebook', 'STMemoryBooks');
-                console.log('STMemoryBooks: No previous summaries available for context');
+                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
+                console.log('STMemoryBooks: No previous memories available for context');
             }
         }
         
-        // Add previous summaries to compiled scene for context
-        compiledScene.previousSummariesContext = previousSummaries;
+        // Add previous memories to compiled scene for context
+        compiledScene.previousSummariesContext = previousMemories;
         
         // Validate compiled scene
         const validation = validateCompiledScene(compiledScene);
@@ -1601,8 +1657,8 @@ async function initiateMemoryCreation() {
         
         // Show detailed progress
         const actualTokens = estimateTokenCount(compiledScene);
-        const contextInfo = summaryFetchResult.actualCount > 0 ? 
-            ` + ${summaryFetchResult.actualCount} context ${summaryFetchResult.actualCount === 1 ? 'summary' : 'summaries'}` : '';
+        const contextInfo = memoryFetchResult.actualCount > 0 ? 
+            ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
         toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
         
         // Apply profile settings if configured
@@ -1622,7 +1678,9 @@ async function initiateMemoryCreation() {
         toastr.info('Generating memory with AI...', 'STMemoryBooks');
         
         // Call stmemory.js with compiledScene (including context summaries)
-        const memoryResult = await createMemory(compiledScene, selectedProfile);
+        const memoryResult = await createMemory(compiledScene, selectedProfile, {
+            tokenWarningThreshold: tokenThreshold
+        });
         
         // Check if keywords need user selection
         if (memoryResult.needsKeywordGeneration) {
@@ -1652,8 +1710,8 @@ async function initiateMemoryCreation() {
             const addResult = await addMemoryToLorebook(finalMemoryResult, lorebookValidation);
             
             if (addResult.success) {
-                const contextMsg = summaryFetchResult.actualCount > 0 ? 
-                    ` (with ${summaryFetchResult.actualCount} context ${summaryFetchResult.actualCount === 1 ? 'summary' : 'summaries'})` : '';
+                const contextMsg = memoryFetchResult.actualCount > 0 ? 
+                    ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
                 setTimeout(() => {
                     toastr.success(`Memory "${addResult.entryTitle}" created with ${keywordChoice.method} keywords${contextMsg}!`, 'STMemoryBooks');
                     isProcessingMemory = false;
@@ -1669,8 +1727,8 @@ async function initiateMemoryCreation() {
             const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
             
             if (addResult.success) {
-                const contextMsg = summaryFetchResult.actualCount > 0 ? 
-                    ` (with ${summaryFetchResult.actualCount} context ${summaryFetchResult.actualCount === 1 ? 'summary' : 'summaries'})` : '';
+                const contextMsg = memoryFetchResult.actualCount > 0 ? 
+                    ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
                 setTimeout(() => {
                     toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
                     isProcessingMemory = false;
@@ -1701,14 +1759,16 @@ async function initiateMemoryCreation() {
 async function showConfirmationPopup(sceneData) {
     const settings = initializeSettings();
     
-    // Get available summaries count from lorebook
-    const availableSummaries = await getAvailableSummariesCount();
+    // Get available memories count from lorebook
+    const availableMemories = await getAvailableMemoriesCount();
+    
+    const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
     
     const templateData = {
         ...sceneData,
         showProfileSelect: !settings.moduleSettings.alwaysUseDefault,
-        showWarning: sceneData.estimatedTokens > TOKEN_WARNING_THRESHOLD,
-        availableSummaries: availableSummaries,
+        showWarning: sceneData.estimatedTokens > tokenThreshold,
+        availableMemories: availableMemories,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
             isDefault: index === settings.defaultProfile
@@ -1718,11 +1778,63 @@ async function showConfirmationPopup(sceneData) {
     const content = DOMPurify.sanitize(confirmationTemplate(templateData));
     
     try {
-        const result = await new Popup(`<h3>Create Memory</h3>${content}`, POPUP_TYPE.TEXT, '', {
+        const popup = new Popup(`<h3>Create Memory</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Create Memory',
             cancelButton: 'Cancel',
             wide: true
-        }).show();
+        });
+        
+        const result = await popup.show();
+        
+        // Set up dynamic token estimation after popup is shown
+        const summaryCountSelect = popup.dlg.querySelector('#stmb-summary-count');
+        const totalTokensSpan = popup.dlg.querySelector('#stmb-total-tokens');
+        const tokenWarning = popup.dlg.querySelector('#stmb-token-warning');
+        
+        if (summaryCountSelect && totalTokensSpan) {
+            let cachedMemories = {}; // Cache fetched memories
+            
+            const updateTokenEstimate = async () => {
+                const memoryCount = parseInt(summaryCountSelect.value) || 0;
+                
+                if (memoryCount === 0) {
+                    totalTokensSpan.textContent = `Total estimated tokens: ${sceneData.estimatedTokens}`;
+                    if (tokenWarning) {
+                        tokenWarning.style.display = sceneData.estimatedTokens > tokenThreshold ? 'block' : 'none';
+                    }
+                    return;
+                }
+                
+                // Fetch actual memories for accurate token calculation
+                if (!cachedMemories[memoryCount]) {
+                    totalTokensSpan.textContent = `Total estimated tokens: Calculating...`;
+                    
+                    const memoryFetchResult = await fetchPreviousMemories(memoryCount);
+                    cachedMemories[memoryCount] = memoryFetchResult.memories;
+                }
+                
+                const memories = cachedMemories[memoryCount];
+                const totalTokens = await calculateTokensWithContext(sceneData, memories);
+                totalTokensSpan.textContent = `Total estimated tokens: ${totalTokens}`;
+                
+                // Update warning visibility
+                if (tokenWarning) {
+                    if (totalTokens > tokenThreshold) {
+                        tokenWarning.style.display = 'block';
+                        tokenWarning.querySelector('span').textContent = 
+                            `⚠️ Large scene (${totalTokens} tokens) may take some time to process.`;
+                    } else {
+                        tokenWarning.style.display = 'none';
+                    }
+                }
+            };
+            
+            // Update on change
+            summaryCountSelect.addEventListener('change', updateTokenEstimate);
+            
+            // Initial update
+            updateTokenEstimate();
+        }
         
         return result === POPUP_RESULT.AFFIRMATIVE;
     } catch (error) {
