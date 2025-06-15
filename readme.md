@@ -94,8 +94,8 @@ This ensures that only actual auto-generated memories are counted when determini
 - **Preferred prompt**: Choose from the [built-in presets](https://www.aikobots.com/cmd-memory.html), or make your own!
 
 ### Title Formatting
-- **Allowed characters**: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`
-- **Allowed emoji**: Standard emoji only. If it's not in the default emoji of your operating system, it should not be used
+- **Allowed characters**: Some punctuation is problematic. [Read the Character Restrictions in Titles document](charset.md)
+- **Allowed emoji**: Standard emoji only. [Read the Character Restrictions in Titles document](charset.md)
 - **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook?)
 - **Template Placeholders**: 
   - **{{title}}**: AI-generated title (extracted from AI response headings, markdown, or first line)
