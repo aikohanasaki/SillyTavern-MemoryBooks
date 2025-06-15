@@ -1,4 +1,5 @@
 // profileManager.js - Pure profile CRUD operations
+// Updated to work with refactored CSS that uses SillyTavern's built-in classes
 import { 
     saveSettingsDebounced,
     Popup, 
@@ -20,46 +21,60 @@ import {
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
 /**
- * Profile edit template
+ * Profile edit template - Updated to use SillyTavern's built-in classes
  */
 const profileEditTemplate = Handlebars.compile(`
-<div class="completion_prompt_manager_popup_entry">
-    <div class="completion_prompt_manager_popup_entry_form_control">
-        <label for="stmb-profile-name">Profile Name:</label>
-        <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" placeholder="Profile name">
+<div class="popup-content">
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-name">
+            <h4>Profile Name:</h4>
+            <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" placeholder="Profile name">
+        </label>
     </div>
     
-    <div class="completion_prompt_manager_popup_entry_form_control">
+    <div class="world_entry_form_control">
         <h5>Model & Temperature Settings:</h5>
-        <small style="opacity: 0.7; margin-bottom: 10px; display: block;">These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.</small>
+        <div class="info-block hint marginBot10">
+            These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.
+        </div>
         
-        <label for="stmb-profile-model">Model:</label>
-        <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Leave blank to use current model">
+        <label for="stmb-profile-model">
+            <h4>Model:</h4>
+            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Leave blank to use current model">
+        </label>
         
-        <label for="stmb-profile-temperature">Temperature (0.0 - 2.0):</label>
-        <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="Leave blank to use current temperature">
+        <label for="stmb-profile-temperature">
+            <h4>Temperature (0.0 - 2.0):</h4>
+            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="Leave blank to use current temperature">
+        </label>
         
-        <small style="opacity: 0.7;">Engine setting is for future use - currently uses SillyTavern's active API.</small>
-        <label for="stmb-profile-engine">Engine (Future Use):</label>
-        <select id="stmb-profile-engine" class="text_pole" disabled>
-            <option value="openai" {{#if (eq connection.engine 'openai')}}selected{{/if}}>OpenAI</option>
-            <option value="claude" {{#if (eq connection.engine 'claude')}}selected{{/if}}>Claude</option>
-            <option value="custom" {{#if (eq connection.engine 'custom')}}selected{{/if}}>Custom</option>
-        </select>
+        <small class="opacity50p">Engine setting is for future use - currently uses SillyTavern's active API.</small>
+        <label for="stmb-profile-engine">
+            <h4>Engine (Future Use):</h4>
+            <select id="stmb-profile-engine" class="text_pole" disabled>
+                <option value="openai" {{#if (eq connection.engine 'openai')}}selected{{/if}}>OpenAI</option>
+                <option value="claude" {{#if (eq connection.engine 'claude')}}selected{{/if}}>Claude</option>
+                <option value="custom" {{#if (eq connection.engine 'custom')}}selected{{/if}}>Custom</option>
+            </select>
+        </label>
     </div>
     
-    <div class="completion_prompt_manager_popup_entry_form_control">
-        <label for="stmb-profile-prompt">Memory Creation Prompt:</label>
-        <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter the prompt for memory creation">{{prompt}}</textarea>
-        <small style="opacity: 0.7;">Or leave blank to use a built-in preset selected below.</small>
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-prompt">
+            <h4>Memory Creation Prompt:</h4>
+            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter the prompt for memory creation">{{prompt}}</textarea>
+            <h5>Or leave blank to use a built-in preset selected below.</h5>
+        </label>
         
-        <label for="stmb-profile-preset">Built-in Preset:</label>
-        <select id="stmb-profile-preset" class="text_pole">
-            <option value="">Custom Prompt (use text above)</option>
-            {{#each presetOptions}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
-            {{/each}}
-        </select>
+        <label for="stmb-profile-preset">
+            <h4>Built-in Preset:</h4>
+            <select id="stmb-profile-preset" class="text_pole">
+                <option value="">Custom Prompt (use text above)</option>
+                {{#each presetOptions}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
+                {{/each}}
+            </select>
+        </label>
     </div>
 </div>
 `);
