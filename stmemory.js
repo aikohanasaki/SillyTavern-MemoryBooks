@@ -13,14 +13,9 @@ import { getContext } from '../../../extensions.js';
 import { substituteParams } from '../../../../script.js';
 import { generateQuietPrompt } from '../../../../script.js';
 import { getTokenCount } from '../../../tokenizers.js';
+import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
-
-// Available preset files (loaded dynamically) - as per spec + bonus keywords preset
-const AVAILABLE_PRESETS = ['summary', 'summarize', 'synopsis', 'sumup', 'keywords'];
-
-// Cache for loaded presets
-const presetCache = new Map();
 
 // --- Custom Error Types for Better UI Handling ---
 class TokenWarningError extends Error {
@@ -66,13 +61,10 @@ export async function createMemory(compiledScene, profile, options = {}) {
         // 1. Validate inputs as per the spec
         validateInputs(compiledScene, profile);
         
-        // 2. Determine which preset to use and load it (preserving preset system)
-        const preset = await determinePreset(profile, options);
+        // 2. Build the complete prompt for the AI using utils.js preset system
+        const promptString = await buildPrompt(compiledScene, profile);
         
-        // 3. Build the complete prompt for the AI
-        const promptString = await buildPrompt(compiledScene, profile, preset);
-        
-        // 4. Token estimation and warning flow as required by the spec
+        // 3. Token estimation and warning flow as required by the spec
         const tokenEstimate = await estimateTokenUsage(promptString);
         console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total} (input: ${tokenEstimate.input}, output: ${tokenEstimate.output})`);
         
@@ -84,10 +76,10 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        // 5. Generate memory using SillyTavern's AI interface
-        const aiResponse = await generateMemoryWithAI(promptString, profile, preset);
+        // 4. Generate memory using SillyTavern's AI interface
+        const aiResponse = await generateMemoryWithAI(promptString, profile);
         
-        // 6. Process and validate the AI's response (including keyword parsing and title extraction)
+        // 5. Process and validate the AI's response (including keyword parsing and title extraction)
         const processedMemory = processAIResponse(aiResponse, compiledScene);
         
         // Check if keywords need user intervention
@@ -100,7 +92,6 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 extractedTitle: processedMemory.extractedTitle,
                 compiledScene: compiledScene,
                 profile: profile,
-                preset: preset,
                 needsKeywordGeneration: true,
                 tokenUsage: tokenEstimate,
                 formattedContent: null // Will be populated by addlore.js formatting
@@ -109,7 +100,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             return keywordPromptResult;
         }
         
-        // 7. Create the final memory object, structured for the lorebook
+        // 6. Create the final memory object, structured for the lorebook
         const memoryResult = {
             content: processedMemory.content,
             extractedTitle: processedMemory.extractedTitle,
@@ -121,7 +112,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 chatId: compiledScene.metadata.chatId,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
-                presetUsed: preset?.name || 'custom',
+                presetUsed: profile.preset || 'custom',
                 tokenUsage: tokenEstimate,
                 version: '1.0'
             },
@@ -159,53 +150,6 @@ export async function createMemory(compiledScene, profile, options = {}) {
 }
 
 /**
- * Load a preset from its JSON file
- * @param {string} presetName - Name of the preset file (without .json extension)
- * @returns {Promise<Object>} Loaded preset data
- */
-async function loadPreset(presetName) {
-    // Check cache first
-    if (presetCache.has(presetName)) {
-        console.log(`${MODULE_NAME}: Using cached preset: ${presetName}`);
-        return presetCache.get(presetName);
-    }
-    
-    if (!AVAILABLE_PRESETS.includes(presetName)) {
-        throw new Error(`Unknown preset: ${presetName}`);
-    }
-    
-    try {
-        console.log(`${MODULE_NAME}: Loading preset: ${presetName}`);
-        
-        // Construct the path to the preset file
-        const presetPath = `./extensions/STMemorybooks/${presetName}.json`;
-        
-        // Fetch the preset file
-        const response = await fetch(presetPath);
-        if (!response.ok) {
-            throw new Error(`Failed to load preset file: ${response.status} ${response.statusText}`);
-        }
-        
-        const presetData = await response.json();
-        
-        // Validate preset structure
-        if (!presetData.name || !presetData.description || !presetData.systemPrompt) {
-            throw new Error(`Invalid preset structure in ${presetName}.json`);
-        }
-        
-        // Cache the preset
-        presetCache.set(presetName, presetData);
-        
-        console.log(`${MODULE_NAME}: Successfully loaded preset: ${presetData.name}`);
-        return presetData;
-        
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error loading preset ${presetName}:`, error);
-        throw new Error(`Failed to load preset ${presetName}: ${error.message}`);
-    }
-}
-
-/**
  * Validates the essential inputs for the memory creation process.
  * @private
  * @param {Object} compiledScene - The compiled scene data.
@@ -217,30 +161,9 @@ function validateInputs(compiledScene, profile) {
     if (!compiledScene?.messages?.length > 0) {
         throw new Error('Invalid or empty compiled scene data provided.');
     }
-    if (!profile?.prompt && !profile?.name) {
+    if (!profile?.prompt && !profile?.preset && !profile?.name) {
         throw new InvalidProfileError('Invalid profile configuration. A prompt or preset name is required.');
     }
-}
-
-/**
- * Determine which preset to use and load it
- * @private
- */
-async function determinePreset(profile, options) {
-    const presetKey = options.preset || profile.preset || profile.presetKey || profile.name;
-    
-    if (presetKey && AVAILABLE_PRESETS.includes(presetKey)) {
-        console.log(`${MODULE_NAME}: Using preset: ${presetKey}`);
-        try {
-            return await loadPreset(presetKey);
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Failed to load preset "${presetKey}". Falling back to custom prompt.`, error);
-            return null;
-        }
-    }
-    
-    console.log(`${MODULE_NAME}: No valid preset specified. Using custom prompt from profile.`);
-    return null;
 }
 
 /**
@@ -248,23 +171,22 @@ async function determinePreset(profile, options) {
  * @private
  * @param {Object} compiledScene - The compiled scene data.
  * @param {Object} profile - The user-selected profile.
- * @param {Object} preset - The loaded preset (if any).
  * @returns {Promise<string>} The fully formatted prompt string.
  */
-async function buildPrompt(compiledScene, profile, preset) {
+async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
     
-    // Use preset system prompt if available, otherwise use the profile's custom prompt
-    const baseSystemPrompt = preset ? preset.systemPrompt : profile.prompt;
+    // Use utils.js to get the effective prompt (handles presets, custom prompts, and fallbacks)
+    const systemPrompt = getEffectivePrompt(profile);
     
     // Use substituteParams to allow for standard macros like {{char}} and {{user}}
-    const systemPrompt = substituteParams(baseSystemPrompt, metadata.userName, metadata.characterName);
+    const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);
     
     // Build scene text for user prompt
     const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
     
     // Combine system prompt and scene text into a single prompt
-    return `${systemPrompt}\n\n${sceneText}`;
+    return `${processedSystemPrompt}\n\n${sceneText}`;
 }
 
 /**
@@ -353,12 +275,11 @@ async function estimateTokenUsage(promptString) {
  * @private
  * @param {string} promptString - The full prompt for the AI.
  * @param {Object} profile - The user-selected profile (for logging purposes).
- * @param {Object} preset - The loaded preset (for logging purposes).
  * @returns {Promise<string>} The raw text response from the AI.
  * @throws {AIResponseError} If the AI generation fails or returns an empty response.
  */
-async function generateMemoryWithAI(promptString, profile, preset) {
-    const profileInfo = preset ? `preset: ${preset.name}` : `profile: ${profile.name}`;
+async function generateMemoryWithAI(promptString, profile) {
+    const profileInfo = profile.preset ? `preset: ${profile.preset}` : `profile: ${profile.name}`;
     console.log(`${MODULE_NAME}: Generating memory with AI using global settings (${profileInfo})`);
     
     // --- TECHNICAL LIMITATION NOTE ---
@@ -630,48 +551,26 @@ function generateFallbackKeys(content, characterName) {
 }
 
 /**
- * Get available built-in presets (without loading them)
+ * Get available built-in presets using utils.js
  * @returns {Object} Available presets with basic info
  */
 export function getAvailablePresets() {
-    return AVAILABLE_PRESETS.reduce((acc, presetName) => {
+    return getPresetNames().reduce((acc, presetName) => {
         acc[presetName] = {
             name: presetName.charAt(0).toUpperCase() + presetName.slice(1),
-            description: `${presetName} preset (click to load details)`
+            description: `${presetName} preset`
         };
         return acc;
     }, {});
 }
 
 /**
- * Validate preset configuration
+ * Validate preset configuration using utils.js
  * @param {string} presetKey - Preset key to validate
  * @returns {boolean} Whether preset is valid and available
  */
 export function validatePreset(presetKey) {
-    return presetKey && AVAILABLE_PRESETS.includes(presetKey);
-}
-
-/**
- * Get preset details (loads the preset to get full info)
- * @param {string} presetName - Name of the preset
- * @returns {Promise<Object>} Preset details
- */
-export async function getPresetDetails(presetName) {
-    try {
-        return await loadPreset(presetName);
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error getting preset details:`, error);
-        return null;
-    }
-}
-
-/**
- * Clear preset cache (useful for development/testing)
- */
-export function clearPresetCache() {
-    presetCache.clear();
-    console.log(`${MODULE_NAME}: Preset cache cleared`);
+    return isValidPreset(presetKey);
 }
 
 /**
@@ -684,7 +583,7 @@ export function clearPresetCache() {
 export async function completeMemoryWithKeywords(keywordPromptResult, method, userKeywords = []) {
     console.log(`${MODULE_NAME}: Completing memory with keyword method: ${method}`);
     
-    const { content, extractedTitle, compiledScene, profile, preset, tokenUsage } = keywordPromptResult;
+    const { content, extractedTitle, compiledScene, profile, tokenUsage } = keywordPromptResult;
     let finalKeywords = [];
     
     try {
@@ -722,7 +621,7 @@ export async function completeMemoryWithKeywords(keywordPromptResult, method, us
                 chatId: compiledScene.metadata.chatId,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
-                presetUsed: preset?.name || 'custom',
+                presetUsed: profile.preset || 'custom',
                 keywordMethod: method,
                 tokenUsage: tokenUsage,
                 version: '1.0'
@@ -756,21 +655,24 @@ export async function completeMemoryWithKeywords(keywordPromptResult, method, us
 }
 
 /**
- * Generate keywords using AI with the keywords preset
+ * Generate keywords using AI with the keywords preset from utils.js
  * @private
  */
 async function generateKeywordsWithAI(compiledScene, profile) {
     console.log(`${MODULE_NAME}: Generating keywords using AI with keywords preset`);
     
     try {
-        // Load the keywords preset
-        const keywordsPreset = await loadPreset('keywords');
+        // Create a temporary profile with keywords preset
+        const keywordsProfile = {
+            ...profile,
+            preset: 'keywords'
+        };
         
-        // Build prompt using keywords preset
-        const promptString = await buildPrompt(compiledScene, profile, keywordsPreset);
+        // Build prompt using keywords preset from utils.js
+        const promptString = await buildPrompt(compiledScene, keywordsProfile);
         
         // Generate keywords with AI
-        const aiResponse = await generateMemoryWithAI(promptString, profile, keywordsPreset);
+        const aiResponse = await generateMemoryWithAI(promptString, keywordsProfile);
         
         // Parse keywords from response
         const keywordString = aiResponse.trim();

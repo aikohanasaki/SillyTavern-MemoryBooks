@@ -1,4 +1,6 @@
-/* STMemoryBooks Extension Styles */
+/* STMemoryBooks Extension Styles - Refactored */
+
+/* --- NECESSARY CUSTOM STYLES (UNIQUE FUNCTIONALITY) --- */
 
 /* Scene marker buttons */
 .stmb-start-btn,
@@ -105,62 +107,6 @@
     text-align: center;
 }
 
-/* Settings popup container */
-.stmb-settings-container {
-    max-width: 100%;
-}
-
-.stmb-settings-container .completion_prompt_manager_popup_entry {
-    margin-bottom: 15px;
-}
-
-.stmb-settings-container .completion_prompt_manager_popup_entry:last-child {
-    margin-bottom: 0;
-}
-
-/* Profile management section */
-.stmb-settings-container #stmb-profile-select {
-    margin-bottom: 10px;
-    width: 100%;
-}
-
-.stmb-settings-container .menu_button {
-    display: inline-block;
-    margin: 2px 4px 2px 0;
-    padding: 6px 12px;
-    font-size: 13px;
-}
-
-/* Import/Export section */
-.stmb-settings-container #stmb-import-file {
-    display: none;
-}
-
-/* Profile edit form styling */
-.stmb-profile-edit label {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 4px;
-    font-weight: 600;
-    color: rgba(var(--SmartThemeBodyColor), 0.9);
-}
-
-.stmb-profile-edit label:first-child {
-    margin-top: 0;
-}
-
-.stmb-profile-edit input,
-.stmb-profile-edit select,
-.stmb-profile-edit textarea {
-    width: 100%;
-    margin-bottom: 8px;
-}
-
-.stmb-profile-edit textarea {
-    resize: vertical;
-    min-height: 120px;
-}
-
 /* Scene preview styling */
 .stmb-scene-preview {
     background: rgba(var(--SmartThemeBlurTintColor), 0.3);
@@ -177,35 +123,25 @@
     overflow-y: auto;
 }
 
-/* Warning styling */
-.stmb-warning {
-    background: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.4);
+/* Custom scrollbar for scene preview */
+.stmb-scene-preview::-webkit-scrollbar {
+    width: 8px;
+}
+
+.stmb-scene-preview::-webkit-scrollbar-track {
+    background: rgba(var(--SmartThemeBodyColor), 0.1);
     border-radius: 4px;
-    padding: 10px;
-    margin: 10px 0;
-    color: rgba(255, 193, 7, 0.9);
-    font-size: 14px;
 }
 
-.stmb-warning i {
-    margin-right: 6px;
+.stmb-scene-preview::-webkit-scrollbar-thumb {
+    background: rgba(var(--SmartThemeBodyColor), 0.3);
+    border-radius: 4px;
 }
 
-/* Confirmation popup styling */
-.stmb-confirmation-container {
-    max-width: 100%;
+.stmb-scene-preview::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--SmartThemeBodyColor), 0.5);
 }
 
-.stmb-confirmation-container .mes_file_container {
-    max-height: 250px;
-    overflow-y: auto;
-}
-
-.stmb-confirmation-container select {
-    width: 100%;
-    margin-top: 8px;
-}
 
 /* Processing state styling */
 .stmb-processing {
@@ -240,6 +176,8 @@
     }
 }
 
+/* --- RESPONSIVE & ACCESSIBILITY (KEEP) --- */
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .stmb-start-btn,
@@ -249,36 +187,9 @@
         font-size: 14px;
     }
     
-    .stmb-settings-container .menu_button {
-        display: block;
-        margin: 4px 0;
-        text-align: center;
-    }
-    
     .stmb-scene-preview {
         font-size: 11px;
         max-height: 200px;
-    }
-}
-
-/* Dark theme adjustments */
-@media (prefers-color-scheme: dark) {
-    .stmb-start-btn,
-    .stmb-end-btn {
-        background: rgba(255, 255, 255, 0.05);
-        color: rgba(255, 255, 255, 0.6);
-    }
-    
-    .stmb-start-btn:hover,
-    .stmb-end-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.8);
-        border-color: rgba(255, 255, 255, 0.2);
-    }
-    
-    .stmb-scene-preview {
-        background: rgba(0, 0, 0, 0.2);
-        border-color: rgba(255, 255, 255, 0.1);
     }
 }
 
@@ -293,19 +204,6 @@
 .stmb-end-btn[aria-pressed="true"] {
     background: rgba(var(--SmartThemeQuoteColor), 0.8);
     color: var(--SmartThemeBorderColor);
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    .stmb-start-btn,
-    .stmb-end-btn {
-        border-width: 2px;
-    }
-    
-    .stmb-start-btn.on,
-    .stmb-end-btn.on {
-        border-width: 3px;
-    }
 }
 
 /* Reduced motion support */
@@ -324,76 +222,4 @@
     .stmb-processing::after {
         animation: none;
     }
-}
-
-/* Tooltip styling for buttons */
-.stmb-start-btn[title]:hover::after,
-.stmb-end-btn[title]:hover::after {
-    content: attr(title);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    white-space: nowrap;
-    z-index: 1000;
-    margin-bottom: 4px;
-}
-
-/* Loading spinner for memory creation */
-.stmb-spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(var(--SmartThemeBodyColor), 0.3);
-    border-radius: 50%;
-    border-top-color: var(--SmartThemeEmphasisColor);
-    animation: spin 1s ease-in-out infinite;
-    margin-right: 8px;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Status indicators */
-.stmb-status-success {
-    color: #28a745;
-}
-
-.stmb-status-warning {
-    color: #ffc107;
-}
-
-.stmb-status-error {
-    color: #dc3545;
-}
-
-.stmb-status-info {
-    color: #17a2b8;
-}
-
-/* Custom scrollbar for scene preview */
-.stmb-scene-preview::-webkit-scrollbar {
-    width: 8px;
-}
-
-.stmb-scene-preview::-webkit-scrollbar-track {
-    background: rgba(var(--SmartThemeBodyColor), 0.1);
-    border-radius: 4px;
-}
-
-.stmb-scene-preview::-webkit-scrollbar-thumb {
-    background: rgba(var(--SmartThemeBodyColor), 0.3);
-    border-radius: 4px;
-}
-
-.stmb-scene-preview::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--SmartThemeBodyColor), 0.5);
 }
