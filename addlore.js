@@ -20,12 +20,14 @@ const MODULE_NAME = 'STMemoryBooks-AddLore';
 
 // Default title formats that users can select from
 const DEFAULT_TITLE_FORMATS = [
-    '[000] - Auto Memory',
-    'Memory [000]: {{scene}}',
-    '[00] - {{character}} Scene',
-    'Scene [000] ({{messages}} msgs)',
-    '📚 Memory [000]',
-    '[000]. {{character}} - {{scene}}'
+    '[000] - {{title}} ({{profile}})',
+    '{{date}} [000] 🎬{{title}}, {{messages}} msgs',
+    '[000] {{date}} - {{char}} Memory',
+    '[00] - {{user}} & {{char}} {{scene}}',
+    '🧠 [000] ({{messages}} msgs)',
+    '📚 Memory [000] - {{profile}} {{date}} {{time}}',
+    '[000] - {{scene}}: {{title}}',
+    '[000] - {{title}}'
 ];
 
 /**
@@ -34,6 +36,7 @@ const DEFAULT_TITLE_FORMATS = [
  *
  * @param {Object} memoryResult - The result from stmemory.js
  * @param {string} memoryResult.content - The main text of the memory
+ * @param {string} memoryResult.extractedTitle - AI-generated title (if any)
  * @param {string[]} memoryResult.suggestedKeys - Array of keywords for the entry
  * @param {Object} memoryResult.metadata - Metadata about the memory creation
  * @param {Object} memoryResult.lorebook - Lorebook-specific configuration
@@ -137,7 +140,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.comment = entryTitle;
     
     // Extract order number from title for proper sorting
-    const orderMatch = entryTitle.match(/^\[?(\d+)\]?/);
+    const orderMatch = entryTitle.match(/\[(\d+)\]/);
     const orderNumber = orderMatch ? parseInt(orderMatch[1]) : 100;
     
     // Set all properties to match the example lorebook structure
@@ -189,7 +192,7 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     const matches = title.match(numberingPattern);
     
     if (matches) {
-        const nextNumber = getNextEntryNumber(lorebookData);
+        const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
         
         matches.forEach(match => {
             const digits = match.length - 2; // Remove [ and ]
@@ -201,8 +204,10 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     // Template substitutions
     const metadata = memoryResult.metadata || {};
     const substitutions = {
+        '{{title}}': memoryResult.extractedTitle || 'Memory',
         '{{scene}}': `Scene ${metadata.sceneRange || 'Unknown'}`,
-        '{{character}}': metadata.characterName || 'Unknown',
+        '{{char}}': metadata.characterName || 'Unknown',
+        '{{user}}': metadata.userName || 'User',
         '{{messages}}': metadata.messageCount || 0,
         '{{profile}}': metadata.profileUsed || 'Unknown',
         '{{date}}': new Date().toLocaleDateString(),
@@ -222,12 +227,13 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
 }
 
 /**
- * Gets the next available entry number for auto-numbering
+ * Gets the next available entry number for auto-numbering based on title format
  * @private
  * @param {Object} lorebookData - The lorebook data
+ * @param {string} titleFormat - The title format to match against
  * @returns {number} The next available number
  */
-function getNextEntryNumber(lorebookData) {
+function getNextEntryNumber(lorebookData, titleFormat) {
     if (!lorebookData.entries) {
         return 1;
     }
@@ -235,20 +241,36 @@ function getNextEntryNumber(lorebookData) {
     const entries = Object.values(lorebookData.entries);
     const existingNumbers = [];
     
-    // Extract numbers from existing memory entries (numbered titles with vectorized: true)
-    entries.forEach(entry => {
-        // Only look at entries that appear to be auto-generated memories
-        // (numbered titles and vectorized for database retrieval)
-        if (entry.comment && 
-            entry.comment.match(/^\[?\d+\]?/) && 
-            entry.vectorized === true) {
-            
-            const numberMatch = entry.comment.match(/^\[?(\d+)\]?/);
-            if (numberMatch) {
-                existingNumbers.push(parseInt(numberMatch[1]));
+    // Convert title format to regex pattern for matching existing memories
+    const memoryPattern = createMemoryMatchPattern(titleFormat);
+    
+    if (memoryPattern) {
+        // Use title format pattern as primary filter
+        entries.forEach(entry => {
+            if (entry.comment && memoryPattern.test(entry.comment)) {
+                const numberMatch = entry.comment.match(/\[(\d+)\]/);
+                if (numberMatch) {
+                    existingNumbers.push(parseInt(numberMatch[1]));
+                }
             }
-        }
-    });
+        });
+    } else {
+        // Fallback to old logic if pattern creation fails
+        console.warn(`${MODULE_NAME}: Could not create pattern from title format, using fallback logic`);
+        entries.forEach(entry => {
+            // Only look at entries that appear to be auto-generated memories
+            // (numbered titles and vectorized for database retrieval)
+            if (entry.comment && 
+                entry.comment.match(/\[(\d+)\]/) && 
+                entry.vectorized === true) {
+                
+                const numberMatch = entry.comment.match(/\[(\d+)\]/);
+                if (numberMatch) {
+                    existingNumbers.push(parseInt(numberMatch[1]));
+                }
+            }
+        });
+    }
     
     // Find the next available number
     if (existingNumbers.length === 0) {
@@ -267,6 +289,112 @@ function getNextEntryNumber(lorebookData) {
     }
     
     return nextNumber;
+}
+
+/**
+ * Creates a regex pattern to match existing memories based on title format
+ * @private
+ * @param {string} titleFormat - The title format template
+ * @returns {RegExp|null} Regex pattern to match existing memories, or null if pattern creation fails
+ */
+function createMemoryMatchPattern(titleFormat) {
+    try {
+        let pattern = titleFormat;
+        
+        // Escape regex special characters except for our placeholders
+        pattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Replace auto-numbering patterns with capture groups
+        pattern = pattern.replace(/\\\[0+\\\]/g, '\\[(\\d+)\\]');
+        
+        // Replace template placeholders with appropriate patterns
+        const placeholderPatterns = {
+            '\\{\\{title\\}\\}': '[^\\[\\]]+', // Any characters except brackets
+            '\\{\\{scene\\}\\}': 'Scene \\d+-\\d+', // Scene X-Y format
+            '\\{\\{char\\}\\}': '[^\\[\\]]+', // Character name
+            '\\{\\{user\\}\\}': '[^\\[\\]]+', // User name
+            '\\{\\{messages\\}\\}': '\\d+', // Number of messages
+            '\\{\\{profile\\}\\}': '[^\\[\\]]+', // Profile name
+            '\\{\\{date\\}\\}': '[^\\[\\]]+', // Date string
+            '\\{\\{time\\}\\}': '[^\\[\\]]+' // Time string
+        };
+        
+        Object.entries(placeholderPatterns).forEach(([placeholder, replacement]) => {
+            pattern = pattern.replace(new RegExp(placeholder, 'g'), replacement);
+        });
+        
+        // Create regex with anchors for exact matching
+        const regex = new RegExp(`^${pattern}$`, 'i');
+        
+        console.log(`${MODULE_NAME}: Created memory match pattern: ${regex.source}`);
+        return regex;
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error creating memory match pattern:`, error);
+        return null;
+    }
+}
+
+/**
+ * Identifies memory entries from lorebook using title format pattern
+ * @param {Object} lorebookData - The lorebook data
+ * @param {string} titleFormat - The title format to match against
+ * @returns {Array} Array of memory entries with extracted metadata
+ */
+export function identifyMemoryEntries(lorebookData, titleFormat) {
+    if (!lorebookData.entries) {
+        return [];
+    }
+    
+    const entries = Object.values(lorebookData.entries);
+    const memoryEntries = [];
+    
+    // Convert title format to regex pattern for matching
+    const memoryPattern = createMemoryMatchPattern(titleFormat);
+    
+    if (memoryPattern) {
+        // Use title format pattern as primary filter
+        entries.forEach(entry => {
+            if (entry.comment && memoryPattern.test(entry.comment)) {
+                const numberMatch = entry.comment.match(/\[(\d+)\]/);
+                const number = numberMatch ? parseInt(numberMatch[1]) : 0;
+                
+                memoryEntries.push({
+                    number: number,
+                    title: entry.comment,
+                    content: entry.content,
+                    keywords: entry.key || [],
+                    entry: entry
+                });
+            }
+        });
+    } else {
+        // Fallback to secondary filters for borderline cases
+        console.warn(`${MODULE_NAME}: Using fallback memory detection`);
+        entries.forEach(entry => {
+            // Check for numbered titles with vectorized property
+            if (entry.comment && 
+                entry.comment.match(/\[(\d+)\]/) && 
+                entry.vectorized === true) {
+                
+                const numberMatch = entry.comment.match(/\[(\d+)\]/);
+                const number = numberMatch ? parseInt(numberMatch[1]) : 0;
+                
+                memoryEntries.push({
+                    number: number,
+                    title: entry.comment,
+                    content: entry.content,
+                    keywords: entry.key || [],
+                    entry: entry
+                });
+            }
+        });
+    }
+    
+    // Sort by number
+    memoryEntries.sort((a, b) => a.number - b.number);
+    
+    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using title format pattern`);
+    return memoryEntries;
 }
 
 /**
@@ -315,7 +443,7 @@ export function validateTitleFormat(format) {
     
     // Check for valid placeholder syntax
     const invalidPlaceholders = format.match(/\{\{[^}]*\}\}/g)?.filter(placeholder => {
-        const validPlaceholders = ['{{scene}}', '{{character}}', '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'];
+        const validPlaceholders = ['{{title}}', '{{scene}}', '{{char}}', '{{user}}', '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'];
         return !validPlaceholders.includes(placeholder);
     });
     
@@ -351,9 +479,11 @@ export function validateTitleFormat(format) {
  */
 export function previewTitle(titleFormat, sampleData = {}) {
     const defaultSampleData = {
+        extractedTitle: 'Sample Memory Title',
         metadata: {
             sceneRange: '15-23',
             characterName: 'Alice',
+            userName: 'Bob',
             messageCount: 9,
             profileUsed: 'Summary'
         }
@@ -394,17 +524,13 @@ export async function getLorebookStats() {
         }
         
         const entries = Object.values(lorebookData.entries || {});
+        const settings = extension_settings.STMemoryBooks || {};
+        const titleFormat = settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
         
-        // Identify memory entries vs other lorebook entries based on structure
-        const memoryEntries = entries.filter(entry => 
-            entry.comment && 
-            entry.comment.match(/^\[?\d+\]?/) && 
-            entry.vectorized === true
-        );
+        // Use title format pattern to identify memory entries
+        const memoryEntries = identifyMemoryEntries(lorebookData, titleFormat);
         const otherEntries = entries.filter(entry => 
-            !entry.comment || 
-            !entry.comment.match(/^\[?\d+\]?/) || 
-            entry.vectorized !== true
+            !memoryEntries.some(memEntry => memEntry.entry === entry)
         );
         
         return {
@@ -416,7 +542,7 @@ export async function getLorebookStats() {
             averageContentLength: entries.length > 0 ? 
                 Math.round(entries.reduce((sum, entry) => sum + (entry.content?.length || 0), 0) / entries.length) : 0,
             totalKeywords: entries.reduce((sum, entry) => sum + (entry.key?.length || 0), 0),
-            memoryKeywords: memoryEntries.reduce((sum, entry) => sum + (entry.key?.length || 0), 0)
+            memoryKeywords: memoryEntries.reduce((sum, entry) => sum + (entry.keywords?.length || 0), 0)
         };
         
     } catch (error) {

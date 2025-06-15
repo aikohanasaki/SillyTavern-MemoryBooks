@@ -21,7 +21,7 @@ import { stringToRange } from '../../../utils.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory, completeMemoryWithKeywords } from './stmemory.js'; // FIXED: Removed non-existent prepareForKeywordDialog
-import { addMemoryToLorebook, getDefaultTitleFormats, validateTitleFormat, previewTitle } from './addlore.js'; // FIXED: Added missing import
+import { addMemoryToLorebook, getDefaultTitleFormats, validateTitleFormat, previewTitle, identifyMemoryEntries } from './addlore.js'; // FIXED: Added missing import and identifyMemoryEntries
 
 const MODULE_NAME = 'STMemoryBooks';
 const SAVE_DEBOUNCE_TIME = 1000;
@@ -760,7 +760,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <input type="text" id="stmb-custom-title-format" class="text_pole" 
                 style="margin-top: 5px; {{#unless showCustomInput}}display: none;{{/unless}}" 
                 placeholder="Enter custom format" value="{{titleFormat}}">
-            <small style="opacity: 0.7;">Use [0], [00], [000] for auto-numbering. Available: {{character}}, {{scene}}, {{messages}}, {{profile}}, {{date}}, {{time}}</small>
+            <small style="opacity: 0.7;">Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}</small>
         </div>
         
         <div class="completion_prompt_manager_popup_entry_form_control">
@@ -1435,6 +1435,72 @@ function setupKeywordSelectionEventListeners(popup, resolve) {
 }
 
 /**
+ * Get available summaries count using the new title format matching
+ */
+async function getAvailableSummariesCount() {
+    try {
+        const lorebookValidation = await validateLorebook();
+        if (!lorebookValidation.valid) {
+            return 0;
+        }
+        
+        const settings = initializeSettings();
+        const titleFormat = settings.titleFormat || '[000] - Auto Memory';
+        
+        // Use the new identifyMemoryEntries function from addlore.js
+        const memoryEntries = identifyMemoryEntries(lorebookValidation.data, titleFormat);
+        
+        return memoryEntries.length;
+    } catch (error) {
+        console.warn('STMemoryBooks: Error getting available summaries count:', error);
+        return 0;
+    }
+}
+
+/**
+ * Fetch previous summaries using the new title format matching
+ */
+async function fetchPreviousSummaries(count) {
+    if (count <= 0) {
+        return { summaries: [], actualCount: 0, requestedCount: 0 };
+    }
+    
+    try {
+        const lorebookValidation = await validateLorebook();
+        if (!lorebookValidation.valid) {
+            return { summaries: [], actualCount: 0, requestedCount: count };
+        }
+        
+        const settings = initializeSettings();
+        const titleFormat = settings.titleFormat || '[000] - Auto Memory';
+        
+        // Use the new identifyMemoryEntries function from addlore.js
+        const memoryEntries = identifyMemoryEntries(lorebookValidation.data, titleFormat);
+        
+        // Return the last N summaries (most recent ones)
+        const recentSummaries = memoryEntries.slice(-count);
+        const actualCount = recentSummaries.length;
+        
+        console.log(`STMemoryBooks: Requested ${count} summaries, found ${actualCount} available summaries using title format pattern`);
+        
+        return {
+            summaries: recentSummaries.map(entry => ({
+                number: entry.number,
+                title: entry.title,
+                content: entry.content,
+                keywords: entry.keywords
+            })),
+            actualCount: actualCount,
+            requestedCount: count
+        };
+        
+    } catch (error) {
+        console.error('STMemoryBooks: Error fetching previous summaries:', error);
+        return { summaries: [], actualCount: 0, requestedCount: count };
+    }
+}
+
+/**
  * Initiate memory creation process with profile settings support
  */
 async function initiateMemoryCreation() {
@@ -1626,79 +1692,6 @@ async function initiateMemoryCreation() {
             await new Promise(resolve => setTimeout(resolve, 1000));
             restoreOriginalSettings(originalSettings);
         }
-    }
-}
-
-async function getAvailableSummariesCount() {
-    try {
-        const lorebookValidation = await validateLorebook();
-        if (!lorebookValidation.valid) {
-            return 0;
-        }
-        
-        const entries = Object.values(lorebookValidation.data.entries || {});
-        
-        // Count memory entries (numbered titles with vectorized: true)
-        const memoryEntries = entries.filter(entry => 
-            entry.comment && 
-            entry.comment.match(/^\[?\d+\]?/) && 
-            entry.vectorized === true
-        );
-        
-        return memoryEntries.length;
-    } catch (error) {
-        console.warn('STMemoryBooks: Error getting available summaries count:', error);
-        return 0;
-    }
-}
-
-async function fetchPreviousSummaries(count) {
-    if (count <= 0) {
-        return { summaries: [], actualCount: 0, requestedCount: 0 };
-    }
-    
-    try {
-        const lorebookValidation = await validateLorebook();
-        if (!lorebookValidation.valid) {
-            return { summaries: [], actualCount: 0, requestedCount: count };
-        }
-        
-        const entries = Object.values(lorebookValidation.data.entries || {});
-        
-        // Get memory entries with their numbers
-        const memoryEntries = entries
-            .filter(entry => 
-                entry.comment && 
-                entry.comment.match(/^\[?\d+\]?/) && 
-                entry.vectorized === true
-            )
-            .map(entry => {
-                const numberMatch = entry.comment.match(/^\[?(\d+)\]?/);
-                const number = numberMatch ? parseInt(numberMatch[1]) : 0;
-                return {
-                    number: number,
-                    title: entry.comment,
-                    content: entry.content,
-                    keywords: entry.key || []
-                };
-            })
-            .sort((a, b) => a.number - b.number); // Sort by number ascending
-        
-        // Return the last N summaries (most recent ones)
-        const recentSummaries = memoryEntries.slice(-count);
-        const actualCount = recentSummaries.length;
-        
-        console.log(`STMemoryBooks: Requested ${count} summaries, found ${actualCount} available summaries`);
-        
-        return {
-            summaries: recentSummaries,
-            actualCount: actualCount,
-            requestedCount: count
-        };
-        
-    } catch (error) {
-        console.error('STMemoryBooks: Error fetching previous summaries:', error);
-        return { summaries: [], actualCount: 0, requestedCount: count };
     }
 }
 

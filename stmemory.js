@@ -88,7 +88,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
         // 5. Generate memory using SillyTavern's AI interface
         const aiResponse = await generateMemoryWithAI(promptString, profile, preset);
         
-        // 6. Process and validate the AI's response (including keyword parsing)
+        // 6. Process and validate the AI's response (including keyword parsing and title extraction)
         const processedMemory = processAIResponse(aiResponse, compiledScene);
         
         // Check if keywords need user intervention
@@ -98,6 +98,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             // Return special result for keyword generation flow
             const keywordPromptResult = {
                 content: processedMemory.content,
+                extractedTitle: processedMemory.extractedTitle,
                 compiledScene: compiledScene,
                 profile: profile,
                 preset: preset,
@@ -112,10 +113,12 @@ export async function createMemory(compiledScene, profile, options = {}) {
         // 7. Create the final memory object, structured for the lorebook
         const memoryResult = {
             content: processedMemory.content,
+            extractedTitle: processedMemory.extractedTitle,
             metadata: {
                 sceneRange: `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`,
                 messageCount: compiledScene.metadata.messageCount,
                 characterName: compiledScene.metadata.characterName,
+                userName: compiledScene.metadata.userName,
                 chatId: compiledScene.metadata.chatId,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
@@ -250,7 +253,7 @@ async function determinePreset(profile, options) {
  * @returns {Promise<string>} The fully formatted prompt string.
  */
 async function buildPrompt(compiledScene, profile, preset) {
-    const { metadata, messages } = compiledScene;
+    const { metadata, messages, previousSummariesContext } = compiledScene;
     
     // Use preset system prompt if available, otherwise use the profile's custom prompt
     const baseSystemPrompt = preset ? preset.systemPrompt : profile.prompt;
@@ -259,7 +262,7 @@ async function buildPrompt(compiledScene, profile, preset) {
     const systemPrompt = substituteParams(baseSystemPrompt, metadata.userName, metadata.characterName);
     
     // Build scene text for user prompt
-    const sceneText = formatSceneForAI(messages, metadata);
+    const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
     
     // Combine system prompt and scene text into a single prompt
     return `${systemPrompt}\n\n${sceneText}`;
@@ -270,9 +273,10 @@ async function buildPrompt(compiledScene, profile, preset) {
  * @private
  * @param {Array<Object>} messages - The messages from the compiled scene.
  * @param {Object} metadata - The metadata from the compiled scene.
+ * @param {Array<Object>} previousSummariesContext - Previous summaries for context (optional).
  * @returns {string} A formatted string representing the chat scene.
  */
-function formatSceneForAI(messages, metadata) {
+function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
     const messageLines = messages.map(message => {
         const speaker = message.name || 'Unknown';
         const content = (message.mes || '').trim();
@@ -285,12 +289,32 @@ function formatSceneForAI(messages, metadata) {
         `User: ${metadata.userName || 'User'}`,
         `Chat ID: ${metadata.chatId || 'Unknown'}`,
         `Messages: ${metadata.sceneStart} to ${metadata.sceneEnd} (${messages.length} total)`,
-        "",
-        "=== SCENE TRANSCRIPT ===",
-        ...messageLines,
-        "",
-        "=== END SCENE ==="
+        ""
     ];
+    
+    // Add previous summaries context if available
+    if (previousSummariesContext && previousSummariesContext.length > 0) {
+        sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===");
+        sceneHeader.push("These are previous summaries for context only. Do NOT include them in your new summary:");
+        sceneHeader.push("");
+        
+        previousSummariesContext.forEach((summary, index) => {
+            sceneHeader.push(`Context ${index + 1} - ${summary.title}:`);
+            sceneHeader.push(summary.content);
+            if (summary.keywords && summary.keywords.length > 0) {
+                sceneHeader.push(`Keywords: ${summary.keywords.join(', ')}`);
+            }
+            sceneHeader.push("");
+        });
+        
+        sceneHeader.push("=== END CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===");
+        sceneHeader.push("");
+    }
+    
+    sceneHeader.push("=== SCENE TRANSCRIPT ===");
+    sceneHeader.push(...messageLines);
+    sceneHeader.push("");
+    sceneHeader.push("=== END SCENE ===");
     
     return sceneHeader.join('\n');
 }
@@ -365,19 +389,25 @@ async function generateMemoryWithAI(promptString, profile, preset) {
 }
 
 /**
- * Cleans the raw AI response and extracts memory content and keywords.
+ * Cleans the raw AI response and extracts memory content, keywords, and title.
  * As per spec: "This requires the stmemory.js script to parse the AI's response 
  * to separate the main memory content from the list of keywords provided by the AI."
  * @private
  * @param {string} aiResponse - The raw response from the AI.
  * @param {Object} compiledScene - The original compiled scene for context.
- * @returns {{content: string, suggestedKeys: Array<string>}} An object with the cleaned content and keys.
+ * @returns {{content: string, extractedTitle: string, suggestedKeys: Array<string>}} An object with the cleaned content, title, and keys.
  * @throws {AIResponseError} If the processed memory is too short.
  */
 function processAIResponse(aiResponse, compiledScene) {
+    // Extract title from AI response
+    const extractedTitle = extractTitleFromResponse(aiResponse);
+    
     // Remove common conversational prefixes from the AI response
     const prefixes = /^(here is the|here's a|the memory is:|memory:|summary:|assistant:)\s*/i;
     let cleanedResponse = aiResponse.trim().replace(prefixes, '').trim();
+    
+    // Remove title lines from the content if they exist
+    cleanedResponse = removeTitleLinesFromContent(cleanedResponse);
     
     // Parse keywords from AI response if present
     let content = cleanedResponse;
@@ -424,11 +454,149 @@ function processAIResponse(aiResponse, compiledScene) {
         extractedKeys = null; // Signal that keywords need user intervention
     }
     
+    console.log(`${MODULE_NAME}: Extracted title: "${extractedTitle}"`);
+    
     return {
         content: content,
+        extractedTitle: extractedTitle,
         suggestedKeys: extractedKeys,
         needsKeywordGeneration: extractedKeys === null
     };
+}
+
+/**
+ * Extracts title from AI response using various patterns
+ * @private
+ * @param {string} aiResponse - The raw AI response
+ * @returns {string} Extracted title or default fallback
+ */
+function extractTitleFromResponse(aiResponse) {
+    // Common title patterns to look for
+    const titlePatterns = [
+        /^title:\s*(.+?)$/mi,                          // "Title: Something"
+        /^#\s+(.+?)$/mi,                               // "# Heading"
+        /^\*\*(.+?)\*\*$/mi,                           // "**Bold Title**"
+        /^(.+?)\s*\n[-=]{3,}/mi,                       // "Title\n---" or "Title\n==="
+        /^\d+\.\s*(.+?)$/mi,                           // "1. Title" (first numbered item)
+        /^(.+?):$/mi,                                  // "Title:" (standalone line ending with colon)
+    ];
+    
+    // Try each pattern
+    for (const pattern of titlePatterns) {
+        const match = aiResponse.match(pattern);
+        if (match && match[1]) {
+            let title = match[1].trim();
+            // Clean up the title
+            title = title.replace(/[*_~`]/g, ''); // Remove markdown formatting
+            title = title.replace(/^\d+\.\s*/, ''); // Remove leading numbers
+            if (title.length > 3 && title.length <= 50) {
+                return title;
+            }
+        }
+    }
+    
+    // If no explicit title pattern found, try to extract from first line
+    const lines = aiResponse.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length > 0) {
+        let firstLine = lines[0].trim();
+        
+        // Clean up first line and check if it looks like a title
+        firstLine = firstLine.replace(/^(here is the|here's a|the memory is:|memory:|summary:|assistant:)\s*/i, '');
+        firstLine = firstLine.replace(/[*_~`]/g, ''); // Remove markdown
+        firstLine = firstLine.replace(/^\d+\.\s*/, ''); // Remove numbers
+        
+        // If first line is short and doesn't end with sentence punctuation, likely a title
+        if (firstLine.length > 3 && firstLine.length <= 50 && !/[.!?]$/.test(firstLine)) {
+            return firstLine;
+        }
+        
+        // Check if first line contains key title words
+        const titleWords = ['memory', 'scene', 'summary', 'chapter', 'part', 'event', 'encounter'];
+        const hasTitle = titleWords.some(word => firstLine.toLowerCase().includes(word));
+        if (hasTitle && firstLine.length <= 50) {
+            return firstLine;
+        }
+    }
+    
+    // Fallback: generate a basic title from content
+    return generateFallbackTitle(aiResponse);
+}
+
+/**
+ * Generates a fallback title from content
+ * @private
+ * @param {string} content - The AI response content
+ * @returns {string} Generated fallback title
+ */
+function generateFallbackTitle(content) {
+    // Look for key events or characters mentioned
+    const sentences = content.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+    
+    if (sentences.length > 0) {
+        const firstSentence = sentences[0];
+        
+        // Extract key words that might indicate the topic
+        const keyWords = firstSentence.match(/\b[A-Z][a-z]+\b/g) || [];
+        const actionWords = firstSentence.match(/\b(talk|discuss|meet|fight|discover|learn|visit|leave|arrive|decide)\w*\b/gi) || [];
+        
+        if (keyWords.length > 0 || actionWords.length > 0) {
+            const titleParts = [...new Set([...keyWords.slice(0, 2), ...actionWords.slice(0, 1)])];
+            if (titleParts.length > 0) {
+                return titleParts.join(' ') + ' Scene';
+            }
+        }
+        
+        // If first sentence is short enough, use part of it
+        if (firstSentence.length <= 40) {
+            return firstSentence.replace(/^(the|a|an)\s+/i, '');
+        }
+    }
+    
+    return 'Memory Scene';
+}
+
+/**
+ * Removes title lines from content to avoid duplication
+ * @private
+ * @param {string} content - Content that may contain title lines
+ * @returns {string} Content with title lines removed
+ */
+function removeTitleLinesFromContent(content) {
+    const lines = content.split('\n');
+    const cleanedLines = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Skip lines that look like titles
+        if (i === 0 && line.length <= 50 && !line.includes('.') && !line.includes(',')) {
+            // First line looks like a title, skip it
+            continue;
+        }
+        
+        // Skip markdown headers
+        if (/^#+\s/.test(line)) {
+            continue;
+        }
+        
+        // Skip lines that are just "Title:" format
+        if (/^title:\s*(.+?)$/i.test(line)) {
+            continue;
+        }
+        
+        // Skip underlined titles
+        if (i > 0 && /^[-=]{3,}$/.test(line) && lines[i-1] && lines[i-1].trim().length <= 50) {
+            // Remove the previous line too (it was the title)
+            if (cleanedLines.length > 0) {
+                cleanedLines.pop();
+            }
+            continue;
+        }
+        
+        cleanedLines.push(lines[i]);
+    }
+    
+    return cleanedLines.join('\n').trim();
 }
 
 /**
@@ -517,7 +685,7 @@ export function clearPresetCache() {
 export async function completeMemoryWithKeywords(keywordPromptResult, method, userKeywords = []) {
     console.log(`${MODULE_NAME}: Completing memory with keyword method: ${method}`);
     
-    const { content, compiledScene, profile, preset, tokenUsage } = keywordPromptResult;
+    const { content, extractedTitle, compiledScene, profile, preset, tokenUsage } = keywordPromptResult;
     let finalKeywords = [];
     
     try {
@@ -546,10 +714,12 @@ export async function completeMemoryWithKeywords(keywordPromptResult, method, us
         // Create final memory object
         const memoryResult = {
             content: content,
+            extractedTitle: extractedTitle,
             metadata: {
                 sceneRange: `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`,
                 messageCount: compiledScene.metadata.messageCount,
                 characterName: compiledScene.metadata.characterName,
+                userName: compiledScene.metadata.userName,
                 chatId: compiledScene.metadata.chatId,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
