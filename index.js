@@ -20,9 +20,8 @@ import { PromptManager, Prompt } from '../../../PromptManager.js';
 import { stringToRange } from '../../../utils.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory, prepareForKeywordDialog, completeMemoryWithKeywords } from './stmemory.js'; // ADD THIS LINE
-import { getDefaultTitleFormats, validateTitleFormat, previewTitle } from './addlore.js';
+import { createMemory, completeMemoryWithKeywords } from './stmemory.js'; // FIXED: Removed non-existent prepareForKeywordDialog
+import { addMemoryToLorebook, getDefaultTitleFormats, validateTitleFormat, previewTitle } from './addlore.js'; // FIXED: Added missing import
 
 const MODULE_NAME = 'STMemoryBooks';
 const SAVE_DEBOUNCE_TIME = 1000;
@@ -68,6 +67,23 @@ let currentSceneState = {
     start: null,
     end: null
 };
+
+/**
+ * FIXED: Create prepareForKeywordDialog function that was referenced but missing
+ * Prepares memory result for keyword selection dialog
+ * @param {Object} memoryResult - Result from createMemory that needs keywords
+ * @returns {Object} Prepared result with formatted content for display
+ */
+function prepareForKeywordDialog(memoryResult) {
+    return {
+        formattedContent: memoryResult.content,
+        displayMetadata: {
+            sceneRange: memoryResult.metadata?.sceneRange || 'Unknown',
+            characterName: memoryResult.metadata?.characterName || 'Unknown',
+            profileUsed: memoryResult.metadata?.profileUsed || 'Unknown'
+        }
+    };
+}
 
 /**
  * Initialize and validate extension settings
@@ -775,13 +791,16 @@ function handleSettingsPopupClose(popup) {
         // Save checkbox states
         const alwaysUseDefault = popupElement.querySelector('#stmb-always-use-default')?.checked ?? settings.moduleSettings.alwaysUseDefault;
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
-        
+        const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
+
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
-                          showNotifications !== settings.moduleSettings.showNotifications;
+                          showNotifications !== settings.moduleSettings.showNotifications ||
+                          refreshEditor !== settings.moduleSettings.refreshEditor;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
             settings.moduleSettings.showNotifications = showNotifications;
+            settings.moduleSettings.refreshEditor = refreshEditor;
             saveSettingsDebounced();
             console.log('STMemoryBooks: Settings updated');
         }
@@ -790,19 +809,6 @@ function handleSettingsPopupClose(popup) {
     }
     
     currentPopupInstance = null;
-
-    const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
-
-    const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
-                    showNotifications !== settings.moduleSettings.showNotifications ||
-                    refreshEditor !== settings.moduleSettings.refreshEditor;  // ADD THIS
-
-    if (hasChanges) {
-        settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
-        settings.moduleSettings.showNotifications = showNotifications;
-        settings.moduleSettings.refreshEditor = refreshEditor;  // ADD THIS
-        saveSettingsDebounced();
-    }
 }
 
 /**
@@ -1230,25 +1236,33 @@ async function initiateMemoryCreation() {
                 keywordChoice.userKeywords
             );
             
-            // TODO: Call addlore.js to add the memory to lorebook
-            // await addMemoryToLorebook(finalMemoryResult, lorebookValidation.data);
+            // FIXED: Actually call addlore.js to add the memory to lorebook
+            toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
+            const addResult = await addMemoryToLorebook(finalMemoryResult, lorebookValidation);
             
-            // Success
-            setTimeout(() => {
-                toastr.success(`Memory created with ${keywordChoice.method} keywords!`, 'STMemoryBooks');
-                isProcessingMemory = false;
-            }, 1000);
+            if (addResult.success) {
+                setTimeout(() => {
+                    toastr.success(`Memory "${addResult.entryTitle}" created with ${keywordChoice.method} keywords!`, 'STMemoryBooks');
+                    isProcessingMemory = false;
+                }, 1000);
+            } else {
+                throw new Error(addResult.error || 'Failed to add memory to lorebook');
+            }
             
         } else {
             // Normal flow - keywords were found in AI response
-            // TODO: Call addlore.js to add the memory to lorebook  
-            // await addMemoryToLorebook(memoryResult, lorebookValidation.data);
+            // FIXED: Actually call addlore.js to add the memory to lorebook  
+            toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
+            const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
             
-            // Placeholder success message
-            setTimeout(() => {
-                toastr.success(`Memory created from ${stats.messageCount} messages!`, 'STMemoryBooks');
-                isProcessingMemory = false;
-            }, 2000);
+            if (addResult.success) {
+                setTimeout(() => {
+                    toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages!`, 'STMemoryBooks');
+                    isProcessingMemory = false;
+                }, 2000);
+            } else {
+                throw new Error(addResult.error || 'Failed to add memory to lorebook');
+            }
         }
         
     } catch (error) {
