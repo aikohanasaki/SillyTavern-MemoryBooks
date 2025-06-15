@@ -72,6 +72,10 @@ When creating memories, you can include 0-7 previous summaries as context to hel
 
 This feature is especially useful for long-running chats where character relationships and story elements evolve over time.
 
+## Allows Mixed Lorebooks 
+
+STMemoryBooks will use your configured memory title format to locate previous memories and also to filter out anything that is not a memory (but is in the same lorebook as the memories).
+
 ## Customizable Details
 
 ### Using the Defaults?
@@ -82,21 +86,33 @@ This feature is especially useful for long-running chats where character relatio
 ### Title Formatting
 - **Allowed characters**: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`
 - **Allowed emoji**: Standard emoji only. If it's not in the default emoji of your operating system, it should not be used
-- **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook?)
+- **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook? 📚)
+- **Template Placeholders**: 
+  - **{{title}}**: AI-generated title (extracted from AI response headings, markdown, or first line)
+  - **{{scene}}**: The message range of the scene (e.g., "Scene 15-23")
+  - **{{char}}**: The name of the character
+  - **{{user}}**: The name of the user
+  - **{{messages}}**: The total number of messages in the scene
+  - **{{profile}}**: The name of the memory generation profile used
+  - **{{date}}**: The current date
+  - **{{time}}**: The current time
+
+### AI Title Extraction
+
+The extension automatically extracts titles from AI responses using multiple detection methods:
+
+- **Explicit title patterns**: "Title: Something", "# Heading", "**Bold Title**"
+- **Underlined titles**: "Title\n---" or "Title\n==="
+- **Numbered items**: "1. Title" (first numbered item)
+- **Standalone colons**: "Title:" (line ending with colon)
+- **Smart first-line detection**: Short lines without sentence punctuation
+- **Fallback generation**: Creates descriptive titles from content analysis
+
+The extracted title is then available as `{{title}}` in your title format templates.
 
 ## Keyword System
 
-The extension automatically parses AI responses to extract keywords using multiple patterns:
-
-- `Keywords: keyword1, keyword2, keyword3`
-- `Key topics: topic1, topic2, topic3`
-- `Important keywords: word1, word2, word3`
-- `Tags: tag1, tag2, tag3`
-- End-of-response comma-separated lists
-
-### When Keywords Aren't Found
-
-If the AI doesn't provide keywords, you'll see the generated memory content and be prompted to choose:
+The extension automatically parses AI responses for prompted keywords. If the AI doesn't provide keywords, you'll see the generated memory content and be prompted to choose:
 
 1. **ST Generate**: Use SillyTavern's built-in keyword generation (proper noun detection + character names)
 2. **AI Keywords**: Send a separate request to AI using the keywords-only preset  
@@ -142,8 +158,6 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Temperature**: Response randomness (currently uses global SillyTavern settings)
 - **Preset**: Select from built-in presets or use custom prompt
 
-> **Note**: Connection settings are stored for future use but currently SillyTavern's global API settings are used for all requests.
-
 ## Advanced Features
 
 - **Profile Management**: Create custom profiles with specific models and temperature settings
@@ -167,11 +181,21 @@ STMemoryBooks will collect the chat history from the beginning of the scene to t
 ### Memory Generation Process
 
 1. **Scene Compilation**: Extract and validate messages in marked range
-2. **Context Retrieval**: Fetch requested previous summaries in chronological order (if any)
+2. **Context Retrieval**: Fetch requested previous summaries in chronological order (if any) using title format pattern matching
 3. **Token Estimation**: Calculate approximate token usage with warnings (including context)
 4. **AI Generation**: Use SillyTavern's `generateQuietPrompt` with preset/custom prompts and context
-5. **Response Processing**: Parse content and extract keywords
-6. **Lorebook Integration**: Format and add to bound lorebook
+5. **Response Processing**: Parse content, extract title and keywords from AI response
+6. **Lorebook Integration**: Format using configured title template and add to bound lorebook
+
+### Title Format Pattern Matching
+
+The extension converts your configured title format into a regex pattern to identify existing memories:
+
+- **Auto-numbering patterns** `[000]` become capture groups `\[(\d+)\]`
+- **Template placeholders** like `{{char}}` become flexible patterns `[^\\[\\]]+`
+- **Literal text** is escaped to match exactly
+- **Primary filtering** uses this pattern to distinguish memories from other lorebook entries
+- **Fallback detection** uses secondary criteria for borderline cases
 
 ### Preset System
 
