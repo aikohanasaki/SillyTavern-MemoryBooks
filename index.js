@@ -15,17 +15,39 @@ import { extension_settings, getContext } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
-import { METADATA_KEY, world_names, loadWorldInfo, createWorldInfoEntry, saveWorldInfo } from '../../../world-info.js';
-import { PromptManager, Prompt } from '../../../PromptManager.js';
-import { stringToRange } from '../../../utils.js';
+import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory, completeMemoryWithKeywords } from './stmemory.js'; // FIXED: Removed non-existent prepareForKeywordDialog
-import { addMemoryToLorebook, getDefaultTitleFormats, validateTitleFormat, previewTitle, identifyMemoryEntries } from './addlore.js'; // FIXED: Added missing import and identifyMemoryEntries
+import { createMemory, completeMemoryWithKeywords } from './stmemory.js';
+import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
+import { 
+    editProfile, 
+    newProfile, 
+    deleteProfile, 
+    exportProfiles, 
+    importProfiles
+} from './profileManager.js';
+import {
+    getSceneMarkers,
+    setSceneMarker,
+    clearScene,
+    updateAllButtonStates,
+    validateSceneMarkers,
+    handleMessageDeletion,
+    createSceneButtons,
+    getSceneData,
+    updateSceneStateCache,
+    getCurrentSceneState
+} from './sceneManager.js';
+import { settingsTemplate } from './templates.js';
+import { 
+    showConfirmationPopup, 
+    showKeywordSelectionPopup,
+    fetchPreviousSummaries,
+    calculateTokensWithContext
+} from './confirmationPopup.js';
 
 const MODULE_NAME = 'STMemoryBooks';
-const SAVE_DEBOUNCE_TIME = 1000;
-const CHARS_PER_TOKEN = 4; // Rough estimation
 
 // Centralized DOM selectors
 const SELECTORS = {
@@ -63,6 +85,7 @@ const defaultSettings = {
         showNotifications: true,
         refreshEditor: true,
         tokenWarningThreshold: 30000,
+        defaultMemoryCount: 0,
     },
     titleFormat: '[000] - Auto Memory',
     profiles: [
@@ -70,7 +93,6 @@ const defaultSettings = {
             name: "Default",
             connection: {
                 engine: "openai"
-                // model and temperature intentionally left blank to use current settings
             },
             prompt: "Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions. Format as a brief summary suitable for a character's memory book."
         }
@@ -83,17 +105,8 @@ const defaultSettings = {
 let currentPopupInstance = null;
 let isProcessingMemory = false;
 
-// Cache for current scene state
-let currentSceneState = {
-    start: null,
-    end: null
-};
-
 /**
- * FIXED: Create prepareForKeywordDialog function that was referenced but missing
- * Prepares memory result for keyword selection dialog
- * @param {Object} memoryResult - Result from createMemory that needs keywords
- * @returns {Object} Prepared result with formatted content for display
+ * Prepare memory result for keyword selection dialog
  */
 function prepareForKeywordDialog(memoryResult) {
     return {
@@ -108,7 +121,6 @@ function prepareForKeywordDialog(memoryResult) {
 
 /**
  * Get current API and completion source information
- * @returns {Object} Current API info
  */
 function getCurrentApiInfo() {
     try {
@@ -141,7 +153,6 @@ function getCurrentApiInfo() {
 
 /**
  * Get the appropriate model and temperature selectors for current completion source
- * @returns {Object} Selectors for current API
  */
 function getApiSelectors() {
     const completionSource = $(SELECTORS.completionSource).val();
@@ -174,15 +185,13 @@ function getApiSelectors() {
 
 /**
  * Get current model and temperature settings
- * @returns {Object} Current settings
  */
-function getCurrentModelSettings() {
+export function getCurrentModelSettings() {
     const apiInfo = getCurrentApiInfo();
     const selectors = getApiSelectors();
     
     let currentModel = '';
     
-    // Get the current model based on completion source
     if (apiInfo.completionSource === 'custom') {
         currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
     } else {
@@ -200,8 +209,6 @@ function getCurrentModelSettings() {
 
 /**
  * Apply model and temperature settings temporarily
- * @param {Object} profile - Profile with connection settings
- * @returns {Object} Original settings to restore later
  */
 function applyProfileSettings(profile) {
     if (!profile?.connection) {
@@ -209,7 +216,6 @@ function applyProfileSettings(profile) {
         return null;
     }
     
-    // Store original settings for restoration
     const originalSettings = getCurrentModelSettings();
     console.log('STMemoryBooks: Stored original settings:', originalSettings);
     
@@ -217,7 +223,6 @@ function applyProfileSettings(profile) {
     const apiInfo = getCurrentApiInfo();
     
     try {
-        // Apply model setting
         if (profile.connection.model) {
             if (apiInfo.completionSource === 'custom') {
                 if ($(SELECTORS.customModelId).length) {
@@ -234,7 +239,6 @@ function applyProfileSettings(profile) {
             console.log(`STMemoryBooks: Applied model: ${profile.connection.model}`);
         }
 
-        // Apply temperature setting
         if (typeof profile.connection.temperature === 'number') {
             if ($(selectors.temp).length) {
                 $(selectors.temp).val(profile.connection.temperature).trigger('input');
@@ -254,7 +258,6 @@ function applyProfileSettings(profile) {
 
 /**
  * Restore original model and temperature settings
- * @param {Object} originalSettings - Settings to restore
  */
 function restoreOriginalSettings(originalSettings) {
     if (!originalSettings) {
@@ -265,7 +268,6 @@ function restoreOriginalSettings(originalSettings) {
     const selectors = getApiSelectors();
     
     try {
-        // Restore model setting
         if (originalSettings.model) {
             if (originalSettings.completionSource === 'custom') {
                 if ($(SELECTORS.customModelId).length) {
@@ -282,7 +284,6 @@ function restoreOriginalSettings(originalSettings) {
             console.log(`STMemoryBooks: Restored model: ${originalSettings.model}`);
         }
 
-        // Restore temperature setting
         if (typeof originalSettings.temperature === 'number') {
             if ($(selectors.temp).length) {
                 $(selectors.temp).val(originalSettings.temperature).trigger('input');
@@ -309,42 +310,30 @@ function initializeSettings() {
  * Validate settings structure and fix any issues
  */
 function validateSettings(settings) {
-    // Ensure profiles array exists and has at least one profile
     if (!settings.profiles || settings.profiles.length === 0) {
         settings.profiles = [lodash.cloneDeep(defaultSettings.profiles[0])];
         settings.defaultProfile = 0;
     }
     
-    // Ensure defaultProfile is valid
     if (settings.defaultProfile >= settings.profiles.length) {
         settings.defaultProfile = 0;
     }
     
-    // Ensure module settings exist
     if (!settings.moduleSettings) {
         settings.moduleSettings = lodash.cloneDeep(defaultSettings.moduleSettings);
     }
     
-    // Ensure tokenWarningThreshold exists and has a reasonable value
     if (!settings.moduleSettings.tokenWarningThreshold || 
         settings.moduleSettings.tokenWarningThreshold < 1000) {
         settings.moduleSettings.tokenWarningThreshold = 30000;
     }
     
-    return settings;
-}
-
-/**
- * Get current scene markers from chat metadata
- */
-function getSceneMarkers() {
-    if (!chat_metadata.STMemoryBooks) {
-        chat_metadata.STMemoryBooks = {
-            sceneStart: null,
-            sceneEnd: null
-        };
+    if (settings.moduleSettings.defaultMemoryCount === undefined || 
+        settings.moduleSettings.defaultMemoryCount < 0) {
+        settings.moduleSettings.defaultMemoryCount = 0;
     }
-    return chat_metadata.STMemoryBooks;
+    
+    return settings;
 }
 
 /**
@@ -377,574 +366,278 @@ async function validateLorebook() {
 }
 
 /**
- * Set scene marker with validation
+ * Extract and validate settings from confirmation popup or defaults
  */
-function setSceneMarker(messageId, type) {
-    const markers = getSceneMarkers();
-    const numericId = parseInt(messageId);
+async function showAndGetMemorySettings(sceneData, lorebookValidation) {
+    const settings = initializeSettings();
+    const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
+    const shouldShowConfirmation = !settings.moduleSettings.alwaysUseDefault || 
+                                  sceneData.estimatedTokens > tokenThreshold;
     
-    console.log(`STMemoryBooks: Setting ${type} marker to message ${numericId}`);
+    let confirmationResult = null;
     
-    if (type === 'start') {
-        // If setting start, clear end if it would be invalid
-        if (markers.sceneEnd !== null && markers.sceneEnd <= numericId) {
-            markers.sceneEnd = null;
-            console.log('STMemoryBooks: Cleared end marker (would be invalid)');
-        }
+    if (shouldShowConfirmation) {
+        // Show simplified confirmation popup
+        confirmationResult = await showConfirmationPopup(
+            sceneData, 
+            settings, 
+            getCurrentModelSettings(), 
+            getCurrentApiInfo(), 
+            chat_metadata
+        );
         
-        // Toggle start marker
-        markers.sceneStart = markers.sceneStart === numericId ? null : numericId;
-    } else if (type === 'end') {
-        // If setting end, clear start if it would be invalid  
-        if (markers.sceneStart !== null && markers.sceneStart >= numericId) {
-            markers.sceneStart = null;
-            console.log('STMemoryBooks: Cleared start marker (would be invalid)');
-        }
-        
-        // Toggle end marker
-        markers.sceneEnd = markers.sceneEnd === numericId ? null : numericId;
-    }
-    
-    // Update cache
-    currentSceneState.start = markers.sceneStart;
-    currentSceneState.end = markers.sceneEnd;
-    
-    // Save to metadata
-    saveMetadataDebounced();
-    
-    // Update all button states
-    updateAllButtonStates();
-    
-    console.log('STMemoryBooks: Scene markers updated:', markers);
-}
-
-/**
- * Update visual states of all currently rendered message buttons
- */
-function updateAllButtonStates() {
-    const markers = getSceneMarkers();
-    const { sceneStart, sceneEnd } = markers;
-    
-    // Find all rendered message elements
-    const messageElements = document.querySelectorAll('#chat .mes[mesid]');
-    
-    messageElements.forEach(messageElement => {
-        const messageId = parseInt(messageElement.getAttribute('mesid'));
-        const startBtn = messageElement.querySelector('.stmb-start-btn');
-        const endBtn = messageElement.querySelector('.stmb-end-btn');
-        
-        if (!startBtn || !endBtn) return;
-        
-        // Clear all special classes
-        startBtn.classList.remove('on', 'valid-start-point', 'in-scene');
-        endBtn.classList.remove('on', 'valid-end-point', 'in-scene');
-        
-        // Apply appropriate classes based on current state
-        if (sceneStart !== null && sceneEnd !== null) {
-            // Complete scene - highlight range
-            if (messageId >= sceneStart && messageId <= sceneEnd) {
-                startBtn.classList.add('in-scene');
-                endBtn.classList.add('in-scene');
-            }
-            // Mark active markers
-            if (messageId === sceneStart) startBtn.classList.add('on');
-            if (messageId === sceneEnd) endBtn.classList.add('on');
-            
-        } else if (sceneStart !== null) {
-            // Start set, show valid end points
-            if (messageId === sceneStart) {
-                startBtn.classList.add('on');
-            } else if (messageId > sceneStart) {
-                endBtn.classList.add('valid-end-point');
-            }
-            
-        } else if (sceneEnd !== null) {
-            // End set, show valid start points
-            if (messageId === sceneEnd) {
-                endBtn.classList.add('on');
-            } else if (messageId < sceneEnd) {
-                startBtn.classList.add('valid-start-point');
-            }
-        }
-    });
-    
-    console.log(`STMemoryBooks: Updated button states for ${messageElements.length} messages`);
-}
-
-/**
- * Validate scene markers after message changes
- */
-function validateSceneMarkers() {
-    const markers = getSceneMarkers();
-    let hasChanges = false;
-    
-    // Check if markers are within chat bounds
-    const chatLength = chat.length;
-    
-    if (markers.sceneStart !== null && markers.sceneStart >= chatLength) {
-        markers.sceneStart = null;
-        hasChanges = true;
-        console.log('STMemoryBooks: Cleared invalid start marker');
-    }
-    
-    if (markers.sceneEnd !== null && markers.sceneEnd >= chatLength) {
-        // For end marker, try to fall back to last message
-        markers.sceneEnd = chatLength - 1;
-        hasChanges = true;
-        console.log('STMemoryBooks: Adjusted end marker to last message');
-    }
-    
-    // Ensure start < end
-    if (markers.sceneStart !== null && markers.sceneEnd !== null && markers.sceneStart >= markers.sceneEnd) {
-        markers.sceneStart = null;
-        markers.sceneEnd = null;
-        hasChanges = true;
-        console.log('STMemoryBooks: Cleared invalid scene range');
-    }
-    
-    if (hasChanges) {
-        currentSceneState.start = markers.sceneStart;
-        currentSceneState.end = markers.sceneEnd;
-        saveMetadataDebounced();
-        updateAllButtonStates();
-    }
-}
-
-/**
- * Handle message deletion events
- */
-function handleMessageDeletion(deletedId) {
-    const markers = getSceneMarkers();
-    let shouldClear = false;
-    
-    // If start marker was deleted, clear entire scene
-    if (markers.sceneStart === deletedId) {
-        shouldClear = true;
-        console.log('STMemoryBooks: Start marker deleted, clearing scene');
-    }
-    
-    // If end marker was deleted
-    if (markers.sceneEnd === deletedId) {
-        const chatLength = chat.length;
-        
-        if (deletedId === chatLength) {
-            // Was the last message, fall back to new last message
-            markers.sceneEnd = chatLength - 1;
-            console.log('STMemoryBooks: End marker was last message, falling back');
-        } else {
-            // Was not the last message, clear scene
-            shouldClear = true;
-            console.log('STMemoryBooks: End marker deleted (not last message), clearing scene');
-        }
-    }
-    
-    if (shouldClear) {
-        clearScene();
-        
-        const settings = initializeSettings();
-        if (settings.moduleSettings.showNotifications) {
-            toastr.warning('Scene markers cleared due to message deletion', 'STMemoryBooks');
+        if (!confirmationResult.confirmed) {
+            return null; // User cancelled
         }
     } else {
-        // Validate remaining markers
-        validateSceneMarkers();
+        // Use default profile without confirmation
+        const selectedProfile = settings.profiles[settings.defaultProfile];
+        confirmationResult = {
+            confirmed: true,
+            profileSettings: {
+                ...selectedProfile,
+                effectivePrompt: getEffectivePrompt(selectedProfile)
+            },
+            advancedOptions: {
+                memoryCount: settings.moduleSettings.defaultMemoryCount || 0,
+                overrideSettings: false
+            }
+        };
     }
-}
-
-/**
- * Clear scene markers
- */
-function clearScene() {
-    const markers = getSceneMarkers();
-    markers.sceneStart = null;
-    markers.sceneEnd = null;
     
-    currentSceneState.start = null;
-    currentSceneState.end = null;
+    // Build effective connection settings
+    const { profileSettings, advancedOptions } = confirmationResult;
     
-    saveMetadataDebounced();
-    updateAllButtonStates();
-    
-    console.log('STMemoryBooks: Scene cleared');
-}
-
-/**
- * Estimate token count for scene (fallback implementation)
- */
-function estimateSceneTokens(startId, endId) {
-    let totalChars = 0;
-    
-    for (let i = startId; i <= endId; i++) {
-        const message = chat[i];
-        if (message && !message.is_system) {
-            totalChars += (message.mes || '').length;
-            totalChars += (message.name || '').length;
+    if (advancedOptions.overrideSettings) {
+        const currentSettings = getCurrentModelSettings();
+        profileSettings.effectiveConnection = { ...profileSettings.connection };
+        if (currentSettings.model) {
+            profileSettings.effectiveConnection.model = currentSettings.model;
         }
+        if (typeof currentSettings.temperature === 'number') {
+            profileSettings.effectiveConnection.temperature = currentSettings.temperature;
+        }
+        console.log('STMemoryBooks: Using current SillyTavern settings for memory creation');
+    } else {
+        profileSettings.effectiveConnection = { ...profileSettings.connection };
+        console.log('STMemoryBooks: Using profile connection settings for memory creation');
     }
-    
-    // Rough estimation: 4 characters per token
-    return Math.ceil(totalChars / 4);
-}
-
-/**
- * Estimate token count for scene
- */
-function estimateSceneTokensEnhanced(startId, endId) {
-    try {
-        // Create a temporary scene request for estimation
-        const tempRequest = createSceneRequest(startId, endId);
-        const tempCompiled = compileScene(tempRequest);
-        return estimateTokenCount(tempCompiled);
-    } catch (error) {
-        console.error('STMemoryBooks: Error estimating tokens:', error);
-        // Fallback to simple estimation
-        return estimateSceneTokens(startId, endId);
-    }
-}
-
-/**
- * Get scene data with message excerpts
- */
-function getSceneData() {
-    const markers = getSceneMarkers();
-    
-    if (markers.sceneStart === null || markers.sceneEnd === null) {
-        return null;
-    }
-    
-    const startMessage = chat[markers.sceneStart];
-    const endMessage = chat[markers.sceneEnd];
-    
-    if (!startMessage || !endMessage) {
-        return null;
-    }
-    
-    const getExcerpt = (message) => {
-        const content = message.mes || '';
-        return content.length > 100 ? content.substring(0, 100) + '...' : content;
-    };
     
     return {
-        sceneStart: markers.sceneStart,
-        sceneEnd: markers.sceneEnd,
-        startExcerpt: getExcerpt(startMessage),
-        endExcerpt: getExcerpt(endMessage),
-        startSpeaker: startMessage.name || 'Unknown',
-        endSpeaker: endMessage.name || 'Unknown',
-        messageCount: markers.sceneEnd - markers.sceneStart + 1,
-        estimatedTokens: estimateSceneTokensEnhanced(markers.sceneStart, markers.sceneEnd) // Use enhanced estimation
+        profileSettings,
+        summaryCount: advancedOptions.memoryCount || 0,
+        tokenThreshold,
+        settings
     };
 }
 
 /**
- * Create message action buttons
+ * Execute the core memory generation process
  */
-function createSceneButtons(messageElement) {
-    const messageId = parseInt(messageElement.getAttribute('mesid'));
-    const extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
+async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
+    const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     
-    if (!extraButtonsContainer) return;
+    let originalSettings = null;
     
-    // Check if buttons already exist
-    if (messageElement.querySelector('.stmb-start-btn')) return;
-    
-    // Create start button
-    const startButton = document.createElement('div');
-    startButton.title = 'Mark Scene Start';
-    startButton.classList.add('stmb-start-btn', 'mes_button');
-    startButton.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-    
-    // Create end button  
-    const endButton = document.createElement('div');
-    endButton.title = 'Mark Scene End';
-    endButton.classList.add('stmb-end-btn', 'mes_button');
-    endButton.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
-    
-    // Add event listeners
-    startButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setSceneMarker(messageId, 'start');
-    });
-    
-    endButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setSceneMarker(messageId, 'end');
-    });
-    
-    // Append buttons
-    extraButtonsContainer.appendChild(startButton);
-    extraButtonsContainer.appendChild(endButton);
-}
-
-/**
- * Event handlers - separated for clarity
- */
-function handleMessageRendered(messageId) {
-    const messageElement = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
-    if (messageElement) {
-        createSceneButtons(messageElement);
-        setTimeout(updateAllButtonStates, 100);
+    try {
+        toastr.info('Compiling scene messages...', 'STMemoryBooks');
+        
+        // Create and compile scene
+        const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
+        const compiledScene = compileScene(sceneRequest);
+        
+        // Validate compiled scene
+        const validation = validateCompiledScene(compiledScene);
+        if (!validation.valid) {
+            throw new Error(`Scene compilation failed: ${validation.errors.join(', ')}`);
+        }
+        
+        // Fetch previous memories if requested
+        let previousMemories = [];
+        let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
+        if (summaryCount > 0) {
+            toastr.info(`Fetching ${summaryCount} previous memories for context...`, 'STMemoryBooks');
+            memoryFetchResult = await fetchPreviousSummaries(summaryCount, settings, chat_metadata);
+            previousMemories = memoryFetchResult.summaries;
+            
+            if (memoryFetchResult.actualCount > 0) {
+                if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
+                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
+                }
+                console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
+            } else {
+                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
+            }
+        }
+        
+        // Add context and show progress
+        compiledScene.previousSummariesContext = previousMemories;
+        const stats = getSceneStats(compiledScene);
+        const actualTokens = estimateTokenCount(compiledScene);
+        const contextInfo = memoryFetchResult.actualCount > 0 ? 
+            ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
+        toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
+        
+        // Apply profile settings if configured
+        originalSettings = await applyTemporarySettings(profileSettings);
+        
+        // Generate memory
+        toastr.info('Generating memory with AI...', 'STMemoryBooks');
+        const memoryResult = await createMemory(compiledScene, profileSettings, {
+            tokenWarningThreshold: tokenThreshold
+        });
+        
+        // Handle keyword selection and finalization
+        const finalResult = await handleMemoryCompletion(memoryResult, memoryFetchResult, stats);
+        
+        // Add to lorebook
+        toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
+        const addResult = await addMemoryToLorebook(finalResult, lorebookValidation);
+        
+        if (!addResult.success) {
+            throw new Error(addResult.error || 'Failed to add memory to lorebook');
+        }
+        
+        // Success notification
+        const contextMsg = memoryFetchResult.actualCount > 0 ? 
+            ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
+        setTimeout(() => {
+            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
+        }, 1000);
+        
+    } finally {
+        // Always restore original settings
+        if (originalSettings) {
+            toastr.info('Restoring original API settings...', 'STMemoryBooks');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            restoreOriginalSettings(originalSettings);
+        }
     }
 }
 
-function handleChatChanged() {
-    console.log('STMemoryBooks: Chat changed');
-    // Update cached state
-    const markers = getSceneMarkers();
-    currentSceneState.start = markers.sceneStart;
-    currentSceneState.end = markers.sceneEnd;
+/**
+ * Apply temporary API settings and return original settings for restoration
+ */
+async function applyTemporarySettings(profileSettings) {
+    if (!profileSettings?.effectiveConnection?.model && 
+        profileSettings?.effectiveConnection?.temperature === undefined) {
+        return null;
+    }
     
-    // Update button states after a delay to allow DOM to update
-    setTimeout(updateAllButtonStates, 500);
-}
-
-function handleChatLoaded() {
-    console.log('STMemoryBooks: Chat loaded');
-    setTimeout(() => {
-        const markers = getSceneMarkers();
-        currentSceneState.start = markers.sceneStart;
-        currentSceneState.end = markers.sceneEnd;
-        updateAllButtonStates();
-    }, 1000);
-}
-
-function handleMessageReceived() {
-    setTimeout(validateSceneMarkers, 500);
+    const settingsApplied = [];
+    if (profileSettings.effectiveConnection.model) {
+        settingsApplied.push(`model: ${profileSettings.effectiveConnection.model}`);
+    }
+    if (profileSettings.effectiveConnection.temperature !== undefined) {
+        settingsApplied.push(`temp: ${profileSettings.effectiveConnection.temperature}`);
+    }
+    
+    toastr.info(`Applying settings (${settingsApplied.join(', ')})...`, 'STMemoryBooks');
+    
+    const tempProfile = { connection: profileSettings.effectiveConnection };
+    const originalSettings = applyProfileSettings(tempProfile);
+    
+    // Wait for settings to take effect
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return originalSettings;
 }
 
 /**
- * Handlebars templates
+ * Handle memory completion including keyword selection if needed
  */
-const settingsTemplate = Handlebars.compile(`
-<div class="stmb-settings-container">
-    <div class="completion_prompt_manager_popup_entry">
-        {{#if hasScene}}
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <h5>Current Scene:</h5>
-            <div class="mes_file_container" style="margin-bottom: 10px;">
-                <pre style="margin: 0; white-space: pre-line;">Start: Message #{{sceneData.sceneStart}} ({{sceneData.startSpeaker}})
-{{sceneData.startExcerpt}}
-
-End: Message #{{sceneData.sceneEnd}} ({{sceneData.endSpeaker}})
-{{sceneData.endExcerpt}}
-
-Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTokens}}</pre>
-            </div>
-        </div>
-        {{else}}
-        <div class="completion_prompt_manager_error caution">
-            <span>No scene markers set. Use the chevron buttons in chat messages to mark start (►) and end (◄) points.</span>
-        </div>
-        {{/if}}
+async function handleMemoryCompletion(memoryResult, memoryFetchResult, stats) {
+    if (memoryResult.needsKeywordGeneration) {
+        console.log('STMemoryBooks: Keywords need user selection, showing keyword dialog');
         
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
-                <span>Always use default profile (no confirmation prompt)</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
-                <span>Show notifications</span>
-            </label>
-        </div>
-
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
-                <span>Refresh lorebook editor after adding memories</span>
-            </label>
-        </div>
-
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <label for="stmb-token-warning-threshold">Token Warning Threshold:</label>
-            <input type="number" id="stmb-token-warning-threshold" class="text_pole" 
-                value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
-                placeholder="30000">
-            <small style="opacity: 0.7;">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
-        </div>
-
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <h5>Memory Title Format:</h5>
-            <select id="stmb-title-format-select" class="text_pole">
-                {{#each titleFormats}}
-                <option value="{{this}}" {{#if isSelected}}selected{{/if}}>{{this}}</option>
-                {{/each}}
-                <option value="custom">Custom Title Format...</option>
-            </select>
-            <input type="text" id="stmb-custom-title-format" class="text_pole" 
-                style="margin-top: 5px; {{#unless showCustomInput}}display: none;{{/unless}}" 
-                placeholder="Enter custom format" value="{{titleFormat}}">
-            <small style="opacity: 0.7;">Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}</small>
-        </div>
+        const preparedResult = prepareForKeywordDialog(memoryResult);
+        const keywordChoice = await showKeywordSelectionPopup(preparedResult);
         
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <h5>Memory Profiles:</h5>
-            <select id="stmb-profile-select" class="text_pole">
-                {{#each profiles}}
-                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}</option>
-                {{/each}}
-            </select>
-            <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
-            <div class="menu_button" id="stmb-new-profile">New Profile</div>
-            <div class="menu_button" id="stmb-delete-profile">Delete Profile</div>
-        </div>
+        if (!keywordChoice) {
+            throw new Error('User cancelled keyword selection');
+        }
         
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <h5>Import/Export:</h5>
-            <input type="file" id="stmb-import-file" accept=".json" style="display: none;">
-            <div class="menu_button" id="stmb-export-profiles">Export Profiles</div>
-            <div class="menu_button" id="stmb-import-profiles">Import Profiles</div>
-        </div>
-    </div>
-</div>
-`);
-
-const profileEditTemplate = Handlebars.compile(`
-<div class="completion_prompt_manager_popup_entry">
-    <div class="completion_prompt_manager_popup_entry_form_control">
-        <label for="stmb-profile-name">Profile Name:</label>
-        <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" placeholder="Profile name">
-    </div>
+        toastr.info('Completing memory with selected keyword method...', 'STMemoryBooks');
+        return await completeMemoryWithKeywords(
+            memoryResult, 
+            keywordChoice.method, 
+            keywordChoice.userKeywords
+        );
+    }
     
-    <div class="completion_prompt_manager_popup_entry_form_control">
-        <h5>Model & Temperature Settings:</h5>
-        <small style="opacity: 0.7; margin-bottom: 10px; display: block;">These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.</small>
-        
-        <label for="stmb-profile-model">Model:</label>
-        <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Leave blank to use current model">
-        
-        <label for="stmb-profile-temperature">Temperature (0.0 - 2.0):</label>
-        <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="Leave blank to use current temperature">
-        
-        <small style="opacity: 0.7;">Engine setting is for future use - currently uses SillyTavern's active API.</small>
-        <label for="stmb-profile-engine">Engine (Future Use):</label>
-        <select id="stmb-profile-engine" class="text_pole" disabled>
-            <option value="openai" {{#if (eq connection.engine 'openai')}}selected{{/if}}>OpenAI</option>
-            <option value="claude" {{#if (eq connection.engine 'claude')}}selected{{/if}}>Claude</option>
-            <option value="custom" {{#if (eq connection.engine 'custom')}}selected{{/if}}>Custom</option>
-        </select>
-    </div>
+    return memoryResult;
+}
+
+/**
+ * Refactored main orchestrator function
+ */
+async function initiateMemoryCreation() {
+    if (isProcessingMemory) {
+        toastr.warning('Memory creation already in progress', 'STMemoryBooks');
+        return;
+    }
     
-    <div class="completion_prompt_manager_popup_entry_form_control">
-        <label for="stmb-profile-prompt">Memory Creation Prompt:</label>
-        <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter the prompt for memory creation">{{prompt}}</textarea>
-        <small style="opacity: 0.7;">Or leave blank to use a built-in preset selected below.</small>
-        
-        <label for="stmb-profile-preset">Built-in Preset:</label>
-        <select id="stmb-profile-preset" class="text_pole">
-            <option value="">Custom Prompt (use text above)</option>
-            <option value="summary" {{#if (eq preset 'summary')}}selected{{/if}}>Summary - Detailed beat-by-beat summaries</option>
-            <option value="summarize" {{#if (eq preset 'summarize')}}selected{{/if}}>Summarize - Bullet-point format</option>
-            <option value="synopsis" {{#if (eq preset 'synopsis')}}selected{{/if}}>Synopsis - Comprehensive with headings</option>
-            <option value="sumup" {{#if (eq preset 'sumup')}}selected{{/if}}>Sum Up - Concise story beats</option>
-            <option value="keywords" {{#if (eq preset 'keywords')}}selected{{/if}}>Keywords - Keywords only</option>
-        </select>
-    </div>
-</div>
-`);
+    // Step 1: Validate prerequisites
+    const sceneData = getSceneData();
+    if (!sceneData) {
+        toastr.error('No scene selected', 'STMemoryBooks');
+        return;
+    }
+    
+    const lorebookValidation = await validateLorebook();
+    if (!lorebookValidation.valid) {
+        toastr.error(lorebookValidation.error, 'STMemoryBooks');
+        return;
+    }
+    
+    // Step 2: Get user confirmation and effective settings
+    const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
+    if (!effectiveSettings) {
+        return; // User cancelled
+    }
+    
+    // Close settings popup if open
+    if (currentPopupInstance) {
+        currentPopupInstance.completeCancelled();
+        currentPopupInstance = null;
+    }
+    
+    // Step 3: Execute the memory generation process
+    isProcessingMemory = true;
+    try {
+        await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings);
+    } catch (error) {
+        console.error('STMemoryBooks: Error creating memory:', error);
+        toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
+    } finally {
+        isProcessingMemory = false;
+    }
+}
 
-const confirmationTemplate = Handlebars.compile(`
-<div class="completion_prompt_manager_popup_entry">
-    <div class="completion_prompt_manager_popup_entry_form_control">
-        <h5>Scene Preview:</h5>
-        <div class="mes_file_container" style="margin-bottom: 15px;">
-            <pre style="margin: 0; white-space: pre-line;">Start: Message #{{sceneStart}} ({{startSpeaker}})
-{{startExcerpt}}
+/**
+ * Helper function to get effective prompt from profile (needs to be added to index.js)
+ */
+function getEffectivePrompt(profile) {
+    if (profile.prompt) {
+        return profile.prompt;
+    } else if (profile.preset) {
+        return getPresetPrompt(profile.preset);
+    } else {
+        return 'Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions.';
+    }
+}
 
-End: Message #{{sceneEnd}} ({{endSpeaker}})
-{{endExcerpt}}
-
-Messages: {{messageCount}} | Base tokens: {{estimatedTokens}}
-<span id="stmb-total-tokens" style="font-weight: bold;">Total estimated tokens: {{estimatedTokens}}</span></pre>
-        </div>
-        
-        {{#if showProfileSelect}}
-        <label for="stmb-selected-profile">Select Profile:</label>
-        <select id="stmb-selected-profile" class="text_pole">
-            {{#each profiles}}
-            <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}</option>
-            {{/each}}
-        </select>
-        {{/if}}
-        
-        <div class="completion_prompt_manager_popup_entry_form_control" style="margin-top: 15px;">
-            <h5>Include Previous Scene Memories as Context:</h5>
-            <select id="stmb-summary-count" class="text_pole">
-                <option value="0">None (0 memories)</option>
-                <option value="1">Last 1 memory</option>
-                <option value="2">Last 2 memories</option>
-                <option value="3">Last 3 memories</option>
-                <option value="4">Last 4 memories</option>
-                <option value="5">Last 5 memories</option>
-                <option value="6">Last 6 memories</option>
-                <option value="7">Last 7 memories</option>
-            </select>
-            <small style="opacity: 0.7; display: block; margin-top: 5px;">
-                Previous memories will be included as context to help the AI understand the ongoing story, but will NOT be part of the new memory.
-                {{#if availableMemories}}
-                <br>Found {{availableMemories}} existing {{#if (eq availableMemories 1)}}memory{{else}}memories{{/if}} in lorebook.
-                {{#if (lt availableMemories 7)}}
-                <br><em>Note: Selecting more than {{availableMemories}} will use all available memories.</em>
-                {{/if}}
-                {{else}}
-                <br>No existing memories found in lorebook.
-                {{/if}}
-            </small>
-        </div>
-        
-        {{#if showWarning}}
-        <div class="completion_prompt_manager_error caution" style="margin-top: 10px;" id="stmb-token-warning">
-            <span>⚠️ This is a very large scene and may take some time to process.</span>
-        </div>
-        {{/if}}
-    </div>
-</div>
-`);
-
-const keywordSelectionTemplate = Handlebars.compile(`
-<div class="stmb-keyword-selection-container">
-    <div class="completion_prompt_manager_popup_entry">
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <h5>Generated Memory:</h5>
-            <div class="stmb-scene-preview">{{formattedContent}}</div>
-        </div>
-        
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <h5>Keywords Not Found in AI Response</h5>
-            <p>The AI didn't provide keywords with this memory. Choose how you'd like to generate them:</p>
-            
-            <div class="menu_button" id="stmb-keyword-st-generate">
-                <i class="fa-solid fa-cog"></i> ST Generate
-                <small style="display: block; margin-top: 4px; opacity: 0.7;">Use SillyTavern's built-in keyword detection</small>
-            </div>
-            
-            <div class="menu_button" id="stmb-keyword-ai-generate">
-                <i class="fa-solid fa-robot"></i> AI Keywords  
-                <small style="display: block; margin-top: 4px; opacity: 0.7;">Send separate request to AI for keywords only</small>
-            </div>
-            
-            <div class="menu_button" id="stmb-keyword-user-input">
-                <i class="fa-solid fa-keyboard"></i> Manual Entry
-                <small style="display: block; margin-top: 4px; opacity: 0.7;">Enter your own keywords</small>
-            </div>
-        </div>
-        
-        <div class="completion_prompt_manager_popup_entry_form_control" id="stmb-manual-keywords-section" style="display: none;">
-            <label for="stmb-manual-keywords">Enter Keywords (comma-separated):</label>
-            <textarea id="stmb-manual-keywords" class="text_pole textarea_compact" rows="3" placeholder="keyword1, keyword2, keyword3, character name, location"></textarea>            
-            <small style="opacity: 0.7;">Enter 1-8 keywords separated by commas. Each keyword should be 1-25 characters.</small>
-        </div>
-        
-        <div class="completion_prompt_manager_popup_entry_form_control">
-            <div class="stmb-keyword-metadata">
-                <small style="opacity: 0.6;">
-                    Scene: {{displayMetadata.sceneRange}} | Character: {{displayMetadata.characterName}} | Profile: {{displayMetadata.profileUsed}}
-                </small>
-            </div>
-        </div>
-    </div>
-</div>
-`);
+function getPresetPrompt(presetName) {
+    const presets = {
+        'summary': 'Create a detailed beat-by-beat summary of this chat scene. Include character actions, dialogue highlights, emotional beats, and story progression. Format as a comprehensive narrative summary.',
+        'summarize': 'Summarize this chat scene in bullet-point format. Focus on:\n• Key events and actions\n• Important dialogue\n• Character development\n• Plot advancement',
+        'synopsis': 'Create a comprehensive synopsis of this chat scene with clear headings:\n\n**Characters Present:** [list]\n**Setting/Location:** [describe]\n**Key Events:** [summarize]\n**Emotional Beats:** [highlight]\n**Story Impact:** [explain]',
+        'sumup': 'Sum up this chat scene focusing on the essential story beats. Keep it concise but capture the core narrative progression, character moments, and any important plot developments.',
+        'keywords': 'Extract only the most important keywords and phrases from this chat scene. Focus on: character names, locations, objects, actions, emotions, and plot-relevant terms. Return as a simple list.'
+    };
+    
+    return presets[presetName] || 'Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions.';
+}
 
 /**
  * Show main settings popup
@@ -960,6 +653,7 @@ async function showSettingsPopup() {
         showNotifications: settings.moduleSettings.showNotifications,
         refreshEditor: settings.moduleSettings.refreshEditor,
         tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
+        defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
             isDefault: index === settings.defaultProfile
@@ -1017,28 +711,42 @@ async function showSettingsPopup() {
 }
 
 /**
- * Setup event listeners for settings popup
+ * Setup event listeners for settings popup with profile manager integration
  */
 function setupSettingsEventListeners() {
     if (!currentPopupInstance) return;
     
     const popupElement = currentPopupInstance.dlg;
+    const settings = initializeSettings();
     
-    // Profile management buttons
-    popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', editProfile);
-    popupElement.querySelector('#stmb-new-profile')?.addEventListener('click', newProfile);
-    popupElement.querySelector('#stmb-delete-profile')?.addEventListener('click', deleteProfile);
+    // Profile management buttons - use imported functions
+    popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', () => {
+        editProfile(settings, refreshPopupContent);
+    });
     
-    // Import/Export buttons
-    popupElement.querySelector('#stmb-export-profiles')?.addEventListener('click', exportProfiles);
+    popupElement.querySelector('#stmb-new-profile')?.addEventListener('click', () => {
+        newProfile(settings, refreshPopupContent);
+    });
+    
+    popupElement.querySelector('#stmb-delete-profile')?.addEventListener('click', () => {
+        deleteProfile(settings, refreshPopupContent);
+    });
+    
+    // Import/Export buttons - use imported functions
+    popupElement.querySelector('#stmb-export-profiles')?.addEventListener('click', () => {
+        exportProfiles(settings);
+    });
+    
     popupElement.querySelector('#stmb-import-profiles')?.addEventListener('click', () => {
         popupElement.querySelector('#stmb-import-file')?.click();
     });
-    popupElement.querySelector('#stmb-import-file')?.addEventListener('change', importProfiles);
+    
+    popupElement.querySelector('#stmb-import-file')?.addEventListener('change', (event) => {
+        importProfiles(event, settings, refreshPopupContent);
+    });
     
     // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
-        const settings = initializeSettings();
         settings.defaultProfile = parseInt(e.target.value);
         saveSettingsDebounced();
     });
@@ -1051,7 +759,6 @@ function setupSettingsEventListeners() {
             customInput.focus();
         } else {
             customInput.style.display = 'none';
-            const settings = initializeSettings();
             settings.titleFormat = e.target.value;
             saveSettingsDebounced();
         }
@@ -1059,20 +766,27 @@ function setupSettingsEventListeners() {
 
     // Custom title format input
     popupElement.querySelector('#stmb-custom-title-format')?.addEventListener('input', lodash.debounce((e) => {
-        const settings = initializeSettings();
         settings.titleFormat = e.target.value;
         saveSettingsDebounced();
     }, 1000));
 
     // Token warning threshold input
     popupElement.querySelector('#stmb-token-warning-threshold')?.addEventListener('input', lodash.debounce((e) => {
-        const settings = initializeSettings();
         const value = parseInt(e.target.value);
         if (!isNaN(value) && value >= 1000) {
             settings.moduleSettings.tokenWarningThreshold = value;
             saveSettingsDebounced();
         }
     }, 1000));
+
+    // Default memory count dropdown
+    popupElement.querySelector('#stmb-default-memory-count')?.addEventListener('change', (e) => {
+        const value = parseInt(e.target.value);
+        if (!isNaN(value) && value >= 0) {
+            settings.moduleSettings.defaultMemoryCount = value;
+            saveSettingsDebounced();
+        }
+    });
 }
 
 /**
@@ -1094,16 +808,24 @@ function handleSettingsPopupClose(popup) {
             parseInt(tokenWarningThresholdInput.value) || 30000 : 
             settings.moduleSettings.tokenWarningThreshold || 30000;
 
+        // Save default memory count
+        const defaultMemoryCountInput = popupElement.querySelector('#stmb-default-memory-count');
+        const defaultMemoryCount = defaultMemoryCountInput ? 
+            parseInt(defaultMemoryCountInput.value) || 0 : 
+            settings.moduleSettings.defaultMemoryCount || 0;
+
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
                           showNotifications !== settings.moduleSettings.showNotifications ||
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
-                          tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold;
+                          tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
+                          defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
             settings.moduleSettings.showNotifications = showNotifications;
             settings.moduleSettings.refreshEditor = refreshEditor;
             settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
+            settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
             saveSettingsDebounced();
             console.log('STMemoryBooks: Settings updated');
         }
@@ -1133,6 +855,7 @@ function refreshPopupContent() {
             showNotifications: settings.moduleSettings.showNotifications,
             refreshEditor: settings.moduleSettings.refreshEditor,
             tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
+            defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
                 isDefault: index === settings.defaultProfile
@@ -1165,682 +888,32 @@ function refreshPopupContent() {
 }
 
 /**
- * Profile management functions
+ * Event handlers - delegated to scene manager
  */
-async function editProfile() {
-    const settings = initializeSettings();
-    const profileIndex = settings.defaultProfile;
-    const profile = settings.profiles[profileIndex];
-    
-    if (!profile) return;
-    
-    const templateData = {
-        name: profile.name,
-        connection: profile.connection || { engine: 'openai', model: '', temperature: 0.7 },
-        prompt: profile.prompt || '',
-        preset: profile.preset || ''
-    };
-    
-    const content = DOMPurify.sanitize(profileEditTemplate(templateData));
-    
-    try {
-        const result = await new Popup(`<h3>Edit Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: 'Save',
-            cancelButton: 'Cancel',
-            wide: true
-        }).show();
-        
-        if (result === POPUP_RESULT.AFFIRMATIVE) {
-            const popupElement = document.querySelector('.popup');
-            const updatedProfile = {
-                name: popupElement.querySelector('#stmb-profile-name')?.value || profile.name,
-                connection: {
-                    engine: popupElement.querySelector('#stmb-profile-engine')?.value || 'openai',
-                    model: popupElement.querySelector('#stmb-profile-model')?.value || '',
-                    temperature: parseFloat(popupElement.querySelector('#stmb-profile-temperature')?.value) || null
-                },
-                prompt: popupElement.querySelector('#stmb-profile-prompt')?.value || '',
-                preset: popupElement.querySelector('#stmb-profile-preset')?.value || ''
-            };
-            
-            // Clean up connection values - remove empty strings and null values
-            if (!updatedProfile.connection.model) {
-                delete updatedProfile.connection.model;
-            }
-            if (updatedProfile.connection.temperature === null || isNaN(updatedProfile.connection.temperature)) {
-                delete updatedProfile.connection.temperature;
-            }
-            
-            settings.profiles[profileIndex] = updatedProfile;
-            saveSettingsDebounced();
-            refreshPopupContent();
-            
-            toastr.success('Profile updated successfully', 'STMemoryBooks');
-        }
-    } catch (error) {
-        console.error('STMemoryBooks: Error editing profile:', error);
+function handleMessageRendered(messageId) {
+    const messageElement = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
+    if (messageElement) {
+        createSceneButtons(messageElement);
+        setTimeout(updateAllButtonStates, 100);
     }
 }
 
-async function newProfile() {
-    const templateData = {
-        name: 'New Profile',
-        connection: {
-            engine: 'openai',
-            model: '',
-            temperature: 0.7
-        },
-        prompt: 'Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions.',
-        preset: ''
-    };
-    
-    const content = DOMPurify.sanitize(profileEditTemplate(templateData));
-    
-    try {
-        const result = await new Popup(`<h3>New Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: 'Create',
-            cancelButton: 'Cancel',
-            wide: true
-        }).show();
-        
-        if (result === POPUP_RESULT.AFFIRMATIVE) {
-            const popupElement = document.querySelector('.popup');
-            const newProfile = {
-                name: popupElement.querySelector('#stmb-profile-name')?.value || 'New Profile',
-                connection: {
-                    engine: popupElement.querySelector('#stmb-profile-engine')?.value || 'openai',
-                    model: popupElement.querySelector('#stmb-profile-model')?.value || '',
-                    temperature: parseFloat(popupElement.querySelector('#stmb-profile-temperature')?.value) || null
-                },
-                prompt: popupElement.querySelector('#stmb-profile-prompt')?.value || templateData.prompt,
-                preset: popupElement.querySelector('#stmb-profile-preset')?.value || ''
-            };
-            
-            // Clean up connection values - remove empty strings and null values
-            if (!newProfile.connection.model) {
-                delete newProfile.connection.model;
-            }
-            if (newProfile.connection.temperature === null || isNaN(newProfile.connection.temperature)) {
-                delete newProfile.connection.temperature;
-            }
-            
-            const settings = initializeSettings();
-            settings.profiles.push(newProfile);
-            saveSettingsDebounced();
-            refreshPopupContent();
-            
-            toastr.success('Profile created successfully', 'STMemoryBooks');
-        }
-    } catch (error) {
-        console.error('STMemoryBooks: Error creating profile:', error);
-    }
+function handleChatChanged() {
+    console.log('STMemoryBooks: Chat changed');
+    updateSceneStateCache();
+    setTimeout(updateAllButtonStates, 500);
 }
 
-async function deleteProfile() {
-    const settings = initializeSettings();
-    
-    if (settings.profiles.length <= 1) {
-        toastr.error('Cannot delete the last profile', 'STMemoryBooks');
-        return;
-    }
-    
-    const profileIndex = settings.defaultProfile;
-    const profile = settings.profiles[profileIndex];
-    
-    try {
-        const result = await new Popup(`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
-        
-        if (result === POPUP_RESULT.AFFIRMATIVE) {
-            settings.profiles.splice(profileIndex, 1);
-            
-            // Adjust default profile index
-            if (settings.defaultProfile >= settings.profiles.length) {
-                settings.defaultProfile = settings.profiles.length - 1;
-            }
-            
-            saveSettingsDebounced();
-            refreshPopupContent();
-            
-            toastr.success('Profile deleted successfully', 'STMemoryBooks');
-        }
-    } catch (error) {
-        console.error('STMemoryBooks: Error deleting profile:', error);
-    }
+function handleChatLoaded() {
+    console.log('STMemoryBooks: Chat loaded');
+    setTimeout(() => {
+        updateSceneStateCache();
+        updateAllButtonStates();
+    }, 1000);
 }
 
-/**
- * Export profiles to JSON file
- */
-function exportProfiles() {
-    try {
-        const settings = initializeSettings();
-        const exportData = {
-            profiles: settings.profiles,
-            exportDate: moment().toISOString(),
-            version: 1
-        };
-        
-        const dataStr = JSON.stringify(exportData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `stmemorybooks-profiles-${moment().format('YYYY-MM-DD')}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        toastr.success('Profiles exported successfully', 'STMemoryBooks');
-    } catch (error) {
-        console.error('STMemoryBooks: Error exporting profiles:', error);
-        toastr.error('Failed to export profiles', 'STMemoryBooks');
-    }
-}
-
-/**
- * Import profiles from JSON file
- */
-function importProfiles(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importData = JSON.parse(e.target.result);
-            
-            if (!importData.profiles || !Array.isArray(importData.profiles)) {
-                throw new Error('Invalid profile data format');
-            }
-            
-            const settings = initializeSettings();
-            
-            // Merge profiles (avoid duplicates by name)
-            importData.profiles.forEach(importProfile => {
-                const exists = settings.profiles.some(p => p.name === importProfile.name);
-                if (!exists) {
-                    settings.profiles.push(importProfile);
-                }
-            });
-            
-            saveSettingsDebounced();
-            refreshPopupContent();
-            
-            toastr.success(`Imported ${importData.profiles.length} profiles`, 'STMemoryBooks');
-        } catch (error) {
-            console.error('STMemoryBooks: Error importing profiles:', error);
-            toastr.error('Failed to import profiles: Invalid file format', 'STMemoryBooks');
-        }
-    };
-    
-    reader.readAsText(file);
-    
-    // Clear the file input
-    event.target.value = '';
-}
-
-/**
- * Show keyword selection popup when AI doesn't provide keywords
- */
-async function showKeywordSelectionPopup(preparedResult) {
-    const templateData = {
-        formattedContent: preparedResult.formattedContent,
-        displayMetadata: preparedResult.displayMetadata
-    };
-    
-    const content = DOMPurify.sanitize(keywordSelectionTemplate(templateData));
-    
-    return new Promise((resolve) => {
-        const popup = new Popup(`<h3>🔤 Choose Keyword Generation Method</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: false,
-            cancelButton: 'Cancel',
-            wide: true,
-            onClose: () => resolve(null)
-        });
-        
-        popup.show().then(() => {
-            setupKeywordSelectionEventListeners(popup, resolve);
-        });
-    });
-}
-
-/**
- * Setup event listeners for keyword selection popup
- */
-function setupKeywordSelectionEventListeners(popup, resolve) {
-    const popupElement = popup.dlg;
-    
-    // ST Generate button
-    popupElement.querySelector('#stmb-keyword-st-generate')?.addEventListener('click', () => {
-        popup.completeCancelled();
-        resolve({ method: 'st-generate', userKeywords: [] });
-    });
-    
-    // AI Keywords button  
-    popupElement.querySelector('#stmb-keyword-ai-generate')?.addEventListener('click', () => {
-        popup.completeCancelled();
-        resolve({ method: 'ai-keywords', userKeywords: [] });
-    });
-    
-    // Manual Entry button
-    popupElement.querySelector('#stmb-keyword-user-input')?.addEventListener('click', () => {
-        const manualSection = popupElement.querySelector('#stmb-manual-keywords-section');
-        const textArea = popupElement.querySelector('#stmb-manual-keywords');
-        
-        if (manualSection.style.display === 'none') {
-            // Show manual input section
-            manualSection.style.display = 'block';
-            textArea.focus();
-            
-            // Add confirm button for manual entry
-            let confirmBtn = popupElement.querySelector('#stmb-manual-confirm');
-            if (!confirmBtn) {
-                confirmBtn = document.createElement('div');
-                confirmBtn.id = 'stmb-manual-confirm';
-                confirmBtn.className = 'menu_button';
-                confirmBtn.innerHTML = '<i class="fa-solid fa-check"></i> Use These Keywords';
-                confirmBtn.style.marginTop = '10px';
-                
-                confirmBtn.addEventListener('click', () => {
-                    const keywordText = textArea.value.trim();
-                    if (!keywordText) {
-                        toastr.warning('Please enter at least one keyword', 'STMemoryBooks');
-                        return;
-                    }
-                    
-                    // Parse and validate keywords
-                    const userKeywords = keywordText
-                        .split(',')
-                        .map(k => k.trim())
-                        .filter(k => k.length > 0 && k.length <= 25)
-                        .slice(0, 8);
-                    
-                    if (userKeywords.length === 0) {
-                        toastr.warning('No valid keywords found. Keywords must be 1-25 characters each.', 'STMemoryBooks');
-                        return;
-                    }
-                    
-                    popup.completeCancelled();
-                    resolve({ method: 'user-input', userKeywords: userKeywords });
-                });
-                
-                manualSection.appendChild(confirmBtn);
-            }
-        }
-    });
-}
-
-/**
- * Calculate actual token count including real context memories
- */
-async function calculateTokensWithContext(sceneData, memories) {
-    let baseTokens = sceneData.estimatedTokens;
-    
-    if (memories && memories.length > 0) {
-        // Calculate actual tokens from memory content
-        let contextTokens = 200; // Headers and formatting overhead
-        
-        for (const memory of memories) {
-            const memoryContent = memory.content || '';
-            const memoryTokens = Math.ceil(memoryContent.length / 4); // Rough estimation
-            contextTokens += memoryTokens;
-        }
-        
-        console.log(`STMemoryBooks: Calculated ${contextTokens} actual tokens for ${memories.length} context memories`);
-        return baseTokens + contextTokens;
-    }
-    
-    return baseTokens;
-}
-async function getAvailableSummariesCount() {
-    try {
-        const lorebookValidation = await validateLorebook();
-        if (!lorebookValidation.valid) {
-            return 0;
-        }
-        
-        const settings = initializeSettings();
-        const titleFormat = settings.titleFormat || '[000] - Auto Memory';
-        
-        // Use the new identifyMemoryEntries function from addlore.js
-        const memoryEntries = identifyMemoryEntries(lorebookValidation.data, titleFormat);
-        
-        return memoryEntries.length;
-    } catch (error) {
-        console.warn('STMemoryBooks: Error getting available summaries count:', error);
-        return 0;
-    }
-}
-
-/**
- * Fetch previous summaries using the new title format matching
- */
-async function fetchPreviousSummaries(count) {
-    if (count <= 0) {
-        return { summaries: [], actualCount: 0, requestedCount: 0 };
-    }
-    
-    try {
-        const lorebookValidation = await validateLorebook();
-        if (!lorebookValidation.valid) {
-            return { summaries: [], actualCount: 0, requestedCount: count };
-        }
-        
-        const settings = initializeSettings();
-        const titleFormat = settings.titleFormat || '[000] - Auto Memory';
-        
-        // Use the new identifyMemoryEntries function from addlore.js
-        const memoryEntries = identifyMemoryEntries(lorebookValidation.data, titleFormat);
-        
-        // Return the last N summaries (most recent ones)
-        const recentSummaries = memoryEntries.slice(-count);
-        const actualCount = recentSummaries.length;
-        
-        console.log(`STMemoryBooks: Requested ${count} summaries, found ${actualCount} available summaries using title format pattern`);
-        
-        return {
-            summaries: recentSummaries.map(entry => ({
-                number: entry.number,
-                title: entry.title,
-                content: entry.content,
-                keywords: entry.keywords
-            })),
-            actualCount: actualCount,
-            requestedCount: count
-        };
-        
-    } catch (error) {
-        console.error('STMemoryBooks: Error fetching previous summaries:', error);
-        return { summaries: [], actualCount: 0, requestedCount: count };
-    }
-}
-
-/**
- * Initiate memory creation process with profile settings support
- */
-async function initiateMemoryCreation() {
-    if (isProcessingMemory) {
-        toastr.warning('Memory creation already in progress', 'STMemoryBooks');
-        return;
-    }
-    
-    const sceneData = getSceneData();
-    if (!sceneData) {
-        toastr.error('No scene selected', 'STMemoryBooks');
-        return;
-    }
-    
-    // Validate lorebook
-    const lorebookValidation = await validateLorebook();
-    if (!lorebookValidation.valid) {
-        toastr.error(lorebookValidation.error, 'STMemoryBooks');
-        return;
-    }
-    
-    const settings = initializeSettings();
-    
-    // Show confirmation if not using default or if large scene
-    const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
-    const shouldShowConfirmation = !settings.moduleSettings.alwaysUseDefault || 
-                                  sceneData.estimatedTokens > tokenThreshold;
-    
-    let selectedProfileIndex = settings.defaultProfile;
-    let summaryCount = 0; // Default to no previous summaries
-    
-    if (shouldShowConfirmation) {
-        const confirmed = await showConfirmationPopup(sceneData);
-        if (!confirmed) return;
-        
-        // Get selected profile from confirmation popup if available
-        const selectedProfileElement = document.querySelector('#stmb-selected-profile');
-        if (selectedProfileElement) {
-            selectedProfileIndex = parseInt(selectedProfileElement.value) || settings.defaultProfile;
-        }
-        
-        // Get selected summary count
-        const summaryCountElement = document.querySelector('#stmb-summary-count');
-        if (summaryCountElement) {
-            summaryCount = parseInt(summaryCountElement.value) || 0;
-        }
-    }
-    
-    // Close settings popup
-    if (currentPopupInstance) {
-        currentPopupInstance.completeCancelled();
-        currentPopupInstance = null;
-    }
-    
-    // Start processing
-    isProcessingMemory = true;
-    let originalSettings = null;
-    
-    try {
-        toastr.info('Compiling scene messages...', 'STMemoryBooks');
-        
-        // Create scene request
-        const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
-        
-        // Compile scene using chatcompile.js
-        const compiledScene = compileScene(sceneRequest);
-        
-        // Fetch previous memories if requested
-        let previousMemories = [];
-        let memoryFetchResult = { memories: [], actualCount: 0, requestedCount: 0 };
-        if (summaryCount > 0) {
-            toastr.info(`Fetching ${summaryCount} previous memories for context...`, 'STMemoryBooks');
-            memoryFetchResult = await fetchPreviousMemories(summaryCount);
-            previousMemories = memoryFetchResult.memories;
-            
-            if (memoryFetchResult.actualCount > 0) {
-                if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
-                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
-                }
-                console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
-            } else {
-                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
-                console.log('STMemoryBooks: No previous memories available for context');
-            }
-        }
-        
-        // Add previous memories to compiled scene for context
-        compiledScene.previousSummariesContext = previousMemories;
-        
-        // Validate compiled scene
-        const validation = validateCompiledScene(compiledScene);
-        if (!validation.valid) {
-            throw new Error(`Scene compilation failed: ${validation.errors.join(', ')}`);
-        }
-        
-        // Log compilation stats
-        const stats = getSceneStats(compiledScene);
-        console.log('STMemoryBooks: Scene compilation stats:', stats);
-        
-        // Show detailed progress
-        const actualTokens = estimateTokenCount(compiledScene);
-        const contextInfo = memoryFetchResult.actualCount > 0 ? 
-            ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
-        toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
-        
-        // Apply profile settings if configured
-        const selectedProfile = settings.profiles[selectedProfileIndex];
-        if (selectedProfile?.connection?.model || selectedProfile?.connection?.temperature) {
-            const settingsApplied = [];
-            if (selectedProfile.connection.model) settingsApplied.push(`model: ${selectedProfile.connection.model}`);
-            if (selectedProfile.connection.temperature) settingsApplied.push(`temp: ${selectedProfile.connection.temperature}`);
-            
-            toastr.info(`Applying profile settings (${settingsApplied.join(', ')})...`, 'STMemoryBooks');
-            originalSettings = applyProfileSettings(selectedProfile);
-            
-            // Wait a moment for settings to take effect
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        toastr.info('Generating memory with AI...', 'STMemoryBooks');
-        
-        // Call stmemory.js with compiledScene (including context summaries)
-        const memoryResult = await createMemory(compiledScene, selectedProfile, {
-            tokenWarningThreshold: tokenThreshold
-        });
-        
-        // Check if keywords need user selection
-        if (memoryResult.needsKeywordGeneration) {
-            console.log('STMemoryBooks: Keywords need user selection, showing keyword dialog');
-            
-            // Prepare formatted content for display
-            const preparedResult = prepareForKeywordDialog(memoryResult);
-            
-            // Show keyword selection dialog
-            const keywordChoice = await showKeywordSelectionPopup(preparedResult);
-            if (!keywordChoice) {
-                // User cancelled
-                isProcessingMemory = false;
-                return;
-            }
-            
-            // Complete memory creation with user's keyword choice
-            toastr.info('Completing memory with selected keyword method...', 'STMemoryBooks');
-            const finalMemoryResult = await completeMemoryWithKeywords(
-                memoryResult, 
-                keywordChoice.method, 
-                keywordChoice.userKeywords
-            );
-            
-            // Add memory to lorebook
-            toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
-            const addResult = await addMemoryToLorebook(finalMemoryResult, lorebookValidation);
-            
-            if (addResult.success) {
-                const contextMsg = memoryFetchResult.actualCount > 0 ? 
-                    ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
-                setTimeout(() => {
-                    toastr.success(`Memory "${addResult.entryTitle}" created with ${keywordChoice.method} keywords${contextMsg}!`, 'STMemoryBooks');
-                    isProcessingMemory = false;
-                }, 1000);
-            } else {
-                throw new Error(addResult.error || 'Failed to add memory to lorebook');
-            }
-            
-        } else {
-            // Normal flow - keywords were found in AI response
-            // Add memory to lorebook  
-            toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
-            const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
-            
-            if (addResult.success) {
-                const contextMsg = memoryFetchResult.actualCount > 0 ? 
-                    ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
-                setTimeout(() => {
-                    toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
-                    isProcessingMemory = false;
-                }, 2000);
-            } else {
-                throw new Error(addResult.error || 'Failed to add memory to lorebook');
-            }
-        }
-        
-    } catch (error) {
-        console.error('STMemoryBooks: Error creating memory:', error);
-        toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
-        isProcessingMemory = false;
-    } finally {
-        // Always restore original settings
-        if (originalSettings) {
-            toastr.info('Restoring original API settings...', 'STMemoryBooks');
-            // Small delay to ensure previous operations complete
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            restoreOriginalSettings(originalSettings);
-        }
-    }
-}
-
-/**
- * Show confirmation popup for memory creation
- */
-async function showConfirmationPopup(sceneData) {
-    const settings = initializeSettings();
-    
-    // Get available memories count from lorebook
-    const availableMemories = await getAvailableMemoriesCount();
-    
-    const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
-    
-    const templateData = {
-        ...sceneData,
-        showProfileSelect: !settings.moduleSettings.alwaysUseDefault,
-        showWarning: sceneData.estimatedTokens > tokenThreshold,
-        availableMemories: availableMemories,
-        profiles: settings.profiles.map((profile, index) => ({
-            ...profile,
-            isDefault: index === settings.defaultProfile
-        }))
-    };
-    
-    const content = DOMPurify.sanitize(confirmationTemplate(templateData));
-    
-    try {
-        const popup = new Popup(`<h3>Create Memory</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: 'Create Memory',
-            cancelButton: 'Cancel',
-            wide: true
-        });
-        
-        const result = await popup.show();
-        
-        // Set up dynamic token estimation after popup is shown
-        const summaryCountSelect = popup.dlg.querySelector('#stmb-summary-count');
-        const totalTokensSpan = popup.dlg.querySelector('#stmb-total-tokens');
-        const tokenWarning = popup.dlg.querySelector('#stmb-token-warning');
-        
-        if (summaryCountSelect && totalTokensSpan) {
-            let cachedMemories = {}; // Cache fetched memories
-            
-            const updateTokenEstimate = async () => {
-                const memoryCount = parseInt(summaryCountSelect.value) || 0;
-                
-                if (memoryCount === 0) {
-                    totalTokensSpan.textContent = `Total estimated tokens: ${sceneData.estimatedTokens}`;
-                    if (tokenWarning) {
-                        tokenWarning.style.display = sceneData.estimatedTokens > tokenThreshold ? 'block' : 'none';
-                    }
-                    return;
-                }
-                
-                // Fetch actual memories for accurate token calculation
-                if (!cachedMemories[memoryCount]) {
-                    totalTokensSpan.textContent = `Total estimated tokens: Calculating...`;
-                    
-                    const memoryFetchResult = await fetchPreviousMemories(memoryCount);
-                    cachedMemories[memoryCount] = memoryFetchResult.memories;
-                }
-                
-                const memories = cachedMemories[memoryCount];
-                const totalTokens = await calculateTokensWithContext(sceneData, memories);
-                totalTokensSpan.textContent = `Total estimated tokens: ${totalTokens}`;
-                
-                // Update warning visibility
-                if (tokenWarning) {
-                    if (totalTokens > tokenThreshold) {
-                        tokenWarning.style.display = 'block';
-                        tokenWarning.querySelector('span').textContent = 
-                            `⚠️ Large scene (${totalTokens} tokens) may take some time to process.`;
-                    } else {
-                        tokenWarning.style.display = 'none';
-                    }
-                }
-            };
-            
-            // Update on change
-            summaryCountSelect.addEventListener('change', updateTokenEstimate);
-            
-            // Initial update
-            updateTokenEstimate();
-        }
-        
-        return result === POPUP_RESULT.AFFIRMATIVE;
-    } catch (error) {
-        console.error('STMemoryBooks: Error showing confirmation popup:', error);
-        return false;
-    }
+function handleMessageReceived() {
+    setTimeout(validateSceneMarkers, 500);
 }
 
 /**
@@ -1878,14 +951,12 @@ function handleSceneMemoryCommand(args) {
         return;
     }
     
-    // Set markers and update UI
+    // Set markers using scene manager
     const markers = getSceneMarkers();
     markers.sceneStart = startId;
     markers.sceneEnd = endId;
     
-    currentSceneState.start = startId;
-    currentSceneState.end = endId;
-    
+    updateSceneStateCache();
     saveMetadataDebounced();
     updateAllButtonStates();
     
@@ -1938,17 +1009,20 @@ function createUI() {
 }
 
 /**
- * Setup event listeners - simplified with separated handlers
+ * Setup event listeners
  */
 function setupEventListeners() {
     // UI events
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
     
-    // SillyTavern events - cleaner with proper imports
+    // SillyTavern events
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleMessageRendered);
     eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
     eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
-    eventSource.on(event_types.MESSAGE_DELETED, handleMessageDeletion);
+    eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
+        const settings = initializeSettings();
+        handleMessageDeletion(deletedId, settings);
+    });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
     
     console.log('STMemoryBooks: Event listeners registered');
@@ -1978,9 +1052,7 @@ async function init() {
     console.log('STMemoryBooks: Settings initialized');
     
     // Initialize scene state
-    const markers = getSceneMarkers();
-    currentSceneState.start = markers.sceneStart;
-    currentSceneState.end = markers.sceneEnd;
+    updateSceneStateCache();
     
     // Create UI
     createUI();
