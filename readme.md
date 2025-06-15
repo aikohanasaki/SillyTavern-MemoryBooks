@@ -5,6 +5,7 @@ A SillyTavern extension that allows you to automatically create memories from ch
 ## Features
 
 - **Scene Marking System**: Mark start (►) and end (◄) points in your chat messages with visual feedback
+- **Previous Scene Context**: Include 0-7 previous summaries as context to help AI understand ongoing storylines
 - **Multiple Usage Methods**: Use slash commands or visual markers to define scenes
 - **5 Built-in Presets**: Production-quality prompts optimized for vectorized databases
 - **Automatic Keyword Extraction**: AI-generated keywords parsed from responses with fallback generation
@@ -12,29 +13,6 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **Profile Management**: Create, edit, and manage multiple memory generation profiles
 - **Import/Export**: Backup and share your profiles as JSON files
 - **Visual Feedback**: Clear indicators showing selected scenes and valid marker positions
-
-## Installation
-
-1. Download the extension files
-2. Place the `STMemorybooks` folder in your SillyTavern `extensions` directory
-3. Restart SillyTavern
-4. The extension will appear in your Extensions menu
-
-## File Structure
-
-```
-extensions/STMemorybooks/
-├── index.js              # Main extension file (UI and event handling)
-├── chatcompile.js        # Scene compilation and validation
-├── stmemory.js          # AI memory generation with preset system
-├── addlore.js           # Lorebook integration
-├── style.css            # Extension styling and visual feedback
-├── summary.json         # "Talented Summarist" preset
-├── summarize.json       # Bullet-point format preset
-├── synopsis.json        # Long detailed preset
-├── sumup.json          # Concise beat summary preset
-└── keywords.json       # Keywords-only generation preset
-```
 
 ## Initial Setup 🛠️
 
@@ -68,8 +46,8 @@ The first set of settings you create will become your default, but you can alway
 1. **Mark Your Scene**: Click the chevron-right (►) button on the first message of your scene, then click the chevron-left (◄) button on the last message
 2. **Open Settings**: Click "Memory Settings" in the Extensions menu  
 3. **Create Memory**: Click the "🧠 Create Memory" button or use `/creatememory`
-4. **Choose Profile**: Select your preferred preset (if not using default)
-5. **Confirm**: The pop-up will confirm which messages you want as the start and end of your scene, click OK to confirm
+4. **Choose Options**: Select your preferred preset and choose 0-7 previous summaries to include as context (helps AI understand ongoing storylines)
+5. **Confirm**: The pop-up will confirm which messages and context summaries to use, click OK to confirm
 6. **Wait**: The AI will respond and a message will appear confirming that the memory has been created and saved
 
 ### Method Two: Slash Commands
@@ -82,6 +60,17 @@ The first set of settings you create will become your default, but you can alway
 
 - `/creatememory` - Create memory from currently marked scene
 - `/scenememory 10-15` - Mark messages 10-15 as scene and create memory
+
+## Previous Scene Context
+
+When creating memories, you can include 0-7 previous summaries as context to help the AI understand ongoing storylines, character development, and plot continuity. The extension automatically:
+
+- **Finds existing summaries** in your lorebook (numbered entries like [001], [002], etc.)
+- **Orders them chronologically** based on their sequential numbers 
+- **Includes them as context** marked clearly as "DO NOT SUMMARIZE" so the AI uses them for understanding but doesn't include them in the new summary
+- **Handles missing summaries gracefully** - if you request 5 but only 2 exist, it uses all available with a warning
+
+This feature is especially useful for long-running chats where character relationships and story elements evolve over time.
 
 ## Customizable Details
 
@@ -178,10 +167,11 @@ STMemoryBooks will collect the chat history from the beginning of the scene to t
 ### Memory Generation Process
 
 1. **Scene Compilation**: Extract and validate messages in marked range
-2. **Token Estimation**: Calculate approximate token usage with warnings
-3. **AI Generation**: Use SillyTavern's `generateQuietPrompt` with preset/custom prompts
-4. **Response Processing**: Parse content and extract keywords
-5. **Lorebook Integration**: Format and add to bound lorebook
+2. **Context Retrieval**: Fetch requested previous summaries in chronological order (if any)
+3. **Token Estimation**: Calculate approximate token usage with warnings (including context)
+4. **AI Generation**: Use SillyTavern's `generateQuietPrompt` with preset/custom prompts and context
+5. **Response Processing**: Parse content and extract keywords
+6. **Lorebook Integration**: Format and add to bound lorebook
 
 ### Preset System
 

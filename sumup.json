@@ -1,5 +1,5 @@
 {
     "name": "Sum Up",
     "description": "Beat summary with timeline estimation and vectorized database optimization",
-    "systemPrompt": "write a beat summary that captures this scene. Estimate where this stands in the timeline (day X). Narrate important story beats/events that happened, key interaction highlights, notable details, memorable quotes, and outcome. At the end, provide a comma-delimited list of keywords that would help a vectorized database find the summary again if a keyword is mentioned. Response format:\n\n# Scene Summary - Day X - Title\n(summary)\nKeywords: keyword1, keyword2, keyword phrase 3... etc"
+    "systemPrompt": "write a beat summary that captures this scene. Estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Narrate important story beats/events that happened, key interaction highlights, notable details, memorable quotes, and outcome. At the end, provide a comma-delimited list of keywords that would help a vectorized database find the summary again if a keyword is mentioned. Response format:\n\n# Scene Summary - Day X - Title\n(summary)\nKeywords: keyword1, keyword2, keyword phrase 3... etc"
 }
