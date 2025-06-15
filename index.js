@@ -25,7 +25,8 @@ import {
     newProfile, 
     deleteProfile, 
     exportProfiles, 
-    importProfiles
+    importProfiles,
+    validateAndFixProfiles
 } from './profileManager.js';
 import {
     getSceneMarkers,
@@ -46,6 +47,12 @@ import {
     fetchPreviousSummaries,
     calculateTokensWithContext
 } from './confirmationPopup.js';
+import { 
+    getEffectivePrompt, 
+    getPresetPrompt,
+    DEFAULT_PROMPT,
+    deepClone
+} from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 
@@ -94,7 +101,7 @@ const defaultSettings = {
             connection: {
                 engine: "openai"
             },
-            prompt: "Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions. Format as a brief summary suitable for a character's memory book."
+            prompt: DEFAULT_PROMPT
         }
     ],
     defaultProfile: 0,
@@ -302,8 +309,17 @@ function restoreOriginalSettings(originalSettings) {
  * Initialize and validate extension settings
  */
 function initializeSettings() {
-    extension_settings.STMemoryBooks = extension_settings.STMemoryBooks || lodash.cloneDeep(defaultSettings);
-    return validateSettings(extension_settings.STMemoryBooks);
+    extension_settings.STMemoryBooks = extension_settings.STMemoryBooks || deepClone(defaultSettings);
+    const validationResult = validateSettings(extension_settings.STMemoryBooks);
+    
+    // Also validate profiles structure
+    const profileValidation = validateAndFixProfiles(extension_settings.STMemoryBooks);
+    if (profileValidation.fixes.length > 0) {
+        console.log(`${MODULE_NAME}: Applied profile fixes:`, profileValidation.fixes);
+        saveSettingsDebounced();
+    }
+    
+    return validationResult;
 }
 
 /**
@@ -311,7 +327,7 @@ function initializeSettings() {
  */
 function validateSettings(settings) {
     if (!settings.profiles || settings.profiles.length === 0) {
-        settings.profiles = [lodash.cloneDeep(defaultSettings.profiles[0])];
+        settings.profiles = [deepClone(defaultSettings.profiles[0])];
         settings.defaultProfile = 0;
     }
     
@@ -320,7 +336,7 @@ function validateSettings(settings) {
     }
     
     if (!settings.moduleSettings) {
-        settings.moduleSettings = lodash.cloneDeep(defaultSettings.moduleSettings);
+        settings.moduleSettings = deepClone(defaultSettings.moduleSettings);
     }
     
     if (!settings.moduleSettings.tokenWarningThreshold || 
@@ -396,7 +412,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation) {
             confirmed: true,
             profileSettings: {
                 ...selectedProfile,
-                effectivePrompt: getEffectivePrompt(selectedProfile)
+                effectivePrompt: getEffectivePrompt(selectedProfile) // Use shared function
             },
             advancedOptions: {
                 memoryCount: settings.moduleSettings.defaultMemoryCount || 0,
@@ -615,31 +631,6 @@ async function initiateMemoryCreation() {
 }
 
 /**
- * Helper function to get effective prompt from profile (needs to be added to index.js)
- */
-function getEffectivePrompt(profile) {
-    if (profile.prompt) {
-        return profile.prompt;
-    } else if (profile.preset) {
-        return getPresetPrompt(profile.preset);
-    } else {
-        return 'Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions.';
-    }
-}
-
-function getPresetPrompt(presetName) {
-    const presets = {
-        'summary': 'Create a detailed beat-by-beat summary of this chat scene. Include character actions, dialogue highlights, emotional beats, and story progression. Format as a comprehensive narrative summary.',
-        'summarize': 'Summarize this chat scene in bullet-point format. Focus on:\n• Key events and actions\n• Important dialogue\n• Character development\n• Plot advancement',
-        'synopsis': 'Create a comprehensive synopsis of this chat scene with clear headings:\n\n**Characters Present:** [list]\n**Setting/Location:** [describe]\n**Key Events:** [summarize]\n**Emotional Beats:** [highlight]\n**Story Impact:** [explain]',
-        'sumup': 'Sum up this chat scene focusing on the essential story beats. Keep it concise but capture the core narrative progression, character moments, and any important plot developments.',
-        'keywords': 'Extract only the most important keywords and phrases from this chat scene. Focus on: character names, locations, objects, actions, emotions, and plot-relevant terms. Return as a simple list.'
-    };
-    
-    return presets[presetName] || 'Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions.';
-}
-
-/**
  * Show main settings popup
  */
 async function showSettingsPopup() {
@@ -719,22 +710,42 @@ function setupSettingsEventListeners() {
     const popupElement = currentPopupInstance.dlg;
     const settings = initializeSettings();
     
-    // Profile management buttons - use imported functions
-    popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', () => {
-        editProfile(settings, refreshPopupContent);
+    // Profile management buttons - use imported functions with proper error handling
+    popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', async () => {
+        try {
+            await editProfile(settings, refreshPopupContent);
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error in edit profile:`, error);
+            toastr.error('Failed to edit profile', 'STMemoryBooks');
+        }
     });
     
-    popupElement.querySelector('#stmb-new-profile')?.addEventListener('click', () => {
-        newProfile(settings, refreshPopupContent);
+    popupElement.querySelector('#stmb-new-profile')?.addEventListener('click', async () => {
+        try {
+            await newProfile(settings, refreshPopupContent);
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error in new profile:`, error);
+            toastr.error('Failed to create profile', 'STMemoryBooks');
+        }
     });
     
-    popupElement.querySelector('#stmb-delete-profile')?.addEventListener('click', () => {
-        deleteProfile(settings, refreshPopupContent);
+    popupElement.querySelector('#stmb-delete-profile')?.addEventListener('click', async () => {
+        try {
+            await deleteProfile(settings, refreshPopupContent);
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error in delete profile:`, error);
+            toastr.error('Failed to delete profile', 'STMemoryBooks');
+        }
     });
     
-    // Import/Export buttons - use imported functions
+    // Import/Export buttons - use imported functions with better error handling
     popupElement.querySelector('#stmb-export-profiles')?.addEventListener('click', () => {
-        exportProfiles(settings);
+        try {
+            exportProfiles(settings);
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error in export profiles:`, error);
+            toastr.error('Failed to export profiles', 'STMemoryBooks');
+        }
     });
     
     popupElement.querySelector('#stmb-import-profiles')?.addEventListener('click', () => {
@@ -742,13 +753,21 @@ function setupSettingsEventListeners() {
     });
     
     popupElement.querySelector('#stmb-import-file')?.addEventListener('change', (event) => {
-        importProfiles(event, settings, refreshPopupContent);
+        try {
+            importProfiles(event, settings, refreshPopupContent);
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error in import profiles:`, error);
+            toastr.error('Failed to import profiles', 'STMemoryBooks');
+        }
     });
     
     // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
-        settings.defaultProfile = parseInt(e.target.value);
-        saveSettingsDebounced();
+        const newIndex = parseInt(e.target.value);
+        if (newIndex >= 0 && newIndex < settings.profiles.length) {
+            settings.defaultProfile = newIndex;
+            saveSettingsDebounced();
+        }
     });
 
     // Title format dropdown
@@ -764,25 +783,28 @@ function setupSettingsEventListeners() {
         }
     });
 
-    // Custom title format input
+    // Custom title format input with validation
     popupElement.querySelector('#stmb-custom-title-format')?.addEventListener('input', lodash.debounce((e) => {
-        settings.titleFormat = e.target.value;
-        saveSettingsDebounced();
+        const value = e.target.value.trim();
+        if (value && value.includes('000')) { // Basic validation for numbering placeholder
+            settings.titleFormat = value;
+            saveSettingsDebounced();
+        }
     }, 1000));
 
-    // Token warning threshold input
+    // Token warning threshold input with validation
     popupElement.querySelector('#stmb-token-warning-threshold')?.addEventListener('input', lodash.debounce((e) => {
         const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 1000) {
+        if (!isNaN(value) && value >= 1000 && value <= 100000) {
             settings.moduleSettings.tokenWarningThreshold = value;
             saveSettingsDebounced();
         }
     }, 1000));
 
-    // Default memory count dropdown
+    // Default memory count dropdown with validation
     popupElement.querySelector('#stmb-default-memory-count')?.addEventListener('change', (e) => {
         const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 0) {
+        if (!isNaN(value) && value >= 0 && value <= 20) {
             settings.moduleSettings.defaultMemoryCount = value;
             saveSettingsDebounced();
         }
@@ -1047,9 +1069,19 @@ async function init() {
         attempts++;
     }
     
-    // Initialize settings
+    // Initialize settings with validation
     const settings = initializeSettings();
-    console.log('STMemoryBooks: Settings initialized');
+    const profileValidation = validateAndFixProfiles(settings);
+    
+    if (!profileValidation.valid) {
+        console.warn('STMemoryBooks: Profile validation issues found:', profileValidation.issues);
+        if (profileValidation.fixes.length > 0) {
+            console.log('STMemoryBooks: Applied automatic fixes:', profileValidation.fixes);
+            saveSettingsDebounced();
+        }
+    }
+    
+    console.log(`STMemoryBooks: Settings initialized with ${profileValidation.profileCount} profiles`);
     
     // Initialize scene state
     updateSceneStateCache();
