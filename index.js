@@ -12,7 +12,7 @@ import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
-import { SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
@@ -990,18 +990,22 @@ function handleSceneMemoryCommand(args) {
  * Register slash commands using proper SlashCommand classes
  */
 function registerSlashCommands() {
-    const createMemoryCmd = new SlashCommand({
+    const createMemoryCmd = SlashCommand.fromProps({
         name: 'creatememory',
         callback: handleCreateMemoryCommand,
         helpString: 'Create memory from marked scene'
     });
     
-    const sceneMemoryCmd = new SlashCommand({
+    const sceneMemoryCmd = SlashCommand.fromProps({
         name: 'scenememory', 
         callback: handleSceneMemoryCommand,
         helpString: 'Set scene range and create memory (e.g., /scenememory 10-15)',
-        arguments: [
-            new SlashCommandArgument('range', 'Message range (X-Y format)')
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Message range (X-Y format)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true
+            })
         ]
     });
     
