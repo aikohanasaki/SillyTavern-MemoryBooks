@@ -1,10 +1,6 @@
 // confirmationPopup.js - Consolidated popup management for memory creation flow
-import { 
-    Popup, 
-    POPUP_TYPE, 
-    POPUP_RESULT,
-    saveSettingsDebounced
-} from '../../../../script.js';
+import { saveSettingsDebounced } from '../../../../script.js';
+import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify, lodash } from '../../../../lib.js';
 import { simpleConfirmationTemplate, keywordSelectionTemplate, advancedOptionsTemplate } from './templates.js';
 import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';

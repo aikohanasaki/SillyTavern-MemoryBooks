@@ -1,11 +1,3 @@
-/**
- * STMemoryBooks - Lorebook Integration Module
- *
- * This script handles adding generated memories to chat-bound lorebooks.
- * It receives memory data from stmemory.js and integrates it with SillyTavern's
- * lorebook system using the world-info.js functions.
- */
-
 import { getContext } from '../../../extensions.js';
 import { 
     METADATA_KEY, 
