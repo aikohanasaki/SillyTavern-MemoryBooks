@@ -4,13 +4,12 @@ import {
     event_types, 
     chat, 
     chat_metadata, 
-    saveMetadataDebounced,
     saveSettingsDebounced,
     name1, 
     name2 
 } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
-import { extension_settings, getContext } from '../../../extensions.js';
+import { extension_settings, saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';

@@ -1,8 +1,5 @@
-import { 
-    chat, 
-    chat_metadata, 
-    saveMetadataDebounced
-} from '../../../../script.js';
+import { chat, chat_metadata } from '../../../../script.js';
+import { saveMetadataDebounced } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
