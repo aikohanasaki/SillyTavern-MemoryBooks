@@ -1,11 +1,5 @@
-// profileManager.js - Pure profile CRUD operations
-// Updated to work with refactored CSS that uses SillyTavern's built-in classes
-import { 
-    saveSettingsDebounced,
-    Popup, 
-    POPUP_TYPE, 
-    POPUP_RESULT
-} from '../../../../script.js';
+import { saveSettingsDebounced } from '../../../../script.js';
+import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../scripts/popup.js';
 import { moment, Handlebars, DOMPurify } from '../../../../lib.js';
 import { getCurrentModelSettings } from './index.js';
 import { 

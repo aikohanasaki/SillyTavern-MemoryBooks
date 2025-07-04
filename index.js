@@ -1,3 +1,4 @@
+// This is the corrected code for index.js
 import { 
     eventSource, 
     event_types, 
@@ -5,12 +6,10 @@ import {
     chat_metadata, 
     saveMetadataDebounced,
     saveSettingsDebounced,
-    Popup, 
-    POPUP_TYPE, 
-    POPUP_RESULT,
     name1, 
     name2 
 } from '../../../../script.js';
+import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../scripts/popup.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
