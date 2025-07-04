@@ -53,6 +53,7 @@ import {
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks';
+let hasBeenInitialized = false; // <<< Add this line
 
 // Centralized DOM selectors
 const SELECTORS = {
@@ -1056,6 +1057,9 @@ function setupEventListeners() {
  * Initialize the extension
  */
 async function init() {
+    if (hasBeenInitialized) return;
+    hasBeenInitialized = true;
+
     console.log('STMemoryBooks: Initializing');
     
     // Wait for SillyTavern to be ready
