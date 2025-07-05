@@ -215,7 +215,7 @@ export function handleMessageDeletion(deletedId, settings) {
 }
 
 /**
- * Create message action buttons
+ * Create message action buttons with consistent styling
  */
 export function createSceneButtons(messageElement) {
     const messageId = parseInt(messageElement.getAttribute('mesid'));
@@ -241,17 +241,19 @@ export function createSceneButtons(messageElement) {
     // Check if buttons already exist to prevent duplication
     if (messageElement.querySelector('.stmb-start-btn')) return;
     
-    // Create start button with a more solid, stylized icon
+    // Create start button
     const startButton = document.createElement('div');
     startButton.title = 'Mark Scene Start';
-    startButton.classList.add('stmb-start-btn', 'mes_button');
-    startButton.innerHTML = '<i class="fa-solid fa-caret-right"></i>';
+    startButton.classList.add('stmb-start-btn', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
+    startButton.setAttribute('tabindex', '0');
+    startButton.setAttribute('data-i18n', '[title]Mark Scene Start');
     
-    // Create end button with a more solid, stylized icon
+    // Create end button
     const endButton = document.createElement('div');
     endButton.title = 'Mark Scene End';
-    endButton.classList.add('stmb-end-btn', 'mes_button');
-    endButton.innerHTML = '<i class="fa-solid fa-caret-left"></i>';
+    endButton.classList.add('stmb-end-btn', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
+    endButton.setAttribute('tabindex', '0');
+    endButton.setAttribute('data-i18n', '[title]Mark Scene End');
     
     // Add event listeners
     startButton.addEventListener('click', (e) => {

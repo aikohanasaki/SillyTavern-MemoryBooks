@@ -909,7 +909,27 @@ function refreshPopupContent() {
 }
 
 /**
- * Event handlers - delegated to scene manager
+ * FIXED: Ensure chevrons are created on all chat loading scenarios
+ */
+function ensureChevronButtonsForAllMessages() {
+    console.log('STMemoryBooks: Ensuring chevron buttons for all messages');
+    const messageElements = document.querySelectorAll('#chat .mes[mesid]');
+    console.log(`STMemoryBooks: Found ${messageElements.length} messages to process`);
+    
+    messageElements.forEach((messageElement, index) => {
+        // Check if chevron buttons already exist
+        const existingStartBtn = messageElement.querySelector('.stmb-start-btn');
+        const existingEndBtn = messageElement.querySelector('.stmb-end-btn');
+        
+        if (!existingStartBtn || !existingEndBtn) {
+            console.log(`STMemoryBooks: Creating missing chevron buttons for message ${index}`);
+            createSceneButtons(messageElement);
+        }
+    });
+}
+
+/**
+ * Event handlers - FIXED: Both functions now ensure buttons are created
  */
 function handleMessageRendered(messageId) {
     const messageElement = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
@@ -920,18 +940,22 @@ function handleMessageRendered(messageId) {
 }
 
 function handleChatChanged() {
-    console.log('STMemoryBooks: Chat changed');
+    console.log('STMemoryBooks: Chat changed - creating buttons for all messages');
     updateSceneStateCache();
-    setTimeout(updateAllButtonStates, 500);
+    
+    // FIXED: Ensure all messages have chevron buttons when chat changes
+    setTimeout(() => {
+        ensureChevronButtonsForAllMessages();
+        updateAllButtonStates();
+    }, 500);
 }
 
 function handleChatLoaded() {
-    console.log('STMemoryBooks: Chat loaded, creating buttons for existing messages.');
+    console.log('STMemoryBooks: Chat loaded - creating buttons for all messages');
+    
+    // FIXED: Ensure all messages have chevron buttons when chat loads
     setTimeout(() => {
-        const messageElements = document.querySelectorAll('#chat .mes[mesid]');
-        messageElements.forEach(messageElement => {
-            createSceneButtons(messageElement);
-        });
+        ensureChevronButtonsForAllMessages();
         updateSceneStateCache();
         updateAllButtonStates();
     }, 1000); 
@@ -1110,6 +1134,12 @@ async function init() {
     Handlebars.registerHelper('eq', function(a, b) {
         return a === b;
     });
+    
+    // Ensure chevron buttons exist on extension load
+    setTimeout(() => {
+        ensureChevronButtonsForAllMessages();
+        updateAllButtonStates();
+    }, 2000);
     
     console.log('STMemoryBooks: Extension loaded successfully');
 }
