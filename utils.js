@@ -34,7 +34,7 @@ const SELECTORS = {
 /**
  * Get current API and completion source information
  */
-function getCurrentApiInfo() {
+export function getCurrentApiInfo() {
     try {
         let api = 'unknown';
         let model = 'unknown';
@@ -66,7 +66,7 @@ function getCurrentApiInfo() {
 /**
  * Get the appropriate model and temperature selectors for current completion source
  */
-function getApiSelectors() {
+export function getApiSelectors() {
     const completionSource = $(SELECTORS.completionSource).val();
     
     const modelSelectorMap = {
