@@ -170,7 +170,7 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Temperature**: Response randomness (currently uses global SillyTavern settings)
 - **Preset**: Select from built-in presets or use custom prompt
 
-> **Note**: Connection settings are stored for future use but currently SillyTavern's global API settings are used for all requests.
+> **Note**: Connection settings are stored for future use but currently SillyTavern's global API settings.
 
 ## Advanced Features
 
@@ -198,7 +198,7 @@ STMemoryBooks will collect the chat history from the beginning of the scene to t
 1. **Scene Compilation**: Extract and validate messages in marked range
 2. **Context Retrieval**: Fetch requested previous memories in chronological order (if any) using title format pattern matching
 3. **Token Estimation**: Calculate exact token usage with warnings (including actual context memory content)
-4. **AI Generation**: Use SillyTavern's `generateQuietPrompt` with preset/custom prompts and context
+4. **AI Generation**: Direct request via API.
 5. **Response Processing**: Parse content, extract title and keywords from AI response
 6. **Lorebook Integration**: Format using configured title template and add to bound lorebook
 

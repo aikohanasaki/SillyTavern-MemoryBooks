@@ -1,19 +1,8 @@
-/**
- * STMemoryBooks - Memory Generation Module
- *
- * This script is responsible for taking a compiled chat scene,
- * formatting it for an AI model, generating a memory/summary,
- * and returning it in a format ready to be added to a lorebook.
- *
- * As per the specification, this module receives data from chatcompile.js
- * and passes its result to addlore.js.
- */
-
 import { getContext } from '../../../extensions.js';
 import { substituteParams } from '../../../../script.js';
 import { generateQuietPrompt } from '../../../../script.js';
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt } from './utils.js';
+import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -270,39 +259,88 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates the memory by calling the AI.
+ * Generates the memory by calling the AI with self-contained, profile-specific settings.
  *
  * @private
  * @param {string} promptString - The full prompt for the AI.
- * @param {Object} profile - The user-selected profile (for logging purposes).
+ * @param {Object} profile - The user-selected profile containing connection settings.
  * @returns {Promise<string>} The raw text response from the AI.
  * @throws {AIResponseError} If the AI generation fails or returns an empty response.
  */
 async function generateMemoryWithAI(promptString, profile) {
     const profileInfo = profile.preset ? `preset: ${profile.preset}` : `profile: ${profile.name}`;
-    console.log(`${MODULE_NAME}: Generating memory with AI using global settings (${profileInfo})`);
-    
-    // --- TECHNICAL LIMITATION NOTE ---
-    // The spec implies per-profile connection settings. However, SillyTavern's `generateQuietPrompt`
-    // function does not accept connection parameters (engine, model, temperature). It exclusively uses the
-    // main API settings configured by the user in the UI.
-    // The `profile.connection` object is therefore unused here but is kept for future enhancements
-    // where direct API calls might be implemented.
-    
+    console.log(`${MODULE_NAME}: Generating memory with direct API call using ${profileInfo}`);
+
+    // Get SillyTavern's current global settings as a fallback.
+    const globalSettings = getCurrentModelSettings();
+
+    // Determine the final settings for this specific call.
+    // The profile's `effectiveConnection` takes precedence.
+    const modelToUse = profile.effectiveConnection?.model || globalSettings.model;
+    const tempToUse = profile.effectiveConnection?.temperature ?? globalSettings.temperature;
+
+    // Construct the payload for the direct API call.
+    const generationPayload = {
+        prompt: promptString,
+        model: modelToUse,
+        temperature: tempToUse,
+        // You can add other parameters here if needed, e.g., max_tokens, stop sequences etc.
+    };
+
+    console.log(`${MODULE_NAME}: Generation Payload:`, { model: generationPayload.model, temperature: generationPayload.temperature });
+
     try {
-        // `generateQuietPrompt` arguments: (quiet_prompt, quietToLoud, skipWIAN, quietImage, quietName, responseLength, force_chid)
-        // We set skipWIAN to true to ensure only our compiled scene and prompt are used
-        const response = await generateQuietPrompt(promptString, false, true);
+        // IMPLEMENTATION NOTE: The exact API for direct generation may vary.
+        // This is an attempt to bypass SillyTavern's prompt management entirely.
+        // If getContext().generate() doesn't exist, we may need to use an alternative approach
+        // such as directly calling the API client or using a different SillyTavern internal function.
         
+        const context = getContext();
+        
+        // Try multiple approaches for direct API access
+        let response;
+        
+        if (typeof context.generate === 'function') {
+            // Direct generation function (if it exists)
+            response = await context.generate(generationPayload);
+        } else if (typeof context.generateRaw === 'function') {
+            // Alternative raw generation function
+            response = await context.generateRaw(generationPayload);
+        } else {
+            // Fallback: Use generateQuietPrompt but with isolated settings
+            // This is not ideal but better than global settings manipulation
+            console.warn(`${MODULE_NAME}: Direct API access not available, falling back to generateQuietPrompt`);
+            
+            // Temporarily set context-specific generation parameters if possible
+            const originalContext = { ...context };
+            if (modelToUse) {
+                context.model = modelToUse;
+            }
+            if (tempToUse !== undefined) {
+                context.temperature = tempToUse;
+            }
+            
+            try {
+                response = await generateQuietPrompt(promptString, false, true);
+                
+                // Restore original context
+                Object.assign(context, originalContext);
+            } catch (error) {
+                // Restore original context on error
+                Object.assign(context, originalContext);
+                throw error;
+            }
+        }
+
         if (!response || typeof response !== 'string' || response.trim().length === 0) {
             throw new AIResponseError('AI generated an empty or invalid response.');
         }
-        
+
         console.log(`${MODULE_NAME}: AI generation successful (${response.length} characters)`);
         return response.trim();
-        
+
     } catch (error) {
-        console.error(`${MODULE_NAME}: AI generation failed:`, error);
+        console.error(`${MODULE_NAME}: Direct AI generation failed:`, error);
         if (error instanceof AIResponseError) throw error;
         throw new AIResponseError(`AI generation failed: ${error.message}`);
     }

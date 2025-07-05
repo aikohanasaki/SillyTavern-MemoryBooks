@@ -1,5 +1,123 @@
 // utils.js - Shared utilities for STMemoryBooks
 const MODULE_NAME = 'STMemoryBooks-Utils';
+const $ = window.jQuery;
+
+// Centralized DOM selectors
+const SELECTORS = {
+    extensionsMenu: '#extensionsMenu .list-group',
+    menuItem: '#stmb-menu-item',
+    chatContainer: '#chat',
+    // API and model selectors for profile settings
+    mainApi: '#main_api',
+    completionSource: '#chat_completion_source',
+    modelOpenai: '#model_openai_select',
+    modelClaude: '#model_claude_select',
+    modelWindowai: '#model_windowai_select',
+    modelOpenrouter: '#model_openrouter_select',
+    modelAi21: '#model_ai21_select',
+    modelScale: '#model_scale_select',
+    modelGoogle: '#model_google_select',
+    modelMistralai: '#model_mistralai_select',
+    customModelId: '#custom_model_id',
+    modelCustomSelect: '#model_custom_select',
+    modelCohere: '#model_cohere_select',
+    modelPerplexity: '#model_perplexity_select',
+    modelGroq: '#model_groq_select',
+    model01ai: '#model_01ai_select',
+    modelNanogpt: '#model_nanogpt_select',
+    modelDeepseek: '#model_deepseek_select',
+    modelBlockentropy: '#model_blockentropy_select',
+    tempOpenai: '#temp_openai',
+    tempCounterOpenai: '#temp_counter_openai'
+};
+
+/**
+ * Get current API and completion source information
+ */
+function getCurrentApiInfo() {
+    try {
+        let api = 'unknown';
+        let model = 'unknown';
+        let completionSource = 'unknown';
+
+        if (typeof window.getGeneratingApi === 'function') {
+            api = window.getGeneratingApi();
+        } else {
+            api = $(SELECTORS.mainApi).val() || 'unknown';
+        }
+
+        if (typeof window.getGeneratingModel === 'function') {
+            model = window.getGeneratingModel();
+        }
+
+        completionSource = $(SELECTORS.completionSource).val() || api;
+
+        return { api, model, completionSource };
+    } catch (e) {
+        console.warn('STMemoryBooks: Error getting API info:', e);
+        return {
+            api: $(SELECTORS.mainApi).val() || 'unknown',
+            model: 'unknown',
+            completionSource: $(SELECTORS.completionSource).val() || 'unknown'
+        };
+    }
+}
+
+/**
+ * Get the appropriate model and temperature selectors for current completion source
+ */
+function getApiSelectors() {
+    const completionSource = $(SELECTORS.completionSource).val();
+    
+    const modelSelectorMap = {
+        'openai': SELECTORS.modelOpenai,
+        'claude': SELECTORS.modelClaude,
+        'windowai': SELECTORS.modelWindowai,
+        'openrouter': SELECTORS.modelOpenrouter,
+        'ai21': SELECTORS.modelAi21,
+        'scale': SELECTORS.modelScale,
+        'makersuite': SELECTORS.modelGoogle,
+        'mistralai': SELECTORS.modelMistralai,
+        'custom': SELECTORS.customModelId,
+        'cohere': SELECTORS.modelCohere,
+        'perplexity': SELECTORS.modelPerplexity,
+        'groq': SELECTORS.modelGroq,
+        '01ai': SELECTORS.model01ai,
+        'nanogpt': SELECTORS.modelNanogpt,
+        'deepseek': SELECTORS.modelDeepseek,
+        'blockentropy': SELECTORS.modelBlockentropy
+    };
+    
+    return {
+        model: modelSelectorMap[completionSource] || SELECTORS.modelOpenai,
+        temp: SELECTORS.tempOpenai,
+        tempCounter: SELECTORS.tempCounterOpenai
+    };
+}
+
+/**
+ * Get current model and temperature settings
+ */
+export function getCurrentModelSettings() {
+    const apiInfo = getCurrentApiInfo();
+    const selectors = getApiSelectors();
+    
+    let currentModel = '';
+    
+    if (apiInfo.completionSource === 'custom') {
+        currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
+    } else {
+        currentModel = $(selectors.model).val() || '';
+    }
+    
+    const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0.7);
+    
+    return {
+        model: currentModel,
+        temperature: currentTemp,
+        completionSource: apiInfo.completionSource
+    };
+}
 
 /**
  * Preset prompt definitions

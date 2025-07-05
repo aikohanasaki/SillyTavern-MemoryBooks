@@ -49,40 +49,13 @@ import {
     getEffectivePrompt, 
     getPresetPrompt,
     DEFAULT_PROMPT,
-    deepClone
+    deepClone,
+    getCurrentModelSettings,
+    getCurrentApiInfo
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; // <<< Add this line
-
-// Centralized DOM selectors
-const SELECTORS = {
-    extensionsMenu: '#extensionsMenu .list-group',
-    menuItem: '#stmb-menu-item',
-    chatContainer: '#chat',
-    // API and model selectors for profile settings
-    mainApi: '#main_api',
-    completionSource: '#chat_completion_source',
-    modelOpenai: '#model_openai_select',
-    modelClaude: '#model_claude_select',
-    modelWindowai: '#model_windowai_select',
-    modelOpenrouter: '#model_openrouter_select',
-    modelAi21: '#model_ai21_select',
-    modelScale: '#model_scale_select',
-    modelGoogle: '#model_google_select',
-    modelMistralai: '#model_mistralai_select',
-    customModelId: '#custom_model_id',
-    modelCustomSelect: '#model_custom_select',
-    modelCohere: '#model_cohere_select',
-    modelPerplexity: '#model_perplexity_select',
-    modelGroq: '#model_groq_select',
-    model01ai: '#model_01ai_select',
-    modelNanogpt: '#model_nanogpt_select',
-    modelDeepseek: '#model_deepseek_select',
-    modelBlockentropy: '#model_blockentropy_select',
-    tempOpenai: '#temp_openai',
-    tempCounterOpenai: '#temp_counter_openai'
-};
 
 // Default settings structure
 const defaultSettings = {
@@ -121,185 +94,6 @@ function prepareForKeywordDialog(memoryResult) {
             profileUsed: memoryResult.metadata?.profileUsed || 'Unknown'
         }
     };
-}
-
-/**
- * Get current API and completion source information
- */
-function getCurrentApiInfo() {
-    try {
-        let api = 'unknown';
-        let model = 'unknown';
-        let completionSource = 'unknown';
-
-        if (typeof window.getGeneratingApi === 'function') {
-            api = window.getGeneratingApi();
-        } else {
-            api = $(SELECTORS.mainApi).val() || 'unknown';
-        }
-
-        if (typeof window.getGeneratingModel === 'function') {
-            model = window.getGeneratingModel();
-        }
-
-        completionSource = $(SELECTORS.completionSource).val() || api;
-
-        return { api, model, completionSource };
-    } catch (e) {
-        console.warn('STMemoryBooks: Error getting API info:', e);
-        return {
-            api: $(SELECTORS.mainApi).val() || 'unknown',
-            model: 'unknown',
-            completionSource: $(SELECTORS.completionSource).val() || 'unknown'
-        };
-    }
-}
-
-/**
- * Get the appropriate model and temperature selectors for current completion source
- */
-function getApiSelectors() {
-    const completionSource = $(SELECTORS.completionSource).val();
-    
-    const modelSelectorMap = {
-        'openai': SELECTORS.modelOpenai,
-        'claude': SELECTORS.modelClaude,
-        'windowai': SELECTORS.modelWindowai,
-        'openrouter': SELECTORS.modelOpenrouter,
-        'ai21': SELECTORS.modelAi21,
-        'scale': SELECTORS.modelScale,
-        'makersuite': SELECTORS.modelGoogle,
-        'mistralai': SELECTORS.modelMistralai,
-        'custom': SELECTORS.customModelId,
-        'cohere': SELECTORS.modelCohere,
-        'perplexity': SELECTORS.modelPerplexity,
-        'groq': SELECTORS.modelGroq,
-        '01ai': SELECTORS.model01ai,
-        'nanogpt': SELECTORS.modelNanogpt,
-        'deepseek': SELECTORS.modelDeepseek,
-        'blockentropy': SELECTORS.modelBlockentropy
-    };
-    
-    return {
-        model: modelSelectorMap[completionSource] || SELECTORS.modelOpenai,
-        temp: SELECTORS.tempOpenai,
-        tempCounter: SELECTORS.tempCounterOpenai
-    };
-}
-
-/**
- * Get current model and temperature settings
- */
-export function getCurrentModelSettings() {
-    const apiInfo = getCurrentApiInfo();
-    const selectors = getApiSelectors();
-    
-    let currentModel = '';
-    
-    if (apiInfo.completionSource === 'custom') {
-        currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
-    } else {
-        currentModel = $(selectors.model).val() || '';
-    }
-    
-    const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0.7);
-    
-    return {
-        model: currentModel,
-        temperature: currentTemp,
-        completionSource: apiInfo.completionSource
-    };
-}
-
-/**
- * Apply model and temperature settings temporarily
- */
-function applyProfileSettings(profile) {
-    if (!profile?.connection) {
-        console.log('STMemoryBooks: No connection settings in profile');
-        return null;
-    }
-    
-    const originalSettings = getCurrentModelSettings();
-    console.log('STMemoryBooks: Stored original settings:', originalSettings);
-    
-    const selectors = getApiSelectors();
-    const apiInfo = getCurrentApiInfo();
-    
-    try {
-        if (profile.connection.model) {
-            if (apiInfo.completionSource === 'custom') {
-                if ($(SELECTORS.customModelId).length) {
-                    $(SELECTORS.customModelId).val(profile.connection.model).trigger('change');
-                }
-                if ($(SELECTORS.modelCustomSelect).length) {
-                    $(SELECTORS.modelCustomSelect).val(profile.connection.model).trigger('change');
-                }
-            } else {
-                if ($(selectors.model).length) {
-                    $(selectors.model).val(profile.connection.model).trigger('change');
-                }
-            }
-            console.log(`STMemoryBooks: Applied model: ${profile.connection.model}`);
-        }
-
-        if (typeof profile.connection.temperature === 'number') {
-            if ($(selectors.temp).length) {
-                $(selectors.temp).val(profile.connection.temperature).trigger('input');
-            }
-            if ($(selectors.tempCounter).length) {
-                $(selectors.tempCounter).val(profile.connection.temperature).trigger('input');
-            }
-            console.log(`STMemoryBooks: Applied temperature: ${profile.connection.temperature}`);
-        }
-        
-        return originalSettings;
-    } catch (error) {
-        console.error('STMemoryBooks: Error applying profile settings:', error);
-        return originalSettings;
-    }
-}
-
-/**
- * Restore original model and temperature settings
- */
-function restoreOriginalSettings(originalSettings) {
-    if (!originalSettings) {
-        console.log('STMemoryBooks: No original settings to restore');
-        return;
-    }
-    
-    const selectors = getApiSelectors();
-    
-    try {
-        if (originalSettings.model) {
-            if (originalSettings.completionSource === 'custom') {
-                if ($(SELECTORS.customModelId).length) {
-                    $(SELECTORS.customModelId).val(originalSettings.model).trigger('change');
-                }
-                if ($(SELECTORS.modelCustomSelect).length) {
-                    $(SELECTORS.modelCustomSelect).val(originalSettings.model).trigger('change');
-                }
-            } else {
-                if ($(selectors.model).length) {
-                    $(selectors.model).val(originalSettings.model).trigger('change');
-                }
-            }
-            console.log(`STMemoryBooks: Restored model: ${originalSettings.model}`);
-        }
-
-        if (typeof originalSettings.temperature === 'number') {
-            if ($(selectors.temp).length) {
-                $(selectors.temp).val(originalSettings.temperature).trigger('input');
-            }
-            if ($(selectors.tempCounter).length) {
-                $(selectors.tempCounter).val(originalSettings.temperature).trigger('input');
-            }
-            console.log(`STMemoryBooks: Restored temperature: ${originalSettings.temperature}`);
-        }
-    } catch (error) {
-        console.error('STMemoryBooks: Error restoring original settings:', error);
-    }
 }
 
 /**
@@ -450,8 +244,6 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation) {
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     
-    let originalSettings = null;
-    
     try {
         toastr.info('Compiling scene messages...', 'STMemoryBooks');
         
@@ -491,10 +283,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
         toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
         
-        // Apply profile settings if configured
-        originalSettings = await applyTemporarySettings(profileSettings);
-        
-        // Generate memory
+        // Generate memory (profileSettings now contains all necessary connection info)
         toastr.info('Generating memory with AI...', 'STMemoryBooks');
         const memoryResult = await createMemory(compiledScene, profileSettings, {
             tokenWarningThreshold: tokenThreshold
@@ -518,42 +307,10 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
         }, 1000);
         
-    } finally {
-        // Always restore original settings
-        if (originalSettings) {
-            toastr.info('Restoring original API settings...', 'STMemoryBooks');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            restoreOriginalSettings(originalSettings);
-        }
+    } catch (error) {
+        console.error('STMemoryBooks: Error creating memory:', error);
+        throw error;
     }
-}
-
-/**
- * Apply temporary API settings and return original settings for restoration
- */
-async function applyTemporarySettings(profileSettings) {
-    if (!profileSettings?.effectiveConnection?.model && 
-        profileSettings?.effectiveConnection?.temperature === undefined) {
-        return null;
-    }
-    
-    const settingsApplied = [];
-    if (profileSettings.effectiveConnection.model) {
-        settingsApplied.push(`model: ${profileSettings.effectiveConnection.model}`);
-    }
-    if (profileSettings.effectiveConnection.temperature !== undefined) {
-        settingsApplied.push(`temp: ${profileSettings.effectiveConnection.temperature}`);
-    }
-    
-    toastr.info(`Applying settings (${settingsApplied.join(', ')})...`, 'STMemoryBooks');
-    
-    const tempProfile = { connection: profileSettings.effectiveConnection };
-    const originalSettings = applyProfileSettings(tempProfile);
-    
-    // Wait for settings to take effect
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    return originalSettings;
 }
 
 /**
