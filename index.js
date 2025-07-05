@@ -692,8 +692,10 @@ async function showSettingsPopup() {
     
     try {
         currentPopupInstance = new Popup(`<h3>📕 Memory Book Settings</h3>${content}`, POPUP_TYPE.TEXT, '', popupOptions);
-        await currentPopupInstance.show();
+        // Attach listeners while the popup is in memory but before it is displayed.
         setupSettingsEventListeners();
+        // Now, show the popup and wait for the user to close it.
+        await currentPopupInstance.show();
     } catch (error) {
         console.error('STMemoryBooks: Error showing settings popup:', error);
         currentPopupInstance = null;

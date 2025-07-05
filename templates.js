@@ -74,13 +74,13 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <h5>Memory Title Format:</h5>
             <select id="stmb-title-format-select" class="text_pole">
                 {{#each titleFormats}}
-                <option value="{{this}}" {{#if isSelected}}selected{{/if}}>{{this}}</option>
+                <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
                 {{/each}}
                 <option value="custom">Custom Title Format...</option>
             </select>
             <input type="text" id="stmb-custom-title-format" class="text_pole marginTop5 {{#unless showCustomInput}}displayNone{{/unless}}" 
                 placeholder="Enter custom format" value="{{titleFormat}}">
-            <small class="opacity50p">Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}</small>
+            <small class="opacity50p">Use [0], [00], [000] for auto-numbering. Available: \{{title}}, \{{scene}}, \{{char}}, \{{user}}, \{{messages}}, \{{profile}}, \{{date}}, \{{time}}</small>
         </div>
         
         <div class="world_entry_form_control">

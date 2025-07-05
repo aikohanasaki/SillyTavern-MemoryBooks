@@ -131,10 +131,10 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
             ]
         });
         
-        const result = await popup.show();
-        
-        // Set up event listeners after popup is shown
+        // Set up event listeners BEFORE popup is shown
         setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfile, chat_metadata);
+        
+        const result = await popup.show();
         
         // Handle different results
         if (result === POPUP_RESULT.AFFIRMATIVE) {
@@ -409,9 +409,9 @@ export async function showKeywordSelectionPopup(preparedResult) {
             onClose: () => resolve(null)
         });
         
-        popup.show().then(() => {
-            setupKeywordSelectionEventListeners(popup, resolve);
-        });
+        // Attach event listeners synchronously before showing the popup
+        setupKeywordSelectionEventListeners(popup, resolve);
+        popup.show();
     });
 }
 
