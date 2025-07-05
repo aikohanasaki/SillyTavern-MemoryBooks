@@ -54,6 +54,7 @@ import {
     getCurrentApiInfo,
     SELECTORS
 } from './utils.js';
+import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; // <<< Add this line
@@ -308,9 +309,27 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
         }, 1000);
         
-    } catch (error) {
+} catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
-        throw error;
+        
+        // Provide specific error messages for tool calling issues
+        if (error.message.includes('Tool calling is not supported')) {
+            toastr.error('Function calling must be enabled in OpenAI settings for memory creation to work.', 'STMemoryBooks', {
+                timeOut: 10000,
+                onclick: () => {
+                    // Could potentially open settings or provide more guidance
+                    toastr.info('Go to OpenAI Settings → Advanced → Enable Function Calling', 'STMemoryBooks', { timeOut: 15000 });
+                }
+            });
+        } else if (error.message.includes('AI did not call the createMemory tool')) {
+            toastr.error('AI model did not use the memory creation tool. This may indicate your model does not support function calling properly.', 'STMemoryBooks', {
+                timeOut: 8000
+            });
+        } else {
+            toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
+        }
+    } finally {
+        isProcessingMemory = false;
     }
 }
 
@@ -775,6 +794,45 @@ function handleSceneMemoryCommand(args) {
 }
 
 /**
+ * Register the createMemory tool
+ */
+function registerMemoryTool() {
+    console.log('STMemoryBooks: Registering createMemory tool');
+    
+    ToolManager.registerFunctionTool({
+        name: 'createMemory',
+        displayName: 'Create Memory',
+        description: 'Create a structured memory summary from the current conversation scene. Extract key plot points, character interactions, and important details.',
+        parameters: {
+            type: 'object',
+            properties: {
+                memory_content: {
+                    type: 'string',
+                    description: 'The main memory content - a detailed summary of the scene'
+                },
+                title: {
+                    type: 'string',
+                    description: 'A short, descriptive title for the memory (1-3 words)'
+                },
+                keywords: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Array of 3-8 keywords that would help find this memory later',
+                    maxItems: 8
+                }
+            },
+            required: ['memory_content']
+        },
+        action: (params) => {
+            // Store the tool result for pickup by the memory creation process
+            window.STMemoryBooks_toolResult = params;
+            return JSON.stringify({ success: true, received: true });
+        },
+        stealth: true  // Prevents chat output and follow-up generation
+    });
+}
+
+/**
  * Register slash commands using proper SlashCommand classes
  */
 function registerSlashCommands() {
@@ -884,6 +942,15 @@ async function init() {
     
     // Setup event listeners
     setupEventListeners();
+
+    // Check if tool calling is supported
+    if (!ToolManager.isToolCallingSupported()) {
+        console.error('STMemoryBooks: Tool calling is not supported with current settings');
+        throw new Error('STMemoryBooks requires function calling to be enabled. Please enable function calling in your OpenAI settings.');
+    }
+
+    // Register our stealth tool
+    registerMemoryTool();
     
     // Register slash commands
     registerSlashCommands();

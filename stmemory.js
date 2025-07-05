@@ -30,32 +30,32 @@ class InvalidProfileError extends Error {
 }
 
 /**
- * Creates a memory from a compiled scene using an AI model.
+ * Creates a memory from a compiled scene using an AI model with tool calling.
  * This is the main entry point for this module.
  *
- * @param {Object} compiledScene - Scene data from chatcompile.js. Conforms to the data contract in the spec.
- * @param {Object} profile - The user-selected memory generation profile from settings.
- * @param {Object} options - Additional generation options.
- * @param {number} options.tokenWarningThreshold - Token threshold for warnings (default: 30000).
- * @returns {Promise<Object>} The generated memory result, ready for lorebook insertion.
- * @throws {TokenWarningError} If the estimated token count exceeds the warning threshold.
- * @throws {InvalidProfileError} If the provided profile is incomplete.
- * @throws {AIResponseError} If the AI fails to generate a valid response.
- * @throws {Error} For other general failures.
+ * @param {Object} compiledScene - Scene data from chatcompile.js
+ * @param {Object} profile - The user-selected memory generation profile from settings
+ * @param {Object} options - Additional generation options
+ * @param {number} options.tokenWarningThreshold - Token threshold for warnings (default: 30000)
+ * @returns {Promise<Object>} The generated memory result, ready for lorebook insertion
+ * @throws {TokenWarningError} If the estimated token count exceeds the warning threshold
+ * @throws {InvalidProfileError} If the provided profile is incomplete
+ * @throws {AIResponseError} If the AI fails to generate a valid response
+ * @throws {Error} For other general failures
  */
 export async function createMemory(compiledScene, profile, options = {}) {
-    console.log(`${MODULE_NAME}: Starting memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
+    console.log(`${MODULE_NAME}: Starting tool-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
     
     try {
-        // 1. Validate inputs as per the spec
+        // 1. Validate inputs
         validateInputs(compiledScene, profile);
         
-        // 2. Build the complete prompt for the AI using utils.js preset system
+        // 2. Build the complete prompt for the AI
         const promptString = await buildPrompt(compiledScene, profile);
         
-        // 3. Token estimation and warning flow as required by the spec
+        // 3. Token estimation and warning flow
         const tokenEstimate = await estimateTokenUsage(promptString);
-        console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total} (input: ${tokenEstimate.input}, output: ${tokenEstimate.output})`);
+        console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total}`);
         
         const tokenWarningThreshold = options.tokenWarningThreshold || 30000;
         if (tokenEstimate.total > tokenWarningThreshold) {
@@ -65,31 +65,27 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        // 4. Generate memory using SillyTavern's AI interface
-        const aiResponse = await generateMemoryWithAI(promptString, profile);
+        // 4. Generate memory using tool calling
+        const toolResult = await generateMemoryWithAI(promptString, profile);
         
-        // 5. Process and validate the AI's response (including keyword parsing and title extraction)
-        const processedMemory = processAIResponse(aiResponse, compiledScene);
+        // 5. Process the structured tool result
+        const processedMemory = processToolResult(toolResult, compiledScene);
         
         // Check if keywords need user intervention
         if (processedMemory.needsKeywordGeneration) {
             console.log(`${MODULE_NAME}: Keywords need user intervention`);
             
-            // Return special result for keyword generation flow
-            const keywordPromptResult = {
+            return {
                 content: processedMemory.content,
                 extractedTitle: processedMemory.extractedTitle,
                 compiledScene: compiledScene,
                 profile: profile,
                 needsKeywordGeneration: true,
-                tokenUsage: tokenEstimate,
-                formattedContent: null // Will be populated by addlore.js formatting
+                tokenUsage: tokenEstimate
             };
-            
-            return keywordPromptResult;
         }
         
-        // 6. Create the final memory object, structured for the lorebook
+        // 6. Create the final memory object
         const memoryResult = {
             content: processedMemory.content,
             extractedTitle: processedMemory.extractedTitle,
@@ -103,6 +99,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',
                 tokenUsage: tokenEstimate,
+                generationMethod: 'tool-calling',
                 version: '1.0'
             },
             suggestedKeys: processedMemory.suggestedKeys,
@@ -124,11 +121,11 @@ export async function createMemory(compiledScene, profile, options = {}) {
             }
         };
         
-        console.log(`${MODULE_NAME}: Memory creation completed successfully`);
+        console.log(`${MODULE_NAME}: Tool-based memory creation completed successfully`);
         return memoryResult;
         
     } catch (error) {
-        // Re-throw specific errors to be handled by the UI layer (index.js)
+        // Re-throw specific errors to be handled by the UI layer
         if (error instanceof TokenWarningError || error instanceof AIResponseError || error instanceof InvalidProfileError) {
             throw error;
         }
@@ -259,302 +256,102 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates the memory by calling the AI with self-contained, profile-specific settings.
+ * Generates the memory by calling the AI with tool calling.
+ * The AI will use the createMemory tool instead of generating free-form text.
  *
  * @private
  * @param {string} promptString - The full prompt for the AI.
  * @param {Object} profile - The user-selected profile containing connection settings.
- * @returns {Promise<string>} The raw text response from the AI.
- * @throws {AIResponseError} If the AI generation fails or returns an empty response.
+ * @returns {Promise<Object>} The structured memory result from the tool call.
+ * @throws {AIResponseError} If the AI generation fails or doesn't call our tool.
  */
 async function generateMemoryWithAI(promptString, profile) {
-    const profileInfo = profile.preset ? `preset: ${profile.preset}` : `profile: ${profile.name}`;
-    console.log(`${MODULE_NAME}: Generating memory with direct API call using ${profileInfo}`);
+    console.log(`${MODULE_NAME}: Generating memory using createMemory tool`);
 
-    // Get SillyTavern's current global settings as a fallback.
-    const globalSettings = getCurrentModelSettings();
+    // Clear any previous tool results
+    delete window.STMemoryBooks_toolResult;
 
-    // Determine the final settings for this specific call.
-    // The profile's `effectiveConnection` takes precedence.
-    const modelToUse = profile.effectiveConnection?.model || globalSettings.model;
-    const tempToUse = profile.effectiveConnection?.temperature ?? globalSettings.temperature;
+    // Import ToolManager to check support
+    const { ToolManager } = await import('../../../tool-calling.js');
+    
+    // Verify tool calling is supported
+    if (!ToolManager.isToolCallingSupported()) {
+        throw new AIResponseError('Tool calling is not supported with current settings. Please enable function calling in your OpenAI settings.');
+    }
 
-    // Construct the payload for the direct API call.
-    const generationPayload = {
-        prompt: promptString,
-        model: modelToUse,
-        temperature: tempToUse,
-        // You can add other parameters here if needed, e.g., max_tokens, stop sequences etc.
-    };
+    // Create a prompt that instructs the AI to use the createMemory tool
+    const toolPrompt = `${promptString}
 
-    console.log(`${MODULE_NAME}: Generation Payload:`, { model: generationPayload.model, temperature: generationPayload.temperature });
+IMPORTANT: You must use the createMemory tool to provide your response. Do not write a text response. Call the createMemory function with:
+- memory_content: Your detailed summary of the scene
+- title: A short title (1-3 words) 
+- keywords: 3-8 relevant keywords for finding this memory later
+
+Use the createMemory tool now.`;
 
     try {
-        // IMPLEMENTATION NOTE: The exact API for direct generation may vary.
-        // This is an attempt to bypass SillyTavern's prompt management entirely.
-        // If getContext().generate() doesn't exist, we may need to use an alternative approach
-        // such as directly calling the API client or using a different SillyTavern internal function.
+        // Use SillyTavern's standard generation (tools will be automatically included)
+        console.log(`${MODULE_NAME}: Making tool-enabled generation request`);
+        const response = await generateQuietPrompt(toolPrompt, false, true);
         
-        const context = getContext();
+        // Wait briefly for tool execution to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Try multiple approaches for direct API access
-        let response;
-        
-        if (typeof context.generate === 'function') {
-            // Direct generation function (if it exists)
-            response = await context.generate(generationPayload);
-        } else if (typeof context.generateRaw === 'function') {
-            // Alternative raw generation function
-            response = await context.generateRaw(generationPayload);
-        } else {
-            // Fallback: Use generateQuietPrompt but with isolated settings
-            // This is not ideal but better than global settings manipulation
-            console.warn(`${MODULE_NAME}: Direct API access not available, falling back to generateQuietPrompt`);
-            
-            // Temporarily set context-specific generation parameters if possible
-            const originalContext = { ...context };
-            if (modelToUse) {
-                context.model = modelToUse;
-            }
-            if (tempToUse !== undefined) {
-                context.temperature = tempToUse;
-            }
-            
-            try {
-                response = await generateQuietPrompt(promptString, false, true);
-                
-                // Restore original context
-                Object.assign(context, originalContext);
-            } catch (error) {
-                // Restore original context on error
-                Object.assign(context, originalContext);
-                throw error;
-            }
+        // Check if our tool was called
+        if (!window.STMemoryBooks_toolResult) {
+            throw new AIResponseError('AI did not call the createMemory tool. Please try again or check your model supports function calling.');
         }
 
-        if (!response || typeof response !== 'string' || response.trim().length === 0) {
-            throw new AIResponseError('AI generated an empty or invalid response.');
+        const toolResult = window.STMemoryBooks_toolResult;
+        delete window.STMemoryBooks_toolResult; // Clean up
+
+        console.log(`${MODULE_NAME}: Received structured memory from createMemory tool:`, toolResult);
+
+        // Validate the tool result
+        if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string') {
+            throw new AIResponseError('Invalid tool result: missing or invalid memory_content');
         }
 
-        console.log(`${MODULE_NAME}: AI generation successful (${response.length} characters)`);
-        return response.trim();
+        if (toolResult.memory_content.trim().length < 10) {
+            throw new AIResponseError('Generated memory content is too short');
+        }
+
+        // Return structured result
+        return {
+            content: toolResult.memory_content.trim(),
+            title: toolResult.title || 'Memory',
+            keywords: Array.isArray(toolResult.keywords) ? toolResult.keywords : []
+        };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Direct AI generation failed:`, error);
-        if (error instanceof AIResponseError) throw error;
-        throw new AIResponseError(`AI generation failed: ${error.message}`);
+        console.error(`${MODULE_NAME}: Tool-based memory generation failed:`, error);
+        
+        if (error instanceof AIResponseError) {
+            throw error;
+        }
+        
+        throw new AIResponseError(`Memory generation failed: ${error.message}`);
     }
 }
 
 /**
- * Cleans the raw AI response and extracts memory content, keywords, and title.
- * As per spec: "This requires the stmemory.js script to parse the AI's response 
- * to separate the main memory content from the list of keywords provided by the AI."
+ * Process the structured result from the createMemory tool
  * @private
- * @param {string} aiResponse - The raw response from the AI.
- * @param {Object} compiledScene - The original compiled scene for context.
- * @returns {{content: string, extractedTitle: string, suggestedKeys: Array<string>}} An object with the cleaned content, title, and keys.
- * @throws {AIResponseError} If the processed memory is too short.
+ * @param {Object} toolResult - The structured result from createMemory tool
+ * @param {Object} compiledScene - The original compiled scene for context
+ * @returns {Object} Processed memory data
  */
-function processAIResponse(aiResponse, compiledScene) {
-    // Extract title from AI response
-    const extractedTitle = extractTitleFromResponse(aiResponse);
+function processToolResult(toolResult, compiledScene) {
+    const { content, title, keywords } = toolResult;
     
-    // Remove common conversational prefixes from the AI response
-    const prefixes = /^(here is the|here's a|the memory is:|memory:|summary:|assistant:)\s*/i;
-    let cleanedResponse = aiResponse.trim().replace(prefixes, '').trim();
-    
-    // Remove title lines from the content if they exist
-    cleanedResponse = removeTitleLinesFromContent(cleanedResponse);
-    
-    // Parse keywords from AI response if present
-    let content = cleanedResponse;
-    let extractedKeys = [];
-    
-    // Look for keyword patterns as specified in the sophisticated presets
-    const keywordPatterns = [
-        /Keywords?\s*:\s*(.+?)(?:\n|$)/i,
-        /Key\s+topics?\s*:\s*(.+?)(?:\n|$)/i,
-        /Important\s+keywords?\s*:\s*(.+?)(?:\n|$)/i,
-        /Relevant\s+keywords?\s*:\s*(.+?)(?:\n|$)/i,
-        /Tags?\s*:\s*(.+?)(?:\n|$)/i,
-        // Handle end-of-response patterns for sophisticated prompts
-        /\n\s*(.+?(?:,\s*.+?){2,})\s*$/i // Match comma-separated list at end
-    ];
-    
-    for (const pattern of keywordPatterns) {
-        const match = cleanedResponse.match(pattern);
-        if (match) {
-            const keywordString = match[1].trim();
-            // Split by comma and clean up each keyword
-            extractedKeys = keywordString.split(',')
-                .map(key => key.trim())
-                .filter(key => key.length > 0 && key.length <= 25) // Reasonable length limits
-                .slice(0, 8); // Limit to 8 keywords max
-            
-            // Remove the keyword line from the content
-            content = cleanedResponse.replace(pattern, '').trim();
-            console.log(`${MODULE_NAME}: Extracted ${extractedKeys.length} keywords from AI response:`, extractedKeys);
-            break;
-        }
-    }
-    
-    // Collapse excessive newlines to a maximum of two
-    content = content.replace(/\n{3,}/g, '\n\n');
-    
-    if (content.length < 15) {
-        throw new AIResponseError('Processed AI memory is too short or empty.');
-    }
-    
-    // If no keywords were extracted from AI response, flag for user choice
-    if (extractedKeys.length === 0) {
-        console.log(`${MODULE_NAME}: No keywords found in AI response, will prompt user for options`);
-        extractedKeys = null; // Signal that keywords need user intervention
-    }
-    
-    console.log(`${MODULE_NAME}: Extracted title: "${extractedTitle}"`);
+    console.log(`${MODULE_NAME}: Processing structured tool result - Content: ${content.length} chars, Keywords: ${keywords.length}`);
     
     return {
         content: content,
-        extractedTitle: extractedTitle,
-        suggestedKeys: extractedKeys,
-        needsKeywordGeneration: extractedKeys === null
+        extractedTitle: title || 'Memory',
+        suggestedKeys: keywords && keywords.length > 0 ? keywords : null,
+        needsKeywordGeneration: !keywords || keywords.length === 0
     };
-}
-
-/**
- * Extracts title from AI response using various patterns
- * @private
- * @param {string} aiResponse - The raw AI response
- * @returns {string} Extracted title or default fallback
- */
-function extractTitleFromResponse(aiResponse) {
-    // Common title patterns to look for
-    const titlePatterns = [
-        /^title:\s*(.+?)$/mi,                          // "Title: Something"
-        /^#\s+(.+?)$/mi,                               // "# Heading"
-        /^\*\*(.+?)\*\*$/mi,                           // "**Bold Title**"
-        /^(.+?)\s*\n[-=]{3,}/mi,                       // "Title\n---" or "Title\n==="
-        /^\d+\.\s*(.+?)$/mi,                           // "1. Title" (first numbered item)
-        /^(.+?):$/mi,                                  // "Title:" (standalone line ending with colon)
-    ];
-    
-    // Try each pattern
-    for (const pattern of titlePatterns) {
-        const match = aiResponse.match(pattern);
-        if (match && match[1]) {
-            let title = match[1].trim();
-            // Clean up the title
-            title = title.replace(/[*_~`]/g, ''); // Remove markdown formatting
-            title = title.replace(/^\d+\.\s*/, ''); // Remove leading numbers
-            if (title.length > 3 && title.length <= 50) {
-                return title;
-            }
-        }
-    }
-    
-    // If no explicit title pattern found, try to extract from first line
-    const lines = aiResponse.split('\n').filter(line => line.trim().length > 0);
-    if (lines.length > 0) {
-        let firstLine = lines[0].trim();
-        
-        // Clean up first line and check if it looks like a title
-        firstLine = firstLine.replace(/^(here is the|here's a|the memory is:|memory:|summary:|assistant:)\s*/i, '');
-        firstLine = firstLine.replace(/[*_~`]/g, ''); // Remove markdown
-        firstLine = firstLine.replace(/^\d+\.\s*/, ''); // Remove numbers
-        
-        // If first line is short and doesn't end with sentence punctuation, likely a title
-        if (firstLine.length > 3 && firstLine.length <= 50 && !/[.!?]$/.test(firstLine)) {
-            return firstLine;
-        }
-        
-        // Check if first line contains key title words
-        const titleWords = ['memory', 'scene', 'summary', 'chapter', 'part', 'event', 'encounter'];
-        const hasTitle = titleWords.some(word => firstLine.toLowerCase().includes(word));
-        if (hasTitle && firstLine.length <= 50) {
-            return firstLine;
-        }
-    }
-    
-    // Fallback: generate a basic title from content
-    return generateFallbackTitle(aiResponse);
-}
-
-/**
- * Generates a fallback title from content
- * @private
- * @param {string} content - The AI response content
- * @returns {string} Generated fallback title
- */
-function generateFallbackTitle(content) {
-    // Look for key events or characters mentioned
-    const sentences = content.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
-    
-    if (sentences.length > 0) {
-        const firstSentence = sentences[0];
-        
-        // Extract key words that might indicate the topic
-        const keyWords = firstSentence.match(/\b[A-Z][a-z]+\b/g) || [];
-        const actionWords = firstSentence.match(/\b(talk|discuss|meet|fight|discover|learn|visit|leave|arrive|decide)\w*\b/gi) || [];
-        
-        if (keyWords.length > 0 || actionWords.length > 0) {
-            const titleParts = [...new Set([...keyWords.slice(0, 2), ...actionWords.slice(0, 1)])];
-            if (titleParts.length > 0) {
-                return titleParts.join(' ') + ' Scene';
-            }
-        }
-        
-        // If first sentence is short enough, use part of it
-        if (firstSentence.length <= 40) {
-            return firstSentence.replace(/^(the|a|an)\s+/i, '');
-        }
-    }
-    
-    return 'Memory Scene';
-}
-
-/**
- * Removes title lines from content to avoid duplication
- * @private
- * @param {string} content - Content that may contain title lines
- * @returns {string} Content with title lines removed
- */
-function removeTitleLinesFromContent(content) {
-    const lines = content.split('\n');
-    const cleanedLines = [];
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        // Skip lines that look like titles
-        if (i === 0 && line.length <= 50 && !line.includes('.') && !line.includes(',')) {
-            // First line looks like a title, skip it
-            continue;
-        }
-        
-        // Skip markdown headers
-        if (/^#+\s/.test(line)) {
-            continue;
-        }
-        
-        // Skip lines that are just "Title:" format
-        if (/^title:\s*(.+?)$/i.test(line)) {
-            continue;
-        }
-        
-        // Skip underlined titles
-        if (i > 0 && /^[-=]{3,}$/.test(line) && lines[i-1] && lines[i-1].trim().length <= 50) {
-            // Remove the previous line too (it was the title)
-            if (cleanedLines.length > 0) {
-                cleanedLines.pop();
-            }
-            continue;
-        }
-        
-        cleanedLines.push(lines[i]);
-    }
-    
-    return cleanedLines.join('\n').trim();
 }
 
 /**
@@ -697,30 +494,34 @@ export async function completeMemoryWithKeywords(keywordPromptResult, method, us
  * @private
  */
 async function generateKeywordsWithAI(compiledScene, profile) {
-    console.log(`${MODULE_NAME}: Generating keywords using AI with keywords preset`);
+    console.log(`${MODULE_NAME}: Generating keywords using createMemory tool with keywords-only prompt`);
     
     try {
-        // Create a temporary profile with keywords preset
-        const keywordsProfile = {
-            ...profile,
-            preset: 'keywords'
-        };
+        // Create a keywords-focused prompt
+        const keywordsPrompt = `Based on this scene, generate only keywords for a vectorized database.
         
-        // Build prompt using keywords preset from utils.js
-        const promptString = await buildPrompt(compiledScene, keywordsProfile);
+${formatSceneForAI(compiledScene.messages, compiledScene.metadata)}
+
+Generate 3-8 keywords that would help find this scene later. Use the createMemory tool with only the keywords field filled - leave memory_content as "keywords only".`;
+
+        // Clear any previous results
+        delete window.STMemoryBooks_toolResult;
         
-        // Generate keywords with AI
-        const aiResponse = await generateMemoryWithAI(promptString, keywordsProfile);
+        // Make the tool call
+        await generateQuietPrompt(keywordsPrompt, false, true);
+        await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Parse keywords from response
-        const keywordString = aiResponse.trim();
-        const keywords = keywordString.split(',')
-            .map(key => key.trim())
-            .filter(key => key.length > 0 && key.length <= 25)
-            .slice(0, 8);
+        if (!window.STMemoryBooks_toolResult) {
+            throw new Error('AI did not call createMemory tool for keywords');
+        }
+        
+        const result = window.STMemoryBooks_toolResult;
+        delete window.STMemoryBooks_toolResult;
+        
+        const keywords = Array.isArray(result.keywords) ? result.keywords : [];
         
         if (keywords.length === 0) {
-            throw new Error('AI generated no valid keywords');
+            throw new Error('AI generated no keywords');
         }
         
         console.log(`${MODULE_NAME}: AI generated ${keywords.length} keywords:`, keywords);
@@ -729,8 +530,10 @@ async function generateKeywordsWithAI(compiledScene, profile) {
     } catch (error) {
         console.error(`${MODULE_NAME}: AI keyword generation failed:`, error);
         // Fallback to ST generation if AI fails
-        console.log(`${MODULE_NAME}: Falling back to ST keyword generation`);
-        return generateFallbackKeys(compiledScene.messages.map(m => m.mes).join(' '), compiledScene.metadata.characterName);
+        return generateFallbackKeys(
+            compiledScene.messages.map(m => m.mes).join(' '), 
+            compiledScene.metadata.characterName
+        );
     }
 }
 
