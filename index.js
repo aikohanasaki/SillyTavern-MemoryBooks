@@ -97,9 +97,7 @@ const defaultSettings = {
     profiles: [
         {
             name: "Default",
-            connection: {
-                engine: "openai"
-            },
+            connection: {},
             prompt: DEFAULT_PROMPT
         }
     ],

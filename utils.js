@@ -85,10 +85,6 @@ export function cleanConnectionSettings(connection) {
     
     const cleaned = {};
     
-    if (connection.engine && typeof connection.engine === 'string') {
-        cleaned.engine = connection.engine;
-    }
-    
     if (connection.model && typeof connection.model === 'string' && connection.model.trim()) {
         cleaned.model = connection.model.trim();
     }

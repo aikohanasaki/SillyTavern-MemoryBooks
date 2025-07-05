@@ -360,7 +360,7 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
             name: safeName,
             prompt: effectivePrompt,
             connection: {}
-        };
+        };        
         
         // If not overriding, use selected profile's connection settings
         if (!overrideSettings) {

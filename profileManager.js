@@ -41,33 +41,24 @@ const profileEditTemplate = Handlebars.compile(`
             <h4>Temperature (0.0 - 2.0):</h4>
             <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="Leave blank to use current temperature">
         </label>
-        
-        <small class="opacity50p">Engine setting is for future use - currently uses SillyTavern's active API.</small>
-        <label for="stmb-profile-engine">
-            <h4>Engine (Future Use):</h4>
-            <select id="stmb-profile-engine" class="text_pole" disabled>
-                <option value="openai" {{#if (eq connection.engine 'openai')}}selected{{/if}}>OpenAI</option>
-                <option value="claude" {{#if (eq connection.engine 'claude')}}selected{{/if}}>Claude</option>
-                <option value="custom" {{#if (eq connection.engine 'custom')}}selected{{/if}}>Custom</option>
-            </select>
-        </label>
     </div>
     
     <div class="world_entry_form_control">
-        <label for="stmb-profile-prompt">
-            <h4>Memory Creation Prompt:</h4>
-            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter the prompt for memory creation">{{prompt}}</textarea>
-            <h5>Or leave blank to use a built-in preset selected below.</h5>
-        </label>
-        
         <label for="stmb-profile-preset">
-            <h4>Built-in Preset:</h4>
+            <h4>Memory Creation Method:</h4>
             <select id="stmb-profile-preset" class="text_pole">
-                <option value="">Custom Prompt (use text above)</option>
                 {{#each presetOptions}}
                 <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
                 {{/each}}
+                <option value="" {{#unless preset}}selected{{/unless}}>Custom Prompt...</option>
             </select>
+            <h5>Choose a built-in preset or create a custom prompt.</h5>
+        </label>
+        
+        <label for="stmb-profile-prompt" id="stmb-custom-prompt-section" class="{{#if preset}}displayNone{{/if}}">
+            <h4>Custom Memory Creation Prompt:</h4>
+            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter your custom prompt for memory creation">{{prompt}}</textarea>
+            <h5>This prompt will be used to generate memories from chat scenes.</h5>
         </label>
     </div>
 </div>
