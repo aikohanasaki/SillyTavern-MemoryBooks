@@ -98,25 +98,23 @@ export function getApiSelectors() {
 /**
  * Get current model and temperature settings
  */
-export function getCurrentModelSettings() {
-    const apiInfo = getCurrentApiInfo();
-    const selectors = getApiSelectors();
+function setupEventListeners() {
+    // UI events
+    $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
     
-    let currentModel = '';
+    // SillyTavern events - REMOVED CHARACTER_MESSAGE_RENDERED
+    eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
+    eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
+    eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
+        const settings = initializeSettings();
+        handleMessageDeletion(deletedId, settings);
+    });
+    eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
     
-    if (apiInfo.completionSource === 'custom') {
-        currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
-    } else {
-        currentModel = $(selectors.model).val() || '';
-    }
+    // Add cleanup when page unloads
+    window.addEventListener('beforeunload', cleanupChatObserver);
     
-    const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0.7);
-    
-    return {
-        model: currentModel,
-        temperature: currentTemp,
-        completionSource: apiInfo.completionSource
-    };
+    console.log('STMemoryBooks: Event listeners registered');
 }
 
 /**
@@ -198,7 +196,8 @@ export function validateProfile(profile) {
  */
 export function cleanConnectionSettings(connection) {
     if (!connection || typeof connection !== 'object') {
-        return {};
+        // UPDATED: Default temperature to 0.7
+        return { temperature: 0.7 };
     }
     
     const cleaned = {};
@@ -210,6 +209,9 @@ export function cleanConnectionSettings(connection) {
     if (typeof connection.temperature === 'number' && !isNaN(connection.temperature)) {
         // Clamp temperature to reasonable bounds
         cleaned.temperature = Math.max(0, Math.min(2, connection.temperature));
+    } else {
+        // UPDATED: Default to 0.7 if no valid temperature provided
+        cleaned.temperature = 0.7;
     }
     
     return cleaned;

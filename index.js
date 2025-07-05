@@ -1,4 +1,3 @@
-// This is the corrected code for index.js
 import { 
     eventSource, 
     event_types, 
@@ -57,9 +56,8 @@ import {
 import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks';
-let hasBeenInitialized = false; // <<< Add this line
+let hasBeenInitialized = false; 
 
-// Default settings structure
 const defaultSettings = {
     moduleSettings: {
         alwaysUseDefault: true,
@@ -83,6 +81,94 @@ const defaultSettings = {
 // Current state variables
 let currentPopupInstance = null;
 let isProcessingMemory = false;
+
+// MutationObserver for chat message monitoring
+let chatObserver = null;
+let updateTimeout = null;
+
+/**
+ * Initialize chat observer to watch for new messages
+ */
+function initializeChatObserver() {
+    // Clean up existing observer if any
+    if (chatObserver) {
+        chatObserver.disconnect();
+        chatObserver = null;
+    }
+
+    const chatContainer = document.getElementById('chat');
+    if (!chatContainer) {
+        throw new Error('STMemoryBooks: Chat container not found. SillyTavern DOM structure may have changed.');
+    }
+
+    chatObserver = new MutationObserver((mutations) => {
+        let needsButtonStateUpdate = false;
+        
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                // Only process element nodes
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    try {
+                        // Check if the added node is a message itself
+                        if (node.matches('#chat .mes[mesid]')) {
+                            createSceneButtons(node);
+                            needsButtonStateUpdate = true;
+                        }
+                        // Check if the added node contains messages (for batch loads)
+                        else {
+                            const messageElements = node.querySelectorAll('#chat .mes[mesid]');
+                            if (messageElements.length > 0) {
+                                messageElements.forEach(messageElement => {
+                                    createSceneButtons(messageElement);
+                                });
+                                needsButtonStateUpdate = true;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('STMemoryBooks: Error processing new chat elements:', error);
+                        // Continue processing other nodes rather than failing completely
+                    }
+                }
+            });
+        });
+
+        if (needsButtonStateUpdate) {
+            // Debounce the state update to prevent excessive calls
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(() => {
+                try {
+                    updateAllButtonStates();
+                } catch (error) {
+                    console.error('STMemoryBooks: Error updating button states:', error);
+                }
+            }, 50);
+        }
+    });
+
+    // Start observing the chat container
+    chatObserver.observe(chatContainer, {
+        childList: true,
+        subtree: true 
+    });
+
+    console.log('STMemoryBooks: Chat observer initialized and monitoring for new messages');
+}
+
+/**
+ * Clean up chat observer
+ */
+function cleanupChatObserver() {
+    if (chatObserver) {
+        chatObserver.disconnect();
+        chatObserver = null;
+        console.log('STMemoryBooks: Chat observer disconnected');
+    }
+    
+    if (updateTimeout) {
+        clearTimeout(updateTimeout);
+        updateTimeout = null;
+    }
+}
 
 /**
  * Prepare memory result for keyword selection dialog
@@ -685,57 +771,31 @@ function refreshPopupContent() {
     }
 }
 
-/**
- * FIXED: Ensure chevrons are created on all chat loading scenarios
- */
-function ensureChevronButtonsForAllMessages() {
-    console.log('STMemoryBooks: Ensuring chevron buttons for all messages');
-    const messageElements = document.querySelectorAll('#chat .mes[mesid]');
-    console.log(`STMemoryBooks: Found ${messageElements.length} messages to process`);
-    
-    messageElements.forEach((messageElement, index) => {
-        // Check if chevron buttons already exist
-        const existingStartBtn = messageElement.querySelector('.mes_stmb_start');
-        const existingEndBtn = messageElement.querySelector('.mes_stmb_end');
-        
-        if (!existingStartBtn || !existingEndBtn) {
-            console.log(`STMemoryBooks: Creating missing chevron buttons for message ${index}`);
-            createSceneButtons(messageElement);
-        }
-    });
-}
-
-/**
- * Event handlers - FIXED: Both functions now ensure buttons are created
- */
-function handleMessageRendered(messageId) {
-    const messageElement = document.querySelector(`#chat .mes[mesid="${messageId}"]`);
-    if (messageElement) {
-        createSceneButtons(messageElement);
-        setTimeout(updateAllButtonStates, 100);
-    }
-}
-
 function handleChatChanged() {
-    console.log('STMemoryBooks: Chat changed - creating buttons for all messages');
+    console.log('STMemoryBooks: Chat changed - updating scene state');
     updateSceneStateCache();
     
-    // FIXED: Ensure all messages have chevron buttons when chat changes
     setTimeout(() => {
-        ensureChevronButtonsForAllMessages();
-        updateAllButtonStates();
-    }, 500);
+        try {
+            updateAllButtonStates();
+        } catch (error) {
+            console.error('STMemoryBooks: Error updating button states after chat change:', error);
+        }
+    }, 100);
 }
 
 function handleChatLoaded() {
-    console.log('STMemoryBooks: Chat loaded - creating buttons for all messages');
+    console.log('STMemoryBooks: Chat loaded - updating scene state');
+    updateSceneStateCache();
     
-    // FIXED: Ensure all messages have chevron buttons when chat loads
+    // After chat loads, update button states once DOM is ready
     setTimeout(() => {
-        ensureChevronButtonsForAllMessages();
-        updateSceneStateCache();
-        updateAllButtonStates();
-    }, 1000); 
+        try {
+            updateAllButtonStates();
+        } catch (error) {
+            console.error('STMemoryBooks: Error updating button states after chat load:', error);
+        }
+    }, 200);
 }
 
 function handleMessageReceived() {
@@ -885,8 +945,7 @@ function setupEventListeners() {
     // UI events
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
     
-    // SillyTavern events
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleMessageRendered);
+    // SillyTavern events - REMOVED CHARACTER_MESSAGE_RENDERED
     eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
     eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
     eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
@@ -894,6 +953,9 @@ function setupEventListeners() {
         handleMessageDeletion(deletedId, settings);
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+    
+    // Add cleanup when page unloads
+    window.addEventListener('beforeunload', cleanupChatObserver);
     
     console.log('STMemoryBooks: Event listeners registered');
 }
@@ -937,6 +999,15 @@ async function init() {
     // Initialize scene state
     updateSceneStateCache();
     
+    // Initialize chat observer - NEW
+    try {
+        initializeChatObserver();
+    } catch (error) {
+        console.error('STMemoryBooks: Failed to initialize chat observer:', error);
+        toastr.error('STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.', 'STMemoryBooks');
+        return; // Don't continue initialization if observer fails
+    }
+    
     // Create UI
     createUI();
     
@@ -960,14 +1031,9 @@ async function init() {
         return a === b;
     });
     
-    // Ensure chevron buttons exist on extension load
-    setTimeout(() => {
-        ensureChevronButtonsForAllMessages();
-        updateAllButtonStates();
-    }, 2000);
-    
     console.log('STMemoryBooks: Extension loaded successfully');
 }
+
 
 // Initialize when ready
 $(document).ready(() => {
