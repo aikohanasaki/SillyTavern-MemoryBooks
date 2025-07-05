@@ -94,8 +94,8 @@ export function updateAllButtonStates() {
     
     messageElements.forEach(messageElement => {
         const messageId = parseInt(messageElement.getAttribute('mesid'));
-        const startBtn = messageElement.querySelector('.stmb-start-btn');
-        const endBtn = messageElement.querySelector('.stmb-end-btn');
+        const startBtn = messageElement.querySelector('.mes_stmb_start');
+        const endBtn = messageElement.querySelector('.mes_stmb_end');
         
         if (!startBtn || !endBtn) return;
         
@@ -239,19 +239,19 @@ export function createSceneButtons(messageElement) {
     }
     
     // Check if buttons already exist to prevent duplication
-    if (messageElement.querySelector('.stmb-start-btn')) return;
+    if (messageElement.querySelector('.mes_stmb_start')) return;
     
     // Create start button
     const startButton = document.createElement('div');
     startButton.title = 'Mark Scene Start';
-    startButton.classList.add('stmb-start-btn', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
+    startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
     startButton.setAttribute('tabindex', '0');
     startButton.setAttribute('data-i18n', '[title]Mark Scene Start');
     
     // Create end button
     const endButton = document.createElement('div');
     endButton.title = 'Mark Scene End';
-    endButton.classList.add('stmb-end-btn', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
+    endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
     endButton.setAttribute('tabindex', '0');
     endButton.setAttribute('data-i18n', '[title]Mark Scene End');
     

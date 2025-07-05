@@ -2,73 +2,47 @@
 
 /* --- NECESSARY CUSTOM STYLES (UNIQUE FUNCTIONALITY) --- */
 
-/* Scene marker buttons */
-.stmb-start-btn,
-.stmb-end-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    margin: 2px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    background: rgba(var(--SmartThemeBodyColor), 0.1);
-    color: rgba(var(--SmartThemeBodyColor), 0.6);
-    font-size: 12px;
-}
-
-.stmb-start-btn:hover,
-.stmb-end-btn:hover {
-    background: rgba(var(--SmartThemeBodyColor), 0.15);
-    color: rgba(var(--SmartThemeBodyColor), 0.8);
-    border-color: rgba(var(--SmartThemeBodyColor), 0.2);
-    transform: scale(1.05);
-}
-
 /* Active scene markers */
-.stmb-start-btn.on,
-.stmb-end-btn.on {
+.mes_stmb_start.on,
+.mes_stmb_end.on {
     background: rgba(var(--SmartThemeQuoteColor), 0.8);
     color: var(--SmartThemeBorderColor);
     border-color: var(--SmartThemeQuoteColor);
     box-shadow: 0 0 8px rgba(var(--SmartThemeQuoteColor), 0.3);
 }
 
-.stmb-start-btn.on:hover,
-.stmb-end-btn.on:hover {
+.mes_stmb_start.on:hover,
+.mes_stmb_end.on:hover {
     background: var(--SmartThemeQuoteColor);
     transform: scale(1.1);
 }
 
 /* Valid selection points */
-.stmb-start-btn.valid-start-point,
-.stmb-end-btn.valid-end-point {
+.mes_stmb_start.valid-start-point,
+.mes_stmb_end.valid-end-point {
     background: rgba(var(--SmartThemeEmphasisColor), 0.6);
     color: var(--SmartThemeBorderColor);
     border-color: var(--SmartThemeEmphasisColor);
     animation: pulse 2s infinite;
 }
 
-.stmb-start-btn.valid-start-point:hover,
-.stmb-end-btn.valid-end-point:hover {
+.mes_stmb_start.valid-start-point:hover,
+.mes_stmb_end.valid-end-point:hover {
     background: var(--SmartThemeEmphasisColor);
     animation: none;
     transform: scale(1.1);
 }
 
 /* In-scene range markers */
-.stmb-start-btn.in-scene,
-.stmb-end-btn.in-scene {
+.mes_stmb_start.in-scene,
+.mes_stmb_end.in-scene {
     background: rgba(var(--SmartThemeQuoteColor), 0.4);
     color: rgba(var(--SmartThemeBodyColor), 0.9);
     border-color: rgba(var(--SmartThemeQuoteColor), 0.6);
 }
 
-.stmb-start-btn.in-scene:hover,
-.stmb-end-btn.in-scene:hover {
+.mes_stmb_start.in-scene:hover,
+.mes_stmb_end.in-scene:hover {
     background: rgba(var(--SmartThemeQuoteColor), 0.6);
     transform: scale(1.05);
 }
@@ -180,13 +154,6 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .stmb-start-btn,
-    .stmb-end-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 14px;
-    }
-    
     .stmb-scene-preview {
         font-size: 11px;
         max-height: 200px;
@@ -194,27 +161,27 @@
 }
 
 /* Accessibility improvements */
-.stmb-start-btn:focus,
-.stmb-end-btn:focus {
+.mes_stmb_start:focus,
+.mes_stmb_end:focus {
     outline: 2px solid var(--SmartThemeEmphasisColor);
     outline-offset: 2px;
 }
 
-.stmb-start-btn[aria-pressed="true"],
-.stmb-end-btn[aria-pressed="true"] {
+.mes_stmb_start[aria-pressed="true"],
+.mes_stmb_end[aria-pressed="true"] {
     background: rgba(var(--SmartThemeQuoteColor), 0.8);
     color: var(--SmartThemeBorderColor);
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-    .stmb-start-btn,
-    .stmb-end-btn {
+    .mes_stmb_start,
+    .mes_stmb_end {
         transition: none;
     }
     
-    .stmb-start-btn.valid-start-point,
-    .stmb-end-btn.valid-end-point {
+    .mes_stmb_start.valid-start-point,
+    .mes_stmb_end.valid-end-point {
         animation: none;
         background: var(--SmartThemeEmphasisColor);
     }

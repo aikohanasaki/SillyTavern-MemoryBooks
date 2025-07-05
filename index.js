@@ -918,8 +918,8 @@ function ensureChevronButtonsForAllMessages() {
     
     messageElements.forEach((messageElement, index) => {
         // Check if chevron buttons already exist
-        const existingStartBtn = messageElement.querySelector('.stmb-start-btn');
-        const existingEndBtn = messageElement.querySelector('.stmb-end-btn');
+        const existingStartBtn = messageElement.querySelector('.mes_stmb_start');
+        const existingEndBtn = messageElement.querySelector('.mes_stmb_end');
         
         if (!existingStartBtn || !existingEndBtn) {
             console.log(`STMemoryBooks: Creating missing chevron buttons for message ${index}`);

@@ -245,4 +245,4 @@ The extension converts your configured title format into a regex pattern to iden
 
 ---
 
-*Made with love (and Claude Sonnet 4)* 🤖
+*Made with love, Claude Sonnet 4, and Gemini 2.5 Pro* 🤖
