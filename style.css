@@ -1,66 +1,98 @@
-/* STMemoryBooks Extension Styles - Refactored */
+/* STMemoryBooks Extension Styles - FIXED */
 
-/* --- NECESSARY CUSTOM STYLES (UNIQUE FUNCTIONALITY) --- */
+/* --- CORE BUTTON STYLES --- */
 
-/* Active scene markers */
+/* Base styling for all scene marker buttons */
+.mes_stmb_start,
+.mes_stmb_end {
+    /* Ensure buttons are visible with good base styling */
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 20%, transparent 80%);
+    color: var(--SmartThemeBodyColor, #dcdcd2);
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 40%, transparent 60%);
+    border-radius: 4px;
+    padding: 4px 6px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.mes_stmb_start:hover,
+.mes_stmb_end:hover {
+    opacity: 1;
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 30%, transparent 70%);
+    transform: scale(1.05);
+}
+
+/* --- ACTIVE STATE (ON) --- */
 .mes_stmb_start.on,
 .mes_stmb_end.on {
-    background: rgba(var(--SmartThemeQuoteColor), 0.8);
-    color: var(--SmartThemeBorderColor);
-    border-color: var(--SmartThemeQuoteColor);
-    box-shadow: 0 0 8px rgba(var(--SmartThemeQuoteColor), 0.3);
+    /* Bright, visible active state with glow */
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%);
+    color: var(--SmartThemeBlurTintColor, #171717);
+    border-color: var(--SmartThemeQuoteColor, #e18a24);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 50%, transparent 50%);
+    opacity: 1;
+    font-weight: bold;
 }
 
 .mes_stmb_start.on:hover,
 .mes_stmb_end.on:hover {
-    background: var(--SmartThemeQuoteColor);
+    background: var(--SmartThemeQuoteColor, #e18a24);
     transform: scale(1.1);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
 }
 
-/* Valid selection points */
+/* --- VALID SELECTION POINTS --- */
 .mes_stmb_start.valid-start-point,
 .mes_stmb_end.valid-end-point {
-    background: rgba(var(--SmartThemeEmphasisColor), 0.6);
-    color: var(--SmartThemeBorderColor);
-    border-color: var(--SmartThemeEmphasisColor);
-    animation: pulse 2s infinite;
+    /* Pulsing green glow for valid selection points */
+    background: color-mix(in srgb, #4CAF50 60%, transparent 40%);
+    color: var(--SmartThemeBlurTintColor, #171717);
+    border-color: #4CAF50;
+    animation: stmb-pulse 2s infinite;
+    opacity: 1;
 }
 
 .mes_stmb_start.valid-start-point:hover,
 .mes_stmb_end.valid-end-point:hover {
-    background: var(--SmartThemeEmphasisColor);
+    background: #4CAF50;
     animation: none;
     transform: scale(1.1);
+    box-shadow: 0 0 8px color-mix(in srgb, #4CAF50 50%, transparent 50%);
 }
 
-/* In-scene range markers */
+/* --- IN-SCENE RANGE MARKERS --- */
 .mes_stmb_start.in-scene,
 .mes_stmb_end.in-scene {
-    background: rgba(var(--SmartThemeQuoteColor), 0.4);
-    color: rgba(var(--SmartThemeBodyColor), 0.9);
-    border-color: rgba(var(--SmartThemeQuoteColor), 0.6);
+    /* Subtle highlight for messages in the selected range */
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 40%, transparent 60%);
+    color: var(--SmartThemeBodyColor, #dcdcd2);
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
+    opacity: 0.8;
 }
 
 .mes_stmb_start.in-scene:hover,
 .mes_stmb_end.in-scene:hover {
-    background: rgba(var(--SmartThemeQuoteColor), 0.6);
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
     transform: scale(1.05);
+    opacity: 1;
 }
+
+/* --- ANIMATIONS --- */
 
 /* Pulse animation for valid selection points */
-@keyframes pulse {
+@keyframes stmb-pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(var(--SmartThemeEmphasisColor), 0.7);
+        box-shadow: 0 0 0 0 color-mix(in srgb, #4CAF50 70%, transparent 30%);
     }
     50% {
-        box-shadow: 0 0 0 4px rgba(var(--SmartThemeEmphasisColor), 0.3);
+        box-shadow: 0 0 0 4px color-mix(in srgb, #4CAF50 30%, transparent 70%);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(var(--SmartThemeEmphasisColor), 0);
+        box-shadow: 0 0 0 0 color-mix(in srgb, #4CAF50 0%, transparent 100%);
     }
 }
 
-/* Main extension menu button */
+/* --- MAIN EXTENSION MENU BUTTON --- */
 #stmb-menu-item {
     display: flex;
     align-items: center;
@@ -72,7 +104,7 @@
 }
 
 #stmb-menu-item:hover {
-    background: rgba(var(--SmartThemeEmphasisColor), 0.1);
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 10%, transparent 90%);
 }
 
 #stmb-menu-item i {
@@ -81,10 +113,10 @@
     text-align: center;
 }
 
-/* Scene preview styling */
+/* --- SCENE PREVIEW STYLING --- */
 .stmb-scene-preview {
-    background: rgba(var(--SmartThemeBlurTintColor), 0.3);
-    border: 1px solid rgba(var(--SmartThemeBodyColor), 0.2);
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #171717) 30%, transparent 70%);
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 20%, transparent 80%);
     border-radius: 6px;
     padding: 12px;
     margin: 10px 0;
@@ -103,21 +135,20 @@
 }
 
 .stmb-scene-preview::-webkit-scrollbar-track {
-    background: rgba(var(--SmartThemeBodyColor), 0.1);
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 10%, transparent 90%);
     border-radius: 4px;
 }
 
 .stmb-scene-preview::-webkit-scrollbar-thumb {
-    background: rgba(var(--SmartThemeBodyColor), 0.3);
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 30%, transparent 70%);
     border-radius: 4px;
 }
 
 .stmb-scene-preview::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--SmartThemeBodyColor), 0.5);
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 50%, transparent 50%);
 }
 
-
-/* Processing state styling */
+/* --- PROCESSING STATE STYLING --- */
 .stmb-processing {
     opacity: 0.6;
     pointer-events: none;
@@ -135,13 +166,13 @@
         45deg,
         transparent,
         transparent 10px,
-        rgba(var(--SmartThemeBodyColor), 0.1) 10px,
-        rgba(var(--SmartThemeBodyColor), 0.1) 20px
+        color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 10%, transparent 90%) 10px,
+        color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 10%, transparent 90%) 20px
     );
-    animation: processing 1s linear infinite;
+    animation: stmb-processing 1s linear infinite;
 }
 
-@keyframes processing {
+@keyframes stmb-processing {
     0% {
         background-position: 0 0;
     }
@@ -150,7 +181,7 @@
     }
 }
 
-/* --- RESPONSIVE & ACCESSIBILITY (KEEP) --- */
+/* --- RESPONSIVE & ACCESSIBILITY --- */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -158,19 +189,25 @@
         font-size: 11px;
         max-height: 200px;
     }
+    
+    .mes_stmb_start,
+    .mes_stmb_end {
+        padding: 6px 8px;
+        font-size: 14px;
+    }
 }
 
 /* Accessibility improvements */
 .mes_stmb_start:focus,
 .mes_stmb_end:focus {
-    outline: 2px solid var(--SmartThemeEmphasisColor);
+    outline: 2px solid var(--SmartThemeBodyColor, #dcdcd2);
     outline-offset: 2px;
 }
 
 .mes_stmb_start[aria-pressed="true"],
 .mes_stmb_end[aria-pressed="true"] {
-    background: rgba(var(--SmartThemeQuoteColor), 0.8);
-    color: var(--SmartThemeBorderColor);
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%);
+    color: var(--SmartThemeBlurTintColor, #171717);
 }
 
 /* Reduced motion support */
@@ -183,7 +220,7 @@
     .mes_stmb_start.valid-start-point,
     .mes_stmb_end.valid-end-point {
         animation: none;
-        background: var(--SmartThemeEmphasisColor);
+        background: #4CAF50;
     }
     
     .stmb-processing::after {
