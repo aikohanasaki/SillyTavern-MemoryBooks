@@ -98,23 +98,26 @@ export function getApiSelectors() {
 /**
  * Get current model and temperature settings
  */
-function setupEventListeners() {
-    // UI events
-    $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
+export function getCurrentModelSettings() {
+    const apiInfo = getCurrentApiInfo();
+    const selectors = getApiSelectors();
     
-    // SillyTavern events - REMOVED CHARACTER_MESSAGE_RENDERED
-    eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
-    eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
-    eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
-        const settings = initializeSettings();
-        handleMessageDeletion(deletedId, settings);
-    });
-    eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+    let currentModel = '';
     
-    // Add cleanup when page unloads
-    window.addEventListener('beforeunload', cleanupChatObserver);
+    if (apiInfo.completionSource === 'custom') {
+        currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
+    } else {
+        currentModel = $(selectors.model).val() || '';
+    }
     
-    console.log('STMemoryBooks: Event listeners registered');
+    // UPDATED: Default to 0.7 if no temperature is set
+    const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0.7);
+    
+    return {
+        model: currentModel,
+        temperature: currentTemp,
+        completionSource: apiInfo.completionSource
+    };
 }
 
 /**

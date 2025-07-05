@@ -942,10 +942,8 @@ function createUI() {
  * Setup event listeners
  */
 function setupEventListeners() {
-    // UI events
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
     
-    // SillyTavern events - REMOVED CHARACTER_MESSAGE_RENDERED
     eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
     eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
     eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
@@ -954,7 +952,6 @@ function setupEventListeners() {
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
     
-    // Add cleanup when page unloads
     window.addEventListener('beforeunload', cleanupChatObserver);
     
     console.log('STMemoryBooks: Event listeners registered');
