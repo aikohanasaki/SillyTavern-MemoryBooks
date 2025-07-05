@@ -219,24 +219,39 @@ export function handleMessageDeletion(deletedId, settings) {
  */
 export function createSceneButtons(messageElement) {
     const messageId = parseInt(messageElement.getAttribute('mesid'));
-    const extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
+    let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
+
+    // If the button container doesn't exist (e.g., on user messages), create and append it.
+    if (!extraButtonsContainer) {
+        extraButtonsContainer = document.createElement('div');
+        extraButtonsContainer.classList.add('extraMesButtons');
+        
+        // SillyTavern messages have a 'mes_block' that contains the text and buttons.
+        // Appending our container here ensures consistent placement.
+        const messageBlock = messageElement.querySelector('.mes_block');
+        if (messageBlock) {
+            messageBlock.appendChild(extraButtonsContainer);
+        } else {
+            // As a fallback, append to the main message element.
+            // The .extraMesButtons CSS should still position it reasonably well.
+            messageElement.appendChild(extraButtonsContainer);
+        }
+    }
     
-    if (!extraButtonsContainer) return;
-    
-    // Check if buttons already exist
+    // Check if buttons already exist to prevent duplication
     if (messageElement.querySelector('.stmb-start-btn')) return;
     
-    // Create start button
+    // Create start button with a more solid, stylized icon
     const startButton = document.createElement('div');
     startButton.title = 'Mark Scene Start';
     startButton.classList.add('stmb-start-btn', 'mes_button');
-    startButton.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+    startButton.innerHTML = '<i class="fa-solid fa-caret-right"></i>';
     
-    // Create end button  
+    // Create end button with a more solid, stylized icon
     const endButton = document.createElement('div');
     endButton.title = 'Mark Scene End';
     endButton.classList.add('stmb-end-btn', 'mes_button');
-    endButton.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+    endButton.innerHTML = '<i class="fa-solid fa-caret-left"></i>';
     
     // Add event listeners
     startButton.addEventListener('click', (e) => {
