@@ -51,7 +51,8 @@ import {
     DEFAULT_PROMPT,
     deepClone,
     getCurrentModelSettings,
-    getCurrentApiInfo
+    getCurrentApiInfo,
+    SELECTORS
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks';

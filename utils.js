@@ -3,7 +3,7 @@ const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
 
 // Centralized DOM selectors
-const SELECTORS = {
+export const SELECTORS = {
     extensionsMenu: '#extensionsMenu .list-group',
     menuItem: '#stmb-menu-item',
     chatContainer: '#chat',
