@@ -103,17 +103,21 @@ export function updateAllButtonStates() {
         startBtn.classList.remove('on', 'valid-start-point', 'in-scene');
         endBtn.classList.remove('on', 'valid-end-point', 'in-scene');
         
-        // Apply appropriate classes based on current state
+// Apply appropriate classes based on current state
         if (sceneStart !== null && sceneEnd !== null) {
-            // Complete scene - highlight range
-            if (messageId >= sceneStart && messageId <= sceneEnd) {
+            // Complete scene - highlight range and markers distinctly
+            if (messageId === sceneStart) {
+                // This is the start marker
+                startBtn.classList.add('on');
+            } else if (messageId === sceneEnd) {
+                // This is the end marker
+                endBtn.classList.add('on');
+            } else if (messageId > sceneStart && messageId < sceneEnd) {
+                // This is a message between start and end
                 startBtn.classList.add('in-scene');
                 endBtn.classList.add('in-scene');
             }
-            // Mark active markers
-            if (messageId === sceneStart) startBtn.classList.add('on');
-            if (messageId === sceneEnd) endBtn.classList.add('on');
-            
+
         } else if (sceneStart !== null) {
             // Start set, show valid end points
             if (messageId === sceneStart) {
