@@ -926,11 +926,15 @@ function handleChatChanged() {
 }
 
 function handleChatLoaded() {
-    console.log('STMemoryBooks: Chat loaded');
+    console.log('STMemoryBooks: Chat loaded, creating buttons for existing messages.');
     setTimeout(() => {
+        const messageElements = document.querySelectorAll('#chat .mes[mesid]');
+        messageElements.forEach(messageElement => {
+            createSceneButtons(messageElement);
+        });
         updateSceneStateCache();
         updateAllButtonStates();
-    }, 1000);
+    }, 1000); 
 }
 
 function handleMessageReceived() {
@@ -950,8 +954,9 @@ function handleCreateMemoryCommand() {
     initiateMemoryCreation();
 }
 
+
 function handleSceneMemoryCommand(args) {
-    const range = args.trim();
+    const range = args[0].trim();
     const match = range.match(/^(\d+)-(\d+)$/);
     
     if (!match) {
