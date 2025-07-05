@@ -10,9 +10,8 @@
     color: var(--SmartThemeBodyColor, #dcdcd2);
     border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 40%, transparent 60%);
     border-radius: 4px;
-    padding: 6px 8px;
-    margin: 0 2px;
-    min-width: 24px;
+    padding: 4px 6px;
+    margin: 0 3px;
     transition: all 0.2s ease;
     opacity: 0.7;
 }
