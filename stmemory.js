@@ -3,7 +3,6 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
 import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
 import { promptManager } from '../../../openai.js';
-import { world_info } from '../../../world-info.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -235,10 +234,10 @@ async function estimateTokenUsage(promptString) {
 
 /**
  * Generates memory using AI with TOTAL CONTEXT OVERRIDE to ensure completely clean tool calling.
- * This function now implements a three-layer approach:
+ * This function now implements a two-layer approach:
  * 1. Character field blanking
  * 2. PromptManager source blanking 
- * 3. World Info disabling
+ * 3. World Info disabling via generateQuietPrompt's skipWIAN flag
  * 
  * @private
  * @param {string} promptString - The full prompt for the AI
@@ -279,7 +278,6 @@ async function generateMemoryWithAI(promptString, profile) {
     // Backup storage
     const fieldBackup = {};
     const promptBackup = {};
-    let worldInfoBackup = [];
     const originalPromptOrder = promptManager.getPromptOrderForCharacter(promptManager.activeCharacter);
 
     try {
@@ -313,17 +311,16 @@ async function generateMemoryWithAI(promptString, profile) {
         promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
         promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, []);
 
-        // --- STEP 3: Backup and Disable World Info ---
-        console.log(`${MODULE_NAME}: Backing up and disabling World Info entries...`);
-        worldInfoBackup = [...world_info]; // Create backup copy
-        world_info.length = 0; // Clear the global array completely
+        // --- STEP 3: World Info is handled by skipWIAN flag ---
+        console.log(`${MODULE_NAME}: Relying on skipWIAN flag to disable World Info during generation`);
 
-        console.log(`${MODULE_NAME}: Total context override complete - all sources blanked`);
+        console.log(`${MODULE_NAME}: Context override complete - sending prompt`);
 
         // --- Generate with completely clean context ---
         delete window.STMemoryBooks_toolResult;
         console.log(`${MODULE_NAME}: Sending clean prompt for tool-based generation`);
-        await generateQuietPrompt(promptString, false, true); // skipWIAN is redundant now but harmless
+        // The third parameter 'true' (skipWIAN) handles the exclusion of World Info, Author's Note, etc.
+        await generateQuietPrompt(promptString, false, true);
 
         // Brief pause to ensure tool execution completes
         await new Promise(resolve => setTimeout(resolve, 150));
@@ -392,7 +389,7 @@ async function generateMemoryWithAI(promptString, profile) {
         
     } finally {
         // --- ALWAYS restore ALL original data ---
-        console.log(`${MODULE_NAME}: Restoring original character fields, prompt content, and World Info...`);
+        console.log(`${MODULE_NAME}: Restoring original character fields and prompt content...`);
         
         // Restore character fields
         for (const field in fieldBackup) {
@@ -411,10 +408,9 @@ async function generateMemoryWithAI(promptString, profile) {
         promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
         promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, originalPromptOrder);
         
-        // Restore World Info by pushing backed up items back into the now-empty array
-        world_info.push(...worldInfoBackup);
+        // World Info restoration is no longer needed as we didn't modify it
         
-        console.log(`${MODULE_NAME}: Total context restoration complete - all original data restored`);
+        console.log(`${MODULE_NAME}: Context restoration complete - all original data restored`);
     }
 }
 
