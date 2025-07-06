@@ -30,6 +30,30 @@ class InvalidProfileError extends Error {
 }
 
 /**
+ * Waits for character data to be available with retry mechanism
+ * @private
+ * @param {number} maxWaitMs - Maximum time to wait in milliseconds (default: 10000)
+ * @param {number} checkIntervalMs - How often to check in milliseconds (default: 250)
+ * @returns {Promise<boolean>} True if character data is available, false if timeout
+ */
+async function waitForCharacterData(maxWaitMs = 10000, checkIntervalMs = 250) {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < maxWaitMs) {
+        if (characters && characters.length > this_chid && characters[this_chid]) {
+            console.log(`${MODULE_NAME}: Character data became available after ${Date.now() - startTime}ms`);
+            return true;
+        }
+        
+        // Wait before checking again
+        await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
+    }
+    
+    console.warn(`${MODULE_NAME}: Character data did not become available within ${maxWaitMs}ms timeout`);
+    return false;
+}
+
+/**
  * Creates a memory from a compiled scene using an AI model with tool calling.
  * This is the main entry point for this module.
  *
@@ -232,20 +256,19 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
  */
 async function generateMemoryWithAI(promptString, profile) {
-    // Get the current application context - this is the correct way to access ST's state
+    // Get the current application context
     const context = getContext();
 
-    //temporary debug logging
-    console.log(`[MEMORY-DEBUG] Preparing to clone character data. State at this moment:`);
-    console.log(`[MEMORY-DEBUG] > this_chid:`, this_chid);
-    console.log(`[MEMORY-DEBUG] > Is characters array available?`, Array.isArray(characters));
-    if (Array.isArray(characters)) {
-        console.log(`[MEMORY-DEBUG] > characters.length:`, characters.length);
-        console.log(`[MEMORY-DEBUG] > Value of characters[this_chid]:`, characters[this_chid]);
+    // Wait for character data to be available before proceeding
+    const characterDataReady = await waitForCharacterData();
+    if (!characterDataReady) {
+        throw new AIResponseError(
+            'Character data is not available. This may indicate that SillyTavern is still loading. ' +
+            'Please wait a moment and try again.'
+        );
     }
 
-    // Store all original context data for restoration using deep cloning
-    // This prevents mutation issues and makes backup/restore more robust
+    // Store all original context data for restoration using deep cloning. This prevents mutation issues and makes backup/restore more robust
     const originalCharacterData = JSON.parse(JSON.stringify(characters[this_chid]));
     const originalWorldInfoSettings = JSON.parse(JSON.stringify(context.world_info_settings));
     const originalWorldInfoData = JSON.parse(JSON.stringify(context.world_info_data || {}));
@@ -256,7 +279,7 @@ async function generateMemoryWithAI(promptString, profile) {
         // --- STEP 1: Complete context blanking for clean generation ---
         console.log(`${MODULE_NAME}: Creating completely clean context for AI generation...`);
         
-        // Blank out ALL character fields that could influence the AI
+        // blank out ALL character fields
         characters[this_chid].name = '';
         characters[this_chid].description = '';
         characters[this_chid].personality = '';
@@ -377,8 +400,7 @@ async function generateMemoryWithAI(promptString, profile) {
 }
 
 /**
- * Build the complete prompt string using proven system prompts
- * The original prompts are technically precise and optimized for vectorized databases
+ * Build the complete prompt string
  * @private
  * @param {Object} compiledScene - The compiled scene data.
  * @param {Object} profile - The user-selected profile.
@@ -396,8 +418,7 @@ async function buildPrompt(compiledScene, profile) {
     // Build scene text for user prompt
     const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
     
-    // Combine system prompt and scene - trust the enhanced tool description and proven prompts
-    // to naturally guide the model to use the createMemory tool without explicit forcing
+    // Combine system prompt and scene - trust the enhanced tool description and proven prompts to naturally guide the model to use the createMemory tool without explicit forcing
     return `${processedSystemPrompt}\n\n${sceneText}`;
 }
 

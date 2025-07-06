@@ -403,10 +403,13 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     }
 }
 
-/**
- * Refactored main orchestrator function
- */
 async function initiateMemoryCreation() {
+    // Ensure character data is loaded before doing anything else
+    if (!characters || characters.length === 0 || !characters[this_chid]) {
+        toastr.error('Silly Tavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
+        return;
+    }
+    
     if (isProcessingMemory) {
         toastr.warning('Memory creation already in progress', 'STMemoryBooks');
         return;
@@ -452,7 +455,6 @@ async function initiateMemoryCreation() {
 /**
  * Show main settings popup
  */
-// In showSettingsPopup function, around line 654
 async function showSettingsPopup() {
     const settings = initializeSettings();
     const sceneData = getSceneData();
