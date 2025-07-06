@@ -322,18 +322,23 @@ async function generateMemoryWithAI(promptString, profile) {
         // The third parameter 'true' (skipWIAN) handles the exclusion of World Info, Author's Note, etc.
         await generateQuietPrompt(promptString, false, true);
 
-        // Brief pause to ensure tool execution completes
-        await new Promise(resolve => setTimeout(resolve, 150));
+        // RACE CONDITION FIX: Replace fixed pause with resilient polling loop
+        console.log(`${MODULE_NAME}: Waiting for tool result...`);
+        let attempts = 0;
+        const maxAttempts = 50; // Wait for a maximum of 5 seconds (50 * 100ms)
+        while (!window.STMemoryBooks_toolResult && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
 
         // --- Check if our tool was called ---
         if (!window.STMemoryBooks_toolResult) {
-            console.warn(`${MODULE_NAME}: Model did not use createMemory tool despite total context override`);
+            console.warn(`${MODULE_NAME}: Timed out waiting for tool result after ${maxAttempts * 100}ms.`);
             throw new AIResponseError(
-                'The AI model did not create a structured memory despite a completely clean context. This may indicate:\n' +
-                '• The current model does not support function calling reliably\n' +
-                '• API connection issues\n' +
-                '• The model is ignoring function calls\n\n' +
-                'Please check your model and API settings, or try a different model.'
+                'The AI model did not produce a valid tool call for `createMemory`. This could be due to:\n' +
+                '• The model ignoring the instruction to use the tool.\n' +
+                '• A delayed API response or processing issue.\n\n' +
+                'Please verify your model supports function calling and try again.'
             );
         }
 
@@ -614,9 +619,18 @@ Focus on generating 3-8 relevant keywords that would help retrieve this conversa
         
         // Make the tool call - the enhanced tool description should guide model to use createMemory tool
         await generateQuietPrompt(keywordsPrompt, false, true);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // RACE CONDITION FIX: Replace fixed pause with resilient polling loop
+        console.log(`${MODULE_NAME}: Waiting for keywords tool result...`);
+        let attempts = 0;
+        const maxAttempts = 50; // Wait for a maximum of 5 seconds (50 * 100ms)
+        while (!window.STMemoryBooks_toolResult && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
         
         if (!window.STMemoryBooks_toolResult) {
+            console.warn(`${MODULE_NAME}: Timed out waiting for keywords tool result after ${maxAttempts * 100}ms.`);
             throw new Error('AI did not generate keywords using tool calling');
         }
         
