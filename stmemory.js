@@ -2,7 +2,6 @@ import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
 import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
-import { power_user } from '../../../power-user.js';
 import { promptManager } from '../../../openai.js';
 import { world_info } from '../../../world-info.js';
 
@@ -271,7 +270,11 @@ async function generateMemoryWithAI(promptString, profile) {
     // Define what we need to backup and restore
     const fieldsToBlank = ['description', 'personality', 'scenario', 'mes_example'];
     const promptsToBlank = ['main', 'nsfw', 'jailbreak', 'enhanceDefinitions'];
-    const promptDefinitions = power_user.instruct_settings.prompts;
+
+    if (!promptManager || !promptManager.serviceSettings || !promptManager.serviceSettings.prompts) {
+        throw new Error('PromptManager or its definitions are not available. Cannot ensure clean tool-calling context.');
+    }
+    const promptDefinitions = promptManager.serviceSettings.prompts;
     
     // Backup storage
     const fieldBackup = {};

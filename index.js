@@ -776,6 +776,32 @@ function refreshPopupContent() {
     }
 }
 
+/**
+ * Processes any messages that already exist in the DOM, adding scene buttons if they are missing.
+ * This is used for the initial load and for chat changes to catch any messages the observer might miss.
+ */
+function processExistingMessages() {
+    console.log('STMemoryBooks: Processing any existing messages on the DOM...');
+    const messageElements = document.querySelectorAll('#chat .mes[mesid]');
+
+    if (messageElements.length > 0) {
+        let buttonsAdded = 0;
+        messageElements.forEach(messageElement => {
+            // Check if buttons are already there to prevent duplication
+            if (!messageElement.querySelector('.mes_stmb_start')) {
+                createSceneButtons(messageElement);
+                buttonsAdded++;
+            }
+        });
+
+        if (buttonsAdded > 0) {
+            console.log(`STMemoryBooks: Added buttons to ${buttonsAdded} existing messages.`);
+        }
+
+        updateAllButtonStates();
+    }
+}
+
 function handleChatChanged() {
     console.log('STMemoryBooks: Chat changed - updating scene state');
     updateSceneStateCache();
@@ -790,21 +816,9 @@ function handleChatChanged() {
 }
 
 function handleChatLoaded() {
-    console.log('STMemoryBooks: Chat loaded - updating scene state');
+    console.log('STMemoryBooks: Chat loaded event received, processing messages.');
     updateSceneStateCache();
-    
-    setTimeout(() => {
-        try {
-            const messageElements = document.querySelectorAll('#chat .mes[mesid]');
-            messageElements.forEach(messageElement => {
-                createSceneButtons(messageElement);
-            });
-
-            updateAllButtonStates();
-        } catch (error) {
-            console.error('STMemoryBooks: Error creating/updating button states after chat load:', error);
-        }
-    }, 200);
+    processExistingMessages();
 }
 
 function handleMessageReceived() {
@@ -1036,6 +1050,9 @@ async function init() {
     
     // Register slash commands
     registerSlashCommands();
+
+    // Process any messages that are already on the screen at initialization time.
+    processExistingMessages();
     
     // Add CSS classes helper for Handlebars
     Handlebars.registerHelper('eq', function(a, b) {
