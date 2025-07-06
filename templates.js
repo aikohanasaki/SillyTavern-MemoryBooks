@@ -4,9 +4,7 @@ import { Handlebars } from '../../../../lib.js';
  * Main settings template - Updated to use SillyTavern's built-in classes
  */
 export const settingsTemplate = Handlebars.compile(`
-<div>
     <h3>📕 Memory Book Settings</h3>
-    <div class="world_entry_form_control">
         {{#if hasScene}}
         <div class="world_entry_form_control">
             <h5>Current Scene:</h5>
@@ -106,15 +104,12 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                 <div class="menu_button" id="stmb-import-profiles">Import Profiles</div>
             </div>
         </div>
-    </div>
-</div>
 `);
 
 /**
  * Simplified confirmation popup template - Updated to use ST's built-in classes
  */
 export const simpleConfirmationTemplate = Handlebars.compile(`
-<div>
     <h3>Create Memory</h3>
     <div class="world_entry_form_control">
         <h5>Scene Preview:</h5>
@@ -155,14 +150,12 @@ Messages: {{messageCount}} | Estimated tokens: {{estimatedTokens}}</code></pre>
     <div class="marginTop10 opacity50p" style="font-size: 0.9em;">
         Click "Advanced Options" to customize prompt, context memories, or API settings.
     </div>
-</div>
 `);
 
 /**
  * Advanced options popup template - Updated to use ST's built-in classes
  */
 export const advancedOptionsTemplate = Handlebars.compile(`
-<div>
     <h3>Advanced Memory Options</h3>
     <div class="world_entry_form_control">
         <h5>Scene Information:</h5>
@@ -256,14 +249,12 @@ export const advancedOptionsTemplate = Handlebars.compile(`
         <span>⚠️ Large scene may take some time to process.</span>
     </div>
     {{/if}}
-</div>
 `);
 
 /**
  * Keyword selection template 
  */
 export const keywordSelectionTemplate = Handlebars.compile(`
-<div>
     <h3>🔤 Choose Keyword Generation Method</h3>
     <div class="world_entry_form_control">
         <h5>Generated Memory:</h5>
@@ -316,5 +307,4 @@ export const keywordSelectionTemplate = Handlebars.compile(`
             </small>
         </div>
     </div>
-</div>
 `);
