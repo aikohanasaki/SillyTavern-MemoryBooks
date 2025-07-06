@@ -220,7 +220,7 @@ async function estimateTokenUsage(promptString) {
 
 /**
  * Generates memory using AI with TOTAL CONTEXT OVERRIDE to ensure completely clean tool calling.
- * This function now implements a two-layer approach:
+ * This function implements a two-layer approach:
  * 1. Character field blanking
  * 2. PromptManager source blanking 
  * 3. World Info disabling via generateQuietPrompt's skipWIAN flag
@@ -232,28 +232,16 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
  */
 async function generateMemoryWithAI(promptString, profile) {
-    // Store all original context data for restoration
-    const originalCharacterData = {
-        name: characters[this_chid].name,
-        description: characters[this_chid].description,
-        personality: characters[this_chid].personality,
-        scenario: characters[this_chid].scenario,
-        first_mes: characters[this_chid].first_mes,
-        mes_example: characters[this_chid].mes_example,
-        creator_notes: characters[this_chid].creator_notes,
-        system_prompt: characters[this_chid].system_prompt,
-        post_history_instructions: characters[this_chid].post_history_instructions,
-        creator: characters[this_chid].creator,
-        character_version: characters[this_chid].character_version,
-        extensions: characters[this_chid].extensions ? JSON.parse(JSON.stringify(characters[this_chid].extensions)) : undefined
-    };
+    // Get the current application context - this is the correct way to access ST's state
+    const context = getContext();
 
-    const originalPromptData = {
-        main: main_api,
-        worldInfoSettings: world_info_settings,
-        worldInfoData: world_info_data ? JSON.parse(JSON.stringify(world_info_data)) : undefined,
-        chatMetadata: chat_metadata ? JSON.parse(JSON.stringify(chat_metadata)) : undefined
-    };
+    // Store all original context data for restoration using deep cloning
+    // This prevents mutation issues and makes backup/restore more robust
+    const originalCharacterData = JSON.parse(JSON.stringify(characters[this_chid]));
+    const originalWorldInfoSettings = JSON.parse(JSON.stringify(context.world_info_settings));
+    const originalWorldInfoData = JSON.parse(JSON.stringify(context.world_info_data || {}));
+    const originalChatMetadata = JSON.parse(JSON.stringify(context.chat_metadata || {}));
+    const originalMainApi = context.main_api;
 
     try {
         // --- STEP 1: Complete context blanking for clean generation ---
@@ -273,10 +261,10 @@ async function generateMemoryWithAI(promptString, profile) {
         characters[this_chid].character_version = '';
         characters[this_chid].extensions = {};
 
-        // Disable world info completely
-        world_info_settings.world_info = false;
-        world_info_data = {};
-        chat_metadata = {};
+        // Disable world info completely by modifying the context object
+        context.world_info_settings.world_info = false;
+        context.world_info_data = {};
+        context.chat_metadata = {};
 
         // Force prompt manager refresh
         if (typeof promptManager !== 'undefined' && promptManager.activeCharacter) {
@@ -361,14 +349,14 @@ async function generateMemoryWithAI(promptString, profile) {
             delete window.STMemoryBooks_resolveToolResult;
         }
 
-        // Restore character data
+        // Restore character data from our deep clone
         Object.assign(characters[this_chid], originalCharacterData);
 
-        // Restore prompt settings
-        main_api = originalPromptData.main;
-        world_info_settings = originalPromptData.worldInfoSettings;
-        world_info_data = originalPromptData.worldInfoData || {};
-        chat_metadata = originalPromptData.chatMetadata || {};
+        // Restore settings on the context object from our deep clones
+        context.main_api = originalMainApi;
+        context.world_info_settings = originalWorldInfoSettings;
+        context.world_info_data = originalWorldInfoData;
+        context.chat_metadata = originalChatMetadata;
 
         // Force prompt manager refresh with restored data
         if (typeof promptManager !== 'undefined') {
