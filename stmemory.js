@@ -1,7 +1,8 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
-import { characters, this_chid, substituteParams, generateQuietPrompt, power_user } from '../../../../script.js';
+import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
+import { power_user } from '../../../power-user.js';
 import { promptManager } from '../../../openai.js';
 import { world_info } from '../../../world-info.js';
 
