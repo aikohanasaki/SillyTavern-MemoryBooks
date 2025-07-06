@@ -493,6 +493,7 @@ async function initiateMemoryCreation() {
 /**
  * Show main settings popup
  */
+// In showSettingsPopup function, around line 654
 async function showSettingsPopup() {
     const settings = initializeSettings();
     const sceneData = getSceneData();
@@ -552,10 +553,8 @@ async function showSettingsPopup() {
     };
     
     try {
-        currentPopupInstance = new Popup(`<h3>📕 Memory Book Settings</h3>${content}`, POPUP_TYPE.TEXT, '', popupOptions);
-        // Attach listeners while the popup is in memory but before it is displayed.
+        currentPopupInstance = new Popup(content, POPUP_TYPE.TEXT, '', popupOptions);
         setupSettingsEventListeners();
-        // Now, show the popup and wait for the user to close it.
         await currentPopupInstance.show();
     } catch (error) {
         console.error('STMemoryBooks: Error showing settings popup:', error);
@@ -753,7 +752,7 @@ function refreshPopupContent() {
         };
         
         const content = DOMPurify.sanitize(settingsTemplate(templateData));
-        const newContent = `<h3>📕 Memory Book Settings</h3>${content}`;
+        const newContent = content;
         
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = newContent;

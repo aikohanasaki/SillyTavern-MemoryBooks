@@ -33,7 +33,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
     const content = DOMPurify.sanitize(simpleConfirmationTemplate(templateData));
     
     try {
-        const popup = new Popup(`<h3>Create Memory</h3>${content}`, POPUP_TYPE.TEXT, '', {
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
             okButton: 'Create Memory',
             cancelButton: 'Cancel',
             wide: false,
@@ -81,6 +81,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
     }
 }
 
+
 /**
  * Show advanced options popup for memory creation
  * MOVED FROM profileManager.js to consolidate popup logic
@@ -116,7 +117,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     const content = DOMPurify.sanitize(advancedOptionsTemplate(templateData));
     
     try {
-        const popup = new Popup(`<h3>Advanced Memory Options</h3>${content}`, POPUP_TYPE.TEXT, '', {
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
             okButton: 'Create Memory',
             cancelButton: 'Cancel',
             wide: true,
@@ -148,6 +149,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         return { confirmed: false };
     }
 }
+
 
 /**
  * Handle advanced options confirmation
@@ -401,7 +403,7 @@ export async function showKeywordSelectionPopup(preparedResult) {
     const content = DOMPurify.sanitize(keywordSelectionTemplate(templateData));
     
     return new Promise((resolve) => {
-        const popup = new Popup(`<h3>🔤 Choose Keyword Generation Method</h3>${content}`, POPUP_TYPE.TEXT, '', {
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
             okButton: false,
             cancelButton: 'Cancel',
             wide: true,
