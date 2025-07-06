@@ -11,13 +11,13 @@ import {
     getPresetNames,
     getAvailableModels,
     isCustomModel,
-    getCurrentApiInfo  // Fixed: Added missing import
+    getCurrentApiInfo
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
 /**
- * Profile edit template - Updated to remove engine field and use SillyTavern's built-in classes
+ * Profile edit template uses ST's existing classes
  */
 const profileEditTemplate = Handlebars.compile(`
 <div class="popup-content">
@@ -370,7 +370,6 @@ export function importProfiles(event, settings, refreshCallback) {
 
 /**
  * Setup event handlers for profile edit popup
- * Fixed: Implemented the missing function
  * @param {Popup} popupInstance - The popup instance to attach handlers to
  */
 function setupProfileEditEventHandlers(popupInstance) {
@@ -412,7 +411,6 @@ function setupProfileEditEventHandlers(popupInstance) {
 
 /**
  * Build profile object from form data
- * Fixed: Removed engine handling
  * @param {HTMLElement} popupElement - The popup form element
  * @param {string} fallbackName - Fallback name if form name is empty
  * @returns {Object} Profile object
@@ -427,7 +425,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
     
     const profile = {
         name: name,
-        connection: {},  // Fixed: Removed engine field
+        connection: {},
         prompt: prompt,
         preset: preset
     };
@@ -447,7 +445,6 @@ function buildProfileFromForm(popupElement, fallbackName) {
 
 /**
  * Clean and normalize profile structure
- * Fixed: Removed engine handling
  * @param {Object} profile - Profile to clean
  * @returns {Object} Cleaned profile
  */
@@ -549,7 +546,7 @@ export function validateAndFixProfiles(settings) {
         // Add default profile
         settings.profiles.push({
             name: 'Default',
-            connection: {},  // Fixed: Removed engine field
+            connection: {},
             prompt: '',
             preset: 'summary'
         });

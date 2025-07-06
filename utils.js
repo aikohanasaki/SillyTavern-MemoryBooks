@@ -304,7 +304,6 @@ export function getSafeModelTemplateData(profile) {
 /**
  * Clean up profile connection settings
  * Removes empty/invalid values and normalizes structure
- * Fixed: Removed engine handling
  * @param {Object} connection - Connection settings to clean
  * @returns {Object} Cleaned connection settings
  */
