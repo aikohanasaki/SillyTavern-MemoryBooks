@@ -789,8 +789,13 @@ function processExistingMessages() {
         messageElements.forEach(messageElement => {
             // Check if buttons are already there to prevent duplication
             if (!messageElement.querySelector('.mes_stmb_start')) {
-                createSceneButtons(messageElement);
-                buttonsAdded++;
+                try {
+                    createSceneButtons(messageElement);
+                    buttonsAdded++;
+                } catch (error) {
+                    console.error('STMemoryBooks: Error creating buttons for message:', error);
+                    // Continue processing other messages even if one fails
+                }
             }
         });
 
@@ -799,6 +804,8 @@ function processExistingMessages() {
         }
 
         updateAllButtonStates();
+    } else {
+        console.log('STMemoryBooks: No existing messages found to process.');
     }
 }
 
@@ -808,11 +815,11 @@ function handleChatChanged() {
     
     setTimeout(() => {
         try {
-            updateAllButtonStates();
+            processExistingMessages();
         } catch (error) {
-            console.error('STMemoryBooks: Error updating button states after chat change:', error);
+            console.error('STMemoryBooks: Error processing messages after chat change:', error);
         }
-    }, 100);
+    }, 50);
 }
 
 function handleChatLoaded() {
@@ -1024,13 +1031,13 @@ async function init() {
     // Initialize scene state
     updateSceneStateCache();
     
-    // Initialize chat observer - NEW
+    // Initialize chat observer
     try {
         initializeChatObserver();
     } catch (error) {
         console.error('STMemoryBooks: Failed to initialize chat observer:', error);
         toastr.error('STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.', 'STMemoryBooks');
-        return; // Don't continue initialization if observer fails
+        return;
     }
     
     // Create UI
@@ -1051,8 +1058,14 @@ async function init() {
     // Register slash commands
     registerSlashCommands();
 
-    // Process any messages that are already on the screen at initialization time.
-    processExistingMessages();
+    // CRITICAL: Process any messages that are already on the screen at initialization time
+    // This handles cases where a chat is already loaded when the extension initializes
+    try {
+        processExistingMessages();
+        console.log('STMemoryBooks: Processed existing messages during initialization');
+    } catch (error) {
+        console.error('STMemoryBooks: Error processing existing messages during init:', error);
+    }
     
     // Add CSS classes helper for Handlebars
     Handlebars.registerHelper('eq', function(a, b) {
