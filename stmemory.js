@@ -1,9 +1,9 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
-import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
+import { characters, this_chid, substituteParams, generateQuietPrompt, power_user } from '../../../../script.js';
 import { promptManager } from '../../../openai.js';
-
+import { world_info } from '../../../world-info.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -66,7 +66,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        // 4. Generate memory using tool calling
+        // 4. Generate memory using tool calling with TOTAL context override
         const toolResult = await generateMemoryWithAI(promptString, profile);
         
         // 5. Process the structured tool result
@@ -234,7 +234,12 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates memory using AI with temporary PromptManager override to ensure clean tool calling.
+ * Generates memory using AI with TOTAL CONTEXT OVERRIDE to ensure completely clean tool calling.
+ * This function now implements a three-layer approach:
+ * 1. Character field blanking
+ * 2. PromptManager source blanking 
+ * 3. World Info disabling
+ * 
  * @private
  * @param {string} promptString - The full prompt for the AI
  * @param {Object} profile - The user-selected profile containing connection settings
@@ -242,11 +247,16 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
  */
 async function generateMemoryWithAI(promptString, profile) {
-    console.log(`${MODULE_NAME}: Generating memory using PromptManager override for clean tool calling`);
+    console.log(`${MODULE_NAME}: Generating memory using TOTAL CONTEXT OVERRIDE for completely clean tool calling`);
 
-    // Ensure promptManager is available
+    // Ensure required objects are available
     if (!promptManager) {
         throw new Error('PromptManager is not initialized. Cannot ensure clean tool-calling context.');
+    }
+
+    const character = characters[this_chid];
+    if (!character) {
+        throw new Error('Current character data not found.');
     }
 
     // Import ToolManager to check support
@@ -257,51 +267,86 @@ async function generateMemoryWithAI(promptString, profile) {
         throw new AIResponseError('Tool calling is not supported with current settings. Please enable function calling in your API settings.');
     }
 
-    // Get the character's current prompt order from the PromptManager
+    // Define what we need to backup and restore
+    const fieldsToBlank = ['description', 'personality', 'scenario', 'mes_example'];
+    const promptsToBlank = ['main', 'nsfw', 'jailbreak', 'enhanceDefinitions'];
+    const promptDefinitions = power_user.instruct_settings.prompts;
+    
+    // Backup storage
+    const fieldBackup = {};
+    const promptBackup = {};
+    let worldInfoBackup = [];
     const originalPromptOrder = promptManager.getPromptOrderForCharacter(promptManager.activeCharacter);
 
     try {
-        // STEP 1: Temporarily replace the character's prompt order with an empty one.
-        // This prevents the PromptManager from injecting any roleplaying prompts from Aikobots.json
+        // --- STEP 1: Backup and Blank Character Fields ---
+        console.log(`${MODULE_NAME}: Backing up and blanking character fields...`);
+        fieldsToBlank.forEach(field => {
+            if (character.hasOwnProperty(field)) {
+                fieldBackup[field] = character[field];
+                character[field] = '';
+            }
+        });
+
+        // --- STEP 2: Backup and Blank PromptManager Source Prompts ---
+        console.log(`${MODULE_NAME}: Backing up and blanking PromptManager prompts...`);
+        promptsToBlank.forEach(id => {
+            const prompt = promptDefinitions.find(p => p.identifier === id);
+            if (prompt) {
+                promptBackup[id] = prompt.content;
+                prompt.content = '';
+            }
+        });
+        
+        // Set main prompt to minimal assistant instruction
+        const mainPrompt = promptDefinitions.find(p => p.identifier === 'main');
+        if (mainPrompt) {
+            promptBackup['main'] = mainPrompt.content; // Backup the main prompt too
+            mainPrompt.content = 'You are a helpful AI assistant. Your only task is to analyze the user\'s request and use the provided function tools to respond.';
+        }
+
+        // Clear PromptManager character order
         promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
         promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, []);
 
-        console.log(`${MODULE_NAME}: PromptManager context temporarily cleared for clean tool calling`);
+        // --- STEP 3: Backup and Disable World Info ---
+        console.log(`${MODULE_NAME}: Backing up and disabling World Info entries...`);
+        worldInfoBackup = [...world_info]; // Create backup copy
+        world_info.length = 0; // Clear the global array completely
 
-        // Clear any previous tool results
+        console.log(`${MODULE_NAME}: Total context override complete - all sources blanked`);
+
+        // --- Generate with completely clean context ---
         delete window.STMemoryBooks_toolResult;
-
-        // STEP 2: Call generation with the clean context.
-        // generateQuietPrompt will now build a prompt with NO system instructions,
-        // allowing the AI to focus solely on the user's request and the available tool.
         console.log(`${MODULE_NAME}: Sending clean prompt for tool-based generation`);
-        await generateQuietPrompt(promptString, false, true);
+        await generateQuietPrompt(promptString, false, true); // skipWIAN is redundant now but harmless
 
         // Brief pause to ensure tool execution completes
         await new Promise(resolve => setTimeout(resolve, 150));
 
-        // STEP 3: Check if our tool was called
+        // --- Check if our tool was called ---
         if (!window.STMemoryBooks_toolResult) {
-            console.warn(`${MODULE_NAME}: Model did not use createMemory tool despite clean context`);
+            console.warn(`${MODULE_NAME}: Model did not use createMemory tool despite total context override`);
             throw new AIResponseError(
-                'The AI model did not create a structured memory despite a clean context. This may indicate:\n' +
+                'The AI model did not create a structured memory despite a completely clean context. This may indicate:\n' +
                 '• The current model does not support function calling reliably\n' +
-                '• API connection issues\n\n' +
-                'Please check your model and API settings.'
+                '• API connection issues\n' +
+                '• The model is ignoring function calls\n\n' +
+                'Please check your model and API settings, or try a different model.'
             );
         }
 
         const toolResult = window.STMemoryBooks_toolResult;
         delete window.STMemoryBooks_toolResult; // Clean up
 
-        console.log(`${MODULE_NAME}: Successfully received structured memory via clean PromptManager context:`, {
+        console.log(`${MODULE_NAME}: Successfully received structured memory via total context override:`, {
             hasContent: !!toolResult.memory_content,
             contentLength: toolResult.memory_content?.length || 0,
             hasTitle: !!toolResult.title,
             keywordCount: toolResult.keywords?.length || 0
         });
 
-        // STEP 4: Validate the tool result structure
+        // --- Validate the tool result structure ---
         if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string' || toolResult.memory_content.trim().length < 10) {
             throw new AIResponseError('Invalid tool result: missing, invalid, or too short memory content');
         }
@@ -342,11 +387,30 @@ async function generateMemoryWithAI(promptString, profile) {
         throw new AIResponseError(`Memory generation failed: ${error.message}`);
         
     } finally {
-        // STEP 5: ALWAYS restore the original prompt order
-        // This runs even if an error occurs, ensuring the character's prompt state is never corrupted.
+        // --- ALWAYS restore ALL original data ---
+        console.log(`${MODULE_NAME}: Restoring original character fields, prompt content, and World Info...`);
+        
+        // Restore character fields
+        for (const field in fieldBackup) {
+            character[field] = fieldBackup[field];
+        }
+        
+        // Restore prompt content
+        for (const id in promptBackup) {
+            const prompt = promptDefinitions.find(p => p.identifier === id);
+            if (prompt) {
+                prompt.content = promptBackup[id];
+            }
+        }
+        
+        // Restore PromptManager character order
         promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
         promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, originalPromptOrder);
-        console.log(`${MODULE_NAME}: Original PromptManager context restored successfully`);
+        
+        // Restore World Info by pushing backed up items back into the now-empty array
+        world_info.push(...worldInfoBackup);
+        
+        console.log(`${MODULE_NAME}: Total context restoration complete - all original data restored`);
     }
 }
 
@@ -581,107 +645,6 @@ Focus on generating 3-8 relevant keywords that would help retrieve this conversa
             compiledScene.messages.map(m => m.mes).join(' '), 
             compiledScene.metadata.characterName
         );
-    }
-}
-
-/**
- * Enhanced error handling for the main memory creation process
- */
-async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
-    const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
-    
-    try {
-        toastr.info('Compiling scene messages...', 'STMemoryBooks');
-        
-        // Create and compile scene
-        const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
-        const compiledScene = compileScene(sceneRequest);
-        
-        // Validate compiled scene
-        const validation = validateCompiledScene(compiledScene);
-        if (!validation.valid) {
-            throw new Error(`Scene compilation failed: ${validation.errors.join(', ')}`);
-        }
-        
-        // Fetch previous memories if requested
-        let previousMemories = [];
-        let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
-        if (summaryCount > 0) {
-            toastr.info(`Fetching ${summaryCount} previous memories for context...`, 'STMemoryBooks');
-            memoryFetchResult = await fetchPreviousSummaries(summaryCount, settings, chat_metadata);
-            previousMemories = memoryFetchResult.summaries;
-            
-            if (memoryFetchResult.actualCount > 0) {
-                if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
-                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
-                }
-                console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
-            } else {
-                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
-            }
-        }
-        
-        // Add context and show progress
-        compiledScene.previousSummariesContext = previousMemories;
-        const stats = getSceneStats(compiledScene);
-        const actualTokens = estimateTokenCount(compiledScene);
-        const contextInfo = memoryFetchResult.actualCount > 0 ? 
-            ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
-        toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
-        
-        // Generate memory using natural tool calling
-        toastr.info('Generating memory with AI...', 'STMemoryBooks');
-        const memoryResult = await createMemory(compiledScene, profileSettings, {
-            tokenWarningThreshold: tokenThreshold
-        });
-        
-        // Handle keyword selection and finalization
-        const finalResult = await handleMemoryCompletion(memoryResult, memoryFetchResult, stats);
-        
-        // Add to lorebook
-        toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
-        const addResult = await addMemoryToLorebook(finalResult, lorebookValidation);
-        
-        if (!addResult.success) {
-            throw new Error(addResult.error || 'Failed to add memory to lorebook');
-        }
-        
-        // Success notification
-        const contextMsg = memoryFetchResult.actualCount > 0 ? 
-            ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
-        setTimeout(() => {
-            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
-        }, 1000);
-        
-    } catch (error) {
-        console.error('STMemoryBooks: Error creating memory:', error);
-        
-        // Enhanced error messaging for tool calling issues
-        if (error.message.includes('Tool calling is not supported') || 
-            error.message.includes('function calling')) {
-            toastr.error(
-                'Function calling must be enabled for memory creation. Check your API settings and ensure your model supports function calling.',
-                'STMemoryBooks', 
-                { timeOut: 10000 }
-            );
-        } else if (error.message.includes('did not create a structured memory') || 
-                   error.message.includes('did not use createMemory tool')) {
-            toastr.error(
-                'The AI model did not create a memory structure. This may indicate function calling is not properly configured or the model does not support it reliably.',
-                'STMemoryBooks', 
-                { timeOut: 8000 }
-            );
-        } else if (error.message.includes('API') || error.message.includes('connection')) {
-            toastr.error(
-                `API connection issue: ${error.message}. Please check your API settings and try again.`,
-                'STMemoryBooks',
-                { timeOut: 6000 }
-            );
-        } else {
-            toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
-        }
-    } finally {
-        isProcessingMemory = false;
     }
 }
 
