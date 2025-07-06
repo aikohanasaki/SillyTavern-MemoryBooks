@@ -88,6 +88,43 @@ let chatObserver = null;
 let updateTimeout = null;
 
 /**
+ * Recursively traverses a DOM node to find and process STMemoryBooks message buttons.
+ * This is more efficient than querySelectorAll for handling newly added DOM fragments.
+ * @param {Node} node The DOM node to process.
+ * @param {number} currentDepth The current recursion depth.
+ * @param {number} maxDepth The maximum recursion depth to prevent stack overflow.
+ * @returns {boolean} True if any buttons were added, otherwise false.
+ */
+function processNodeForMessages(node, currentDepth = 0, maxDepth = 10) {
+    if (currentDepth > maxDepth) {
+        return false;
+    }
+
+    let buttonsWereAdded = false;
+
+    // 1. Check if the node itself is a message element
+    // Using a more specific selector is slightly safer.
+    if (node.matches && node.matches('#chat .mes[mesid]')) {
+        // Check if buttons already exist to prevent duplication, just in case.
+        if (!node.querySelector('.mes_stmb_start')) {
+            createSceneButtons(node);
+            buttonsWereAdded = true;
+        }
+    } 
+    // 2. If the node is a container, recursively check its children.
+    else if (node.children) {
+        for (const child of node.children) {
+            // The recursive call returns a boolean, which we can aggregate.
+            if (processNodeForMessages(child, currentDepth + 1, maxDepth)) {
+                buttonsWereAdded = true;
+            }
+        }
+    }
+
+    return buttonsWereAdded;
+}
+
+/**
  * Initialize chat observer to watch for new messages
  */
 function initializeChatObserver() {
@@ -105,33 +142,19 @@ function initializeChatObserver() {
     chatObserver = new MutationObserver((mutations) => {
         let needsButtonStateUpdate = false;
         
-        mutations.forEach(mutation => {
-            mutation.addedNodes.forEach(node => {
-                // Only process element nodes
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
                 if (node.nodeType === Node.ELEMENT_NODE) {
                     try {
-                        // Check if the added node is a message itself
-                        if (node.matches('#chat .mes[mesid]')) {
-                            createSceneButtons(node);
+                        if (processNodeForMessages(node)) {
                             needsButtonStateUpdate = true;
-                        }
-                        // Check if the added node contains messages (for batch loads)
-                        else {
-                            const messageElements = node.querySelectorAll('#chat .mes[mesid]');
-                            if (messageElements.length > 0) {
-                                messageElements.forEach(messageElement => {
-                                    createSceneButtons(messageElement);
-                                });
-                                needsButtonStateUpdate = true;
-                            }
                         }
                     } catch (error) {
                         console.error('STMemoryBooks: Error processing new chat elements:', error);
-                        // Continue processing other nodes rather than failing completely
                     }
                 }
-            });
-        });
+            }
+        }
 
         if (needsButtonStateUpdate) {
             // Debounce the state update to prevent excessive calls
@@ -152,7 +175,7 @@ function initializeChatObserver() {
         subtree: true 
     });
 
-    console.log('STMemoryBooks: Chat observer initialized and monitoring for new messages');
+    console.log('STMemoryBooks: Efficient chat observer initialized and monitoring for new messages');
 }
 
 /**
@@ -405,8 +428,11 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     }
 }
 
+/**
+ * *** ENHANCED: Restructured error handling with improved flag management ***
+ */
 async function initiateMemoryCreation() {
-    // Ensure character data is loaded before doing anything else
+    // Early validation checks (no flag set yet)
     if (!characters || characters.length === 0 || !characters[this_chid]) {
         toastr.error('Silly Tavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
         return;
@@ -416,40 +442,43 @@ async function initiateMemoryCreation() {
         toastr.warning('Memory creation already in progress', 'STMemoryBooks');
         return;
     }
-    
-    // Step 1: Validate prerequisites
-    const sceneData = getSceneData();
-    if (!sceneData) {
-        toastr.error('No scene selected', 'STMemoryBooks');
-        return;
-    }
-    
-    const lorebookValidation = await validateLorebook();
-    if (!lorebookValidation.valid) {
-        toastr.error(lorebookValidation.error, 'STMemoryBooks');
-        return;
-    }
-    
-    // Step 2: Get user confirmation and effective settings
-    const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
-    if (!effectiveSettings) {
-        return; // User cancelled
-    }
-    
-    // Close settings popup if open
-    if (currentPopupInstance) {
-        currentPopupInstance.completeCancelled();
-        currentPopupInstance = null;
-    }
-    
-    // Step 3: Execute the memory generation process
+
+    // Set processing flag immediately after validation
     isProcessingMemory = true;
+    
     try {
+        // All the validation and processing logic
+        const sceneData = getSceneData();
+        if (!sceneData) {
+            toastr.error('No scene selected', 'STMemoryBooks');
+            return; // Will hit finally block
+        }
+        
+        const lorebookValidation = await validateLorebook();
+        if (!lorebookValidation.valid) {
+            toastr.error(lorebookValidation.error, 'STMemoryBooks');
+            return; // Will hit finally block
+        }
+        
+        const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
+        if (!effectiveSettings) {
+            return; // User cancelled, will hit finally block
+        }
+        
+        // Close settings popup if open
+        if (currentPopupInstance) {
+            currentPopupInstance.completeCancelled();
+            currentPopupInstance = null;
+        }
+        
+        // Execute the main process
         await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings);
+        
     } catch (error) {
-        console.error('STMemoryBooks: Error creating memory:', error);
-        toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
+        console.error('STMemoryBooks: Critical error during memory initiation:', error);
+        toastr.error(`An unexpected error occurred: ${error.message}`, 'STMemoryBooks');
     } finally {
+        // ALWAYS reset the flag, no matter how we exit
         isProcessingMemory = false;
     }
 }

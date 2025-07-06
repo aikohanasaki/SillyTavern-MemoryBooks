@@ -1,6 +1,6 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
+import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
 import { promptManager } from '../../../openai.js';
 
@@ -268,12 +268,18 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
-    // Store all original context data for restoration using deep cloning. This prevents mutation issues and makes backup/restore more robust
-    const originalCharacterData = JSON.parse(JSON.stringify(characters[this_chid]));
-    const originalWorldInfoSettings = JSON.parse(JSON.stringify(context.world_info_settings));
-    const originalWorldInfoData = JSON.parse(JSON.stringify(context.world_info_data || {}));
-    const originalChatMetadata = JSON.parse(JSON.stringify(context.chat_metadata || {}));
+    // *** FIX: Use deepClone for safer cloning to avoid JSON.parse errors ***
+    // Store all original context data for restoration using deep cloning
+    const originalCharacterData = deepClone(characters[this_chid]);
+    const originalWorldInfoSettings = deepClone(context.world_info_settings);
+    const originalWorldInfoData = deepClone(context.world_info_data || {});
+    const originalChatMetadata = deepClone(context.chat_metadata || {});
     const originalMainApi = context.main_api;
+
+    // *** FIX: Check if the clone operation failed unexpectedly ***
+    if (!originalCharacterData) {
+        throw new AIResponseError('Failed to capture character data for context restoration. The character data might be invalid.');
+    }
 
     try {
         // --- STEP 1: Complete context blanking for clean generation ---
@@ -381,7 +387,7 @@ async function generateMemoryWithAI(promptString, profile) {
             delete window.STMemoryBooks_resolveToolResult;
         }
 
-        // Restore character data from our deep clone
+        // *** FIX: Restore character data from our safe deep clone ***
         Object.assign(characters[this_chid], originalCharacterData);
 
         // Restore settings on the context object from our deep clones
