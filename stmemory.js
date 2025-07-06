@@ -235,6 +235,15 @@ async function generateMemoryWithAI(promptString, profile) {
     // Get the current application context - this is the correct way to access ST's state
     const context = getContext();
 
+    //temporary debug logging
+    console.log(`[MEMORY-DEBUG] Preparing to clone character data. State at this moment:`);
+    console.log(`[MEMORY-DEBUG] > this_chid:`, this_chid);
+    console.log(`[MEMORY-DEBUG] > Is characters array available?`, Array.isArray(characters));
+    if (Array.isArray(characters)) {
+        console.log(`[MEMORY-DEBUG] > characters.length:`, characters.length);
+        console.log(`[MEMORY-DEBUG] > Value of characters[this_chid]:`, characters[this_chid]);
+    }
+
     // Store all original context data for restoration using deep cloning
     // This prevents mutation issues and makes backup/restore more robust
     const originalCharacterData = JSON.parse(JSON.stringify(characters[this_chid]));
