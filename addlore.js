@@ -285,7 +285,6 @@ function getNextEntryNumber(lorebookData, titleFormat) {
 
 /**
  * Creates a regex pattern to match existing memories based on title format
- * FIXED: Completely rewritten with a simpler, more reliable approach
  * @private
  * @param {string} titleFormat - The title format template
  * @returns {RegExp|null} Regex pattern to match existing memories, or null if pattern creation fails

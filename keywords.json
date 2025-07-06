@@ -1,5 +1,0 @@
-{
-    "name": "Keywords",
-    "description": "Generate comma-delimited keywords for vectorized database retrieval",
-    "systemPrompt": "Generate a comma-delimited list of keywords that would help a vectorized database find this conversation again if a keyword is mentioned."
-}

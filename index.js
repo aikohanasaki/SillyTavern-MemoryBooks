@@ -788,12 +788,16 @@ function handleChatLoaded() {
     console.log('STMemoryBooks: Chat loaded - updating scene state');
     updateSceneStateCache();
     
-    // After chat loads, update button states once DOM is ready
     setTimeout(() => {
         try {
+            const messageElements = document.querySelectorAll('#chat .mes[mesid]');
+            messageElements.forEach(messageElement => {
+                createSceneButtons(messageElement);
+            });
+
             updateAllButtonStates();
         } catch (error) {
-            console.error('STMemoryBooks: Error updating button states after chat load:', error);
+            console.error('STMemoryBooks: Error creating/updating button states after chat load:', error);
         }
     }, 200);
 }
