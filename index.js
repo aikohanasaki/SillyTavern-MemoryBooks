@@ -852,39 +852,50 @@ function registerMemoryTool() {
     
     ToolManager.registerFunctionTool({
         name: 'createMemory',
-        displayName: 'Create Memory',
         description: 'Create a structured memory summary when analyzing conversation scenes. This tool extracts key plot points, character development, important interactions, and story details for future reference. Use when asked to summarize, analyze, or create memories from chat conversations.',
         parameters: {
             type: 'object',
             properties: {
                 memory_content: {
                     type: 'string',
-                    description: 'A comprehensive summary of the conversation scene including key events, character interactions, plot developments, and important details. Should be detailed enough to serve as a memory for future reference.'
+                    description: 'Detailed summary using markdown with specific headers: **Timeline**, **Story Beats**, **Key Interactions**, **Notable Details**, and **Outcome**. Comprehensive detail is more important than brevity.'
                 },
                 title: {
                     type: 'string',
-                    description: 'A concise, descriptive title for this memory (1-4 words that capture the essence of the scene)'
+                    description: 'Concise title for the scene (1-3 words)'
                 },
                 keywords: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'An array of 3-8 relevant keywords or phrases that would help retrieve this memory later when similar topics are mentioned',
-                    minItems: 3,
-                    maxItems: 8
+                    description: 'Array of 3-8 relevant keywords for vectorized database search'
                 }
             },
             required: ['memory_content', 'title', 'keywords']
         },
         action: (params) => {
-            // Store the tool result for pickup by the memory creation process
-            window.STMemoryBooks_toolResult = params;
+            console.log('STMemoryBooks: Tool action called with params:', {
+                hasContent: !!params.memory_content,
+                contentLength: params.memory_content?.length || 0,
+                hasTitle: !!params.title,
+                keywordCount: params.keywords?.length || 0
+            });
+
+            // Check if our promise resolver exists
+            if (typeof window.STMemoryBooks_resolveToolResult === 'function') {
+                console.log('STMemoryBooks: Tool action called, resolving promise.');
+                window.STMemoryBooks_resolveToolResult(params);
+            } else {
+                console.error('STMemoryBooks: Tool action was called, but no promise resolver was found on the window object. The memory creation process may have timed out or been cancelled.');
+            }
+
+            // The return value for a stealth tool is still important
             return JSON.stringify({ 
                 success: true, 
                 received: true,
                 summary: `Created memory: "${params.title}" with ${params.keywords?.length || 0} keywords`
             });
         },
-        stealth: true  // Prevents chat output and follow-up generation
+        stealth: true
     });
 }
 

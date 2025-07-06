@@ -232,104 +232,85 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
  */
 async function generateMemoryWithAI(promptString, profile) {
-    console.log(`${MODULE_NAME}: Generating memory using TOTAL CONTEXT OVERRIDE for completely clean tool calling`);
+    // Store all original context data for restoration
+    const originalCharacterData = {
+        name: characters[this_chid].name,
+        description: characters[this_chid].description,
+        personality: characters[this_chid].personality,
+        scenario: characters[this_chid].scenario,
+        first_mes: characters[this_chid].first_mes,
+        mes_example: characters[this_chid].mes_example,
+        creator_notes: characters[this_chid].creator_notes,
+        system_prompt: characters[this_chid].system_prompt,
+        post_history_instructions: characters[this_chid].post_history_instructions,
+        creator: characters[this_chid].creator,
+        character_version: characters[this_chid].character_version,
+        extensions: characters[this_chid].extensions ? JSON.parse(JSON.stringify(characters[this_chid].extensions)) : undefined
+    };
 
-    // Ensure required objects are available
-    if (!promptManager) {
-        throw new Error('PromptManager is not initialized. Cannot ensure clean tool-calling context.');
-    }
-
-    const character = characters[this_chid];
-    if (!character) {
-        throw new Error('Current character data not found.');
-    }
-
-    // Import ToolManager to check support
-    const { ToolManager } = await import('../../../tool-calling.js');
-    
-    // Verify tool calling is supported
-    if (!ToolManager.isToolCallingSupported()) {
-        throw new AIResponseError('Tool calling is not supported with current settings. Please enable function calling in your API settings.');
-    }
-
-    // Define what we need to backup and restore
-    const fieldsToBlank = ['description', 'personality', 'scenario', 'mes_example'];
-    const promptsToBlank = ['main', 'nsfw', 'jailbreak', 'enhanceDefinitions'];
-
-    if (!promptManager || !promptManager.serviceSettings || !promptManager.serviceSettings.prompts) {
-        throw new Error('PromptManager or its definitions are not available. Cannot ensure clean tool-calling context.');
-    }
-    const promptDefinitions = promptManager.serviceSettings.prompts;
-    
-    // Backup storage
-    const fieldBackup = {};
-    const promptBackup = {};
-    const originalPromptOrder = promptManager.getPromptOrderForCharacter(promptManager.activeCharacter);
+    const originalPromptData = {
+        main: main_api,
+        worldInfoSettings: world_info_settings,
+        worldInfoData: world_info_data ? JSON.parse(JSON.stringify(world_info_data)) : undefined,
+        chatMetadata: chat_metadata ? JSON.parse(JSON.stringify(chat_metadata)) : undefined
+    };
 
     try {
-        // --- STEP 1: Backup and Blank Character Fields ---
-        console.log(`${MODULE_NAME}: Backing up and blanking character fields...`);
-        fieldsToBlank.forEach(field => {
-            if (character.hasOwnProperty(field)) {
-                fieldBackup[field] = character[field];
-                character[field] = '';
-            }
-        });
-
-        // --- STEP 2: Backup and Blank PromptManager Source Prompts ---
-        console.log(`${MODULE_NAME}: Backing up and blanking PromptManager prompts...`);
-        promptsToBlank.forEach(id => {
-            const prompt = promptDefinitions.find(p => p.identifier === id);
-            if (prompt) {
-                promptBackup[id] = prompt.content;
-                prompt.content = '';
-            }
-        });
+        // --- STEP 1: Complete context blanking for clean generation ---
+        console.log(`${MODULE_NAME}: Creating completely clean context for AI generation...`);
         
-        // Set main prompt to minimal assistant instruction
-        const mainPrompt = promptDefinitions.find(p => p.identifier === 'main');
-        if (mainPrompt) {
-            promptBackup['main'] = mainPrompt.content; // Backup the main prompt too
-            mainPrompt.content = 'You are a helpful AI assistant. Your only task is to analyze the user\'s request and use the provided function tools to respond.';
+        // Blank out ALL character fields that could influence the AI
+        characters[this_chid].name = '';
+        characters[this_chid].description = '';
+        characters[this_chid].personality = '';
+        characters[this_chid].scenario = '';
+        characters[this_chid].first_mes = '';
+        characters[this_chid].mes_example = '';
+        characters[this_chid].creator_notes = '';
+        characters[this_chid].system_prompt = '';
+        characters[this_chid].post_history_instructions = '';
+        characters[this_chid].creator = '';
+        characters[this_chid].character_version = '';
+        characters[this_chid].extensions = {};
+
+        // Disable world info completely
+        world_info_settings.world_info = false;
+        world_info_data = {};
+        chat_metadata = {};
+
+        // Force prompt manager refresh
+        if (typeof promptManager !== 'undefined' && promptManager.activeCharacter) {
+            promptManager.activeCharacter = null;
         }
 
-        // Clear PromptManager character order
-        promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
-        promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, []);
+        // --- STEP 2: Create Promise-based tool result handler ---
+        const toolPromise = new Promise((resolve, reject) => {
+            // Set a generous timeout for the AI response
+            const timeout = setTimeout(() => {
+                delete window.STMemoryBooks_resolveToolResult; // Clean up resolver
+                reject(new AIResponseError(
+                    'The AI model did not produce a valid tool call for `createMemory`. This could be due to:\n' +
+                    '• The model ignoring the instruction to use the tool.\n' +
+                    '• A delayed API response or processing issue.\n\n' +
+                    'Please verify your model supports function calling and try again.'
+                ));
+            }, 20000); // Wait for 20 seconds, much safer for slow APIs
 
-        // --- STEP 3: World Info is handled by skipWIAN flag ---
-        console.log(`${MODULE_NAME}: Relying on skipWIAN flag to disable World Info during generation`);
+            // Expose the resolver function globally for the tool action to find
+            window.STMemoryBooks_resolveToolResult = (result) => {
+                clearTimeout(timeout); // Cancel the timeout
+                delete window.STMemoryBooks_resolveToolResult; // Clean up resolver
+                resolve(result);
+            };
+        });
 
-        console.log(`${MODULE_NAME}: Context override complete - sending prompt`);
-
-        // --- Generate with completely clean context ---
-        delete window.STMemoryBooks_toolResult;
+        // --- STEP 3: Send the AI request ---
         console.log(`${MODULE_NAME}: Sending clean prompt for tool-based generation`);
-        // The third parameter 'true' (skipWIAN) handles the exclusion of World Info, Author's Note, etc.
         await generateQuietPrompt(promptString, false, true);
 
-        // RACE CONDITION FIX: Replace fixed pause with resilient polling loop
-        console.log(`${MODULE_NAME}: Waiting for tool result...`);
-        let attempts = 0;
-        const maxAttempts = 50; // Wait for a maximum of 5 seconds (50 * 100ms)
-        while (!window.STMemoryBooks_toolResult && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-
-        // --- Check if our tool was called ---
-        if (!window.STMemoryBooks_toolResult) {
-            console.warn(`${MODULE_NAME}: Timed out waiting for tool result after ${maxAttempts * 100}ms.`);
-            throw new AIResponseError(
-                'The AI model did not produce a valid tool call for `createMemory`. This could be due to:\n' +
-                '• The model ignoring the instruction to use the tool.\n' +
-                '• A delayed API response or processing issue.\n\n' +
-                'Please verify your model supports function calling and try again.'
-            );
-        }
-
-        const toolResult = window.STMemoryBooks_toolResult;
-        delete window.STMemoryBooks_toolResult; // Clean up
+        // --- STEP 4: Wait for our promise to be resolved by the tool's action ---
+        console.log(`${MODULE_NAME}: Waiting for tool result via promise...`);
+        const toolResult = await toolPromise;
 
         console.log(`${MODULE_NAME}: Successfully received structured memory via total context override:`, {
             hasContent: !!toolResult.memory_content,
@@ -338,69 +319,62 @@ async function generateMemoryWithAI(promptString, profile) {
             keywordCount: toolResult.keywords?.length || 0
         });
 
-        // --- Validate the tool result structure ---
-        if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string' || toolResult.memory_content.trim().length < 10) {
-            throw new AIResponseError('Invalid tool result: missing, invalid, or too short memory content');
+        // --- STEP 5: Validate the tool result structure ---
+        if (!toolResult || typeof toolResult !== 'object') {
+            throw new AIResponseError('Tool result is missing or invalid. The AI may not have used the createMemory function correctly.');
         }
 
-        // Validate title
-        if (!toolResult.title || typeof toolResult.title !== 'string') {
-            console.warn(`${MODULE_NAME}: Tool result missing title, using default`);
-            toolResult.title = 'Memory';
+        if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string' || toolResult.memory_content.trim() === '') {
+            throw new AIResponseError('Tool result is missing required memory_content field or it is empty.');
         }
 
-        // Validate and clean keywords
-        const validKeywords = Array.isArray(toolResult.keywords) ? toolResult.keywords
-            .filter(kw => typeof kw === 'string' && kw.trim().length > 0 && kw.trim().length <= 25)
-            .map(kw => kw.trim())
-            .slice(0, 8) : []; // Enforce max limit and ensure it's an array
+        if (!toolResult.title || typeof toolResult.title !== 'string' || toolResult.title.trim() === '') {
+            throw new AIResponseError('Tool result is missing required title field or it is empty.');
+        }
 
-        // Return structured result
+        if (!Array.isArray(toolResult.keywords) || toolResult.keywords.length === 0) {
+            throw new AIResponseError('Tool result is missing required keywords array or it is empty.');
+        }
+
+        // --- STEP 6: Return the validated result ---
         return {
             content: toolResult.memory_content.trim(),
             title: toolResult.title.trim(),
-            keywords: validKeywords
+            keywords: toolResult.keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()),
+            profile: profile
         };
 
     } catch (error) {
         console.error(`${MODULE_NAME}: Tool-based memory generation failed:`, error);
         
-        // Re-throw known error types
         if (error instanceof AIResponseError) {
             throw error;
+        } else {
+            throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
         }
-        
-        // Handle specific API/tool errors with better messaging
-        if (error.message?.includes('function_calling')) {
-            throw new AIResponseError('Function calling must be enabled in your API settings for memory creation to work.');
-        }
-        
-        // Generic fallback error
-        throw new AIResponseError(`Memory generation failed: ${error.message}`);
-        
     } finally {
         // --- ALWAYS restore ALL original data ---
         console.log(`${MODULE_NAME}: Restoring original character fields and prompt content...`);
         
-        // Restore character fields
-        for (const field in fieldBackup) {
-            character[field] = fieldBackup[field];
+        // Cleanup the resolver in case of an early error
+        if (window.STMemoryBooks_resolveToolResult) {
+            delete window.STMemoryBooks_resolveToolResult;
         }
-        
-        // Restore prompt content
-        for (const id in promptBackup) {
-            const prompt = promptDefinitions.find(p => p.identifier === id);
-            if (prompt) {
-                prompt.content = promptBackup[id];
-            }
+
+        // Restore character data
+        Object.assign(characters[this_chid], originalCharacterData);
+
+        // Restore prompt settings
+        main_api = originalPromptData.main;
+        world_info_settings = originalPromptData.worldInfoSettings;
+        world_info_data = originalPromptData.worldInfoData || {};
+        chat_metadata = originalPromptData.chatMetadata || {};
+
+        // Force prompt manager refresh with restored data
+        if (typeof promptManager !== 'undefined') {
+            promptManager.activeCharacter = characters[this_chid];
         }
-        
-        // Restore PromptManager character order
-        promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
-        promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, originalPromptOrder);
-        
-        // World Info restoration is no longer needed as we didn't modify it
-        
+
         console.log(`${MODULE_NAME}: Context restoration complete - all original data restored`);
     }
 }
