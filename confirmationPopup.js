@@ -2,7 +2,7 @@
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify, lodash } from '../../../../lib.js';
-import { simpleConfirmationTemplate, keywordSelectionTemplate, advancedOptionsTemplate } from './templates.js';
+import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
 import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
 import { getCurrentModelSettings, getEffectivePrompt, getPresetPrompt, generateSafeProfileName } from './utils.js';
@@ -396,99 +396,6 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
         console.error(`${MODULE_NAME}: Error saving new profile from advanced settings:`, error);
         throw error;
     }
-}
-
-/**
- * Show keyword selection popup when AI doesn't provide keywords
- */
-export async function showKeywordSelectionPopup(preparedResult) {
-    const templateData = {
-        formattedContent: preparedResult.formattedContent,
-        displayMetadata: preparedResult.displayMetadata
-    };
-    
-    const content = DOMPurify.sanitize(keywordSelectionTemplate(templateData));
-    
-    return new Promise((resolve) => {
-        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
-            okButton: false,
-            cancelButton: 'Cancel',
-            wide: true,
-            large: true,
-            allowVerticalScrolling: true,
-            onClose: () => resolve(null)
-        });
-        
-        // Attach event listeners synchronously before showing the popup
-        setupKeywordSelectionEventListeners(popup, resolve);
-        popup.show();
-    });
-}
-
-/**
- * Setup event listeners for keyword selection popup
- */
-function setupKeywordSelectionEventListeners(popup, resolve) {
-    const popupElement = popup.dlg;
-    
-    // ST Generate button
-    popupElement.querySelector('#stmb-keyword-st-generate')?.addEventListener('click', () => {
-        popup.completeCancelled();
-        resolve({ method: 'st-generate', userKeywords: [] });
-    });
-    
-    // AI Keywords button  
-    popupElement.querySelector('#stmb-keyword-ai-generate')?.addEventListener('click', () => {
-        popup.completeCancelled();
-        resolve({ method: 'ai-keywords', userKeywords: [] });
-    });
-    
-    // Manual Entry button
-    popupElement.querySelector('#stmb-keyword-user-input')?.addEventListener('click', () => {
-        const manualSection = popupElement.querySelector('#stmb-manual-keywords-section');
-        const textArea = popupElement.querySelector('#stmb-manual-keywords');
-        
-        if (manualSection.style.display === 'none') {
-            // Show manual input section
-            manualSection.style.display = 'block';
-            textArea.focus();
-            
-            // Add confirm button for manual entry
-            let confirmBtn = popupElement.querySelector('#stmb-manual-confirm');
-            if (!confirmBtn) {
-                confirmBtn = document.createElement('div');
-                confirmBtn.id = 'stmb-manual-confirm';
-                confirmBtn.className = 'menu_button';
-                confirmBtn.innerHTML = '<i class="fa-solid fa-check"></i> Use These Keywords';
-                confirmBtn.style.marginTop = '10px';
-                
-                confirmBtn.addEventListener('click', () => {
-                    const keywordText = textArea.value.trim();
-                    if (!keywordText) {
-                        toastr.warning('Please enter at least one keyword', 'STMemoryBooks');
-                        return;
-                    }
-                    
-                    // Parse and validate keywords
-                    const userKeywords = keywordText
-                        .split(',')
-                        .map(k => k.trim())
-                        .filter(k => k.length > 0 && k.length <= 25)
-                        .slice(0, 8);
-                    
-                    if (userKeywords.length === 0) {
-                        toastr.warning('No valid keywords found. Keywords must be 1-25 characters each.', 'STMemoryBooks');
-                        return;
-                    }
-                    
-                    popup.completeCancelled();
-                    resolve({ method: 'user-input', userKeywords: userKeywords });
-                });
-                
-                manualSection.appendChild(confirmBtn);
-            }
-        }
-    });
 }
 
 /**

@@ -15,7 +15,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/Sla
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory, completeMemoryWithKeywords } from './stmemory.js';
+import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
 import { 
     editProfile, 
@@ -40,7 +40,6 @@ import {
 import { settingsTemplate } from './templates.js';
 import { 
     showConfirmationPopup, 
-    showKeywordSelectionPopup,
     fetchPreviousSummaries,
     calculateTokensWithContext
 } from './confirmationPopup.js';
@@ -168,20 +167,6 @@ function cleanupChatObserver() {
         clearTimeout(updateTimeout);
         updateTimeout = null;
     }
-}
-
-/**
- * Prepare memory result for keyword selection dialog
- */
-function prepareForKeywordDialog(memoryResult) {
-    return {
-        formattedContent: memoryResult.content,
-        displayMetadata: {
-            sceneRange: memoryResult.metadata?.sceneRange || 'Unknown',
-            characterName: memoryResult.metadata?.characterName || 'Unknown',
-            profileUsed: memoryResult.metadata?.profileUsed || 'Unknown'
-        }
-    };
 }
 
 /**
@@ -371,14 +356,14 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
         toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
         
-        // Generate memory (profileSettings now contains all necessary connection info)
+        // Generate memory (tool calling guarantees complete result)
         toastr.info('Generating memory with AI...', 'STMemoryBooks');
         const memoryResult = await createMemory(compiledScene, profileSettings, {
             tokenWarningThreshold: tokenThreshold
         });
         
-        // Handle keyword selection and finalization
-        const finalResult = await handleMemoryCompletion(memoryResult, memoryFetchResult, stats);
+        // SIMPLIFIED: No keyword handling needed - tool calling provides complete result
+        const finalResult = memoryResult;
         
         // Add to lorebook
         toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
@@ -395,7 +380,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
         }, 1000);
         
-} catch (error) {
+    } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
         
         // Provide specific error messages for tool calling issues
@@ -403,7 +388,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.error('Function calling must be enabled in OpenAI settings for memory creation to work.', 'STMemoryBooks', {
                 timeOut: 10000,
                 onclick: () => {
-                    // Could potentially open settings or provide more guidance
                     toastr.info('Go to OpenAI Settings → Advanced → Enable Function Calling', 'STMemoryBooks', { timeOut: 15000 });
                 }
             });
@@ -417,31 +401,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     } finally {
         isProcessingMemory = false;
     }
-}
-
-/**
- * Handle memory completion including keyword selection if needed
- */
-async function handleMemoryCompletion(memoryResult, memoryFetchResult, stats) {
-    if (memoryResult.needsKeywordGeneration) {
-        console.log('STMemoryBooks: Keywords need user selection, showing keyword dialog');
-        
-        const preparedResult = prepareForKeywordDialog(memoryResult);
-        const keywordChoice = await showKeywordSelectionPopup(preparedResult);
-        
-        if (!keywordChoice) {
-            throw new Error('User cancelled keyword selection');
-        }
-        
-        toastr.info('Completing memory with selected keyword method...', 'STMemoryBooks');
-        return await completeMemoryWithKeywords(
-            memoryResult, 
-            keywordChoice.method, 
-            keywordChoice.userKeywords
-        );
-    }
-    
-    return memoryResult;
 }
 
 /**

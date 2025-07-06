@@ -68,24 +68,10 @@ export async function createMemory(compiledScene, profile, options = {}) {
         // 4. Generate memory using tool calling with TOTAL context override
         const toolResult = await generateMemoryWithAI(promptString, profile);
         
-        // 5. Process the structured tool result
+        // 5. Process the structured tool result (simplified - no keyword checking)
         const processedMemory = processToolResult(toolResult, compiledScene);
         
-        // Check if keywords need user intervention
-        if (processedMemory.needsKeywordGeneration) {
-            console.log(`${MODULE_NAME}: Keywords need user intervention`);
-            
-            return {
-                content: processedMemory.content,
-                extractedTitle: processedMemory.extractedTitle,
-                compiledScene: compiledScene,
-                profile: profile,
-                needsKeywordGeneration: true,
-                tokenUsage: tokenEstimate
-            };
-        }
-        
-        // 6. Create the final memory object
+        // 6. Create the final memory object (tool calling guarantees complete result)
         const memoryResult = {
             content: processedMemory.content,
             extractedTitle: processedMemory.extractedTitle,
@@ -459,40 +445,8 @@ function processToolResult(toolResult, compiledScene) {
     return {
         content: content,
         extractedTitle: title || 'Memory',
-        suggestedKeys: keywords && keywords.length > 0 ? keywords : null,
-        needsKeywordGeneration: !keywords || keywords.length === 0
+        suggestedKeys: keywords
     };
-}
-
-/**
- * Generates fallback keywords from the memory content for lorebook keys.
- * @private
- * @param {string} content - The generated memory content.
- * @param {string} characterName - The name of the main character.
- * @returns {Array<string>} An array of suggested keywords.
- */
-function generateFallbackKeys(content, characterName) {
-    const keys = new Set();
-    
-    // Always add the character's name as a primary key
-    if (characterName) {
-        keys.add(characterName);
-    }
-    
-    // A simple regex to find capitalized words (potential proper nouns)
-    const properNouns = content.match(/\b[A-Z][a-z]{2,}\b/g) || [];
-    properNouns.forEach(noun => {
-        // Exclude common words that might start a sentence
-        if (!['The', 'A', 'An', 'He', 'She', 'It', 'They', 'User'].includes(noun) && noun !== characterName) {
-            keys.add(noun);
-        }
-    });
-    
-    // Limit to a reasonable number of keys to avoid clutter
-    const keyArray = Array.from(keys).slice(0, 8);
-    console.log(`${MODULE_NAME}: Generated ${keyArray.length} fallback keywords:`, keyArray);
-    
-    return keyArray;
 }
 
 /**
@@ -516,150 +470,6 @@ export function getAvailablePresets() {
  */
 export function validatePreset(presetKey) {
     return isValidPreset(presetKey);
-}
-
-/**
- * Complete memory creation with user-chosen keyword generation method
- * @param {Object} keywordPromptResult - Result from createMemory() when keywords needed
- * @param {string} method - 'st-generate', 'ai-keywords', or 'user-input'
- * @param {Array<string>} userKeywords - Keywords provided by user (for 'user-input' method)
- * @returns {Promise<Object>} Complete memory result
- */
-export async function completeMemoryWithKeywords(keywordPromptResult, method, userKeywords = []) {
-    console.log(`${MODULE_NAME}: Completing memory with keyword method: ${method}`);
-    
-    const { content, extractedTitle, compiledScene, profile, tokenUsage } = keywordPromptResult;
-    let finalKeywords = [];
-    
-    try {
-        switch (method) {
-            case 'st-generate':
-                // Use SillyTavern's built-in keyword generation
-                finalKeywords = generateFallbackKeys(content, compiledScene.metadata.characterName);
-                break;
-                
-            case 'ai-keywords':
-                // Send keywords-only request to AI using keywords preset
-                finalKeywords = await generateKeywordsWithAI(compiledScene, profile);
-                break;
-                
-            case 'user-input':
-                // Use user-provided keywords
-                finalKeywords = Array.isArray(userKeywords) ? userKeywords : [];
-                break;
-                
-            default:
-                throw new Error(`Unknown keyword generation method: ${method}`);
-        }
-        
-        console.log(`${MODULE_NAME}: Generated ${finalKeywords.length} keywords using ${method} method`);
-        
-        // Create final memory object
-        const memoryResult = {
-            content: content,
-            extractedTitle: extractedTitle,
-            metadata: {
-                sceneRange: `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`,
-                messageCount: compiledScene.metadata.messageCount,
-                characterName: compiledScene.metadata.characterName,
-                userName: compiledScene.metadata.userName,
-                chatId: compiledScene.metadata.chatId,
-                createdAt: new Date().toISOString(),
-                profileUsed: profile.name,
-                presetUsed: profile.preset || 'custom',
-                keywordMethod: method,
-                tokenUsage: tokenUsage,
-                version: '1.0'
-            },
-            suggestedKeys: finalKeywords,
-            lorebook: {
-                content: content,
-                comment: `Auto-generated memory from messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}. Profile: ${profile.name}. Keywords: ${method}.`,
-                key: finalKeywords || [],
-                keysecondary: [],
-                selective: true,
-                constant: false,
-                order: 100,
-                position: 'before_char',
-                disable: false,
-                addMemo: true,
-                excludeRecursion: false,
-                delayUntilRecursion: false,
-                probability: 100,
-                useProbability: false
-            }
-        };
-        
-        console.log(`${MODULE_NAME}: Memory creation completed successfully with ${method} keywords`);
-        return memoryResult;
-        
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error completing memory with keywords:`, error);
-        throw new AIResponseError(`Keyword generation failed: ${error.message}`);
-    }
-}
-
-/**
- * Generate keywords using AI with the proven keywords preset
- * @private
- */
-async function generateKeywordsWithAI(compiledScene, profile) {
-    console.log(`${MODULE_NAME}: Generating keywords using proven prompt approach`);
-    
-    try {
-        // Use the keywords preset but make it clear this is for memory creation
-        const keywordsPrompt = `${getPresetPrompt('keywords')}
-
-${formatSceneForAI(compiledScene.messages, compiledScene.metadata)}
-
-Focus on generating 3-8 relevant keywords that would help retrieve this conversation when similar topics, characters, locations, or themes are mentioned.`;
-
-        // Clear any previous results
-        delete window.STMemoryBooks_toolResult;
-        
-        // Make the tool call - the enhanced tool description should guide model to use createMemory tool
-        await generateQuietPrompt(keywordsPrompt, false, true);
-        
-        // RACE CONDITION FIX: Replace fixed pause with resilient polling loop
-        console.log(`${MODULE_NAME}: Waiting for keywords tool result...`);
-        let attempts = 0;
-        const maxAttempts = 50; // Wait for a maximum of 5 seconds (50 * 100ms)
-        while (!window.STMemoryBooks_toolResult && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.STMemoryBooks_toolResult) {
-            console.warn(`${MODULE_NAME}: Timed out waiting for keywords tool result after ${maxAttempts * 100}ms.`);
-            throw new Error('AI did not generate keywords using tool calling');
-        }
-        
-        const result = window.STMemoryBooks_toolResult;
-        delete window.STMemoryBooks_toolResult;
-        
-        const keywords = Array.isArray(result.keywords) ? result.keywords : [];
-        
-        if (keywords.length === 0) {
-            throw new Error('AI generated no keywords');
-        }
-        
-        // Validate and clean keywords
-        const validKeywords = keywords
-            .filter(kw => typeof kw === 'string' && kw.trim().length > 0 && kw.trim().length <= 25)
-            .map(kw => kw.trim())
-            .slice(0, 8);
-        
-        console.log(`${MODULE_NAME}: AI generated ${validKeywords.length} keywords using proven prompt:`, validKeywords);
-        return validKeywords;
-        
-    } catch (error) {
-        console.error(`${MODULE_NAME}: AI keyword generation failed:`, error);
-        // Fallback to ST generation if AI fails
-        return generateFallbackKeys(
-            compiledScene.messages.map(m => m.mes).join(' '), 
-            compiledScene.metadata.characterName
-        );
-    }
 }
 
 /**

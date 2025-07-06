@@ -188,19 +188,58 @@ export function getCurrentModelSettings() {
 }
 
 /**
- * Preset prompt definitions - Original precise prompts optimized for tool usage
- * These are the proven prompts that provide technical precision and formatting requirements
+ * Preset prompt definitions - Updated for tool calling architecture
+ * All prompts now explicitly instruct the AI to use the createMemory tool
  */
 export const PRESET_PROMPTS = {
-    'summary': "You are a talented summarist skilled at capturing scenes from stories in a few words. First, estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Then, create a detailed beat-by-beat summary in narrative prose that captures this scene accurately without losing much information. This summary will go in a vectorized database, so it is important to be token-efficient.\n\n- Give it a title that's 1-3 words long.\n- Make sure to include all important story beats/events that happened, key interaction highlights, notable details, memorable quotes, outcome, and anything else that might be important and relevant to future interactions between {{user}} and {{char}}. Capture as much nuance as you can without repeating this word for word. Make it easy to read and digest both for you and also for human readers.\n- At the end, provide a comma-delimited list of keywords suitable for copy-paste that would help a vectorized database find the summary again if a keyword is mentioned.",
+    'summary': "You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and use the `createMemory` function tool to generate a detailed memory.\n\n" +
+               "For the tool's `memory_content` parameter, create a detailed beat-by-beat summary in narrative prose. First, estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Then capture this scene accurately without losing ANY important information. This summary will go in a vectorized database, so include:\n" +
+               "- All important story beats/events that happened\n" +
+               "- Key interaction highlights and character developments\n" +
+               "- Notable details, memorable quotes, and revelations\n" +
+               "- Outcome and anything else important for future interactions between {{user}} and {{char}}\n" +
+               "Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.\n\n" +
+               "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
+               "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords for vectorized database retrieval.",
 
-    'summarize': "Write a detailed summary for this roleplay and present it using headers and bullet points. Estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Give it a title that's 1-3 words long. Capture story beats/events that happened, key interaction highlights, notable details, and outcome. Finally, generate a comma-delimited list of keywords that would help a vectorized database find this conversation again if something is mentioned.\n\nResponse format:\n# Scene Summary - Day X - Title\n## Story Beats\n(story beats in bullet points)\n## Key Interactions\n(key interactions in bullet points)\n## Notable Details\n(notable details in bullet points)\n## Outcome\n(outcome in bullet points)\n\nKeywords: keyword1, keyword2, keyword phrase 3... etc",
+    'summarize': "Analyze the following roleplay scene and use the `createMemory` function tool to generate a structured summary.\n\n" +
+                 "For the tool's `memory_content` parameter, create a detailed summary using markdown with these headers:\n" +
+                 "- **Timeline**: Start with an estimation of the story timeline (e.g., Day 1, Day 2) based on earlier scene summaries included (if any).\n" +
+                 "- **Story Beats**: List all important plot events and story developments that occurred.\n" +
+                 "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
+                 "- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.\n" +
+                 "- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.\n\n" +
+                 "For the tool's `title` parameter, provide a concise title for the scene (1-3 words).\n\n" +
+                 "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords that would help a vectorized database find this conversation again if something is mentioned.\n\n" +
+                 "Ensure you capture ALL important information - comprehensive detail is more important than brevity.",
 
-    'synopsis': "Estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any) and then write a long and detailed beat-by-beat summary that captures the most recent scene accurately without losing much information. This summary will go in a vectorized database, so it is important to be token-efficient (headings and bullet points are ideal). You must include important story beats/events that happened, key interaction highlights, notable details, memorable quotes, outcome, and anything else that might be important and relevant to future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating things verbatim. Make it easy to read and digest both for you and also for human readers. At the end, provide a comma-delimited list of keywords that would help a vectorized database find this conversation again if a keyword is mentioned.\n\nResponse format:\n# Title\n## Story Beats\n(story beats in bullet points)\n## Key Interactions\n(key interactions in bullet points)\n## Notable Details\n(notable details in bullet points)\n## Outcome\n(outcome in bullet points)\n\nKeywords: keyword1, keyword2, keyword phrase 3... etc",
+    'synopsis': "Analyze the following roleplay scene and use the `createMemory` function tool to generate a comprehensive synopsis.\n\n" +
+                "For the tool's `memory_content` parameter, create a long and detailed beat-by-beat summary using markdown structure. Start by estimating where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then write a thorough summary that captures the most recent scene accurately without losing ANY information. Use this structure:\n" +
+                "# [Scene Title]\n" +
+                "**Timeline**: Day X estimation\n" +
+                "## Story Beats\n" +
+                "- (List all important plot events and developments)\n" +
+                "## Key Interactions\n" +
+                "- (Detail all significant character interactions and dialogue)\n" +
+                "## Notable Details\n" +
+                "- (Include memorable quotes, revelations, objects, settings)\n" +
+                "## Outcome\n" +
+                "- (Describe results, resolutions, and final state)\n\n" +
+                "Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.\n\n" +
+                "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
+                "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords for vectorized database retrieval.",
 
-    'sumup': "write a beat summary that captures this scene. Estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Narrate important story beats/events that happened, key interaction highlights, notable details, memorable quotes, and outcome. At the end, provide a comma-delimited list of keywords that would help a vectorized database find the summary again if a keyword is mentioned.\n\nResponse format:\n# Scene Summary - Day X - Title\n(summary)\nKeywords: keyword1, keyword2, keyword phrase 3... etc",
+    'sumup': "Analyze the following roleplay scene and use the `createMemory` function tool to generate a beat summary.\n\n" +
+             "For the tool's `memory_content` parameter, write a comprehensive beat summary that captures this scene completely. Format it as:\n" +
+             "# Scene Summary - Day X - [Title]\n" +
+             "First estimate where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost.\n\n" +
+             "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
+             "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords that would help a vectorized database find this summary again if mentioned.",
 
-    'keywords': "Generate a comma-delimited list of keywords that would help a vectorized database find this conversation again if a keyword is mentioned."
+    'keywords': "Analyze the following roleplay scene and use the `createMemory` function tool to create a minimal memory entry.\n\n" +
+                "For the tool's `memory_content` parameter, provide a very brief 1-2 sentence summary of what happened in this scene.\n\n" +
+                "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
+                "For the tool's `keywords` parameter, generate 3-8 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later."
 };
 
 /**
