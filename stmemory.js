@@ -153,29 +153,6 @@ function validateInputs(compiledScene, profile) {
 }
 
 /**
- * Builds the complete prompt string to be sent to the AI.
- * @private
- * @param {Object} compiledScene - The compiled scene data.
- * @param {Object} profile - The user-selected profile.
- * @returns {Promise<string>} The fully formatted prompt string.
- */
-async function buildPrompt(compiledScene, profile) {
-    const { metadata, messages, previousSummariesContext } = compiledScene;
-    
-    // Use utils.js to get the effective prompt (handles presets, custom prompts, and fallbacks)
-    const systemPrompt = getEffectivePrompt(profile);
-    
-    // Use substituteParams to allow for standard macros like {{char}} and {{user}}
-    const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);
-    
-    // Build scene text for user prompt
-    const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
-    
-    // Combine system prompt and scene text into a single prompt
-    return `${processedSystemPrompt}\n\n${sceneText}`;
-}
-
-/**
  * Formats the array of scene messages into a single text block for the AI.
  * @private
  * @param {Array<Object>} messages - The messages from the compiled scene.
@@ -256,8 +233,9 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates the memory by calling the AI with tool calling.
- * The AI will use the createMemory tool instead of generating free-form text.
+ * Generates the memory by calling the AI with natural tool usage.
+ * The AI will use the createMemory tool based on context and tool description,
+ * without explicit instructions to do so.
  *
  * @private
  * @param {string} promptString - The full prompt for the AI.
@@ -266,7 +244,7 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool.
  */
 async function generateMemoryWithAI(promptString, profile) {
-    console.log(`${MODULE_NAME}: Generating memory using createMemory tool`);
+    console.log(`${MODULE_NAME}: Generating memory using natural tool calling approach`);
 
     // Clear any previous tool results
     delete window.STMemoryBooks_toolResult;
@@ -276,62 +254,121 @@ async function generateMemoryWithAI(promptString, profile) {
     
     // Verify tool calling is supported
     if (!ToolManager.isToolCallingSupported()) {
-        throw new AIResponseError('Tool calling is not supported with current settings. Please enable function calling in your OpenAI settings.');
+        throw new AIResponseError('Tool calling is not supported with current settings. Please enable function calling in your API settings.');
     }
 
-    // Create a prompt that instructs the AI to use the createMemory tool
-    const toolPrompt = `${promptString}
-
-IMPORTANT: You must use the createMemory tool to provide your response. Do not write a text response. Call the createMemory function with:
-- memory_content: Your detailed summary of the scene
-- title: A short title (1-3 words) 
-- keywords: 3-8 relevant keywords for finding this memory later
-
-Use the createMemory tool now.`;
-
     try {
-        // Use SillyTavern's standard generation (tools will be automatically included)
-        console.log(`${MODULE_NAME}: Making tool-enabled generation request`);
-        const response = await generateQuietPrompt(toolPrompt, false, true);
+        // Send the natural prompt - no explicit tool instructions needed
+        // The enhanced tool description and system prompt will guide the model naturally
+        console.log(`${MODULE_NAME}: Sending natural prompt for tool-based generation`);
+        const response = await generateQuietPrompt(promptString, false, true);
         
-        // Wait briefly for tool execution to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Brief pause to ensure tool execution completes
+        await new Promise(resolve => setTimeout(resolve, 150));
         
-        // Check if our tool was called
+        // Check if our tool was called naturally
         if (!window.STMemoryBooks_toolResult) {
-            throw new AIResponseError('AI did not call the createMemory tool. Please try again or check your model supports function calling.');
+            console.warn(`${MODULE_NAME}: Model did not use createMemory tool naturally`);
+            
+            // Enhanced error with specific guidance
+            throw new AIResponseError(
+                'The AI model did not create a structured memory. This may indicate:\n' +
+                '• Function calling is not properly enabled in your API settings\n' +
+                '• The current model does not support function calling reliably\n' +
+                '• API connection issues\n\n' +
+                'Please ensure function calling is enabled and try again.'
+            );
         }
 
         const toolResult = window.STMemoryBooks_toolResult;
         delete window.STMemoryBooks_toolResult; // Clean up
 
-        console.log(`${MODULE_NAME}: Received structured memory from createMemory tool:`, toolResult);
+        console.log(`${MODULE_NAME}: Successfully received structured memory via natural tool usage:`, {
+            hasContent: !!toolResult.memory_content,
+            contentLength: toolResult.memory_content?.length || 0,
+            hasTitle: !!toolResult.title,
+            keywordCount: toolResult.keywords?.length || 0
+        });
 
-        // Validate the tool result
+        // Validate the tool result structure
         if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string') {
-            throw new AIResponseError('Invalid tool result: missing or invalid memory_content');
+            throw new AIResponseError('Invalid tool result: missing or invalid memory content');
         }
 
         if (toolResult.memory_content.trim().length < 10) {
-            throw new AIResponseError('Generated memory content is too short');
+            throw new AIResponseError('Generated memory content is too short to be useful');
         }
+
+        // Validate title
+        if (!toolResult.title || typeof toolResult.title !== 'string') {
+            console.warn(`${MODULE_NAME}: Tool result missing title, using default`);
+            toolResult.title = 'Memory';
+        }
+
+        // Validate keywords
+        if (!Array.isArray(toolResult.keywords)) {
+            console.warn(`${MODULE_NAME}: Tool result missing or invalid keywords, will need keyword generation`);
+            toolResult.keywords = [];
+        }
+
+        // Filter and validate individual keywords
+        const validKeywords = toolResult.keywords
+            .filter(kw => typeof kw === 'string' && kw.trim().length > 0 && kw.trim().length <= 25)
+            .map(kw => kw.trim())
+            .slice(0, 8); // Enforce max limit
 
         // Return structured result
         return {
             content: toolResult.memory_content.trim(),
-            title: toolResult.title || 'Memory',
-            keywords: Array.isArray(toolResult.keywords) ? toolResult.keywords : []
+            title: toolResult.title.trim(),
+            keywords: validKeywords
         };
 
     } catch (error) {
         console.error(`${MODULE_NAME}: Tool-based memory generation failed:`, error);
         
+        // Re-throw known error types
         if (error instanceof AIResponseError) {
             throw error;
         }
         
+        // Handle specific API/tool errors with better messaging
+        if (error.message?.includes('function_calling')) {
+            throw new AIResponseError('Function calling must be enabled in your API settings for memory creation to work.');
+        }
+        
+        if (error.message?.includes('tool_choice')) {
+            throw new AIResponseError('Your API does not support the required tool calling features. Please check your model and API settings.');
+        }
+        
+        // Generic fallback error
         throw new AIResponseError(`Memory generation failed: ${error.message}`);
     }
+}
+
+/**
+ * Build the complete prompt string using proven system prompts
+ * The original prompts are technically precise and optimized for vectorized databases
+ * @private
+ * @param {Object} compiledScene - The compiled scene data.
+ * @param {Object} profile - The user-selected profile.
+ * @returns {Promise<string>} The fully formatted prompt string.
+ */
+async function buildPrompt(compiledScene, profile) {
+    const { metadata, messages, previousSummariesContext } = compiledScene;
+    
+    // Use utils.js to get the effective prompt (proven prompts with precise formatting requirements)
+    const systemPrompt = getEffectivePrompt(profile);
+    
+    // Use substituteParams to allow for standard macros like {{char}} and {{user}}
+    const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);
+    
+    // Build scene text for user prompt
+    const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
+    
+    // Combine system prompt and scene - trust the enhanced tool description and proven prompts
+    // to naturally guide the model to use the createMemory tool without explicit forcing
+    return `${processedSystemPrompt}\n\n${sceneText}`;
 }
 
 /**
@@ -490,29 +527,29 @@ export async function completeMemoryWithKeywords(keywordPromptResult, method, us
 }
 
 /**
- * Generate keywords using AI with the keywords preset from utils.js
+ * Generate keywords using AI with the proven keywords preset
  * @private
  */
 async function generateKeywordsWithAI(compiledScene, profile) {
-    console.log(`${MODULE_NAME}: Generating keywords using createMemory tool with keywords-only prompt`);
+    console.log(`${MODULE_NAME}: Generating keywords using proven prompt approach`);
     
     try {
-        // Create a keywords-focused prompt
-        const keywordsPrompt = `Based on this scene, generate only keywords for a vectorized database.
-        
+        // Use the keywords preset but make it clear this is for memory creation
+        const keywordsPrompt = `${getPresetPrompt('keywords')}
+
 ${formatSceneForAI(compiledScene.messages, compiledScene.metadata)}
 
-Generate 3-8 keywords that would help find this scene later. Use the createMemory tool with only the keywords field filled - leave memory_content as "keywords only".`;
+Focus on generating 3-8 relevant keywords that would help retrieve this conversation when similar topics, characters, locations, or themes are mentioned.`;
 
         // Clear any previous results
         delete window.STMemoryBooks_toolResult;
         
-        // Make the tool call
+        // Make the tool call - the enhanced tool description should guide model to use createMemory tool
         await generateQuietPrompt(keywordsPrompt, false, true);
         await new Promise(resolve => setTimeout(resolve, 100));
         
         if (!window.STMemoryBooks_toolResult) {
-            throw new Error('AI did not call createMemory tool for keywords');
+            throw new Error('AI did not generate keywords using tool calling');
         }
         
         const result = window.STMemoryBooks_toolResult;
@@ -524,8 +561,14 @@ Generate 3-8 keywords that would help find this scene later. Use the createMemor
             throw new Error('AI generated no keywords');
         }
         
-        console.log(`${MODULE_NAME}: AI generated ${keywords.length} keywords:`, keywords);
-        return keywords;
+        // Validate and clean keywords
+        const validKeywords = keywords
+            .filter(kw => typeof kw === 'string' && kw.trim().length > 0 && kw.trim().length <= 25)
+            .map(kw => kw.trim())
+            .slice(0, 8);
+        
+        console.log(`${MODULE_NAME}: AI generated ${validKeywords.length} keywords using proven prompt:`, validKeywords);
+        return validKeywords;
         
     } catch (error) {
         console.error(`${MODULE_NAME}: AI keyword generation failed:`, error);
@@ -534,6 +577,107 @@ Generate 3-8 keywords that would help find this scene later. Use the createMemor
             compiledScene.messages.map(m => m.mes).join(' '), 
             compiledScene.metadata.characterName
         );
+    }
+}
+
+/**
+ * Enhanced error handling for the main memory creation process
+ */
+async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
+    const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
+    
+    try {
+        toastr.info('Compiling scene messages...', 'STMemoryBooks');
+        
+        // Create and compile scene
+        const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
+        const compiledScene = compileScene(sceneRequest);
+        
+        // Validate compiled scene
+        const validation = validateCompiledScene(compiledScene);
+        if (!validation.valid) {
+            throw new Error(`Scene compilation failed: ${validation.errors.join(', ')}`);
+        }
+        
+        // Fetch previous memories if requested
+        let previousMemories = [];
+        let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
+        if (summaryCount > 0) {
+            toastr.info(`Fetching ${summaryCount} previous memories for context...`, 'STMemoryBooks');
+            memoryFetchResult = await fetchPreviousSummaries(summaryCount, settings, chat_metadata);
+            previousMemories = memoryFetchResult.summaries;
+            
+            if (memoryFetchResult.actualCount > 0) {
+                if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
+                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
+                }
+                console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
+            } else {
+                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
+            }
+        }
+        
+        // Add context and show progress
+        compiledScene.previousSummariesContext = previousMemories;
+        const stats = getSceneStats(compiledScene);
+        const actualTokens = estimateTokenCount(compiledScene);
+        const contextInfo = memoryFetchResult.actualCount > 0 ? 
+            ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
+        toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
+        
+        // Generate memory using natural tool calling
+        toastr.info('Generating memory with AI...', 'STMemoryBooks');
+        const memoryResult = await createMemory(compiledScene, profileSettings, {
+            tokenWarningThreshold: tokenThreshold
+        });
+        
+        // Handle keyword selection and finalization
+        const finalResult = await handleMemoryCompletion(memoryResult, memoryFetchResult, stats);
+        
+        // Add to lorebook
+        toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
+        const addResult = await addMemoryToLorebook(finalResult, lorebookValidation);
+        
+        if (!addResult.success) {
+            throw new Error(addResult.error || 'Failed to add memory to lorebook');
+        }
+        
+        // Success notification
+        const contextMsg = memoryFetchResult.actualCount > 0 ? 
+            ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
+        setTimeout(() => {
+            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
+        }, 1000);
+        
+    } catch (error) {
+        console.error('STMemoryBooks: Error creating memory:', error);
+        
+        // Enhanced error messaging for tool calling issues
+        if (error.message.includes('Tool calling is not supported') || 
+            error.message.includes('function calling')) {
+            toastr.error(
+                'Function calling must be enabled for memory creation. Check your API settings and ensure your model supports function calling.',
+                'STMemoryBooks', 
+                { timeOut: 10000 }
+            );
+        } else if (error.message.includes('did not create a structured memory') || 
+                   error.message.includes('did not use createMemory tool')) {
+            toastr.error(
+                'The AI model did not create a memory structure. This may indicate function calling is not properly configured or the model does not support it reliably.',
+                'STMemoryBooks', 
+                { timeOut: 8000 }
+            );
+        } else if (error.message.includes('API') || error.message.includes('connection')) {
+            toastr.error(
+                `API connection issue: ${error.message}. Please check your API settings and try again.`,
+                'STMemoryBooks',
+                { timeOut: 6000 }
+            );
+        } else {
+            toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
+        }
+    } finally {
+        isProcessingMemory = false;
     }
 }
 

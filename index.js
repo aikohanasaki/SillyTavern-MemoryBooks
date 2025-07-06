@@ -854,39 +854,44 @@ function handleSceneMemoryCommand(args) {
 }
 
 /**
- * Register the createMemory tool
+ * Register the createMemory tool with enhanced description for natural usage
  */
 function registerMemoryTool() {
-    console.log('STMemoryBooks: Registering createMemory tool');
+    console.log('STMemoryBooks: Registering createMemory tool with enhanced description');
     
     ToolManager.registerFunctionTool({
         name: 'createMemory',
         displayName: 'Create Memory',
-        description: 'Create a structured memory summary from the current conversation scene. Extract key plot points, character interactions, and important details.',
+        description: 'Create a structured memory summary when analyzing conversation scenes. This tool extracts key plot points, character development, important interactions, and story details for future reference. Use when asked to summarize, analyze, or create memories from chat conversations.',
         parameters: {
             type: 'object',
             properties: {
                 memory_content: {
                     type: 'string',
-                    description: 'The main memory content - a detailed summary of the scene'
+                    description: 'A comprehensive summary of the conversation scene including key events, character interactions, plot developments, and important details. Should be detailed enough to serve as a memory for future reference.'
                 },
                 title: {
                     type: 'string',
-                    description: 'A short, descriptive title for the memory (1-3 words)'
+                    description: 'A concise, descriptive title for this memory (1-4 words that capture the essence of the scene)'
                 },
                 keywords: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'Array of 3-8 keywords that would help find this memory later',
+                    description: 'An array of 3-8 relevant keywords or phrases that would help retrieve this memory later when similar topics are mentioned',
+                    minItems: 3,
                     maxItems: 8
                 }
             },
-            required: ['memory_content']
+            required: ['memory_content', 'title', 'keywords']
         },
         action: (params) => {
             // Store the tool result for pickup by the memory creation process
             window.STMemoryBooks_toolResult = params;
-            return JSON.stringify({ success: true, received: true });
+            return JSON.stringify({ 
+                success: true, 
+                received: true,
+                summary: `Created memory: "${params.title}" with ${params.keywords?.length || 0} keywords`
+            });
         },
         stealth: true  // Prevents chat output and follow-up generation
     });
