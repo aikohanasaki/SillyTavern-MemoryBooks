@@ -4,7 +4,7 @@ import {
     chat, 
     chat_metadata, 
     saveSettingsDebounced,
-    characters
+    characters,
     name1, 
     name2 
 } from '../../../../script.js';
