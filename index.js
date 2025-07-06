@@ -5,6 +5,7 @@ import {
     chat_metadata, 
     saveSettingsDebounced,
     characters,
+    this_chid,
     name1, 
     name2 
 } from '../../../../script.js';
