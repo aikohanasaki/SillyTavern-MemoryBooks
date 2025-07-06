@@ -9,6 +9,12 @@ import { getCurrentModelSettings, getEffectivePrompt, getPresetPrompt, generateS
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 
+// Define semantic mappings for custom popup results using SillyTavern's provided constants
+const STMB_POPUP_RESULTS = {
+    ADVANCED: POPUP_RESULT.CUSTOM1,
+    SAVE_PROFILE: POPUP_RESULT.CUSTOM2
+};
+
 /**
  * Show simplified confirmation popup for memory creation
  */
@@ -40,7 +46,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
             customButtons: [
                 {
                     text: 'Advanced Options...',
-                    result: 'advanced',
+                    result: STMB_POPUP_RESULTS.ADVANCED, // ✅ Now using numeric constant
                     classes: ['menu_button'],
                     action: null
                 }
@@ -61,7 +67,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
                     overrideSettings: false
                 }
             };
-        } else if (result === 'advanced') {
+        } else if (result === STMB_POPUP_RESULTS.ADVANCED) { // ✅ Now checking numeric constant
             // Show advanced options popup (now handled in this module)
             const advancedResult = await showAdvancedOptionsPopup(
                 sceneData, 
@@ -125,7 +131,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
             customButtons: [
                 {
                     text: 'Save as New Profile',
-                    result: 'save_profile',
+                    result: STMB_POPUP_RESULTS.SAVE_PROFILE, // ✅ Now using numeric constant
                     classes: ['menu_button'],
                     action: null
                 }
@@ -140,7 +146,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         // Handle different results
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             return await handleAdvancedConfirmation(popup, settings);
-        } else if (result === 'save_profile') {
+        } else if (result === STMB_POPUP_RESULTS.SAVE_PROFILE) { // ✅ Now checking numeric constant
             return await handleSaveNewProfile(popup, settings);
         }
         
