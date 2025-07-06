@@ -285,55 +285,67 @@ function getNextEntryNumber(lorebookData, titleFormat) {
 
 /**
  * Creates a regex pattern to match existing memories based on title format
+ * FIXED: Completely rewritten with a simpler, more reliable approach
  * @private
  * @param {string} titleFormat - The title format template
  * @returns {RegExp|null} Regex pattern to match existing memories, or null if pattern creation fails
  */
 function createMemoryMatchPattern(titleFormat) {
     try {
-        let pattern = titleFormat;
-
-        // Define placeholders and their temporary markers and final regex patterns
-        const placeholderMap = {
-            '{{title}}':    { marker: '__TITLE__',    regex: '[^\\[\\]]+' },
-            '{{scene}}':    { marker: '__SCENE__',    regex: 'Scene \\d+-\\d+' },
-            '{{char}}':     { marker: '__CHAR__',     regex: '[^\\[\\]]+' },
-            '{{user}}':     { marker: '__USER__',     regex: '[^\\[\\]]+' },
-            '{{messages}}': { marker: '__MESSAGES__', regex: '\\d+' },
-            '{{profile}}':  { marker: '__PROFILE__',  regex: '[^\\[\\]]+' },
-            '{{date}}':     { marker: '__DATE__',     regex: '[^\\[\\]]+' },
-            '{{time}}':     { marker: '__TIME__',     regex: '[^\\[\\]]+' },
+        console.log(`${MODULE_NAME}: Creating memory match pattern from format: "${titleFormat}"`);
+        
+        // Define placeholder patterns - what each placeholder can match
+        const placeholderPatterns = {
+            '{{title}}': '[^\\[\\]]+?',      // Any text except brackets (non-greedy)
+            '{{scene}}': 'Scene \\d+-\\d+',  // Specific scene format
+            '{{char}}': '[^\\[\\]]+?',       // Character names (non-greedy)
+            '{{user}}': '[^\\[\\]]+?',       // User names (non-greedy)
+            '{{messages}}': '\\d+',          // Number of messages
+            '{{profile}}': '[^\\[\\]]+?',    // Profile names (non-greedy)
+            '{{date}}': '[^\\[\\]]+?',       // Date in any format (non-greedy)
+            '{{time}}': '[^\\[\\]]+?'        // Time in any format (non-greedy)
         };
-
-        // Step 1: Replace placeholders with temporary markers
-        for (const [placeholder, { marker }] of Object.entries(placeholderMap)) {
-            // Escape the placeholder for literal matching
-            const escapedPlaceholder = placeholder.replace(/[{}]/g, '\\$&');
-            pattern = pattern.replace(new RegExp(escapedPlaceholder, 'g'), marker);
-        }
-
-        // Step 2: Escape the entire string (user text + markers)
+        
+        let pattern = titleFormat;
+        
+        // Step 1: Replace numbering patterns [0], [00], [000] with a capture group for any number
+        pattern = pattern.replace(/\[0+\]/g, '\\[(\\d+)\\]');
+        
+        // Step 2: Escape all regex special characters EXCEPT our placeholders
+        // First, temporarily replace placeholders with unique markers
+        const tempMarkers = {};
+        let markerCounter = 0;
+        
+        Object.keys(placeholderPatterns).forEach(placeholder => {
+            const marker = `__PLACEHOLDER_${markerCounter++}__`;
+            tempMarkers[marker] = placeholderPatterns[placeholder];
+            pattern = pattern.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), marker);
+        });
+        
+        // Step 3: Escape all remaining regex special characters
         pattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-        // Step 3: Replace escaped markers with regex patterns
-        for (const { marker, regex } of Object.values(placeholderMap)) {
-            // The marker is now escaped, so match the escaped version
-            const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            pattern = pattern.replace(new RegExp(escapedMarker, 'g'), regex);
-        }
-
-        // Step 4: Handle auto-numbering patterns  
-        // After escaping, [000] becomes \\[000\\], so we match and replace that
-        pattern = pattern.replace(/\\\\\\\[0+\\\\\\\]/g, '\\\\\\[(\\\\\\d+)\\\\\\]');
-
-        // Create final regex with anchors
+        
+        // Step 4: Replace temp markers with their regex patterns
+        Object.entries(tempMarkers).forEach(([marker, regexPattern]) => {
+            pattern = pattern.replace(new RegExp(marker, 'g'), regexPattern);
+        });
+        
+        // Step 5: Create the final regex with anchors
         const regex = new RegExp(`^${pattern}$`, 'i');
-
+        
         console.log(`${MODULE_NAME}: Created memory match pattern: ${regex.source}`);
+        
+        // Quick validation - make sure the regex can be created and is not too permissive
+        if (pattern === '.*' || pattern === '.+') {
+            console.warn(`${MODULE_NAME}: Generated pattern is too permissive, falling back to null`);
+            return null;
+        }
+        
         return regex;
         
     } catch (error) {
         console.error(`${MODULE_NAME}: Error creating memory match pattern:`, error);
+        console.error(`${MODULE_NAME}: Original format was: "${titleFormat}"`);
         return null;
     }
 }

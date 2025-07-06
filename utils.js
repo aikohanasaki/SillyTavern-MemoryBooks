@@ -64,6 +64,32 @@ export function getCurrentApiInfo() {
 }
 
 /**
+ * Get a user-friendly description of the current API setup
+ * @returns {string} Description of current API and model setup
+ */
+export function getCurrentApiDescription() {
+    try {
+        const apiInfo = getCurrentApiInfo();
+        const modelInfo = getCurrentModelSettings();
+        
+        let description = `API: ${apiInfo.api || 'Unknown'}`;
+        
+        if (modelInfo.model) {
+            description += `, Model: ${modelInfo.model}`;
+        }
+        
+        if (typeof modelInfo.temperature === 'number') {
+            description += `, Temp: ${modelInfo.temperature}`;
+        }
+        
+        return description;
+    } catch (error) {
+        console.warn('STMemoryBooks: Error getting API description:', error);
+        return 'Current SillyTavern Settings';
+    }
+}
+
+/**
  * Get the appropriate model and temperature selectors for current completion source
  */
 export function getApiSelectors() {
@@ -93,6 +119,47 @@ export function getApiSelectors() {
         temp: SELECTORS.tempOpenai,
         tempCounter: SELECTORS.tempCounterOpenai
     };
+}
+
+/**
+ * Gets the list of available models from the current API's select dropdown in the UI.
+ * @returns {Array<{value: string, text: string}>} An array of model objects.
+ */
+export function getAvailableModels() {
+    try {
+        const selectors = getApiSelectors();
+        const modelSelectElement = $(selectors.model);
+
+        if (modelSelectElement && modelSelectElement.length > 0) {
+            const models = Array.from(modelSelectElement[0].options)
+                .filter(option => option.value) // Filter out empty options
+                .map(option => ({
+                    value: option.value,
+                    text: option.text || option.value, // Fallback to value if no text
+                }));
+                
+            console.log(`${MODULE_NAME}: Found ${models.length} available models for current API`);
+            return models;
+        }
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Could not get available models from UI:`, error);
+    }
+    
+    // Return empty array if UI scraping fails - template will handle this gracefully
+    return [];
+}
+
+/**
+ * Check if a model value represents a custom model entry
+ * @param {string} modelValue - The model value to check
+ * @param {Array} availableModels - Array of available models from getAvailableModels()
+ * @returns {boolean} Whether this is a custom model
+ */
+export function isCustomModel(modelValue, availableModels) {
+    if (!modelValue) return false;
+    
+    // Check if the model value exists in the available models list
+    return !availableModels.some(model => model.value === modelValue);
 }
 
 /**
@@ -192,14 +259,53 @@ export function validateProfile(profile) {
 }
 
 /**
+ * Get safe template data for model dropdown
+ * @param {Object} profile - Profile object
+ * @returns {Object} Safe template data
+ */
+export function getSafeModelTemplateData(profile) {
+    try {
+        const availableModels = getAvailableModels();
+        const apiInfo = getCurrentApiInfo();
+        const connection = profile?.connection || { temperature: 0.7 };
+        
+        // Determine if current model is custom
+        const isCustom = connection.model ? isCustomModel(connection.model, availableModels) : false;
+        const showCustomInput = isCustom || availableModels.length === 0;
+        const customModelValue = isCustom ? connection.model : '';
+        
+        return {
+            availableModels,
+            currentApi: apiInfo.api || 'Unknown',
+            isCustomModel: isCustom,
+            showCustomInput,
+            customModelValue,
+            modelCount: availableModels.length
+        };
+    } catch (error) {
+        console.error('STMemoryBooks: Error preparing model template data:', error);
+        
+        // Return safe fallback data
+        return {
+            availableModels: [],
+            currentApi: 'Unknown',
+            isCustomModel: true,
+            showCustomInput: true,
+            customModelValue: profile?.connection?.model || '',
+            modelCount: 0
+        };
+    }
+}
+
+/**
  * Clean up profile connection settings
  * Removes empty/invalid values and normalizes structure
+ * Fixed: Removed engine handling
  * @param {Object} connection - Connection settings to clean
  * @returns {Object} Cleaned connection settings
  */
 export function cleanConnectionSettings(connection) {
     if (!connection || typeof connection !== 'object') {
-        // UPDATED: Default temperature to 0.7
         return { temperature: 0.7 };
     }
     
@@ -213,7 +319,7 @@ export function cleanConnectionSettings(connection) {
         // Clamp temperature to reasonable bounds
         cleaned.temperature = Math.max(0, Math.min(2, connection.temperature));
     } else {
-        // UPDATED: Default to 0.7 if no valid temperature provided
+        // Default to 0.7 if no valid temperature provided
         cleaned.temperature = 0.7;
     }
     

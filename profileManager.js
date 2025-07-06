@@ -1,7 +1,6 @@
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { moment, Handlebars, DOMPurify } from '../../../../lib.js';
-import { getCurrentModelSettings } from './utils.js';
 import { 
     getEffectivePrompt, 
     validateProfile, 
@@ -9,13 +8,16 @@ import {
     generateSafeProfileName,
     parseTemperature,
     formatPresetDisplayName,
-    getPresetNames
+    getPresetNames,
+    getAvailableModels,
+    isCustomModel,
+    getCurrentApiInfo  // Fixed: Added missing import
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
 /**
- * Profile edit template - Updated to use SillyTavern's built-in classes
+ * Profile edit template - Updated to remove engine field and use SillyTavern's built-in classes
  */
 const profileEditTemplate = Handlebars.compile(`
 <div class="popup-content">
@@ -78,30 +80,49 @@ export async function editProfile(settings, refreshCallback) {
         return;
     }
     
-    const templateData = {
-        name: profile.name,
-        connection: profile.connection || { engine: 'openai', model: '', temperature: 0.7 },
-        prompt: profile.prompt || '',
-        preset: profile.preset || '',
-        presetOptions: getPresetNames().map(presetName => ({
-            value: presetName,
-            displayName: formatPresetDisplayName(presetName),
-            selected: presetName === profile.preset
-        }))
-    };
-    
-    const content = DOMPurify.sanitize(profileEditTemplate(templateData));
-    
     try {
-        const result = await new Popup(`<h3>Edit Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
+        // Get available models and API info
+        const availableModels = getAvailableModels();
+        const apiInfo = getCurrentApiInfo();
+        const connection = profile.connection || { temperature: 0.7 };
+        
+        // Determine if current model is custom and prepare values
+        const isCustom = connection.model ? isCustomModel(connection.model, availableModels) : false;
+        const showCustomInput = isCustom || availableModels.length === 0;
+        const customModelValue = isCustom ? connection.model : '';
+        
+        const templateData = {
+            name: profile.name,
+            connection: connection,
+            prompt: profile.prompt || '',
+            preset: profile.preset || '',
+            availableModels: availableModels,
+            currentApi: apiInfo.api || 'Unknown',
+            isCustomModel: isCustom,
+            showCustomInput: showCustomInput,
+            customModelValue: customModelValue,
+            presetOptions: getPresetNames().map(presetName => ({
+                value: presetName,
+                displayName: formatPresetDisplayName(presetName),
+                selected: presetName === profile.preset
+            }))
+        };
+        
+        const content = DOMPurify.sanitize(profileEditTemplate(templateData));
+        
+        const popupInstance = new Popup(`<h3>Edit Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Save',
             cancelButton: 'Cancel',
             wide: true
-        }).show();
+        });
+        
+        // Add event handling for the popup
+        setupProfileEditEventHandlers(popupInstance);
+        
+        const result = await popupInstance.show();
         
         if (result === POPUP_RESULT.AFFIRMATIVE) {
-            const popupElement = document.querySelector('.popup');
-            const updatedProfile = buildProfileFromForm(popupElement, profile.name);
+            const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name);
             
             // Validate the updated profile
             if (!validateProfile(updatedProfile)) {
@@ -129,37 +150,46 @@ export async function editProfile(settings, refreshCallback) {
  * @param {Function} refreshCallback - Function to refresh UI after changes
  */
 export async function newProfile(settings, refreshCallback) {
-    const existingNames = settings.profiles.map(p => p.name);
-    const defaultName = generateSafeProfileName('New Profile', existingNames);
-    
-    const templateData = {
-        name: defaultName,
-        connection: {
-            engine: 'openai',
-            model: '',
-            temperature: 0.7
-        },
-        prompt: '',
-        preset: '',
-        presetOptions: getPresetNames().map(presetName => ({
-            value: presetName,
-            displayName: formatPresetDisplayName(presetName),
-            selected: false
-        }))
-    };
-    
-    const content = DOMPurify.sanitize(profileEditTemplate(templateData));
-    
     try {
-        const result = await new Popup(`<h3>New Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
+        const existingNames = settings.profiles.map(p => p.name);
+        const defaultName = generateSafeProfileName('New Profile', existingNames);
+        
+        // Get available models and API info
+        const availableModels = getAvailableModels();
+        const apiInfo = getCurrentApiInfo();
+        
+        const templateData = {
+            name: defaultName,
+            connection: { temperature: 0.7 },
+            prompt: '',
+            preset: '',
+            availableModels: availableModels,
+            currentApi: apiInfo.api || 'Unknown',
+            isCustomModel: false,
+            showCustomInput: availableModels.length === 0, // Show custom input if no models detected
+            customModelValue: '',
+            presetOptions: getPresetNames().map(presetName => ({
+                value: presetName,
+                displayName: formatPresetDisplayName(presetName),
+                selected: false
+            }))
+        };
+        
+        const content = DOMPurify.sanitize(profileEditTemplate(templateData));
+        
+        const popupInstance = new Popup(`<h3>New Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Create',
             cancelButton: 'Cancel',
             wide: true
-        }).show();
+        });
+        
+        // Add event handling for the popup
+        setupProfileEditEventHandlers(popupInstance);
+        
+        const result = await popupInstance.show();
         
         if (result === POPUP_RESULT.AFFIRMATIVE) {
-            const popupElement = document.querySelector('.popup');
-            const newProfileData = buildProfileFromForm(popupElement, defaultName);
+            const newProfileData = buildProfileFromForm(popupInstance.dlg, defaultName);
             
             // Ensure unique name
             const finalName = generateSafeProfileName(newProfileData.name, existingNames);
@@ -339,7 +369,50 @@ export function importProfiles(event, settings, refreshCallback) {
 }
 
 /**
+ * Setup event handlers for profile edit popup
+ * Fixed: Implemented the missing function
+ * @param {Popup} popupInstance - The popup instance to attach handlers to
+ */
+function setupProfileEditEventHandlers(popupInstance) {
+    const popupElement = popupInstance.dlg;
+    
+    // Preset selection handler - show/hide custom prompt section
+    popupElement.querySelector('#stmb-profile-preset')?.addEventListener('change', (e) => {
+        const customPromptSection = popupElement.querySelector('#stmb-custom-prompt-section');
+        const promptTextarea = popupElement.querySelector('#stmb-profile-prompt');
+        
+        if (e.target.value === '') {
+            // Show custom prompt section
+            customPromptSection.classList.remove('displayNone');
+            promptTextarea.focus();
+        } else {
+            // Hide custom prompt section
+            customPromptSection.classList.add('displayNone');
+        }
+    });
+    
+    // Temperature input validation
+    popupElement.querySelector('#stmb-profile-temperature')?.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        if (!isNaN(value)) {
+            // Clamp temperature to valid range
+            if (value < 0) e.target.value = 0;
+            if (value > 2) e.target.value = 2;
+        }
+    });
+    
+    // Model input validation (basic sanitization)
+    popupElement.querySelector('#stmb-profile-model')?.addEventListener('input', (e) => {
+        // Remove potentially problematic characters
+        e.target.value = e.target.value.replace(/[<>]/g, '');
+    });
+    
+    console.log(`${MODULE_NAME}: Profile edit event handlers attached`);
+}
+
+/**
  * Build profile object from form data
+ * Fixed: Removed engine handling
  * @param {HTMLElement} popupElement - The popup form element
  * @param {string} fallbackName - Fallback name if form name is empty
  * @returns {Object} Profile object
@@ -349,15 +422,12 @@ function buildProfileFromForm(popupElement, fallbackName) {
     const model = popupElement.querySelector('#stmb-profile-model')?.value.trim() || '';
     const temperatureInput = popupElement.querySelector('#stmb-profile-temperature')?.value;
     const temperature = parseTemperature(temperatureInput);
-    const engine = popupElement.querySelector('#stmb-profile-engine')?.value || 'openai';
     const prompt = popupElement.querySelector('#stmb-profile-prompt')?.value.trim() || '';
     const preset = popupElement.querySelector('#stmb-profile-preset')?.value || '';
     
     const profile = {
         name: name,
-        connection: {
-            engine: engine
-        },
+        connection: {},  // Fixed: Removed engine field
         prompt: prompt,
         preset: preset
     };
@@ -377,6 +447,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
 
 /**
  * Clean and normalize profile structure
+ * Fixed: Removed engine handling
  * @param {Object} profile - Profile to clean
  * @returns {Object} Cleaned profile
  */
@@ -478,7 +549,7 @@ export function validateAndFixProfiles(settings) {
         // Add default profile
         settings.profiles.push({
             name: 'Default',
-            connection: { engine: 'openai' },
+            connection: {},  // Fixed: Removed engine field
             prompt: '',
             preset: 'summary'
         });
