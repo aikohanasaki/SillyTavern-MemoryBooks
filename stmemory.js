@@ -2,6 +2,7 @@ import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings } from './utils.js';
 import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
+import { promptManager } from '../../../openai.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -233,7 +234,7 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates memory using AI with temporary prompt override to ensure clean tool calling
+ * Generates memory using AI with temporary PromptManager override to ensure clean tool calling.
  * @private
  * @param {string} promptString - The full prompt for the AI
  * @param {Object} profile - The user-selected profile containing connection settings
@@ -241,12 +242,11 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
  */
 async function generateMemoryWithAI(promptString, profile) {
-    console.log(`${MODULE_NAME}: Generating memory using temporary prompt override`);
-    
-    // Get a reference to the current character's data
-    const character = characters[this_chid];
-    if (!character) {
-        throw new Error('Could not find the current character data.');
+    console.log(`${MODULE_NAME}: Generating memory using PromptManager override for clean tool calling`);
+
+    // Ensure promptManager is available
+    if (!promptManager) {
+        throw new Error('PromptManager is not initialized. Cannot ensure clean tool-calling context.');
     }
 
     // Import ToolManager to check support
@@ -257,27 +257,25 @@ async function generateMemoryWithAI(promptString, profile) {
         throw new AIResponseError('Tool calling is not supported with current settings. Please enable function calling in your API settings.');
     }
 
-    // Save the original prompts for restoration
-    const originalSystemPrompt = character.system_prompt;
-    const originalJailbreak = character.jailbreak_prompt;
+    // Get the character's current prompt order from the PromptManager
+    const originalPromptOrder = promptManager.getPromptOrderForCharacter(promptManager.activeCharacter);
 
     try {
-        // STEP 1: Clear conflicting prompts temporarily
-        // Set a minimal, tool-focused system prompt and clear the jailbreak
-        // to prevent any conflicts with the character's persona
-        character.system_prompt = `You are a helpful AI assistant. Your task is to follow the user's instructions precisely.`;
-        character.jailbreak_prompt = ''; // Clear the jailbreak entirely for this call
+        // STEP 1: Temporarily replace the character's prompt order with an empty one.
+        // This prevents the PromptManager from injecting any roleplaying prompts from Aikobots.json
+        promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
+        promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, []);
 
-        console.log(`${MODULE_NAME}: System prompts temporarily overridden for clean tool calling context`);
+        console.log(`${MODULE_NAME}: PromptManager context temporarily cleared for clean tool calling`);
 
         // Clear any previous tool results
         delete window.STMemoryBooks_toolResult;
 
-        // STEP 2: Call generation with clean context
-        // Now that the context is clean, generateQuietPrompt will build a prompt without the conflicting persona/jailbreak instructions
-        // skipWIAN=true also prevents World Info and Author's Note from interfering
+        // STEP 2: Call generation with the clean context.
+        // generateQuietPrompt will now build a prompt with NO system instructions,
+        // allowing the AI to focus solely on the user's request and the available tool.
         console.log(`${MODULE_NAME}: Sending clean prompt for tool-based generation`);
-        const response = await generateQuietPrompt(promptString, false, true);
+        await generateQuietPrompt(promptString, false, true);
 
         // Brief pause to ensure tool execution completes
         await new Promise(resolve => setTimeout(resolve, 150));
@@ -285,20 +283,18 @@ async function generateMemoryWithAI(promptString, profile) {
         // STEP 3: Check if our tool was called
         if (!window.STMemoryBooks_toolResult) {
             console.warn(`${MODULE_NAME}: Model did not use createMemory tool despite clean context`);
-            
             throw new AIResponseError(
-                'The AI model did not create a structured memory despite clean context. This may indicate:\n' +
-                '• Function calling is not properly enabled in your API settings\n' +
+                'The AI model did not create a structured memory despite a clean context. This may indicate:\n' +
                 '• The current model does not support function calling reliably\n' +
                 '• API connection issues\n\n' +
-                'Please ensure function calling is enabled and try again.'
+                'Please check your model and API settings.'
             );
         }
 
         const toolResult = window.STMemoryBooks_toolResult;
         delete window.STMemoryBooks_toolResult; // Clean up
 
-        console.log(`${MODULE_NAME}: Successfully received structured memory via clean context:`, {
+        console.log(`${MODULE_NAME}: Successfully received structured memory via clean PromptManager context:`, {
             hasContent: !!toolResult.memory_content,
             contentLength: toolResult.memory_content?.length || 0,
             hasTitle: !!toolResult.title,
@@ -306,12 +302,8 @@ async function generateMemoryWithAI(promptString, profile) {
         });
 
         // STEP 4: Validate the tool result structure
-        if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string') {
-            throw new AIResponseError('Invalid tool result: missing or invalid memory content');
-        }
-
-        if (toolResult.memory_content.trim().length < 10) {
-            throw new AIResponseError('Generated memory content is too short to be useful');
+        if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string' || toolResult.memory_content.trim().length < 10) {
+            throw new AIResponseError('Invalid tool result: missing, invalid, or too short memory content');
         }
 
         // Validate title
@@ -320,17 +312,11 @@ async function generateMemoryWithAI(promptString, profile) {
             toolResult.title = 'Memory';
         }
 
-        // Validate keywords
-        if (!Array.isArray(toolResult.keywords)) {
-            console.warn(`${MODULE_NAME}: Tool result missing or invalid keywords, will need keyword generation`);
-            toolResult.keywords = [];
-        }
-
-        // Filter and validate individual keywords
-        const validKeywords = toolResult.keywords
+        // Validate and clean keywords
+        const validKeywords = Array.isArray(toolResult.keywords) ? toolResult.keywords
             .filter(kw => typeof kw === 'string' && kw.trim().length > 0 && kw.trim().length <= 25)
             .map(kw => kw.trim())
-            .slice(0, 8); // Enforce max limit
+            .slice(0, 8) : []; // Enforce max limit and ensure it's an array
 
         // Return structured result
         return {
@@ -340,7 +326,7 @@ async function generateMemoryWithAI(promptString, profile) {
         };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Tool-based memory generation failed during prompt override:`, error);
+        console.error(`${MODULE_NAME}: Tool-based memory generation failed:`, error);
         
         // Re-throw known error types
         if (error instanceof AIResponseError) {
@@ -352,19 +338,15 @@ async function generateMemoryWithAI(promptString, profile) {
             throw new AIResponseError('Function calling must be enabled in your API settings for memory creation to work.');
         }
         
-        if (error.message?.includes('tool_choice')) {
-            throw new AIResponseError('Your API does not support the required tool calling features. Please check your model and API settings.');
-        }
-        
         // Generic fallback error
         throw new AIResponseError(`Memory generation failed: ${error.message}`);
         
     } finally {
-        // STEP 5: ALWAYS restore the original prompts
-        // This runs even if an error occurs, ensuring character state is never corrupted
-        character.system_prompt = originalSystemPrompt;
-        character.jailbreak_prompt = originalJailbreak;
-        console.log(`${MODULE_NAME}: Original character prompts restored successfully`);
+        // STEP 5: ALWAYS restore the original prompt order
+        // This runs even if an error occurs, ensuring the character's prompt state is never corrupted.
+        promptManager.removePromptOrderForCharacter(promptManager.activeCharacter);
+        promptManager.addPromptOrderForCharacter(promptManager.activeCharacter, originalPromptOrder);
+        console.log(`${MODULE_NAME}: Original PromptManager context restored successfully`);
     }
 }
 
