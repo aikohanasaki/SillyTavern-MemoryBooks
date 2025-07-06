@@ -743,7 +743,13 @@ function refreshPopupContent() {
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
                 isDefault: index === settings.defaultProfile
-            }))
+            })),
+            titleFormat: settings.titleFormat,
+            titleFormats: getDefaultTitleFormats().map(format => ({
+                value: format,
+                isSelected: format === settings.titleFormat
+            })),
+            showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat)
         };
         
         const content = DOMPurify.sanitize(settingsTemplate(templateData));
