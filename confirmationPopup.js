@@ -84,7 +84,6 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
 
 /**
  * Show advanced options popup for memory creation
- * MOVED FROM profileManager.js to consolidate popup logic
  */
 export async function showAdvancedOptionsPopup(sceneData, settings, selectedProfile, currentModelSettings, currentApiInfo, chat_metadata) {
     // Get available memories count
@@ -121,6 +120,8 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
             okButton: 'Create Memory',
             cancelButton: 'Cancel',
             wide: true,
+            large: true,
+            allowVerticalScrolling: true,
             customButtons: [
                 {
                     text: 'Save as New Profile',
@@ -407,6 +408,8 @@ export async function showKeywordSelectionPopup(preparedResult) {
             okButton: false,
             cancelButton: 'Cancel',
             wide: true,
+            large: true,
+            allowVerticalScrolling: true,
             onClose: () => resolve(null)
         });
         

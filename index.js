@@ -546,6 +546,8 @@ async function showSettingsPopup() {
     
     const popupOptions = {
         wide: true,
+        large: true,
+        allowVerticalScrolling: true,
         customButtons: customButtons,
         cancelButton: 'Close',
         okButton: false,

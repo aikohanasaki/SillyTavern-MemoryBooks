@@ -113,7 +113,9 @@ export async function editProfile(settings, refreshCallback) {
         const popupInstance = new Popup(`<h3>Edit Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Save',
             cancelButton: 'Cancel',
-            wide: true
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
         });
         
         // Add event handling for the popup
@@ -180,7 +182,9 @@ export async function newProfile(settings, refreshCallback) {
         const popupInstance = new Popup(`<h3>New Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Create',
             cancelButton: 'Cancel',
-            wide: true
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
         });
         
         // Add event handling for the popup
