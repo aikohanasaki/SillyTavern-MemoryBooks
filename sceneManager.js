@@ -24,11 +24,121 @@ export function getSceneMarkers() {
 }
 
 /**
+ * Update button states only for affected messages (instead of all messages)
+ * @param {number|null} oldStart - Previous start marker
+ * @param {number|null} oldEnd - Previous end marker  
+ * @param {number|null} newStart - New start marker
+ * @param {number|null} newEnd - New end marker
+ */
+function updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd) {
+    // Calculate the range of messages that could be affected
+    const affectedRange = calculateAffectedRange(oldStart, oldEnd, newStart, newEnd);
+    
+    if (affectedRange.needsFullUpdate) {
+        // Fall back to full update for complex changes
+        updateAllButtonStates();
+        return;
+    }
+    
+    if (affectedRange.min === null || affectedRange.max === null) {
+        // No messages affected
+        return;
+    }
+    
+    // Only query and update the affected message range
+    const selector = `#chat .mes[mesid]`;
+    const allMessages = document.querySelectorAll(selector);
+    const affectedMessages = Array.from(allMessages).filter(messageElement => {
+        const messageId = parseInt(messageElement.getAttribute('mesid'));
+        return messageId >= affectedRange.min && messageId <= affectedRange.max;
+    });
+    
+    if (affectedMessages.length > 0) {
+        const markers = getSceneMarkers();
+        updateButtonStatesForElements(affectedMessages, markers);
+        console.log(`${MODULE_NAME}: Updated button states for ${affectedMessages.length} affected messages (range ${affectedRange.min}-${affectedRange.max}) instead of all ${allMessages.length} messages`);
+    }
+}
+
+/**
+ * Calculate which message range is affected by scene marker changes
+ * @param {number|null} oldStart - Previous start marker
+ * @param {number|null} oldEnd - Previous end marker
+ * @param {number|null} newStart - New start marker  
+ * @param {number|null} newEnd - New end marker
+ * @returns {Object} Range info with min, max, and needsFullUpdate flag
+ */
+function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
+    const affectedIds = new Set();
+    
+    // Add old scene range
+    if (oldStart !== null && oldEnd !== null) {
+        for (let i = oldStart; i <= oldEnd; i++) {
+            affectedIds.add(i);
+        }
+    }
+    
+    // Add old markers
+    if (oldStart !== null) affectedIds.add(oldStart);
+    if (oldEnd !== null) affectedIds.add(oldEnd);
+    
+    // Add new scene range
+    if (newStart !== null && newEnd !== null) {
+        for (let i = newStart; i <= newEnd; i++) {
+            affectedIds.add(i);
+        }
+    }
+    
+    // Add new markers
+    if (newStart !== null) affectedIds.add(newStart);
+    if (newEnd !== null) affectedIds.add(newEnd);
+    
+    // Add messages that might need "valid-start-point" or "valid-end-point" classes
+    if (newStart !== null && newEnd === null) {
+        // Start set, no end - all messages after start could be valid end points
+        // But limit the range to avoid scanning thousands of messages
+        const maxScan = Math.min(newStart + 100, chat.length - 1);
+        for (let i = newStart + 1; i <= maxScan; i++) {
+            affectedIds.add(i);
+        }
+    }
+    
+    if (newEnd !== null && newStart === null) {
+        // End set, no start - all messages before end could be valid start points
+        // But limit the range to avoid scanning thousands of messages  
+        const minScan = Math.max(newEnd - 100, 0);
+        for (let i = minScan; i < newEnd; i++) {
+            affectedIds.add(i);
+        }
+    }
+    
+    if (affectedIds.size === 0) {
+        return { min: null, max: null, needsFullUpdate: false };
+    }
+    
+    // If we're affecting more than 200 messages, fall back to full update
+    if (affectedIds.size > 200) {
+        return { needsFullUpdate: true };
+    }
+    
+    const sortedIds = Array.from(affectedIds).sort((a, b) => a - b);
+    return {
+        min: sortedIds[0],
+        max: sortedIds[sortedIds.length - 1],
+        needsFullUpdate: false
+    };
+}
+
+/**
  * Set scene marker with validation
  */
 export function setSceneMarker(messageId, type) {
     const markers = getSceneMarkers();
     const numericId = parseInt(messageId);
+    
+    // Store previous state for optimization
+    const oldStart = markers.sceneStart;
+    const oldEnd = markers.sceneEnd;
     
     console.log(`${MODULE_NAME}: Setting ${type} marker to message ${numericId}`);
     
@@ -59,8 +169,8 @@ export function setSceneMarker(messageId, type) {
     // Save to metadata
     saveMetadataDebounced();
     
-    // PERFORMANCE: Full update needed when markers change
-    updateAllButtonStates();
+    // PERFORMANCE: Use selective update instead of full update
+    updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
     
     console.log(`${MODULE_NAME}: Scene markers updated:`, markers);
 }
@@ -70,6 +180,11 @@ export function setSceneMarker(messageId, type) {
  */
 export function clearScene() {
     const markers = getSceneMarkers();
+    
+    // Store previous state for optimization
+    const oldStart = markers.sceneStart;
+    const oldEnd = markers.sceneEnd;
+    
     markers.sceneStart = null;
     markers.sceneEnd = null;
     
@@ -78,8 +193,8 @@ export function clearScene() {
     
     saveMetadataDebounced();
     
-    // PERFORMANCE: Full update needed when markers are cleared
-    updateAllButtonStates();
+    // PERFORMANCE: Use selective update instead of full update
+    updateAffectedButtonStates(oldStart, oldEnd, null, null);
     
     console.log(`${MODULE_NAME}: Scene cleared`);
 }
@@ -175,6 +290,11 @@ function updateButtonStatesForElements(messageElements, markers) {
  */
 export function validateSceneMarkers() {
     const markers = getSceneMarkers();
+    
+    // Store previous state for optimization
+    const oldStart = markers.sceneStart;
+    const oldEnd = markers.sceneEnd;
+    
     let hasChanges = false;
     
     // Check if markers are within chat bounds
@@ -205,8 +325,9 @@ export function validateSceneMarkers() {
         currentSceneState.start = markers.sceneStart;
         currentSceneState.end = markers.sceneEnd;
         saveMetadataDebounced();
-        // PERFORMANCE: Full update needed when markers are validated/changed
-        updateAllButtonStates();
+        
+        // PERFORMANCE: Use selective update instead of full update
+        updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
     }
 }
 

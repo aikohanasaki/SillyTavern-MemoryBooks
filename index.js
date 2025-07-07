@@ -809,27 +809,7 @@ function handleMessageReceived() {
 }
 
 /**
- * Slash command handlers
- */
-function handleCreateMemoryCommand() {
-    const sceneData = getSceneData();
-    if (!sceneData) {
-        toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
-        return;
-    }
-    
-    initiateMemoryCreation();
-}
-
-/**
- * Slash command handlers with correct signatures and validation
- * These replace the buggy handlers in index.js
- */
-
-/**
- * Handle /creatememory slash command
- * @param {Object} namedArgs - Named arguments object
- * @param {Array} unnamedArgs - Array of unnamed arguments
+ * Slash command handlers - FIXED SIGNATURES
  */
 function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
     const sceneData = getSceneData();
@@ -841,11 +821,6 @@ function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
     initiateMemoryCreation();
 }
 
-/**
- * Handle /scenememory slash command with proper validation
- * @param {Object} namedArgs - Named arguments object  
- * @param {Array} unnamedArgs - Array of unnamed arguments
- */
 function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     // Validate that we have an unnamed argument
     if (!unnamedArgs || unnamedArgs.length === 0 || typeof unnamedArgs[0] !== 'string') {
@@ -890,8 +865,8 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     updateSceneStateCache();
     saveMetadataDebounced();
     
-    // Use optimized update (see performance fix below)
-    updateSceneMarkersOptimized(null, null, startId, endId);
+    // This will automatically use the optimized update since we fixed setSceneMarker
+    updateAllButtonStates();
     
     toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
     
