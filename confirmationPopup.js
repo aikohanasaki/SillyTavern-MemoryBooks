@@ -157,9 +157,8 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     }
 }
 
-
 /**
- * Handle advanced options confirmation
+ * Handle advanced options confirmation - Enhanced to handle dynamic button behavior
  */
 async function handleAdvancedConfirmation(popup, settings) {
     const popupElement = popup.dlg;
@@ -168,12 +167,24 @@ async function handleAdvancedConfirmation(popup, settings) {
     const memoryCount = parseInt(popupElement.querySelector('#stmb-context-memories-advanced')?.value || 0);
     const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
     
-    // Check if settings should be saved as new profile
-    const shouldSaveProfile = popupElement.querySelector('#stmb-save-profile-section-advanced').style.display !== 'none';
+    // FIXED: Check if settings should be saved as new profile (when button text indicates it)
+    const createButton = popup.dlg.querySelector('.popup_button_ok');
+    const shouldSaveProfile = createButton?.textContent.includes('Save Profile');
+    
     if (shouldSaveProfile) {
         const newProfileName = popupElement.querySelector('#stmb-new-profile-name-advanced').value.trim();
-        if (newProfileName && await confirmSaveNewProfile(newProfileName)) {
-            await saveNewProfileFromAdvancedSettings(popupElement, settings, newProfileName);
+        if (newProfileName) {
+            try {
+                await saveNewProfileFromAdvancedSettings(popupElement, settings, newProfileName);
+                toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
+            } catch (error) {
+                toastr.error(`Failed to save profile: ${error.message}`, 'STMemoryBooks');
+                // Continue with memory creation even if profile save fails
+            }
+        } else {
+            // No profile name provided, show error and don't proceed
+            toastr.error('Please enter a profile name or use "Create Memory" to proceed without saving', 'STMemoryBooks');
+            return { confirmed: false };
         }
     }
     
@@ -224,7 +235,7 @@ async function handleSaveNewProfile(popup, settings) {
 }
 
 /**
- * Setup event listeners for advanced options popup
+ * Setup event listeners for advanced options popup - Enhanced with dynamic button text
  */
 function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfile, chat_metadata) {
     const popupElement = popup.dlg;
@@ -237,7 +248,7 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
         profileIndex: parseInt(popupElement.querySelector('#stmb-profile-select-advanced').value)
     };
     
-    // Function to check if settings have changed and show/hide save profile section
+    // FIXED: Function to check if settings have changed and update button text
     const checkForChanges = () => {
         const currentPrompt = popupElement.querySelector('#stmb-effective-prompt-advanced').value;
         const currentMemoryCount = parseInt(popupElement.querySelector('#stmb-context-memories-advanced').value);
@@ -250,6 +261,19 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
                           currentProfileIndex !== originalSettings.profileIndex;
         
         const saveSection = popupElement.querySelector('#stmb-save-profile-section-advanced');
+        
+        // FIXED: Update button text based on whether settings have changed
+        const createButton = popup.dlg.querySelector('.popup_button_ok');
+        if (createButton) {
+            if (hasChanges) {
+                createButton.textContent = 'Save Profile & Create Memory';
+                createButton.title = 'Save the modified settings as a new profile and create the memory';
+            } else {
+                createButton.textContent = 'Create Memory';
+                createButton.title = 'Create memory using the selected profile settings';
+            }
+        }
+        
         if (hasChanges) {
             saveSection.style.display = 'block';
         } else {
@@ -257,7 +281,7 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
         }
     };
     
-    // Add change listeners
+    // Add change listeners with immediate button text update
     popupElement.querySelector('#stmb-effective-prompt-advanced')?.addEventListener('input', checkForChanges);
     popupElement.querySelector('#stmb-context-memories-advanced')?.addEventListener('change', checkForChanges);
     popupElement.querySelector('#stmb-override-settings-advanced')?.addEventListener('change', checkForChanges);
@@ -289,6 +313,9 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
     
     // Enhanced token estimation with context memories
     setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, checkForChanges);
+    
+    // FIXED: Initial button text check
+    checkForChanges();
 }
 
 /**
@@ -399,7 +426,11 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
 }
 
 /**
- * Fetch previous summaries using the title format matching
+ * Fetch previous summaries using the flag-based identification
+ * @param {number} count - Number of summaries to fetch
+ * @param {Object} settings - Extension settings (titleFormat no longer needed)
+ * @param {Object} chat_metadata - Chat metadata for lorebook access
+ * @returns {Promise<Object>} Summaries result
  */
 export async function fetchPreviousSummaries(count, settings, chat_metadata) {
     if (count <= 0) {
@@ -417,16 +448,14 @@ export async function fetchPreviousSummaries(count, settings, chat_metadata) {
             return { summaries: [], actualCount: 0, requestedCount: count };
         }
         
-        const titleFormat = settings.titleFormat || '[000] - Auto Memory';
-        
-        // Use the identifyMemoryEntries function from addlore.js
-        const memoryEntries = identifyMemoryEntries(lorebookData, titleFormat);
+        // Use flag-based identification - no titleFormat needed
+        const memoryEntries = identifyMemoryEntries(lorebookData);
         
         // Return the last N summaries (most recent ones)
         const recentSummaries = memoryEntries.slice(-count);
         const actualCount = recentSummaries.length;
         
-        console.log(`${MODULE_NAME}: Requested ${count} summaries, found ${actualCount} available summaries using title format pattern`);
+        console.log(`${MODULE_NAME}: Requested ${count} summaries, found ${actualCount} available summaries using flag-based detection`);
         
         return {
             summaries: recentSummaries.map(entry => ({
@@ -469,7 +498,10 @@ export async function calculateTokensWithContext(sceneData, memories) {
 }
 
 /**
- * Get available memories count from lorebook
+ * Get available memories count from lorebook using flag-based identification
+ * @param {Object} settings - Extension settings (titleFormat no longer needed)
+ * @param {Object} chat_metadata - Chat metadata for lorebook access
+ * @returns {Promise<number>} Number of available memories
  */
 async function getAvailableMemoriesCount(settings, chat_metadata) {
     try {
@@ -483,10 +515,8 @@ async function getAvailableMemoriesCount(settings, chat_metadata) {
             return 0;
         }
         
-        const titleFormat = settings.titleFormat || '[000] - Auto Memory';
-        
-        // Use the identifyMemoryEntries function from addlore.js
-        const memoryEntries = identifyMemoryEntries(lorebookData, titleFormat);
+        // Use flag-based identification - no titleFormat needed
+        const memoryEntries = identifyMemoryEntries(lorebookData);
         
         return memoryEntries.length;
     } catch (error) {

@@ -41,9 +41,10 @@ const DEFAULT_TITLE_FORMATS = [
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
     console.log(`${MODULE_NAME}: Adding memory to lorebook "${lorebookValidation.name}"`);
     
+    // FIXED: Declare context once at function scope to avoid redundancy
+    const context = getContext();
+    
     try {
-        const context = getContext();
-        
         // Validate inputs
         if (!memoryResult?.content) {
             throw new Error('Invalid memory result: missing content');
@@ -76,9 +77,9 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         
         console.log(`${MODULE_NAME}: Successfully added memory entry "${entryTitle}" to lorebook`);
         
-        // Provide user feedback
+        // FIXED: Use direct toastr access instead of context.toastr
         if (settings.moduleSettings?.showNotifications !== false) {
-            context.toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
+            toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
         }
         
         // Refresh the editor if enabled and user is viewing this lorebook
@@ -105,9 +106,9 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
     } catch (error) {
         console.error(`${MODULE_NAME}: Failed to add memory to lorebook:`, error);
         
-        const context = getContext();
+        // FIXED: Use direct toastr access instead of context.toastr
         if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
-            context.toastr.error(`Failed to add memory: ${error.message}`, 'STMemoryBooks');
+            toastr.error(`Failed to add memory: ${error.message}`, 'STMemoryBooks');
         }
         
         return {
@@ -165,7 +166,25 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.delay = 0;
     entry.displayIndex = orderNumber; // Use order number for display index
     
+    // CRITICAL: Add STMemoryBooks flag for reliable identification
+    entry.stmemorybooks = true;
+    
     console.log(`${MODULE_NAME}: Populated entry with ${entry.key.length} keywords and ${entry.content.length} characters`);
+}
+
+/**
+ * Determines if an entry is a memory entry using the STMemoryBooks flag system.
+ * NO FALLBACK - Only entries with the explicit flag are considered memories.
+ * This forces users to convert their lorebooks for proper memory detection.
+ * 
+ * @private
+ * @param {Object} entry - The lorebook entry to check
+ * @returns {boolean} Whether this entry is a confirmed STMemoryBooks memory
+ */
+function isMemoryEntry(entry) {
+    // ONLY check for the explicit STMemoryBooks flag
+    // This forces conversion and ensures maximum reliability and performance
+    return entry.stmemorybooks === true;
 }
 
 /**
@@ -184,7 +203,7 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     const matches = title.match(numberingPattern);
     
     if (matches) {
-        const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
+        const nextNumber = getNextEntryNumber(lorebookData);
         
         matches.forEach(match => {
             const digits = match.length - 2; // Remove [ and ]
@@ -219,13 +238,12 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
 }
 
 /**
- * Gets the next available entry number for auto-numbering based on title format
+ * Gets the next available entry number for auto-numbering
  * @private
  * @param {Object} lorebookData - The lorebook data
- * @param {string} titleFormat - The title format to match against
  * @returns {number} The next available number
  */
-function getNextEntryNumber(lorebookData, titleFormat) {
+function getNextEntryNumber(lorebookData) {
     if (!lorebookData.entries) {
         return 1;
     }
@@ -233,9 +251,9 @@ function getNextEntryNumber(lorebookData, titleFormat) {
     const entries = Object.values(lorebookData.entries);
     const existingNumbers = [];
     
-    // Use safe string parsing instead of regex generation
     entries.forEach(entry => {
-        if (entry.comment && isMemoryEntry(entry, titleFormat)) {
+        // Only check memory entries for numbering conflicts
+        if (isMemoryEntry(entry) && entry.comment) {
             const number = extractNumberFromTitle(entry.comment);
             if (number !== null) {
                 existingNumbers.push(number);
@@ -332,170 +350,11 @@ function extractNumberFromTitle(title) {
 }
 
 /**
- * Safely determines if an entry is a memory entry using multiple detection methods.
- * Uses property-based detection as primary method, title format as secondary.
- * 
- * @private
- * @param {Object} entry - The lorebook entry to check
- * @param {string} titleFormat - The title format to match against
- * @returns {boolean} Whether this entry appears to be a memory entry
- */
-function isMemoryEntry(entry, titleFormat) {
-    if (!entry.comment) {
-        return false;
-    }
-    
-    // Primary detection: Strong indicators based on properties
-    // These properties are consistently set by STMemoryBooks
-    const hasMemoryProperties = (
-        entry.vectorized === true &&           // Memories should be vectorized for search
-        entry.addMemo === true &&              // Memories have memos enabled
-        (entry.position === 0 || entry.position === 1)  // Memory entries use position 0 or 1
-    );
-    
-    if (!hasMemoryProperties) {
-        return false;
-    }
-    
-    // Secondary confirmation: Check title format
-    const hasNumberInTitle = extractNumberFromTitle(entry.comment) !== null;
-    const hasGeneralStructure = hasFormatStructure(entry.comment, titleFormat);
-    
-    // If it has memory properties AND (a number in title OR general structure), it's a memory
-    return hasNumberInTitle || hasGeneralStructure;
-}
-
-/**
- * Enhanced format structure checking with support for multiple title formats.
- * Supports all common numbering and structural patterns used by STMemoryBooks:
- * 
- * Numbering Formats Supported:
- * - [001], [01], [1] - Square bracket format
- * - (001), (01), (1) - Parentheses format  
- * - {001}, {01}, {1} - Curly brace format
- * - #01, #5, #7-8 - Hash prefix format (including ranges)
- * - 001 -, 1 - - Number at start with separator
- * 
- * Content Indicators:
- * - Contains "Scene", "Memory" keywords
- * - Has structural separators (-, :, ;, ,, .)
- * - Matches static parts of title format template
- * 
- * @private
- * @param {string} title - The title to check
- * @param {string} titleFormat - The format template
- * @returns {boolean} Whether the title matches memory entry structure
- */
-function hasFormatStructure(title, titleFormat) {
-    if (!title || !titleFormat) {
-        return false;
-    }
-    
-    try {
-        // Check 1: Direct numbering format detection
-        const hasKnownNumberingFormat = (
-            /^\[0*\d+\]/.test(title) ||          // [001], [1] format
-            /^\(0*\d+\)/.test(title) ||          // (001), (1) format  
-            /^\{0*\d+\}/.test(title) ||          // {001}, {1} format
-            /^#0*\d+(?:-\d+)?/.test(title) ||    // #01, #5, #7-8 format
-            /^\d+\s*[-.]/.test(title)            // 001 -, 1. format
-        );
-        
-        if (hasKnownNumberingFormat) {
-            console.log(`${MODULE_NAME}: Detected known numbering format in "${title}"`);
-            return true;
-        }
-        
-        // Check 2: Memory content indicators
-        const hasMemoryIndicators = (
-            /\bscene\b/i.test(title) ||          // Contains "Scene" (case insensitive)
-            /\bmemory\b/i.test(title) ||         // Contains "Memory" (case insensitive)
-            /[-:;,.(){}[\]#]/.test(title)        // Has structural separators
-        );
-        
-        if (hasMemoryIndicators) {
-            console.log(`${MODULE_NAME}: Detected memory indicators in "${title}"`);
-            return true;
-        }
-        
-        // Check 3: Template format matching
-        return matchesTemplateStructure(title, titleFormat);
-        
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Error in format structure check:`, error);
-        // Fallback: any title with extractable number is probably a memory
-        return extractNumberFromTitle(title) !== null;
-    }
-}
-
-/**
- * Checks if title matches the static structure of the template format.
- * Extracts non-placeholder parts and checks for their presence in the title.
- * 
- * @private
- * @param {string} title - The title to check
- * @param {string} titleFormat - The format template
- * @returns {boolean} Whether title matches template structure
- */
-function matchesTemplateStructure(title, titleFormat) {
-    try {
-        // Extract static parts by removing placeholders and numbering patterns
-        let staticParts = titleFormat;
-        
-        // Remove all common placeholders
-        const placeholders = [
-            '{{title}}', '{{scene}}', '{{char}}', '{{user}}', 
-            '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'
-        ];
-        
-        placeholders.forEach(placeholder => {
-            staticParts = staticParts.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), ' ');
-        });
-        
-        // Remove all supported numbering placeholders
-        staticParts = staticParts.replace(/[\[\({#]0+[\]\)}]?/g, ' ');
-        
-        // Clean up and extract meaningful words
-        staticParts = staticParts.replace(/\s+/g, ' ').trim();
-        
-        if (staticParts.length > 2) {
-            const staticWords = staticParts.split(/\s+/).filter(word => 
-                word.length > 1 && /[a-zA-Z]/.test(word)
-            );
-            
-            if (staticWords.length > 0) {
-                const foundWords = staticWords.filter(word => 
-                    title.toLowerCase().includes(word.toLowerCase())
-                ).length;
-                
-                // If most static words are found, it likely matches the format
-                const matchThreshold = Math.max(1, Math.ceil(staticWords.length * 0.6));
-                const matches = foundWords >= matchThreshold;
-                
-                if (matches) {
-                    console.log(`${MODULE_NAME}: Template structure match: ${foundWords}/${staticWords.length} static words found`);
-                }
-                
-                return matches;
-            }
-        }
-        
-        // Final fallback: check for any structural elements that suggest memory entry
-        return /[#_=\[\]{}();,.()-]/.test(title);
-        
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Error in template structure matching:`, error);
-        return false;
-    }
-}
-
-/**
- * Identifies memory entries from lorebook using safe string parsing
+ * Identifies memory entries from lorebook using the flag system
  * @param {Object} lorebookData - The lorebook data
- * @param {string} titleFormat - The title format to match against
  * @returns {Array} Array of memory entries with extracted metadata
  */
-export function identifyMemoryEntries(lorebookData, titleFormat) {
+export function identifyMemoryEntries(lorebookData) {
     if (!lorebookData.entries) {
         return [];
     }
@@ -504,7 +363,7 @@ export function identifyMemoryEntries(lorebookData, titleFormat) {
     const memoryEntries = [];
     
     entries.forEach(entry => {
-        if (isMemoryEntry(entry, titleFormat)) {
+        if (isMemoryEntry(entry)) {
             const number = extractNumberFromTitle(entry.comment) || 0;
             
             memoryEntries.push({
@@ -520,7 +379,7 @@ export function identifyMemoryEntries(lorebookData, titleFormat) {
     // Sort by number
     memoryEntries.sort((a, b) => a.number - b.number);
     
-    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using enhanced format detection`);
+    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using flag-based detection`);
     return memoryEntries;
 }
 
@@ -621,8 +480,8 @@ export function previewTitle(titleFormat, sampleData = {}) {
     
     const mockLorebookData = {
         entries: {
-            'existing1': { uid: 5, comment: '[001] - Previous Memory', vectorized: true, addMemo: true, position: 0 },
-            'existing2': { uid: 7, comment: '[002] - Another Memory', vectorized: true, addMemo: true, position: 0 }
+            'existing1': { uid: 5, comment: '[001] - Previous Memory', stmemorybooks: true },
+            'existing2': { uid: 7, comment: '[002] - Another Memory', stmemorybooks: true }
         }
     };
     
@@ -654,11 +513,9 @@ export async function getLorebookStats() {
         }
         
         const entries = Object.values(lorebookData.entries || {});
-        const settings = extension_settings.STMemoryBooks || {};
-        const titleFormat = settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
         
-        // Use enhanced format detection to identify memory entries
-        const memoryEntries = identifyMemoryEntries(lorebookData, titleFormat);
+        // Use flag-based detection to identify memory entries
+        const memoryEntries = identifyMemoryEntries(lorebookData);
         const otherEntries = entries.filter(entry => 
             !memoryEntries.some(memEntry => memEntry.entry === entry)
         );

@@ -14,6 +14,7 @@ import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, upd
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
 import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
+import { showConverterPopup, shouldSkipConversionPrompt } from './convertmemory.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
@@ -35,8 +36,8 @@ const defaultSettings = {
         }
     ],
     defaultProfile: 0,
-    migrationVersion: 2  // Updated for JSON-based architecture
-};
+    migrationVersion: 2,
+    convertDontAskAgain: {} // Track which lorebooks user doesn't want to convert
 
 // Current state variables
 let currentPopupInstance = null;
@@ -215,6 +216,65 @@ function hasLorebook() {
 }
 
 /**
+ * Check if the current lorebook needs conversion and prompt user if needed
+ * This runs automatically when a chat is loaded to help users upgrade their lorebooks
+ */
+async function checkAndPromptForConversion() {
+    const lorebookName = chat_metadata[METADATA_KEY];
+
+    // Exit early if no lorebook is bound
+    if (!lorebookName || !world_names || !world_names.includes(lorebookName)) {
+        return;
+    }
+
+    // Respect user's "don't ask again" preference
+    if (shouldSkipConversionPrompt(lorebookName)) {
+        console.log(`STMemoryBooks: Skipping conversion prompt for "${lorebookName}" per user preference`);
+        return;
+    }
+
+    try {
+        const lorebookData = await loadWorldInfo(lorebookName);
+
+        // Exit if lorebook can't be loaded or has no entries
+        if (!lorebookData || !lorebookData.entries || Object.keys(lorebookData.entries).length === 0) {
+            return;
+        }
+
+        // Check if any entries already have the STMemoryBooks flag
+        const hasStmbEntries = Object.values(lorebookData.entries).some(entry => entry.stmemorybooks === true);
+
+        // If no entries have the flag, this lorebook needs conversion
+        if (!hasStmbEntries) {
+            console.log(`STMemoryBooks: Detected lorebook "${lorebookName}" without STMemoryBooks flags. Prompting for conversion.`);
+            
+            const popupContent = `
+                <div class="info-block warning marginBot10">
+                    <span><strong>Critical:</strong> Without conversion, memory entries will NOT be detected and will stop working entirely.</span>
+                </div>
+                <p>The attached lorebook <b>"${lorebookName}"</b> appears to contain entries that may be STMemoryBooks memories, but they're using the old detection system.</p>
+                <p><strong>Conversion is required</strong> for memory entries to function. The new system uses a reliable flag-based approach instead of fragile title parsing.</p>
+                <p><strong>This conversion is mandatory</strong> to ensure all memory features work correctly.</p>
+            `;
+            
+            const result = await new Popup(popupContent, POPUP_TYPE.CONFIRM, '🔧 Mandatory Lorebook Conversion', {
+                okButton: 'Convert Now (Required)',
+                cancelButton: 'Skip (Memories Will Not Work)'
+            }).show();
+
+            if (result === POPUP_RESULT.AFFIRMATIVE) {
+                await showConverterPopup(lorebookName);
+            }
+        } else {
+            console.log(`STMemoryBooks: Lorebook "${lorebookName}" already has STMemoryBooks flags, no conversion needed`);
+        }
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error during conversion check:`, error);
+        // Don't show error to user unless it's critical - this is a background check
+    }
+}
+
+/**
  * Validate lorebook and return status with data
  */
 async function validateLorebook() {
@@ -302,12 +362,42 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation) {
 }
 
 /**
- * Execute the core memory generation process - now using JSON-based approach
+ * Determine if an error is retryable
  */
-async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
+function isRetryableError(error) {
+    // Don't retry these error types
+    const nonRetryableErrors = [
+        'TokenWarningError',     // User needs to select smaller range
+        'InvalidProfileError'    // Configuration issue
+    ];
+    
+    if (nonRetryableErrors.includes(error.name)) {
+        return false;
+    }
+    
+    // Don't retry validation errors
+    if (error.message.includes('Scene compilation failed') || 
+        error.message.includes('Invalid memory result') ||
+        error.message.includes('Invalid lorebook')) {
+        return false;
+    }
+    
+    // Retry AI response errors and network-related issues
+    return true;
+}
+
+/**
+ * Execute the core memory generation process - now with retry logic
+ */
+async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
+    const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
     
     try {
+        if (retryCount > 0) {
+            toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
+        }
+        
         toastr.info('Compiling scene messages...', 'STMemoryBooks');
         
         // Create and compile scene
@@ -363,28 +453,51 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         // Success notification
         const contextMsg = memoryFetchResult.actualCount > 0 ? 
             ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
+        
+        // Show success message immediately if this was a retry, otherwise delay slightly
+        const successDelay = retryCount > 0 ? 0 : 1000;
         setTimeout(() => {
-            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
-        }, 1000);
+            const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
+            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}${retryMsg}!`, 'STMemoryBooks');
+        }, successDelay);
         
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
         
+        // Determine if we should retry
+        const shouldRetry = retryCount < maxRetries && isRetryableError(error);
+        
+        if (shouldRetry) {
+            // Show retry notification and attempt again
+            toastr.warning(`Memory creation failed (attempt ${retryCount + 1}). Retrying in 2 seconds...`, 'STMemoryBooks', {
+                timeOut: 3000
+            });
+            
+            // Wait 2 seconds before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Recursive retry
+            return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount + 1);
+        }
+        
+        // No more retries or non-retryable error - show final error
+        const retryMsg = retryCount > 0 ? ` (failed after ${retryCount + 1} attempts)` : '';
+        
         // Provide specific error messages for different types of failures
         if (error.name === 'TokenWarningError') {
-            toastr.error(`Scene is too large (${error.tokenCount} tokens). Try selecting a smaller range.`, 'STMemoryBooks', {
+            toastr.error(`Scene is too large (${error.tokenCount} tokens). Try selecting a smaller range${retryMsg}.`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else if (error.name === 'AIResponseError') {
-            toastr.error(`AI failed to generate valid memory: ${error.message}`, 'STMemoryBooks', {
+            toastr.error(`AI failed to generate valid memory: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else if (error.name === 'InvalidProfileError') {
-            toastr.error(`Profile configuration error: ${error.message}`, 'STMemoryBooks', {
+            toastr.error(`Profile configuration error: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else {
-            toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
+            toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
     } finally {
         isProcessingMemory = false;
@@ -397,7 +510,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 async function initiateMemoryCreation() {
     // Early validation checks (no flag set yet)
     if (!characters || characters.length === 0 || !characters[this_chid]) {
-        toastr.error('Silly Tavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
+        toastr.error('SillyTavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
         return;
     }
     
@@ -410,6 +523,12 @@ async function initiateMemoryCreation() {
     isProcessingMemory = true;
     
     try {
+        // Validate that toastr is available (defensive programming)
+        if (typeof toastr === 'undefined') {
+            console.error('STMemoryBooks: toastr is not available');
+            throw new Error('Notification system not available');
+        }
+
         // All the validation and processing logic
         const sceneData = getSceneData();
         if (!sceneData) {
@@ -434,7 +553,7 @@ async function initiateMemoryCreation() {
             currentPopupInstance = null;
         }
         
-        // Execute the main process
+        // Execute the main process with retry logic
         await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings);
         
     } catch (error) {
@@ -796,11 +915,18 @@ function handleChatChanged() {
     }, 50);
 }
 
+/**
+ * Handle chat loaded event - updated to include conversion check
+ */
 function handleChatLoaded() {
     console.log('STMemoryBooks: Chat loaded event received, processing messages.');
     updateSceneStateCache();
+    
     // PERFORMANCE: Full update needed for chat loads
     processExistingMessages();
+
+    // NEW: Check if lorebook needs conversion (with delay to ensure UI is ready)
+    setTimeout(checkAndPromptForConversion, 1000);
 }
 
 function handleMessageReceived() {
