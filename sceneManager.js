@@ -134,45 +134,30 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
  */
 export function setSceneMarker(messageId, type) {
     const markers = getSceneMarkers();
-    const numericId = parseInt(messageId);
     
     // Store previous state for optimization
     const oldStart = markers.sceneStart;
     const oldEnd = markers.sceneEnd;
     
-    console.log(`${MODULE_NAME}: Setting ${type} marker to message ${numericId}`);
+    console.log(`${MODULE_NAME}: Setting ${type} marker to message ${messageId}`);
     
-    if (type === 'start') {
-        // If setting start, clear end if it would be invalid
-        if (markers.sceneEnd !== null && markers.sceneEnd <= numericId) {
-            markers.sceneEnd = null;
-            console.log(`${MODULE_NAME}: Cleared end marker (would be invalid)`);
-        }
-        
-        // Toggle start marker
-        markers.sceneStart = markers.sceneStart === numericId ? null : numericId;
-    } else if (type === 'end') {
-        // If setting end, clear start if it would be invalid  
-        if (markers.sceneStart !== null && markers.sceneStart >= numericId) {
-            markers.sceneStart = null;
-            console.log(`${MODULE_NAME}: Cleared start marker (would be invalid)`);
-        }
-        
-        // Toggle end marker
-        markers.sceneEnd = markers.sceneEnd === numericId ? null : numericId;
-    }
+    // Calculate new state atomically
+    const newState = calculateNewSceneState(markers, messageId, type);
     
-    // Update cache
-    currentSceneState.start = markers.sceneStart;
-    currentSceneState.end = markers.sceneEnd;
+    // Update both metadata and cache simultaneously
+    markers.sceneStart = newState.start;
+    markers.sceneEnd = newState.end;
+    currentSceneState.start = newState.start;
+    currentSceneState.end = newState.end;
     
-    // Save to metadata
+    // Persist to metadata and update DOM to match committed state
     saveMetadataDebounced();
+    updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
     
-    // PERFORMANCE: Use selective update instead of full update
-    updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
-    
-    console.log(`${MODULE_NAME}: Scene markers updated:`, markers);
+    console.log(`${MODULE_NAME}: Scene markers updated atomically:`, {
+        start: newState.start,
+        end: newState.end
+    });
 }
 
 /**
@@ -185,18 +170,17 @@ export function clearScene() {
     const oldStart = markers.sceneStart;
     const oldEnd = markers.sceneEnd;
     
+    // Clear both metadata and cache simultaneously
     markers.sceneStart = null;
     markers.sceneEnd = null;
-    
     currentSceneState.start = null;
     currentSceneState.end = null;
     
+    // Persist and update DOM
     saveMetadataDebounced();
-    
-    // PERFORMANCE: Use selective update instead of full update
     updateAffectedButtonStates(oldStart, oldEnd, null, null);
     
-    console.log(`${MODULE_NAME}: Scene cleared`);
+    console.log(`${MODULE_NAME}: Scene cleared atomically`);
 }
 
 /**
@@ -494,6 +478,36 @@ export function getSceneData() {
         messageCount: markers.sceneEnd - markers.sceneStart + 1,
         estimatedTokens: estimateSceneTokensEnhanced(markers.sceneStart, markers.sceneEnd)
     };
+}
+
+/**
+ * Calculate new scene state based on marker type and message ID
+ * @private
+ */
+function calculateNewSceneState(markers, messageId, type) {
+    const numericId = parseInt(messageId);
+    let newStart = markers.sceneStart;
+    let newEnd = markers.sceneEnd;
+    
+    if (type === 'start') {
+        // If setting start, clear end if it would be invalid
+        if (markers.sceneEnd !== null && markers.sceneEnd <= numericId) {
+            newEnd = null;
+        }
+        
+        // Toggle start marker
+        newStart = markers.sceneStart === numericId ? null : numericId;
+    } else if (type === 'end') {
+        // If setting end, clear start if it would be invalid  
+        if (markers.sceneStart !== null && markers.sceneStart >= numericId) {
+            newStart = null;
+        }
+        
+        // Toggle end marker
+        newEnd = markers.sceneEnd === numericId ? null : numericId;
+    }
+    
+    return { start: newStart, end: newEnd };
 }
 
 /**

@@ -505,9 +505,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     }
 }
 
-/**
- * Enhanced memory creation initiation with improved error handling
- */
 async function initiateMemoryCreation() {
     // Early validation checks (no flag set yet)
     if (!characters || characters.length === 0 || !characters[this_chid]) {
@@ -515,12 +512,13 @@ async function initiateMemoryCreation() {
         return;
     }
     
+    // RACE CONDITION FIX: Check and set flag atomically
     if (isProcessingMemory) {
         toastr.warning('Memory creation already in progress', 'STMemoryBooks');
         return;
     }
-
-    // Set processing flag immediately after validation
+    
+    // CRITICAL: Set processing flag IMMEDIATELY after validation to prevent race conditions
     isProcessingMemory = true;
     
     try {
