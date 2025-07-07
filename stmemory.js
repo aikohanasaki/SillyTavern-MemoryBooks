@@ -2,6 +2,7 @@ import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
+import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
