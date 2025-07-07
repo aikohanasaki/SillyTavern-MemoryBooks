@@ -1,6 +1,6 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getPresetNames, isValidPreset, getPresetPrompt, getCurrentModelSettings, deepClone } from './utils.js';
+import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
 import { promptManager } from '../../../openai.js';
 
@@ -244,9 +244,9 @@ async function estimateTokenUsage(promptString) {
 
 /**
  * Generates memory using AI with TOTAL CONTEXT OVERRIDE to ensure completely clean tool calling.
- * This function implements a two-layer approach:
- * 1. Character field blanking
- * 2. PromptManager source blanking 
+ * This function implements a simplified approach:
+ * 1. Character field blanking with restoration
+ * 2. Direct world info/metadata blanking (no restoration needed - ST rebuilds these)
  * 3. World Info disabling via generateQuietPrompt's skipWIAN flag
  * 
  * @private
@@ -268,15 +268,10 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
-    // *** FIX: Use deepClone for safer cloning to avoid JSON.parse errors ***
-    // Store all original context data for restoration using deep cloning
+    // Store only character data for restoration (using deep clone for safety)
     const originalCharacterData = deepClone(characters[this_chid]);
-    const originalWorldInfoSettings = deepClone(context.world_info_settings);
-    const originalWorldInfoData = deepClone(context.world_info_data || {});
-    const originalChatMetadata = deepClone(context.chat_metadata || {});
-    const originalMainApi = context.main_api;
 
-    // *** FIX: Check if the clone operation failed unexpectedly ***
+    // Check if the clone operation failed unexpectedly
     if (!originalCharacterData) {
         throw new AIResponseError('Failed to capture character data for context restoration. The character data might be invalid.');
     }
@@ -285,7 +280,7 @@ async function generateMemoryWithAI(promptString, profile) {
         // --- STEP 1: Complete context blanking for clean generation ---
         console.log(`${MODULE_NAME}: Creating completely clean context for AI generation...`);
         
-        // blank out ALL character fields
+        // Blank out ALL character fields
         characters[this_chid].name = '';
         characters[this_chid].description = '';
         characters[this_chid].personality = '';
@@ -299,8 +294,9 @@ async function generateMemoryWithAI(promptString, profile) {
         characters[this_chid].character_version = '';
         characters[this_chid].extensions = {};
 
-        // Disable world info completely by modifying the context object
-        context.world_info_settings.world_info = false;
+        // Disable world info and metadata by directly replacing with clean objects
+        // This is safe because SillyTavern rebuilds these from scratch for each generation
+        context.world_info_settings = { world_info: false };
         context.world_info_data = {};
         context.chat_metadata = {};
 
@@ -379,29 +375,23 @@ async function generateMemoryWithAI(promptString, profile) {
             throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
         }
     } finally {
-        // --- ALWAYS restore ALL original data ---
-        console.log(`${MODULE_NAME}: Restoring original character fields and prompt content...`);
+        // --- ALWAYS restore character data (world info will be rebuilt by ST automatically) ---
+        console.log(`${MODULE_NAME}: Restoring original character data...`);
         
         // Cleanup the resolver in case of an early error
         if (window.STMemoryBooks_resolveToolResult) {
             delete window.STMemoryBooks_resolveToolResult;
         }
 
-        // *** FIX: Restore character data from our safe deep clone ***
+        // Restore character data from our safe deep clone
         Object.assign(characters[this_chid], originalCharacterData);
 
-        // Restore settings on the context object from our deep clones
-        context.main_api = originalMainApi;
-        context.world_info_settings = originalWorldInfoSettings;
-        context.world_info_data = originalWorldInfoData;
-        context.chat_metadata = originalChatMetadata;
-
-        // Force prompt manager refresh with restored data
+        // Force prompt manager refresh with restored character data
         if (typeof promptManager !== 'undefined') {
             promptManager.activeCharacter = characters[this_chid];
         }
 
-        console.log(`${MODULE_NAME}: Context restoration complete - all original data restored`);
+        console.log(`${MODULE_NAME}: Character data restoration complete`);
     }
 }
 
