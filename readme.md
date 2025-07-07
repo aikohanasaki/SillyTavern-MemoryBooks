@@ -2,6 +2,8 @@
 
 A SillyTavern extension that allows you to automatically create memories from chat excerpts and send them to your designated lorebook. Mark scene start/end points in chat, extract messages between those points, and use AI to generate memories that are automatically added to your chat's bound lorebook.
 
+Note: This extension ONLY SUPPORTS chat completion APIs (oai_settings). 
+
 ## Features
 
 - **Scene Marking System**: Mark start (►) and end (◄) points in your chat messages with visual feedback
@@ -10,7 +12,7 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **5 Built-in Presets**: Production-quality prompts optimized for vectorized databases
 - **Automatic Keyword Extraction**: AI-generated keywords parsed from responses with fallback generation
 - **AI Title Extraction**: Automatically extracts titles from AI responses for use in memory formatting
-- **Token Warning System**: Alerts for large scenes (>30k tokens) before processing
+- **Token Warning System**: Alerts for large scenes (configurable token threshold) before processing
 - **Profile Management**: Create, edit, and manage multiple memory generation profiles
 - **Import/Export**: Backup and share your profiles as JSON files
 - **Visual Feedback**: Clear indicators showing selected scenes and valid marker positions

@@ -2,6 +2,7 @@ import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
+import { oai_settings } from '../../../openai.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -218,19 +219,23 @@ async function applyProfileConnectionSettings(profile) {
     }
     
     try {
-        // Store original values
+        // Import the oai_settings from the OpenAI module
+        // Note: You'll need to import this at the top of stmemory.js:
+        // import { oai_settings } from './openai.js';
+        
+        // Store and apply model override
         if (profile.effectiveConnection.model) {
-            // This is a simplified approach - in a real implementation, you'd need to 
-            // properly interface with SillyTavern's model selection system
-            console.log(`${MODULE_NAME}: Would temporarily switch to model: ${profile.effectiveConnection.model}`);
+            originalSettings.model = oai_settings.openai_model;
+            oai_settings.openai_model = profile.effectiveConnection.model;
+            console.log(`${MODULE_NAME}: Temporarily switched to model: ${profile.effectiveConnection.model}`);
         }
         
+        // Store and apply temperature override
         if (typeof profile.effectiveConnection.temperature === 'number') {
-            console.log(`${MODULE_NAME}: Would temporarily switch to temperature: ${profile.effectiveConnection.temperature}`);
+            originalSettings.temperature = oai_settings.temp_openai;
+            oai_settings.temp_openai = profile.effectiveConnection.temperature;
+            console.log(`${MODULE_NAME}: Temporarily switched to temperature: ${profile.effectiveConnection.temperature}`);
         }
-        
-        // NOTE: Actual model/temperature switching would require deeper integration
-        // with SillyTavern's settings system. For now, we log the intent.
         
     } catch (error) {
         console.warn(`${MODULE_NAME}: Failed to apply profile connection settings:`, error);
@@ -246,8 +251,18 @@ async function applyProfileConnectionSettings(profile) {
  */
 async function restoreConnectionSettings(originalSettings) {
     try {
-        // Restore any changed settings
-        console.log(`${MODULE_NAME}: Connection settings restored`);
+        // Restore model if it was overridden
+        if (originalSettings.model !== undefined) {
+            oai_settings.openai_model = originalSettings.model;
+            console.log(`${MODULE_NAME}: Restored original model: ${originalSettings.model}`);
+        }
+        
+        // Restore temperature if it was overridden
+        if (originalSettings.temperature !== undefined) {
+            oai_settings.temp_openai = originalSettings.temperature;
+            console.log(`${MODULE_NAME}: Restored original temperature: ${originalSettings.temperature}`);
+        }
+        
     } catch (error) {
         console.warn(`${MODULE_NAME}: Failed to restore connection settings:`, error);
     }
