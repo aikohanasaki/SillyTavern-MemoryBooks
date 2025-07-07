@@ -59,7 +59,7 @@ export function setSceneMarker(messageId, type) {
     // Save to metadata
     saveMetadataDebounced();
     
-    // Update all button states
+    // PERFORMANCE: Full update needed when markers change
     updateAllButtonStates();
     
     console.log(`${MODULE_NAME}: Scene markers updated:`, markers);
@@ -77,20 +77,53 @@ export function clearScene() {
     currentSceneState.end = null;
     
     saveMetadataDebounced();
+    
+    // PERFORMANCE: Full update needed when markers are cleared
     updateAllButtonStates();
     
     console.log(`${MODULE_NAME}: Scene cleared`);
 }
 
 /**
- * Update visual states of all currently rendered message buttons
+ * Update visual states of all currently rendered message buttons (FULL UPDATE)
+ * Use this for: chat loads, scene marker changes, initialization
  */
 export function updateAllButtonStates() {
     const markers = getSceneMarkers();
-    const { sceneStart, sceneEnd } = markers;
     
     // Find all rendered message elements
     const messageElements = document.querySelectorAll('#chat .mes[mesid]');
+    
+    // Apply button states to all messages
+    updateButtonStatesForElements(messageElements, markers);
+    
+    console.log(`${MODULE_NAME}: Updated button states for ${messageElements.length} messages (FULL UPDATE)`);
+}
+
+/**
+ * Update visual states of specific message buttons only (PARTIAL UPDATE)
+ * Use this for: new messages added to current chat
+ * @param {NodeList|Array} messageElements - Specific message elements to update
+ */
+export function updateNewMessageButtonStates(messageElements) {
+    if (!messageElements || messageElements.length === 0) return;
+    
+    const markers = getSceneMarkers();
+    
+    // Apply button states to only the specified messages
+    updateButtonStatesForElements(messageElements, markers);
+    
+    console.log(`${MODULE_NAME}: Updated button states for ${messageElements.length} messages (PARTIAL UPDATE)`);
+}
+
+/**
+ * Core logic for updating button states on a set of message elements
+ * @private
+ * @param {NodeList|Array} messageElements - Message elements to update
+ * @param {Object} markers - Current scene markers
+ */
+function updateButtonStatesForElements(messageElements, markers) {
+    const { sceneStart, sceneEnd } = markers;
     
     messageElements.forEach(messageElement => {
         const messageId = parseInt(messageElement.getAttribute('mesid'));
@@ -103,7 +136,7 @@ export function updateAllButtonStates() {
         startBtn.classList.remove('on', 'valid-start-point', 'in-scene');
         endBtn.classList.remove('on', 'valid-end-point', 'in-scene');
         
-// Apply appropriate classes based on current state
+        // Apply appropriate classes based on current state
         if (sceneStart !== null && sceneEnd !== null) {
             // Complete scene - highlight range and markers distinctly
             if (messageId === sceneStart) {
@@ -135,8 +168,6 @@ export function updateAllButtonStates() {
             }
         }
     });
-    
-    console.log(`${MODULE_NAME}: Updated button states for ${messageElements.length} messages`);
 }
 
 /**
@@ -174,6 +205,7 @@ export function validateSceneMarkers() {
         currentSceneState.start = markers.sceneStart;
         currentSceneState.end = markers.sceneEnd;
         saveMetadataDebounced();
+        // PERFORMANCE: Full update needed when markers are validated/changed
         updateAllButtonStates();
     }
 }

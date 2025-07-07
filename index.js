@@ -10,7 +10,7 @@ import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledS
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
+import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
 import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
@@ -47,18 +47,18 @@ let chatObserver = null;
 let updateTimeout = null;
 
 /**
- * Simplified message processing - much more efficient than recursive traversal
+ * PERFORMANCE OPTIMIZED: Process messages and return processed elements
  * @param {Node} node The DOM node to process.
- * @returns {boolean} True if any buttons were added, otherwise false.
+ * @returns {Array} Array of message elements that had buttons added
  */
 function processNodeForMessages(node) {
-    let buttonsWereAdded = false;
+    const processedMessages = [];
 
     // If the node itself is a message element
     if (node.matches && node.matches('#chat .mes[mesid]')) {
         if (!node.querySelector('.mes_stmb_start')) {
             createSceneButtons(node);
-            buttonsWereAdded = true;
+            processedMessages.push(node);
         }
     } 
     // Find any message elements within the added node
@@ -67,16 +67,16 @@ function processNodeForMessages(node) {
         newMessages.forEach(mes => {
             if (!mes.querySelector('.mes_stmb_start')) {
                 createSceneButtons(mes);
-                buttonsWereAdded = true;
+                processedMessages.push(mes);
             }
         });
     }
 
-    return buttonsWereAdded;
+    return processedMessages;
 }
 
 /**
- * Initialize chat observer to watch for new messages - simplified implementation
+ * PERFORMANCE OPTIMIZED: Chat observer with partial updates
  */
 function initializeChatObserver() {
     // Clean up existing observer if any
@@ -91,15 +91,15 @@ function initializeChatObserver() {
     }
 
     chatObserver = new MutationObserver((mutations) => {
-        let needsButtonStateUpdate = false;
+        const newlyProcessedMessages = [];
         
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.nodeType === Node.ELEMENT_NODE) {
                     try {
-                        if (processNodeForMessages(node)) {
-                            needsButtonStateUpdate = true;
-                        }
+                        // Collect all newly processed messages
+                        const processed = processNodeForMessages(node);
+                        newlyProcessedMessages.push(...processed);
                     } catch (error) {
                         console.error('STMemoryBooks: Error processing new chat elements:', error);
                     }
@@ -107,12 +107,13 @@ function initializeChatObserver() {
             }
         }
 
-        if (needsButtonStateUpdate) {
+        if (newlyProcessedMessages.length > 0) {
             // Debounce the state update to prevent excessive calls
             clearTimeout(updateTimeout);
             updateTimeout = setTimeout(() => {
                 try {
-                    updateAllButtonStates();
+                    // PERFORMANCE: Use partial update for new messages only
+                    updateNewMessageButtonStates(newlyProcessedMessages);
                 } catch (error) {
                     console.error('STMemoryBooks: Error updating button states:', error);
                 }
@@ -126,7 +127,7 @@ function initializeChatObserver() {
         subtree: true 
     });
 
-    console.log('STMemoryBooks: Simplified chat observer initialized and monitoring for new messages');
+    console.log('STMemoryBooks: Performance-optimized chat observer initialized');
 }
 
 /**
@@ -748,8 +749,7 @@ function refreshPopupContent() {
 }
 
 /**
- * Processes any messages that already exist in the DOM, adding scene buttons if they are missing.
- * This is used for the initial load and for chat changes to catch any messages the observer might miss.
+ * PERFORMANCE: Process existing messages and use full update (for chat loads)
  */
 function processExistingMessages() {
     console.log('STMemoryBooks: Processing any existing messages on the DOM...');
@@ -774,6 +774,7 @@ function processExistingMessages() {
             console.log(`STMemoryBooks: Added buttons to ${buttonsAdded} existing messages.`);
         }
 
+        // PERFORMANCE: Full update needed for chat loads
         updateAllButtonStates();
     } else {
         console.log('STMemoryBooks: No existing messages found to process.');
@@ -786,6 +787,7 @@ function handleChatChanged() {
     
     setTimeout(() => {
         try {
+            // PERFORMANCE: Full update needed for chat changes
             processExistingMessages();
         } catch (error) {
             console.error('STMemoryBooks: Error processing messages after chat change:', error);
@@ -796,6 +798,7 @@ function handleChatChanged() {
 function handleChatLoaded() {
     console.log('STMemoryBooks: Chat loaded event received, processing messages.');
     updateSceneStateCache();
+    // PERFORMANCE: Full update needed for chat loads
     processExistingMessages();
 }
 
@@ -845,6 +848,7 @@ function handleSceneMemoryCommand(args) {
     
     updateSceneStateCache();
     saveMetadataDebounced();
+    // PERFORMANCE: Full update needed when markers are set programmatically
     updateAllButtonStates();
     
     toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
@@ -925,7 +929,7 @@ async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
 
-    console.log('STMemoryBooks: Initializing with JSON-based architecture');
+    console.log('STMemoryBooks: Initializing with JSON-based architecture and performance optimizations');
     
     // Wait for SillyTavern to be ready
     let attempts = 0;
@@ -989,7 +993,7 @@ async function init() {
         return a === b;
     });
     
-    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation');
+    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation and performance optimizations');
 }
 
 // Initialize when ready
