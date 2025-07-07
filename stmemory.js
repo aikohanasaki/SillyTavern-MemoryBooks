@@ -5,6 +5,29 @@ import { characters, this_chid, substituteParams, Generate } from '../../../../s
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
+// --- NEW: State variable to capture tool call arguments ---
+let capturedToolCallArgs = null;
+
+/**
+ * Captures the arguments passed to the createMemory tool.
+ * This is called from the tool's action in index.js.
+ * @param {Object} args - The arguments from the tool call.
+ */
+export function captureMemoryToolArgs(args) {
+    console.log(`${MODULE_NAME}: Tool arguments captured.`, args);
+    capturedToolCallArgs = args;
+}
+
+/**
+ * Retrieves and clears the captured tool call arguments.
+ * @returns {Object|null} The captured arguments, or null if none.
+ */
+function retrieveCapturedMemoryToolArgs() {
+    const args = capturedToolCallArgs;
+    capturedToolCallArgs = null; // Reset state for the next call
+    return args;
+}
+
 // --- Custom Error Types for Better UI Handling ---
 class TokenWarningError extends Error {
     constructor(message, tokenCount) {
@@ -145,8 +168,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
 }
 
 /**
- * Generates memory using AI with clean context via Generate() function.
- * This function uses SillyTavern's main generation pipeline with skipWIAN for context isolation.
+ * MODIFIED: Generates memory using AI with clean context via Generate() function.
+ * This function now uses the capture/retrieve pattern instead of relying on the return value.
  * 
  * @private
  * @param {string} promptString - The full prompt for the AI
@@ -165,73 +188,35 @@ async function generateMemoryWithAI(promptString, profile) {
     }
 
     try {
-        console.log(`${MODULE_NAME}: Generating memory with Generate() function and clean context...`);
+        console.log(`${MODULE_NAME}: Generating memory with Generate() function...`);
 
-        // Use Generate() with quiet type and skipWIAN for clean context
-        const response = await Generate('quiet', { 
+        // We call Generate to trigger the AI, but we will ignore its return value.
+        await Generate('quiet', { 
             quiet_prompt: promptString, 
             skipWIAN: true  // This provides clean context without World Info, Author's Note, etc.
         });
 
-        console.log(`${MODULE_NAME}: Received response from Generate():`, {
-            hasResponse: !!response,
-            responseType: typeof response,
-            hasToolCalls: response?.tool_calls?.length > 0
-        });
-
-        // The Generate() function returns different types depending on the API and whether tool calls were made
-        // For tool calls, we need to check if the response contains our expected tool call
-        
-        // Check if this is a tool call response (could be in different formats depending on the API)
-        let toolCallData = null;
-        
-        // OpenAI format: response.tool_calls array
-        if (response?.tool_calls?.length > 0) {
-            const createMemoryCall = response.tool_calls.find(call => 
-                call.function?.name === 'createMemory'
-            );
-            if (createMemoryCall) {
-                toolCallData = JSON.parse(createMemoryCall.function.arguments);
-            }
-        }
-        
-        // Alternative: Check if the response itself contains tool call data
-        // (some APIs might return it differently)
-        if (!toolCallData && response?.name === 'createMemory') {
-            toolCallData = response;
-        }
-        
-        // Alternative: Check if it's a string response that we need to parse for tool calls
-        if (!toolCallData && typeof response === 'string') {
-            // This might happen with some APIs - try to parse tool call from the string
-            try {
-                const toolCallMatch = response.match(/createMemory\s*\(\s*({.*?})\s*\)/s);
-                if (toolCallMatch) {
-                    toolCallData = JSON.parse(toolCallMatch[1]);
-                }
-            } catch (parseError) {
-                console.warn(`${MODULE_NAME}: Could not parse tool call from string response`);
-            }
-        }
+        // NEW: Retrieve the arguments that were captured by the tool's action.
+        const toolCallData = retrieveCapturedMemoryToolArgs();
 
         if (!toolCallData) {
             throw new AIResponseError(
-                'The AI model did not return the expected `createMemory` tool call. ' +
-                'Please check that function calling is enabled in your API settings.'
+                'The AI model did not call the `createMemory` tool. ' +
+                'This may indicate your model does not support function calling properly or the prompt was insufficient.'
             );
         }
 
-        // Validate the tool result structure
+        // Validate the captured tool result structure
         if (!toolCallData.memory_content || typeof toolCallData.memory_content !== 'string' || !toolCallData.memory_content.trim()) {
-            throw new AIResponseError('Tool result is missing required memory_content field or it is empty.');
+            throw new AIResponseError('Tool result is missing or has empty `memory_content`.');
         }
 
         if (!toolCallData.title || typeof toolCallData.title !== 'string' || !toolCallData.title.trim()) {
-            throw new AIResponseError('Tool result is missing required title field or it is empty.');
+            throw new AIResponseError('Tool result is missing or has empty `title`.');
         }
 
         if (!Array.isArray(toolCallData.keywords) || toolCallData.keywords.length === 0) {
-            throw new AIResponseError('Tool result is missing required keywords array or it is empty.');
+            throw new AIResponseError('Tool result is missing or has empty `keywords` array.');
         }
 
         // Return the validated result

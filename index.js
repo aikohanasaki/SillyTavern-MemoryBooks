@@ -55,6 +55,7 @@ import {
     SELECTORS
 } from './utils.js';
 import { ToolManager } from '../../../tool-calling.js';
+import { captureMemoryToolArgs } from './stmemory.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
@@ -906,6 +907,8 @@ function registerMemoryTool() {
             required: ['memory_content', 'title', 'keywords']
         },
         action: (params) => {
+            captureMemoryToolArgs(params);
+
             console.log('STMemoryBooks: createMemory tool was called by AI with params:', {
                 hasContent: !!params.memory_content,
                 contentLength: params.memory_content?.length || 0,
@@ -913,7 +916,6 @@ function registerMemoryTool() {
                 keywordCount: params.keywords?.length || 0
             });
 
-            // Return a success message for the AI/system logs
             return JSON.stringify({ 
                 success: true, 
                 message: `Memory created: "${params.title}" with ${params.keywords?.length || 0} keywords`
