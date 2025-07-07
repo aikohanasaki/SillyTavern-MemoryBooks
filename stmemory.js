@@ -17,6 +17,19 @@ export function setMemoryToolResolver(resolver) {
     memoryToolResolver = resolver;
 }
 
+/**
+ * Helper function to call the memory tool resolver with data.
+ * @param {Object} data - The data to pass to the resolver
+ */
+export function callMemoryToolResolver(data) {
+    if (memoryToolResolver && typeof memoryToolResolver === 'function') {
+        memoryToolResolver(data);
+        memoryToolResolver = null; // Clean up after calling
+    } else {
+        console.error(`${MODULE_NAME}: No memory tool resolver available or resolver is not a function`);
+    }
+}
+
 // --- Custom Error Types for Better UI Handling ---
 class TokenWarningError extends Error {
     constructor(message, tokenCount) {
@@ -157,7 +170,6 @@ export async function createMemory(compiledScene, profile, options = {}) {
 }
 
 /**
- * NEW: Promise-based memory generation with tool calling.
  * Creates a Promise that resolves when the AI calls the createMemory tool.
  * 
  * @private

@@ -1,14 +1,4 @@
-import { 
-    eventSource, 
-    event_types, 
-    chat, 
-    chat_metadata, 
-    saveSettingsDebounced,
-    characters,
-    this_chid,
-    name1, 
-    name2 
-} from '../../../../script.js';
+import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2 } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
@@ -17,43 +7,13 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/Sla
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory, setMemoryToolResolver } from './stmemory.js';
+import { createMemory, setMemoryToolResolver, callMemoryToolResolver } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
-import { 
-    editProfile, 
-    newProfile, 
-    deleteProfile, 
-    exportProfiles, 
-    importProfiles,
-    validateAndFixProfiles
-} from './profileManager.js';
-import {
-    getSceneMarkers,
-    setSceneMarker,
-    clearScene,
-    updateAllButtonStates,
-    validateSceneMarkers,
-    handleMessageDeletion,
-    createSceneButtons,
-    getSceneData,
-    updateSceneStateCache,
-    getCurrentSceneState
-} from './sceneManager.js';
+import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
+import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
-import { 
-    showConfirmationPopup, 
-    fetchPreviousSummaries,
-    calculateTokensWithContext
-} from './confirmationPopup.js';
-import { 
-    getEffectivePrompt, 
-    getPresetPrompt,
-    DEFAULT_PROMPT,
-    deepClone,
-    getCurrentModelSettings,
-    getCurrentApiInfo,
-    SELECTORS
-} from './utils.js';
+import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
+import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
 import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks';
@@ -913,7 +873,7 @@ function registerMemoryTool() {
                 keywordCount: params.keywords?.length || 0
             });
 
-            setMemoryToolResolver({
+            callMemoryToolResolver({
                 content: params.memory_content,
                 title: params.title,
                 keywords: params.keywords
