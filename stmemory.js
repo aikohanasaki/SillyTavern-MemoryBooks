@@ -1,8 +1,7 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
-import { characters, this_chid, substituteParams, generateQuietPrompt } from '../../../../script.js';
-import { promptManager } from '../../../openai.js';
+import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -89,13 +88,13 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        // 4. Generate memory using tool calling with TOTAL context override
-        const toolResult = await generateMemoryWithAI(promptString, profile);
+        // 4. Generate memory using SillyTavern's main Generate function
+        const response = await generateMemoryWithAI(promptString, profile);
         
-        // 5. Process the structured tool result (simplified - no keyword checking)
-        const processedMemory = processToolResult(toolResult, compiledScene);
+        // 5. Process the structured tool result 
+        const processedMemory = processToolResult(response, compiledScene);
         
-        // 6. Create the final memory object (tool calling guarantees complete result)
+        // 6. Create the final memory object
         const memoryResult = {
             content: processedMemory.content,
             extractedTitle: processedMemory.extractedTitle,
@@ -109,8 +108,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',
                 tokenUsage: tokenEstimate,
-                generationMethod: 'tool-calling',
-                version: '1.0'
+                generationMethod: 'tool-calling-generate',
+                version: '1.1'
             },
             suggestedKeys: processedMemory.suggestedKeys,
             lorebook: {
@@ -142,6 +141,115 @@ export async function createMemory(compiledScene, profile, options = {}) {
         // Wrap generic errors
         console.error(`${MODULE_NAME}: An unexpected error occurred during memory creation:`, error);
         throw new Error(`Memory creation failed: ${error.message}`);
+    }
+}
+
+/**
+ * Generates memory using AI with clean context via Generate() function.
+ * This function uses SillyTavern's main generation pipeline with skipWIAN for context isolation.
+ * 
+ * @private
+ * @param {string} promptString - The full prompt for the AI
+ * @param {Object} profile - The user-selected profile containing connection settings
+ * @returns {Promise<Object>} The structured memory result from the tool call
+ * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
+ */
+async function generateMemoryWithAI(promptString, profile) {
+    // Wait for character data to be available before proceeding
+    const characterDataReady = await waitForCharacterData();
+    if (!characterDataReady) {
+        throw new AIResponseError(
+            'Character data is not available. This may indicate that SillyTavern is still loading. ' +
+            'Please wait a moment and try again.'
+        );
+    }
+
+    try {
+        console.log(`${MODULE_NAME}: Generating memory with Generate() function and clean context...`);
+
+        // Use Generate() with quiet type and skipWIAN for clean context
+        const response = await Generate('quiet', { 
+            quiet_prompt: promptString, 
+            skipWIAN: true  // This provides clean context without World Info, Author's Note, etc.
+        });
+
+        console.log(`${MODULE_NAME}: Received response from Generate():`, {
+            hasResponse: !!response,
+            responseType: typeof response,
+            hasToolCalls: response?.tool_calls?.length > 0
+        });
+
+        // The Generate() function returns different types depending on the API and whether tool calls were made
+        // For tool calls, we need to check if the response contains our expected tool call
+        
+        // Check if this is a tool call response (could be in different formats depending on the API)
+        let toolCallData = null;
+        
+        // OpenAI format: response.tool_calls array
+        if (response?.tool_calls?.length > 0) {
+            const createMemoryCall = response.tool_calls.find(call => 
+                call.function?.name === 'createMemory'
+            );
+            if (createMemoryCall) {
+                toolCallData = JSON.parse(createMemoryCall.function.arguments);
+            }
+        }
+        
+        // Alternative: Check if the response itself contains tool call data
+        // (some APIs might return it differently)
+        if (!toolCallData && response?.name === 'createMemory') {
+            toolCallData = response;
+        }
+        
+        // Alternative: Check if it's a string response that we need to parse for tool calls
+        if (!toolCallData && typeof response === 'string') {
+            // This might happen with some APIs - try to parse tool call from the string
+            try {
+                const toolCallMatch = response.match(/createMemory\s*\(\s*({.*?})\s*\)/s);
+                if (toolCallMatch) {
+                    toolCallData = JSON.parse(toolCallMatch[1]);
+                }
+            } catch (parseError) {
+                console.warn(`${MODULE_NAME}: Could not parse tool call from string response`);
+            }
+        }
+
+        if (!toolCallData) {
+            throw new AIResponseError(
+                'The AI model did not return the expected `createMemory` tool call. ' +
+                'Please check that function calling is enabled in your API settings.'
+            );
+        }
+
+        // Validate the tool result structure
+        if (!toolCallData.memory_content || typeof toolCallData.memory_content !== 'string' || !toolCallData.memory_content.trim()) {
+            throw new AIResponseError('Tool result is missing required memory_content field or it is empty.');
+        }
+
+        if (!toolCallData.title || typeof toolCallData.title !== 'string' || !toolCallData.title.trim()) {
+            throw new AIResponseError('Tool result is missing required title field or it is empty.');
+        }
+
+        if (!Array.isArray(toolCallData.keywords) || toolCallData.keywords.length === 0) {
+            throw new AIResponseError('Tool result is missing required keywords array or it is empty.');
+        }
+
+        // Return the validated result
+        return {
+            content: toolCallData.memory_content.trim(),
+            title: toolCallData.title.trim(),
+            keywords: toolCallData.keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()),
+            profile: profile
+        };
+
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Memory generation with Generate() failed:`, error);
+        
+        if (error instanceof AIResponseError) {
+            throw error;
+        } else {
+            throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
+        }
     }
 }
 
@@ -243,109 +351,6 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates memory using AI with clean context via skipWIAN flag.
- * This function uses SillyTavern's built-in context isolation instead of manual blanking.
- * 
- * @private
- * @param {string} promptString - The full prompt for the AI
- * @param {Object} profile - The user-selected profile containing connection settings
- * @returns {Promise<Object>} The structured memory result from the tool call
- * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
- */
-async function generateMemoryWithAI(promptString, profile) {
-    // Wait for character data to be available before proceeding
-    const characterDataReady = await waitForCharacterData();
-    if (!characterDataReady) {
-        throw new AIResponseError(
-            'Character data is not available. This may indicate that SillyTavern is still loading. ' +
-            'Please wait a moment and try again.'
-        );
-    }
-
-    try {
-        console.log(`${MODULE_NAME}: Creating clean context for AI generation using skipWIAN...`);
-
-        // --- STEP 1: Create Promise-based tool result handler ---
-        const toolPromise = new Promise((resolve, reject) => {
-            // Set a generous timeout for the AI response
-            const timeout = setTimeout(() => {
-                delete window.STMemoryBooks_resolveToolResult; // Clean up resolver
-                reject(new AIResponseError(
-                    'The AI model did not produce a valid tool call for `createMemory`. This could be due to:\n' +
-                    '• The model ignoring the instruction to use the tool.\n' +
-                    '• A delayed API response or processing issue.\n\n' +
-                    'Please verify your model supports function calling and try again.'
-                ));
-            }, 20000); // Wait for 20 seconds, much safer for slow APIs
-
-            // Expose the resolver function globally for the tool action to find
-            window.STMemoryBooks_resolveToolResult = (result) => {
-                clearTimeout(timeout); // Cancel the timeout
-                delete window.STMemoryBooks_resolveToolResult; // Clean up resolver
-                resolve(result);
-            };
-        });
-
-        // --- STEP 2: Send the AI request with context isolation ---
-        // The skipWIAN flag (third parameter = true) provides clean context without manual blanking
-        console.log(`${MODULE_NAME}: Sending prompt with skipWIAN for clean tool-based generation`);
-        await generateQuietPrompt(promptString, false, true);
-
-        // --- STEP 3: Wait for our promise to be resolved by the tool's action ---
-        console.log(`${MODULE_NAME}: Waiting for tool result via promise...`);
-        const toolResult = await toolPromise;
-
-        console.log(`${MODULE_NAME}: Successfully received structured memory via skipWIAN:`, {
-            hasContent: !!toolResult.memory_content,
-            contentLength: toolResult.memory_content?.length || 0,
-            hasTitle: !!toolResult.title,
-            keywordCount: toolResult.keywords?.length || 0
-        });
-
-        // --- STEP 4: Validate the tool result structure ---
-        if (!toolResult || typeof toolResult !== 'object') {
-            throw new AIResponseError('Tool result is missing or invalid. The AI may not have used the createMemory function correctly.');
-        }
-
-        if (!toolResult.memory_content || typeof toolResult.memory_content !== 'string' || toolResult.memory_content.trim() === '') {
-            throw new AIResponseError('Tool result is missing required memory_content field or it is empty.');
-        }
-
-        if (!toolResult.title || typeof toolResult.title !== 'string' || toolResult.title.trim() === '') {
-            throw new AIResponseError('Tool result is missing required title field or it is empty.');
-        }
-
-        if (!Array.isArray(toolResult.keywords) || toolResult.keywords.length === 0) {
-            throw new AIResponseError('Tool result is missing required keywords array or it is empty.');
-        }
-
-        // --- STEP 5: Return the validated result ---
-        return {
-            content: toolResult.memory_content.trim(),
-            title: toolResult.title.trim(),
-            keywords: toolResult.keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()),
-            profile: profile
-        };
-
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Tool-based memory generation failed:`, error);
-        
-        if (error instanceof AIResponseError) {
-            throw error;
-        } else {
-            throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
-        }
-    } finally {
-        // --- Cleanup the resolver in case of an early error ---
-        if (window.STMemoryBooks_resolveToolResult) {
-            delete window.STMemoryBooks_resolveToolResult;
-        }
-        
-        console.log(`${MODULE_NAME}: Memory generation cleanup complete`);
-    }
-}
-
-/**
  * Build the complete prompt string
  * @private
  * @param {Object} compiledScene - The compiled scene data.
@@ -364,7 +369,7 @@ async function buildPrompt(compiledScene, profile) {
     // Build scene text for user prompt
     const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
     
-    // Combine system prompt and scene - trust the enhanced tool description and proven prompts to naturally guide the model to use the createMemory tool without explicit forcing
+    // Combine system prompt and scene
     return `${processedSystemPrompt}\n\n${sceneText}`;
 }
 

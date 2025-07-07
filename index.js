@@ -906,26 +906,17 @@ function registerMemoryTool() {
             required: ['memory_content', 'title', 'keywords']
         },
         action: (params) => {
-            console.log('STMemoryBooks: Tool action called with params:', {
+            console.log('STMemoryBooks: createMemory tool was called by AI with params:', {
                 hasContent: !!params.memory_content,
                 contentLength: params.memory_content?.length || 0,
                 hasTitle: !!params.title,
                 keywordCount: params.keywords?.length || 0
             });
 
-            // Check if our promise resolver exists
-            if (typeof window.STMemoryBooks_resolveToolResult === 'function') {
-                console.log('STMemoryBooks: Tool action called, resolving promise.');
-                window.STMemoryBooks_resolveToolResult(params);
-            } else {
-                console.error('STMemoryBooks: Tool action was called, but no promise resolver was found on the window object. The memory creation process may have timed out or been cancelled.');
-            }
-
-            // The return value for a stealth tool is still important
+            // Return a success message for the AI/system logs
             return JSON.stringify({ 
                 success: true, 
-                received: true,
-                summary: `Created memory: "${params.title}" with ${params.keywords?.length || 0} keywords`
+                message: `Memory created: "${params.title}" with ${params.keywords?.length || 0} keywords`
             });
         },
         stealth: true
