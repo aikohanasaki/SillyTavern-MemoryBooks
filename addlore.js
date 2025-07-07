@@ -165,9 +165,14 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.cooldown = 0;
     entry.delay = 0;
     entry.displayIndex = orderNumber; // Use order number for display index
-    
-    // CRITICAL: Add STMemoryBooks flag for reliable identification
-    entry.stmemorybooks = true;
+    entry.stmemorybooks = true; // Explicitly mark as STMemoryBooks memory entry
+    if (memoryResult.metadata?.sceneRange) { // Set metadata for scene range if available
+    const rangeParts = memoryResult.metadata.sceneRange.split('-');
+    if (rangeParts.length === 2) {
+        entry.STMB_start = parseInt(rangeParts[0], 10);
+        entry.STMB_end = parseInt(rangeParts[1], 10);
+    }
+}
     
     console.log(`${MODULE_NAME}: Populated entry with ${entry.key.length} keywords and ${entry.content.length} characters`);
 }
@@ -491,6 +496,25 @@ export function previewTitle(titleFormat, sampleData = {}) {
     } catch (error) {
         return `Error: ${error.message}`;
     }
+}
+
+export function getRangeFromMemoryEntry(entry) {
+    // Prefer the new, explicit flags
+    if (typeof entry.STMB_start === 'number' && typeof entry.STMB_end === 'number') {
+        return { start: entry.STMB_start, end: entry.STMB_end };
+    }
+
+    // Fallback for older entries: Parse the comment/title
+    // The title generation includes the scene range
+    // This is less reliable but necessary for backward compatibility.
+    const title = entry.comment || '';
+    const match = title.match(/Scene (\d+)-(\d+)/) || title.match(/(\d+)-(\d+)/); // Example regex
+
+    if (match && match.length >= 3) {
+        return { start: parseInt(match[1], 10), end: parseInt(match[2], 10) };
+    }
+
+    return null; // Could not determine range
 }
 
 /**

@@ -8,7 +8,7 @@ import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory } from './stmemory.js';
-import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
+import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
@@ -518,7 +518,7 @@ async function initiateMemoryCreation() {
         return;
     }
     
-    // CRITICAL: Set processing flag IMMEDIATELY after validation to prevent race conditions
+    // Set processing flag IMMEDIATELY after validation to prevent race conditions
     isProcessingMemory = true;
     
     try {
@@ -541,6 +541,20 @@ async function initiateMemoryCreation() {
             return; // Will hit finally block
         }
         
+        const allMemories = identifyMemoryEntries(lorebookValidation.data);
+        const newStart = sceneData.sceneStart;
+        const newEnd = sceneData.sceneEnd;
+
+        for (const mem of allMemories) {
+            const existingRange = getRangeFromMemoryEntry(mem.entry); 
+
+            if (existingRange && newStart < existingRange.end && newEnd > existingRange.start) {
+                toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                isProcessingMemory = false;
+                return;
+            }
+        }
+
         const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
         if (!effectiveSettings) {
             return; // User cancelled, will hit finally block
