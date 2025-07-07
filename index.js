@@ -676,7 +676,7 @@ function handleSettingsPopupClose(popup) {
 }
 
 /**
- * Refresh popup content
+ * Refresh popup content while preserving popup properties
  */
 function refreshPopupContent() {
     if (!currentPopupInstance || !currentPopupInstance.dlg.hasAttribute('open')) {
@@ -725,8 +725,23 @@ function refreshPopupContent() {
             }
         });
         
+        // Ensure essential popup properties are preserved after content refresh
+        // These classes enable large mode and vertical scrolling functionality
+        const requiredClasses = [
+            'large_dialogue_popup',              // Enables large mode (90% of screen)
+            'vertical_scrolling_dialogue_popup', // Enables vertical scrolling
+            'wide_dialogue_popup'                // Enables wide mode
+        ];
+        
+        requiredClasses.forEach(className => {
+            if (!currentPopupInstance.dlg.classList.contains(className)) {
+                currentPopupInstance.dlg.classList.add(className);
+                console.log(`STMemoryBooks: Added missing popup class: ${className}`);
+            }
+        });
+        
         setupSettingsEventListeners();
-        console.log('STMemoryBooks: Popup content refreshed');
+        console.log('STMemoryBooks: Popup content refreshed with preserved properties');
     } catch (error) {
         console.error('STMemoryBooks: Error refreshing popup content:', error);
     }
