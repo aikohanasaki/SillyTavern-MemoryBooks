@@ -18,6 +18,10 @@ Note: This extension ONLY SUPPORTS chat completion APIs (oai_settings).
 - **Visual Feedback**: Clear indicators showing selected scenes and valid marker positions
 - **Smart Memory Detection**: Uses configured title format as primary filter to identify previous memories
 
+## Loading Note ⏳
+
+After selecting a character and chat, there may be a slight delay before the extension fully loads and the memory buttons appear. This is normal - the extension will be ready within 10 seconds. If buttons don't appear after this time, try refreshing the page.
+
 ## Initial Setup 🛠️
 
 First you must set up the extension! On first run, it will ask you to select your preferred settings. If you don't do this, it will not do anything 🤣 You can change them in the future by going to the wand menu and clicking on Memory Settings.
@@ -241,7 +245,7 @@ The extension converts your configured title format into a regex pattern to iden
 
 **"AI generation failed"**: Check your SillyTavern API configuration and ensure your selected model is available.
 
-**Missing buttons**: Refresh the page or check that the extension loaded properly in the Extensions menu.
+**Missing buttons**: The extension may take up to 10 seconds to load after selecting a character and chat. If buttons don't appear after this time, refresh the page or check that the extension loaded properly in the Extensions menu.
 
 **Wrong memory count**: If the extension isn't detecting your existing memories correctly, check that your title format matches your existing entries. The extension uses your configured title format as the primary method to identify memories.
 

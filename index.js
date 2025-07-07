@@ -821,8 +821,39 @@ function handleCreateMemoryCommand() {
     initiateMemoryCreation();
 }
 
-function handleSceneMemoryCommand(args) {
-    const range = args[0].trim();
+/**
+ * Slash command handlers with correct signatures and validation
+ * These replace the buggy handlers in index.js
+ */
+
+/**
+ * Handle /creatememory slash command
+ * @param {Object} namedArgs - Named arguments object
+ * @param {Array} unnamedArgs - Array of unnamed arguments
+ */
+function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
+    const sceneData = getSceneData();
+    if (!sceneData) {
+        toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
+        return;
+    }
+    
+    initiateMemoryCreation();
+}
+
+/**
+ * Handle /scenememory slash command with proper validation
+ * @param {Object} namedArgs - Named arguments object  
+ * @param {Array} unnamedArgs - Array of unnamed arguments
+ */
+function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
+    // Validate that we have an unnamed argument
+    if (!unnamedArgs || unnamedArgs.length === 0 || typeof unnamedArgs[0] !== 'string') {
+        toastr.error('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        return;
+    }
+    
+    const range = unnamedArgs[0].trim();
     const match = range.match(/^(\d+)-(\d+)$/);
     
     if (!match) {
@@ -833,13 +864,21 @@ function handleSceneMemoryCommand(args) {
     const startId = parseInt(match[1]);
     const endId = parseInt(match[2]);
     
+    // Validate range logic
     if (startId >= endId) {
         toastr.error('Start message must be less than end message', 'STMemoryBooks');
         return;
     }
     
+    // Validate message IDs exist in current chat
     if (startId < 0 || endId >= chat.length) {
-        toastr.error('Message IDs out of range', 'STMemoryBooks');
+        toastr.error(`Message IDs out of range. Valid range: 0-${chat.length - 1}`, 'STMemoryBooks');
+        return;
+    }
+    
+    // Additional validation: check if messages actually exist
+    if (!chat[startId] || !chat[endId]) {
+        toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
         return;
     }
     
@@ -850,8 +889,9 @@ function handleSceneMemoryCommand(args) {
     
     updateSceneStateCache();
     saveMetadataDebounced();
-    // PERFORMANCE: Full update needed when markers are set programmatically
-    updateAllButtonStates();
+    
+    // Use optimized update (see performance fix below)
+    updateSceneMarkersOptimized(null, null, startId, endId);
     
     toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
     
