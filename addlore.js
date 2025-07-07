@@ -263,15 +263,15 @@ function getNextEntryNumber(lorebookData, titleFormat) {
 }
 
 /**
- * Safely extracts number from title using comprehensive pattern matching
+ * Safely extracts number from title using comprehensive pattern matching.
  * Supports ALL numbering formats the extension can generate:
  * - [001], [01], [1] (square brackets)
  * - (001), (01), (1) (parentheses) 
  * - {001}, {01}, {1} (curly braces)
- * - #01, #5 (hash prefix)
- * - #7-8 (hash prefix with ranges - extracts first number)
+ * - #01, #5, #7-8 (hash prefix with ranges)
  * - 001 - Title, 1 - Title (start of string)
  * - Numbers anywhere in title as fallback
+ * 
  * @private
  * @param {string} title - The title to extract number from
  * @returns {number|null} The extracted number or null if not found
@@ -332,8 +332,9 @@ function extractNumberFromTitle(title) {
 }
 
 /**
- * Safely determines if an entry is a memory entry using multiple detection methods
- * Uses property-based detection as primary method, title format as secondary
+ * Safely determines if an entry is a memory entry using multiple detection methods.
+ * Uses property-based detection as primary method, title format as secondary.
+ * 
  * @private
  * @param {Object} entry - The lorebook entry to check
  * @param {string} titleFormat - The title format to match against
@@ -365,11 +366,25 @@ function isMemoryEntry(entry, titleFormat) {
 }
 
 /**
- * Enhanced format structure checking with support for allowed special characters
+ * Enhanced format structure checking with support for multiple title formats.
+ * Supports all common numbering and structural patterns used by STMemoryBooks:
+ * 
+ * Numbering Formats Supported:
+ * - [001], [01], [1] - Square bracket format
+ * - (001), (01), (1) - Parentheses format  
+ * - {001}, {01}, {1} - Curly brace format
+ * - #01, #5, #7-8 - Hash prefix format (including ranges)
+ * - 001 -, 1 - - Number at start with separator
+ * 
+ * Content Indicators:
+ * - Contains "Scene", "Memory" keywords
+ * - Has structural separators (-, :, ;, ,, .)
+ * - Matches static parts of title format template
+ * 
  * @private
  * @param {string} title - The title to check
  * @param {string} titleFormat - The format template
- * @returns {boolean} Whether the title matches the basic structure
+ * @returns {boolean} Whether the title matches memory entry structure
  */
 function hasFormatStructure(title, titleFormat) {
     if (!title || !titleFormat) {
@@ -377,109 +392,73 @@ function hasFormatStructure(title, titleFormat) {
     }
     
     try {
-        // If title has a number in any supported format, it's likely a memory
-        if (extractNumberFromTitle(title) !== null) {
-            return true;
-        }
-        
-        // Check for common memory indicators with allowed special characters
-        // Allowed chars: # _ = [ ] { } ; , . - ( )
-        const hasMemoryStructure = (
-            /^#\d+/.test(title) ||           // #01, #5, #7-8 format
-            /^\(\d+\)/.test(title) ||        // (001) format  
-            /^\{\d+\}/.test(title) ||        // {4} format
-            /^\[\d+\]/.test(title) ||        // [001] format
-            /^\d+\s*[-.]/.test(title) ||     // 001 - or 001. format
-            title.includes('Scene') ||        // Contains "Scene"
-            title.includes('Memory') ||       // Contains "Memory"
-            /[-:;,.]/.test(title)            // Has structural separators
+        // Check 1: Direct numbering format detection
+        const hasKnownNumberingFormat = (
+            /^\[0*\d+\]/.test(title) ||          // [001], [1] format
+            /^\(0*\d+\)/.test(title) ||          // (001), (1) format  
+            /^\{0*\d+\}/.test(title) ||          // {001}, {1} format
+            /^#0*\d+(?:-\d+)?/.test(title) ||    // #01, #5, #7-8 format
+            /^\d+\s*[-.]/.test(title)            // 001 -, 1. format
         );
         
-        if (hasMemoryStructure) {
+        if (hasKnownNumberingFormat) {
+            console.log(`${MODULE_NAME}: Detected known numbering format in "${title}"`);
             return true;
         }
         
-        // Extract static parts of the format (non-placeholder parts)
-        let staticParts = titleFormat;
+        // Check 2: Memory content indicators
+        const hasMemoryIndicators = (
+            /\bscene\b/i.test(title) ||          // Contains "Scene" (case insensitive)
+            /\bmemory\b/i.test(title) ||         // Contains "Memory" (case insensitive)
+            /[-:;,.(){}[\]#]/.test(title)        // Has structural separators
+        );
         
-        // Remove common placeholders to find static text
-        const placeholders = [
-            '{{title}}', '{{scene}}', '{{char}}', '{{user}}', 
-            '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'
-        ];
-        
-        placeholders.forEach(placeholder => {
-            staticParts = staticParts.replace(placeholder, '');
-        });
-        
-        // Remove all supported numbering placeholders: [000], (000), {000}, #000
-        staticParts = staticParts.replace(/[\[\({#]0+[\]\)}]?/g, '');
-        
-        // Clean up extra spaces
-        staticParts = staticParts.replace(/\s+/g, ' ').trim();
-        
-        // If there are meaningful static parts, check for them
-        if (staticParts.length > 2) {
-            const staticWords = staticParts.split(/\s+/).filter(word => 
-                word.length > 1 && /[a-zA-Z]/.test(word)
-            );
-            
-            if (staticWords.length > 0) {
-                const foundWords = staticWords.filter(word => 
-                    title.toLowerCase().includes(word.toLowerCase())
-                ).length;
-                
-                // If most static words are found, it likely matches the format
-                return foundWords >= Math.ceil(staticWords.length * 0.6);
-            }
+        if (hasMemoryIndicators) {
+            console.log(`${MODULE_NAME}: Detected memory indicators in "${title}"`);
+            return true;
         }
         
-        // Final fallback: title contains allowed structural characters
-        return /[#_=\[\]{}();,.()-]/.test(title);
+        // Check 3: Template format matching
+        return matchesTemplateStructure(title, titleFormat);
         
     } catch (error) {
         console.warn(`${MODULE_NAME}: Error in format structure check:`, error);
-        // Fallback: any title with a number is probably a memory
+        // Fallback: any title with extractable number is probably a memory
         return extractNumberFromTitle(title) !== null;
     }
 }
 
 /**
- * Safely checks if a title has the basic structure of the format template
- * Uses string operations instead of regex generation
+ * Checks if title matches the static structure of the template format.
+ * Extracts non-placeholder parts and checks for their presence in the title.
+ * 
  * @private
  * @param {string} title - The title to check
  * @param {string} titleFormat - The format template
- * @returns {boolean} Whether the title matches the basic structure
+ * @returns {boolean} Whether title matches template structure
  */
-function hasFormatStructure(title, titleFormat) {
-    if (!title || !titleFormat) {
-        return false;
-    }
-    
+function matchesTemplateStructure(title, titleFormat) {
     try {
-        // Extract static parts of the format (non-placeholder parts)
+        // Extract static parts by removing placeholders and numbering patterns
         let staticParts = titleFormat;
         
-        // Remove common placeholders to find static text
+        // Remove all common placeholders
         const placeholders = [
             '{{title}}', '{{scene}}', '{{char}}', '{{user}}', 
             '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'
         ];
         
         placeholders.forEach(placeholder => {
-            staticParts = staticParts.replace(placeholder, '');
+            staticParts = staticParts.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), ' ');
         });
         
-        // Remove numbering placeholders like [000]
-        staticParts = staticParts.replace(/\[0+\]/g, '');
+        // Remove all supported numbering placeholders
+        staticParts = staticParts.replace(/[\[\({#]0+[\]\)}]?/g, ' ');
         
-        // Clean up extra spaces
+        // Clean up and extract meaningful words
         staticParts = staticParts.replace(/\s+/g, ' ').trim();
         
-        // If there are meaningful static parts (more than just punctuation), check for them
         if (staticParts.length > 2) {
-            // Split into words and check if most static words appear in the title
             const staticWords = staticParts.split(/\s+/).filter(word => 
                 word.length > 1 && /[a-zA-Z]/.test(word)
             );
@@ -490,17 +469,23 @@ function hasFormatStructure(title, titleFormat) {
                 ).length;
                 
                 // If most static words are found, it likely matches the format
-                return foundWords >= Math.ceil(staticWords.length * 0.6);
+                const matchThreshold = Math.max(1, Math.ceil(staticWords.length * 0.6));
+                const matches = foundWords >= matchThreshold;
+                
+                if (matches) {
+                    console.log(`${MODULE_NAME}: Template structure match: ${foundWords}/${staticWords.length} static words found`);
+                }
+                
+                return matches;
             }
         }
         
-        // If no meaningful static parts, just check that it has brackets (likely memory entry)
-        return /\[\d+\]/.test(title);
+        // Final fallback: check for any structural elements that suggest memory entry
+        return /[#_=\[\]{}();,.()-]/.test(title);
         
     } catch (error) {
-        console.warn(`${MODULE_NAME}: Error in format structure check:`, error);
-        // Fallback: just check for bracketed numbers
-        return /\[\d+\]/.test(title);
+        console.warn(`${MODULE_NAME}: Error in template structure matching:`, error);
+        return false;
     }
 }
 
@@ -535,7 +520,7 @@ export function identifyMemoryEntries(lorebookData, titleFormat) {
     // Sort by number
     memoryEntries.sort((a, b) => a.number - b.number);
     
-    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using safe string parsing`);
+    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using enhanced format detection`);
     return memoryEntries;
 }
 
@@ -546,9 +531,9 @@ export function identifyMemoryEntries(lorebookData, titleFormat) {
  * @returns {string} The sanitized title
  */
 function sanitizeTitle(title) {
-    // Allowed characters: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`
+    // Allowed characters: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`, `{`, `}`, `:`, `;`, `,`
     // Plus alphanumeric characters and standard emoji
-    const allowedCharsPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    const allowedCharsPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\{\}:;,\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
     
     return title.replace(allowedCharsPattern, '').trim() || 'Auto Memory';
 }
@@ -577,7 +562,7 @@ export function validateTitleFormat(format) {
     
     // Check for disallowed characters (excluding template placeholders)
     const withoutPlaceholders = format.replace(/\{\{[^}]+\}\}/g, '').replace(/\[0+\]/g, '');
-    const disallowedPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    const disallowedPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\{\}:;,\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
     
     if (disallowedPattern.test(withoutPlaceholders)) {
         warnings.push('Title contains characters that will be removed during sanitization');
@@ -593,13 +578,16 @@ export function validateTitleFormat(format) {
         warnings.push(`Unknown placeholders: ${invalidPlaceholders.join(', ')}`);
     }
     
-    // Check for valid numbering patterns
-    const invalidNumbering = format.match(/\[[^0\]]*\]/g)?.filter(pattern => {
-        return !/^\[0+\]$/.test(pattern);
-    });
-    
-    if (invalidNumbering && invalidNumbering.length > 0) {
-        warnings.push(`Invalid numbering patterns: ${invalidNumbering.join(', ')}. Use [0], [00], [000] etc.`);
+    // Check for valid numbering patterns (now supports multiple formats)
+    const numberingPatterns = format.match(/[\[\({#][^0\]\)}]*[\]\)}]?/g);
+    if (numberingPatterns) {
+        const invalidNumbering = numberingPatterns.filter(pattern => {
+            return !/^[\[\({#]0+[\]\)}]?$/.test(pattern);
+        });
+        
+        if (invalidNumbering.length > 0) {
+            warnings.push(`Invalid numbering patterns: ${invalidNumbering.join(', ')}. Use [0], [00], [000], (0), {0}, #0 etc.`);
+        }
     }
     
     if (format.length > 100) {
@@ -633,8 +621,8 @@ export function previewTitle(titleFormat, sampleData = {}) {
     
     const mockLorebookData = {
         entries: {
-            'existing1': { uid: 5, comment: '[001] - Previous Memory', vectorized: true },
-            'existing2': { uid: 7, comment: '[002] - Another Memory', vectorized: true }
+            'existing1': { uid: 5, comment: '[001] - Previous Memory', vectorized: true, addMemo: true, position: 0 },
+            'existing2': { uid: 7, comment: '[002] - Another Memory', vectorized: true, addMemo: true, position: 0 }
         }
     };
     
@@ -669,7 +657,7 @@ export async function getLorebookStats() {
         const settings = extension_settings.STMemoryBooks || {};
         const titleFormat = settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
         
-        // Use safe string parsing to identify memory entries
+        // Use enhanced format detection to identify memory entries
         const memoryEntries = identifyMemoryEntries(lorebookData, titleFormat);
         const otherEntries = entries.filter(entry => 
             !memoryEntries.some(memEntry => memEntry.entry === entry)
