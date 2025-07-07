@@ -730,13 +730,12 @@ function refreshPopupContent() {
             }
         });
 
-        // Explicitly ensure the main dialog element has the correct classes for size and scrolling.
-        // These are sometimes lost during the morphdom content update.
         const requiredClasses = [
             'wide_dialogue_popup',
             'large_dialogue_popup',
             'vertical_scrolling_dialogue_popup'
         ];
+
         requiredClasses.forEach(className => {
             if (!currentPopupInstance.dlg.classList.contains(className)) {
                 currentPopupInstance.dlg.classList.add(className);
