@@ -171,6 +171,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
 
 /**
  * Creates a Promise that resolves when the AI calls the createMemory tool.
+ * Includes a fix for the nested tool_calls array bug.
  * 
  * @private
  * @param {string} promptString - The full prompt for the AI
@@ -188,8 +189,29 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
+    // Save the original ToolManager function
+    const originalInvokeFunctionTools = ToolManager.invokeFunctionTools;
+    
     try {
-        console.log(`${MODULE_NAME}: Starting Promise-based memory generation...`);
+        console.log(`${MODULE_NAME}: Starting Promise-based memory generation with tool_calls fix...`);
+
+        // Apply the monkey patch to fix nested tool_calls arrays
+        ToolManager.invokeFunctionTools = async function(data) {
+            // Fix the nested array bug: [[{...}]] → [{...}]
+            if (data && data.choices) {
+                for (const choice of data.choices) {
+                    const toolCalls = choice.message?.tool_calls;
+                    if (Array.isArray(toolCalls) && toolCalls.length === 1 && Array.isArray(toolCalls[0])) {
+                        console.log(`${MODULE_NAME}: Fixed nested tool_calls array structure`);
+                        choice.message.tool_calls = toolCalls[0];
+                    }
+                }
+            }
+            
+            // Call the original function with the fixed data
+            // Use .apply to maintain correct 'this' context
+            return originalInvokeFunctionTools.apply(this, arguments);
+        };
 
         // Create Promise that will resolve when tool is called
         const memoryToolPromise = new Promise((resolve, reject) => {
@@ -272,6 +294,10 @@ async function generateMemoryWithAI(promptString, profile) {
             throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
         }
     } finally {
+        // CRITICAL: Always restore the original function, no matter what happens
+        ToolManager.invokeFunctionTools = originalInvokeFunctionTools;
+        console.log(`${MODULE_NAME}: Restored original ToolManager.invokeFunctionTools`);
+        
         // Always clean up resolver
         memoryToolResolver = null;
     }
