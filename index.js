@@ -716,28 +716,30 @@ function refreshPopupContent() {
         
         morphdom(currentPopupInstance.content, tempContainer, {
             onBeforeElUpdated: function(fromEl, toEl) {
-                if (fromEl.type === 'checkbox') {
+                // Preserve state of form elements that morphdom might reset
+                if (fromEl.isEqualNode(toEl)) {
+                    return false;
+                }
+                if (fromEl.type === 'checkbox' || fromEl.type === 'radio') {
                     toEl.checked = fromEl.checked;
                 }
-                if (fromEl.tagName === 'SELECT') {
+                if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
                     toEl.value = fromEl.value;
                 }
                 return true;
             }
         });
-        
-        // Ensure essential popup properties are preserved after content refresh
-        // These classes enable large mode and vertical scrolling functionality
+
+        // Explicitly ensure the main dialog element has the correct classes for size and scrolling.
+        // These are sometimes lost during the morphdom content update.
         const requiredClasses = [
-            'large_dialogue_popup',              // Enables large mode (90% of screen)
-            'vertical_scrolling_dialogue_popup', // Enables vertical scrolling
-            'wide_dialogue_popup'                // Enables wide mode
+            'wide_dialogue_popup',
+            'large_dialogue_popup',
+            'vertical_scrolling_dialogue_popup'
         ];
-        
         requiredClasses.forEach(className => {
             if (!currentPopupInstance.dlg.classList.contains(className)) {
                 currentPopupInstance.dlg.classList.add(className);
-                console.log(`STMemoryBooks: Added missing popup class: ${className}`);
             }
         });
         
