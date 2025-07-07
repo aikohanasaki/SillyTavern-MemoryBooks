@@ -220,8 +220,6 @@ async function applyProfileConnectionSettings(profile) {
     
     try {
         // Import the oai_settings from the OpenAI module
-        // Note: You'll need to import this at the top of stmemory.js:
-        // import { oai_settings } from './openai.js';
         
         // Store and apply model override
         if (profile.effectiveConnection.model) {

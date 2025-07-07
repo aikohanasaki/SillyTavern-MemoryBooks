@@ -73,7 +73,7 @@ export async function showConverterPopup(lorebookName) {
 
         // Prepare entry view models with detection and preview
         const entryViewModels = Object.values(lorebookData.entries).map(entry => {
-            const detected = isMemoryEntry(entry, titleFormat);
+            const detected = isMemoryEntry(entry);
             const preview = getEntryPreview(entry);
             
             return {
