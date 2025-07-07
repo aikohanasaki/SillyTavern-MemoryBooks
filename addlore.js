@@ -263,7 +263,15 @@ function getNextEntryNumber(lorebookData, titleFormat) {
 }
 
 /**
- * Safely extracts number from title using string parsing instead of regex
+ * Safely extracts number from title using comprehensive pattern matching
+ * Supports ALL numbering formats the extension can generate:
+ * - [001], [01], [1] (square brackets)
+ * - (001), (01), (1) (parentheses) 
+ * - {001}, {01}, {1} (curly braces)
+ * - #01, #5 (hash prefix)
+ * - #7-8 (hash prefix with ranges - extracts first number)
+ * - 001 - Title, 1 - Title (start of string)
+ * - Numbers anywhere in title as fallback
  * @private
  * @param {string} title - The title to extract number from
  * @returns {number|null} The extracted number or null if not found
@@ -273,10 +281,50 @@ function extractNumberFromTitle(title) {
         return null;
     }
     
-    // Find bracketed numbers like [001], [42], etc.
+    // Pattern 1: Square brackets [001], [01], [1]
     const bracketMatch = title.match(/\[(\d+)\]/);
     if (bracketMatch) {
         const number = parseInt(bracketMatch[1], 10);
+        return isNaN(number) ? null : number;
+    }
+    
+    // Pattern 2: Parentheses (001), (01), (1)
+    const parenMatch = title.match(/\((\d+)\)/);
+    if (parenMatch) {
+        const number = parseInt(parenMatch[1], 10);
+        return isNaN(number) ? null : number;
+    }
+    
+    // Pattern 3: Curly braces {001}, {01}, {1}
+    const braceMatch = title.match(/\{(\d+)\}/);
+    if (braceMatch) {
+        const number = parseInt(braceMatch[1], 10);
+        return isNaN(number) ? null : number;
+    }
+    
+    // Pattern 4: Hash prefix #01, #5, #7-8 (extract LAST number from ranges for proper sequencing)
+    const hashMatch = title.match(/#(\d+)(?:-(\d+))?/);
+    if (hashMatch) {
+        // If it's a range like #7-8, use the second number (8)
+        // If it's single like #5, use the first number (5)
+        const firstNumber = parseInt(hashMatch[1], 10);
+        const secondNumber = hashMatch[2] ? parseInt(hashMatch[2], 10) : null;
+        
+        const number = secondNumber !== null ? secondNumber : firstNumber;
+        return isNaN(number) ? null : number;
+    }
+    
+    // Pattern 5: Numbers at start of string: "001 - Title", "1 - Title"
+    const startMatch = title.match(/^(\d+)(?:\s*[-\s])/);
+    if (startMatch) {
+        const number = parseInt(startMatch[1], 10);
+        return isNaN(number) ? null : number;
+    }
+    
+    // Pattern 6: Fallback - any sequence of digits (prefer earlier occurrence)
+    const anyNumberMatch = title.match(/(\d+)/);
+    if (anyNumberMatch) {
+        const number = parseInt(anyNumberMatch[1], 10);
         return isNaN(number) ? null : number;
     }
     
@@ -284,32 +332,116 @@ function extractNumberFromTitle(title) {
 }
 
 /**
- * Safely determines if an entry matches the title format pattern (is a memory entry)
- * Uses string parsing instead of dangerous regex generation
+ * Safely determines if an entry is a memory entry using multiple detection methods
+ * Uses property-based detection as primary method, title format as secondary
  * @private
  * @param {Object} entry - The lorebook entry to check
  * @param {string} titleFormat - The title format to match against
  * @returns {boolean} Whether this entry appears to be a memory entry
  */
 function isMemoryEntry(entry, titleFormat) {
-    if (!entry.comment || !titleFormat) {
+    if (!entry.comment) {
         return false;
     }
     
-    // Primary check: Does this entry have the vectorized property? 
-    // Memory entries should always be vectorized for database retrieval
-    if (entry.vectorized !== true) {
+    // Primary detection: Strong indicators based on properties
+    // These properties are consistently set by STMemoryBooks
+    const hasMemoryProperties = (
+        entry.vectorized === true &&           // Memories should be vectorized for search
+        entry.addMemo === true &&              // Memories have memos enabled
+        (entry.position === 0 || entry.position === 1)  // Memory entries use position 0 or 1
+    );
+    
+    if (!hasMemoryProperties) {
         return false;
     }
     
-    // Secondary check: Does the title contain a bracketed number?
-    // All memory entries should have auto-numbering
-    if (!extractNumberFromTitle(entry.comment)) {
+    // Secondary confirmation: Check title format
+    const hasNumberInTitle = extractNumberFromTitle(entry.comment) !== null;
+    const hasGeneralStructure = hasFormatStructure(entry.comment, titleFormat);
+    
+    // If it has memory properties AND (a number in title OR general structure), it's a memory
+    return hasNumberInTitle || hasGeneralStructure;
+}
+
+/**
+ * Enhanced format structure checking with support for allowed special characters
+ * @private
+ * @param {string} title - The title to check
+ * @param {string} titleFormat - The format template
+ * @returns {boolean} Whether the title matches the basic structure
+ */
+function hasFormatStructure(title, titleFormat) {
+    if (!title || !titleFormat) {
         return false;
     }
     
-    // Tertiary check: Basic format structure matching using safe string operations
-    return hasFormatStructure(entry.comment, titleFormat);
+    try {
+        // If title has a number in any supported format, it's likely a memory
+        if (extractNumberFromTitle(title) !== null) {
+            return true;
+        }
+        
+        // Check for common memory indicators with allowed special characters
+        // Allowed chars: # _ = [ ] { } ; , . - ( )
+        const hasMemoryStructure = (
+            /^#\d+/.test(title) ||           // #01, #5, #7-8 format
+            /^\(\d+\)/.test(title) ||        // (001) format  
+            /^\{\d+\}/.test(title) ||        // {4} format
+            /^\[\d+\]/.test(title) ||        // [001] format
+            /^\d+\s*[-.]/.test(title) ||     // 001 - or 001. format
+            title.includes('Scene') ||        // Contains "Scene"
+            title.includes('Memory') ||       // Contains "Memory"
+            /[-:;,.]/.test(title)            // Has structural separators
+        );
+        
+        if (hasMemoryStructure) {
+            return true;
+        }
+        
+        // Extract static parts of the format (non-placeholder parts)
+        let staticParts = titleFormat;
+        
+        // Remove common placeholders to find static text
+        const placeholders = [
+            '{{title}}', '{{scene}}', '{{char}}', '{{user}}', 
+            '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'
+        ];
+        
+        placeholders.forEach(placeholder => {
+            staticParts = staticParts.replace(placeholder, '');
+        });
+        
+        // Remove all supported numbering placeholders: [000], (000), {000}, #000
+        staticParts = staticParts.replace(/[\[\({#]0+[\]\)}]?/g, '');
+        
+        // Clean up extra spaces
+        staticParts = staticParts.replace(/\s+/g, ' ').trim();
+        
+        // If there are meaningful static parts, check for them
+        if (staticParts.length > 2) {
+            const staticWords = staticParts.split(/\s+/).filter(word => 
+                word.length > 1 && /[a-zA-Z]/.test(word)
+            );
+            
+            if (staticWords.length > 0) {
+                const foundWords = staticWords.filter(word => 
+                    title.toLowerCase().includes(word.toLowerCase())
+                ).length;
+                
+                // If most static words are found, it likely matches the format
+                return foundWords >= Math.ceil(staticWords.length * 0.6);
+            }
+        }
+        
+        // Final fallback: title contains allowed structural characters
+        return /[#_=\[\]{}();,.()-]/.test(title);
+        
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Error in format structure check:`, error);
+        // Fallback: any title with a number is probably a memory
+        return extractNumberFromTitle(title) !== null;
+    }
 }
 
 /**
