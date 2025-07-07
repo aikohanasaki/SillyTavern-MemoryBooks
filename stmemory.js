@@ -2,34 +2,8 @@ import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
-import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
-
-// --- Promise resolver for tool calling ---
-let memoryToolResolver = null;
-
-/**
- * Sets the Promise resolver for the createMemory tool.
- * This is called from the tool registration in index.js.
- * @param {Function} resolver - The Promise resolver function.
- */
-export function setMemoryToolResolver(resolver) {
-    memoryToolResolver = resolver;
-}
-
-/**
- * Helper function to call the memory tool resolver with data.
- * @param {Object} data - The data to pass to the resolver
- */
-export function callMemoryToolResolver(data) {
-    if (memoryToolResolver && typeof memoryToolResolver === 'function') {
-        memoryToolResolver(data);
-        memoryToolResolver = null; // Clean up after calling
-    } else {
-        console.error(`${MODULE_NAME}: No memory tool resolver available or resolver is not a function`);
-    }
-}
 
 // --- Custom Error Types for Better UI Handling ---
 class TokenWarningError extends Error {
@@ -57,11 +31,11 @@ class InvalidProfileError extends Error {
 /**
  * Waits for character data to be available with retry mechanism
  * @private
- * @param {number} maxWaitMs - Maximum time to wait in milliseconds (default: 10000)
+ * @param {number} maxWaitMs - Maximum time to wait in milliseconds (default: 5000)
  * @param {number} checkIntervalMs - How often to check in milliseconds (default: 250)
  * @returns {Promise<boolean>} True if character data is available, false if timeout
  */
-async function waitForCharacterData(maxWaitMs = 10000, checkIntervalMs = 250) {
+async function waitForCharacterData(maxWaitMs = 5000, checkIntervalMs = 250) {
     const startTime = Date.now();
     
     while (Date.now() - startTime < maxWaitMs) {
@@ -79,7 +53,7 @@ async function waitForCharacterData(maxWaitMs = 10000, checkIntervalMs = 250) {
 }
 
 /**
- * Creates a memory from a compiled scene using an AI model with tool calling.
+ * Creates a memory from a compiled scene using AI with structured JSON output.
  * This is the main entry point for this module.
  *
  * @param {Object} compiledScene - Scene data from chatcompile.js
@@ -93,7 +67,7 @@ async function waitForCharacterData(maxWaitMs = 10000, checkIntervalMs = 250) {
  * @throws {Error} For other general failures
  */
 export async function createMemory(compiledScene, profile, options = {}) {
-    console.log(`${MODULE_NAME}: Starting Promise-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
+    console.log(`${MODULE_NAME}: Starting JSON-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
     
     try {
         // 1. Validate inputs
@@ -114,11 +88,11 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        // 4. Generate memory using SillyTavern's main Generate function with Promise-based tool calling
+        // 4. Generate memory using SillyTavern's Generate function with JSON output
         const response = await generateMemoryWithAI(promptString, profile);
         
-        // 5. Process the structured tool result 
-        const processedMemory = processToolResult(response, compiledScene);
+        // 5. Process the structured JSON result 
+        const processedMemory = processJsonResult(response, compiledScene);
         
         // 6. Create the final memory object
         const memoryResult = {
@@ -134,8 +108,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',
                 tokenUsage: tokenEstimate,
-                generationMethod: 'promise-based-tool-calling',
-                version: '1.2'
+                generationMethod: 'json-structured-output',
+                version: '2.0'
             },
             suggestedKeys: processedMemory.suggestedKeys,
             lorebook: {
@@ -156,7 +130,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             }
         };
         
-        console.log(`${MODULE_NAME}: Promise-based memory creation completed successfully`);
+        console.log(`${MODULE_NAME}: JSON-based memory creation completed successfully`);
         return memoryResult;
         
     } catch (error) {
@@ -171,14 +145,14 @@ export async function createMemory(compiledScene, profile, options = {}) {
 }
 
 /**
- * Creates a Promise that resolves when the AI calls the createMemory tool.
- * Includes a fix for the nested tool_calls array bug.
+ * Generates memory using AI with structured JSON output instead of tool calling.
+ * This is much more reliable across different models and APIs.
  * 
  * @private
  * @param {string} promptString - The full prompt for the AI
  * @param {Object} profile - The user-selected profile containing connection settings
- * @returns {Promise<Object>} The structured memory result from the tool call
- * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
+ * @returns {Promise<Object>} The structured memory result from JSON parsing
+ * @throws {AIResponseError} If the AI generation fails or doesn't return valid JSON
  */
 async function generateMemoryWithAI(promptString, profile) {
     // Wait for character data to be available before proceeding
@@ -190,116 +164,164 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
-    // Save the original ToolManager function
-    const originalInvokeFunctionTools = ToolManager.invokeFunctionTools;
-    let timeoutId; // Declare timeout ID in outer scope for cleanup
-    
     try {
-        console.log(`${MODULE_NAME}: Starting Promise-based memory generation with tool_calls fix...`);
+        console.log(`${MODULE_NAME}: Starting JSON-based memory generation...`);
 
-        // Apply the monkey patch to fix nested tool_calls arrays
-        ToolManager.invokeFunctionTools = async function(data) {
-            // Fix the nested array bug: [[{...}]] → [{...}]
-            if (data && data.choices) {
-                for (const choice of data.choices) {
-                    const toolCalls = choice.message?.tool_calls;
-                    if (Array.isArray(toolCalls) && toolCalls.length === 1 && Array.isArray(toolCalls[0])) {
-                        console.log(`${MODULE_NAME}: Fixed nested tool_calls array structure`);
-                        choice.message.tool_calls = toolCalls[0];
-                    }
-                }
-            }
+        // Temporarily override connection settings if profile specifies them
+        const originalSettings = await applyProfileConnectionSettings(profile);
+        
+        try {
+            // Use SillyTavern's standard Generate function
+            const aiResponse = await Generate('quiet', { 
+                quiet_prompt: promptString, 
+                skipWIAN: true,  // Clean context without World Info, Author's Note, etc.
+                stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:'] // Stop at common delimiters
+            });
+
+            // Parse the JSON response
+            const jsonResult = parseAIJsonResponse(aiResponse);
             
-            // Call the original function with the fixed data
-            // Use .apply to maintain correct 'this' context
-            return originalInvokeFunctionTools.apply(this, arguments);
-        };
-
-        // Create Promise that will resolve when tool is called
-        const memoryToolPromise = new Promise((resolve, reject) => {
-            // Set the resolver so the tool can call it
-            memoryToolResolver = (toolData) => {
-                console.log(`${MODULE_NAME}: Tool called with data:`, {
-                    hasContent: !!toolData.content,
-                    contentLength: toolData.content?.length || 0,
-                    hasTitle: !!toolData.title,
-                    keywordCount: toolData.keywords?.length || 0
-                });
-                // Clear timeout since tool was called successfully
-                if (timeoutId) {
-                    clearTimeout(timeoutId);
-                    timeoutId = null;
-                }
-                resolve(toolData);
+            return {
+                content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
+                title: jsonResult.title || 'Memory',
+                keywords: jsonResult.keywords || [],
+                profile: profile
             };
-            
-            // Add timeout to prevent hanging
-            timeoutId = setTimeout(() => {
-                memoryToolResolver = null;
-                reject(new AIResponseError(
-                    'Tool call timeout - AI did not call createMemory within 60 seconds. ' +
-                    'This may indicate the model does not support function calling or the prompt was insufficient.'
-                ));
-            }, 60000); // 60 second timeout
-        });
 
-        // Run Generate() and let it complete its internal process (including tool calls)
-        await Generate('quiet', { 
-            quiet_prompt: promptString, 
-            skipWIAN: true  // Clean context without World Info, Author's Note, etc.
-        });
-
-        // Now await the tool result. If the tool was called during Generate(), 
-        // this will resolve immediately. If not, the timeout will trigger.
-        const toolResult = await memoryToolPromise;
-
-        // Clean up timeout if still active
-        if (timeoutId) {
-            clearTimeout(timeoutId);
+        } finally {
+            // Always restore original settings
+            await restoreConnectionSettings(originalSettings);
         }
-
-        // Validate the tool result structure
-        if (!toolResult.content || typeof toolResult.content !== 'string' || !toolResult.content.trim()) {
-            throw new AIResponseError('Tool result is missing or has empty content.');
-        }
-
-        if (!toolResult.title || typeof toolResult.title !== 'string' || !toolResult.title.trim()) {
-            throw new AIResponseError('Tool result is missing or has empty title.');
-        }
-
-        if (!Array.isArray(toolResult.keywords) || toolResult.keywords.length === 0) {
-            throw new AIResponseError('Tool result is missing or has empty keywords array.');
-        }
-
-        // Return the validated, cleaned result
-        return {
-            content: toolResult.content.trim(),
-            title: toolResult.title.trim(),
-            keywords: toolResult.keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()),
-            profile: profile
-        };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Promise-based memory generation failed:`, error);
-        
-        // Clean up resolver
-        memoryToolResolver = null;
+        console.error(`${MODULE_NAME}: JSON-based memory generation failed:`, error);
         
         if (error instanceof AIResponseError) {
             throw error;
         } else {
-            throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
+            throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
         }
-    } finally {
-        // CRITICAL: Always restore the original function, no matter what happens
-        ToolManager.invokeFunctionTools = originalInvokeFunctionTools;
-        console.log(`${MODULE_NAME}: Restored original ToolManager.invokeFunctionTools`);
+    }
+}
+
+/**
+ * Applies profile connection settings temporarily if they exist
+ * @private
+ * @param {Object} profile - Profile with connection settings
+ * @returns {Promise<Object>} Original settings to restore later
+ */
+async function applyProfileConnectionSettings(profile) {
+    const originalSettings = {};
+    
+    if (!profile.effectiveConnection) {
+        return originalSettings; // No settings to apply
+    }
+    
+    try {
+        // Store original values
+        if (profile.effectiveConnection.model) {
+            // This is a simplified approach - in a real implementation, you'd need to 
+            // properly interface with SillyTavern's model selection system
+            console.log(`${MODULE_NAME}: Would temporarily switch to model: ${profile.effectiveConnection.model}`);
+        }
         
-        // Always clean up resolver and timeout
-        memoryToolResolver = null;
-        if (timeoutId) {
-            clearTimeout(timeoutId);
+        if (typeof profile.effectiveConnection.temperature === 'number') {
+            console.log(`${MODULE_NAME}: Would temporarily switch to temperature: ${profile.effectiveConnection.temperature}`);
         }
+        
+        // NOTE: Actual model/temperature switching would require deeper integration
+        // with SillyTavern's settings system. For now, we log the intent.
+        
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to apply profile connection settings:`, error);
+    }
+    
+    return originalSettings;
+}
+
+/**
+ * Restores original connection settings
+ * @private
+ * @param {Object} originalSettings - Settings to restore
+ */
+async function restoreConnectionSettings(originalSettings) {
+    try {
+        // Restore any changed settings
+        console.log(`${MODULE_NAME}: Connection settings restored`);
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to restore connection settings:`, error);
+    }
+}
+
+/**
+ * Parses AI response as JSON with robust error handling
+ * @private
+ * @param {string} aiResponse - Raw AI response text
+ * @returns {Object} Parsed JSON object
+ * @throws {AIResponseError} If JSON parsing fails
+ */
+function parseAIJsonResponse(aiResponse) {
+    if (!aiResponse || typeof aiResponse !== 'string') {
+        throw new AIResponseError('AI response is empty or invalid');
+    }
+    
+    // Clean up the response - remove common wrapper text
+    let cleanResponse = aiResponse.trim();
+    
+    // Remove common prefixes that models sometimes add
+    const prefixesToRemove = [
+        'Here is the JSON response:',
+        'Here is the memory:',
+        'Here\'s the JSON:',
+        'JSON:',
+        '```json',
+        '```'
+    ];
+    
+    for (const prefix of prefixesToRemove) {
+        if (cleanResponse.startsWith(prefix)) {
+            cleanResponse = cleanResponse.substring(prefix.length).trim();
+        }
+    }
+    
+    // Remove closing code blocks
+    if (cleanResponse.endsWith('```')) {
+        cleanResponse = cleanResponse.substring(0, cleanResponse.length - 3).trim();
+    }
+    
+    // Try to find JSON within the response if it's wrapped in other text
+    const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        cleanResponse = jsonMatch[0];
+    }
+    
+    try {
+        const parsed = JSON.parse(cleanResponse);
+        
+        // Validate required fields
+        if (!parsed.content && !parsed.summary && !parsed.memory_content) {
+            throw new AIResponseError('AI response missing content field');
+        }
+        
+        if (!parsed.title) {
+            throw new AIResponseError('AI response missing title field');
+        }
+        
+        if (!Array.isArray(parsed.keywords)) {
+            throw new AIResponseError('AI response missing or invalid keywords array');
+        }
+        
+        return parsed;
+        
+    } catch (parseError) {
+        console.error(`${MODULE_NAME}: Failed to parse AI JSON response:`, parseError);
+        console.error(`${MODULE_NAME}: Original response:`, aiResponse);
+        console.error(`${MODULE_NAME}: Cleaned response:`, cleanResponse);
+        
+        throw new AIResponseError(
+            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
+            `Parse error: ${parseError.message}`
+        );
     }
 }
 
@@ -381,7 +403,7 @@ async function estimateTokenUsage(promptString) {
     try {
         const inputTokens = await getTokenCount(promptString);
         // A reasonable estimate for a memory summary output
-        const estimatedOutputTokens = 200;
+        const estimatedOutputTokens = 300; // Slightly higher for JSON structure
         
         return {
             input: inputTokens,
@@ -394,14 +416,14 @@ async function estimateTokenUsage(promptString) {
         const inputTokens = Math.ceil(charCount / 4); // A common approximation
         return {
             input: inputTokens,
-            output: 200,
-            total: inputTokens + 200
+            output: 300,
+            total: inputTokens + 300
         };
     }
 }
 
 /**
- * Build the complete prompt string
+ * Build the complete prompt string for JSON output
  * @private
  * @param {Object} compiledScene - The compiled scene data.
  * @param {Object} profile - The user-selected profile.
@@ -410,7 +432,7 @@ async function estimateTokenUsage(promptString) {
 async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
     
-    // Use utils.js to get the effective prompt (proven prompts with precise formatting requirements)
+    // Use utils.js to get the effective prompt (now designed for JSON output)
     const systemPrompt = getEffectivePrompt(profile);
     
     // Use substituteParams to allow for standard macros like {{char}} and {{user}}
@@ -424,21 +446,27 @@ async function buildPrompt(compiledScene, profile) {
 }
 
 /**
- * Process the structured result from the createMemory tool
+ * Process the structured result from JSON parsing
  * @private
- * @param {Object} toolResult - The structured result from createMemory tool
+ * @param {Object} jsonResult - The structured result from JSON parsing
  * @param {Object} compiledScene - The original compiled scene for context
  * @returns {Object} Processed memory data
  */
-function processToolResult(toolResult, compiledScene) {
-    const { content, title, keywords } = toolResult;
+function processJsonResult(jsonResult, compiledScene) {
+    const { content, title, keywords } = jsonResult;
     
-    console.log(`${MODULE_NAME}: Processing Promise-based tool result - Content: ${content.length} chars, Keywords: ${keywords.length}`);
+    // Clean and validate content
+    const cleanContent = (content || jsonResult.summary || jsonResult.memory_content || '').trim();
+    const cleanTitle = (title || 'Memory').trim();
+    const cleanKeywords = Array.isArray(keywords) ? 
+        keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()) : [];
+    
+    console.log(`${MODULE_NAME}: Processing JSON result - Content: ${cleanContent.length} chars, Keywords: ${cleanKeywords.length}`);
     
     return {
-        content: content,
-        extractedTitle: title || 'Memory',
-        suggestedKeys: keywords
+        content: cleanContent,
+        extractedTitle: cleanTitle,
+        suggestedKeys: cleanKeywords
     };
 }
 

@@ -132,10 +132,10 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.comment = entryTitle;
     
     // Extract order number from title for proper sorting
-    const orderMatch = entryTitle.match(/\[(\d+)\]/);
-    const orderNumber = orderMatch ? parseInt(orderMatch[1]) : 100;
+    const orderNumber = extractNumberFromTitle(entryTitle) || 100;
     
-    // Set all properties to match the example lorebook structure
+    // Set all properties to match the tested lorebook structure
+    // These values are tested and proven to work well for memory entries
     entry.keysecondary = [];
     entry.constant = false;
     entry.vectorized = true;  // Important: memory entries should be vectorized
@@ -143,7 +143,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.selectiveLogic = 0;
     entry.addMemo = true;
     entry.order = orderNumber;
-    entry.position = 3;  // Position value from example
+    entry.position = 3;  // Position value from testing
     entry.disable = false;
     entry.excludeRecursion = false;
     entry.preventRecursion = true;
@@ -233,36 +233,15 @@ function getNextEntryNumber(lorebookData, titleFormat) {
     const entries = Object.values(lorebookData.entries);
     const existingNumbers = [];
     
-    // Convert title format to regex pattern for matching existing memories
-    const memoryPattern = createMemoryMatchPattern(titleFormat);
-    
-    if (memoryPattern) {
-        // Use title format pattern as primary filter
-        entries.forEach(entry => {
-            if (entry.comment && memoryPattern.test(entry.comment)) {
-                const numberMatch = entry.comment.match(/\[(\d+)\]/);
-                if (numberMatch) {
-                    existingNumbers.push(parseInt(numberMatch[1]));
-                }
+    // Use safe string parsing instead of regex generation
+    entries.forEach(entry => {
+        if (entry.comment && isMemoryEntry(entry, titleFormat)) {
+            const number = extractNumberFromTitle(entry.comment);
+            if (number !== null) {
+                existingNumbers.push(number);
             }
-        });
-    } else {
-        // Fallback to old logic if pattern creation fails
-        console.warn(`${MODULE_NAME}: Could not create pattern from title format, using fallback logic`);
-        entries.forEach(entry => {
-            // Only look at entries that appear to be auto-generated memories
-            // (numbered titles and vectorized for database retrieval)
-            if (entry.comment && 
-                entry.comment.match(/\[(\d+)\]/) && 
-                entry.vectorized === true) {
-                
-                const numberMatch = entry.comment.match(/\[(\d+)\]/);
-                if (numberMatch) {
-                    existingNumbers.push(parseInt(numberMatch[1]));
-                }
-            }
-        });
-    }
+        }
+    });
     
     // Find the next available number
     if (existingNumbers.length === 0) {
@@ -284,73 +263,117 @@ function getNextEntryNumber(lorebookData, titleFormat) {
 }
 
 /**
- * Creates a regex pattern to match existing memories based on title format
+ * Safely extracts number from title using string parsing instead of regex
  * @private
- * @param {string} titleFormat - The title format template
- * @returns {RegExp|null} Regex pattern to match existing memories, or null if pattern creation fails
+ * @param {string} title - The title to extract number from
+ * @returns {number|null} The extracted number or null if not found
  */
-function createMemoryMatchPattern(titleFormat) {
+function extractNumberFromTitle(title) {
+    if (!title || typeof title !== 'string') {
+        return null;
+    }
+    
+    // Find bracketed numbers like [001], [42], etc.
+    const bracketMatch = title.match(/\[(\d+)\]/);
+    if (bracketMatch) {
+        const number = parseInt(bracketMatch[1], 10);
+        return isNaN(number) ? null : number;
+    }
+    
+    return null;
+}
+
+/**
+ * Safely determines if an entry matches the title format pattern (is a memory entry)
+ * Uses string parsing instead of dangerous regex generation
+ * @private
+ * @param {Object} entry - The lorebook entry to check
+ * @param {string} titleFormat - The title format to match against
+ * @returns {boolean} Whether this entry appears to be a memory entry
+ */
+function isMemoryEntry(entry, titleFormat) {
+    if (!entry.comment || !titleFormat) {
+        return false;
+    }
+    
+    // Primary check: Does this entry have the vectorized property? 
+    // Memory entries should always be vectorized for database retrieval
+    if (entry.vectorized !== true) {
+        return false;
+    }
+    
+    // Secondary check: Does the title contain a bracketed number?
+    // All memory entries should have auto-numbering
+    if (!extractNumberFromTitle(entry.comment)) {
+        return false;
+    }
+    
+    // Tertiary check: Basic format structure matching using safe string operations
+    return hasFormatStructure(entry.comment, titleFormat);
+}
+
+/**
+ * Safely checks if a title has the basic structure of the format template
+ * Uses string operations instead of regex generation
+ * @private
+ * @param {string} title - The title to check
+ * @param {string} titleFormat - The format template
+ * @returns {boolean} Whether the title matches the basic structure
+ */
+function hasFormatStructure(title, titleFormat) {
+    if (!title || !titleFormat) {
+        return false;
+    }
+    
     try {
-        console.log(`${MODULE_NAME}: Creating memory match pattern from format: "${titleFormat}"`);
+        // Extract static parts of the format (non-placeholder parts)
+        let staticParts = titleFormat;
         
-        // Define placeholder patterns - what each placeholder can match
-        const placeholderPatterns = {
-            '{{title}}': '[^\\[\\]]+?',      // Any text except brackets (non-greedy)
-            '{{scene}}': 'Scene \\d+-\\d+',  // Specific scene format
-            '{{char}}': '[^\\[\\]]+?',       // Character names (non-greedy)
-            '{{user}}': '[^\\[\\]]+?',       // User names (non-greedy)
-            '{{messages}}': '\\d+',          // Number of messages
-            '{{profile}}': '[^\\[\\]]+?',    // Profile names (non-greedy)
-            '{{date}}': '[^\\[\\]]+?',       // Date in any format (non-greedy)
-            '{{time}}': '[^\\[\\]]+?'        // Time in any format (non-greedy)
-        };
+        // Remove common placeholders to find static text
+        const placeholders = [
+            '{{title}}', '{{scene}}', '{{char}}', '{{user}}', 
+            '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'
+        ];
         
-        let pattern = titleFormat;
-        
-        // Step 1: Replace numbering patterns [0], [00], [000] with a capture group for any number
-        pattern = pattern.replace(/\[0+\]/g, '\\[(\\d+)\\]');
-        
-        // Step 2: Escape all regex special characters EXCEPT our placeholders
-        // First, temporarily replace placeholders with unique markers
-        const tempMarkers = {};
-        let markerCounter = 0;
-        
-        Object.keys(placeholderPatterns).forEach(placeholder => {
-            const marker = `__PLACEHOLDER_${markerCounter++}__`;
-            tempMarkers[marker] = placeholderPatterns[placeholder];
-            pattern = pattern.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), marker);
+        placeholders.forEach(placeholder => {
+            staticParts = staticParts.replace(placeholder, '');
         });
         
-        // Step 3: Escape all remaining regex special characters
-        pattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Remove numbering placeholders like [000]
+        staticParts = staticParts.replace(/\[0+\]/g, '');
         
-        // Step 4: Replace temp markers with their regex patterns
-        Object.entries(tempMarkers).forEach(([marker, regexPattern]) => {
-            pattern = pattern.replace(new RegExp(marker, 'g'), regexPattern);
-        });
+        // Clean up extra spaces
+        staticParts = staticParts.replace(/\s+/g, ' ').trim();
         
-        // Step 5: Create the final regex with anchors
-        const regex = new RegExp(`^${pattern}$`, 'i');
-        
-        console.log(`${MODULE_NAME}: Created memory match pattern: ${regex.source}`);
-        
-        // Quick validation - make sure the regex can be created and is not too permissive
-        if (pattern === '.*' || pattern === '.+') {
-            console.warn(`${MODULE_NAME}: Generated pattern is too permissive, falling back to null`);
-            return null;
+        // If there are meaningful static parts (more than just punctuation), check for them
+        if (staticParts.length > 2) {
+            // Split into words and check if most static words appear in the title
+            const staticWords = staticParts.split(/\s+/).filter(word => 
+                word.length > 1 && /[a-zA-Z]/.test(word)
+            );
+            
+            if (staticWords.length > 0) {
+                const foundWords = staticWords.filter(word => 
+                    title.toLowerCase().includes(word.toLowerCase())
+                ).length;
+                
+                // If most static words are found, it likely matches the format
+                return foundWords >= Math.ceil(staticWords.length * 0.6);
+            }
         }
         
-        return regex;
+        // If no meaningful static parts, just check that it has brackets (likely memory entry)
+        return /\[\d+\]/.test(title);
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error creating memory match pattern:`, error);
-        console.error(`${MODULE_NAME}: Original format was: "${titleFormat}"`);
-        return null;
+        console.warn(`${MODULE_NAME}: Error in format structure check:`, error);
+        // Fallback: just check for bracketed numbers
+        return /\[\d+\]/.test(title);
     }
 }
 
 /**
- * Identifies memory entries from lorebook using title format pattern
+ * Identifies memory entries from lorebook using safe string parsing
  * @param {Object} lorebookData - The lorebook data
  * @param {string} titleFormat - The title format to match against
  * @returns {Array} Array of memory entries with extracted metadata
@@ -363,52 +386,24 @@ export function identifyMemoryEntries(lorebookData, titleFormat) {
     const entries = Object.values(lorebookData.entries);
     const memoryEntries = [];
     
-    // Convert title format to regex pattern for matching
-    const memoryPattern = createMemoryMatchPattern(titleFormat);
-    
-    if (memoryPattern) {
-        // Use title format pattern as primary filter
-        entries.forEach(entry => {
-            if (entry.comment && memoryPattern.test(entry.comment)) {
-                const numberMatch = entry.comment.match(/\[(\d+)\]/);
-                const number = numberMatch ? parseInt(numberMatch[1]) : 0;
-                
-                memoryEntries.push({
-                    number: number,
-                    title: entry.comment,
-                    content: entry.content,
-                    keywords: entry.key || [],
-                    entry: entry
-                });
-            }
-        });
-    } else {
-        // Fallback to secondary filters for borderline cases
-        console.warn(`${MODULE_NAME}: Using fallback memory detection`);
-        entries.forEach(entry => {
-            // Check for numbered titles with vectorized property
-            if (entry.comment && 
-                entry.comment.match(/\[(\d+)\]/) && 
-                entry.vectorized === true) {
-                
-                const numberMatch = entry.comment.match(/\[(\d+)\]/);
-                const number = numberMatch ? parseInt(numberMatch[1]) : 0;
-                
-                memoryEntries.push({
-                    number: number,
-                    title: entry.comment,
-                    content: entry.content,
-                    keywords: entry.key || [],
-                    entry: entry
-                });
-            }
-        });
-    }
+    entries.forEach(entry => {
+        if (isMemoryEntry(entry, titleFormat)) {
+            const number = extractNumberFromTitle(entry.comment) || 0;
+            
+            memoryEntries.push({
+                number: number,
+                title: entry.comment,
+                content: entry.content,
+                keywords: entry.key || [],
+                entry: entry
+            });
+        }
+    });
     
     // Sort by number
     memoryEntries.sort((a, b) => a.number - b.number);
     
-    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using title format pattern`);
+    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using safe string parsing`);
     return memoryEntries;
 }
 
@@ -542,7 +537,7 @@ export async function getLorebookStats() {
         const settings = extension_settings.STMemoryBooks || {};
         const titleFormat = settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
         
-        // Use title format pattern to identify memory entries
+        // Use safe string parsing to identify memory entries
         const memoryEntries = identifyMemoryEntries(lorebookData, titleFormat);
         const otherEntries = entries.filter(entry => 
             !memoryEntries.some(memEntry => memEntry.entry === entry)

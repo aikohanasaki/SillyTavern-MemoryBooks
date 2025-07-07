@@ -188,33 +188,51 @@ export function getCurrentModelSettings() {
 }
 
 /**
- * Preset prompt definitions - Updated for tool calling architecture
- * All prompts now explicitly instruct the AI to use the createMemory tool
+ * Preset prompt definitions - Updated for JSON structured output
+ * All prompts now explicitly instruct the AI to return valid JSON with specific schema
  */
 export const PRESET_PROMPTS = {
-    'summary': "You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and use the `createMemory` function tool to generate a detailed memory.\n\n" +
-               "For the tool's `memory_content` parameter, create a detailed beat-by-beat summary in narrative prose. First, estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Then capture this scene accurately without losing ANY important information. This summary will go in a vectorized database, so include:\n" +
+    'summary': "You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.\n\n" +
+               "You must respond with ONLY valid JSON in this exact format:\n" +
+               "{\n" +
+               '  "title": "Short scene title (1-3 words)",\n' +
+               '  "content": "Detailed beat-by-beat summary in narrative prose...",\n' +
+               '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+               "}\n\n" +
+               "For the content field, create a detailed beat-by-beat summary in narrative prose. First, estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Then capture this scene accurately without losing ANY important information. This summary will go in a vectorized database, so include:\n" +
                "- All important story beats/events that happened\n" +
                "- Key interaction highlights and character developments\n" +
                "- Notable details, memorable quotes, and revelations\n" +
                "- Outcome and anything else important for future interactions between {{user}} and {{char}}\n" +
                "Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.\n\n" +
-               "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
-               "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords for vectorized database retrieval.",
+               "For the keywords field, provide 3-8 relevant keywords for vectorized database retrieval.\n\n" +
+               "Return ONLY the JSON, no other text.",
 
-    'summarize': "Analyze the following roleplay scene and use the `createMemory` function tool to generate a structured summary.\n\n" +
-                 "For the tool's `memory_content` parameter, create a detailed summary using markdown with these headers:\n" +
+    'summarize': "Analyze the following roleplay scene and return a structured summary as JSON.\n\n" +
+                 "You must respond with ONLY valid JSON in this exact format:\n" +
+                 "{\n" +
+                 '  "title": "Short scene title (1-3 words)",\n' +
+                 '  "content": "Detailed summary with markdown headers...",\n' +
+                 '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+                 "}\n\n" +
+                 "For the content field, create a detailed summary using markdown with these headers:\n" +
                  "- **Timeline**: Start with an estimation of the story timeline (e.g., Day 1, Day 2) based on earlier scene summaries included (if any).\n" +
                  "- **Story Beats**: List all important plot events and story developments that occurred.\n" +
                  "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
                  "- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.\n" +
                  "- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.\n\n" +
-                 "For the tool's `title` parameter, provide a concise title for the scene (1-3 words).\n\n" +
-                 "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords that would help a vectorized database find this conversation again if something is mentioned.\n\n" +
-                 "Ensure you capture ALL important information - comprehensive detail is more important than brevity.",
+                 "For the keywords field, provide 3-8 relevant keywords that would help a vectorized database find this conversation again if something is mentioned.\n\n" +
+                 "Ensure you capture ALL important information - comprehensive detail is more important than brevity.\n\n" +
+                 "Return ONLY the JSON, no other text.",
 
-    'synopsis': "Analyze the following roleplay scene and use the `createMemory` function tool to generate a comprehensive synopsis.\n\n" +
-                "For the tool's `memory_content` parameter, create a long and detailed beat-by-beat summary using markdown structure. Start by estimating where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then write a thorough summary that captures the most recent scene accurately without losing ANY information. Use this structure:\n" +
+    'synopsis': "Analyze the following roleplay scene and return a comprehensive synopsis as JSON.\n\n" +
+                "You must respond with ONLY valid JSON in this exact format:\n" +
+                "{\n" +
+                '  "title": "Short scene title (1-3 words)",\n' +
+                '  "content": "Long detailed synopsis with markdown structure...",\n' +
+                '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+                "}\n\n" +
+                "For the content field, create a long and detailed beat-by-beat summary using markdown structure. Start by estimating where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then write a thorough summary that captures the most recent scene accurately without losing ANY information. Use this structure:\n" +
                 "# [Scene Title]\n" +
                 "**Timeline**: Day X estimation\n" +
                 "## Story Beats\n" +
@@ -226,26 +244,45 @@ export const PRESET_PROMPTS = {
                 "## Outcome\n" +
                 "- (Describe results, resolutions, and final state)\n\n" +
                 "Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.\n\n" +
-                "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
-                "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords for vectorized database retrieval.",
+                "For the keywords field, provide 3-8 relevant keywords for vectorized database retrieval.\n\n" +
+                "Return ONLY the JSON, no other text.",
 
-    'sumup': "Analyze the following roleplay scene and use the `createMemory` function tool to generate a beat summary.\n\n" +
-             "For the tool's `memory_content` parameter, write a comprehensive beat summary that captures this scene completely. Format it as:\n" +
+    'sumup': "Analyze the following roleplay scene and return a beat summary as JSON.\n\n" +
+             "You must respond with ONLY valid JSON in this exact format:\n" +
+             "{\n" +
+             '  "title": "Short scene title (1-3 words)",\n' +
+             '  "content": "Comprehensive beat summary...",\n' +
+             '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+             "}\n\n" +
+             "For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:\n" +
              "# Scene Summary - Day X - [Title]\n" +
              "First estimate where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost.\n\n" +
-             "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
-             "For the tool's `keywords` parameter, provide an array of 3-8 relevant keywords that would help a vectorized database find this summary again if mentioned.",
+             "For the keywords field, provide 3-8 relevant keywords that would help a vectorized database find this summary again if mentioned.\n\n" +
+             "Return ONLY the JSON, no other text.",
 
-    'keywords': "Analyze the following roleplay scene and use the `createMemory` function tool to create a minimal memory entry.\n\n" +
-                "For the tool's `memory_content` parameter, provide a very brief 1-2 sentence summary of what happened in this scene.\n\n" +
-                "For the tool's `title` parameter, provide a concise title (1-3 words).\n\n" +
-                "For the tool's `keywords` parameter, generate 3-8 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later."
+    'keywords': "Analyze the following roleplay scene and return a minimal memory entry as JSON.\n\n" +
+                "You must respond with ONLY valid JSON in this exact format:\n" +
+                "{\n" +
+                '  "title": "Short scene title (1-3 words)",\n' +
+                '  "content": "Brief 1-2 sentence summary...",\n' +
+                '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+                "}\n\n" +
+                "For the content field, provide a very brief 1-2 sentence summary of what happened in this scene.\n\n" +
+                "For the keywords field, generate 3-8 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later.\n\n" +
+                "Return ONLY the JSON, no other text."
 };
 
 /**
- * Default fallback prompt
+ * Default fallback prompt for JSON output
  */
-export const DEFAULT_PROMPT = 'Create a concise memory from this chat scene. Focus on key plot points, character development, and important interactions.';
+export const DEFAULT_PROMPT = 'Analyze the following chat scene and return a memory as JSON.\n\n' +
+                              'You must respond with ONLY valid JSON in this exact format:\n' +
+                              '{\n' +
+                              '  "title": "Short scene title (1-3 words)",\n' +
+                              '  "content": "Concise memory focusing on key plot points, character development, and important interactions",\n' +
+                              '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+                              '}\n\n' +
+                              'Return ONLY the JSON, no other text.';
 
 /**
  * Get preset prompt based on preset name

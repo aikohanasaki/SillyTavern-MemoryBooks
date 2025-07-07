@@ -7,14 +7,13 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/Sla
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory, setMemoryToolResolver, callMemoryToolResolver } from './stmemory.js';
+import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
 import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
-import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
@@ -36,7 +35,7 @@ const defaultSettings = {
         }
     ],
     defaultProfile: 0,
-    migrationVersion: 1
+    migrationVersion: 2  // Updated for JSON-based architecture
 };
 
 // Current state variables
@@ -48,44 +47,36 @@ let chatObserver = null;
 let updateTimeout = null;
 
 /**
- * Recursively traverses a DOM node to find and process STMemoryBooks message buttons.
- * This is more efficient than querySelectorAll for handling newly added DOM fragments.
+ * Simplified message processing - much more efficient than recursive traversal
  * @param {Node} node The DOM node to process.
- * @param {number} currentDepth The current recursion depth.
- * @param {number} maxDepth The maximum recursion depth to prevent stack overflow.
  * @returns {boolean} True if any buttons were added, otherwise false.
  */
-function processNodeForMessages(node, currentDepth = 0, maxDepth = 10) {
-    if (currentDepth > maxDepth) {
-        return false;
-    }
-
+function processNodeForMessages(node) {
     let buttonsWereAdded = false;
 
-    // 1. Check if the node itself is a message element
-    // Using a more specific selector is slightly safer.
+    // If the node itself is a message element
     if (node.matches && node.matches('#chat .mes[mesid]')) {
-        // Check if buttons already exist to prevent duplication, just in case.
         if (!node.querySelector('.mes_stmb_start')) {
             createSceneButtons(node);
             buttonsWereAdded = true;
         }
     } 
-    // 2. If the node is a container, recursively check its children.
-    else if (node.children) {
-        for (const child of node.children) {
-            // The recursive call returns a boolean, which we can aggregate.
-            if (processNodeForMessages(child, currentDepth + 1, maxDepth)) {
+    // Find any message elements within the added node
+    else if (node.querySelectorAll) {
+        const newMessages = node.querySelectorAll('#chat .mes[mesid]');
+        newMessages.forEach(mes => {
+            if (!mes.querySelector('.mes_stmb_start')) {
+                createSceneButtons(mes);
                 buttonsWereAdded = true;
             }
-        }
+        });
     }
 
     return buttonsWereAdded;
 }
 
 /**
- * Initialize chat observer to watch for new messages
+ * Initialize chat observer to watch for new messages - simplified implementation
  */
 function initializeChatObserver() {
     // Clean up existing observer if any
@@ -135,7 +126,7 @@ function initializeChatObserver() {
         subtree: true 
     });
 
-    console.log('STMemoryBooks: Efficient chat observer initialized and monitoring for new messages');
+    console.log('STMemoryBooks: Simplified chat observer initialized and monitoring for new messages');
 }
 
 /**
@@ -196,6 +187,19 @@ function validateSettings(settings) {
     if (settings.moduleSettings.defaultMemoryCount === undefined || 
         settings.moduleSettings.defaultMemoryCount < 0) {
         settings.moduleSettings.defaultMemoryCount = 0;
+    }
+    
+    // Migrate to version 2 if needed (JSON-based architecture)
+    if (!settings.migrationVersion || settings.migrationVersion < 2) {
+        console.log(`${MODULE_NAME}: Migrating to JSON-based architecture (v2)`);
+        settings.migrationVersion = 2;
+        // Update any old tool-based prompts to JSON prompts
+        settings.profiles.forEach(profile => {
+            if (profile.prompt && profile.prompt.includes('createMemory')) {
+                console.log(`${MODULE_NAME}: Updating profile "${profile.name}" to use JSON output`);
+                profile.prompt = DEFAULT_PROMPT; // Reset to new JSON-based default
+            }
+        });
     }
     
     return settings;
@@ -297,7 +301,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation) {
 }
 
 /**
- * Execute the core memory generation process
+ * Execute the core memory generation process - now using JSON-based approach
  */
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
@@ -341,18 +345,15 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
         toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
         
-        // Generate memory (tool calling guarantees complete result)
-        toastr.info('Generating memory with AI...', 'STMemoryBooks');
+        // Generate memory using new JSON-based approach
+        toastr.info('Generating memory with AI (JSON structured output)...', 'STMemoryBooks');
         const memoryResult = await createMemory(compiledScene, profileSettings, {
             tokenWarningThreshold: tokenThreshold
         });
         
-        // SIMPLIFIED: No keyword handling needed - tool calling provides complete result
-        const finalResult = memoryResult;
-        
         // Add to lorebook
         toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
-        const addResult = await addMemoryToLorebook(finalResult, lorebookValidation);
+        const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
         
         if (!addResult.success) {
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
@@ -368,16 +369,17 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
         
-        // Provide specific error messages for tool calling issues
-        if (error.message.includes('Tool calling is not supported')) {
-            toastr.error('Function calling must be enabled in OpenAI settings for memory creation to work.', 'STMemoryBooks', {
-                timeOut: 10000,
-                onclick: () => {
-                    toastr.info('Go to OpenAI Settings → Advanced → Enable Function Calling', 'STMemoryBooks', { timeOut: 15000 });
-                }
+        // Provide specific error messages for different types of failures
+        if (error.name === 'TokenWarningError') {
+            toastr.error(`Scene is too large (${error.tokenCount} tokens). Try selecting a smaller range.`, 'STMemoryBooks', {
+                timeOut: 8000
             });
-        } else if (error.message.includes('AI did not call the createMemory tool')) {
-            toastr.error('AI model did not use the memory creation tool. This may indicate your model does not support function calling properly.', 'STMemoryBooks', {
+        } else if (error.name === 'AIResponseError') {
+            toastr.error(`AI failed to generate valid memory: ${error.message}`, 'STMemoryBooks', {
+                timeOut: 8000
+            });
+        } else if (error.name === 'InvalidProfileError') {
+            toastr.error(`Profile configuration error: ${error.message}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else {
@@ -389,7 +391,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 }
 
 /**
- * *** ENHANCED: Restructured error handling with improved flag management ***
+ * Enhanced memory creation initiation with improved error handling
  */
 async function initiateMemoryCreation() {
     // Early validation checks (no flag set yet)
@@ -799,7 +801,6 @@ function handleCreateMemoryCommand() {
     initiateMemoryCreation();
 }
 
-
 function handleSceneMemoryCommand(args) {
     const range = args[0].trim();
     const match = range.match(/^(\d+)-(\d+)$/);
@@ -835,57 +836,6 @@ function handleSceneMemoryCommand(args) {
     
     // Optionally create memory immediately
     setTimeout(() => initiateMemoryCreation(), 500);
-}
-
-/**
- * Register the createMemory tool with enhanced description for natural usage
- */
-function registerMemoryTool() {
-    console.log('STMemoryBooks: Registering createMemory tool with Promise-based resolver');
-    
-    ToolManager.registerFunctionTool({
-        name: 'createMemory',
-        description: 'Create a structured memory summary when analyzing conversation scenes. This tool extracts key plot points, character development, important interactions, and story details for future reference. Use when asked to summarize, analyze, or create memories from chat conversations.',
-        parameters: {
-            type: 'object',
-            properties: {
-                memory_content: {
-                    type: 'string',
-                    description: 'Detailed summary using markdown with specific headers: **Timeline**, **Story Beats**, **Key Interactions**, **Notable Details**, and **Outcome**. Comprehensive detail is more important than brevity.'
-                },
-                title: {
-                    type: 'string',
-                    description: 'Concise title for the scene (1-3 words)'
-                },
-                keywords: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    description: 'Array of 3-8 relevant keywords for vectorized database search'
-                }
-            },
-            required: ['memory_content', 'title', 'keywords']
-        },
-        action: (params) => {
-            console.log('STMemoryBooks: createMemory tool called by AI with params:', {
-                hasContent: !!params.memory_content,
-                contentLength: params.memory_content?.length || 0,
-                hasTitle: !!params.title,
-                keywordCount: params.keywords?.length || 0
-            });
-
-            callMemoryToolResolver({
-                content: params.memory_content,
-                title: params.title,
-                keywords: params.keywords
-            });
-
-            return JSON.stringify({ 
-                success: true, 
-                message: `Memory created: "${params.title}" with ${params.keywords?.length || 0} keywords`
-            });
-        },
-        stealth: true
-    });
 }
 
 /**
@@ -960,7 +910,7 @@ async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
 
-    console.log('STMemoryBooks: Initializing');
+    console.log('STMemoryBooks: Initializing with JSON-based architecture');
     
     // Wait for SillyTavern to be ready
     let attempts = 0;
@@ -1006,15 +956,6 @@ async function init() {
     
     // Setup event listeners
     setupEventListeners();
-
-    // Check if tool calling is supported
-    if (!ToolManager.isToolCallingSupported()) {
-        console.error('STMemoryBooks: Tool calling is not supported with current settings');
-        throw new Error('STMemoryBooks requires function calling to be enabled. Please enable function calling in your OpenAI settings.');
-    }
-
-    // Register our stealth tool
-    registerMemoryTool();
     
     // Register slash commands
     registerSlashCommands();
@@ -1033,9 +974,8 @@ async function init() {
         return a === b;
     });
     
-    console.log('STMemoryBooks: Extension loaded successfully');
+    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation');
 }
-
 
 // Initialize when ready
 $(document).ready(() => {
@@ -1046,5 +986,5 @@ $(document).ready(() => {
     // Fallback initialization
     setTimeout(init, 2000);
     
-    console.log('STMemoryBooks: Ready to initialize');
+    console.log('STMemoryBooks: Ready to initialize with improved architecture');
 });
