@@ -192,6 +192,7 @@ async function generateMemoryWithAI(promptString, profile) {
 
     // Save the original ToolManager function
     const originalInvokeFunctionTools = ToolManager.invokeFunctionTools;
+    let timeoutId; // Declare timeout ID in outer scope for cleanup
     
     try {
         console.log(`${MODULE_NAME}: Starting Promise-based memory generation with tool_calls fix...`);
@@ -224,42 +225,37 @@ async function generateMemoryWithAI(promptString, profile) {
                     hasTitle: !!toolData.title,
                     keywordCount: toolData.keywords?.length || 0
                 });
+                // Clear timeout since tool was called successfully
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
                 resolve(toolData);
             };
             
             // Add timeout to prevent hanging
-            const timeoutId = setTimeout(() => {
+            timeoutId = setTimeout(() => {
                 memoryToolResolver = null;
                 reject(new AIResponseError(
                     'Tool call timeout - AI did not call createMemory within 60 seconds. ' +
                     'This may indicate the model does not support function calling or the prompt was insufficient.'
                 ));
             }, 60000); // 60 second timeout
-            
-            // Store timeout ID so we can clear it if tool is called
-            resolve._timeoutId = timeoutId;
         });
 
-        // Start AI generation
-        const generatePromise = Generate('quiet', { 
+        // Run Generate() and let it complete its internal process (including tool calls)
+        await Generate('quiet', { 
             quiet_prompt: promptString, 
             skipWIAN: true  // Clean context without World Info, Author's Note, etc.
         });
 
-        // Race between tool call and generation completion
-        const toolResult = await Promise.race([
-            memoryToolPromise,
-            generatePromise.then(() => {
-                throw new AIResponseError(
-                    'AI generation completed without calling createMemory tool. ' +
-                    'This may indicate your model does not support function calling properly.'
-                );
-            })
-        ]);
+        // Now await the tool result. If the tool was called during Generate(), 
+        // this will resolve immediately. If not, the timeout will trigger.
+        const toolResult = await memoryToolPromise;
 
-        // Clear timeout if we got here successfully
-        if (memoryToolPromise._timeoutId) {
-            clearTimeout(memoryToolPromise._timeoutId);
+        // Clean up timeout if still active
+        if (timeoutId) {
+            clearTimeout(timeoutId);
         }
 
         // Validate the tool result structure
@@ -299,8 +295,11 @@ async function generateMemoryWithAI(promptString, profile) {
         ToolManager.invokeFunctionTools = originalInvokeFunctionTools;
         console.log(`${MODULE_NAME}: Restored original ToolManager.invokeFunctionTools`);
         
-        // Always clean up resolver
+        // Always clean up resolver and timeout
         memoryToolResolver = null;
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
     }
 }
 
