@@ -64,32 +64,6 @@ export function getCurrentApiInfo() {
 }
 
 /**
- * Get a user-friendly description of the current API setup
- * @returns {string} Description of current API and model setup
- */
-export function getCurrentApiDescription() {
-    try {
-        const apiInfo = getCurrentApiInfo();
-        const modelInfo = getCurrentModelSettings();
-        
-        let description = `API: ${apiInfo.api || 'Unknown'}`;
-        
-        if (modelInfo.model) {
-            description += `, Model: ${modelInfo.model}`;
-        }
-        
-        if (typeof modelInfo.temperature === 'number') {
-            description += `, Temp: ${modelInfo.temperature}`;
-        }
-        
-        return description;
-    } catch (error) {
-        console.warn('STMemoryBooks: Error getting API description:', error);
-        return 'Current SillyTavern Settings';
-    }
-}
-
-/**
  * Get the appropriate model and temperature selectors for current completion source
  */
 export function getApiSelectors() {
@@ -336,45 +310,6 @@ export function validateProfile(profile) {
     }
     
     return true;
-}
-
-/**
- * Get safe template data for model dropdown
- * @param {Object} profile - Profile object
- * @returns {Object} Safe template data
- */
-export function getSafeModelTemplateData(profile) {
-    try {
-        const availableModels = getAvailableModels();
-        const apiInfo = getCurrentApiInfo();
-        const connection = profile?.connection || { temperature: 0.7 };
-        
-        // Determine if current model is custom
-        const isCustom = connection.model ? isCustomModel(connection.model, availableModels) : false;
-        const showCustomInput = isCustom || availableModels.length === 0;
-        const customModelValue = isCustom ? connection.model : '';
-        
-        return {
-            availableModels,
-            currentApi: apiInfo.api || 'Unknown',
-            isCustomModel: isCustom,
-            showCustomInput,
-            customModelValue,
-            modelCount: availableModels.length
-        };
-    } catch (error) {
-        console.error('STMemoryBooks: Error preparing model template data:', error);
-        
-        // Return safe fallback data
-        return {
-            availableModels: [],
-            currentApi: 'Unknown',
-            isCustomModel: true,
-            showCustomInput: true,
-            customModelValue: profile?.connection?.model || '',
-            modelCount: 0
-        };
-    }
 }
 
 /**

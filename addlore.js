@@ -177,11 +177,10 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
  * NO FALLBACK - Only entries with the explicit flag are considered memories.
  * This forces users to convert their lorebooks for proper memory detection.
  * 
- * @private
  * @param {Object} entry - The lorebook entry to check
  * @returns {boolean} Whether this entry is a confirmed STMemoryBooks memory
  */
-function isMemoryEntry(entry) {
+export function isMemoryEntry(entry) {
     // ONLY check for the explicit STMemoryBooks flag
     // This forces conversion and ensures maximum reliability and performance
     return entry.stmemorybooks === true;

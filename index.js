@@ -38,6 +38,7 @@ const defaultSettings = {
     defaultProfile: 0,
     migrationVersion: 2,
     convertDontAskAgain: {} // Track which lorebooks user doesn't want to convert
+}
 
 // Current state variables
 let currentPopupInstance = null;

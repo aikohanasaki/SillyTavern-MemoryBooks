@@ -470,69 +470,6 @@ function cleanProfile(profile) {
 }
 
 /**
- * Duplicate an existing profile
- * @param {Object} settings - Extension settings
- * @param {number} profileIndex - Index of profile to duplicate
- * @param {Function} refreshCallback - Function to refresh UI after changes
- */
-export async function duplicateProfile(settings, profileIndex, refreshCallback) {
-    if (profileIndex < 0 || profileIndex >= settings.profiles.length) {
-        toastr.error('Invalid profile index', 'STMemoryBooks');
-        return;
-    }
-    
-    try {
-        const originalProfile = settings.profiles[profileIndex];
-        const existingNames = settings.profiles.map(p => p.name);
-        const newName = generateSafeProfileName(`${originalProfile.name} - Copy`, existingNames);
-        
-        const duplicatedProfile = {
-            ...originalProfile,
-            name: newName
-        };
-        
-        // Deep clone connection settings
-        if (originalProfile.connection) {
-            duplicatedProfile.connection = { ...originalProfile.connection };
-        }
-        
-        settings.profiles.push(duplicatedProfile);
-        saveSettingsDebounced();
-        
-        if (refreshCallback) refreshCallback();
-        
-        toastr.success(`Profile "${newName}" created as copy`, 'STMemoryBooks');
-        console.log(`${MODULE_NAME}: Duplicated profile "${originalProfile.name}" as "${newName}"`);
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error duplicating profile:`, error);
-        toastr.error('Failed to duplicate profile', 'STMemoryBooks');
-    }
-}
-
-/**
- * Get profile summary for display
- * @param {Object} profile - Profile object
- * @returns {Object} Profile summary
- */
-export function getProfileSummary(profile) {
-    const effectivePrompt = getEffectivePrompt(profile);
-    const hasCustomSettings = !!(profile.connection?.model || profile.connection?.temperature !== undefined);
-    
-    return {
-        name: profile.name,
-        hasCustomPrompt: !!(profile.prompt && profile.prompt.trim()),
-        hasPreset: !!(profile.preset),
-        presetName: profile.preset ? formatPresetDisplayName(profile.preset) : null,
-        hasCustomSettings: hasCustomSettings,
-        model: profile.connection?.model || null,
-        temperature: profile.connection?.temperature,
-        promptPreview: effectivePrompt.length > 100 ? 
-            effectivePrompt.substring(0, 97) + '...' : 
-            effectivePrompt
-    };
-}
-
-/**
  * Validate all profiles in settings and fix issues
  * @param {Object} settings - Extension settings
  * @returns {Object} Validation result with any fixes applied

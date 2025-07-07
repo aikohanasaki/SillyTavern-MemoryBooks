@@ -1,7 +1,6 @@
-// confirmationPopup.js - Consolidated popup management for memory creation flow
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
-import { DOMPurify, lodash } from '../../../../lib.js';
+import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
 import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
@@ -46,7 +45,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
             customButtons: [
                 {
                     text: 'Advanced Options...',
-                    result: STMB_POPUP_RESULTS.ADVANCED, // ✅ Now using numeric constant
+                    result: STMB_POPUP_RESULTS.ADVANCED,
                     classes: ['menu_button'],
                     action: null
                 }
@@ -67,8 +66,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
                     overrideSettings: false
                 }
             };
-        } else if (result === STMB_POPUP_RESULTS.ADVANCED) { // ✅ Now checking numeric constant
-            // Show advanced options popup (now handled in this module)
+        } else if (result === STMB_POPUP_RESULTS.ADVANCED) { 
             const advancedResult = await showAdvancedOptionsPopup(
                 sceneData, 
                 settings, 
@@ -131,7 +129,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
             customButtons: [
                 {
                     text: 'Save as New Profile',
-                    result: STMB_POPUP_RESULTS.SAVE_PROFILE, // ✅ Now using numeric constant
+                    result: STMB_POPUP_RESULTS.SAVE_PROFILE,
                     classes: ['menu_button'],
                     action: null
                 }
@@ -146,7 +144,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         // Handle different results
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             return await handleAdvancedConfirmation(popup, settings);
-        } else if (result === STMB_POPUP_RESULTS.SAVE_PROFILE) { // ✅ Now checking numeric constant
+        } else if (result === STMB_POPUP_RESULTS.SAVE_PROFILE) {
             return await handleSaveNewProfile(popup, settings);
         }
         
