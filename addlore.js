@@ -132,7 +132,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.comment = entryTitle;
     
     // Extract order number from title for proper sorting
-    const orderNumber = extractNumberFromTitle(entryTitle) || 100;
+    const orderNumber = extractNumberFromTitle(entryTitle) || 1;
     
     // Set all properties to match the tested lorebook structure
     // These values are tested and proven to work well for memory entries
@@ -143,7 +143,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.selectiveLogic = 0;
     entry.addMemo = true;
     entry.order = orderNumber;
-    entry.position = 3;  // Position value from testing
+    entry.position = 0;
     entry.disable = false;
     entry.excludeRecursion = false;
     entry.preventRecursion = true;
