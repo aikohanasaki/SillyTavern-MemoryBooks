@@ -17,7 +17,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/Sla
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory } from './stmemory.js';
+import { createMemory, setMemoryToolResolver } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
 import { 
     editProfile, 
@@ -55,7 +55,6 @@ import {
     SELECTORS
 } from './utils.js';
 import { ToolManager } from '../../../tool-calling.js';
-import { captureMemoryToolArgs } from './stmemory.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
@@ -882,7 +881,7 @@ function handleSceneMemoryCommand(args) {
  * Register the createMemory tool with enhanced description for natural usage
  */
 function registerMemoryTool() {
-    console.log('STMemoryBooks: Registering createMemory tool with enhanced description');
+    console.log('STMemoryBooks: Registering createMemory tool with Promise-based resolver');
     
     ToolManager.registerFunctionTool({
         name: 'createMemory',
@@ -907,13 +906,17 @@ function registerMemoryTool() {
             required: ['memory_content', 'title', 'keywords']
         },
         action: (params) => {
-            captureMemoryToolArgs(params);
-
-            console.log('STMemoryBooks: createMemory tool was called by AI with params:', {
+            console.log('STMemoryBooks: createMemory tool called by AI with params:', {
                 hasContent: !!params.memory_content,
                 contentLength: params.memory_content?.length || 0,
                 hasTitle: !!params.title,
                 keywordCount: params.keywords?.length || 0
+            });
+
+            setMemoryToolResolver({
+                content: params.memory_content,
+                title: params.title,
+                keywords: params.keywords
             });
 
             return JSON.stringify({ 

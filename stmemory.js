@@ -5,27 +5,16 @@ import { characters, this_chid, substituteParams, Generate } from '../../../../s
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
-// --- NEW: State variable to capture tool call arguments ---
-let capturedToolCallArgs = null;
+// --- Promise resolver for tool calling ---
+let memoryToolResolver = null;
 
 /**
- * Captures the arguments passed to the createMemory tool.
- * This is called from the tool's action in index.js.
- * @param {Object} args - The arguments from the tool call.
+ * Sets the Promise resolver for the createMemory tool.
+ * This is called from the tool registration in index.js.
+ * @param {Function} resolver - The Promise resolver function.
  */
-export function captureMemoryToolArgs(args) {
-    console.log(`${MODULE_NAME}: Tool arguments captured.`, args);
-    capturedToolCallArgs = args;
-}
-
-/**
- * Retrieves and clears the captured tool call arguments.
- * @returns {Object|null} The captured arguments, or null if none.
- */
-function retrieveCapturedMemoryToolArgs() {
-    const args = capturedToolCallArgs;
-    capturedToolCallArgs = null; // Reset state for the next call
-    return args;
+export function setMemoryToolResolver(resolver) {
+    memoryToolResolver = resolver;
 }
 
 // --- Custom Error Types for Better UI Handling ---
@@ -90,7 +79,7 @@ async function waitForCharacterData(maxWaitMs = 10000, checkIntervalMs = 250) {
  * @throws {Error} For other general failures
  */
 export async function createMemory(compiledScene, profile, options = {}) {
-    console.log(`${MODULE_NAME}: Starting tool-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
+    console.log(`${MODULE_NAME}: Starting Promise-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
     
     try {
         // 1. Validate inputs
@@ -111,7 +100,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        // 4. Generate memory using SillyTavern's main Generate function
+        // 4. Generate memory using SillyTavern's main Generate function with Promise-based tool calling
         const response = await generateMemoryWithAI(promptString, profile);
         
         // 5. Process the structured tool result 
@@ -131,8 +120,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',
                 tokenUsage: tokenEstimate,
-                generationMethod: 'tool-calling-generate',
-                version: '1.1'
+                generationMethod: 'promise-based-tool-calling',
+                version: '1.2'
             },
             suggestedKeys: processedMemory.suggestedKeys,
             lorebook: {
@@ -153,7 +142,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             }
         };
         
-        console.log(`${MODULE_NAME}: Tool-based memory creation completed successfully`);
+        console.log(`${MODULE_NAME}: Promise-based memory creation completed successfully`);
         return memoryResult;
         
     } catch (error) {
@@ -168,8 +157,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
 }
 
 /**
- * MODIFIED: Generates memory using AI with clean context via Generate() function.
- * This function now uses the capture/retrieve pattern instead of relying on the return value.
+ * NEW: Promise-based memory generation with tool calling.
+ * Creates a Promise that resolves when the AI calls the createMemory tool.
  * 
  * @private
  * @param {string} promptString - The full prompt for the AI
@@ -188,53 +177,91 @@ async function generateMemoryWithAI(promptString, profile) {
     }
 
     try {
-        console.log(`${MODULE_NAME}: Generating memory with Generate() function...`);
+        console.log(`${MODULE_NAME}: Starting Promise-based memory generation...`);
 
-        // We call Generate to trigger the AI, but we will ignore its return value.
-        await Generate('quiet', { 
-            quiet_prompt: promptString, 
-            skipWIAN: true  // This provides clean context without World Info, Author's Note, etc.
+        // Create Promise that will resolve when tool is called
+        const memoryToolPromise = new Promise((resolve, reject) => {
+            // Set the resolver so the tool can call it
+            memoryToolResolver = (toolData) => {
+                console.log(`${MODULE_NAME}: Tool called with data:`, {
+                    hasContent: !!toolData.content,
+                    contentLength: toolData.content?.length || 0,
+                    hasTitle: !!toolData.title,
+                    keywordCount: toolData.keywords?.length || 0
+                });
+                resolve(toolData);
+            };
+            
+            // Add timeout to prevent hanging
+            const timeoutId = setTimeout(() => {
+                memoryToolResolver = null;
+                reject(new AIResponseError(
+                    'Tool call timeout - AI did not call createMemory within 60 seconds. ' +
+                    'This may indicate the model does not support function calling or the prompt was insufficient.'
+                ));
+            }, 60000); // 60 second timeout
+            
+            // Store timeout ID so we can clear it if tool is called
+            resolve._timeoutId = timeoutId;
         });
 
-        // NEW: Retrieve the arguments that were captured by the tool's action.
-        const toolCallData = retrieveCapturedMemoryToolArgs();
+        // Start AI generation
+        const generatePromise = Generate('quiet', { 
+            quiet_prompt: promptString, 
+            skipWIAN: true  // Clean context without World Info, Author's Note, etc.
+        });
 
-        if (!toolCallData) {
-            throw new AIResponseError(
-                'The AI model did not call the `createMemory` tool. ' +
-                'This may indicate your model does not support function calling properly or the prompt was insufficient.'
-            );
+        // Race between tool call and generation completion
+        const toolResult = await Promise.race([
+            memoryToolPromise,
+            generatePromise.then(() => {
+                throw new AIResponseError(
+                    'AI generation completed without calling createMemory tool. ' +
+                    'This may indicate your model does not support function calling properly.'
+                );
+            })
+        ]);
+
+        // Clear timeout if we got here successfully
+        if (memoryToolPromise._timeoutId) {
+            clearTimeout(memoryToolPromise._timeoutId);
         }
 
-        // Validate the captured tool result structure
-        if (!toolCallData.memory_content || typeof toolCallData.memory_content !== 'string' || !toolCallData.memory_content.trim()) {
-            throw new AIResponseError('Tool result is missing or has empty `memory_content`.');
+        // Validate the tool result structure
+        if (!toolResult.content || typeof toolResult.content !== 'string' || !toolResult.content.trim()) {
+            throw new AIResponseError('Tool result is missing or has empty content.');
         }
 
-        if (!toolCallData.title || typeof toolCallData.title !== 'string' || !toolCallData.title.trim()) {
-            throw new AIResponseError('Tool result is missing or has empty `title`.');
+        if (!toolResult.title || typeof toolResult.title !== 'string' || !toolResult.title.trim()) {
+            throw new AIResponseError('Tool result is missing or has empty title.');
         }
 
-        if (!Array.isArray(toolCallData.keywords) || toolCallData.keywords.length === 0) {
-            throw new AIResponseError('Tool result is missing or has empty `keywords` array.');
+        if (!Array.isArray(toolResult.keywords) || toolResult.keywords.length === 0) {
+            throw new AIResponseError('Tool result is missing or has empty keywords array.');
         }
 
-        // Return the validated result
+        // Return the validated, cleaned result
         return {
-            content: toolCallData.memory_content.trim(),
-            title: toolCallData.title.trim(),
-            keywords: toolCallData.keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()),
+            content: toolResult.content.trim(),
+            title: toolResult.title.trim(),
+            keywords: toolResult.keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()),
             profile: profile
         };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Memory generation with Generate() failed:`, error);
+        console.error(`${MODULE_NAME}: Promise-based memory generation failed:`, error);
+        
+        // Clean up resolver
+        memoryToolResolver = null;
         
         if (error instanceof AIResponseError) {
             throw error;
         } else {
             throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
         }
+    } finally {
+        // Always clean up resolver
+        memoryToolResolver = null;
     }
 }
 
@@ -368,7 +395,7 @@ async function buildPrompt(compiledScene, profile) {
 function processToolResult(toolResult, compiledScene) {
     const { content, title, keywords } = toolResult;
     
-    console.log(`${MODULE_NAME}: Processing structured tool result - Content: ${content.length} chars, Keywords: ${keywords.length}`);
+    console.log(`${MODULE_NAME}: Processing Promise-based tool result - Content: ${content.length} chars, Keywords: ${keywords.length}`);
     
     return {
         content: content,
