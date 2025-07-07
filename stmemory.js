@@ -243,11 +243,8 @@ async function estimateTokenUsage(promptString) {
 }
 
 /**
- * Generates memory using AI with TOTAL CONTEXT OVERRIDE to ensure completely clean tool calling.
- * This function implements a simplified approach:
- * 1. Character field blanking with restoration
- * 2. Direct world info/metadata blanking (no restoration needed - ST rebuilds these)
- * 3. World Info disabling via generateQuietPrompt's skipWIAN flag
+ * Generates memory using AI with clean context via skipWIAN flag.
+ * This function uses SillyTavern's built-in context isolation instead of manual blanking.
  * 
  * @private
  * @param {string} promptString - The full prompt for the AI
@@ -256,9 +253,6 @@ async function estimateTokenUsage(promptString) {
  * @throws {AIResponseError} If the AI generation fails or doesn't call our tool
  */
 async function generateMemoryWithAI(promptString, profile) {
-    // Get the current application context
-    const context = getContext();
-
     // Wait for character data to be available before proceeding
     const characterDataReady = await waitForCharacterData();
     if (!characterDataReady) {
@@ -268,44 +262,10 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
-    // Store only character data for restoration (using deep clone for safety)
-    const originalCharacterData = deepClone(characters[this_chid]);
-
-    // Check if the clone operation failed unexpectedly
-    if (!originalCharacterData) {
-        throw new AIResponseError('Failed to capture character data for context restoration. The character data might be invalid.');
-    }
-
     try {
-        // --- STEP 1: Complete context blanking for clean generation ---
-        console.log(`${MODULE_NAME}: Creating completely clean context for AI generation...`);
-        
-        // Blank out ALL character fields
-        characters[this_chid].name = '';
-        characters[this_chid].description = '';
-        characters[this_chid].personality = '';
-        characters[this_chid].scenario = '';
-        characters[this_chid].first_mes = '';
-        characters[this_chid].mes_example = '';
-        characters[this_chid].creator_notes = '';
-        characters[this_chid].system_prompt = '';
-        characters[this_chid].post_history_instructions = '';
-        characters[this_chid].creator = '';
-        characters[this_chid].character_version = '';
-        characters[this_chid].extensions = {};
+        console.log(`${MODULE_NAME}: Creating clean context for AI generation using skipWIAN...`);
 
-        // Disable world info and metadata by directly replacing with clean objects
-        // This is safe because SillyTavern rebuilds these from scratch for each generation
-        context.world_info_settings = { world_info: false };
-        context.world_info_data = {};
-        context.chat_metadata = {};
-
-        // Force prompt manager refresh
-        if (typeof promptManager !== 'undefined' && promptManager.activeCharacter) {
-            promptManager.activeCharacter = null;
-        }
-
-        // --- STEP 2: Create Promise-based tool result handler ---
+        // --- STEP 1: Create Promise-based tool result handler ---
         const toolPromise = new Promise((resolve, reject) => {
             // Set a generous timeout for the AI response
             const timeout = setTimeout(() => {
@@ -326,22 +286,23 @@ async function generateMemoryWithAI(promptString, profile) {
             };
         });
 
-        // --- STEP 3: Send the AI request ---
-        console.log(`${MODULE_NAME}: Sending clean prompt for tool-based generation`);
+        // --- STEP 2: Send the AI request with context isolation ---
+        // The skipWIAN flag (third parameter = true) provides clean context without manual blanking
+        console.log(`${MODULE_NAME}: Sending prompt with skipWIAN for clean tool-based generation`);
         await generateQuietPrompt(promptString, false, true);
 
-        // --- STEP 4: Wait for our promise to be resolved by the tool's action ---
+        // --- STEP 3: Wait for our promise to be resolved by the tool's action ---
         console.log(`${MODULE_NAME}: Waiting for tool result via promise...`);
         const toolResult = await toolPromise;
 
-        console.log(`${MODULE_NAME}: Successfully received structured memory via total context override:`, {
+        console.log(`${MODULE_NAME}: Successfully received structured memory via skipWIAN:`, {
             hasContent: !!toolResult.memory_content,
             contentLength: toolResult.memory_content?.length || 0,
             hasTitle: !!toolResult.title,
             keywordCount: toolResult.keywords?.length || 0
         });
 
-        // --- STEP 5: Validate the tool result structure ---
+        // --- STEP 4: Validate the tool result structure ---
         if (!toolResult || typeof toolResult !== 'object') {
             throw new AIResponseError('Tool result is missing or invalid. The AI may not have used the createMemory function correctly.');
         }
@@ -358,7 +319,7 @@ async function generateMemoryWithAI(promptString, profile) {
             throw new AIResponseError('Tool result is missing required keywords array or it is empty.');
         }
 
-        // --- STEP 6: Return the validated result ---
+        // --- STEP 5: Return the validated result ---
         return {
             content: toolResult.memory_content.trim(),
             title: toolResult.title.trim(),
@@ -375,23 +336,12 @@ async function generateMemoryWithAI(promptString, profile) {
             throw new AIResponseError(`Unexpected error during memory generation: ${error.message || error}`);
         }
     } finally {
-        // --- ALWAYS restore character data (world info will be rebuilt by ST automatically) ---
-        console.log(`${MODULE_NAME}: Restoring original character data...`);
-        
-        // Cleanup the resolver in case of an early error
+        // --- Cleanup the resolver in case of an early error ---
         if (window.STMemoryBooks_resolveToolResult) {
             delete window.STMemoryBooks_resolveToolResult;
         }
-
-        // Restore character data from our safe deep clone
-        Object.assign(characters[this_chid], originalCharacterData);
-
-        // Force prompt manager refresh with restored character data
-        if (typeof promptManager !== 'undefined') {
-            promptManager.activeCharacter = characters[this_chid];
-        }
-
-        console.log(`${MODULE_NAME}: Character data restoration complete`);
+        
+        console.log(`${MODULE_NAME}: Memory generation cleanup complete`);
     }
 }
 
