@@ -3,8 +3,9 @@
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { Handlebars, DOMPurify } from '../../../../lib.js';
 import { loadWorldInfo, saveWorldInfo } from '../../../world-info.js';
-import { extension_settings, saveSettingsDebounced } from '../../../extensions.js';
+import { extension_settings } from '../../../extensions.js';
 import { isMemoryEntry } from './addlore.js';
+import { saveSettingsDebounced } from '../../../../script.js';
 
 const MODULE_NAME = 'STMemoryBooks-Converter';
 
