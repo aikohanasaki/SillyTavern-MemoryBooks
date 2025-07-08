@@ -18,17 +18,17 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **Token Warning System**: Alerts for large scenes (configurable token threshold) before processing
 - **Profile Management**: Create, edit, backup, and manage multiple memory generation profiles
 
-# LOADING NOTE ⏳
-
-[![Wait for these buttons](images/startup.png)]
+## LOADING NOTE ⏳
 
 After selecting a character and chat, there may be a slight delay before the extension fully loads and the memory buttons appear. This is normal - the extension will be ready within 10 seconds. If buttons don't appear after this time, try refreshing the page.
 
+[![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)]
+
 ## How It Works
 
-[![Chat lorebook is a prerequisite](images/chatlorebook.png)]
-
 **Before you start**: The chat MUST have a lorebook bound to it. Check the character card--if there is no chat lorebook, you need to make one and bind the lorebook to the chat.
+
+[![Chat lorebook is a prerequisite](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)]
 
 **Lorebook Conversion**: The lorebook conversion process tries to auto-identify memories in your memory lorebook and will add a flag that STMemoryBooks will read to speed up memory identification. 
 ⚠️ STMemoryBooks __**WILL NOT READ**__ older memories from non-converted lorebooks. 
@@ -53,25 +53,19 @@ After selecting a character and chat, there may be a slight delay before the ext
 - `/creatememory` - Create memory from currently marked scene
 - `/scenememory 10-15` - Mark messages 10-15 as scene and create memory
 
-## Memory Detection System
-
-The extension uses your configured **Memory Title Format** as the primary method to identify existing memories in your lorebook. This smart detection system:
-
-- **Converts your title format into a regex pattern** to match existing memories precisely
-- **Filters out non-memory entries** that don't match your format (like manual lorebook entries, character descriptions, etc.)
-- **Provides accurate numbering** by only counting entries that match your memory format
-- **Falls back to secondary detection** for borderline cases when pattern matching fails
-
-This ensures that only actual auto-generated memories are counted when determining the next memory number and when fetching previous summaries for context.
-
 ## Customizable Details
 
 ### Using the Defaults?
 - **Preferred memory title format**: Use `[000]-[00] - [Title]` or whatever else strikes your fancy
-- **Preferred engine model and temperature**: There are some pre-populated choices but you can override/delete/choose your own
-- **Preferred prompt**: Choose from the [built-in presets](https://www.aikobots.com/cmd-memory.html), or make your own!
+
+[![Preset title formats plus custom available](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)]
+
+- **Preferred engine model and temperature**: Choose your favorite engine/temperature (must be on same API endpoint)
+- **Preferred prompt**: Choose from the built-in memory presets, or make your own!
 
 ### Title Formatting
+
+
 - **Allowed characters**: Some punctuation is problematic. [Read the Character Restrictions in Titles document](charset.md)
 - **Allowed emoji**: Standard emoji only. [Read the Character Restrictions in Titles document](charset.md)
 - **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook?)
@@ -159,7 +153,7 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Scene Validation**: Automatic cleanup of invalid marker ranges
 - **Scene Overlap Detection**: Detects if there is scene overlap (chat messages in more than one memory)
 
-[![Scene overlap detection](images/overlap.png)]
+[![Scene overlap detection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)]
 
 ## Prerequisites
 
@@ -183,8 +177,11 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 
 ## Image Gallery
 
-### Default Lorebook Entry Settings
-[![Default lorebook entry settings](images/default.png)]
+[![Default lorebook entry settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/default.png)]
+
+[![Main program window (no scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/mainwindow.png)]
+
+[![Main program window (scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Mainwindowwithscene.png)]
 
 ---
 
