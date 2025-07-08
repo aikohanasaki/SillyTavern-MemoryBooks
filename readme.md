@@ -12,11 +12,11 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **Visual Feedback**: Clear indicators showing selected scenes and valid marker positions
 - **Multiple Usage Methods**: Use slash commands or visual markers to define scenes
 - **Previous Scene Context**: Include 0-7 previous summaries as context to help AI understand ongoing storylines
-[![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 - **5 Built-in Presets**: Production-quality prompts optimized for vectorized databases
 - **Title and Keyword Generation**: Automatically extracts titles and keywords from AI responses
 - **Automatic Lorebook Updates**: Automatically updates memory lorebook with newest entry
-[![Automatic lorebook update](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/lorebookadd.png)
+![Automatic lorebook update](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/lorebookadd.png)
 - **Token Warning System**: Alerts for large scenes (configurable token threshold) before processing
 - **Profile Management**: Create, edit, backup, and manage multiple memory generation profiles
 
@@ -24,13 +24,13 @@ A SillyTavern extension that allows you to automatically create memories from ch
 
 After selecting a character and chat, there may be a slight delay before the extension fully loads and the memory buttons appear. This is normal - the extension will be ready within 10 seconds. If buttons don't appear after this time, try refreshing the page.
 
-[![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
+![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ## How It Works
 
 **Before you start**: The chat MUST have a lorebook bound to it. Check the character card--if there is no chat lorebook, you need to make one and bind the lorebook to the chat.
 
-[![Chat lorebook is a prerequisite](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+![Chat lorebook is a prerequisite](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
 **Lorebook Conversion**: The lorebook conversion process tries to auto-identify memories in your memory lorebook and will add a flag that STMemoryBooks will read to speed up memory identification. 
 
@@ -61,7 +61,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 ### Using the Defaults?
 - **Preferred memory title format**: Use `[000]-[00] - [Title]` or whatever else strikes your fancy
 
-[![Preset title formats plus custom available](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+![Preset title formats plus custom available](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
 
 - **Preferred engine model and temperature**: Choose your favorite engine/temperature (must be on same API endpoint)
 - **Preferred prompt**: Choose from the built-in memory presets, or make your own!
@@ -116,7 +116,7 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 
 ### Memory Generation Profile Settings
 
-[![Memory Generation Profile Setup](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/customengine.png)
+![Memory Generation Profile Setup](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/customengine.png)
 
 - **Name**: Display name for the profile
 - **Model**: AI model
@@ -134,7 +134,7 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Scene Validation**: Automatic cleanup of invalid marker ranges
 - **Scene Overlap Detection**: Detects if there is scene overlap (chat messages in more than one memory)
 
-[![Scene overlap detection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![Scene overlap detection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 
 ## Prerequisites
 
@@ -158,11 +158,11 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 
 ## Image Gallery
 
-[![Default lorebook entry settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/default.png)
+![Default lorebook entry settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/default.png)
 
-[![Main program window (no scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/mainwindow.png)
+![Main program window (no scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/mainwindow.png)
 
-[![Main program window (scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Mainwindowwithscene.png)
+![Main program window (scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Mainwindowwithscene.png)
 
 ---
 
