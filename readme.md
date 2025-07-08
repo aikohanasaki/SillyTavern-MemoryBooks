@@ -38,7 +38,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 
 ![Chat lorebook is a prerequisite](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
-**Lorebook Conversion**: The lorebook conversion process tries to auto-identify memories in your memory lorebook and will add a flag that STMemoryBooks will read to speed up memory identification. 
+**Lorebook Conversion**: The [standalone HTML Lorebook Converter](lorebookconverter.html) will convert older non STMB lorebooks to add the stmemorybooks, stmb_start, and stmb_end JSON fields. 
 
 ⚠️ STMemoryBooks __**WILL NOT READ**__ older memories from non-converted lorebooks. 
 
