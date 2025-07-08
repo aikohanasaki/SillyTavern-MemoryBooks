@@ -12,9 +12,11 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **Visual Feedback**: Clear indicators showing selected scenes and valid marker positions
 - **Multiple Usage Methods**: Use slash commands or visual markers to define scenes
 - **Previous Scene Context**: Include 0-7 previous summaries as context to help AI understand ongoing storylines
+[![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)]
 - **5 Built-in Presets**: Production-quality prompts optimized for vectorized databases
 - **Title and Keyword Generation**: Automatically extracts titles and keywords from AI responses
 - **Automatic Lorebook Updates**: Automatically updates memory lorebook with newest entry
+[![Automatic lorebook update](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/lorebookadd.png)]
 - **Token Warning System**: Alerts for large scenes (configurable token threshold) before processing
 - **Profile Management**: Create, edit, backup, and manage multiple memory generation profiles
 
@@ -31,6 +33,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 [![Chat lorebook is a prerequisite](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)]
 
 **Lorebook Conversion**: The lorebook conversion process tries to auto-identify memories in your memory lorebook and will add a flag that STMemoryBooks will read to speed up memory identification. 
+
 ⚠️ STMemoryBooks __**WILL NOT READ**__ older memories from non-converted lorebooks. 
 
 ### Method One: Visual Markers
@@ -65,7 +68,6 @@ After selecting a character and chat, there may be a slight delay before the ext
 
 ### Title Formatting
 
-
 - **Allowed characters**: Some punctuation is problematic. [Read the Character Restrictions in Titles document](charset.md)
 - **Allowed emoji**: Standard emoji only. [Read the Character Restrictions in Titles document](charset.md)
 - **Auto-Numbering**: Use placeholders `[0]`, `[00]`, `[000]` to auto-number with self-incrementing digits (if you hit the 4 digit range may I suggest starting another lorebook?)
@@ -78,29 +80,6 @@ After selecting a character and chat, there may be a slight delay before the ext
   - **{{profile}}**: The name of the memory generation profile used
   - **{{date}}**: The current date
   - **{{time}}**: The current time
-
-### AI Title Extraction
-
-The extension automatically extracts titles from AI responses using multiple detection methods:
-
-- **Explicit title patterns**: "Title: Something", "# Heading", "**Bold Title**"
-- **Underlined titles**: "Title\n---" or "Title\n==="
-- **Numbered items**: "1. Title" (first numbered item)
-- **Standalone colons**: "Title:" (line ending with colon)
-- **Smart first-line detection**: Short lines without sentence punctuation
-- **Fallback generation**: Creates descriptive titles from content analysis
-
-The extracted title is then available as `{{title}}` in your title format templates.
-
-## Keyword System
-
-The extension automatically parses AI responses for prompted keywords. If the AI doesn't provide keywords, you'll see the generated memory content and be prompted to choose:
-
-1. **ST Generate**: Use SillyTavern's built-in keyword generation (proper noun detection + character names)
-2. **AI Keywords**: Send a separate request to AI using the keywords-only preset  
-3. **User Input**: Manually enter your own keywords based on the displayed content
-
-The formatted memory content is displayed so you can make an informed choice about which keyword generation method would work best for that specific memory.
 
 ## Visual Feedback
 
@@ -135,11 +114,13 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Refresh Editor**: Refresh lorebook editor after adding memories
 - **Token Warning Threshold**: Show confirmation dialog when estimated tokens exceed this value (default: 30,000)
 
-### Profile Settings
+### Memory Generation Profile Settings
+
+[![Memory Generation Profile Setup](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/customengine.png)]
+
 - **Name**: Display name for the profile
-- **Engine**: AI engine (currently uses global SillyTavern settings)
-- **Model**: AI model (currently uses global SillyTavern settings)  
-- **Temperature**: Response randomness (currently uses global SillyTavern settings)
+- **Model**: AI model
+- **Temperature**: Response randomness
 - **Preset**: Select from built-in presets or use custom prompt
 
 > **Note**: Connection settings are stored for future use but currently SillyTavern's global API settings.
