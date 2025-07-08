@@ -79,7 +79,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             </select>
             <input type="text" id="stmb-custom-title-format" class="text_pole marginTop5 {{#unless showCustomInput}}displayNone{{/unless}}" 
                 placeholder="Enter custom format" value="{{titleFormat}}">
-            <small class="opacity50p">Use [0], [00], [000] for auto-numbering. Available: \{{title}}, \{{scene}}, \{{char}}, \{{user}}, \{{messages}}, \{{profile}}, \{{date}}, \{{time}}</small>
+            <small class="opacity50p">Use [0], [00], [000] for auto-numbering. Available: \{{title}}, \{{scene}}, &#123;&#123;char}}, &#123;&#123;user}}, \{{messages}}, \{{profile}}, \{{date}}, \{{time}}</small>
         </div>
         
         <div class="world_entry_form_control">
