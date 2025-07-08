@@ -246,6 +246,159 @@ export async function newProfile(settings, refreshCallback) {
 }
 
 /**
+ * Delete an existing profile
+ * @param {Object} settings - Extension settings
+ * @param {Function} refreshCallback - Function to refresh UI after changes
+ */
+export async function deleteProfile(settings, refreshCallback) {
+    if (settings.profiles.length <= 1) {
+        toastr.error('Cannot delete the last profile', 'STMemoryBooks');
+        return;
+    }
+    
+    const profileIndex = settings.defaultProfile;
+    const profile = settings.profiles[profileIndex];
+    
+    try {
+        const result = await new Popup(`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
+        
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            const deletedName = profile.name;
+            settings.profiles.splice(profileIndex, 1);
+            
+            // Adjust default profile index
+            if (settings.defaultProfile >= settings.profiles.length) {
+                settings.defaultProfile = settings.profiles.length - 1;
+            }
+            
+            saveSettingsDebounced();
+            
+            if (refreshCallback) refreshCallback();
+            
+            toastr.success('Profile deleted successfully', 'STMemoryBooks');
+            console.log(`${MODULE_NAME}: Deleted profile "${deletedName}"`);
+        }
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error deleting profile:`, error);
+        toastr.error('Failed to delete profile', 'STMemoryBooks');
+    }
+}
+
+/**
+ * Export profiles to JSON file
+ * @param {Object} settings - Extension settings
+ */
+export function exportProfiles(settings) {
+    try {
+        const exportData = {
+            profiles: settings.profiles,
+            exportDate: moment().toISOString(),
+            version: 1,
+            moduleVersion: settings.migrationVersion || 1
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `stmemorybooks-profiles-${moment().format('YYYY-MM-DD')}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the object URL
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        
+        toastr.success('Profiles exported successfully', 'STMemoryBooks');
+        console.log(`${MODULE_NAME}: Exported ${settings.profiles.length} profiles`);
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error exporting profiles:`, error);
+        toastr.error('Failed to export profiles', 'STMemoryBooks');
+    }
+}
+
+/**
+ * Import profiles from JSON file
+ * @param {Event} event - File input change event
+ * @param {Object} settings - Extension settings
+ * @param {Function} refreshCallback - Function to refresh UI after changes
+ */
+export function importProfiles(event, settings, refreshCallback) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importData = JSON.parse(e.target.result);
+            
+            if (!importData.profiles || !Array.isArray(importData.profiles)) {
+                throw new Error('Invalid profile data format - missing profiles array');
+            }
+            
+            // Validate and clean profile structure
+            const validProfiles = importData.profiles
+                .filter(profile => validateProfile(profile))
+                .map(profile => cleanProfile(profile));
+            
+            if (validProfiles.length === 0) {
+                throw new Error('No valid profiles found in import file');
+            }
+            
+            let importedCount = 0;
+            let skippedCount = 0;
+            const existingNames = settings.profiles.map(p => p.name);
+            
+            // Merge profiles (avoid duplicates by name)
+            validProfiles.forEach(importProfile => {
+                const exists = existingNames.includes(importProfile.name);
+                if (!exists) {
+                    // Ensure unique name and clean structure
+                    const finalName = generateSafeProfileName(importProfile.name, existingNames);
+                    importProfile.name = finalName;
+                    existingNames.push(finalName);
+                    
+                    settings.profiles.push(importProfile);
+                    importedCount++;
+                } else {
+                    skippedCount++;
+                }
+            });
+            
+            if (importedCount > 0) {
+                saveSettingsDebounced();
+                if (refreshCallback) refreshCallback();
+                
+                let message = `Imported ${importedCount} profile${importedCount === 1 ? '' : 's'}`;
+                if (skippedCount > 0) {
+                    message += ` (${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} skipped)`;
+                }
+                
+                toastr.success(message, 'STMemoryBooks');
+                console.log(`${MODULE_NAME}: ${message}`);
+            } else {
+                toastr.warning('No new profiles imported - all profiles already exist', 'STMemoryBooks');
+            }
+            
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error importing profiles:`, error);
+            toastr.error(`Failed to import profiles: ${error.message}`, 'STMemoryBooks');
+        }
+    };
+    
+    reader.onerror = function() {
+        console.error(`${MODULE_NAME}: Error reading import file`);
+        toastr.error('Failed to read import file', 'STMemoryBooks');
+    };
+    
+    reader.readAsText(file);
+    
+    // Clear the file input
+    event.target.value = '';
+}
+
+/**
  * MODIFIED: Setup event handlers for profile edit popup
  */
 function setupProfileEditEventHandlers(popupInstance) {
