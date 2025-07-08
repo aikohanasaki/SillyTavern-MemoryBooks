@@ -234,7 +234,7 @@ export const PRESET_PROMPTS = {
              "For the keywords field, provide 3-8 relevant keywords that would help a vectorized database find this summary again if mentioned.\n\n" +
              "Return ONLY the JSON, no other text.",
 
-    'keywords': "Analyze the following roleplay scene and return a minimal memory entry as JSON.\n\n" +
+    'minimal': "Analyze the following roleplay scene and return a minimal memory entry as JSON.\n\n" +
                 "You must respond with ONLY valid JSON in this exact format:\n" +
                 "{\n" +
                 '  "title": "Short scene title (1-3 words)",\n' +
@@ -443,7 +443,7 @@ export function formatPresetDisplayName(presetName) {
         'summarize': 'Summarize - Bullet-point format',
         'synopsis': 'Synopsis - Comprehensive with headings',
         'sumup': 'Sum Up - Concise story beats',
-        'keywords': 'Keywords - Keywords only'
+        'minimal': 'Minimal - Brief 1-2 sentence summary'
     };
     
     return displayNames[presetName] || presetName;

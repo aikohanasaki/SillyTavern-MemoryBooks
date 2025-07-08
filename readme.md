@@ -179,6 +179,11 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 
 **Missing buttons**: The extension may take up to 10 seconds to load after selecting a character and chat. If buttons don't appear after this time, refresh the page or check that the extension loaded properly in the Extensions menu.
 
+## Image Gallery
+
+### Default Lorebook Entry Settings
+[![Default lorebook entry settings](images\default.png)]
+
 ---
 
 *Made with love, Claude Sonnet 4, and Gemini 2.5 Pro* 🤖
