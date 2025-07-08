@@ -499,22 +499,10 @@ export function previewTitle(titleFormat, sampleData = {}) {
 }
 
 export function getRangeFromMemoryEntry(entry) {
-    // Prefer the new, explicit flags
     if (typeof entry.STMB_start === 'number' && typeof entry.STMB_end === 'number') {
         return { start: entry.STMB_start, end: entry.STMB_end };
     }
-
-    // Fallback for older entries: Parse the comment/title
-    // The title generation includes the scene range
-    // This is less reliable but necessary for backward compatibility.
-    const title = entry.comment || '';
-    const match = title.match(/Scene (\d+)-(\d+)/) || title.match(/(\d+)-(\d+)/); // Example regex
-
-    if (match && match.length >= 3) {
-        return { start: parseInt(match[1], 10), end: parseInt(match[2], 10) };
-    }
-
-    return null; // Could not determine range
+    return null;
 }
 
 /**
