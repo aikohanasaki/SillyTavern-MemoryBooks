@@ -379,30 +379,26 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
  */
 async function saveNewProfileFromAdvancedSettings(popupElement, settings, profileName) {
     try {
-        // Get current settings from popup
         const effectivePrompt = popupElement.querySelector('#stmb-effective-prompt-advanced')?.value || '';
         const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
         const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || settings.defaultProfile);
         
-        // Generate safe profile name
         const existingNames = settings.profiles.map(p => p.name);
         const safeName = generateSafeProfileName(profileName, existingNames);
         
-        // Build new profile
         const newProfile = {
             name: safeName,
             prompt: effectivePrompt,
-            connection: {}
+            connection: {},
+            titleFormat: settings.titleFormat 
         };        
         
-        // If not overriding, use selected profile's connection settings
         if (!overrideSettings) {
             const baseProfile = settings.profiles[selectedProfileIndex];
             if (baseProfile.connection) {
                 newProfile.connection = { ...baseProfile.connection };
             }
         } else {
-            // Use current SillyTavern settings
             const currentSettings = getCurrentModelSettings();
             if (currentSettings.model) {
                 newProfile.connection.model = currentSettings.model;
@@ -412,7 +408,6 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
             }
         }
         
-        // Add to settings
         settings.profiles.push(newProfile);
         saveSettingsDebounced();
         

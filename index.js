@@ -26,7 +26,7 @@ const defaultSettings = {
         tokenWarningThreshold: 30000,
         defaultMemoryCount: 0,
     },
-    titleFormat: '[000] - Auto Memory',
+    titleFormat: '[000] - {{title}}',
     profiles: [
         {
             name: "Default",

@@ -113,6 +113,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 version: '2.0'
             },
             suggestedKeys: processedMemory.suggestedKeys,
+            titleFormat: profile.titleFormat || '[000] - {{title}}', 
             lorebook: {
                 content: processedMemory.content,
                 comment: `Auto-generated memory from messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}. Profile: ${profile.name}.`,

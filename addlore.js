@@ -41,11 +41,9 @@ const DEFAULT_TITLE_FORMATS = [
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
     console.log(`${MODULE_NAME}: Adding memory to lorebook "${lorebookValidation.name}"`);
     
-    // FIXED: Declare context once at function scope to avoid redundancy
     const context = getContext();
     
     try {
-        // Validate inputs
         if (!memoryResult?.content) {
             throw new Error('Invalid memory result: missing content');
         }
@@ -54,46 +52,37 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             throw new Error('Invalid lorebook validation data');
         }
         
-        // Get extension settings for title formatting and UI refresh
         const settings = extension_settings.STMemoryBooks || {};
-        const titleFormat = settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
-        const refreshEditor = settings.moduleSettings?.refreshEditor !== false; // Default to true
+        const titleFormat = memoryResult.titleFormat || settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
+        const refreshEditor = settings.moduleSettings?.refreshEditor !== false;
         
-        // Create new lorebook entry
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
         
         if (!newEntry) {
             throw new Error('Failed to create new lorebook entry');
         }
         
-        // Generate title using the configured format
         const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
         
-        // Populate the entry with memory data
         populateLorebookEntry(newEntry, memoryResult, entryTitle);
         
-        // Save the modified lorebook data back to the server
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
         
         console.log(`${MODULE_NAME}: Successfully added memory entry "${entryTitle}" to lorebook`);
         
-        // FIXED: Use direct toastr access instead of context.toastr
         if (settings.moduleSettings?.showNotifications !== false) {
             toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
         }
         
-        // Refresh the editor if enabled and user is viewing this lorebook
         if (refreshEditor) {
             try {
                 reloadEditor(lorebookValidation.name);
                 console.log(`${MODULE_NAME}: Refreshed lorebook editor UI`);
             } catch (error) {
                 console.warn(`${MODULE_NAME}: Failed to refresh editor UI:`, error);
-                // Don't fail the whole operation if UI refresh fails
             }
         }
         
-        // Return success result
         return {
             success: true,
             entryId: newEntry.uid,
@@ -106,7 +95,6 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
     } catch (error) {
         console.error(`${MODULE_NAME}: Failed to add memory to lorebook:`, error);
         
-        // FIXED: Use direct toastr access instead of context.toastr
         if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
             toastr.error(`Failed to add memory: ${error.message}`, 'STMemoryBooks');
         }
