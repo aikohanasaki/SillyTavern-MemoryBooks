@@ -7,14 +7,13 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/Sla
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, moment, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory, setMemoryToolResolver, callMemoryToolResolver } from './stmemory.js';
-import { addMemoryToLorebook, getDefaultTitleFormats } from './addlore.js';
+import { createMemory } from './stmemory.js';
+import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
+import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
 import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
-import { ToolManager } from '../../../tool-calling.js';
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
@@ -36,8 +35,8 @@ const defaultSettings = {
         }
     ],
     defaultProfile: 0,
-    migrationVersion: 1
-};
+    migrationVersion: 2,
+}
 
 // Current state variables
 let currentPopupInstance = null;
@@ -48,44 +47,36 @@ let chatObserver = null;
 let updateTimeout = null;
 
 /**
- * Recursively traverses a DOM node to find and process STMemoryBooks message buttons.
- * This is more efficient than querySelectorAll for handling newly added DOM fragments.
+ * PERFORMANCE OPTIMIZED: Process messages and return processed elements
  * @param {Node} node The DOM node to process.
- * @param {number} currentDepth The current recursion depth.
- * @param {number} maxDepth The maximum recursion depth to prevent stack overflow.
- * @returns {boolean} True if any buttons were added, otherwise false.
+ * @returns {Array} Array of message elements that had buttons added
  */
-function processNodeForMessages(node, currentDepth = 0, maxDepth = 10) {
-    if (currentDepth > maxDepth) {
-        return false;
-    }
+function processNodeForMessages(node) {
+    const processedMessages = [];
 
-    let buttonsWereAdded = false;
-
-    // 1. Check if the node itself is a message element
-    // Using a more specific selector is slightly safer.
+    // If the node itself is a message element
     if (node.matches && node.matches('#chat .mes[mesid]')) {
-        // Check if buttons already exist to prevent duplication, just in case.
         if (!node.querySelector('.mes_stmb_start')) {
             createSceneButtons(node);
-            buttonsWereAdded = true;
+            processedMessages.push(node);
         }
     } 
-    // 2. If the node is a container, recursively check its children.
-    else if (node.children) {
-        for (const child of node.children) {
-            // The recursive call returns a boolean, which we can aggregate.
-            if (processNodeForMessages(child, currentDepth + 1, maxDepth)) {
-                buttonsWereAdded = true;
+    // Find any message elements within the added node
+    else if (node.querySelectorAll) {
+        const newMessages = node.querySelectorAll('#chat .mes[mesid]');
+        newMessages.forEach(mes => {
+            if (!mes.querySelector('.mes_stmb_start')) {
+                createSceneButtons(mes);
+                processedMessages.push(mes);
             }
-        }
+        });
     }
 
-    return buttonsWereAdded;
+    return processedMessages;
 }
 
 /**
- * Initialize chat observer to watch for new messages
+ * PERFORMANCE OPTIMIZED: Chat observer with partial updates
  */
 function initializeChatObserver() {
     // Clean up existing observer if any
@@ -100,15 +91,15 @@ function initializeChatObserver() {
     }
 
     chatObserver = new MutationObserver((mutations) => {
-        let needsButtonStateUpdate = false;
+        const newlyProcessedMessages = [];
         
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.nodeType === Node.ELEMENT_NODE) {
                     try {
-                        if (processNodeForMessages(node)) {
-                            needsButtonStateUpdate = true;
-                        }
+                        // Collect all newly processed messages
+                        const processed = processNodeForMessages(node);
+                        newlyProcessedMessages.push(...processed);
                     } catch (error) {
                         console.error('STMemoryBooks: Error processing new chat elements:', error);
                     }
@@ -116,12 +107,13 @@ function initializeChatObserver() {
             }
         }
 
-        if (needsButtonStateUpdate) {
+        if (newlyProcessedMessages.length > 0) {
             // Debounce the state update to prevent excessive calls
             clearTimeout(updateTimeout);
             updateTimeout = setTimeout(() => {
                 try {
-                    updateAllButtonStates();
+                    // PERFORMANCE: Use partial update for new messages only
+                    updateNewMessageButtonStates(newlyProcessedMessages);
                 } catch (error) {
                     console.error('STMemoryBooks: Error updating button states:', error);
                 }
@@ -135,7 +127,7 @@ function initializeChatObserver() {
         subtree: true 
     });
 
-    console.log('STMemoryBooks: Efficient chat observer initialized and monitoring for new messages');
+    console.log('STMemoryBooks: Performance-optimized chat observer initialized');
 }
 
 /**
@@ -152,6 +144,107 @@ function cleanupChatObserver() {
         clearTimeout(updateTimeout);
         updateTimeout = null;
     }
+}
+
+function handleChatChanged() {
+    console.log('STMemoryBooks: Chat changed - updating scene state');
+    updateSceneStateCache();
+    
+    setTimeout(() => {
+        try {
+            // PERFORMANCE: Full update needed for chat changes
+            processExistingMessages();
+        } catch (error) {
+            console.error('STMemoryBooks: Error processing messages after chat change:', error);
+        }
+    }, 50);
+}
+
+/**
+ * Enhanced chat loaded handler with conversion logging
+ * Update the existing handleChatLoaded() function in index.js
+ */
+function handleChatLoaded() {
+    console.log(`${MODULE_NAME}: === CHAT LOADED EVENT ===`);
+    console.log(`${MODULE_NAME}: Chat loaded event received, processing messages.`);
+    console.log(`${MODULE_NAME}: Current chat metadata:`, chat_metadata);
+    console.log(`${MODULE_NAME}: METADATA_KEY value:`, METADATA_KEY);
+    console.log(`${MODULE_NAME}: Lorebook from metadata:`, chat_metadata[METADATA_KEY]);
+    
+    updateSceneStateCache();
+    
+    // PERFORMANCE: Full update needed for chat loads
+    processExistingMessages();
+}
+
+function handleMessageReceived() {
+    setTimeout(validateSceneMarkers, 500);
+}
+
+/**
+ * Slash command handlers - FIXED SIGNATURES
+ */
+function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
+    const sceneData = getSceneData();
+    if (!sceneData) {
+        toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
+        return;
+    }
+    
+    initiateMemoryCreation();
+}
+
+function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
+    // Validate that we have an unnamed argument
+    if (!unnamedArgs || unnamedArgs.length === 0 || typeof unnamedArgs[0] !== 'string') {
+        toastr.error('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        return;
+    }
+    
+    const range = unnamedArgs[0].trim();
+    const match = range.match(/^(\d+)-(\d+)$/);
+    
+    if (!match) {
+        toastr.error('Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        return;
+    }
+    
+    const startId = parseInt(match[1]);
+    const endId = parseInt(match[2]);
+    
+    // Validate range logic
+    if (startId >= endId) {
+        toastr.error('Start message must be less than end message', 'STMemoryBooks');
+        return;
+    }
+    
+    // Validate message IDs exist in current chat
+    if (startId < 0 || endId >= chat.length) {
+        toastr.error(`Message IDs out of range. Valid range: 0-${chat.length - 1}`, 'STMemoryBooks');
+        return;
+    }
+    
+    // Additional validation: check if messages actually exist
+    if (!chat[startId] || !chat[endId]) {
+        toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
+        return;
+    }
+    
+    // Set markers using scene manager
+    const markers = getSceneMarkers();
+    markers.sceneStart = startId;
+    markers.sceneEnd = endId;
+    
+    updateSceneStateCache();
+    saveMetadataDebounced();
+    
+    // This will automatically use the optimized update since we fixed setSceneMarker
+    updateAllButtonStates();
+    
+    toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
+    
+    // Optionally create memory immediately
+    setTimeout(() => initiateMemoryCreation(), 500);
 }
 
 /**
@@ -196,6 +289,19 @@ function validateSettings(settings) {
     if (settings.moduleSettings.defaultMemoryCount === undefined || 
         settings.moduleSettings.defaultMemoryCount < 0) {
         settings.moduleSettings.defaultMemoryCount = 0;
+    }
+    
+    // Migrate to version 2 if needed (JSON-based architecture)
+    if (!settings.migrationVersion || settings.migrationVersion < 2) {
+        console.log(`${MODULE_NAME}: Migrating to JSON-based architecture (v2)`);
+        settings.migrationVersion = 2;
+        // Update any old tool-based prompts to JSON prompts
+        settings.profiles.forEach(profile => {
+            if (profile.prompt && profile.prompt.includes('createMemory')) {
+                console.log(`${MODULE_NAME}: Updating profile "${profile.name}" to use JSON output`);
+                profile.prompt = DEFAULT_PROMPT; // Reset to new JSON-based default
+            }
+        });
     }
     
     return settings;
@@ -297,12 +403,42 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation) {
 }
 
 /**
- * Execute the core memory generation process
+ * Determine if an error is retryable
  */
-async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings) {
+function isRetryableError(error) {
+    // Don't retry these error types
+    const nonRetryableErrors = [
+        'TokenWarningError',     // User needs to select smaller range
+        'InvalidProfileError'    // Configuration issue
+    ];
+    
+    if (nonRetryableErrors.includes(error.name)) {
+        return false;
+    }
+    
+    // Don't retry validation errors
+    if (error.message.includes('Scene compilation failed') || 
+        error.message.includes('Invalid memory result') ||
+        error.message.includes('Invalid lorebook')) {
+        return false;
+    }
+    
+    // Retry AI response errors and network-related issues
+    return true;
+}
+
+/**
+ * Execute the core memory generation process - now with retry logic
+ */
+async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
+    const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
     
     try {
+        if (retryCount > 0) {
+            toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
+        }
+        
         toastr.info('Compiling scene messages...', 'STMemoryBooks');
         
         // Create and compile scene
@@ -341,18 +477,15 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
         toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
         
-        // Generate memory (tool calling guarantees complete result)
-        toastr.info('Generating memory with AI...', 'STMemoryBooks');
+        // Generate memory using new JSON-based approach
+        toastr.info('Generating memory with AI (JSON structured output)...', 'STMemoryBooks');
         const memoryResult = await createMemory(compiledScene, profileSettings, {
             tokenWarningThreshold: tokenThreshold
         });
         
-        // SIMPLIFIED: No keyword handling needed - tool calling provides complete result
-        const finalResult = memoryResult;
-        
         // Add to lorebook
         toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
-        const addResult = await addMemoryToLorebook(finalResult, lorebookValidation);
+        const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
         
         if (!addResult.success) {
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
@@ -361,52 +494,80 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         // Success notification
         const contextMsg = memoryFetchResult.actualCount > 0 ? 
             ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
+        
+        // Show success message immediately if this was a retry, otherwise delay slightly
+        const successDelay = retryCount > 0 ? 0 : 1000;
         setTimeout(() => {
-            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}!`, 'STMemoryBooks');
-        }, 1000);
+            const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
+            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}${retryMsg}!`, 'STMemoryBooks');
+        }, successDelay);
         
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
         
-        // Provide specific error messages for tool calling issues
-        if (error.message.includes('Tool calling is not supported')) {
-            toastr.error('Function calling must be enabled in OpenAI settings for memory creation to work.', 'STMemoryBooks', {
-                timeOut: 10000,
-                onclick: () => {
-                    toastr.info('Go to OpenAI Settings → Advanced → Enable Function Calling', 'STMemoryBooks', { timeOut: 15000 });
-                }
+        // Determine if we should retry
+        const shouldRetry = retryCount < maxRetries && isRetryableError(error);
+        
+        if (shouldRetry) {
+            // Show retry notification and attempt again
+            toastr.warning(`Memory creation failed (attempt ${retryCount + 1}). Retrying in 2 seconds...`, 'STMemoryBooks', {
+                timeOut: 3000
             });
-        } else if (error.message.includes('AI did not call the createMemory tool')) {
-            toastr.error('AI model did not use the memory creation tool. This may indicate your model does not support function calling properly.', 'STMemoryBooks', {
+            
+            // Wait 2 seconds before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Recursive retry
+            return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount + 1);
+        }
+        
+        // No more retries or non-retryable error - show final error
+        const retryMsg = retryCount > 0 ? ` (failed after ${retryCount + 1} attempts)` : '';
+        
+        // Provide specific error messages for different types of failures
+        if (error.name === 'TokenWarningError') {
+            toastr.error(`Scene is too large (${error.tokenCount} tokens). Try selecting a smaller range${retryMsg}.`, 'STMemoryBooks', {
+                timeOut: 8000
+            });
+        } else if (error.name === 'AIResponseError') {
+            toastr.error(`AI failed to generate valid memory: ${error.message}${retryMsg}`, 'STMemoryBooks', {
+                timeOut: 8000
+            });
+        } else if (error.name === 'InvalidProfileError') {
+            toastr.error(`Profile configuration error: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else {
-            toastr.error(`Failed to create memory: ${error.message}`, 'STMemoryBooks');
+            toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
     } finally {
         isProcessingMemory = false;
     }
 }
 
-/**
- * *** ENHANCED: Restructured error handling with improved flag management ***
- */
 async function initiateMemoryCreation() {
     // Early validation checks (no flag set yet)
     if (!characters || characters.length === 0 || !characters[this_chid]) {
-        toastr.error('Silly Tavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
+        toastr.error('SillyTavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
         return;
     }
     
+    // RACE CONDITION FIX: Check and set flag atomically
     if (isProcessingMemory) {
         toastr.warning('Memory creation already in progress', 'STMemoryBooks');
         return;
     }
-
-    // Set processing flag immediately after validation
+    
+    // Set processing flag IMMEDIATELY after validation to prevent race conditions
     isProcessingMemory = true;
     
     try {
+        // Validate that toastr is available (defensive programming)
+        if (typeof toastr === 'undefined') {
+            console.error('STMemoryBooks: toastr is not available');
+            throw new Error('Notification system not available');
+        }
+
         // All the validation and processing logic
         const sceneData = getSceneData();
         if (!sceneData) {
@@ -420,6 +581,20 @@ async function initiateMemoryCreation() {
             return; // Will hit finally block
         }
         
+        const allMemories = identifyMemoryEntries(lorebookValidation.data);
+        const newStart = sceneData.sceneStart;
+        const newEnd = sceneData.sceneEnd;
+
+        for (const mem of allMemories) {
+            const existingRange = getRangeFromMemoryEntry(mem.entry); 
+
+            if (existingRange && newStart < existingRange.end && newEnd > existingRange.start) {
+                toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                isProcessingMemory = false;
+                return;
+            }
+        }
+
         const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
         if (!effectiveSettings) {
             return; // User cancelled, will hit finally block
@@ -431,7 +606,7 @@ async function initiateMemoryCreation() {
             currentPopupInstance = null;
         }
         
-        // Execute the main process
+        // Execute the main process with retry logic
         await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings);
         
     } catch (error) {
@@ -674,7 +849,7 @@ function handleSettingsPopupClose(popup) {
 }
 
 /**
- * Refresh popup content
+ * Refresh popup content while preserving popup properties
  */
 function refreshPopupContent() {
     if (!currentPopupInstance || !currentPopupInstance.dlg.hasAttribute('open')) {
@@ -713,26 +888,41 @@ function refreshPopupContent() {
         
         morphdom(currentPopupInstance.content, tempContainer, {
             onBeforeElUpdated: function(fromEl, toEl) {
-                if (fromEl.type === 'checkbox') {
+                // Preserve state of form elements that morphdom might reset
+                if (fromEl.isEqualNode(toEl)) {
+                    return false;
+                }
+                if (fromEl.type === 'checkbox' || fromEl.type === 'radio') {
                     toEl.checked = fromEl.checked;
                 }
-                if (fromEl.tagName === 'SELECT') {
+                if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
                     toEl.value = fromEl.value;
                 }
                 return true;
             }
         });
+
+        const requiredClasses = [
+            'wide_dialogue_popup',
+            'large_dialogue_popup',
+            'vertical_scrolling_dialogue_popup'
+        ];
+
+        requiredClasses.forEach(className => {
+            if (!currentPopupInstance.dlg.classList.contains(className)) {
+                currentPopupInstance.dlg.classList.add(className);
+            }
+        });
         
         setupSettingsEventListeners();
-        console.log('STMemoryBooks: Popup content refreshed');
+        console.log('STMemoryBooks: Popup content refreshed with preserved properties');
     } catch (error) {
         console.error('STMemoryBooks: Error refreshing popup content:', error);
     }
 }
 
 /**
- * Processes any messages that already exist in the DOM, adding scene buttons if they are missing.
- * This is used for the initial load and for chat changes to catch any messages the observer might miss.
+ * PERFORMANCE: Process existing messages and use full update (for chat loads)
  */
 function processExistingMessages() {
     console.log('STMemoryBooks: Processing any existing messages on the DOM...');
@@ -757,135 +947,11 @@ function processExistingMessages() {
             console.log(`STMemoryBooks: Added buttons to ${buttonsAdded} existing messages.`);
         }
 
+        // PERFORMANCE: Full update needed for chat loads
         updateAllButtonStates();
     } else {
         console.log('STMemoryBooks: No existing messages found to process.');
     }
-}
-
-function handleChatChanged() {
-    console.log('STMemoryBooks: Chat changed - updating scene state');
-    updateSceneStateCache();
-    
-    setTimeout(() => {
-        try {
-            processExistingMessages();
-        } catch (error) {
-            console.error('STMemoryBooks: Error processing messages after chat change:', error);
-        }
-    }, 50);
-}
-
-function handleChatLoaded() {
-    console.log('STMemoryBooks: Chat loaded event received, processing messages.');
-    updateSceneStateCache();
-    processExistingMessages();
-}
-
-function handleMessageReceived() {
-    setTimeout(validateSceneMarkers, 500);
-}
-
-/**
- * Slash command handlers
- */
-function handleCreateMemoryCommand() {
-    const sceneData = getSceneData();
-    if (!sceneData) {
-        toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
-        return;
-    }
-    
-    initiateMemoryCreation();
-}
-
-
-function handleSceneMemoryCommand(args) {
-    const range = args[0].trim();
-    const match = range.match(/^(\d+)-(\d+)$/);
-    
-    if (!match) {
-        toastr.error('Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
-        return;
-    }
-    
-    const startId = parseInt(match[1]);
-    const endId = parseInt(match[2]);
-    
-    if (startId >= endId) {
-        toastr.error('Start message must be less than end message', 'STMemoryBooks');
-        return;
-    }
-    
-    if (startId < 0 || endId >= chat.length) {
-        toastr.error('Message IDs out of range', 'STMemoryBooks');
-        return;
-    }
-    
-    // Set markers using scene manager
-    const markers = getSceneMarkers();
-    markers.sceneStart = startId;
-    markers.sceneEnd = endId;
-    
-    updateSceneStateCache();
-    saveMetadataDebounced();
-    updateAllButtonStates();
-    
-    toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
-    
-    // Optionally create memory immediately
-    setTimeout(() => initiateMemoryCreation(), 500);
-}
-
-/**
- * Register the createMemory tool with enhanced description for natural usage
- */
-function registerMemoryTool() {
-    console.log('STMemoryBooks: Registering createMemory tool with Promise-based resolver');
-    
-    ToolManager.registerFunctionTool({
-        name: 'createMemory',
-        description: 'Create a structured memory summary when analyzing conversation scenes. This tool extracts key plot points, character development, important interactions, and story details for future reference. Use when asked to summarize, analyze, or create memories from chat conversations.',
-        parameters: {
-            type: 'object',
-            properties: {
-                memory_content: {
-                    type: 'string',
-                    description: 'Detailed summary using markdown with specific headers: **Timeline**, **Story Beats**, **Key Interactions**, **Notable Details**, and **Outcome**. Comprehensive detail is more important than brevity.'
-                },
-                title: {
-                    type: 'string',
-                    description: 'Concise title for the scene (1-3 words)'
-                },
-                keywords: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    description: 'Array of 3-8 relevant keywords for vectorized database search'
-                }
-            },
-            required: ['memory_content', 'title', 'keywords']
-        },
-        action: (params) => {
-            console.log('STMemoryBooks: createMemory tool called by AI with params:', {
-                hasContent: !!params.memory_content,
-                contentLength: params.memory_content?.length || 0,
-                hasTitle: !!params.title,
-                keywordCount: params.keywords?.length || 0
-            });
-
-            callMemoryToolResolver({
-                content: params.memory_content,
-                title: params.title,
-                keywords: params.keywords
-            });
-
-            return JSON.stringify({ 
-                success: true, 
-                message: `Memory created: "${params.title}" with ${params.keywords?.length || 0} keywords`
-            });
-        },
-        stealth: true
-    });
 }
 
 /**
@@ -960,7 +1026,7 @@ async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
 
-    console.log('STMemoryBooks: Initializing');
+    console.log('STMemoryBooks: Initializing with JSON-based architecture and performance optimizations');
     
     // Wait for SillyTavern to be ready
     let attempts = 0;
@@ -1006,15 +1072,6 @@ async function init() {
     
     // Setup event listeners
     setupEventListeners();
-
-    // Check if tool calling is supported
-    if (!ToolManager.isToolCallingSupported()) {
-        console.error('STMemoryBooks: Tool calling is not supported with current settings');
-        throw new Error('STMemoryBooks requires function calling to be enabled. Please enable function calling in your OpenAI settings.');
-    }
-
-    // Register our stealth tool
-    registerMemoryTool();
     
     // Register slash commands
     registerSlashCommands();
@@ -1033,9 +1090,8 @@ async function init() {
         return a === b;
     });
     
-    console.log('STMemoryBooks: Extension loaded successfully');
+    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation and performance optimizations');
 }
-
 
 // Initialize when ready
 $(document).ready(() => {
@@ -1046,5 +1102,5 @@ $(document).ready(() => {
     // Fallback initialization
     setTimeout(init, 2000);
     
-    console.log('STMemoryBooks: Ready to initialize');
+    console.log('STMemoryBooks: Ready to initialize with improved architecture');
 });
