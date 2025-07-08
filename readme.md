@@ -20,9 +20,13 @@ A SillyTavern extension that allows you to automatically create memories from ch
 
 # LOADING NOTE ⏳
 
+[![Wait for these buttons](images\startup.png)]
+
 After selecting a character and chat, there may be a slight delay before the extension fully loads and the memory buttons appear. This is normal - the extension will be ready within 10 seconds. If buttons don't appear after this time, try refreshing the page.
 
 ## How It Works
+
+[![Chat lorebook is a prerequisite](images\chatlorebook.png)]
 
 **Before you start**: The chat MUST have a lorebook bound to it. Check the character card--if there is no chat lorebook, you need to make one and bind the lorebook to the chat.
 

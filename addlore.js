@@ -155,7 +155,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.group = "";
     entry.groupOverride = false;
     entry.groupWeight = 100;
-    entry.scanDepth = 1;
+    entry.scanDepth = null;
     entry.caseSensitive = null;
     entry.matchWholeWords = null;
     entry.useGroupScoring = null;
