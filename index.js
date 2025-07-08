@@ -237,8 +237,6 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     
     updateSceneStateCache();
     saveMetadataDebounced();
-    
-    // This will automatically use the optimized update since we fixed setSceneMarker
     updateAllButtonStates();
     
     toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
@@ -986,18 +984,15 @@ function registerSlashCommands() {
  */
 function createUI() {
     const menuItem = $(`
-        <div id="stmb-menu-item" class="extension_container">
-            <i class="fa-solid fa-book"></i>
-            <span>Memory Settings</span>
+        <div id="stmb-menu-item-container" class="extension_container interactable" tabindex="0">            
+            <div id="stmb-menu-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
+                <div class="fa-fw fa-solid fa-book extensionsMenuExtensionButton"></div>
+                <span>Create Memory</span>
+            </div>
         </div>
     `);
     
-    let extensionsList = $(SELECTORS.extensionsMenu);
-    if (extensionsList.length === 0) {
-        extensionsList = $('<div class="list-group"></div>');
-        $('#extensionsMenu').append(extensionsList);
-    }
-    extensionsList.append(menuItem);
+    $('#extensionsMenu').append(menuItem);
 }
 
 /**
