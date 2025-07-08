@@ -764,10 +764,10 @@ function setupSettingsEventListeners() {
     popupElement.querySelector('#stmb-title-format-select')?.addEventListener('change', (e) => {
         const customInput = popupElement.querySelector('#stmb-custom-title-format');
         if (e.target.value === 'custom') {
-            customInput.style.display = 'block';
+            customInput.classList.remove('displayNone'); 
             customInput.focus();
         } else {
-            customInput.style.display = 'none';
+            customInput.classList.add('displayNone'); 
             settings.titleFormat = e.target.value;
             saveSettingsDebounced();
         }
