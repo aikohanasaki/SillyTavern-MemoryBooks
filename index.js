@@ -188,25 +188,27 @@ function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
     const sceneData = getSceneData();
     if (!sceneData) {
         toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
-        return;
+        return ''; 
     }
     
     initiateMemoryCreation();
+    return ''; 
 }
 
+
 function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
-    // Validate that we have an unnamed argument
-    if (!unnamedArgs || unnamedArgs.length === 0 || typeof unnamedArgs[0] !== 'string') {
-        toastr.error('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
-        return;
-    }
+    const range = String(unnamedArgs || '').trim();
     
-    const range = unnamedArgs[0].trim();
-    const match = range.match(/^(\d+)-(\d+)$/);
+    if (!range) {
+        toastr.error('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        return '';
+    }
+   
+    const match = range.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
     
     if (!match) {
         toastr.error('Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
-        return;
+        return '';
     }
     
     const startId = parseInt(match[1]);
@@ -215,19 +217,19 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     // Validate range logic
     if (startId >= endId) {
         toastr.error('Start message must be less than end message', 'STMemoryBooks');
-        return;
+        return '';
     }
     
     // Validate message IDs exist in current chat
     if (startId < 0 || endId >= chat.length) {
         toastr.error(`Message IDs out of range. Valid range: 0-${chat.length - 1}`, 'STMemoryBooks');
-        return;
+        return '';
     }
     
     // Additional validation: check if messages actually exist
     if (!chat[startId] || !chat[endId]) {
         toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
-        return;
+        return '';
     }
     
     // Set markers using scene manager
@@ -243,6 +245,8 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     
     // Optionally create memory immediately
     setTimeout(() => initiateMemoryCreation(), 500);
+
+    return '';
 }
 
 /**
