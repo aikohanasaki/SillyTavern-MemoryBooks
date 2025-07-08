@@ -39,12 +39,12 @@ const profileEditTemplate = Handlebars.compile(`
         
         <label for="stmb-profile-model">
             <h4>Model:</h4>
-            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Leave blank to use current model">
+            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Copy-paste the model name from connections panel in here, eg. gemini-2.5-pro, claude-4-sonnet, etc.">
         </label>
         
         <label for="stmb-profile-temperature">
             <h4>Temperature (0.0 - 2.0):</h4>
-            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="Leave blank to use current temperature">
+            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8.">
         </label>
     </div>
     
