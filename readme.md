@@ -2,9 +2,15 @@
 
 A SillyTavern extension that allows you to automatically create memories from chat excerpts and send them to your designated lorebook. Mark scene start/end points in chat, extract messages between those points, and use AI to generate memories that are automatically added to your chat's bound lorebook.
 
+## Prerequisites
+
+- **Bound Lorebook**: Your chat must have exactly one lorebook bound to it
+- **API Access**: Compatible AI engine (OpenAI, Claude, etc.) configured in SillyTavern
+- **Scene Selection**: Start and end markers must be set with valid range (start < end)
+
 > ## Notes
 > - This extension ONLY SUPPORTS chat completion APIs (oai_settings). 
-> - Chat messages are NOT hidden. You must still use /hide after memories are created.
+> - Chat messages are NOT hidden after memory creation. You must still use /hide after memories are created. This was an intentional decision to leave some chat history for generation overlap.
 
 ## Features
 
@@ -133,12 +139,6 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Scene Overlap Detection**: Detects if there is scene overlap (chat messages in more than one memory)
 
 ![Scene overlap detection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
-
-## Prerequisites
-
-- **Bound Lorebook**: Your chat must have exactly one lorebook bound to it
-- **API Access**: Compatible AI engine (OpenAI, Claude, etc.) configured in SillyTavern
-- **Scene Selection**: Start and end markers must be set with valid range (start < end)
 
 ## Troubleshooting
 
