@@ -162,6 +162,14 @@
             <span id="fileName"></span>
         </div>
         
+        <div class="input-group">
+            <label for="vectorizedToggle">
+                <input type="checkbox" id="vectorizedToggle" checked>
+                Include 🔵 entries
+            </label>
+            <small>If enabled, entries with <code>vectorized: false</code> will also be included as memories.</small>
+        </div>
+
         <button id="convertBtn" class="btn">Convert File</button>
 
         <div id="downloadLinkContainer" style="display:none;">
@@ -179,6 +187,7 @@
             const downloadLink = document.getElementById('downloadLink');
             const sampleTitleInput = document.getElementById('sampleTitleInput');
             const regexDisplay = document.getElementById('regexDisplay');
+            const vectorizedToggle = document.getElementById('vectorizedToggle');
 
             let uploadedFile = null;
 
@@ -263,10 +272,12 @@
                 const entries = Object.values(data.entries);
                 const totalEntries = entries.length;
 
+                // NEW: read toggle value
+                const skipVectorizedCheck = vectorizedToggle.checked;
+
                 entries.forEach(entry => {
-                    // Check all three conditions before converting an entry
                     const titleMatches = entry.comment && isMemoryRegex.test(entry.comment);
-                    const isVectorized = entry.vectorized !== false;
+                    const isVectorized = skipVectorizedCheck ? true : (entry.vectorized !== false);
                     const isPositionZero = entry.position === 0;
 
                     if (titleMatches && isVectorized && isPositionZero) {
