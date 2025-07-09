@@ -8,6 +8,15 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **API Access**: Compatible AI engine (OpenAI, Claude, etc.) configured in SillyTavern
 - **Scene Selection**: Start and end markers must be set with valid range (start < end)
 
+## Memory Settings
+
+The following settings are hard-coded. (Maybe in a future update I will put user-defined settings in.)
+- **Insertion Strategy**: 🔗 Vectorized
+- **Position**: ⬆️ Char (Before Character Definitions)
+- **Order**: set to the same as the memory number
+- **Recursion**: ✔️ Prevent further recursion (will not activate others)
+- **Delay**: ✔️ Delay until recursion (can only be activated on recursive checking)
+
 > ## Notes
 > - This extension ONLY SUPPORTS chat completion APIs (oai_settings). 
 > - Chat messages are NOT hidden after memory creation. You must still use /hide after memories are created. This was an intentional decision to leave some chat history for generation overlap.
