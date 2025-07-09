@@ -12,9 +12,6 @@ A SillyTavern extension that allows you to automatically create memories from ch
 > - This extension ONLY SUPPORTS chat completion APIs (oai_settings). 
 > - Chat messages are NOT hidden after memory creation. You must still use /hide after memories are created. This was an intentional decision to leave some chat history for generation overlap.
 
-### Current Bugs
-- Create Memory says it uses a different engine but it lies. It uses your current engine and temp settings. I'm working on getting that changed.
-
 ## Features
 
 - **Scene Marking System**: Mark start (►) and end (◄) points in your chat messages with visual feedback
