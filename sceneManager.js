@@ -320,39 +320,43 @@ export function validateSceneMarkers() {
  */
 export function handleMessageDeletion(deletedId, settings) {
     const markers = getSceneMarkers();
-    let shouldClear = false;
-    
+    const oldStart = markers.sceneStart;
+    const oldEnd = markers.sceneEnd;
+    let hasChanges = false;
+    let toastrMessage = '';
+
     // If start marker was deleted, clear entire scene
     if (markers.sceneStart === deletedId) {
-        shouldClear = true;
+        markers.sceneStart = null;
+        markers.sceneEnd = null; // Also clear the end marker
+        hasChanges = true;
         console.log(`${MODULE_NAME}: Start marker deleted, clearing scene`);
+        toastrMessage = 'Scene cleared due to start marker deletion';
+
+    // If end marker was deleted, just clear the end marker
+    } else if (markers.sceneEnd === deletedId) {
+        markers.sceneEnd = null;
+        hasChanges = true;
+        console.log(`${MODULE_NAME}: End marker deleted, clearing end point`);
+        toastrMessage = 'Scene end point cleared due to message deletion';
     }
-    
-    // If end marker was deleted
-    if (markers.sceneEnd === deletedId) {
-        const chatLength = chat.length;
-        
-        if (deletedId === chatLength) {
-            // Was the last message, fall back to new last message
-            markers.sceneEnd = chatLength - 1;
-            console.log(`${MODULE_NAME}: End marker was last message, falling back`);
-        } else {
-            // Was not the last message, clear scene
-            shouldClear = true;
-            console.log(`${MODULE_NAME}: End marker deleted (not last message), clearing scene`);
-        }
-    }
-    
-    if (shouldClear) {
-        clearScene();
-        
+
+    // If any message within the scene is deleted, we should just validate
+    // This part is implicit, as validateSceneMarkers() is called below if no changes are made.
+
+    if (hasChanges) {
+        currentSceneState.start = markers.sceneStart;
+        currentSceneState.end = markers.sceneEnd;
+        saveMetadataDebounced();
+        updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
+
         if (settings?.moduleSettings?.showNotifications) {
-            toastr.warning('Scene markers cleared due to message deletion', 'STMemoryBooks');
+            toastr.warning(toastrMessage, 'STMemoryBooks');
         }
-    } else {
-        // Validate remaining markers
-        validateSceneMarkers();
     }
+
+    // Always validate the markers after any deletion
+    validateSceneMarkers();
 }
 
 /**

@@ -155,12 +155,12 @@ function populateLorebookEntry(entry, memoryResult, entryTitle) {
     entry.displayIndex = orderNumber; // Use order number for display index
     entry.stmemorybooks = true; // Explicitly mark as STMemoryBooks memory entry
     if (memoryResult.metadata?.sceneRange) { // Set metadata for scene range if available
-    const rangeParts = memoryResult.metadata.sceneRange.split('-');
-    if (rangeParts.length === 2) {
-        entry.STMB_start = parseInt(rangeParts[0], 10);
-        entry.STMB_end = parseInt(rangeParts[1], 10);
+        const rangeParts = memoryResult.metadata.sceneRange.split('-');
+        if (rangeParts.length === 2) {
+            entry.STMB_start = parseInt(rangeParts[0], 10);
+            entry.STMB_end = parseInt(rangeParts[1], 10);
+        }
     }
-}
     
     console.log(`${MODULE_NAME}: Populated entry with ${entry.key.length} keywords and ${entry.content.length} characters`);
 }

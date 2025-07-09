@@ -24,20 +24,20 @@
 }
 
 /* --- ACTIVE STATE (ON) --- */
-.mes_stmb_start.on,
-.mes_stmb_end.on {
+.mes .mes_stmb_start.on,
+.mes .mes_stmb_end.on {
     /* Bright, visible active state with glow */
-    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%);
-    color: var(--SmartThemeBlurTintColor, #171717);
-    border-color: var(--SmartThemeQuoteColor, #e18a24);
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%) !important;
+    color: var(--SmartThemeBlurTintColor, #171717) !important;
+    border-color: var(--SmartThemeQuoteColor, #e18a24) !important;
     box-shadow: 0 0 8px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 50%, transparent 50%);
-    opacity: 1;
+    opacity: 1 !important;
     font-weight: bold;
 }
 
-.mes_stmb_start.on:hover,
-.mes_stmb_end.on:hover {
-    background: var(--SmartThemeQuoteColor, #e18a24);
+.mes .mes_stmb_start.on:hover,
+.mes .mes_stmb_end.on:hover {
+    background: var(--SmartThemeQuoteColor, #e18a24) !important;
     transform: scale(1.1);
     box-shadow: 0 0 12px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
 }

@@ -14,7 +14,6 @@ import {
     isCustomModel,
     getCurrentApiInfo
 } from './utils.js';
-// ADDED: Import to get default title formats for the UI
 import { getDefaultTitleFormats } from './addlore.js'; 
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
@@ -37,11 +36,31 @@ const profileEditTemplate = Handlebars.compile(`
             These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.
         </div>
         
+        <label for="stmb-profile-api">
+            <h4>API/Provider:</h4>
+            <select id="stmb-profile-api" class="text_pole">
+                <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
+                <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Claude</option>
+                <option value="google" {{#if (eq connection.api "google")}}selected{{/if}}>Google AI Studio</option>
+                <option value="openrouter" {{#if (eq connection.api "openrouter")}}selected{{/if}}>OpenRouter</option>
+                <option value="mistralai" {{#if (eq connection.api "mistralai")}}selected{{/if}}>MistralAI</option>
+                <option value="cohere" {{#if (eq connection.api "cohere")}}selected{{/if}}>Cohere</option>
+                <option value="perplexity" {{#if (eq connection.api "perplexity")}}selected{{/if}}>Perplexity</option>
+                <option value="groq" {{#if (eq connection.api "groq")}}selected{{/if}}>Groq</option>
+                <option value="01ai" {{#if (eq connection.api "01ai")}}selected{{/if}}>01.AI</option>
+                <option value="deepseek" {{#if (eq connection.api "deepseek")}}selected{{/if}}>DeepSeek</option>
+                <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
+                <option value="xai" {{#if (eq connection.api "xai")}}selected{{/if}}>xAI</option>
+                <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
+                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}}>Custom API</option>
+            </select>
+        </label>
+        
         <label for="stmb-profile-model">
             <h4>Model:</h4>
             <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Copy-paste the model name from connections panel in here, eg. gemini-2.5-pro, claude-4-sonnet, etc.">
         </label>
-        
+
         <label for="stmb-profile-temperature">
             <h4>Temperature (0.0 - 2.0):</h4>
             <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8.">
@@ -110,6 +129,7 @@ export async function editProfile(settings, refreshCallback) {
         const templateData = {
             name: profile.name,
             connection: connection,
+            api: 'openai',
             prompt: profile.prompt || '',
             preset: profile.preset || '',
             availableModels: availableModels,
@@ -178,13 +198,14 @@ export async function newProfile(settings, refreshCallback) {
         const availableModels = getAvailableModels();
         const apiInfo = getCurrentApiInfo();
 
-        // ADDED: Logic to handle title format for the template
+        // Logic to handle title format for the template
         const currentTitleFormat = settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
 
         const templateData = {
             name: defaultName,
             connection: { temperature: 0.7 },
+            api: 'openai',
             prompt: '',
             preset: '',
             availableModels: availableModels,
@@ -197,7 +218,7 @@ export async function newProfile(settings, refreshCallback) {
                 displayName: formatPresetDisplayName(presetName),
                 selected: false
             })),
-            // ADDED: Pass title format data to the template
+            // Pass title format data to the template
             titleFormat: currentTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
                 value: format,
@@ -445,6 +466,7 @@ function setupProfileEditEventHandlers(popupInstance) {
  */
 function buildProfileFromForm(popupElement, fallbackName) {
     const name = popupElement.querySelector('#stmb-profile-name')?.value.trim() || fallbackName;
+    const api = popupElement.querySelector('#stmb-profile-api')?.value || 'openai';
     const model = popupElement.querySelector('#stmb-profile-model')?.value.trim() || '';
     const temperatureInput = popupElement.querySelector('#stmb-profile-temperature')?.value;
     const temperature = parseTemperature(temperatureInput);
@@ -461,7 +483,9 @@ function buildProfileFromForm(popupElement, fallbackName) {
 
     const profile = {
         name: name,
-        connection: {},
+        connection: {
+            api: api,
+        },
         prompt: prompt,
         preset: preset,
         titleFormat: titleFormat 

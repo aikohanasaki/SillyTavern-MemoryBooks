@@ -14,6 +14,7 @@ import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, upd
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
 import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
+export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
@@ -30,7 +31,11 @@ const defaultSettings = {
     profiles: [
         {
             name: "Default",
-            connection: {},
+            connection: {
+            api: "openai", // Default to openai, but user may select/override!
+            model: "gpt-4.1", // default to gpt-4.1, but user may select/override!
+            temperature: 0.7, // Default temperature
+            },
             prompt: DEFAULT_PROMPT
         }
     ],
@@ -38,9 +43,94 @@ const defaultSettings = {
     migrationVersion: 2,
 }
 
+/**
+ * Switches SillyTavern API and model selectors to match the profile's provider/model id.
+ * Waits for proper propagation to ensure Generate will use the right API and model.
+ * @param {Object} profile - expects .connection.api/.connection.model
+ */
+export async function switchProviderAndModel(profile) {
+    const conn = profile.effectiveConnection || profile.connection;
+    if (!profile || !conn || !conn.model) return;
+    
+    // 1. Always force main_api to 'openai' for chat completions
+    if ($('#main_api').val() !== 'openai') {
+        $('#main_api').val('openai').trigger('change');
+        window.main_api = 'openai';
+        await new Promise(r => setTimeout(r, 300));
+    }
+
+    // 2. Determine the chat completion source
+    const apiToSource = {
+        openai: 'openai',
+        claude: 'claude',
+        google: 'makersuite',
+        makersuite: 'makersuite',
+        vertexai: 'vertexai',
+        openrouter: 'openrouter',
+        cohere: 'cohere',
+        perplexity: 'perplexity',
+        groq: 'groq',
+        "01ai": '01ai',
+        deepseek: 'deepseek',
+        mistralai: 'mistralai',
+        custom: 'custom',
+        aimlapi: 'aimlapi',
+        xai: 'xai',
+        pollinations: 'pollinations'
+    };
+    const completionSource = apiToSource[conn.api] || 'openai'; 
+
+    if ($('#chat_completion_source').val() !== completionSource) {
+        $('#chat_completion_source').val(completionSource).trigger('change');
+        await new Promise(r => setTimeout(r, 300));
+    }
+
+    const model = conn.model;
+
+    // 3. Set the model value in the appropriate selector
+    // (Allow time for the right selector to appear/populate)
+    const PROVIDER_TO_MODEL_SELECTOR = {
+        openai: "#model_openai_select",
+        claude: "#model_claude_select", 
+        google: "#model_google_select",
+        makersuite: "#model_google_select",
+        vertexai: "#model_vertexai_select",
+        openrouter: "#model_openrouter_select",
+        cohere: "#model_cohere_select",
+        perplexity: "#model_perplexity_select",
+        groq: "#model_groq_select",
+        "01ai": "#model_01ai_select",
+        deepseek: "#model_deepseek_select",
+        mistralai: "#model_mistralai_select",
+        custom: "#model_custom_select",
+        aimlapi: "#model_aimlapi_select",
+        xai: "#model_xai_select",
+        pollinations: "#model_pollinations_select"
+    };
+    const selector = PROVIDER_TO_MODEL_SELECTOR[conn.api] || '#model_openai_select';
+
+    // Wait for the select to exist and options to load (prevent race condition)
+    for (let tries = 0; tries < 10; tries++) {
+        const $select = $(selector);
+        if ($select.length && $select.find(`option[value='${model}']`).length) {
+            $select.val(model).trigger('change');
+            break;
+        }
+        await new Promise(r => setTimeout(r, 200));
+    }
+
+    // Also, for custom: update custom_model_id
+    if (completionSource === 'custom') {
+        $('#custom_model_id').val(model).trigger('input');
+    }
+
+    await new Promise(r => setTimeout(r, 150)); // brief pause for SillyTavern state update
+}
+
 // Current state variables
 let currentPopupInstance = null;
 let isProcessingMemory = false;
+let currentProfile = null;
 
 // MutationObserver for chat message monitoring
 let chatObserver = null;
@@ -88,6 +178,12 @@ function initializeChatObserver() {
     const chatContainer = document.getElementById('chat');
     if (!chatContainer) {
         throw new Error('STMemoryBooks: Chat container not found. SillyTavern DOM structure may have changed.');
+    }
+
+    // Ensure scene state is initialized before starting observer
+    const sceneState = getCurrentSceneState();
+    if (!sceneState || (sceneState.start === null && sceneState.end === null)) {
+        updateSceneStateCache();
     }
 
     chatObserver = new MutationObserver((mutations) => {
@@ -434,6 +530,7 @@ function isRetryableError(error) {
  */
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
+    currentProfile = profileSettings;
     const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
     
     try {
@@ -590,10 +687,12 @@ async function initiateMemoryCreation() {
         for (const mem of allMemories) {
             const existingRange = getRangeFromMemoryEntry(mem.entry); 
 
-            if (existingRange && newStart < existingRange.end && newEnd > existingRange.start) {
-                toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
-                isProcessingMemory = false;
-                return;
+            if (existingRange && existingRange.start !== null && existingRange.end !== null) { // Added null checks
+                if (newStart <= existingRange.end && newEnd >= existingRange.start) { // Fixed overlap logic
+                    toastr.error(`Scene overlaps with existing memory: "<strong>${mem.title}</strong>" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                    isProcessingMemory = false;
+                    return;
+                }
             }
         }
 
@@ -1012,6 +1111,23 @@ function setupEventListeners() {
         handleMessageDeletion(deletedId, settings);
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+    
+    eventSource.on(event_types.GENERATE_AFTER_DATA, (generate_data) => {
+        if (isProcessingMemory && currentProfile) { 
+            if (currentProfile.effectiveConnection) {
+                if (currentProfile.effectiveConnection.model) {
+                    generate_data.model = currentProfile.effectiveConnection.model;
+                    // Also for custom: set custom_model_id
+                    if (generate_data.chat_completion_source === 'custom') {
+                        generate_data.custom_model_id = currentProfile.effectiveConnection.model;
+                    }
+                }
+                if (typeof currentProfile.effectiveConnection.temperature === 'number') {
+                    generate_data.temperature = currentProfile.effectiveConnection.temperature;
+                }
+            }
+        }
+    });
     
     window.addEventListener('beforeunload', cleanupChatObserver);
     

@@ -3,6 +3,7 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
+import { switchProviderAndModel, currentProfile } from './index.js';
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -166,6 +167,8 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
+    await switchProviderAndModel(profile);
+
     try {
         console.log(`${MODULE_NAME}: Starting JSON-based memory generation...`);
 
@@ -214,32 +217,43 @@ async function generateMemoryWithAI(promptString, profile) {
  */
 async function applyProfileConnectionSettings(profile) {
     const originalSettings = {};
-    
-    if (!profile.effectiveConnection) {
-        return originalSettings; // No settings to apply
-    }
-    
+    if (!profile.effectiveConnection) return originalSettings;
+
     try {
-        // Import the oai_settings from the OpenAI module
-        
-        // Store and apply model override
+        originalSettings.chat_completion_source = oai_settings.chat_completion_source;
+        const apiToSource = {
+            openai: 'openai',
+            claude: 'claude',
+            google: 'makersuite',
+            makersuite: 'makersuite',
+            vertexai: 'vertexai',
+            openrouter: 'openrouter',
+            cohere: 'cohere',
+            perplexity: 'perplexity',
+            groq: 'groq',
+            "01ai": '01ai',
+            deepseek: 'deepseek',
+            mistralai: 'mistralai',
+            custom: 'custom',
+            aimlapi: 'aimlapi',
+            xai: 'xai',
+            pollinations: 'pollinations'
+        };
+        // Apply chat_completion_source
+        if (profile.connection && profile.connection.api) {
+            oai_settings.chat_completion_source = apiToSource[profile.connection.api] || 'openai';
+        }
         if (profile.effectiveConnection.model) {
             originalSettings.model = oai_settings.openai_model;
             oai_settings.openai_model = profile.effectiveConnection.model;
-            console.log(`${MODULE_NAME}: Temporarily switched to model: ${profile.effectiveConnection.model}`);
         }
-        
-        // Store and apply temperature override
         if (typeof profile.effectiveConnection.temperature === 'number') {
             originalSettings.temperature = oai_settings.temp_openai;
             oai_settings.temp_openai = profile.effectiveConnection.temperature;
-            console.log(`${MODULE_NAME}: Temporarily switched to temperature: ${profile.effectiveConnection.temperature}`);
         }
-        
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Failed to apply profile connection settings:`, error);
+    } catch (e) {
+        console.warn(`${MODULE_NAME}: Could not apply profile settings`, e);
     }
-    
     return originalSettings;
 }
 
@@ -250,6 +264,12 @@ async function applyProfileConnectionSettings(profile) {
  */
 async function restoreConnectionSettings(originalSettings) {
     try {
+        // Restore API provider if it was overridden
+        if (originalSettings.chat_completion_source !== undefined) {
+            oai_settings.chat_completion_source = originalSettings.chat_completion_source;
+            console.log(`${MODULE_NAME}: Restored original API provider: ${originalSettings.chat_completion_source}`);
+        }
+
         // Restore model if it was overridden
         if (originalSettings.model !== undefined) {
             oai_settings.openai_model = originalSettings.model;

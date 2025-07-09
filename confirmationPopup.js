@@ -165,9 +165,9 @@ async function handleAdvancedConfirmation(popup, settings) {
     const memoryCount = parseInt(popupElement.querySelector('#stmb-context-memories-advanced')?.value || 0);
     const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
     
-    // FIXED: Check if settings should be saved as new profile (when button text indicates it)
+    // Check if settings should be saved as new profile (when button text indicates it)
     const createButton = popup.dlg.querySelector('.popup_button_ok');
-    const shouldSaveProfile = createButton?.textContent.includes('Save Profile');
+    const shouldSaveProfile = createButton?.dataset.shouldSave === 'true';
     
     if (shouldSaveProfile) {
         const newProfileName = popupElement.querySelector('#stmb-new-profile-name-advanced').value.trim();
@@ -191,20 +191,23 @@ async function handleAdvancedConfirmation(popup, settings) {
     const profileSettings = {
         ...baseProfile,
         prompt: customPrompt || baseProfile.prompt,
-        effectiveConnection: {}
-    };
+        effectiveConnection: { ...baseProfile.connection } // Start with a copy of base connection
+};
     
     // Determine effective connection settings
     if (overrideSettings) {
         const currentSettings = getCurrentModelSettings();
+        const currentApiInfo = getCurrentApiInfo(); // Get current API info
+
+        if (currentApiInfo.api) {
+            profileSettings.effectiveConnection.api = currentApiInfo.api; // Override API
+        }
         if (currentSettings.model) {
-            profileSettings.effectiveConnection.model = currentSettings.model;
+            profileSettings.effectiveConnection.model = currentSettings.model; // Override Model
         }
         if (typeof currentSettings.temperature === 'number') {
-            profileSettings.effectiveConnection.temperature = currentSettings.temperature;
+            profileSettings.effectiveConnection.temperature = currentSettings.temperature; // Override Temp
         }
-    } else {
-        profileSettings.effectiveConnection = { ...baseProfile.connection };
     }
     
     return {
@@ -246,7 +249,7 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
         profileIndex: parseInt(popupElement.querySelector('#stmb-profile-select-advanced').value)
     };
     
-    // FIXED: Function to check if settings have changed and update button text
+    // Function to check if settings have changed and update button text
     const checkForChanges = () => {
         const currentPrompt = popupElement.querySelector('#stmb-effective-prompt-advanced').value;
         const currentMemoryCount = parseInt(popupElement.querySelector('#stmb-context-memories-advanced').value);
@@ -260,15 +263,17 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
         
         const saveSection = popupElement.querySelector('#stmb-save-profile-section-advanced');
         
-        // FIXED: Update button text based on whether settings have changed
+        // Update button text based on whether settings have changed
         const createButton = popup.dlg.querySelector('.popup_button_ok');
         if (createButton) {
             if (hasChanges) {
                 createButton.textContent = 'Save Profile & Create Memory';
                 createButton.title = 'Save the modified settings as a new profile and create the memory';
+                createButton.dataset.shouldSave = 'true'; 
             } else {
                 createButton.textContent = 'Create Memory';
                 createButton.title = 'Create memory using the selected profile settings';
+                createButton.dataset.shouldSave = 'false';
             }
         }
         
