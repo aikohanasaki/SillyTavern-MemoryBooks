@@ -725,7 +725,7 @@ async function initiateMemoryCreation() {
 async function showSettingsPopup() {
     const settings = initializeSettings();
     const sceneData = getSceneData();
-    
+    const selectedProfile = settings.profiles[settings.defaultProfile];    
     const templateData = {
         hasScene: !!sceneData,
         sceneData: sceneData,
@@ -736,14 +736,25 @@ async function showSettingsPopup() {
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
-            isDefault: index === settings.defaultProfile
+            isDefault: index === settings.defaultProfile,
+            name: profile.name + (index === settings.defaultProfile ? ' (Default)' : '')
         })),
         titleFormat: settings.titleFormat,
         titleFormats: getDefaultTitleFormats().map(format => ({
             value: format,
             isSelected: format === settings.titleFormat
         })),
-        showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat)
+        showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
+        selectedProfile: {
+            ...selectedProfile,
+            connection: {
+                api: selectedProfile.connection?.api || 'openai',
+                model: selectedProfile.connection?.model || 'Not Set',
+                temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
+            },
+            titleFormat: selectedProfile.titleFormat || settings.titleFormat,
+            effectivePrompt: getEffectivePrompt(selectedProfile)
+        }
     };
 
     const content = DOMPurify.sanitize(settingsTemplate(templateData));
@@ -854,12 +865,25 @@ function setupSettingsEventListeners() {
     
     // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
-        const newIndex = parseInt(e.target.value);
-        if (newIndex >= 0 && newIndex < settings.profiles.length) {
-            settings.defaultProfile = newIndex;
-            saveSettingsDebounced();
-        }
-    });
+    const newIndex = parseInt(e.target.value);
+    if (newIndex >= 0 && newIndex < settings.profiles.length) {
+        settings.defaultProfile = newIndex;
+        saveSettingsDebounced();
+
+        const selectedProfile = settings.profiles[newIndex];
+        const summaryApi = popupElement.querySelector('#stmb-summary-api');
+        const summaryModel = popupElement.querySelector('#stmb-summary-model');
+        const summaryTemp = popupElement.querySelector('#stmb-summary-temp');
+        const summaryTitle = popupElement.querySelector('#stmb-summary-title');
+        const summaryPrompt = popupElement.querySelector('#stmb-summary-prompt');
+
+        if (summaryApi) summaryApi.textContent = selectedProfile.connection?.api || 'openai';
+        if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
+        if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
+        if (summaryTitle) summaryTitle.textContent = selectedProfile.titleFormat || settings.titleFormat;
+        if (summaryPrompt) summaryPrompt.textContent = getEffectivePrompt(selectedProfile);
+    }
+});
 
     // Title format dropdown
     popupElement.querySelector('#stmb-title-format-select')?.addEventListener('change', (e) => {
@@ -960,7 +984,7 @@ function refreshPopupContent() {
     try {
         const settings = initializeSettings();
         const sceneData = getSceneData();
-        
+        const selectedProfile = settings.profiles[settings.defaultProfile];
         const templateData = {
             hasScene: !!sceneData,
             sceneData: sceneData,
@@ -971,14 +995,25 @@ function refreshPopupContent() {
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
-                isDefault: index === settings.defaultProfile
+                isDefault: index === settings.defaultProfile,
+                name: profile.name + (index === settings.defaultProfile ? ' (Default)' : '')
             })),
             titleFormat: settings.titleFormat,
             titleFormats: getDefaultTitleFormats().map(format => ({
                 value: format,
                 isSelected: format === settings.titleFormat
             })),
-            showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat)
+            showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
+            selectedProfile: {
+                ...selectedProfile,
+                connection: {
+                    api: selectedProfile.connection?.api || 'openai',
+                    model: selectedProfile.connection?.model || 'Not Set',
+                    temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
+                },
+                titleFormat: selectedProfile.titleFormat || settings.titleFormat,
+                effectivePrompt: getEffectivePrompt(selectedProfile)
+            }
         };
         
         const content = DOMPurify.sanitize(settingsTemplate(templateData));

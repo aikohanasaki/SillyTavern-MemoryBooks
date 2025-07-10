@@ -89,14 +89,27 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                 <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
                 {{/each}}
             </select>
+
+            <div id="stmb-profile-summary" class="padding10 marginBot10" style="background: #2a2a2a; border-radius: 5px; margin-top: 10px;">
+                <div class="marginBot5" style="font-weight: bold;">Profile Settings:</div>
+                <div style="font-size: 0.9em;">Provider: <span style="color: #4CAF50;" id="stmb-summary-api">{{selectedProfile.connection.api}}</span></div>
+                <div style="font-size: 0.9em;">Model: <span style="color: #4CAF50;" id="stmb-summary-model">{{selectedProfile.connection.model}}</span></div>
+                <div style="font-size: 0.9em;">Temperature: <span style="color: #4CAF50;" id="stmb-summary-temp">{{selectedProfile.connection.temperature}}</span></div>
+                <div style="font-size: 0.9em;">Title Format: <span style="color: #4CAF50;" id="stmb-summary-title">{{selectedProfile.titleFormat}}</span></div>
+                <details class="marginTop10">
+                    <summary style="cursor: pointer; color: #2196F3;">View Prompt</summary>
+                    <div class="padding10 marginTop5" style="background: #1a1a1a; border-radius: 5px; max-height: 150px; overflow-y: auto;">
+                        <pre><code id="stmb-summary-prompt">{{selectedProfile.effectivePrompt}}</code></pre>
+                    </div>
+                </details>
+            </div>
+
             <div class="flex gap5px marginTop5">
                 <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
                 <div class="menu_button" id="stmb-new-profile">New Profile</div>
                 <div class="menu_button" id="stmb-delete-profile">Delete Profile</div>
             </div>
-        </div>
-        
-        <div class="world_entry_form_control">
+
             <h5>Import/Export:</h5>
             <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
             <div class="flex gap5px">
