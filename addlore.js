@@ -19,6 +19,7 @@ const DEFAULT_TITLE_FORMATS = [
     '🧠 [000] ({{messages}} msgs)',
     '📚 Memory [000] - {{profile}} {{date}} {{time}}',
     '[000] - {{scene}}: {{title}}',
+    '[000] - {{title}} ({{scene}})',
     '[000] - {{title}}'
 ];
 
@@ -179,6 +180,8 @@ export function isMemoryEntry(entry) {
     return entry.stmemorybooks === true;
 }
 
+// In addlore.js
+
 /**
  * Generates a title for the lorebook entry using the configured format
  * @private
@@ -195,6 +198,7 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     const matches = title.match(numberingPattern);
     
     if (matches) {
+        // This logic is now fixed from our previous discussion.
         const nextNumber = getNextEntryNumber(lorebookData);
         
         matches.forEach(match => {
@@ -213,7 +217,9 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
         '{{user}}': metadata.userName || 'User',
         '{{messages}}': metadata.messageCount || 0,
         '{{profile}}': metadata.profileUsed || 'Unknown',
-        '{{date}}': new Date().toLocaleDateString(),
+        // --- CHANGE HERE ---
+        // Use moment.js to format the date as YYYY-MM-DD.
+        '{{date}}': moment().format('YYYY-MM-DD'),
         '{{time}}': new Date().toLocaleTimeString()
     };
     
@@ -228,6 +234,8 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     console.log(`${MODULE_NAME}: Generated entry title: "${title}"`);
     return title;
 }
+
+// In addlore.js
 
 /**
  * Gets the next available entry number for auto-numbering
@@ -253,23 +261,17 @@ function getNextEntryNumber(lorebookData) {
         }
     });
     
-    // Find the next available number
+    // If no numbers were found in any existing memories, start at 1.
     if (existingNumbers.length === 0) {
         return 1;
     }
     
-    existingNumbers.sort((a, b) => a - b);
-    let nextNumber = 1;
-    
-    for (const num of existingNumbers) {
-        if (num === nextNumber) {
-            nextNumber++;
-        } else if (num > nextNumber) {
-            break;
-        }
-    }
-    
-    return nextNumber;
+    // --- BUG FIX ---
+    // The old logic used a fragile loop that would break incorrectly.
+    // The new logic is simpler and more robust: find the highest existing
+    // number and add 1 to it. This guarantees sequential numbering.
+    const maxNumber = Math.max(...existingNumbers);
+    return maxNumber + 1;
 }
 
 /**

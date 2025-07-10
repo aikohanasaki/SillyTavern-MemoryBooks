@@ -1,4 +1,4 @@
-# 📕 Memory Books (A Silly Tavern Extension)
+# 📕 Memory Books (A SillyTavern Extension)
 
 A SillyTavern extension that allows you to automatically create memories from chat excerpts and send them to your designated lorebook. Mark scene start/end points in chat, extract messages between those points, and use AI to generate memories that are automatically added to your chat's bound lorebook.
 
