@@ -997,6 +997,9 @@ function refreshPopupContent() {
                     toEl.checked = fromEl.checked;
                 }
                 if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
+                    if (fromEl.id === 'stmb-profile-select') {
+                        return true;
+                    }
                     toEl.value = fromEl.value;
                 }
                 return true;
