@@ -106,6 +106,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
             <h5>Profile Actions:</h5>
             <div class="buttons_block marginTop5" style="justify-content: center;">
+                <div class="menu_button" id="stmb-set-default-profile">Set as Default</div>
                 <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
                 <div class="menu_button" id="stmb-new-profile">New Profile</div>
                 <div class="menu_button" id="stmb-delete-profile">Delete Profile</div>

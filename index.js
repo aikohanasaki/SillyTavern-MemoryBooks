@@ -812,6 +812,23 @@ function setupSettingsEventListeners() {
     const settings = initializeSettings();
     
     // Profile management buttons - use imported functions with proper error handling
+    popupElement.querySelector('#stmb-set-default-profile')?.addEventListener('click', () => {
+        const profileSelect = popupElement.querySelector('#stmb-profile-select');
+        const selectedIndex = parseInt(profileSelect.value);
+
+        // Don't do anything if they click it for the profile that's already the default.
+        if (selectedIndex === settings.defaultProfile) {
+            return;
+        }
+
+        settings.defaultProfile = selectedIndex;
+        saveSettingsDebounced();
+        toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
+
+        // Refresh the popup to update the "(Default)" text next to the profile names.
+        refreshPopupContent();
+    });
+
     popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', async () => {
         try {
             await editProfile(settings, refreshPopupContent);
@@ -863,12 +880,10 @@ function setupSettingsEventListeners() {
     });
     
     // Profile selection change
+    // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
     const newIndex = parseInt(e.target.value);
     if (newIndex >= 0 && newIndex < settings.profiles.length) {
-        settings.defaultProfile = newIndex;
-        saveSettingsDebounced();
-
         const selectedProfile = settings.profiles[newIndex];
         const summaryApi = popupElement.querySelector('#stmb-summary-api');
         const summaryModel = popupElement.querySelector('#stmb-summary-model');
