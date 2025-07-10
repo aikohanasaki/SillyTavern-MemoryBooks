@@ -32,7 +32,7 @@ const profileEditTemplate = Handlebars.compile(`
     </div>
     
     <div class="world_entry_form_control" style="margin-top: 5px;">
-        <h5>Model & Temperature Settings:</h5>
+        <h4>>Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10">
             These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.
         </div>
@@ -82,13 +82,13 @@ const profileEditTemplate = Handlebars.compile(`
         
         <label for="stmb-profile-prompt" id="stmb-custom-prompt-section" class="{{#if preset}}displayNone{{/if}}">
             <h4>Custom Memory Creation Prompt:</h4>
-            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter your custom prompt for memory creation">{{prompt}}</textarea>
             <h5>This prompt will be used to generate memories from chat scenes.</h5>
+            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter your custom prompt for memory creation">{{prompt}}</textarea>
         </label>
     </div>
 
     <div class="world_entry_form_control" style="margin-top: 5px;">
-        <h5>Memory Title Format:</h5>
+        <h4>Memory Title Format:</h4>
         <small class="opacity50p">Use [0], [00], etc. for numbering. Available tags: \\{{title}}, \\{{scene}}, \\{{char}}, \\{{user}}, \\{{messages}}, \\{{profile}}, \\{{date}}, \\{{time}}</small>
         <select id="stmb-profile-title-format-select" class="text_pole">
             {{#each titleFormats}}

@@ -7,7 +7,7 @@ export const settingsTemplate = Handlebars.compile(`
     <h3>📕 Memory Book Settings</h3>
         {{#if hasScene}}
         <div class="world_entry_form_control">
-            <h5>Current Scene:</h5>
+            <h4>Current Scene:</h4>
             <div class="mes_file_container marginBot10">
                 <pre class="stmb-scene-preview"><code>Start: Message #{{sceneData.sceneStart}} ({{sceneData.startSpeaker}})
 {{sceneData.startExcerpt}}
@@ -45,16 +45,17 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         <div class="world_entry_form_control">
             <label for="stmb-token-warning-threshold">
                 <h4>Token Warning Threshold:</h4>
+                <h5>Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</h5>
                 <input type="number" id="stmb-token-warning-threshold" class="text_pole" 
                     value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
                     placeholder="30000">
-                <h5>Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</h5>
             </label>
         </div>
 
         <div class="world_entry_form_control">
             <label for="stmb-default-memory-count">
                 <h4>Default Previous Memories Count:</h4>
+                <h5>Default number of previous memories to include as context when creating new memories.</h5>
                 <select id="stmb-default-memory-count" class="text_pole">
                     <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}}>None (0 memories)</option>
                     <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}}>Last 1 memory</option>
@@ -65,12 +66,11 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                     <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}}>Last 6 memories</option>
                     <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}}>Last 7 memories</option>
                 </select>
-                <h5>Default number of previous memories to include as context when creating new memories.</h5>
             </label>
         </div>
 
         <div class="world_entry_form_control">
-            <h5>Memory Title Format:</h5>
+            <h4>Memory Title Format:</h4>
             <select id="stmb-title-format-select" class="text_pole">
                 {{#each titleFormats}}
                 <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
@@ -83,7 +83,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
         
         <div class="world_entry_form_control">
-            <h5>Memory Profiles:</h5>
+            <h4>Memory Profiles:</h4>
             <select id="stmb-profile-select" class="text_pole">
                 {{#each profiles}}
                 <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
@@ -104,7 +104,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                 </details>
             </div>
 
-            <h5>Profile Actions:</h5>
+            <h4>Profile Actions:</h4>
             <div class="buttons_block marginTop5" style="justify-content: center;">
                 <div class="menu_button" id="stmb-set-default-profile">Set as Default</div>
                 <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
@@ -112,7 +112,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                 <div class="menu_button" id="stmb-delete-profile">Delete Profile</div>
             </div>
 
-            <h5>Import/Export:</h5>
+            <h4>Import/Export Profiles:</h4>
             <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
             <div class="buttons_block marginTop5" style="justify-content: center;">
                 <div class="menu_button" id="stmb-export-profiles">Export Profiles</div>
@@ -127,7 +127,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 export const simpleConfirmationTemplate = Handlebars.compile(`
     <h3>Create Memory</h3>
     <div class="world_entry_form_control">
-        <h5>Scene Preview:</h5>
+        <h4>Scene Preview:</h4>
         <div class="mes_file_container" style="margin-bottom: 15px;">
             <pre class="stmb-scene-preview"><code>Start: Message #{{sceneStart}} ({{startSpeaker}})
 {{startExcerpt}}
@@ -173,7 +173,7 @@ Messages: {{messageCount}} | Estimated tokens: {{estimatedTokens}}</code></pre>
 export const advancedOptionsTemplate = Handlebars.compile(`
     <h3>Advanced Memory Options</h3>
     <div class="world_entry_form_control">
-        <h5>Scene Information:</h5>
+        <h4>Scene Information:</h4>
         <div class="padding10" style="background: #1a1a1a; border-radius: 5px; margin-bottom: 15px;">
             <div style="font-size: 0.9em;">Messages {{sceneStart}}-{{sceneEnd}} ({{messageCount}} total)</div>
             <div style="font-size: 0.9em;">Base tokens: {{estimatedTokens}}</div>
@@ -184,26 +184,34 @@ export const advancedOptionsTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <label for="stmb-profile-select-advanced">
             <h4>Profile:</h4>
+            <h5>Change the profile to use different base settings.</h5>
             <select id="stmb-profile-select-advanced" class="text_pole">
                 {{#each profiles}}
                 <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
                 {{/each}}
             </select>
-            <h5>Change the profile to use different base settings.</h5>
         </label>
     </div>
 
     <div class="world_entry_form_control">
         <label for="stmb-effective-prompt-advanced">
             <h4>Memory Creation Prompt:</h4>
-            <textarea id="stmb-effective-prompt-advanced" class="text_pole textarea_compact" rows="6" placeholder="Memory creation prompt">{{effectivePrompt}}</textarea>
             <h5>Customize the prompt used to generate this memory.</h5>
+            <textarea id="stmb-effective-prompt-advanced" class="text_pole textarea_compact" rows="6" placeholder="Memory creation prompt">{{effectivePrompt}}</textarea>
         </label>
     </div>
 
     <div class="world_entry_form_control">
         <label for="stmb-context-memories-advanced">
             <h4>Include Previous Memories as Context:</h4>
+            <h5>
+                Previous memories provide context for better continuity.
+                {{#if availableMemories}}
+                <br>Found {{availableMemories}} existing {{#if (eq availableMemories 1)}}memory{{else}}memories{{/if}} in lorebook.
+                {{else}}
+                <br>No existing memories found in lorebook.
+                {{/if}}
+            </h5>
             <select id="stmb-context-memories-advanced" class="text_pole">
                 <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}}>None (0 memories)</option>
                 <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}}>Last 1 memory</option>
@@ -214,19 +222,11 @@ export const advancedOptionsTemplate = Handlebars.compile(`
                 <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}}>Last 6 memories</option>
                 <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}}>Last 7 memories</option>
             </select>
-            <h5>
-                Previous memories provide context for better continuity.
-                {{#if availableMemories}}
-                <br>Found {{availableMemories}} existing {{#if (eq availableMemories 1)}}memory{{else}}memories{{/if}} in lorebook.
-                {{else}}
-                <br>No existing memories found in lorebook.
-                {{/if}}
-            </h5>
         </label>
     </div>
 
     <div class="world_entry_form_control">
-        <h5>API Override Settings:</h5>
+        <h4>API Override Settings:</h4>
         
         <div class="padding10 marginBot10" style="background: #2a2a2a; border-radius: 5px;">
             <div class="marginBot5" style="font-weight: bold;">Profile Settings:</div>
@@ -251,11 +251,11 @@ export const advancedOptionsTemplate = Handlebars.compile(`
     </div>
 
     <div class="world_entry_form_control displayNone" id="stmb-save-profile-section-advanced">
-        <h5>Save as New Profile:</h5>
+        <h4>Save as New Profile:</h4>
         <label for="stmb-new-profile-name-advanced">
             <h4>Profile Name:</h4>
-            <input type="text" id="stmb-new-profile-name-advanced" class="text_pole" placeholder="Enter new profile name" value="{{suggestedProfileName}}">
             <h5>Your current settings differ from the selected profile. Save them as a new profile.</h5>
+            <input type="text" id="stmb-new-profile-name-advanced" class="text_pole" placeholder="Enter new profile name" value="{{suggestedProfileName}}">
         </label>
     </div>
 

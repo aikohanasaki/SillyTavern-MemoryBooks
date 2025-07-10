@@ -8,14 +8,6 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **API Access**: Compatible AI engine (OpenAI, Claude, etc.) configured in SillyTavern
 - **Scene Selection**: Start and end markers must be set with valid range (start < end)
 
-## Recommended Memory Settings (Customizable)
-
-- **Insertion Strategy**: 🔗 Vectorized
-- **Position**: ⬆️ Char (Before Character Definitions)
-- **Order**: set to the same as the memory number
-- **Recursion**: ✔️ Prevent further recursion (will not activate others)
-- **Delay**: ✔️ Delay until recursion (can only be activated on recursive checking)
-
 > ## Notes
 > - This extension ONLY SUPPORTS chat completion APIs. (Sorry, Kobold, Textgen... I don't use you so I have no way to test you.) 
 > - Chat messages are NOT hidden after memory creation. You must still use /hide after memories are created. This was an intentional decision to leave some chat history for generation overlap.
@@ -53,7 +45,17 @@ After selecting a character and chat, there may be a slight delay before the ext
 ### Method One: Visual Markers
 
 1. **Mark Your Scene**: Click the chevron-right (►) button on the first message of your scene, then click the chevron-left (◄) button on the last message of the scene.
+
+![Inactive start/end buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-off.png) <sub>Inactive start/end buttons</sub>
+![Start button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png) <sub>Start button selected</sub>
+![Mid-scene indicator](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-mid.png) <sub>Mid-scene indicator</sub>
+![End button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png) <sub>End button selected</sub>
+![Glow effect on messages included in scene (ready for memory creation)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png) <sub>Glow effect on messages included in scene (ready for memory creation)</sub>
+
 2. **Open Settings**: Click "Memory Settings" in the Extensions menu  
+
+![Memory Settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
 3. **Create Memory**: Click the "🧠 Create Memory" button or use `/creatememory`
 4. **Choose Options**: Select your preferred preset and choose 0-7 previous memories to include as context (helps AI understand ongoing storylines)
 5. **Confirm**: The pop-up will confirm which messages and context memories to use, click OK to confirm
@@ -95,6 +97,14 @@ After selecting a character and chat, there may be a slight delay before the ext
   - **{{date}}**: The current date
   - **{{time}}**: The current time
 
+## Recommended Memory Settings (Customizable)
+
+- **Insertion Strategy**: 🔗 Vectorized
+- **Position**: ⬆️ Char (Before Character Definitions)
+- **Order**: set to the same as the memory number
+- **Recursion**: ✔️ Prevent further recursion (will not activate others)
+- **Delay**: ✔️ Delay until recursion (can only be activated on recursive checking)
+
 ## Visual Feedback
 
 - **Active markers (.on)**: Glowing effect with theme quote color and subtle shadow
@@ -122,28 +132,32 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 
 ## Settings
 
+![Program Settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+
 ### Module Settings
 - **Always Use Default**: Skip confirmation dialog and use default profile
 - **Show Notifications**: Display success/error notifications
 - **Refresh Editor**: Refresh lorebook editor after adding memories
 - **Token Warning Threshold**: Show confirmation dialog when estimated tokens exceed this value (default: 30,000)
+- **Default Previous Memories Count**: How many previous memories to include (helps AI generate better summaries with context)
 
 ### Memory Generation Profile Settings
 
-![Memory Generation Profile Setup](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/customengine.png)
+![Memory Generation Profile Setup](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 - **Name**: Display name for the profile
 - **Model**: AI model
 - **Temperature**: Response randomness 
 - **Preset**: Select from built-in presets or use custom prompt
+- **Title**: Title Format
+- **Lorebook Settings**: Lorebook entry settings (or accept recommended values)
 
 ## Advanced Features
 
 - **Profile Management**: Create custom profiles with specific models and temperature settings
 - **Token Warnings**: Automatic alerts for large scenes that may take time to process  
-- **Auto-Keywords**: AI extracts keywords from responses, with fallback generation
+- **Auto-Keywords**: AI extracts keywords from responses
 - **Import/Export**: Share profiles between installations
-- **Scene Validation**: Automatic cleanup of invalid marker ranges
 - **Scene Overlap Detection**: Detects if there is scene overlap (chat messages in more than one memory)
 
 ![Scene overlap detection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
