@@ -1033,8 +1033,24 @@ function refreshPopupContent() {
         const content = DOMPurify.sanitize(settingsTemplate(templateData));
         const newContent = content;
         
-        const tempContainer = document.createElement('div');
-        tempContainer.innerHTML = newContent;
+        morphdom(currentPopupInstance.content, newContent, {
+            onBeforeElUpdated: function(fromEl, toEl) {
+                // This part is important and should be kept as-is
+                if (fromEl.isEqualNode(toEl)) {
+                    return false;
+                }
+                if (fromEl.type === 'checkbox' || fromEl.type === 'radio') {
+                    toEl.checked = fromEl.checked;
+                }
+                if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
+                    if (fromEl.id === 'stmb-profile-select') {
+                        return true;
+                    }
+                    toEl.value = fromEl.value;
+                }
+                return true;
+            }
+        });
         
         morphdom(currentPopupInstance.content, tempContainer, {
             onBeforeElUpdated: function(fromEl, toEl) {
