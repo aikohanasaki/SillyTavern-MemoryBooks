@@ -158,8 +158,7 @@ const profileEditTemplate = Handlebars.compile(`
 /**
  * Edit an existing profile
  */
-export async function editProfile(settings, refreshCallback) {
-    const profileIndex = settings.defaultProfile;
+export async function editProfile(settings, profileIndex, refreshCallback) {
     const profile = settings.profiles[profileIndex];
     
     if (!profile) {
@@ -335,15 +334,15 @@ export async function newProfile(settings, refreshCallback) {
 /**
  * Delete an existing profile
  * @param {Object} settings - Extension settings
+ * @param {number} profileIndex - The index of the profile to delete
  * @param {Function} refreshCallback - Function to refresh UI after changes
  */
-export async function deleteProfile(settings, refreshCallback) {
+export async function deleteProfile(settings, profileIndex, refreshCallback) {
     if (settings.profiles.length <= 1) {
         toastr.error('Cannot delete the last profile', 'STMemoryBooks');
         return;
     }
     
-    const profileIndex = settings.defaultProfile;
     const profile = settings.profiles[profileIndex];
     
     try {
@@ -352,8 +351,16 @@ export async function deleteProfile(settings, refreshCallback) {
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const deletedName = profile.name;
             settings.profiles.splice(profileIndex, 1);
-            settings.defaultProfile = 0;
             
+            // If we deleted the profile that was the default, reset default to the first profile.
+            if (settings.defaultProfile === profileIndex) {
+                settings.defaultProfile = 0;
+            } 
+            // If we deleted a profile that came *before* the default one, its index has shifted.
+            else if (settings.defaultProfile > profileIndex) {
+                settings.defaultProfile--;
+            }
+
             saveSettingsDebounced();
             
             if (refreshCallback) refreshCallback();

@@ -824,14 +824,14 @@ function setupSettingsEventListeners() {
         settings.defaultProfile = selectedIndex;
         saveSettingsDebounced();
         toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
-
-        // Refresh the popup to update the "(Default)" text next to the profile names.
         refreshPopupContent();
     });
 
     popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', async () => {
         try {
-            await editProfile(settings, refreshPopupContent);
+            const profileSelect = popupElement.querySelector('#stmb-profile-select');
+            const selectedIndex = parseInt(profileSelect.value);
+            await editProfile(settings, selectedIndex, refreshPopupContent);
         } catch (error) {
             console.error(`${MODULE_NAME}: Error in edit profile:`, error);
             toastr.error('Failed to edit profile', 'STMemoryBooks');
@@ -849,14 +849,15 @@ function setupSettingsEventListeners() {
     
     popupElement.querySelector('#stmb-delete-profile')?.addEventListener('click', async () => {
         try {
-            await deleteProfile(settings, refreshPopupContent);
+            const profileSelect = popupElement.querySelector('#stmb-profile-select');
+            const selectedIndex = parseInt(profileSelect.value);
+            await deleteProfile(settings, selectedIndex, refreshPopupContent);
         } catch (error) {
             console.error(`${MODULE_NAME}: Error in delete profile:`, error);
             toastr.error('Failed to delete profile', 'STMemoryBooks');
         }
     });
     
-    // Import/Export buttons - use imported functions with better error handling
     popupElement.querySelector('#stmb-export-profiles')?.addEventListener('click', () => {
         try {
             exportProfiles(settings);
@@ -1060,11 +1061,7 @@ function refreshPopupContent() {
             'vertical_scrolling_dialogue_popup'
         ];
 
-        requiredClasses.forEach(className => {
-            if (!currentPopupInstance.dlg.classList.contains(className)) {
-                currentPopupInstance.dlg.classList.add(className);
-            }
-        });
+        currentPopupInstance.dlg.classList.add(...requiredClasses);
         
         setupSettingsEventListeners();
         console.log('STMemoryBooks: Popup content refreshed with preserved properties');

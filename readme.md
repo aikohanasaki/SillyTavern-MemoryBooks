@@ -45,12 +45,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 ### Method One: Visual Markers
 
 1. **Mark Your Scene**: Click the chevron-right (►) button on the first message of your scene, then click the chevron-left (◄) button on the last message of the scene.
-
-![Inactive start/end buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-off.png) <sub>Inactive start/end buttons</sub>
-![Start button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png) <sub>Start button selected</sub>
-![Mid-scene indicator](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-mid.png) <sub>Mid-scene indicator</sub>
-![End button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png) <sub>End button selected</sub>
-![Glow effect on messages included in scene (ready for memory creation)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png) <sub>Glow effect on messages included in scene (ready for memory creation)</sub>
+![Inactive start/end buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-off.png)
 
 2. **Open Settings**: Click "Memory Settings" in the Extensions menu  
 
@@ -108,7 +103,12 @@ After selecting a character and chat, there may be a slight delay before the ext
 ## Visual Feedback
 
 - **Active markers (.on)**: Glowing effect with theme quote color and subtle shadow
+![Start button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png) <sub>Start button selected</sub>
+![Glow effect on messages included in scene (ready for memory creation)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png) <sub>Glow effect on messages included in scene (ready for memory creation)</sub>
+![End button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png) <sub>End button selected</sub>
+
 - **Valid selection points**: Emphasis color with animated pulse effect to guide selection
+![Mid-scene indicator](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-mid.png) <sub>Mid-scene indicator</sub>
 - **In-scene range**: Subtle highlighting for all messages within selected scene
 - **Hover effects**: Scale transforms and color transitions for better interactivity
 - **Processing state**: Diagonal stripe animation when creating memories
@@ -140,6 +140,7 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 - **Refresh Editor**: Refresh lorebook editor after adding memories
 - **Token Warning Threshold**: Show confirmation dialog when estimated tokens exceed this value (default: 30,000)
 - **Default Previous Memories Count**: How many previous memories to include (helps AI generate better summaries with context)
+- **Memory Title Format**: Select a preset or create a custom format
 
 ### Memory Generation Profile Settings
 
