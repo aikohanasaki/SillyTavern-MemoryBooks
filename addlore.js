@@ -54,7 +54,10 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         }
         
         const settings = extension_settings.STMemoryBooks || {};
-        const titleFormat = memoryResult.titleFormat || settings.titleFormat || DEFAULT_TITLE_FORMATS[0];
+        let titleFormat = memoryResult.titleFormat;
+        if (!titleFormat) {
+            titleFormat = settings.titleFormat || '[000] - {{title}}';
+        }
         const refreshEditor = settings.moduleSettings?.refreshEditor !== false;
         
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
@@ -217,10 +220,8 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
         '{{user}}': metadata.userName || 'User',
         '{{messages}}': metadata.messageCount || 0,
         '{{profile}}': metadata.profileUsed || 'Unknown',
-        // --- CHANGE HERE ---
-        // Use moment.js to format the date as YYYY-MM-DD.
         '{{date}}': moment().format('YYYY-MM-DD'),
-        '{{time}}': new Date().toLocaleTimeString()
+        '{{time}}': moment().format('HH:mm:ss')
     };
     
     // Apply substitutions

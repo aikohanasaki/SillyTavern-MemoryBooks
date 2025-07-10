@@ -477,7 +477,7 @@ export function createProfileObject(data = {}) {
         },
         prompt: (data.prompt || '').trim(),
         preset: data.preset || '',
-        titleFormat: data.titleFormat || '[000] - {{title}}'
+        titleFormat: data.titleFormat
     };
 
     const model = (data.model || '').trim();
