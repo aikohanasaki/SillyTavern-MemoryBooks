@@ -187,12 +187,6 @@ The extension uses SillyTavern's CSS variables for seamless theme integration:
 
 ![STMemoryBooks in use](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
-![Default lorebook entry settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/default.png)
-
-![Main program window (no scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/mainwindow.png)
-
-![Main program window (scene selected)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Mainwindowwithscene.png)
-
 ---
 
 *Made with love, Claude Sonnet 4, and Gemini 2.5 Pro* 🤖
