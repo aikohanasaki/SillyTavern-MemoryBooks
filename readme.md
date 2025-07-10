@@ -45,8 +45,9 @@ After selecting a character and chat, there may be a slight delay before the ext
 
 ### Method One: Visual Markers
 
-1. **Mark Your Scene**: Click the chevron-right (►) button on the first message of your scene, then click the chevron-left (◄) button on the last message of the scene.
 ![Inactive start/end buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-off.png)
+
+1. **Mark Your Scene**: Click the chevron-right (►) button on the first message of your scene, then click the chevron-left (◄) button on the last message of the scene.
 
 2. **Open Settings**: Click "Memory Settings" in the Extensions menu  
 
@@ -66,7 +67,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 ### Available Slash Commands
 
 - `/creatememory` - Create memory from currently marked scene
-- `/scenememory 10-15` - Mark messages 10-15 as scene and create memory
+- `/scenememory 10-15` - Mark messages 10-15 as scene and create memory 
 
 ## Customizable Details
 
@@ -104,11 +105,15 @@ After selecting a character and chat, there may be a slight delay before the ext
 ## Visual Feedback
 
 - **Active markers (.on)**: Glowing effect with theme quote color and subtle shadow
+
 ![Start button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png) <sub>Start button selected</sub>
+
 ![Glow effect on messages included in scene (ready for memory creation)](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png) <sub>Glow effect on messages included in scene (ready for memory creation)</sub>
+
 ![End button selected](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png) <sub>End button selected</sub>
 
 - **Valid selection points**: Emphasis color with animated pulse effect to guide selection
+
 ![Mid-scene indicator](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-mid.png) <sub>Mid-scene indicator</sub>
 - **In-scene range**: Subtle highlighting for all messages within selected scene
 - **Hover effects**: Scale transforms and color transitions for better interactivity
