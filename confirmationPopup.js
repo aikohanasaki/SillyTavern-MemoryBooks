@@ -4,7 +4,7 @@ import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
 import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
-import { getCurrentModelSettings, getEffectivePrompt, getPresetPrompt, generateSafeProfileName } from './utils.js';
+import { getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, getPresetPrompt, generateSafeProfileName } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 
