@@ -8,9 +8,8 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **API Access**: Compatible AI engine (OpenAI, Claude, etc.) configured in SillyTavern
 - **Scene Selection**: Start and end markers must be set with valid range (start < end)
 
-## Memory Settings
+## Recommended Memory Settings (Customizable)
 
-The following settings are hard-coded. (Maybe in a future update I will put user-defined settings in.)
 - **Insertion Strategy**: 🔗 Vectorized
 - **Position**: ⬆️ Char (Before Character Definitions)
 - **Order**: set to the same as the memory number
