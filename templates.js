@@ -86,7 +86,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <h5>Memory Profiles:</h5>
             <select id="stmb-profile-select" class="text_pole">
                 {{#each profiles}}
-                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}</option>
+                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
                 {{/each}}
             </select>
             <div class="flex gap5px marginTop5">
@@ -171,7 +171,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
             <h4>Profile:</h4>
             <select id="stmb-profile-select-advanced" class="text_pole">
                 {{#each profiles}}
-                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}</option>
+                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
                 {{/each}}
             </select>
             <h5>Change the profile to use different base settings.</h5>
