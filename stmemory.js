@@ -1,6 +1,6 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { switchProviderAndModel, currentProfile } from './index.js';
@@ -54,263 +54,6 @@ async function waitForCharacterData(maxWaitMs = 5000, checkIntervalMs = 250) {
     
     console.warn(`${MODULE_NAME}: Character data did not become available within ${maxWaitMs}ms timeout`);
     return false;
-}
-
-/**
- * Creates a memory from a compiled scene using AI with structured JSON output.
- * This is the main entry point for this module.
- *
- * @param {Object} compiledScene - Scene data from chatcompile.js
- * @param {Object} profile - The user-selected memory generation profile from settings
- * @param {Object} options - Additional generation options
- * @param {number} options.tokenWarningThreshold - Token threshold for warnings (default: 30000)
- * @returns {Promise<Object>} The generated memory result, ready for lorebook insertion
- * @throws {TokenWarningError} If the estimated token count exceeds the warning threshold
- * @throws {InvalidProfileError} If the provided profile is incomplete
- * @throws {AIResponseError} If the AI fails to generate a valid response
- * @throws {Error} For other general failures
- */
-export async function createMemory(compiledScene, profile, options = {}) {
-    console.log(`${MODULE_NAME}: Starting JSON-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
-    
-    try {
-        // 1. Validate inputs
-        validateInputs(compiledScene, profile);
-        
-        // 2. Build the complete prompt for the AI
-        const promptString = await buildPrompt(compiledScene, profile);
-        
-        // 3. Token estimation and warning flow
-        const tokenEstimate = await estimateTokenUsage(promptString);
-        console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total}`);
-        
-        const tokenWarningThreshold = options.tokenWarningThreshold || 30000;
-        if (tokenEstimate.total > tokenWarningThreshold) {
-            throw new TokenWarningError(
-                'Token warning threshold exceeded.',
-                tokenEstimate.total
-            );
-        }
-        
-        // 4. Generate memory using SillyTavern's Generate function with JSON output
-        const response = await generateMemoryWithAI(promptString, profile);
-        
-        // 5. Process the structured JSON result 
-        const processedMemory = processJsonResult(response, compiledScene);
-        
-        // 6. Create the final memory object
-        const memoryResult = {
-            content: processedMemory.content,
-            extractedTitle: processedMemory.extractedTitle,
-            metadata: {
-                sceneRange: `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`,
-                messageCount: compiledScene.metadata.messageCount,
-                characterName: compiledScene.metadata.characterName,
-                userName: compiledScene.metadata.userName,
-                chatId: compiledScene.metadata.chatId,
-                createdAt: new Date().toISOString(),
-                profileUsed: profile.name,
-                presetUsed: profile.preset || 'custom',
-                tokenUsage: tokenEstimate,
-                generationMethod: 'json-structured-output',
-                version: '2.0'
-            },
-            suggestedKeys: processedMemory.suggestedKeys,
-            titleFormat: profile.titleFormat || '[000] - {{title}}',
-            lorebookSettings: {
-                constVectMode: profile.constVectMode,
-                position: profile.position,
-                orderMode: profile.orderMode,
-                orderValue: profile.orderValue,
-                preventRecursion: profile.preventRecursion,
-                delayUntilRecursion: profile.delayUntilRecursion,
-            },
-            lorebook: {
-                content: processedMemory.content,
-                comment: `Auto-generated memory from messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}. Profile: ${profile.name}.`,
-                key: processedMemory.suggestedKeys || [],
-                keysecondary: [],
-                selective: true,
-                constant: false,
-                order: 100,
-                position: 'before_char',
-                disable: false,
-                addMemo: true,
-                excludeRecursion: false,
-                delayUntilRecursion: false,
-                probability: 100,
-                useProbability: false
-            }
-        };
-        
-        console.log(`${MODULE_NAME}: JSON-based memory creation completed successfully`);
-        return memoryResult;
-        
-    } catch (error) {
-        // Re-throw specific errors to be handled by the UI layer
-        if (error instanceof TokenWarningError || error instanceof AIResponseError || error instanceof InvalidProfileError) {
-            throw error;
-        }
-        // Wrap generic errors
-        console.error(`${MODULE_NAME}: An unexpected error occurred during memory creation:`, error);
-        throw new Error(`Memory creation failed: ${error.message}`);
-    }
-}
-
-/**
- * Generates memory using AI with structured JSON output instead of tool calling.
- * This is much more reliable across different models and APIs.
- * 
- * @private
- * @param {string} promptString - The full prompt for the AI
- * @param {Object} profile - The user-selected profile containing connection settings
- * @returns {Promise<Object>} The structured memory result from JSON parsing
- * @throws {AIResponseError} If the AI generation fails or doesn't return valid JSON
- */
-async function generateMemoryWithAI(promptString, profile) {
-    // Wait for character data to be available before proceeding
-    const characterDataReady = await waitForCharacterData();
-    if (!characterDataReady) {
-        throw new AIResponseError(
-            'Character data is not available. This may indicate that SillyTavern is still loading. ' +
-            'Please wait a moment and try again.'
-        );
-    }
-
-    await switchProviderAndModel(profile);
-
-    try {
-        console.log(`${MODULE_NAME}: Starting JSON-based memory generation...`);
-
-        // Temporarily override connection settings if profile specifies them
-        const originalSettings = await applyProfileConnectionSettings(profile);
-        
-        try {
-            // Use SillyTavern's standard Generate function
-            const aiResponse = await Generate('quiet', { 
-                quiet_prompt: promptString, 
-                skipWIAN: true,  // Clean context without World Info, Author's Note, etc.
-                stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:'] // Stop at common delimiters
-            });
-
-            // Parse the JSON response
-            const jsonResult = parseAIJsonResponse(aiResponse);
-            
-            return {
-                content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
-                title: jsonResult.title || 'Memory',
-                keywords: jsonResult.keywords || [],
-                profile: profile
-            };
-
-        } finally {
-            // Always restore original settings
-            await restoreConnectionSettings(originalSettings);
-        }
-
-    } catch (error) {
-        console.error(`${MODULE_NAME}: JSON-based memory generation failed:`, error);
-        
-        if (error instanceof AIResponseError) {
-            throw error;
-        } else {
-            throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
-        }
-    }
-}
-
-/**
- * Applies profile connection settings temporarily if they exist
- * @private
- * @param {Object} profile - Profile with connection settings
- * @returns {Promise<Object>} Original settings to restore later
- */
-async function applyProfileConnectionSettings(profile) {
-    const originalSettings = {};
-    if (!profile.effectiveConnection) return originalSettings;
-
-    try {
-        originalSettings.chat_completion_source = oai_settings.chat_completion_source;
-        const apiToSource = {
-            openai: 'openai',
-            claude: 'claude',
-            google: 'makersuite',
-            makersuite: 'makersuite',
-            vertexai: 'vertexai',
-            openrouter: 'openrouter',
-            cohere: 'cohere',
-            perplexity: 'perplexity',
-            groq: 'groq',
-            "01ai": '01ai',
-            deepseek: 'deepseek',
-            mistralai: 'mistralai',
-            custom: 'custom',
-            aimlapi: 'aimlapi',
-            xai: 'xai',
-            pollinations: 'pollinations'
-        };
-        // Apply chat_completion_source
-        if (profile.connection && profile.connection.api) {
-            oai_settings.chat_completion_source = apiToSource[profile.connection.api] || 'openai';
-        }
-        if (profile.effectiveConnection.model) {
-            originalSettings.model = oai_settings.openai_model;
-            oai_settings.openai_model = profile.effectiveConnection.model;
-        }
-        if (typeof profile.effectiveConnection.temperature === 'number') {
-            originalSettings.temperature = oai_settings.temp_openai;
-            oai_settings.temp_openai = profile.effectiveConnection.temperature;
-        }
-    } catch (e) {
-        console.warn(`${MODULE_NAME}: Could not apply profile settings`, e);
-    }
-    return originalSettings;
-}
-
-/**
- * Restores original connection settings
- * @private
- * @param {Object} originalSettings - Settings to restore
- */
-async function restoreConnectionSettings(originalSettings) {
-    try {
-        // Restore API provider if it was overridden
-        if (originalSettings.chat_completion_source !== undefined) {
-            oai_settings.chat_completion_source = originalSettings.chat_completion_source;
-            console.log(`${MODULE_NAME}: Restored original API provider: ${originalSettings.chat_completion_source}`);
-        }
-
-        // Restore model if it was overridden
-        if (originalSettings.model !== undefined) {
-            oai_settings.openai_model = originalSettings.model;
-            console.log(`${MODULE_NAME}: Restored original model: ${originalSettings.model}`);
-        }
-        
-        // Restore temperature if it was overridden
-        if (originalSettings.temperature !== undefined) {
-            const temp = originalSettings.temperature;
-            
-            // 1. Restore the underlying settings object (the "engine")
-            oai_settings.temp_openai = temp;
-            
-            // 2. Get the UI elements (the "dashboard")
-            const $tempSlider = $(SELECTORS.tempOpenai);
-            const $tempCounter = $(SELECTORS.tempCounterOpenai);
-            
-            // 3. Update the UI elements with the original temperature
-            if ($tempSlider.length) {
-                $tempSlider.val(temp).trigger('input');
-            }
-            if ($tempCounter.length) {
-                $tempCounter.val(temp);
-            }
-
-            console.log(`${MODULE_NAME}: Restored original temperature to ${temp} in settings and UI`);
-        }
-        
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Failed to restore connection settings:`, error);
-    }
 }
 
 /**
@@ -382,6 +125,236 @@ function parseAIJsonResponse(aiResponse) {
             `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
             `Parse error: ${parseError.message}`
         );
+    }
+}
+
+/**
+ * Read live state of connection settings and save them for later restoration.
+ * @private
+ * @returns {Promise<Object>} An object containing the original settings.
+ */
+async function saveCurrentConnectionSettings() {
+    try {
+        const apiInfo = getCurrentApiInfo();
+        const modelSettings = getCurrentModelSettings();
+        
+        const originalSettings = {
+            apiSource: apiInfo.completionSource,
+            model: modelSettings.model,
+            temperature: modelSettings.temperature,
+        };
+        
+        console.log(`${MODULE_NAME}: Saved original connection settings:`, originalSettings);
+        return originalSettings;
+    } catch (e) {
+        console.warn(`${MODULE_NAME}: Could not save current settings`, e);
+        return {}; // Return empty object on failure
+    }
+}
+
+/**
+ * Restores original connection settings.
+ * @private
+ * @param {Object} originalSettings - The settings object saved by saveCurrentConnectionSettings.
+ */
+async function restoreConnectionSettings(originalSettings) {
+    if (!originalSettings || !originalSettings.apiSource) {
+        console.warn(`${MODULE_NAME}: No original settings to restore or settings object is invalid.`);
+        return;
+    }
+
+    try {
+        console.log(`${MODULE_NAME}: Restoring original connection settings:`, originalSettings);
+        
+        const targetSource = originalSettings.apiSource;
+        const targetModel = originalSettings.model;
+        const targetTemp = originalSettings.temperature;
+
+        // Step 1: Restore the API provider (completion source) via the UI dropdown.
+        if ($('#chat_completion_source').val() !== targetSource) {
+            $('#chat_completion_source').val(targetSource).trigger('change');
+            await new Promise(r => setTimeout(r, 300)); // Wait for UI to update.
+        }
+
+        // Step 2: Get the correct model selector for the newly restored provider.
+        const selectors = getApiSelectors(); 
+        const modelSelectorId = selectors.model;
+
+        // Step 3: Restore the model in the correct dropdown.
+        const $select = $(modelSelectorId);
+        if ($select.length) {
+            // Wait for the dropdown to be populated with options after the provider switch.
+            for (let i = 0; i < 10; i++) {
+                if ($select.find(`option[value='${targetModel}']`).length > 0 || targetSource === 'custom') {
+                    break; // Found the model or it's a custom input, proceed.
+                }
+                await new Promise(r => setTimeout(r, 200));
+            }
+            $select.val(targetModel).trigger('change');
+            if (targetSource === 'custom') {
+                $('#custom_model_id').val(targetModel).trigger('input');
+            }
+            console.log(`${MODULE_NAME}: Restored model to ${targetModel} in selector ${modelSelectorId}`);
+        }
+        
+        // Step 4: Restore the temperature.
+        if (typeof targetTemp === 'number') {
+            oai_settings.temp_openai = targetTemp; // Update the backend setting.
+            $(SELECTORS.tempOpenai).val(targetTemp).trigger('input'); // Update the UI slider.
+            $(SELECTORS.tempCounterOpenai).val(targetTemp); // Update the UI number input.
+            console.log(`${MODULE_NAME}: Restored temperature to ${targetTemp}`);
+        }
+
+        console.log(`${MODULE_NAME}: Connection settings restored successfully.`);
+        
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to restore all connection settings:`, error);
+    }
+}
+
+/**
+ * Generates memory using AI with structured JSON output instead of tool calling.
+ * @private
+ * @param {string} promptString - The full prompt for the AI
+ * @param {Object} profile - The user-selected profile containing connection settings
+ * @returns {Promise<Object>} The structured memory result from JSON parsing
+ * @throws {AIResponseError} If the AI generation fails or doesn't return valid JSON
+ */
+async function generateMemoryWithAI(promptString, profile) {
+    // Wait for character data to be available before proceeding
+    const characterDataReady = await waitForCharacterData();
+    if (!characterDataReady) {
+        throw new AIResponseError(
+            'Character data is not available. This may indicate that SillyTavern is still loading. ' +
+            'Please wait a moment and try again.'
+        );
+    }
+
+    let originalSettings = null;
+    
+    try {
+        // Step 1: Save the current settings BEFORE making any changes.
+        originalSettings = await saveCurrentConnectionSettings();
+
+        // Step 2: Switch to the profile's settings for the generation call.
+        await switchProviderAndModel(profile);
+
+        // Step 3: Generate the memory using the new settings.
+        const aiResponse = await Generate('quiet', { 
+            quiet_prompt: promptString, 
+            skipWIAN: true,
+            stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:']
+        });
+
+        const jsonResult = parseAIJsonResponse(aiResponse);
+        
+        return {
+            content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
+            title: jsonResult.title || 'Memory',
+            keywords: jsonResult.keywords || [],
+            profile: profile
+        };
+
+    } catch (error) {
+        console.error(`${MODULE_NAME}: JSON-based memory generation failed:`, error);
+        if (error instanceof AIResponseError) throw error;
+        throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
+    } finally {
+        // Step 4: ALWAYS restore the original settings, even if an error occurred.
+        if (originalSettings) {
+            await restoreConnectionSettings(originalSettings);
+        }
+    }
+}
+
+/**
+ * Creates a memory from a compiled scene using AI with structured JSON output.
+ * This is the main entry point for this module.
+ *
+ * @param {Object} compiledScene - Scene data from chatcompile.js
+ * @param {Object} profile - The user-selected memory generation profile from settings
+ * @param {Object} options - Additional generation options
+ * @param {number} options.tokenWarningThreshold - Token threshold for warnings (default: 30000)
+ * @returns {Promise<Object>} The generated memory result, ready for lorebook insertion
+ * @throws {TokenWarningError} If the estimated token count exceeds the warning threshold
+ * @throws {InvalidProfileError} If the provided profile is incomplete
+ * @throws {AIResponseError} If the AI fails to generate a valid response
+ * @throws {Error} For other general failures
+ */
+export async function createMemory(compiledScene, profile, options = {}) {
+    console.log(`${MODULE_NAME}: Starting JSON-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
+    
+    try {
+        validateInputs(compiledScene, profile);
+        const promptString = await buildPrompt(compiledScene, profile);
+        const tokenEstimate = await estimateTokenUsage(promptString);
+        console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total}`);
+        
+        const tokenWarningThreshold = options.tokenWarningThreshold || 30000;
+        if (tokenEstimate.total > tokenWarningThreshold) {
+            throw new TokenWarningError(
+                'Token warning threshold exceeded.',
+                tokenEstimate.total
+            );
+        }
+        
+        const response = await generateMemoryWithAI(promptString, profile);
+        
+        const processedMemory = processJsonResult(response, compiledScene);
+        
+        const memoryResult = {
+            content: processedMemory.content,
+            extractedTitle: processedMemory.extractedTitle,
+            metadata: {
+                sceneRange: `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`,
+                messageCount: compiledScene.metadata.messageCount,
+                characterName: compiledScene.metadata.characterName,
+                userName: compiledScene.metadata.userName,
+                chatId: compiledScene.metadata.chatId,
+                createdAt: new Date().toISOString(),
+                profileUsed: profile.name,
+                presetUsed: profile.preset || 'custom',
+                tokenUsage: tokenEstimate,
+                generationMethod: 'json-structured-output',
+                version: '2.0'
+            },
+            suggestedKeys: processedMemory.suggestedKeys,
+            titleFormat: profile.titleFormat || '[000] - {{title}}',
+            lorebookSettings: {
+                constVectMode: profile.constVectMode,
+                position: profile.position,
+                orderMode: profile.orderMode,
+                orderValue: profile.orderValue,
+                preventRecursion: profile.preventRecursion,
+                delayUntilRecursion: profile.delayUntilRecursion,
+            },
+            lorebook: {
+                content: processedMemory.content,
+                comment: `Auto-generated memory from messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}. Profile: ${profile.name}.`,
+                key: processedMemory.suggestedKeys || [],
+                keysecondary: [],
+                selective: true,
+                constant: false,
+                order: 100,
+                position: 'before_char',
+                disable: false,
+                addMemo: true,
+                excludeRecursion: false,
+                delayUntilRecursion: false,
+                probability: 100,
+                useProbability: false
+            }
+        };
+        
+        console.log(`${MODULE_NAME}: JSON-based memory creation completed successfully`);
+        return memoryResult;
+        
+    } catch (error) {
+        if (error instanceof TokenWarningError || error instanceof AIResponseError || error instanceof InvalidProfileError) {
+            throw error;
+        }
+        console.error(`${MODULE_NAME}: An unexpected error occurred during memory creation:`, error);
+        throw new Error(`Memory creation failed: ${error.message}`);
     }
 }
 
