@@ -7,6 +7,7 @@ A SillyTavern extension that allows you to automatically create memories from ch
 - **Bound Lorebook**: Your chat must have exactly one lorebook bound to it
 - **API Access**: Compatible AI engine (OpenAI, Claude, etc.) configured in SillyTavern
 - **Scene Selection**: Start and end markers must be set with valid range (start < end)
+- **Release Version**: Built and tested on SillyTavern release 1.13.1.
 
 > ## Notes
 > - This extension ONLY SUPPORTS chat completion APIs. (Sorry, Kobold, Textgen... I don't use you so I have no way to test you.) 
@@ -38,7 +39,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 
 ![Chat lorebook is a prerequisite](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
-**Lorebook Conversion**: The [standalone HTML Lorebook Converter](lorebookconverter.html) will convert older non STMB lorebooks to add the stmemorybooks, stmb_start, and stmb_end JSON fields. 
+**Lorebook Conversion**: The [standalone HTML Lorebook Converter](lorebookconverter.html) will convert older non STMB lorebooks to add the stmemorybooks, stmb_start, and stmb_end JSON fields. You can also access the converter [online](https://www.aikobots.com/lorebookconverter.html). 
 
 ⚠️ STMemoryBooks __**WILL NOT READ**__ older memories from non-converted lorebooks. 
 
