@@ -59,7 +59,16 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             titleFormat = settings.titleFormat || '[000] - {{title}}';
         }
         const refreshEditor = settings.moduleSettings?.refreshEditor !== false;
-        
+
+        const lorebookSettings = memoryResult.lorebookSettings || {
+            constVectMode: 'link',
+            position: 0,
+            orderMode: 'auto',
+            orderValue: 100,
+            preventRecursion: true,
+            delayUntilRecursion: true
+        };
+
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
         
         if (!newEntry) {
@@ -68,10 +77,10 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         
         const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
         
-        populateLorebookEntry(newEntry, memoryResult, entryTitle);
+        populateLorebookEntry(newEntry, memoryResult, entryTitle, lorebookSettings);
         
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
-        
+
         console.log(`${MODULE_NAME}: Successfully added memory entry "${entryTitle}" to lorebook`);
         
         if (settings.moduleSettings?.showNotifications !== false) {
@@ -117,30 +126,59 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
  * @param {Object} entry - The lorebook entry to populate
  * @param {Object} memoryResult - The memory generation result
  * @param {string} entryTitle - The generated title for this entry
+ * @param {Object} lorebookSettings - The user-configured lorebook settings
  */
-function populateLorebookEntry(entry, memoryResult, entryTitle) {
+function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings) {
     // Core content and keywords
     entry.content = memoryResult.content;
     entry.key = memoryResult.suggestedKeys || [];
     entry.comment = entryTitle;
     
-    // Extract order number from title for proper sorting
+    // Extract order number from title for auto-numbering
     const orderNumber = extractNumberFromTitle(entryTitle) || 1;
     
-    // Set all properties to match the tested lorebook structure
-    // These values are tested and proven to work well for memory entries
+    // --- APPLY USER SETTINGS ---
+    
+    // 1. Constant / Vectorized Mode
+    switch (lorebookSettings.constVectMode) {
+        case 'blue': // Constant
+            entry.constant = true;
+            entry.vectorized = false;
+            break;
+        case 'green': // Normal
+            entry.constant = false;
+            entry.vectorized = false;
+            break;
+        case 'link': // Vectorized (Default)
+        default:
+            entry.constant = false;
+            entry.vectorized = true;
+            break;
+    }
+    
+    // 2. Insertion Position
+    entry.position = lorebookSettings.position;
+
+    // 3. Insertion Order
+    if (lorebookSettings.orderMode === 'manual') {
+        entry.order = lorebookSettings.orderValue;
+    } else { // 'auto'
+        entry.order = orderNumber;
+    }
+
+    // 4. Recursion Settings
+    entry.preventRecursion = lorebookSettings.preventRecursion;
+    entry.delayUntilRecursion = lorebookSettings.delayUntilRecursion;
+
+    // --- End User Settings ---
+
+    // Set other properties to match the tested lorebook structure
     entry.keysecondary = [];
-    entry.constant = false;
-    entry.vectorized = true;  // Important: memory entries should be vectorized
     entry.selective = true;
     entry.selectiveLogic = 0;
     entry.addMemo = true;
-    entry.order = orderNumber;
-    entry.position = 0;
     entry.disable = false;
     entry.excludeRecursion = false;
-    entry.preventRecursion = true;
-    entry.delayUntilRecursion = true;
     entry.probability = 100;
     entry.useProbability = true;
     entry.depth = 4;

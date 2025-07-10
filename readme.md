@@ -18,7 +18,7 @@ The following settings are hard-coded. (Maybe in a future update I will put user
 - **Delay**: ✔️ Delay until recursion (can only be activated on recursive checking)
 
 > ## Notes
-> - This extension ONLY SUPPORTS chat completion APIs (oai_settings). 
+> - This extension ONLY SUPPORTS chat completion APIs. (Sorry, Kobold, Textgen... I don't use you so I have no way to test you.) 
 > - Chat messages are NOT hidden after memory creation. You must still use /hide after memories are created. This was an intentional decision to leave some chat history for generation overlap.
 
 ## Features

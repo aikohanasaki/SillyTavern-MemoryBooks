@@ -460,6 +460,12 @@ export function formatPresetDisplayName(presetName) {
  * @param {string} [data.prompt=''] - The custom prompt.
  * @param {string} [data.preset=''] - The selected preset.
  * @param {string} [data.titleFormat='[000] - {{title}}'] - The title format for lorebook entries.
+ * @param {string} [data.constVectMode='link'] - The constant/vectorized mode.
+ * @param {number} [data.position=0] - The lorebook entry position.
+ * @param {string} [data.orderMode='auto'] - The ordering mode.
+ * @param {number} [data.orderValue=100] - The manual order value.
+ * @param {boolean} [data.preventRecursion=true] - The prevent recursion flag.
+ * @param {boolean} [data.delayUntilRecursion=true] - The delay until recursion flag.
  * @returns {Object} A structured and validated profile object.
  */
 export function createProfileObject(data = {}) {
@@ -477,7 +483,13 @@ export function createProfileObject(data = {}) {
         },
         prompt: (data.prompt || '').trim(),
         preset: data.preset || '',
-        titleFormat: data.titleFormat
+        titleFormat: data.titleFormat,
+        constVectMode: data.constVectMode || 'link',
+        position: data.position !== undefined ? Number(data.position) : 0,
+        orderMode: data.orderMode || 'auto',
+        orderValue: data.orderValue !== undefined ? Number(data.orderValue) : 100,
+        preventRecursion: data.preventRecursion !== undefined ? data.preventRecursion : true,
+        delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : true,
     };
 
     const model = (data.model || '').trim();

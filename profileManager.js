@@ -99,6 +99,62 @@ const profileEditTemplate = Handlebars.compile(`
             placeholder="Enter custom format" value="{{titleFormat}}">
         <small class="opacity50p">Use [0], [00], etc. for numbering. Available: \\{{title}}, \\{{scene}}, \\{{char}}, \\{{user}}, \\{{messages}}, \\{{profile}}, \\{{date}}, \\{{time}}</small>
     </div>
+    <hr>
+    <h4>Lorebook Entry Settings</h4>
+    <div class="info-block hint marginBot10">
+        These settings control how the generated memory is saved into the lorebook.
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-const-vect">
+            <h4>Activation Mode:</h4>
+            <select id="stmb-profile-const-vect" class="text_pole">
+                <option value="link" {{#if (eq constVectMode "link")}}selected{{/if}}>🔗 Vectorized (Default)</option>
+                <option value="blue" {{#if (eq constVectMode "blue")}}selected{{/if}}>🔵 Constant</option>
+                <option value="green" {{#if (eq constVectMode "green")}}selected{{/if}}>🟢 Normal</option>
+            </select>
+            <h5>🔗 Vectorized is recommended for memories.</h5>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-position">
+            <h4>Insertion Position:</h4>
+            <small>Aiko recommends memories never go lower than ↑AN.</small>
+            <select id="stmb-profile-position" class="text_pole">
+                <option value="0" {{#if (eq position 0)}}selected{{/if}}>↑Char</option>
+                <option value="1" {{#if (eq position 1)}}selected{{/if}}>↓Cha</option>
+                <option value="2" {{#if (eq position 2)}}selected{{/if}}>↑EM</option>
+                <option value="3" {{#if (eq position 3)}}selected{{/if}}>↓EM</option>
+                <option value="4" {{#if (eq position 4)}}selected{{/if}}>↑AN</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-order-mode">
+            <h4>Insertion Order:</h4>
+            <div class="radio_group">
+                <label><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> Auto (uses memory #)</label>
+                <label><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> Manual</label>
+            </div>
+            <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}}" min="1" max="9999" step="1">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-prevent-recursion">
+            <h4>Recursion Settings:</h4>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-profile-prevent-recursion" {{#if preventRecursion}}checked{{/if}}>
+                <span>Prevent Recursion</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-profile-delay-recursion" {{#if delayUntilRecursion}}checked{{/if}}>
+                <span>Delay Until Recursion</span>
+            </label>
+        </label>
+    </div>
 </div>
 `);
 
@@ -149,7 +205,13 @@ export async function editProfile(settings, refreshCallback) {
                 value: format,
                 isSelected: format === profileTitleFormat
             })),
-            showCustomTitleInput: !allTitleFormats.includes(profileTitleFormat)
+            showCustomTitleInput: !allTitleFormats.includes(profileTitleFormat),
+            constVectMode: profile.constVectMode,
+            position: profile.position,
+            orderMode: profile.orderMode,
+            orderValue: profile.orderValue,
+            preventRecursion: profile.preventRecursion,
+            delayUntilRecursion: profile.delayUntilRecursion
         };
         
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -225,7 +287,13 @@ export async function newProfile(settings, refreshCallback) {
                 value: format,
                 isSelected: format === currentTitleFormat
             })),
-            showCustomTitleInput: !allTitleFormats.includes(currentTitleFormat)
+            showCustomTitleInput: !allTitleFormats.includes(currentTitleFormat),
+            constVectMode: 'link',
+            position: 0,
+            orderMode: 'auto',
+            orderValue: 100,
+            preventRecursion: true,
+            delayUntilRecursion: true
         };
         
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -453,6 +521,17 @@ function setupProfileEditEventHandlers(popupInstance) {
     popupElement.querySelector('#stmb-profile-model')?.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[<>]/g, '');
     });
+
+    popupElement.querySelectorAll('input[name="order-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const orderValueInput = popupElement.querySelector('#stmb-profile-order-value');
+            if (e.target.value === 'manual') {
+                orderValueInput.classList.remove('displayNone');
+            } else {
+                orderValueInput.classList.add('displayNone');
+            }
+        });
+    });
     
     console.log(`${MODULE_NAME}: Profile edit event handlers attached`);
 }
@@ -469,6 +548,12 @@ function buildProfileFromForm(popupElement, fallbackName) {
         temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
         prompt: popupElement.querySelector('#stmb-profile-prompt')?.value,
         preset: popupElement.querySelector('#stmb-profile-preset')?.value,
+        constVectMode: popupElement.querySelector('#stmb-profile-const-vect')?.value,
+        position: popupElement.querySelector('#stmb-profile-position')?.value,
+        orderMode: popupElement.querySelector('input[name="order-mode"]:checked')?.value,
+        orderValue: popupElement.querySelector('#stmb-profile-order-value')?.value,
+        preventRecursion: popupElement.querySelector('#stmb-profile-prevent-recursion')?.checked,
+        delayUntilRecursion: popupElement.querySelector('#stmb-profile-delay-recursion')?.checked,
     };
 
     // Handle the title format dropdown logic
@@ -515,14 +600,13 @@ export function validateAndFixProfiles(settings) {
     }
     
     if (settings.profiles.length === 0) {
-        settings.profiles.push({
+        // Use the centralized creator to ensure all fields are present
+        settings.profiles.push(createProfileObject({
             name: 'Default',
-            connection: {},
-            prompt: '',
             preset: 'summary',
-            titleFormat: settings.titleFormat || '[000] - {{title}}'
-        });
-        fixes.push('Added default profile');
+            titleFormat: settings.titleFormat
+        }));
+        fixes.push('Added default profile with all new settings.');
     }
     
     settings.profiles.forEach((profile, index) => {
@@ -536,6 +620,29 @@ export function validateAndFixProfiles(settings) {
                 profile.connection = {};
                 fixes.push(`Fixed missing connection for profile ${index}`);
             }
+        }
+        
+        // For each profile, we check if the new settings exist. If not, we add the defaults.
+        if (profile.constVectMode === undefined) {
+            profile.constVectMode = 'link';
+            fixes.push(`Added default 'constVectMode' to profile "${profile.name}"`);
+        }
+        if (profile.position === undefined) {
+            profile.position = 0;
+            fixes.push(`Added default 'position' to profile "${profile.name}"`);
+        }
+        if (profile.orderMode === undefined) {
+            profile.orderMode = 'auto';
+            profile.orderValue = 100;
+            fixes.push(`Added default 'order' settings to profile "${profile.name}"`);
+        }
+        if (profile.preventRecursion === undefined) {
+            profile.preventRecursion = true;
+            fixes.push(`Added default 'preventRecursion' to profile "${profile.name}"`);
+        }
+        if (profile.delayUntilRecursion === undefined) {
+            profile.delayUntilRecursion = true;
+            fixes.push(`Added default 'delayUntilRecursion' to profile "${profile.name}"`);
         }
         // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {
