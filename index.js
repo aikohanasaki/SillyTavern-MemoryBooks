@@ -736,8 +736,7 @@ async function showSettingsPopup() {
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
-            isDefault: index === settings.defaultProfile,
-            name: profile.name + (index === settings.defaultProfile ? ' (Default)' : '')
+            isDefault: index === settings.defaultProfile
         })),
         titleFormat: settings.titleFormat,
         titleFormats: getDefaultTitleFormats().map(format => ({
@@ -995,8 +994,7 @@ function refreshPopupContent() {
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
-                isDefault: index === settings.defaultProfile,
-                name: profile.name + (index === settings.defaultProfile ? ' (Default)' : '')
+                isDefault: index === settings.defaultProfile
             })),
             titleFormat: settings.titleFormat,
             titleFormats: getDefaultTitleFormats().map(format => ({
