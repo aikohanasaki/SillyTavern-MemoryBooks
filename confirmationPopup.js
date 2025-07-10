@@ -40,7 +40,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
     try {
         const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
             okButton: 'Create Memory',
-            cancelButton: 'Cancel',
+            cancelButton: 'Cancel/Close',
             wide: false,
             customButtons: [
                 {
@@ -122,7 +122,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     try {
         const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
             okButton: 'Create Memory',
-            cancelButton: 'Cancel',
+            cancelButton: 'Cancel/Close',
             wide: true,
             large: true,
             allowVerticalScrolling: true,
