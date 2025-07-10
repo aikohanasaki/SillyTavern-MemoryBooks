@@ -287,11 +287,7 @@ export async function deleteProfile(settings, refreshCallback) {
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const deletedName = profile.name;
             settings.profiles.splice(profileIndex, 1);
-            
-            // Adjust default profile index
-            if (settings.defaultProfile >= settings.profiles.length) {
-                settings.defaultProfile = settings.profiles.length - 1;
-            }
+            settings.defaultProfile = 0;
             
             saveSettingsDebounced();
             

@@ -104,7 +104,8 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                 </details>
             </div>
 
-            <div class="flex gap5px marginTop5">
+            <h5>Profile Actions:</h5>
+            <div class="buttons_block marginTop5" style="justify-content: center;">
                 <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
                 <div class="menu_button" id="stmb-new-profile">New Profile</div>
                 <div class="menu_button" id="stmb-delete-profile">Delete Profile</div>
@@ -112,7 +113,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
             <h5>Import/Export:</h5>
             <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-            <div class="flex gap5px">
+            <div class="buttons_block marginTop5" style="justify-content: center;">
                 <div class="menu_button" id="stmb-export-profiles">Export Profiles</div>
                 <div class="menu_button" id="stmb-import-profiles">Import Profiles</div>
             </div>
