@@ -4,6 +4,8 @@ import { getEffectivePrompt, getPresetNames, isValidPreset, deepClone } from './
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { switchProviderAndModel, currentProfile } from './index.js';
+import { SELECTORS } from './utils.js';
+const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
@@ -278,8 +280,24 @@ async function restoreConnectionSettings(originalSettings) {
         
         // Restore temperature if it was overridden
         if (originalSettings.temperature !== undefined) {
-            oai_settings.temp_openai = originalSettings.temperature;
-            console.log(`${MODULE_NAME}: Restored original temperature: ${originalSettings.temperature}`);
+            const temp = originalSettings.temperature;
+            
+            // 1. Restore the underlying settings object (the "engine")
+            oai_settings.temp_openai = temp;
+            
+            // 2. Get the UI elements (the "dashboard")
+            const $tempSlider = $(SELECTORS.tempOpenai);
+            const $tempCounter = $(SELECTORS.tempCounterOpenai);
+            
+            // 3. Update the UI elements with the original temperature
+            if ($tempSlider.length) {
+                $tempSlider.val(temp).trigger('input');
+            }
+            if ($tempCounter.length) {
+                $tempCounter.val(temp);
+            }
+
+            console.log(`${MODULE_NAME}: Restored original temperature to ${temp} in settings and UI`);
         }
         
     } catch (error) {
