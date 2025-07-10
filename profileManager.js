@@ -32,7 +32,7 @@ const profileEditTemplate = Handlebars.compile(`
     </div>
     
     <div class="world_entry_form_control" style="margin-top: 5px;">
-        <h4>>Model & Temperature Settings:</h4>
+        <h4>Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10">
             These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.
         </div>

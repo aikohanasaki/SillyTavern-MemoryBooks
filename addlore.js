@@ -7,6 +7,7 @@ import {
     reloadEditor 
 } from '../../../world-info.js';
 import { extension_settings } from '../../../extensions.js';
+import { moment } from '../../../../lib.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
