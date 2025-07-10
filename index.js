@@ -32,7 +32,7 @@ const defaultSettings = {
         {
             name: "Default",
             connection: {
-            api: "openai", // Default to openai, but user may select/override!
+            api: "custom", // Default to openai, but user may select/override!
             model: "gpt-4.1", // default to gpt-4.1, but user may select/override!
             temperature: 0.7, // Default temperature
             },

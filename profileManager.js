@@ -40,6 +40,7 @@ const profileEditTemplate = Handlebars.compile(`
         <label for="stmb-profile-api">
             <h4>API/Provider:</h4>
             <select id="stmb-profile-api" class="text_pole">
+                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}}>Custom API</option>
                 <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
                 <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Claude</option>
                 <option value="google" {{#if (eq connection.api "google")}}selected{{/if}}>Google AI Studio</option>
@@ -53,7 +54,6 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
                 <option value="xai" {{#if (eq connection.api "xai")}}selected{{/if}}>xAI</option>
                 <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
-                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}}>Custom API</option>
             </select>
         </label>
         
@@ -264,8 +264,8 @@ export async function newProfile(settings, refreshCallback) {
         const templateData = {
             name: defaultName,
             connection: { temperature: 0.7 },
-            api: 'openai',
-            prompt: '',
+            api: 'custom',
+            prompt: 'summary',
             preset: '',
             availableModels: availableModels,
             currentApi: apiInfo.api || 'Unknown',
