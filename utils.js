@@ -448,3 +448,52 @@ export function formatPresetDisplayName(presetName) {
     
     return displayNames[presetName] || presetName;
 }
+
+/**
+ * Creates a clean, validated profile object from raw data.
+ * This centralizes profile creation logic from all parts of the extension.
+ * @param {Object} data - Raw data for the profile.
+ * @param {string} data.name - The desired profile name.
+ * @param {string} [data.api='openai'] - The API provider.
+ * @param {string} [data.model=''] - The model identifier.
+ * @param {number|string} [data.temperature=0.7] - The temperature setting.
+ * @param {string} [data.prompt=''] - The custom prompt.
+ * @param {string} [data.preset=''] - The selected preset.
+ * @param {string} [data.titleFormat='[000] - {{title}}'] - The title format for lorebook entries.
+ * @returns {Object} A structured and validated profile object.
+ */
+export function createProfileObject(data = {}) {
+    // Use parseTemperature for robust handling, with a clear fallback to 0.7
+    let temperature = parseTemperature(data.temperature);
+    if (temperature === null) {
+        temperature = 0.7;
+    }
+
+    const profile = {
+        name: (data.name || 'New Profile').trim(),
+        connection: {
+            api: data.api || 'openai',
+            temperature: temperature,
+        },
+        prompt: (data.prompt || '').trim(),
+        preset: data.preset || '',
+        titleFormat: data.titleFormat || '[000] - {{title}}'
+    };
+
+    const model = (data.model || '').trim();
+    if (model) {
+        profile.connection.model = model;
+    }
+
+    // A profile should have a preset OR a custom prompt. The custom prompt takes precedence.
+    if (profile.prompt && profile.preset) {
+        profile.preset = '';
+    }
+    
+    // If there's no custom prompt and no preset specified, default to the 'summary' preset.
+    if (!profile.prompt && !profile.preset) {
+        profile.preset = 'summary'; 
+    }
+
+    return profile;
+}

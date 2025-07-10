@@ -4,7 +4,7 @@ import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
 import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
-import { getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, getPresetPrompt, generateSafeProfileName } from './utils.js';
+import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, getPresetPrompt, generateSafeProfileName } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 
@@ -384,39 +384,42 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
  */
 async function saveNewProfileFromAdvancedSettings(popupElement, settings, profileName) {
     try {
-        const effectivePrompt = popupElement.querySelector('#stmb-effective-prompt-advanced')?.value || '';
-        const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
         const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || settings.defaultProfile);
+        const baseProfile = settings.profiles[selectedProfileIndex];
+
+        // Step 1: Gather base data from the form and the selected profile.
+        const data = {
+            name: profileName,
+            prompt: popupElement.querySelector('#stmb-effective-prompt-advanced')?.value,
+            api: baseProfile.connection?.api,
+            model: baseProfile.connection?.model,
+            temperature: baseProfile.connection?.temperature,
+            preset: baseProfile.preset,
+            titleFormat: baseProfile.titleFormat || settings.titleFormat,
+        };
         
-        const existingNames = settings.profiles.map(p => p.name);
-        const safeName = generateSafeProfileName(profileName, existingNames);
-        
-        const newProfile = {
-            name: safeName,
-            prompt: effectivePrompt,
-            connection: {},
-            titleFormat: settings.titleFormat 
-        };        
-        
-        if (!overrideSettings) {
-            const baseProfile = settings.profiles[selectedProfileIndex];
-            if (baseProfile.connection) {
-                newProfile.connection = { ...baseProfile.connection };
-            }
-        } else {
+        // Step 2: If overriding, update the data with current SillyTavern settings.
+        const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
+        if (overrideSettings) {
             const currentSettings = getCurrentModelSettings();
-            if (currentSettings.model) {
-                newProfile.connection.model = currentSettings.model;
-            }
-            if (typeof currentSettings.temperature === 'number') {
-                newProfile.connection.temperature = currentSettings.temperature;
-            }
+            const currentApiInfo = getCurrentApiInfo();
+            
+            data.api = currentApiInfo.api;
+            data.model = currentSettings.model;
+            data.temperature = currentSettings.temperature;
         }
+
+        // Step 3: Call the centralized function to create the final profile object.
+        const newProfile = createProfileObject(data);
+
+        // Ensure the final profile name is unique before saving.
+        const existingNames = settings.profiles.map(p => p.name);
+        newProfile.name = generateSafeProfileName(newProfile.name, existingNames);
         
         settings.profiles.push(newProfile);
         saveSettingsDebounced();
         
-        console.log(`${MODULE_NAME}: Saved new profile "${safeName}" from advanced options`);
+        console.log(`${MODULE_NAME}: Saved new profile "${newProfile.name}" from advanced options`);
     } catch (error) {
         console.error(`${MODULE_NAME}: Error saving new profile from advanced settings:`, error);
         throw error;

@@ -330,19 +330,35 @@ export function handleMessageDeletion(deletedId, settings) {
         markers.sceneStart = null;
         markers.sceneEnd = null; // Also clear the end marker
         hasChanges = true;
-        console.log(`${MODULE_NAME}: Start marker deleted, clearing scene`);
         toastrMessage = 'Scene cleared due to start marker deletion';
 
     // If end marker was deleted, just clear the end marker
     } else if (markers.sceneEnd === deletedId) {
         markers.sceneEnd = null;
         hasChanges = true;
-        console.log(`${MODULE_NAME}: End marker deleted, clearing end point`);
         toastrMessage = 'Scene end point cleared due to message deletion';
-    }
 
-    // If any message within the scene is deleted, we should just validate
-    // This part is implicit, as validateSceneMarkers() is called below if no changes are made.
+    } else {
+        let startChanged = false;
+        let endChanged = false;
+
+        // If a message *before* the start marker is deleted, shift the start marker down.
+        if (markers.sceneStart !== null && markers.sceneStart > deletedId) {
+            markers.sceneStart--;
+            startChanged = true;
+        }
+        // If a message *before* the end marker is deleted, shift the end marker down.
+        if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
+            markers.sceneEnd--;
+            endChanged = true;
+        }
+
+        if (startChanged || endChanged) {
+            hasChanges = true;
+            toastrMessage = 'Scene markers adjusted due to message deletion.';
+            console.log(`${MODULE_NAME}: Scene markers re-indexed after deletion of message ${deletedId}. New range: ${markers.sceneStart}-${markers.sceneEnd}`);
+        }
+    }
 
     if (hasChanges) {
         currentSceneState.start = markers.sceneStart;

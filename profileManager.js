@@ -12,14 +12,15 @@ import {
     getPresetNames,
     getAvailableModels,
     isCustomModel,
-    getCurrentApiInfo
+    getCurrentApiInfo,
+    createProfileObject
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js'; 
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
 /**
- * MODIFIED: Profile edit template updated to include title format controls
+ * Profile edit template
  */
 const profileEditTemplate = Handlebars.compile(`
 <div class="popup-content">
@@ -102,7 +103,7 @@ const profileEditTemplate = Handlebars.compile(`
 `);
 
 /**
- * MODIFIED: Edit an existing profile
+ * Edit an existing profile
  */
 export async function editProfile(settings, refreshCallback) {
     const profileIndex = settings.defaultProfile;
@@ -122,7 +123,7 @@ export async function editProfile(settings, refreshCallback) {
         const showCustomInput = isCustom || availableModels.length === 0;
         const customModelValue = isCustom ? connection.model : '';
         
-        // ADDED: Logic to handle title format for the template
+        // Logic to handle title format for the template
         const profileTitleFormat = profile.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
 
@@ -142,7 +143,7 @@ export async function editProfile(settings, refreshCallback) {
                 displayName: formatPresetDisplayName(presetName),
                 selected: presetName === profile.preset
             })),
-            // ADDED: Pass title format data to the template
+            // Pass title format data to the template
             titleFormat: profileTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
                 value: format,
@@ -188,7 +189,7 @@ export async function editProfile(settings, refreshCallback) {
 }
 
 /**
- * MODIFIED: Create a new profile
+ * Create a new profile
  */
 export async function newProfile(settings, refreshCallback) {
     try {
@@ -420,7 +421,7 @@ export function importProfiles(event, settings, refreshCallback) {
 }
 
 /**
- * MODIFIED: Setup event handlers for profile edit popup
+ * Setup event handlers for profile edit popup
  */
 function setupProfileEditEventHandlers(popupInstance) {
     const popupElement = popupInstance.dlg;
@@ -434,7 +435,7 @@ function setupProfileEditEventHandlers(popupInstance) {
         }
     });
     
-    // ADDED: Handler for the new title format dropdown
+    // Handler for the new title format dropdown
     popupElement.querySelector('#stmb-profile-title-format-select')?.addEventListener('change', (e) => {
         const customInput = popupElement.querySelector('#stmb-profile-custom-title-format');
         if (e.target.value === 'custom') {
@@ -442,7 +443,6 @@ function setupProfileEditEventHandlers(popupInstance) {
             customInput.focus();
         } else {
             customInput.classList.add('displayNone');
-            customInput.value = e.target.value;
         }
     });
 
@@ -462,48 +462,33 @@ function setupProfileEditEventHandlers(popupInstance) {
 }
 
 /**
- * MODIFIED: Build profile object from form data
+ * Build profile object from form data
  */
 function buildProfileFromForm(popupElement, fallbackName) {
-    const name = popupElement.querySelector('#stmb-profile-name')?.value.trim() || fallbackName;
-    const api = popupElement.querySelector('#stmb-profile-api')?.value || 'openai';
-    const model = popupElement.querySelector('#stmb-profile-model')?.value.trim() || '';
-    const temperatureInput = popupElement.querySelector('#stmb-profile-temperature')?.value;
-    const temperature = parseTemperature(temperatureInput);
-    const prompt = popupElement.querySelector('#stmb-profile-prompt')?.value.trim() || '';
-    const preset = popupElement.querySelector('#stmb-profile-preset')?.value || '';
-    
-    // ADDED: Logic to get title format from the new UI elements
+    // Step 1: Gather all the raw data from the form into a single object.
+    const data = {
+        name: popupElement.querySelector('#stmb-profile-name')?.value.trim() || fallbackName,
+        api: popupElement.querySelector('#stmb-profile-api')?.value,
+        model: popupElement.querySelector('#stmb-profile-model')?.value,
+        temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
+        prompt: popupElement.querySelector('#stmb-profile-prompt')?.value,
+        preset: popupElement.querySelector('#stmb-profile-preset')?.value,
+    };
+
+    // Handle the title format dropdown logic
     const titleFormatSelect = popupElement.querySelector('#stmb-profile-title-format-select');
-    let titleFormat = titleFormatSelect ? titleFormatSelect.value : '[000] - {{title}}';
-    if (titleFormat === 'custom') {
-        const customTitleInput = popupElement.querySelector('#stmb-profile-custom-title-format');
-        titleFormat = customTitleInput ? customTitleInput.value.trim() : '[000] - {{title}}';
+    if (titleFormatSelect?.value === 'custom') {
+        data.titleFormat = popupElement.querySelector('#stmb-profile-custom-title-format')?.value;
+    } else if (titleFormatSelect) {
+        data.titleFormat = titleFormatSelect.value;
     }
 
-    const profile = {
-        name: name,
-        connection: {
-            api: api,
-        },
-        prompt: prompt,
-        preset: preset,
-        titleFormat: titleFormat 
-    };
-    
-    if (model) {
-        profile.connection.model = model;
-    }
-    
-    if (temperature !== null) {
-        profile.connection.temperature = temperature;
-    }
-    
-    return profile;
+    // Step 2: Call the centralized creator function with the gathered data.
+    return createProfileObject(data);
 }
 
 /**
- * MODIFIED: Clean and normalize profile structure
+ * Clean and normalize profile structure
  */
 function cleanProfile(profile) {
     const cleaned = {
@@ -522,7 +507,7 @@ function cleanProfile(profile) {
 }
 
 /**
- * MODIFIED: Validate all profiles in settings and fix issues
+ * Validate all profiles in settings and fix issues
  */
 export function validateAndFixProfiles(settings) {
     const issues = [];
@@ -556,7 +541,7 @@ export function validateAndFixProfiles(settings) {
                 fixes.push(`Fixed missing connection for profile ${index}`);
             }
         }
-        // ADDED: Ensure all existing profiles have a title format
+        // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {
             profile.titleFormat = settings.titleFormat || '[000] - {{title}}';
             fixes.push(`Added missing title format to profile "${profile.name}"`);
