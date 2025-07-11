@@ -265,7 +265,7 @@ export async function newProfile(settings, refreshCallback) {
             name: defaultName,
             connection: { temperature: 0.7 },
             api: 'custom',
-            prompt: 'summary',
+            prompt: '',
             preset: '',
             availableModels: availableModels,
             currentApi: apiInfo.api || 'Unknown',
