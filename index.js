@@ -1030,28 +1030,13 @@ function refreshPopupContent() {
             }
         };
         
-        const content = DOMPurify.sanitize(settingsTemplate(templateData));
-        const newContent = content;
+        const newHtml = DOMPurify.sanitize(settingsTemplate(templateData));
+
+        // Create a temporary container to hold the new content for morphdom
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = newHtml;
         
-        morphdom(currentPopupInstance.content, newContent, {
-            onBeforeElUpdated: function(fromEl, toEl) {
-                // This part is important and should be kept as-is
-                if (fromEl.isEqualNode(toEl)) {
-                    return false;
-                }
-                if (fromEl.type === 'checkbox' || fromEl.type === 'radio') {
-                    toEl.checked = fromEl.checked;
-                }
-                if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
-                    if (fromEl.id === 'stmb-profile-select') {
-                        return true;
-                    }
-                    toEl.value = fromEl.value;
-                }
-                return true;
-            }
-        });
-        
+        // Morph the existing popup content with the new content
         morphdom(currentPopupInstance.content, tempContainer, {
             onBeforeElUpdated: function(fromEl, toEl) {
                 // Preserve state of form elements that morphdom might reset
@@ -1062,6 +1047,7 @@ function refreshPopupContent() {
                     toEl.checked = fromEl.checked;
                 }
                 if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
+                    // Always allow the profile selector to update, as its options may have changed
                     if (fromEl.id === 'stmb-profile-select') {
                         return true;
                     }
@@ -1079,6 +1065,7 @@ function refreshPopupContent() {
 
         currentPopupInstance.dlg.classList.add(...requiredClasses);
         
+        // Re-attach event listeners to the new content
         setupSettingsEventListeners();
         console.log('STMemoryBooks: Popup content refreshed with preserved properties');
     } catch (error) {

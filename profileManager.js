@@ -550,8 +550,6 @@ function buildProfileFromForm(popupElement, fallbackName) {
         api: popupElement.querySelector('#stmb-profile-api')?.value,
         model: popupElement.querySelector('#stmb-profile-model')?.value,
         temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
-        prompt: popupElement.querySelector('#stmb-profile-prompt')?.value,
-        preset: popupElement.querySelector('#stmb-profile-preset')?.value,
         constVectMode: popupElement.querySelector('#stmb-profile-const-vect')?.value,
         position: popupElement.querySelector('#stmb-profile-position')?.value,
         orderMode: popupElement.querySelector('input[name="order-mode"]:checked')?.value,
@@ -559,6 +557,16 @@ function buildProfileFromForm(popupElement, fallbackName) {
         preventRecursion: popupElement.querySelector('#stmb-profile-prevent-recursion')?.checked,
         delayUntilRecursion: popupElement.querySelector('#stmb-profile-delay-recursion')?.checked,
     };
+
+    // Step 2: Intelligently determine whether to use the selected preset or the custom prompt.
+    const presetSelect = popupElement.querySelector('#stmb-profile-preset');
+    if (presetSelect && presetSelect.value === '') { // An empty value means "Custom Prompt..." was selected.
+        data.prompt = popupElement.querySelector('#stmb-profile-prompt')?.value;
+        data.preset = ''; // Ensure preset is cleared when using a custom prompt.
+    } else if (presetSelect) { // A preset was selected.
+        data.prompt = ''; // Ensure custom prompt is cleared when using a preset.
+        data.preset = presetSelect.value;
+    }
 
     // Handle the title format dropdown logic
     const titleFormatSelect = popupElement.querySelector('#stmb-profile-title-format-select');
@@ -568,27 +576,8 @@ function buildProfileFromForm(popupElement, fallbackName) {
         data.titleFormat = titleFormatSelect.value;
     }
 
-    // Step 2: Call the centralized creator function with the gathered data.
+    // Step 3: Call the centralized creator function with the gathered and cleaned data.
     return createProfileObject(data);
-}
-
-/**
- * Clean and normalize profile structure
- */
-function cleanProfile(profile) {
-    const cleaned = {
-        name: profile.name || 'Unnamed Profile',
-        connection: cleanConnectionSettings(profile.connection || {}),
-        prompt: profile.prompt || '',
-        preset: profile.preset || '',
-        titleFormat: profile.titleFormat || '[000] - {{title}}'
-    };
-    
-    if (cleaned.prompt && cleaned.preset) {
-        cleaned.preset = '';
-    }
-    
-    return cleaned;
 }
 
 /**
