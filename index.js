@@ -1032,7 +1032,6 @@ function refreshPopupContent() {
         
         const newHtml = DOMPurify.sanitize(settingsTemplate(templateData));
 
-        // Create a temporary container to hold the new content for morphdom
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = newHtml;
         
@@ -1062,8 +1061,8 @@ function refreshPopupContent() {
             'large_dialogue_popup',
             'vertical_scrolling_dialogue_popup'
         ];
-
         currentPopupInstance.dlg.classList.add(...requiredClasses);
+        currentPopupInstance.dlg.style.overflow = 'auto'; 
         
         // Re-attach event listeners to the new content
         setupSettingsEventListeners();
