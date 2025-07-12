@@ -1062,7 +1062,7 @@ function refreshPopupContent() {
             'vertical_scrolling_dialogue_popup'
         ];
         currentPopupInstance.dlg.classList.add(...requiredClasses);
-        currentPopupInstance.dlg.style.overflow = 'auto'; 
+        currentPopupInstance.content.style.overflowY = 'auto';
         
         // Re-attach event listeners to the new content
         setupSettingsEventListeners();

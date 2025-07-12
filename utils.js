@@ -104,22 +104,24 @@ export function getAvailableModels() {
         const selectors = getApiSelectors();
         const modelSelectElement = $(selectors.model);
 
-        if (modelSelectElement && modelSelectElement.length > 0) {
+        if (modelSelectElement && modelSelectElement.length > 0 && modelSelectElement[0] && modelSelectElement[0].options) {
             const models = Array.from(modelSelectElement[0].options)
-                .filter(option => option.value) // Filter out empty options
+                .filter(option => option.value) 
                 .map(option => ({
                     value: option.value,
-                    text: option.text || option.value, // Fallback to value if no text
+                    text: option.text || option.value,
                 }));
                 
             console.log(`${MODULE_NAME}: Found ${models.length} available models for current API`);
             return models;
         }
+
     } catch (error) {
         console.warn(`${MODULE_NAME}: Could not get available models from UI:`, error);
     }
-    
-    // Return empty array if UI scraping fails - template will handle this gracefully
+
+    // If the check fails or an error occurs, always return an empty array.
+    console.warn(`${MODULE_NAME}: Could not find model select element in UI, returning empty list.`);
     return [];
 }
 
