@@ -689,7 +689,7 @@ async function initiateMemoryCreation() {
 
             if (existingRange && existingRange.start !== null && existingRange.end !== null) { // Added null checks
                 if (newStart <= existingRange.end && newEnd >= existingRange.start) { // Fixed overlap logic
-                    toastr.error(`Scene overlaps with existing memory: "<strong>${mem.title}</strong>" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                    toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
                     isProcessingMemory = false;
                     return;
                 }
