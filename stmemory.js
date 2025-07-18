@@ -1,6 +1,6 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getPresetNames, isValidPreset, deepClone } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getApiSelectors, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { switchProviderAndModel, currentProfile } from './index.js';
