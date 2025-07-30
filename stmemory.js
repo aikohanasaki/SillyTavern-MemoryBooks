@@ -139,6 +139,7 @@ async function saveCurrentConnectionSettings() {
         const modelSettings = getCurrentModelSettings();
         
         const originalSettings = {
+            mainApi: $(SELECTORS.mainApi).val(), 
             apiSource: apiInfo.completionSource,
             model: modelSettings.model,
             temperature: modelSettings.temperature,
@@ -166,9 +167,16 @@ async function restoreConnectionSettings(originalSettings) {
     try {
         console.log(`${MODULE_NAME}: Restoring original connection settings:`, originalSettings);
         
+        const targetMainApi = originalSettings.mainApi;
         const targetSource = originalSettings.apiSource;
         const targetModel = originalSettings.model;
         const targetTemp = originalSettings.temperature;
+
+        // Step 0: restore main API setting first
+        if (targetMainApi && $(SELECTORS.mainApi).val() !== targetMainApi) {
+            $(SELECTORS.mainApi).val(targetMainApi).trigger('change');
+            await new Promise(r => setTimeout(r, 300)); // Wait for UI to update
+        }
 
         // Step 1: Restore the API provider (completion source) via the UI dropdown.
         if ($('#chat_completion_source').val() !== targetSource) {
