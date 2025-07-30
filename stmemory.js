@@ -155,64 +155,69 @@ async function saveCurrentConnectionSettings() {
 
 /**
  * Restores original connection settings.
+ * Robustly applies API, source, model, and temperature for all sources.
  * @private
  * @param {Object} originalSettings - The settings object saved by saveCurrentConnectionSettings.
  */
 async function restoreConnectionSettings(originalSettings) {
-    if (!originalSettings || !originalSettings.apiSource) {
-        console.warn(`${MODULE_NAME}: No original settings to restore or settings object is invalid.`);
+    if (!originalSettings) {
+        console.warn(`${MODULE_NAME}: No original settings to restore.`);
         return;
     }
 
     try {
         console.log(`${MODULE_NAME}: Restoring original connection settings:`, originalSettings);
-        
+
         const targetMainApi = originalSettings.mainApi;
         const targetSource = originalSettings.apiSource;
         const targetModel = originalSettings.model;
         const targetTemp = originalSettings.temperature;
 
-        // Step 0: restore main API setting first
+        // Step 1: Restore Main API
         if (targetMainApi && $(SELECTORS.mainApi).val() !== targetMainApi) {
             $(SELECTORS.mainApi).val(targetMainApi).trigger('change');
-            await new Promise(r => setTimeout(r, 300)); // Wait for UI to update
+            await new Promise(r => setTimeout(r, 800)); // Allow UI to react
         }
 
-        // Step 1: Restore the API provider (completion source) via the UI dropdown.
-        if ($('#chat_completion_source').val() !== targetSource) {
+        // Step 2: Restore Completion Source
+        if (targetSource && $('#chat_completion_source').val() !== targetSource) {
             $('#chat_completion_source').val(targetSource).trigger('change');
-            await new Promise(r => setTimeout(r, 300)); // Wait for UI to update.
+            await new Promise(r => setTimeout(r, 1000)); // Allow model options to load
         }
 
-        // Step 2: Get the correct model selector for the newly restored provider.
-        const selectors = getApiSelectors(); 
-        const modelSelectorId = selectors.model;
-
-        // Step 3: Restore the model in the correct dropdown.
-        const $select = $(modelSelectorId);
-        if ($select.length) {
-            // Wait for the dropdown to be populated with options after the provider switch.
-            for (let i = 0; i < 10; i++) {
-                if ($select.find(`option[value='${targetModel}']`).length > 0 || targetSource === 'custom') {
-                    break; // Found the model or it's a custom input, proceed.
-                }
-                await new Promise(r => setTimeout(r, 200));
-            }
-            $select.val(targetModel).trigger('change');
+        // Step 3: Restore Model Selector
+        if (targetModel) {
             if (targetSource === 'custom') {
+                // For custom completions, set both selectors if they exist
                 $('#custom_model_id').val(targetModel).trigger('input');
+                $('#model_custom_select').val(targetModel).trigger('change');
+            } else {
+                const selectors = getApiSelectors();
+                const modelSelectorId = selectors.model;
+                const $select = $(modelSelectorId);
+
+                if ($select.length) {
+                    // Wait for the dropdown to properly populate if needed
+                    for (let i = 0; i < 15; i++) {
+                        // ✅ FIX: Use a valid selector with correct variable interpolation
+                        if ($select.find(`option[value='${targetModel}']`).length > 0) {
+                            break;
+                        }
+                        await new Promise(r => setTimeout(r, 120));
+                    }
+                    $select.val(targetModel).trigger('change');
+                }
             }
-            console.log(`${MODULE_NAME}: Restored model to ${targetModel} in selector ${modelSelectorId}`);
         }
         
-        // Step 4: Restore the temperature.
+        // Step 4: Restore Temperature
         if (typeof targetTemp === 'number') {
-            oai_settings.temp_openai = targetTemp; // Update the backend setting.
-            $(SELECTORS.tempOpenai).val(targetTemp).trigger('input'); // Update the UI slider.
-            $(SELECTORS.tempCounterOpenai).val(targetTemp); // Update the UI number input.
-            console.log(`${MODULE_NAME}: Restored temperature to ${targetTemp}`);
+            oai_settings.temp_openai = targetTemp; // Backend/JS config
+            $(SELECTORS.tempOpenai).val(targetTemp).trigger('input');
+            $(SELECTORS.tempCounterOpenai).val(targetTemp);
         }
 
+        await new Promise(r => setTimeout(r, 350));
         console.log(`${MODULE_NAME}: Connection settings restored successfully.`);
         
     } catch (error) {
