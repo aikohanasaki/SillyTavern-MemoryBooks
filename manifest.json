@@ -6,8 +6,8 @@
     "js": "index.js",
     "css": "style.css",
     "author": "aikohanasaki",
-    "version": "2.2.6",
+    "version": "2.3.0",
     "homePage": "https://github.com/aikohanasaki/SillyTavern-MemoryBooks",
     "auto_update": true,
-    "description": "Creates and saves chat memories to SillyTavern lorebooks with keywords and numbered titles. Just set start and end messages and click Create!"
+    "description": "Creates and saves chat memories to SillyTavern lorebooks with keywords and numbered titles. Just set start and end messages and click Create! 2.3.0 is a stability and bugfix update release."
 }

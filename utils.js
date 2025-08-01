@@ -2,7 +2,7 @@
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
 
-// Centralized DOM selectors
+// Centralized DOM selectors - single source of truth
 export const SELECTORS = {
     extensionsMenu: '#extensionsMenu .list-group',
     menuItem: '#stmb-menu-item',
@@ -31,8 +31,15 @@ export const SELECTORS = {
     tempCounterOpenai: '#temp_counter_openai'
 };
 
+// Supported Chat Completion sources - BULLETPROOF
+const SUPPORTED_COMPLETION_SOURCES = [
+    'openai', 'claude', 'windowai', 'openrouter', 'ai21', 'scale', 'makersuite',
+    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', '01ai', 'nanogpt',
+    'deepseek', 'blockentropy'
+];
+
 /**
- * Get current API and completion source information
+ * BULLETPROOF: Get current API and completion source information with comprehensive error handling
  */
 export function getCurrentApiInfo() {
     try {
@@ -40,6 +47,7 @@ export function getCurrentApiInfo() {
         let model = 'unknown';
         let completionSource = 'unknown';
 
+        // Try SillyTavern's built-in functions first
         if (typeof window.getGeneratingApi === 'function') {
             api = window.getGeneratingApi();
         } else {
@@ -52,19 +60,25 @@ export function getCurrentApiInfo() {
 
         completionSource = $(SELECTORS.completionSource).val() || api;
 
+        // Validate completion source
+        if (!SUPPORTED_COMPLETION_SOURCES.includes(completionSource)) {
+            console.warn(`${MODULE_NAME}: Unsupported completion source: ${completionSource}, falling back to openai`);
+            completionSource = 'openai';
+        }
+
         return { api, model, completionSource };
     } catch (e) {
-        console.warn('STMemoryBooks: Error getting API info:', e);
+        console.warn(`${MODULE_NAME}: Error getting API info:`, e);
         return {
             api: $(SELECTORS.mainApi).val() || 'unknown',
             model: 'unknown',
-            completionSource: $(SELECTORS.completionSource).val() || 'unknown'
+            completionSource: $(SELECTORS.completionSource).val() || 'openai'
         };
     }
 }
 
 /**
- * Get the appropriate model and temperature selectors for current completion source
+ * BULLETPROOF: Get the appropriate model and temperature selectors for current completion source
  */
 export function getApiSelectors() {
     const completionSource = $(SELECTORS.completionSource).val();
@@ -96,7 +110,7 @@ export function getApiSelectors() {
 }
 
 /**
- * Gets the list of available models from the current API's select dropdown in the UI.
+ * BULLETPROOF: Gets the list of available models from the current API's select dropdown in the UI.
  * @returns {Array<{value: string, text: string}>} An array of model objects.
  */
 export function getAvailableModels() {
@@ -126,7 +140,7 @@ export function getAvailableModels() {
 }
 
 /**
- * Check if a model value represents a custom model entry
+ * BULLETPROOF: Check if a model value represents a custom model entry
  * @param {string} modelValue - The model value to check
  * @param {Array} availableModels - Array of available models from getAvailableModels()
  * @returns {boolean} Whether this is a custom model
@@ -139,28 +153,233 @@ export function isCustomModel(modelValue, availableModels) {
 }
 
 /**
- * Get current model and temperature settings
+ * BULLETPROOF: Get current model and temperature settings with comprehensive validation
  */
 export function getCurrentModelSettings() {
-    const apiInfo = getCurrentApiInfo();
-    const selectors = getApiSelectors();
-    
-    let currentModel = '';
-    
-    if (apiInfo.completionSource === 'custom') {
-        currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
-    } else {
-        currentModel = $(selectors.model).val() || '';
+    try {
+        const apiInfo = getCurrentApiInfo();
+        const selectors = getApiSelectors();
+        
+        let currentModel = '';
+        
+        if (apiInfo.completionSource === 'custom') {
+            currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
+        } else {
+            currentModel = $(selectors.model).val() || '';
+        }
+        
+        // BULLETPROOF: Default to 0.7 if no temperature is set, with proper validation
+        let currentTemp = 0.7;
+        const tempValue = $(selectors.temp).val() || $(selectors.tempCounter).val();
+        if (tempValue !== null && tempValue !== undefined && tempValue !== '') {
+            const parsedTemp = parseFloat(tempValue);
+            if (!isNaN(parsedTemp) && parsedTemp >= 0 && parsedTemp <= 2) {
+                currentTemp = parsedTemp;
+            }
+        }
+        
+        return {
+            model: currentModel,
+            temperature: currentTemp,
+            completionSource: apiInfo.completionSource
+        };
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
+        return {
+            model: '',
+            temperature: 0.7,
+            completionSource: 'openai'
+        };
+    }
+}
+
+/**
+ * BULLETPROOF: Switch provider and model with comprehensive error handling and validation
+ * @param {Object} profile - expects .connection.api/.connection.model
+ */
+export async function switchProviderAndModel(profile) {
+    const conn = profile.effectiveConnection || profile.connection;
+    if (!profile || !conn || !conn.model) {
+        console.warn(`${MODULE_NAME}: Cannot switch provider - invalid profile or connection`);
+        return false;
     }
     
-    // UPDATED: Default to 0.7 if no temperature is set
-    const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0.7);
-    
-    return {
-        model: currentModel,
-        temperature: currentTemp,
-        completionSource: apiInfo.completionSource
-    };
+    try {
+        console.log(`${MODULE_NAME}: Switching to provider: ${conn.api}, model: ${conn.model}`);
+        
+        // 1. Always force main_api to 'openai' for chat completions
+        if ($(SELECTORS.mainApi).val() !== 'openai') {
+            $(SELECTORS.mainApi).val('openai').trigger('change');
+            window.main_api = 'openai';
+            await new Promise(r => setTimeout(r, 300));
+        }
+
+        // 2. Determine the chat completion source with validation
+        const apiToSource = {
+            openai: 'openai',
+            claude: 'claude',
+            google: 'makersuite',
+            makersuite: 'makersuite',
+            vertexai: 'vertexai',
+            openrouter: 'openrouter',
+            cohere: 'cohere',
+            perplexity: 'perplexity',
+            groq: 'groq',
+            "01ai": '01ai',
+            deepseek: 'deepseek',
+            mistralai: 'mistralai',
+            custom: 'custom',
+            aimlapi: 'aimlapi',
+            xai: 'xai',
+            pollinations: 'pollinations'
+        };
+        const completionSource = apiToSource[conn.api] || 'openai'; 
+
+        if ($(SELECTORS.completionSource).val() !== completionSource) {
+            $(SELECTORS.completionSource).val(completionSource).trigger('change');
+            await new Promise(r => setTimeout(r, 300));
+        }
+
+        const model = conn.model;
+
+        // 3. Set the model value in the appropriate selector with retry logic
+        const PROVIDER_TO_MODEL_SELECTOR = {
+            openai: "#model_openai_select",
+            claude: "#model_claude_select", 
+            google: "#model_google_select",
+            makersuite: "#model_google_select",
+            vertexai: "#model_vertexai_select",
+            openrouter: "#model_openrouter_select",
+            cohere: "#model_cohere_select",
+            perplexity: "#model_perplexity_select",
+            groq: "#model_groq_select",
+            "01ai": "#model_01ai_select",
+            deepseek: "#model_deepseek_select",
+            mistralai: "#model_mistralai_select",
+            custom: "#model_custom_select",
+            aimlapi: "#model_aimlapi_select",
+            xai: "#model_xai_select",
+            pollinations: "#model_pollinations_select"
+        };
+        const selector = PROVIDER_TO_MODEL_SELECTOR[conn.api] || '#model_openai_select';
+
+        // BULLETPROOF: Wait for the select to exist and options to load with retry logic
+        let modelSet = false;
+        for (let tries = 0; tries < 15; tries++) {
+            const $select = $(selector);
+            if ($select.length && $select.find(`option[value='${model}']`).length) {
+                $select.val(model).trigger('change');
+                modelSet = true;
+                console.log(`${MODULE_NAME}: Model set to ${model} on attempt ${tries + 1}`);
+                break;
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+
+        if (!modelSet) {
+            console.warn(`${MODULE_NAME}: Could not set model ${model} after 15 attempts`);
+            return false;
+        }
+
+        // Also, for custom: update custom_model_id
+        if (completionSource === 'custom') {
+            $(SELECTORS.customModelId).val(model).trigger('input');
+        }
+
+        await new Promise(r => setTimeout(r, 150)); // brief pause for SillyTavern state update
+        
+        console.log(`${MODULE_NAME}: Successfully switched to ${conn.api}/${model}`);
+        return true;
+        
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error switching provider and model:`, error);
+        return false;
+    }
+}
+
+/**
+ * BULLETPROOF: Restore model and temperature settings with comprehensive validation
+ * @param {Object} settings - Settings object with model and temperature
+ * @returns {boolean} Whether restoration was successful
+ */
+export async function restoreModelSettings(settings) {
+    if (!settings || !settings.model) {
+        console.warn(`${MODULE_NAME}: Cannot restore settings - invalid settings object`);
+        return false;
+    }
+
+    try {
+        console.log(`${MODULE_NAME}: Restoring model settings:`, settings);
+        
+        const selectors = getApiSelectors();
+        const apiInfo = getCurrentApiInfo();
+        let restored = false;
+
+        // Check if the saved settings match the current completion source
+        if (settings.completionSource && settings.completionSource !== apiInfo.completionSource) {
+            console.warn(`${MODULE_NAME}: Completion source mismatch (saved: ${settings.completionSource}, current: ${apiInfo.completionSource})`);
+            return false;
+        }
+
+        // Apply model setting - handle both custom fields for custom completion source
+        if (settings.model) {
+            if (apiInfo.completionSource === 'custom') {
+                if ($(SELECTORS.customModelId).length) {
+                    const currentCustomId = $(SELECTORS.customModelId).val();
+                    if (currentCustomId !== settings.model) {
+                        $(SELECTORS.customModelId).val(settings.model).trigger('change');
+                        console.log(`${MODULE_NAME}: Custom model ID changed from ${currentCustomId} to ${settings.model}`);
+                        restored = true;
+                    }
+                }
+
+                if ($(SELECTORS.modelCustomSelect).length) {
+                    const currentCustomSelect = $(SELECTORS.modelCustomSelect).val();
+                    if (currentCustomSelect !== settings.model) {
+                        $(SELECTORS.modelCustomSelect).val(settings.model).trigger('change');
+                        console.log(`${MODULE_NAME}: Custom model select changed from ${currentCustomSelect} to ${settings.model}`);
+                        restored = true;
+                    }
+                }
+            } else {
+                if ($(selectors.model).length) {
+                    const currentModel = $(selectors.model).val();
+                    if (currentModel !== settings.model) {
+                        $(selectors.model).val(settings.model).trigger('change');
+                        console.log(`${MODULE_NAME}: Model changed from ${currentModel} to ${settings.model}`);
+                        restored = true;
+                    }
+                }
+            }
+        }
+
+        // Apply temperature setting with validation
+        if (typeof settings.temperature === 'number' && !isNaN(settings.temperature)) {
+            const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0);
+            if (Math.abs(currentTemp - settings.temperature) > 0.001) {
+                if ($(selectors.temp).length) {
+                    $(selectors.temp).val(settings.temperature);
+                }
+                if ($(selectors.tempCounter).length) {
+                    $(selectors.tempCounter).val(settings.temperature);
+                }
+                console.log(`${MODULE_NAME}: Temperature changed from ${currentTemp} to ${settings.temperature}`);
+                restored = true;
+            }
+        }
+
+        if (restored) {
+            console.log(`${MODULE_NAME}: Successfully restored model settings`);
+        } else {
+            console.log(`${MODULE_NAME}: No settings needed to be restored`);
+        }
+
+        return true;
+        
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error restoring model settings:`, error);
+        return false;
+    }
 }
 
 /**

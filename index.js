@@ -13,11 +13,18 @@ import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles,
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
-import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS } from './utils.js';
+import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings } from './utils.js';
 export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
+
+// BULLETPROOF: Supported Chat Completion sources (matching ModelTempLocks)
+const SUPPORTED_COMPLETION_SOURCES = [
+    'openai', 'claude', 'windowai', 'openrouter', 'ai21', 'scale', 'makersuite',
+    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', '01ai', 'nanogpt',
+    'deepseek', 'blockentropy'
+];
 
 const defaultSettings = {
     moduleSettings: {
@@ -43,94 +50,16 @@ const defaultSettings = {
     migrationVersion: 2,
 }
 
-/**
- * Switches SillyTavern API and model selectors to match the profile's provider/model id.
- * Waits for proper propagation to ensure Generate will use the right API and model.
- * @param {Object} profile - expects .connection.api/.connection.model
- */
-export async function switchProviderAndModel(profile) {
-    const conn = profile.effectiveConnection || profile.connection;
-    if (!profile || !conn || !conn.model) return;
-    
-    // 1. Always force main_api to 'openai' for chat completions
-    if ($('#main_api').val() !== 'openai') {
-        $('#main_api').val('openai').trigger('change');
-        window.main_api = 'openai';
-        await new Promise(r => setTimeout(r, 300));
-    }
 
-    // 2. Determine the chat completion source
-    const apiToSource = {
-        openai: 'openai',
-        claude: 'claude',
-        google: 'makersuite',
-        makersuite: 'makersuite',
-        vertexai: 'vertexai',
-        openrouter: 'openrouter',
-        cohere: 'cohere',
-        perplexity: 'perplexity',
-        groq: 'groq',
-        "01ai": '01ai',
-        deepseek: 'deepseek',
-        mistralai: 'mistralai',
-        custom: 'custom',
-        aimlapi: 'aimlapi',
-        xai: 'xai',
-        pollinations: 'pollinations'
-    };
-    const completionSource = apiToSource[conn.api] || 'openai'; 
-
-    if ($('#chat_completion_source').val() !== completionSource) {
-        $('#chat_completion_source').val(completionSource).trigger('change');
-        await new Promise(r => setTimeout(r, 300));
-    }
-
-    const model = conn.model;
-
-    // 3. Set the model value in the appropriate selector
-    // (Allow time for the right selector to appear/populate)
-    const PROVIDER_TO_MODEL_SELECTOR = {
-        openai: "#model_openai_select",
-        claude: "#model_claude_select", 
-        google: "#model_google_select",
-        makersuite: "#model_google_select",
-        vertexai: "#model_vertexai_select",
-        openrouter: "#model_openrouter_select",
-        cohere: "#model_cohere_select",
-        perplexity: "#model_perplexity_select",
-        groq: "#model_groq_select",
-        "01ai": "#model_01ai_select",
-        deepseek: "#model_deepseek_select",
-        mistralai: "#model_mistralai_select",
-        custom: "#model_custom_select",
-        aimlapi: "#model_aimlapi_select",
-        xai: "#model_xai_select",
-        pollinations: "#model_pollinations_select"
-    };
-    const selector = PROVIDER_TO_MODEL_SELECTOR[conn.api] || '#model_openai_select';
-
-    // Wait for the select to exist and options to load (prevent race condition)
-    for (let tries = 0; tries < 10; tries++) {
-        const $select = $(selector);
-        if ($select.length && $select.find(`option[value='${model}']`).length) {
-            $select.val(model).trigger('change');
-            break;
-        }
-        await new Promise(r => setTimeout(r, 200));
-    }
-
-    // Also, for custom: update custom_model_id
-    if (completionSource === 'custom') {
-        $('#custom_model_id').val(model).trigger('input');
-    }
-
-    await new Promise(r => setTimeout(r, 150)); // brief pause for SillyTavern state update
-}
 
 // Current state variables
 let currentPopupInstance = null;
 let isProcessingMemory = false;
 let currentProfile = null;
+
+// BULLETPROOF: Settings cache for restoration (like ModelTempLocks)
+let cachedSettings = null;
+let isExtensionEnabled = false;
 
 // MutationObserver for chat message monitoring
 let chatObserver = null;
@@ -346,6 +275,105 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 /**
+ * BULLETPROOF: Check API compatibility using SillyTavern's built-in functions
+ */
+function checkApiCompatibility() {
+    let isCompatible = false;
+
+    try {
+        if (typeof window.getGeneratingApi === 'function') {
+            const currentApi = window.getGeneratingApi();
+            isCompatible = window.main_api === 'openai' && SUPPORTED_COMPLETION_SOURCES.includes(currentApi);
+        } else {
+            const mainApi = $(SELECTORS.mainApi).val();
+            const completionSource = $(SELECTORS.completionSource).val();
+            isCompatible = mainApi === 'openai' && SUPPORTED_COMPLETION_SOURCES.includes(completionSource);
+        }
+    } catch (e) {
+        console.warn(`${MODULE_NAME}: Error checking API compatibility:`, e);
+        const mainApi = $(SELECTORS.mainApi).val();
+        const completionSource = $(SELECTORS.completionSource).val();
+        isCompatible = mainApi === 'openai' && SUPPORTED_COMPLETION_SOURCES.includes(completionSource);
+    }
+
+    if (isCompatible !== isExtensionEnabled) {
+        isExtensionEnabled = isCompatible;
+        console.log(`${MODULE_NAME}: Extension ${isCompatible ? 'enabled' : 'disabled'} for current API`);
+    }
+
+    return isCompatible;
+}
+
+/**
+ * BULLETPROOF: Update cached settings
+ */
+function updateCachedSettings() {
+    if (!isExtensionEnabled) {
+        console.log(`${MODULE_NAME}: Skipping settings cache update - extension not enabled`);
+        return;
+    }
+
+    try {
+        const currentSettings = getCurrentModelSettings();
+        cachedSettings = {
+            model: currentSettings.model,
+            temperature: currentSettings.temperature,
+            completionSource: currentSettings.completionSource,
+            cachedAt: new Date().toISOString()
+        };
+        console.log(`${MODULE_NAME}: Updated cached settings:`, cachedSettings);
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Error updating cached settings:`, error);
+    }
+}
+
+/**
+ * BULLETPROOF: Restore cached settings
+ */
+async function restoreCachedSettings() {
+    if (!cachedSettings || !isExtensionEnabled) {
+        console.log(`${MODULE_NAME}: No cached settings to restore or extension disabled`);
+        return false;
+    }
+
+    try {
+        console.log(`${MODULE_NAME}: Restoring cached settings:`, cachedSettings);
+        const success = await restoreModelSettings(cachedSettings);
+        if (success) {
+            console.log(`${MODULE_NAME}: Successfully restored cached settings`);
+        } else {
+            console.warn(`${MODULE_NAME}: Failed to restore cached settings`);
+        }
+        return success;
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error restoring cached settings:`, error);
+        return false;
+    }
+}
+
+/**
+ * BULLETPROOF: Handle extension state changes (enabled/disabled)
+ */
+function handleExtensionStateChange() {
+    const wasEnabled = isExtensionEnabled;
+    const isNowEnabled = checkApiCompatibility();
+    
+    if (wasEnabled && !isNowEnabled) {
+        // Extension was disabled - restore cached settings
+        console.log(`${MODULE_NAME}: Extension disabled, restoring cached settings`);
+        setTimeout(() => {
+            restoreCachedSettings();
+        }, 500);
+    } else if (!wasEnabled && isNowEnabled) {
+        // Extension was enabled - update cached settings
+        console.log(`${MODULE_NAME}: Extension enabled, updating cached settings`);
+        setTimeout(() => {
+            updateCachedSettings();
+        }, 500);
+    }
+}
+
+/**
  * Initialize and validate extension settings
  */
 function initializeSettings() {
@@ -526,16 +554,32 @@ function isRetryableError(error) {
 }
 
 /**
- * Execute the core memory generation process - now with retry logic
+ * Execute the core memory generation process - now with retry logic and BULLETPROOF settings restoration
  */
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     currentProfile = profileSettings;
     const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
     
+    // BULLETPROOF: Store current settings for restoration
+    const originalSettings = getCurrentModelSettings();
+    let settingsRestored = false;
+    
+    // BULLETPROOF: Update cached settings before switching
+    updateCachedSettings();
+    
     try {
         if (retryCount > 0) {
             toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
+        }
+        
+        // BULLETPROOF: Switch to profile settings if not using current settings override
+        if (!profileSettings.advancedOptions?.overrideSettings) {
+            console.log('STMemoryBooks: Switching to profile settings for memory generation');
+            const switchSuccess = await switchProviderAndModel(profileSettings);
+            if (!switchSuccess) {
+                console.warn('STMemoryBooks: Failed to switch to profile settings, continuing with current settings');
+            }
         }
         
         toastr.info('Compiling scene messages...', 'STMemoryBooks');
@@ -601,6 +645,9 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         }, successDelay);
         
+        // BULLETPROOF: Mark settings as restored on success
+        settingsRestored = true;
+        
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
         
@@ -640,6 +687,22 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
     } finally {
+        // BULLETPROOF: Always restore cached settings, even on error
+        if (!settingsRestored) {
+            try {
+                console.log('STMemoryBooks: Restoring cached model settings');
+                const restoreSuccess = await restoreCachedSettings();
+                if (restoreSuccess) {
+                    console.log('STMemoryBooks: Successfully restored cached settings');
+                    settingsRestored = true;
+                } else {
+                    console.warn('STMemoryBooks: Failed to restore cached settings');
+                }
+            } catch (restoreError) {
+                console.error('STMemoryBooks: Error restoring cached settings:', restoreError);
+            }
+        }
+        
         isProcessingMemory = false;
     }
 }
@@ -1149,7 +1212,7 @@ function createUI() {
 }
 
 /**
- * Setup event listeners
+ * Setup event listeners with BULLETPROOF settings management
  */
 function setupEventListeners() {
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
@@ -1161,6 +1224,26 @@ function setupEventListeners() {
         handleMessageDeletion(deletedId, settings);
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+    
+    // BULLETPROOF: API change handlers for settings management
+    $(document).on('change', `${SELECTORS.mainApi}, ${SELECTORS.completionSource}`, function() {
+        console.log(`${MODULE_NAME}: API change detected`);
+        handleExtensionStateChange();
+    });
+
+    // BULLETPROOF: Model settings change handlers
+    const modelSelectors = Object.values(SELECTORS).filter(selector => 
+        selector.includes('model_') || selector.includes('temp_') || selector.includes('custom_model')
+    ).join(', ');
+
+    $(document).on('change input', modelSelectors, function(e) {
+        console.log(`${MODULE_NAME}: Model/temp setting changed:`, e.target.id);
+        if (isExtensionEnabled) {
+            setTimeout(() => {
+                updateCachedSettings();
+            }, 100);
+        }
+    });
     
     eventSource.on(event_types.GENERATE_AFTER_DATA, (generate_data) => {
         if (isProcessingMemory && currentProfile) { 
@@ -1181,17 +1264,17 @@ function setupEventListeners() {
     
     window.addEventListener('beforeunload', cleanupChatObserver);
     
-    console.log('STMemoryBooks: Event listeners registered');
+    console.log('STMemoryBooks: Event listeners registered with bulletproof settings management');
 }
 
 /**
- * Initialize the extension
+ * Initialize the extension with BULLETPROOF settings management
  */
 async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
 
-    console.log('STMemoryBooks: Initializing with JSON-based architecture and performance optimizations');
+    console.log('STMemoryBooks: Initializing with JSON-based architecture, performance optimizations, and bulletproof settings management');
     
     // Wait for SillyTavern to be ready
     let attempts = 0;
@@ -1205,6 +1288,9 @@ async function init() {
         await new Promise(resolve => setTimeout(resolve, 500));
         attempts++;
     }
+    
+    // BULLETPROOF: Check initial API compatibility
+    checkApiCompatibility();
     
     // Initialize settings with validation
     const settings = initializeSettings();
@@ -1222,6 +1308,9 @@ async function init() {
     
     // Initialize scene state
     updateSceneStateCache();
+    
+    // BULLETPROOF: Initialize cached settings
+    updateCachedSettings();
     
     // Initialize chat observer
     try {
@@ -1255,7 +1344,7 @@ async function init() {
         return a === b;
     });
     
-    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation and performance optimizations');
+    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation, performance optimizations, and bulletproof settings management');
 }
 
 // Initialize when ready
