@@ -645,8 +645,21 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         }, successDelay);
         
-        // BULLETPROOF: Mark settings as restored on success
-        settingsRestored = true;
+        // BULLETPROOF: Restore original settings on success
+        if (originalSettings) {
+            try {
+                console.log('STMemoryBooks: Restoring original model settings');
+                const restoreSuccess = await restoreModelSettings(originalSettings);
+                if (restoreSuccess) {
+                    console.log('STMemoryBooks: Successfully restored original settings');
+                    settingsRestored = true;
+                } else {
+                    console.warn('STMemoryBooks: Failed to restore original settings');
+                }
+            } catch (restoreError) {
+                console.error('STMemoryBooks: Error restoring original settings:', restoreError);
+            }
+        }
         
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
@@ -687,19 +700,19 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
     } finally {
-        // BULLETPROOF: Always restore cached settings, even on error
-        if (!settingsRestored) {
+        // BULLETPROOF: Always restore original settings, even on error
+        if (!settingsRestored && originalSettings) {
             try {
-                console.log('STMemoryBooks: Restoring cached model settings');
-                const restoreSuccess = await restoreCachedSettings();
+                console.log('STMemoryBooks: Restoring original model settings');
+                const restoreSuccess = await restoreModelSettings(originalSettings);
                 if (restoreSuccess) {
-                    console.log('STMemoryBooks: Successfully restored cached settings');
+                    console.log('STMemoryBooks: Successfully restored original settings');
                     settingsRestored = true;
                 } else {
-                    console.warn('STMemoryBooks: Failed to restore cached settings');
+                    console.warn('STMemoryBooks: Failed to restore original settings');
                 }
             } catch (restoreError) {
-                console.error('STMemoryBooks: Error restoring cached settings:', restoreError);
+                console.error('STMemoryBooks: Error restoring original settings:', restoreError);
             }
         }
         

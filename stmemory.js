@@ -3,8 +3,8 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getApiSelectors, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
-import { switchProviderAndModel, currentProfile } from './index.js';
-import { SELECTORS } from './utils.js';
+import { currentProfile } from './index.js';
+import { switchProviderAndModel, SELECTORS } from './utils.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -128,102 +128,7 @@ function parseAIJsonResponse(aiResponse) {
     }
 }
 
-/**
- * Read live state of connection settings and save them for later restoration.
- * @private
- * @returns {Promise<Object>} An object containing the original settings.
- */
-async function saveCurrentConnectionSettings() {
-    try {
-        const apiInfo = getCurrentApiInfo();
-        const modelSettings = getCurrentModelSettings();
-        
-        const originalSettings = {
-            mainApi: $(SELECTORS.mainApi).val(), 
-            apiSource: apiInfo.completionSource,
-            model: modelSettings.model,
-            temperature: modelSettings.temperature,
-        };
-        
-        console.log(`${MODULE_NAME}: Saved original connection settings:`, originalSettings);
-        return originalSettings;
-    } catch (e) {
-        console.warn(`${MODULE_NAME}: Could not save current settings`, e);
-        return {}; // Return empty object on failure
-    }
-}
 
-/**
- * Restores original connection settings.
- * Robustly applies API, source, model, and temperature for all sources.
- * @private
- * @param {Object} originalSettings - The settings object saved by saveCurrentConnectionSettings.
- */
-async function restoreConnectionSettings(originalSettings) {
-    if (!originalSettings) {
-        console.warn(`${MODULE_NAME}: No original settings to restore.`);
-        return;
-    }
-
-    try {
-        console.log(`${MODULE_NAME}: Restoring original connection settings:`, originalSettings);
-
-        const targetMainApi = originalSettings.mainApi;
-        const targetSource = originalSettings.apiSource;
-        const targetModel = originalSettings.model;
-        const targetTemp = originalSettings.temperature;
-
-        // Step 1: Restore Main API
-        if (targetMainApi && $(SELECTORS.mainApi).val() !== targetMainApi) {
-            $(SELECTORS.mainApi).val(targetMainApi).trigger('change');
-            await new Promise(r => setTimeout(r, 800)); // Allow UI to react
-        }
-
-        // Step 2: Restore Completion Source
-        if (targetSource && $('#chat_completion_source').val() !== targetSource) {
-            $('#chat_completion_source').val(targetSource).trigger('change');
-            await new Promise(r => setTimeout(r, 1000)); // Allow model options to load
-        }
-
-        // Step 3: Restore Model Selector
-        if (targetModel) {
-            if (targetSource === 'custom') {
-                // For custom completions, set both selectors if they exist
-                $('#custom_model_id').val(targetModel).trigger('input');
-                $('#model_custom_select').val(targetModel).trigger('change');
-            } else {
-                const selectors = getApiSelectors();
-                const modelSelectorId = selectors.model;
-                const $select = $(modelSelectorId);
-
-                if ($select.length) {
-                    // Wait for the dropdown to properly populate if needed
-                    for (let i = 0; i < 15; i++) {
-                        // ✅ FIX: Use a valid selector with correct variable interpolation
-                        if ($select.find(`option[value='${targetModel}']`).length > 0) {
-                            break;
-                        }
-                        await new Promise(r => setTimeout(r, 120));
-                    }
-                    $select.val(targetModel).trigger('change');
-                }
-            }
-        }
-        
-        // Step 4: Restore Temperature
-        if (typeof targetTemp === 'number') {
-            oai_settings.temp_openai = targetTemp; // Backend/JS config
-            $(SELECTORS.tempOpenai).val(targetTemp).trigger('input');
-            $(SELECTORS.tempCounterOpenai).val(targetTemp);
-        }
-
-        await new Promise(r => setTimeout(r, 350));
-        console.log(`${MODULE_NAME}: Connection settings restored successfully.`);
-        
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Failed to restore all connection settings:`, error);
-    }
-}
 
 /**
  * Generates memory using AI with structured JSON output instead of tool calling.
@@ -243,16 +148,12 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
-    let originalSettings = null;
-    
     try {
-        // Step 1: Save the current settings BEFORE making any changes.
-        originalSettings = await saveCurrentConnectionSettings();
-
-        // Step 2: Switch to the profile's settings for the generation call.
+        // Step 1: Switch to the profile's settings for the generation call.
+        // Note: Settings restoration is handled by the main process in index.js
         await switchProviderAndModel(profile);
 
-        // Step 3: Generate the memory using the new settings.
+        // Step 2: Generate the memory using the new settings.
         const aiResponse = await Generate('quiet', { 
             quiet_prompt: promptString, 
             skipWIAN: true,
@@ -272,12 +173,8 @@ async function generateMemoryWithAI(promptString, profile) {
         console.error(`${MODULE_NAME}: JSON-based memory generation failed:`, error);
         if (error instanceof AIResponseError) throw error;
         throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
-    } finally {
-        // Step 4: ALWAYS restore the original settings, even if an error occurred.
-        if (originalSettings) {
-            await restoreConnectionSettings(originalSettings);
-        }
     }
+    // Note: Settings restoration is handled by the main process in index.js
 }
 
 /**
