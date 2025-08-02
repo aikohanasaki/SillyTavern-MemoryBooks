@@ -1,4 +1,8 @@
 // utils.js - Shared utilities for STMemoryBooks
+import { chat_metadata, characters, name2, this_chid } from '../../../../script.js';
+import { getContext } from '../../../extensions.js';
+import { selected_group, groups } from '../../../group-chats.js';
+
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
 
@@ -107,6 +111,168 @@ export function getApiSelectors() {
         temp: SELECTORS.tempOpenai,
         tempCounter: SELECTORS.tempCounterOpenai
     };
+}
+
+/**
+ * GROUP CHAT SUPPORT: Get current context - detects group vs single character chats
+ * Based on ModelTempLocks implementation pattern
+ * @returns {Object} Context information including group/character detection
+ */
+export function getCurrentMemoryBooksContext() {
+    try {
+        let characterName = null;
+        let chatId = null;
+        let chatName = null;
+
+        // Debug: Check what's available for context detection
+        console.log(`${MODULE_NAME}: Debug - selected_group:`, selected_group);
+        console.log(`${MODULE_NAME}: Debug - groups length:`, groups?.length || 'undefined');
+        console.log(`${MODULE_NAME}: Debug - name2:`, name2);
+        console.log(`${MODULE_NAME}: Debug - this_chid:`, this_chid);
+        console.log(`${MODULE_NAME}: Debug - chat_metadata:`, chat_metadata);
+        console.log(`${MODULE_NAME}: Debug - chat_metadata keys:`, Object.keys(chat_metadata || {}));
+
+        // Check if we're in a group chat (following group-chats.js pattern)
+        const isGroupChat = !!selected_group;
+        const groupId = selected_group || null;
+        let groupName = null;
+
+        if (isGroupChat) {
+            // Group chat context (following group-chats.js pattern)
+            const group = groups?.find(x => x.id === groupId);
+            if (group) {
+                groupName = group.name;
+                chatId = group.chat_id;
+                chatName = chatId;
+                // For group chats, use the group name as the "character" identifier for compatibility
+                characterName = groupName;
+                console.log(`${MODULE_NAME}: Debug - Group chat detected: ${groupName}`);
+            }
+        } else {
+            // Single character chat context (following group-chats.js and script.js patterns)
+            
+            // Method 1: Use name2 variable (primary character name from script.js)
+            if (name2 && name2.trim()) {
+                characterName = String(name2).trim();
+                console.log(`${MODULE_NAME}: Debug - Using name2:`, characterName);
+            }
+            // Method 2: Try to get current character from characters array and this_chid
+            else if (this_chid !== undefined && characters && characters[this_chid]) {
+                characterName = characters[this_chid].name;
+                console.log(`${MODULE_NAME}: Debug - Using characters[this_chid].name:`, characterName);
+            }
+            // Method 3: Try chat_metadata.character_name as fallback
+            else if (chat_metadata?.character_name) {
+                characterName = String(chat_metadata.character_name).trim();
+                console.log(`${MODULE_NAME}: Debug - Using chat_metadata.character_name:`, characterName);
+            }
+            
+            // Normalize unicode characters for consistency
+            if (characterName && characterName.normalize) {
+                characterName = characterName.normalize('NFC');
+            }
+
+            // Get chat information using SillyTavern's context system
+            try {
+                const context = getContext();
+                if (context?.chatId) {
+                    chatId = context.chatId;
+                    chatName = chatId;
+                } else if (typeof window.getCurrentChatId === 'function') {
+                    chatId = window.getCurrentChatId();
+                    chatName = chatId;
+                }
+            } catch (error) {
+                console.warn(`${MODULE_NAME}: Could not get context, trying fallback methods`);
+                if (typeof window.getCurrentChatId === 'function') {
+                    chatId = window.getCurrentChatId();
+                    chatName = chatId;
+                }
+            }
+        }
+
+        // Get bound lorebook information
+        let lorebookName = null;
+        if (chat_metadata?.world_info) {
+            lorebookName = chat_metadata.world_info;
+            console.log(`${MODULE_NAME}: Debug - Bound lorebook:`, lorebookName);
+        }
+
+        // Get current model/temperature settings (following ModelTempLocks approach)
+        let modelSettings = null;
+        
+        try {
+            // Get API info using the same method as ModelTempLocks
+            const currentApiInfo = getCurrentApiInfo();
+            
+            // Get temperature using the same method as ModelTempLocks
+            const apiSelectors = getApiSelectors();
+            const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() || 0.7);
+            
+            // Get model using the same method as ModelTempLocks
+            let currentModel = '';
+            if (currentApiInfo.completionSource === 'custom') {
+                currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
+            } else {
+                currentModel = $(apiSelectors.model).val() || '';
+            }
+            
+            modelSettings = {
+                api: currentApiInfo.api,
+                model: currentModel,
+                temperature: currentTemp,
+                completionSource: currentApiInfo.completionSource,
+                source: 'current_ui'
+            };
+            
+            console.log(`${MODULE_NAME}: Debug - Current model/temp settings:`, modelSettings);
+        } catch (error) {
+            console.warn(`${MODULE_NAME}: Could not get current model/temperature settings:`, error);
+            modelSettings = {
+                api: 'unknown',
+                model: 'unknown',
+                temperature: 0.7,
+                completionSource: 'unknown',
+                source: 'fallback'
+            };
+        }
+
+        const result = {
+            characterName,
+            chatId,
+            chatName,
+            groupId,
+            isGroupChat,
+            lorebookName,
+            modelSettings
+        };
+
+        // Add group-specific properties when in group chat
+        if (isGroupChat) {
+            result.groupName = groupName;
+        }
+
+        console.log(`${MODULE_NAME}: Context resolved:`, result);
+        console.log(`${MODULE_NAME}: - isGroupChat: ${result.isGroupChat}`);
+        console.log(`${MODULE_NAME}: - groupId: ${result.groupId}`);
+        console.log(`${MODULE_NAME}: - groupName: ${result.groupName}`);
+        console.log(`${MODULE_NAME}: - characterName: ${result.characterName}`);
+        console.log(`${MODULE_NAME}: - chatId: ${result.chatId}`);
+        console.log(`${MODULE_NAME}: - lorebookName: ${result.lorebookName}`);
+        console.log(`${MODULE_NAME}: - modelSettings:`, result.modelSettings);
+        return result;
+
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Error getting context:`, error);
+        return {
+            characterName: null,
+            chatId: null,
+            chatName: null,
+            groupId: null,
+            groupName: null,
+            isGroupChat: false
+        };
+    }
 }
 
 /**

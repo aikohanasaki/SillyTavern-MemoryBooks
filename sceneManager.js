@@ -1,6 +1,8 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { saveMetadataDebounced } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
+import { getCurrentMemoryBooksContext } from './utils.js';
+import { groups, editGroup } from '../../../group-chats.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
@@ -11,16 +13,66 @@ let currentSceneState = {
 };
 
 /**
- * Get current scene markers from chat metadata
+ * GROUP CHAT SUPPORT: Get current scene markers from appropriate metadata location
+ * Handles both group chats (group.chat_metadata) and single character chats (chat_metadata)
  */
 export function getSceneMarkers() {
-    if (!chat_metadata.STMemoryBooks) {
-        chat_metadata.STMemoryBooks = {
-            sceneStart: null,
-            sceneEnd: null
-        };
+    const context = getCurrentMemoryBooksContext();
+    
+    if (context.isGroupChat) {
+        // Group chat - store in group metadata
+        const group = groups?.find(x => x.id === context.groupId);
+        
+        if (group) {
+            if (!group.chat_metadata) {
+                group.chat_metadata = {};
+            }
+            if (!group.chat_metadata.STMemoryBooks) {
+                group.chat_metadata.STMemoryBooks = {
+                    sceneStart: null,
+                    sceneEnd: null
+                };
+            }
+            return group.chat_metadata.STMemoryBooks;
+        }
+    } else {
+        // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        if (!chat_metadata.STMemoryBooks) {
+            chat_metadata.STMemoryBooks = {
+                sceneStart: null,
+                sceneEnd: null
+            };
+        }
+        return chat_metadata.STMemoryBooks;
     }
-    return chat_metadata.STMemoryBooks;
+    
+    // Fallback for edge cases
+    console.warn(`${MODULE_NAME}: Could not access scene markers, returning fallback`);
+    return { 
+        sceneStart: null, 
+        sceneEnd: null 
+    };
+}
+
+/**
+ * GROUP CHAT SUPPORT: Save metadata for current context (group or single character)
+ * Handles both group metadata saving and regular chat metadata saving
+ */
+function saveMetadataForCurrentContext() {
+    const context = getCurrentMemoryBooksContext();
+    
+    if (context.isGroupChat) {
+        // Group chat - trigger group save for metadata persistence
+        if (typeof editGroup === 'function') {
+            editGroup(context.groupId, false, false);
+            console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}"`);
+        } else {
+            console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
+        }
+    } else {
+        // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        saveMetadataDebounced();
+    }
 }
 
 /**
@@ -151,7 +203,7 @@ export function setSceneMarker(messageId, type) {
     currentSceneState.end = newState.end;
     
     // Persist to metadata and update DOM to match committed state
-    saveMetadataDebounced();
+    saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
     
     console.log(`${MODULE_NAME}: Scene markers updated atomically:`, {
@@ -177,7 +229,7 @@ export function clearScene() {
     currentSceneState.end = null;
     
     // Persist and update DOM
-    saveMetadataDebounced();
+    saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, null, null);
     
     console.log(`${MODULE_NAME}: Scene cleared atomically`);
@@ -308,7 +360,7 @@ export function validateSceneMarkers() {
     if (hasChanges) {
         currentSceneState.start = markers.sceneStart;
         currentSceneState.end = markers.sceneEnd;
-        saveMetadataDebounced();
+        saveMetadataForCurrentContext();
         
         // PERFORMANCE: Use selective update instead of full update
         updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
@@ -363,7 +415,7 @@ export function handleMessageDeletion(deletedId, settings) {
     if (hasChanges) {
         currentSceneState.start = markers.sceneStart;
         currentSceneState.end = markers.sceneEnd;
-        saveMetadataDebounced();
+        saveMetadataForCurrentContext();
         updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
 
         if (settings?.moduleSettings?.showNotifications) {

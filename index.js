@@ -13,7 +13,8 @@ import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles,
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
-import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings } from './utils.js';
+import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings, getCurrentMemoryBooksContext } from './utils.js';
+import { editGroup } from '../../../group-chats.js';
 export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
@@ -207,6 +208,27 @@ function handleMessageReceived() {
 }
 
 /**
+ * GROUP CHAT SUPPORT: Save metadata for current context (group or single character)
+ * Handles both group metadata saving and regular chat metadata saving
+ */
+function saveMemoryBooksMetadata() {
+    const context = getCurrentMemoryBooksContext();
+    
+    if (context.isGroupChat) {
+        // Group chat - trigger group save for metadata persistence
+        if (typeof editGroup === 'function') {
+            editGroup(context.groupId, false, false);
+            console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}"`);
+        } else {
+            console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
+        }
+    } else {
+        // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        saveMetadataDebounced();
+    }
+}
+
+/**
  * Slash command handlers - FIXED SIGNATURES
  */
 function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
@@ -263,7 +285,7 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     markers.sceneEnd = endId;
     
     updateSceneStateCache();
-    saveMetadataDebounced();
+    saveMemoryBooksMetadata();
     updateAllButtonStates();
     
     toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
@@ -721,10 +743,22 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 }
 
 async function initiateMemoryCreation() {
-    // Early validation checks (no flag set yet)
-    if (!characters || characters.length === 0 || !characters[this_chid]) {
-        toastr.error('SillyTavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
-        return;
+    // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
+    const context = getCurrentMemoryBooksContext();
+    
+    // For single character chats, check character data
+    if (!context.isGroupChat) {
+        if (!characters || characters.length === 0 || !characters[this_chid]) {
+            toastr.error('SillyTavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
+            return;
+        }
+    }
+    // For group chats, check that we have group data
+    else {
+        if (!context.groupId || !context.groupName) {
+            toastr.error('Group chat data not available, please wait a few seconds and try again.', 'STMemoryBooks');
+            return;
+        }
     }
     
     // RACE CONDITION FIX: Check and set flag atomically
