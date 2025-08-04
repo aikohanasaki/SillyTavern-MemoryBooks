@@ -53,7 +53,7 @@ After selecting a character and chat, there may be a slight delay before the ext
 
 ![Memory Settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
 
-3. **Create Memory**: Click the "🧠 Create Memory" button or use `/creatememory`
+3. **Create Memory**: Click the "📕 Create Memory" button or use `/creatememory`
 4. **Choose Options**: Select your preferred preset and choose 0-7 previous memories to include as context (helps AI understand ongoing storylines)
 5. **Confirm**: The pop-up will confirm which messages and context memories to use, click OK to confirm
 6. **Wait**: The AI will respond and a message will appear confirming that the memory has been created and saved
