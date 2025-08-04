@@ -186,6 +186,23 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
         }
     }
     
+    // BUGFIX: Add messages that had valid-point classes in the old state but won't in the new state
+    if (oldStart !== null && oldEnd === null && newStart !== null && newEnd !== null) {
+        // Transitioning from "start only" to "complete scene" - need to clear valid-end-point from messages after newEnd
+        const maxScan = Math.min(oldStart + 100, chat.length - 1);
+        for (let i = newEnd + 1; i <= maxScan; i++) {
+            affectedIds.add(i);
+        }
+    }
+    
+    if (oldEnd !== null && oldStart === null && newStart !== null && newEnd !== null) {
+        // Transitioning from "end only" to "complete scene" - need to clear valid-start-point from messages before newStart
+        const minScan = Math.max(oldEnd - 100, 0);
+        for (let i = minScan; i < newStart; i++) {
+            affectedIds.add(i);
+        }
+    }
+    
     if (affectedIds.size === 0) {
         return { min: null, max: null, needsFullUpdate: false };
     }
@@ -323,6 +340,8 @@ function updateButtonStatesForElements(messageElements, markers) {
                 startBtn.classList.add('in-scene');
                 endBtn.classList.add('in-scene');
             }
+            // Messages outside the scene range (before start or after end) should have no special styling
+            // The classes were already cleared above, so no additional action needed
 
         } else if (sceneStart !== null) {
             // Start set, show valid end points
