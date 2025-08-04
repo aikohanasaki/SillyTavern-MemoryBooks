@@ -5,6 +5,7 @@ import { characters, this_chid, substituteParams, Generate } from '../../../../s
 import { oai_settings } from '../../../openai.js';
 import { currentProfile } from './index.js';
 import { switchProviderAndModel, SELECTORS } from './utils.js';
+import { groups } from '../../../group-chats.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -33,26 +34,48 @@ class InvalidProfileError extends Error {
 }
 
 /**
- * Waits for character data to be available with retry mechanism
+ * GROUP CHAT SUPPORT: Waits for character/group data to be available with retry mechanism
  * @private
  * @param {number} maxWaitMs - Maximum time to wait in milliseconds (default: 5000)
  * @param {number} checkIntervalMs - How often to check in milliseconds (default: 250)
- * @returns {Promise<boolean>} True if character data is available, false if timeout
+ * @returns {Promise<boolean>} True if character/group data is available, false if timeout
  */
 async function waitForCharacterData(maxWaitMs = 5000, checkIntervalMs = 250) {
     const startTime = Date.now();
     
+    // Import context detection to check if we're in a group chat
+    const { getCurrentMemoryBooksContext } = await import('./utils.js');
+    const context = getCurrentMemoryBooksContext();
+    
+    console.log(`${MODULE_NAME}: waitForCharacterData - context:`, context);
+    console.log(`${MODULE_NAME}: waitForCharacterData - isGroupChat:`, context.isGroupChat);
+    
     while (Date.now() - startTime < maxWaitMs) {
-        if (characters && characters.length > this_chid && characters[this_chid]) {
-            console.log(`${MODULE_NAME}: Character data became available after ${Date.now() - startTime}ms`);
-            return true;
+        if (context.isGroupChat) {
+            // Group chat - check if group data is available
+            console.log(`${MODULE_NAME}: Checking group data - groups:`, !!groups, 'length:', groups?.length, 'groupId:', context.groupId);
+            if (groups && context.groupId) {
+                const group = groups.find(g => g.id === context.groupId);
+                console.log(`${MODULE_NAME}: Found group:`, !!group);
+                if (group) {
+                    console.log(`${MODULE_NAME}: Group data became available after ${Date.now() - startTime}ms`);
+                    return true;
+                }
+            }
+        } else {
+            // Single character chat - use original logic
+            console.log(`${MODULE_NAME}: Checking character data - characters:`, !!characters, 'this_chid:', this_chid);
+            if (characters && characters.length > this_chid && characters[this_chid]) {
+                console.log(`${MODULE_NAME}: Character data became available after ${Date.now() - startTime}ms`);
+                return true;
+            }
         }
         
         // Wait before checking again
         await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
     }
     
-    console.warn(`${MODULE_NAME}: Character data did not become available within ${maxWaitMs}ms timeout`);
+    console.warn(`${MODULE_NAME}: Character/group data did not become available within ${maxWaitMs}ms timeout`);
     return false;
 }
 

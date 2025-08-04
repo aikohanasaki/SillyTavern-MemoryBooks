@@ -597,3 +597,4 @@ export function updateSceneStateCache() {
 export function getCurrentSceneState() {
     return { ...currentSceneState };
 }
+
