@@ -2,7 +2,7 @@ import { chat, chat_metadata } from '../../../../script.js';
 import { saveMetadataDebounced } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { getCurrentMemoryBooksContext } from './utils.js';
-import { groups, editGroup } from '../../../group-chats.js';
+import { groups } from '../../../group-chats.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
@@ -34,9 +34,18 @@ export function getSceneMarkers() {
                 };
             }
             return group.chat_metadata.STMemoryBooks;
+        } else {
+            console.warn(`${MODULE_NAME}: Group with ID "${context.groupId}" not found in groups array`);
         }
     } else {
         // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        if (!chat_metadata) {
+            console.warn(`${MODULE_NAME}: chat_metadata is not available, this might indicate a context issue`);
+            return { 
+                sceneStart: null, 
+                sceneEnd: null 
+            };
+        }
         if (!chat_metadata.STMemoryBooks) {
             chat_metadata.STMemoryBooks = {
                 sceneStart: null,
@@ -47,7 +56,7 @@ export function getSceneMarkers() {
     }
     
     // Fallback for edge cases
-    console.warn(`${MODULE_NAME}: Could not access scene markers, returning fallback`);
+    console.warn(`${MODULE_NAME}: Could not access scene markers for context:`, context);
     return { 
         sceneStart: null, 
         sceneEnd: null 
@@ -63,11 +72,24 @@ function saveMetadataForCurrentContext() {
     
     if (context.isGroupChat) {
         // Group chat - trigger group save for metadata persistence
-        if (typeof editGroup === 'function') {
-            editGroup(context.groupId, false, false);
+        // Use window.editGroup as it's more reliable than direct import [[memory:4989984]]
+        if (typeof window.editGroup === 'function') {
+            window.editGroup(context.groupId, false, false);
             console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}"`);
         } else {
-            console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
+            // Try to get editGroup from global scope as fallback
+            const editGroupFunc = window.editGroup || globalThis.editGroup;
+            if (typeof editGroupFunc === 'function') {
+                editGroupFunc(context.groupId, false, false);
+                console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}" (global fallback method)`);
+            } else {
+                console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
+                // Additional fallback - try to save via the group object directly
+                const group = groups?.find(x => x.id === context.groupId);
+                if (group && group.chat_metadata) {
+                    console.log(`${MODULE_NAME}: Group metadata updated in memory for group ID "${context.groupId}"`);
+                }
+            }
         }
     } else {
         // Single character chat - use existing logic (PRESERVE COMPATIBILITY)

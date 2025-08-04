@@ -34,6 +34,7 @@ const defaultSettings = {
         refreshEditor: true,
         tokenWarningThreshold: 30000,
         defaultMemoryCount: 0,
+        autoClearSceneAfterMemory: false,
     },
     titleFormat: '[000] - {{title}}',
     profiles: [
