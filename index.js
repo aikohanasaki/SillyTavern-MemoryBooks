@@ -14,7 +14,7 @@ import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, upd
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
 import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings, getCurrentMemoryBooksContext } from './utils.js';
-import { editGroup } from '../../../group-chats.js';
+import { editGroup, groups } from '../../../group-chats.js';
 export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
@@ -268,14 +268,28 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
+    const context = getCurrentMemoryBooksContext();
+    let activeChat;
+
+    if (context.isGroupChat) {
+        const group = groups.find(g => g.id === context.groupId);
+        if (!group) {
+            toastr.error('Group chat not found', 'STMemoryBooks');
+            return '';
+        }
+        activeChat = group.chat || [];
+    } else {
+        activeChat = chat;
+    }
+
     // Validate message IDs exist in current chat
-    if (startId < 0 || endId >= chat.length) {
-        toastr.error(`Message IDs out of range. Valid range: 0-${chat.length - 1}`, 'STMemoryBooks');
+    if (startId < 0 || endId >= activeChat.length) {
+        toastr.error(`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`, 'STMemoryBooks');
         return '';
     }
     
     // Additional validation: check if messages actually exist
-    if (!chat[startId] || !chat[endId]) {
+    if (!activeChat[startId] || !activeChat[endId]) {
         toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
         return '';
     }
@@ -289,7 +303,8 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     saveMemoryBooksMetadata();
     updateAllButtonStates();
     
-    toastr.info(`Scene set: messages ${startId}-${endId}`, 'STMemoryBooks');
+    const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
+    toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
     
     // Optionally create memory immediately
     setTimeout(() => initiateMemoryCreation(), 500);
@@ -298,7 +313,7 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 /**
- * BULLETPROOF: Check API compatibility using SillyTavern's built-in functions
+ * Check API compatibility using SillyTavern's built-in functions
  */
 function checkApiCompatibility() {
     let isCompatible = false;
