@@ -67,7 +67,7 @@ export function getSceneMarkers() {
  * GROUP CHAT SUPPORT: Save metadata for current context (group or single character)
  * Handles both group metadata saving and regular chat metadata saving
  */
-function saveMetadataForCurrentContext() {
+export function saveMetadataForCurrentContext() {
     const context = getCurrentMemoryBooksContext();
     
     if (context.isGroupChat) {
