@@ -408,6 +408,10 @@ export function exportProfiles(settings) {
     }
 }
 
+function cleanProfile(profile) {
+    return createProfileObject(profile);
+}
+
 /**
  * Import profiles from JSON file
  * @param {Event} event - File input change event
