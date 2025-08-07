@@ -1,82 +1,125 @@
 [Back to README](readme.md)
 
-## Character Restrictions in Metadata Fields
+# 📝 Character Restrictions in Memory Titles
 
-STMemoryBooks supports **international characters, accents, emoji, and most punctuation** in all metadata fields (character names, user names, extracted titles, etc.). Only genuinely problematic characters are removed to ensure compatibility with SillyTavern's lorebook system.
+STMemoryBooks applies **strict character filtering** to memory titles and metadata fields to ensure compatibility with SillyTavern's lorebook system. This affects title templates and AI-extracted titles, but **memory content itself has no restrictions**.
+
+## 🎯 What Gets Restricted
 
 **Character restrictions apply to:**
-- Character names (`{{char}}`)
-- User names (`{{user}}`)
-- AI-extracted titles (`{{title}}`)
-- Any text used in title templates
-- Final lorebook entry titles/comments
+- 🏷️ AI-extracted titles (`{{title}}`)
+- 👤 Character names in templates (`{{char}}`)
+- 🧑‍💻 User names in templates (`{{user}}`)
+- 📋 Final lorebook entry titles/comments
+- 🎨 Any text used in title format templates
 
-**NO character restrictions apply to:**
-- Memory content (completely freeform)
-- AI-generated text (before title extraction)
-- Original chat message content
+**🆓 NO character restrictions apply to:**
+- 📝 Memory content (completely unrestricted)
+- 💬 Original chat message content
+- 🤖 AI-generated memory text (before title extraction)
 
-## Blocked Characters
+## ✅ Allowed Characters
 
-The following characters are automatically removed from titles to prevent system issues:
+The title sanitization system **only allows**:
 
-#### Control Characters
-- **Newlines, tabs, and spacing**: `\n` `\r` `\t` and other whitespace control characters
-- **Null bytes and control codes**: All characters from `\x00` to `\x1F` (NULL, SOH, STX, etc.)
-- **Extended control characters**: `\x7F` to `\x9F` (DEL and C1 control block)
+### 📝 Basic Text
+- **ASCII Letters**: `A-Z`, `a-z`
+- **Numbers**: `0-9`
+- **Spaces**: ` ` (regular spaces)
 
-#### File System Unsafe Characters
-These characters can cause issues with file systems and JSON storage:
-- `/` (forward slash)
-- `\` (backslash) 
-- `<` (less than)
-- `>` (greater than)
-- `|` (pipe)
-- `"` (double quote)
-- `*` (asterisk)
-- `?` (question mark)
-- `:` (colon)
+### 🔤 Allowed Punctuation
+- **Hyphen**: `-`
+- **Period**: `.`
+- **Parentheses**: `(` `)`
+- **Hash/Number sign**: `#`
+- **Square brackets**: `[` `]`
+- **Curly braces**: `{` `}`
+- **Colon**: `:`
+- **Semicolon**: `;`
+- **Comma**: `,`
 
-## ✅ Supported Characters
+### 😀 Limited Emoji Support
+- **Emoticons**: 😀-🙿 (main emoticon block)
+- **Symbols**: 🌀-🗿 (misc symbols and pictographs)
+- **Transport**: 🚀-🛿 (transport and map symbols)
+- **Flags**: 🇠-🇿 (regional indicator symbols)
+- **Misc Symbols**: ☀-⛿ (miscellaneous symbols)
+- **Dingbats**: ✀-➿ (dingbats block)
 
-**All of these work perfectly:**
-- **International scripts**: Cyrillic (Сергей), Chinese (先生, 沈星回), Japanese, Arabic (العربية), Hindi (हिंदी), etc.
-- **Accented characters**: René, François, Émilie, José, etc.
-- **Common punctuation**: `'` `&` `!` `@` `#` `$` `%` `^` `_` `+` `=` `[` `]` `{` `}` `;` `,` `.` `-` `(` `)`
-- **All emoji**: 👤🧠🎯🎪🎨 and any standard emoji
-- **Brackets and symbols**: `[Redacted]` `Agent R.` `Anon (S)` `O'Malley`
+## ❌ Blocked Characters
 
-### Examples
+**All other characters are automatically removed**, including:
 
-**Metadata fields (character restrictions apply):**
+### 🌍 International Characters
+- **Accented**: `é`, `ñ`, `ü`, `ø`, etc.
+- **Cyrillic**: `Сергей`, `Анна`, etc.
+- **Chinese/Japanese**: `先生`, `田中`, etc.
+- **Arabic**: `العربية`, etc.
+- **All other non-ASCII scripts**
+
+### 💬 Quotes and Apostrophes
+- **Single quotes**: `'` `'` `'`
+- **Double quotes**: `"` `"` `"`
+- **Apostrophes**: `'` (O'Malley → OMalley)
+
+### 🚫 Special Characters
+- **File separators**: `/` `\`
+- **Comparison**: `<` `>`
+- **Logic**: `|` `&`
+- **Math**: `*` `+` `=` `%` `^`
+- **Symbols**: `@` `$` `!` `?` `~` `` ` ``
+- **Underscores**: `_`
+
+## 📊 Examples
+
 | Input | Output | Status |
 |-------|--------|---------|
-| Character: `Сергей` | `Сергей` | ✅ Unchanged |
-| User: `先生` | `先生` | ✅ Unchanged |
-| Title: `René's Story` | `René's Story` | ✅ Unchanged |
-| Character: `O'Malley` | `O'Malley` | ✅ Unchanged |
-| Character: `Agent "R"` | `Agent R` | ⚠️ Quotes removed |
-| Title: `Path/Problem` | `PathProblem` | ⚠️ Slashes removed |
+| `Test Memory` | `Test Memory` | ✅ Perfect |
+| `[001] - Scene` | `[001] - Scene` | ✅ Perfect |
+| `René's Story` | `Rens Story` | ⚠️ Accents & apostrophe removed |
+| `Сергей` | `Auto Memory` | ❌ All characters removed |
+| `先生の話` | `Auto Memory` | ❌ All characters removed |
+| `Test/Problem` | `TestProblem` | ⚠️ Slash removed |
+| `"Chapter 1"` | `Chapter 1` | ⚠️ Quotes removed |
+| `O'Malley & Co.` | `OMalley  Co.` | ⚠️ Apostrophe & ampersand removed |
+| `Test_Name` | `TestName` | ⚠️ Underscore removed |
+| `😀🎯🧠` | `😀🎯` | ⚠️ Some emoji removed |
 
-**Memory content (NO restrictions):**
+## 🛡️ Why These Restrictions?
+
+1. **📁 File System Safety**: Prevents issues with SillyTavern's storage system
+2. **💾 JSON Compatibility**: Ensures lorebook metadata parses correctly
+3. **🔍 Search Reliability**: Maintains consistent indexing and retrieval
+4. **⚡ Performance**: Reduces complexity in database operations
+
+## 🔧 Workarounds
+
+### ✍️ For International Names
+Instead of using restricted characters in titles, include the full names in the memory content:
+
 ```
-✅ All of this is preserved exactly as-is in memory content:
-- Control characters: "Line 1\nLine 2\tTabbed"
-- File paths: "C:\Users\Name\file.txt" 
-- Special chars: <test> "quotes" |pipes| *asterisks*
-- International: 这是中文 العربية Русский
-- Everything: The AI can write anything in the actual memory!
+Title: "Scene with Sergey"
+Content: "In this scene, Сергей (Sergey) discusses..."
 ```
 
-## Why These Restrictions?
+### 🎨 For Special Characters
+Use allowed punctuation as alternatives:
 
-- **Control characters** can break JSON parsing and lorebook metadata display
-- **File system unsafe characters** can cause issues with SillyTavern's storage system
-- **Restrictions only apply to metadata fields** - memory content itself is completely unrestricted
-- **Everything else is preserved** to support international users and creative character names
+| Instead of | Use |
+|------------|-----|
+| `René` | `Rene` |
+| `O'Malley` | `O-Malley` or `OMalley` |
+| `Test/Debug` | `Test-Debug` |
+| `"Chapter 1"` | `[Chapter 1]` |
 
-### Fallback Behavior
+### 🚨 Fallback Behavior
+If a title becomes completely empty after cleaning (all characters were blocked), it automatically defaults to `"Auto Memory"` to ensure the lorebook entry is still created.
 
-If a title becomes empty after cleaning (e.g., only contained blocked characters), it defaults to `"Auto Memory"` to ensure the lorebook entry is still created successfully.
+## 💡 Pro Tips
+
+1. **🎯 Keep titles simple**: Use basic ASCII characters for maximum compatibility
+2. **📝 Put details in content**: Memory content has no restrictions - include full international names there
+3. **🔤 Use allowed punctuation**: Brackets `[]`, parentheses `()`, and hyphens `-` work great for formatting
+4. **📋 Test your templates**: Preview titles before creating memories to see how they'll be cleaned
 
 [Back to README](readme.md)
