@@ -794,17 +794,19 @@ async function initiateMemoryCreation() {
             throw new Error('Notification system not available');
         }
 
+        const settings = initializeSettings();
+
         // All the validation and processing logic
         const sceneData = getSceneData();
         if (!sceneData) {
             toastr.error('No scene selected', 'STMemoryBooks');
-            return; // Will hit finally block
+            return;
         }
         
         const lorebookValidation = await validateLorebook();
         if (!lorebookValidation.valid) {
             toastr.error(lorebookValidation.error, 'STMemoryBooks');
-            return; // Will hit finally block
+            return;
         }
         
         const allMemories = identifyMemoryEntries(lorebookValidation.data);
@@ -812,8 +814,6 @@ async function initiateMemoryCreation() {
         const newEnd = sceneData.sceneEnd;
 
         if (!settings.moduleSettings.allowSceneOverlap) {
-
-            // The existing validation loop goes inside this 'if' block
             for (const mem of allMemories) {
                 const existingRange = getRangeFromMemoryEntry(mem.entry); 
 
@@ -829,7 +829,7 @@ async function initiateMemoryCreation() {
         
         const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
         if (!effectiveSettings) {
-            return; // User cancelled, will hit finally block
+            return; // User cancelled
         }
         
         // Close settings popup if open
