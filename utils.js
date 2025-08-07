@@ -1,7 +1,11 @@
 // utils.js - Shared utilities for STMemoryBooks
 import { chat_metadata, characters, name2, this_chid } from '../../../../script.js';
-import { getContext } from '../../../extensions.js';
+import { getContext, extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { selected_group, groups } from '../../../group-chats.js';
+import { world_names } from '../../../../world-info.js';
+import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
+import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
+
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
@@ -115,7 +119,6 @@ export function getApiSelectors() {
 
 /**
  * GROUP CHAT SUPPORT: Get current context - detects group vs single character chats
- * Based on ModelTempLocks implementation pattern
  * @returns {Object} Context information including group/character detection
  */
 export function getCurrentMemoryBooksContext() {
@@ -273,6 +276,70 @@ export function getCurrentMemoryBooksContext() {
             isGroupChat: false
         };
     }
+}
+
+/**
+ * Determines which lorebook to use based on settings and chat metadata.
+ * If in manual mode and no lorebook is set, it will trigger a selection popup.
+ * @returns {Promise<string|null>} The name of the effective lorebook, or null if none is available/selected.
+ */
+export async function getEffectiveLorebookName() {
+    const settings = extension_settings.STMemoryBooks;
+    const context = getCurrentMemoryBooksContext();
+    const chatMetadata = context.chatMetadata; // Assumes getCurrentMemoryBooksContext provides this
+
+    // If manual mode is OFF, use the default chat-bound lorebook
+    if (!settings.moduleSettings.manualModeEnabled) {
+        return chatMetadata?.[METADATA_KEY] || null;
+    }
+
+    // Manual mode is ON. Check if a manual lorebook has already been designated for this chat.
+    const stmbData = getSceneMarkers(); // This function already gets the right metadata object
+    if (stmbData.manualLorebook) {
+        // Ensure the designated lorebook still exists
+        if (world_names.includes(stmbData.manualLorebook)) {
+            return stmbData.manualLorebook;
+        } else {
+            toastr.error(`The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`);
+            delete stmbData.manualLorebook; // Clear the invalid entry
+        }
+    }
+
+    // No manual lorebook is set. We need to ask the user.
+    const lorebookOptions = world_names.map(name => `<option value="${name}">${name}</option>`).join('');
+    
+    if (lorebookOptions.length === 0) {
+        toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
+        return null;
+    }
+
+    const popupContent = `
+        <h4>Select a Memory Book</h4>
+        <div class="world_entry_form_control">
+            <p>Manual mode is enabled, but no lorebook has been designated for this chat's memories. Please select one.</p>
+            <select id="stmb-manual-lorebook-select" class="text_pole">
+                ${lorebookOptions}
+            </select>
+        </div>
+    `;
+
+    const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', { okButton: 'Select', cancelButton: 'Cancel' });
+    const result = await popup.show();
+
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        const selectedLorebook = popup.dlg.querySelector('#stmb-manual-lorebook-select').value;
+        
+        // Save the selection to the chat's metadata
+        stmbData.manualLorebook = selectedLorebook;
+        saveMetadataForCurrentContext(); // Use the existing function from sceneManager to save correctly for groups/single chats
+        
+        toastr.success(`"${selectedLorebook}" is now the Memory Book for this chat.`, 'STMemoryBooks');
+        return selectedLorebook;
+    }
+
+    // User cancelled the selection
+    toastr.warning('Memory creation cancelled. No lorebook was selected.', 'STMemoryBooks');
+    return null;
 }
 
 /**

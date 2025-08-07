@@ -4,7 +4,7 @@ import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
 import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
-import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, getPresetPrompt, generateSafeProfileName } from './utils.js';
+import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, getPresetPrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 
@@ -439,7 +439,7 @@ export async function fetchPreviousSummaries(count, settings, chat_metadata) {
     }
     
     try {
-        const lorebookName = chat_metadata[METADATA_KEY];
+        const lorebookName = await getEffectiveLorebookName();
         if (!lorebookName) {
             return { summaries: [], actualCount: 0, requestedCount: count };
         }
@@ -506,7 +506,7 @@ export async function calculateTokensWithContext(sceneData, memories) {
  */
 async function getAvailableMemoriesCount(settings, chat_metadata) {
     try {
-        const lorebookName = chat_metadata[METADATA_KEY];
+        const lorebookName = await getEffectiveLorebookName();
         if (!lorebookName) {
             return 0;
         }
