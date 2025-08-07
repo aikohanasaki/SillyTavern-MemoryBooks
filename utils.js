@@ -911,7 +911,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {number|string} [data.temperature=0.7] - The temperature setting.
  * @param {string} [data.prompt=''] - The custom prompt.
  * @param {string} [data.preset=''] - The selected preset.
- * @param {string} [data.titleFormat='[000] - {{title}}'] - The title format for lorebook entries.
+ * @param {string} [data.titleFormat=''] - The title format for lorebook entries.
  * @param {string} [data.constVectMode='link'] - The constant/vectorized mode.
  * @param {number} [data.position=0] - The lorebook entry position.
  * @param {string} [data.orderMode='auto'] - The ordering mode.
@@ -935,7 +935,7 @@ export function createProfileObject(data = {}) {
         },
         prompt: (data.prompt || '').trim(),
         preset: data.preset || '',
-        titleFormat: data.titleFormat,
+        titleFormat: data.titleFormat || '[000] - {{title}}',
         constVectMode: data.constVectMode || 'link',
         position: data.position !== undefined ? Number(data.position) : 0,
         orderMode: data.orderMode || 'auto',
