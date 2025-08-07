@@ -34,6 +34,14 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
+                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if moduleSettings.allowSceneOverlap}}checked{{/if}}>
+                <span>Allow scene overlap</span>
+            </label>
+            <small class="opacity50p">Check this box to skip checking for scene overlap.</small>
+        </div>
+        
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
                 <span>Always use default profile (no confirmation prompt)</span>
             </label>

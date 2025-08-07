@@ -20,7 +20,7 @@ export { currentProfile };
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
 
-// BULLETPROOF: Supported Chat Completion sources (matching ModelTempLocks)
+// BULLETPROOF: Supported Chat Completion sources
 const SUPPORTED_COMPLETION_SOURCES = [
     'openai', 'claude', 'windowai', 'openrouter', 'ai21', 'scale', 'makersuite',
     'mistralai', 'custom', 'cohere', 'perplexity', 'groq', '01ai', 'nanogpt',
@@ -36,13 +36,14 @@ const defaultSettings = {
         defaultMemoryCount: 0,
         autoClearSceneAfterMemory: false,
         manualModeEnabled: false,
+        allowSceneOverlap: false,
     },
     titleFormat: '[000] - {{title}}',
     profiles: [
         {
             name: "Default",
             connection: {
-            api: "custom", // Default to openai, but user may select/override!
+            api: "custom", // Default to custom, but user may select/override!
             model: "gpt-4.1", // default to gpt-4.1, but user may select/override!
             temperature: 0.7, // Default temperature
             },
@@ -53,14 +54,12 @@ const defaultSettings = {
     migrationVersion: 2,
 }
 
-
-
 // Current state variables
 let currentPopupInstance = null;
 let isProcessingMemory = false;
 let currentProfile = null;
 
-// BULLETPROOF: Settings cache for restoration (like ModelTempLocks)
+// BULLETPROOF: Settings cache for restoration
 let cachedSettings = null;
 let isExtensionEnabled = false;
 
@@ -812,18 +811,22 @@ async function initiateMemoryCreation() {
         const newStart = sceneData.sceneStart;
         const newEnd = sceneData.sceneEnd;
 
-        for (const mem of allMemories) {
-            const existingRange = getRangeFromMemoryEntry(mem.entry); 
+        if (!settings.moduleSettings.allowSceneOverlap) {
 
-            if (existingRange && existingRange.start !== null && existingRange.end !== null) { // Added null checks
-                if (newStart <= existingRange.end && newEnd >= existingRange.start) { // Fixed overlap logic
-                    toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
-                    isProcessingMemory = false;
-                    return;
+            // The existing validation loop goes inside this 'if' block
+            for (const mem of allMemories) {
+                const existingRange = getRangeFromMemoryEntry(mem.entry); 
+
+                if (existingRange && existingRange.start !== null && existingRange.end !== null) {
+                    if (newStart <= existingRange.end && newEnd >= existingRange.start) {
+                        toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                        isProcessingMemory = false;
+                        return;
+                    }
                 }
             }
         }
-
+        
         const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
         if (!effectiveSettings) {
             return; // User cancelled, will hit finally block
@@ -1081,6 +1084,7 @@ function handleSettingsPopupClose(popup) {
         const alwaysUseDefault = popupElement.querySelector('#stmb-always-use-default')?.checked ?? settings.moduleSettings.alwaysUseDefault;
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
         const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
+        const allowSceneOverlap = popupElement.querySelector('#stmb-allow-scene-overlap')?.checked ?? settings.moduleSettings.allowSceneOverlap;
         
         // Save token warning threshold
         const tokenWarningThresholdInput = popupElement.querySelector('#stmb-token-warning-threshold');
@@ -1101,7 +1105,8 @@ function handleSettingsPopupClose(popup) {
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
                           defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount ||
-                          manualModeEnabled !== settings.moduleSettings.manualModeEnabled;
+                          manualModeEnabled !== settings.moduleSettings.manualModeEnabled ||
+                          allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -1110,6 +1115,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
             settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
             settings.moduleSettings.manualModeEnabled = manualModeEnabled;
+            settings.moduleSettings.allowSceneOverlap = allowSceneOverlap;
             saveSettingsDebounced();
             console.log('STMemoryBooks: Settings updated');
         }
