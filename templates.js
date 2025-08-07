@@ -26,6 +26,14 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         
         <div class="world_entry_form_control">
             <label class="checkbox_label">
+                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if moduleSettings.manualModeEnabled}}checked{{/if}}>
+                <span>Enable Manual Lorebook Mode</span>
+            </label>
+            <small class="opacity50p">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
                 <span>Always use default profile (no confirmation prompt)</span>
             </label>

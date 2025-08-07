@@ -13,7 +13,7 @@ import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles,
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
-import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings, getCurrentMemoryBooksContext } from './utils.js';
+import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
 import { editGroup, groups } from '../../../group-chats.js';
 export { currentProfile };
 
@@ -35,6 +35,7 @@ const defaultSettings = {
         tokenWarningThreshold: 30000,
         defaultMemoryCount: 0,
         autoClearSceneAfterMemory: false,
+        manualModeEnabled: false,
     },
     titleFormat: '[000] - {{title}}',
     profiles: [
@@ -483,20 +484,21 @@ function hasLorebook() {
  * Validate lorebook and return status with data
  */
 async function validateLorebook() {
-    const lorebookName = chat_metadata[METADATA_KEY];
+    const lorebookName = await getEffectiveLorebookName();
+
     if (!lorebookName) {
-        return { valid: false, error: 'No lorebook bound to this chat' };
+        return { valid: false, error: 'No lorebook available or selected.' };
     }
     
     if (!world_names || !world_names.includes(lorebookName)) {
-        return { valid: false, error: 'Bound lorebook not found' };
-    }
+        return { valid: false, error: `Selected lorebook "${lorebookName}" not found.` };
+    }    
     
     try {
         const lorebookData = await loadWorldInfo(lorebookName);
         return { valid: !!lorebookData, data: lorebookData, name: lorebookName };
     } catch (error) {
-        return { valid: false, error: 'Failed to load lorebook' };
+        return { valid: false, error: 'Failed to load the selected lorebook.' };
     }
 }
 
@@ -1092,11 +1094,14 @@ function handleSettingsPopupClose(popup) {
             parseInt(defaultMemoryCountInput.value) || 0 : 
             settings.moduleSettings.defaultMemoryCount || 0;
 
+        const manualModeEnabled = popupElement.querySelector('#stmb-manual-mode-enabled')?.checked ?? settings.moduleSettings.manualModeEnabled;
+
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
                           showNotifications !== settings.moduleSettings.showNotifications ||
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
-                          defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount;
+                          defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount ||
+                          manualModeEnabled !== settings.moduleSettings.manualModeEnabled;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -1104,6 +1109,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.refreshEditor = refreshEditor;
             settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
             settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
+            settings.moduleSettings.manualModeEnabled = manualModeEnabled;
             saveSettingsDebounced();
             console.log('STMemoryBooks: Settings updated');
         }
