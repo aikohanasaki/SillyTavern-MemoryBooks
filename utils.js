@@ -631,7 +631,7 @@ export const PRESET_PROMPTS = {
                "- Notable details, memorable quotes, and revelations\n" +
                "- Outcome and anything else important for future interactions between {{user}} and {{char}}\n" +
                "Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.\n\n" +
-               "For the keywords field, provide 5-20 relevant keywords for vectorized database retrieval.\n\n" +
+               "For the keywords field, provide 5-20 relevant keywords for vectorized database retrieval. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                "Return ONLY the JSON, no other text.",
 
     'summarize': "Analyze the following roleplay scene and return a structured summary as JSON.\n\n" +
@@ -647,7 +647,7 @@ export const PRESET_PROMPTS = {
                  "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
                  "- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.\n" +
                  "- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.\n\n" +
-                 "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this conversation again if something is mentioned.\n\n" +
+                 "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                  "Ensure you capture ALL important information - comprehensive detail is more important than brevity.\n\n" +
                  "Return ONLY the JSON, no other text.",
 
@@ -670,7 +670,7 @@ export const PRESET_PROMPTS = {
                 "## Outcome\n" +
                 "- (Describe results, resolutions, and final state)\n\n" +
                 "Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.\n\n" +
-                "For the keywords field, provide 5-20 relevant keywords for vectorized database retrieval.\n\n" +
+                "For the keywords field, provide 5-20 relevant keywords for vectorized database retrieval. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                 "Return ONLY the JSON, no other text.",
 
     'sumup': "Analyze the following roleplay scene and return a beat summary as JSON.\n\n" +
@@ -683,7 +683,7 @@ export const PRESET_PROMPTS = {
              "For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:\n" +
              "# Scene Summary - Day X - [Title]\n" +
              "First estimate where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost.\n\n" +
-             "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this summary again if mentioned.\n\n" +
+             "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this summary again if mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
              "Return ONLY the JSON, no other text.",
 
     'minimal': "Analyze the following roleplay scene and return a minimal memory entry as JSON.\n\n" +
@@ -694,7 +694,7 @@ export const PRESET_PROMPTS = {
                 '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                 "}\n\n" +
                 "For the content field, provide a very brief 1-2 sentence summary of what happened in this scene.\n\n" +
-                "For the keywords field, generate 5-20 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later.\n\n" +
+                "For the keywords field, generate 5-20 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                 "Return ONLY the JSON, no other text."
 };
 
