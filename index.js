@@ -644,7 +644,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         // Add context and show progress
         compiledScene.previousSummariesContext = previousMemories;
         const stats = getSceneStats(compiledScene);
-        const actualTokens = estimateTokenCount(compiledScene);
+        const actualTokens = stats.estimatedTokens;
         const contextInfo = memoryFetchResult.actualCount > 0 ? 
             ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
         toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
