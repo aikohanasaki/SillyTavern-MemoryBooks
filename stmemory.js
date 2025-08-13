@@ -300,8 +300,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
  * @throws {InvalidProfileError} If the profile is invalid.
  */
 function validateInputs(compiledScene, profile) {
-    if (!compiledScene?.messages?.length > 0) {
-        throw new Error('Invalid or empty compiled scene data provided.');
+    if (!compiledScene || !Array.isArray(compiledScene.messages) || compiledScene.messages.length === 0) {
+      throw new Error('Invalid or empty compiled scene data provided.');
     }
     if (!profile?.prompt && !profile?.preset && !profile?.name) {
         throw new InvalidProfileError('Invalid profile configuration. A prompt or preset name is required.');
