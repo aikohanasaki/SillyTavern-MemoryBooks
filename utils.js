@@ -208,9 +208,8 @@ export function getCurrentMemoryBooksContext() {
 
         // Get bound lorebook information
         let lorebookName = null;
-        if (chat_metadata?.world_info) {
-            lorebookName = chat_metadata.world_info;
-            console.log(`${MODULE_NAME}: Debug - Bound lorebook:`, lorebookName);
+        if (chat_metadata && METADATA_KEY in chat_metadata) {
+            lorebookName = chat_metadata[METADATA_KEY];
         }
 
         // Get current model/temperature settings (following ModelTempLocks approach)
