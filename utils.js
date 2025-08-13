@@ -88,33 +88,45 @@ export function getCurrentApiInfo() {
 /**
  * BULLETPROOF: Get the appropriate model and temperature selectors for current completion source
  */
+/**
+ * BULLETPROOF: Get the appropriate model and temperature selectors for current completion source
+ */
 export function getApiSelectors() {
-    const completionSource = $(SELECTORS.completionSource).val();
-    
+    const completionSource = $('#chat_completion_source').val() || 'openai';
+
+    // Model selectors per provider/source
     const modelSelectorMap = {
-        'openai': SELECTORS.modelOpenai,
-        'claude': SELECTORS.modelClaude,
-        'windowai': SELECTORS.modelWindowai,
-        'openrouter': SELECTORS.modelOpenrouter,
-        'ai21': SELECTORS.modelAi21,
-        'scale': SELECTORS.modelScale,
-        'makersuite': SELECTORS.modelGoogle,
-        'mistralai': SELECTORS.modelMistralai,
-        'custom': SELECTORS.customModelId,
-        'cohere': SELECTORS.modelCohere,
-        'perplexity': SELECTORS.modelPerplexity,
-        'groq': SELECTORS.modelGroq,
-        '01ai': SELECTORS.model01ai,
-        'nanogpt': SELECTORS.modelNanogpt,
-        'deepseek': SELECTORS.modelDeepseek,
-        'blockentropy': SELECTORS.modelBlockentropy
+        openai:        '#model_openai_select',
+        claude:        '#model_claude_select',
+        windowai:      '#model_windowai_select',
+        openrouter:    '#model_openrouter_select',
+        ai21:          '#model_ai21_select',
+        scale:         '#model_scale_select',
+        makersuite:    '#model_google_select',
+        mistralai:     '#model_mistralai_select',
+        custom:        '#model_custom_select',   // fallback handled elsewhere for #custom_model_id
+        cohere:        '#model_cohere_select',
+        perplexity:    '#model_perplexity_select',
+        groq:          '#model_groq_select',
+        '01ai':        '#model_01ai_select',
+        nanogpt:       '#model_nanogpt_select',
+        deepseek:      '#model_deepseek_select',
+        blockentropy:  '#model_blockentropy_select',
+        vertexai:      '#model_vertexai_select',
+        aimlapi:       '#model_aimlapi_select',
+        xai:           '#model_xai_select',
+        pollinations:  '#model_pollinations_select',
     };
-    
-    return {
-        model: modelSelectorMap[completionSource] || SELECTORS.modelOpenai,
-        temp: SELECTORS.tempOpenai,
-        tempCounter: SELECTORS.tempCounterOpenai
+
+    // All providers share the same temp inputs (per openai.js)
+    const tempSelectorMap = {
+        default: { temp: '#temp_openai', tempCounter: '#temp_counter_openai' }
     };
+
+    const model = modelSelectorMap[completionSource] || modelSelectorMap.openai;
+    const { temp, tempCounter } = tempSelectorMap.default;
+
+    return { model, temp, tempCounter };
 }
 
 /**
@@ -425,105 +437,163 @@ export function getCurrentModelSettings() {
 }
 
 /**
- * BULLETPROOF: Switch provider and model with comprehensive error handling and validation
- * @param {Object} profile - expects .connection.api/.connection.model
+ * BULLETPROOF: Switch provider, model, and temperature with comprehensive error handling and validation
+ * @param {Object} profile - expects .effectiveConnection or .connection with { api, model, temperature }
  */
 export async function switchProviderAndModel(profile) {
-    const conn = profile.effectiveConnection || profile.connection;
+    const conn = profile?.effectiveConnection || profile?.connection;
     if (!profile || !conn || !conn.model) {
-        console.warn(`${MODULE_NAME}: Cannot switch provider - invalid profile or connection`);
+        console.warn(`${MODULE_NAME}: Cannot switch provider - invalid profile or connection`, profile);
         return false;
     }
-    
+
     try {
         console.log(`${MODULE_NAME}: Switching to provider: ${conn.api}, model: ${conn.model}`);
-        
-        // 1. Always force main_api to 'openai' for chat completions
-        if ($(SELECTORS.mainApi).val() !== 'openai') {
-            $(SELECTORS.mainApi).val('openai').trigger('change');
+
+        // 1) Ensure main_api is 'openai' (SillyTavern requirement for Chat Completions pane)
+        if ($('#main_api').val() !== 'openai') {
+            $('#main_api').val('openai').trigger('change');
             window.main_api = 'openai';
             await new Promise(r => setTimeout(r, 300));
         }
 
-        // 2. Determine the chat completion source with validation
+        // 2) Set chat completion source with validation and aliasing
         const apiToSource = {
             openai: 'openai',
             claude: 'claude',
-            google: 'makersuite',
-            makersuite: 'makersuite',
-            vertexai: 'vertexai',
             openrouter: 'openrouter',
+            ai21: 'ai21',
+            makersuite: 'makersuite',
+            google: 'makersuite',
+            vertexai: 'vertexai',
+            mistralai: 'mistralai',
+            custom: 'custom',
             cohere: 'cohere',
             perplexity: 'perplexity',
             groq: 'groq',
-            "01ai": '01ai',
+            '01ai': '01ai',
+            nanogpt: 'nanogpt',
             deepseek: 'deepseek',
-            mistralai: 'mistralai',
-            custom: 'custom',
             aimlapi: 'aimlapi',
             xai: 'xai',
-            pollinations: 'pollinations'
+            pollinations: 'pollinations',
+            windowai: 'windowai',
+            scale: 'scale',
+            blockentropy: 'blockentropy',
         };
-        const completionSource = apiToSource[conn.api] || 'openai'; 
+        const completionSource = apiToSource[conn.api] || 'openai';
 
-        if ($(SELECTORS.completionSource).val() !== completionSource) {
-            $(SELECTORS.completionSource).val(completionSource).trigger('change');
+        if ($('#chat_completion_source').val() !== completionSource) {
+            $('#chat_completion_source').val(completionSource).trigger('change');
             await new Promise(r => setTimeout(r, 300));
         }
 
-        const model = conn.model;
-
-        // 3. Set the model value in the appropriate selector with retry logic
+        // 3) Map provider to model select element
         const PROVIDER_TO_MODEL_SELECTOR = {
-            openai: "#model_openai_select",
-            claude: "#model_claude_select", 
-            google: "#model_google_select",
-            makersuite: "#model_google_select",
-            vertexai: "#model_vertexai_select",
-            openrouter: "#model_openrouter_select",
-            cohere: "#model_cohere_select",
-            perplexity: "#model_perplexity_select",
-            groq: "#model_groq_select",
-            "01ai": "#model_01ai_select",
-            deepseek: "#model_deepseek_select",
-            mistralai: "#model_mistralai_select",
-            custom: "#model_custom_select",
-            aimlapi: "#model_aimlapi_select",
-            xai: "#model_xai_select",
-            pollinations: "#model_pollinations_select"
+            openai: '#model_openai_select',
+            claude: '#model_claude_select',
+            makersuite: '#model_google_select',
+            google: '#model_google_select',
+            vertexai: '#model_vertexai_select',
+            openrouter: '#model_openrouter_select',
+            ai21: '#model_ai21_select',
+            mistralai: '#model_mistralai_select',
+            cohere: '#model_cohere_select',
+            perplexity: '#model_perplexity_select',
+            groq: '#model_groq_select',
+            '01ai': '#model_01ai_select',
+            nanogpt: '#model_nanogpt_select',
+            deepseek: '#model_deepseek_select',
+            custom: '#model_custom_select',
+            aimlapi: '#model_aimlapi_select',
+            xai: '#model_xai_select',
+            pollinations: '#model_pollinations_select',
+            windowai: '#model_windowai_select',
+            scale: '#model_scale_select',
+            blockentropy: '#model_blockentropy_select',
         };
         const selector = PROVIDER_TO_MODEL_SELECTOR[conn.api] || '#model_openai_select';
+        const desiredModel = conn.model;
 
-        // BULLETPROOF: Wait for the select to exist and options to load with retry logic
+        // 4) Set the model with robust retry
         let modelSet = false;
         for (let tries = 0; tries < 15; tries++) {
             const $select = $(selector);
-            if ($select.length && $select.find(`option[value='${model}']`).length) {
-                $select.val(model).trigger('change');
-                modelSet = true;
-                console.log(`${MODULE_NAME}: Model set to ${model} on attempt ${tries + 1}`);
-                break;
+            if ($select.length) {
+                // If options exist and include the model, use it
+                if ($select.find(`option[value='${desiredModel}']`).length) {
+                    $select.val(desiredModel).trigger('change');
+                    modelSet = true;
+                    console.log(`${MODULE_NAME}: Model set to ${desiredModel} on attempt ${tries + 1}`);
+                    break;
+                }
+                // If no options (some providers or custom), still try setting value
+                if (!$select[0].options?.length) {
+                    $select.val(desiredModel).trigger('change');
+                    modelSet = true;
+                    console.log(`${MODULE_NAME}: Model set to ${desiredModel} (no options present) on attempt ${tries + 1}`);
+                    break;
+                }
             }
             await new Promise(r => setTimeout(r, 200));
         }
 
         if (!modelSet) {
-            console.warn(`${MODULE_NAME}: Could not set model ${model} after 15 attempts`);
-            return false;
+            console.warn(`${MODULE_NAME}: Could not set model ${desiredModel} on selector ${selector} after 15 attempts`);
+            // For custom, we can still push it via custom_model_id
+            if (completionSource !== 'custom') return false;
         }
 
-        // Also, for custom: update custom_model_id
+        // 5) For custom source: also set the freeform custom_model_id
         if (completionSource === 'custom') {
-            $(SELECTORS.customModelId).val(model).trigger('input');
+            $('#custom_model_id').val(desiredModel).trigger('input');
         }
 
-        await new Promise(r => setTimeout(r, 150)); // brief pause for SillyTavern state update
-        
-        console.log(`${MODULE_NAME}: Successfully switched to ${conn.api}/${model}`);
+        // 6) Temperature: all providers share #temp_openai and #temp_counter_openai in this UI
+        let tempProvided = false;
+        let tempValue = conn.temperature;
+
+        if (typeof tempValue === 'string') {
+            const parsed = parseFloat(tempValue);
+            if (!isNaN(parsed)) tempValue = parsed;
+        }
+        if (typeof tempValue === 'number' && !isNaN(tempValue)) {
+            tempProvided = true;
+            tempValue = Math.max(0, Math.min(2, tempValue));
+        }
+
+        if (tempProvided) {
+            // Wait for temp inputs to exist, then set both slider and numeric counter
+            let tempSet = false;
+            for (let tries = 0; tries < 15; tries++) {
+                const $temp = $('#temp_openai');
+                const $tempCounter = $('#temp_counter_openai');
+
+                if ($temp.length || $tempCounter.length) {
+                    if ($temp.length) {
+                        $temp.val(tempValue).trigger('input').trigger('change');
+                    }
+                    if ($tempCounter.length) {
+                        $tempCounter.val(tempValue).trigger('input').trigger('change');
+                    }
+                    tempSet = true;
+                    console.log(`${MODULE_NAME}: Temperature set to ${tempValue} on attempt ${tries + 1}`);
+                    break;
+                }
+                await new Promise(r => setTimeout(r, 150));
+            }
+
+            if (!tempSet) {
+                console.warn(`${MODULE_NAME}: Temperature inputs not found; could not set temperature`);
+            }
+        }
+
+        await new Promise(r => setTimeout(r, 150)); // brief pause for ST state update
+        console.log(`${MODULE_NAME}: Switched to ${conn.api}/${desiredModel}${tempProvided ? ` with temperature ${tempValue}` : ''}`);
         return true;
-        
+
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error switching provider and model:`, error);
+        console.error(`${MODULE_NAME}: Error switching provider/model/temperature:`, error);
         return false;
     }
 }
