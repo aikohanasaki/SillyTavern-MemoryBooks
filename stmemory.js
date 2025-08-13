@@ -303,7 +303,7 @@ function validateInputs(compiledScene, profile) {
       throw new Error('Invalid or empty compiled scene data provided.');
     }
     if (!profile?.prompt && !profile?.preset && !profile?.name) {
-        throw new InvalidProfileError('Invalid profile configuration. A prompt or preset name is required.');
+        throw new InvalidProfileError('Invalid profile configuration. Check prompt, preset, or name.');
     }
 }
 
