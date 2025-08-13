@@ -268,19 +268,8 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    const context = getCurrentMemoryBooksContext();
-    let activeChat;
-
-    if (context.isGroupChat) {
-        const group = groups.find(g => g.id === context.groupId);
-        if (!group) {
-            toastr.error('Group chat not found', 'STMemoryBooks');
-            return '';
-        }
-        activeChat = group.chat || [];
-    } else {
-        activeChat = chat;
-    }
+    // IMPORTANT: Use the global chat array for validation to match compileScene()
+    const activeChat = chat;
 
     // Validate message IDs exist in current chat
     if (startId < 0 || endId >= activeChat.length) {
@@ -303,6 +292,7 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     saveMemoryBooksMetadata();
     updateAllButtonStates();
     
+    const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
     toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
     
