@@ -3,7 +3,6 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getApiSelectors, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
-import { currentProfile } from './index.js';
 import { switchProviderAndModel, SELECTORS } from './utils.js';
 import { groups } from '../../../group-chats.js';
 const $ = window.jQuery;
