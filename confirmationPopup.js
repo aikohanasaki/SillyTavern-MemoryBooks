@@ -41,6 +41,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
             okButton: 'Create Memory',
             cancelButton: 'Cancel/Close',
+            allowVerticalScrolling: true,
             wide: false,
             customButtons: [
                 {

@@ -1,21 +1,15 @@
-
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { moment, Handlebars, DOMPurify } from '../../../../lib.js';
-import { 
-    getEffectivePrompt, 
-    validateProfile, 
-    cleanConnectionSettings,
+import {
+    validateProfile,
     generateSafeProfileName,
-    parseTemperature,
     formatPresetDisplayName,
     getPresetNames,
-    getAvailableModels,
-    isCustomModel,
     getCurrentApiInfo,
     createProfileObject
 } from './utils.js';
-import { getDefaultTitleFormats } from './addlore.js'; 
+import { getDefaultTitleFormats } from './addlore.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
@@ -30,13 +24,13 @@ const profileEditTemplate = Handlebars.compile(`
             <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" placeholder="Profile name">
         </label>
     </div>
-    
+
     <div class="world_entry_form_control" style="margin-top: 5px;">
         <h4>Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10">
             For model, make sure to copy-paste the exact model name from the connections panel, e.g. <code>gemini-2.5-pro</code>, <code>claude-4-sonnet</code>, etc.
         </div>
-        
+
         <label for="stmb-profile-api">
             <h4>API/Provider:</h4>
             <select id="stmb-profile-api" class="text_pole">
@@ -56,7 +50,7 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
             </select>
         </label>
-        
+
         <label for="stmb-profile-model">
             <h4>Model:</h4>
             <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Copy-paste the model name from connections panel in here, eg. gemini-2.5-pro, claude-4-sonnet, etc.">
@@ -67,7 +61,7 @@ const profileEditTemplate = Handlebars.compile(`
             <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8.">
         </label>
     </div>
-    
+
     <div class="world_entry_form_control" style="margin-top: 5px;">
         <label for="stmb-profile-preset">
             <h4>Memory Creation Method:</h4>
@@ -79,7 +73,7 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="" {{#unless preset}}selected{{/unless}}>Custom Prompt...</option>
             </select>
         </label>
-        
+
         <label for="stmb-profile-prompt" id="stmb-custom-prompt-section" class="{{#if preset}}displayNone{{/if}}">
             <h4>Custom Memory Creation Prompt:</h4>
             <h5>This prompt will be used to generate memories from chat scenes.</h5>
@@ -96,7 +90,7 @@ const profileEditTemplate = Handlebars.compile(`
             {{/each}}
             <option value="custom">Custom Title Format...</option>
         </select>
-        <input type="text" id="stmb-profile-custom-title-format" class="text_pole marginTop5 {{#unless showCustomTitleInput}}displayNone{{/unless}}" 
+        <input type="text" id="stmb-profile-custom-title-format" class="text_pole marginTop5 {{#unless showCustomTitleInput}}displayNone{{/unless}}"
             placeholder="Enter custom format" value="{{titleFormat}}">
     </div>
     <hr>
@@ -160,36 +154,24 @@ const profileEditTemplate = Handlebars.compile(`
  */
 export async function editProfile(settings, profileIndex, refreshCallback) {
     const profile = settings.profiles[profileIndex];
-    
+
     if (!profile) {
         console.error(`${MODULE_NAME}: No profile found at index ${profileIndex}`);
         return;
     }
-    
+
     try {
-        const availableModels = getAvailableModels();
         const apiInfo = getCurrentApiInfo();
         const connection = profile.connection || { temperature: 0.7 };
-        
-        const isCustom = connection.model ? isCustomModel(connection.model, availableModels) : false;
-        const showCustomInput = isCustom || availableModels.length === 0;
-        const customModelValue = isCustom ? connection.model : '';
-        
-        // Logic to handle title format for the template
         const profileTitleFormat = profile.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
-
         const templateData = {
             name: profile.name,
             connection: connection,
             api: 'openai',
             prompt: profile.prompt || '',
             preset: profile.preset || '',
-            availableModels: availableModels,
             currentApi: apiInfo.api || 'Unknown',
-            isCustomModel: isCustom,
-            showCustomInput: showCustomInput,
-            customModelValue: customModelValue,
             presetOptions: getPresetNames().map(presetName => ({
                 value: presetName,
                 displayName: formatPresetDisplayName(presetName),
@@ -209,9 +191,9 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             preventRecursion: profile.preventRecursion,
             delayUntilRecursion: profile.delayUntilRecursion
         };
-        
+
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
-        
+
         const popupInstance = new Popup(`<h3>Edit Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Save',
             cancelButton: 'Cancel/Close',
@@ -219,24 +201,24 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             large: true,
             allowVerticalScrolling: true,
         });
-        
+
         setupProfileEditEventHandlers(popupInstance);
-        
+
         const result = await popupInstance.show();
-        
+
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name);
-            
+
             if (!validateProfile(updatedProfile)) {
                 toastr.error('Invalid profile data', 'STMemoryBooks');
                 return;
             }
-            
+
             settings.profiles[profileIndex] = updatedProfile;
             saveSettingsDebounced();
-            
+
             if (refreshCallback) refreshCallback();
-            
+
             toastr.success('Profile updated successfully', 'STMemoryBooks');
             console.log(`${MODULE_NAME}: Updated profile "${updatedProfile.name}"`);
         }
@@ -253,8 +235,7 @@ export async function newProfile(settings, refreshCallback) {
     try {
         const existingNames = settings.profiles.map(p => p.name);
         const defaultName = generateSafeProfileName('New Profile', existingNames);
-        
-        const availableModels = getAvailableModels();
+
         const apiInfo = getCurrentApiInfo();
 
         // Logic to handle title format for the template
@@ -267,11 +248,7 @@ export async function newProfile(settings, refreshCallback) {
             api: '',
             prompt: '',
             preset: '',
-            availableModels: availableModels,
             currentApi: apiInfo.api || 'Unknown',
-            isCustomModel: false,
-            showCustomInput: availableModels.length === 0,
-            customModelValue: '',
             presetOptions: getPresetNames().map(presetName => ({
                 value: presetName,
                 displayName: formatPresetDisplayName(presetName),
@@ -291,9 +268,9 @@ export async function newProfile(settings, refreshCallback) {
             preventRecursion: true,
             delayUntilRecursion: false
         };
-        
+
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
-        
+
         const popupInstance = new Popup(`<h3>New Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
             okButton: 'Create',
             cancelButton: 'Cancel/Close',
@@ -301,27 +278,27 @@ export async function newProfile(settings, refreshCallback) {
             large: true,
             allowVerticalScrolling: true,
         });
-        
+
         setupProfileEditEventHandlers(popupInstance);
-        
+
         const result = await popupInstance.show();
-        
+
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const newProfileData = buildProfileFromForm(popupInstance.dlg, defaultName);
-            
+
             const finalName = generateSafeProfileName(newProfileData.name, existingNames);
             newProfileData.name = finalName;
-            
+
             if (!validateProfile(newProfileData)) {
                 toastr.error('Invalid profile data', 'STMemoryBooks');
                 return;
             }
-            
+
             settings.profiles.push(newProfileData);
             saveSettingsDebounced();
-            
+
             if (refreshCallback) refreshCallback();
-            
+
             toastr.success('Profile created successfully', 'STMemoryBooks');
             console.log(`${MODULE_NAME}: Created new profile "${newProfileData.name}"`);
         }
@@ -342,29 +319,29 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
         toastr.error('Cannot delete the last profile', 'STMemoryBooks');
         return;
     }
-    
+
     const profile = settings.profiles[profileIndex];
-    
+
     try {
         const result = await new Popup(`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
-        
+
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const deletedName = profile.name;
             settings.profiles.splice(profileIndex, 1);
-            
+
             // If we deleted the profile that was the default, reset default to the first profile.
             if (settings.defaultProfile === profileIndex) {
                 settings.defaultProfile = 0;
-            } 
+            }
             // If we deleted a profile that came *before* the default one, its index has shifted.
             else if (settings.defaultProfile > profileIndex) {
                 settings.defaultProfile--;
             }
 
             saveSettingsDebounced();
-            
+
             if (refreshCallback) refreshCallback();
-            
+
             toastr.success('Profile deleted successfully', 'STMemoryBooks');
             console.log(`${MODULE_NAME}: Deleted profile "${deletedName}"`);
         }
@@ -386,20 +363,20 @@ export function exportProfiles(settings) {
             version: 1,
             moduleVersion: settings.migrationVersion || 1
         };
-        
+
         const dataStr = JSON.stringify(exportData, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
+
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
         link.download = `stmemorybooks-profiles-${moment().format('YYYY-MM-DD')}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up the object URL
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-        
+
         toastr.success('Profiles exported successfully', 'STMemoryBooks');
         console.log(`${MODULE_NAME}: Exported ${settings.profiles.length} profiles`);
     } catch (error) {
@@ -421,29 +398,29 @@ function cleanProfile(profile) {
 export function importProfiles(event, settings, refreshCallback) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const importData = JSON.parse(e.target.result);
-            
+
             if (!importData.profiles || !Array.isArray(importData.profiles)) {
                 throw new Error('Invalid profile data format - missing profiles array');
             }
-            
+
             // Validate and clean profile structure
             const validProfiles = importData.profiles
                 .filter(profile => validateProfile(profile))
                 .map(profile => cleanProfile(profile));
-            
+
             if (validProfiles.length === 0) {
                 throw new Error('No valid profiles found in import file');
             }
-            
+
             let importedCount = 0;
             let skippedCount = 0;
             const existingNames = settings.profiles.map(p => p.name);
-            
+
             // Merge profiles (avoid duplicates by name)
             validProfiles.forEach(importProfile => {
                 const exists = existingNames.includes(importProfile.name);
@@ -452,42 +429,42 @@ export function importProfiles(event, settings, refreshCallback) {
                     const finalName = generateSafeProfileName(importProfile.name, existingNames);
                     importProfile.name = finalName;
                     existingNames.push(finalName);
-                    
+
                     settings.profiles.push(importProfile);
                     importedCount++;
                 } else {
                     skippedCount++;
                 }
             });
-            
+
             if (importedCount > 0) {
                 saveSettingsDebounced();
                 if (refreshCallback) refreshCallback();
-                
+
                 let message = `Imported ${importedCount} profile${importedCount === 1 ? '' : 's'}`;
                 if (skippedCount > 0) {
                     message += ` (${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} skipped)`;
                 }
-                
+
                 toastr.success(message, 'STMemoryBooks');
                 console.log(`${MODULE_NAME}: ${message}`);
             } else {
                 toastr.warning('No new profiles imported - all profiles already exist', 'STMemoryBooks');
             }
-            
+
         } catch (error) {
             console.error(`${MODULE_NAME}: Error importing profiles:`, error);
             toastr.error(`Failed to import profiles: ${error.message}`, 'STMemoryBooks');
         }
     };
-    
+
     reader.onerror = function() {
         console.error(`${MODULE_NAME}: Error reading import file`);
         toastr.error('Failed to read import file', 'STMemoryBooks');
     };
-    
+
     reader.readAsText(file);
-    
+
     // Clear the file input
     event.target.value = '';
 }
@@ -497,7 +474,7 @@ export function importProfiles(event, settings, refreshCallback) {
  */
 function setupProfileEditEventHandlers(popupInstance) {
     const popupElement = popupInstance.dlg;
-    
+
     popupElement.querySelector('#stmb-profile-preset')?.addEventListener('change', (e) => {
         const customPromptSection = popupElement.querySelector('#stmb-custom-prompt-section');
         if (e.target.value === '') {
@@ -506,7 +483,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             customPromptSection.classList.add('displayNone');
         }
     });
-    
+
     // Handler for the new title format dropdown
     popupElement.querySelector('#stmb-profile-title-format-select')?.addEventListener('change', (e) => {
         const customInput = popupElement.querySelector('#stmb-profile-custom-title-format');
@@ -525,7 +502,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             if (value > 2) e.target.value = 2;
         }
     });
-    
+
     popupElement.querySelector('#stmb-profile-model')?.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[<>]/g, '');
     });
@@ -540,7 +517,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             }
         });
     });
-    
+
     console.log(`${MODULE_NAME}: Profile edit event handlers attached`);
 }
 
@@ -590,12 +567,12 @@ function buildProfileFromForm(popupElement, fallbackName) {
 export function validateAndFixProfiles(settings) {
     const issues = [];
     const fixes = [];
-    
+
     if (!settings.profiles || !Array.isArray(settings.profiles)) {
         settings.profiles = [];
         fixes.push('Created empty profiles array');
     }
-    
+
     if (settings.profiles.length === 0) {
         // Use the centralized creator to ensure all fields are present
         settings.profiles.push(createProfileObject({
@@ -605,7 +582,7 @@ export function validateAndFixProfiles(settings) {
         }));
         fixes.push('Added default profile with all new settings.');
     }
-    
+
     settings.profiles.forEach((profile, index) => {
         if (!validateProfile(profile)) {
             issues.push(`Profile ${index} is invalid`);
@@ -618,7 +595,7 @@ export function validateAndFixProfiles(settings) {
                 fixes.push(`Fixed missing connection for profile ${index}`);
             }
         }
-        
+
         // For each profile, we check if the new settings exist. If not, we add the defaults.
         if (profile.constVectMode === undefined) {
             profile.constVectMode = 'link';
@@ -647,12 +624,12 @@ export function validateAndFixProfiles(settings) {
             fixes.push(`Added missing title format to profile "${profile.name}"`);
         }
     });
-    
+
     if (settings.defaultProfile >= settings.profiles.length) {
         settings.defaultProfile = 0;
         fixes.push('Fixed invalid default profile index');
     }
-    
+
     return {
         valid: issues.length === 0,
         issues: issues,

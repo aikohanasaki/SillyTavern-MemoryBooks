@@ -39,8 +39,6 @@ export const SELECTORS = {
     modelScale: '#model_scale_select',
     modelGoogle: '#model_google_select',
     modelMistralai: '#model_mistralai_select',
-    customModelId: '#custom_model_id',
-    modelCustomSelect: '#model_custom_select',
     modelCohere: '#model_cohere_select',
     modelPerplexity: '#model_perplexity_select',
     modelGroq: '#model_groq_select',
@@ -364,65 +362,12 @@ export async function getEffectiveLorebookName() {
 }
 
 /**
- * BULLETPROOF: Gets the list of available models from the current API's select dropdown in the UI.
- * @returns {Array<{value: string, text: string}>} An array of model objects.
- */
-export function getAvailableModels() {
-    try {
-        const selectors = getApiSelectors();
-        const modelSelectElement = $(selectors.model);
-
-        if (modelSelectElement && modelSelectElement.length > 0 && modelSelectElement[0] && modelSelectElement[0].options) {
-            const models = Array.from(modelSelectElement[0].options)
-                .filter(option => option.value) 
-                .map(option => ({
-                    value: option.value,
-                    text: option.text || option.value,
-                }));
-                
-            console.log(`${MODULE_NAME}: Found ${models.length} available models for current API`);
-            return models;
-        }
-
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Could not get available models from UI:`, error);
-    }
-
-    // If the check fails or an error occurs, always return an empty array.
-    console.warn(`${MODULE_NAME}: Could not find model select element in UI, returning empty list.`);
-    return [];
-}
-
-/**
- * BULLETPROOF: Check if a model value represents a custom model entry
- * @param {string} modelValue - The model value to check
- * @param {Array} availableModels - Array of available models from getAvailableModels()
- * @returns {boolean} Whether this is a custom model
- */
-export function isCustomModel(modelValue, availableModels) {
-    if (!modelValue) return false;
-    
-    // Check if the model value exists in the available models list
-    return !availableModels.some(model => model.value === modelValue);
-}
-
-/**
- * BULLETPROOF: Get current model and temperature settings with comprehensive validation
+ * Get current model and temperature settings with comprehensive validation
  */
 export function getCurrentModelSettings() {
     try {
-        const apiInfo = getCurrentApiInfo();
         const selectors = getApiSelectors();
-        
-        let currentModel = '';
-        
-        if (apiInfo.completionSource === 'custom') {
-            currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
-        } else {
-            currentModel = $(selectors.model).val() || '';
-        }
-        
-        // BULLETPROOF: Default to 0.7 if no temperature is set, with proper validation
+        const currentModel = $(selectors.model).val() || '';
         let currentTemp = 0.7;
         const tempValue = $(selectors.temp).val() || $(selectors.tempCounter).val();
         if (tempValue !== null && tempValue !== undefined && tempValue !== '') {
@@ -431,238 +376,19 @@ export function getCurrentModelSettings() {
                 currentTemp = parsedTemp;
             }
         }
-        
         return {
             model: currentModel,
             temperature: currentTemp,
-            completionSource: apiInfo.completionSource
         };
     } catch (error) {
         console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
         return {
             model: '',
-            temperature: 0.7,
-            completionSource: 'openai'
+            temperature: 0.7
         };
     }
 }
 
-/**
- * BULLETPROOF: Switch provider, model, and temperature with comprehensive error handling and validation
- * @param {Object} profile - expects .effectiveConnection or .connection with { api, model, temperature }
- */
-export async function switchProviderAndModel(profile) {
-    const conn = profile?.effectiveConnection || profile?.connection;
-    if (!profile || !conn || !conn.model) {
-        console.warn(`${MODULE_NAME}: Cannot switch provider - invalid profile or connection`, profile);
-        return false;
-    }
-
-    try {
-        console.log(`${MODULE_NAME}: Switching to provider: ${conn.api}, model: ${conn.model}`);
-
-        // 1) Ensure main_api is 'openai' (ST Chat Completions pane requirement)
-        if ($('#main_api').val() !== 'openai') {
-            $('#main_api').val('openai').trigger('change');
-            window.main_api = 'openai';
-            await new Promise(r => setTimeout(r, 300));
-        }
-
-        // 2) Set chat completion source with validation/alias
-        const apiToSource = {
-            openai: 'openai',
-            claude: 'claude',
-            openrouter: 'openrouter',
-            ai21: 'ai21',
-            makersuite: 'makersuite',
-            google: 'makersuite',
-            vertexai: 'vertexai',
-            mistralai: 'mistralai',
-            custom: 'custom',
-            cohere: 'cohere',
-            perplexity: 'perplexity',
-            groq: 'groq',
-            '01ai': '01ai',
-            nanogpt: 'nanogpt',
-            deepseek: 'deepseek',
-            aimlapi: 'aimlapi',
-            xai: 'xai',
-            pollinations: 'pollinations',
-            windowai: 'windowai',
-            scale: 'scale',
-            blockentropy: 'blockentropy',
-        };
-        const completionSource = apiToSource[conn.api] || 'openai';
-
-        const $source = pick$('#group_chat_completion_source', '#chat_completion_source');
-        if ($source.length && $source.val() !== completionSource) {
-            $source.val(completionSource).trigger('change');
-            await new Promise(r => setTimeout(r, 300));
-        }
-
-        // 3) Use group-aware selectors
-        const selectors = getApiSelectors();
-        const desiredModel = conn.model;
-
-        // 4) Set the model with retry
-        let modelSet = false;
-        for (let tries = 0; tries < 15; tries++) {
-            const $select = $(selectors.model);
-            if ($select.length) {
-                if ($select.find(`option[value='${desiredModel}']`).length) {
-                    $select.val(desiredModel).trigger('change');
-                    modelSet = true;
-                    console.log(`${MODULE_NAME}: Model set to ${desiredModel} on attempt ${tries + 1}`);
-                    break;
-                }
-                if (!$select[0].options?.length) {
-                    $select.val(desiredModel).trigger('change');
-                    modelSet = true;
-                    console.log(`${MODULE_NAME}: Model set to ${desiredModel} (no options present) on attempt ${tries + 1}`);
-                    break;
-                }
-            }
-            await new Promise(r => setTimeout(r, 200));
-        }
-
-        if (!modelSet) {
-            console.warn(`${MODULE_NAME}: Could not set model ${desiredModel} on selector ${selectors.model} after 15 attempts`);
-            if (completionSource !== 'custom') return false;
-        }
-
-        // 5) For custom source: also set the freeform custom_model_id (group or normal)
-        if (completionSource === 'custom') {
-            pick$('#group_custom_model_id', '#custom_model_id')
-                .val(desiredModel).trigger('input').trigger('change');
-            pick$('#group_model_custom_select', '#model_custom_select')
-                .val(desiredModel).trigger('change');
-        }
-
-        // 6) Temperature (group or normal inputs)
-        let tempProvided = false;
-        let tempValue = conn.temperature;
-
-        if (typeof tempValue === 'string') {
-            const parsed = parseFloat(tempValue);
-            if (!isNaN(parsed)) tempValue = parsed;
-        }
-        if (typeof tempValue === 'number' && !isNaN(tempValue)) {
-            tempProvided = true;
-            tempValue = Math.max(0, Math.min(2, tempValue));
-        }
-
-        if (tempProvided) {
-            let tempSet = false;
-            for (let tries = 0; tries < 15; tries++) {
-                const $temp = pick$('#group_temp_openai', '#temp_openai');
-                const $tempCounter = pick$('#group_temp_counter_openai', '#temp_counter_openai');
-
-                if ($temp.length || $tempCounter.length) {
-                    if ($temp.length) {
-                        $temp.val(tempValue).trigger('input').trigger('change');
-                    }
-                    if ($tempCounter.length) {
-                        $tempCounter.val(tempValue).trigger('input').trigger('change');
-                    }
-                    tempSet = true;
-                    console.log(`${MODULE_NAME}: Temperature set to ${tempValue} on attempt ${tries + 1}`);
-                    break;
-                }
-                await new Promise(r => setTimeout(r, 150));
-            }
-
-            if (!tempSet) {
-                console.warn(`${MODULE_NAME}: Temperature inputs not found; could not set temperature`);
-            }
-        }
-
-        await new Promise(r => setTimeout(r, 150));
-        console.log(`${MODULE_NAME}: Switched to ${conn.api}/${desiredModel}${tempProvided ? ` with temperature ${tempValue}` : ''}`);
-        return true;
-
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error switching provider/model/temperature:`, error);
-        return false;
-    }
-}
-
-/**
- * BULLETPROOF: Restore model and temperature settings with comprehensive validation
- * @param {Object} settings - Settings object with model and temperature
- * @returns {boolean} Whether restoration was successful
- */
-export async function restoreModelSettings(settings) {
-    if (!settings || !settings.model) {
-        console.warn(`${MODULE_NAME}: Cannot restore settings - invalid settings object`);
-        return false;
-    }
-
-    try {
-        console.log(`${MODULE_NAME}: Restoring model settings:`, settings);
-
-        const selectors = getApiSelectors();
-        let restored = false;
-
-        // Apply model setting (handles custom + group)
-        if (settings.model) {
-            // Custom source: set both custom id and custom select if present
-            const $customId = pick$('#group_custom_model_id', '#custom_model_id');
-            const $customSelect = pick$('#group_model_custom_select', '#model_custom_select');
-            const $modelSelect = $(selectors.model);
-
-            if ($customId.length) {
-                const currentCustomId = $customId.val();
-                if (currentCustomId !== settings.model) {
-                    $customId.val(settings.model).trigger('change');
-                    restored = true;
-                }
-            }
-            if ($customSelect.length) {
-                const currentCustomSelect = $customSelect.val();
-                if (currentCustomSelect !== settings.model) {
-                    $customSelect.val(settings.model).trigger('change');
-                    restored = true;
-                }
-            }
-            if ($modelSelect.length) {
-                const currentModel = $modelSelect.val();
-                if (currentModel !== settings.model) {
-                    $modelSelect.val(settings.model).trigger('change');
-                    restored = true;
-                }
-            }
-        }
-
-        // Apply temperature (handles group)
-        if (typeof settings.temperature === 'number' && !isNaN(settings.temperature)) {
-            const $temp = pick$('#group_temp_openai', '#temp_openai');
-            const $tempCounter = pick$('#group_temp_counter_openai', '#temp_counter_openai');
-
-            const currentTemp = parseFloat(($temp.val?.() ?? $tempCounter.val?.()) || 0);
-            if (Math.abs(currentTemp - settings.temperature) > 0.001) {
-                if ($temp.length) {
-                    $temp.val(settings.temperature).trigger('input').trigger('change');
-                }
-                if ($tempCounter.length) {
-                    $tempCounter.val(settings.temperature).trigger('input').trigger('change');
-                }
-                restored = true;
-            }
-        }
-
-        if (restored) {
-            console.log(`${MODULE_NAME}: Successfully restored model settings`);
-        } else {
-            console.log(`${MODULE_NAME}: No settings needed to be restored`);
-        }
-
-        return true;
-
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error restoring model settings:`, error);
-        return false;
-    }
-}
 
 /**
  * Preset prompt definitions - Updated for JSON structured output
@@ -816,34 +542,6 @@ export function validateProfile(profile) {
 }
 
 /**
- * Clean up profile connection settings
- * Removes empty/invalid values and normalizes structure
- * @param {Object} connection - Connection settings to clean
- * @returns {Object} Cleaned connection settings
- */
-export function cleanConnectionSettings(connection) {
-    if (!connection || typeof connection !== 'object') {
-        return { temperature: 0.7 };
-    }
-    
-    const cleaned = {};
-    
-    if (connection.model && typeof connection.model === 'string' && connection.model.trim()) {
-        cleaned.model = connection.model.trim();
-    }
-    
-    if (typeof connection.temperature === 'number' && !isNaN(connection.temperature)) {
-        // Clamp temperature to reasonable bounds
-        cleaned.temperature = Math.max(0, Math.min(2, connection.temperature));
-    } else {
-        // Default to 0.7 if no valid temperature provided
-        cleaned.temperature = 0.7;
-    }
-    
-    return cleaned;
-}
-
-/**
  * Deep clone an object (simplified lodash.cloneDeep alternative)
  * @param {any} obj - Object to clone
  * @returns {any} Deep cloned object
@@ -972,7 +670,6 @@ export function formatPresetDisplayName(presetName) {
  * @returns {Object} A structured and validated profile object.
  */
 export function createProfileObject(data = {}) {
-    // Use parseTemperature for robust handling, with a clear fallback to 0.7
     let temperature = parseTemperature(data.temperature);
     if (temperature === null) {
         temperature = 0.7;
