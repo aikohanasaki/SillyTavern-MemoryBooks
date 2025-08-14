@@ -20,7 +20,7 @@ export { currentProfile };
 const MODULE_NAME = 'STMemoryBooks';
 let hasBeenInitialized = false; 
 
-// BULLETPROOF: Supported Chat Completion sources
+// Supported Chat Completion sources
 const SUPPORTED_COMPLETION_SOURCES = [
     'openai', 'claude', 'windowai', 'openrouter', 'ai21', 'scale', 'makersuite',
     'mistralai', 'custom', 'cohere', 'perplexity', 'groq', '01ai', 'nanogpt',
@@ -59,7 +59,7 @@ let currentPopupInstance = null;
 let isProcessingMemory = false;
 let currentProfile = null;
 
-// BULLETPROOF: Settings cache for restoration
+// Settings cache for restoration
 let cachedSettings = null;
 let isExtensionEnabled = false;
 
@@ -333,7 +333,7 @@ function checkApiCompatibility() {
 }
 
 /**
- * BULLETPROOF: Update cached settings
+ * Update cached settings
  */
 function updateCachedSettings() {
     if (!isExtensionEnabled) {
@@ -356,7 +356,7 @@ function updateCachedSettings() {
 }
 
 /**
- * BULLETPROOF: Restore cached settings
+ * Restore cached settings
  */
 async function restoreCachedSettings() {
     if (!cachedSettings || !isExtensionEnabled) {
@@ -380,7 +380,7 @@ async function restoreCachedSettings() {
 }
 
 /**
- * BULLETPROOF: Handle extension state changes (enabled/disabled)
+ * Handle extension state changes (enabled/disabled)
  */
 function handleExtensionStateChange() {
     const wasEnabled = isExtensionEnabled;
@@ -590,11 +590,11 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     currentProfile = profileSettings;
     const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
     
-    // BULLETPROOF: Store current settings for restoration
+    // Store current settings for restoration
     const originalSettings = getCurrentModelSettings();
     let settingsRestored = false;
     
-    // BULLETPROOF: Update cached settings before switching
+    // Update cached settings before switching
     updateCachedSettings();
     
     try {
@@ -602,14 +602,8 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
         }
         
-        // BULLETPROOF: Switch to profile settings if not using current settings override
-        if (!profileSettings.advancedOptions?.overrideSettings) {
-            console.log('STMemoryBooks: Switching to profile settings for memory generation');
-            const switchSuccess = await switchProviderAndModel(profileSettings);
-            if (!switchSuccess) {
-                console.warn('STMemoryBooks: Failed to switch to profile settings, continuing with current settings');
-            }
-        }
+        // Not switching UI here; Generate() will use explicit model/temperature overrides
+        console.log('STMemoryBooks: Using explicit model/temperature overrides for generation');
         
         toastr.info('Compiling scene messages...', 'STMemoryBooks');
         
@@ -674,22 +668,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         }, successDelay);
         
-        // BULLETPROOF: Restore original settings on success
-        if (originalSettings) {
-            try {
-                console.log('STMemoryBooks: Restoring original model settings');
-                const restoreSuccess = await restoreModelSettings(originalSettings);
-                if (restoreSuccess) {
-                    console.log('STMemoryBooks: Successfully restored original settings');
-                    settingsRestored = true;
-                } else {
-                    console.warn('STMemoryBooks: Failed to restore original settings');
-                }
-            } catch (restoreError) {
-                console.error('STMemoryBooks: Error restoring original settings:', restoreError);
-            }
-        }
-        
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
         
@@ -728,23 +706,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         } else {
             toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
-    } finally {
-        // BULLETPROOF: Always restore original settings, even on error
-        if (!settingsRestored && originalSettings) {
-            try {
-                console.log('STMemoryBooks: Restoring original model settings');
-                const restoreSuccess = await restoreModelSettings(originalSettings);
-                if (restoreSuccess) {
-                    console.log('STMemoryBooks: Successfully restored original settings');
-                    settingsRestored = true;
-                } else {
-                    console.warn('STMemoryBooks: Failed to restore original settings');
-                }
-            } catch (restoreError) {
-                console.error('STMemoryBooks: Error restoring original settings:', restoreError);
-            }
-        }
-        
+    } finally {        
         isProcessingMemory = false;
     }
 }
@@ -1290,13 +1252,13 @@ function setupEventListeners() {
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
     
-    // BULLETPROOF: API change handlers for settings management
+    // API change handlers for settings management
     $(document).on('change', `${SELECTORS.mainApi}, ${SELECTORS.completionSource}`, function() {
         console.log(`${MODULE_NAME}: API change detected`);
         handleExtensionStateChange();
     });
 
-    // BULLETPROOF: Model settings change handlers
+    // Model settings change handlers
     const modelSelectors = Object.values(SELECTORS).filter(selector => 
         selector.includes('model_') || selector.includes('temp_') || selector.includes('custom_model')
     ).join(', ');
@@ -1311,19 +1273,49 @@ function setupEventListeners() {
     });
     
     eventSource.on(event_types.GENERATE_AFTER_DATA, (generate_data) => {
-        if (isProcessingMemory && currentProfile) { 
-            if (currentProfile.effectiveConnection) {
-                if (currentProfile.effectiveConnection.model) {
-                    generate_data.model = currentProfile.effectiveConnection.model;
-                    // Also for custom: set custom_model_id
-                    if (generate_data.chat_completion_source === 'custom') {
-                        generate_data.custom_model_id = currentProfile.effectiveConnection.model;
-                    }
-                }
-                if (typeof currentProfile.effectiveConnection.temperature === 'number') {
-                    generate_data.temperature = currentProfile.effectiveConnection.temperature;
+        if (isProcessingMemory && currentProfile) {
+            const conn = currentProfile.effectiveConnection || currentProfile.connection || {};
+            const apiToSource = {
+                openai: 'openai',
+                claude: 'claude',
+                openrouter: 'openrouter',
+                ai21: 'ai21',
+                makersuite: 'makersuite',
+                google: 'makersuite',
+                vertexai: 'vertexai',
+                mistralai: 'mistralai',
+                custom: 'custom',
+                cohere: 'cohere',
+                perplexity: 'perplexity',
+                groq: 'groq',
+                '01ai': '01ai',
+                nanogpt: 'nanogpt',
+                deepseek: 'deepseek',
+                aimlapi: 'aimlapi',
+                xai: 'xai',
+                pollinations: 'pollinations',
+                windowai: 'windowai',
+                scale: 'scale',
+                blockentropy: 'blockentropy',
+            };
+            const src = apiToSource[conn.api] || 'openai';
+
+            // Force source/model/temp
+            generate_data.chat_completion_source = src;
+
+            if (conn.model) {
+                generate_data.model = conn.model;
+                if (src === 'custom') {
+                    generate_data.custom_model_id = conn.model;
                 }
             }
+            if (typeof conn.temperature === 'number') {
+                generate_data.temperature = conn.temperature;
+            }
+
+            // Defeat model/temp locks
+            generate_data.bypass_mtlock = true;
+            generate_data.force_model = true;
         }
     });
     
@@ -1354,7 +1346,7 @@ async function init() {
         attempts++;
     }
     
-    // BULLETPROOF: Check initial API compatibility
+    // Check initial API compatibility
     checkApiCompatibility();
     
     // Initialize settings with validation
@@ -1374,7 +1366,7 @@ async function init() {
     // Initialize scene state
     updateSceneStateCache();
     
-    // BULLETPROOF: Initialize cached settings
+    // Initialize cached settings
     updateCachedSettings();
     
     // Initialize chat observer
