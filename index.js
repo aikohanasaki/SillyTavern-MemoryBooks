@@ -1,6 +1,6 @@
 import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2 } from '../../../../script.js';
-import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
-import { extension_settings, saveMetadataDebounced, getContext } from '../../../extensions.js';
+import { Popup, POPUP_TYPE } from '../../../popup.js';
+import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
@@ -10,9 +10,9 @@ import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats 
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
+import { getSceneMarkers, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
-import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
+import { showConfirmationPopup, fetchPreviousSummaries } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
 export { currentProfile };
@@ -529,9 +529,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         if (retryCount > 0) {
             toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
         }
-        
-        // Not switching UI here; Generate() will use explicit model/temperature overrides
-        console.log('STMemoryBooks: Using explicit model/temperature overrides for generation');
         
         toastr.info('Compiling scene messages...', 'STMemoryBooks');
         
@@ -1192,9 +1189,10 @@ function setupEventListeners() {
     });
 
     // Model settings change handlers
-    const modelSelectors = Object.values(SELECTORS).filter(selector => 
-        selector.includes('model_') || selector.includes('temp_') || selector.includes('custom_model')
+    const modelSelectors = Object.values(SELECTORS).filter(selector =>
+        selector.includes('model_') || selector.includes('temp_')
     ).join(', ');
+
 
     eventSource.on(event_types.GENERATE_AFTER_DATA, (generate_data) => {
         if (isProcessingMemory && currentProfile) {
@@ -1229,9 +1227,6 @@ function setupEventListeners() {
 
             if (conn.model) {
                 generate_data.model = conn.model;
-                if (src === 'custom') {
-                    generate_data.custom_model_id = conn.model;
-                }
             }
             if (typeof conn.temperature === 'number') {
                 generate_data.temperature = conn.temperature;

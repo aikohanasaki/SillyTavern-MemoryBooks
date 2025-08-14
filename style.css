@@ -1,5 +1,3 @@
-/* STMemoryBooks Extension Styles - FIXED */
-
 /* --- CORE BUTTON STYLES --- */
 
 /* Base styling for all scene marker buttons */
@@ -115,38 +113,36 @@
 }
 
 /* --- SCENE PREVIEW STYLING --- */
-.stmb-scene-preview {
-    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #171717) 30%, transparent 70%);
-    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 20%, transparent 80%);
+.stmb-box {
+    border: var(--SmartThemeBorderColor) 1px solid;
+    border-radius: 6px;
+    background-color: var(--SmartThemeChatTintColor);
+}
+
+#stmb-summary-api, #stmb-summary-model, #stmb-summary-temp, #stmb-summary-title {
+    color: var(--SmartThemeQuoteColor);
+    font-weight: bold;
+}
+
+#stmb-scene-block, #stmb-summary-prompt {
+    color: var(--SmartThemeEmColor);
+    background: inherit;
+    border: 0;
+    font-size: smaller;
+}
+
+#stmb-profile-summary, #stmb-scene {
+    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 20%, transparent 80%);
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 30%, transparent 70%);
     border-radius: 6px;
     padding: 12px;
     margin: 10px 0;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    max-height: 300px;
     overflow-y: auto;
+
 }
 
-/* Custom scrollbar for scene preview */
-.stmb-scene-preview::-webkit-scrollbar {
-    width: 8px;
-}
-
-.stmb-scene-preview::-webkit-scrollbar-track {
-    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 10%, transparent 90%);
-    border-radius: 4px;
-}
-
-.stmb-scene-preview::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 30%, transparent 70%);
-    border-radius: 4px;
-}
-
-.stmb-scene-preview::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 50%, transparent 50%);
+#stmb-profile-summary pre {
+    text-align: left !important;
 }
 
 /* --- PROCESSING STATE STYLING --- */

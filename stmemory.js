@@ -1,5 +1,5 @@
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, isValidPreset } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, isValidPreset } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
@@ -416,13 +416,8 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
         const content = (message.mes || '').trim();
         return content ? `${speaker}: ${content}` : null;
     }).filter(Boolean); // Filter out any empty/null messages
-    
+        
     const sceneHeader = [
-        "=== CHAT SCENE TO SUMMARIZE ===",
-        `Character: ${metadata.characterName || 'Unknown'}`,
-        `User: ${metadata.userName || 'User'}`,
-        `Chat ID: ${metadata.chatId || 'Unknown'}`,
-        `Messages: ${metadata.sceneStart} to ${metadata.sceneEnd} (${messages.length} total)`,
         ""
     ];
     
@@ -441,7 +436,7 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
             sceneHeader.push("");
         });
         
-        sceneHeader.push("=== END CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===");
+        sceneHeader.push("=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===");
         sceneHeader.push("");
     }
     
