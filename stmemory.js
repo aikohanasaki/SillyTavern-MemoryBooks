@@ -1,7 +1,7 @@
 import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getApiSelectors, getPresetNames, isValidPreset, deepClone } from './utils.js';
-import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
+import { characters, this_chid, substituteParams, Generate, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
 const $ = window.jQuery;
@@ -31,22 +31,10 @@ class InvalidProfileError extends Error {
     }
 }
 
-function getCurrentCompletionEndpoint(api) {
-    if (api === 'custom') {
-        // Use SillyTavern's stored custom endpoint
-        return window.oai_settings?.custom_url || '/api/openai/v1/chat/completions';
-    }
-    if (api === 'openai') {
-        return '/api/openai/v1/chat/completions';
-    }
-    if (api === 'claude') {
-        return '/api/claude/v1/messages';
-    }
-    if (api === 'google') {
-        return '/api/google/v1/messages';
-    }
-    return '/api/openai/v1/chat/completions'; // fallback
+function getCurrentCompletionEndpoint() {
+    return '/api/backends/chat-completions/generate';
 }
+
 
 /**
 *Send a raw completion request to the backend, bypassing SillyTavern's chat context stack.*
@@ -68,41 +56,27 @@ export async function sendRawCompletionRequest({
     api = 'openai',
     extra = {},
 }) {
-    let url = getCurrentCompletionEndpoint(api);
+    let url = getCurrentCompletionEndpoint();
 
-    let body = {};
-    if (api === 'openai' || api === 'custom') {
-        body = {
-            model,
-            messages: [
-                { role: 'user', content: prompt }
-            ],
-            temperature,
-            ...extra,
-        };
-    } else if (api === 'claude') {
-        body = {
-            model,
-            messages: [
-                { role: 'user', content: prompt }
-            ],
-            temperature,
-            ...extra,
-        };
-    } else if (api === 'google') {
-        body = {
-            model,
-            contents: [
-                { role: 'user', parts: [{ text: prompt }] }
-            ],
-            temperature,
-            ...extra,
-        };
+    let body = {
+        messages: [
+            { role: 'user', content: prompt }
+        ],
+        model,
+        temperature,
+        chat_completion_source: api,
+        ...extra,
+    };
+
+    if (api === 'custom' && model) {
+        body.custom_model_id = model;
+        // --- ADD THIS LINE ---
+        body.custom_url = oai_settings.custom_url || '';
     }
 
     const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getRequestHeaders(),
         body: JSON.stringify(body),
     });
 
@@ -112,14 +86,7 @@ export async function sendRawCompletionRequest({
 
     const data = await res.json();
 
-    let text = '';
-    if (api === 'openai' || api === 'custom') {
-        text = data.choices?.[0]?.message?.content ?? '';
-    } else if (api === 'claude') {
-        text = data.completion ?? data.choices?.[0]?.message?.content ?? '';
-    } else if (api === 'google') {
-        text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    }
+    let text = data.choices?.[0]?.message?.content ?? data.completion ?? data.choices?.[0]?.text ?? '';
 
     return { text, full: data };
 }
