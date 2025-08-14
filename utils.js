@@ -117,7 +117,6 @@ export function getApiSelectors() {
         ai21:          `${prefix}model_ai21_select`,
         scale:         `${prefix}model_scale_select`,
         makersuite:    `${prefix}model_google_select`,
-        google:        `${prefix}model_google_select`,
         mistralai:     `${prefix}model_mistralai_select`,
         custom:        `${prefix}model_custom_select`,
         cohere:        `${prefix}model_cohere_select`,

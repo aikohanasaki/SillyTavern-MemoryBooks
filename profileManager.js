@@ -34,7 +34,7 @@ const profileEditTemplate = Handlebars.compile(`
     <div class="world_entry_form_control" style="margin-top: 5px;">
         <h4>Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10">
-            These settings will temporarily override SillyTavern's current model and temperature during memory generation, then restore the original values.
+            For model, make sure to copy-paste the exact model name from the connections panel, e.g. <code>gemini-2.5-pro</code>, <code>claude-4-sonnet</code>, etc.
         </div>
         
         <label for="stmb-profile-api">
