@@ -3,7 +3,6 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getApiSelectors, getPresetNames, isValidPreset, deepClone } from './utils.js';
 import { characters, this_chid, substituteParams, Generate } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
-import { switchProviderAndModel, SELECTORS } from './utils.js';
 import { groups } from '../../../group-chats.js';
 const $ = window.jQuery;
 
@@ -30,6 +29,99 @@ class InvalidProfileError extends Error {
         super(message);
         this.name = 'InvalidProfileError';
     }
+}
+
+function getCurrentCompletionEndpoint(api) {
+    if (api === 'custom') {
+        // Use SillyTavern's stored custom endpoint
+        return window.oai_settings?.custom_url || '/api/openai/v1/chat/completions';
+    }
+    if (api === 'openai') {
+        return '/api/openai/v1/chat/completions';
+    }
+    if (api === 'claude') {
+        return '/api/claude/v1/messages';
+    }
+    if (api === 'google') {
+        return '/api/google/v1/messages';
+    }
+    return '/api/openai/v1/chat/completions'; // fallback
+}
+
+/**
+*Send a raw completion request to the backend, bypassing SillyTavern's chat context stack.*
+*Supports OpenAI, Claude, Gemini, and custom OpenAI-compatible endpoints.*
+**
+*@param {Object} opts*
+*@param {string} opts.model*
+*@param {string} opts.prompt*
+*@param {number} [opts.temperature]*
+*@param {string} [opts.api] - 'openai', 'claude', 'google', 'custom', etc.*
+*@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
+*@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
+*@returns {Promise<{text: string, full: object}>}*
+*/
+export async function sendRawCompletionRequest({
+    model,
+    prompt,
+    temperature = 0.7,
+    api = 'openai',
+    extra = {},
+}) {
+    let url = getCurrentCompletionEndpoint(api);
+
+    let body = {};
+    if (api === 'openai' || api === 'custom') {
+        body = {
+            model,
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            temperature,
+            ...extra,
+        };
+    } else if (api === 'claude') {
+        body = {
+            model,
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            temperature,
+            ...extra,
+        };
+    } else if (api === 'google') {
+        body = {
+            model,
+            contents: [
+                { role: 'user', parts: [{ text: prompt }] }
+            ],
+            temperature,
+            ...extra,
+        };
+    }
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+        throw new Error(`LLM request failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = await res.json();
+
+    let text = '';
+    if (api === 'openai' || api === 'custom') {
+        text = data.choices?.[0]?.message?.content ?? '';
+    } else if (api === 'claude') {
+        text = data.completion ?? data.choices?.[0]?.message?.content ?? '';
+    } else if (api === 'google') {
+        text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    }
+
+    return { text, full: data };
 }
 
 /**
@@ -207,12 +299,17 @@ async function generateMemoryWithAI(promptString, profile) {
     };
 
     try {
-        const aiResponse = await Generate('quiet', genOptions);
-        let aiResponseText = aiResponse;
-        if (aiResponse && typeof aiResponse === 'object' && aiResponse.content) {
-            aiResponseText = aiResponse.content;
-        }
+        // Prepare connection info
+        const apiType = conn.api || getCurrentApiInfo().api;
+        const { text: aiResponseText } = await sendRawCompletionRequest({
+            model: conn.model,
+            prompt: promptString,
+            temperature: conn.temperature,
+            api: apiType,
+        });
+
         const jsonResult = parseAIJsonResponse(aiResponseText);
+
         return {
             content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
             title: jsonResult.title || 'Memory',
