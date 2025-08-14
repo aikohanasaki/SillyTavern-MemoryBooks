@@ -2,7 +2,7 @@ import { chat, chat_metadata } from '../../../../script.js';
 import { saveMetadataDebounced } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { getCurrentMemoryBooksContext } from './utils.js';
-import { groups } from '../../../group-chats.js';
+import { groups, editGroup } from '../../../group-chats.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
@@ -72,22 +72,18 @@ export function saveMetadataForCurrentContext() {
     
     if (context.isGroupChat) {
         // Group chat - trigger group save for metadata persistence
-        // Use window.editGroup as it's more reliable than direct import [[memory:4989984]]
-        if (typeof window.editGroup === 'function') {
-            window.editGroup(context.groupId, false, false);
-            console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}"`);
+        if (typeof editGroup === 'function') {
+            editGroup(context.groupId, false, false);
         } else {
             // Try to get editGroup from global scope as fallback
             const editGroupFunc = window.editGroup || globalThis.editGroup;
             if (typeof editGroupFunc === 'function') {
                 editGroupFunc(context.groupId, false, false);
-                console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}" (global fallback method)`);
             } else {
                 console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
                 // Additional fallback - try to save via the group object directly
                 const group = groups?.find(x => x.id === context.groupId);
                 if (group && group.chat_metadata) {
-                    console.log(`${MODULE_NAME}: Group metadata updated in memory for group ID "${context.groupId}"`);
                 }
             }
         }
@@ -249,6 +245,7 @@ export function setSceneMarker(messageId, type) {
         start: newState.start,
         end: newState.end
     });
+    
 }
 
 /**
