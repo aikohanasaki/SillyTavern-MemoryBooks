@@ -70,7 +70,6 @@ export async function sendRawCompletionRequest({
 
     if (api === 'custom' && model) {
         body.custom_model_id = model;
-        // --- ADD THIS LINE ---
         body.custom_url = oai_settings.custom_url || '';
     }
 
