@@ -161,7 +161,6 @@ function parseAIJsonResponse(aiResponse) {
  * @throws {AIResponseError} If the AI generation fails or doesn't return valid JSON
  */
 async function generateMemoryWithAI(promptString, profile) {
-    // Wait for character data to be available before proceeding
     const characterDataReady = await waitForCharacterData();
     if (!characterDataReady) {
         throw new AIResponseError(
@@ -170,33 +169,66 @@ async function generateMemoryWithAI(promptString, profile) {
         );
     }
 
+    const conn = profile?.effectiveConnection || profile?.connection || {};
+
+    const apiToSource = {
+        openai: 'openai',
+        claude: 'claude',
+        openrouter: 'openrouter',
+        ai21: 'ai21',
+        makersuite: 'makersuite',
+        google: 'makersuite',
+        vertexai: 'vertexai',
+        mistralai: 'mistralai',
+        custom: 'custom',
+        cohere: 'cohere',
+        perplexity: 'perplexity',
+        groq: 'groq',
+        '01ai': '01ai',
+        nanogpt: 'nanogpt',
+        deepseek: 'deepseek',
+        aimlapi: 'aimlapi',
+        xai: 'xai',
+        pollinations: 'pollinations',
+        windowai: 'windowai',
+        scale: 'scale',
+        blockentropy: 'blockentropy',
+    };
+    const chatCompletionSource = apiToSource[conn.api] || 'openai';
+
+    const genOptions = {
+        // Pass both to satisfy different ST versions
+        prompt: promptString,
+        quiet_prompt: promptString,
+
+        skipWIAN: true,
+        stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:'],
+
+        // Force provider/engine
+        chat_completion_source: chatCompletionSource,
+        model: conn.model || undefined,
+        custom_model_id: chatCompletionSource === 'custom' ? (conn.model || undefined) : undefined,
+        temperature: (typeof conn.temperature === 'number') ? Math.max(0, Math.min(2, conn.temperature)) : undefined,
+
+        // Defeat model/temp locks in many setups
+        bypass_mtlock: true,
+        force_model: true,
+    };
+
     try {
-        // Step 1: Switch to the profile's settings for the generation call.
-        // Note: Settings restoration is handled by the main process in index.js
-        await switchProviderAndModel(profile);
-
-        // Step 2: Generate the memory using the new settings.
-        const aiResponse = await Generate('quiet', { 
-            quiet_prompt: promptString, 
-            skipWIAN: true,
-            stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:']
-        });
-
+        const aiResponse = await Generate('quiet', genOptions);
         const jsonResult = parseAIJsonResponse(aiResponse);
-        
         return {
             content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
             title: jsonResult.title || 'Memory',
             keywords: jsonResult.keywords || [],
             profile: profile
         };
-
     } catch (error) {
         console.error(`${MODULE_NAME}: JSON-based memory generation failed:`, error);
         if (error instanceof AIResponseError) throw error;
         throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
     }
-    // Note: Settings restoration is handled by the main process in index.js
 }
 
 /**

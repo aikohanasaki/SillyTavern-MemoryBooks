@@ -10,6 +10,20 @@ import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.j
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
 
+// Prefer the first selector that exists in the DOM
+function pick$(...selectors) {
+    for (const s of selectors) {
+        const $el = $(s);
+        if ($el.length) return $el;
+    }
+    return $(); // empty jQuery
+}
+
+// Returns '#group_' if group UI controls are present, otherwise '#'
+function groupPrefix() {
+    return document.querySelector('#group_chat_completion_source') ? '#group_' : '#';
+}
+
 // Centralized DOM selectors - single source of truth
 export const SELECTORS = {
     extensionsMenu: '#extensionsMenu .list-group',
@@ -88,43 +102,43 @@ export function getCurrentApiInfo() {
 /**
  * BULLETPROOF: Get the appropriate model and temperature selectors for current completion source
  */
-/**
- * BULLETPROOF: Get the appropriate model and temperature selectors for current completion source
- */
 export function getApiSelectors() {
-    const completionSource = $('#chat_completion_source').val() || 'openai';
+    const prefix = groupPrefix();
 
-    // Model selectors per provider/source
+    // current completion source from active UI (group or normal)
+    const $source = pick$(`${prefix}chat_completion_source`, '#chat_completion_source');
+    const completionSource = ($source.val?.() || 'openai');
+
+    // Model selectors per provider/source (group-aware via prefix)
     const modelSelectorMap = {
-        openai:        '#model_openai_select',
-        claude:        '#model_claude_select',
-        windowai:      '#model_windowai_select',
-        openrouter:    '#model_openrouter_select',
-        ai21:          '#model_ai21_select',
-        scale:         '#model_scale_select',
-        makersuite:    '#model_google_select',
-        mistralai:     '#model_mistralai_select',
-        custom:        '#model_custom_select',   // fallback handled elsewhere for #custom_model_id
-        cohere:        '#model_cohere_select',
-        perplexity:    '#model_perplexity_select',
-        groq:          '#model_groq_select',
-        '01ai':        '#model_01ai_select',
-        nanogpt:       '#model_nanogpt_select',
-        deepseek:      '#model_deepseek_select',
-        blockentropy:  '#model_blockentropy_select',
-        vertexai:      '#model_vertexai_select',
-        aimlapi:       '#model_aimlapi_select',
-        xai:           '#model_xai_select',
-        pollinations:  '#model_pollinations_select',
-    };
-
-    // All providers share the same temp inputs (per openai.js)
-    const tempSelectorMap = {
-        default: { temp: '#temp_openai', tempCounter: '#temp_counter_openai' }
+        openai:        `${prefix}model_openai_select`,
+        claude:        `${prefix}model_claude_select`,
+        windowai:      `${prefix}model_windowai_select`,
+        openrouter:    `${prefix}model_openrouter_select`,
+        ai21:          `${prefix}model_ai21_select`,
+        scale:         `${prefix}model_scale_select`,
+        makersuite:    `${prefix}model_google_select`,
+        google:        `${prefix}model_google_select`,
+        mistralai:     `${prefix}model_mistralai_select`,
+        custom:        `${prefix}model_custom_select`,
+        cohere:        `${prefix}model_cohere_select`,
+        perplexity:    `${prefix}model_perplexity_select`,
+        groq:          `${prefix}model_groq_select`,
+        '01ai':        `${prefix}model_01ai_select`,
+        nanogpt:       `${prefix}model_nanogpt_select`,
+        deepseek:      `${prefix}model_deepseek_select`,
+        blockentropy:  `${prefix}model_blockentropy_select`,
+        vertexai:      `${prefix}model_vertexai_select`,
+        aimlapi:       `${prefix}model_aimlapi_select`,
+        xai:           `${prefix}model_xai_select`,
+        pollinations:  `${prefix}model_pollinations_select`,
     };
 
     const model = modelSelectorMap[completionSource] || modelSelectorMap.openai;
-    const { temp, tempCounter } = tempSelectorMap.default;
+
+    // Temps share same ids per UI set
+    const temp = `${prefix}temp_openai`.replace('##', '#');
+    const tempCounter = `${prefix}temp_counter_openai`.replace('##', '#');
 
     return { model, temp, tempCounter };
 }
@@ -449,14 +463,14 @@ export async function switchProviderAndModel(profile) {
     try {
         console.log(`${MODULE_NAME}: Switching to provider: ${conn.api}, model: ${conn.model}`);
 
-        // 1) Ensure main_api is 'openai' (SillyTavern requirement for Chat Completions pane)
+        // 1) Ensure main_api is 'openai' (ST Chat Completions pane requirement)
         if ($('#main_api').val() !== 'openai') {
             $('#main_api').val('openai').trigger('change');
             window.main_api = 'openai';
             await new Promise(r => setTimeout(r, 300));
         }
 
-        // 2) Set chat completion source with validation and aliasing
+        // 2) Set chat completion source with validation/alias
         const apiToSource = {
             openai: 'openai',
             claude: 'claude',
@@ -482,51 +496,27 @@ export async function switchProviderAndModel(profile) {
         };
         const completionSource = apiToSource[conn.api] || 'openai';
 
-        if ($('#chat_completion_source').val() !== completionSource) {
-            $('#chat_completion_source').val(completionSource).trigger('change');
+        const $source = pick$('#group_chat_completion_source', '#chat_completion_source');
+        if ($source.length && $source.val() !== completionSource) {
+            $source.val(completionSource).trigger('change');
             await new Promise(r => setTimeout(r, 300));
         }
 
-        // 3) Map provider to model select element
-        const PROVIDER_TO_MODEL_SELECTOR = {
-            openai: '#model_openai_select',
-            claude: '#model_claude_select',
-            makersuite: '#model_google_select',
-            google: '#model_google_select',
-            vertexai: '#model_vertexai_select',
-            openrouter: '#model_openrouter_select',
-            ai21: '#model_ai21_select',
-            mistralai: '#model_mistralai_select',
-            cohere: '#model_cohere_select',
-            perplexity: '#model_perplexity_select',
-            groq: '#model_groq_select',
-            '01ai': '#model_01ai_select',
-            nanogpt: '#model_nanogpt_select',
-            deepseek: '#model_deepseek_select',
-            custom: '#model_custom_select',
-            aimlapi: '#model_aimlapi_select',
-            xai: '#model_xai_select',
-            pollinations: '#model_pollinations_select',
-            windowai: '#model_windowai_select',
-            scale: '#model_scale_select',
-            blockentropy: '#model_blockentropy_select',
-        };
-        const selector = PROVIDER_TO_MODEL_SELECTOR[conn.api] || '#model_openai_select';
+        // 3) Use group-aware selectors
+        const selectors = getApiSelectors();
         const desiredModel = conn.model;
 
-        // 4) Set the model with robust retry
+        // 4) Set the model with retry
         let modelSet = false;
         for (let tries = 0; tries < 15; tries++) {
-            const $select = $(selector);
+            const $select = $(selectors.model);
             if ($select.length) {
-                // If options exist and include the model, use it
                 if ($select.find(`option[value='${desiredModel}']`).length) {
                     $select.val(desiredModel).trigger('change');
                     modelSet = true;
                     console.log(`${MODULE_NAME}: Model set to ${desiredModel} on attempt ${tries + 1}`);
                     break;
                 }
-                // If no options (some providers or custom), still try setting value
                 if (!$select[0].options?.length) {
                     $select.val(desiredModel).trigger('change');
                     modelSet = true;
@@ -538,17 +528,19 @@ export async function switchProviderAndModel(profile) {
         }
 
         if (!modelSet) {
-            console.warn(`${MODULE_NAME}: Could not set model ${desiredModel} on selector ${selector} after 15 attempts`);
-            // For custom, we can still push it via custom_model_id
+            console.warn(`${MODULE_NAME}: Could not set model ${desiredModel} on selector ${selectors.model} after 15 attempts`);
             if (completionSource !== 'custom') return false;
         }
 
-        // 5) For custom source: also set the freeform custom_model_id
+        // 5) For custom source: also set the freeform custom_model_id (group or normal)
         if (completionSource === 'custom') {
-            $('#custom_model_id').val(desiredModel).trigger('input');
+            pick$('#group_custom_model_id', '#custom_model_id')
+                .val(desiredModel).trigger('input').trigger('change');
+            pick$('#group_model_custom_select', '#model_custom_select')
+                .val(desiredModel).trigger('change');
         }
 
-        // 6) Temperature: all providers share #temp_openai and #temp_counter_openai in this UI
+        // 6) Temperature (group or normal inputs)
         let tempProvided = false;
         let tempValue = conn.temperature;
 
@@ -562,11 +554,10 @@ export async function switchProviderAndModel(profile) {
         }
 
         if (tempProvided) {
-            // Wait for temp inputs to exist, then set both slider and numeric counter
             let tempSet = false;
             for (let tries = 0; tries < 15; tries++) {
-                const $temp = $('#temp_openai');
-                const $tempCounter = $('#temp_counter_openai');
+                const $temp = pick$('#group_temp_openai', '#temp_openai');
+                const $tempCounter = pick$('#group_temp_counter_openai', '#temp_counter_openai');
 
                 if ($temp.length || $tempCounter.length) {
                     if ($temp.length) {
@@ -587,7 +578,7 @@ export async function switchProviderAndModel(profile) {
             }
         }
 
-        await new Promise(r => setTimeout(r, 150)); // brief pause for ST state update
+        await new Promise(r => setTimeout(r, 150));
         console.log(`${MODULE_NAME}: Switched to ${conn.api}/${desiredModel}${tempProvided ? ` with temperature ${tempValue}` : ''}`);
         return true;
 
@@ -610,60 +601,53 @@ export async function restoreModelSettings(settings) {
 
     try {
         console.log(`${MODULE_NAME}: Restoring model settings:`, settings);
-        
+
         const selectors = getApiSelectors();
-        const apiInfo = getCurrentApiInfo();
         let restored = false;
 
-        // Check if the saved settings match the current completion source
-        if (settings.completionSource && settings.completionSource !== apiInfo.completionSource) {
-            console.warn(`${MODULE_NAME}: Completion source mismatch (saved: ${settings.completionSource}, current: ${apiInfo.completionSource})`);
-            return false;
-        }
-
-        // Apply model setting - handle both custom fields for custom completion source
+        // Apply model setting (handles custom + group)
         if (settings.model) {
-            if (apiInfo.completionSource === 'custom') {
-                if ($(SELECTORS.customModelId).length) {
-                    const currentCustomId = $(SELECTORS.customModelId).val();
-                    if (currentCustomId !== settings.model) {
-                        $(SELECTORS.customModelId).val(settings.model).trigger('change');
-                        console.log(`${MODULE_NAME}: Custom model ID changed from ${currentCustomId} to ${settings.model}`);
-                        restored = true;
-                    }
-                }
+            // Custom source: set both custom id and custom select if present
+            const $customId = pick$('#group_custom_model_id', '#custom_model_id');
+            const $customSelect = pick$('#group_model_custom_select', '#model_custom_select');
+            const $modelSelect = $(selectors.model);
 
-                if ($(SELECTORS.modelCustomSelect).length) {
-                    const currentCustomSelect = $(SELECTORS.modelCustomSelect).val();
-                    if (currentCustomSelect !== settings.model) {
-                        $(SELECTORS.modelCustomSelect).val(settings.model).trigger('change');
-                        console.log(`${MODULE_NAME}: Custom model select changed from ${currentCustomSelect} to ${settings.model}`);
-                        restored = true;
-                    }
+            if ($customId.length) {
+                const currentCustomId = $customId.val();
+                if (currentCustomId !== settings.model) {
+                    $customId.val(settings.model).trigger('change');
+                    restored = true;
                 }
-            } else {
-                if ($(selectors.model).length) {
-                    const currentModel = $(selectors.model).val();
-                    if (currentModel !== settings.model) {
-                        $(selectors.model).val(settings.model).trigger('change');
-                        console.log(`${MODULE_NAME}: Model changed from ${currentModel} to ${settings.model}`);
-                        restored = true;
-                    }
+            }
+            if ($customSelect.length) {
+                const currentCustomSelect = $customSelect.val();
+                if (currentCustomSelect !== settings.model) {
+                    $customSelect.val(settings.model).trigger('change');
+                    restored = true;
+                }
+            }
+            if ($modelSelect.length) {
+                const currentModel = $modelSelect.val();
+                if (currentModel !== settings.model) {
+                    $modelSelect.val(settings.model).trigger('change');
+                    restored = true;
                 }
             }
         }
 
-        // Apply temperature setting with validation
+        // Apply temperature (handles group)
         if (typeof settings.temperature === 'number' && !isNaN(settings.temperature)) {
-            const currentTemp = parseFloat($(selectors.temp).val() || $(selectors.tempCounter).val() || 0);
+            const $temp = pick$('#group_temp_openai', '#temp_openai');
+            const $tempCounter = pick$('#group_temp_counter_openai', '#temp_counter_openai');
+
+            const currentTemp = parseFloat(($temp.val?.() ?? $tempCounter.val?.()) || 0);
             if (Math.abs(currentTemp - settings.temperature) > 0.001) {
-                if ($(selectors.temp).length) {
-                    $(selectors.temp).val(settings.temperature);
+                if ($temp.length) {
+                    $temp.val(settings.temperature).trigger('input').trigger('change');
                 }
-                if ($(selectors.tempCounter).length) {
-                    $(selectors.tempCounter).val(settings.temperature);
+                if ($tempCounter.length) {
+                    $tempCounter.val(settings.temperature).trigger('input').trigger('change');
                 }
-                console.log(`${MODULE_NAME}: Temperature changed from ${currentTemp} to ${settings.temperature}`);
                 restored = true;
             }
         }
@@ -675,7 +659,7 @@ export async function restoreModelSettings(settings) {
         }
 
         return true;
-        
+
     } catch (error) {
         console.error(`${MODULE_NAME}: Error restoring model settings:`, error);
         return false;
