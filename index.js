@@ -525,9 +525,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     const originalSettings = getCurrentModelSettings();
     let settingsRestored = false;
     
-    // Update cached settings before switching
-    updateCachedSettings();
-    
     try {
         if (retryCount > 0) {
             toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
@@ -1199,15 +1196,6 @@ function setupEventListeners() {
         selector.includes('model_') || selector.includes('temp_') || selector.includes('custom_model')
     ).join(', ');
 
-    $(document).on('change input', modelSelectors, function(e) {
-        console.log(`${MODULE_NAME}: Model/temp setting changed:`, e.target.id);
-        if (isExtensionEnabled) {
-            setTimeout(() => {
-                updateCachedSettings();
-            }, 100);
-        }
-    });
-    
     eventSource.on(event_types.GENERATE_AFTER_DATA, (generate_data) => {
         if (isProcessingMemory && currentProfile) {
             const conn = currentProfile.effectiveConnection || currentProfile.connection || {};
@@ -1301,9 +1289,6 @@ async function init() {
     
     // Initialize scene state
     updateSceneStateCache();
-    
-    // Initialize cached settings
-    updateCachedSettings();
     
     // Initialize chat observer
     try {
