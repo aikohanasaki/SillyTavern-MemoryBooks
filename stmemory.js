@@ -86,69 +86,60 @@ async function waitForCharacterData(maxWaitMs = 5000, checkIntervalMs = 250) {
  * @throws {AIResponseError} If JSON parsing fails
  */
 function parseAIJsonResponse(aiResponse) {
-    if (!aiResponse || typeof aiResponse !== 'string') {
+    let cleanResponse = aiResponse;
+
+    // If the response is an object with a .content property, use that.
+    if (typeof cleanResponse === 'object' && cleanResponse !== null && cleanResponse.content) {
+        cleanResponse = cleanResponse.content;
+    }
+
+    if (!cleanResponse || typeof cleanResponse !== 'string') {
         throw new AIResponseError('AI response is empty or invalid');
     }
-    
-    // Clean up the response - remove common wrapper text
-    let cleanResponse = aiResponse.trim();
-    
-    // Remove common prefixes that models sometimes add
-    const prefixesToRemove = [
-        'Here is the JSON response:',
-        'Here is the memory:',
-        'Here\'s the JSON:',
-        'JSON:',
-        '```json',
-        '```'
-    ];
-    
-    for (const prefix of prefixesToRemove) {
-        if (cleanResponse.startsWith(prefix)) {
-            cleanResponse = cleanResponse.substring(prefix.length).trim();
-        }
+
+    cleanResponse = cleanResponse.trim();
+
+    // Remove code block fences (```json ... ```)
+    cleanResponse = cleanResponse.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+
+    // Remove any leading explanatory text (before first '{')
+    const jsonStart = cleanResponse.indexOf('{');
+    if (jsonStart > 0) {
+        cleanResponse = cleanResponse.slice(jsonStart);
     }
-    
-    // Remove closing code blocks
-    if (cleanResponse.endsWith('```')) {
-        cleanResponse = cleanResponse.substring(0, cleanResponse.length - 3).trim();
+
+    // Remove any trailing text after the last '}'
+    const jsonEnd = cleanResponse.lastIndexOf('}');
+    if (jsonEnd !== -1 && jsonEnd < cleanResponse.length - 1) {
+        cleanResponse = cleanResponse.slice(0, jsonEnd + 1);
     }
-    
-    // Try to find JSON within the response if it's wrapped in other text
-    const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-        cleanResponse = jsonMatch[0];
-    }
-    
+
+    // Now try to parse
     try {
         const parsed = JSON.parse(cleanResponse);
-        
+
         // Validate required fields
         if (!parsed.content && !parsed.summary && !parsed.memory_content) {
             throw new AIResponseError('AI response missing content field');
         }
-        
         if (!parsed.title) {
             throw new AIResponseError('AI response missing title field');
         }
-        
         if (!Array.isArray(parsed.keywords)) {
             throw new AIResponseError('AI response missing or invalid keywords array');
         }
-        
         return parsed;
-        
     } catch (parseError) {
-        console.error(`${MODULE_NAME}: Failed to parse AI JSON response:`, parseError);
-        console.error(`${MODULE_NAME}: Original response:`, aiResponse);
-        console.error(`${MODULE_NAME}: Cleaned response:`, cleanResponse);
-        
+        console.error('STMemoryBooks: Failed to parse AI JSON response:', parseError);
+        console.error('Original response:', aiResponse);
+        console.error('Cleaned response:', cleanResponse);
         throw new AIResponseError(
             `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
             `Parse error: ${parseError.message}`
         );
     }
 }
+
 
 
 
@@ -217,7 +208,11 @@ async function generateMemoryWithAI(promptString, profile) {
 
     try {
         const aiResponse = await Generate('quiet', genOptions);
-        const jsonResult = parseAIJsonResponse(aiResponse);
+        let aiResponseText = aiResponse;
+        if (aiResponse && typeof aiResponse === 'object' && aiResponse.content) {
+            aiResponseText = aiResponse.content;
+        }
+        const jsonResult = parseAIJsonResponse(aiResponseText);
         return {
             content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
             title: jsonResult.title || 'Memory',
