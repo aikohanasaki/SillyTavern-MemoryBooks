@@ -264,7 +264,7 @@ export async function newProfile(settings, refreshCallback) {
         const templateData = {
             name: defaultName,
             connection: { temperature: 0.7 },
-            api: 'custom',
+            api: '',
             prompt: '',
             preset: '',
             availableModels: availableModels,
@@ -289,7 +289,7 @@ export async function newProfile(settings, refreshCallback) {
             orderMode: 'auto',
             orderValue: 100,
             preventRecursion: true,
-            delayUntilRecursion: true
+            delayUntilRecursion: false
         };
         
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
