@@ -963,7 +963,12 @@ function setupSettingsEventListeners() {
         }
     });
     
-    // Profile selection change
+    // Allow scene overlap checkbox - live update
+    popupElement.querySelector('#stmb-allow-scene-overlap')?.addEventListener('change', (e) => {
+        settings.moduleSettings.allowSceneOverlap = e.target.checked;
+        saveSettingsDebounced();
+    });
+
     // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
     const newIndex = parseInt(e.target.value);
