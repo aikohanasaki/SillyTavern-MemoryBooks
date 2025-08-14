@@ -2,9 +2,9 @@ import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
-import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
+import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
-import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, getPresetPrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
+import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 

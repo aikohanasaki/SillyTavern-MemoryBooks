@@ -1,7 +1,6 @@
-import { getContext } from '../../../extensions.js';
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, getApiSelectors, getPresetNames, isValidPreset, deepClone } from './utils.js';
-import { characters, this_chid, substituteParams, Generate, getRequestHeaders } from '../../../../script.js';
+import { getEffectivePrompt, getCurrentApiInfo, getCurrentModelSettings, isValidPreset } from './utils.js';
+import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
 const $ = window.jQuery;

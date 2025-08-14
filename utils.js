@@ -1,6 +1,5 @@
-// utils.js - Shared utilities for STMemoryBooks
 import { chat_metadata, characters, name2, this_chid } from '../../../../script.js';
-import { getContext, extension_settings, saveMetadataDebounced } from '../../../extensions.js';
+import { getContext, extension_settings } from '../../../extensions.js';
 import { selected_group, groups } from '../../../group-chats.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';

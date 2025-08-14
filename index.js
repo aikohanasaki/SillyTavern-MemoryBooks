@@ -6,15 +6,15 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
-import { compileScene, createSceneRequest, estimateTokenCount, validateCompiledScene, getSceneStats } from './chatcompile.js';
+import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, calculateTokensWithContext } from './confirmationPopup.js';
-import { getEffectivePrompt, getPresetPrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, switchProviderAndModel, restoreModelSettings, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
-import { editGroup, groups } from '../../../group-chats.js';
+import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
+import { editGroup } from '../../../group-chats.js';
 export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
@@ -330,75 +330,6 @@ function checkApiCompatibility() {
     }
 
     return isCompatible;
-}
-
-/**
- * Update cached settings
- */
-function updateCachedSettings() {
-    if (!isExtensionEnabled) {
-        console.log(`${MODULE_NAME}: Skipping settings cache update - extension not enabled`);
-        return;
-    }
-
-    try {
-        const currentSettings = getCurrentModelSettings();
-        cachedSettings = {
-            model: currentSettings.model,
-            temperature: currentSettings.temperature,
-            completionSource: currentSettings.completionSource,
-            cachedAt: new Date().toISOString()
-        };
-        console.log(`${MODULE_NAME}: Updated cached settings:`, cachedSettings);
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Error updating cached settings:`, error);
-    }
-}
-
-/**
- * Restore cached settings
- */
-async function restoreCachedSettings() {
-    if (!cachedSettings || !isExtensionEnabled) {
-        console.log(`${MODULE_NAME}: No cached settings to restore or extension disabled`);
-        return false;
-    }
-
-    try {
-        console.log(`${MODULE_NAME}: Restoring cached settings:`, cachedSettings);
-        const success = await restoreModelSettings(cachedSettings);
-        if (success) {
-            console.log(`${MODULE_NAME}: Successfully restored cached settings`);
-        } else {
-            console.warn(`${MODULE_NAME}: Failed to restore cached settings`);
-        }
-        return success;
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error restoring cached settings:`, error);
-        return false;
-    }
-}
-
-/**
- * Handle extension state changes (enabled/disabled)
- */
-function handleExtensionStateChange() {
-    const wasEnabled = isExtensionEnabled;
-    const isNowEnabled = checkApiCompatibility();
-    
-    if (wasEnabled && !isNowEnabled) {
-        // Extension was disabled - restore cached settings
-        console.log(`${MODULE_NAME}: Extension disabled, restoring cached settings`);
-        setTimeout(() => {
-            restoreCachedSettings();
-        }, 500);
-    } else if (!wasEnabled && isNowEnabled) {
-        // Extension was enabled - update cached settings
-        console.log(`${MODULE_NAME}: Extension enabled, updating cached settings`);
-        setTimeout(() => {
-            updateCachedSettings();
-        }, 500);
-    }
 }
 
 /**
