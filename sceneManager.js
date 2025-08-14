@@ -38,7 +38,7 @@ export function getSceneMarkers() {
             console.warn(`${MODULE_NAME}: Group with ID "${context.groupId}" not found in groups array`);
         }
     } else {
-        // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        // Single character chat - chat_metadata
         if (!chat_metadata) {
             console.warn(`${MODULE_NAME}: chat_metadata is not available, this might indicate a context issue`);
             return { 
@@ -252,6 +252,7 @@ export function setSceneMarker(messageId, type) {
  * Clear scene markers
  */
 export function clearScene() {
+    
     const markers = getSceneMarkers();
     
     // Store previous state for optimization
@@ -266,7 +267,7 @@ export function clearScene() {
     
     // Persist and update DOM
     saveMetadataForCurrentContext();
-    updateAffectedButtonStates(oldStart, oldEnd, null, null);
+    updateAllButtonStates();
     
     console.log(`${MODULE_NAME}: Scene cleared atomically`);
 }

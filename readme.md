@@ -112,7 +112,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 - **Editor Refresh:** Optionally auto-refreshes the lorebook editor after adding a memory.
 
 > **Existing memories must be converted!**
-> Use the [Lorebook Converter](https://www.aikobots.com/lorebookconverter.html) to add the `stmemorybooks` flag and required fields.
+> Use the [Lorebook Converter](https://github.com/aikohanasaki/SillyTavern-MemoryBooks/blob/main/lorebookconverter.html) to add the `stmemorybooks` flag and required fields.
 
 ---
 
