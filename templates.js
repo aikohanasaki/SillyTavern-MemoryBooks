@@ -36,7 +36,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
-                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if moduleSettings.allowSceneOverlap}}checked{{/if}}>
+                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
                 <span>Allow scene overlap</span>
             </label>
             <small class="opacity50p">Check this box to skip checking for scene overlap.</small>
