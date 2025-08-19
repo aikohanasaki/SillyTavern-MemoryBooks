@@ -960,6 +960,7 @@ async function showSettingsPopup() {
         alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
         showNotifications: settings.moduleSettings.showNotifications,
         refreshEditor: settings.moduleSettings.refreshEditor,
+        allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
         tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profiles: settings.profiles.map((profile, index) => ({
