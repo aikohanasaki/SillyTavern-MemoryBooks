@@ -7,7 +7,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/Sla
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
-import { createMemory } from './stmemory.js';
+import { createMemory, processJsonResult } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
@@ -62,6 +62,9 @@ let currentProfile = null;
 // Settings cache for restoration
 let cachedSettings = null;
 let isExtensionEnabled = false;
+
+// Debug variables for raw response handling
+let lastFailedResponse = null;
 
 // MutationObserver for chat message monitoring
 let chatObserver = null;
@@ -514,6 +517,143 @@ function isRetryableError(error) {
 }
 
 /**
+ * Show debug popup for examining and editing raw AI responses
+ */
+async function showRawResponseDebugPopup(error, sceneData, lorebookValidation, effectiveSettings) {
+    const { rawResponse, cleanedResponse, parseError } = error;
+    
+    const debugContent = `
+        <div class="stmb-raw-response-debug">
+            <h3>🔍 JSON Parse Error - Debug Raw Response</h3>
+            <p><strong>Parse Error:</strong> ${parseError}</p>
+            
+            <div class="flex-container flexGap10">
+                <div style="flex: 1;">
+                    <label><strong>Original AI Response:</strong></label>
+                    <textarea id="stmb-raw-response" readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px;">${rawResponse}</textarea>
+                </div>
+                <div style="flex: 1;">
+                    <label><strong>Cleaned Response (what parser tried to parse):</strong></label>
+                    <textarea id="stmb-cleaned-response" readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px;">${cleanedResponse}</textarea>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <label><strong>Edit JSON manually and retry:</strong></label>
+                <textarea id="stmb-manual-json" style="width: 100%; height: 150px; font-family: monospace;" placeholder="Paste corrected JSON here...">${cleanedResponse}</textarea>
+            </div>
+            
+            <div style="margin-top: 10px;">
+                <button id="stmb-validate-json" class="menu_button" style="margin-right: 10px;">Validate JSON</button>
+                <span id="stmb-validation-result" style="color: #666;"></span>
+            </div>
+        </div>
+        
+        <style>
+        .stmb-raw-response-debug textarea {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px;
+            background: #f8f8f8;
+            color: #333;
+        }
+        .stmb-raw-response-debug textarea[readonly] {
+            background: #f0f0f0;
+        }
+        #stmb-validation-result.valid {
+            color: #28a745 !important;
+        }
+        #stmb-validation-result.invalid {
+            color: #dc3545 !important;
+        }
+        </style>
+    `;
+    
+    const customButtons = [
+        {
+            text: '🔄 Retry with Edited JSON',
+            result: 'retry',
+            classes: ['menu_button']
+        }
+    ];
+    
+    const popupOptions = {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        customButtons: customButtons,
+        cancelButton: 'Cancel',
+        okButton: false
+    };
+    
+    const debugPopup = new Popup(debugContent, POPUP_TYPE.TEXT, '', popupOptions);
+    
+    // Setup validation
+    debugPopup.show().then(() => {
+        const validateBtn = debugPopup.dlg.querySelector('#stmb-validate-json');
+        const manualJsonArea = debugPopup.dlg.querySelector('#stmb-manual-json');
+        const validationResult = debugPopup.dlg.querySelector('#stmb-validation-result');
+        
+        validateBtn.addEventListener('click', () => {
+            try {
+                const testJson = JSON.parse(manualJsonArea.value);
+                
+                // Validate required fields
+                if (!testJson.title) throw new Error('Missing title field');
+                if (!testJson.content && !testJson.summary && !testJson.memory_content) throw new Error('Missing content field');
+                if (!Array.isArray(testJson.keywords)) throw new Error('Keywords must be an array');
+                
+                validationResult.textContent = '✓ Valid JSON with required fields';
+                validationResult.className = 'valid';
+            } catch (err) {
+                validationResult.textContent = `✗ Invalid: ${err.message}`;
+                validationResult.className = 'invalid';
+            }
+        });
+        
+        // Auto-validate on input
+        manualJsonArea.addEventListener('input', () => {
+            validationResult.textContent = '';
+            validationResult.className = '';
+        });
+    });
+    
+    const result = await debugPopup.show();
+    
+    if (result === 'retry') {
+        const manualJson = debugPopup.dlg.querySelector('#stmb-manual-json').value;
+        try {
+            // Try to parse the manually edited JSON
+            const parsedJson = JSON.parse(manualJson);
+            
+            // Validate required fields
+            if (!parsedJson.title) throw new Error('Missing title field');
+            if (!parsedJson.content && !parsedJson.summary && !parsedJson.memory_content) throw new Error('Missing content field');  
+            if (!Array.isArray(parsedJson.keywords)) throw new Error('Keywords must be an array');
+            
+            // Create mock response object
+            const mockResponse = {
+                content: parsedJson.content || parsedJson.summary || parsedJson.memory_content,
+                title: parsedJson.title,
+                keywords: parsedJson.keywords,
+                profile: effectiveSettings.profileSettings
+            };
+            
+            toastr.info('Using manually corrected JSON...', 'STMemoryBooks');
+            
+            // Continue with the corrected response
+            return mockResponse;
+            
+        } catch (parseErr) {
+            toastr.error(`Manual JSON is still invalid: ${parseErr.message}`, 'STMemoryBooks');
+            return null;
+        }
+    }
+    
+    return null; // User cancelled
+}
+
+/**
  * Execute the core memory generation process - now with retry logic and BULLETPROOF settings restoration
  */
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
@@ -621,6 +761,82 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 timeOut: 8000
             });
         } else if (error.name === 'AIResponseError') {
+            // Check if this is a JSON parsing error with raw response data
+            if (error.rawResponse && retryCount === 0) {
+                toastr.warning('JSON parsing failed. Opening debug window...', 'STMemoryBooks');
+                
+                try {
+                    const debugResult = await showRawResponseDebugPopup(error, sceneData, lorebookValidation, effectiveSettings);
+                    if (debugResult) {
+                        // User provided corrected JSON, continue with the process
+                        const processedMemory = processJsonResult(debugResult, { metadata: sceneData });
+                        
+                        const memoryResult = {
+                            content: processedMemory.content,
+                            extractedTitle: processedMemory.extractedTitle,
+                            metadata: {
+                                sceneRange: `${sceneData.sceneStart}-${sceneData.sceneEnd}`,
+                                messageCount: sceneData.messageCount,
+                                characterName: sceneData.characterName,
+                                userName: sceneData.userName,
+                                chatId: sceneData.chatId,
+                                createdAt: new Date().toISOString(),
+                                profileUsed: profileSettings.name,
+                                presetUsed: profileSettings.preset || 'custom',
+                                tokenUsage: { estimated: true },
+                                generationMethod: 'manual-json-correction',
+                                version: '2.0'
+                            },
+                            suggestedKeys: processedMemory.suggestedKeys,
+                            titleFormat: profileSettings.titleFormat || '[000] - {{title}}',
+                            lorebookSettings: {
+                                constVectMode: profileSettings.constVectMode,
+                                position: profileSettings.position,
+                                orderMode: profileSettings.orderMode,
+                                orderValue: profileSettings.orderValue,
+                                preventRecursion: profileSettings.preventRecursion,
+                                delayUntilRecursion: profileSettings.delayUntilRecursion,
+                            },
+                            lorebook: {
+                                content: processedMemory.content,
+                                comment: `Auto-generated memory from messages ${sceneData.sceneStart}-${sceneData.sceneEnd}. Profile: ${profileSettings.name}. (Manual JSON correction)`,
+                                key: processedMemory.suggestedKeys || [],
+                                keysecondary: [],
+                                selective: true,
+                                constant: false,
+                                order: 100,
+                                position: 'before_char',
+                                disable: false,
+                                addMemo: true,
+                                excludeRecursion: false,
+                                delayUntilRecursion: false,
+                                probability: 100,
+                                useProbability: false
+                            }
+                        };
+                        
+                        // Add to lorebook
+                        toastr.info('Adding manually corrected memory to lorebook...', 'STMemoryBooks');
+                        const { addMemoryToLorebook } = await import('./addlore.js');
+                        const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
+                        
+                        if (!addResult.success) {
+                            throw new Error(addResult.error || 'Failed to add memory to lorebook');
+                        }
+                        
+                        // Success notification
+                        setTimeout(() => {
+                            toastr.success(`Memory "${addResult.entryTitle}" created with manual JSON correction!`, 'STMemoryBooks');
+                        }, 1000);
+                        
+                        return; // Exit successfully
+                    }
+                } catch (debugError) {
+                    console.error('STMemoryBooks: Error in debug popup:', debugError);
+                    toastr.error(`Debug popup failed: ${debugError.message}`, 'STMemoryBooks');
+                }
+            }
+            
             toastr.error(`AI failed to generate valid memory: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
