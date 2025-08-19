@@ -71,22 +71,55 @@ export function saveMetadataForCurrentContext() {
     const context = getCurrentMemoryBooksContext();
     
     if (context.isGroupChat) {
-        // Group chat - trigger group save for metadata persistence
-        if (typeof editGroup === 'function') {
-            editGroup(context.groupId, false, false);
-        } else {
-            // Try to get editGroup from global scope as fallback
-            const editGroupFunc = window.editGroup || globalThis.editGroup;
-            if (typeof editGroupFunc === 'function') {
-                editGroupFunc(context.groupId, false, false);
+        // Group chat - SYNCHRONOUS save with verification
+        const group = groups?.find(x => x.id === context.groupId);
+        if (!group) {
+            console.error(`${MODULE_NAME}: Group with ID "${context.groupId}" not found for metadata save`);
+            return;
+        }
+        
+        // Ensure group metadata structure exists
+        if (!group.chat_metadata) {
+            group.chat_metadata = {};
+        }
+        if (!group.chat_metadata.STMemoryBooks) {
+            group.chat_metadata.STMemoryBooks = {
+                sceneStart: null,
+                sceneEnd: null
+            };
+        }
+        
+        // SYNCHRONOUS: Direct update with current scene state
+        group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
+        group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
+        
+        // Force immediate persistence through SillyTavern's group save mechanism
+        try {
+            if (typeof editGroup === 'function') {
+                editGroup(context.groupId, false, false);
             } else {
-                console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
-                // Additional fallback - try to save via the group object directly
-                const group = groups?.find(x => x.id === context.groupId);
-                if (group && group.chat_metadata) {
+                // Try fallback editGroup functions
+                const editGroupFunc = window.editGroup || globalThis.editGroup;
+                if (typeof editGroupFunc === 'function') {
+                    editGroupFunc(context.groupId, false, false);
+                } else {
+                    console.warn(`${MODULE_NAME}: editGroup function not available, metadata updated in memory only`);
                 }
             }
+            
+            // VERIFICATION: Confirm the save was successful
+            const verificationMarkers = getSceneMarkers();
+            if (verificationMarkers.sceneStart !== currentSceneState.start || 
+                verificationMarkers.sceneEnd !== currentSceneState.end) {
+                console.error(`${MODULE_NAME}: Group metadata save verification failed. Expected: start=${currentSceneState.start}, end=${currentSceneState.end}. Got: start=${verificationMarkers.sceneStart}, end=${verificationMarkers.sceneEnd}`);
+            } else {
+                console.log(`${MODULE_NAME}: Group metadata saved and verified successfully for group "${context.groupName}"`);
+            }
+            
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error during group metadata save:`, error);
         }
+        
     } else {
         // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
         saveMetadataDebounced();
