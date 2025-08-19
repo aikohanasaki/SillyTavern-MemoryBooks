@@ -190,16 +190,10 @@ function parseAIJsonResponse(aiResponse) {
         console.error('STMemoryBooks: Failed to parse AI JSON response:', parseError);
         console.error('Original response:', aiResponse);
         console.error('Cleaned response:', cleanResponse);
-        
-        // Create enhanced error with raw response data for debugging
-        const enhancedError = new AIResponseError(
-            `AI did not return valid JSON. Parse error: ${parseError.message}`
+        throw new AIResponseError(
+            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
+            `Parse error: ${parseError.message}`
         );
-        enhancedError.rawResponse = aiResponse;
-        enhancedError.cleanedResponse = cleanResponse;
-        enhancedError.parseError = parseError.message;
-        
-        throw enhancedError;
     }
 }
 
@@ -508,11 +502,12 @@ async function buildPrompt(compiledScene, profile) {
 
 /**
  * Process the structured result from JSON parsing
+ * @private
  * @param {Object} jsonResult - The structured result from JSON parsing
  * @param {Object} compiledScene - The original compiled scene for context
  * @returns {Object} Processed memory data
  */
-export function processJsonResult(jsonResult, compiledScene) {
+function processJsonResult(jsonResult, compiledScene) {
     const { content, title, keywords } = jsonResult;
     
     // Clean and validate content
