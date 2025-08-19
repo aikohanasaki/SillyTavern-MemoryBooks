@@ -17,9 +17,12 @@ const STMB_POPUP_RESULTS = {
 /**
  * Show simplified confirmation popup for memory creation
  */
-export async function showConfirmationPopup(sceneData, settings, currentModelSettings, currentApiInfo, chat_metadata) {
-    const selectedProfile = settings.profiles[settings.defaultProfile];
+export async function showConfirmationPopup(sceneData, settings, currentModelSettings, currentApiInfo, chat_metadata, selectedProfileIndex = null) {
+    const profileIndex = selectedProfileIndex !== null ? selectedProfileIndex : settings.defaultProfile;
+    const selectedProfile = settings.profiles[profileIndex];
     const effectivePrompt = getEffectivePrompt(selectedProfile);
+    
+    console.log(`STMemoryBooks: Simple confirmation popup using profile "${selectedProfile.name}" (index: ${profileIndex})`);
     
     const templateData = {
         ...sceneData,
@@ -32,7 +35,12 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         currentTemperature: currentModelSettings.temperature || 0.7,
         currentApi: currentApiInfo.api || 'Unknown',
         tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
-        showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000)
+        showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000),
+        profiles: settings.profiles.map((profile, index) => ({
+            ...profile,
+            isDefault: index === settings.defaultProfile,
+            isSelected: index === profileIndex
+        }))
     };
     
     const content = DOMPurify.sanitize(simpleConfirmationTemplate(templateData));
