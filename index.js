@@ -428,7 +428,7 @@ async function validateLorebook() {
 /**
  * Extract and validate settings from confirmation popup or defaults
  */
-async function showAndGetMemorySettings(sceneData, lorebookValidation) {
+async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedProfileIndex = null) {
     const settings = initializeSettings();
     const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
     const shouldShowConfirmation = !settings.moduleSettings.alwaysUseDefault || 
@@ -437,13 +437,17 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation) {
     let confirmationResult = null;
     
     if (shouldShowConfirmation) {
-        // Show simplified confirmation popup
+        // Use the passed profile index, or fall back to default
+        const profileIndex = selectedProfileIndex !== null ? selectedProfileIndex : settings.defaultProfile;
+        
+        // Show simplified confirmation popup with selected profile
         confirmationResult = await showConfirmationPopup(
             sceneData, 
             settings, 
             getCurrentModelSettings(), 
             getCurrentApiInfo(), 
-            chat_metadata
+            chat_metadata,
+            profileIndex
         );
         
         if (!confirmationResult.confirmed) {
@@ -852,7 +856,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     }
 }
 
-async function initiateMemoryCreation() {
+async function initiateMemoryCreation(selectedProfileIndex = null) {
     // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
     const context = getCurrentMemoryBooksContext();
     
@@ -920,7 +924,7 @@ async function initiateMemoryCreation() {
             }
         }
         
-        const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation);
+        const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation, selectedProfileIndex);
         if (!effectiveSettings) {
             return; // User cancelled
         }
@@ -992,7 +996,18 @@ async function showSettingsPopup() {
                     toastr.error('No scene selected. Mark start and end points first.', 'STMemoryBooks');
                     return;
                 }
-                await initiateMemoryCreation();
+                
+                // Capture the currently selected profile before proceeding
+                let selectedProfileIndex = settings.defaultProfile;
+                if (currentPopupInstance && currentPopupInstance.dlg) {
+                    const profileSelect = currentPopupInstance.dlg.querySelector('#stmb-profile-select');
+                    if (profileSelect) {
+                        selectedProfileIndex = parseInt(profileSelect.value) || settings.defaultProfile;
+                        console.log(`STMemoryBooks: Using profile index ${selectedProfileIndex} (${settings.profiles[selectedProfileIndex]?.name}) from main popup selection`);
+                    }
+                }
+                
+                await initiateMemoryCreation(selectedProfileIndex);
             }
         },
         {
