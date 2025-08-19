@@ -90,48 +90,127 @@ export async function sendRawCompletionRequest({
 }
 
 /**
- * GROUP CHAT SUPPORT: Waits for character/group data to be available with retry mechanism
- * @private
- * @param {number} maxWaitMs - Maximum time to wait in milliseconds (default: 5000)
- * @param {number} checkIntervalMs - How often to check in milliseconds (default: 250)
- * @returns {Promise<boolean>} True if character/group data is available, false if timeout
+ * Polling configuration for waitForCharacterData
+ * @typedef {Object} PollingConfig
+ * @property {number} maxWaitMs - Maximum time to wait in milliseconds (default: 5000)
+ * @property {number} initialIntervalMs - Initial check interval in milliseconds (default: 100)
+ * @property {number} maxIntervalMs - Maximum check interval in milliseconds (default: 1000)
+ * @property {number} backoffMultiplier - Multiplier for exponential backoff (default: 1.5)
+ * @property {boolean} useExponentialBackoff - Whether to use exponential backoff (default: true)
+ * @property {AbortSignal} signal - Optional AbortSignal for cancellation
  */
-async function waitForCharacterData(maxWaitMs = 5000, checkIntervalMs = 250) {
+
+/**
+ * GROUP CHAT SUPPORT: Waits for character/group data to be available with enhanced polling
+ * Features exponential backoff, cancellation support, and better error handling
+ * @private
+ * @param {PollingConfig|number} config - Polling configuration or legacy maxWaitMs parameter
+ * @param {number} legacyCheckIntervalMs - Legacy parameter for backward compatibility
+ * @returns {Promise<boolean>} True if character/group data is available, false if timeout/cancelled
+ */
+async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
+    // Handle legacy parameter format for backward compatibility
+    let pollingConfig;
+    if (typeof config === 'number') {
+        pollingConfig = {
+            maxWaitMs: config,
+            initialIntervalMs: legacyCheckIntervalMs || 250,
+            maxIntervalMs: 1000,
+            backoffMultiplier: 1.2,
+            useExponentialBackoff: false // Keep legacy behavior
+        };
+    } else {
+        pollingConfig = {
+            maxWaitMs: 5000,
+            initialIntervalMs: 100,
+            maxIntervalMs: 1000,
+            backoffMultiplier: 1.5,
+            useExponentialBackoff: true,
+            ...config
+        };
+    }
+
+    const { 
+        maxWaitMs, 
+        initialIntervalMs, 
+        maxIntervalMs, 
+        backoffMultiplier, 
+        useExponentialBackoff,
+        signal 
+    } = pollingConfig;
+
     const startTime = Date.now();
+    let currentInterval = initialIntervalMs;
+    let attemptCount = 0;
     
     // Import context detection to check if we're in a group chat
     const { getCurrentMemoryBooksContext } = await import('./utils.js');
     const context = getCurrentMemoryBooksContext();
     
+    console.log(`${MODULE_NAME}: waitForCharacterData - Enhanced polling started`);
     console.log(`${MODULE_NAME}: waitForCharacterData - context:`, context);
     console.log(`${MODULE_NAME}: waitForCharacterData - isGroupChat:`, context.isGroupChat);
+    console.log(`${MODULE_NAME}: waitForCharacterData - config:`, { maxWaitMs, initialIntervalMs, maxIntervalMs, useExponentialBackoff });
     
     while (Date.now() - startTime < maxWaitMs) {
-        if (context.isGroupChat) {
-            // Group chat - check if group data is available
-            console.log(`${MODULE_NAME}: Checking group data - groups:`, !!groups, 'length:', groups?.length, 'groupId:', context.groupId);
-            if (groups && context.groupId) {
-                const group = groups.find(g => g.id === context.groupId);
-                console.log(`${MODULE_NAME}: Found group:`, !!group);
-                if (group) {
-                    console.log(`${MODULE_NAME}: Group data became available after ${Date.now() - startTime}ms`);
+        // Check for cancellation
+        if (signal?.aborted) {
+            console.log(`${MODULE_NAME}: waitForCharacterData - Cancelled via AbortSignal`);
+            return false;
+        }
+
+        attemptCount++;
+        
+        try {
+            if (context.isGroupChat) {
+                // Group chat - check if group data is available
+                console.log(`${MODULE_NAME}: Attempt ${attemptCount} - Checking group data - groups:`, !!groups, 'length:', groups?.length, 'groupId:', context.groupId);
+                if (groups && context.groupId) {
+                    const group = groups.find(g => g.id === context.groupId);
+                    console.log(`${MODULE_NAME}: Found group:`, !!group);
+                    if (group) {
+                        console.log(`${MODULE_NAME}: Group data became available after ${Date.now() - startTime}ms (${attemptCount} attempts)`);
+                        return true;
+                    }
+                }
+            } else {
+                // Single character chat - use original logic
+                console.log(`${MODULE_NAME}: Attempt ${attemptCount} - Checking character data - characters:`, !!characters, 'this_chid:', this_chid);
+                if (characters && characters.length > this_chid && characters[this_chid]) {
+                    console.log(`${MODULE_NAME}: Character data became available after ${Date.now() - startTime}ms (${attemptCount} attempts)`);
                     return true;
                 }
             }
-        } else {
-            // Single character chat - use original logic
-            console.log(`${MODULE_NAME}: Checking character data - characters:`, !!characters, 'this_chid:', this_chid);
-            if (characters && characters.length > this_chid && characters[this_chid]) {
-                console.log(`${MODULE_NAME}: Character data became available after ${Date.now() - startTime}ms`);
-                return true;
-            }
+        } catch (error) {
+            console.warn(`${MODULE_NAME}: Error during polling attempt ${attemptCount}:`, error);
+            // Continue polling despite errors
         }
         
-        // Wait before checking again
-        await new Promise(resolve => setTimeout(resolve, checkIntervalMs));
+        // Wait before checking again with potential backoff
+        await new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(resolve, currentInterval);
+            
+            // Handle cancellation during sleep
+            if (signal) {
+                const onAbort = () => {
+                    clearTimeout(timeoutId);
+                    reject(new Error('Cancelled'));
+                };
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+        }).catch(() => {
+            // Cancellation during sleep
+            return false;
+        });
+
+        // Apply exponential backoff if enabled
+        if (useExponentialBackoff && currentInterval < maxIntervalMs) {
+            currentInterval = Math.min(currentInterval * backoffMultiplier, maxIntervalMs);
+            console.log(`${MODULE_NAME}: Backoff - Next interval: ${currentInterval}ms`);
+        }
     }
     
-    console.warn(`${MODULE_NAME}: Character/group data did not become available within ${maxWaitMs}ms timeout`);
+    console.warn(`${MODULE_NAME}: Character/group data did not become available within ${maxWaitMs}ms timeout (${attemptCount} attempts)`);
     return false;
 }
 
