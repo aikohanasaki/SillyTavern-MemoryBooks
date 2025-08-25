@@ -43,7 +43,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 ![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Create a Memory**
-- Open the Extensions menu and click "Create Memory", or use `/creatememory` slash command.
+- Open the Extensions menu (the magic wand 🪄) and click "Create Memory", or use `/creatememory` slash command.
 - Confirm settings (profile, context, API/model) if prompted.
 - Wait for AI generation and automatic lorebook entry.
 
