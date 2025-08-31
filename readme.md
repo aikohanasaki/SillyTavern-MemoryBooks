@@ -26,6 +26,14 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 > **Not Supported:** Text generation APIs (Kobold, TextGen, etc.)
 
+## 💡 Recommended Global World Info/Lorebook Activation Settings
+(If these settings are not used it is unlikely the memories will be pulled in!)
+
+- **Match Whole Words:** leave unchecked (false)
+- **Scan Depth:** higher is better (at least 4)
+- **Max Recursion Steps:** 2 (general recommendation, not required)
+- **Context %:** 40% (based on a context window of 100,000 tokens) - assumes you don't have super-heavy chat history or bots
+
 ---
 
 ## 🚀 Getting Started
