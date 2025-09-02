@@ -19,6 +19,13 @@ let currentSceneState = {
 export function getSceneMarkers() {
     const context = getCurrentMemoryBooksContext();
     
+    // DEBUGGING: Log context info
+    console.log(`${MODULE_NAME}: getSceneMarkers called for context:`, {
+        isGroupChat: context.isGroupChat,
+        groupName: context.groupName,
+        groupId: context.groupId
+    });
+    
     if (context.isGroupChat) {
         // Group chat - store in group metadata
         const group = groups?.find(x => x.id === context.groupId);
@@ -33,6 +40,7 @@ export function getSceneMarkers() {
                     sceneEnd: null
                 };
             }
+            console.log(`${MODULE_NAME}: Returning group scene markers:`, group.chat_metadata.STMemoryBooks);
             return group.chat_metadata.STMemoryBooks;
         } else {
             console.warn(`${MODULE_NAME}: Group with ID "${context.groupId}" not found in groups array`);
@@ -52,6 +60,7 @@ export function getSceneMarkers() {
                 sceneEnd: null
             };
         }
+        console.log(`${MODULE_NAME}: Returning single chat scene markers:`, chat_metadata.STMemoryBooks);
         return chat_metadata.STMemoryBooks;
     }
     
@@ -107,11 +116,14 @@ export function saveMetadataForCurrentContext() {
                 }
             }
             
-            // VERIFICATION: Confirm the save was successful
-            const verificationMarkers = getSceneMarkers();
-            if (verificationMarkers.sceneStart !== currentSceneState.start || 
+            // VERIFICATION: Confirm the save was successful by checking if we can read back what we just wrote
+            // BUGFIX: Force a fresh read from the group metadata to ensure persistence worked
+            const verificationGroup = groups?.find(x => x.id === context.groupId);
+            const verificationMarkers = verificationGroup?.chat_metadata?.STMemoryBooks;
+            if (!verificationMarkers || 
+                verificationMarkers.sceneStart !== currentSceneState.start || 
                 verificationMarkers.sceneEnd !== currentSceneState.end) {
-                console.error(`${MODULE_NAME}: Group metadata save verification failed. Expected: start=${currentSceneState.start}, end=${currentSceneState.end}. Got: start=${verificationMarkers.sceneStart}, end=${verificationMarkers.sceneEnd}`);
+                console.error(`${MODULE_NAME}: Group metadata save verification failed. Expected: start=${currentSceneState.start}, end=${currentSceneState.end}. Got: start=${verificationMarkers?.sceneStart}, end=${verificationMarkers?.sceneEnd}`);
             } else {
                 console.log(`${MODULE_NAME}: Group metadata saved and verified successfully for group "${context.groupName}"`);
             }
@@ -345,6 +357,16 @@ export function updateNewMessageButtonStates(messageElements) {
  */
 function updateButtonStatesForElements(messageElements, markers) {
     const { sceneStart, sceneEnd } = markers;
+    
+    // DEBUGGING: Log scene marker state for troubleshooting
+    const context = getCurrentMemoryBooksContext();
+    console.log(`${MODULE_NAME}: updateButtonStatesForElements called with markers:`, {
+        sceneStart,
+        sceneEnd,
+        isGroupChat: context.isGroupChat,
+        groupName: context.groupName,
+        currentSceneState: getCurrentSceneState()
+    });
     
     messageElements.forEach(messageElement => {
         const messageId = parseInt(messageElement.getAttribute('mesid'));
