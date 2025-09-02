@@ -69,7 +69,7 @@ export function compileScene(sceneRequest) {
         sceneMessages.push(compiledMessage);
     }
     
-    // Create comprehensive metadata
+    // Create metadata
     const metadata = {
         sceneStart,
         sceneEnd,
@@ -254,8 +254,6 @@ export function toReadableText(compiledScene) {
     const { metadata, messages } = compiledScene;
     
     let output = [];
-    
-    // Add metadata header
     output.push('=== SCENE METADATA ===');
     output.push(`Range: Messages ${metadata.sceneStart}-${metadata.sceneEnd}`);
     output.push(`Chat: ${metadata.chatId}`);
@@ -263,8 +261,6 @@ export function toReadableText(compiledScene) {
     output.push(`Compiled: ${metadata.messageCount} messages`);
     output.push(`Compiled at: ${metadata.compiledAt}`);
     output.push('');
-    
-    // Add messages
     output.push('=== SCENE MESSAGES ===');
     messages.forEach(message => {
         output.push(`[${message.id}] ${message.name}: ${message.mes}`);

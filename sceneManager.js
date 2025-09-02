@@ -39,7 +39,8 @@ export function getSceneMarkers() {
             if (!group.chat_metadata.STMemoryBooks) {
                 group.chat_metadata.STMemoryBooks = {
                     sceneStart: null,
-                    sceneEnd: null
+                    sceneEnd: null,
+                    manualLorebook: null
                 };
             }
             
@@ -71,7 +72,8 @@ export function getSceneMarkers() {
         if (!chat_metadata.STMemoryBooks) {
             chat_metadata.STMemoryBooks = {
                 sceneStart: null,
-                sceneEnd: null
+                sceneEnd: null,
+                manualLorebook: null
             };
         }
         
@@ -89,7 +91,8 @@ export function getSceneMarkers() {
     console.warn(`${MODULE_NAME}: Could not access scene markers for context:`, context);
     return { 
         sceneStart: null, 
-        sceneEnd: null 
+        sceneEnd: null,
+        manualLorebook: null
     };
 }
 
@@ -115,7 +118,8 @@ export function saveMetadataForCurrentContext() {
         if (!group.chat_metadata.STMemoryBooks) {
             group.chat_metadata.STMemoryBooks = {
                 sceneStart: null,
-                sceneEnd: null
+                sceneEnd: null,
+                manualLorebook: null
             };
         }
         
