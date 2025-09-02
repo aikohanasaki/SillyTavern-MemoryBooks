@@ -739,6 +739,7 @@ async function showSettingsPopup() {
         showNotifications: settings.moduleSettings.showNotifications,
         refreshEditor: settings.moduleSettings.refreshEditor,
         allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
+        manualModeEnabled: settings.moduleSettings.manualModeEnabled,
         tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profiles: settings.profiles.map((profile, index) => ({
@@ -1042,6 +1043,8 @@ function refreshPopupContent() {
             alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
             showNotifications: settings.moduleSettings.showNotifications,
             refreshEditor: settings.moduleSettings.refreshEditor,
+            allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
+            manualModeEnabled: settings.moduleSettings.manualModeEnabled,
             tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             profiles: settings.profiles.map((profile, index) => ({
