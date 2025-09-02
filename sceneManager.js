@@ -15,6 +15,7 @@ let currentSceneState = {
 /**
  * GROUP CHAT SUPPORT: Get current scene markers from appropriate metadata location
  * Handles both group chats (group.chat_metadata) and single character chats (chat_metadata)
+ * BUGFIX: For group chats, ensure we sync from currentSceneState to avoid stale metadata
  */
 export function getSceneMarkers() {
     const context = getCurrentMemoryBooksContext();
@@ -23,7 +24,8 @@ export function getSceneMarkers() {
     console.log(`${MODULE_NAME}: getSceneMarkers called for context:`, {
         isGroupChat: context.isGroupChat,
         groupName: context.groupName,
-        groupId: context.groupId
+        groupId: context.groupId,
+        currentSceneState: currentSceneState
     });
     
     if (context.isGroupChat) {
@@ -40,6 +42,18 @@ export function getSceneMarkers() {
                     sceneEnd: null
                 };
             }
+            
+            // BUGFIX: Sync from currentSceneState to ensure fresh data
+            // This prevents stale metadata from being returned after scene changes
+            if (currentSceneState.start !== null || currentSceneState.end !== null) {
+                group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
+                group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
+                console.log(`${MODULE_NAME}: Synced currentSceneState to group metadata:`, {
+                    start: currentSceneState.start,
+                    end: currentSceneState.end
+                });
+            }
+            
             console.log(`${MODULE_NAME}: Returning group scene markers:`, group.chat_metadata.STMemoryBooks);
             return group.chat_metadata.STMemoryBooks;
         } else {
@@ -60,6 +74,13 @@ export function getSceneMarkers() {
                 sceneEnd: null
             };
         }
+        
+        // BUGFIX: Also sync from currentSceneState for consistency
+        if (currentSceneState.start !== null || currentSceneState.end !== null) {
+            chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
+            chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
+        }
+        
         console.log(`${MODULE_NAME}: Returning single chat scene markers:`, chat_metadata.STMemoryBooks);
         return chat_metadata.STMemoryBooks;
     }
@@ -227,6 +248,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
         }
     }
     
+
     // BUGFIX: Add messages that had valid-point classes in the old state but won't in the new state
     if (oldStart !== null && oldEnd === null && newStart !== null && newEnd !== null) {
         // Transitioning from "start only" to "complete scene" - need to clear valid-end-point from messages after newEnd
