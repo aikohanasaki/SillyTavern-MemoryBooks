@@ -10,7 +10,7 @@ import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats 
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
+import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
@@ -284,14 +284,13 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    // Set markers using scene manager
-    const markers = getSceneMarkers();
-    markers.sceneStart = startId;
-    markers.sceneEnd = endId;
+    // BUGFIX: Set markers using scene manager's setSceneMarker to ensure proper state synchronization
+    // Clear existing scene first to reset state
+    clearScene();
     
-    updateSceneStateCache();
-    saveMetadataForCurrentContext();
-    updateAllButtonStates();
+    // Set new scene markers using direct scene manager API calls
+    setSceneMarker(startId, 'start');
+    setSceneMarker(endId, 'end');
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
