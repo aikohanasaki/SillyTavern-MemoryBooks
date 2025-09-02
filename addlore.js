@@ -222,8 +222,6 @@ export function isMemoryEntry(entry) {
     return entry.stmemorybooks === true;
 }
 
-// In addlore.js
-
 /**
  * Generates a title for the lorebook entry using the configured format
  * @private
@@ -240,7 +238,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     const matches = title.match(numberingPattern);
     
     if (matches) {
-        // This logic is now fixed from our previous discussion.
         const nextNumber = getNextEntryNumber(lorebookData);
         
         matches.forEach(match => {
@@ -275,8 +272,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     return title;
 }
 
-// In addlore.js
-
 /**
  * Gets the next available entry number for auto-numbering
  * @private
@@ -306,10 +301,7 @@ function getNextEntryNumber(lorebookData) {
         return 1;
     }
     
-    // --- BUG FIX ---
-    // The old logic used a fragile loop that would break incorrectly.
-    // The new logic is simpler and more robust: find the highest existing
-    // number and add 1 to it. This guarantees sequential numbering.
+    // find the highest existing number and add 1 to it.
     const maxNumber = Math.max(...existingNumbers);
     return maxNumber + 1;
 }

@@ -186,7 +186,7 @@ async function handleAdvancedConfirmation(popup, settings) {
                 toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
             } catch (error) {
                 toastr.error(`Failed to save profile: ${error.message}`, 'STMemoryBooks');
-                // Continue with memory creation even if profile save fails
+                // Continues with memory creation even if profile save fails
             }
         } else {
             // No profile name provided, show error and don't proceed
@@ -326,7 +326,7 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
     // Enhanced token estimation with context memories
     setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, checkForChanges);
     
-    // FIXED: Initial button text check
+    // Initial button text check
     checkForChanges();
 }
 

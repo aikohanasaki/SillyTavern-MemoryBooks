@@ -69,7 +69,7 @@ let chatObserver = null;
 let updateTimeout = null;
 
 /**
- * PERFORMANCE OPTIMIZED: Process messages and return processed elements
+ * Process messages and return processed elements
  * @param {Node} node The DOM node to process.
  * @returns {Array} Array of message elements that had buttons added
  */
@@ -98,7 +98,7 @@ function processNodeForMessages(node) {
 }
 
 /**
- * PERFORMANCE OPTIMIZED: Chat observer with partial updates
+ * Chat observer with partial updates
  */
 function initializeChatObserver() {
     // Clean up existing observer if any
@@ -140,7 +140,7 @@ function initializeChatObserver() {
             clearTimeout(updateTimeout);
             updateTimeout = setTimeout(() => {
                 try {
-                    // PERFORMANCE: Use partial update for new messages only
+                    // Use partial update for new messages only
                     updateNewMessageButtonStates(newlyProcessedMessages);
                 } catch (error) {
                     console.error('STMemoryBooks: Error updating button states:', error);
@@ -180,7 +180,7 @@ function handleChatChanged() {
     
     setTimeout(() => {
         try {
-            // PERFORMANCE: Full update needed for chat changes
+            // Full update needed for chat changes
             processExistingMessages();
         } catch (error) {
             console.error('STMemoryBooks: Error processing messages after chat change:', error);
@@ -189,8 +189,7 @@ function handleChatChanged() {
 }
 
 /**
- * Enhanced chat loaded handler with conversion logging
- * Update the existing handleChatLoaded() function in index.js
+ * Chat loaded handler with conversion logging
  */
 function handleChatLoaded() {
     console.log(`${MODULE_NAME}: === CHAT LOADED EVENT ===`);
@@ -200,8 +199,6 @@ function handleChatLoaded() {
     console.log(`${MODULE_NAME}: Lorebook from metadata:`, chat_metadata[METADATA_KEY]);
     
     updateSceneStateCache();
-    
-    // PERFORMANCE: Full update needed for chat loads
     processExistingMessages();
 }
 
@@ -209,15 +206,12 @@ function handleMessageReceived() {
     setTimeout(validateSceneMarkers, 500);
 }
 
-/**
- * GROUP CHAT SUPPORT: Save metadata for current context (group or single character)
- * Handles both group metadata saving and regular chat metadata saving
- */
+// Save metadata for current context (group and single char)
 function saveMemoryBooksMetadata() {
     const context = getCurrentMemoryBooksContext();
     
     if (context.isGroupChat) {
-        // Group chat - trigger group save for metadata persistence
+        // Group chat
         if (typeof editGroup === 'function') {
             editGroup(context.groupId, false, false);
             console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}"`);
@@ -225,13 +219,13 @@ function saveMemoryBooksMetadata() {
             console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
         }
     } else {
-        // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        // Single character chat
         saveMetadataDebounced();
     }
 }
 
 /**
- * Slash command handlers - FIXED SIGNATURES
+ * Slash command handlers
  */
 function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
     const sceneData = getSceneData();
@@ -278,17 +272,17 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    // Additional validation: check if messages actually exist
+    // check if messages actually exist
     if (!activeChat[startId] || !activeChat[endId]) {
         toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
         return '';
     }
     
-    // BUGFIX: Set markers using scene manager's setSceneMarker to ensure proper state synchronization
+    // Set markers using scene manager's setSceneMarker to ensure proper state synchronization
     // Clear existing scene first to reset state
     clearScene();
     
-    // Set new scene markers using direct scene manager API calls
+    // Set new scene markers
     setSceneMarker(startId, 'start');
     setSceneMarker(endId, 'end');
     
@@ -296,7 +290,6 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
     toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
     
-    // Optionally create memory immediately
     setTimeout(() => initiateMemoryCreation(), 500);
 
     return '';
@@ -911,6 +904,12 @@ function setupSettingsEventListeners() {
         saveSettingsDebounced();
     });
 
+    // Manual lorebook mode checkbox - live update
+    popupElement.querySelector('#stmb-manual-mode-enabled')?.addEventListener('change', (e) => {
+        settings.moduleSettings.manualModeEnabled = e.target.checked;
+        saveSettingsDebounced();
+    });
+
     // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
     const newIndex = parseInt(e.target.value);
@@ -1110,7 +1109,7 @@ function refreshPopupContent() {
 }
 
 /**
- * PERFORMANCE: Process existing messages and use full update (for chat loads)
+ * Process existing messages and use full update (for chat loads)
  */
 function processExistingMessages() {
     console.log('STMemoryBooks: Processing any existing messages on the DOM...');
@@ -1135,7 +1134,7 @@ function processExistingMessages() {
             console.log(`STMemoryBooks: Added buttons to ${buttonsAdded} existing messages.`);
         }
 
-        // PERFORMANCE: Full update needed for chat loads
+        // Full update needed for chat loads
         updateAllButtonStates();
     } else {
         console.log('STMemoryBooks: No existing messages found to process.');
@@ -1186,7 +1185,7 @@ function createUI() {
 }
 
 /**
- * Setup event listeners with BULLETPROOF settings management
+ * Setup event listeners
  */
 function setupEventListeners() {
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
