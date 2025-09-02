@@ -10,7 +10,7 @@ import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats 
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState } from './sceneManager.js';
+import { getSceneMarkers, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
@@ -290,7 +290,7 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     markers.sceneEnd = endId;
     
     updateSceneStateCache();
-    saveMemoryBooksMetadata();
+    saveMetadataForCurrentContext();
     updateAllButtonStates();
     
     const context = getCurrentMemoryBooksContext();
