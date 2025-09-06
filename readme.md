@@ -57,6 +57,20 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ---
 
+## 🆕 Slash Command Shortcuts
+
+- `/creatememory` will use existing chevron start/end markers to create a memory
+- `/scenememory x-y` will make a memory starting with message x and ending with message y 
+- `/nextmemory` will make a memory with all messages since the last memory. 
+
+## 👥 Group Chat Support
+
+- All features work with group chats.
+- Scene markers, memory creation, and lorebook integration are stored in group metadata.
+- No special setup required—just select a group chat and use as normal.
+
+---
+
 ## 🧭 Modes of Operation
 
 ###**Automatic Mode (Default)**
@@ -73,15 +87,6 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
   1. Enable "Enable Manual Lorebook Mode" in the extension's settings.
   2. The first time you create a memory in a chat, you will be prompted to choose a lorebook.
   3. This choice is saved for that specific chat until you clear it or switch back to Automatic Mode.
-
-
----
-
-## 👥 Group Chat Support
-
-- All features work with group chats.
-- Scene markers, memory creation, and lorebook integration are stored in group metadata.
-- No special setup required—just select a group chat and use as normal.
 
 ---
 

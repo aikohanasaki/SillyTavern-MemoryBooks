@@ -295,6 +295,72 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     return '';
 }
 
+async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
+    try {
+        // Validate lorebook exists
+        const lorebookValidation = await validateLorebook();
+        if (!lorebookValidation.valid) {
+            toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
+            return '';
+        }
+        
+        // Get all memory entries
+        const allMemories = identifyMemoryEntries(lorebookValidation.data);
+        
+        if (allMemories.length === 0) {
+            toastr.error('No memory entries found in lorebook', 'STMemoryBooks');
+            return '';
+        }
+        
+        // Find the most recent memory (highest end message number)
+        let mostRecentMemory = null;
+        let highestEndMessage = -1;
+        
+        for (const memory of allMemories) {
+            const range = getRangeFromMemoryEntry(memory.entry);
+            if (range && range.end !== null && range.end > highestEndMessage) {
+                highestEndMessage = range.end;
+                mostRecentMemory = memory;
+            }
+        }
+        
+        if (!mostRecentMemory) {
+            toastr.error('No memory entries with valid message ranges found', 'STMemoryBooks');
+            return '';
+        }
+        
+        // Calculate next memory start (last memory end + 1)
+        const nextStart = highestEndMessage + 1;
+        
+        // Use current last message as end
+        const activeChat = chat;
+        const nextEnd = activeChat.length - 1;
+        
+        // Validate the range
+        if (nextStart >= activeChat.length) {
+            toastr.error('No new messages since last memory', 'STMemoryBooks');
+            return '';
+        }
+        
+        if (nextStart >= nextEnd) {
+            toastr.error('Not enough messages for a new memory', 'STMemoryBooks');
+            return '';
+        }
+        
+        // Execute scenememory with the calculated range
+        const rangeString = `${nextStart}-${nextEnd}`;
+        toastr.info(`Auto-detected next memory range: ${rangeString}`, 'STMemoryBooks');
+        
+        // Use the scenememory handler directly
+        return handleSceneMemoryCommand({}, rangeString);
+        
+    } catch (error) {
+        console.error('STMemoryBooks: Error in /nextmemory command:', error);
+        toastr.error(`Failed to determine next memory range: ${error.message}`, 'STMemoryBooks');
+        return '';
+    }
+}
+
 /**
  * Check API compatibility using SillyTavern's built-in functions
  */
@@ -1167,8 +1233,15 @@ function registerSlashCommands() {
         ]
     });
     
+    const nextMemoryCmd = SlashCommand.fromProps({
+        name: 'nextmemory',
+        callback: handleNextMemoryCommand,
+        helpString: 'Create memory from end of last memory to current message'
+    });
+    
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
+    SlashCommandParser.addCommandObject(nextMemoryCmd);
 }
 
 /**
