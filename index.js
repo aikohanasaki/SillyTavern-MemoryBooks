@@ -37,6 +37,8 @@ const defaultSettings = {
         autoClearSceneAfterMemory: false,
         manualModeEnabled: false,
         allowSceneOverlap: false,
+        autoHideMode: 'none',
+        unhiddenEntriesCount: 0,
     },
     titleFormat: '[000] - {{title}}',
     profiles: [
@@ -792,6 +794,25 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
 }
 
 /**
+ * Helper function to convert old boolean auto-hide settings to new dropdown format
+ */
+function getAutoHideMode(moduleSettings) {
+    // Handle new format
+    if (moduleSettings.autoHideMode) {
+        return moduleSettings.autoHideMode;
+    }
+    
+    // Convert from old boolean format for backward compatibility
+    if (moduleSettings.autoHideAllMessages) {
+        return 'all';
+    } else if (moduleSettings.autoHideLastMemory) {
+        return 'last';
+    } else {
+        return 'none';
+    }
+}
+
+/**
  * Show main settings popup
  */
 async function showSettingsPopup() {
@@ -806,6 +827,8 @@ async function showSettingsPopup() {
         refreshEditor: settings.moduleSettings.refreshEditor,
         allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
         manualModeEnabled: settings.moduleSettings.manualModeEnabled,
+        autoHideMode: getAutoHideMode(settings.moduleSettings),
+        unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
         tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profiles: settings.profiles.map((profile, index) => ({
@@ -977,6 +1000,15 @@ function setupSettingsEventListeners() {
         saveSettingsDebounced();
     });
 
+    // Auto-hide mode dropdown - live update
+    popupElement.querySelector('#stmb-auto-hide-mode')?.addEventListener('change', (e) => {
+        settings.moduleSettings.autoHideMode = e.target.value;
+        // Clear old boolean settings for clean migration
+        delete settings.moduleSettings.autoHideAllMessages;
+        delete settings.moduleSettings.autoHideLastMemory;
+        saveSettingsDebounced();
+    });
+
     // Profile selection change
     popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
     const newIndex = parseInt(e.target.value);
@@ -1035,6 +1067,15 @@ function setupSettingsEventListeners() {
             saveSettingsDebounced();
         }
     });
+
+    // Unhidden entries count input with validation
+    popupElement.querySelector('#stmb-unhidden-entries-count')?.addEventListener('input', lodash.debounce((e) => {
+        const value = parseInt(e.target.value);
+        if (!isNaN(value) && value >= 0 && value <= 50) {
+            settings.moduleSettings.unhiddenEntriesCount = value;
+            saveSettingsDebounced();
+        }
+    }, 1000));
 }
 
 /**
@@ -1050,6 +1091,7 @@ function handleSettingsPopupClose(popup) {
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
         const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
         const allowSceneOverlap = popupElement.querySelector('#stmb-allow-scene-overlap')?.checked ?? settings.moduleSettings.allowSceneOverlap;
+        const autoHideMode = popupElement.querySelector('#stmb-auto-hide-mode')?.value ?? getAutoHideMode(settings.moduleSettings);
         
         // Save token warning threshold
         const tokenWarningThresholdInput = popupElement.querySelector('#stmb-token-warning-threshold');
@@ -1063,6 +1105,12 @@ function handleSettingsPopupClose(popup) {
             parseInt(defaultMemoryCountInput.value) || 0 : 
             settings.moduleSettings.defaultMemoryCount || 0;
 
+        // Save unhidden entries count
+        const unhiddenEntriesCountInput = popupElement.querySelector('#stmb-unhidden-entries-count');
+        const unhiddenEntriesCount = unhiddenEntriesCountInput ? 
+            parseInt(unhiddenEntriesCountInput.value) || 0 : 
+            settings.moduleSettings.unhiddenEntriesCount || 0;
+
         const manualModeEnabled = popupElement.querySelector('#stmb-manual-mode-enabled')?.checked ?? settings.moduleSettings.manualModeEnabled;
 
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
@@ -1071,7 +1119,9 @@ function handleSettingsPopupClose(popup) {
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
                           defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount ||
                           manualModeEnabled !== settings.moduleSettings.manualModeEnabled ||
-                          allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap;
+                          allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap ||
+                          autoHideMode !== getAutoHideMode(settings.moduleSettings) ||
+                          unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -1081,6 +1131,11 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
             settings.moduleSettings.manualModeEnabled = manualModeEnabled;
             settings.moduleSettings.allowSceneOverlap = allowSceneOverlap;
+            settings.moduleSettings.autoHideMode = autoHideMode;
+            // Clear old boolean settings for clean migration
+            delete settings.moduleSettings.autoHideAllMessages;
+            delete settings.moduleSettings.autoHideLastMemory;
+            settings.moduleSettings.unhiddenEntriesCount = unhiddenEntriesCount;
             saveSettingsDebounced();
             console.log('STMemoryBooks: Settings updated');
         }
@@ -1111,6 +1166,8 @@ function refreshPopupContent() {
             refreshEditor: settings.moduleSettings.refreshEditor,
             allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
             manualModeEnabled: settings.moduleSettings.manualModeEnabled,
+            autoHideMode: getAutoHideMode(settings.moduleSettings),
+            unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
             tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             profiles: settings.profiles.map((profile, index) => ({

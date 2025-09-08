@@ -28,22 +28,6 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
-                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}}>
-                <span>Enable Manual Lorebook Mode</span>
-            </label>
-            <small class="opacity50p">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
-                <span>Allow scene overlap</span>
-            </label>
-            <small class="opacity50p">Check this box to skip checking for scene overlap.</small>
-        </div>
-        
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
                 <span>Always use default profile (no confirmation prompt)</span>
             </label>
@@ -55,18 +39,24 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
-                <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
-                <span>Refresh lorebook editor after adding memories</span>
+                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}}>
+                <span>Enable Manual Lorebook Mode</span>
             </label>
+            <small class="opacity50p">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
         </div>
 
         <div class="world_entry_form_control">
-            <label for="stmb-token-warning-threshold">
-                <h4>Token Warning Threshold:</h4>
-                <small class="opacity50p">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
-                <input type="number" id="stmb-token-warning-threshold" class="text_pole" 
-                    value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
-                    placeholder="30000">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
+                <span>Allow scene overlap</span>
+            </label>
+            <small class="opacity50p">Check this box to skip checking for overlapping memories/scenes.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
+                <span>Refresh lorebook editor after adding memories</span>
             </label>
         </div>
 
@@ -84,6 +74,38 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                     <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}}>Last 6 memories</option>
                     <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}}>Last 7 memories</option>
                 </select>
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-auto-hide-mode">
+                <h4>Auto-hide messages after adding memory:</h4>
+                <small class="opacity50p">Choose what messages to automatically hide after creating a memory.</small>
+                <select id="stmb-auto-hide-mode" class="text_pole">
+                    <option value="none" {{#if (eq autoHideMode "none")}}selected{{/if}}>Do not auto-hide</option>
+                    <option value="all" {{#if (eq autoHideMode "all")}}selected{{/if}}>Auto-hide all messages up to the last memory</option>
+                    <option value="last" {{#if (eq autoHideMode "last")}}selected{{/if}}>Auto-hide only messages in the last memory</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-unhidden-entries-count">
+                <h4>Messages to leave unhidden:</h4>
+                <small class="opacity50p">Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)</small>
+                <input type="number" id="stmb-unhidden-entries-count" class="text_pole" 
+                    value="{{unhiddenEntriesCount}}" min="0" max="50" step="1"
+                    placeholder="0">
+            </label>
+        </div>
+        
+        <div class="world_entry_form_control">
+            <label for="stmb-token-warning-threshold">
+                <h4>Token Warning Threshold:</h4>
+                <small class="opacity50p">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
+                <input type="number" id="stmb-token-warning-threshold" class="text_pole" 
+                    value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
+                    placeholder="30000">
             </label>
         </div>
 

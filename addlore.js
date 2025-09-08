@@ -8,8 +8,28 @@ import {
 } from '../../../world-info.js';
 import { extension_settings } from '../../../extensions.js';
 import { moment } from '../../../../lib.js';
+import { executeSlashCommands } from '../../../slash-commands.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
+
+/**
+ * Helper function to convert old boolean auto-hide settings to new dropdown format
+ */
+function getAutoHideMode(moduleSettings) {
+    // Handle new format
+    if (moduleSettings.autoHideMode) {
+        return moduleSettings.autoHideMode;
+    }
+    
+    // Convert from old boolean format for backward compatibility
+    if (moduleSettings.autoHideAllMessages) {
+        return 'all';
+    } else if (moduleSettings.autoHideLastMemory) {
+        return 'last';
+    } else {
+        return 'none';
+    }
+}
 
 // Default title formats that users can select from
 const DEFAULT_TITLE_FORMATS = [
@@ -94,6 +114,85 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                 console.log(`${MODULE_NAME}: Refreshed lorebook editor UI`);
             } catch (error) {
                 console.warn(`${MODULE_NAME}: Failed to refresh editor UI:`, error);
+            }
+        }
+        
+        // Execute auto-hide commands if enabled
+        const autoHideMode = getAutoHideMode(settings.moduleSettings);
+        if (autoHideMode !== 'none') {
+            try {
+                const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
+                const messageCount = memoryResult.metadata?.messageCount || 0;
+                
+                // Validate that unhidden count is less than message count (only for 'last' mode)
+                if (autoHideMode === 'last' && unhiddenCount >= messageCount && unhiddenCount > 0) {
+                    const message = unhiddenCount > messageCount 
+                        ? `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`
+                        : `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`;
+                    console.warn(`${MODULE_NAME}: ${message}`);
+                    if (settings.moduleSettings?.showNotifications !== false) {
+                        toastr.warning(message, 'STMemoryBooks');
+                    }
+                    return {
+                        success: true,
+                        entryId: newEntry.uid,
+                        entryTitle: entryTitle,
+                        lorebookName: lorebookValidation.name,
+                        keywordCount: memoryResult.suggestedKeys?.length || 0,
+                        message: `Memory successfully added to "${lorebookValidation.name}" (auto-hide skipped)`,
+                        warning: message
+                    };
+                }
+                
+                if (autoHideMode === 'all') {
+                    // Additional check for 'all' mode: only hide if scene end > unhidden count
+                    const sceneRange = memoryResult.metadata?.sceneRange;
+                    let sceneEnd = null;
+                    if (sceneRange) {
+                        const rangeParts = sceneRange.split('-');
+                        if (rangeParts.length === 2) {
+                            sceneEnd = parseInt(rangeParts[1], 10);
+                        }
+                    }
+                    
+                    // Only proceed if we have scene end data and it's greater than unhidden count
+                    if (sceneEnd !== null && sceneEnd > unhiddenCount) {
+                        const hideCommand = unhiddenCount > 0 
+                            ? `/hide 0-${sceneEnd - unhiddenCount}` 
+                            : `/hide 0-${sceneEnd}`;
+                        await executeSlashCommands(hideCommand);
+                        console.log(`${MODULE_NAME}: Executed auto-hide all messages (${hideCommand}) - scene end ${sceneEnd} > unhidden count ${unhiddenCount}`);
+                    } else {
+                        const reason = sceneEnd === null 
+                            ? 'no scene end data available' 
+                            : `scene end ${sceneEnd} <= unhidden count ${unhiddenCount}`;
+                        console.log(`${MODULE_NAME}: Skipped auto-hide all messages - ${reason}`);
+                    }
+                } else if (autoHideMode === 'last') {
+                    // Get scene start and end for 'last' mode
+                    const sceneRange = memoryResult.metadata?.sceneRange;
+                    let sceneStart = null;
+                    let sceneEnd = null;
+                    if (sceneRange) {
+                        const rangeParts = sceneRange.split('-');
+                        if (rangeParts.length === 2) {
+                            sceneStart = parseInt(rangeParts[0], 10);
+                            sceneEnd = parseInt(rangeParts[1], 10);
+                        }
+                    }
+                    
+                    if (sceneStart !== null && sceneEnd !== null) {
+                        const hideCommand = unhiddenCount > 0 
+                            ? `/hide ${sceneStart}-${sceneEnd - unhiddenCount}` 
+                            : `/hide ${sceneStart}-${sceneEnd}`;
+                        await executeSlashCommands(hideCommand);
+                        console.log(`${MODULE_NAME}: Executed auto-hide last memory (${hideCommand})`);
+                    } else {
+                        console.log(`${MODULE_NAME}: Skipped auto-hide last memory - no scene range data available`);
+                    }
+                }
+            } catch (error) {
+                console.warn(`${MODULE_NAME}: Failed to execute auto-hide command:`, error);
             }
         }
         
