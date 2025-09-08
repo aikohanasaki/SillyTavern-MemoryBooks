@@ -28,7 +28,7 @@ const profileEditTemplate = Handlebars.compile(`
     <div class="world_entry_form_control" style="margin-top: 5px;">
         <h4>Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10">
-            For model, make sure to copy-paste the exact model name from the connections panel, e.g. <code>gemini-2.5-pro</code>, <code>claude-4-sonnet</code>, etc.
+            For model, copy-paste the exact model ID, eg. <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code>, etc.
         </div>
 
         <label for="stmb-profile-api">
@@ -53,7 +53,7 @@ const profileEditTemplate = Handlebars.compile(`
 
         <label for="stmb-profile-model">
             <h4>Model:</h4>
-            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Copy-paste the model name from connections panel in here, eg. gemini-2.5-pro, claude-4-sonnet, etc.">
+            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Paste model ID here">
         </label>
 
         <label for="stmb-profile-temperature">
@@ -76,8 +76,21 @@ const profileEditTemplate = Handlebars.compile(`
 
         <label for="stmb-profile-prompt" id="stmb-custom-prompt-section" class="{{#if preset}}displayNone{{/if}}">
             <h4>Custom Memory Creation Prompt:</h4>
-            <h5>This prompt will be used to generate memories from chat scenes.</h5>
-            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="6" placeholder="Enter your custom prompt for memory creation">{{prompt}}</textarea>
+            <h5>This prompt will be used to generate memories from chat scenes. Don't change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.</h5>
+            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="10" placeholder="Enter your custom memory creation prompt here...">{{#if prompt}}{{prompt}}{{else}}Analyze the following roleplay scene and return a minimal memory entry as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Brief 1-2 sentence summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, provide a very brief 1-2 sentence summary of what happened in this scene.
+
+For the keywords field, generate 5-20 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use \{{char}} or \{{user}} as keywords.
+
+Return ONLY the JSON, no other text.{{/if}}</textarea>
         </label>
     </div>
 

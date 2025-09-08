@@ -4,7 +4,7 @@ import { Handlebars } from '../../../../lib.js';
  * Main settings template - Updated to use SillyTavern's built-in classes
  */
 export const settingsTemplate = Handlebars.compile(`
-    <h3>📕 Memory Book Settings</h3>
+    <h3>📕 Memory Books Settings</h3>
         {{#if hasScene}}
         <div id="stmb-scene" class="padding10 marginBot10">
             <div class="marginBot5" style="font-weight: bold;">Current Scene:</div>
