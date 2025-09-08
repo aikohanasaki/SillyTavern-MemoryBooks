@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/ai/Aikobots Code/Aikobots/public/scripts/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
