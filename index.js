@@ -4,6 +4,7 @@ import { extension_settings, saveMetadataDebounced } from '../../../extensions.j
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { executeSlashCommands } from '../../../slash-commands.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { lodash, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
@@ -1020,169 +1021,194 @@ async function showSettingsPopup() {
 }
 
 /**
- * Setup event listeners for settings popup with profile manager integration
+ * Setup event listeners for settings popup using full event delegation
  */
 function setupSettingsEventListeners() {
     if (!currentPopupInstance) return;
     
     const popupElement = currentPopupInstance.dlg;
-    const settings = initializeSettings();
     
-    // Profile management buttons - use imported functions with proper error handling
-    popupElement.querySelector('#stmb-set-default-profile')?.addEventListener('click', () => {
-        const profileSelect = popupElement.querySelector('#stmb-profile-select');
-        const selectedIndex = parseInt(profileSelect.value);
+    // Use full event delegation for all interactions
+    popupElement.addEventListener('click', async (e) => {
+        const settings = initializeSettings();
+        
+        // Profile management buttons
+        if (e.target.matches('#stmb-set-default-profile')) {
+            e.preventDefault();
+            const profileSelect = popupElement.querySelector('#stmb-profile-select');
+            const selectedIndex = parseInt(profileSelect.value);
 
-        // Don't do anything if they click it for the profile that's already the default.
-        if (selectedIndex === settings.defaultProfile) {
+            if (selectedIndex === settings.defaultProfile) {
+                return;
+            }
+
+            settings.defaultProfile = selectedIndex;
+            saveSettingsDebounced();
+            toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
+            refreshPopupContent();
             return;
         }
-
-        settings.defaultProfile = selectedIndex;
-        saveSettingsDebounced();
-        toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
-        refreshPopupContent();
-    });
-
-    popupElement.querySelector('#stmb-edit-profile')?.addEventListener('click', async () => {
-        try {
-            const profileSelect = popupElement.querySelector('#stmb-profile-select');
-            const selectedIndex = parseInt(profileSelect.value);
-            await editProfile(settings, selectedIndex, refreshPopupContent);
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error in edit profile:`, error);
-            toastr.error('Failed to edit profile', 'STMemoryBooks');
+        
+        if (e.target.matches('#stmb-edit-profile')) {
+            e.preventDefault();
+            try {
+                const profileSelect = popupElement.querySelector('#stmb-profile-select');
+                const selectedIndex = parseInt(profileSelect.value);
+                await editProfile(settings, selectedIndex, refreshPopupContent);
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error in edit profile:`, error);
+                toastr.error('Failed to edit profile', 'STMemoryBooks');
+            }
+            return;
+        }
+        
+        if (e.target.matches('#stmb-new-profile')) {
+            e.preventDefault();
+            try {
+                await newProfile(settings, refreshPopupContent);
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error in new profile:`, error);
+                toastr.error('Failed to create profile', 'STMemoryBooks');
+            }
+            return;
+        }
+        
+        if (e.target.matches('#stmb-delete-profile')) {
+            e.preventDefault();
+            try {
+                const profileSelect = popupElement.querySelector('#stmb-profile-select');
+                const selectedIndex = parseInt(profileSelect.value);
+                await deleteProfile(settings, selectedIndex, refreshPopupContent);
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error in delete profile:`, error);
+                toastr.error('Failed to delete profile', 'STMemoryBooks');
+            }
+            return;
+        }
+        
+        if (e.target.matches('#stmb-export-profiles')) {
+            e.preventDefault();
+            try {
+                exportProfiles(settings);
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error in export profiles:`, error);
+                toastr.error('Failed to export profiles', 'STMemoryBooks');
+            }
+            return;
+        }
+        
+        if (e.target.matches('#stmb-import-profiles')) {
+            e.preventDefault();
+            popupElement.querySelector('#stmb-import-file')?.click();
+            return;
         }
     });
     
-    popupElement.querySelector('#stmb-new-profile')?.addEventListener('click', async () => {
-        try {
-            await newProfile(settings, refreshPopupContent);
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error in new profile:`, error);
-            toastr.error('Failed to create profile', 'STMemoryBooks');
+    // Handle change events using delegation
+    popupElement.addEventListener('change', (e) => {
+        const settings = initializeSettings();
+        
+        if (e.target.matches('#stmb-import-file')) {
+            try {
+                importProfiles(e, settings, refreshPopupContent);
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error in import profiles:`, error);
+                toastr.error('Failed to import profiles', 'STMemoryBooks');
+            }
+            return;
         }
-    });
-    
-    popupElement.querySelector('#stmb-delete-profile')?.addEventListener('click', async () => {
-        try {
-            const profileSelect = popupElement.querySelector('#stmb-profile-select');
-            const selectedIndex = parseInt(profileSelect.value);
-            await deleteProfile(settings, selectedIndex, refreshPopupContent);
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error in delete profile:`, error);
-            toastr.error('Failed to delete profile', 'STMemoryBooks');
-        }
-    });
-    
-    popupElement.querySelector('#stmb-export-profiles')?.addEventListener('click', () => {
-        try {
-            exportProfiles(settings);
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error in export profiles:`, error);
-            toastr.error('Failed to export profiles', 'STMemoryBooks');
-        }
-    });
-    
-    popupElement.querySelector('#stmb-import-profiles')?.addEventListener('click', () => {
-        popupElement.querySelector('#stmb-import-file')?.click();
-    });
-    
-    popupElement.querySelector('#stmb-import-file')?.addEventListener('change', (event) => {
-        try {
-            importProfiles(event, settings, refreshPopupContent);
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error in import profiles:`, error);
-            toastr.error('Failed to import profiles', 'STMemoryBooks');
-        }
-    });
-    
-    // Allow scene overlap checkbox - live update
-    popupElement.querySelector('#stmb-allow-scene-overlap')?.addEventListener('change', (e) => {
-        settings.moduleSettings.allowSceneOverlap = e.target.checked;
-        saveSettingsDebounced();
-    });
-
-    // Manual lorebook mode checkbox - live update
-    popupElement.querySelector('#stmb-manual-mode-enabled')?.addEventListener('change', (e) => {
-        settings.moduleSettings.manualModeEnabled = e.target.checked;
-        saveSettingsDebounced();
-    });
-
-    // Auto-hide mode dropdown - live update
-    popupElement.querySelector('#stmb-auto-hide-mode')?.addEventListener('change', (e) => {
-        settings.moduleSettings.autoHideMode = e.target.value;
-        // Clear old boolean settings for clean migration
-        delete settings.moduleSettings.autoHideAllMessages;
-        delete settings.moduleSettings.autoHideLastMemory;
-        saveSettingsDebounced();
-    });
-
-    // Profile selection change
-    popupElement.querySelector('#stmb-profile-select')?.addEventListener('change', (e) => {
-    const newIndex = parseInt(e.target.value);
-    if (newIndex >= 0 && newIndex < settings.profiles.length) {
-        const selectedProfile = settings.profiles[newIndex];
-        const summaryApi = popupElement.querySelector('#stmb-summary-api');
-        const summaryModel = popupElement.querySelector('#stmb-summary-model');
-        const summaryTemp = popupElement.querySelector('#stmb-summary-temp');
-        const summaryTitle = popupElement.querySelector('#stmb-summary-title');
-        const summaryPrompt = popupElement.querySelector('#stmb-summary-prompt');
-
-        if (summaryApi) summaryApi.textContent = selectedProfile.connection?.api || 'openai';
-        if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
-        if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
-        if (summaryTitle) summaryTitle.textContent = selectedProfile.titleFormat || settings.titleFormat;
-        if (summaryPrompt) summaryPrompt.textContent = getEffectivePrompt(selectedProfile);
-    }
-});
-
-    // Title format dropdown
-    popupElement.querySelector('#stmb-title-format-select')?.addEventListener('change', (e) => {
-        const customInput = popupElement.querySelector('#stmb-custom-title-format');
-        if (e.target.value === 'custom') {
-            customInput.classList.remove('displayNone'); 
-            customInput.focus();
-        } else {
-            customInput.classList.add('displayNone'); 
-            settings.titleFormat = e.target.value;
+        
+        if (e.target.matches('#stmb-allow-scene-overlap')) {
+            settings.moduleSettings.allowSceneOverlap = e.target.checked;
             saveSettingsDebounced();
+            return;
+        }
+        
+        if (e.target.matches('#stmb-manual-mode-enabled')) {
+            settings.moduleSettings.manualModeEnabled = e.target.checked;
+            saveSettingsDebounced();
+            return;
+        }
+        
+        if (e.target.matches('#stmb-auto-hide-mode')) {
+            settings.moduleSettings.autoHideMode = e.target.value;
+            delete settings.moduleSettings.autoHideAllMessages;
+            delete settings.moduleSettings.autoHideLastMemory;
+            saveSettingsDebounced();
+            return;
+        }
+        
+        if (e.target.matches('#stmb-profile-select')) {
+            const newIndex = parseInt(e.target.value);
+            if (newIndex >= 0 && newIndex < settings.profiles.length) {
+                const selectedProfile = settings.profiles[newIndex];
+                const summaryApi = popupElement.querySelector('#stmb-summary-api');
+                const summaryModel = popupElement.querySelector('#stmb-summary-model');
+                const summaryTemp = popupElement.querySelector('#stmb-summary-temp');
+                const summaryTitle = popupElement.querySelector('#stmb-summary-title');
+                const summaryPrompt = popupElement.querySelector('#stmb-summary-prompt');
+
+                if (summaryApi) summaryApi.textContent = selectedProfile.connection?.api || 'openai';
+                if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
+                if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
+                if (summaryTitle) summaryTitle.textContent = selectedProfile.titleFormat || settings.titleFormat;
+                if (summaryPrompt) summaryPrompt.textContent = getEffectivePrompt(selectedProfile);
+            }
+            return;
+        }
+        
+        if (e.target.matches('#stmb-title-format-select')) {
+            const customInput = popupElement.querySelector('#stmb-custom-title-format');
+            if (e.target.value === 'custom') {
+                customInput.classList.remove('displayNone');
+                customInput.focus();
+            } else {
+                customInput.classList.add('displayNone');
+                settings.titleFormat = e.target.value;
+                saveSettingsDebounced();
+            }
+            return;
+        }
+        
+        if (e.target.matches('#stmb-default-memory-count')) {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value >= 0 && value <= 20) {
+                settings.moduleSettings.defaultMemoryCount = value;
+                saveSettingsDebounced();
+            }
+            return;
         }
     });
-
-    // Custom title format input with validation
-    popupElement.querySelector('#stmb-custom-title-format')?.addEventListener('input', lodash.debounce((e) => {
-        const value = e.target.value.trim();
-        if (value && value.includes('000')) { // Basic validation for numbering placeholder
-            settings.titleFormat = value;
-            saveSettingsDebounced();
+    
+    // Handle input events using delegation with debouncing
+    popupElement.addEventListener('input', lodash.debounce((e) => {
+        const settings = initializeSettings();
+        
+        if (e.target.matches('#stmb-custom-title-format')) {
+            const value = e.target.value.trim();
+            if (value && value.includes('000')) {
+                settings.titleFormat = value;
+                saveSettingsDebounced();
+            }
+            return;
         }
-    }, 1000));
-
-    // Token warning threshold input with validation
-    popupElement.querySelector('#stmb-token-warning-threshold')?.addEventListener('input', lodash.debounce((e) => {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 1000 && value <= 100000) {
-            settings.moduleSettings.tokenWarningThreshold = value;
-            saveSettingsDebounced();
+        
+        if (e.target.matches('#stmb-token-warning-threshold')) {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value >= 1000 && value <= 100000) {
+                settings.moduleSettings.tokenWarningThreshold = value;
+                saveSettingsDebounced();
+            }
+            return;
         }
-    }, 1000));
-
-    // Default memory count dropdown with validation
-    popupElement.querySelector('#stmb-default-memory-count')?.addEventListener('change', (e) => {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 0 && value <= 20) {
-            settings.moduleSettings.defaultMemoryCount = value;
-            saveSettingsDebounced();
-        }
-    });
-
-    // Unhidden entries count input with validation
-    popupElement.querySelector('#stmb-unhidden-entries-count')?.addEventListener('input', lodash.debounce((e) => {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 0 && value <= 50) {
-            settings.moduleSettings.unhiddenEntriesCount = value;
-            saveSettingsDebounced();
+        
+        if (e.target.matches('#stmb-unhidden-entries-count')) {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value >= 0 && value <= 50) {
+                settings.moduleSettings.unhiddenEntriesCount = value;
+                saveSettingsDebounced();
+            }
+            return;
         }
     }, 1000));
 }
@@ -1335,8 +1361,6 @@ function refreshPopupContent() {
         currentPopupInstance.dlg.classList.add(...requiredClasses);
         currentPopupInstance.content.style.overflowY = 'auto';
         
-        // Re-attach event listeners to the new content
-        setupSettingsEventListeners();
         console.log('STMemoryBooks: Popup content refreshed with preserved properties');
     } catch (error) {
         console.error('STMemoryBooks: Error refreshing popup content:', error);
