@@ -16,27 +16,27 @@ export const bookmarksTemplate = Handlebars.compile(`
     <div class="popup-content marginBot10"><small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small></div>
 
     {{#if bookmarks.length}}
-    <div class="flex-container flexFlowColumn spaceBetween" style="max-height: 400px; overflow-y: auto;">
-        {{#each bookmarks}}
-        <div class="bookmark-item flex-container alignItemsCenter padding8 marginTopBot5 stmb-box" data-message-num="{{messageNum}}" data-title="{{title}}">
-            <div title="{{loadStatus.tooltip}}" class="bookmark-content flex1 cursor-pointer marginTopBot5" data-message="{{messageNum}}">
-                {{loadStatus.indicator}} #{{messageNum}} - {{title}}
+        <div class="flex-container flexFlowColumn spaceBetween" style="max-height: 400px; overflow-y: auto;">
+            {{#each bookmarks}}
+            <div class="bookmark-item flex-container alignItemsCenter padding8 marginTopBot5 stmb-box" data-message-num="{{messageNum}}" data-title="{{title}}">
+                <div title="{{loadStatus.tooltip}}" class="bookmark-content flex1 cursor-pointer marginTopBot5" data-message="{{messageNum}}">
+                    {{loadStatus.indicator}} #{{messageNum}} - {{title}}
+                </div>
+                <div class="flex-container">
+                    <button class="menu_button fa-solid fa-edit interactable edit-bookmark" data-index="{{@index}}" title="Edit bookmark"></button>
+                    <button class="menu_button fa-solid fa-trash interactable red_button delete-bookmark" data-index="{{@index}}" title="Delete bookmark"></button>
+                </div>
             </div>
-            <div class="flex-container">
-                <button class="menu_button fa-solid fa-edit interactable edit-bookmark" data-index="{{@index}}" title="Edit bookmark"></button>
-                <button class="menu_button fa-solid fa-trash interactable red_button delete-bookmark" data-index="{{@index}}" title="Delete bookmark"></button>
-            </div>
+            {{/each}}
         </div>
-        {{/each}}
-    </div>
+    {{else}}
+        <div class="info-block warning">
+            <span>No bookmarks found. Create your first bookmark to get started!</span>
+        </div>
+    {{/if}}
     <div class="buttons_block marginTop5" style="justify-content: center;">
         <button id="stmb-create-bookmark" class="menu_button menu_button_icon inline-flex interactable"><i class="fa-solid fa-plus"></i>  Create New Bookmark</button>
     </div>
-    {{else}}
-    <div class="info-block warning">
-        <span>No bookmarks found. Create your first bookmark to get started!</span>
-    </div>
-    {{/if}}
 `);
 
 /**
