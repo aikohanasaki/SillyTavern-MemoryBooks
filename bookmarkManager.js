@@ -408,36 +408,44 @@ function sortBookmarks(bookmarks, ascending = true) {
 }
 
 /**
- * Setup event listeners for bookmark popup following STMB patterns
+ * Setup event listeners for bookmark popup using full event delegation
  */
 function setupBookmarkEventListeners() {
     if (!currentBookmarkPopup) return;
     
     const popupElement = currentBookmarkPopup.dlg;
     
-    // Sort toggle
-    popupElement.querySelector('#stmb-sort-toggle')?.addEventListener('click', () => {
-        sortAscending = !sortAscending;
-        refreshBookmarkPopup();
-    });
-
-    // Create bookmark
-    popupElement.querySelector('#stmb-create-bookmark')?.addEventListener('click', async () => {
-        await handleCreateBookmark();
-    });
-
-    // Edit buttons - use event delegation like STMB
+    // Use full event delegation - handles all clicks on popup
     popupElement.addEventListener('click', (e) => {
+        // Sort toggle
+        if (e.target.matches('#stmb-sort-toggle')) {
+            e.preventDefault();
+            sortAscending = !sortAscending;
+            refreshBookmarkPopup();
+            return;
+        }
+        
+        // Create bookmark
+        if (e.target.matches('#stmb-create-bookmark') || e.target.closest('#stmb-create-bookmark')) {
+            e.preventDefault();
+            handleCreateBookmark();
+            return;
+        }
+        
+        // Edit bookmark
         if (e.target.classList.contains('edit-bookmark')) {
             e.stopPropagation();
             const index = parseInt(e.target.dataset.index);
             handleEditBookmark(index);
+            return;
         }
         
+        // Delete bookmark
         if (e.target.classList.contains('delete-bookmark')) {
             e.stopPropagation();
             const index = parseInt(e.target.dataset.index);
             handleDeleteBookmark(index);
+            return;
         }
         
         // Handle bookmark content clicks (including child elements)
@@ -496,8 +504,6 @@ async function refreshBookmarkPopup() {
         currentBookmarkPopup.dlg.classList.add(...requiredClasses);
         currentBookmarkPopup.content.style.overflowY = 'auto';
         
-        // Re-attach event listeners to the new content
-        setupBookmarkEventListeners();
         console.log(`${MODULE_NAME}: Bookmark popup content refreshed`);
     } catch (error) {
         console.error(`${MODULE_NAME}: Error refreshing bookmark popup content:`, error);

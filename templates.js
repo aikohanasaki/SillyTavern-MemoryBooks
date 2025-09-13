@@ -8,7 +8,7 @@ export const bookmarksTemplate = Handlebars.compile(`
         <div class="bookmark-header flexGap5 alignItemsCenter justifyContentSpaceBetween marginBot10">
             <h3>📖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
             <div class="flexGap5 alignItemsCenter">
-                <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px;">
+                <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px; white-space: nowrap; min-width: 100px;">
                     {{#if sortAscending}}📈 Ascending{{else}}📉 Descending{{/if}}
                 </button>
                 <button id="stmb-create-bookmark" class="menu_button">
@@ -24,7 +24,7 @@ export const bookmarksTemplate = Handlebars.compile(`
                  data-message-num="{{messageNum}}" data-title="{{title}}">
                 <div class="bookmark-content flex1 cursor-pointer" data-message="{{messageNum}}">
                     <div class="bookmark-title" style="font-weight: bold;">
-                        {{messageNum}} - {{title}}
+                        {{title}}
                     </div>
                     <div class="bookmark-meta" style="font-size: smaller; opacity: 0.8;">
                         Message {{messageNum}}

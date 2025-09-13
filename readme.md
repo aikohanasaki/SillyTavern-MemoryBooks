@@ -4,17 +4,14 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ---
 
-## 🚦 What’s New (v3.0.1)
+## 🚦 What’s New (v3.4.0)
 
--**JSON Architecture**: Moved from tool-based to JSON structured output for higher reliability.
--**Group Chat Support**: Full compatibility with group conversations.
--**Manual Lorebook Mode**: Freedom to choose any lorebook for memories, or use the chat-bound one automatically.
--**Enhanced Profiles**: Comprehensive profile system with lorebook settings (activation, position, order, recursion).
--**Bulletproof API Handling**: Directly injects model/temp settings for generation, avoiding conflicts with other extensions.
--**Advanced Error Handling**: Smart retry logic for transient network/API errors.
--**Flag-based Memory Detection**: Reliable `stmemorybooks: true` flag system for identifying memories.
--**Scene Overlap Detection**: Configurable check to prevent creating memories for overlapping message ranges.
+- **Chat Bookmarks:** Set up to 75 bookmarks per chat.
+  - The memory lorebook is also used to save the bookmarks
+  - "STMB Bookmarks" entry is invisible and is NOT sent to the LLM.
+  - If "STMB Bookmarks" is deleted all bookmarks for that chat will disappear. 
 
+- **Bugfix:** Popup refresh issues fixed.
 
 ---
 
