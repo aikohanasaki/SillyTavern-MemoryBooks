@@ -23,8 +23,8 @@ export const bookmarksTemplate = Handlebars.compile(`
                 {{loadStatus.indicator}} #{{messageNum}} - {{title}}
             </div>
             <div class="flex-container">
-                <button class="menu_button fa-solid fa-edit interactable" data-index="{{@index}}" title="Edit bookmark"></button>
-                <button class="menu_button fa-solid fa-trash interactable red_button" data-index="{{@index}}" title="Delete bookmark"></button>
+                <button class="menu_button fa-solid fa-edit interactable edit-bookmark" data-index="{{@index}}" title="Edit bookmark"></button>
+                <button class="menu_button fa-solid fa-trash interactable red_button delete-bookmark" data-index="{{@index}}" title="Delete bookmark"></button>
             </div>
         </div>
         {{/each}}
