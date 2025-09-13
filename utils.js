@@ -27,7 +27,14 @@ function groupPrefix() {
 export const SELECTORS = {
     extensionsMenu: '#extensionsMenu .list-group',
     menuItem: '#stmb-menu-item',
+    bookmarksMenuItem: '#stmb-bookmarks-menu-item',
     chatContainer: '#chat',
+    // Bookmark UI selectors
+    sortToggle: '#stmb-sort-toggle',
+    createBookmark: '#stmb-create-bookmark',
+    editBookmark: '.edit-bookmark',
+    deleteBookmark: '.delete-bookmark',
+    bookmarkContent: '.bookmark-content',
     // API and model selectors for profile settings
     mainApi: '#main_api',
     completionSource: '#chat_completion_source',

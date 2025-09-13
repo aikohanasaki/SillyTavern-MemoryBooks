@@ -1,6 +1,61 @@
 import { Handlebars } from '../../../../lib.js';
 
 /**
+ * Bookmarks management template following settingsTemplate patterns
+ */
+export const bookmarksTemplate = Handlebars.compile(`
+    <div class="bookmarks-container">
+        <div class="bookmark-header flexGap5 alignItemsCenter justifyContentSpaceBetween marginBot10">
+            <h3>📖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
+            <div class="flexGap5 alignItemsCenter">
+                <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px;">
+                    {{#if sortAscending}}📈 Ascending{{else}}📉 Descending{{/if}}
+                </button>
+                <button id="stmb-create-bookmark" class="menu_button">
+                    <i class="fa fa-plus"></i> Create
+                </button>
+            </div>
+        </div>
+        
+        {{#if bookmarks.length}}
+        <div class="bookmark-list" style="max-height: 400px; overflow-y: auto;">
+            {{#each bookmarks}}
+            <div class="bookmark-item flex-container alignItemsCenter padding8 marginBot5 stmb-box" 
+                 data-message-num="{{messageNum}}" data-title="{{title}}">
+                <div class="bookmark-content flex1 cursor-pointer" data-message="{{messageNum}}">
+                    <div class="bookmark-title" style="font-weight: bold;">
+                        {{messageNum}} - {{title}}
+                    </div>
+                    <div class="bookmark-meta" style="font-size: smaller; opacity: 0.8;">
+                        Message {{messageNum}}
+                    </div>
+                </div>
+                <div class="bookmark-actions flexGap5">
+                    <button class="edit-bookmark fa fa-edit interactable" 
+                            data-index="{{@index}}" 
+                            title="Edit bookmark"
+                            style="background: none; border: none; padding: 4px; font-size: 16px;"></button>
+                    <button class="delete-bookmark fa fa-trash interactable" 
+                            data-index="{{@index}}" 
+                            title="Delete bookmark"
+                            style="background: none; border: none; padding: 4px; font-size: 16px; color: #ff6b6b;"></button>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+        {{else}}
+        <div class="no-bookmarks info-block" style="text-align: center; padding: 20px;">
+            <i class="fa fa-bookmark" style="font-size: 2em; opacity: 0.5; margin-bottom: 10px;"></i>
+            <div>No bookmarks found</div>
+            <div style="font-size: smaller; opacity: 0.7; margin-top: 5px;">
+                Create your first bookmark to get started
+            </div>
+        </div>
+        {{/if}}
+    </div>
+`);
+
+/**
  * Main settings template - Updated to use SillyTavern's built-in classes
  */
 export const settingsTemplate = Handlebars.compile(`
