@@ -92,20 +92,6 @@
 }
 
 /* --- MAIN EXTENSION MENU BUTTON --- */
-#stmb-menu-item, #stmb-bookmarks-menu-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    margin: 2px 0;
-}
-
-#stmb-menu-item:hover, #stmb-bookmarks-menu-item:hover {
-    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 10%, transparent 90%);
-}
-
 #stmb-menu-item i, #stmb-bookmarks-menu-item i {
     margin-right: 8px;
     width: 16px;
@@ -113,17 +99,13 @@
 }
 
 /* --- BOOKMARKS UI STYLING --- */
-.bookmarks-container {
-    font-family: var(--mainFontFamily);
-    color: var(--SmartThemeBodyColor);
-}
 
 /* Bookmark navigation highlight effect */
 .bookmark-highlight {
     background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 30%, transparent 70%) !important;
     border: 2px solid var(--SmartThemeQuoteColor, #e18a24) !important;
     border-radius: 8px !important;
-    transition: all 0.3s ease !important;
+    transition: all var(--animation-duration-3x, 375ms) ease !important;
     box-shadow: 0 0 15px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 40%, transparent 60%) !important;
     animation: stmb-bookmark-highlight 2s ease-out !important;
 }
@@ -142,31 +124,14 @@
     }
 }
 
-.bookmark-header h3 {
-    color: var(--SmartThemeQuoteColor);
-    margin: 0;
-}
-
-.bookmark-item {
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
 
 .bookmark-item:hover {
     background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 10%, var(--SmartThemeChatTintColor) 90%) !important;
     transform: translateX(2px);
 }
 
-.bookmark-content {
-    flex: 1;
-    padding: 4px 8px;
-}
-
 .bookmark-content:hover {
     color: var(--SmartThemeQuoteColor);
-}
-
-.bookmark-actions button {
-    transition: color 0.2s ease, transform 0.1s ease;
 }
 
 .bookmark-actions button:hover {
@@ -179,11 +144,6 @@
 
 .delete-bookmark:hover {
     color: #ff4444 !important;
-}
-
-.no-bookmarks {
-    font-style: italic;
-    opacity: 0.7;
 }
 
 /* Bookmark limit indicator */
@@ -261,47 +221,5 @@
 
 /* --- RESPONSIVE & ACCESSIBILITY --- */
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .stmb-scene-preview {
-        font-size: 11px;
-        max-height: 200px;
-    }
-    
-    .mes_stmb_start,
-    .mes_stmb_end {
-        padding: 6px 8px;
-        font-size: 14px;
-    }
-}
 
-/* Accessibility improvements */
-.mes_stmb_start:focus,
-.mes_stmb_end:focus {
-    outline: 2px solid var(--SmartThemeBodyColor, #dcdcd2);
-    outline-offset: 2px;
-}
 
-.mes_stmb_start[aria-pressed="true"],
-.mes_stmb_end[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%);
-    color: var(--SmartThemeBlurTintColor, #171717);
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    .mes_stmb_start,
-    .mes_stmb_end {
-        transition: none;
-    }
-    
-    .mes_stmb_start.valid-start-point,
-    .mes_stmb_end.valid-end-point {
-        animation: none;
-        background: #4CAF50;
-    }
-    
-    .stmb-processing::after {
-        animation: none;
-    }
-}

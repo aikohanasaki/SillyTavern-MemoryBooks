@@ -11,14 +11,9 @@ export const bookmarksTemplate = Handlebars.compile(`
             <p>⚠️Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded from the server. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</p>
             <small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small>
 
-            <div class="flexGap5 alignItemsCenter">
-                <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px; white-space: nowrap; min-width: 100px;">
-                    {{#if sortAscending}}📈 Ascending{{else}}📉 Descending{{/if}}
-                </button>
-                <button id="stmb-create-bookmark" class="menu_button">
-                    <i class="fa fa-plus"></i> Create
-                </button>
-            </div>
+            <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px; white-space: nowrap; min-width: 100px;">
+                {{#if sortAscending}}📈 Sort bookmarks in ascending order{{else}}📉 Sort bookmarks in descending order{{/if}}
+            </button>
         </div>
         
         {{#if bookmarks.length}}
@@ -46,6 +41,9 @@ export const bookmarksTemplate = Handlebars.compile(`
                 </div>
             </div>
             {{/each}}
+        </div>
+        <div class="bookmark-header flexGap5 alignItemsCenter justifyContentSpaceBetween marginBot10">
+            <button id="stmb-create-bookmark" class="menu_button" style="white-space: nowrap;"><i class="fa fa-plus"></i>  Create New Bookmark</button>
         </div>
         {{else}}
         <div class="no-bookmarks info-block" style="text-align: center; padding: 20px;">
