@@ -9,6 +9,7 @@ export const bookmarksTemplate = Handlebars.compile(`
             <h3>📖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
             
             <p>⚠️Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded from the server. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</p>
+            <small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small>
 
             <div class="flexGap5 alignItemsCenter">
                 <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px; white-space: nowrap; min-width: 100px;">
@@ -30,7 +31,7 @@ export const bookmarksTemplate = Handlebars.compile(`
                         {{title}}
                     </div>
                     <div class="bookmark-meta" style="font-size: smaller; opacity: 0.8;">
-                        Message {{messageNum}}
+                        <span title="{{loadStatus.tooltip}}">{{loadStatus.indicator}}</span> Message {{messageNum}}
                     </div>
                 </div>
                 <div class="bookmark-actions flexGap5">

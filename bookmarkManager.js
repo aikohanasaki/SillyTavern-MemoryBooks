@@ -476,6 +476,43 @@ let currentBookmarkPopup = null;
 let sortAscending = true;
 
 /**
+ * Calculate load status for a bookmark message
+ * @param {number} messageNum The bookmark message number
+ * @returns {object} Load status with indicator and tooltip info
+ */
+function calculateLoadStatus(messageNum) {
+    const firstDisplayedMesId = $('#chat').children('.mes').first().attr('mesid');
+    const firstDisplayedMessageId = Number(firstDisplayedMesId) || chat.length;
+    
+    // If message is already loaded
+    if (messageNum >= firstDisplayedMessageId) {
+        return {
+            indicator: '🟢',
+            status: 'loaded',
+            tooltip: 'Message is loaded - instant navigation'
+        };
+    }
+    
+    const messagesToLoad = firstDisplayedMessageId - messageNum;
+    
+    // Heavy loading (500+ messages back)
+    if (messagesToLoad >= 500) {
+        return {
+            indicator: '🔴',
+            status: 'heavy',
+            tooltip: `Requires loading ${messagesToLoad} messages - will be slow`
+        };
+    }
+    
+    // Light loading (less than 500 messages)
+    return {
+        indicator: '🟡',
+        status: 'loading',
+        tooltip: `Requires loading ${messagesToLoad} messages - may take a moment`
+    };
+}
+
+/**
  * Show bookmarks management popup following showSettingsPopup pattern
  */
 export async function showBookmarksPopup() {
@@ -494,8 +531,14 @@ export async function showBookmarksPopup() {
         const bookmarks = loadResult.bookmarks;
         sortBookmarks(bookmarks, sortAscending);
 
+        // Add load status to each bookmark
+        const bookmarksWithStatus = bookmarks.map(bookmark => ({
+            ...bookmark,
+            loadStatus: calculateLoadStatus(bookmark.messageNum)
+        }));
+
         const templateData = {
-            bookmarks: bookmarks,
+            bookmarks: bookmarksWithStatus,
             maxBookmarks: MAX_BOOKMARKS,
             sortAscending: sortAscending
         };
@@ -610,8 +653,14 @@ async function refreshBookmarkPopup() {
         const bookmarks = loadResult.bookmarks;
         sortBookmarks(bookmarks, sortAscending);
 
+        // Add load status to each bookmark
+        const bookmarksWithStatus = bookmarks.map(bookmark => ({
+            ...bookmark,
+            loadStatus: calculateLoadStatus(bookmark.messageNum)
+        }));
+
         const templateData = {
-            bookmarks: bookmarks,
+            bookmarks: bookmarksWithStatus,
             maxBookmarks: MAX_BOOKMARKS,
             sortAscending: sortAscending
         };
