@@ -331,19 +331,30 @@ export function isMemoryEntry(entry) {
  */
 function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     let title = titleFormat;
-    
-    // Auto-numbering: [0], [00], [000], etc.
-    const numberingPattern = /\[0+\]/g;
-    const matches = title.match(numberingPattern);
-    
-    if (matches) {
-        const nextNumber = getNextEntryNumber(lorebookData);
-        
-        matches.forEach(match => {
-            const digits = match.length - 2; // Remove [ and ]
-            const paddedNumber = nextNumber.toString().padStart(digits, '0');
-            title = title.replace(match, paddedNumber);
-        });
+
+    // Auto-numbering: [0], [00], [000], (0), {0}, #0, etc.
+    const allNumberingPatterns = [
+        { pattern: /\[0+\]/g, prefix: '[', suffix: ']' },  // [000]
+        { pattern: /\(0+\)/g, prefix: '(', suffix: ')' },  // (000)
+        { pattern: /\{0+\}/g, prefix: '{', suffix: '}' },  // {000}
+        { pattern: /#0+/g, prefix: '#', suffix: '' }       // #000
+    ];
+
+    let hasNumbering = false;
+    for (const { pattern, prefix, suffix } of allNumberingPatterns) {
+        const matches = title.match(pattern);
+        if (matches) {
+            const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
+
+            matches.forEach(match => {
+                const digits = match.length - prefix.length - suffix.length;
+                const paddedNumber = nextNumber.toString().padStart(digits, '0');
+                const replacement = prefix + paddedNumber + suffix;
+                title = title.replace(match, replacement);
+            });
+            hasNumbering = true;
+            break; // Only process the first pattern type found
+        }
     }
     
     // Template substitutions
@@ -375,34 +386,119 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
  * Gets the next available entry number for auto-numbering
  * @private
  * @param {Object} lorebookData - The lorebook data
+ * @param {string} [titleFormat] - The title format template for format-aware extraction
  * @returns {number} The next available number
  */
-function getNextEntryNumber(lorebookData) {
+function getNextEntryNumber(lorebookData, titleFormat = null) {
     if (!lorebookData.entries) {
         return 1;
     }
-    
+
     const entries = Object.values(lorebookData.entries);
     const existingNumbers = [];
-    
+
     entries.forEach(entry => {
         // Only check memory entries for numbering conflicts
         if (isMemoryEntry(entry) && entry.comment) {
-            const number = extractNumberFromTitle(entry.comment);
+            // Use format-aware extraction if available, otherwise fall back to original method
+            const number = titleFormat
+                ? extractNumberUsingFormat(entry.comment, titleFormat)
+                : extractNumberFromTitle(entry.comment);
             if (number !== null) {
                 existingNumbers.push(number);
             }
         }
     });
-    
+
     // If no numbers were found in any existing memories, start at 1.
     if (existingNumbers.length === 0) {
         return 1;
     }
-    
+
     // find the highest existing number and add 1 to it.
     const maxNumber = Math.max(...existingNumbers);
     return maxNumber + 1;
+}
+
+/**
+ * Extracts number from title using the title format as a guide.
+ * This prevents extracting dates or other numbers that aren't the intended sequence number.
+ *
+ * @private
+ * @param {string} title - The title to extract number from
+ * @param {string} titleFormat - The title format template
+ * @returns {number|null} The extracted number or null if not found
+ */
+function extractNumberUsingFormat(title, titleFormat) {
+    if (!title || typeof title !== 'string' || !titleFormat || typeof titleFormat !== 'string') {
+        return null;
+    }
+
+    // Find all numbering patterns in the format
+    const allNumberingPatterns = [
+        /\[0+\]/g,   // [000]
+        /\(0+\)/g,   // (000)
+        /\{0+\}/g,   // {000}
+        /#0+/g       // #000
+    ];
+
+    let formatMatches = [];
+    let patternType = null;
+
+    // Find which pattern type is used and where
+    for (const pattern of allNumberingPatterns) {
+        const matches = [...titleFormat.matchAll(pattern)];
+        if (matches.length > 0) {
+            formatMatches = matches;
+            patternType = pattern;
+            break;
+        }
+    }
+
+    // If no numbering pattern found in format, fall back to original method
+    if (formatMatches.length === 0) {
+        return extractNumberFromTitle(title);
+    }
+
+    // Create a regex from the format that captures the number position
+    let regexPattern = escapeRegex(titleFormat);
+
+    // Replace template variables with non-greedy wildcards
+    regexPattern = regexPattern.replace(/\\\{\\\{[^}]+\\\}\\\}/g, '.*?');
+
+    // Replace numbering patterns with capture groups
+    if (patternType.source.includes('\\[')) {
+        regexPattern = regexPattern.replace(/\\\[0+\\\]/g, '(\\d+)');
+    } else if (patternType.source.includes('\\(')) {
+        regexPattern = regexPattern.replace(/\\\(0+\\\)/g, '(\\d+)');
+    } else if (patternType.source.includes('\\{')) {
+        regexPattern = regexPattern.replace(/\\\{0+\\\}/g, '(\\d+)');
+    } else if (patternType.source.includes('#')) {
+        regexPattern = regexPattern.replace(/#0+/g, '(\\d+)');
+    }
+
+    try {
+        const match = title.match(new RegExp(regexPattern));
+        if (match && match[1]) {
+            const number = parseInt(match[1], 10);
+            return isNaN(number) ? null : number;
+        }
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Regex pattern failed for format-aware extraction: ${error.message}`);
+    }
+
+    // Fallback to original extraction method
+    return extractNumberFromTitle(title);
+}
+
+/**
+ * Helper function to escape special regex characters
+ * @private
+ * @param {string} string - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
