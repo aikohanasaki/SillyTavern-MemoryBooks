@@ -4,57 +4,39 @@ import { Handlebars } from '../../../../lib.js';
  * Bookmarks management template following settingsTemplate patterns
  */
 export const bookmarksTemplate = Handlebars.compile(`
-    <div class="bookmarks-container">
-        <div class="bookmark-header flexGap5 alignItemsCenter justifyContentSpaceBetween marginBot10">
-            <h3>📖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
-            
-            <p>⚠️Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded from the server. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</p>
-            <small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small>
+    <h3>🔖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
+    <div class="popup-content">⚠️ Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded into memory and the page has to be redrawn. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</div>
 
-            <button id="stmb-sort-toggle" class="menu_button" style="font-size: 12px; white-space: nowrap; min-width: 100px;">
-                {{#if sortAscending}}📈 Sort bookmarks in ascending order{{else}}📉 Sort bookmarks in descending order{{/if}}
-            </button>
-        </div>
-        
-        {{#if bookmarks.length}}
-        <div class="bookmark-list" style="max-height: 400px; overflow-y: auto;">
-            {{#each bookmarks}}
-            <div class="bookmark-item flex-container alignItemsCenter padding8 marginBot5 stmb-box" 
-                 data-message-num="{{messageNum}}" data-title="{{title}}">
-                <div class="bookmark-content flex1 cursor-pointer" data-message="{{messageNum}}">
-                    <div class="bookmark-title" style="font-weight: bold;">
-                        {{title}}
-                    </div>
-                    <div class="bookmark-meta" style="font-size: smaller; opacity: 0.8;">
-                        <span title="{{loadStatus.tooltip}}">{{loadStatus.indicator}}</span> Message {{messageNum}}
-                    </div>
-                </div>
-                <div class="bookmark-actions flexGap5">
-                    <button class="edit-bookmark fa fa-edit interactable" 
-                            data-index="{{@index}}" 
-                            title="Edit bookmark"
-                            style="background: none; border: none; padding: 4px; font-size: 16px;"></button>
-                    <button class="delete-bookmark fa fa-trash interactable" 
-                            data-index="{{@index}}" 
-                            title="Delete bookmark"
-                            style="background: none; border: none; padding: 4px; font-size: 16px; color: #ff6b6b;"></button>
-                </div>
-            </div>
-            {{/each}}
-        </div>
-        <div class="bookmark-header flexGap5 alignItemsCenter justifyContentSpaceBetween marginBot10">
-            <button id="stmb-create-bookmark" class="menu_button" style="white-space: nowrap;"><i class="fa fa-plus"></i>  Create New Bookmark</button>
-        </div>
-        {{else}}
-        <div class="no-bookmarks info-block" style="text-align: center; padding: 20px;">
-            <i class="fa fa-bookmark" style="font-size: 2em; opacity: 0.5; margin-bottom: 10px;"></i>
-            <div>No bookmarks found</div>
-            <div style="font-size: smaller; opacity: 0.7; margin-top: 5px;">
-                Create your first bookmark to get started
-            </div>
-        </div>
-        {{/if}}
+    <div class="buttons_block marginTop5" style="justify-content: center;">
+        <button id="stmb-sort-toggle" class="menu_button menu_button_icon inline-flex interactable">
+            {{#if sortAscending}}<i class="fa-solid fa-sort-asc"></i> Sort bookmarks in ascending order{{else}}<i class="fa-solid fa-sort-desc"></i> Sort bookmarks in descending order{{/if}}
+        </button>
     </div>
+    
+    <div class="popup-content marginBot10"><small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small></div>
+
+    {{#if bookmarks.length}}
+    <div class="flex-container flexFlowColumn spaceBetween" style="max-height: 400px; overflow-y: auto;">
+        {{#each bookmarks}}
+        <div class="bookmark-item flex-container alignItemsCenter padding8 marginTopBot5 stmb-box" data-message-num="{{messageNum}}" data-title="{{title}}">
+            <div title="{{loadStatus.tooltip}}" class="bookmark-content flex1 cursor-pointer marginTopBot5" data-message="{{messageNum}}">
+                {{loadStatus.indicator}} #{{messageNum}} - {{title}}
+            </div>
+            <div class="flex-container">
+                <button class="menu_button fa-solid fa-edit interactable" data-index="{{@index}}" title="Edit bookmark"></button>
+                <button class="menu_button fa-solid fa-trash interactable red_button" data-index="{{@index}}" title="Delete bookmark"></button>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+    <div class="buttons_block marginTop5" style="justify-content: center;">
+        <button id="stmb-create-bookmark" class="menu_button menu_button_icon inline-flex interactable"><i class="fa-solid fa-plus"></i>  Create New Bookmark</button>
+    </div>
+    {{else}}
+    <div class="info-block warning">
+        <span>No bookmarks found. Create your first bookmark to get started!</span>
+    </div>
+    {{/if}}
 `);
 
 /**

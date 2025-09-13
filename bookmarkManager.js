@@ -10,12 +10,12 @@ import { bookmarksTemplate } from './templates.js';
 import { morphdom } from '../../../../lib.js';
 
 const MODULE_NAME = 'STMemoryBooks-BookmarkManager';
-const BOOKMARK_ENTRY_NAME = 'STMB Bookmarks';
+const BOOKMARK_ENTRY_NAME = 'STMB Bookmarks (do not edit or enable)'; // Special lorebook entry name
 const MAX_BOOKMARKS = 75;
 
 // Configuration for async navigation
-const LARGE_CHAT_THRESHOLD = 2000;
-const CHUNK_SIZE = 50; // Messages to load per chunk
+const LARGE_CHAT_THRESHOLD = 1000;
+const CHUNK_SIZE = 30; // Messages to load per chunk
 const CHUNK_DELAY = 10; // Delay between chunks in ms
 
 /**
@@ -561,8 +561,7 @@ export async function showBookmarksPopup() {
             large: true,
             allowVerticalScrolling: true,
             customButtons: customButtons,
-            cancelButton: 'Close',
-            okButton: false,
+            okButton: 'Close',
             onClose: handleBookmarkPopupClose
         };
         
@@ -667,18 +666,8 @@ async function refreshBookmarkPopup() {
         
         const newHtml = DOMPurify.sanitize(bookmarksTemplate(templateData));
 
-        const tempContainer = document.createElement('div');
-        tempContainer.innerHTML = newHtml;
-        
-        // Morph the existing popup content with the new content
-        morphdom(currentBookmarkPopup.content, tempContainer, {
-            onBeforeElUpdated: function(fromEl, toEl) {
-                if (fromEl.isEqualNode(toEl)) {
-                    return false;
-                }
-                return true;
-            }
-        });
+        // Use simple innerHTML replacement instead of morphdom
+        currentBookmarkPopup.content.innerHTML = newHtml;
 
         const requiredClasses = [
             'wide_dialogue_popup',

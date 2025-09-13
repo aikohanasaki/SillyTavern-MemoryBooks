@@ -125,13 +125,13 @@
 }
 
 
-.bookmark-item:hover {
-    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 10%, var(--SmartThemeChatTintColor) 90%) !important;
-    transform: translateX(2px);
+.bookmark-list {
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
-.bookmark-content:hover {
-    color: var(--SmartThemeQuoteColor);
+.bookmark-item:hover {
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 10%, var(--SmartThemeChatTintColor) 90%) !important;
 }
 
 .bookmark-actions button:hover {
@@ -144,13 +144,6 @@
 
 .delete-bookmark:hover {
     color: #ff4444 !important;
-}
-
-/* Bookmark limit indicator */
-.bookmark-header {
-    border-bottom: 1px solid var(--SmartThemeBorderColor);
-    padding-bottom: 8px;
-    margin-bottom: 12px !important;
 }
 
 /* --- SCENE PREVIEW STYLING --- */
