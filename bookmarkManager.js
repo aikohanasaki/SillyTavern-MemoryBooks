@@ -1,4 +1,4 @@
-import { chat, chat_metadata } from '../../../../script.js';
+import { chat, chat_metadata, showMoreMessages } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import { Popup, POPUP_TYPE } from '../../../popup.js';
 import { METADATA_KEY, loadWorldInfo, saveWorldInfo, createWorldInfoEntry } from '../../../world-info.js';
@@ -12,6 +12,141 @@ import { morphdom } from '../../../../lib.js';
 const MODULE_NAME = 'STMemoryBooks-BookmarkManager';
 const BOOKMARK_ENTRY_NAME = 'STMB Bookmarks';
 const MAX_BOOKMARKS = 75;
+
+// Configuration for async navigation
+const LARGE_CHAT_THRESHOLD = 2000;
+const CHUNK_SIZE = 50; // Messages to load per chunk
+const CHUNK_DELAY = 10; // Delay between chunks in ms
+
+/**
+ * Async navigation function for large chats to prevent UI freezing
+ * @param {number} messageNum Target message number
+ * @returns {Promise<void>}
+ */
+export async function navigateToBookmarkAsync(messageNum) {
+    const firstDisplayedMesId = $('#chat').children('.mes').first().attr('mesid');
+    const firstDisplayedMessageId = Number(firstDisplayedMesId) || chat.length;
+    
+    // Check if we need to load messages (target is before first displayed)
+    if (messageNum >= firstDisplayedMessageId) {
+        // Target is already loaded, just scroll to it
+        scrollToMessage(messageNum);
+        return;
+    }
+    
+    const messagesToLoad = firstDisplayedMessageId - messageNum;
+    console.log(`${MODULE_NAME}: Need to load ${messagesToLoad} messages to reach bookmark ${messageNum}`);
+    
+    // For large chats, use chunked loading with progress
+    if (chat.length > LARGE_CHAT_THRESHOLD && messagesToLoad > CHUNK_SIZE) {
+        await loadMessagesInChunks(messagesToLoad, messageNum);
+    } else {
+        // For smaller chats, use regular loading
+        await showMoreMessages(messagesToLoad);
+        await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for rendering
+        scrollToMessage(messageNum);
+    }
+}
+
+/**
+ * Load messages in chunks to keep UI responsive
+ * @param {number} totalToLoad Total messages to load
+ * @param {number} targetMessageNum Target message number
+ */
+async function loadMessagesInChunks(totalToLoad, targetMessageNum) {
+    let loaded = 0;
+    let progressToast = null;
+    
+    try {
+        // Show initial progress
+        progressToast = toastr.info(`Loading messages... 0/${totalToLoad}`, 'STMemoryBooks', {
+            timeOut: 0,
+            preventDuplicates: true,
+            progressBar: true
+        });
+        
+        while (loaded < totalToLoad) {
+            const chunkSize = Math.min(CHUNK_SIZE, totalToLoad - loaded);
+            
+            // Load a chunk of messages
+            await showMoreMessages(chunkSize);
+            loaded += chunkSize;
+            
+            // Update progress
+            if (progressToast && progressToast.length > 0) {
+                progressToast.find('.toast-message').text(`Loading messages... ${loaded}/${totalToLoad}`);
+                
+                // Update progress bar
+                const progress = (loaded / totalToLoad) * 100;
+                progressToast.find('.toast-progress').css('width', `${progress}%`);
+            }
+            
+            // Small delay to keep UI responsive
+            if (loaded < totalToLoad) {
+                await new Promise(resolve => setTimeout(resolve, CHUNK_DELAY));
+            }
+        }
+        
+        // Update progress to show scrolling phase
+        if (progressToast && progressToast.length > 0) {
+            progressToast.find('.toast-message').text(`Scrolling to message ${targetMessageNum}...`);
+            progressToast.find('.toast-progress').css('width', '100%');
+        }
+        
+        // Small delay for rendering to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Now scroll to the target message
+        scrollToMessage(targetMessageNum);
+        
+        // Wait a bit for scrolling animation to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Clear progress toast after scrolling is done
+        if (progressToast) {
+            toastr.clear(progressToast);
+        }
+        
+        toastr.success(`Jumped to message ${targetMessageNum}`, 'STMemoryBooks');
+        
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error during chunked loading:`, error);
+        if (progressToast) {
+            toastr.clear(progressToast);
+        }
+        toastr.error(`Failed to navigate to bookmark: ${error.message}`, 'STMemoryBooks');
+    }
+}
+
+/**
+ * Scroll to and highlight a specific message
+ * @param {number} messageNum Message number to scroll to
+ */
+function scrollToMessage(messageNum) {
+    const chatContainer = document.getElementById('chat');
+    const messageElement = document.querySelector(`#chat .mes[mesid="${messageNum}"]`);
+    
+    if (messageElement && chatContainer) {
+        const containerRect = chatContainer.getBoundingClientRect();
+        const elementRect = messageElement.getBoundingClientRect();
+        const scrollPosition = elementRect.top - containerRect.top + chatContainer.scrollTop;
+        
+        chatContainer.scrollTo({
+            top: scrollPosition,
+            behavior: 'smooth',
+        });
+        
+        // Highlight the message briefly
+        $(messageElement).addClass('bookmark-highlight');
+        setTimeout(() => {
+            $(messageElement).removeClass('bookmark-highlight');
+        }, 2000);
+        
+    } else {
+        console.warn(`${MODULE_NAME}: Could not find message element for ${messageNum}`);
+        toastr.warning(`Could not scroll to message ${messageNum}. It may not be rendered yet.`, 'STMemoryBooks');
+    }
+}
 
 /**
  * Load bookmarks from the special lorebook entry
@@ -614,7 +749,7 @@ async function handleDeleteBookmark(index) {
     }
 }
 
-function handleGoToBookmark(messageNum) {
+async function handleGoToBookmark(messageNum) {
     if (messageNum >= chat.length) {
         toastr.error(`Bookmark points to deleted message ${messageNum}`, 'STMemoryBooks');
     } else {
@@ -623,7 +758,14 @@ function handleGoToBookmark(messageNum) {
             currentBookmarkPopup.completeCancelled();
         }
         
-        executeSlashCommands(`/chat-jump ${messageNum}`);
-        toastr.info(`Jumped to message ${messageNum}`, 'STMemoryBooks');
+        // Use async navigation for better performance on large chats
+        try {
+            await navigateToBookmarkAsync(messageNum);
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error navigating to bookmark:`, error);
+            // Fallback to regular navigation
+            executeSlashCommands(`/chat-jump ${messageNum}`);
+            toastr.info(`Jumped to message ${messageNum}`, 'STMemoryBooks');
+        }
     }
 }

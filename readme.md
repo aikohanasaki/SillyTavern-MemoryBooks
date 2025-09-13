@@ -10,6 +10,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
   - The memory lorebook is also used to save the bookmarks
   - "STMB Bookmarks" entry is invisible and is NOT sent to the LLM.
   - If "STMB Bookmarks" is deleted all bookmarks for that chat will disappear. 
+  - implemented background loading of large chats (more than 1000 messages) 
 
 - **Bugfix:** Popup refresh issues fixed.
 

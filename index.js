@@ -457,12 +457,21 @@ async function handleBookmarkGoCommand(namedArgs, unnamedArgs) {
             return '';
         }
         
-        // Jump to the bookmark
+        // Jump to the bookmark using async navigation
         if (targetBookmark.messageNum >= chat.length) {
             toastr.error(`Bookmark points to deleted message ${targetBookmark.messageNum}`, 'STMemoryBooks');
         } else {
-            executeSlashCommands(`/chat-jump ${targetBookmark.messageNum}`);
-            toastr.info(`Jumped to bookmark: ${targetBookmark.messageNum} - ${targetBookmark.title}`, 'STMemoryBooks');
+            // Import and use the async navigation function from bookmarkManager
+            try {
+                const { navigateToBookmarkAsync } = await import('./bookmarkManager.js');
+                await navigateToBookmarkAsync(targetBookmark.messageNum);
+                toastr.success(`Jumped to bookmark: ${targetBookmark.messageNum} - ${targetBookmark.title}`, 'STMemoryBooks');
+            } catch (error) {
+                console.error('STMemoryBooks: Error with async navigation, falling back to regular navigation:', error);
+                // Fallback to regular navigation
+                executeSlashCommands(`/chat-jump ${targetBookmark.messageNum}`);
+                toastr.info(`Jumped to bookmark: ${targetBookmark.messageNum} - ${targetBookmark.title}`, 'STMemoryBooks');
+            }
         }
         
     } catch (error) {

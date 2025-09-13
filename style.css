@@ -118,6 +118,30 @@
     color: var(--SmartThemeBodyColor);
 }
 
+/* Bookmark navigation highlight effect */
+.bookmark-highlight {
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 30%, transparent 70%) !important;
+    border: 2px solid var(--SmartThemeQuoteColor, #e18a24) !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 0 15px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 40%, transparent 60%) !important;
+    animation: stmb-bookmark-highlight 2s ease-out !important;
+}
+
+@keyframes stmb-bookmark-highlight {
+    0% {
+        box-shadow: 0 0 25px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%);
+        border-color: var(--SmartThemeQuoteColor, #e18a24);
+    }
+    50% {
+        box-shadow: 0 0 30px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
+    }
+    100% {
+        box-shadow: 0 0 15px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 40%, transparent 60%);
+        border-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 70%, transparent 30%);
+    }
+}
+
 .bookmark-header h3 {
     color: var(--SmartThemeQuoteColor);
     margin: 0;
