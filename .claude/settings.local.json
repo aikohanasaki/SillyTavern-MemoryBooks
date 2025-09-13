@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/ai/Aikobots Code/Aikobots/public/scripts/**)"
+      "Read(//c/Users/ai/Aikobots Code/Aikobots/public/scripts/**)",
+      "Read(//c//**)",
+      "Read(//c/Users/ai/Aikobots Code/Aikobots/public/**)"
     ],
     "deny": [],
     "ask": []
