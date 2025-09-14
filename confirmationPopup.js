@@ -20,10 +20,7 @@ const STMB_POPUP_RESULTS = {
 export async function showConfirmationPopup(sceneData, settings, currentModelSettings, currentApiInfo, chat_metadata, selectedProfileIndex = null) {
     const profileIndex = selectedProfileIndex !== null ? selectedProfileIndex : settings.defaultProfile;
     const selectedProfile = settings.profiles[profileIndex];
-    const effectivePrompt = getEffectivePrompt(selectedProfile);
-    
-    console.log(`STMemoryBooks: Simple confirmation popup using profile "${selectedProfile.name}" (index: ${profileIndex})`);
-    
+    const effectivePrompt = getEffectivePrompt(selectedProfile);    
     const templateData = {
         ...sceneData,
         profileName: selectedProfile.name,
@@ -31,9 +28,9 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         profileModel: selectedProfile.connection?.model || 'Current SillyTavern model',
         profileTemperature: selectedProfile.connection?.temperature !== undefined ? 
             selectedProfile.connection.temperature : 'Current SillyTavern temperature',
-        currentModel: currentModelSettings.model || 'Unknown',
-        currentTemperature: currentModelSettings.temperature || 0.7,
-        currentApi: currentApiInfo.api || 'Unknown',
+        currentModel: currentModelSettings?.model || 'Unknown',
+        currentTemperature: currentModelSettings?.temperature || 0.7,
+        currentApi: currentApiInfo?.api || 'Unknown',
         tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000),
         profiles: settings.profiles.map((profile, index) => ({
@@ -89,7 +86,6 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         
         return { confirmed: false };
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error showing confirmation popup:`, error);
         return { confirmed: false };
     }
 }
@@ -118,9 +114,9 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profileModel: profileModel,
         profileTemperature: profileTemperature,
-        currentModel: currentModelSettings.model || 'Unknown',
-        currentTemperature: currentModelSettings.temperature || 0.7,
-        currentApi: currentApiInfo.api || 'Unknown',
+        currentModel: currentModelSettings?.model || 'Unknown',
+        currentTemperature: currentModelSettings?.temperature || 0.7,
+        currentApi: currentApiInfo?.api || 'Unknown',
         suggestedProfileName: `${selectedProfile.name} - Modified`,
         tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000)
@@ -159,7 +155,6 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         
         return { confirmed: false };
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error showing advanced options popup:`, error);
         return { confirmed: false };
     }
 }
@@ -206,7 +201,7 @@ async function handleAdvancedConfirmation(popup, settings) {
     // Determine effective connection settings
     if (overrideSettings) {
         const currentSettings = getCurrentModelSettings();
-        const currentApiInfo = getCurrentApiInfo(); // Get current API info
+        const currentApiInfo = getCurrentApiInfo();
 
         if (currentApiInfo.api) {
             profileSettings.effectiveConnection.api = currentApiInfo.api; // Override API
@@ -392,47 +387,40 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
  * Save new profile from advanced settings popup
  */
 async function saveNewProfileFromAdvancedSettings(popupElement, settings, profileName) {
-    try {
-        const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || settings.defaultProfile);
-        const baseProfile = settings.profiles[selectedProfileIndex];
+    const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || settings.defaultProfile);
+    const baseProfile = settings.profiles[selectedProfileIndex];
 
-        // Step 1: Gather base data from the form and the selected profile.
-        const data = {
-            name: profileName,
-            prompt: popupElement.querySelector('#stmb-effective-prompt-advanced')?.value,
-            api: baseProfile.connection?.api,
-            model: baseProfile.connection?.model,
-            temperature: baseProfile.connection?.temperature,
-            preset: baseProfile.preset,
-            titleFormat: baseProfile.titleFormat || settings.titleFormat,
-        };
-        
-        // Step 2: If overriding, update the data with current SillyTavern settings.
-        const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
-        if (overrideSettings) {
-            const currentSettings = getCurrentModelSettings();
-            const currentApiInfo = getCurrentApiInfo();
-            
-            data.api = currentApiInfo.api;
-            data.model = currentSettings.model;
-            data.temperature = currentSettings.temperature;
-        }
+    // Step 1: Gather base data from the form and the selected profile.
+    const data = {
+        name: profileName,
+        prompt: popupElement.querySelector('#stmb-effective-prompt-advanced')?.value,
+        api: baseProfile.connection?.api,
+        model: baseProfile.connection?.model,
+        temperature: baseProfile.connection?.temperature,
+        preset: baseProfile.preset,
+        titleFormat: baseProfile.titleFormat || settings.titleFormat,
+    };
 
-        // Step 3: Call the centralized function to create the final profile object.
-        const newProfile = createProfileObject(data);
+    // Step 2: If overriding, update the data with current SillyTavern settings.
+    const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
+    if (overrideSettings) {
+        const currentSettings = getCurrentModelSettings();
+        const currentApiInfo = getCurrentApiInfo();
 
-        // Ensure the final profile name is unique before saving.
-        const existingNames = settings.profiles.map(p => p.name);
-        newProfile.name = generateSafeProfileName(newProfile.name, existingNames);
-        
-        settings.profiles.push(newProfile);
-        saveSettingsDebounced();
-        
-        console.log(`${MODULE_NAME}: Saved new profile "${newProfile.name}" from advanced options`);
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error saving new profile from advanced settings:`, error);
-        throw error;
+        data.api = currentApiInfo.api;
+        data.model = currentSettings.model;
+        data.temperature = currentSettings.temperature;
     }
+
+    // Step 3: Call the centralized function to create the final profile object.
+    const newProfile = createProfileObject(data);
+
+    // Ensure the final profile name is unique before saving.
+    const existingNames = settings.profiles.map(p => p.name);
+    newProfile.name = generateSafeProfileName(newProfile.name, existingNames);
+
+    settings.profiles.push(newProfile);
+    saveSettingsDebounced();
 }
 
 /**
@@ -464,9 +452,7 @@ export async function fetchPreviousSummaries(count, settings, chat_metadata) {
         // Return the last N summaries (most recent ones)
         const recentSummaries = memoryEntries.slice(-count);
         const actualCount = recentSummaries.length;
-        
-        console.log(`${MODULE_NAME}: Requested ${count} summaries, found ${actualCount} available summaries using flag-based detection`);
-        
+                
         return {
             summaries: recentSummaries.map(entry => ({
                 number: entry.number,
@@ -479,7 +465,6 @@ export async function fetchPreviousSummaries(count, settings, chat_metadata) {
         };
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error fetching previous summaries:`, error);
         return { summaries: [], actualCount: 0, requestedCount: count };
     }
 }
@@ -500,7 +485,6 @@ export async function calculateTokensWithContext(sceneData, memories) {
             contextTokens += memoryTokens;
         }
         
-        console.log(`${MODULE_NAME}: Calculated ${contextTokens} actual tokens for ${memories.length} context memories`);
         return baseTokens + contextTokens;
     }
     
@@ -530,7 +514,6 @@ async function getAvailableMemoriesCount(settings, chat_metadata) {
         
         return memoryEntries.length;
     } catch (error) {
-        console.warn(`${MODULE_NAME}: Error getting available memories count:`, error);
         return 0;
     }
 }
@@ -549,7 +532,6 @@ export async function confirmSaveNewProfile(profileName) {
         ).show();
         return result === POPUP_RESULT.AFFIRMATIVE;
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error confirming save new profile:`, error);
         return false;
     }
 }

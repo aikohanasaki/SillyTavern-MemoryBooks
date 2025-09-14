@@ -246,7 +246,6 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             if (refreshCallback) refreshCallback();
 
             toastr.success('Profile updated successfully', 'STMemoryBooks');
-            console.log(`${MODULE_NAME}: Updated profile "${updatedProfile.name}"`);
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error editing profile:`, error);
@@ -326,7 +325,6 @@ export async function newProfile(settings, refreshCallback) {
             if (refreshCallback) refreshCallback();
 
             toastr.success('Profile created successfully', 'STMemoryBooks');
-            console.log(`${MODULE_NAME}: Created new profile "${newProfileData.name}"`);
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error creating profile:`, error);
@@ -369,7 +367,6 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
             if (refreshCallback) refreshCallback();
 
             toastr.success('Profile deleted successfully', 'STMemoryBooks');
-            console.log(`${MODULE_NAME}: Deleted profile "${deletedName}"`);
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error deleting profile:`, error);
@@ -404,7 +401,6 @@ export function exportProfiles(settings) {
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 
         toastr.success('Profiles exported successfully', 'STMemoryBooks');
-        console.log(`${MODULE_NAME}: Exported ${settings.profiles.length} profiles`);
     } catch (error) {
         console.error(`${MODULE_NAME}: Error exporting profiles:`, error);
         toastr.error('Failed to export profiles', 'STMemoryBooks');
@@ -472,8 +468,7 @@ export function importProfiles(event, settings, refreshCallback) {
                     message += ` (${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} skipped)`;
                 }
 
-                toastr.success(message, 'STMemoryBooks');
-                console.log(`${MODULE_NAME}: ${message}`);
+                toastr.success(message, 'STMemoryBooks profile import completed');
             } else {
                 toastr.warning('No new profiles imported - all profiles already exist', 'STMemoryBooks');
             }
@@ -552,8 +547,6 @@ function setupProfileEditEventHandlers(popupInstance) {
             }
         });
     });
-
-    console.log(`${MODULE_NAME}: Profile edit event handlers attached`);
 }
 
 /**

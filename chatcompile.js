@@ -16,8 +16,6 @@ const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
 export function compileScene(sceneRequest) {
     const { sceneStart, sceneEnd, chatId, characterName } = sceneRequest;
     
-    console.log(`${MODULE_NAME}: Starting compilation for scene ${sceneStart}-${sceneEnd}`);
-    
     // Validate input parameters
     if (sceneStart == null || sceneEnd == null) {
         throw new Error('Scene markers are required for compilation');
@@ -41,14 +39,12 @@ export function compileScene(sceneRequest) {
         
         // Handle missing messages gracefully
         if (!message) {
-            console.warn(`${MODULE_NAME}: Missing message at index ${i}`);
             skippedMessageCount++;
             continue;
         }
         
         // Skip hidden messages - marked with is_system: true
         if (message.is_system) {
-            console.log(`${MODULE_NAME}: Skipping hidden message at index ${i}`);
             hiddenMessageCount++;
             continue;
         }
@@ -89,8 +85,6 @@ export function compileScene(sceneRequest) {
         messages: sceneMessages
     };
     
-    console.log(`${MODULE_NAME}: Compiled ${sceneMessages.length} messages (skipped ${hiddenMessageCount} hidden messages, ${skippedMessageCount} missing messages)`);
-    
     // Validate that we have at least some visible messages
     if (sceneMessages.length === 0) {
         throw new Error(`No visible messages found in range ${sceneStart}-${sceneEnd}. All messages may be hidden or missing.`);
@@ -115,7 +109,6 @@ export function createSceneRequest(sceneStart, sceneEnd) {
         characterName: context.name2 || name2 || 'Unknown'
     };
     
-    console.log(`${MODULE_NAME}: Created scene request:`, sceneRequest);
     return sceneRequest;
 }
 
@@ -139,7 +132,6 @@ export function estimateTokenCount(compiledScene) {
     }
     
     const estimatedTokens = Math.ceil(totalChars / CHARS_PER_TOKEN);
-    console.log(`${MODULE_NAME}: Estimated ${estimatedTokens} tokens for ${compiledScene.messages.length} messages`);
     
     return estimatedTokens;
 }
@@ -229,14 +221,6 @@ export function validateCompiledScene(compiledScene) {
     }
     
     const isValid = errors.length === 0;
-    
-    if (!isValid) {
-        console.error(`${MODULE_NAME}: Validation failed:`, errors);
-    }
-    
-    if (warnings.length > 0) {
-        console.warn(`${MODULE_NAME}: Validation warnings:`, warnings);
-    }
     
     return {
         valid: isValid,

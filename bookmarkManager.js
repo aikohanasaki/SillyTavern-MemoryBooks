@@ -7,7 +7,6 @@ import { getEffectiveLorebookName } from './utils.js';
 import { validateLorebook } from './index.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { bookmarksTemplate } from './templates.js';
-import { morphdom } from '../../../../lib.js';
 
 const MODULE_NAME = 'STMemoryBooks-BookmarkManager';
 const BOOKMARK_ENTRY_NAME = 'STMB Bookmarks (do not edit or enable)'; // Special lorebook entry name
@@ -35,7 +34,6 @@ export async function navigateToBookmarkAsync(messageNum) {
     }
     
     const messagesToLoad = firstDisplayedMessageId - messageNum;
-    console.log(`${MODULE_NAME}: Need to load ${messagesToLoad} messages to reach bookmark ${messageNum}`);
     
     // For large chats, use chunked loading with progress
     if (chat.length > LARGE_CHAT_THRESHOLD && messagesToLoad > CHUNK_SIZE) {
@@ -110,7 +108,6 @@ async function loadMessagesInChunks(totalToLoad, targetMessageNum) {
         toastr.success(`Jumped to message ${targetMessageNum}`, 'STMemoryBooks');
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error during chunked loading:`, error);
         if (progressToast) {
             toastr.clear(progressToast);
         }
@@ -143,7 +140,6 @@ function scrollToMessage(messageNum) {
         }, 2000);
         
     } else {
-        console.warn(`${MODULE_NAME}: Could not find message element for ${messageNum}`);
         toastr.warning(`Could not scroll to message ${messageNum}. It may not be rendered yet.`, 'STMemoryBooks');
     }
 }
@@ -159,7 +155,7 @@ export async function loadBookmarks() {
             return { success: false, error: lorebookValidation.error, bookmarks: [] };
         }
 
-        // Find the bookmark entry - using the same pattern as STMB memory identification
+        // Find the bookmark entry
         const entries = Object.values(lorebookValidation.data.entries || {});
         const bookmarkEntry = entries.find(entry => 
             entry?.comment === BOOKMARK_ENTRY_NAME
@@ -174,12 +170,10 @@ export async function loadBookmarks() {
             const bookmarks = JSON.parse(bookmarkEntry.content || '[]');
             return { success: true, bookmarks: Array.isArray(bookmarks) ? bookmarks : [] };
         } catch (parseError) {
-            console.error(`${MODULE_NAME}: Invalid bookmark JSON:`, parseError);
             return { success: false, error: 'Bookmark data is corrupted (invalid JSON)', bookmarks: [] };
         }
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error loading bookmarks:`, error);
         return { success: false, error: error.message, bookmarks: [] };
     }
 }
@@ -195,7 +189,7 @@ export async function saveBookmarks(bookmarks) {
             throw new Error(lorebookValidation.error);
         }
 
-        // Find existing bookmark entry - using the same pattern as STMB
+        // Find existing bookmark entry
         const entries = Object.values(lorebookValidation.data.entries || {});
         let bookmarkEntry = entries.find(entry => 
             entry?.comment === BOOKMARK_ENTRY_NAME
@@ -207,7 +201,7 @@ export async function saveBookmarks(bookmarks) {
             // Update existing entry
             bookmarkEntry.content = bookmarkData;
         } else {
-            // Create new entry using STMB's proven method
+            // Create new entry
             const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
             if (!newEntry) {
                 throw new Error('Failed to create new bookmark entry');
@@ -235,7 +229,6 @@ export async function saveBookmarks(bookmarks) {
         return { success: true };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error saving bookmarks:`, error);
         return { success: false, error: error.message };
     }
 }
@@ -320,7 +313,6 @@ export async function createBookmark(messageNum, title) {
         return { success: true, bookmark: newBookmark };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error creating bookmark:`, error);
         return { success: false, error: error.message };
     }
 }
@@ -379,7 +371,6 @@ export async function updateBookmark(originalMessageNum, originalTitle, newMessa
         return { success: true };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error updating bookmark:`, error);
         return { success: false, error: error.message };
     }
 }
@@ -417,7 +408,6 @@ export async function deleteBookmark(messageNum, title) {
         return { success: true };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error deleting bookmark:`, error);
         return { success: false, error: error.message };
     }
 }
@@ -466,7 +456,6 @@ export async function shiftBookmarksAfterDeletion(deletedMessageNum) {
         return { success: true, shifted };
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error shifting bookmarks:`, error);
         return { success: false, error: error.message };
     }
 }
@@ -521,7 +510,7 @@ export async function showBookmarksPopup() {
         const loadResult = await loadBookmarks();
         if (!loadResult.success) {
             if (loadResult.error.includes('STMB Bookmarks')) {
-                toastr.error('No bookmarks were found. Is there an entry titled "STMB Bookmarks" in the lorebook?', 'STMemoryBooks');
+                toastr.error('No bookmarks were found. Is there an entry titled "STMB Bookmarks (do not edit or enable)" in the lorebook?', 'STMemoryBooks');
             } else {
                 toastr.error(loadResult.error, 'STMemoryBooks');
             }
@@ -565,12 +554,11 @@ export async function showBookmarksPopup() {
             onClose: handleBookmarkPopupClose
         };
         
-        currentBookmarkPopup = new Popup(content, POPUP_TYPE.TEXT, '📖 Bookmarks', popupOptions);
+        currentBookmarkPopup = new Popup(content, POPUP_TYPE.TEXT, '🔖 Bookmarks', popupOptions);
         setupBookmarkEventListeners();
         await currentBookmarkPopup.show();
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error showing bookmarks popup:`, error);
         toastr.error(`Failed to show bookmarks: ${error.message}`, 'STMemoryBooks');
     }
 }
@@ -677,9 +665,7 @@ async function refreshBookmarkPopup() {
         currentBookmarkPopup.dlg.classList.add(...requiredClasses);
         currentBookmarkPopup.content.style.overflowY = 'auto';
         
-        console.log(`${MODULE_NAME}: Bookmark popup content refreshed`);
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error refreshing bookmark popup content:`, error);
     }
 }
 
@@ -688,7 +674,6 @@ async function refreshBookmarkPopup() {
  */
 function handleBookmarkPopupClose(popup) {
     currentBookmarkPopup = null;
-    console.log(`${MODULE_NAME}: Bookmark popup closed`);
 }
 
 /**
@@ -800,7 +785,6 @@ async function handleGoToBookmark(messageNum) {
         try {
             await navigateToBookmarkAsync(messageNum);
         } catch (error) {
-            console.error(`${MODULE_NAME}: Error navigating to bookmark:`, error);
             // Fallback to regular navigation
             executeSlashCommands(`/chat-jump ${messageNum}`);
             toastr.info(`Jumped to message ${messageNum}`, 'STMemoryBooks');

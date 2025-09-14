@@ -38,7 +38,7 @@ const DEFAULT_TITLE_FORMATS = [
     '[000] {{date}} - {{char}} Memory',
     '[00] - {{user}} & {{char}} {{scene}}',
     '🧠 [000] ({{messages}} msgs)',
-    '📚 Memory [000] - {{profile}} {{date}} {{time}}',
+    '📚 Memory #[000] - {{profile}} {{date}} {{time}}',
     '[000] - {{scene}}: {{title}}',
     '[000] - {{title}} ({{scene}})',
     '[000] - {{title}}'
@@ -61,7 +61,6 @@ const DEFAULT_TITLE_FORMATS = [
  * @returns {Promise<Object>} Result object with success status and details
  */
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
-    console.log(`${MODULE_NAME}: Adding memory to lorebook "${lorebookValidation.name}"`);
     
     const context = getContext();
     
@@ -97,13 +96,8 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         }
         
         const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
-        
         populateLorebookEntry(newEntry, memoryResult, entryTitle, lorebookSettings);
-        
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
-
-        console.log(`${MODULE_NAME}: Successfully added memory entry "${entryTitle}" to lorebook`);
-        
         if (settings.moduleSettings?.showNotifications !== false) {
             toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
         }
@@ -111,7 +105,6 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         if (refreshEditor) {
             try {
                 reloadEditor(lorebookValidation.name);
-                console.log(`${MODULE_NAME}: Refreshed lorebook editor UI`);
             } catch (error) {
                 console.warn(`${MODULE_NAME}: Failed to refresh editor UI:`, error);
             }
@@ -120,82 +113,71 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         // Execute auto-hide commands if enabled
         const autoHideMode = getAutoHideMode(settings.moduleSettings);
         if (autoHideMode !== 'none') {
-            try {
-                const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
-                const messageCount = memoryResult.metadata?.messageCount || 0;
-                
-                // Validate that unhidden count is less than message count (only for 'last' mode)
-                if (autoHideMode === 'last' && unhiddenCount >= messageCount && unhiddenCount > 0) {
-                    const message = unhiddenCount > messageCount 
-                        ? `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`
-                        : `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`;
-                    console.warn(`${MODULE_NAME}: ${message}`);
-                    if (settings.moduleSettings?.showNotifications !== false) {
-                        toastr.warning(message, 'STMemoryBooks');
+            const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
+            const messageCount = memoryResult.metadata?.messageCount || 0;
+            
+            // Validate that unhidden count is less than message count (only for 'last' mode)
+            if (autoHideMode === 'last' && unhiddenCount >= messageCount && unhiddenCount > 0) {
+                const message = unhiddenCount > messageCount 
+                    ? `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`
+                    : `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`;
+                if (settings.moduleSettings?.showNotifications !== false) {
+                    toastr.warning(message, 'STMemoryBooks');
+                }
+                return {
+                    success: true,
+                    entryId: newEntry.uid,
+                    entryTitle: entryTitle,
+                    lorebookName: lorebookValidation.name,
+                    keywordCount: memoryResult.suggestedKeys?.length || 0,
+                    message: `Memory successfully added to "${lorebookValidation.name}" (auto-hide skipped)`,
+                    warning: message
+                };
+            }
+            
+            if (autoHideMode === 'all') {
+                // Additional check for 'all' mode: only hide if scene end > unhidden count
+                const sceneRange = memoryResult.metadata?.sceneRange;
+                let sceneEnd = null;
+                if (sceneRange) {
+                    const rangeParts = sceneRange.split('-');
+                    if (rangeParts.length === 2) {
+                        sceneEnd = parseInt(rangeParts[1], 10);
                     }
-                    return {
-                        success: true,
-                        entryId: newEntry.uid,
-                        entryTitle: entryTitle,
-                        lorebookName: lorebookValidation.name,
-                        keywordCount: memoryResult.suggestedKeys?.length || 0,
-                        message: `Memory successfully added to "${lorebookValidation.name}" (auto-hide skipped)`,
-                        warning: message
-                    };
                 }
                 
-                if (autoHideMode === 'all') {
-                    // Additional check for 'all' mode: only hide if scene end > unhidden count
-                    const sceneRange = memoryResult.metadata?.sceneRange;
-                    let sceneEnd = null;
-                    if (sceneRange) {
-                        const rangeParts = sceneRange.split('-');
-                        if (rangeParts.length === 2) {
-                            sceneEnd = parseInt(rangeParts[1], 10);
-                        }
-                    }
-                    
-                    // Only proceed if we have scene end data and it's greater than unhidden count
-                    if (sceneEnd !== null && sceneEnd > unhiddenCount) {
-                        const hideCommand = unhiddenCount > 0 
-                            ? `/hide 0-${sceneEnd - unhiddenCount}` 
-                            : `/hide 0-${sceneEnd}`;
-                        await executeSlashCommands(hideCommand);
-                        console.log(`${MODULE_NAME}: Executed auto-hide all messages (${hideCommand}) - scene end ${sceneEnd} > unhidden count ${unhiddenCount}`);
-                    } else {
-                        const reason = sceneEnd === null 
-                            ? 'no scene end data available' 
-                            : `scene end ${sceneEnd} <= unhidden count ${unhiddenCount}`;
-                        console.log(`${MODULE_NAME}: Skipped auto-hide all messages - ${reason}`);
-                    }
-                } else if (autoHideMode === 'last') {
-                    // Get scene start and end for 'last' mode
-                    const sceneRange = memoryResult.metadata?.sceneRange;
-                    let sceneStart = null;
-                    let sceneEnd = null;
-                    if (sceneRange) {
-                        const rangeParts = sceneRange.split('-');
-                        if (rangeParts.length === 2) {
-                            sceneStart = parseInt(rangeParts[0], 10);
-                            sceneEnd = parseInt(rangeParts[1], 10);
-                        }
-                    }
-                    
-                    if (sceneStart !== null && sceneEnd !== null) {
-                        const hideCommand = unhiddenCount > 0 
-                            ? `/hide ${sceneStart}-${sceneEnd - unhiddenCount}` 
-                            : `/hide ${sceneStart}-${sceneEnd}`;
-                        await executeSlashCommands(hideCommand);
-                        console.log(`${MODULE_NAME}: Executed auto-hide last memory (${hideCommand})`);
-                    } else {
-                        console.log(`${MODULE_NAME}: Skipped auto-hide last memory - no scene range data available`);
+                // Only proceed if we have scene end data and it's greater than unhidden count
+                if (sceneEnd !== null && sceneEnd > unhiddenCount) {
+                    const hideCommand = unhiddenCount > 0 
+                        ? `/hide 0-${sceneEnd - unhiddenCount}` 
+                        : `/hide 0-${sceneEnd}`;
+                    await executeSlashCommands(hideCommand);
+                } else {
+                    const reason = sceneEnd === null 
+                        ? 'no scene end data available' 
+                        : `scene end ${sceneEnd} <= unhidden count ${unhiddenCount}`;
+                }
+            } else if (autoHideMode === 'last') {
+                // Get scene start and end for 'last' mode
+                const sceneRange = memoryResult.metadata?.sceneRange;
+                let sceneStart = null;
+                let sceneEnd = null;
+                if (sceneRange) {
+                    const rangeParts = sceneRange.split('-');
+                    if (rangeParts.length === 2) {
+                        sceneStart = parseInt(rangeParts[0], 10);
+                        sceneEnd = parseInt(rangeParts[1], 10);
                     }
                 }
-            } catch (error) {
-                console.warn(`${MODULE_NAME}: Failed to execute auto-hide command:`, error);
+                
+                if (sceneStart !== null && sceneEnd !== null) {
+                    const hideCommand = unhiddenCount > 0 
+                        ? `/hide ${sceneStart}-${sceneEnd - unhiddenCount}` 
+                        : `/hide ${sceneStart}-${sceneEnd}`;
+                    await executeSlashCommands(hideCommand);
+                }
             }
         }
-        
         return {
             success: true,
             entryId: newEntry.uid,
@@ -237,8 +219,6 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     // Extract order number from title for auto-numbering
     const orderNumber = extractNumberFromTitle(entryTitle) || 1;
     
-    // --- APPLY USER SETTINGS ---
-    
     // 1. Constant / Vectorized Mode
     switch (lorebookSettings.constVectMode) {
         case 'blue': // Constant
@@ -269,8 +249,6 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     // 4. Recursion Settings
     entry.preventRecursion = lorebookSettings.preventRecursion;
     entry.delayUntilRecursion = lorebookSettings.delayUntilRecursion;
-
-    // --- End User Settings ---
 
     // Set other properties to match the tested lorebook structure
     entry.keysecondary = [];
@@ -304,7 +282,6 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
         }
     }
     
-    console.log(`${MODULE_NAME}: Populated entry with ${entry.key.length} keywords and ${entry.content.length} characters`);
 }
 
 /**
@@ -341,7 +318,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
         { pattern: /#\[0+\]/g, prefix: '#', suffix: '' }      // #[000] -> #001
     ];
 
-    let hasNumbering = false;
     for (const { pattern, prefix, suffix } of allNumberingPatterns) {
         const matches = title.match(pattern);
         if (matches) {
@@ -364,7 +340,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
                 const replacement = prefix + paddedNumber + suffix;
                 title = title.replace(match, replacement);
             });
-            hasNumbering = true;
             break; // Only process the first pattern type found
         }
     }
@@ -390,7 +365,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     // Clean up the title (remove invalid characters not in allowed list)
     title = sanitizeTitle(title);
     
-    console.log(`${MODULE_NAME}: Generated entry title: "${title}"`);
     return title;
 }
 
@@ -496,7 +470,6 @@ function extractNumberUsingFormat(title, titleFormat) {
             return isNaN(number) ? null : number;
         }
     } catch (error) {
-        console.warn(`${MODULE_NAME}: Regex pattern failed for format-aware extraction: ${error.message}`);
     }
 
     // Fallback to original extraction method
@@ -627,7 +600,6 @@ export function identifyMemoryEntries(lorebookData) {
     // Sort by number
     memoryEntries.sort((a, b) => a.number - b.number);
     
-    console.log(`${MODULE_NAME}: Identified ${memoryEntries.length} memory entries using flag-based detection`);
     return memoryEntries;
 }
 
