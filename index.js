@@ -6,7 +6,7 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
-import { lodash, Handlebars, DOMPurify, morphdom } from '../../../../lib.js';
+import { lodash, Handlebars, DOMPurify } from '../../../../lib.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
@@ -850,12 +850,6 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     isProcessingMemory = true;
     
     try {
-        // Validate that toastr is available (defensive programming)
-        if (typeof toastr === 'undefined') {
-            console.error('STMemoryBooks: toastr is not available');
-            throw new Error('Notification system not available');
-        }
-
         const settings = initializeSettings();
 
         // All the validation and processing logic
@@ -981,7 +975,7 @@ async function showSettingsPopup() {
             classes: ['menu_button'],
             action: async () => {
                 if (!sceneData) {
-                    toastr.error('No scene selected. Mark start and end points first.', 'STMemoryBooks');
+                    toastr.error('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks');
                     return;
                 }
                 
@@ -1369,8 +1363,7 @@ function refreshPopupContent() {
         ];
         currentPopupInstance.dlg.classList.add(...requiredClasses);
         currentPopupInstance.content.style.overflowY = 'auto';
-        
-        console.log('STMemoryBooks: Popup content refreshed with preserved properties');
+
     } catch (error) {
         console.error('STMemoryBooks: Error refreshing popup content:', error);
     }
@@ -1380,7 +1373,6 @@ function refreshPopupContent() {
  * Process existing messages and use full update (for chat loads)
  */
 function processExistingMessages() {
-    console.log('STMemoryBooks: Processing any existing messages on the DOM...');
     const messageElements = document.querySelectorAll('#chat .mes[mesid]');
 
     if (messageElements.length > 0) {
@@ -1388,24 +1380,13 @@ function processExistingMessages() {
         messageElements.forEach(messageElement => {
             // Check if buttons are already there to prevent duplication
             if (!messageElement.querySelector('.mes_stmb_start')) {
-                try {
-                    createSceneButtons(messageElement);
-                    buttonsAdded++;
-                } catch (error) {
-                    console.error('STMemoryBooks: Error creating buttons for message:', error);
-                    // Continue processing other messages even if one fails
-                }
+                createSceneButtons(messageElement);
+                buttonsAdded++;
             }
         });
 
-        if (buttonsAdded > 0) {
-            console.log(`STMemoryBooks: Added buttons to ${buttonsAdded} existing messages.`);
-        }
-
         // Full update needed for chat loads
         updateAllButtonStates();
-    } else {
-        console.log('STMemoryBooks: No existing messages found to process.');
     }
 }
 
@@ -1580,8 +1561,6 @@ function setupEventListeners() {
     });
     
     window.addEventListener('beforeunload', cleanupChatObserver);
-    
-    console.log('STMemoryBooks: Event listeners registered with bulletproof settings management');
 }
 
 /**
@@ -1590,16 +1569,13 @@ function setupEventListeners() {
 async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
-
-    console.log('STMemoryBooks: Initializing with JSON-based architecture, performance optimizations, and bulletproof settings management');
-    
+    console.log('STMemoryBooks: Initializing');
     // Wait for SillyTavern to be ready
     let attempts = 0;
     const maxAttempts = 20;
     
     while (attempts < maxAttempts) {
         if ($(SELECTORS.extensionsMenu).length > 0 && eventSource && typeof Popup !== 'undefined') {
-            console.log('STMemoryBooks: SillyTavern UI detected');
             break;
         }
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -1616,12 +1592,9 @@ async function init() {
     if (!profileValidation.valid) {
         console.warn('STMemoryBooks: Profile validation issues found:', profileValidation.issues);
         if (profileValidation.fixes.length > 0) {
-            console.log('STMemoryBooks: Applied automatic fixes:', profileValidation.fixes);
             saveSettingsDebounced();
         }
     }
-    
-    console.log(`STMemoryBooks: Settings initialized with ${profileValidation.profileCount} profiles`);
     
     // Initialize scene state
     updateSceneStateCache();
@@ -1644,7 +1617,7 @@ async function init() {
     // Register slash commands
     registerSlashCommands();
 
-    // CRITICAL: Process any messages that are already on the screen at initialization time
+    // Process any messages that are already on the screen at initialization time
     // This handles cases where a chat is already loaded when the extension initializes
     try {
         processExistingMessages();
@@ -1658,17 +1631,14 @@ async function init() {
         return a === b;
     });
     
-    console.log('STMemoryBooks: Extension loaded successfully with JSON-based memory generation, performance optimizations, and bulletproof settings management');
+    console.log('STMemoryBooks: Extension loaded successfully');
 }
 
 // Initialize when ready
 $(document).ready(() => {
     if (eventSource && event_types.APP_READY) {
         eventSource.on(event_types.APP_READY, init);
-    }
-    
+    }    
     // Fallback initialization
-    setTimeout(init, 2000);
-    
-    console.log('STMemoryBooks: Ready to initialize with improved architecture');
+    setTimeout(init, 2000);    
 });

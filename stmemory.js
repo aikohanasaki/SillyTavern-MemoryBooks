@@ -165,44 +165,28 @@ async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
     // Import context detection to check if we're in a group chat
     const { getCurrentMemoryBooksContext } = await import('./utils.js');
     const context = getCurrentMemoryBooksContext();
-    
-    console.log(`${MODULE_NAME}: waitForCharacterData - Enhanced polling started`);
-    console.log(`${MODULE_NAME}: waitForCharacterData - context:`, context);
-    console.log(`${MODULE_NAME}: waitForCharacterData - isGroupChat:`, context.isGroupChat);
-    console.log(`${MODULE_NAME}: waitForCharacterData - config:`, { maxWaitMs, initialIntervalMs, maxIntervalMs, useExponentialBackoff });
-    
+        
     while (Date.now() - startTime < maxWaitMs) {
         // Check for cancellation
         if (signal?.aborted) {
-            console.log(`${MODULE_NAME}: waitForCharacterData - Cancelled via AbortSignal`);
             return false;
         }
 
         attemptCount++;
         
-        try {
-            if (context.isGroupChat) {
-                // Group chat - check if group data is available
-                console.log(`${MODULE_NAME}: Attempt ${attemptCount} - Checking group data - groups:`, !!groups, 'length:', groups?.length, 'groupId:', context.groupId);
-                if (groups && context.groupId) {
-                    const group = groups.find(g => g.id === context.groupId);
-                    console.log(`${MODULE_NAME}: Found group:`, !!group);
-                    if (group) {
-                        console.log(`${MODULE_NAME}: Group data became available after ${Date.now() - startTime}ms (${attemptCount} attempts)`);
-                        return true;
-                    }
-                }
-            } else {
-                // Single character chat - use original logic
-                console.log(`${MODULE_NAME}: Attempt ${attemptCount} - Checking character data - characters:`, !!characters, 'this_chid:', this_chid);
-                if (characters && characters.length > this_chid && characters[this_chid]) {
-                    console.log(`${MODULE_NAME}: Character data became available after ${Date.now() - startTime}ms (${attemptCount} attempts)`);
+        if (context.isGroupChat) {
+            // Group chat - check if group data is available
+            if (groups && context.groupId) {
+                const group = groups.find(g => g.id === context.groupId);
+                if (group) {
                     return true;
                 }
             }
-        } catch (error) {
-            console.warn(`${MODULE_NAME}: Error during polling attempt ${attemptCount}:`, error);
-            // Continue polling despite errors
+        } else {
+            // Single character chat - use original logic
+            if (characters && characters.length > this_chid && characters[this_chid]) {
+                return true;
+            }
         }
         
         // Wait before checking again with potential backoff
@@ -225,11 +209,9 @@ async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
         // Apply exponential backoff if enabled
         if (useExponentialBackoff && currentInterval < maxIntervalMs) {
             currentInterval = Math.min(currentInterval * backoffMultiplier, maxIntervalMs);
-            console.log(`${MODULE_NAME}: Backoff - Next interval: ${currentInterval}ms`);
         }
     }
     
-    console.warn(`${MODULE_NAME}: Character/group data did not become available within ${maxWaitMs}ms timeout (${attemptCount} attempts)`);
     return false;
 }
 
@@ -285,9 +267,6 @@ function parseAIJsonResponse(aiResponse) {
         }
         return parsed;
     } catch (parseError) {
-        console.error('STMemoryBooks: Failed to parse AI JSON response:', parseError);
-        console.error('Original response:', aiResponse);
-        console.error('Cleaned response:', cleanResponse);
         throw new AIResponseError(
             `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
             `Parse error: ${parseError.message}`
@@ -383,7 +362,6 @@ async function generateMemoryWithAI(promptString, profile) {
             profile: profile
         };
     } catch (error) {
-        console.error(`${MODULE_NAME}: JSON-based memory generation failed:`, error);
         if (error instanceof AIResponseError) throw error;
         throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
     }
@@ -404,14 +382,11 @@ async function generateMemoryWithAI(promptString, profile) {
  * @throws {Error} For other general failures
  */
 export async function createMemory(compiledScene, profile, options = {}) {
-    console.log(`${MODULE_NAME}: Starting JSON-based memory creation for scene ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`);
     
     try {
         validateInputs(compiledScene, profile);
         const promptString = await buildPrompt(compiledScene, profile);
-        const tokenEstimate = await estimateTokenUsage(promptString);
-        console.log(`${MODULE_NAME}: Estimated token usage: ${tokenEstimate.total}`);
-        
+        const tokenEstimate = await estimateTokenUsage(promptString);        
         const tokenWarningThreshold = options.tokenWarningThreshold || 30000;
         if (tokenEstimate.total > tokenWarningThreshold) {
             throw new TokenWarningError(
@@ -421,9 +396,8 @@ export async function createMemory(compiledScene, profile, options = {}) {
         }
         
         const response = await generateMemoryWithAI(promptString, profile);
-        
         const processedMemory = processJsonResult(response, compiledScene);
-        
+
         const memoryResult = {
             content: processedMemory.content,
             extractedTitle: processedMemory.extractedTitle,
@@ -468,14 +442,12 @@ export async function createMemory(compiledScene, profile, options = {}) {
             }
         };
         
-        console.log(`${MODULE_NAME}: JSON-based memory creation completed successfully`);
         return memoryResult;
         
     } catch (error) {
         if (error instanceof TokenWarningError || error instanceof AIResponseError || error instanceof InvalidProfileError) {
             throw error;
         }
-        console.error(`${MODULE_NAME}: An unexpected error occurred during memory creation:`, error);
         throw new Error(`Memory creation failed: ${error.message}`);
     }
 }
@@ -567,7 +539,6 @@ async function estimateTokenUsage(promptString) {
             total: inputTokens + estimatedOutputTokens
         };
     } catch (error) {
-        console.warn(`${MODULE_NAME}: Token estimation with tokenizer failed, using fallback character count.`, error);
         const charCount = promptString.length;
         const inputTokens = Math.ceil(charCount / 4); // A common approximation
         return {
@@ -616,8 +587,6 @@ function processJsonResult(jsonResult, compiledScene) {
     const cleanTitle = (title || 'Memory').trim();
     const cleanKeywords = Array.isArray(keywords) ? 
         keywords.filter(k => k && typeof k === 'string' && k.trim() !== '').map(k => k.trim()) : [];
-    
-    console.log(`${MODULE_NAME}: Processing JSON result - Content: ${cleanContent.length} chars, Keywords: ${cleanKeywords.length}`);
     
     return {
         content: cleanContent,

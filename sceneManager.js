@@ -15,19 +15,10 @@ let currentSceneState = {
 /**
  * GROUP CHAT SUPPORT: Get current scene markers from appropriate metadata location
  * Handles both group chats (group.chat_metadata) and single character chats (chat_metadata)
- * BUGFIX: For group chats, ensure we sync from currentSceneState to avoid stale metadata
  */
 export function getSceneMarkers() {
     const context = getCurrentMemoryBooksContext();
-    
-    // DEBUGGING: Log context info
-    console.log(`${MODULE_NAME}: getSceneMarkers called for context:`, {
-        isGroupChat: context.isGroupChat,
-        groupName: context.groupName,
-        groupId: context.groupId,
-        currentSceneState: currentSceneState
-    });
-    
+        
     if (context.isGroupChat) {
         // Group chat - store in group metadata
         const group = groups?.find(x => x.id === context.groupId);
@@ -44,26 +35,17 @@ export function getSceneMarkers() {
                 };
             }
             
-            // BUGFIX: Sync from currentSceneState to ensure fresh data
-            // This prevents stale metadata from being returned after scene changes
+            // Sync from currentSceneState to prevent stale metadata from being returned after scene changes
             if (currentSceneState.start !== null || currentSceneState.end !== null) {
                 group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
                 group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
-                console.log(`${MODULE_NAME}: Synced currentSceneState to group metadata:`, {
-                    start: currentSceneState.start,
-                    end: currentSceneState.end
-                });
             }
             
-            console.log(`${MODULE_NAME}: Returning group scene markers:`, group.chat_metadata.STMemoryBooks);
             return group.chat_metadata.STMemoryBooks;
-        } else {
-            console.warn(`${MODULE_NAME}: Group with ID "${context.groupId}" not found in groups array`);
         }
     } else {
         // Single character chat - chat_metadata
         if (!chat_metadata) {
-            console.warn(`${MODULE_NAME}: chat_metadata is not available, this might indicate a context issue`);
             return { 
                 sceneStart: null, 
                 sceneEnd: null 
@@ -77,18 +59,16 @@ export function getSceneMarkers() {
             };
         }
         
-        // BUGFIX: Also sync from currentSceneState for consistency
+        // sync from currentSceneState for consistency
         if (currentSceneState.start !== null || currentSceneState.end !== null) {
             chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
             chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
         }
         
-        console.log(`${MODULE_NAME}: Returning single chat scene markers:`, chat_metadata.STMemoryBooks);
         return chat_metadata.STMemoryBooks;
     }
     
     // Fallback for edge cases
-    console.warn(`${MODULE_NAME}: Could not access scene markers for context:`, context);
     return { 
         sceneStart: null, 
         sceneEnd: null,
@@ -107,7 +87,6 @@ export function saveMetadataForCurrentContext() {
         // Group chat - SYNCHRONOUS save with verification
         const group = groups?.find(x => x.id === context.groupId);
         if (!group) {
-            console.error(`${MODULE_NAME}: Group with ID "${context.groupId}" not found for metadata save`);
             return;
         }
         
@@ -128,37 +107,18 @@ export function saveMetadataForCurrentContext() {
         group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
         
         // Force immediate persistence through SillyTavern's group save mechanism
-        try {
-            if (typeof editGroup === 'function') {
-                editGroup(context.groupId, false, false);
-            } else {
-                // Try fallback editGroup functions
-                const editGroupFunc = window.editGroup || globalThis.editGroup;
-                if (typeof editGroupFunc === 'function') {
-                    editGroupFunc(context.groupId, false, false);
-                } else {
-                    console.warn(`${MODULE_NAME}: editGroup function not available, metadata updated in memory only`);
-                }
+        if (typeof editGroup === 'function') {
+            editGroup(context.groupId, false, false);
+        } else {
+            // Try fallback editGroup functions
+            const editGroupFunc = window.editGroup || globalThis.editGroup;
+            if (typeof editGroupFunc === 'function') {
+                editGroupFunc(context.groupId, false, false);
             }
-            
-            // VERIFICATION: Confirm the save was successful by checking if we can read back what we just wrote
-            // BUGFIX: Force a fresh read from the group metadata to ensure persistence worked
-            const verificationGroup = groups?.find(x => x.id === context.groupId);
-            const verificationMarkers = verificationGroup?.chat_metadata?.STMemoryBooks;
-            if (!verificationMarkers || 
-                verificationMarkers.sceneStart !== currentSceneState.start || 
-                verificationMarkers.sceneEnd !== currentSceneState.end) {
-                console.error(`${MODULE_NAME}: Group metadata save verification failed. Expected: start=${currentSceneState.start}, end=${currentSceneState.end}. Got: start=${verificationMarkers?.sceneStart}, end=${verificationMarkers?.sceneEnd}`);
-            } else {
-                console.log(`${MODULE_NAME}: Group metadata saved and verified successfully for group "${context.groupName}"`);
-            }
-            
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error during group metadata save:`, error);
         }
         
     } else {
-        // Single character chat - use existing logic (PRESERVE COMPATIBILITY)
+        // Single character chat - use existing debounced save
         saveMetadataDebounced();
     }
 }
@@ -196,7 +156,6 @@ function updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd) {
     if (affectedMessages.length > 0) {
         const markers = getSceneMarkers();
         updateButtonStatesForElements(affectedMessages, markers);
-        console.log(`${MODULE_NAME}: Updated button states for ${affectedMessages.length} affected messages (range ${affectedRange.min}-${affectedRange.max}) instead of all ${allMessages.length} messages`);
     }
 }
 
@@ -236,7 +195,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     // Add messages that might need "valid-start-point" or "valid-end-point" classes
     if (newStart !== null && newEnd === null) {
         // Start set, no end - all messages after start could be valid end points
-        // But limit the range to avoid scanning thousands of messages
+        // Limit the range to avoid scanning thousands of messages
         const maxScan = Math.min(newStart + 100, chat.length - 1);
         for (let i = newStart + 1; i <= maxScan; i++) {
             affectedIds.add(i);
@@ -245,15 +204,14 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     
     if (newEnd !== null && newStart === null) {
         // End set, no start - all messages before end could be valid start points
-        // But limit the range to avoid scanning thousands of messages  
+        // Limit the range to avoid scanning thousands of messages  
         const minScan = Math.max(newEnd - 100, 0);
         for (let i = minScan; i < newEnd; i++) {
             affectedIds.add(i);
         }
     }
     
-
-    // BUGFIX: Add messages that had valid-point classes in the old state but won't in the new state
+    // Add messages that had valid-point classes in the old state but won't in the new state
     if (oldStart !== null && oldEnd === null && newStart !== null && newEnd !== null) {
         // Transitioning from "start only" to "complete scene" - need to clear valid-end-point from messages after newEnd
         const maxScan = Math.min(oldStart + 100, chat.length - 1);
@@ -295,9 +253,7 @@ export function setSceneMarker(messageId, type) {
     
     // Store previous state for optimization
     const oldStart = markers.sceneStart;
-    const oldEnd = markers.sceneEnd;
-    
-    console.log(`${MODULE_NAME}: Setting ${type} marker to message ${messageId}`);
+    const oldEnd = markers.sceneEnd;    
     
     // Calculate new state atomically
     const newState = calculateNewSceneState(markers, messageId, type);
@@ -311,12 +267,6 @@ export function setSceneMarker(messageId, type) {
     // Persist to metadata and update DOM to match committed state
     saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
-    
-    console.log(`${MODULE_NAME}: Scene markers updated atomically:`, {
-        start: newState.start,
-        end: newState.end
-    });
-    
 }
 
 /**
@@ -338,9 +288,7 @@ export function clearScene() {
     
     // Persist and update DOM
     saveMetadataForCurrentContext();
-    updateAllButtonStates();
-    
-    console.log(`${MODULE_NAME}: Scene cleared atomically`);
+    updateAllButtonStates();    
 }
 
 /**
@@ -354,9 +302,7 @@ export function updateAllButtonStates() {
     const messageElements = document.querySelectorAll('#chat .mes[mesid]');
     
     // Apply button states to all messages
-    updateButtonStatesForElements(messageElements, markers);
-    
-    console.log(`${MODULE_NAME}: Updated button states for ${messageElements.length} messages (FULL UPDATE)`);
+    updateButtonStatesForElements(messageElements, markers);    
 }
 
 /**
@@ -372,7 +318,6 @@ export function updateNewMessageButtonStates(messageElements) {
     // Apply button states to only the specified messages
     updateButtonStatesForElements(messageElements, markers);
     
-    console.log(`${MODULE_NAME}: Updated button states for ${messageElements.length} messages (PARTIAL UPDATE)`);
 }
 
 /**
@@ -383,17 +328,7 @@ export function updateNewMessageButtonStates(messageElements) {
  */
 function updateButtonStatesForElements(messageElements, markers) {
     const { sceneStart, sceneEnd } = markers;
-    
-    // DEBUGGING: Log scene marker state for troubleshooting
-    const context = getCurrentMemoryBooksContext();
-    console.log(`${MODULE_NAME}: updateButtonStatesForElements called with markers:`, {
-        sceneStart,
-        sceneEnd,
-        isGroupChat: context.isGroupChat,
-        groupName: context.groupName,
-        currentSceneState: getCurrentSceneState()
-    });
-    
+        
     messageElements.forEach(messageElement => {
         const messageId = parseInt(messageElement.getAttribute('mesid'));
         const startBtn = messageElement.querySelector('.mes_stmb_start');
@@ -459,14 +394,12 @@ export function validateSceneMarkers() {
     if (markers.sceneStart !== null && markers.sceneStart >= chatLength) {
         markers.sceneStart = null;
         hasChanges = true;
-        console.log(`${MODULE_NAME}: Cleared invalid start marker`);
     }
     
     if (markers.sceneEnd !== null && markers.sceneEnd >= chatLength) {
         // For end marker, try to fall back to last message
         markers.sceneEnd = chatLength - 1;
         hasChanges = true;
-        console.log(`${MODULE_NAME}: Adjusted end marker to last message`);
     }
     
     // Ensure start < end
@@ -474,7 +407,6 @@ export function validateSceneMarkers() {
         markers.sceneStart = null;
         markers.sceneEnd = null;
         hasChanges = true;
-        console.log(`${MODULE_NAME}: Cleared invalid scene range`);
     }
     
     if (hasChanges) {
@@ -482,7 +414,7 @@ export function validateSceneMarkers() {
         currentSceneState.end = markers.sceneEnd;
         saveMetadataForCurrentContext();
         
-        // PERFORMANCE: Use selective update instead of full update
+        // Use selective update instead of full update
         updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
     }
 }
@@ -528,7 +460,6 @@ export function handleMessageDeletion(deletedId, settings) {
         if (startChanged || endChanged) {
             hasChanges = true;
             toastrMessage = 'Scene markers adjusted due to message deletion.';
-            console.log(`${MODULE_NAME}: Scene markers re-indexed after deletion of message ${deletedId}. New range: ${markers.sceneStart}-${markers.sceneEnd}`);
         }
     }
 
@@ -632,7 +563,6 @@ function estimateSceneTokensEnhanced(startId, endId) {
         const tempCompiled = compileScene(tempRequest);
         return estimateTokenCount(tempCompiled);
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error estimating tokens:`, error);
         // Fallback to simple estimation
         return estimateSceneTokens(startId, endId);
     }
