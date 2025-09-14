@@ -704,6 +704,17 @@ export function createProfileObject(data = {}) {
         profile.connection.model = model;
     }
 
+    // Add endpoint and apiKey for full-manual configuration
+    const endpoint = (data.endpoint || '').trim();
+    if (endpoint) {
+        profile.connection.endpoint = endpoint;
+    }
+
+    const apiKey = (data.apiKey || '').trim();
+    if (apiKey) {
+        profile.connection.apiKey = apiKey;
+    }
+
     // A profile should have a preset OR a custom prompt. The custom prompt takes precedence.
     if (profile.prompt && profile.preset) {
         profile.preset = '';
