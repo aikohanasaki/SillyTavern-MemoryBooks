@@ -41,6 +41,8 @@ const defaultSettings = {
         allowSceneOverlap: false,
         autoHideMode: 'none',
         unhiddenEntriesCount: 0,
+        autoSummaryEnabled: false,
+        autoSummaryInterval: 100,
     },
     titleFormat: '[000] - {{title}}',
     profiles: [
@@ -206,25 +208,67 @@ function handleChatLoaded() {
     processExistingMessages();
 }
 
-function handleMessageReceived() {
+async function handleMessageReceived() {
     setTimeout(validateSceneMarkers, 500);
+    if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
+        const currentMessageCount = chat.length;
+        const checkInterval = 8; // Check every 8 messages
+        if (currentMessageCount % checkInterval === 0) {
+            await checkAutoSummaryTrigger();
+        }
+    }
 }
 
-// Save metadata for current context (group and single char)
-function saveMemoryBooksMetadata() {
-    const context = getCurrentMemoryBooksContext();
-    
-    if (context.isGroupChat) {
-        // Group chat
-        if (typeof editGroup === 'function') {
-            editGroup(context.groupId, false, false);
-            console.log(`${MODULE_NAME}: Saved group metadata for group ID "${context.groupId}"`);
-        } else {
-            console.warn(`${MODULE_NAME}: editGroup function not available for group metadata save`);
+/**
+ * Check if auto-summary should be triggered based on message difference
+ */
+async function checkAutoSummaryTrigger() {
+    const lorebookValidation = await validateLorebook();
+    if (!lorebookValidation.valid) {
+        return; // No lorebook available
+    }
+
+    // Get all memory entries to find the most recent one
+    const allMemories = identifyMemoryEntries(lorebookValidation.data);
+
+    if (allMemories.length === 0) {
+        return; // No memories exist yet
+    }
+
+    // Find the most recent memory (highest end message number)
+    let mostRecentMemory = null;
+    let highestEndMessage = -1;
+
+    for (const memory of allMemories) {
+        const range = getRangeFromMemoryEntry(memory.entry);
+        if (range && range.end !== null && range.end > highestEndMessage) {
+            highestEndMessage = range.end;
+            mostRecentMemory = memory;
         }
-    } else {
-        // Single character chat
-        saveMetadataDebounced();
+    }
+
+    if (!mostRecentMemory) {
+        return; // No valid memory ranges found
+    }
+
+    const currentLastMessage = chat.length - 1;
+    const messagesSinceLastMemory = currentLastMessage - highestEndMessage;
+    const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
+
+    if (messagesSinceLastMemory >= requiredInterval) {
+        // Check if memory creation is already in progress
+        if (isProcessingMemory) {
+            return;
+        }
+
+        // Wait a moment for any ongoing message processing to complete
+        setTimeout(async () => {
+            try {
+                await handleNextMemoryCommand({}, '');
+            } catch (error) {
+                toastr.warning(`Auto-summary failed: ${error.message}`, 'STMemoryBooks');
+            }
+        }, 1000);
     }
 }
 
@@ -282,7 +326,6 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    // Set markers using scene manager's setSceneMarker to ensure proper state synchronization
     // Clear existing scene first to reset state
     clearScene();
     
@@ -551,9 +594,18 @@ function validateSettings(settings) {
         settings.moduleSettings.tokenWarningThreshold = 30000;
     }
     
-    if (settings.moduleSettings.defaultMemoryCount === undefined || 
+    if (settings.moduleSettings.defaultMemoryCount === undefined ||
         settings.moduleSettings.defaultMemoryCount < 0) {
         settings.moduleSettings.defaultMemoryCount = 0;
+    }
+
+    // Validate auto-summary settings
+    if (settings.moduleSettings.autoSummaryEnabled === undefined) {
+        settings.moduleSettings.autoSummaryEnabled = false;
+    }
+    if (settings.moduleSettings.autoSummaryInterval === undefined ||
+        settings.moduleSettings.autoSummaryInterval < 10) {
+        settings.moduleSettings.autoSummaryInterval = 100;
     }
     
     // Migrate to version 2 if needed (JSON-based architecture)
@@ -944,6 +996,8 @@ async function showSettingsPopup() {
         unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
         tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
+        autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
+        autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
             isDefault: index === settings.defaultProfile
@@ -1181,6 +1235,21 @@ function setupSettingsEventListeners() {
             }
             return;
         }
+
+        if (e.target.matches('#stmb-auto-summary-enabled')) {
+            settings.moduleSettings.autoSummaryEnabled = e.target.checked;
+            saveSettingsDebounced();
+            return;
+        }
+
+        if (e.target.matches('#stmb-auto-summary-interval')) {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value >= 10 && value <= 200) {
+                settings.moduleSettings.autoSummaryInterval = value;
+                saveSettingsDebounced();
+            }
+            return;
+        }
     });
     
     // Handle input events using delegation with debouncing
@@ -1251,7 +1320,14 @@ function handleSettingsPopupClose(popup) {
 
         const manualModeEnabled = popupElement.querySelector('#stmb-manual-mode-enabled')?.checked ?? settings.moduleSettings.manualModeEnabled;
 
-        const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault || 
+        // Save auto-summary settings
+        const autoSummaryEnabled = popupElement.querySelector('#stmb-auto-summary-enabled')?.checked ?? settings.moduleSettings.autoSummaryEnabled;
+        const autoSummaryIntervalInput = popupElement.querySelector('#stmb-auto-summary-interval');
+        const autoSummaryInterval = autoSummaryIntervalInput ?
+            parseInt(autoSummaryIntervalInput.value) || 50 :
+            settings.moduleSettings.autoSummaryInterval || 50;
+
+        const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault ||
                           showNotifications !== settings.moduleSettings.showNotifications ||
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
@@ -1259,7 +1335,9 @@ function handleSettingsPopupClose(popup) {
                           manualModeEnabled !== settings.moduleSettings.manualModeEnabled ||
                           allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap ||
                           autoHideMode !== getAutoHideMode(settings.moduleSettings) ||
-                          unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount;
+                          unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount ||
+                          autoSummaryEnabled !== settings.moduleSettings.autoSummaryEnabled ||
+                          autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -1274,13 +1352,13 @@ function handleSettingsPopupClose(popup) {
             delete settings.moduleSettings.autoHideAllMessages;
             delete settings.moduleSettings.autoHideLastMemory;
             settings.moduleSettings.unhiddenEntriesCount = unhiddenEntriesCount;
+            settings.moduleSettings.autoSummaryEnabled = autoSummaryEnabled;
+            settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
             saveSettingsDebounced();
-            console.log('STMemoryBooks: Settings updated');
         }
     } catch (error) {
-        console.error('STMemoryBooks: Error handling settings popup close:', error);
+        toastr.warning('Failed to save settings. Please try again.', 'STMemoryBooks');
     }
-    
     currentPopupInstance = null;
 }
 
@@ -1308,6 +1386,8 @@ function refreshPopupContent() {
             unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
             tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
+            autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
+            autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
                 isDefault: index === settings.defaultProfile
@@ -1322,7 +1402,7 @@ function refreshPopupContent() {
                 ...selectedProfile,
                 connection: {
                     api: selectedProfile.connection?.api || 'openai',
-                    model: selectedProfile.connection?.model || 'Not Set',
+                    model: selectedProfile.connection?.model || 'gpt-4.1',
                     temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                 },
                 titleFormat: selectedProfile.titleFormat || settings.titleFormat,
@@ -1467,7 +1547,7 @@ function createUI() {
         <div id="stmb-menu-item-container" class="extension_container interactable" tabindex="0">            
             <div id="stmb-menu-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
                 <div class="fa-fw fa-solid fa-book extensionsMenuExtensionButton"></div>
-                <span>Create Memory</span>
+                <span>Memory Books</span>
             </div>
         </div>
     `);

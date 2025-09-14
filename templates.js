@@ -142,9 +142,27 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <label for="stmb-token-warning-threshold">
                 <h4>Token Warning Threshold:</h4>
                 <small class="opacity50p">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
-                <input type="number" id="stmb-token-warning-threshold" class="text_pole" 
+                <input type="number" id="stmb-token-warning-threshold" class="text_pole"
                     value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
                     placeholder="30000">
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
+                <span>Auto-create memory summaries</span>
+            </label>
+            <small class="opacity50p">Automatically run /nextmemory after a specified number of messages.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-auto-summary-interval">
+                <h4>Auto-Summary Interval:</h4>
+                <small class="opacity50p">Number of messages after which to automatically create a memory summary.</small>
+                <input type="number" id="stmb-auto-summary-interval" class="text_pole"
+                    value="{{autoSummaryInterval}}" min="10" max="200" step="1"
+                    placeholder="100">
             </label>
         </div>
 
