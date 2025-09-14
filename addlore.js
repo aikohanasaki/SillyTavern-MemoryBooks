@@ -332,12 +332,13 @@ export function isMemoryEntry(entry) {
 function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     let title = titleFormat;
 
-    // Auto-numbering: [0], [00], [000], (0), {0}, #0, etc.
+    // Auto-numbering: [0], [00], [000], ([0]), ({0}), #[0], etc.
     const allNumberingPatterns = [
-        { pattern: /\[0+\]/g, prefix: '[', suffix: ']' },  // [000]
-        { pattern: /\(0+\)/g, prefix: '(', suffix: ')' },  // (000)
-        { pattern: /\{0+\}/g, prefix: '{', suffix: '}' },  // {000}
-        { pattern: /#0+/g, prefix: '#', suffix: '' }       // #000
+        { pattern: /\[\[0+\]\]/g, prefix: '[', suffix: ']' }, // [[000]] -> [001]
+        { pattern: /\[0+\]/g, prefix: '', suffix: '' },       // [000] -> just number
+        { pattern: /\(\[0+\]\)/g, prefix: '(', suffix: ')' }, // ([000]) -> (001)
+        { pattern: /\{\[0+\]\}/g, prefix: '{', suffix: '}' }, // {[000]} -> {001}
+        { pattern: /#\[0+\]/g, prefix: '#', suffix: '' }      // #[000] -> #001
     ];
 
     let hasNumbering = false;
@@ -347,7 +348,18 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
             const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
 
             matches.forEach(match => {
-                const digits = match.length - prefix.length - suffix.length;
+                let digits;
+                if (pattern.source.includes('\\[\\[')) {
+                    digits = match.length - 4; // [[000]] -> remove [[ and ]]
+                } else if (pattern.source.includes('\\(\\[') || pattern.source.includes('\\{\\[')) {
+                    digits = match.length - 4; // ([000]) or {[000]} -> remove outer delimiters and [ ]
+                } else if (pattern.source.includes('#\\[')) {
+                    digits = match.length - 3; // #[000] -> remove # and [ ]
+                } else if (pattern.source.includes('\\[')) {
+                    digits = match.length - 2; // [000] -> remove [ and ]
+                } else {
+                    digits = match.length - 2; // fallback
+                }
                 const paddedNumber = nextNumber.toString().padStart(digits, '0');
                 const replacement = prefix + paddedNumber + suffix;
                 title = title.replace(match, replacement);
@@ -560,11 +572,26 @@ function extractNumberFromTitle(title) {
         return isNaN(number) ? null : number;
     }
     
-    // Pattern 6: Fallback - any sequence of digits (prefer earlier occurrence)
-    const anyNumberMatch = title.match(/(\d+)/);
-    if (anyNumberMatch) {
-        const number = parseInt(anyNumberMatch[1], 10);
-        return isNaN(number) ? null : number;
+    // Pattern 6: Fallback - any sequence of digits (prefer earlier occurrence, but skip dates)
+    const allNumbers = [...title.matchAll(/(\d+)/g)];
+    for (const match of allNumbers) {
+        const number = parseInt(match[1], 10);
+        if (isNaN(number)) continue;
+
+        // Skip if this number appears to be part of a YYYY-MM-DD date format
+        const fullMatch = match[0];
+        const index = match.index;
+        const before = title.substring(Math.max(0, index - 10), index);
+        const after = title.substring(index + fullMatch.length, index + fullMatch.length + 10);
+
+        // Check for YYYY-MM-DD pattern (year, month, or day component)
+        const isDateComponent = /\d{4}-\d{2}-\d{2}/.test(before + fullMatch + after) ||
+                               /\d{4}-\d{1,2}/.test(before + fullMatch) ||
+                               /-\d{1,2}-\d{1,2}/.test(fullMatch + after);
+
+        if (!isDateComponent) {
+            return number;
+        }
     }
     
     return null;
