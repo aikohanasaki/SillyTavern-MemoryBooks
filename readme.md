@@ -2,9 +2,17 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as vectorized entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling.
 
+**📋 [Version History & Changelog](versionhistory.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
+
 ---
 
-## 🚦 What’s New (v3.4.0)
+## 🚦 What's New (v3.5.3)
+
+- **Auto-Summary Feature:** Automatically create memory summaries at specified intervals.
+  - Set a message interval (10-200 messages) to trigger automatic `/nextmemory` execution
+  - Configurable in settings with enable/disable toggle
+  - Helps maintain continuous memory creation without manual intervention
+  - Default interval: 100 messages after the last memory
 
 - **Chat Bookmarks:** Set up to 75 bookmarks per chat.
   - The memory lorebook is also used to save the bookmarks
@@ -18,7 +26,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ## 📋 Prerequisites
 
-- **SillyTavern:** 1.13.1+ (latest recommended)
+- **SillyTavern:** 1.13.2+ (latest recommended)
 - **API Access:** OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Scene Selection:** Start and end markers (start < end) must be set.
 
@@ -148,6 +156,8 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 - **Refresh Editor:** Auto-refresh lorebook editor after memory creation.
 - **Token Warning Threshold:** Set warning level for large scenes (default: 30,000).
 - **Default Previous Memories:** Number of prior memories to include as context (0-7).
+- **Auto-create memory summaries:** Enable automatic memory creation at intervals.
+- **Auto-Summary Interval:** Number of messages after which to automatically create a memory summary (10-200, default: 100).
 - **Memory Title Format:** Choose or customize (see below).
 
 ![Profile configuration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
