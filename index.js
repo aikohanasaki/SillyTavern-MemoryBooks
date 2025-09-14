@@ -1,5 +1,5 @@
 import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2 } from '../../../../script.js';
-import { Popup, POPUP_TYPE } from '../../../popup.js';
+import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
@@ -212,7 +212,7 @@ async function handleMessageReceived() {
     setTimeout(validateSceneMarkers, 500);
     if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
         const currentMessageCount = chat.length;
-        const checkInterval = 8; // Check every 8 messages
+        const checkInterval = 2; // Check every 2 messages
         if (currentMessageCount % checkInterval === 0) {
             await checkAutoSummaryTrigger();
         }
@@ -223,9 +223,21 @@ async function handleMessageReceived() {
  * Check if auto-summary should be triggered based on message difference
  */
 async function checkAutoSummaryTrigger() {
-    const lorebookValidation = await validateLorebook();
+    // Check if user has postponed auto-summary
+    const stmbData = getCurrentMemoryBooksContext().sceneMarkers || {};
+    if (stmbData.autoSummaryNextPromptAt && chat.length < stmbData.autoSummaryNextPromptAt) {
+        return; // Still in postpone period
+    }
+
+    const lorebookValidation = await validateLorebookForAutoSummary();
     if (!lorebookValidation.valid) {
-        return; // No lorebook available
+        return; // No lorebook available or user cancelled
+    }
+
+    // Clear any postpone flag since we're proceeding with auto-summary
+    if (stmbData.autoSummaryNextPromptAt) {
+        delete stmbData.autoSummaryNextPromptAt;
+        saveMetadataDebounced();
     }
 
     // Get all memory entries to find the most recent one
@@ -641,11 +653,90 @@ async function validateLorebook() {
     if (!lorebookName) {
         return { valid: false, error: 'No lorebook available or selected.' };
     }
-    
+
     if (!world_names || !world_names.includes(lorebookName)) {
         return { valid: false, error: `Selected lorebook "${lorebookName}" not found.` };
-    }    
-    
+    }
+
+    try {
+        const lorebookData = await loadWorldInfo(lorebookName);
+        return { valid: !!lorebookData, data: lorebookData, name: lorebookName };
+    } catch (error) {
+        return { valid: false, error: 'Failed to load the selected lorebook.' };
+    }
+}
+
+/**
+ * Validates lorebook for auto-summary with user-friendly prompts
+ */
+async function validateLorebookForAutoSummary() {
+    // First, try to get a lorebook without showing popups
+    const settings = extension_settings.STMemoryBooks;
+    let lorebookName;
+
+    if (!settings.moduleSettings.manualModeEnabled) {
+        // Automatic mode - use chat-bound lorebook
+        lorebookName = chat_metadata?.[METADATA_KEY] || null;
+    } else {
+        // Manual mode - check if a lorebook is already selected
+        const stmbData = getCurrentMemoryBooksContext().sceneMarkers || {};
+        lorebookName = stmbData.manualLorebook;
+
+        // If no lorebook is selected, ask user what to do
+        if (!lorebookName) {
+            const popupContent = `
+                <h4>Auto-Summary Ready</h4>
+                <div class="world_entry_form_control">
+                    <p>Auto-summary is enabled but there is no assigned lorebook for this chat.</p>
+                    <p>Would you like to select a lorebook for memory storage, or postpone this auto-summary?</p>
+                    <label for="stmb-postpone-messages">Postpone for how many messages?</label>
+                    <select id="stmb-postpone-messages" class="text_pole">
+                        <option value="10">10 messages</option>
+                        <option value="20">20 messages</option>
+                        <option value="30">30 messages</option>
+                        <option value="40">40 messages</option>
+                        <option value="50">50 messages</option>
+                    </select>
+                </div>
+            `;
+
+            const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
+                okButton: 'Select Lorebook',
+                cancelButton: 'Postpone'
+            });
+            const result = await popup.show();
+
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                // User chose to postpone - get the number of messages to skip
+                const postponeMessages = parseInt(popup.dlg.querySelector('#stmb-postpone-messages').value) || 10;
+
+                // Store when to next prompt (current message count + postpone amount)
+                const nextPromptAt = chat.length + postponeMessages;
+                const stmbData = getCurrentMemoryBooksContext().sceneMarkers || {};
+                stmbData.autoSummaryNextPromptAt = nextPromptAt;
+
+                // Save the postpone decision
+                saveMetadataDebounced();
+
+                return { valid: false, error: `Auto-summary postponed for ${postponeMessages} messages` };
+            }
+
+            // User wants to select a lorebook - use the existing selection logic
+            lorebookName = await getEffectiveLorebookName();
+            if (!lorebookName) {
+                return { valid: false, error: 'No lorebook selected' };
+            }
+        }
+    }
+
+    if (!lorebookName) {
+        return { valid: false, error: 'No lorebook available' };
+    }
+
+    if (!world_names || !world_names.includes(lorebookName)) {
+        return { valid: false, error: `Selected lorebook "${lorebookName}" not found.` };
+    }
+
     try {
         const lorebookData = await loadWorldInfo(lorebookName);
         return { valid: !!lorebookData, data: lorebookData, name: lorebookName };

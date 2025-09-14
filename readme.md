@@ -2,7 +2,7 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as vectorized entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling.
 
-**📋 [Version History & Changelog](versionhistory.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
+**📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
 
 ---
 
