@@ -8,6 +8,7 @@
   - Configurable in settings with enable/disable toggle
   - Helps maintain continuous memory creation without manual intervention
   - Default interval: 100 messages after the last memory
+  - Postpone auto-summary functionality
 - **UI Improvements:** Changed extension menu text from "Create Memory" to "Memory Books"
 - **Code Cleanup:** Various formatting fixes and optimizations
 
