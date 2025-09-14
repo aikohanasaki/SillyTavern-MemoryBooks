@@ -48,6 +48,7 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
                 <option value="xai" {{#if (eq connection.api "xai")}}selected{{/if}}>xAI</option>
                 <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
+                <option value="full-manual" {{#if (eq connection.api "full-manual")}}selected{{/if}} title="⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option.">Full Manual Configuration</option>
             </select>
         </label>
 
@@ -60,6 +61,18 @@ const profileEditTemplate = Handlebars.compile(`
             <h4>Temperature (0.0 - 2.0):</h4>
             <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8.">
         </label>
+
+        <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
+            <label for="stmb-profile-endpoint">
+                <h4>API Endpoint URL:</h4>
+                <input type="text" id="stmb-profile-endpoint" value="{{connection.endpoint}}" class="text_pole" placeholder="https://api.example.com/v1/chat/completions">
+            </label>
+
+            <label for="stmb-profile-apikey">
+                <h4>API Key:</h4>
+                <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" placeholder="Enter your API key">
+            </label>
+        </div>
     </div>
 
     <div class="world_entry_form_control" style="margin-top: 5px;">
@@ -520,6 +533,15 @@ function setupProfileEditEventHandlers(popupInstance) {
         e.target.value = e.target.value.replace(/[<>]/g, '');
     });
 
+    popupElement.querySelector('#stmb-profile-api')?.addEventListener('change', (e) => {
+        const fullManualSection = popupElement.querySelector('#stmb-full-manual-section');
+        if (e.target.value === 'full-manual') {
+            fullManualSection.classList.remove('displayNone');
+        } else {
+            fullManualSection.classList.add('displayNone');
+        }
+    });
+
     popupElement.querySelectorAll('input[name="order-mode"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
             const orderValueInput = popupElement.querySelector('#stmb-profile-order-value');
@@ -544,6 +566,8 @@ function buildProfileFromForm(popupElement, fallbackName) {
         api: popupElement.querySelector('#stmb-profile-api')?.value,
         model: popupElement.querySelector('#stmb-profile-model')?.value,
         temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
+        endpoint: popupElement.querySelector('#stmb-profile-endpoint')?.value,
+        apiKey: popupElement.querySelector('#stmb-profile-apikey')?.value,
         constVectMode: popupElement.querySelector('#stmb-profile-const-vect')?.value,
         position: popupElement.querySelector('#stmb-profile-position')?.value,
         orderMode: popupElement.querySelector('input[name="order-mode"]:checked')?.value,

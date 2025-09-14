@@ -53,9 +53,12 @@ export async function sendRawCompletionRequest({
     prompt,
     temperature = 0.7,
     api = 'openai',
+    endpoint = null,
+    apiKey = null,
     extra = {},
 }) {
     let url = getCurrentCompletionEndpoint();
+    let headers = getRequestHeaders();
 
     let body = {
         messages: [
@@ -67,14 +70,30 @@ export async function sendRawCompletionRequest({
         ...extra,
     };
 
-    if (api === 'custom' && model) {
+    // Handle full-manual configuration with direct endpoint calls
+    if (api === 'full-manual' && endpoint && apiKey) {
+        url = endpoint;
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        };
+        // For direct endpoint calls, use standard OpenAI-compatible format
+        body = {
+            model,
+            messages: [
+                { role: 'user', content: prompt }
+            ],
+            temperature,
+            ...extra,
+        };
+    } else if (api === 'custom' && model) {
         body.custom_model_id = model;
         body.custom_url = oai_settings.custom_url || '';
     }
 
     const res = await fetch(url, {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify(body),
     });
 
@@ -320,6 +339,7 @@ async function generateMemoryWithAI(promptString, profile) {
         windowai: 'windowai',
         scale: 'scale',
         blockentropy: 'blockentropy',
+        'full-manual': 'custom',
     };
     const chatCompletionSource = apiToSource[conn.api] || 'openai';
 
@@ -350,6 +370,8 @@ async function generateMemoryWithAI(promptString, profile) {
             prompt: promptString,
             temperature: conn.temperature,
             api: apiType,
+            endpoint: conn.endpoint,
+            apiKey: conn.apiKey,
         });
 
         const jsonResult = parseAIJsonResponse(aiResponseText);
