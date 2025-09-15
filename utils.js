@@ -40,28 +40,34 @@ export const SELECTORS = {
     completionSource: '#chat_completion_source',
     modelOpenai: '#model_openai_select',
     modelClaude: '#model_claude_select',
-    modelWindowai: '#model_windowai_select',
     modelOpenrouter: '#model_openrouter_select',
     modelAi21: '#model_ai21_select',
-    modelScale: '#model_scale_select',
     modelGoogle: '#model_google_select',
     modelMistralai: '#model_mistralai_select',
     modelCohere: '#model_cohere_select',
     modelPerplexity: '#model_perplexity_select',
     modelGroq: '#model_groq_select',
-    model01ai: '#model_01ai_select',
     modelNanogpt: '#model_nanogpt_select',
     modelDeepseek: '#model_deepseek_select',
-    modelBlockentropy: '#model_blockentropy_select',
+    modelElectronhub: '#model_electronhub_select',
+    modelVertexai: '#model_vertexai_select',
+    modelAimlapi: '#model_aimlapi_select',
+    modelXai: '#model_xai_select',
+    modelPollinations: '#model_pollinations_select',
+    modelMoonshot: '#model_moonshot_select',
+    modelFireworks: '#model_fireworks_select',
+    modelCometapi: '#model_cometapi_select',
+    modelAzureOpenai: '#model_azure_openai_select',
     tempOpenai: '#temp_openai',
     tempCounterOpenai: '#temp_counter_openai'
 };
 
 // Supported Chat Completion sources - BULLETPROOF
 const SUPPORTED_COMPLETION_SOURCES = [
-    'openai', 'claude', 'windowai', 'openrouter', 'ai21', 'scale', 'makersuite',
-    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', '01ai', 'nanogpt',
-    'deepseek', 'blockentropy'
+    'openai', 'claude', 'openrouter', 'ai21', 'makersuite', 'vertexai',
+    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', 'nanogpt',
+    'deepseek', 'electronhub', 'aimlapi', 'xai', 'pollinations',
+    'moonshot', 'fireworks', 'cometapi', 'azure_openai'
 ];
 
 /**
@@ -117,24 +123,25 @@ export function getApiSelectors() {
     const modelSelectorMap = {
         openai:        `${prefix}model_openai_select`,
         claude:        `${prefix}model_claude_select`,
-        windowai:      `${prefix}model_windowai_select`,
         openrouter:    `${prefix}model_openrouter_select`,
         ai21:          `${prefix}model_ai21_select`,
-        scale:         `${prefix}model_scale_select`,
         makersuite:    `${prefix}model_google_select`,
         mistralai:     `${prefix}model_mistralai_select`,
         custom:        `${prefix}model_custom_select`,
         cohere:        `${prefix}model_cohere_select`,
         perplexity:    `${prefix}model_perplexity_select`,
         groq:          `${prefix}model_groq_select`,
-        '01ai':        `${prefix}model_01ai_select`,
         nanogpt:       `${prefix}model_nanogpt_select`,
         deepseek:      `${prefix}model_deepseek_select`,
-        blockentropy:  `${prefix}model_blockentropy_select`,
+        electronhub:   `${prefix}model_electronhub_select`,
         vertexai:      `${prefix}model_vertexai_select`,
         aimlapi:       `${prefix}model_aimlapi_select`,
         xai:           `${prefix}model_xai_select`,
         pollinations:  `${prefix}model_pollinations_select`,
+        moonshot:      `${prefix}model_moonshot_select`,
+        fireworks:     `${prefix}model_fireworks_select`,
+        cometapi:      `${prefix}model_cometapi_select`,
+        azure_openai:  `${prefix}model_azure_openai_select`,
     };
 
     const model = modelSelectorMap[completionSource] || modelSelectorMap.openai;
