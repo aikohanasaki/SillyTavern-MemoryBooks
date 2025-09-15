@@ -24,9 +24,10 @@ let hasBeenInitialized = false;
 
 // Supported Chat Completion sources
 const SUPPORTED_COMPLETION_SOURCES = [
-    'openai', 'claude', 'windowai', 'openrouter', 'ai21', 'scale', 'makersuite',
-    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', '01ai', 'nanogpt',
-    'deepseek', 'blockentropy'
+    'openai', 'claude', 'openrouter', 'ai21', 'makersuite', 'vertexai',
+    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', 'nanogpt',
+    'deepseek', 'electronhub', 'aimlapi', 'xai', 'pollinations',
+    'moonshot', 'fireworks', 'cometapi', 'azure_openai'
 ];
 
 const defaultSettings = {
@@ -1703,15 +1704,16 @@ function setupEventListeners() {
                 cohere: 'cohere',
                 perplexity: 'perplexity',
                 groq: 'groq',
-                '01ai': '01ai',
                 nanogpt: 'nanogpt',
                 deepseek: 'deepseek',
+                electronhub: 'electronhub',
                 aimlapi: 'aimlapi',
                 xai: 'xai',
                 pollinations: 'pollinations',
-                windowai: 'windowai',
-                scale: 'scale',
-                blockentropy: 'blockentropy',
+                moonshot: 'moonshot',
+                fireworks: 'fireworks',
+                cometapi: 'cometapi',
+                azure_openai: 'azure_openai',
             };
             const src = apiToSource[conn.api] || 'openai';
 

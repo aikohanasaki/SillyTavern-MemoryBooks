@@ -43,11 +43,16 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="cohere" {{#if (eq connection.api "cohere")}}selected{{/if}}>Cohere</option>
                 <option value="perplexity" {{#if (eq connection.api "perplexity")}}selected{{/if}}>Perplexity</option>
                 <option value="groq" {{#if (eq connection.api "groq")}}selected{{/if}}>Groq</option>
-                <option value="01ai" {{#if (eq connection.api "01ai")}}selected{{/if}}>01.AI</option>
                 <option value="deepseek" {{#if (eq connection.api "deepseek")}}selected{{/if}}>DeepSeek</option>
+                <option value="electronhub" {{#if (eq connection.api "electronhub")}}selected{{/if}}>Electron Hub</option>
                 <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
                 <option value="xai" {{#if (eq connection.api "xai")}}selected{{/if}}>xAI</option>
                 <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
+                <option value="vertexai" {{#if (eq connection.api "vertexai")}}selected{{/if}}>Vertex AI</option>
+                <option value="moonshot" {{#if (eq connection.api "moonshot")}}selected{{/if}}>Moonshot</option>
+                <option value="fireworks" {{#if (eq connection.api "fireworks")}}selected{{/if}}>Fireworks</option>
+                <option value="cometapi" {{#if (eq connection.api "cometapi")}}selected{{/if}}>Comet API</option>
+                <option value="azure_openai" {{#if (eq connection.api "azure_openai")}}selected{{/if}}>Azure OpenAI</option>
                 <option value="full-manual" {{#if (eq connection.api "full-manual")}}selected{{/if}} title="⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option.">Full Manual Configuration</option>
             </select>
         </label>
