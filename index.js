@@ -234,30 +234,34 @@ async function checkAutoSummaryTrigger() {
 
     // Get all memory entries to find the most recent one
     const allMemories = identifyMemoryEntries(lorebookValidation.data);
+    const currentLastMessage = chat.length - 1;
+    const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
+
+    let messagesSinceLastMemory;
 
     if (allMemories.length === 0) {
-        return; // No memories exist yet
-    }
+        // No memories exist yet - check if we have enough messages for the first memory
+        messagesSinceLastMemory = currentLastMessage + 1; // +1 because message indices are 0-based
+    } else {
+        // Find the most recent memory (highest end message number)
+        let mostRecentMemory = null;
+        let highestEndMessage = -1;
 
-    // Find the most recent memory (highest end message number)
-    let mostRecentMemory = null;
-    let highestEndMessage = -1;
+        for (const memory of allMemories) {
+            const range = getRangeFromMemoryEntry(memory.entry);
+            if (range && range.end !== null && range.end > highestEndMessage) {
+                highestEndMessage = range.end;
+                mostRecentMemory = memory;
+            }
+        }
 
-    for (const memory of allMemories) {
-        const range = getRangeFromMemoryEntry(memory.entry);
-        if (range && range.end !== null && range.end > highestEndMessage) {
-            highestEndMessage = range.end;
-            mostRecentMemory = memory;
+        if (!mostRecentMemory) {
+            // No valid memory ranges found, treat as first memory
+            messagesSinceLastMemory = currentLastMessage + 1;
+        } else {
+            messagesSinceLastMemory = currentLastMessage - highestEndMessage;
         }
     }
-
-    if (!mostRecentMemory) {
-        return; // No valid memory ranges found
-    }
-
-    const currentLastMessage = chat.length - 1;
-    const messagesSinceLastMemory = currentLastMessage - highestEndMessage;
-    const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
 
     if (messagesSinceLastMemory >= requiredInterval) {
         // Check if memory creation is already in progress
@@ -268,7 +272,18 @@ async function checkAutoSummaryTrigger() {
         // Wait a moment for any ongoing message processing to complete
         setTimeout(async () => {
             try {
-                await handleNextMemoryCommand({}, '');
+                if (allMemories.length === 0) {
+                    // First memory - create from beginning of chat to current message
+                    const startMessage = 0;
+                    const endMessage = currentLastMessage;
+                    const rangeString = `${startMessage}-${endMessage}`;
+
+                    console.log(`STMemoryBooks: Auto-creating first memory for range: ${rangeString}`);
+                    await handleSceneMemoryCommand({}, rangeString);
+                } else {
+                    // Subsequent memories - use existing nextmemory logic
+                    await handleNextMemoryCommand({}, '');
+                }
             } catch (error) {
                 toastr.warning(`Auto-summary failed: ${error.message}`, 'STMemoryBooks');
             }
