@@ -2,7 +2,7 @@
 
 **← [Back to README](readme.md)**
 
-## v3.5.4 (September 2025)
+## v3.6.0 (September 2025)
 - **Dynamic Profile System:** Added dynamic profile functionality that uses current SillyTavern settings
 - **Completion Sources:** Updated completion source handling and configuration
 - **Auto-Summary Enhancements:** Added postpone functionality for auto-summary feature
