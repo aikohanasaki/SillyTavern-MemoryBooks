@@ -30,6 +30,7 @@ const SUPPORTED_COMPLETION_SOURCES = [
     'moonshot', 'fireworks', 'cometapi', 'azure_openai'
 ];
 
+
 const defaultSettings = {
     moduleSettings: {
         alwaysUseDefault: true,
@@ -46,19 +47,9 @@ const defaultSettings = {
         autoSummaryInterval: 100,
     },
     titleFormat: '[000] - {{title}}',
-    profiles: [
-        {
-            name: "Default",
-            connection: {
-            api: "custom", // Default to custom, but user may select/override!
-            model: "gpt-4.1", // default to gpt-4.1, but user may select/override!
-            temperature: 0.7, // Default temperature
-            },
-            prompt: DEFAULT_PROMPT
-        }
-    ],
+    profiles: [], // Will be populated dynamically with current ST settings
     defaultProfile: 0,
-    migrationVersion: 2,
+    migrationVersion: 4,
 }
 
 // Current state variables
@@ -573,15 +564,90 @@ function checkApiCompatibility() {
  */
 function initializeSettings() {
     extension_settings.STMemoryBooks = extension_settings.STMemoryBooks || deepClone(defaultSettings);
+
+    // Migration logic for versions 3-4: Add dynamic profile and clean up titleFormat
+    const currentVersion = extension_settings.STMemoryBooks.migrationVersion || 1;
+    if (currentVersion < 4) {
+        // Check if dynamic profile already exists (in case of partial migration)
+        const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(p => p.useDynamicSTSettings);
+
+        if (!hasDynamicProfile) {
+            // Add dynamic profile for existing installations
+            if (!extension_settings.STMemoryBooks.profiles) {
+                extension_settings.STMemoryBooks.profiles = [];
+            }
+
+            // Insert dynamic profile at the beginning of the array
+            const dynamicProfile = {
+                name: "Current SillyTavern Settings",
+                connection: {
+                    // Empty connection object - will be populated dynamically from ST
+                },
+                useDynamicSTSettings: true, // Flag to indicate this profile uses live ST settings
+                preset: 'summary',
+                // No titleFormat - will use current settings titleFormat dynamically
+                constVectMode: 'link',
+                position: 0,
+                orderMode: 'auto',
+                orderValue: 100,
+                preventRecursion: true,
+                delayUntilRecursion: false
+            };
+
+            extension_settings.STMemoryBooks.profiles.unshift(dynamicProfile);
+
+            // Adjust default profile index since we inserted at the beginning
+            if (extension_settings.STMemoryBooks.defaultProfile !== undefined) {
+                extension_settings.STMemoryBooks.defaultProfile += 1;
+            }
+
+            console.log(`${MODULE_NAME}: Added dynamic profile for existing installation (migration to v3)`);
+        }
+
+        // Clean up any existing dynamic profiles that may have titleFormat
+        extension_settings.STMemoryBooks.profiles.forEach(profile => {
+            if (profile.useDynamicSTSettings && profile.titleFormat) {
+                delete profile.titleFormat;
+                console.log(`${MODULE_NAME}: Removed static titleFormat from dynamic profile`);
+            }
+        });
+
+        // Update migration version
+        extension_settings.STMemoryBooks.migrationVersion = 4;
+        saveSettingsDebounced();
+    }
+
+    // If this is a fresh install (no profiles), create default profile that dynamically uses ST settings
+    if (!extension_settings.STMemoryBooks.profiles || extension_settings.STMemoryBooks.profiles.length === 0) {
+        const dynamicProfile = {
+            name: "Current SillyTavern Settings",
+            connection: {
+                // Empty connection object - will be populated dynamically from ST
+            },
+            useDynamicSTSettings: true, // Flag to indicate this profile uses live ST settings
+            preset: 'summary',
+            // No titleFormat - will use current settings titleFormat dynamically
+            constVectMode: 'link',
+            position: 0,
+            orderMode: 'auto',
+            orderValue: 100,
+            preventRecursion: true,
+            delayUntilRecursion: false
+        };
+
+        extension_settings.STMemoryBooks.profiles = [dynamicProfile];
+        console.log(`${MODULE_NAME}: Created dynamic profile for fresh installation`);
+    }
+
     const validationResult = validateSettings(extension_settings.STMemoryBooks);
-    
+
     // Also validate profiles structure
     const profileValidation = validateAndFixProfiles(extension_settings.STMemoryBooks);
     if (profileValidation.fixes.length > 0) {
         console.log(`${MODULE_NAME}: Applied profile fixes:`, profileValidation.fixes);
         saveSettingsDebounced();
     }
-    
+
     return validationResult;
 }
 
@@ -792,17 +858,23 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
     
     // Build effective connection settings
     const { profileSettings, advancedOptions } = confirmationResult;
-    
-    if (advancedOptions.overrideSettings) {
+
+    // Check if this profile should dynamically use ST settings
+    if (profileSettings.useDynamicSTSettings || advancedOptions.overrideSettings) {
+        const currentApiInfo = getCurrentApiInfo();
         const currentSettings = getCurrentModelSettings();
-        profileSettings.effectiveConnection = { ...profileSettings.connection };
-        if (currentSettings.model) {
-            profileSettings.effectiveConnection.model = currentSettings.model;
+
+        profileSettings.effectiveConnection = {
+            api: currentApiInfo.completionSource || 'openai',
+            model: currentSettings.model || '',
+            temperature: currentSettings.temperature || 0.7
+        };
+
+        if (profileSettings.useDynamicSTSettings) {
+            console.log('STMemoryBooks: Using dynamic ST settings profile - current settings:', profileSettings.effectiveConnection);
+        } else {
+            console.log('STMemoryBooks: Using current SillyTavern settings override for memory creation');
         }
-        if (typeof currentSettings.temperature === 'number') {
-            profileSettings.effectiveConnection.temperature = currentSettings.temperature;
-        }
-        console.log('STMemoryBooks: Using current SillyTavern settings for memory creation');
     } else {
         profileSettings.effectiveConnection = { ...profileSettings.connection };
         console.log('STMemoryBooks: Using profile connection settings for memory creation');
@@ -1102,12 +1174,21 @@ async function showSettingsPopup() {
         showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
         selectedProfile: {
             ...selectedProfile,
-            connection: {
-                api: selectedProfile.connection?.api || 'openai',
-                model: selectedProfile.connection?.model || 'Not Set',
-                temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
-            },
-            titleFormat: selectedProfile.titleFormat || settings.titleFormat,
+            connection: selectedProfile.useDynamicSTSettings ?
+                (() => {
+                    const currentApiInfo = getCurrentApiInfo();
+                    const currentSettings = getCurrentModelSettings();
+                    return {
+                        api: currentApiInfo.completionSource || 'openai',
+                        model: currentSettings.model || 'Not Set',
+                        temperature: currentSettings.temperature || 0.7
+                    };
+                })() : {
+                    api: selectedProfile.connection?.api || 'openai',
+                    model: selectedProfile.connection?.model || 'Not Set',
+                    temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
+                },
+            titleFormat: selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat),
             effectivePrompt: getEffectivePrompt(selectedProfile)
         }
     };
@@ -1203,6 +1284,14 @@ function setupSettingsEventListeners() {
             try {
                 const profileSelect = popupElement.querySelector('#stmb-profile-select');
                 const selectedIndex = parseInt(profileSelect.value);
+                const selectedProfile = settings.profiles[selectedIndex];
+
+                // Prevent editing of dynamic ST settings profile
+                if (selectedProfile.useDynamicSTSettings) {
+                    toastr.error('Cannot edit the "Current SillyTavern Settings" profile - it automatically uses your current ST configuration', 'STMemoryBooks');
+                    return;
+                }
+
                 await editProfile(settings, selectedIndex, refreshPopupContent);
             } catch (error) {
                 console.error(`${MODULE_NAME}: Error in edit profile:`, error);
@@ -1297,10 +1386,22 @@ function setupSettingsEventListeners() {
                 const summaryTitle = popupElement.querySelector('#stmb-summary-title');
                 const summaryPrompt = popupElement.querySelector('#stmb-summary-prompt');
 
-                if (summaryApi) summaryApi.textContent = selectedProfile.connection?.api || 'openai';
-                if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
-                if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
-                if (summaryTitle) summaryTitle.textContent = selectedProfile.titleFormat || settings.titleFormat;
+                if (selectedProfile.useDynamicSTSettings) {
+                    // For dynamic profiles, show current ST settings
+                    const currentApiInfo = getCurrentApiInfo();
+                    const currentSettings = getCurrentModelSettings();
+
+                    if (summaryApi) summaryApi.textContent = currentApiInfo.completionSource || 'openai';
+                    if (summaryModel) summaryModel.textContent = currentSettings.model || 'Not Set';
+                    if (summaryTemp) summaryTemp.textContent = currentSettings.temperature || '0.7';
+                } else {
+                    // For regular profiles, show stored settings
+                    if (summaryApi) summaryApi.textContent = selectedProfile.connection?.api || 'openai';
+                    if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
+                    if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
+                }
+                // For title format, dynamic profiles use current settings, regular profiles use their own
+                if (summaryTitle) summaryTitle.textContent = selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat);
                 if (summaryPrompt) summaryPrompt.textContent = getEffectivePrompt(selectedProfile);
             }
             return;
@@ -1308,6 +1409,8 @@ function setupSettingsEventListeners() {
         
         if (e.target.matches('#stmb-title-format-select')) {
             const customInput = popupElement.querySelector('#stmb-custom-title-format');
+            const summaryTitle = popupElement.querySelector('#stmb-summary-title');
+
             if (e.target.value === 'custom') {
                 customInput.classList.remove('displayNone');
                 customInput.focus();
@@ -1315,6 +1418,11 @@ function setupSettingsEventListeners() {
                 customInput.classList.add('displayNone');
                 settings.titleFormat = e.target.value;
                 saveSettingsDebounced();
+
+                // Update the preview
+                if (summaryTitle) {
+                    summaryTitle.textContent = e.target.value;
+                }
             }
             return;
         }
@@ -1353,6 +1461,12 @@ function setupSettingsEventListeners() {
             if (value && value.includes('000')) {
                 settings.titleFormat = value;
                 saveSettingsDebounced();
+
+                // Update the preview
+                const summaryTitle = popupElement.querySelector('#stmb-summary-title');
+                if (summaryTitle) {
+                    summaryTitle.textContent = value;
+                }
             }
             return;
         }
@@ -1492,11 +1606,20 @@ function refreshPopupContent() {
             showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
             selectedProfile: {
                 ...selectedProfile,
-                connection: {
-                    api: selectedProfile.connection?.api || 'openai',
-                    model: selectedProfile.connection?.model || 'gpt-4.1',
-                    temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
-                },
+                connection: selectedProfile.useDynamicSTSettings ?
+                    (() => {
+                        const currentApiInfo = getCurrentApiInfo();
+                        const currentSettings = getCurrentModelSettings();
+                        return {
+                            api: currentApiInfo.completionSource || 'openai',
+                            model: currentSettings.model || 'Not Set',
+                            temperature: currentSettings.temperature || 0.7
+                        };
+                    })() : {
+                        api: selectedProfile.connection?.api || 'openai',
+                        model: selectedProfile.connection?.model || 'gpt-4.1',
+                        temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
+                    },
                 titleFormat: selectedProfile.titleFormat || settings.titleFormat,
                 effectivePrompt: getEffectivePrompt(selectedProfile)
             }
@@ -1504,29 +1627,16 @@ function refreshPopupContent() {
         
         const newHtml = DOMPurify.sanitize(settingsTemplate(templateData));
 
-        const tempContainer = document.createElement('div');
-        tempContainer.innerHTML = newHtml;
-        
-        // Morph the existing popup content with the new content
-        morphdom(currentPopupInstance.content, tempContainer, {
-            onBeforeElUpdated: function(fromEl, toEl) {
-                // Preserve state of form elements that morphdom might reset
-                if (fromEl.isEqualNode(toEl)) {
-                    return false;
-                }
-                if (fromEl.type === 'checkbox' || fromEl.type === 'radio') {
-                    toEl.checked = fromEl.checked;
-                }
-                if (fromEl.tagName === 'SELECT' || fromEl.tagName === 'INPUT' || fromEl.tagName === 'TEXTAREA') {
-                    // Always allow the profile selector to update, as its options may have changed
-                    if (fromEl.id === 'stmb-profile-select') {
-                        return true;
-                    }
-                    toEl.value = fromEl.value;
-                }
-                return true;
-            }
-        });
+        // Update the popup content directly
+        currentPopupInstance.content.innerHTML = newHtml;
+
+        // After updating content, refresh the profile dropdown selection
+        const profileSelect = currentPopupInstance.content.querySelector('#stmb-profile-select');
+        if (profileSelect) {
+            profileSelect.value = settings.defaultProfile;
+            // Trigger change event to update profile summary
+            profileSelect.dispatchEvent(new Event('change'));
+        }
 
         const requiredClasses = [
             'wide_dialogue_popup',

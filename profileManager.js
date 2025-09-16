@@ -351,6 +351,12 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
     const profile = settings.profiles[profileIndex];
 
+    // Prevent deletion of dynamic ST settings profile
+    if (profile.useDynamicSTSettings) {
+        toastr.error('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work', 'STMemoryBooks');
+        return;
+    }
+
     try {
         const result = await new Popup(`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
 
@@ -609,13 +615,20 @@ export function validateAndFixProfiles(settings) {
     }
 
     if (settings.profiles.length === 0) {
-        // Use the centralized creator to ensure all fields are present
-        settings.profiles.push(createProfileObject({
-            name: 'Default',
+        // Create dynamic profile that uses live ST settings
+        const dynamicProfile = createProfileObject({
+            name: 'Current SillyTavern Settings',
             preset: 'summary',
-            titleFormat: settings.titleFormat
-        }));
-        fixes.push('Added default profile with all new settings.');
+            isDynamicProfile: true  // Flag to prevent titleFormat creation
+        });
+
+        // Add flag to indicate this profile uses dynamic ST settings
+        dynamicProfile.useDynamicSTSettings = true;
+        // Clear connection since it will be populated dynamically
+        dynamicProfile.connection = {};
+
+        settings.profiles.push(dynamicProfile);
+        fixes.push('Added dynamic profile that uses current SillyTavern settings.');
     }
 
     settings.profiles.forEach((profile, index) => {

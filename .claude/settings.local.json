@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/ai/Aikobots Code/SillyTavern-ModelTempLocks/**)",
+      "Read(//c/Users/ai/Aikobots Code/Aikobots/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

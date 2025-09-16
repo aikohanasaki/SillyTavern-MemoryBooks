@@ -669,7 +669,6 @@ export function createProfileObject(data = {}) {
         },
         prompt: (data.prompt || '').trim(),
         preset: data.preset || '',
-        titleFormat: data.titleFormat || '[000] - {{title}}',
         constVectMode: data.constVectMode || 'link',
         position: data.position !== undefined ? Number(data.position) : 0,
         orderMode: data.orderMode || 'auto',
@@ -677,6 +676,11 @@ export function createProfileObject(data = {}) {
         preventRecursion: data.preventRecursion !== undefined ? data.preventRecursion : true,
         delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : true,
     };
+
+    // Set titleFormat if explicitly provided, or if it's not a dynamic profile
+    if (data.titleFormat || !data.isDynamicProfile) {
+        profile.titleFormat = data.titleFormat || '[000] - {{title}}';
+    }
 
     const model = (data.model || '').trim();
     if (model) {
