@@ -1,14 +1,15 @@
 import { getContext } from '../../../extensions.js';
-import { 
-    METADATA_KEY, 
-    loadWorldInfo, 
-    createWorldInfoEntry, 
-    saveWorldInfo, 
-    reloadEditor 
+import {
+    METADATA_KEY,
+    loadWorldInfo,
+    createWorldInfoEntry,
+    saveWorldInfo,
+    reloadEditor
 } from '../../../world-info.js';
 import { extension_settings } from '../../../extensions.js';
 import { moment } from '../../../../lib.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
+import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
@@ -178,6 +179,10 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                 }
             }
         }
+
+        // Update highest memory processed tracking
+        updateHighestMemoryProcessed(memoryResult);
+
         return {
             success: true,
             entryId: newEntry.uid,
@@ -762,5 +767,55 @@ export async function getLorebookStats() {
     } catch (error) {
         console.error(`${MODULE_NAME}: Error getting lorebook stats:`, error);
         return { valid: false, error: error.message };
+    }
+}
+
+/**
+ * Update the highest memory processed tracking for the current chat
+ * @param {Object} memoryResult - The memory result containing metadata
+ */
+function updateHighestMemoryProcessed(memoryResult) {
+    try {
+        // Extract the end message number from the scene range
+        const sceneRange = memoryResult.metadata?.sceneRange;
+        if (!sceneRange) {
+            console.warn(`${MODULE_NAME}: No scene range found in memory result, cannot update highest processed`);
+            return;
+        }
+
+        const rangeParts = sceneRange.split('-');
+        if (rangeParts.length !== 2) {
+            console.warn(`${MODULE_NAME}: Invalid scene range format: ${sceneRange}`);
+            return;
+        }
+
+        const endMessage = parseInt(rangeParts[1], 10);
+        if (isNaN(endMessage)) {
+            console.warn(`${MODULE_NAME}: Invalid end message number: ${rangeParts[1]}`);
+            return;
+        }
+
+        // Get current scene markers (which handles both single and group chats)
+        const sceneMarkers = getSceneMarkers();
+        if (!sceneMarkers) {
+            console.warn(`${MODULE_NAME}: Could not get scene markers to update highest processed`);
+            return;
+        }
+
+        // Update if this is higher than current highest processed, or if no previous value
+        const currentHighest = sceneMarkers.highestMemoryProcessed;
+        if (currentHighest === null || endMessage > currentHighest) {
+            sceneMarkers.highestMemoryProcessed = endMessage;
+
+            // Save the metadata
+            saveMetadataForCurrentContext();
+
+            console.log(`${MODULE_NAME}: Updated highest memory processed to message ${endMessage}`);
+        } else {
+            console.log(`${MODULE_NAME}: Memory end message ${endMessage} not higher than current highest ${currentHighest}, no update needed`);
+        }
+
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error updating highest memory processed:`, error);
     }
 }

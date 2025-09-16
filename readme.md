@@ -6,14 +6,14 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ---
 
-## 🚦 What's New (v3.6.1)
+## 🚦 What's New (v3.6.2)
 
-- **Bug Fixes:** Various stability improvements and fixes to ensure smoother operation.
-  - Resolved edge cases in profile management
-  - Fixed minor UI inconsistencies
-  - Improved error recovery mechanisms
-
-- **Code Refinements:** Minor code improvements and optimizations for better performance and maintainability.
+- **Memory Processing Tracking:** Added "highest memory processed" field to track progress per chat
+  - Each chat now displays "Memory Status: Processed up to message #X" in settings
+  - Shows "No memories processed yet" for new chats
+  - Enables better management of aggregate lorebooks across multiple chats
+  - Auto-summary logic improved for more accurate triggering
+  - Backwards compatible - existing chats automatically get the new field
 
 ---
 
@@ -23,7 +23,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 - **API Access:** OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Scene Selection:** Start and end markers (start < end) must be set.
 
-> **Not Supported:** Text generation APIs (Kobold, TextGen, etc.)
+> **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
 
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 (If these settings are not used it is unlikely the memories will be pulled in!)

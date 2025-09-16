@@ -62,7 +62,21 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <span>No scene markers set. Use the chevron buttons in chat messages to mark start (►) and end (◄) points.</span>
         </div>
         {{/if}}
-        
+
+        {{#if highestMemoryProcessed}}
+        <div id="stmb-memory-status" class="padding10 marginBot10">
+            <div class="info-block">
+                <span>📊 Memory Status: Processed up to message #{{highestMemoryProcessed}}</span>
+            </div>
+        </div>
+        {{else}}
+        <div id="stmb-memory-status" class="padding10 marginBot10">
+            <div class="info-block">
+                <span>📊 Memory Status: No memories have been processed for this chat yet</span>
+            </div>
+        </div>
+        {{/if}}
+
         <h4>Preferences:</h4>
 
         <div class="world_entry_form_control">
