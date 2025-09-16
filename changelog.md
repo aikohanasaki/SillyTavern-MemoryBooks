@@ -2,6 +2,14 @@
 
 **← [Back to README](readme.md)**
 
+## v3.6.2 (September 2025)
+- **Memory Processing Tracking:** Added "highest memory processed" field to track progress per chat
+  - Each chat now displays "Memory Status: Processed up to message #X" in settings
+  - Shows "No memories processed yet" for new chats
+  - Enables better management of aggregate lorebooks across multiple chats
+  - Auto-summary logic improved for more accurate triggering
+  - Backwards compatible - existing chats automatically get the new field
+
 ## v3.6.1 (September 2025)
 - **Bug Fixes:** Various stability improvements and fixes
 - **Code Refinements:** Minor code improvements and optimizations

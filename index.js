@@ -216,7 +216,7 @@ async function handleMessageReceived() {
  */
 async function checkAutoSummaryTrigger() {
     // Check if user has postponed auto-summary
-    const stmbData = getCurrentMemoryBooksContext().sceneMarkers || {};
+    const stmbData = getSceneMarkers() || {};
     if (stmbData.autoSummaryNextPromptAt && chat.length < stmbData.autoSummaryNextPromptAt) {
         return; // Still in postpone period
     }
@@ -229,38 +229,22 @@ async function checkAutoSummaryTrigger() {
     // Clear any postpone flag since we're proceeding with auto-summary
     if (stmbData.autoSummaryNextPromptAt) {
         delete stmbData.autoSummaryNextPromptAt;
-        saveMetadataDebounced();
+        saveMetadataForCurrentContext();
     }
 
-    // Get all memory entries to find the most recent one
-    const allMemories = identifyMemoryEntries(lorebookValidation.data);
+    // Use the highestMemoryProcessed field for more efficient tracking
     const currentLastMessage = chat.length - 1;
     const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
+    const highestProcessed = stmbData.highestMemoryProcessed;
 
     let messagesSinceLastMemory;
 
-    if (allMemories.length === 0) {
-        // No memories exist yet - check if we have enough messages for the first memory
+    if (highestProcessed === null) {
+        // No memories processed yet - check if we have enough messages for the first memory
         messagesSinceLastMemory = currentLastMessage + 1; // +1 because message indices are 0-based
     } else {
-        // Find the most recent memory (highest end message number)
-        let mostRecentMemory = null;
-        let highestEndMessage = -1;
-
-        for (const memory of allMemories) {
-            const range = getRangeFromMemoryEntry(memory.entry);
-            if (range && range.end !== null && range.end > highestEndMessage) {
-                highestEndMessage = range.end;
-                mostRecentMemory = memory;
-            }
-        }
-
-        if (!mostRecentMemory) {
-            // No valid memory ranges found, treat as first memory
-            messagesSinceLastMemory = currentLastMessage + 1;
-        } else {
-            messagesSinceLastMemory = currentLastMessage - highestEndMessage;
-        }
+        // Calculate messages since the highest processed message
+        messagesSinceLastMemory = currentLastMessage - highestProcessed;
     }
 
     if (messagesSinceLastMemory >= requiredInterval) {
@@ -272,7 +256,7 @@ async function checkAutoSummaryTrigger() {
         // Wait a moment for any ongoing message processing to complete
         setTimeout(async () => {
             try {
-                if (allMemories.length === 0) {
+                if (highestProcessed === null) {
                     // First memory - create from beginning of chat to current message
                     const startMessage = 0;
                     const endMessage = currentLastMessage;
@@ -761,7 +745,7 @@ async function validateLorebookForAutoSummary() {
         lorebookName = chat_metadata?.[METADATA_KEY] || null;
     } else {
         // Manual mode - check if a lorebook is already selected
-        const stmbData = getCurrentMemoryBooksContext().sceneMarkers || {};
+        const stmbData = getSceneMarkers() || {};
         lorebookName = stmbData.manualLorebook;
 
         // If no lorebook is selected, ask user what to do
@@ -794,11 +778,11 @@ async function validateLorebookForAutoSummary() {
 
                 // Store when to next prompt (current message count + postpone amount)
                 const nextPromptAt = chat.length + postponeMessages;
-                const stmbData = getCurrentMemoryBooksContext().sceneMarkers || {};
+                const stmbData = getSceneMarkers() || {};
                 stmbData.autoSummaryNextPromptAt = nextPromptAt;
 
                 // Save the postpone decision
-                saveMetadataDebounced();
+                saveMetadataForCurrentContext();
 
                 return { valid: false, error: `Auto-summary postponed for ${postponeMessages} messages` };
             }
@@ -1162,10 +1146,12 @@ function getAutoHideMode(moduleSettings) {
 async function showSettingsPopup() {
     const settings = initializeSettings();
     const sceneData = getSceneData();
-    const selectedProfile = settings.profiles[settings.defaultProfile];    
+    const selectedProfile = settings.profiles[settings.defaultProfile];
+    const sceneMarkers = getSceneMarkers();
     const templateData = {
         hasScene: !!sceneData,
         sceneData: sceneData,
+        highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
         alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
         showNotifications: settings.moduleSettings.showNotifications,
         refreshEditor: settings.moduleSettings.refreshEditor,
@@ -1595,9 +1581,11 @@ function refreshPopupContent() {
         const settings = initializeSettings();
         const sceneData = getSceneData();
         const selectedProfile = settings.profiles[settings.defaultProfile];
+        const sceneMarkers = getSceneMarkers();
         const templateData = {
             hasScene: !!sceneData,
             sceneData: sceneData,
+            highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
             alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
             showNotifications: settings.moduleSettings.showNotifications,
             refreshEditor: settings.moduleSettings.refreshEditor,

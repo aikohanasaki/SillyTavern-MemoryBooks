@@ -31,10 +31,16 @@ export function getSceneMarkers() {
                 group.chat_metadata.STMemoryBooks = {
                     sceneStart: null,
                     sceneEnd: null,
-                    manualLorebook: null
+                    manualLorebook: null,
+                    highestMemoryProcessed: null
                 };
             }
-            
+
+            // Migration: Add highestMemoryProcessed if missing
+            if (group.chat_metadata.STMemoryBooks.highestMemoryProcessed === undefined) {
+                group.chat_metadata.STMemoryBooks.highestMemoryProcessed = null;
+            }
+
             // Sync from currentSceneState to prevent stale metadata from being returned after scene changes
             if (currentSceneState.start !== null || currentSceneState.end !== null) {
                 group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
@@ -55,10 +61,16 @@ export function getSceneMarkers() {
             chat_metadata.STMemoryBooks = {
                 sceneStart: null,
                 sceneEnd: null,
-                manualLorebook: null
+                manualLorebook: null,
+                highestMemoryProcessed: null
             };
         }
-        
+
+        // Migration: Add highestMemoryProcessed if missing
+        if (chat_metadata.STMemoryBooks.highestMemoryProcessed === undefined) {
+            chat_metadata.STMemoryBooks.highestMemoryProcessed = null;
+        }
+
         // sync from currentSceneState for consistency
         if (currentSceneState.start !== null || currentSceneState.end !== null) {
             chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
@@ -98,7 +110,8 @@ export function saveMetadataForCurrentContext() {
             group.chat_metadata.STMemoryBooks = {
                 sceneStart: null,
                 sceneEnd: null,
-                manualLorebook: null
+                manualLorebook: null,
+                highestMemoryProcessed: null
             };
         }
         
