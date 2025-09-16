@@ -361,10 +361,10 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     Object.entries(substitutions).forEach(([placeholder, value]) => {
         title = title.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
     });
-    
+
     // Clean up the title (remove invalid characters not in allowed list)
     title = sanitizeTitle(title);
-    
+
     return title;
 }
 

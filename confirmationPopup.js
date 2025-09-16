@@ -25,9 +25,11 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         ...sceneData,
         profileName: selectedProfile.name,
         effectivePrompt: effectivePrompt,
-        profileModel: selectedProfile.connection?.model || 'Current SillyTavern model',
-        profileTemperature: selectedProfile.connection?.temperature !== undefined ? 
-            selectedProfile.connection.temperature : 'Current SillyTavern temperature',
+        profileModel: selectedProfile.useDynamicSTSettings ?
+            'Current SillyTavern model' : (selectedProfile.connection?.model || 'Current SillyTavern model'),
+        profileTemperature: selectedProfile.useDynamicSTSettings ?
+            'Current SillyTavern temperature' : (selectedProfile.connection?.temperature !== undefined ?
+                selectedProfile.connection.temperature : 'Current SillyTavern temperature'),
         currentModel: currentModelSettings?.model || 'Unknown',
         currentTemperature: currentModelSettings?.temperature || 0.7,
         currentApi: currentApiInfo?.api || 'Unknown',

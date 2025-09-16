@@ -3,6 +3,7 @@ import { getEffectivePrompt, getCurrentApiInfo, isValidPreset } from './utils.js
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
+import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -415,7 +416,9 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 version: '2.0'
             },
             suggestedKeys: processedMemory.suggestedKeys,
-            titleFormat: profile.titleFormat || '[000] - {{title}}',
+            titleFormat: profile.useDynamicSTSettings ?
+                (extension_settings.STMemoryBooks?.titleFormat || '[000] - {{title}}') :
+                (profile.titleFormat || '[000] - {{title}}'),
             lorebookSettings: {
                 constVectMode: profile.constVectMode,
                 position: profile.position,
