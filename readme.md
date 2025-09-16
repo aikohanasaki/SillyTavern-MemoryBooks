@@ -6,20 +6,14 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ---
 
-## 🚦 What's New (v3.6.0)
+## 🚦 What's New (v3.6.1)
 
-- **Dynamic Profile System:** Added dynamic profile functionality that automatically uses your current SillyTavern settings.
-  - Seamlessly integrates with your existing API configuration
-  - Eliminates need for manual profile setup in many cases
-  - Automatically adapts to your current model and provider settings
+- **Bug Fixes:** Various stability improvements and fixes to ensure smoother operation.
+  - Resolved edge cases in profile management
+  - Fixed minor UI inconsistencies
+  - Improved error recovery mechanisms
 
-- **Enhanced Completion Sources:** Updated completion source handling for better API compatibility.
-  - Improved support for various API providers
-  - Better error handling and fallback mechanisms
-
-- **Auto-Summary Enhancements:** Added postpone functionality for auto-summary feature.
-  - Ability to delay auto-summary execution when needed
-  - More flexible control over automatic memory creation timing
+- **Code Refinements:** Minor code improvements and optimizations for better performance and maintainability.
 
 ---
 

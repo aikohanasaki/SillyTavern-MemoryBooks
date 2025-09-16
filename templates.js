@@ -7,7 +7,7 @@ export const bookmarksTemplate = Handlebars.compile(`
     <h3>🔖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
     <div class="popup-content">⚠️ Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded into memory and the page has to be redrawn. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</div>
 
-    <div class="buttons_block marginTop5" style="justify-content: center;">
+    <div class="buttons_block marginTop5 justifyCenter">
         <button id="stmb-sort-toggle" class="menu_button menu_button_icon inline-flex interactable">
             {{#if sortAscending}}<i class="fa-solid fa-sort-asc"></i> Sort bookmarks in ascending order{{else}}<i class="fa-solid fa-sort-desc"></i> Sort bookmarks in descending order{{/if}}
         </button>
@@ -16,7 +16,7 @@ export const bookmarksTemplate = Handlebars.compile(`
     <div class="popup-content marginBot10"><small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small></div>
 
     {{#if bookmarks.length}}
-        <div class="flex-container flexFlowColumn spaceBetween" style="max-height: 400px; overflow-y: auto;">
+        <div class="flex-container flexFlowColumn spaceBetween">
             {{#each bookmarks}}
             <div class="bookmark-item flex-container alignItemsCenter padding8 marginTopBot5 stmb-box" data-message-num="{{messageNum}}" data-title="{{title}}">
                 <div title="{{loadStatus.tooltip}}" class="bookmark-content flex1 cursor-pointer marginTopBot5" data-message="{{messageNum}}">
@@ -34,7 +34,7 @@ export const bookmarksTemplate = Handlebars.compile(`
             <span>No bookmarks found. Create your first bookmark to get started!</span>
         </div>
     {{/if}}
-    <div class="buttons_block marginTop5" style="justify-content: center;">
+    <div class="buttons_block marginTop5 justifyCenter">
         <button id="stmb-create-bookmark" class="menu_button menu_button_icon inline-flex interactable"><i class="fa-solid fa-plus"></i>  Create New Bookmark</button>
     </div>
 `);
@@ -46,7 +46,7 @@ export const settingsTemplate = Handlebars.compile(`
     <h3>📕 Memory Books Settings</h3>
         {{#if hasScene}}
         <div id="stmb-scene" class="padding10 marginBot10">
-            <div class="marginBot5" style="font-weight: bold;">Current Scene:</div>
+            <div class="marginBot5">Current Scene:</div>
             <div class="padding10 marginTop5 stmb-box">
                 <pre><code id="stmb-scene-block">Start: Message #{{sceneData.sceneStart}} ({{sceneData.startSpeaker}})
 {{sceneData.startExcerpt}}
@@ -189,7 +189,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
 
         <div id="stmb-profile-summary" class="padding10 marginBot10">
-            <div class="marginBot5" style="font-weight: bold;">Profile Settings:</div>
+            <div class="marginBot5">Profile Settings:</div>
             <div>Provider: <span id="stmb-summary-api">{{selectedProfile.connection.api}}</span></div>
             <div>Model: <span id="stmb-summary-model">{{selectedProfile.connection.model}}</span></div>
             <div>Temperature: <span id="stmb-summary-temp">{{selectedProfile.connection.temperature}}</span></div>
@@ -203,7 +203,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
 
         <h4>Profile Actions:</h4>
-        <div class="buttons_block marginTop5" style="justify-content: center;">
+        <div class="buttons_block marginTop5 justifyCenter">
             <div class="menu_button" id="stmb-set-default-profile">Set as Default</div>
             <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
             <div class="menu_button" id="stmb-new-profile">New Profile</div>
@@ -212,7 +212,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
         <h4>Import/Export Profiles:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-        <div class="buttons_block marginTop5" style="justify-content: center;">
+        <div class="buttons_block marginTop5 justifyCenter">
             <div class="menu_button" id="stmb-export-profiles">Export Profiles</div>
             <div class="menu_button" id="stmb-import-profiles">Import Profiles</div>
         </div>
@@ -224,7 +224,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 export const simpleConfirmationTemplate = Handlebars.compile(`
     <h3>Create Memory</h3>
     <div id="stmb-scene" class="padding10 marginBot10">
-        <div class="marginBot5" style="font-weight: bold;">Scene Preview:</div>
+        <div class="marginBot5">Scene Preview:</div>
             <div class="padding10 marginTop5 stmb-box">
             <pre><code id="stmb-scene-block">Start: Message #{{sceneStart}} ({{startSpeaker}})
 {{startExcerpt}}
@@ -238,10 +238,10 @@ Messages: {{messageCount}} | Estimated tokens: {{estimatedTokens}}</code></pre>
     </div>
 
     <div class="world_entry_form_control">
-        <h5>Using Profile: <span style="color: #4CAF50;">{{profileName}}</span></h5>
+        <h5>Using Profile: <span class="success">{{profileName}}</span></h5>
         
         <div id="stmb-profile-summary" class="padding10 marginBot10">
-            <div class="marginBot5" style="font-weight: bold;">Profile Settings:</div>
+            <div class="marginBot5">Profile Settings:</div>
             <div>Model: <span id="stmb-summary-model">{{profileModel}}</span></div>
             <div>Temperature: <span id="stmb-summary-temp">{{profileTemperature}}</span></div>
             <details class="marginTop10">
@@ -259,7 +259,7 @@ Messages: {{messageCount}} | Estimated tokens: {{estimatedTokens}}</code></pre>
     </div>
     {{/if}}
 
-    <div class="marginTop10 opacity50p" style="font-size: 0.9em;">
+    <div class="marginTop10 opacity50p fontsize90p">
         Click "Advanced Options" to customize prompt, context memories, or API settings.
     </div>
 `);
@@ -271,10 +271,10 @@ export const advancedOptionsTemplate = Handlebars.compile(`
     <h3>Advanced Memory Options</h3>
     <div class="world_entry_form_control">
         <h4>Scene Information:</h4>
-        <div class="padding10" style="background: #1a1a1a; border-radius: 5px; margin-bottom: 15px;">
-            <div style="font-size: 0.9em;">Messages {{sceneStart}}-{{sceneEnd}} ({{messageCount}} total)</div>
-            <div style="font-size: 0.9em;">Base tokens: {{estimatedTokens}}</div>
-            <div style="font-size: 0.9em;" id="stmb-total-tokens-display">Total tokens: {{estimatedTokens}}</div>
+        <div class="padding10 marginBot15" style="background-color: var(--SmartThemeBlurTintColor); border-radius: 5px;">
+            <div class="fontsize90p">Messages {{sceneStart}}-{{sceneEnd}} ({{messageCount}} total)</div>
+            <div class="fontsize90p">Base tokens: {{estimatedTokens}}</div>
+            <div class="fontsize90p" id="stmb-total-tokens-display">Total tokens: {{estimatedTokens}}</div>
         </div>
     </div>
 
@@ -325,17 +325,17 @@ export const advancedOptionsTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <h4>API Override Settings:</h4>
         
-        <div class="padding10 marginBot10" style="background: #2a2a2a; border-radius: 5px;">
-            <div class="marginBot5" style="font-weight: bold;">Profile Settings:</div>
-            <div style="font-size: 0.9em;">Model: <span style="color: #4CAF50;" id="stmb-profile-model-display">{{profileModel}}</span></div>
-            <div style="font-size: 0.9em;">Temperature: <span style="color: #4CAF50;" id="stmb-profile-temp-display">{{profileTemperature}}</span></div>
+        <div class="padding10 marginBot10" style="background-color: var(--SmartThemeBlurTintColor); border-radius: 5px; filter: brightness(1.2);">
+            <div class="marginBot5">Profile Settings:</div>
+            <div class="fontsize90p">Model: <span class="success" id="stmb-profile-model-display">{{profileModel}}</span></div>
+            <div class="fontsize90p">Temperature: <span class="success" id="stmb-profile-temp-display">{{profileTemperature}}</span></div>
         </div>
         
-        <div class="padding10 marginBot10" style="background: #1a1a1a; border-radius: 5px;">
-            <div class="marginBot5" style="font-weight: bold;">Current SillyTavern Settings:</div>
-            <div style="font-size: 0.9em;">Model: <span style="color: #2196F3;">{{currentModel}}</span></div>
-            <div style="font-size: 0.9em;">Temperature: <span style="color: #2196F3;">{{currentTemperature}}</span></div>
-            <div style="font-size: 0.9em;">API: <span style="color: #2196F3;">{{currentApi}}</span></div>
+        <div class="padding10 marginBot10" style="background-color: var(--SmartThemeBlurTintColor); border-radius: 5px;">
+            <div class="marginBot5">Current SillyTavern Settings:</div>
+            <div class="fontsize90p">Model: <span style="color: var(--SmartThemeQuoteColor);">{{currentModel}}</span></div>
+            <div class="fontsize90p">Temperature: <span style="color: var(--SmartThemeQuoteColor);">{{currentTemperature}}</span></div>
+            <div class="fontsize90p">API: <span style="color: var(--SmartThemeQuoteColor);">{{currentApi}}</span></div>
         </div>
         
         <label class="checkbox_label">
