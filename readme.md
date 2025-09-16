@@ -12,8 +12,9 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
   - Each chat now displays "Memory Status: Processed up to message #X" in settings
   - Shows "No memories processed yet" for new chats
   - Enables better management of aggregate lorebooks across multiple chats
-  - Auto-summary logic improved for more accurate triggering
   - Backwards compatible - existing chats automatically get the new field
+- **Bug Fixes:** Fixed highest memory processing logic for better reliability
+- **Auto-Summary Improvements:** Auto-summary now properly activates for first memory in chat
 
 ---
 
