@@ -6,7 +6,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ---
 
-## 🚦 What's New (v3.5.4)
+## 🚦 What's New (v3.6.0)
 
 - **Dynamic Profile System:** Added dynamic profile functionality that automatically uses your current SillyTavern settings.
   - Seamlessly integrates with your existing API configuration
@@ -20,14 +20,6 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 - **Auto-Summary Enhancements:** Added postpone functionality for auto-summary feature.
   - Ability to delay auto-summary execution when needed
   - More flexible control over automatic memory creation timing
-
-- **Chat Bookmarks:** Set up to 75 bookmarks per chat.
-  - The memory lorebook is also used to save the bookmarks
-  - "STMB Bookmarks" entry is invisible and is NOT sent to the LLM.
-  - If "STMB Bookmarks" is deleted all bookmarks for that chat will disappear.
-  - implemented background loading of large chats (more than 1000 messages)
-
-- **Bugfix:** Popup refresh issues fixed.
 
 ---
 
