@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v3.6.1 (September 2025)
+- **Bug Fixes:** Various stability improvements and fixes
+- **Code Refinements:** Minor code improvements and optimizations
+
 ## v3.6.0 (September 2025)
 - **Dynamic Profile System:** Added dynamic profile functionality that uses current SillyTavern settings
 - **Completion Sources:** Updated completion source handling and configuration

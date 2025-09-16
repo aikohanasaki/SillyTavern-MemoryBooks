@@ -18,14 +18,14 @@ const MODULE_NAME = 'STMemoryBooks-ProfileManager';
  */
 const profileEditTemplate = Handlebars.compile(`
 <div class="popup-content">
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-name">
             <h4>Profile Name:</h4>
             <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" placeholder="Profile name">
         </label>
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <h4>Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10">
             For model, copy-paste the exact model ID, eg. <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code>, etc.
@@ -80,7 +80,7 @@ const profileEditTemplate = Handlebars.compile(`
         </div>
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-preset">
             <h4>Memory Creation Method:</h4>
             <h5>Choose a built-in preset or create a custom prompt.</h5>
@@ -112,7 +112,7 @@ Return ONLY the JSON, no other text.{{/if}}</textarea>
         </label>
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <h4>Memory Title Format:</h4>
         <small class="opacity50p">Use [0], [00], etc. for numbering. Available tags: \\{{title}}, \\{{scene}}, \\{{char}}, \\{{user}}, \\{{messages}}, \\{{profile}}, \\{{date}}, \\{{time}}</small>
         <select id="stmb-profile-title-format-select" class="text_pole">
@@ -130,7 +130,7 @@ Return ONLY the JSON, no other text.{{/if}}</textarea>
         These settings control how the generated memory is saved into the lorebook.
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-const-vect">
             <h4>Activation Mode:</h4>
             <h5>🔗 Vectorized is recommended for memories.</h5>
@@ -142,7 +142,7 @@ Return ONLY the JSON, no other text.{{/if}}</textarea>
         </label>
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-position">
             <h4>Insertion Position:</h4>
             <h5>↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</h5>
@@ -156,17 +156,17 @@ Return ONLY the JSON, no other text.{{/if}}</textarea>
         </label>
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <h4>Insertion Order:</h4>
-        <div class="buttons_block" style="justify-content: center; gap: 10px;">
+        <div class="buttons_block justifyCenter gap10px">
             <label class="checkbox_label"><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> Auto (uses memory #)</label>
-            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> Manual <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}}" min="1" max="9999" step="1" style="width: 100px; margin-left: auto;"></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> Manual <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
         </div>
     </div>
 
-    <div class="world_entry_form_control" style="margin-top: 5px;">
+    <div class="world_entry_form_control marginTop5">
         <h4>Recursion Settings:</h4>
-        <div class="buttons_block" style="justify-content: center;">
+        <div class="buttons_block justifyCenter">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-profile-prevent-recursion" {{#if preventRecursion}}checked{{/if}}>
                 <span>Prevent Recursion</span>
