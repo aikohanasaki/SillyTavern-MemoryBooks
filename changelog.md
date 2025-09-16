@@ -2,6 +2,12 @@
 
 **← [Back to README](readme.md)**
 
+## v3.5.4 (September 2025)
+- **Dynamic Profile System:** Added dynamic profile functionality that uses current SillyTavern settings
+- **Completion Sources:** Updated completion source handling and configuration
+- **Auto-Summary Enhancements:** Added postpone functionality for auto-summary feature
+- **Documentation:** Updated changelog and README with latest changes
+
 ## v3.5.3 (September 2025)
 - **Auto-Summary Feature:** Automatically create memory summaries at specified intervals
   - Set a message interval (10-200 messages) to trigger automatic `/nextmemory` execution
