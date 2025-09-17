@@ -188,6 +188,28 @@ function handleChatChanged() {
 }
 
 /**
+ * Validate and clean up orphaned scene markers
+ */
+function validateAndCleanupSceneMarkers() {
+    const stmbData = getSceneMarkers() || {};
+    const { sceneStart, sceneEnd } = stmbData;
+
+    // Check if we have orphaned scene markers (scene markers without active memory creation)
+    if (sceneStart !== null || sceneEnd !== null) {
+        console.log(`STMemoryBooks: Found orphaned scene markers on chat load (start: ${sceneStart}, end: ${sceneEnd})`);
+
+        // Check if memory creation is actually in progress
+        if (!isProcessingMemory) {
+            console.log('STMemoryBooks: No active memory creation detected - clearing orphaned scene markers');
+            clearScene();
+            toastr.info('Cleared orphaned scene markers from previous session', 'STMemoryBooks');
+        } else {
+            console.log('STMemoryBooks: Memory creation in progress - keeping scene markers');
+        }
+    }
+}
+
+/**
  * Chat loaded handler with conversion logging
  */
 function handleChatLoaded() {
@@ -196,8 +218,9 @@ function handleChatLoaded() {
     console.log(`${MODULE_NAME}: Current chat metadata:`, chat_metadata);
     console.log(`${MODULE_NAME}: METADATA_KEY value:`, METADATA_KEY);
     console.log(`${MODULE_NAME}: Lorebook from metadata:`, chat_metadata[METADATA_KEY]);
-    
+
     updateSceneStateCache();
+    validateAndCleanupSceneMarkers();
     processExistingMessages();
 }
 
@@ -205,25 +228,86 @@ async function handleMessageReceived() {
     setTimeout(validateSceneMarkers, 500);
     if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
         const currentMessageCount = chat.length;
-        const checkInterval = 2; // Check every 2 messages
-        if (currentMessageCount % checkInterval === 0) {
-            await checkAutoSummaryTrigger();
-        }
+        console.log(`STMemoryBooks: Message received - auto-summary enabled, current count: ${currentMessageCount}`);
+
+        // Always check auto-summary trigger, not just on even messages
+        // This ensures we don't miss triggers due to odd message counts
+        await checkAutoSummaryTrigger();
+    } else {
+        console.log('STMemoryBooks: Message received but auto-summary is disabled');
     }
 }
+
+/**
+ * Debug function to manually check auto-summary status
+ * Call this from browser console: window.STMemoryBooks_debugAutoSummary()
+ */
+window.STMemoryBooks_debugAutoSummary = function() {
+    const settings = extension_settings.STMemoryBooks;
+    const stmbData = getSceneMarkers() || {};
+    const currentMessageCount = chat.length;
+    const currentLastMessage = currentMessageCount - 1;
+    const requiredInterval = settings.moduleSettings.autoSummaryInterval;
+    const highestProcessed = stmbData.highestMemoryProcessed;
+
+    console.log('=== STMemoryBooks Auto-Summary Debug ===');
+    console.log('Auto-summary enabled:', settings.moduleSettings.autoSummaryEnabled);
+    console.log('Current message count:', currentMessageCount);
+    console.log('Current last message index:', currentLastMessage);
+    console.log('Required interval:', requiredInterval);
+    console.log('Highest processed:', highestProcessed);
+    console.log('Scene markers:', { start: stmbData.sceneStart, end: stmbData.sceneEnd });
+    console.log('Processing memory flag:', isProcessingMemory);
+
+    if (highestProcessed !== null) {
+        const messagesSince = currentLastMessage - highestProcessed;
+        console.log('Messages since last memory:', messagesSince);
+        console.log('Should trigger:', messagesSince >= requiredInterval);
+    } else {
+        console.log('No previous memories - total messages:', currentMessageCount);
+        console.log('Should trigger:', currentMessageCount >= requiredInterval);
+    }
+
+    console.log('Chat metadata STMemoryBooks:', chat_metadata?.STMemoryBooks);
+    console.log('Chat bound lorebook:', chat_metadata?.[METADATA_KEY]);
+    console.log('Available world_names:', world_names);
+    console.log('Manual mode enabled:', settings.moduleSettings.manualModeEnabled);
+    console.log('=========================================');
+
+    // Manually trigger check
+    console.log('Manually triggering auto-summary check...');
+    checkAutoSummaryTrigger();
+};
 
 /**
  * Check if auto-summary should be triggered based on message difference
  */
 async function checkAutoSummaryTrigger() {
+    const currentMessageCount = chat.length;
+    const currentLastMessage = currentMessageCount - 1;
+    const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
+
+    console.log(`STMemoryBooks: Auto-summary check - current message count: ${currentMessageCount}, interval: ${requiredInterval}`);
+
     // Check if user has postponed auto-summary
     const stmbData = getSceneMarkers() || {};
-    if (stmbData.autoSummaryNextPromptAt && chat.length < stmbData.autoSummaryNextPromptAt) {
+    if (stmbData.autoSummaryNextPromptAt && currentMessageCount < stmbData.autoSummaryNextPromptAt) {
+        console.log(`STMemoryBooks: Auto-summary postponed until message ${stmbData.autoSummaryNextPromptAt}`);
         return; // Still in postpone period
+    }
+
+    // Clear any stale scene markers that might interfere with auto-summary
+    if (stmbData.sceneStart !== null || stmbData.sceneEnd !== null) {
+        console.log(`STMemoryBooks: Detected stale scene markers (start: ${stmbData.sceneStart}, end: ${stmbData.sceneEnd}) - clearing them`);
+        clearScene();
+        // Get updated data after clearing
+        const refreshedData = getSceneMarkers() || {};
+        console.log(`STMemoryBooks: Scene markers cleared, updated data:`, refreshedData);
     }
 
     const lorebookValidation = await validateLorebookForAutoSummary();
     if (!lorebookValidation.valid) {
+        console.log(`STMemoryBooks: Auto-summary blocked - lorebook validation failed: ${lorebookValidation.error}`);
         return; // No lorebook available or user cancelled
     }
 
@@ -231,28 +315,35 @@ async function checkAutoSummaryTrigger() {
     if (stmbData.autoSummaryNextPromptAt) {
         delete stmbData.autoSummaryNextPromptAt;
         saveMetadataForCurrentContext();
+        console.log('STMemoryBooks: Cleared auto-summary postpone flag');
     }
 
     // Use the highestMemoryProcessed field for more efficient tracking
-    const currentLastMessage = chat.length - 1;
-    const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
     const highestProcessed = stmbData.highestMemoryProcessed;
+    console.log(`STMemoryBooks: Highest memory processed: ${highestProcessed}, current last message: ${currentLastMessage}`);
 
     let messagesSinceLastMemory;
 
     if (highestProcessed === null) {
         // No memories processed yet - check if we have enough messages for the first memory
         messagesSinceLastMemory = currentLastMessage + 1; // +1 because message indices are 0-based
+        console.log(`STMemoryBooks: No previous memories found, total messages available: ${messagesSinceLastMemory}`);
     } else {
         // Calculate messages since the highest processed message
         messagesSinceLastMemory = currentLastMessage - highestProcessed;
+        console.log(`STMemoryBooks: Messages since last memory: ${messagesSinceLastMemory} (${currentLastMessage} - ${highestProcessed})`);
     }
+
+    console.log(`STMemoryBooks: Auto-summary decision - need ${requiredInterval} messages, have ${messagesSinceLastMemory}`);
 
     if (messagesSinceLastMemory >= requiredInterval) {
         // Check if memory creation is already in progress
         if (isProcessingMemory) {
+            console.log('STMemoryBooks: Auto-summary blocked - memory creation already in progress');
             return;
         }
+
+        console.log(`STMemoryBooks: Auto-summary triggered! (${messagesSinceLastMemory} >= ${requiredInterval})`);
 
         // Wait a moment for any ongoing message processing to complete
         setTimeout(async () => {
@@ -267,12 +358,16 @@ async function checkAutoSummaryTrigger() {
                     await handleSceneMemoryCommand({}, rangeString);
                 } else {
                     // Subsequent memories - use existing nextmemory logic
+                    console.log(`STMemoryBooks: Auto-creating next memory from message ${highestProcessed + 1}`);
                     await handleNextMemoryCommand({}, '');
                 }
             } catch (error) {
+                console.error('STMemoryBooks: Auto-summary execution failed:', error);
                 toastr.warning(`Auto-summary failed: ${error.message}`, 'STMemoryBooks');
             }
         }, 1000);
+    } else {
+        console.log(`STMemoryBooks: Auto-summary not triggered - need ${requiredInterval - messagesSinceLastMemory} more messages`);
     }
 }
 
@@ -798,11 +893,85 @@ async function validateLorebookForAutoSummary() {
     }
 
     if (!lorebookName) {
+        console.log('STMemoryBooks: No lorebook name found in metadata');
         return { valid: false, error: 'No lorebook available' };
     }
 
+    console.log(`STMemoryBooks: Looking for lorebook: "${lorebookName}"`);
+    console.log('STMemoryBooks: Available world_names:', world_names);
+
     if (!world_names || !world_names.includes(lorebookName)) {
-        return { valid: false, error: `Selected lorebook "${lorebookName}" not found.` };
+        // Try to find a close match (case-insensitive, trimmed)
+        let foundMatch = null;
+        if (world_names) {
+            foundMatch = world_names.find(name =>
+                name.toLowerCase().trim() === lorebookName.toLowerCase().trim()
+            );
+        }
+
+        if (foundMatch) {
+            console.log(`STMemoryBooks: Found close match: "${foundMatch}" for "${lorebookName}"`);
+            lorebookName = foundMatch;
+        } else {
+            console.log(`STMemoryBooks: Lorebook "${lorebookName}" not found in available lorebooks:`, world_names);
+
+            // Show user-friendly lorebook selection popup
+            if (world_names && world_names.length > 0) {
+                const lorebookOptions = world_names.map(name =>
+                    `<option value="${name}">${name}</option>`
+                ).join('');
+
+                const popupContent = `
+                    <h4>Lorebook Not Found</h4>
+                    <div class="world_entry_form_control">
+                        <p>The assigned lorebook "<strong>${lorebookName}</strong>" was not found.</p>
+                        <p>Please select an available lorebook for auto-summary:</p>
+                        <label for="stmb-select-lorebook">Choose Lorebook:</label>
+                        <select id="stmb-select-lorebook" class="text_pole">
+                            ${lorebookOptions}
+                        </select>
+                        <br><br>
+                        <label for="stmb-postpone-messages">Or postpone for how many messages?</label>
+                        <select id="stmb-postpone-messages" class="text_pole">
+                            <option value="10">10 messages</option>
+                            <option value="20">20 messages</option>
+                            <option value="30">30 messages</option>
+                            <option value="50">50 messages</option>
+                        </select>
+                    </div>
+                `;
+
+                const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
+                    okButton: 'Use Selected Lorebook',
+                    cancelButton: 'Postpone'
+                });
+                const result = await popup.show();
+
+                if (result === POPUP_RESULT.AFFIRMATIVE) {
+                    // User selected a lorebook
+                    const selectedLorebook = popup.dlg.querySelector('#stmb-select-lorebook').value;
+                    console.log(`STMemoryBooks: User selected lorebook: "${selectedLorebook}"`);
+
+                    // Update the chat metadata to use the selected lorebook
+                    chat_metadata[METADATA_KEY] = selectedLorebook;
+                    saveMetadataDebounced();
+
+                    lorebookName = selectedLorebook;
+                    toastr.success(`Auto-summary will now use "${selectedLorebook}"`, 'STMemoryBooks');
+                } else {
+                    // User chose to postpone
+                    const postponeMessages = parseInt(popup.dlg.querySelector('#stmb-postpone-messages').value) || 10;
+                    const nextPromptAt = chat.length + postponeMessages;
+                    const stmbData = getSceneMarkers() || {};
+                    stmbData.autoSummaryNextPromptAt = nextPromptAt;
+                    saveMetadataForCurrentContext();
+
+                    return { valid: false, error: `Auto-summary postponed for ${postponeMessages} messages` };
+                }
+            } else {
+                return { valid: false, error: 'No lorebooks available for auto-summary' };
+            }
+        }
     }
 
     try {
@@ -1035,15 +1204,19 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
         // Add to lorebook silently
         const addResult = await addMemoryToLorebook(finalMemoryResult, lorebookValidation);
-        
+
         if (!addResult.success) {
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
         }
-        
+
+        // Clear scene markers after successful memory creation to prevent stale metadata
+        clearScene();
+        console.log('STMemoryBooks: Scene markers cleared after successful memory creation');
+
         // Success notification
-        const contextMsg = memoryFetchResult.actualCount > 0 ? 
+        const contextMsg = memoryFetchResult.actualCount > 0 ?
             ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
-        
+
         // Clear working toast and show success
         toastr.clear();
         const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
