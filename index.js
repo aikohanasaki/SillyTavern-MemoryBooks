@@ -1373,6 +1373,73 @@ function getAutoHideMode(moduleSettings) {
 }
 
 /**
+ * Update lorebook status display in settings popup
+ */
+function updateLorebookStatusDisplay() {
+    const settings = extension_settings.STMemoryBooks;
+    if (!settings) return;
+
+    const stmbData = getSceneMarkers() || {};
+    const isManualMode = settings.moduleSettings.manualModeEnabled;
+
+    // Update mode badge
+    const modeBadge = document.querySelector('.stmb-mode-badge');
+    if (modeBadge) {
+        modeBadge.textContent = isManualMode ? 'Manual' : 'Automatic (Chat-bound)';
+    }
+
+    // Update active lorebook display
+    const activeLorebookSpan = document.querySelector('#stmb-active-lorebook');
+    if (activeLorebookSpan) {
+        const currentLorebook = isManualMode ?
+            stmbData.manualLorebook :
+            chat_metadata?.[METADATA_KEY];
+
+        activeLorebookSpan.textContent = currentLorebook || 'None selected';
+        activeLorebookSpan.className = currentLorebook ? '' : 'opacity50p';
+    }
+
+    // Update button text
+    const selectButton = document.querySelector('#stmb-select-manual-lorebook');
+    if (selectButton) {
+        const buttonText = stmbData.manualLorebook ? 'Change' : 'Select';
+        const icon = selectButton.querySelector('i');
+        selectButton.innerHTML = '';
+        if (icon) selectButton.appendChild(icon);
+        selectButton.appendChild(document.createTextNode(` ${buttonText} Manual Lorebook`));
+    }
+
+    // Show/hide manual controls section
+    const manualSection = document.querySelector('.stmb-lorebook-status');
+    if (manualSection) {
+        const manualControls = manualSection.querySelector('.marginTop10');
+        const automaticInfo = manualSection.querySelector('.marginTop5');
+
+        if (manualControls) {
+            manualControls.style.display = isManualMode ? 'block' : 'none';
+        }
+        if (automaticInfo) {
+            automaticInfo.style.display = isManualMode ? 'none' : 'block';
+
+            // Update automatic mode info text
+            const infoText = automaticInfo.querySelector('small');
+            if (infoText) {
+                const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
+                infoText.innerHTML = chatBoundLorebook ?
+                    `Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"` :
+                    'No chat-bound lorebook. Memories will require lorebook selection.';
+            }
+        }
+
+        // Show/hide clear button based on whether manual lorebook is set
+        const clearButton = document.querySelector('#stmb-clear-manual-lorebook');
+        if (clearButton) {
+            clearButton.style.display = (isManualMode && stmbData.manualLorebook) ? 'inline-block' : 'none';
+        }
+    }
+}
+
+/**
  * Show main settings popup
  */
 async function showSettingsPopup() {
@@ -1380,6 +1447,12 @@ async function showSettingsPopup() {
     const sceneData = getSceneData();
     const selectedProfile = settings.profiles[settings.defaultProfile];
     const sceneMarkers = getSceneMarkers();
+
+    // Get current lorebook information
+    const isManualMode = settings.moduleSettings.manualModeEnabled;
+    const chatBoundLorebook = chat_metadata?.[METADATA_KEY] || null;
+    const manualLorebook = sceneMarkers?.manualLorebook || null;
+
     const templateData = {
         hasScene: !!sceneData,
         sceneData: sceneData,
@@ -1390,6 +1463,13 @@ async function showSettingsPopup() {
         refreshEditor: settings.moduleSettings.refreshEditor,
         allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
         manualModeEnabled: settings.moduleSettings.manualModeEnabled,
+
+        // Lorebook status information
+        lorebookMode: isManualMode ? 'Manual' : 'Automatic (Chat-bound)',
+        currentLorebookName: isManualMode ? manualLorebook : chatBoundLorebook,
+        manualLorebookName: manualLorebook,
+        chatBoundLorebookName: chatBoundLorebook,
+        availableLorebooks: world_names || [],
         autoHideMode: getAutoHideMode(settings.moduleSettings),
         unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
         tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
@@ -1574,10 +1654,49 @@ function setupSettingsEventListeners() {
             popupElement.querySelector('#stmb-import-file')?.click();
             return;
         }
+
+        // Handle manual lorebook selection
+        if (e.target.matches('#stmb-select-manual-lorebook')) {
+            e.preventDefault();
+            try {
+                const selectedLorebook = await getEffectiveLorebookName();
+                if (selectedLorebook) {
+                    const stmbData = getSceneMarkers() || {};
+                    stmbData.manualLorebook = selectedLorebook;
+                    saveMetadataForCurrentContext();
+
+                    // Refresh the display
+                    updateLorebookStatusDisplay();
+                    toastr.success(`Manual lorebook set to "${selectedLorebook}"`, 'STMemoryBooks');
+                }
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error selecting manual lorebook:`, error);
+                toastr.error('Failed to select manual lorebook', 'STMemoryBooks');
+            }
+            return;
+        }
+
+        // Handle manual lorebook clear
+        if (e.target.matches('#stmb-clear-manual-lorebook')) {
+            e.preventDefault();
+            try {
+                const stmbData = getSceneMarkers() || {};
+                delete stmbData.manualLorebook;
+                saveMetadataForCurrentContext();
+
+                // Refresh the display
+                updateLorebookStatusDisplay();
+                toastr.info('Manual lorebook cleared', 'STMemoryBooks');
+            } catch (error) {
+                console.error(`${MODULE_NAME}: Error clearing manual lorebook:`, error);
+                toastr.error('Failed to clear manual lorebook', 'STMemoryBooks');
+            }
+            return;
+        }
     });
     
     // Handle change events using delegation
-    popupElement.addEventListener('change', (e) => {
+    popupElement.addEventListener('change', async (e) => {
         const settings = initializeSettings();
         
         if (e.target.matches('#stmb-import-file')) {
@@ -1597,11 +1716,75 @@ function setupSettingsEventListeners() {
         }
         
         if (e.target.matches('#stmb-manual-mode-enabled')) {
+            const isEnabling = e.target.checked;
+
+            if (isEnabling) {
+                // Check if there's a chat-bound lorebook
+                const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
+                const stmbData = getSceneMarkers() || {};
+
+                // If switching to manual mode and no manual lorebook is set
+                if (!stmbData.manualLorebook) {
+                    // If there's a chat-bound lorebook, suggest using it or selecting a different one
+                    if (chatBoundLorebook) {
+                        const popupContent = `
+                            <h4>Manual Lorebook Setup</h4>
+                            <div class="world_entry_form_control">
+                                <p>You have a chat-bound lorebook "<strong>${chatBoundLorebook}</strong>".</p>
+                                <p>Would you like to use it for manual mode or select a different one?</p>
+                            </div>
+                        `;
+
+                        const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
+                            okButton: 'Use Chat-bound',
+                            cancelButton: 'Select Different'
+                        });
+                        const result = await popup.show();
+
+                        if (result === POPUP_RESULT.AFFIRMATIVE) {
+                            // Use the chat-bound lorebook as manual lorebook
+                            stmbData.manualLorebook = chatBoundLorebook;
+                            saveMetadataForCurrentContext();
+                            toastr.success(`Manual lorebook set to "${chatBoundLorebook}"`, 'STMemoryBooks');
+                        } else {
+                            // Let user select a different lorebook
+                            const selectedLorebook = await getEffectiveLorebookName();
+                            if (selectedLorebook) {
+                                stmbData.manualLorebook = selectedLorebook;
+                                saveMetadataForCurrentContext();
+                                toastr.success(`Manual lorebook set to "${selectedLorebook}"`, 'STMemoryBooks');
+                            } else {
+                                // User cancelled, revert the checkbox
+                                e.target.checked = false;
+                                toastr.info('Manual mode cancelled - no lorebook selected', 'STMemoryBooks');
+                                return;
+                            }
+                        }
+                    } else {
+                        // No chat-bound lorebook, prompt to select one
+                        toastr.info('Please select a lorebook for manual mode', 'STMemoryBooks');
+                        const selectedLorebook = await getEffectiveLorebookName();
+                        if (selectedLorebook) {
+                            stmbData.manualLorebook = selectedLorebook;
+                            saveMetadataForCurrentContext();
+                            toastr.success(`Manual lorebook set to "${selectedLorebook}"`, 'STMemoryBooks');
+                        } else {
+                            // User cancelled, revert the checkbox
+                            e.target.checked = false;
+                            toastr.info('Manual mode cancelled - no lorebook selected', 'STMemoryBooks');
+                            return;
+                        }
+                    }
+                }
+            }
+
             settings.moduleSettings.manualModeEnabled = e.target.checked;
             saveSettingsDebounced();
+            updateLorebookStatusDisplay();
             return;
         }
-        
+
+
         if (e.target.matches('#stmb-auto-hide-mode')) {
             settings.moduleSettings.autoHideMode = e.target.value;
             delete settings.moduleSettings.autoHideAllMessages;

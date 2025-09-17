@@ -102,6 +102,62 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <small class="opacity50p">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
         </div>
 
+        <!-- Lorebook Status Section -->
+        <div class="world_entry_form_control stmb-lorebook-status">
+            <div class="title_restorable">
+                <h4>Current Lorebook Configuration</h4>
+            </div>
+
+            <!-- Mode Display -->
+            <div class="flex-container alignitemscenter">
+                <label style="min-width: 60px;">Mode:</label>
+                <span class="stmb-mode-badge">{{lorebookMode}}</span>
+            </div>
+
+            <!-- Current Lorebook Display -->
+            <div class="flex-container alignitemscenter marginTop5">
+                <label style="min-width: 60px;">Active Lorebook:</label>
+                <span id="stmb-active-lorebook" class="{{#unless currentLorebookName}}opacity50p{{/unless}}">
+                    {{#if currentLorebookName}}
+                        {{currentLorebookName}}
+                    {{else}}
+                        None selected
+                    {{/if}}
+                </span>
+            </div>
+
+            <!-- Manual Mode Controls (shown when manual mode enabled) -->
+            {{#if manualModeEnabled}}
+            <div class="marginTop10">
+                <button id="stmb-select-manual-lorebook" class="menu_button">
+                    <i class="fa-solid fa-book"></i>
+                    {{#if manualLorebookName}}Change{{else}}Select{{/if}} Manual Lorebook
+                </button>
+                {{#if manualLorebookName}}
+                <button id="stmb-clear-manual-lorebook" class="menu_button marginLeft5">
+                    <i class="fa-solid fa-xmark"></i>
+                    Clear
+                </button>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            <!-- Automatic Mode Info (shown when manual mode disabled) -->
+            {{#unless manualModeEnabled}}
+            <div class="marginTop5">
+                <small class="opacity50p">
+                    {{#if chatBoundLorebookName}}
+                        Using chat-bound lorebook "{{chatBoundLorebookName}}"
+                    {{else}}
+                        No chat-bound lorebook. Memories will require lorebook selection.
+                    {{/if}}
+                </small>
+            </div>
+            {{/unless}}
+        </div>
+
+        <hr class="marginTop10 marginBot10">
+
         <div class="world_entry_form_control">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
