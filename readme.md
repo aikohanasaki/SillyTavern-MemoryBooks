@@ -4,6 +4,9 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 **📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
 
+## FAQ 
+Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books" and "Bookmarks".
+
 ---
 
 ## 🚦 What's New (v3.6.3)
@@ -25,10 +28,9 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 ## 📋 Prerequisites
 
 - **SillyTavern:** 1.13.2+ (latest recommended)
-- **API Access:** OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Scene Selection:** Start and end markers (start < end) must be set.
-
-> **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
+- **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
+- **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
 
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 (If these settings are not used it is unlikely the memories will be pulled in!)
@@ -55,7 +57,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 ![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Create a Memory**
-- Open the Extensions menu (the magic wand 🪄) and click "Create Memory", or use `/creatememory` slash command.
+- Open the Extensions menu (the magic wand 🪄) and click "Memory Books", or use `/creatememory` slash command.
 - Confirm settings (profile, context, API/model) if prompted.
 - Wait for AI generation and automatic lorebook entry.
 
