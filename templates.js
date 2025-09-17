@@ -310,7 +310,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control">
         <label for="stmb-effective-prompt-advanced">
-            <h4>Memory Creation Prompt:</h4>
+            <h4>Memory Creation Prompt: <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-effective-prompt-advanced" title="Expand the editor" data-i18n="[title]Expand the editor"></i></h4>
             <h5>Customize the prompt used to generate this memory.</h5>
             <textarea id="stmb-effective-prompt-advanced" class="text_pole textarea_compact" rows="6" placeholder="Memory creation prompt">{{effectivePrompt}}</textarea>
         </label>
@@ -399,7 +399,7 @@ export const memoryPreviewTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control">
         <label for="stmb-preview-content">
-            <h4>Memory Content:</h4>
+            <h4>Memory Content: <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-preview-content" title="Expand the editor" data-i18n="[title]Expand the editor"></i></h4>
             <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" placeholder="Memory content">{{#if content}}{{content}}{{else}}{{/if}}</textarea>
         </label>
     </div>
