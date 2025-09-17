@@ -299,7 +299,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <label for="stmb-profile-select-advanced">
             <h4>Profile:</h4>
-            <h5>Change the profile to use different base settings.</h5>
+            <small>Change the profile to use different base settings.</small>
             <select id="stmb-profile-select-advanced" class="text_pole">
                 {{#each profiles}}
                 <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
@@ -310,8 +310,9 @@ export const advancedOptionsTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control">
         <label for="stmb-effective-prompt-advanced">
-            <h4>Memory Creation Prompt: <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-effective-prompt-advanced" title="Expand the editor" data-i18n="[title]Expand the editor"></i></h4>
-            <h5>Customize the prompt used to generate this memory.</h5>
+            <h4>Memory Creation Prompt:</h4>
+            <small>Customize the prompt used to generate this memory.</small>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-effective-prompt-advanced" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
             <textarea id="stmb-effective-prompt-advanced" class="text_pole textarea_compact" rows="6" placeholder="Memory creation prompt">{{effectivePrompt}}</textarea>
         </label>
     </div>
@@ -319,14 +320,14 @@ export const advancedOptionsTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <label for="stmb-context-memories-advanced">
             <h4>Include Previous Memories as Context:</h4>
-            <h5>
+            <small>
                 Previous memories provide context for better continuity.
                 {{#if availableMemories}}
                 <br>Found {{availableMemories}} existing {{#if (eq availableMemories 1)}}memory{{else}}memories{{/if}} in lorebook.
                 {{else}}
                 <br>No existing memories found in lorebook.
                 {{/if}}
-            </h5>
+            </small>
             <select id="stmb-context-memories-advanced" class="text_pole">
                 <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}}>None (0 memories)</option>
                 <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}}>Last 1 memory</option>
@@ -369,7 +370,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
         <h4>Save as New Profile:</h4>
         <label for="stmb-new-profile-name-advanced">
             <h4>Profile Name:</h4>
-            <h5>Your current settings differ from the selected profile. Save them as a new profile.</h5>
+            <small>Your current settings differ from the selected profile. Save them as a new profile.</small>
             <input type="text" id="stmb-new-profile-name-advanced" class="text_pole" placeholder="Enter new profile name" value="{{suggestedProfileName}}">
         </label>
     </div>
@@ -387,7 +388,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
 export const memoryPreviewTemplate = Handlebars.compile(`
     <h3>📖 Memory Preview</h3>
     <div class="world_entry_form_control">
-        <p class="opacity75p marginBot10">Review the generated memory below. You can edit the content while preserving the structure.</p>
+        <small class="marginBot10">Review the generated memory below. You can edit the content while preserving the structure.</small>
     </div>
 
     <div class="world_entry_form_control">
@@ -399,7 +400,8 @@ export const memoryPreviewTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control">
         <label for="stmb-preview-content">
-            <h4>Memory Content: <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-preview-content" title="Expand the editor" data-i18n="[title]Expand the editor"></i></h4>
+            <h4>Memory Content:</h4>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-preview-content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
             <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" placeholder="Memory content">{{#if content}}{{content}}{{else}}{{/if}}</textarea>
         </label>
     </div>
