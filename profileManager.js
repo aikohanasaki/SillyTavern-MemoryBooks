@@ -83,7 +83,7 @@ const profileEditTemplate = Handlebars.compile(`
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-preset">
             <h4>Memory Creation Method:</h4>
-            <h5>Choose a built-in preset or create a custom prompt.</h5>
+            <small>Choose a built-in preset or create a custom prompt.</small>
             <select id="stmb-profile-preset" class="text_pole">
                 {{#each presetOptions}}
                 <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
@@ -94,7 +94,7 @@ const profileEditTemplate = Handlebars.compile(`
 
         <label for="stmb-profile-prompt" id="stmb-custom-prompt-section" class="{{#if preset}}displayNone{{/if}}">
             <h4>Custom Memory Creation Prompt:</h4>
-            <h5>This prompt will be used to generate memories from chat scenes. Don't change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.</h5>
+            <small>This prompt will be used to generate memories from chat scenes. Don't change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.</small>
             <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="10" placeholder="Enter your custom memory creation prompt here...">{{#if prompt}}{{prompt}}{{else}}Analyze the following roleplay scene and return a minimal memory entry as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
@@ -133,7 +133,7 @@ Return ONLY the JSON, no other text.{{/if}}</textarea>
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-const-vect">
             <h4>Activation Mode:</h4>
-            <h5>🔗 Vectorized is recommended for memories.</h5>
+            <small>🔗 Vectorized is recommended for memories.</small>
             <select id="stmb-profile-const-vect" class="text_pole">
                 <option value="link" {{#if (eq constVectMode "link")}}selected{{/if}}>🔗 Vectorized (Default)</option>
                 <option value="blue" {{#if (eq constVectMode "blue")}}selected{{/if}}>🔵 Constant</option>
@@ -145,7 +145,7 @@ Return ONLY the JSON, no other text.{{/if}}</textarea>
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-position">
             <h4>Insertion Position:</h4>
-            <h5>↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</h5>
+            <small>↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</small>
             <select id="stmb-profile-position" class="text_pole">
                 <option value="0" {{#if (eq position 0)}}selected{{/if}}>↑Char</option>
                 <option value="1" {{#if (eq position 1)}}selected{{/if}}>↓Cha</option>
