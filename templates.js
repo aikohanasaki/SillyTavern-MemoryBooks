@@ -85,6 +85,10 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                 <span>Always use default profile (no confirmation prompt)</span>
             </label>
             <label class="checkbox_label">
+                <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
+                <span>Show memory previews</span>
+            </label>
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
                 <span>Show notifications</span>
             </label>
@@ -375,4 +379,44 @@ export const advancedOptionsTemplate = Handlebars.compile(`
         <span>⚠️ Large scene may take some time to process.</span>
     </div>
     {{/if}}
+`);
+
+/**
+ * Memory preview dialog template - Allows user to review and edit memory before adding to lorebook
+ */
+export const memoryPreviewTemplate = Handlebars.compile(`
+    <h3>📖 Memory Preview</h3>
+    <div class="world_entry_form_control">
+        <p class="opacity75p marginBot10">Review the generated memory below. You can edit the content while preserving the structure.</p>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-preview-title">
+            <h4>Memory Title:</h4>
+            <input type="text" id="stmb-preview-title" class="text_pole" value="{{title}}" placeholder="Memory title">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-preview-content">
+            <h4>Memory Content:</h4>
+            <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" placeholder="Memory content">{{content}}</textarea>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-preview-keywords">
+            <h4>Keywords:</h4>
+            <small class="opacity50p">Separate keywords with commas</small>
+            <input type="text" id="stmb-preview-keywords" class="text_pole" value="{{keywordsText}}" placeholder="keyword1, keyword2, keyword3">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <h4>Scene Information:</h4>
+        <div class="padding10 marginBot10 stmb-box">
+            <div class="fontsize90p">Messages: {{sceneStart}}-{{sceneEnd}} ({{messageCount}} total)</div>
+            <div class="fontsize90p">Profile: {{profileName}}</div>
+        </div>
+    </div>
 `);
