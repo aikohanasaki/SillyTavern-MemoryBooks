@@ -6,15 +6,19 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ---
 
-## 🚦 What's New (v3.6.2)
+## 🚦 What's New (v3.6.3)
 
-- **Memory Processing Tracking:** Added "highest memory processed" field to track progress per chat
-  - Each chat now displays "Memory Status: Processed up to message #X" in settings
-  - Shows "No memories processed yet" for new chats
-  - Enables better management of aggregate lorebooks across multiple chats
-  - Backwards compatible - existing chats automatically get the new field
-- **Bug Fixes:** Fixed highest memory processing logic for better reliability
-- **Auto-Summary Improvements:** Auto-summary now properly activates for first memory in chat
+- **Memory Preview Feature:** New preview system allows you to review and edit memories before adding to lorebook
+  - Preview popup with editable title, content, and keywords
+  - "Accept & Add", "Edit & Save", "Retry Generation", and "Cancel" options
+  - Enable in settings with the "Show memory previews" checkbox
+- **Major UI/UX Improvements:** Streamlined notification system
+  - Reduced notification spam from ~7 toasts down to 2 (start + success)
+  - Cleaner, less intrusive user experience
+- **Enhanced Error Handling:** Comprehensive error handling overhaul
+  - Better input validation and null-safe operations
+  - Improved retry logic with infinite loop prevention
+  - Enhanced debugging with detailed error logging
 
 ---
 
@@ -146,6 +150,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 - **Manual Lorebook Mode:** Enable to select lorebooks per chat.
 - **Allow Scene Overlap:** Permit or prevent overlapping memory ranges.
 - **Always Use Default Profile:** Skip confirmation popups.
+- **Show memory previews:** Enable preview popup to review and edit memories before adding to lorebook.
 - **Show Notifications:** Toggle toast messages.
 - **Refresh Editor:** Auto-refresh lorebook editor after memory creation.
 - **Token Warning Threshold:** Set warning level for large scenes (default: 30,000).

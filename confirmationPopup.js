@@ -184,11 +184,13 @@ async function handleAdvancedConfirmation(popup, settings) {
                 await saveNewProfileFromAdvancedSettings(popupElement, settings, newProfileName);
                 toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
             } catch (error) {
+                console.error(`${MODULE_NAME}: Failed to save profile:`, error);
                 toastr.error(`Failed to save profile: ${error.message}`, 'STMemoryBooks');
                 // Continues with memory creation even if profile save fails
             }
         } else {
             // No profile name provided, show error and don't proceed
+            console.error(`${MODULE_NAME}: Profile creation cancelled - no name provided`);
             toastr.error('Please enter a profile name or use "Create Memory" to proceed without saving', 'STMemoryBooks');
             return { confirmed: false };
         }
@@ -234,6 +236,7 @@ async function handleAdvancedConfirmation(popup, settings) {
 async function handleSaveNewProfile(popup, settings) {
     const newProfileName = popup.dlg.querySelector('#stmb-new-profile-name-advanced').value.trim();
     if (!newProfileName) {
+        console.error(`${MODULE_NAME}: Profile name validation failed - empty name`);
         toastr.error('Please enter a profile name', 'STMemoryBooks');
         return { confirmed: false };
     }
@@ -549,12 +552,46 @@ export async function confirmSaveNewProfile(profileName) {
  */
 export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSettings) {
     try {
+        // Input validation
+        if (!memoryResult || typeof memoryResult !== 'object') {
+            console.error(`${MODULE_NAME}: Invalid memoryResult passed to showMemoryPreviewPopup`);
+            return { action: 'cancel' };
+        }
+
+        if (!sceneData || typeof sceneData !== 'object') {
+            console.error(`${MODULE_NAME}: Invalid sceneData passed to showMemoryPreviewPopup`);
+            return { action: 'cancel' };
+        }
+
+        if (!profileSettings || typeof profileSettings !== 'object') {
+            console.error(`${MODULE_NAME}: Invalid profileSettings passed to showMemoryPreviewPopup`);
+            return { action: 'cancel' };
+        }
+
+        // Validate required sceneData properties
+        if (typeof sceneData.sceneStart !== 'number' ||
+            typeof sceneData.sceneEnd !== 'number' ||
+            typeof sceneData.messageCount !== 'number') {
+            console.error(`${MODULE_NAME}: sceneData missing required numeric properties`);
+            return { action: 'cancel' };
+        }
+
+        // Helper function to safely convert keywords to string
+        const keywordsToString = (keywords) => {
+            if (Array.isArray(keywords)) {
+                return keywords.filter(k => k && typeof k === 'string').join(', ');
+            } else if (typeof keywords === 'string') {
+                return keywords.trim();
+            } else {
+                return '';
+            }
+        };
+
         // Prepare template data
         const templateData = {
             title: memoryResult.extractedTitle || 'Memory',
             content: memoryResult.content || '',
-            keywordsText: Array.isArray(memoryResult.suggestedKeys) ?
-                memoryResult.suggestedKeys.join(', ') : '',
+            keywordsText: keywordsToString(memoryResult.suggestedKeys),
             sceneStart: sceneData.sceneStart,
             sceneEnd: sceneData.sceneEnd,
             messageCount: sceneData.messageCount,
@@ -595,25 +632,54 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
         } else if (result === STMB_POPUP_RESULTS.EDIT) {
             // User wants to edit and save
             const popupElement = popup.dlg;
-            const editedTitle = popupElement.querySelector('#stmb-preview-title')?.value?.trim();
-            const editedContent = popupElement.querySelector('#stmb-preview-content')?.value?.trim();
-            const editedKeywordsText = popupElement.querySelector('#stmb-preview-keywords')?.value?.trim() || '';
+
+            // Check if popup element is still available
+            if (!popupElement) {
+                console.error(`${MODULE_NAME}: Popup element not available for reading edited values`);
+                toastr.error('Unable to read edited values', 'STMemoryBooks');
+                return { action: 'cancel' };
+            }
+
+            // Safely extract values with null checks
+            const titleElement = popupElement.querySelector('#stmb-preview-title');
+            const contentElement = popupElement.querySelector('#stmb-preview-content');
+            const keywordsElement = popupElement.querySelector('#stmb-preview-keywords');
+
+            if (!titleElement || !contentElement || !keywordsElement) {
+                console.error(`${MODULE_NAME}: Required input elements not found in popup`);
+                toastr.error('Unable to find input fields', 'STMemoryBooks');
+                return { action: 'cancel' };
+            }
+
+            const editedTitle = titleElement.value?.trim() || '';
+            const editedContent = contentElement.value?.trim() || '';
+            const editedKeywordsText = keywordsElement.value?.trim() || '';
 
             // Validate required fields
             if (!editedTitle || editedTitle.length === 0) {
+                console.error(`${MODULE_NAME}: Memory title validation failed - empty title`);
                 toastr.error('Memory title cannot be empty', 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
             if (!editedContent || editedContent.length === 0) {
+                console.error(`${MODULE_NAME}: Memory content validation failed - empty content`);
                 toastr.error('Memory content cannot be empty', 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
-            // Parse keywords back to array
-            const editedKeywords = editedKeywordsText ?
-                editedKeywordsText.split(',').map(k => k.trim()).filter(k => k.length > 0) :
-                [];
+            // Parse keywords back to array with robust handling
+            const parseKeywordsToArray = (keywordText) => {
+                if (!keywordText || typeof keywordText !== 'string') {
+                    return [];
+                }
+                return keywordText
+                    .split(',')
+                    .map(k => k.trim())
+                    .filter(k => k.length > 0 && typeof k === 'string');
+            };
+
+            const editedKeywords = parseKeywordsToArray(editedKeywordsText);
 
             // Preserve all original memoryResult fields and only override the user-edited ones
             const editedMemoryResult = {
