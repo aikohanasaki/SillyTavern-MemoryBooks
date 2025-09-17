@@ -1046,8 +1046,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         
         // Clear working toast and show success
         toastr.clear();
-        const contextMsg = memoryFetchResult.actualCount > 0 ?
-            ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
         const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
         toastr.success(`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         
