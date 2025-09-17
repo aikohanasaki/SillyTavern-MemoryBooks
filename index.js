@@ -282,6 +282,7 @@ async function checkAutoSummaryTrigger() {
 function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
     const sceneData = getSceneData();
     if (!sceneData) {
+        console.error('STMemoryBooks: No scene markers set for createMemory command');
         toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
         return ''; 
     }
@@ -927,11 +928,16 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     let settingsRestored = false;
     
     try {
+        // Show initial working toast (removed individual step notifications)
+        let workingToastMessage;
         if (retryCount > 0) {
-            toastr.info(`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`, 'STMemoryBooks');
+            workingToastMessage = `Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`;
+        } else {
+            workingToastMessage = summaryCount > 0
+                ? `Creating memory with ${summaryCount} context memories...`
+                : 'Creating memory...';
         }
-        
-        toastr.info('Compiling scene messages...', 'STMemoryBooks');
+        toastr.info(workingToastMessage, 'STMemoryBooks', { timeOut: 0 });
         
         // Create and compile scene
         const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
@@ -947,7 +953,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         let previousMemories = [];
         let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
         if (summaryCount > 0) {
-            toastr.info(`Fetching ${summaryCount} previous memories for context...`, 'STMemoryBooks');
+            // Fetch previous memories silently (no intermediate toast)
             memoryFetchResult = await fetchPreviousSummaries(summaryCount, settings, chat_metadata);
             previousMemories = memoryFetchResult.summaries;
             
@@ -961,16 +967,12 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             }
         }
         
-        // Add context and show progress
+        // Add context and get stats (no intermediate toast)
         compiledScene.previousSummariesContext = previousMemories;
         const stats = getSceneStats(compiledScene);
         const actualTokens = stats.estimatedTokens;
-        const contextInfo = memoryFetchResult.actualCount > 0 ? 
-            ` + ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'}` : '';
-        toastr.info(`Compiled ${stats.messageCount} messages (~${actualTokens} tokens)${contextInfo}`, 'STMemoryBooks');
-        
-        // Generate memory using new JSON-based approach
-        toastr.info('Generating memory with AI (JSON structured output)...', 'STMemoryBooks');
+
+        // Generate memory silently
         const memoryResult = await createMemory(compiledScene, profileSettings, {
             tokenWarningThreshold: tokenThreshold
         });
@@ -979,8 +981,8 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         let finalMemoryResult = memoryResult;
 
         if (settings.moduleSettings.showMemoryPreviews) {
-            toastr.clear(); // Clear any previous notifications before showing preview
-            toastr.info('Memory generated! Showing preview...', 'STMemoryBooks');
+            // Clear working toast before showing preview popup
+            toastr.clear();
 
             const previewResult = await showMemoryPreviewPopup(memoryResult, sceneData, profileSettings);
 
@@ -989,17 +991,49 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 toastr.info('Memory creation cancelled by user', 'STMemoryBooks');
                 return;
             } else if (previewResult.action === 'retry') {
-                // User wants to retry - reset retry count since this is a manual user action, not an error
-                toastr.info('Retrying memory generation...', 'STMemoryBooks');
-                return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, 0);
+                // User wants to retry - limit user-initiated retries to prevent infinite loops
+                const maxUserRetries = 3; // Allow up to 3 user-initiated retries
+                const currentUserRetries = retryCount >= maxRetries ? retryCount - maxRetries : 0;
+
+                if (currentUserRetries >= maxUserRetries) {
+                    toastr.warning(`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
+                    return { action: 'cancel' };
+                }
+
+                toastr.info(`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
+                // Keep the retry count properly incremented to track total attempts
+                const nextRetryCount = Math.max(retryCount + 1, maxRetries + currentUserRetries + 1);
+                return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, nextRetryCount);
             }
 
-            // For 'accept' or 'edit' actions, use the potentially modified memory data
-            finalMemoryResult = previewResult.memoryData || memoryResult;
+            // Handle preview result based on action
+            if (previewResult.action === 'accept') {
+                // User accepted as-is, use original data
+                finalMemoryResult = memoryResult;
+            } else if (previewResult.action === 'edit') {
+                // User edited the data, validate and use edited version
+                if (!previewResult.memoryData) {
+                    console.error('STMemoryBooks: Edit action missing memoryData');
+                    toastr.error('Unable to retrieve edited memory data', 'STMemoryBooks');
+                    return;
+                }
+
+                // Validate that edited memory data has required fields
+                if (!previewResult.memoryData.extractedTitle || !previewResult.memoryData.content) {
+                    console.error('STMemoryBooks: Edited memory data missing required fields');
+                    toastr.error('Edited memory data is incomplete', 'STMemoryBooks');
+                    return;
+                }
+
+                finalMemoryResult = previewResult.memoryData;
+            } else {
+                // Unexpected action, use original data as fallback
+                console.warn(`STMemoryBooks: Unexpected preview action: ${previewResult.action}`);
+                finalMemoryResult = memoryResult;
+            }
         }
 
-        // Add to lorebook
-        toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
+        // Add to lorebook silently
         const addResult = await addMemoryToLorebook(finalMemoryResult, lorebookValidation);
         
         if (!addResult.success) {
@@ -1010,12 +1044,12 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         const contextMsg = memoryFetchResult.actualCount > 0 ? 
             ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
         
-        // Show success message immediately if this was a retry, otherwise delay slightly
-        const successDelay = retryCount > 0 ? 0 : 1000;
-        setTimeout(() => {
-            const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
-            toastr.success(`Memory "${addResult.entryTitle}" created from ${stats.messageCount} messages${contextMsg}${retryMsg}!`, 'STMemoryBooks');
-        }, successDelay);
+        // Clear working toast and show success
+        toastr.clear();
+        const contextMsg = memoryFetchResult.actualCount > 0 ?
+            ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
+        const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
+        toastr.success(`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
@@ -1094,12 +1128,14 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         // All the validation and processing logic
         const sceneData = getSceneData();
         if (!sceneData) {
+            console.error('STMemoryBooks: No scene selected for memory initiation');
             toastr.error('No scene selected', 'STMemoryBooks');
             return;
         }
         
         const lorebookValidation = await validateLorebook();
         if (!lorebookValidation.valid) {
+            console.error('STMemoryBooks: Lorebook validation failed:', lorebookValidation.error);
             toastr.error(lorebookValidation.error, 'STMemoryBooks');
             return;
         }
@@ -1114,6 +1150,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
 
                 if (existingRange && existingRange.start !== null && existingRange.end !== null) {
                     if (newStart <= existingRange.end && newEnd >= existingRange.start) {
+                        console.error(`STMemoryBooks: Scene overlap detected with memory: ${mem.title}`);
                         toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
                         isProcessingMemory = false;
                         return;
@@ -1592,6 +1629,7 @@ function handleSettingsPopupClose(popup) {
             saveSettingsDebounced();
         }
     } catch (error) {
+        console.error('STMemoryBooks: Failed to save settings:', error);
         toastr.warning('Failed to save settings. Please try again.', 'STMemoryBooks');
     }
     currentPopupInstance = null;

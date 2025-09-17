@@ -2,6 +2,33 @@
 
 **← [Back to README](readme.md)**
 
+## v3.6.3 (September 2025)
+- **Memory Preview Feature:** Added comprehensive memory preview system allowing users to review and edit memories before adding to lorebook
+  - Preview popup shows generated memory with editable title, content, and keywords
+  - "Edit & Save", "Accept & Add", "Retry Generation", and "Cancel" options
+  - Preserves all original memory metadata while allowing user modifications
+  - Includes scene information display for context
+- **Robust Error Handling:** Complete overhaul of error handling throughout the extension
+  - Added comprehensive input validation for all popup functions
+  - Null-safe DOM element access with proper cleanup
+  - Improved array handling for keywords with type checking
+  - Retry logic with infinite loop prevention (max 3 user retries)
+  - Consistent error logging with console.error() for debugging
+- **UI/UX Improvements:** Major notification system consolidation
+  - Reduced ~7 intermediate toast notifications down to 2 (start + success)
+  - Single working toast with context-aware messaging
+  - Removed notification spam during memory generation
+  - Cleaner, less intrusive user experience
+- **Template Safety:** Enhanced template rendering with defensive programming
+  - Handlebars templates now use null-safe conditionals
+  - Default fallback values for all template variables
+  - Proper HTML escaping and sanitization
+- **Code Quality:** Extensive code review and cleanup
+  - Fixed potential race conditions in popup handling
+  - Improved data validation and type checking
+  - Better separation of concerns in error handling
+  - Enhanced debugging capabilities with detailed logging
+
 ## v3.6.2 (September 2025)
 - **Memory Processing Tracking:** Added "highest memory processed" field to track progress per chat
   - Each chat now displays "Memory Status: Processed up to message #X" in settings

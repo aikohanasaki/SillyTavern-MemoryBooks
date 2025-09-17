@@ -393,14 +393,14 @@ export const memoryPreviewTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <label for="stmb-preview-title">
             <h4>Memory Title:</h4>
-            <input type="text" id="stmb-preview-title" class="text_pole" value="{{title}}" placeholder="Memory title">
+            <input type="text" id="stmb-preview-title" class="text_pole" value="{{#if title}}{{title}}{{else}}Memory{{/if}}" placeholder="Memory title">
         </label>
     </div>
 
     <div class="world_entry_form_control">
         <label for="stmb-preview-content">
             <h4>Memory Content:</h4>
-            <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" placeholder="Memory content">{{content}}</textarea>
+            <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" placeholder="Memory content">{{#if content}}{{content}}{{else}}{{/if}}</textarea>
         </label>
     </div>
 
@@ -408,15 +408,15 @@ export const memoryPreviewTemplate = Handlebars.compile(`
         <label for="stmb-preview-keywords">
             <h4>Keywords:</h4>
             <small class="opacity50p">Separate keywords with commas</small>
-            <input type="text" id="stmb-preview-keywords" class="text_pole" value="{{keywordsText}}" placeholder="keyword1, keyword2, keyword3">
+            <input type="text" id="stmb-preview-keywords" class="text_pole" value="{{#if keywordsText}}{{keywordsText}}{{else}}{{/if}}" placeholder="keyword1, keyword2, keyword3">
         </label>
     </div>
 
     <div class="world_entry_form_control">
         <h4>Scene Information:</h4>
         <div class="padding10 marginBot10 stmb-box">
-            <div class="fontsize90p">Messages: {{sceneStart}}-{{sceneEnd}} ({{messageCount}} total)</div>
-            <div class="fontsize90p">Profile: {{profileName}}</div>
+            <div class="fontsize90p">Messages: {{#if sceneStart}}{{sceneStart}}{{else}}?{{/if}}-{{#if sceneEnd}}{{sceneEnd}}{{else}}?{{/if}} ({{#if messageCount}}{{messageCount}}{{else}}?{{/if}} total)</div>
+            <div class="fontsize90p">Profile: {{#if profileName}}{{profileName}}{{else}}Unknown Profile{{/if}}</div>
         </div>
     </div>
 `);
