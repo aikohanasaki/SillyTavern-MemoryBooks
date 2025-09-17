@@ -1,7 +1,7 @@
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
-import { simpleConfirmationTemplate, advancedOptionsTemplate } from './templates.js';
+import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTemplate } from './templates.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
 import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
@@ -11,7 +11,9 @@ const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 // Define semantic mappings for custom popup results using SillyTavern's provided constants
 const STMB_POPUP_RESULTS = {
     ADVANCED: POPUP_RESULT.CUSTOM1,
-    SAVE_PROFILE: POPUP_RESULT.CUSTOM2
+    SAVE_PROFILE: POPUP_RESULT.CUSTOM2,
+    EDIT: POPUP_RESULT.CUSTOM3,
+    RETRY: POPUP_RESULT.CUSTOM4
 };
 
 /**
@@ -535,5 +537,112 @@ export async function confirmSaveNewProfile(profileName) {
         return result === POPUP_RESULT.AFFIRMATIVE;
     } catch (error) {
         return false;
+    }
+}
+
+/**
+ * Show memory preview popup that allows user to review and edit memory before saving
+ * @param {Object} memoryResult - The generated memory result containing content, title, and keywords
+ * @param {Object} sceneData - Scene information for context
+ * @param {Object} profileSettings - Profile settings used for generation
+ * @returns {Promise<Object>} Result object with action and optional edited memory data
+ */
+export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSettings) {
+    try {
+        // Prepare template data
+        const templateData = {
+            title: memoryResult.extractedTitle || 'Memory',
+            content: memoryResult.content || '',
+            keywordsText: Array.isArray(memoryResult.suggestedKeys) ?
+                memoryResult.suggestedKeys.join(', ') : '',
+            sceneStart: sceneData.sceneStart,
+            sceneEnd: sceneData.sceneEnd,
+            messageCount: sceneData.messageCount,
+            profileName: profileSettings.name || 'Unknown Profile'
+        };
+
+        const content = DOMPurify.sanitize(memoryPreviewTemplate(templateData));
+
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            okButton: 'Accept & Add to Lorebook',
+            cancelButton: 'Cancel',
+            allowVerticalScrolling: true,
+            wide: true,
+            customButtons: [
+                {
+                    text: 'Edit & Save',
+                    result: STMB_POPUP_RESULTS.EDIT,
+                    classes: ['menu_button'],
+                    action: null
+                },
+                {
+                    text: 'Retry Generation',
+                    result: STMB_POPUP_RESULTS.RETRY,
+                    classes: ['menu_button'],
+                    action: null
+                }
+            ]
+        });
+
+        const result = await popup.show();
+
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            // User accepted as-is
+            return {
+                action: 'accept',
+                memoryData: memoryResult
+            };
+        } else if (result === STMB_POPUP_RESULTS.EDIT) {
+            // User wants to edit and save
+            const popupElement = popup.dlg;
+            const editedTitle = popupElement.querySelector('#stmb-preview-title')?.value?.trim();
+            const editedContent = popupElement.querySelector('#stmb-preview-content')?.value?.trim();
+            const editedKeywordsText = popupElement.querySelector('#stmb-preview-keywords')?.value?.trim() || '';
+
+            // Validate required fields
+            if (!editedTitle || editedTitle.length === 0) {
+                toastr.error('Memory title cannot be empty', 'STMemoryBooks');
+                return { action: 'cancel' };
+            }
+
+            if (!editedContent || editedContent.length === 0) {
+                toastr.error('Memory content cannot be empty', 'STMemoryBooks');
+                return { action: 'cancel' };
+            }
+
+            // Parse keywords back to array
+            const editedKeywords = editedKeywordsText ?
+                editedKeywordsText.split(',').map(k => k.trim()).filter(k => k.length > 0) :
+                [];
+
+            // Preserve all original memoryResult fields and only override the user-edited ones
+            const editedMemoryResult = {
+                ...memoryResult,  // This preserves metadata, titleFormat, lorebookSettings, etc.
+                extractedTitle: editedTitle,
+                content: editedContent,
+                suggestedKeys: editedKeywords
+            };
+
+            return {
+                action: 'edit',
+                memoryData: editedMemoryResult
+            };
+        } else if (result === STMB_POPUP_RESULTS.RETRY) {
+            // User wants to retry generation
+            return {
+                action: 'retry'
+            };
+        }
+
+        // User cancelled
+        return {
+            action: 'cancel'
+        };
+
+    } catch (error) {
+        console.error(`${MODULE_NAME}: Error showing memory preview popup:`, error);
+        return {
+            action: 'cancel'
+        };
     }
 }

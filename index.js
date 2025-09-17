@@ -14,7 +14,7 @@ import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles,
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { loadBookmarks, saveBookmarks, createBookmark, updateBookmark, deleteBookmark, validateBookmarks, shiftBookmarksAfterDeletion, showBookmarksPopup } from './bookmarkManager.js';
 import { settingsTemplate } from './templates.js';
-import { showConfirmationPopup, fetchPreviousSummaries } from './confirmationPopup.js';
+import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
 export { currentProfile, validateLorebook };
@@ -34,6 +34,7 @@ const SUPPORTED_COMPLETION_SOURCES = [
 const defaultSettings = {
     moduleSettings: {
         alwaysUseDefault: true,
+        showMemoryPreviews: false,
         showNotifications: true,
         refreshEditor: true,
         tokenWarningThreshold: 30000,
@@ -973,10 +974,33 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         const memoryResult = await createMemory(compiledScene, profileSettings, {
             tokenWarningThreshold: tokenThreshold
         });
-        
+
+        // Check if memory previews are enabled and handle accordingly
+        let finalMemoryResult = memoryResult;
+
+        if (settings.moduleSettings.showMemoryPreviews) {
+            toastr.clear(); // Clear any previous notifications before showing preview
+            toastr.info('Memory generated! Showing preview...', 'STMemoryBooks');
+
+            const previewResult = await showMemoryPreviewPopup(memoryResult, sceneData, profileSettings);
+
+            if (previewResult.action === 'cancel') {
+                // User cancelled, abort the process
+                toastr.info('Memory creation cancelled by user', 'STMemoryBooks');
+                return;
+            } else if (previewResult.action === 'retry') {
+                // User wants to retry - reset retry count since this is a manual user action, not an error
+                toastr.info('Retrying memory generation...', 'STMemoryBooks');
+                return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, 0);
+            }
+
+            // For 'accept' or 'edit' actions, use the potentially modified memory data
+            finalMemoryResult = previewResult.memoryData || memoryResult;
+        }
+
         // Add to lorebook
         toastr.info('Adding memory to lorebook...', 'STMemoryBooks');
-        const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation);
+        const addResult = await addMemoryToLorebook(finalMemoryResult, lorebookValidation);
         
         if (!addResult.success) {
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
@@ -1153,6 +1177,7 @@ async function showSettingsPopup() {
         sceneData: sceneData,
         highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
         alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
+        showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
         showNotifications: settings.moduleSettings.showNotifications,
         refreshEditor: settings.moduleSettings.refreshEditor,
         allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
@@ -1502,6 +1527,7 @@ function handleSettingsPopupClose(popup) {
         
         // Save checkbox states
         const alwaysUseDefault = popupElement.querySelector('#stmb-always-use-default')?.checked ?? settings.moduleSettings.alwaysUseDefault;
+        const showMemoryPreviews = popupElement.querySelector('#stmb-show-memory-previews')?.checked ?? settings.moduleSettings.showMemoryPreviews;
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
         const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
         const allowSceneOverlap = popupElement.querySelector('#stmb-allow-scene-overlap')?.checked ?? settings.moduleSettings.allowSceneOverlap;
@@ -1535,6 +1561,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.autoSummaryInterval || 50;
 
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault ||
+                          showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews ||
                           showNotifications !== settings.moduleSettings.showNotifications ||
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
@@ -1548,6 +1575,7 @@ function handleSettingsPopupClose(popup) {
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
+            settings.moduleSettings.showMemoryPreviews = showMemoryPreviews;
             settings.moduleSettings.showNotifications = showNotifications;
             settings.moduleSettings.refreshEditor = refreshEditor;
             settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
@@ -1587,6 +1615,7 @@ function refreshPopupContent() {
             sceneData: sceneData,
             highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
             alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
+            showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
             showNotifications: settings.moduleSettings.showNotifications,
             refreshEditor: settings.moduleSettings.refreshEditor,
             allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
