@@ -2,6 +2,41 @@
 
 **← [Back to README](readme.md)**
 
+## v3.7.1 (September 2025)
+- **Bug Fix:** Fixed manual lorebook display issue where Mode and Active Lorebook would not display correctly after changing manual lorebook selection
+  - Resolved template data synchronization issue in `refreshPopupContent()` function
+  - Mode and Active Lorebook information now properly updates after manual lorebook selection
+  - Ensures consistent UI display when switching between different manual lorebooks
+
+## v3.7.0 (September 2025)
+- **Enhanced Manual/Chat Lorebook Controls:** Complete UI overhaul for lorebook management
+  - New lorebook status display with mode badges and active lorebook information
+  - Improved manual mode setup flow with automatic lorebook selection prompts
+  - Visual indicators for chat-bound vs manual lorebook configurations
+  - One-click lorebook selection and clearing for manual mode
+  - Contextual help text and status messages throughout the interface
+- **Session Management & Cleanup:** Robust handling of orphaned scene markers
+  - Automatic detection and cleanup of stale scene markers from previous sessions
+  - Prevents interference with auto-summary and memory creation processes
+  - Clear logging and user notifications when cleanup occurs
+  - Scene marker validation on chat load to ensure clean state
+- **Auto-Summary System Improvements:** Enhanced reliability and debugging capabilities
+  - Improved trigger logic that works correctly regardless of message count parity
+  - Enhanced logging throughout the auto-summary process for better troubleshooting
+  - Added `window.STMemoryBooks_debugAutoSummary()` developer function for manual debugging
+  - Better handling of postponed auto-summary states and cleanup
+  - Improved lorebook validation with user-friendly selection popups when lorebooks are missing
+- **UI/UX Enhancements:** Streamlined lorebook management experience
+  - Real-time status updates in settings popup
+  - Contextual button text (Select vs Change) based on current state
+  - Automatic UI refresh after lorebook selection or mode changes
+  - Better visual feedback for manual vs automatic mode operation
+- **Code Quality & Reliability:** Enhanced error handling and state management
+  - Improved scene marker cleanup after successful memory creation
+  - Better null-safe operations throughout lorebook handling
+  - Enhanced debugging output for troubleshooting auto-summary issues
+  - More robust handling of edge cases in lorebook selection and validation
+
 ## v3.6.3 (September 2025)
 - **Memory Preview Feature:** Added comprehensive memory preview system allowing users to review and edit memories before adding to lorebook
   - Preview popup shows generated memory with editable title, content, and keywords

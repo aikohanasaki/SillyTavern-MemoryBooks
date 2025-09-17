@@ -9,19 +9,26 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-## 🚦 What's New (v3.6.3)
+## 🚦 What's New (v3.7.1)
 
-- **Memory Preview Feature:** New preview system allows you to review and edit memories before adding to lorebook
-  - Preview popup with editable title, content, and keywords
-  - "Accept & Add", "Edit & Save", "Retry Generation", and "Cancel" options
-  - Enable in settings with the "Show memory previews" checkbox
-- **Major UI/UX Improvements:** Streamlined notification system
-  - Reduced notification spam from ~7 toasts down to 2 (start + success)
-  - Cleaner, less intrusive user experience
-- **Enhanced Error Handling:** Comprehensive error handling overhaul
-  - Better input validation and null-safe operations
-  - Improved retry logic with infinite loop prevention
-  - Enhanced debugging with detailed error logging
+- **Bug Fix:** Fixed manual lorebook display issue where Mode and Active Lorebook information would disappear after changing manual lorebook selection. The Current Lorebook Configuration section now properly updates and displays the correct mode and active lorebook after selection changes.
+
+### Previous Release (v3.7.0)
+
+- **Enhanced Manual/Chat Lorebook Controls:** Complete UI overhaul for lorebook management
+  - New lorebook status display with mode badges showing current configuration
+  - Improved manual mode setup with automatic prompts for lorebook selection
+  - One-click lorebook selection and clearing for manual mode users
+  - Real-time status updates and contextual help throughout the interface
+- **Session Management & Cleanup:** Automatic handling of orphaned scene markers
+  - Detects and cleans up stale scene markers from previous sessions
+  - Prevents interference with auto-summary and memory creation processes
+  - Clear user notifications when cleanup occurs
+- **Auto-Summary System Improvements:** Enhanced reliability and debugging
+  - Improved trigger logic that works correctly regardless of message count
+  - Enhanced logging and new `window.STMemoryBooks_debugAutoSummary()` debug function
+  - Better lorebook validation with user-friendly selection popups
+  - More robust handling of postponed auto-summary states
 
 ---
 

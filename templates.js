@@ -64,16 +64,12 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         {{/if}}
 
         {{#if highestMemoryProcessed}}
-        <div id="stmb-memory-status" class="padding10 marginBot10">
-            <div class="info-block">
-                <span>📊 Memory Status: Processed up to message #{{highestMemoryProcessed}}</span>
-            </div>
+        <div id="stmb-memory-status" class="info-block">
+            <span>📊 Memory Status: Processed up to message #{{highestMemoryProcessed}}</span>
         </div>
         {{else}}
-        <div id="stmb-memory-status" class="padding10 marginBot10">
-            <div class="info-block">
-                <span>📊 Memory Status: No memories have been processed for this chat yet <small>(since updating to version 3.6.2.)</small></span>
-            </div>
+        <div id="stmb-memory-status" class="info-block">
+            <span>📊 Memory Status: No memories have been processed for this chat yet <small>(since updating to version 3.6.2.)</small></span>
         </div>
         {{/if}}
 
@@ -102,49 +98,28 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             <small class="opacity50p">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
         </div>
 
-        <!-- Lorebook Status Section -->
-        <div class="world_entry_form_control stmb-lorebook-status">
-            <div class="title_restorable">
-                <h4>Current Lorebook Configuration</h4>
-            </div>
+        <h4>Current Lorebook Configuration</h4>
 
-            <!-- Mode Display -->
-            <div class="flex-container alignitemscenter">
-                <label style="min-width: 60px;">Mode:</label>
-                <span class="stmb-mode-badge">{{lorebookMode}}</span>
-            </div>
+        <div class="info-block">
+            <small class="opacity50p">Mode:</small>
+            <h5 id="stmb-mode-badge">{{lorebookMode}}</h5>
 
-            <!-- Current Lorebook Display -->
-            <div class="flex-container alignitemscenter marginTop5">
-                <label style="min-width: 60px;">Active Lorebook:</label>
-                <span id="stmb-active-lorebook" class="{{#unless currentLorebookName}}opacity50p{{/unless}}">
-                    {{#if currentLorebookName}}
-                        {{currentLorebookName}}
-                    {{else}}
-                        None selected
-                    {{/if}}
-                </span>
-            </div>
-
-            <!-- Manual Mode Controls (shown when manual mode enabled) -->
-            {{#if manualModeEnabled}}
-            <div class="marginTop10">
-                <button id="stmb-select-manual-lorebook" class="menu_button">
-                    <i class="fa-solid fa-book"></i>
-                    {{#if manualLorebookName}}Change{{else}}Select{{/if}} Manual Lorebook
-                </button>
-                {{#if manualLorebookName}}
-                <button id="stmb-clear-manual-lorebook" class="menu_button marginLeft5">
-                    <i class="fa-solid fa-xmark"></i>
-                    Clear
-                </button>
+            <small class="opacity50p">Active Lorebook:</small>
+            <h5 id="stmb-active-lorebook" class="{{#unless currentLorebookName}}opacity50p{{/unless}}">
+                {{#if currentLorebookName}}
+                    {{currentLorebookName}}
+                {{else}}
+                    None selected
                 {{/if}}
-            </div>
-            {{/if}}
+            </h5>
 
-            <!-- Automatic Mode Info (shown when manual mode disabled) -->
-            {{#unless manualModeEnabled}}
-            <div class="marginTop5">
+            <div id="stmb-manual-controls" style="display: {{#if manualModeEnabled}}block{{else}}none{{/if}};">
+                <div class="buttons_block marginTop5 justifyCenter" id="stmb-manual-lorebook-buttons">
+                    <!-- Manual lorebook buttons will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <div id="stmb-automatic-info" class="marginTop5" style="display: {{#if manualModeEnabled}}none{{else}}block{{/if}};">
                 <small class="opacity50p">
                     {{#if chatBoundLorebookName}}
                         Using chat-bound lorebook "{{chatBoundLorebookName}}"
@@ -153,7 +128,6 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
                     {{/if}}
                 </small>
             </div>
-            {{/unless}}
         </div>
 
         <hr class="marginTop10 marginBot10">
@@ -277,18 +251,14 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
 
         <h4>Profile Actions:</h4>
-        <div class="buttons_block marginTop5 justifyCenter">
-            <div class="menu_button" id="stmb-set-default-profile">Set as Default</div>
-            <div class="menu_button" id="stmb-edit-profile">Edit Profile</div>
-            <div class="menu_button" id="stmb-new-profile">New Profile</div>
-            <div class="menu_button" id="stmb-delete-profile">Delete Profile</div>
+        <div class="buttons_block marginTop5 justifyCenter" id="stmb-profile-buttons">
+            <!-- Profile buttons will be dynamically inserted here -->
         </div>
 
         <h4>Import/Export Profiles:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-        <div class="buttons_block marginTop5 justifyCenter">
-            <div class="menu_button" id="stmb-export-profiles">Export Profiles</div>
-            <div class="menu_button" id="stmb-import-profiles">Import Profiles</div>
+        <div class="buttons_block marginTop5 justifyCenter" id="stmb-import-export-buttons">
+            <!-- Import/Export buttons will be dynamically inserted here -->
         </div>
 `);
 
