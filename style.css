@@ -212,6 +212,47 @@
     }
 }
 
+/* --- BUTTON STYLING --- */
+
+/* Button container classes for consistent layout */
+.buttons_block {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.marginTop5 {
+    margin-top: 5px;
+}
+
+.justifyCenter {
+    justify-content: center;
+}
+
+/* Ensure consistent sizing for manual lorebook buttons */
+#stmb-manual-lorebook-buttons {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+#stmb-manual-lorebook-buttons .menu_button {
+    padding: 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* General menu button consistency */
+.menu_button {
+    min-height: 32px;
+    box-sizing: border-box;
+}
+
 /* --- RESPONSIVE & ACCESSIBILITY --- */
 
 

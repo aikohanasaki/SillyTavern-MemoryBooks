@@ -15,7 +15,7 @@ import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, upd
 import { loadBookmarks, saveBookmarks, createBookmark, updateBookmark, deleteBookmark, validateBookmarks, shiftBookmarksAfterDeletion, showBookmarksPopup } from './bookmarkManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
-import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName } from './utils.js';
+import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
 export { currentProfile, validateLorebook };
 
@@ -1383,7 +1383,7 @@ function updateLorebookStatusDisplay() {
     const isManualMode = settings.moduleSettings.manualModeEnabled;
 
     // Update mode badge
-    const modeBadge = document.querySelector('.stmb-mode-badge');
+    const modeBadge = document.querySelector('#stmb-mode-badge');
     if (modeBadge) {
         modeBadge.textContent = isManualMode ? 'Manual' : 'Automatic (Chat-bound)';
     }
@@ -1399,44 +1399,229 @@ function updateLorebookStatusDisplay() {
         activeLorebookSpan.className = currentLorebook ? '' : 'opacity50p';
     }
 
-    // Update button text
-    const selectButton = document.querySelector('#stmb-select-manual-lorebook');
-    if (selectButton) {
-        const buttonText = stmbData.manualLorebook ? 'Change' : 'Select';
-        const icon = selectButton.querySelector('i');
-        selectButton.innerHTML = '';
-        if (icon) selectButton.appendChild(icon);
-        selectButton.appendChild(document.createTextNode(` ${buttonText} Manual Lorebook`));
+    // Manual lorebook buttons are now handled by populateInlineButtons()
+
+    // Show/hide manual controls and automatic info sections based on mode
+    const manualControls = document.querySelector('#stmb-manual-controls');
+    if (manualControls) {
+        manualControls.style.display = isManualMode ? 'block' : 'none';
     }
 
-    // Show/hide manual controls section
-    const manualSection = document.querySelector('.stmb-lorebook-status');
-    if (manualSection) {
-        const manualControls = manualSection.querySelector('.marginTop10');
-        const automaticInfo = manualSection.querySelector('.marginTop5');
+    const automaticInfo = document.querySelector('#stmb-automatic-info');
+    if (automaticInfo) {
+        automaticInfo.style.display = isManualMode ? 'none' : 'block';
 
-        if (manualControls) {
-            manualControls.style.display = isManualMode ? 'block' : 'none';
+        // Update automatic mode info text
+        const infoText = automaticInfo.querySelector('small');
+        if (infoText) {
+            const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
+            infoText.innerHTML = chatBoundLorebook ?
+                `Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"` :
+                'No chat-bound lorebook. Memories will require lorebook selection.';
         }
-        if (automaticInfo) {
-            automaticInfo.style.display = isManualMode ? 'none' : 'block';
+    }
 
-            // Update automatic mode info text
-            const infoText = automaticInfo.querySelector('small');
-            if (infoText) {
-                const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
-                infoText.innerHTML = chatBoundLorebook ?
-                    `Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"` :
-                    'No chat-bound lorebook. Memories will require lorebook selection.';
+    // Manual lorebook button visibility is now handled by populateInlineButtons()
+}
+
+/**
+ * Populate inline button containers with dynamic buttons (profile and manual lorebook buttons)
+ */
+function populateInlineButtons() {
+    if (!currentPopupInstance?.dlg) return;
+
+    const settings = initializeSettings();
+    const stmbData = getSceneMarkers() || {};
+
+    // Get all button containers
+    const manualLorebookContainer = currentPopupInstance.content.querySelector('#stmb-manual-lorebook-buttons');
+    const profileButtonsContainer = currentPopupInstance.content.querySelector('#stmb-profile-buttons');
+    const importExportContainer = currentPopupInstance.content.querySelector('#stmb-import-export-buttons');
+
+    // Populate manual lorebook buttons if container exists and manual mode is enabled
+    if (manualLorebookContainer && settings.moduleSettings.manualModeEnabled) {
+        const hasManualLorebook = stmbData.manualLorebook;
+
+        const manualLorebookButtons = [
+            {
+                text: `📕 ${hasManualLorebook ? 'Change' : 'Select'} Manual Lorebook`,
+                id: 'stmb-select-manual-lorebook',
+                action: async () => {
+                    try {
+                        // Use the dedicated selection popup that always shows options
+                        const selectedLorebook = await showLorebookSelectionPopup(hasManualLorebook ? stmbData.manualLorebook : null);
+                        if (selectedLorebook) {
+                            // Refresh the popup content to reflect the new selection
+                            refreshPopupContent();
+                        }
+                    } catch (error) {
+                        console.error('STMemoryBooks: Error selecting manual lorebook:', error);
+                        toastr.error('Failed to select manual lorebook', 'STMemoryBooks');
+                    }
+                }
+            }
+        ];
+
+        // Add clear button if manual lorebook is set
+        if (hasManualLorebook) {
+            manualLorebookButtons.push({
+                text: '❌ Clear Manual Lorebook',
+                id: 'stmb-clear-manual-lorebook',
+                action: () => {
+                    try {
+                        const stmbData = getSceneMarkers() || {};
+                        delete stmbData.manualLorebook;
+                        saveMetadataForCurrentContext();
+
+                        // Refresh the popup content
+                        refreshPopupContent();
+                        toastr.success('Manual lorebook cleared', 'STMemoryBooks');
+                    } catch (error) {
+                        console.error('STMemoryBooks: Error clearing manual lorebook:', error);
+                        toastr.error('Failed to clear manual lorebook', 'STMemoryBooks');
+                    }
+                }
+            });
+        }
+
+        // Clear container and populate with buttons
+        manualLorebookContainer.innerHTML = '';
+        manualLorebookButtons.forEach(buttonConfig => {
+            const button = document.createElement('div');
+            button.className = 'menu_button';
+            button.id = buttonConfig.id;
+            button.textContent = buttonConfig.text;
+            button.addEventListener('click', buttonConfig.action);
+            manualLorebookContainer.appendChild(button);
+        });
+    }
+
+    if (!profileButtonsContainer || !importExportContainer) return;
+
+    // Create profile action buttons
+    const profileButtons = [
+        {
+            text: '⭐ Set as Default',
+            id: 'stmb-set-default-profile',
+            action: () => {
+                const profileSelect = currentPopupInstance?.dlg?.querySelector('#stmb-profile-select');
+                if (!profileSelect) return;
+
+                const selectedIndex = parseInt(profileSelect.value);
+                if (selectedIndex === settings.defaultProfile) {
+                    toastr.info('This profile is already the default', 'STMemoryBooks');
+                    return;
+                }
+
+                settings.defaultProfile = selectedIndex;
+                saveSettingsDebounced();
+                toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
+                refreshPopupContent();
+            }
+        },
+        {
+            text: '✏️ Edit Profile',
+            id: 'stmb-edit-profile',
+            action: async () => {
+                try {
+                    const profileSelect = currentPopupInstance?.dlg?.querySelector('#stmb-profile-select');
+                    if (!profileSelect) return;
+
+                    const selectedIndex = parseInt(profileSelect.value);
+                    const selectedProfile = settings.profiles[selectedIndex];
+
+                    // Prevent editing of dynamic ST settings profile
+                    if (selectedProfile.useDynamicSTSettings) {
+                        toastr.error('Cannot edit the Dynamic ST Settings profile. Create a new profile instead.', 'STMemoryBooks');
+                        return;
+                    }
+
+                    await editProfile(settings, selectedIndex, refreshPopupContent);
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error in edit profile:`, error);
+                    toastr.error('Failed to edit profile', 'STMemoryBooks');
+                }
+            }
+        },
+        {
+            text: '➕ New Profile',
+            id: 'stmb-new-profile',
+            action: async () => {
+                try {
+                    await newProfile(settings, refreshPopupContent);
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error in new profile:`, error);
+                    toastr.error('Failed to create profile', 'STMemoryBooks');
+                }
+            }
+        },
+        {
+            text: '🗑️ Delete Profile',
+            id: 'stmb-delete-profile',
+            action: async () => {
+                try {
+                    const profileSelect = currentPopupInstance?.dlg?.querySelector('#stmb-profile-select');
+                    if (!profileSelect) return;
+
+                    const selectedIndex = parseInt(profileSelect.value);
+                    await deleteProfile(settings, selectedIndex, refreshPopupContent);
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error in delete profile:`, error);
+                    toastr.error('Failed to delete profile', 'STMemoryBooks');
+                }
             }
         }
+    ];
 
-        // Show/hide clear button based on whether manual lorebook is set
-        const clearButton = document.querySelector('#stmb-clear-manual-lorebook');
-        if (clearButton) {
-            clearButton.style.display = (isManualMode && stmbData.manualLorebook) ? 'inline-block' : 'none';
+    // Create import/export buttons
+    const importExportButtons = [
+        {
+            text: '📤 Export Profiles',
+            id: 'stmb-export-profiles',
+            action: () => {
+                try {
+                    exportProfiles(settings);
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error in export profiles:`, error);
+                    toastr.error('Failed to export profiles', 'STMemoryBooks');
+                }
+            }
+        },
+        {
+            text: '📥 Import Profiles',
+            id: 'stmb-import-profiles',
+            action: () => {
+                const importFile = currentPopupInstance?.dlg?.querySelector('#stmb-import-file');
+                if (importFile) {
+                    importFile.click();
+                }
+            }
         }
-    }
+    ];
+
+    // Clear containers and populate with buttons
+    profileButtonsContainer.innerHTML = '';
+    importExportContainer.innerHTML = '';
+
+    // Add profile action buttons
+    profileButtons.forEach(buttonConfig => {
+        const button = document.createElement('div');
+        button.className = 'menu_button';
+        button.id = buttonConfig.id;
+        button.textContent = buttonConfig.text;
+        button.addEventListener('click', buttonConfig.action);
+        profileButtonsContainer.appendChild(button);
+    });
+
+    // Add import/export buttons
+    importExportButtons.forEach(buttonConfig => {
+        const button = document.createElement('div');
+        button.className = 'menu_button';
+        button.id = buttonConfig.id;
+        button.textContent = buttonConfig.text;
+        button.addEventListener('click', buttonConfig.action);
+        importExportContainer.appendChild(button);
+    });
 }
 
 /**
@@ -1509,6 +1694,7 @@ async function showSettingsPopup() {
 
     const content = DOMPurify.sanitize(settingsTemplate(templateData));
     
+    // Build customButtons array dynamically based on current state
     const customButtons = [
         {
             text: '🧠 Create Memory',
@@ -1519,7 +1705,7 @@ async function showSettingsPopup() {
                     toastr.error('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks');
                     return;
                 }
-                
+
                 // Capture the currently selected profile before proceeding
                 let selectedProfileIndex = settings.defaultProfile;
                 if (currentPopupInstance && currentPopupInstance.dlg) {
@@ -1529,7 +1715,7 @@ async function showSettingsPopup() {
                         console.log(`STMemoryBooks: Using profile index ${selectedProfileIndex} (${settings.profiles[selectedProfileIndex]?.name}) from main popup selection`);
                     }
                 }
-                
+
                 await initiateMemoryCreation(selectedProfileIndex);
             }
         },
@@ -1543,6 +1729,8 @@ async function showSettingsPopup() {
             }
         }
     ];
+
+    // Manual lorebook and profile buttons will be populated after popup creation
     
     const popupOptions = {
         wide: true,
@@ -1557,6 +1745,7 @@ async function showSettingsPopup() {
     try {
         currentPopupInstance = new Popup(content, POPUP_TYPE.TEXT, '', popupOptions);
         setupSettingsEventListeners();
+        populateInlineButtons();
         await currentPopupInstance.show();
     } catch (error) {
         console.error('STMemoryBooks: Error showing settings popup:', error);
@@ -1576,123 +1765,7 @@ function setupSettingsEventListeners() {
     popupElement.addEventListener('click', async (e) => {
         const settings = initializeSettings();
         
-        // Profile management buttons
-        if (e.target.matches('#stmb-set-default-profile')) {
-            e.preventDefault();
-            const profileSelect = popupElement.querySelector('#stmb-profile-select');
-            const selectedIndex = parseInt(profileSelect.value);
-
-            if (selectedIndex === settings.defaultProfile) {
-                return;
-            }
-
-            settings.defaultProfile = selectedIndex;
-            saveSettingsDebounced();
-            toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
-            refreshPopupContent();
-            return;
-        }
-        
-        if (e.target.matches('#stmb-edit-profile')) {
-            e.preventDefault();
-            try {
-                const profileSelect = popupElement.querySelector('#stmb-profile-select');
-                const selectedIndex = parseInt(profileSelect.value);
-                const selectedProfile = settings.profiles[selectedIndex];
-
-                // Prevent editing of dynamic ST settings profile
-                if (selectedProfile.useDynamicSTSettings) {
-                    toastr.error('Cannot edit the "Current SillyTavern Settings" profile - it automatically uses your current ST configuration', 'STMemoryBooks');
-                    return;
-                }
-
-                await editProfile(settings, selectedIndex, refreshPopupContent);
-            } catch (error) {
-                console.error(`${MODULE_NAME}: Error in edit profile:`, error);
-                toastr.error('Failed to edit profile', 'STMemoryBooks');
-            }
-            return;
-        }
-        
-        if (e.target.matches('#stmb-new-profile')) {
-            e.preventDefault();
-            try {
-                await newProfile(settings, refreshPopupContent);
-            } catch (error) {
-                console.error(`${MODULE_NAME}: Error in new profile:`, error);
-                toastr.error('Failed to create profile', 'STMemoryBooks');
-            }
-            return;
-        }
-        
-        if (e.target.matches('#stmb-delete-profile')) {
-            e.preventDefault();
-            try {
-                const profileSelect = popupElement.querySelector('#stmb-profile-select');
-                const selectedIndex = parseInt(profileSelect.value);
-                await deleteProfile(settings, selectedIndex, refreshPopupContent);
-            } catch (error) {
-                console.error(`${MODULE_NAME}: Error in delete profile:`, error);
-                toastr.error('Failed to delete profile', 'STMemoryBooks');
-            }
-            return;
-        }
-        
-        if (e.target.matches('#stmb-export-profiles')) {
-            e.preventDefault();
-            try {
-                exportProfiles(settings);
-            } catch (error) {
-                console.error(`${MODULE_NAME}: Error in export profiles:`, error);
-                toastr.error('Failed to export profiles', 'STMemoryBooks');
-            }
-            return;
-        }
-        
-        if (e.target.matches('#stmb-import-profiles')) {
-            e.preventDefault();
-            popupElement.querySelector('#stmb-import-file')?.click();
-            return;
-        }
-
-        // Handle manual lorebook selection
-        if (e.target.matches('#stmb-select-manual-lorebook')) {
-            e.preventDefault();
-            try {
-                const selectedLorebook = await getEffectiveLorebookName();
-                if (selectedLorebook) {
-                    const stmbData = getSceneMarkers() || {};
-                    stmbData.manualLorebook = selectedLorebook;
-                    saveMetadataForCurrentContext();
-
-                    // Refresh the display
-                    updateLorebookStatusDisplay();
-                    toastr.success(`Manual lorebook set to "${selectedLorebook}"`, 'STMemoryBooks');
-                }
-            } catch (error) {
-                console.error(`${MODULE_NAME}: Error selecting manual lorebook:`, error);
-                toastr.error('Failed to select manual lorebook', 'STMemoryBooks');
-            }
-            return;
-        }
-
-        // Handle manual lorebook clear
-        if (e.target.matches('#stmb-clear-manual-lorebook')) {
-            e.preventDefault();
-            try {
-                const stmbData = getSceneMarkers() || {};
-                delete stmbData.manualLorebook;
-                saveMetadataForCurrentContext();
-
-                // Refresh the display
-                updateLorebookStatusDisplay();
-                toastr.info('Manual lorebook cleared', 'STMemoryBooks');
-            } catch (error) {
-                console.error(`${MODULE_NAME}: Error clearing manual lorebook:`, error);
-                toastr.error('Failed to clear manual lorebook', 'STMemoryBooks');
-            }
-            return;
-        }
+        // Note: Manual lorebook and profile management buttons are now handled via customButtons
     });
     
     // Handle change events using delegation
@@ -1781,6 +1854,7 @@ function setupSettingsEventListeners() {
             settings.moduleSettings.manualModeEnabled = e.target.checked;
             saveSettingsDebounced();
             updateLorebookStatusDisplay();
+            populateInlineButtons();
             return;
         }
 
@@ -2002,6 +2076,12 @@ function refreshPopupContent() {
         const sceneData = getSceneData();
         const selectedProfile = settings.profiles[settings.defaultProfile];
         const sceneMarkers = getSceneMarkers();
+
+        // Get current lorebook information
+        const isManualMode = settings.moduleSettings.manualModeEnabled;
+        const chatBoundLorebook = chat_metadata?.[METADATA_KEY] || null;
+        const manualLorebook = sceneMarkers?.manualLorebook || null;
+
         const templateData = {
             hasScene: !!sceneData,
             sceneData: sceneData,
@@ -2012,6 +2092,13 @@ function refreshPopupContent() {
             refreshEditor: settings.moduleSettings.refreshEditor,
             allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
             manualModeEnabled: settings.moduleSettings.manualModeEnabled,
+
+            // Lorebook status information
+            lorebookMode: isManualMode ? 'Manual' : 'Automatic (Chat-bound)',
+            currentLorebookName: isManualMode ? manualLorebook : chatBoundLorebook,
+            manualLorebookName: manualLorebook,
+            chatBoundLorebookName: chatBoundLorebook,
+            availableLorebooks: world_names || [],
             autoHideMode: getAutoHideMode(settings.moduleSettings),
             unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
             tokenWarningThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
@@ -2069,6 +2156,9 @@ function refreshPopupContent() {
         ];
         currentPopupInstance.dlg.classList.add(...requiredClasses);
         currentPopupInstance.content.style.overflowY = 'auto';
+
+        // Repopulate profile buttons after content refresh
+        populateInlineButtons();
 
     } catch (error) {
         console.error('STMemoryBooks: Error refreshing popup content:', error);

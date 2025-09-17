@@ -288,6 +288,11 @@ export function getCurrentMemoryBooksContext() {
 /**
  * Determines which lorebook to use based on settings and chat metadata.
  * If in manual mode and no lorebook is set, it will trigger a selection popup.
+ *
+ * Note: This function only shows the selection popup when NO manual lorebook is currently set.
+ * If a manual lorebook already exists, it returns that lorebook without prompting.
+ * For "change" operations that should always show a selection popup, use showLorebookSelectionPopup() instead.
+ *
  * @returns {Promise<string|null>} The name of the effective lorebook, or null if none is available/selected.
  */
 export async function getEffectiveLorebookName() {
@@ -346,6 +351,61 @@ export async function getEffectiveLorebookName() {
     toastr.warning('Memory creation cancelled. No lorebook was selected.', 'STMemoryBooks');
     return null;
 }
+
+/**
+ * Always shows a lorebook selection popup, regardless of current manual lorebook state.
+ * This function is intended for "change" operations where the user explicitly wants to select a different lorebook.
+ *
+ * @param {string} currentLorebook - The currently selected lorebook (optional, for display purposes)
+ * @returns {Promise<string|null>} The name of the selected lorebook, or null if cancelled/no selection made.
+ */
+export async function showLorebookSelectionPopup(currentLorebook = null) {
+    // Check if lorebooks are available
+    if (world_names.length === 0) {
+        toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
+        return null;
+    }
+
+    const lorebookOptions = world_names.map(name => {
+        const selected = name === currentLorebook ? ' selected' : '';
+        return `<option value="${name}"${selected}>${name}</option>`;
+    }).join('');
+
+    const popupContent = `
+        <h4>Select a Memory Book</h4>
+        <div class="world_entry_form_control">
+            <p>Choose which lorebook should be used for this chat's memories.</p>
+            ${currentLorebook ? `<p><strong>Current:</strong> ${currentLorebook}</p>` : ''}
+            <select id="stmb-manual-lorebook-select" class="text_pole">
+                ${lorebookOptions}
+            </select>
+        </div>
+    `;
+
+    const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', { okButton: 'Select', cancelButton: 'Cancel' });
+    const result = await popup.show();
+
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        const selectedLorebook = popup.dlg.querySelector('#stmb-manual-lorebook-select').value;
+
+        // Only save and show success if a different lorebook was actually selected
+        if (selectedLorebook !== currentLorebook) {
+            const stmbData = getSceneMarkers();
+            stmbData.manualLorebook = selectedLorebook;
+            saveMetadataForCurrentContext();
+
+            toastr.success(`Manual lorebook changed to: ${selectedLorebook}`, 'STMemoryBooks');
+            return selectedLorebook;
+        } else {
+            // Same lorebook selected, no need to save or show success
+            return selectedLorebook;
+        }
+    }
+
+    // User cancelled the selection
+    return null;
+}
+
 
 /**
  * Get current model and temperature settings with comprehensive validation
