@@ -69,7 +69,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
         {{else}}
         <div id="stmb-memory-status" class="info-block">
-            <span>📊 Memory Status: No memories have been processed for this chat yet <small>(since updating to version 3.6.2.)</small></span>
+            <span>📊 Memory Status: No memories have been processed for this chat yet <small>(since updating to version 3.6.2 or higher.)</small></span>
         </div>
         {{/if}}
 
