@@ -7,8 +7,8 @@ export const bookmarksTemplate = Handlebars.compile(`
     <h3>🔖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
     <div class="popup-content">⚠️ Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded into memory and the page has to be redrawn. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</div>
 
-    <div class="buttons_block marginTop5 justifyCenter">
-        <button id="stmb-sort-toggle" class="menu_button menu_button_icon inline-flex interactable">
+    <div class="stmb-buttons-block stmb-margin-top-5 stmb-justify-center">
+        <button id="stmb-sort-toggle" class="stmb-menu-button menu_button_icon inline-flex interactable">
             {{#if sortAscending}}<i class="fa-solid fa-sort-asc"></i> Sort bookmarks in ascending order{{else}}<i class="fa-solid fa-sort-desc"></i> Sort bookmarks in descending order{{/if}}
         </button>
     </div>
@@ -23,8 +23,8 @@ export const bookmarksTemplate = Handlebars.compile(`
                     {{loadStatus.indicator}} #{{messageNum}} - {{title}}
                 </div>
                 <div class="flex-container">
-                    <button class="menu_button fa-solid fa-edit interactable edit-bookmark" data-index="{{@index}}" title="Edit bookmark"></button>
-                    <button class="menu_button fa-solid fa-trash interactable red_button delete-bookmark" data-index="{{@index}}" title="Delete bookmark"></button>
+                    <button class="stmb-menu-button fa-solid fa-edit interactable edit-bookmark" data-index="{{@index}}" title="Edit bookmark"></button>
+                    <button class="stmb-menu-button fa-solid fa-trash interactable red_button delete-bookmark" data-index="{{@index}}" title="Delete bookmark"></button>
                 </div>
             </div>
             {{/each}}
@@ -34,8 +34,8 @@ export const bookmarksTemplate = Handlebars.compile(`
             <span>No bookmarks found. Create your first bookmark to get started!</span>
         </div>
     {{/if}}
-    <div class="buttons_block marginTop5 justifyCenter">
-        <button id="stmb-create-bookmark" class="menu_button menu_button_icon inline-flex interactable"><i class="fa-solid fa-plus"></i>  Create New Bookmark</button>
+    <div class="stmb-buttons-block stmb-margin-top-5 stmb-justify-center">
+        <button id="stmb-create-bookmark" class="stmb-menu-button menu_button_icon inline-flex interactable"><i class="fa-solid fa-plus"></i>  Create New Bookmark</button>
     </div>
 `);
 
@@ -114,7 +114,7 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
             </h5>
 
             <div id="stmb-manual-controls" style="display: {{#if manualModeEnabled}}block{{else}}none{{/if}};">
-                <div class="buttons_block marginTop5 justifyCenter" id="stmb-manual-lorebook-buttons">
+                <div class="stmb-buttons-block stmb-margin-top-5 stmb-justify-center" id="stmb-manual-lorebook-buttons">
                     <!-- Manual lorebook buttons will be dynamically inserted here -->
                 </div>
             </div>
@@ -251,13 +251,13 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
         </div>
 
         <h4>Profile Actions:</h4>
-        <div class="buttons_block marginTop5 justifyCenter" id="stmb-profile-buttons">
+        <div class="stmb-buttons-block stmb-margin-top-5 stmb-justify-center" id="stmb-profile-buttons">
             <!-- Profile buttons will be dynamically inserted here -->
         </div>
 
         <h4>Import/Export Profiles:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-        <div class="buttons_block marginTop5 justifyCenter" id="stmb-import-export-buttons">
+        <div class="stmb-buttons-block stmb-margin-top-5 stmb-justify-center" id="stmb-import-export-buttons">
             <!-- Import/Export buttons will be dynamically inserted here -->
         </div>
 `);
