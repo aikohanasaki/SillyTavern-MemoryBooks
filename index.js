@@ -1488,7 +1488,7 @@ function populateInlineButtons() {
         manualLorebookContainer.innerHTML = '';
         manualLorebookButtons.forEach(buttonConfig => {
             const button = document.createElement('div');
-            button.className = 'menu_button';
+            button.className = 'stmb-menu-button';
             button.id = buttonConfig.id;
             button.textContent = buttonConfig.text;
             button.addEventListener('click', buttonConfig.action);
@@ -1606,7 +1606,7 @@ function populateInlineButtons() {
     // Add profile action buttons
     profileButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
-        button.className = 'menu_button';
+        button.className = 'stmb-menu-button';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
@@ -1616,7 +1616,7 @@ function populateInlineButtons() {
     // Add import/export buttons
     importExportButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
-        button.className = 'menu_button';
+        button.className = 'stmb-menu-button';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
@@ -1699,7 +1699,7 @@ async function showSettingsPopup() {
         {
             text: '🧠 Create Memory',
             result: null,
-            classes: ['menu_button'],
+            classes: ['stmb-menu-button'],
             action: async () => {
                 if (!sceneData) {
                     toastr.error('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks');
@@ -1722,7 +1722,7 @@ async function showSettingsPopup() {
         {
             text: '🗑️ Clear Scene',
             result: null,
-            classes: ['menu_button'],
+            classes: ['stmb-menu-button'],
             action: () => {
                 clearScene();
                 refreshPopupContent();

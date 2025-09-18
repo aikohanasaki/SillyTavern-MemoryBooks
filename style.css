@@ -215,18 +215,18 @@
 /* --- BUTTON STYLING --- */
 
 /* Button container classes for consistent layout */
-.buttons_block {
+.stmb-buttons-block {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
     gap: 4px;
 }
 
-.marginTop5 {
+.stmb-margin-top-5 {
     margin-top: 5px;
 }
 
-.justifyCenter {
+.stmb-justify-center {
     justify-content: center;
 }
 
@@ -239,7 +239,7 @@
     flex-wrap: wrap;
 }
 
-#stmb-manual-lorebook-buttons .menu_button {
+#stmb-manual-lorebook-buttons .stmb-menu-button {
     padding: 6px 12px;
     display: inline-flex;
     align-items: center;
@@ -248,7 +248,7 @@
 }
 
 /* General menu button consistency */
-.menu_button {
+.stmb-menu-button {
     min-height: 32px;
     box-sizing: border-box;
 }
