@@ -3,77 +3,68 @@
 /* Base styling for all scene marker buttons */
 .mes_stmb_start,
 .mes_stmb_end {
-    /* Ensure buttons are visible with good base styling */
-    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 20%, transparent 80%);
-    color: var(--SmartThemeBodyColor, #dcdcd2);
-    border: 1px solid color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 40%, transparent 60%);
-    border-radius: 4px;
-    padding: 4px 6px;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 3px 5px;
     margin: 0 3px;
-    transition: all 0.2s ease;
-    opacity: 0.7;
+    filter: grayscale(0.5);
+    transition: var(--animation-duration-2x);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .mes_stmb_start:hover,
 .mes_stmb_end:hover {
-    opacity: 1;
-    background: color-mix(in srgb, var(--SmartThemeBodyColor, #dcdcd2) 30%, transparent 70%);
-    transform: scale(1.05);
+    filter: grayscale(0) brightness(1.1);
 }
 
 /* --- ACTIVE STATE (ON) --- */
 .mes .mes_stmb_start.on,
 .mes .mes_stmb_end.on {
-    /* Bright, visible active state with glow */
-    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 80%, transparent 20%) !important;
-    color: var(--SmartThemeBlurTintColor, #171717) !important;
-    border-color: var(--SmartThemeQuoteColor, #e18a24) !important;
-    box-shadow: 0 0 8px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 50%, transparent 50%);
-    opacity: 1 !important;
+    background-color: var(--SmartThemeQuoteColor) !important;
+    color: var(--SmartThemeBlurTintColor) !important;
+    border-color: var(--SmartThemeQuoteColor) !important;
+    filter: grayscale(0) !important;
     font-weight: bold;
 }
 
 .mes .mes_stmb_start.on:hover,
 .mes .mes_stmb_end.on:hover {
-    background: var(--SmartThemeQuoteColor, #e18a24) !important;
-    transform: scale(1.1);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
+    filter: grayscale(0) brightness(1.2) !important;
 }
 
 /* --- VALID SELECTION POINTS --- */
 .mes_stmb_start.valid-start-point,
 .mes_stmb_end.valid-end-point {
-    /* Pulsing green glow for valid selection points */
-    background: color-mix(in srgb, #4CAF50 60%, transparent 40%);
-    color: var(--SmartThemeBlurTintColor, #171717);
+    background-color: #4CAF50;
+    color: var(--SmartThemeBlurTintColor);
     border-color: #4CAF50;
+    filter: grayscale(0);
     animation: stmb-pulse 2s infinite;
-    opacity: 1;
 }
 
 .mes_stmb_start.valid-start-point:hover,
 .mes_stmb_end.valid-end-point:hover {
-    background: #4CAF50;
+    filter: grayscale(0) brightness(1.2);
     animation: none;
-    transform: scale(1.1);
-    box-shadow: 0 0 8px color-mix(in srgb, #4CAF50 50%, transparent 50%);
 }
 
 /* --- IN-SCENE RANGE MARKERS --- */
 .mes_stmb_start.in-scene,
 .mes_stmb_end.in-scene {
-    /* Subtle highlight for messages in the selected range */
-    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 40%, transparent 60%);
-    color: var(--SmartThemeBodyColor, #dcdcd2);
-    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
-    opacity: 0.8;
+    background-color: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBlurTintColor);
+    border-color: var(--SmartThemeQuoteColor);
+    filter: grayscale(0.3);
 }
 
 .mes_stmb_start.in-scene:hover,
 .mes_stmb_end.in-scene:hover {
-    background: color-mix(in srgb, var(--SmartThemeQuoteColor, #e18a24) 60%, transparent 40%);
-    transform: scale(1.05);
-    opacity: 1;
+    filter: grayscale(0) brightness(1.1);
 }
 
 /* --- ANIMATIONS --- */
@@ -81,13 +72,13 @@
 /* Pulse animation for valid selection points */
 @keyframes stmb-pulse {
     0% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, #4CAF50 70%, transparent 30%);
+        opacity: 0.7;
     }
     50% {
-        box-shadow: 0 0 0 4px color-mix(in srgb, #4CAF50 30%, transparent 70%);
+        opacity: 1;
     }
     100% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, #4CAF50 0%, transparent 100%);
+        opacity: 0.7;
     }
 }
 
@@ -249,8 +240,25 @@
 
 /* General menu button consistency */
 .stmb-menu-button {
+    /* Inherit ST's standard menu button styling */
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 3px 5px;
+    filter: grayscale(0.5);
+    transition: var(--animation-duration-2x);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     min-height: 32px;
     box-sizing: border-box;
+}
+
+.stmb-menu-button:hover {
+    filter: grayscale(0) brightness(1.1);
 }
 
 /* --- RESPONSIVE & ACCESSIBILITY --- */

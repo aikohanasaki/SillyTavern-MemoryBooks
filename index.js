@@ -199,12 +199,8 @@ function validateAndCleanupSceneMarkers() {
         console.log(`STMemoryBooks: Found orphaned scene markers on chat load (start: ${sceneStart}, end: ${sceneEnd})`);
 
         // Check if memory creation is actually in progress
-        if (!isProcessingMemory) {
-            console.log('STMemoryBooks: No active memory creation detected - clearing orphaned scene markers');
+        if (!isProcessingMemory && extension_settings[MODULE_NAME].moduleSettings.autoSummaryEnabled) {
             clearScene();
-            toastr.info('Cleared orphaned scene markers from previous session', 'STMemoryBooks');
-        } else {
-            console.log('STMemoryBooks: Memory creation in progress - keeping scene markers');
         }
     }
 }
@@ -1209,9 +1205,10 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
         }
 
-        // Clear scene markers after successful memory creation to prevent stale metadata
-        clearScene();
-        console.log('STMemoryBooks: Scene markers cleared after successful memory creation');
+        // Clear scene markers after successful memory creation if auto-summary is enabled
+        if (extension_settings[MODULE_NAME].moduleSettings.autoSummaryEnabled) {
+            clearScene();
+        }
 
         // Success notification
         const contextMsg = memoryFetchResult.actualCount > 0 ?
