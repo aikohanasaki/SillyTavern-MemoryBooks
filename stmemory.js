@@ -237,6 +237,9 @@ function parseAIJsonResponse(aiResponse) {
 
     cleanResponse = cleanResponse.trim();
 
+    // Remove <think> tags and their content
+    cleanResponse = cleanResponse.replace(/<think>[\s\S]*?<\/think>/gi, '');
+
     // Remove code block fences (```json ... ```)
     cleanResponse = cleanResponse.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
 
