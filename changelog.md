@@ -2,6 +2,13 @@
 
 **← [Back to README](readme.md)**
 
+## v3.7.2 (September 2025)
+- **Enhancement:** Improved AI response parsing with think tag removal
+  - AI responses containing `<think>` tags are now automatically cleaned during JSON parsing
+  - Removes `<think>...</think>` blocks and their content from memory generation responses
+  - Ensures cleaner, more focused memory entries without AI reasoning artifacts
+  - Implementation in `parseAIJsonResponse()` function in stmemory.js:240
+
 ## v3.7.1 (September 2025)
 - **Bug Fix:** Fixed manual lorebook display issue where Mode and Active Lorebook would not display correctly after changing manual lorebook selection
   - Resolved template data synchronization issue in `refreshPopupContent()` function
