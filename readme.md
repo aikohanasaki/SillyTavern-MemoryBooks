@@ -9,26 +9,9 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-## 🚦 What's New (v3.7.1)
+## 🚦 What's New (v3.7.2)
 
-- **Bug Fix:** Fixed manual lorebook display issue where Mode and Active Lorebook information would disappear after changing manual lorebook selection. The Current Lorebook Configuration section now properly updates and displays the correct mode and active lorebook after selection changes.
-
-### Previous Release (v3.7.0)
-
-- **Enhanced Manual/Chat Lorebook Controls:** Complete UI overhaul for lorebook management
-  - New lorebook status display with mode badges showing current configuration
-  - Improved manual mode setup with automatic prompts for lorebook selection
-  - One-click lorebook selection and clearing for manual mode users
-  - Real-time status updates and contextual help throughout the interface
-- **Session Management & Cleanup:** Automatic handling of orphaned scene markers
-  - Detects and cleans up stale scene markers from previous sessions
-  - Prevents interference with auto-summary and memory creation processes
-  - Clear user notifications when cleanup occurs
-- **Auto-Summary System Improvements:** Enhanced reliability and debugging
-  - Improved trigger logic that works correctly regardless of message count
-  - Enhanced logging and new `window.STMemoryBooks_debugAutoSummary()` debug function
-  - Better lorebook validation with user-friendly selection popups
-  - More robust handling of postponed auto-summary states
+- **Enhancement:** Improved AI response parsing with think tag removal. AI responses containing `<think>` tags are now automatically cleaned during JSON parsing, ensuring cleaner memory entries without AI reasoning artifacts.
 
 ---
 
