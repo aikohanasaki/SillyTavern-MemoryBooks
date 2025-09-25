@@ -5,13 +5,14 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 **📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
 
 ## FAQ 
-Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books" and "Bookmarks".
+Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
 
 ---
 
-## 🚦 What's New (v3.7.2)
+## 🚦 What's New (v4.0.0)
 
-- **Enhancement:** Improved AI response parsing with think tag removal. AI responses containing `<think>` tags are now automatically cleaned during JSON parsing, ensuring cleaner memory entries without AI reasoning artifacts.
+- **BREAKING CHANGE:** Complete removal of bookmark functionality - split into separate extension for better modularity
+- **Codebase Simplification:** Significant reduction in complexity, improved performance, and cleaner architecture focused on memory management
 
 ---
 
