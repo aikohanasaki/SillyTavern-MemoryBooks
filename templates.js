@@ -1,45 +1,6 @@
 import { Handlebars } from '../../../../lib.js';
 
 /**
- * Bookmarks management template following settingsTemplate patterns
- */
-export const bookmarksTemplate = Handlebars.compile(`
-    <h3>🔖 Bookmarks ({{bookmarks.length}}/{{maxBookmarks}})</h3>
-    <div class="popup-content">⚠️ Caution: going back more than 500 messages usually results in a long wait time as the chat messages need to be loaded into memory and the page has to be redrawn. Please be patient if you need to go back that far! Consider scrolling to the top of the chat and helping the extension along by clicking "Show More Messages" to load them manually. Once loaded, the chat will be responsive.</div>
-
-    <div class="flex-container marginTop5" style="justify-content: center;">
-        <button id="stmb-sort-toggle" class="menu_button menu_button_icon inline-flex interactable">
-            {{#if sortAscending}}<i class="fa-solid fa-sort-asc"></i> Sort bookmarks in ascending order{{else}}<i class="fa-solid fa-sort-desc"></i> Sort bookmarks in descending order{{/if}}
-        </button>
-    </div>
-    
-    <div class="popup-content marginBot10"><small>Status indicators: 🟢 = Loaded (fast), 🟡 = Loading required (slight wait), 🔴 = Heavy loading (long wait)</small></div>
-
-    {{#if bookmarks.length}}
-        <div class="flex-container flexFlowColumn spaceBetween">
-            {{#each bookmarks}}
-            <div class="bookmark-item flex-container alignItemsCenter padding8 marginTopBot5 stmb-box" data-message-num="{{messageNum}}" data-title="{{title}}">
-                <div title="{{loadStatus.tooltip}}" class="bookmark-content flex1 cursor-pointer marginTopBot5" data-message="{{messageNum}}">
-                    {{loadStatus.indicator}} #{{messageNum}} - {{title}}
-                </div>
-                <div class="flex-container">
-                    <button class="menu_button fa-solid fa-edit interactable edit-bookmark" data-index="{{@index}}" title="Edit bookmark"></button>
-                    <button class="menu_button fa-solid fa-trash interactable red_button delete-bookmark" data-index="{{@index}}" title="Delete bookmark"></button>
-                </div>
-            </div>
-            {{/each}}
-        </div>
-    {{else}}
-        <div class="info-block warning">
-            <span>No bookmarks found. Create your first bookmark to get started!</span>
-        </div>
-    {{/if}}
-    <div class="flex-container marginTop5" style="justify-content: center;">
-        <button id="stmb-create-bookmark" class="menu_button menu_button_icon inline-flex interactable"><i class="fa-solid fa-plus"></i>  Create New Bookmark</button>
-    </div>
-`);
-
-/**
  * Main settings template - Updated to use SillyTavern's built-in classes
  */
 export const settingsTemplate = Handlebars.compile(`

@@ -12,7 +12,6 @@ import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
-import { loadBookmarks, saveBookmarks, createBookmark, updateBookmark, deleteBookmark, validateBookmarks, shiftBookmarksAfterDeletion, showBookmarksPopup } from './bookmarkManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
@@ -221,16 +220,20 @@ function handleChatLoaded() {
 }
 
 async function handleMessageReceived() {
-    setTimeout(validateSceneMarkers, 500);
-    if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
-        const currentMessageCount = chat.length;
-        console.log(`STMemoryBooks: Message received - auto-summary enabled, current count: ${currentMessageCount}`);
+    try {
+        setTimeout(validateSceneMarkers, 500);
+        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
+            const currentMessageCount = chat.length;
+            console.log(`STMemoryBooks: Message received - auto-summary enabled, current count: ${currentMessageCount}`);
 
-        // Always check auto-summary trigger, not just on even messages
-        // This ensures we don't miss triggers due to odd message counts
-        await checkAutoSummaryTrigger();
-    } else {
-        console.log('STMemoryBooks: Message received but auto-summary is disabled');
+            // Always check auto-summary trigger, not just on even messages
+            // This ensures we don't miss triggers due to odd message counts
+            await checkAutoSummaryTrigger();
+        } else {
+            console.log('STMemoryBooks: Message received but auto-summary is disabled');
+        }
+    } catch (error) {
+        console.error('STMemoryBooks: Error in handleMessageReceived:', error);
     }
 }
 
@@ -502,123 +505,6 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
         toastr.error(`Failed to determine next memory range: ${error.message}`, 'STMemoryBooks');
         return '';
     }
-}
-
-/**
- * Bookmark slash command handlers
- */
-function handleBookmarkSetCommand(namedArgs, unnamedArgs) {
-    const args = String(unnamedArgs || '').trim().split(/\s+/);
-    
-    if (args.length < 2) {
-        toastr.error('Usage: /bookmarkset <message_number> <title>', 'STMemoryBooks');
-        return '';
-    }
-    
-    const messageNum = parseInt(args[0]);
-    if (isNaN(messageNum) || messageNum < 0) {
-        toastr.error('Invalid message number', 'STMemoryBooks');
-        return '';
-    }
-    
-    if (messageNum >= chat.length) {
-        toastr.error('Message number does not exist', 'STMemoryBooks');
-        return '';
-    }
-    
-    if (chat.length === 0) {
-        toastr.error('No messages available to bookmark', 'STMemoryBooks');
-        return '';
-    }
-    
-    const title = args.slice(1).join(' ');
-    if (!title) {
-        toastr.error('Title is required', 'STMemoryBooks');
-        return '';
-    }
-    
-    // Create bookmark asynchronously
-    createBookmark(messageNum, title).then(result => {
-        if (result.success) {
-            toastr.success(`Bookmark "${messageNum} - ${title}" created`, 'STMemoryBooks');
-        } else {
-            toastr.error(result.error, 'STMemoryBooks');
-        }
-    }).catch(error => {
-        toastr.error(`Failed to create bookmark: ${error.message}`, 'STMemoryBooks');
-    });
-    
-    return '';
-}
-
-function handleBookmarkListCommand(namedArgs, unnamedArgs) {
-    showBookmarksPopup();
-    return '';
-}
-
-async function handleBookmarkGoCommand(namedArgs, unnamedArgs) {
-    const arg = String(unnamedArgs || '').trim();
-    
-    if (!arg) {
-        toastr.error('Usage: /bookmarkgo <title_or_message_number>', 'STMemoryBooks');
-        return '';
-    }
-    
-    try {
-        // Load bookmarks
-        const loadResult = await loadBookmarks();
-        if (!loadResult.success) {
-            toastr.error(loadResult.error, 'STMemoryBooks');
-            return '';
-        }
-        
-        const bookmarks = loadResult.bookmarks;
-        if (bookmarks.length === 0) {
-            toastr.error('No bookmarks found', 'STMemoryBooks');
-            return '';
-        }
-        
-        let targetBookmark = null;
-        
-        // Try to find by message number first
-        const messageNum = parseInt(arg);
-        if (!isNaN(messageNum)) {
-            targetBookmark = bookmarks.find(b => b.messageNum === messageNum);
-        }
-        
-        // If not found by message number, try by title
-        if (!targetBookmark) {
-            targetBookmark = bookmarks.find(b => b.title.toLowerCase().includes(arg.toLowerCase()));
-        }
-        
-        if (!targetBookmark) {
-            toastr.error(`Bookmark not found: ${arg}`, 'STMemoryBooks');
-            return '';
-        }
-        
-        // Jump to the bookmark using async navigation
-        if (targetBookmark.messageNum >= chat.length) {
-            toastr.error(`Bookmark points to deleted message ${targetBookmark.messageNum}`, 'STMemoryBooks');
-        } else {
-            // Import and use the async navigation function from bookmarkManager
-            try {
-                const { navigateToBookmarkAsync } = await import('./bookmarkManager.js');
-                await navigateToBookmarkAsync(targetBookmark.messageNum);
-                toastr.success(`Jumped to bookmark: ${targetBookmark.messageNum} - ${targetBookmark.title}`, 'STMemoryBooks');
-            } catch (error) {
-                console.error('STMemoryBooks: Error with async navigation, falling back to regular navigation:', error);
-                // Fallback to regular navigation
-                executeSlashCommands(`/chat-jump ${targetBookmark.messageNum}`);
-                toastr.info(`Jumped to bookmark: ${targetBookmark.messageNum} - ${targetBookmark.title}`, 'STMemoryBooks');
-            }
-        }
-        
-    } catch (error) {
-        console.error('STMemoryBooks: Error in /bookmarkgo command:', error);
-        toastr.error(`Failed to go to bookmark: ${error.message}`, 'STMemoryBooks');
-    }
-    
-    return '';
 }
 
 /**
@@ -1208,6 +1094,8 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         // Clear scene markers after successful memory creation if auto-summary is enabled
         if (extension_settings[MODULE_NAME].moduleSettings.autoSummaryEnabled) {
             clearScene();
+            // RESET auto-summary count so it starts fresh from this point
+            saveMetadataForCurrentContext('autoSummaryLastMessageCount', chat.length);
         }
 
         // Success notification
@@ -1298,6 +1186,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         if (!sceneData) {
             console.error('STMemoryBooks: No scene selected for memory initiation');
             toastr.error('No scene selected', 'STMemoryBooks');
+            isProcessingMemory = false;
             return;
         }
         
@@ -1305,6 +1194,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         if (!lorebookValidation.valid) {
             console.error('STMemoryBooks: Lorebook validation failed:', lorebookValidation.error);
             toastr.error(lorebookValidation.error, 'STMemoryBooks');
+            isProcessingMemory = false;
             return;
         }
         
@@ -1329,6 +1219,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         
         const effectiveSettings = await showAndGetMemorySettings(sceneData, lorebookValidation, selectedProfileIndex);
         if (!effectiveSettings) {
+            isProcessingMemory = false;
             return; // User cancelled
         }
         
@@ -2212,44 +2103,9 @@ function registerSlashCommands() {
         helpString: 'Create memory from end of last memory to current message'
     });
 
-    const bookmarkSetCmd = SlashCommand.fromProps({
-        name: 'bookmarkset',
-        callback: handleBookmarkSetCommand,
-        helpString: 'Create a bookmark (e.g., /bookmarkset 10 Epic Battle)',
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'Message number and title',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true
-            })
-        ]
-    });
-
-    const bookmarkListCmd = SlashCommand.fromProps({
-        name: 'bookmarklist',
-        callback: handleBookmarkListCommand,
-        helpString: 'Show bookmarks list'
-    });
-
-    const bookmarkGoCmd = SlashCommand.fromProps({
-        name: 'bookmarkgo',
-        callback: handleBookmarkGoCommand,
-        helpString: 'Jump to a bookmark by title or message number',
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'Bookmark title or message number',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true
-            })
-        ]
-    });
-    
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
-    SlashCommandParser.addCommandObject(bookmarkSetCmd);
-    SlashCommandParser.addCommandObject(bookmarkListCmd);
-    SlashCommandParser.addCommandObject(bookmarkGoCmd);
 }
 
 /**
@@ -2265,17 +2121,13 @@ function createUI() {
         </div>
     `);
     
-    const bookmarksMenuItem = $(`
-        <div id="stmb-bookmarks-menu-item-container" class="extension_container interactable" tabindex="0">            
-            <div id="stmb-bookmarks-menu-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
-                <div class="fa-fw fa-solid fa-bookmark extensionsMenuExtensionButton"></div>
-                <span>Bookmarks</span>
-            </div>
-        </div>
-    `);
     
-    $('#extensionsMenu').append(menuItem);
-    $('#extensionsMenu').append(bookmarksMenuItem);
+    const extensionsMenu = $('#extensionsMenu');
+    if (extensionsMenu.length > 0) {
+        extensionsMenu.append(menuItem);
+    } else {
+        console.warn('STMemoryBooks: Extensions menu not found - retrying initialization');
+    }
 }
 
 /**
@@ -2283,17 +2135,12 @@ function createUI() {
  */
 function setupEventListeners() {
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
-    $(document).on('click', SELECTORS.bookmarksMenuItem, showBookmarksPopup);
     
     eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
     eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
     eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
         const settings = initializeSettings();
         handleMessageDeletion(deletedId, settings);
-        // Handle bookmark shifting for deleted messages
-        shiftBookmarksAfterDeletion(deletedId).catch(error => {
-            console.error('STMemoryBooks: Error shifting bookmarks after deletion:', error);
-        });
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
     
@@ -2375,7 +2222,10 @@ async function init() {
         await new Promise(resolve => setTimeout(resolve, 500));
         attempts++;
     }
-    
+
+    // Create UI now that extensions menu is available
+    createUI();
+
     // Check initial API compatibility
     checkApiCompatibility();
     
@@ -2401,9 +2251,6 @@ async function init() {
         toastr.error('STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.', 'STMemoryBooks');
         return;
     }
-    
-    // Create UI
-    createUI();
     
     // Setup event listeners
     setupEventListeners();
