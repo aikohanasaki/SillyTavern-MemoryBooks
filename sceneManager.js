@@ -28,18 +28,9 @@ export function getSceneMarkers() {
                 group.chat_metadata = {};
             }
             if (!group.chat_metadata.STMemoryBooks) {
-                group.chat_metadata.STMemoryBooks = {
-                    sceneStart: null,
-                    sceneEnd: null,
-                    manualLorebook: null,
-                    highestMemoryProcessed: null
-                };
+                group.chat_metadata.STMemoryBooks = {};
             }
 
-            // Migration: Add highestMemoryProcessed if missing
-            if (group.chat_metadata.STMemoryBooks.highestMemoryProcessed === undefined) {
-                group.chat_metadata.STMemoryBooks.highestMemoryProcessed = null;
-            }
 
             // Sync from currentSceneState to prevent stale metadata from being returned after scene changes
             if (currentSceneState.start !== null || currentSceneState.end !== null) {
@@ -52,24 +43,12 @@ export function getSceneMarkers() {
     } else {
         // Single character chat - chat_metadata
         if (!chat_metadata) {
-            return { 
-                sceneStart: null, 
-                sceneEnd: null 
-            };
+            return {};
         }
         if (!chat_metadata.STMemoryBooks) {
-            chat_metadata.STMemoryBooks = {
-                sceneStart: null,
-                sceneEnd: null,
-                manualLorebook: null,
-                highestMemoryProcessed: null
-            };
+            chat_metadata.STMemoryBooks = {};
         }
 
-        // Migration: Add highestMemoryProcessed if missing
-        if (chat_metadata.STMemoryBooks.highestMemoryProcessed === undefined) {
-            chat_metadata.STMemoryBooks.highestMemoryProcessed = null;
-        }
 
         // sync from currentSceneState for consistency
         if (currentSceneState.start !== null || currentSceneState.end !== null) {
@@ -81,11 +60,7 @@ export function getSceneMarkers() {
     }
     
     // Fallback for edge cases
-    return { 
-        sceneStart: null, 
-        sceneEnd: null,
-        manualLorebook: null
-    };
+    return {};
 }
 
 /**
@@ -107,12 +82,7 @@ export function saveMetadataForCurrentContext() {
             group.chat_metadata = {};
         }
         if (!group.chat_metadata.STMemoryBooks) {
-            group.chat_metadata.STMemoryBooks = {
-                sceneStart: null,
-                sceneEnd: null,
-                manualLorebook: null,
-                highestMemoryProcessed: null
-            };
+            group.chat_metadata.STMemoryBooks = {};
         }
         
         // SYNCHRONOUS: Direct update with current scene state
@@ -263,10 +233,10 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
  */
 export function setSceneMarker(messageId, type) {
     const markers = getSceneMarkers();
-    
+
     // Store previous state for optimization
-    const oldStart = markers.sceneStart;
-    const oldEnd = markers.sceneEnd;    
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;    
     
     // Calculate new state atomically
     const newState = calculateNewSceneState(markers, messageId, type);
@@ -286,12 +256,12 @@ export function setSceneMarker(messageId, type) {
  * Clear scene markers
  */
 export function clearScene() {
-    
+
     const markers = getSceneMarkers();
-    
+
     // Store previous state for optimization
-    const oldStart = markers.sceneStart;
-    const oldEnd = markers.sceneEnd;
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;
     
     // Clear both metadata and cache simultaneously
     markers.sceneStart = null;
@@ -394,10 +364,10 @@ function updateButtonStatesForElements(messageElements, markers) {
  */
 export function validateSceneMarkers() {
     const markers = getSceneMarkers();
-    
+
     // Store previous state for optimization
-    const oldStart = markers.sceneStart;
-    const oldEnd = markers.sceneEnd;
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;
     
     let hasChanges = false;
     
@@ -415,8 +385,8 @@ export function validateSceneMarkers() {
         hasChanges = true;
     }
     
-    // Ensure start < end
-    if (markers.sceneStart !== null && markers.sceneEnd !== null && markers.sceneStart >= markers.sceneEnd) {
+    // Ensure start <= end (start = end is valid for single message)
+    if (markers.sceneStart !== null && markers.sceneEnd !== null && markers.sceneStart > markers.sceneEnd) {
         markers.sceneStart = null;
         markers.sceneEnd = null;
         hasChanges = true;
@@ -437,8 +407,8 @@ export function validateSceneMarkers() {
  */
 export function handleMessageDeletion(deletedId, settings) {
     const markers = getSceneMarkers();
-    const oldStart = markers.sceneStart;
-    const oldEnd = markers.sceneEnd;
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;
     let hasChanges = false;
     let toastrMessage = '';
 
@@ -625,16 +595,16 @@ function calculateNewSceneState(markers, messageId, type) {
     let newEnd = markers.sceneEnd;
     
     if (type === 'start') {
-        // If setting start, clear end if it would be invalid
-        if (markers.sceneEnd !== null && markers.sceneEnd <= numericId) {
+        // If setting start, clear end if it would be invalid (start = end is valid)
+        if (markers.sceneEnd !== null && markers.sceneEnd < numericId) {
             newEnd = null;
         }
-        
+
         // Toggle start marker
         newStart = markers.sceneStart === numericId ? null : numericId;
     } else if (type === 'end') {
-        // If setting end, clear start if it would be invalid  
-        if (markers.sceneStart !== null && markers.sceneStart >= numericId) {
+        // If setting end, clear start if it would be invalid (start = end is valid)
+        if (markers.sceneStart !== null && markers.sceneStart > numericId) {
             newStart = null;
         }
         
