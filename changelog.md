@@ -2,6 +2,18 @@
 
 **← [Back to README](readme.md)**
 
+## v4.0.1 (September 2025)
+- **Critical Bug Fix:** Resolved zombie scene markers issue in auto-summary functionality
+  - Fixed destructive initialization that overwrote `highestMemoryProcessed` values
+  - Auto-summary now correctly recognizes previously created memories and doesn't reset to beginning
+  - Prevents scene markers from reappearing after being cleared
+- **Range Validation Logic Fixes:** Corrected off-by-one errors in memory range validation
+  - Fixed `>=` vs `>` comparisons to properly allow single-message memories (start = end is valid)
+- **Metadata Persistence Improvements:** Enhanced data integrity across all operations
+  - Eliminated all destructive object initialization patterns
+- **Code Quality:** Comprehensive defensive programming implementation
+  - Replaced destructive `{sceneStart: null, sceneEnd: null, ...}` patterns with safe `{}` initialization
+
 ## v4.0.0 (September 2025)
 - **BREAKING CHANGE:** Complete removal of bookmark functionality
   - Deleted `bookmarkManager.js` module (793 lines) containing all bookmark-related features

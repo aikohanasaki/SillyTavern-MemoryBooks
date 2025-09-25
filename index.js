@@ -247,7 +247,7 @@ window.STMemoryBooks_debugAutoSummary = function() {
     const currentMessageCount = chat.length;
     const currentLastMessage = currentMessageCount - 1;
     const requiredInterval = settings.moduleSettings.autoSummaryInterval;
-    const highestProcessed = stmbData.highestMemoryProcessed;
+    const highestProcessed = stmbData.highestMemoryProcessed ?? null;
 
     console.log('=== STMemoryBooks Auto-Summary Debug ===');
     console.log('Auto-summary enabled:', settings.moduleSettings.autoSummaryEnabled);
@@ -318,7 +318,7 @@ async function checkAutoSummaryTrigger() {
     }
 
     // Use the highestMemoryProcessed field for more efficient tracking
-    const highestProcessed = stmbData.highestMemoryProcessed;
+    const highestProcessed = stmbData.highestMemoryProcessed ?? null;
     console.log(`STMemoryBooks: Highest memory processed: ${highestProcessed}, current last message: ${currentLastMessage}`);
 
     let messagesSinceLastMemory;
@@ -344,6 +344,9 @@ async function checkAutoSummaryTrigger() {
 
         console.log(`STMemoryBooks: Auto-summary triggered! (${messagesSinceLastMemory} >= ${requiredInterval})`);
 
+        // Set processing flag to prevent concurrent execution
+        isProcessingMemory = true;
+
         // Wait a moment for any ongoing message processing to complete
         setTimeout(async () => {
             try {
@@ -363,6 +366,9 @@ async function checkAutoSummaryTrigger() {
             } catch (error) {
                 console.error('STMemoryBooks: Auto-summary execution failed:', error);
                 toastr.warning(`Auto-summary failed: ${error.message}`, 'STMemoryBooks');
+            } finally {
+                // Always clear the processing flag
+                isProcessingMemory = false;
             }
         }, 1000);
     } else {
@@ -404,9 +410,9 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     const startId = parseInt(match[1]);
     const endId = parseInt(match[2]);
     
-    // Validate range logic
-    if (startId >= endId) {
-        toastr.error('Start message must be less than end message', 'STMemoryBooks');
+    // Validate range logic (start = end is valid for single message)
+    if (startId > endId) {
+        toastr.error('Start message cannot be greater than end message', 'STMemoryBooks');
         return '';
     }
     
@@ -488,7 +494,7 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
             return '';
         }
         
-        if (nextStart >= nextEnd) {
+        if (nextStart > nextEnd) {
             toastr.error('Not enough messages for a new memory', 'STMemoryBooks');
             return '';
         }
@@ -725,7 +731,7 @@ async function validateLorebookForAutoSummary() {
     } else {
         // Manual mode - check if a lorebook is already selected
         const stmbData = getSceneMarkers() || {};
-        lorebookName = stmbData.manualLorebook;
+        lorebookName = stmbData.manualLorebook ?? null;
 
         // If no lorebook is selected, ask user what to do
         if (!lorebookName) {
@@ -1328,7 +1334,7 @@ function populateInlineButtons() {
 
     // Populate manual lorebook buttons if container exists and manual mode is enabled
     if (manualLorebookContainer && settings.moduleSettings.manualModeEnabled) {
-        const hasManualLorebook = stmbData.manualLorebook;
+        const hasManualLorebook = stmbData.manualLorebook ?? null;
 
         const manualLorebookButtons = [
             {

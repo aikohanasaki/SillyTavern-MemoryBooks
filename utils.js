@@ -298,7 +298,7 @@ export async function getEffectiveLorebookName() {
 
     // Manual mode is ON. Check if a manual lorebook has already been designated for this chat.
     const stmbData = getSceneMarkers(); // This function already gets the right metadata object
-    if (stmbData.manualLorebook) {
+    if (stmbData.manualLorebook ?? null) {
         // Ensure the designated lorebook still exists
         if (world_names.includes(stmbData.manualLorebook)) {
             return stmbData.manualLorebook;

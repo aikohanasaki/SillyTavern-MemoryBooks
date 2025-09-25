@@ -803,7 +803,7 @@ function updateHighestMemoryProcessed(memoryResult) {
         }
 
         // Update if this is higher than current highest processed, or if no previous value
-        const currentHighest = sceneMarkers.highestMemoryProcessed;
+        const currentHighest = sceneMarkers.highestMemoryProcessed ?? null;
         if (currentHighest === null || endMessage > currentHighest) {
             sceneMarkers.highestMemoryProcessed = endMessage;
 
