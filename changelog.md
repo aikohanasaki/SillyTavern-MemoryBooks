@@ -2,6 +2,18 @@
 
 **← [Back to README](readme.md)**
 
+## v4.0.0 (September 2025)
+- **BREAKING CHANGE:** Complete removal of bookmark functionality
+  - Deleted `bookmarkManager.js` module (793 lines) containing all bookmark-related features
+  - Removed bookmark UI components, navigation, and storage systems
+  - Eliminated bookmark templates and associated CSS styling (1,069 total lines removed)
+  - **Migration Note**: Users relying on bookmark features should backup their data before upgrading
+  - **Rationale**: Bookmark functionality has been split into a separate extension for better modularity
+- **Codebase Simplification:** Significant reduction in complexity and maintenance overhead
+  - Streamlined core functionality to focus on memory book creation and management
+  - Reduced bundle size and improved loading performance
+  - Cleaner separation of concerns between memory management and navigation features
+
 ## v3.7.3 (September 2025)
 - **UI Standardization:** Major CSS consolidation for better SillyTavern integration
   - Replaced custom `.stmb-menu-button` classes with standard SillyTavern `.menu_button` classes
