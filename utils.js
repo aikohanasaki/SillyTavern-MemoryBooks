@@ -448,7 +448,7 @@ export const PRESET_PROMPTS = {
                '  "content": "Detailed beat-by-beat summary in narrative prose...",\n' +
                '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                "}\n\n" +
-               "For the content field, create a detailed beat-by-beat summary in narrative prose. First, estimate where in the story timeline (day X) this scene is based on earlier scene summaries included (if any). Then capture this scene accurately without losing ANY important information. This summary will go in a vectorized database, so include:\n" +
+               "For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information. Ignore all OOC conversation. This summary will go in a vectorized database, so include:\n" +
                "- All important story beats/events that happened\n" +
                "- Key interaction highlights and character developments\n" +
                "- Notable details, memorable quotes, and revelations\n" +
@@ -465,7 +465,7 @@ export const PRESET_PROMPTS = {
                  '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                  "}\n\n" +
                  "For the content field, create a detailed summary using markdown with these headers:\n" +
-                 "- **Timeline**: Start with an estimation of the story timeline (e.g., Day 1, Day 2) based on earlier scene summaries included (if any).\n" +
+                 "- **Timeline**: Day/time this scene covers.\n" +
                  "- **Story Beats**: List all important plot events and story developments that occurred.\n" +
                  "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
                  "- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.\n" +
@@ -481,9 +481,9 @@ export const PRESET_PROMPTS = {
                 '  "content": "Long detailed synopsis with markdown structure...",\n' +
                 '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                 "}\n\n" +
-                "For the content field, create a long and detailed beat-by-beat summary using markdown structure. Start by estimating where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then write a thorough summary that captures the most recent scene accurately without losing ANY information. Use this structure:\n" +
+                "For the content field, create a long and detailed beat-by-beat summary using markdown structure. Capture the most recent scene accurately without losing ANY information. Use this structure:\n" +
                 "# [Scene Title]\n" +
-                "**Timeline**: Day X estimation\n" +
+                "**Timeline**: (day/time)\n" +
                 "## Story Beats\n" +
                 "- (List all important plot events and developments)\n" +
                 "## Key Interactions\n" +
@@ -505,7 +505,7 @@ export const PRESET_PROMPTS = {
              "}\n\n" +
              "For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:\n" +
              "# Scene Summary - Day X - [Title]\n" +
-             "First estimate where in the story timeline (day X) this scene falls based on earlier scene summaries included (if any). Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost.\n\n" +
+             "First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost.\n\n" +
              "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this summary again if mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
              "Return ONLY the JSON, no other text.",
 
@@ -518,6 +518,32 @@ export const PRESET_PROMPTS = {
                 "}\n\n" +
                 "For the content field, provide a very brief 1-2 sentence summary of what happened in this scene.\n\n" +
                 "For the keywords field, generate 5-20 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
+                "Return ONLY the JSON, no other text.",
+
+    'northgate': "You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.\n\n" +
+                "You must respond with ONLY valid JSON in this exact format:\n" +
+                "{\n" +
+                '"title": "Concise Scene Title (3-5 words)",\n' +
+                '"content": "A detailed, literary summary of the scene written in a third-person, past-tense narrative style. Capture all key actions, emotional shifts, character development, and significant dialogue. Focus on "showing" what happened through concrete details. Ensure the summary is comprehensive enough to serve as a standalone record of the scene\'s events and their impact on the characters.",\n' +
+                '"keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+                "}\n\n" +
+                "For the \"content\" field, write with literary quality. Do not simply list events; synthesize them into a coherent narrative block.\n\n" +
+                "For the \"keywords\" field, provide 10-15 specific and descriptive keywords that capture the scene's core elements. Include character names, locations, key objects, actions taken, and the emotional tone (e.g., \"Tense Standoff,\" \"Vulnerable Confession,\" \"Strategic Planning,\" \"Unexpected Alliance\").\n\n" +
+                "Return ONLY the JSON object, with no additional text or explanations.",
+
+    'aelemar': "You are a meticulous archivist, skilled at accurately capturing all key plot points and memories from a story. Analyze the following story scene and extract a detailed summary as JSON.\n\n" +
+                "You must respond with ONLY valid JSON in this exact format:\n" +
+                "{\n" +
+                '  "title": "Concise scene title (3-5 words)",\n' +
+                '  "content": "Detailed summary of key plot points and character memories, beat-by-beat in narrative prose...",\n' +
+                '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
+                "}\n\n" +
+                "For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include: \n\n" +
+                "- Story beats, events, actions and consequences, turning points, and outcomes\n" +
+                "- Key character interactions, character developments, significant dialogue, revelations, emotional impact, and relationships\n" +
+                "- Outcomes and anything else important for future interactions between the user and the world\n" +
+                "Capture ALL nuance without repeating verbatim. Do not simply list events; synthesize them into a coherent narrative block. This summary must be comprehensive enough to serve as a standalone record of the story so far, even if the original text is lost. Use at least 300 words. Avoid redundancy.\n\n" +
+                "For the keywords field, provide 10-20 specific and descriptive keywords that capture the scene's core elements. Include character names, identities, locations, key objects, actions taken, and the emotional tone (e.g., \"Tense Standoff,\" \"Vulnerable Confession,\" \"Strategic Planning,\" \"Unexpected Alliance\"). Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                 "Return ONLY the JSON, no other text."
 };
 
@@ -686,11 +712,13 @@ export function parseTemperature(input) {
  */
 export function formatPresetDisplayName(presetName) {
     const displayNames = {
-        'summary': 'Summary - Detailed beat-by-beat summaries',
+        'summary': 'Summary - Detailed beat-by-beat summaries in narrative prose',
         'summarize': 'Summarize - Bullet-point format',
-        'synopsis': 'Synopsis - Comprehensive with headings',
-        'sumup': 'Sum Up - Concise story beats',
-        'minimal': 'Minimal - Brief 1-2 sentence summary'
+        'synopsis': 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
+        'sumup': 'Sum Up - Concise story beats in narrative prose',
+        'minimal': 'Minimal - Brief 1-2 sentence summary',
+        'northgate': 'Northgate - Intended for creative writing. By Northgate on ST Discord',
+        'aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
     };
     
     return displayNames[presetName] || presetName;
