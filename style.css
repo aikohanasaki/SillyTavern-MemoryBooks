@@ -205,61 +205,15 @@
 
 /* --- BUTTON STYLING --- */
 
-/* Button container classes for consistent layout */
-.stmb-buttons-block {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 4px;
-}
+/* Button container classes for consistent layout - using ST base classes */
 
-.stmb-margin-top-5 {
-    margin-top: 5px;
-}
-
-.stmb-justify-center {
-    justify-content: center;
-}
-
-/* Ensure consistent sizing for manual lorebook buttons */
-#stmb-manual-lorebook-buttons {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    gap: 4px;
-    flex-wrap: wrap;
-}
-
-#stmb-manual-lorebook-buttons .stmb-menu-button {
+/* Manual lorebook buttons use ST base classes */
+#stmb-manual-lorebook-buttons .menu_button {
     padding: 6px 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     white-space: nowrap;
 }
 
-/* General menu button consistency */
-.stmb-menu-button {
-    /* Inherit ST's standard menu button styling */
-    color: var(--SmartThemeBodyColor);
-    background-color: var(--SmartThemeBlurTintColor);
-    border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 5px;
-    padding: 3px 5px;
-    filter: grayscale(0.5);
-    transition: var(--animation-duration-2x);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    min-height: 32px;
-    box-sizing: border-box;
-}
-
-.stmb-menu-button:hover {
-    filter: grayscale(0) brightness(1.1);
-}
+/* Using ST's .menu_button class instead of custom .stmb-menu-button */
 
 /* --- RESPONSIVE & ACCESSIBILITY --- */
 

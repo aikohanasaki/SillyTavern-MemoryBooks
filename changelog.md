@@ -2,6 +2,22 @@
 
 **← [Back to README](readme.md)**
 
+## v3.7.3 (September 2025)
+- **UI Standardization:** Major CSS consolidation for better SillyTavern integration
+  - Replaced custom `.stmb-menu-button` classes with standard SillyTavern `.menu_button` classes
+  - Updated all button styling to use native SillyTavern design system
+  - Improved bookmark button visual consistency and positioning across all UI components
+  - Standardized flex container layouts using SillyTavern's `.flex-container` and `.marginTop5` classes
+- **Template Enhancement:** Added user-contributed preset templates
+  - **Northgate Template**: Literary-style summaries with narrative prose for creative writing
+  - **Aelemar Template**: Focuses on plot points and character memories with comprehensive 300+ word summaries
+  - Improved template descriptions and display names for better user understanding
+  - Updated existing template prompts for better timeline handling and content structure
+- **Code Quality:** Enhanced template rendering and CSS maintainability
+  - Removed redundant CSS rules in favor of SillyTavern's built-in styling
+  - Better separation between custom styling and framework integration
+  - Improved button accessibility and interaction consistency
+
 ## v3.7.2 (September 2025)
 - **Enhancement:** Improved AI response parsing with think tag removal
   - AI responses containing `<think>` tags are now automatically cleaned during JSON parsing
