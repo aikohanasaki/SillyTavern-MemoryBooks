@@ -2194,6 +2194,9 @@ function setupEventListeners() {
             // Force source/model/temp
             generate_data.chat_completion_source = src;
 
+            // Disable thinking mode for memory generation
+            generate_data.include_reasoning = false;
+
             if (conn.model) {
                 generate_data.model = conn.model;
             }
