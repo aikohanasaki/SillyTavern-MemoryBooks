@@ -802,18 +802,13 @@ function updateHighestMemoryProcessed(memoryResult) {
             return;
         }
 
-        // Update if this is higher than current highest processed, or if no previous value
-        const currentHighest = sceneMarkers.highestMemoryProcessed ?? null;
-        if (currentHighest === null || endMessage > currentHighest) {
-            sceneMarkers.highestMemoryProcessed = endMessage;
+        // Always update highestMemoryProcessed to the end of the memory we just created
+        sceneMarkers.highestMemoryProcessed = endMessage;
 
-            // Save the metadata
-            saveMetadataForCurrentContext();
+        // Save the metadata (works for both group chats and single-character chats)
+        saveMetadataForCurrentContext();
 
-            console.log(`${MODULE_NAME}: Updated highest memory processed to message ${endMessage}`);
-        } else {
-            console.log(`${MODULE_NAME}: Memory end message ${endMessage} not higher than current highest ${currentHighest}, no update needed`);
-        }
+        console.log(`${MODULE_NAME}: Set highest memory processed to message ${endMessage}`);
 
     } catch (error) {
         console.error(`${MODULE_NAME}: Error updating highest memory processed:`, error);
