@@ -2,6 +2,25 @@
 
 **← [Back to README](readme.md)**
 
+## v4.0.3 (September 2025)
+- **Critical Bug Fix:** Resolved auto-summary failure in group chats
+  - Fixed early return in auto-hide validation that prevented `updateHighestMemoryProcessed()` from being called
+  - Auto-summary now properly tracks processed messages in group chats and triggers correctly
+  - Memory status display now updates correctly after memory creation in group chats
+- **Auto-Hide Logic Improvements:** Enhanced mathematical correctness and edge case handling
+  - Fixed 'last' mode formula to properly hide from scene start while preserving last X messages
+  - Fixed 'all' mode logic to correctly handle post-memory message calculations
+  - Added comprehensive bounds checking to prevent invalid hide commands referencing non-existent messages
+  - Enhanced validation for scene ranges with negative indices and malformed data
+- **Code Quality Enhancements:** Major refactoring for maintainability and reliability
+  - Extracted `parseSceneRange()` and `executeHideCommand()` helper functions to eliminate code duplication
+  - Reduced auto-hide logic from 120+ lines to ~50 lines while maintaining full functionality
+  - Consolidated debug logging from 25+ statements to strategic essential logs
+  - Improved error handling and edge case management throughout auto-hide system
+- **GROUP_WRAPPER_FINISHED Integration:** Enhanced group chat auto-summary timing
+  - Auto-summary now correctly waits for all group members to finish speaking before triggering
+  - Prevents premature auto-summary execution during ongoing group conversations
+
 ## v4.0.2 (September 2025)
 - **Claude API Compatibility Fix:** Added proper `max_tokens` parameter support for Claude connections
   - Memory generation requests now include `max_tokens` from SillyTavern's OpenAI settings
