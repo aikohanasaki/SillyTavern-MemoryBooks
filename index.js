@@ -295,14 +295,7 @@ async function checkAutoSummaryTrigger() {
         return; // Still in postpone period
     }
 
-    // Clear any stale scene markers that might interfere with auto-summary
-    if (stmbData.sceneStart !== null || stmbData.sceneEnd !== null) {
-        console.log(`STMemoryBooks: Detected stale scene markers (start: ${stmbData.sceneStart}, end: ${stmbData.sceneEnd}) - clearing them`);
-        clearScene();
-        // Get updated data after clearing
-        const refreshedData = getSceneMarkers() || {};
-        console.log(`STMemoryBooks: Scene markers cleared, updated data:`, refreshedData);
-    }
+    // Auto-summary will set new scene markers - no need to clear existing ones
 
     const lorebookValidation = await validateLorebookForAutoSummary();
     if (!lorebookValidation.valid) {
@@ -431,10 +424,7 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    // Clear existing scene first to reset state
-    clearScene();
-    
-    // Set new scene markers
+    // Set new scene markers (automatically overrides any existing markers)
     setSceneMarker(startId, 'start');
     setSceneMarker(endId, 'end');
     
