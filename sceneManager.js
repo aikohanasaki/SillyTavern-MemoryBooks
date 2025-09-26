@@ -1,5 +1,5 @@
 import { chat, chat_metadata } from '../../../../script.js';
-import { saveMetadataDebounced } from '../../../extensions.js';
+import { saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { getCurrentMemoryBooksContext } from './utils.js';
 import { groups, editGroup } from '../../../group-chats.js';
@@ -17,50 +17,24 @@ let currentSceneState = {
  * Handles both group chats (group.chat_metadata) and single character chats (chat_metadata)
  */
 export function getSceneMarkers() {
-    const context = getCurrentMemoryBooksContext();
-        
-    if (context.isGroupChat) {
-        // Group chat - store in group metadata
-        const group = groups?.find(x => x.id === context.groupId);
-        
-        if (group) {
-            if (!group.chat_metadata) {
-                group.chat_metadata = {};
-            }
-            if (!group.chat_metadata.STMemoryBooks) {
-                group.chat_metadata.STMemoryBooks = {};
-            }
+    // Use SillyTavern's proper context API for both group chats and single chats
+    const context = getContext();
+    const chatMetadata = context.chatMetadata;
 
-
-            // Sync from currentSceneState to prevent stale metadata from being returned after scene changes
-            if (currentSceneState.start !== null || currentSceneState.end !== null) {
-                group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
-                group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
-            }
-            
-            return group.chat_metadata.STMemoryBooks;
-        }
-    } else {
-        // Single character chat - chat_metadata
-        if (!chat_metadata) {
-            return {};
-        }
-        if (!chat_metadata.STMemoryBooks) {
-            chat_metadata.STMemoryBooks = {};
-        }
-
-
-        // sync from currentSceneState for consistency
-        if (currentSceneState.start !== null || currentSceneState.end !== null) {
-            chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
-            chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
-        }
-        
-        return chat_metadata.STMemoryBooks;
+    if (!chatMetadata) {
+        return {};
     }
-    
-    // Fallback for edge cases
-    return {};
+    if (!chatMetadata.STMemoryBooks) {
+        chatMetadata.STMemoryBooks = {};
+    }
+
+    // Sync from currentSceneState for consistency
+    if (currentSceneState.start !== null || currentSceneState.end !== null) {
+        chatMetadata.STMemoryBooks.sceneStart = currentSceneState.start;
+        chatMetadata.STMemoryBooks.sceneEnd = currentSceneState.end;
+    }
+
+    return chatMetadata.STMemoryBooks;
 }
 
 /**
@@ -68,44 +42,9 @@ export function getSceneMarkers() {
  * Handles both group metadata saving and regular chat metadata saving
  */
 export function saveMetadataForCurrentContext() {
-    const context = getCurrentMemoryBooksContext();
-    
-    if (context.isGroupChat) {
-        // Group chat - SYNCHRONOUS save with verification
-        const group = groups?.find(x => x.id === context.groupId);
-        if (!group) {
-            return;
-        }
-        
-        // Ensure group metadata structure exists
-        if (!group.chat_metadata) {
-            group.chat_metadata = {};
-        }
-        if (!group.chat_metadata.STMemoryBooks) {
-            group.chat_metadata.STMemoryBooks = {};
-        }
-        
-        // SYNCHRONOUS: Preserve all existing metadata, then update scene state
-        const existing = getSceneMarkers();
-        Object.assign(group.chat_metadata.STMemoryBooks, existing);
-        group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
-        group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
-        
-        // Force immediate persistence through SillyTavern's group save mechanism
-        if (typeof editGroup === 'function') {
-            editGroup(context.groupId, false, false);
-        } else {
-            // Try fallback editGroup functions
-            const editGroupFunc = window.editGroup || globalThis.editGroup;
-            if (typeof editGroupFunc === 'function') {
-                editGroupFunc(context.groupId, false, false);
-            }
-        }
-        
-    } else {
-        // Single character chat - use existing debounced save
-        saveMetadataDebounced();
-    }
+    // Both group chats and single chats use chat_metadata as the authoritative source
+    // SillyTavern's group system automatically persists chat_metadata to group.past_metadata
+    saveMetadataDebounced();
 }
 
 /**
@@ -116,16 +55,21 @@ export function saveMetadataForCurrentContext() {
  * @param {number|null} newEnd - New end marker
  */
 function updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd) {
+    console.log(`STMemoryBooks: updateAffectedButtonStates called - old: ${oldStart}-${oldEnd}, new: ${newStart}-${newEnd}`);
+
     // Calculate the range of messages that could be affected
     const affectedRange = calculateAffectedRange(oldStart, oldEnd, newStart, newEnd);
-    
+    console.log(`STMemoryBooks: Affected range:`, affectedRange);
+
     if (affectedRange.needsFullUpdate) {
+        console.log(`STMemoryBooks: Doing full button update`);
         // Fall back to full update for complex changes
         updateAllButtonStates();
         return;
     }
-    
+
     if (affectedRange.min === null || affectedRange.max === null) {
+        console.log(`STMemoryBooks: No messages affected - min: ${affectedRange.min}, max: ${affectedRange.max}`);
         // No messages affected
         return;
     }
@@ -133,14 +77,23 @@ function updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd) {
     // Only query and update the affected message range
     const selector = `#chat .mes[mesid]`;
     const allMessages = document.querySelectorAll(selector);
+    console.log(`STMemoryBooks: Found ${allMessages.length} total messages with selector "${selector}"`);
+
     const affectedMessages = Array.from(allMessages).filter(messageElement => {
         const messageId = parseInt(messageElement.getAttribute('mesid'));
-        return messageId >= affectedRange.min && messageId <= affectedRange.max;
+        const minCheck = affectedRange.min !== null ? messageId >= affectedRange.min : true;
+        const maxCheck = affectedRange.max !== null && affectedRange.max !== undefined ? messageId <= affectedRange.max : true;
+        return minCheck && maxCheck;
     });
-    
+    console.log(`STMemoryBooks: Found ${affectedMessages.length} affected messages in range ${affectedRange.min}-${affectedRange.max}`);
+
     if (affectedMessages.length > 0) {
         const markers = getSceneMarkers();
+        console.log(`STMemoryBooks: About to update button states for ${affectedMessages.length} messages`);
         updateButtonStatesForElements(affectedMessages, markers);
+        console.log(`STMemoryBooks: Button state update completed`);
+    } else {
+        console.log(`STMemoryBooks: No affected messages found to update`);
     }
 }
 
@@ -234,24 +187,32 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
  * Set scene marker with validation
  */
 export function setSceneMarker(messageId, type) {
+    console.log(`STMemoryBooks: setSceneMarker called - messageId: ${messageId}, type: ${type}`);
     const markers = getSceneMarkers();
+    console.log(`STMemoryBooks: Current markers:`, markers);
 
     // Store previous state for optimization
     const oldStart = markers.sceneStart ?? null;
     const oldEnd = markers.sceneEnd ?? null;
+    console.log(`STMemoryBooks: Previous state - start: ${oldStart}, end: ${oldEnd}`);
 
     // Calculate new state atomically
     const newState = calculateNewSceneState(markers, messageId, type);
+    console.log(`STMemoryBooks: New state calculated:`, newState);
 
     // Update both metadata and cache simultaneously
     markers.sceneStart = newState.start;
     markers.sceneEnd = newState.end;
     currentSceneState.start = newState.start;
     currentSceneState.end = newState.end;
+    console.log(`STMemoryBooks: Updated markers:`, markers);
+    console.log(`STMemoryBooks: Updated currentSceneState:`, currentSceneState);
 
     // Persist to metadata and update DOM to match committed state
+    console.log(`STMemoryBooks: About to save metadata and update buttons`);
     saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
+    console.log(`STMemoryBooks: setSceneMarker completed`);
 }
 
 /**
@@ -334,7 +295,7 @@ function updateButtonStatesForElements(messageElements, markers) {
             } else if (messageId === sceneEnd) {
                 // This is the end marker
                 endBtn.classList.add('on');
-            } else if (messageId > sceneStart && messageId < sceneEnd) {
+            } else if (messageId > (sceneStart ?? null) && messageId < (sceneEnd ?? null)) {
                 // This is a message between start and end
                 startBtn.classList.add('in-scene');
                 endBtn.classList.add('in-scene');
@@ -345,16 +306,20 @@ function updateButtonStatesForElements(messageElements, markers) {
         } else if ((sceneStart ?? null) !== null) {
             // Start set, show valid end points
             if (messageId === sceneStart) {
+                console.log(`STMemoryBooks: Adding 'on' class to start button of message ${messageId}`);
                 startBtn.classList.add('on');
-            } else if (messageId > sceneStart) {
+            } else if (messageId > (sceneStart ?? null)) {
+                console.log(`STMemoryBooks: Adding 'valid-end-point' class to end button of message ${messageId}`);
                 endBtn.classList.add('valid-end-point');
             }
 
         } else if ((sceneEnd ?? null) !== null) {
             // End set, show valid start points
             if (messageId === sceneEnd) {
+                console.log(`STMemoryBooks: Adding 'on' class to end button of message ${messageId}`);
                 endBtn.classList.add('on');
-            } else if (messageId < sceneEnd) {
+            } else if (messageId < (sceneEnd ?? null)) {
+                console.log(`STMemoryBooks: Adding 'valid-start-point' class to start button of message ${messageId}`);
                 startBtn.classList.add('valid-start-point');
             }
         }
@@ -468,6 +433,7 @@ export function handleMessageDeletion(deletedId, settings) {
  */
 export function createSceneButtons(messageElement) {
     const messageId = parseInt(messageElement.getAttribute('mesid'));
+    console.log(`STMemoryBooks: Creating scene buttons for message ${messageId}`);
     let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
 
     // If the button container doesn't exist (e.g., on user messages), create and append it.
@@ -506,11 +472,13 @@ export function createSceneButtons(messageElement) {
     
     // Add event listeners
     startButton.addEventListener('click', (e) => {
+        console.log(`STMemoryBooks: Start button clicked for message ${messageId}`);
         e.stopPropagation();
         setSceneMarker(messageId, 'start');
     });
-    
+
     endButton.addEventListener('click', (e) => {
+        console.log(`STMemoryBooks: End button clicked for message ${messageId}`);
         e.stopPropagation();
         setSceneMarker(messageId, 'end');
     });
@@ -598,7 +566,7 @@ function calculateNewSceneState(markers, messageId, type) {
     
     if (type === 'start') {
         // If setting start, clear end if it would be invalid (start = end is valid)
-        if (markers.sceneEnd !== null && markers.sceneEnd < numericId) {
+        if (markers.sceneEnd !== null && (markers.sceneEnd ?? null) < numericId) {
             newEnd = null;
         }
 
@@ -606,7 +574,7 @@ function calculateNewSceneState(markers, messageId, type) {
         newStart = markers.sceneStart === numericId ? null : numericId;
     } else if (type === 'end') {
         // If setting end, clear start if it would be invalid (start = end is valid)
-        if (markers.sceneStart !== null && markers.sceneStart > numericId) {
+        if (markers.sceneStart !== null && (markers.sceneStart ?? null) > numericId) {
             newStart = null;
         }
         

@@ -62,17 +62,21 @@ const DEFAULT_TITLE_FORMATS = [
  * @returns {Promise<Object>} Result object with success status and details
  */
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
-    
+    console.log(`${MODULE_NAME}: addMemoryToLorebook function called`);
+
     const context = getContext();
-    
+
     try {
+        console.log(`${MODULE_NAME}: addMemoryToLorebook inside try block`);
         if (!memoryResult?.content) {
             throw new Error('Invalid memory result: missing content');
         }
-        
+
         if (!lorebookValidation?.valid || !lorebookValidation.data) {
             throw new Error('Invalid lorebook validation data');
         }
+
+        console.log(`${MODULE_NAME}: Validation checks passed`);
         
         const settings = extension_settings.STMemoryBooks || {};
         let titleFormat = memoryResult.titleFormat;
@@ -91,14 +95,18 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         };
 
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
-        
+
         if (!newEntry) {
             throw new Error('Failed to create new lorebook entry');
         }
-        
+
+        console.log(`${MODULE_NAME}: Entry created successfully`);
+
         const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
         populateLorebookEntry(newEntry, memoryResult, entryTitle, lorebookSettings);
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
+
+        console.log(`${MODULE_NAME}: Entry saved to lorebook`);
         if (settings.moduleSettings?.showNotifications !== false) {
             toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
         }
@@ -111,30 +119,16 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             }
         }
         
+        console.log(`${MODULE_NAME}: About to check auto-hide mode`);
+
         // Execute auto-hide commands if enabled
         const autoHideMode = getAutoHideMode(settings.moduleSettings);
         if (autoHideMode !== 'none') {
+            console.log(`${MODULE_NAME}: Auto-hide mode is ${autoHideMode}`);
             const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
             const messageCount = memoryResult.metadata?.messageCount || 0;
-            
-            // Validate that unhidden count is less than message count (only for 'last' mode)
-            if (autoHideMode === 'last' && unhiddenCount >= messageCount && unhiddenCount > 0) {
-                const message = unhiddenCount > messageCount 
-                    ? `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`
-                    : `Cannot leave ${unhiddenCount} messages unhidden - memory only contains ${messageCount} messages. Auto-hide skipped.`;
-                if (settings.moduleSettings?.showNotifications !== false) {
-                    toastr.warning(message, 'STMemoryBooks');
-                }
-                return {
-                    success: true,
-                    entryId: newEntry.uid,
-                    entryTitle: entryTitle,
-                    lorebookName: lorebookValidation.name,
-                    keywordCount: memoryResult.suggestedKeys?.length || 0,
-                    message: `Memory successfully added to "${lorebookValidation.name}" (auto-hide skipped)`,
-                    warning: message
-                };
-            }
+
+            console.log(`${MODULE_NAME}: unhiddenCount=${unhiddenCount}, messageCount=${messageCount}`);
             
             if (autoHideMode === 'all') {
                 // Additional check for 'all' mode: only hide if scene end > unhidden count
@@ -159,8 +153,12 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                         : `scene end ${sceneEnd} <= unhidden count ${unhiddenCount}`;
                 }
             } else if (autoHideMode === 'last') {
+                console.log(`${MODULE_NAME}: Processing 'last' mode auto-hide`);
+
                 // Get scene start and end for 'last' mode
                 const sceneRange = memoryResult.metadata?.sceneRange;
+                console.log(`${MODULE_NAME}: sceneRange from metadata: ${sceneRange}`);
+
                 let sceneStart = null;
                 let sceneEnd = null;
                 if (sceneRange) {
@@ -170,18 +168,48 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                         sceneEnd = parseInt(rangeParts[1], 10);
                     }
                 }
-                
+
+                console.log(`${MODULE_NAME}: Parsed sceneStart=${sceneStart}, sceneEnd=${sceneEnd}`);
+
                 if (sceneStart !== null && sceneEnd !== null) {
-                    const hideCommand = unhiddenCount > 0 
-                        ? `/hide ${sceneStart}-${sceneEnd - unhiddenCount}` 
-                        : `/hide ${sceneStart}-${sceneEnd}`;
-                    await executeSlashCommands(hideCommand);
+                    const sceneSize = sceneEnd - sceneStart + 1;
+                    console.log(`${MODULE_NAME}: Scene size: ${sceneSize}, unhiddenCount: ${unhiddenCount}`);
+
+                    if (unhiddenCount >= sceneSize) {
+                        console.log(`${MODULE_NAME}: unhiddenCount (${unhiddenCount}) >= sceneSize (${sceneSize}). No hiding needed.`);
+                    } else if (unhiddenCount === 0) {
+                        const hideCommand = `/hide ${sceneStart}-${sceneEnd}`;
+                        console.log(`${MODULE_NAME}: Executing hide command (hide all): ${hideCommand}`);
+                        await executeSlashCommands(hideCommand);
+                        console.log(`${MODULE_NAME}: Hide command completed`);
+                    } else {
+                        // Hide from start to (end - unhiddenCount), keeping last unhiddenCount messages visible
+                        const hideEnd = sceneEnd - unhiddenCount;
+                        console.log(`${MODULE_NAME}: Calculated hideEnd: ${hideEnd} (sceneEnd ${sceneEnd} - unhiddenCount ${unhiddenCount})`);
+
+                        if (hideEnd >= sceneStart) {
+                            const hideCommand = `/hide ${sceneStart}-${hideEnd}`;
+                            console.log(`${MODULE_NAME}: Executing hide command: ${hideCommand}`);
+                            await executeSlashCommands(hideCommand);
+                            console.log(`${MODULE_NAME}: Hide command completed`);
+                        } else {
+                            console.log(`${MODULE_NAME}: Invalid hide range - hideEnd=${hideEnd} < sceneStart=${sceneStart}. Skipping hide command.`);
+                        }
+                    }
+                } else {
+                    console.log(`${MODULE_NAME}: Skipping hide command - missing scene data`);
                 }
             }
+        } else {
+            console.log(`${MODULE_NAME}: Auto-hide mode is 'none' - skipping`);
         }
 
+        console.log(`${MODULE_NAME}: Auto-hide section completed`);
+
         // Update highest memory processed tracking
+        console.log(`${MODULE_NAME}: About to call updateHighestMemoryProcessed`);
         updateHighestMemoryProcessed(memoryResult);
+        console.log(`${MODULE_NAME}: Completed updateHighestMemoryProcessed`);
 
         return {
             success: true,
@@ -776,8 +804,12 @@ export async function getLorebookStats() {
  */
 function updateHighestMemoryProcessed(memoryResult) {
     try {
+        console.log(`${MODULE_NAME}: updateHighestMemoryProcessed called with:`, memoryResult);
+
         // Extract the end message number from the scene range
         const sceneRange = memoryResult.metadata?.sceneRange;
+        console.log(`${MODULE_NAME}: sceneRange extracted:`, sceneRange);
+
         if (!sceneRange) {
             console.warn(`${MODULE_NAME}: No scene range found in memory result, cannot update highest processed`);
             return;
