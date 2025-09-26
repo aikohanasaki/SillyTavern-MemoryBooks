@@ -348,6 +348,11 @@ async function generateMemoryWithAI(promptString, profile) {
     try {
         // Prepare connection info
         const apiType = conn.api || getCurrentApiInfo().api;
+        const extra = {};
+        if (oai_settings.openai_max_tokens) {
+            extra.max_tokens = oai_settings.openai_max_tokens;
+        }
+
         const { text: aiResponseText } = await sendRawCompletionRequest({
             model: conn.model,
             prompt: promptString,
@@ -355,6 +360,7 @@ async function generateMemoryWithAI(promptString, profile) {
             api: apiType,
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
+            extra: extra
         });
 
         const jsonResult = parseAIJsonResponse(aiResponseText);

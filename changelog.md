@@ -2,6 +2,12 @@
 
 **← [Back to README](readme.md)**
 
+## v4.0.2 (September 2025)
+- **Claude API Compatibility Fix:** Added proper `max_tokens` parameter support for Claude connections
+  - Memory generation requests now include `max_tokens` from SillyTavern's OpenAI settings
+  - Fallback to no `max_tokens` parameter when not configured for backward compatibility
+  - Resolves Claude API errors requiring the `max_tokens` parameter for completion requests
+
 ## v4.0.1 (September 2025)
 - **Critical Bug Fix:** Resolved zombie scene markers issue in auto-summary functionality
   - Fixed destructive initialization that overwrote `highestMemoryProcessed` values
