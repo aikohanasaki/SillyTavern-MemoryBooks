@@ -234,23 +234,35 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
  * Set scene marker with validation
  */
 export function setSceneMarker(messageId, type) {
+    console.log(`STMemoryBooks: setSceneMarker called - messageId: ${messageId}, type: ${type}`);
+
     const markers = getSceneMarkers();
+    console.log(`STMemoryBooks: Initial markers:`, markers);
 
     // Store previous state for optimization
     const oldStart = markers.sceneStart ?? null;
-    const oldEnd = markers.sceneEnd ?? null;    
-    
+    const oldEnd = markers.sceneEnd ?? null;
+
     // Calculate new state atomically
     const newState = calculateNewSceneState(markers, messageId, type);
-    
+    console.log(`STMemoryBooks: New state calculated:`, newState);
+
     // Update both metadata and cache simultaneously
     markers.sceneStart = newState.start;
     markers.sceneEnd = newState.end;
     currentSceneState.start = newState.start;
     currentSceneState.end = newState.end;
-    
+
+    console.log(`STMemoryBooks: After update - markers:`, markers);
+    console.log(`STMemoryBooks: After update - currentSceneState:`, currentSceneState);
+
     // Persist to metadata and update DOM to match committed state
     saveMetadataForCurrentContext();
+
+    // Check markers again right before button update
+    const markersBeforeUpdate = getSceneMarkers();
+    console.log(`STMemoryBooks: Markers before button update:`, markersBeforeUpdate);
+
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
 }
 
