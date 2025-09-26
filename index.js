@@ -985,27 +985,16 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     let settingsRestored = false;
     
     try {
-        // Show initial working toast (removed individual step notifications)
-        let workingToastMessage;
-        if (retryCount > 0) {
-            workingToastMessage = `Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`;
-        } else {
-            workingToastMessage = summaryCount > 0
-                ? `Creating memory with ${summaryCount} context memories...`
-                : 'Creating memory...';
-        }
-        toastr.info(workingToastMessage, 'STMemoryBooks', { timeOut: 0 });
-        
-        // Create and compile scene
+        // Create and compile scene first
         const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
         const compiledScene = compileScene(sceneRequest);
-        
+
         // Validate compiled scene
         const validation = validateCompiledScene(compiledScene);
         if (!validation.valid) {
             throw new Error(`Scene compilation failed: ${validation.errors.join(', ')}`);
         }
-        
+
         // Fetch previous memories if requested
         let previousMemories = [];
         let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
@@ -1013,7 +1002,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             // Fetch previous memories silently (no intermediate toast)
             memoryFetchResult = await fetchPreviousSummaries(summaryCount, settings, chat_metadata);
             previousMemories = memoryFetchResult.summaries;
-            
+
             if (memoryFetchResult.actualCount > 0) {
                 if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
                     toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
@@ -1023,6 +1012,17 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
             }
         }
+
+        // Show working toast with actual memory count after fetching
+        let workingToastMessage;
+        if (retryCount > 0) {
+            workingToastMessage = `Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`;
+        } else {
+            workingToastMessage = memoryFetchResult.actualCount > 0
+                ? `Creating memory with ${memoryFetchResult.actualCount} context memories...`
+                : 'Creating memory...';
+        }
+        toastr.info(workingToastMessage, 'STMemoryBooks', { timeOut: 0 });
         
         // Add context and get stats (no intermediate toast)
         compiledScene.previousSummariesContext = previousMemories;
