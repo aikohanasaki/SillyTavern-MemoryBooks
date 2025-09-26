@@ -90,12 +90,9 @@ const DEFAULT_TITLE_FORMATS = [
  * @returns {Promise<Object>} Result object with success status and details
  */
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
-    console.log(`${MODULE_NAME}: addMemoryToLorebook function called`);
-
-    const context = getContext();
+    const context = await getContext();
 
     try {
-        console.log(`${MODULE_NAME}: addMemoryToLorebook inside try block`);
         if (!memoryResult?.content) {
             throw new Error('Invalid memory result: missing content');
         }
@@ -104,8 +101,6 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             throw new Error('Invalid lorebook validation data');
         }
 
-        console.log(`${MODULE_NAME}: Validation checks passed`);
-        
         const settings = extension_settings.STMemoryBooks || {};
         let titleFormat = memoryResult.titleFormat;
         if (!titleFormat) {
@@ -128,35 +123,26 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             throw new Error('Failed to create new lorebook entry');
         }
 
-        console.log(`${MODULE_NAME}: Entry created successfully`);
-
         const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
         populateLorebookEntry(newEntry, memoryResult, entryTitle, lorebookSettings);
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
 
-        console.log(`${MODULE_NAME}: Entry saved to lorebook`);
         if (settings.moduleSettings?.showNotifications !== false) {
             toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
         }
         
         if (refreshEditor) {
-            try {
-                reloadEditor(lorebookValidation.name);
-            } catch (error) {
-                console.warn(`${MODULE_NAME}: Failed to refresh editor UI:`, error);
-            }
+            reloadEditor(lorebookValidation.name);
         }
         
         // Execute auto-hide commands if enabled
         const autoHideMode = getAutoHideMode(settings.moduleSettings);
         if (autoHideMode !== 'none') {
             const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
-            console.log(`${MODULE_NAME}: Auto-hide ${autoHideMode} mode (unhiddenCount=${unhiddenCount})`);
             
             if (autoHideMode === 'all') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
                 if (!sceneData) {
-                    console.log(`${MODULE_NAME}: Skipping auto-hide - invalid scene range`);
                     return;
                 }
 
@@ -164,22 +150,21 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
 
                 // Validate scene range is within chat bounds
                 if (sceneEnd >= chat.length) {
-                    console.warn(`${MODULE_NAME}: Scene end ${sceneEnd} exceeds chat length ${chat.length}, skipping auto-hide`);
+                    toastr.warning(`${MODULE_NAME}: Scene end ${sceneEnd} exceeds chat length ${chat.length}, skipping auto-hide`);
                 } else {
+                    const messagesAfterMemory = chat.length - 1 - sceneEnd;
 
-                const messagesAfterMemory = chat.length - 1 - sceneEnd;
-
-                if (unhiddenCount === 0 || messagesAfterMemory <= 0 || unhiddenCount >= messagesAfterMemory) {
-                    // Hide everything up to and including the memory
-                    const validSceneEnd = Math.min(sceneEnd, chat.length - 1);
-                    await executeHideCommand(`/hide 0-${validSceneEnd}`, 'all mode - up to memory');
-                } else {
-                    // Hide from start, keeping last unhiddenCount messages visible
-                    const hideEndIndex = chat.length - 1 - unhiddenCount;
-                    if (hideEndIndex >= 0) {
-                        await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
+                    if (unhiddenCount === 0 || messagesAfterMemory <= 0 || unhiddenCount >= messagesAfterMemory) {
+                        // Hide everything up to and including the memory
+                        const validSceneEnd = Math.min(sceneEnd, chat.length - 1);
+                        await executeHideCommand(`/hide 0-${validSceneEnd}`, 'all mode - up to memory');
+                    } else {
+                        // Hide from start, keeping last unhiddenCount messages visible
+                        const hideEndIndex = chat.length - 1 - unhiddenCount;
+                        if (hideEndIndex >= 0) {
+                            await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
+                        }
                     }
-                }
                 }
             } else if (autoHideMode === 'last') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
@@ -194,24 +179,23 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                 if (sceneEnd >= chat.length || sceneStart >= chat.length) {
                     console.warn(`${MODULE_NAME}: Scene range ${sceneStart}-${sceneEnd} exceeds chat length ${chat.length}, skipping auto-hide`);
                 } else {
+                    const sceneSize = sceneEnd - sceneStart + 1;
 
-                const sceneSize = sceneEnd - sceneStart + 1;
-
-                if (unhiddenCount >= sceneSize) {
-                    // No hiding needed - want to keep more messages than scene contains
-                } else if (unhiddenCount === 0) {
-                    const validSceneEnd = Math.min(sceneEnd, chat.length - 1);
-                    await executeHideCommand(`/hide ${sceneStart}-${validSceneEnd}`, 'last mode - hide all');
-                } else {
-                    const hideEnd = sceneEnd - unhiddenCount;
-                    if (hideEnd >= sceneStart) {
-                        const validHideEnd = Math.min(hideEnd, chat.length - 1);
-                        await executeHideCommand(`/hide ${sceneStart}-${validHideEnd}`, 'last mode - partial');
+                    if (unhiddenCount >= sceneSize) {
+                        // No hiding needed - want to keep more messages than scene contains
+                    } else if (unhiddenCount === 0) {
+                        const validSceneEnd = Math.min(sceneEnd, chat.length - 1);
+                        await executeHideCommand(`/hide ${sceneStart}-${validSceneEnd}`, 'last mode - hide all');
+                    } else {
+                        const hideEnd = sceneEnd - unhiddenCount;
+                        if (hideEnd >= sceneStart) {
+                            const validHideEnd = Math.min(hideEnd, chat.length - 1);
+                            await executeHideCommand(`/hide ${sceneStart}-${validHideEnd}`, 'last mode - partial');
+                        }
                     }
                 }
             }
         }
-
         // Update highest memory processed tracking
         console.log(`${MODULE_NAME}: About to call updateHighestMemoryProcessed`);
         updateHighestMemoryProcessed(memoryResult);
