@@ -85,7 +85,9 @@ export function saveMetadataForCurrentContext() {
             group.chat_metadata.STMemoryBooks = {};
         }
         
-        // SYNCHRONOUS: Direct update with current scene state
+        // SYNCHRONOUS: Preserve all existing metadata, then update scene state
+        const existing = getSceneMarkers();
+        Object.assign(group.chat_metadata.STMemoryBooks, existing);
         group.chat_metadata.STMemoryBooks.sceneStart = currentSceneState.start;
         group.chat_metadata.STMemoryBooks.sceneEnd = currentSceneState.end;
         
