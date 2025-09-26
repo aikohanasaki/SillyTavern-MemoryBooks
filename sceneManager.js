@@ -338,7 +338,7 @@ function updateButtonStatesForElements(messageElements, markers) {
         endBtn.classList.remove('on', 'valid-end-point', 'in-scene');
         
         // Apply appropriate classes based on current state
-        if (sceneStart !== null && sceneEnd !== null) {
+        if ((sceneStart ?? null) !== null && (sceneEnd ?? null) !== null) {
             // Complete scene - highlight range and markers distinctly
             if (messageId === sceneStart) {
                 // This is the start marker
@@ -354,15 +354,15 @@ function updateButtonStatesForElements(messageElements, markers) {
             // Messages outside the scene range (before start or after end) should have no special styling
             // The classes were already cleared above, so no additional action needed
 
-        } else if (sceneStart !== null) {
+        } else if ((sceneStart ?? null) !== null) {
             // Start set, show valid end points
             if (messageId === sceneStart) {
                 startBtn.classList.add('on');
             } else if (messageId > sceneStart) {
                 endBtn.classList.add('valid-end-point');
             }
-            
-        } else if (sceneEnd !== null) {
+
+        } else if ((sceneEnd ?? null) !== null) {
             // End set, show valid start points
             if (messageId === sceneEnd) {
                 endBtn.classList.add('on');
