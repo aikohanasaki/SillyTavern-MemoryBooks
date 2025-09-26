@@ -222,18 +222,41 @@ function handleChatLoaded() {
 async function handleMessageReceived() {
     try {
         setTimeout(validateSceneMarkers, 500);
-        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
-            const currentMessageCount = chat.length;
-            console.log(`STMemoryBooks: Message received - auto-summary enabled, current count: ${currentMessageCount}`);
 
-            // Always check auto-summary trigger, not just on even messages
-            // This ensures we don't miss triggers due to odd message counts
+        const context = getCurrentMemoryBooksContext();
+
+        // Only check auto-summary for single character chats on MESSAGE_RECEIVED
+        // Group chats will be handled by GROUP_WRAPPER_FINISHED event
+        if (!context.isGroupChat && extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
+            const currentMessageCount = chat.length;
+            console.log(`STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: ${currentMessageCount}`);
+
             await checkAutoSummaryTrigger();
+        } else if (context.isGroupChat) {
+            console.log('STMemoryBooks: Message received in group chat - waiting for GROUP_WRAPPER_FINISHED');
         } else {
             console.log('STMemoryBooks: Message received but auto-summary is disabled');
         }
     } catch (error) {
         console.error('STMemoryBooks: Error in handleMessageReceived:', error);
+    }
+}
+
+async function handleGroupWrapperFinished() {
+    try {
+        setTimeout(validateSceneMarkers, 500);
+
+        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
+            const currentMessageCount = chat.length;
+            console.log(`STMemoryBooks: Group conversation finished - auto-summary enabled, current count: ${currentMessageCount}`);
+
+            // Check auto-summary trigger after all group members have finished speaking
+            await checkAutoSummaryTrigger();
+        } else {
+            console.log('STMemoryBooks: Group conversation finished but auto-summary is disabled');
+        }
+    } catch (error) {
+        console.error('STMemoryBooks: Error in handleGroupWrapperFinished:', error);
     }
 }
 
@@ -2139,6 +2162,7 @@ function setupEventListeners() {
         handleMessageDeletion(deletedId, settings);
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+    eventSource.on(event_types.GROUP_WRAPPER_FINISHED, handleGroupWrapperFinished);
     
     // API change handlers for settings management
     $(document).on('change', `${SELECTORS.mainApi}, ${SELECTORS.completionSource}`, function() {
