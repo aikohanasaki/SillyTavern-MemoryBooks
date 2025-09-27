@@ -104,7 +104,24 @@ export async function sendRawCompletionRequest({
 
     const data = await res.json();
 
-    let text = data.choices?.[0]?.message?.content ?? data.completion ?? data.choices?.[0]?.text ?? '';
+    let text = '';
+
+    // Handle different response formats
+    if (data.choices?.[0]?.message?.content) {
+        text = data.choices[0].message.content;
+    } else if (data.completion) {
+        text = data.completion;
+    } else if (data.choices?.[0]?.text) {
+        text = data.choices[0].text;
+    } else if (data.content && Array.isArray(data.content)) {
+        // Handle Claude's new structured format directly in raw response
+        const textBlock = data.content.find(block =>
+            block && typeof block === 'object' && block.type === 'text' && block.text
+        );
+        text = textBlock?.text || '';
+    } else if (typeof data.content === 'string') {
+        text = data.content;
+    }
 
     return { text, full: data };
 }
