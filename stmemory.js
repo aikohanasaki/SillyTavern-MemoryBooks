@@ -217,6 +217,32 @@ async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
 }
 
 /**
+ * Extracts JSON text from Claude's new structured response format
+ * @private
+ * @param {Object} aiResponse - Raw AI response that might be structured format
+ * @returns {string|null} Extracted text content or null if not structured format
+ */
+function extractFromClaudeStructuredFormat(aiResponse) {
+    try {
+        // Check if response has the new Claude structured format
+        if (typeof aiResponse === 'object' && aiResponse !== null && Array.isArray(aiResponse.content)) {
+            // Look for text type block in content array
+            const textBlock = aiResponse.content.find(block =>
+                block && typeof block === 'object' && block.type === 'text' && block.text
+            );
+
+            if (textBlock && typeof textBlock.text === 'string') {
+                return textBlock.text;
+            }
+        }
+
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
  * Parses AI response as JSON with robust error handling
  * @private
  * @param {string} aiResponse - Raw AI response text
@@ -226,8 +252,17 @@ async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
 function parseAIJsonResponse(aiResponse) {
     let cleanResponse = aiResponse;
 
-    // If the response is an object with a .content property, use that.
-    if (typeof cleanResponse === 'object' && cleanResponse !== null && cleanResponse.content) {
+    // Check for new Claude structured format first
+    if (typeof cleanResponse === 'object' && cleanResponse !== null && Array.isArray(cleanResponse.content)) {
+        const extractedText = extractFromClaudeStructuredFormat(cleanResponse);
+        if (extractedText) {
+            cleanResponse = extractedText;
+        } else {
+            throw new AIResponseError('AI response is empty or invalid');
+        }
+    }
+    // If the response is an object with a .content property (but not array), use that.
+    else if (typeof cleanResponse === 'object' && cleanResponse !== null && cleanResponse.content) {
         cleanResponse = cleanResponse.content;
     }
 

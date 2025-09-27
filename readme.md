@@ -9,10 +9,10 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-## 🚦 What's New (v4.0.0)
+## 🚦 What's New (v4.1.0)
 
-- **BREAKING CHANGE:** Complete removal of bookmark functionality - split into separate extension for better modularity
-- **Codebase Simplification:** Significant reduction in complexity, improved performance, and cleaner architecture focused on memory management
+- **Enhanced AI Compatibility:** Added support for Claude's new structured response format while maintaining backward compatibility
+- **Improved Memory Generation:** Handles both legacy text responses and modern structured content arrays seamlessly
 
 ---
 
