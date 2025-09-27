@@ -2,6 +2,44 @@
 
 **← [Back to README](readme.md)**
 
+## v4.2.0 (September 2025)
+- **Auto-Create Lorebook Feature:** Intelligent automatic lorebook creation and binding when none exists
+  - New checkbox in settings: "Auto-create lorebook if none exists"
+  - Bidirectional mutual exclusion with manual lorebook mode (only one can be active)
+  - Seamless integration with existing chat binding and auto-summary workflows
+  - Works in both automatic and manual mode configurations
+- **Customizable Lorebook Naming:** Flexible template system for auto-created lorebook names
+  - User-configurable naming template with default: "LTM - {{char}} - {{chat}}"
+  - Support for dynamic placeholders: {{char}}, {{user}}, {{chat}}
+  - Intelligent auto-numbering for duplicate names (2, 3, 4... up to 999, then timestamp fallback)
+  - Template input automatically disabled when auto-create is unchecked
+- **Unicode-Friendly Filesystem Support:** Enhanced international character support
+  - Improved sanitization allowing Chinese, Japanese, Cyrillic, emoji, and all Unicode characters
+  - Only blocks filesystem-reserved characters: `\/\\:*?"<>|`
+  - Proper length limits (60 chars) with space reservation for auto-numbering suffixes
+  - Fallback to default template if user clears the naming template completely
+- **Code Modularization:** Significant architectural improvements for maintainability
+  - **autocreate.js** (66 lines): Isolated auto-creation logic with `generateLorebookName()` and `autoCreateLorebook()`
+  - **autosummary.js** (256 lines): Complete auto-summary system extracted from main module
+  - Reduced index.js complexity by ~300 lines while maintaining full functionality
+  - Clean ES6 module pattern with proper import/export dependencies
+  - Dynamic imports used strategically to avoid circular dependencies
+- **Enhanced Auto-Summary Integration:** Seamless auto-create integration with auto-summary workflow
+  - Auto-summary now automatically creates lorebooks when needed using the naming template
+  - Improved lorebook validation with user-friendly popup prompts
+  - Postpone functionality enhanced with auto-create awareness
+  - Better error handling and fallback mechanisms throughout the process
+- **Robust Error Handling:** Comprehensive edge case management and validation
+  - Null safety checks for world_names array and undefined states
+  - Graceful handling of empty templates with fallback to defaults
+  - Enhanced collision detection algorithm with proper bounds checking
+  - Improved async/await chain consistency across all new modules
+- **Developer Experience:** Better debugging and maintenance capabilities
+  - Modular architecture enables easier testing and feature development
+  - Clear separation of concerns between auto-creation and auto-summary
+  - Comprehensive logging throughout auto-creation and naming processes
+  - Clean removal of duplicate code and legacy validation functions
+
 ## v4.1.0 (September 2025)
 - **Enhanced AI Compatibility:** Added support for Claude's new structured response format
   - Memory generation now handles both legacy text responses and modern structured content arrays

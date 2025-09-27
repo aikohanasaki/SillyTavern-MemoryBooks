@@ -53,10 +53,28 @@ Messages: {{sceneData.messageCount}} | Estimated tokens: {{sceneData.estimatedTo
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
-                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}}>
+                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}} {{#if autoCreateLorebook}}disabled{{/if}}>
                 <span>Enable Manual Lorebook Mode</span>
             </label>
             <small class="opacity50p">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-auto-create-lorebook" {{#if autoCreateLorebook}}checked{{/if}} {{#if manualModeEnabled}}disabled{{/if}}>
+                <span>Auto-create lorebook if none exists</span>
+            </label>
+            <small class="opacity50p">When enabled, automatically creates and binds a lorebook to the chat if none exists.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-lorebook-name-template">
+                <h4>Lorebook Name Template:</h4>
+                <small class="opacity50p">Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.</small>
+                <input type="text" id="stmb-lorebook-name-template" class="text_pole"
+                    value="{{lorebookNameTemplate}}" placeholder="LTM - {{char}} - {{chat}}"
+                    {{#unless autoCreateLorebook}}disabled{{/unless}}>
+            </label>
         </div>
 
         <h4>Current Lorebook Configuration</h4>
