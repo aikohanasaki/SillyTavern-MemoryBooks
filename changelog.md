@@ -2,6 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v4.1.0 (September 2025)
+- **Enhanced AI Compatibility:** Added support for Claude's new structured response format
+  - Memory generation now handles both legacy text responses and modern structured content arrays
+  - Backward compatible with all existing AI providers and response formats
+
 ## v4.0.3 (September 2025)
 - **Critical Bug Fix:** Resolved auto-summary failure in group chats
   - Fixed early return in auto-hide validation that prevented `updateHighestMemoryProcessed()` from being called
