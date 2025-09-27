@@ -9,10 +9,12 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-## 🚦 What's New (v4.1.0)
+## 🚦 What's New (v4.2.0)
 
-- **Enhanced AI Compatibility:** Added support for Claude's new structured response format while maintaining backward compatibility
-- **Improved Memory Generation:** Handles both legacy text responses and modern structured content arrays seamlessly
+- **Auto-Create Lorebook Feature:** Intelligent automatic lorebook creation when none exists - just enable the checkbox and set your naming template
+- **Customizable Lorebook Naming:** Flexible template system with {{char}}, {{user}}, {{chat}} placeholders and smart auto-numbering
+- **Unicode-Friendly:** Full international character support including Chinese, Japanese, Cyrillic, emoji, and all Unicode characters
+- **Code Modularization:** Improved maintainability with specialized autocreate.js and autosummary.js modules
 
 ---
 
@@ -70,20 +72,32 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ## 🧭 Modes of Operation
 
-###**Automatic Mode (Default)**
--**How it works:** Automatically uses the lorebook that is bound to your current chat.
--**Best for:** Simplicity and speed. Most users should start here.
--**To use:** Ensure a lorebook is selected in the "Chat Lorebooks" dropdown for your character or group chat.
+### **Automatic Mode (Default)**
+- **How it works:** Automatically uses the lorebook that is bound to your current chat.
+- **Best for:** Simplicity and speed. Most users should start here.
+- **To use:** Ensure a lorebook is selected in the "Chat Lorebooks" dropdown for your character or group chat.
 
 ![Chat lorebook binding example](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
-###**Manual Lorebook Mode**
--**How it works:**Allows you to select a different lorebook for memories on a per-chat basis, ignoring the main chat-bound lorebook.
--**Best for:**Advanced users who want to direct memories to a specific, separate lorebook.
--**To use:**
+### **Auto-Create Lorebook Mode** ⭐ *New in v4.2.0*
+- **How it works:** Automatically creates and binds a new lorebook when none exists, using your custom naming template.
+- **Best for:** New users and quick setup. Perfect for one-click lorebook creation.
+- **To use:**
+  1. Enable "Auto-create lorebook if none exists" in the extension's settings.
+  2. Configure your naming template (default: "LTM - {{char}} - {{chat}}").
+  3. When you create a memory without a bound lorebook, one is automatically created and bound.
+- **Template placeholders:** {{char}} (character name), {{user}} (your name), {{chat}} (chat ID)
+- **Smart numbering:** Automatically adds numbers (2, 3, 4...) if duplicate names exist.
+- **Note:** Cannot be used simultaneously with Manual Lorebook Mode.
+
+### **Manual Lorebook Mode**
+- **How it works:** Allows you to select a different lorebook for memories on a per-chat basis, ignoring the main chat-bound lorebook.
+- **Best for:** Advanced users who want to direct memories to a specific, separate lorebook.
+- **To use:**
   1. Enable "Enable Manual Lorebook Mode" in the extension's settings.
   2. The first time you create a memory in a chat, you will be prompted to choose a lorebook.
   3. This choice is saved for that specific chat until you clear it or switch back to Automatic Mode.
+- **Note:** Cannot be used simultaneously with Auto-Create Lorebook Mode.
 
 ---
 
@@ -141,6 +155,8 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 
 ### **Global Settings**
 - **Manual Lorebook Mode:** Enable to select lorebooks per chat.
+- **Auto-create lorebook if none exists:** ⭐ *New in v4.2.0* - Automatically create and bind lorebooks using your naming template.
+- **Lorebook Name Template:** ⭐ *New in v4.2.0* - Customize auto-created lorebook names with {{char}}, {{user}}, {{chat}} placeholders.
 - **Allow Scene Overlap:** Permit or prevent overlapping memory ranges.
 - **Always Use Default Profile:** Skip confirmation popups.
 - **Show memory previews:** Enable preview popup to review and edit memories before adding to lorebook.
@@ -214,6 +230,7 @@ Customize the titles of your lorebook entries using a powerful template system.
 - **No lorebook available or selected:**
   - In Manual Mode, select a lorebook when prompted.
   - In Automatic Mode, bind a lorebook to your chat.
+  - Or enable "Auto-create lorebook if none exists" for automatic creation.
 
 - **No scene selected:**
   - Mark both start (►) and end (◄) points.

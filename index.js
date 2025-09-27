@@ -1,15 +1,17 @@
-import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2 } from '../../../../script.js';
+import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2, saveMetadata, getCurrentChatId } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
-import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
+import { METADATA_KEY, world_names, loadWorldInfo, createNewWorldInfo } from '../../../world-info.js';
 import { lodash, Handlebars, DOMPurify } from '../../../../lib.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
+import { generateLorebookName, autoCreateLorebook } from './autocreate.js';
+import { checkAutoSummaryTrigger, handleAutoSummaryMessageReceived, handleAutoSummaryGroupFinished, clearAutoSummaryState } from './autosummary.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
@@ -45,6 +47,8 @@ const defaultSettings = {
         unhiddenEntriesCount: 0,
         autoSummaryEnabled: false,
         autoSummaryInterval: 100,
+        autoCreateLorebook: false,
+        lorebookNameTemplate: 'LTM - {{char}} - {{chat}}',
     },
     titleFormat: '[000] - {{title}}',
     profiles: [], // Will be populated dynamically with current ST settings
@@ -222,21 +226,7 @@ function handleChatLoaded() {
 async function handleMessageReceived() {
     try {
         setTimeout(validateSceneMarkers, 500);
-
-        const context = getCurrentMemoryBooksContext();
-
-        // Only check auto-summary for single character chats on MESSAGE_RECEIVED
-        // Group chats will be handled by GROUP_WRAPPER_FINISHED event
-        if (!context.isGroupChat && extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
-            const currentMessageCount = chat.length;
-            console.log(`STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: ${currentMessageCount}`);
-
-            await checkAutoSummaryTrigger();
-        } else if (context.isGroupChat) {
-            console.log('STMemoryBooks: Message received in group chat - waiting for GROUP_WRAPPER_FINISHED');
-        } else {
-            console.log('STMemoryBooks: Message received but auto-summary is disabled');
-        }
+        await handleAutoSummaryMessageReceived();
     } catch (error) {
         console.error('STMemoryBooks: Error in handleMessageReceived:', error);
     }
@@ -245,16 +235,7 @@ async function handleMessageReceived() {
 async function handleGroupWrapperFinished() {
     try {
         setTimeout(validateSceneMarkers, 500);
-
-        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
-            const currentMessageCount = chat.length;
-            console.log(`STMemoryBooks: Group conversation finished - auto-summary enabled, current count: ${currentMessageCount}`);
-
-            // Check auto-summary trigger after all group members have finished speaking
-            await checkAutoSummaryTrigger();
-        } else {
-            console.log('STMemoryBooks: Group conversation finished but auto-summary is disabled');
-        }
+        await handleAutoSummaryGroupFinished();
     } catch (error) {
         console.error('STMemoryBooks: Error in handleGroupWrapperFinished:', error);
     }
@@ -301,96 +282,6 @@ window.STMemoryBooks_debugAutoSummary = function() {
     checkAutoSummaryTrigger();
 };
 
-/**
- * Check if auto-summary should be triggered based on message difference
- */
-async function checkAutoSummaryTrigger() {
-    const currentMessageCount = chat.length;
-    const currentLastMessage = currentMessageCount - 1;
-    const requiredInterval = extension_settings.STMemoryBooks.moduleSettings.autoSummaryInterval;
-
-    console.log(`STMemoryBooks: Auto-summary check - current message count: ${currentMessageCount}, interval: ${requiredInterval}`);
-
-    // Check if user has postponed auto-summary
-    const stmbData = getSceneMarkers() || {};
-    if (stmbData.autoSummaryNextPromptAt && currentMessageCount < stmbData.autoSummaryNextPromptAt) {
-        console.log(`STMemoryBooks: Auto-summary postponed until message ${stmbData.autoSummaryNextPromptAt}`);
-        return; // Still in postpone period
-    }
-
-    // Auto-summary will set new scene markers - no need to clear existing ones
-
-    const lorebookValidation = await validateLorebookForAutoSummary();
-    if (!lorebookValidation.valid) {
-        console.log(`STMemoryBooks: Auto-summary blocked - lorebook validation failed: ${lorebookValidation.error}`);
-        return; // No lorebook available or user cancelled
-    }
-
-    // Clear any postpone flag since we're proceeding with auto-summary
-    if (stmbData.autoSummaryNextPromptAt) {
-        delete stmbData.autoSummaryNextPromptAt;
-        saveMetadataForCurrentContext();
-        console.log('STMemoryBooks: Cleared auto-summary postpone flag');
-    }
-
-    // Use the highestMemoryProcessed field for more efficient tracking
-    const highestProcessed = stmbData.highestMemoryProcessed ?? null;
-    console.log(`STMemoryBooks: Highest memory processed: ${highestProcessed}, current last message: ${currentLastMessage}`);
-
-    let messagesSinceLastMemory;
-
-    if (highestProcessed === null) {
-        // No memories processed yet - check if we have enough messages for the first memory
-        messagesSinceLastMemory = currentLastMessage + 1; // +1 because message indices are 0-based
-        console.log(`STMemoryBooks: No previous memories found, total messages available: ${messagesSinceLastMemory}`);
-    } else {
-        // Calculate messages since the highest processed message
-        messagesSinceLastMemory = currentLastMessage - highestProcessed;
-        console.log(`STMemoryBooks: Messages since last memory: ${messagesSinceLastMemory} (${currentLastMessage} - ${highestProcessed})`);
-    }
-
-    console.log(`STMemoryBooks: Auto-summary decision - need ${requiredInterval} messages, have ${messagesSinceLastMemory}`);
-
-    if (messagesSinceLastMemory >= requiredInterval) {
-        // Check if memory creation is already in progress
-        if (isProcessingMemory) {
-            console.log('STMemoryBooks: Auto-summary blocked - memory creation already in progress');
-            return;
-        }
-
-        console.log(`STMemoryBooks: Auto-summary triggered! (${messagesSinceLastMemory} >= ${requiredInterval})`);
-
-        // Set processing flag to prevent concurrent execution
-        isProcessingMemory = true;
-
-        // Wait a moment for any ongoing message processing to complete
-        setTimeout(async () => {
-            try {
-                if (highestProcessed === null) {
-                    // First memory - create from beginning of chat to current message
-                    const startMessage = 0;
-                    const endMessage = currentLastMessage;
-                    const rangeString = `${startMessage}-${endMessage}`;
-
-                    console.log(`STMemoryBooks: Auto-creating first memory for range: ${rangeString}`);
-                    await handleSceneMemoryCommand({}, rangeString);
-                } else {
-                    // Subsequent memories - use existing nextmemory logic
-                    console.log(`STMemoryBooks: Auto-creating next memory from message ${highestProcessed + 1}`);
-                    await handleNextMemoryCommand({}, '');
-                }
-            } catch (error) {
-                console.error('STMemoryBooks: Auto-summary execution failed:', error);
-                toastr.warning(`Auto-summary failed: ${error.message}`, 'STMemoryBooks');
-            } finally {
-                // Always clear the processing flag
-                isProcessingMemory = false;
-            }
-        }, 1000);
-    } else {
-        console.log(`STMemoryBooks: Auto-summary not triggered - need ${requiredInterval - messagesSinceLastMemory} more messages`);
-    }
-}
 
 /**
  * Slash command handlers
@@ -683,6 +574,23 @@ function validateSettings(settings) {
         settings.moduleSettings.autoSummaryInterval < 10) {
         settings.moduleSettings.autoSummaryInterval = 100;
     }
+
+    // Validate auto-create lorebook setting - always defaults to false
+    if (settings.moduleSettings.autoCreateLorebook === undefined) {
+        settings.moduleSettings.autoCreateLorebook = false;
+    }
+
+    // Validate lorebook name template
+    if (!settings.moduleSettings.lorebookNameTemplate) {
+        settings.moduleSettings.lorebookNameTemplate = 'LTM - {{char}} - {{chat}}';
+    }
+
+    // Ensure mutual exclusion: both cannot be true at the same time
+    if (settings.moduleSettings.manualModeEnabled && settings.moduleSettings.autoCreateLorebook) {
+        // If both are somehow true, prioritize manual mode (since it was added first)
+        settings.moduleSettings.autoCreateLorebook = false;
+        console.warn('STMemoryBooks: Both manualModeEnabled and autoCreateLorebook were true - setting autoCreateLorebook to false');
+    }
     
     // Migrate to version 2 if needed (JSON-based architecture)
     if (!settings.migrationVersion || settings.migrationVersion < 2) {
@@ -708,11 +616,29 @@ function hasLorebook() {
     return lorebookName && world_names && world_names.includes(lorebookName);
 }
 
+
 /**
  * Validate lorebook and return status with data
  */
 async function validateLorebook() {
-    const lorebookName = await getEffectiveLorebookName();
+    const settings = extension_settings.STMemoryBooks;
+    let lorebookName = await getEffectiveLorebookName();
+
+    // Check if auto-create is enabled and we're not in manual mode
+    if (!lorebookName &&
+        settings?.moduleSettings?.autoCreateLorebook &&
+        !settings?.moduleSettings?.manualModeEnabled) {
+
+        // Auto-create lorebook using template
+        const template = settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}';
+        const result = await autoCreateLorebook(template, 'chat');
+
+        if (result.success) {
+            lorebookName = result.name;
+        } else {
+            return { valid: false, error: result.error };
+        }
+    }
 
     if (!lorebookName) {
         return { valid: false, error: 'No lorebook available or selected.' };
@@ -730,158 +656,6 @@ async function validateLorebook() {
     }
 }
 
-/**
- * Validates lorebook for auto-summary with user-friendly prompts
- */
-async function validateLorebookForAutoSummary() {
-    // First, try to get a lorebook without showing popups
-    const settings = extension_settings.STMemoryBooks;
-    let lorebookName;
-
-    if (!settings.moduleSettings.manualModeEnabled) {
-        // Automatic mode - use chat-bound lorebook
-        lorebookName = chat_metadata?.[METADATA_KEY] || null;
-    } else {
-        // Manual mode - check if a lorebook is already selected
-        const stmbData = getSceneMarkers() || {};
-        lorebookName = stmbData.manualLorebook ?? null;
-
-        // If no lorebook is selected, ask user what to do
-        if (!lorebookName) {
-            const popupContent = `
-                <h4>Auto-Summary Ready</h4>
-                <div class="world_entry_form_control">
-                    <p>Auto-summary is enabled but there is no assigned lorebook for this chat.</p>
-                    <p>Would you like to select a lorebook for memory storage, or postpone this auto-summary?</p>
-                    <label for="stmb-postpone-messages">Postpone for how many messages?</label>
-                    <select id="stmb-postpone-messages" class="text_pole">
-                        <option value="10">10 messages</option>
-                        <option value="20">20 messages</option>
-                        <option value="30">30 messages</option>
-                        <option value="40">40 messages</option>
-                        <option value="50">50 messages</option>
-                    </select>
-                </div>
-            `;
-
-            const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
-                okButton: 'Select Lorebook',
-                cancelButton: 'Postpone'
-            });
-            const result = await popup.show();
-
-            if (result !== POPUP_RESULT.AFFIRMATIVE) {
-                // User chose to postpone - get the number of messages to skip
-                const postponeMessages = parseInt(popup.dlg.querySelector('#stmb-postpone-messages').value) || 10;
-
-                // Store when to next prompt (current message count + postpone amount)
-                const nextPromptAt = chat.length + postponeMessages;
-                const stmbData = getSceneMarkers() || {};
-                stmbData.autoSummaryNextPromptAt = nextPromptAt;
-
-                // Save the postpone decision
-                saveMetadataForCurrentContext();
-
-                return { valid: false, error: `Auto-summary postponed for ${postponeMessages} messages` };
-            }
-
-            // User wants to select a lorebook - use the existing selection logic
-            lorebookName = await getEffectiveLorebookName();
-            if (!lorebookName) {
-                return { valid: false, error: 'No lorebook selected' };
-            }
-        }
-    }
-
-    if (!lorebookName) {
-        console.log('STMemoryBooks: No lorebook name found in metadata');
-        return { valid: false, error: 'No lorebook available' };
-    }
-
-    console.log(`STMemoryBooks: Looking for lorebook: "${lorebookName}"`);
-    console.log('STMemoryBooks: Available world_names:', world_names);
-
-    if (!world_names || !world_names.includes(lorebookName)) {
-        // Try to find a close match (case-insensitive, trimmed)
-        let foundMatch = null;
-        if (world_names) {
-            foundMatch = world_names.find(name =>
-                name.toLowerCase().trim() === lorebookName.toLowerCase().trim()
-            );
-        }
-
-        if (foundMatch) {
-            console.log(`STMemoryBooks: Found close match: "${foundMatch}" for "${lorebookName}"`);
-            lorebookName = foundMatch;
-        } else {
-            console.log(`STMemoryBooks: Lorebook "${lorebookName}" not found in available lorebooks:`, world_names);
-
-            // Show user-friendly lorebook selection popup
-            if (world_names && world_names.length > 0) {
-                const lorebookOptions = world_names.map(name =>
-                    `<option value="${name}">${name}</option>`
-                ).join('');
-
-                const popupContent = `
-                    <h4>Lorebook Not Found</h4>
-                    <div class="world_entry_form_control">
-                        <p>The assigned lorebook "<strong>${lorebookName}</strong>" was not found.</p>
-                        <p>Please select an available lorebook for auto-summary:</p>
-                        <label for="stmb-select-lorebook">Choose Lorebook:</label>
-                        <select id="stmb-select-lorebook" class="text_pole">
-                            ${lorebookOptions}
-                        </select>
-                        <br><br>
-                        <label for="stmb-postpone-messages">Or postpone for how many messages?</label>
-                        <select id="stmb-postpone-messages" class="text_pole">
-                            <option value="10">10 messages</option>
-                            <option value="20">20 messages</option>
-                            <option value="30">30 messages</option>
-                            <option value="50">50 messages</option>
-                        </select>
-                    </div>
-                `;
-
-                const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
-                    okButton: 'Use Selected Lorebook',
-                    cancelButton: 'Postpone'
-                });
-                const result = await popup.show();
-
-                if (result === POPUP_RESULT.AFFIRMATIVE) {
-                    // User selected a lorebook
-                    const selectedLorebook = popup.dlg.querySelector('#stmb-select-lorebook').value;
-                    console.log(`STMemoryBooks: User selected lorebook: "${selectedLorebook}"`);
-
-                    // Update the chat metadata to use the selected lorebook
-                    chat_metadata[METADATA_KEY] = selectedLorebook;
-                    saveMetadataDebounced();
-
-                    lorebookName = selectedLorebook;
-                    toastr.success(`Auto-summary will now use "${selectedLorebook}"`, 'STMemoryBooks');
-                } else {
-                    // User chose to postpone
-                    const postponeMessages = parseInt(popup.dlg.querySelector('#stmb-postpone-messages').value) || 10;
-                    const nextPromptAt = chat.length + postponeMessages;
-                    const stmbData = getSceneMarkers() || {};
-                    stmbData.autoSummaryNextPromptAt = nextPromptAt;
-                    saveMetadataForCurrentContext();
-
-                    return { valid: false, error: `Auto-summary postponed for ${postponeMessages} messages` };
-                }
-            } else {
-                return { valid: false, error: 'No lorebooks available for auto-summary' };
-            }
-        }
-    }
-
-    try {
-        const lorebookData = await loadWorldInfo(lorebookName);
-        return { valid: !!lorebookData, data: lorebookData, name: lorebookName };
-    } catch (error) {
-        return { valid: false, error: 'Failed to load the selected lorebook.' };
-    }
-}
 
 /**
  * Extract and validate settings from confirmation popup or defaults
@@ -1110,12 +884,8 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
         }
 
-        // Clear scene markers after successful memory creation if auto-summary is enabled
-        if (extension_settings[MODULE_NAME].moduleSettings.autoSummaryEnabled) {
-            clearScene();
-            // RESET auto-summary count so it starts fresh from this point
-            saveMetadataForCurrentContext('autoSummaryLastMessageCount', chat.length);
-        }
+        // Clear auto-summary state after successful memory creation
+        clearAutoSummaryState();
 
         // Success notification
         const contextMsg = memoryFetchResult.actualCount > 0 ?
@@ -1325,6 +1095,24 @@ function updateLorebookStatusDisplay() {
             infoText.innerHTML = chatBoundLorebook ?
                 `Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"` :
                 'No chat-bound lorebook. Memories will require lorebook selection.';
+        }
+    }
+
+    // Mutual exclusion: Enable/disable checkboxes based on each other's state
+    const autoCreateCheckbox = document.querySelector('#stmb-auto-create-lorebook');
+    const manualModeCheckbox = document.querySelector('#stmb-manual-mode-enabled');
+    const nameTemplateInput = document.querySelector('#stmb-lorebook-name-template');
+
+    if (autoCreateCheckbox && manualModeCheckbox) {
+        const autoCreateEnabled = settings.moduleSettings.autoCreateLorebook;
+
+        // Manual mode disables auto-create and vice versa
+        autoCreateCheckbox.disabled = isManualMode;
+        manualModeCheckbox.disabled = autoCreateEnabled;
+
+        // Name template is only enabled when auto-create is enabled
+        if (nameTemplateInput) {
+            nameTemplateInput.disabled = !autoCreateEnabled;
         }
     }
 
@@ -1568,6 +1356,8 @@ async function showSettingsPopup() {
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
         autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
+        autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
+        lorebookNameTemplate: settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}',
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
             isDefault: index === settings.defaultProfile
@@ -1697,6 +1487,15 @@ function setupSettingsEventListeners() {
         
         if (e.target.matches('#stmb-manual-mode-enabled')) {
             const isEnabling = e.target.checked;
+
+            // Mutual exclusion: If enabling manual mode, disable auto-create
+            if (isEnabling) {
+                settings.moduleSettings.autoCreateLorebook = false;
+                const autoCreateCheckbox = document.querySelector('#stmb-auto-create-lorebook');
+                if (autoCreateCheckbox) {
+                    autoCreateCheckbox.checked = false;
+                }
+            }
 
             if (isEnabling) {
                 // Check if there's a chat-bound lorebook
@@ -1840,6 +1639,25 @@ function setupSettingsEventListeners() {
             return;
         }
 
+        if (e.target.matches('#stmb-auto-create-lorebook')) {
+            const isEnabling = e.target.checked;
+
+            // Mutual exclusion: If enabling auto-create, disable manual mode
+            if (isEnabling) {
+                settings.moduleSettings.manualModeEnabled = false;
+                const manualModeCheckbox = document.querySelector('#stmb-manual-mode-enabled');
+                if (manualModeCheckbox) {
+                    manualModeCheckbox.checked = false;
+                }
+            }
+
+            settings.moduleSettings.autoCreateLorebook = e.target.checked;
+            saveSettingsDebounced();
+            updateLorebookStatusDisplay();
+            populateInlineButtons();
+            return;
+        }
+
         if (e.target.matches('#stmb-auto-summary-interval')) {
             const value = parseInt(e.target.value);
             if (!isNaN(value) && value >= 10 && value <= 200) {
@@ -1868,7 +1686,16 @@ function setupSettingsEventListeners() {
             }
             return;
         }
-        
+
+        if (e.target.matches('#stmb-lorebook-name-template')) {
+            const value = e.target.value.trim();
+            if (value) {
+                settings.moduleSettings.lorebookNameTemplate = value;
+                saveSettingsDebounced();
+            }
+            return;
+        }
+
         if (e.target.matches('#stmb-token-warning-threshold')) {
             const value = parseInt(e.target.value);
             if (!isNaN(value) && value >= 1000 && value <= 100000) {
@@ -1932,6 +1759,9 @@ function handleSettingsPopupClose(popup) {
             parseInt(autoSummaryIntervalInput.value) || 50 :
             settings.moduleSettings.autoSummaryInterval || 50;
 
+        // Save auto-create lorebook setting
+        const autoCreateLorebook = popupElement.querySelector('#stmb-auto-create-lorebook')?.checked ?? settings.moduleSettings.autoCreateLorebook;
+
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault ||
                           showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews ||
                           showNotifications !== settings.moduleSettings.showNotifications ||
@@ -1943,7 +1773,8 @@ function handleSettingsPopupClose(popup) {
                           autoHideMode !== getAutoHideMode(settings.moduleSettings) ||
                           unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount ||
                           autoSummaryEnabled !== settings.moduleSettings.autoSummaryEnabled ||
-                          autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval;
+                          autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval ||
+                          autoCreateLorebook !== settings.moduleSettings.autoCreateLorebook;
         
         if (hasChanges) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -1961,6 +1792,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.unhiddenEntriesCount = unhiddenEntriesCount;
             settings.moduleSettings.autoSummaryEnabled = autoSummaryEnabled;
             settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
+            settings.moduleSettings.autoCreateLorebook = autoCreateLorebook;
             saveSettingsDebounced();
         }
     } catch (error) {
@@ -2012,6 +1844,8 @@ function refreshPopupContent() {
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
             autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
+            autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
+            lorebookNameTemplate: settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}',
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
                 isDefault: index === settings.defaultProfile
