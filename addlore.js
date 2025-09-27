@@ -20,12 +20,23 @@ const MODULE_NAME = 'STMemoryBooks-AddLore';
  * @returns {Object|null} - {start, end} or null if invalid
  */
 function parseSceneRange(sceneRange) {
-    if (!sceneRange) return null;
+    if (!sceneRange) {
+        console.warn(`${MODULE_NAME}: parseSceneRange - sceneRange is falsy:`, sceneRange);
+        return null;
+    }
     const parts = sceneRange.split('-');
-    if (parts.length !== 2) return null;
+    if (parts.length !== 2) {
+        console.warn(`${MODULE_NAME}: parseSceneRange - invalid parts length: ${parts.length}, parts:`, parts);
+        return null;
+    }
     const start = parseInt(parts[0], 10);
     const end = parseInt(parts[1], 10);
-    if (isNaN(start) || isNaN(end) || start < 0) return null;
+    console.log(`${MODULE_NAME}: parseSceneRange - parsed start=${start}, end=${end} from "${sceneRange}"`);
+    if (isNaN(start) || isNaN(end) || start < 0 || end < 0) {
+        console.warn(`${MODULE_NAME}: parseSceneRange - validation failed: start=${start}, end=${end}, isNaN(start)=${isNaN(start)}, isNaN(end)=${isNaN(end)}`);
+        return null;
+    }
+    console.log(`${MODULE_NAME}: parseSceneRange - SUCCESS: returning {start: ${start}, end: ${end}}`);
     return { start, end };
 }
 
@@ -136,62 +147,83 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         }
         
         // Execute auto-hide commands if enabled
+        console.log(`${MODULE_NAME}: DEBUG - About to check auto-hide settings`);
         const autoHideMode = getAutoHideMode(settings.moduleSettings);
+        console.log(`${MODULE_NAME}: DEBUG - Auto-hide mode: ${autoHideMode}`);
+
         if (autoHideMode !== 'none') {
             const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
-            
+            console.log(`${MODULE_NAME}: DEBUG - Unhidden count: ${unhiddenCount}`);
+            console.log(`${MODULE_NAME}: DEBUG - Scene range metadata:`, memoryResult.metadata?.sceneRange);
+
             if (autoHideMode === 'all') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
+                console.log(`${MODULE_NAME}: DEBUG - Parsed scene data:`, sceneData);
+
                 if (!sceneData) {
+                    console.warn(`${MODULE_NAME}: AUTO-HIDE FAILED - Invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
+                    console.warn(`${MODULE_NAME}: Full metadata:`, memoryResult.metadata);
                     return;
                 }
 
                 const { start: sceneStart, end: sceneEnd } = sceneData;
 
-                // Validate scene range is within chat bounds
-                if (sceneEnd >= chat.length) {
-                    toastr.warning(`${MODULE_NAME}: Scene end ${sceneEnd} exceeds chat length ${chat.length}, skipping auto-hide`);
-                } else {
-                    const messagesAfterMemory = chat.length - 1 - sceneEnd;
+                // Auto-hide "all" mode: hide everything up to memory scene
+                console.log(`${MODULE_NAME}: DEBUG - Processing 'all' mode: sceneStart=${sceneStart}, sceneEnd=${sceneEnd}, unhiddenCount=${unhiddenCount}`);
 
-                    if (unhiddenCount === 0 || messagesAfterMemory <= 0 || unhiddenCount >= messagesAfterMemory) {
-                        // Hide everything up to and including the memory
-                        await executeHideCommand(`/hide 0-${sceneEnd}`, 'all mode - up to memory');
+                if (unhiddenCount === 0) {
+                    // Hide everything up to and including the memory
+                    console.log(`${MODULE_NAME}: DEBUG - Executing full hide: /hide 0-${sceneEnd}`);
+                    await executeHideCommand(`/hide 0-${sceneEnd}`, 'all mode - complete');
+                } else {
+                    // Hide everything except the last unhiddenCount messages of the scene
+                    const hideEndIndex = sceneEnd - unhiddenCount;
+                    console.log(`${MODULE_NAME}: DEBUG - Calculated hideEndIndex: ${hideEndIndex} (sceneEnd=${sceneEnd} - unhiddenCount=${unhiddenCount})`);
+
+                    if (hideEndIndex >= 0) {
+                        console.log(`${MODULE_NAME}: DEBUG - Executing partial hide: /hide 0-${hideEndIndex}`);
+                        await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
                     } else {
-                        // Hide from start, keeping last unhiddenCount messages visible
-                        const hideEndIndex = chat.length - 1 - unhiddenCount;
-                        if (hideEndIndex >= 0) {
-                            await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
-                        }
+                        console.log(`${MODULE_NAME}: DEBUG - Auto-hide skipped - not enough messages to hide (unhiddenCount=${unhiddenCount} > available messages)`);
+                        toastr.info('Auto-hide skipped: not enough messages to hide', 'STMemoryBooks');
                     }
                 }
             } else if (autoHideMode === 'last') {
+                console.log(`${MODULE_NAME}: DEBUG - Processing 'last' mode auto-hide`);
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
+                console.log(`${MODULE_NAME}: DEBUG - 'last' mode parsed scene data:`, sceneData);
                 if (!sceneData) {
-                    console.log(`${MODULE_NAME}: Skipping auto-hide - invalid scene range`);
+                    console.warn(`${MODULE_NAME}: AUTO-HIDE FAILED - 'last' mode invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
                     return;
                 }
 
                 const { start: sceneStart, end: sceneEnd } = sceneData;
 
-                // Validate scene range is within chat bounds
-                if (sceneEnd >= chat.length || sceneStart >= chat.length) {
-                    console.warn(`${MODULE_NAME}: Scene range ${sceneStart}-${sceneEnd} exceeds chat length ${chat.length}, skipping auto-hide`);
-                } else {
-                    const sceneSize = sceneEnd - sceneStart + 1;
+                // Auto-hide "last" mode: hide only the memory scene messages
+                console.log(`${MODULE_NAME}: DEBUG - Processing 'last' mode: sceneStart=${sceneStart}, sceneEnd=${sceneEnd}, unhiddenCount=${unhiddenCount}`);
+                const sceneSize = sceneEnd - sceneStart + 1;
+                console.log(`${MODULE_NAME}: DEBUG - Scene size: ${sceneSize} messages`);
 
-                    if (unhiddenCount >= sceneSize) {
-                        // No hiding needed - want to keep more messages than scene contains
-                    } else if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, 'last mode - hide all');
+                if (unhiddenCount >= sceneSize) {
+                    console.log(`${MODULE_NAME}: DEBUG - No hiding needed - unhiddenCount (${unhiddenCount}) >= scene size (${sceneSize})`);
+                    // No hiding needed - want to keep more messages than scene contains
+                } else if (unhiddenCount === 0) {
+                    console.log(`${MODULE_NAME}: DEBUG - Executing full scene hide: /hide ${sceneStart}-${sceneEnd}`);
+                    await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, 'last mode - hide all');
+                } else {
+                    const hideEnd = sceneEnd - unhiddenCount;
+                    console.log(`${MODULE_NAME}: DEBUG - Calculated hideEnd: ${hideEnd} (sceneEnd=${sceneEnd} - unhiddenCount=${unhiddenCount})`);
+                    if (hideEnd >= sceneStart) {
+                        console.log(`${MODULE_NAME}: DEBUG - Executing partial scene hide: /hide ${sceneStart}-${hideEnd}`);
+                        await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, 'last mode - partial');
                     } else {
-                        const hideEnd = sceneEnd - unhiddenCount;
-                        if (hideEnd >= sceneStart) {
-                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, 'last mode - partial');
-                        }
+                        console.log(`${MODULE_NAME}: DEBUG - Auto-hide skipped - not enough scene messages to hide (unhiddenCount=${unhiddenCount} >= scene size)`);
+                        toastr.info('Auto-hide skipped: not enough scene messages to hide', 'STMemoryBooks');
                     }
                 }
             }
+        } else {
+            console.log(`${MODULE_NAME}: DEBUG - Auto-hide disabled (mode: ${autoHideMode})`);
         }
         // Update highest memory processed tracking
         console.log(`${MODULE_NAME}: About to call updateHighestMemoryProcessed`);
