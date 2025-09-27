@@ -156,8 +156,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
 
                     if (unhiddenCount === 0 || messagesAfterMemory <= 0 || unhiddenCount >= messagesAfterMemory) {
                         // Hide everything up to and including the memory
-                        const validSceneEnd = Math.min(sceneEnd, chat.length - 1);
-                        await executeHideCommand(`/hide 0-${validSceneEnd}`, 'all mode - up to memory');
+                        await executeHideCommand(`/hide 0-${sceneEnd}`, 'all mode - up to memory');
                     } else {
                         // Hide from start, keeping last unhiddenCount messages visible
                         const hideEndIndex = chat.length - 1 - unhiddenCount;
@@ -184,13 +183,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     if (unhiddenCount >= sceneSize) {
                         // No hiding needed - want to keep more messages than scene contains
                     } else if (unhiddenCount === 0) {
-                        const validSceneEnd = Math.min(sceneEnd, chat.length - 1);
-                        await executeHideCommand(`/hide ${sceneStart}-${validSceneEnd}`, 'last mode - hide all');
+                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, 'last mode - hide all');
                     } else {
                         const hideEnd = sceneEnd - unhiddenCount;
                         if (hideEnd >= sceneStart) {
-                            const validHideEnd = Math.min(hideEnd, chat.length - 1);
-                            await executeHideCommand(`/hide ${sceneStart}-${validHideEnd}`, 'last mode - partial');
+                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, 'last mode - partial');
                         }
                     }
                 }
