@@ -9,12 +9,9 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-## 🚦 What's New (v4.2.0)
+## 🚦 What's New (v4.2.1)
 
-- **Auto-Create Lorebook Feature:** Intelligent automatic lorebook creation when none exists - just enable the checkbox and set your naming template
-- **Customizable Lorebook Naming:** Flexible template system with {{char}}, {{user}}, {{chat}} placeholders and smart auto-numbering
-- **Unicode-Friendly:** Full international character support including Chinese, Japanese, Cyrillic, emoji, and all Unicode characters
-- **Code Modularization:** Improved maintainability with specialized autocreate.js and autosummary.js modules
+- **Skip Dry Run:** Skips lorebook checking on dry run (loading chat for token counting).
 
 ---
 

@@ -60,6 +60,7 @@ const defaultSettings = {
 let currentPopupInstance = null;
 let isProcessingMemory = false;
 let currentProfile = null;
+let isDryRun = false;
 
 // Settings cache for restoration
 let cachedSettings = null;
@@ -1997,7 +1998,12 @@ function setupEventListeners() {
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
     eventSource.on(event_types.GROUP_WRAPPER_FINISHED, handleGroupWrapperFinished);
-    
+
+    // Track dry-run state for generation events
+    eventSource.on(event_types.GENERATION_STARTED, (type, options, dryRun) => {
+        isDryRun = dryRun || false;
+    });
+
     // API change handlers for settings management
     $(document).on('change', `${SELECTORS.mainApi}, ${SELECTORS.completionSource}`, function() {
         console.log(`${MODULE_NAME}: API change detected`);
@@ -2011,6 +2017,9 @@ function setupEventListeners() {
 
 
     eventSource.on(event_types.GENERATE_AFTER_DATA, (generate_data) => {
+        if (isDryRun) {
+            return; // Skip all processing during dry-run
+        }
         if (isProcessingMemory && currentProfile) {
             const conn = currentProfile.effectiveConnection || currentProfile.connection || {};
             const apiToSource = {

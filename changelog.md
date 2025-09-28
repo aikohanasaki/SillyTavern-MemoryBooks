@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.2.1 (September 2025)
+- **Skip Dry Run:** Skips lorebook checking on dry run (loading chat for token counting).
+
 ## v4.2.0 (September 2025)
 - **Auto-Create Lorebook Feature:** Intelligent automatic lorebook creation and binding when none exists
   - New checkbox in settings: "Auto-create lorebook if none exists"
