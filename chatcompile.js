@@ -20,12 +20,12 @@ export function compileScene(sceneRequest) {
     if (sceneStart == null || sceneEnd == null) {
         throw new Error('Scene markers are required for compilation');
     }
-    
-    if ((sceneStart ?? null) > (sceneEnd ?? null)) {
+
+    if (sceneStart > sceneEnd) {
         throw new Error('Start marker cannot be greater than end marker');
     }
 
-    if ((sceneStart ?? null) < 0 || (sceneEnd ?? null) >= chat.length) {
+    if (sceneStart < 0 || sceneEnd >= chat.length) {
         throw new Error(`Scene markers (${sceneStart}-${sceneEnd}) are out of chat bounds (0-${chat.length - 1})`);
     }
     

@@ -287,7 +287,7 @@ function updateButtonStatesForElements(messageElements, markers) {
         endBtn.classList.remove('on', 'valid-end-point', 'in-scene');
         
         // Apply appropriate classes based on current state
-        if ((sceneStart ?? null) !== null && (sceneEnd ?? null) !== null) {
+        if (sceneStart != null && sceneEnd != null) {
             // Complete scene - highlight range and markers distinctly
             if (messageId === sceneStart) {
                 // This is the start marker
@@ -295,7 +295,7 @@ function updateButtonStatesForElements(messageElements, markers) {
             } else if (messageId === sceneEnd) {
                 // This is the end marker
                 endBtn.classList.add('on');
-            } else if (messageId > (sceneStart ?? null) && messageId < (sceneEnd ?? null)) {
+            } else if (messageId > sceneStart && messageId < sceneEnd) {
                 // This is a message between start and end
                 startBtn.classList.add('in-scene');
                 endBtn.classList.add('in-scene');
@@ -303,22 +303,22 @@ function updateButtonStatesForElements(messageElements, markers) {
             // Messages outside the scene range (before start or after end) should have no special styling
             // The classes were already cleared above, so no additional action needed
 
-        } else if ((sceneStart ?? null) !== null) {
+        } else if (sceneStart != null) {
             // Start set, show valid end points
             if (messageId === sceneStart) {
                 console.log(`STMemoryBooks: Adding 'on' class to start button of message ${messageId}`);
                 startBtn.classList.add('on');
-            } else if (messageId > (sceneStart ?? null)) {
+            } else if (messageId > sceneStart) {
                 console.log(`STMemoryBooks: Adding 'valid-end-point' class to end button of message ${messageId}`);
                 endBtn.classList.add('valid-end-point');
             }
 
-        } else if ((sceneEnd ?? null) !== null) {
+        } else if (sceneEnd != null) {
             // End set, show valid start points
             if (messageId === sceneEnd) {
                 console.log(`STMemoryBooks: Adding 'on' class to end button of message ${messageId}`);
                 endBtn.classList.add('on');
-            } else if (messageId < (sceneEnd ?? null)) {
+            } else if (messageId < sceneEnd) {
                 console.log(`STMemoryBooks: Adding 'valid-start-point' class to start button of message ${messageId}`);
                 startBtn.classList.add('valid-start-point');
             }
@@ -517,6 +517,7 @@ function estimateSceneTokensEnhanced(startId, endId) {
         return estimateTokenCount(tempCompiled);
     } catch (error) {
         // Fallback to simple estimation
+        console.warn(`${MODULE_NAME}: Using fallback token estimation (char/4). Enhanced estimation failed:`, error.message);
         return estimateSceneTokens(startId, endId);
     }
 }
