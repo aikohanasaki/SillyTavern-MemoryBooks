@@ -767,11 +767,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     currentProfile = profileSettings;
     const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
-    
-    // Store current settings for restoration
-    const originalSettings = getCurrentModelSettings();
-    let settingsRestored = false;
-    
+
     try {
         // Create and compile scene first
         const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
