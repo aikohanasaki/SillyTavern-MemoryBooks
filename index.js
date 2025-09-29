@@ -1528,32 +1528,26 @@ function setupSettingsEventListeners() {
                             toastr.success(`Manual lorebook set to "${chatBoundLorebook}"`, 'STMemoryBooks');
                         } else {
                             // Let user select a different lorebook
-                            const selectedLorebook = await getEffectiveLorebookName();
-                            if (selectedLorebook) {
-                                stmbData.manualLorebook = selectedLorebook;
-                                saveMetadataForCurrentContext();
-                                toastr.success(`Manual lorebook set to "${selectedLorebook}"`, 'STMemoryBooks');
-                            } else {
+                            const selectedLorebook = await showLorebookSelectionPopup(chatBoundLorebook);
+                            if (!selectedLorebook) {
                                 // User cancelled, revert the checkbox
                                 e.target.checked = false;
                                 toastr.info('Manual mode cancelled - no lorebook selected', 'STMemoryBooks');
                                 return;
                             }
+                            // showLorebookSelectionPopup already saved the selection and showed success message
                         }
                     } else {
                         // No chat-bound lorebook, prompt to select one
                         toastr.info('Please select a lorebook for manual mode', 'STMemoryBooks');
-                        const selectedLorebook = await getEffectiveLorebookName();
-                        if (selectedLorebook) {
-                            stmbData.manualLorebook = selectedLorebook;
-                            saveMetadataForCurrentContext();
-                            toastr.success(`Manual lorebook set to "${selectedLorebook}"`, 'STMemoryBooks');
-                        } else {
+                        const selectedLorebook = await showLorebookSelectionPopup();
+                        if (!selectedLorebook) {
                             // User cancelled, revert the checkbox
                             e.target.checked = false;
                             toastr.info('Manual mode cancelled - no lorebook selected', 'STMemoryBooks');
                             return;
                         }
+                        // showLorebookSelectionPopup already saved the selection and showed success message
                     }
                 }
             }
