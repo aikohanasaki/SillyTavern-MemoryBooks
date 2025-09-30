@@ -162,9 +162,8 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                         const hideEndIndex = sceneEnd - unhiddenCount;
                         if (hideEndIndex >= 0) {
                             await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
-                        } else {
-                            toastr.info('Auto-hide skipped: not enough messages to hide', 'STMemoryBooks');
                         }
+                        // Auto-hide silently skipped if not enough messages
                     }
                 }
             } else if (autoHideMode === 'last') {
@@ -184,9 +183,8 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                         const hideEnd = sceneEnd - unhiddenCount;
                         if (hideEnd >= sceneStart) {
                             await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, 'last mode - partial');
-                        } else {
-                            toastr.info('Auto-hide skipped: not enough scene messages to hide', 'STMemoryBooks');
                         }
+                        // Auto-hide silently skipped if not enough scene messages
                     }
                 }
             }

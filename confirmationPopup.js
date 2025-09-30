@@ -240,7 +240,7 @@ async function handleSaveNewProfile(popup, settings) {
         toastr.error('Please enter a profile name', 'STMemoryBooks');
         return { confirmed: false };
     }
-    
+
     await saveNewProfileFromAdvancedSettings(popup.dlg, settings, newProfileName);
     toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
     return { confirmed: false }; // Don't create memory, just save profile

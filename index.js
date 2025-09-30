@@ -829,7 +829,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
             if (previewResult.action === 'cancel') {
                 // User cancelled, abort the process
-                toastr.info('Memory creation cancelled by user', 'STMemoryBooks');
                 return;
             } else if (previewResult.action === 'retry') {
                 // User wants to retry - limit user-initiated retries to prevent infinite loops
@@ -957,7 +956,6 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     
     // RACE CONDITION FIX: Check and set flag atomically
     if (isProcessingMemory) {
-        toastr.warning('Memory creation already in progress', 'STMemoryBooks');
         return;
     }
     
@@ -1201,7 +1199,6 @@ function populateInlineButtons() {
 
                 const selectedIndex = parseInt(profileSelect.value);
                 if (selectedIndex === settings.defaultProfile) {
-                    toastr.info('This profile is already the default', 'STMemoryBooks');
                     return;
                 }
 
@@ -1528,7 +1525,6 @@ function setupSettingsEventListeners() {
                             if (!selectedLorebook) {
                                 // User cancelled, revert the checkbox
                                 e.target.checked = false;
-                                toastr.info('Manual mode cancelled - no lorebook selected', 'STMemoryBooks');
                                 return;
                             }
                             // showLorebookSelectionPopup already saved the selection and showed success message
@@ -1540,7 +1536,6 @@ function setupSettingsEventListeners() {
                         if (!selectedLorebook) {
                             // User cancelled, revert the checkbox
                             e.target.checked = false;
-                            toastr.info('Manual mode cancelled - no lorebook selected', 'STMemoryBooks');
                             return;
                         }
                         // showLorebookSelectionPopup already saved the selection and showed success message
