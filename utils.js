@@ -341,7 +341,6 @@ export async function getEffectiveLorebookName() {
     }
 
     // User cancelled the selection
-    toastr.warning('Memory creation cancelled. No lorebook was selected.', 'STMemoryBooks');
     return null;
 }
 
