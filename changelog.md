@@ -2,6 +2,16 @@
 
 **← [Back to README](readme.md)**
 
+## v4.2.2 (September 2025)
+- **Bug Fixes:**
+  - Fixed critical auto-hide bug where memories wouldn't save if scene range metadata was invalid
+  - Fixed manual lorebook mode not showing selection popup when enabled
+- **Code Quality Improvements:**
+  - Removed excessive DEBUG logging (~35 console.log statements per memory creation)
+  - Simplified null checking patterns for better readability
+  - Added warning when token estimation falls back to simple char/4 calculation
+  - Removed unused variables and dead code
+
 ## v4.2.1 (September 2025)
 - **Skip Dry Run:** Skips lorebook checking on dry run (loading chat for token counting).
 

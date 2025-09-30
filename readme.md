@@ -9,9 +9,10 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-## 🚦 What's New (v4.2.1)
+## 🚦 What's New (v4.2.2)
 
-- **Skip Dry Run:** Skips lorebook checking on dry run (loading chat for token counting).
+- **Bug Fixes:** Critical auto-hide and manual lorebook mode fixes
+- **Performance:** Removed excessive DEBUG logging for cleaner console output
 
 ---
 

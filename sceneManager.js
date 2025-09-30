@@ -55,29 +55,23 @@ export function saveMetadataForCurrentContext() {
  * @param {number|null} newEnd - New end marker
  */
 function updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd) {
-    console.log(`STMemoryBooks: updateAffectedButtonStates called - old: ${oldStart}-${oldEnd}, new: ${newStart}-${newEnd}`);
-
     // Calculate the range of messages that could be affected
     const affectedRange = calculateAffectedRange(oldStart, oldEnd, newStart, newEnd);
-    console.log(`STMemoryBooks: Affected range:`, affectedRange);
 
     if (affectedRange.needsFullUpdate) {
-        console.log(`STMemoryBooks: Doing full button update`);
         // Fall back to full update for complex changes
         updateAllButtonStates();
         return;
     }
 
     if (affectedRange.min === null || affectedRange.max === null) {
-        console.log(`STMemoryBooks: No messages affected - min: ${affectedRange.min}, max: ${affectedRange.max}`);
         // No messages affected
         return;
     }
-    
+
     // Only query and update the affected message range
     const selector = `#chat .mes[mesid]`;
     const allMessages = document.querySelectorAll(selector);
-    console.log(`STMemoryBooks: Found ${allMessages.length} total messages with selector "${selector}"`);
 
     const affectedMessages = Array.from(allMessages).filter(messageElement => {
         const messageId = parseInt(messageElement.getAttribute('mesid'));
@@ -85,15 +79,10 @@ function updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd) {
         const maxCheck = affectedRange.max !== null && affectedRange.max !== undefined ? messageId <= affectedRange.max : true;
         return minCheck && maxCheck;
     });
-    console.log(`STMemoryBooks: Found ${affectedMessages.length} affected messages in range ${affectedRange.min}-${affectedRange.max}`);
 
     if (affectedMessages.length > 0) {
         const markers = getSceneMarkers();
-        console.log(`STMemoryBooks: About to update button states for ${affectedMessages.length} messages`);
         updateButtonStatesForElements(affectedMessages, markers);
-        console.log(`STMemoryBooks: Button state update completed`);
-    } else {
-        console.log(`STMemoryBooks: No affected messages found to update`);
     }
 }
 
@@ -187,32 +176,24 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
  * Set scene marker with validation
  */
 export function setSceneMarker(messageId, type) {
-    console.log(`STMemoryBooks: setSceneMarker called - messageId: ${messageId}, type: ${type}`);
     const markers = getSceneMarkers();
-    console.log(`STMemoryBooks: Current markers:`, markers);
 
     // Store previous state for optimization
     const oldStart = markers.sceneStart ?? null;
     const oldEnd = markers.sceneEnd ?? null;
-    console.log(`STMemoryBooks: Previous state - start: ${oldStart}, end: ${oldEnd}`);
 
     // Calculate new state atomically
     const newState = calculateNewSceneState(markers, messageId, type);
-    console.log(`STMemoryBooks: New state calculated:`, newState);
 
     // Update both metadata and cache simultaneously
     markers.sceneStart = newState.start;
     markers.sceneEnd = newState.end;
     currentSceneState.start = newState.start;
     currentSceneState.end = newState.end;
-    console.log(`STMemoryBooks: Updated markers:`, markers);
-    console.log(`STMemoryBooks: Updated currentSceneState:`, currentSceneState);
 
     // Persist to metadata and update DOM to match committed state
-    console.log(`STMemoryBooks: About to save metadata and update buttons`);
     saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
-    console.log(`STMemoryBooks: setSceneMarker completed`);
 }
 
 /**
@@ -306,20 +287,16 @@ function updateButtonStatesForElements(messageElements, markers) {
         } else if (sceneStart != null) {
             // Start set, show valid end points
             if (messageId === sceneStart) {
-                console.log(`STMemoryBooks: Adding 'on' class to start button of message ${messageId}`);
                 startBtn.classList.add('on');
             } else if (messageId > sceneStart) {
-                console.log(`STMemoryBooks: Adding 'valid-end-point' class to end button of message ${messageId}`);
                 endBtn.classList.add('valid-end-point');
             }
 
         } else if (sceneEnd != null) {
             // End set, show valid start points
             if (messageId === sceneEnd) {
-                console.log(`STMemoryBooks: Adding 'on' class to end button of message ${messageId}`);
                 endBtn.classList.add('on');
             } else if (messageId < sceneEnd) {
-                console.log(`STMemoryBooks: Adding 'valid-start-point' class to start button of message ${messageId}`);
                 startBtn.classList.add('valid-start-point');
             }
         }
@@ -433,7 +410,6 @@ export function handleMessageDeletion(deletedId, settings) {
  */
 export function createSceneButtons(messageElement) {
     const messageId = parseInt(messageElement.getAttribute('mesid'));
-    console.log(`STMemoryBooks: Creating scene buttons for message ${messageId}`);
     let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
 
     // If the button container doesn't exist (e.g., on user messages), create and append it.
@@ -472,13 +448,11 @@ export function createSceneButtons(messageElement) {
     
     // Add event listeners
     startButton.addEventListener('click', (e) => {
-        console.log(`STMemoryBooks: Start button clicked for message ${messageId}`);
         e.stopPropagation();
         setSceneMarker(messageId, 'start');
     });
 
     endButton.addEventListener('click', (e) => {
-        console.log(`STMemoryBooks: End button clicked for message ${messageId}`);
         e.stopPropagation();
         setSceneMarker(messageId, 'end');
     });
