@@ -2,6 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v4.2.3 (September 2025)
+- **Bug Fixes:**
+  - Fixed profile edit dialog not displaying the correct API/Provider selection
+  - Google AI Studio (makersuite) now correctly shows as selected when editing saved profiles
+
 ## v4.2.2 (September 2025)
 - **Bug Fixes:**
   - Fixed critical auto-hide bug where memories wouldn't save if scene range metadata was invalid
