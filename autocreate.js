@@ -1,7 +1,8 @@
 import { getCurrentChatId, name1, name2, chat_metadata, saveMetadata } from '../../../../script.js';
+import { t } from '../../../i18n.js';
 import { createNewWorldInfo, METADATA_KEY, world_names } from '../../../world-info.js';
 
-const MODULE_NAME = 'STMemoryBooks-AutoCreate';
+const MODULE_NAME = 'STMB';
 
 /**
  * Generate lorebook name from template with auto-numbering
@@ -58,7 +59,7 @@ export async function autoCreateLorebook(template, context = 'chat') {
             await saveMetadata();
 
             console.log(`${MODULE_NAME}: Successfully created and bound lorebook "${newLorebookName}"`);
-            toastr.success(`Created and bound lorebook "${newLorebookName}"`, 'STMemoryBooks');
+            toastr.success(t`Created and bound lorebook "${newLorebookName}"`, 'STMemoryBooks');
 
             return { success: true, name: newLorebookName };
         } else {

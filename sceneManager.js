@@ -1,4 +1,5 @@
 import { chat, chat_metadata } from '../../../../script.js';
+import { t } from '../../../i18n.js';
 import { saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { getCurrentMemoryBooksContext } from './utils.js';

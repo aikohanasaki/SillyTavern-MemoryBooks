@@ -1,4 +1,5 @@
 import { chat_metadata, characters, name2, this_chid } from '../../../../script.js';
+import { t } from '../../../i18n.js';
 import { getContext, extension_settings } from '../../../extensions.js';
 import { selected_group, groups } from '../../../group-chats.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
@@ -303,7 +304,7 @@ export async function getEffectiveLorebookName() {
         if (world_names.includes(stmbData.manualLorebook)) {
             return stmbData.manualLorebook;
         } else {
-            toastr.error(`The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`);
+            toastr.error(t`The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`);
             delete stmbData.manualLorebook; // Clear the invalid entry
         }
     }
@@ -312,7 +313,7 @@ export async function getEffectiveLorebookName() {
     const lorebookOptions = world_names.map(name => `<option value="${name}">${name}</option>`).join('');
     
     if (lorebookOptions.length === 0) {
-        toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
+        toastr.error(t`No lorebooks found to select from.`, 'STMemoryBooks');
         return null;
     }
 
@@ -336,7 +337,7 @@ export async function getEffectiveLorebookName() {
         stmbData.manualLorebook = selectedLorebook;
         saveMetadataForCurrentContext(); // Use the existing function from sceneManager to save correctly for groups/single chats
         
-        toastr.success(`"${selectedLorebook}" is now the Memory Book for this chat.`, 'STMemoryBooks');
+        toastr.success(t`"${selectedLorebook}" is now the Memory Book for this chat.`, 'STMemoryBooks');
         return selectedLorebook;
     }
 
@@ -354,7 +355,7 @@ export async function getEffectiveLorebookName() {
 export async function showLorebookSelectionPopup(currentLorebook = null) {
     // Check if lorebooks are available
     if (world_names.length === 0) {
-        toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
+        toastr.error(t`No lorebooks found to select from.`, 'STMemoryBooks');
         return null;
     }
 
@@ -386,7 +387,7 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
             stmbData.manualLorebook = selectedLorebook;
             saveMetadataForCurrentContext();
 
-            toastr.success(`Manual lorebook changed to: ${selectedLorebook}`, 'STMemoryBooks');
+            toastr.success(t`Manual lorebook changed to: ${selectedLorebook}`, 'STMemoryBooks');
             return selectedLorebook;
         } else {
             // Same lorebook selected, no need to save or show success

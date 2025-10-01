@@ -1,4 +1,5 @@
 import { getContext } from '../../../extensions.js';
+import { t } from '../../../i18n.js';
 import {
     METADATA_KEY,
     loadWorldInfo,
@@ -134,7 +135,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
 
         if (settings.moduleSettings?.showNotifications !== false) {
-            toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
+            toastr.success(t`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
         }
         
         if (refreshEditor) {
@@ -152,7 +153,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
 
                 if (!sceneData) {
                     console.warn(`${MODULE_NAME}: Auto-hide skipped - invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
-                    toastr.warning('Auto-hide skipped: invalid scene range metadata', 'STMemoryBooks');
+                    toastr.warning(t`Auto-hide skipped: invalid scene range metadata`, 'STMemoryBooks');
                 } else {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
 
@@ -170,7 +171,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
                 if (!sceneData) {
                     console.warn(`${MODULE_NAME}: Auto-hide skipped - invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
-                    toastr.warning('Auto-hide skipped: invalid scene range metadata', 'STMemoryBooks');
+                    toastr.warning(t`Auto-hide skipped: invalid scene range metadata`, 'STMemoryBooks');
                 } else {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
                     const sceneSize = sceneEnd - sceneStart + 1;
@@ -205,7 +206,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         console.error(`${MODULE_NAME}: Failed to add memory to lorebook:`, error);
         
         if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
-            toastr.error(`Failed to add memory: ${error.message}`, 'STMemoryBooks');
+            toastr.error(t`Failed to add memory: ${error.message}`, 'STMemoryBooks');
         }
         
         return {

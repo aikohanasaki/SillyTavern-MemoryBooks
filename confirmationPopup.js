@@ -1,4 +1,5 @@
 import { saveSettingsDebounced } from '../../../../script.js';
+import { t } from '../../../i18n.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTemplate } from './templates.js';
@@ -182,16 +183,16 @@ async function handleAdvancedConfirmation(popup, settings) {
         if (newProfileName) {
             try {
                 await saveNewProfileFromAdvancedSettings(popupElement, settings, newProfileName);
-                toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
+                toastr.success(t`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
             } catch (error) {
                 console.error(`${MODULE_NAME}: Failed to save profile:`, error);
-                toastr.error(`Failed to save profile: ${error.message}`, 'STMemoryBooks');
+                toastr.error(t`Failed to save profile: ${error.message}`, 'STMemoryBooks');
                 // Continues with memory creation even if profile save fails
             }
         } else {
             // No profile name provided, show error and don't proceed
             console.error(`${MODULE_NAME}: Profile creation cancelled - no name provided`);
-            toastr.error('Please enter a profile name or use "Create Memory" to proceed without saving', 'STMemoryBooks');
+            toastr.error(t`Please enter a profile name or use "Create Memory" to proceed without saving`, 'STMemoryBooks');
             return { confirmed: false };
         }
     }
@@ -237,12 +238,12 @@ async function handleSaveNewProfile(popup, settings) {
     const newProfileName = popup.dlg.querySelector('#stmb-new-profile-name-advanced').value.trim();
     if (!newProfileName) {
         console.error(`${MODULE_NAME}: Profile name validation failed - empty name`);
-        toastr.error('Please enter a profile name', 'STMemoryBooks');
+        toastr.error(t`Please enter a profile name`, 'STMemoryBooks');
         return { confirmed: false };
     }
 
     await saveNewProfileFromAdvancedSettings(popup.dlg, settings, newProfileName);
-    toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
+    toastr.success(t`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
     return { confirmed: false }; // Don't create memory, just save profile
 }
 
@@ -636,7 +637,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
             // Check if popup element is still available
             if (!popupElement) {
                 console.error(`${MODULE_NAME}: Popup element not available for reading edited values`);
-                toastr.error('Unable to read edited values', 'STMemoryBooks');
+                toastr.error(t`Unable to read edited values`, 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
@@ -647,7 +648,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
 
             if (!titleElement || !contentElement || !keywordsElement) {
                 console.error(`${MODULE_NAME}: Required input elements not found in popup`);
-                toastr.error('Unable to find input fields', 'STMemoryBooks');
+                toastr.error(t`Unable to find input fields`, 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
@@ -658,13 +659,13 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
             // Validate required fields
             if (!editedTitle || editedTitle.length === 0) {
                 console.error(`${MODULE_NAME}: Memory title validation failed - empty title`);
-                toastr.error('Memory title cannot be empty', 'STMemoryBooks');
+                toastr.error(t`Memory title cannot be empty`, 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
             if (!editedContent || editedContent.length === 0) {
                 console.error(`${MODULE_NAME}: Memory content validation failed - empty content`);
-                toastr.error('Memory content cannot be empty', 'STMemoryBooks');
+                toastr.error(t`Memory content cannot be empty`, 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 

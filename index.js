@@ -1,4 +1,6 @@
 import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2, saveMetadata, getCurrentChatId } from '../../../../script.js';
+import { t, addLocaleData } from '../../../i18n.js';
+import { localeData } from './locales.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
@@ -291,8 +293,8 @@ function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
     const sceneData = getSceneData();
     if (!sceneData) {
         console.error('STMemoryBooks: No scene markers set for createMemory command');
-        toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
-        return ''; 
+        toastr.error(t`No scene markers set. Use chevron buttons to mark start and end points first.`, 'STMemoryBooks');
+        return '';
     }
     
     initiateMemoryCreation();
@@ -304,14 +306,14 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     const range = String(unnamedArgs || '').trim();
     
     if (!range) {
-        toastr.error('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        toastr.error(t`Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)`, 'STMemoryBooks');
         return '';
     }
-   
+
     const match = range.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
-    
+
     if (!match) {
-        toastr.error('Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        toastr.error(t`Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)`, 'STMemoryBooks');
         return '';
     }
     
@@ -320,22 +322,22 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     
     // Validate range logic (start = end is valid for single message)
     if (startId > endId) {
-        toastr.error('Start message cannot be greater than end message', 'STMemoryBooks');
+        toastr.error(t`Start message cannot be greater than end message`, 'STMemoryBooks');
         return '';
     }
-    
+
     // IMPORTANT: Use the global chat array for validation to match compileScene()
     const activeChat = chat;
 
     // Validate message IDs exist in current chat
     if (startId < 0 || endId >= activeChat.length) {
-        toastr.error(`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`, 'STMemoryBooks');
+        toastr.error(t`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`, 'STMemoryBooks');
         return '';
     }
-    
+
     // check if messages actually exist
     if (!activeChat[startId] || !activeChat[endId]) {
-        toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
+        toastr.error(t`One or more specified messages do not exist`, 'STMemoryBooks');
         return '';
     }
     
@@ -345,7 +347,7 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
-    toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
+    toastr.info(t`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
     
     setTimeout(() => initiateMemoryCreation(), 500);
 
@@ -357,15 +359,15 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
         // Validate lorebook exists
         const lorebookValidation = await validateLorebook();
         if (!lorebookValidation.valid) {
-            toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
+            toastr.error(t`No lorebook available: ${lorebookValidation.error}`, 'STMemoryBooks');
             return '';
         }
-        
+
         // Get all memory entries
         const allMemories = identifyMemoryEntries(lorebookValidation.data);
-        
+
         if (allMemories.length === 0) {
-            toastr.error('No memory entries found in lorebook', 'STMemoryBooks');
+            toastr.error(t`No memory entries found in lorebook`, 'STMemoryBooks');
             return '';
         }
         
@@ -382,38 +384,38 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
         }
         
         if (!mostRecentMemory) {
-            toastr.error('No memory entries with valid message ranges found', 'STMemoryBooks');
+            toastr.error(t`No memory entries with valid message ranges found`, 'STMemoryBooks');
             return '';
         }
-        
+
         // Calculate next memory start (last memory end + 1)
         const nextStart = highestEndMessage + 1;
-        
+
         // Use current last message as end
         const activeChat = chat;
         const nextEnd = activeChat.length - 1;
-        
+
         // Validate the range
         if (nextStart >= activeChat.length) {
-            toastr.error('No new messages since last memory', 'STMemoryBooks');
+            toastr.error(t`No new messages since last memory`, 'STMemoryBooks');
             return '';
         }
-        
+
         if (nextStart > nextEnd) {
-            toastr.error('Not enough messages for a new memory', 'STMemoryBooks');
+            toastr.error(t`Not enough messages for a new memory`, 'STMemoryBooks');
             return '';
         }
-        
+
         // Execute scenememory with the calculated range
         const rangeString = `${nextStart}-${nextEnd}`;
-        toastr.info(`Auto-detected next memory range: ${rangeString}`, 'STMemoryBooks');
+        toastr.info(t`Auto-detected next memory range: ${rangeString}`, 'STMemoryBooks');
         
         // Use the scenememory handler directly
         return handleSceneMemoryCommand({}, rangeString);
         
     } catch (error) {
         console.error('STMemoryBooks: Error in /nextmemory command:', error);
-        toastr.error(`Failed to determine next memory range: ${error.message}`, 'STMemoryBooks');
+        toastr.error(t`Failed to determine next memory range: ${error.message}`, 'STMemoryBooks');
         return '';
     }
 }
@@ -789,22 +791,22 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
             if (memoryFetchResult.actualCount > 0) {
                 if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
-                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
+                    toastr.warning(t`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
                 }
                 console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
             } else {
-                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
+                toastr.warning(t`No previous memories found in lorebook`, 'STMemoryBooks');
             }
         }
 
         // Show working toast with actual memory count after fetching
         let workingToastMessage;
         if (retryCount > 0) {
-            workingToastMessage = `Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`;
+            workingToastMessage = t`Retrying memory creation (attempt ${retryCount + 1}/${maxRetries + 1})...`;
         } else {
             workingToastMessage = memoryFetchResult.actualCount > 0
-                ? `Creating memory with ${memoryFetchResult.actualCount} context memories...`
-                : 'Creating memory...';
+                ? t`Creating memory with ${memoryFetchResult.actualCount} context memories...`
+                : t`Creating memory...`;
         }
         toastr.info(workingToastMessage, 'STMemoryBooks', { timeOut: 0 });
         
@@ -836,11 +838,11 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 const currentUserRetries = retryCount >= maxRetries ? retryCount - maxRetries : 0;
 
                 if (currentUserRetries >= maxUserRetries) {
-                    toastr.warning(`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
+                    toastr.warning(t`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
                     return { action: 'cancel' };
                 }
 
-                toastr.info(`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
+                toastr.info(t`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
                 // Keep the retry count properly incremented to track total attempts
                 const nextRetryCount = Math.max(retryCount + 1, maxRetries + currentUserRetries + 1);
                 return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, nextRetryCount);
@@ -2062,10 +2064,24 @@ async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
     console.log('STMemoryBooks: Initializing');
+    // Register locale data for i18n support
+    try {
+        const currentLocale = localStorage.getItem('language') || 'en';
+        if (localeData[currentLocale]) {
+            addLocaleData(currentLocale, localeData[currentLocale]);
+        } else if (localeData['en']) {
+            // Fallback to English if current locale not available
+            addLocaleData(currentLocale, localeData['en']);
+        }
+        console.log(`${MODULE_NAME}: Registered ${currentLocale} locale data`);
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to register locale data:`, error);
+    }
+
     // Wait for SillyTavern to be ready
     let attempts = 0;
     const maxAttempts = 20;
-    
+
     while (attempts < maxAttempts) {
         if ($(SELECTORS.extensionsMenu).length > 0 && eventSource && typeof Popup !== 'undefined') {
             break;
