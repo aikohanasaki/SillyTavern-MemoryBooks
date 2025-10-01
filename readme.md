@@ -7,6 +7,8 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 ## FAQ 
 Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
 
+![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
 ---
 
 ## 🚦 What's New (v4.2.2)
