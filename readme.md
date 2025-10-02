@@ -16,7 +16,7 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 
 ![ST's strategy dropdown](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/vectorized.png)
 
-~[Keywords generated via AI](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/keywords.png)
+![Keywords generated via AI](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/keywords.png)
 
 ---
 
