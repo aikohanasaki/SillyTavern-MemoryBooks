@@ -440,13 +440,14 @@ export const PRESET_PROMPTS = {
                '  "content": "Detailed beat-by-beat summary in narrative prose...",\n' +
                '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                "}\n\n" +
-               "For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information. Ignore all OOC conversation. This summary will go in a vectorized database, so include:\n" +
+               "For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information EXCEPT FOR [OOC] conversation/interaction. All [OOC] conversation/interaction is not useful for summaries.\n" +
+               "This summary will go in a vectorized database, so include:\n" +
                "- All important story beats/events that happened\n" +
                "- Key interaction highlights and character developments\n" +
                "- Notable details, memorable quotes, and revelations\n" +
                "- Outcome and anything else important for future interactions between {{user}} and {{char}}\n" +
                "Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.\n\n" +
-               "For the keywords field, provide 5-20 relevant keywords for vectorized database retrieval. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
+               "For the keywords field, provide 10-30 specific, descriptive, relevant keywords for vectorized database retrieval. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                "Return ONLY the JSON, no other text.",
 
     'summarize': "Analyze the following roleplay scene and return a structured summary as JSON.\n\n" +
@@ -456,13 +457,13 @@ export const PRESET_PROMPTS = {
                  '  "content": "Detailed summary with markdown headers...",\n' +
                  '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                  "}\n\n" +
-                 "For the content field, create a detailed summary using markdown with these headers:\n" +
+                 "For the content field, create a detailed summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):\n" +
                  "- **Timeline**: Day/time this scene covers.\n" +
                  "- **Story Beats**: List all important plot events and story developments that occurred.\n" +
                  "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
                  "- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.\n" +
                  "- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.\n\n" +
-                 "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
+                 "For the keywords field, provide 10-30 specific, descriptive, relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                  "Ensure you capture ALL important information - comprehensive detail is more important than brevity.\n\n" +
                  "Return ONLY the JSON, no other text.",
 
@@ -473,7 +474,7 @@ export const PRESET_PROMPTS = {
                 '  "content": "Long detailed synopsis with markdown structure...",\n' +
                 '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                 "}\n\n" +
-                "For the content field, create a long and detailed beat-by-beat summary using markdown structure. Capture the most recent scene accurately without losing ANY information. Use this structure:\n" +
+                "For the content field, create a long and detailed beat-by-beat summary using markdown structure. Capture the most recent scene accurately without losing ANY information. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. Use this structure:\n" +
                 "# [Scene Title]\n" +
                 "**Timeline**: (day/time)\n" +
                 "## Story Beats\n" +
@@ -485,7 +486,7 @@ export const PRESET_PROMPTS = {
                 "## Outcome\n" +
                 "- (Describe results, resolutions, and final state)\n\n" +
                 "Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.\n\n" +
-                "For the keywords field, provide 5-20 relevant keywords for vectorized database retrieval. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
+                "For the keywords field, provide 10-30 specific, descriptive, relevant keywords for vectorized database retrieval. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                 "Return ONLY the JSON, no other text.",
 
     'sumup': "Analyze the following roleplay scene and return a beat summary as JSON.\n\n" +
@@ -497,19 +498,19 @@ export const PRESET_PROMPTS = {
              "}\n\n" +
              "For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:\n" +
              "# Scene Summary - Day X - [Title]\n" +
-             "First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost.\n\n" +
-             "For the keywords field, provide 5-20 relevant keywords that would help a vectorized database find this summary again if mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
+             "First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. \n\n" +
+             "For the keywords field, provide 10-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
              "Return ONLY the JSON, no other text.",
 
     'minimal': "Analyze the following roleplay scene and return a minimal memory entry as JSON.\n\n" +
                 "You must respond with ONLY valid JSON in this exact format:\n" +
                 "{\n" +
                 '  "title": "Short scene title (1-3 words)",\n' +
-                '  "content": "Brief 1-2 sentence summary...",\n' +
+                '  "content": "Brief 2-5 sentence summary...",\n' +
                 '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                 "}\n\n" +
-                "For the content field, provide a very brief 1-2 sentence summary of what happened in this scene.\n\n" +
-                "For the keywords field, generate 5-20 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
+                "For the content field, provide a very brief 2-5 sentence summary of what happened in this scene. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.\n\n" +
+                "For the keywords field, generate 10-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use `{{char}}` or `{{user}}` as keywords.\n\n" +
                 "Return ONLY the JSON, no other text.",
 
     'northgate': "You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.\n\n" +
