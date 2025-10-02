@@ -18,6 +18,14 @@ import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
+/**
+ * Check if memory is currently being processed
+ * @returns {boolean} True if memory creation is in progress
+ */
+export function isMemoryProcessing() {
+    return isProcessingMemory;
+}
+
 export { currentProfile, validateLorebook };
 
 const MODULE_NAME = 'STMemoryBooks';
@@ -930,8 +938,6 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         } else {
             toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
-    } finally {        
-        isProcessingMemory = false;
     }
 }
 
