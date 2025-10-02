@@ -5,9 +5,18 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 **📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
 
 ## FAQ 
+### Where is the entry in the Extensions menu?
 Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
 
 ![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
+### Vectorized?
+
+The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use the world vectorized. If you don't use vectors, it works via keywords. This is all automated so that you don't have to think about what keywords to use.
+
+![ST's strategy dropdown](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/vectorized.png)
+
+~[Keywords generated via AI](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/keywords.png)
 
 ---
 
