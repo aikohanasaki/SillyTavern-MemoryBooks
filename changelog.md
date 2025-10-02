@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.2.4 (September 2025)
+- **Tweak:** Add back isMemoryProcessing flag to prevent double-memory in auto-create situations.
+
 ## v4.2.3 (September 2025)
 - **Bug Fixes:**
   - Fixed profile edit dialog not displaying the correct API/Provider selection

@@ -5,6 +5,7 @@ import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sc
 import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, getEffectiveLorebookName } from './utils.js';
 import { autoCreateLorebook } from './autocreate.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
+import { isMemoryProcessing } from './index.js';
 
 const MODULE_NAME = 'STMemoryBooks-AutoSummary';
 
@@ -130,9 +131,9 @@ export async function checkAutoSummaryTrigger() {
         console.log('Highest processed:', highestProcessed);
         console.log('Scene markers:', { start: stmbData.sceneStart, end: stmbData.sceneEnd });
 
-        // Check if we have existing scene markers (memory creation in progress)
-        if (stmbData.sceneStart !== null || stmbData.sceneEnd !== null) {
-            console.log('STMemoryBooks: Auto-summary skipped - scene markers already exist (memory creation in progress)');
+        // Check if memory creation is in progress
+        if (isMemoryProcessing()) {
+            console.log('STMemoryBooks: Auto-summary skipped - memory creation in progress');
             return;
         }
 
