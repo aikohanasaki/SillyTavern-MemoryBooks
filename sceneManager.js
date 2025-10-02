@@ -22,17 +22,16 @@ export function getSceneMarkers() {
     const chatMetadata = context.chatMetadata;
 
     if (!chatMetadata) {
-        return {};
+        return { sceneStart: null, sceneEnd: null };
     }
     if (!chatMetadata.STMemoryBooks) {
         chatMetadata.STMemoryBooks = {};
     }
 
-    // Sync from currentSceneState for consistency
-    if (currentSceneState.start !== null || currentSceneState.end !== null) {
-        chatMetadata.STMemoryBooks.sceneStart = currentSceneState.start;
-        chatMetadata.STMemoryBooks.sceneEnd = currentSceneState.end;
-    }
+    // Always sync from currentSceneState to ensure immediate consistency
+    // This handles the case where metadata hasn't been persisted yet due to debouncing
+    chatMetadata.STMemoryBooks.sceneStart = currentSceneState.start ?? chatMetadata.STMemoryBooks.sceneStart ?? null;
+    chatMetadata.STMemoryBooks.sceneEnd = currentSceneState.end ?? chatMetadata.STMemoryBooks.sceneEnd ?? null;
 
     return chatMetadata.STMemoryBooks;
 }
