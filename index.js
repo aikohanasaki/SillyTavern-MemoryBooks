@@ -70,9 +70,8 @@ let isProcessingMemory = false;
 let currentProfile = null;
 let isDryRun = false;
 
-// Settings cache for restoration
+/* Settings cache for restoration */
 let cachedSettings = null;
-let isExtensionEnabled = false;
 
 
 // MutationObserver for chat message monitoring
@@ -188,6 +187,7 @@ function cleanupChatObserver() {
 function handleChatChanged() {
     console.log('STMemoryBooks: Chat changed - updating scene state');
     updateSceneStateCache();
+    validateAndCleanupSceneMarkers();
     
     setTimeout(() => {
         try {
@@ -217,20 +217,6 @@ function validateAndCleanupSceneMarkers() {
     }
 }
 
-/**
- * Chat loaded handler with conversion logging
- */
-function handleChatLoaded() {
-    console.log(`${MODULE_NAME}: === CHAT LOADED EVENT ===`);
-    console.log(`${MODULE_NAME}: Chat loaded event received, processing messages.`);
-    console.log(`${MODULE_NAME}: Current chat metadata:`, chat_metadata);
-    console.log(`${MODULE_NAME}: METADATA_KEY value:`, METADATA_KEY);
-    console.log(`${MODULE_NAME}: Lorebook from metadata:`, chat_metadata[METADATA_KEY]);
-
-    updateSceneStateCache();
-    validateAndCleanupSceneMarkers();
-    processExistingMessages();
-}
 
 async function handleMessageReceived() {
     try {
@@ -426,35 +412,6 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
     }
 }
 
-/**
- * Check API compatibility using SillyTavern's built-in functions
- */
-function checkApiCompatibility() {
-    let isCompatible = false;
-
-    try {
-        if (typeof window.getGeneratingApi === 'function') {
-            const currentApi = window.getGeneratingApi();
-            isCompatible = window.main_api === 'openai' && SUPPORTED_COMPLETION_SOURCES.includes(currentApi);
-        } else {
-            const mainApi = $(SELECTORS.mainApi).val();
-            const completionSource = $(SELECTORS.completionSource).val();
-            isCompatible = mainApi === 'openai' && SUPPORTED_COMPLETION_SOURCES.includes(completionSource);
-        }
-    } catch (e) {
-        console.warn(`${MODULE_NAME}: Error checking API compatibility:`, e);
-        const mainApi = $(SELECTORS.mainApi).val();
-        const completionSource = $(SELECTORS.completionSource).val();
-        isCompatible = mainApi === 'openai' && SUPPORTED_COMPLETION_SOURCES.includes(completionSource);
-    }
-
-    if (isCompatible !== isExtensionEnabled) {
-        isExtensionEnabled = isCompatible;
-        console.log(`${MODULE_NAME}: Extension ${isCompatible ? 'enabled' : 'disabled'} for current API`);
-    }
-
-    return isCompatible;
-}
 
 /**
  * Initialize and validate extension settings
@@ -1982,7 +1939,6 @@ function setupEventListeners() {
     $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
     
     eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
-    eventSource.on(event_types.CHAT_LOADED, handleChatLoaded);
     eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
         const settings = initializeSettings();
         handleMessageDeletion(deletedId, settings);
@@ -1995,11 +1951,6 @@ function setupEventListeners() {
         isDryRun = dryRun || false;
     });
 
-    // API change handlers for settings management
-    $(document).on('change', `${SELECTORS.mainApi}, ${SELECTORS.completionSource}`, function() {
-        console.log(`${MODULE_NAME}: API change detected`);
-        handleExtensionStateChange();
-    });
 
     // Model settings change handlers
     const modelSelectors = Object.values(SELECTORS).filter(selector =>
@@ -2083,9 +2034,6 @@ async function init() {
     // Create UI now that extensions menu is available
     createUI();
 
-    // Check initial API compatibility
-    checkApiCompatibility();
-    
     // Initialize settings with validation
     const settings = initializeSettings();
     const profileValidation = validateAndFixProfiles(settings);
@@ -2099,6 +2047,7 @@ async function init() {
     
     // Initialize scene state
     updateSceneStateCache();
+    validateAndCleanupSceneMarkers();
     
     // Initialize chat observer
     try {

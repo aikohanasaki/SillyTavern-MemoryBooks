@@ -2,6 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v4.2.5 (October 2025)
+- Fix: Eliminated “EventEmitter: Cannot listen to undefined event” by removing the nonexistent `CHAT_LOADED` subscription and consolidating initialization into `CHAT_CHANGED` and `init()`.
+- Cleanup: Removed legacy API compatibility gating (`checkApiCompatibility`, `isExtensionEnabled`, and API change listener). The extension is now always active and profile-driven.
+- Cleanup: Removed dead code (`handleChatLoaded`) and related wiring.
+
 ## v4.2.4 (September 2025)
 - **Tweak:** Add back isMemoryProcessing flag to prevent double-memory in auto-create situations.
 - **Tweaked prompts:** Slightly tweaked included prompts for better summaries.
