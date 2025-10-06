@@ -84,7 +84,7 @@ const profileEditTemplate = Handlebars.compile(`
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-preset">
             <h4 data-i18n="STMemoryBooks_Profile_MemoryMethod">Memory Creation Method:</h4>
-            <small data-i18n="STMemoryBooks_Profile_PresetSelectDesc">Choose a preset. Create and edit presets in the Summary Prompt Manager.</small>
+            <small data-i18n="STMemoryBooks_Profile_PresetSelectDesc">Choose a summary prompt. Edit or create custom prompts in the Summary Prompt Manager to see them in this list.</small>
             <select id="stmb-profile-preset" class="text_pole">
                 {{#each presetOptions}}
                 <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
@@ -97,11 +97,9 @@ const profileEditTemplate = Handlebars.compile(`
     </div>
 
     <div class="world_entry_form_control marginTop5">
-        <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_CustomPromptManaged">
-            Custom prompts are now controlled by the Summary Prompt Manager.
-        </div>
-        <div class="buttons_block justifyCenter gap10px">
+        <div class="buttons_block justifyCenter gap10px whitespacenowrap">
             <div id="stmb-open-prompt-manager" class="menu_button interactable" data-i18n="STMemoryBooks_OpenPromptManager">🧩 Open Summary Prompt Manager</div>
+            <div id="stmb-refresh-presets" class="menu_button interactable" data-i18n="STMemoryBooks_RefreshPresets">🔄 Refresh Presets</div>
             {{#if hasLegacyCustomPrompt}}
             <div id="stmb-move-to-preset" class="menu_button interactable" data-i18n="STMemoryBooks_MoveToPreset">📌 Move Current Custom Prompt to Preset</div>
             {{/if}}
@@ -523,6 +521,65 @@ function setupProfileEditEventHandlers(popupInstance) {
             console.error(`${MODULE_NAME}: Error opening prompt manager from profile editor:`, err);
             toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
         }
+    });
+
+    // Refresh presets list in the dropdown (useful after creating a new preset)
+    popupElement.querySelector('#stmb-refresh-presets')?.addEventListener('click', async () => {
+        try {
+            const selectEl = popupElement.querySelector('#stmb-profile-preset');
+            if (!selectEl) return;
+            const prev = selectEl.value;
+
+            const presetList = await PromptManager.listPresets();
+            // Rebuild options
+            selectEl.innerHTML = '';
+            presetList.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.key;
+                opt.textContent = p.displayName;
+                if (p.key === prev) opt.selected = true;
+                selectEl.appendChild(opt);
+            });
+
+            // If previous value no longer exists, default to first option
+            if (![...selectEl.options].some(o => o.value === prev) && selectEl.options.length > 0) {
+                selectEl.selectedIndex = 0;
+            }
+
+            toastr.success('Preset list refreshed', 'STMemoryBooks');
+        } catch (err) {
+            console.error(`${MODULE_NAME}: Error refreshing presets:`, err);
+            toastr.error('Failed to refresh presets', 'STMemoryBooks');
+        }
+    });
+
+    // Auto-refresh presets when Prompt Manager updates presets
+    const stmbOnPresetsUpdated = async () => {
+        try {
+            const selectEl2 = popupElement.querySelector('#stmb-profile-preset');
+            if (!selectEl2) return;
+            const prev2 = selectEl2.value;
+
+            const presetList2 = await PromptManager.listPresets();
+            selectEl2.innerHTML = '';
+            presetList2.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.key;
+                opt.textContent = p.displayName;
+                if (p.key === prev2) opt.selected = true;
+                selectEl2.appendChild(opt);
+            });
+
+            if (![...selectEl2.options].some(o => o.value === prev2) && selectEl2.options.length > 0) {
+                selectEl2.selectedIndex = 0;
+            }
+        } catch (e) {
+            console.error(`${MODULE_NAME}: Error auto-refreshing presets on update:`, e);
+        }
+    };
+    window.addEventListener('stmb-presets-updated', stmbOnPresetsUpdated);
+    popupInstance?.dlg?.addEventListener('close', () => {
+        window.removeEventListener('stmb-presets-updated', stmbOnPresetsUpdated);
     });
 
     // Move legacy custom prompt to a new preset and select it
