@@ -159,6 +159,30 @@ export const localeData_en = {
     'STMemoryBooks_KeywordsDesc': 'Separate keywords with commas',
     'STMemoryBooks_KeywordsPlaceholder': 'keyword1, keyword2, keyword3',
     'STMemoryBooks_UnknownProfile': 'Unknown Profile',
+
+    // Prompt Manager
+    'STMemoryBooks_PromptManager_Title': '🧩 Summary Prompt Manager',
+    'STMemoryBooks_PromptManager_Desc': 'Manage your summary generation prompts. All presets are editable.',
+    'STMemoryBooks_PromptManager_Search': 'Search presets...',
+    'STMemoryBooks_PromptManager_DisplayName': 'Display Name',
+    'STMemoryBooks_PromptManager_DateCreated': 'Date Created',
+    'STMemoryBooks_PromptManager_New': '➕ New Preset',
+    'STMemoryBooks_PromptManager_Edit': '✏️ Edit',
+    'STMemoryBooks_PromptManager_Duplicate': '📋 Duplicate',
+    'STMemoryBooks_PromptManager_Delete': '🗑️ Delete',
+    'STMemoryBooks_PromptManager_Export': '📤 Export JSON',
+    'STMemoryBooks_PromptManager_Import': '📥 Import JSON',
+    'STMemoryBooks_PromptManager_ApplyToProfile': '✅ Apply to Selected Profile',
+    'STMemoryBooks_PromptManager_NoPresets': 'No presets available',
+
+    // Profile Editor - Preset management
+    'STMemoryBooks_Profile_MemoryMethod': 'Memory Creation Method:',
+    'STMemoryBooks_Profile_PresetSelectDesc': 'Choose a preset. Create and edit presets in the Summary Prompt Manager.',
+    'STMemoryBooks_CustomPromptManaged': 'Custom prompts are now controlled by the Summary Prompt Manager.',
+    'STMemoryBooks_OpenPromptManager': '🧩 Open Summary Prompt Manager',
+    'STMemoryBooks_MoveToPreset': '📌 Move Current Custom Prompt to Preset',
+    'STMemoryBooks_MoveToPresetConfirmTitle': 'Move to Preset',
+    'STMemoryBooks_MoveToPresetConfirmDesc': 'Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?'
 };
 
 /**
