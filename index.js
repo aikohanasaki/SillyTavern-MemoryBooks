@@ -6,7 +6,7 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { METADATA_KEY, world_names, loadWorldInfo, createNewWorldInfo } from '../../../world-info.js';
-import { lodash, Handlebars, DOMPurify } from '../../../../lib.js';
+import { lodash, Handlebars, DOMPurify, escapeHtml } from '../../../../lib.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
@@ -311,7 +311,7 @@ function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 
-function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
+async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     const range = String(unnamedArgs || '').trim();
     
     if (!range) {
@@ -351,14 +351,16 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     }
     
     // Set new scene markers (automatically overrides any existing markers)
-    setSceneMarker(startId, 'start');
-    setSceneMarker(endId, 'end');
+    // Wait for both markers to be set before proceeding
+    await setSceneMarker(startId, 'start');
+    await setSceneMarker(endId, 'end');
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
     toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
     
-    setTimeout(() => initiateMemoryCreation(), 500);
+    // Now that markers are guaranteed to be set, initiate memory creation immediately
+    initiateMemoryCreation();
 
     return '';
 }
@@ -527,7 +529,8 @@ function initializeSettings() {
  */
 function validateSettings(settings) {
     if (!settings.profiles || settings.profiles.length === 0) {
-        settings.profiles = [deepClone(defaultSettings.profiles[0])];
+        // Avoid creating [undefined]; allow downstream validator to create a proper dynamic profile.
+        settings.profiles = [];
         settings.defaultProfile = 0;
     }
     
@@ -1341,7 +1344,7 @@ async function showPromptManagerPopup() {
             for (const preset of presets) {
                 const dateStr = preset.createdAt ? new Date(preset.createdAt).toLocaleString() : 'Unknown';
                 content += `<tr data-preset-key="${preset.key}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">`;
-                content += `<td style="padding: 8px;">${preset.displayName}</td>`;
+                content += `<td style="padding: 8px;">${escapeHtml(preset.displayName)}</td>`;
                 content += `<td style="padding: 8px;">${dateStr}</td>`;
                 content += '</tr>';
             }
@@ -1377,12 +1380,11 @@ async function showPromptManagerPopup() {
             okButton: false,
             cancelButton: 'Close'
         });
-        
-        await popup.show();
-        
-        // Setup event handlers
+
+        // Attach handlers before showing the popup to ensure interactivity
         setupPromptManagerEventHandlers(popup);
-        
+        await popup.show();
+
     } catch (error) {
         console.error('STMemoryBooks: Error showing prompt manager:', error);
         toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
@@ -1584,13 +1586,13 @@ async function editPreset(popup, presetKey) {
             <div class="world_entry_form_control">
                 <label for="stmb-pm-edit-display-name">
                     <h4>Display Name:</h4>
-                    <input type="text" id="stmb-pm-edit-display-name" class="text_pole" value="${displayName}" />
+                    <input type="text" id="stmb-pm-edit-display-name" class="text_pole" value="${escapeHtml(displayName)}" />
                 </label>
             </div>
             <div class="world_entry_form_control">
                 <label for="stmb-pm-edit-prompt">
                     <h4>Prompt:</h4>
-                    <textarea id="stmb-pm-edit-prompt" class="text_pole textarea_compact" rows="10">${prompt}</textarea>
+                    <textarea id="stmb-pm-edit-prompt" class="text_pole textarea_compact" rows="10">${escapeHtml(prompt)}</textarea>
                 </label>
             </div>
         `;
@@ -1648,7 +1650,7 @@ async function deletePreset(popup, presetKey) {
     const displayName = await PromptManager.getDisplayName(presetKey);
     
     const confirmPopup = new Popup(
-        `<h3>Delete Preset</h3><p>Are you sure you want to delete "${displayName}"?</p>`,
+        `<h3>Delete Preset</h3><p>Are you sure you want to delete "${escapeHtml(displayName)}"?</p>`,
         POPUP_TYPE.CONFIRM,
         '',
         { okButton: 'Delete', cancelButton: 'Cancel' }
