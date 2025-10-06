@@ -10,6 +10,7 @@ import {
     createProfileObject
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
+import * as PromptManager from './summaryPromptManager.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
@@ -82,34 +83,29 @@ const profileEditTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-preset">
-            <h4>Memory Creation Method:</h4>
-            <small>Choose a built-in preset or create a custom prompt.</small>
+            <h4 data-i18n="STMemoryBooks_Profile_MemoryMethod">Memory Creation Method:</h4>
+            <small data-i18n="STMemoryBooks_Profile_PresetSelectDesc">Choose a preset. Create and edit presets in the Summary Prompt Manager.</small>
             <select id="stmb-profile-preset" class="text_pole">
                 {{#each presetOptions}}
                 <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
                 {{/each}}
-                <option value="" {{#unless preset}}selected{{/unless}}>Custom Prompt...</option>
             </select>
         </label>
+        {{#if hasLegacyCustomPrompt}}
+        <div id="stmb-legacy-custom-prompt" class="displayNone">{{prompt}}</div>
+        {{/if}}
+    </div>
 
-        <label for="stmb-profile-prompt" id="stmb-custom-prompt-section" class="{{#if preset}}displayNone{{/if}}">
-            <h4>Custom Memory Creation Prompt:</h4>
-            <small>This prompt will be used to generate memories from chat scenes. Don't change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.</small>
-            <textarea id="stmb-profile-prompt" class="text_pole textarea_compact" rows="10" placeholder="Enter your custom memory creation prompt here...">{{#if prompt}}{{prompt}}{{else}}Analyze the following roleplay scene and return a minimal memory entry as JSON.
-
-You must respond with ONLY valid JSON in this exact format:
-{
-  "title": "Short scene title (1-3 words)",
-  "content": "Brief 1-2 sentence summary...",
-  "keywords": ["keyword1", "keyword2", "keyword3"]
-}
-
-For the content field, provide a very brief 1-2 sentence summary of what happened in this scene.
-
-For the keywords field, generate 5-20 highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use \{{char}} or \{{user}} as keywords.
-
-Return ONLY the JSON, no other text.{{/if}}</textarea>
-        </label>
+    <div class="world_entry_form_control marginTop5">
+        <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_CustomPromptManaged">
+            Custom prompts are now controlled by the Summary Prompt Manager.
+        </div>
+        <div class="buttons_block justifyCenter gap10px">
+            <div id="stmb-open-prompt-manager" class="menu_button interactable" data-i18n="STMemoryBooks_OpenPromptManager">🧩 Open Summary Prompt Manager</div>
+            {{#if hasLegacyCustomPrompt}}
+            <div id="stmb-move-to-preset" class="menu_button interactable" data-i18n="STMemoryBooks_MoveToPreset">📌 Move Current Custom Prompt to Preset</div>
+            {{/if}}
+        </div>
     </div>
 
     <div class="world_entry_form_control marginTop5">
@@ -193,6 +189,13 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
     try {
         const apiInfo = getCurrentApiInfo();
+        await PromptManager.firstRunInitIfMissing(settings);
+        const presetList = await PromptManager.listPresets();
+        const presetOptions = presetList.map(p => ({
+            value: p.key,
+            displayName: p.displayName,
+            selected: p.key === (profile.preset || '')
+        }));
         const connection = profile.connection || { temperature: 0.7 };
         const profileTitleFormat = profile.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
@@ -203,11 +206,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             prompt: profile.prompt || '',
             preset: profile.preset || '',
             currentApi: apiInfo.api || 'Unknown',
-            presetOptions: getPresetNames().map(presetName => ({
-                value: presetName,
-                displayName: formatPresetDisplayName(presetName),
-                selected: presetName === profile.preset
-            })),
+            presetOptions: presetOptions,
             // Pass title format data to the template
             titleFormat: profileTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
@@ -220,7 +219,8 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             orderMode: profile.orderMode,
             orderValue: profile.orderValue,
             preventRecursion: profile.preventRecursion,
-            delayUntilRecursion: profile.delayUntilRecursion
+            delayUntilRecursion: profile.delayUntilRecursion,
+            hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false
         };
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -271,6 +271,13 @@ export async function newProfile(settings, refreshCallback) {
         // Logic to handle title format for the template
         const currentTitleFormat = settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
+        await PromptManager.firstRunInitIfMissing(settings);
+        const presetList = await PromptManager.listPresets();
+        const presetOptions = presetList.map(p => ({
+            value: p.key,
+            displayName: p.displayName,
+            selected: false
+        }));
 
         const templateData = {
             name: defaultName,
@@ -279,11 +286,7 @@ export async function newProfile(settings, refreshCallback) {
             prompt: '',
             preset: '',
             currentApi: apiInfo.api || 'Unknown',
-            presetOptions: getPresetNames().map(presetName => ({
-                value: presetName,
-                displayName: formatPresetDisplayName(presetName),
-                selected: false
-            })),
+            presetOptions: presetOptions,
             // Pass title format data to the template
             titleFormat: currentTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
@@ -507,12 +510,61 @@ export function importProfiles(event, settings, refreshCallback) {
 function setupProfileEditEventHandlers(popupInstance) {
     const popupElement = popupInstance.dlg;
 
-    popupElement.querySelector('#stmb-profile-preset')?.addEventListener('change', (e) => {
-        const customPromptSection = popupElement.querySelector('#stmb-custom-prompt-section');
-        if (e.target.value === '') {
-            customPromptSection.classList.remove('displayNone');
-        } else {
-            customPromptSection.classList.add('displayNone');
+    // Open Summary Prompt Manager from profile editor
+    popupElement.querySelector('#stmb-open-prompt-manager')?.addEventListener('click', () => {
+        try {
+            const btn = document.querySelector('#stmb-prompt-manager');
+            if (btn) {
+                btn.click();
+            } else {
+                toastr.error('Prompt Manager button not found. Open main settings and try again.', 'STMemoryBooks');
+            }
+        } catch (err) {
+            console.error(`${MODULE_NAME}: Error opening prompt manager from profile editor:`, err);
+            toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
+        }
+    });
+
+    // Move legacy custom prompt to a new preset and select it
+    popupElement.querySelector('#stmb-move-to-preset')?.addEventListener('click', async () => {
+        try {
+            const legacyPromptEl = popupElement.querySelector('#stmb-legacy-custom-prompt');
+            const legacyPrompt = legacyPromptEl ? legacyPromptEl.textContent : '';
+            if (!legacyPrompt || !legacyPrompt.trim()) {
+                toastr.error('No custom prompt to migrate', 'STMemoryBooks');
+                return;
+            }
+            const profileNameInput = popupElement.querySelector('#stmb-profile-name');
+            const profileName = profileNameInput?.value?.trim() || 'Profile';
+            const displayName = `Custom: ${profileName}`;
+
+            const newKey = await PromptManager.upsertPreset(null, legacyPrompt, displayName);
+
+            const confirmPopup = new Popup(
+                '<h3 data-i18n="STMemoryBooks_MoveToPresetConfirmTitle">Move to Preset</h3><p data-i18n="STMemoryBooks_MoveToPresetConfirmDesc">Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?</p>',
+                POPUP_TYPE.CONFIRM,
+                '',
+                { okButton: 'Apply', cancelButton: 'Cancel' }
+            );
+            const res = await confirmPopup.show();
+            if (res === POPUP_RESULT.AFFIRMATIVE) {
+                const presetSelect = popupElement.querySelector('#stmb-profile-preset');
+                if (presetSelect) {
+                    if (![...presetSelect.options].some(o => o.value === newKey)) {
+                        const opt = document.createElement('option');
+                        opt.value = newKey;
+                        opt.textContent = displayName;
+                        presetSelect.appendChild(opt);
+                    }
+                    presetSelect.value = newKey;
+                }
+                legacyPromptEl?.remove();
+                popupElement.querySelector('#stmb-move-to-preset')?.remove();
+                toastr.success('Preset created and selected. Remember to Save.', 'STMemoryBooks');
+            }
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error moving custom prompt to preset:`, error);
+            toastr.error('Failed to move custom prompt to preset', 'STMemoryBooks');
         }
     });
 
@@ -582,13 +634,8 @@ function buildProfileFromForm(popupElement, fallbackName) {
 
     // Step 2: Intelligently determine whether to use the selected preset or the custom prompt.
     const presetSelect = popupElement.querySelector('#stmb-profile-preset');
-    if (presetSelect && presetSelect.value === '') { // An empty value means "Custom Prompt..." was selected.
-        data.prompt = popupElement.querySelector('#stmb-profile-prompt')?.value;
-        data.preset = ''; // Ensure preset is cleared when using a custom prompt.
-    } else if (presetSelect) { // A preset was selected.
-        data.prompt = ''; // Ensure custom prompt is cleared when using a preset.
-        data.preset = presetSelect.value;
-    }
+    data.prompt = '';
+    data.preset = presetSelect?.value || '';
 
     // Handle the title format dropdown logic
     const titleFormatSelect = popupElement.querySelector('#stmb-profile-title-format-select');

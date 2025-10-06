@@ -18,6 +18,23 @@ import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
+import * as PromptManager from './summaryPromptManager.js';
+/**
+ * Async effective prompt that respects Summary Prompt Manager overrides
+ */
+async function getEffectivePromptAsync(profile) {
+    try {
+        if (profile?.prompt && String(profile.prompt).trim()) {
+            return profile.prompt;
+        }
+        if (profile?.preset) {
+            return await PromptManager.getPrompt(profile.preset);
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: getEffectivePromptAsync fallback due to error:', e);
+    }
+    return DEFAULT_PROMPT;
+}
 /**
  * Check if memory is currently being processed
  * @returns {boolean} True if memory creation is in progress
@@ -658,7 +675,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
             confirmed: true,
             profileSettings: {
                 ...selectedProfile,
-                effectivePrompt: getEffectivePrompt(selectedProfile) // Use shared function
+                effectivePrompt: await getEffectivePromptAsync(selectedProfile)
             },
             advancedOptions: {
                 memoryCount: settings.moduleSettings.defaultMemoryCount || 0,
@@ -1248,6 +1265,18 @@ function populateInlineButtons() {
                     importFile.click();
                 }
             }
+        },
+        {
+            text: '🧩 Summary Prompt Manager',
+            id: 'stmb-prompt-manager',
+            action: async () => {
+                try {
+                    await showPromptManagerPopup();
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error opening prompt manager:`, error);
+                    toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
+                }
+            }
         }
     ];
 
@@ -1277,10 +1306,418 @@ function populateInlineButtons() {
 }
 
 /**
+ * Show the Summary Prompt Manager popup
+ */
+async function showPromptManagerPopup() {
+    try {
+        // Initialize the prompt manager on first use
+        const settings = extension_settings.STMemoryBooks;
+        await PromptManager.firstRunInitIfMissing(settings);
+        
+        // Get list of presets
+        const presets = await PromptManager.listPresets();
+        
+        // Build the popup content
+        let content = '<h3 data-i18n="STMemoryBooks_PromptManager_Title">🧩 Summary Prompt Manager</h3>';
+        content += '<div class="world_entry_form_control">';
+        content += '<p data-i18n="STMemoryBooks_PromptManager_Desc">Manage your summary generation prompts. All presets are editable.</p>';
+        content += '</div>';
+        
+        // Search/filter box
+        content += '<div class="world_entry_form_control">';
+        content += '<input type="text" id="stmb-prompt-search" class="text_pole" placeholder="Search presets..." aria-label="Search presets" data-i18n="STMemoryBooks_PromptManager_Search" />';
+        content += '</div>';
+        
+        // Preset list
+        content += '<div id="stmb-preset-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;">';
+        
+        if (presets.length === 0) {
+            content += '<div class="opacity50p" data-i18n="STMemoryBooks_PromptManager_NoPresets">No presets available</div>';
+        } else {
+            content += '<table style="width: 100%; border-collapse: collapse;">';
+            content += '<thead><tr><th style="text-align: left; padding: 8px;" data-i18n="STMemoryBooks_PromptManager_DisplayName">Display Name</th><th style="text-align: left; padding: 8px;" data-i18n="STMemoryBooks_PromptManager_DateCreated">Date Created</th></tr></thead>';
+            content += '<tbody>';
+            
+            for (const preset of presets) {
+                const dateStr = preset.createdAt ? new Date(preset.createdAt).toLocaleString() : 'Unknown';
+                content += `<tr data-preset-key="${preset.key}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">`;
+                content += `<td style="padding: 8px;">${preset.displayName}</td>`;
+                content += `<td style="padding: 8px;">${dateStr}</td>`;
+                content += '</tr>';
+            }
+            
+            content += '</tbody></table>';
+        }
+        
+        content += '</div>';
+        
+        // Action buttons
+        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
+        content += '<button id="stmb-pm-new" class="menu_button" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
+        content += '<button id="stmb-pm-edit" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_Edit">✏️ Edit</button>';
+        content += '<button id="stmb-pm-duplicate" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_Duplicate">📋 Duplicate</button>';
+        content += '<button id="stmb-pm-delete" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_Delete">🗑️ Delete</button>';
+        content += '</div>';
+        
+        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
+        content += '<button id="stmb-pm-export" class="menu_button" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
+        content += '<button id="stmb-pm-import" class="menu_button" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
+        content += '</div>';
+        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
+        content += '<button id="stmb-pm-apply" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
+        content += '</div>';
+        
+        // Hidden file input for import
+        content += '<input type="file" id="stmb-pm-import-file" accept=".json" style="display: none;" />';
+        
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
+            okButton: false,
+            cancelButton: 'Close'
+        });
+        
+        await popup.show();
+        
+        // Setup event handlers
+        setupPromptManagerEventHandlers(popup);
+        
+    } catch (error) {
+        console.error('STMemoryBooks: Error showing prompt manager:', error);
+        toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
+    }
+}
+
+/**
+ * Setup event handlers for the prompt manager popup
+ */
+function setupPromptManagerEventHandlers(popup) {
+    const dlg = popup.dlg;
+    let selectedPresetKey = null;
+    
+    // Row selection
+    dlg.addEventListener('click', (e) => {
+        const row = e.target.closest('tr[data-preset-key]');
+        if (row) {
+            // Deselect all rows
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.style.backgroundColor = '';
+            });
+            
+            // Select this row
+            row.style.backgroundColor = 'var(--SmartThemeBlurTintColor)';
+            selectedPresetKey = row.dataset.presetKey;
+            
+            // Enable action buttons
+            dlg.querySelector('#stmb-pm-edit').disabled = false;
+            dlg.querySelector('#stmb-pm-duplicate').disabled = false;
+            dlg.querySelector('#stmb-pm-delete').disabled = false;
+            const applyBtn = dlg.querySelector('#stmb-pm-apply');
+            if (applyBtn) applyBtn.disabled = false;
+        }
+    });
+    
+    // Search functionality
+    const searchInput = dlg.querySelector('#stmb-prompt-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(row => {
+                const displayName = row.querySelector('td:first-child').textContent.toLowerCase();
+                row.style.display = displayName.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
+    // Button handlers
+    dlg.querySelector('#stmb-pm-new')?.addEventListener('click', async () => {
+        await createNewPreset(popup);
+    });
+    
+    dlg.querySelector('#stmb-pm-edit')?.addEventListener('click', async () => {
+        if (selectedPresetKey) {
+            await editPreset(popup, selectedPresetKey);
+        }
+    });
+    
+    dlg.querySelector('#stmb-pm-duplicate')?.addEventListener('click', async () => {
+        if (selectedPresetKey) {
+            await duplicatePreset(popup, selectedPresetKey);
+        }
+    });
+    
+    dlg.querySelector('#stmb-pm-delete')?.addEventListener('click', async () => {
+        if (selectedPresetKey) {
+            await deletePreset(popup, selectedPresetKey);
+        }
+    });
+    
+    dlg.querySelector('#stmb-pm-export')?.addEventListener('click', async () => {
+        await exportPrompts();
+    });
+    
+    dlg.querySelector('#stmb-pm-import')?.addEventListener('click', () => {
+        dlg.querySelector('#stmb-pm-import-file')?.click();
+    });
+    
+    dlg.querySelector('#stmb-pm-import-file')?.addEventListener('change', async (e) => {
+        await importPrompts(e, popup);
+    });
+
+    // Apply selected preset to current profile
+    dlg.querySelector('#stmb-pm-apply')?.addEventListener('click', async () => {
+        if (!selectedPresetKey) {
+            toastr.error('Select a preset first', 'STMemoryBooks');
+            return;
+        }
+        const settings = extension_settings?.STMemoryBooks;
+        if (!settings || !Array.isArray(settings.profiles) || settings.profiles.length === 0) {
+            toastr.error('No profiles available', 'STMemoryBooks');
+            return;
+        }
+
+        // Determine selected profile index from the main settings popup if available
+        let selectedIndex = settings.defaultProfile || 0;
+        if (currentPopupInstance?.dlg) {
+            const profileSelect = currentPopupInstance.dlg.querySelector('#stmb-profile-select');
+            if (profileSelect) {
+                const parsed = parseInt(profileSelect.value);
+                if (!isNaN(parsed)) selectedIndex = parsed;
+            }
+        }
+
+        const prof = settings.profiles[selectedIndex];
+        if (!prof) {
+            toastr.error('Selected profile not found', 'STMemoryBooks');
+            return;
+        }
+
+        // If the profile has a custom prompt, ask to clear it so the preset takes effect
+        if (prof.prompt && prof.prompt.trim()) {
+            const confirmPopup = new Popup(
+                '<h3>Clear Custom Prompt?</h3><p>This profile has a custom prompt. Clear it so the selected preset is used?</p>',
+                POPUP_TYPE.CONFIRM,
+                '',
+                { okButton: 'Clear and Apply', cancelButton: 'Cancel' }
+            );
+            const res = await confirmPopup.show();
+            if (res === POPUP_RESULT.AFFIRMATIVE) {
+                prof.prompt = '';
+            } else {
+                return;
+            }
+        }
+
+        // Apply preset and save
+        prof.preset = selectedPresetKey;
+        saveSettingsDebounced();
+        toastr.success('Preset applied to profile', 'STMemoryBooks');
+
+        // Refresh main settings popup if open
+        if (currentPopupInstance?.dlg) {
+            try { refreshPopupContent(); } catch (e) { /* noop */ }
+        }
+    });
+}
+
+/**
+ * Create a new preset
+ */
+async function createNewPreset(popup) {
+    const content = `
+        <h3>Create New Preset</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-pm-new-display-name">
+                <h4>Display Name:</h4>
+                <input type="text" id="stmb-pm-new-display-name" class="text_pole" placeholder="My Custom Preset" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-pm-new-prompt">
+                <h4>Prompt:</h4>
+                <textarea id="stmb-pm-new-prompt" class="text_pole textarea_compact" rows="10" placeholder="Enter your prompt here..."></textarea>
+            </label>
+        </div>
+    `;
+    
+    const editPopup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: 'Create',
+        cancelButton: 'Cancel'
+    });
+    
+    const result = await editPopup.show();
+    
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        const displayName = editPopup.dlg.querySelector('#stmb-pm-new-display-name').value.trim();
+        const prompt = editPopup.dlg.querySelector('#stmb-pm-new-prompt').value.trim();
+        
+        if (!prompt) {
+            toastr.error('Prompt cannot be empty', 'STMemoryBooks');
+            return;
+        }
+        
+        try {
+            await PromptManager.upsertPreset(null, prompt, displayName || null);
+            toastr.success('Preset created successfully', 'STMemoryBooks');
+            
+            // Refresh the manager popup
+            popup.completeAffirmative();
+            await showPromptManagerPopup();
+        } catch (error) {
+            console.error('STMemoryBooks: Error creating preset:', error);
+            toastr.error('Failed to create preset', 'STMemoryBooks');
+        }
+    }
+}
+
+/**
+ * Edit an existing preset
+ */
+async function editPreset(popup, presetKey) {
+    try {
+        const displayName = await PromptManager.getDisplayName(presetKey);
+        const prompt = await PromptManager.getPrompt(presetKey);
+        
+        const content = `
+            <h3>Edit Preset</h3>
+            <div class="world_entry_form_control">
+                <label for="stmb-pm-edit-display-name">
+                    <h4>Display Name:</h4>
+                    <input type="text" id="stmb-pm-edit-display-name" class="text_pole" value="${displayName}" />
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-pm-edit-prompt">
+                    <h4>Prompt:</h4>
+                    <textarea id="stmb-pm-edit-prompt" class="text_pole textarea_compact" rows="10">${prompt}</textarea>
+                </label>
+            </div>
+        `;
+        
+        const editPopup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            okButton: 'Save',
+            cancelButton: 'Cancel'
+        });
+        
+        const result = await editPopup.show();
+        
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            const newDisplayName = editPopup.dlg.querySelector('#stmb-pm-edit-display-name').value.trim();
+            const newPrompt = editPopup.dlg.querySelector('#stmb-pm-edit-prompt').value.trim();
+            
+            if (!newPrompt) {
+                toastr.error('Prompt cannot be empty', 'STMemoryBooks');
+                return;
+            }
+            
+            await PromptManager.upsertPreset(presetKey, newPrompt, newDisplayName || null);
+            toastr.success('Preset updated successfully', 'STMemoryBooks');
+            
+            // Refresh the manager popup
+            popup.completeAffirmative();
+            await showPromptManagerPopup();
+        }
+    } catch (error) {
+        console.error('STMemoryBooks: Error editing preset:', error);
+        toastr.error('Failed to edit preset', 'STMemoryBooks');
+    }
+}
+
+/**
+ * Duplicate a preset
+ */
+async function duplicatePreset(popup, presetKey) {
+    try {
+        const newKey = await PromptManager.duplicatePreset(presetKey);
+        toastr.success('Preset duplicated successfully', 'STMemoryBooks');
+        
+        // Refresh the manager popup
+        popup.completeAffirmative();
+        await showPromptManagerPopup();
+    } catch (error) {
+        console.error('STMemoryBooks: Error duplicating preset:', error);
+        toastr.error('Failed to duplicate preset', 'STMemoryBooks');
+    }
+}
+
+/**
+ * Delete a preset
+ */
+async function deletePreset(popup, presetKey) {
+    const displayName = await PromptManager.getDisplayName(presetKey);
+    
+    const confirmPopup = new Popup(
+        `<h3>Delete Preset</h3><p>Are you sure you want to delete "${displayName}"?</p>`,
+        POPUP_TYPE.CONFIRM,
+        '',
+        { okButton: 'Delete', cancelButton: 'Cancel' }
+    );
+    
+    const result = await confirmPopup.show();
+    
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        try {
+            await PromptManager.removePreset(presetKey);
+            toastr.success('Preset deleted successfully', 'STMemoryBooks');
+            
+            // Refresh the manager popup
+            popup.completeAffirmative();
+            await showPromptManagerPopup();
+        } catch (error) {
+            console.error('STMemoryBooks: Error deleting preset:', error);
+            toastr.error('Failed to delete preset', 'STMemoryBooks');
+        }
+    }
+}
+
+/**
+ * Export prompts to JSON
+ */
+async function exportPrompts() {
+    try {
+        const json = await PromptManager.exportToJSON();
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stmb-summary-prompts.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        toastr.success('Prompts exported successfully', 'STMemoryBooks');
+    } catch (error) {
+        console.error('STMemoryBooks: Error exporting prompts:', error);
+        toastr.error('Failed to export prompts', 'STMemoryBooks');
+    }
+}
+
+/**
+ * Import prompts from JSON
+ */
+async function importPrompts(event, popup) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+        const text = await file.text();
+        await PromptManager.importFromJSON(text);
+        toastr.success('Prompts imported successfully', 'STMemoryBooks');
+        
+        // Refresh the manager popup
+        popup.completeAffirmative();
+        await showPromptManagerPopup();
+    } catch (error) {
+        console.error('STMemoryBooks: Error importing prompts:', error);
+        toastr.error('Failed to import prompts: ' + error.message, 'STMemoryBooks');
+    }
+}
+
+/**
  * Show main settings popup
  */
 async function showSettingsPopup() {
     const settings = initializeSettings();
+    await PromptManager.firstRunInitIfMissing(settings);
     const sceneData = getSceneData();
     const selectedProfile = settings.profiles[settings.defaultProfile];
     const sceneMarkers = getSceneMarkers();
@@ -1342,7 +1779,7 @@ async function showSettingsPopup() {
                     temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                 },
             titleFormat: selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat),
-            effectivePrompt: getEffectivePrompt(selectedProfile)
+            effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await PromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
         }
     };
 
@@ -1548,7 +1985,7 @@ function setupSettingsEventListeners() {
                 }
                 // For title format, dynamic profiles use current settings, regular profiles use their own
                 if (summaryTitle) summaryTitle.textContent = selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat);
-                if (summaryPrompt) summaryPrompt.textContent = getEffectivePrompt(selectedProfile);
+                if (summaryPrompt) summaryPrompt.textContent = await getEffectivePromptAsync(selectedProfile);
             }
             return;
         }
@@ -1754,7 +2191,7 @@ function handleSettingsPopupClose(popup) {
 /**
  * Refresh popup content while preserving popup properties
  */
-function refreshPopupContent() {
+async function refreshPopupContent() {
     if (!currentPopupInstance || !currentPopupInstance.dlg.hasAttribute('open')) {
         return;
     }
@@ -1822,7 +2259,7 @@ function refreshPopupContent() {
                         temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                     },
                 titleFormat: selectedProfile.titleFormat || settings.titleFormat,
-                effectivePrompt: getEffectivePrompt(selectedProfile)
+                effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await PromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
             }
         };
         
