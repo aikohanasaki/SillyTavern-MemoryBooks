@@ -273,11 +273,14 @@ export async function listPresets() {
  */
 export async function getPrompt(key) {
     const data = await loadOverrides();
-    
+
     if (data.overrides[key]) {
-        return data.overrides[key].prompt || '';
+        const p = data.overrides[key].prompt;
+        if (typeof p === 'string' && p.trim()) {
+            return p;
+        }
     }
-    
+
     // Fallback to built-in
     return PRESET_PROMPTS[key] || DEFAULT_PROMPT;
 }

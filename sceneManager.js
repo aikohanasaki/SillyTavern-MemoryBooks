@@ -173,6 +173,8 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
 
 /**
  * Set scene marker with validation
+ * Returns a Promise that resolves immediately after state is committed to cache
+ * (The debounced save to disk happens asynchronously in the background)
  */
 export function setSceneMarker(messageId, type) {
     const markers = getSceneMarkers();
@@ -193,6 +195,9 @@ export function setSceneMarker(messageId, type) {
     // Persist to metadata and update DOM to match committed state
     saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
+    
+    // Return resolved Promise to signal that cache is updated and getSceneData() will work
+    return Promise.resolve();
 }
 
 /**
@@ -574,4 +579,3 @@ export function updateSceneStateCache() {
 export function getCurrentSceneState() {
     return { ...currentSceneState };
 }
-
