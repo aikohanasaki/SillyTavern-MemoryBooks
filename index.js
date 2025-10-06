@@ -1349,14 +1349,25 @@ async function showPromptManagerPopup() {
             content += '<div class="opacity50p" data-i18n="STMemoryBooks_PromptManager_NoPresets">No presets available</div>';
         } else {
             content += '<table style="width: 100%; border-collapse: collapse;">';
-            content += '<thead><tr><th style="text-align: left; padding: 8px;" data-i18n="STMemoryBooks_PromptManager_DisplayName">Display Name</th><th style="text-align: left; padding: 8px;" data-i18n="STMemoryBooks_PromptManager_DateCreated">Date Created</th></tr></thead>';
+            content += '<thead><tr><th data-i18n="STMemoryBooks_PromptManager_DisplayName">Display Name</th></tr></thead>';
             content += '<tbody>';
             
             for (const preset of presets) {
-                const dateStr = preset.createdAt ? new Date(preset.createdAt).toLocaleString() : 'Unknown';
                 content += `<tr data-preset-key="${preset.key}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">`;
-                content += `<td style="padding: 8px;">${escapeHtml(preset.displayName)}</td>`;
-                content += `<td style="padding: 8px;">${dateStr}</td>`;
+                content += `<td style="padding: 8px;">` +
+                           `<span class="stmb-preset-name">${escapeHtml(preset.displayName)}</span>` +
+                           `<span class="stmb-inline-actions" style="float: right; display: inline-flex; gap: 10px;">` +
+                               `<button class="stmb-action stmb-action-edit" title="Edit" aria-label="Edit" style="background:none;border:none;cursor:pointer;">` +
+                                   `<i class="fa-solid fa-pen"></i>` +
+                               `</button>` +
+                               `<button class="stmb-action stmb-action-duplicate" title="Duplicate" aria-label="Duplicate" style="background:none;border:none;cursor:pointer;">` +
+                                   `<i class="fa-solid fa-copy"></i>` +
+                               `</button>` +
+                               `<button class="stmb-action stmb-action-delete" title="Delete" aria-label="Delete" style="background:none;border:none;cursor:pointer;">` +
+                                   `<i class="fa-solid fa-trash"></i>` +
+                               `</button>` +
+                           `</span>` +
+                        `</td>`;
                 content += '</tr>';
             }
             
@@ -1368,19 +1379,14 @@ async function showPromptManagerPopup() {
         // Action buttons
         content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
         content += '<button id="stmb-pm-new" class="menu_button" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
-        content += '<button id="stmb-pm-edit" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_Edit">✏️ Edit</button>';
-        content += '<button id="stmb-pm-duplicate" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_Duplicate">📋 Duplicate</button>';
-        content += '<button id="stmb-pm-delete" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_Delete">🗑️ Delete</button>';
-        content += '</div>';
-        
-        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
         content += '<button id="stmb-pm-export" class="menu_button" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
         content += '<button id="stmb-pm-import" class="menu_button" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
-        content += '</div>';
-        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
         content += '<button id="stmb-pm-apply" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
         content += '</div>';
         
+        // Hint re: prompting
+        content += '<small>💡 When creating a new prompt, copy one of the other built-in prompts and then amend it. Don&apos;t change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.</small>';
+
         // Hidden file input for import
         content += '<input type="file" id="stmb-pm-import-file" accept=".json" style="display: none;" />';
         
@@ -1409,23 +1415,54 @@ function setupPromptManagerEventHandlers(popup) {
     const dlg = popup.dlg;
     let selectedPresetKey = null;
     
-    // Row selection
-    dlg.addEventListener('click', (e) => {
+    // Row selection and inline actions
+    dlg.addEventListener('click', async (e) => {
+        // Handle inline action icon buttons first
+        const actionBtn = e.target.closest('.stmb-action');
+        if (actionBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const row = actionBtn.closest('tr[data-preset-key]');
+            const key = row?.dataset.presetKey;
+            if (!key) return;
+
+            // Keep row visually selected using ST theme colors
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.classList.remove('ui-state-active');
+                r.style.backgroundColor = '';
+                r.style.border = '';
+            });
+            if (row) {
+                row.style.backgroundColor = 'var(--cobalt30a)';
+                row.style.border = '';
+                selectedPresetKey = key;
+            }
+            const applyBtn = dlg.querySelector('#stmb-pm-apply');
+            if (applyBtn) applyBtn.disabled = false;
+
+            if (actionBtn.classList.contains('stmb-action-edit')) {
+                await editPreset(popup, key);
+            } else if (actionBtn.classList.contains('stmb-action-duplicate')) {
+                await duplicatePreset(popup, key);
+            } else if (actionBtn.classList.contains('stmb-action-delete')) {
+                await deletePreset(popup, key);
+            }
+            return;
+        }
+
+        // Handle row selection
         const row = e.target.closest('tr[data-preset-key]');
         if (row) {
-            // Deselect all rows
             dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.classList.remove('ui-state-active');
                 r.style.backgroundColor = '';
+                r.style.border = '';
             });
             
-            // Select this row
-            row.style.backgroundColor = 'var(--SmartThemeBlurTintColor)';
+            row.style.backgroundColor = 'var(--cobalt30a)';
+            row.style.border = '';
             selectedPresetKey = row.dataset.presetKey;
-            
-            // Enable action buttons
-            dlg.querySelector('#stmb-pm-edit').disabled = false;
-            dlg.querySelector('#stmb-pm-duplicate').disabled = false;
-            dlg.querySelector('#stmb-pm-delete').disabled = false;
+
             const applyBtn = dlg.querySelector('#stmb-pm-apply');
             if (applyBtn) applyBtn.disabled = false;
         }
@@ -1573,6 +1610,8 @@ async function createNewPreset(popup) {
         try {
             await PromptManager.upsertPreset(null, prompt, displayName || null);
             toastr.success('Preset created successfully', 'STMemoryBooks');
+            // Notify other UIs about preset changes
+            window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
             
             // Refresh the manager popup
             popup.completeAffirmative();
@@ -1626,6 +1665,8 @@ async function editPreset(popup, presetKey) {
             
             await PromptManager.upsertPreset(presetKey, newPrompt, newDisplayName || null);
             toastr.success('Preset updated successfully', 'STMemoryBooks');
+            // Notify other UIs about preset changes
+            window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
             
             // Refresh the manager popup
             popup.completeAffirmative();
@@ -1644,6 +1685,8 @@ async function duplicatePreset(popup, presetKey) {
     try {
         const newKey = await PromptManager.duplicatePreset(presetKey);
         toastr.success('Preset duplicated successfully', 'STMemoryBooks');
+        // Notify other UIs about preset changes
+        window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
         
         // Refresh the manager popup
         popup.completeAffirmative();
@@ -1673,6 +1716,8 @@ async function deletePreset(popup, presetKey) {
         try {
             await PromptManager.removePreset(presetKey);
             toastr.success('Preset deleted successfully', 'STMemoryBooks');
+            // Notify other UIs about preset changes
+            window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
             
             // Refresh the manager popup
             popup.completeAffirmative();
@@ -1715,6 +1760,8 @@ async function importPrompts(event, popup) {
         const text = await file.text();
         await PromptManager.importFromJSON(text);
         toastr.success('Prompts imported successfully', 'STMemoryBooks');
+        // Notify other UIs about preset changes
+        window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
         
         // Refresh the manager popup
         popup.completeAffirmative();
