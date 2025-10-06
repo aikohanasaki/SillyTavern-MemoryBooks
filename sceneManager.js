@@ -3,6 +3,7 @@ import { saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { getCurrentMemoryBooksContext } from './utils.js';
 import { groups, editGroup } from '../../../group-chats.js';
+import { SCENE_MANAGEMENT } from './constants.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
@@ -122,7 +123,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     if (newStart !== null && newEnd === null) {
         // Start set, no end - all messages after start could be valid end points
         // Limit the range to avoid scanning thousands of messages
-        const maxScan = Math.min(newStart + 100, chat.length - 1);
+        const maxScan = Math.min(newStart + SCENE_MANAGEMENT.MAX_SCAN_RANGE, chat.length - 1);
         for (let i = newStart + 1; i <= maxScan; i++) {
             affectedIds.add(i);
         }
@@ -131,7 +132,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     if (newEnd !== null && newStart === null) {
         // End set, no start - all messages before end could be valid start points
         // Limit the range to avoid scanning thousands of messages  
-        const minScan = Math.max(newEnd - 100, 0);
+        const minScan = Math.max(newEnd - SCENE_MANAGEMENT.MAX_SCAN_RANGE, 0);
         for (let i = minScan; i < newEnd; i++) {
             affectedIds.add(i);
         }
@@ -140,7 +141,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     // Add messages that had valid-point classes in the old state but won't in the new state
     if (oldStart !== null && oldEnd === null && newStart !== null && newEnd !== null) {
         // Transitioning from "start only" to "complete scene" - need to clear valid-end-point from messages after newEnd
-        const maxScan = Math.min(oldStart + 100, chat.length - 1);
+        const maxScan = Math.min(oldStart + SCENE_MANAGEMENT.MAX_SCAN_RANGE, chat.length - 1);
         for (let i = newEnd + 1; i <= maxScan; i++) {
             affectedIds.add(i);
         }
@@ -148,7 +149,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     
     if (oldEnd !== null && oldStart === null && newStart !== null && newEnd !== null) {
         // Transitioning from "end only" to "complete scene" - need to clear valid-start-point from messages before newStart
-        const minScan = Math.max(oldEnd - 100, 0);
+        const minScan = Math.max(oldEnd - SCENE_MANAGEMENT.MAX_SCAN_RANGE, 0);
         for (let i = minScan; i < newStart; i++) {
             affectedIds.add(i);
         }
@@ -158,8 +159,8 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
         return { min: null, max: null, needsFullUpdate: false };
     }
     
-    // If we're affecting more than 200 messages, fall back to full update
-    if (affectedIds.size > 200) {
+    // If we're affecting more than MAX_AFFECTED_MESSAGES, fall back to full update
+    if (affectedIds.size > SCENE_MANAGEMENT.MAX_AFFECTED_MESSAGES) {
         return { needsFullUpdate: true };
     }
     
