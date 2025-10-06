@@ -1,8 +1,9 @@
 import { getRequestHeaders } from '../../../../script.js';
 import { PRESET_PROMPTS, DEFAULT_PROMPT } from './utils.js';
+import { FILE_NAMES, SCHEMA } from './constants.js';
 
 const MODULE_NAME = 'STMemoryBooks-SummaryPromptManager';
-const PROMPTS_FILE = 'stmb-summary-prompts.json';
+const PROMPTS_FILE = FILE_NAMES.PROMPTS_FILE;
 
 /**
  * In-memory cache of loaded overrides
@@ -15,6 +16,12 @@ let cachedOverrides = null;
  * @type {boolean}
  */
 let hasInitialized = false;
+
+/**
+ * Promise to track ongoing initialization
+ * @type {Promise|null}
+ */
+let initializationPromise = null;
 
 /**
  * Default display names for built-in presets
@@ -36,7 +43,7 @@ const DEFAULT_DISPLAY_NAMES = {
  */
 function toTitleCase(str) {
     return str.replace(/\w\S*/g, (txt) => {
-        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        return txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
     });
 }
 
@@ -111,7 +118,7 @@ async function loadOverrides() {
         if (!response.ok) {
             if (response.status === 404) {
                 console.log(`${MODULE_NAME}: Prompts file not found, using built-ins only`);
-                cachedOverrides = { version: 1, overrides: {} };
+                cachedOverrides = { version: SCHEMA.CURRENT_VERSION, overrides: {} };
                 return cachedOverrides;
             }
             throw new Error(`Failed to load prompts: ${response.statusText}`);
@@ -121,9 +128,9 @@ async function loadOverrides() {
         const data = JSON.parse(text);
         
         // Validate structure
-        if (!data.version || !data.overrides || typeof data.overrides !== 'object') {
+        if (!validatePromptsFile(data)) {
             console.warn(`${MODULE_NAME}: Invalid prompts file structure, using built-ins only`);
-            cachedOverrides = { version: 1, overrides: {} };
+            cachedOverrides = { version: SCHEMA.CURRENT_VERSION, overrides: {} };
             return cachedOverrides;
         }
         
@@ -131,7 +138,7 @@ async function loadOverrides() {
         return cachedOverrides;
     } catch (error) {
         console.error(`${MODULE_NAME}: Error loading overrides:`, error);
-        cachedOverrides = { version: 1, overrides: {} };
+        cachedOverrides = { version: SCHEMA.CURRENT_VERSION, overrides: {} };
         return cachedOverrides;
     }
 }
@@ -169,75 +176,135 @@ async function saveOverrides(doc) {
 }
 
 /**
+ * Validates the structure of a prompts file
+ * @param {Object} data - Data to validate
+ * @returns {boolean} True if valid
+ */
+function validatePromptsFile(data) {
+    if (!data || typeof data !== 'object') {
+        console.error(`${MODULE_NAME}: Invalid data type`);
+        return false;
+    }
+    
+    if (typeof data.version !== 'number') {
+        console.error(`${MODULE_NAME}: Invalid schema version type: ${data.version}`);
+        return false;
+    }
+    
+    if (data.version !== SCHEMA.CURRENT_VERSION) {
+        console.warn(`${MODULE_NAME}: Unexpected schema version: ${data.version} (expected ${SCHEMA.CURRENT_VERSION})`);
+    }
+    
+    if (!data.overrides || typeof data.overrides !== 'object') {
+        console.error(`${MODULE_NAME}: Missing or invalid overrides object`);
+        return false;
+    }
+    
+    // Validate each override entry
+    for (const [key, override] of Object.entries(data.overrides)) {
+        if (!override || typeof override !== 'object') {
+            console.error(`${MODULE_NAME}: Invalid override entry for key: ${key}`);
+            return false;
+        }
+        
+        if (typeof override.prompt !== 'string' || !override.prompt.trim()) {
+            console.error(`${MODULE_NAME}: Invalid or empty prompt for key: ${key}`);
+            return false;
+        }
+        
+        if (override.displayName !== undefined && typeof override.displayName !== 'string') {
+            console.error(`${MODULE_NAME}: Invalid displayName for key: ${key}`);
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
  * Performs first-run initialization if needed
+ * Uses promise-based locking to prevent race conditions
  * @param {Object} settings - Extension settings
  * @returns {Promise<boolean>} True if initialization was performed
  */
 export async function firstRunInitIfMissing(settings) {
+    // If already initialized, return immediately
     if (hasInitialized) {
         return false;
     }
     
-    hasInitialized = true;
-    
-    try {
-        // Check if file exists
-        const response = await fetch(`/user/files/${PROMPTS_FILE}`, {
-            method: 'GET',
-            credentials: 'include',
-            headers: getRequestHeaders(),
-        });
-        
-        if (response.ok) {
-            // File already exists
-            return false;
-        }
-        
-        console.log(`${MODULE_NAME}: Performing first-run initialization`);
-        
-        // Build initial document with all built-ins
-        const overrides = {};
-        const now = new Date().toISOString();
-        
-        // Add all built-in presets
-        for (const [key, prompt] of Object.entries(PRESET_PROMPTS)) {
-            overrides[key] = {
-                displayName: DEFAULT_DISPLAY_NAMES[key] || toTitleCase(key),
-                prompt: prompt,
-                createdAt: now,
-            };
-        }
-        
-        // Scan profiles for custom prompts
-        if (settings && settings.profiles && Array.isArray(settings.profiles)) {
-            for (const profile of settings.profiles) {
-                if (profile.prompt && profile.prompt.trim()) {
-                    const displayName = `Custom: ${profile.name || 'Unnamed Profile'}`;
-                    const key = generateUniqueKey(displayName, overrides);
-                    
-                    overrides[key] = {
-                        displayName: displayName,
-                        prompt: profile.prompt,
-                        createdAt: now,
-                    };
-                    
-                    console.log(`${MODULE_NAME}: Migrated custom prompt from profile "${profile.name}" as "${key}"`);
-                }
-            }
-        }
-        
-        const doc = {
-            version: 1,
-            overrides: overrides,
-        };
-        
-        await saveOverrides(doc);
-        toastr.success('Summary prompts initialized. You can now manage them via the Summary Prompt Manager.', 'STMemoryBooks');
-        return true;
-    } catch (error) {
-        console.error(`${MODULE_NAME}: Error during first-run initialization:`, error);
+    // If initialization is in progress, wait for it
+    if (initializationPromise) {
+        await initializationPromise;
         return false;
     }
+    
+    // Start initialization and store the promise
+    initializationPromise = (async () => {
+        try {
+            // Check if file exists
+            const response = await fetch(`/user/files/${PROMPTS_FILE}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: getRequestHeaders(),
+            });
+            
+            if (response.ok) {
+                // File already exists
+                return false;
+            }
+            
+            console.log(`${MODULE_NAME}: Performing first-run initialization`);
+            
+            // Build initial document with all built-ins
+            const overrides = {};
+            const now = new Date().toISOString();
+            
+            // Add all built-in presets
+            for (const [key, prompt] of Object.entries(PRESET_PROMPTS)) {
+                overrides[key] = {
+                    displayName: DEFAULT_DISPLAY_NAMES[key] || toTitleCase(key),
+                    prompt: prompt,
+                    createdAt: now,
+                };
+            }
+            
+            // Scan profiles for custom prompts
+            if (settings && settings.profiles && Array.isArray(settings.profiles)) {
+                for (const profile of settings.profiles) {
+                    if (profile.prompt && profile.prompt.trim()) {
+                        const displayName = `Custom: ${profile.name || 'Unnamed Profile'}`;
+                        const key = generateUniqueKey(displayName, overrides);
+                        
+                        overrides[key] = {
+                            displayName: displayName,
+                            prompt: profile.prompt,
+                            createdAt: now,
+                        };
+                        
+                        console.log(`${MODULE_NAME}: Migrated custom prompt from profile "${profile.name}" as "${key}"`);
+                    }
+                }
+            }
+            
+            const doc = {
+                version: SCHEMA.CURRENT_VERSION,
+                overrides: overrides,
+            };
+            
+            await saveOverrides(doc);
+            toastr.success('Summary prompts initialized. You can now manage them via the Summary Prompt Manager.', 'STMemoryBooks');
+            return true;
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Error during first-run initialization:`, error);
+            return false;
+        } finally {
+            hasInitialized = true;
+            initializationPromise = null;
+        }
+    })();
+    
+    return await initializationPromise;
 }
 
 /**
@@ -405,9 +472,9 @@ export async function importFromJSON(jsonString) {
     try {
         const data = JSON.parse(jsonString);
         
-        // Validate structure
-        if (!data.version || !data.overrides || typeof data.overrides !== 'object') {
-            throw new Error('Invalid prompts file structure');
+        // Validate structure using the validation function
+        if (!validatePromptsFile(data)) {
+            throw new Error('Invalid prompts file structure - see console for details');
         }
         
         await saveOverrides(data);

@@ -19,6 +19,7 @@ import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup }
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
 import * as PromptManager from './summaryPromptManager.js';
+import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
  */
@@ -172,7 +173,7 @@ function initializeChatObserver() {
                 } catch (error) {
                     console.error('STMemoryBooks: Error updating button states:', error);
                 }
-            }, 50);
+            }, UI_SETTINGS.CHAT_OBSERVER_DEBOUNCE_MS);
         }
     });
 
@@ -213,7 +214,7 @@ function handleChatChanged() {
         } catch (error) {
             console.error('STMemoryBooks: Error processing messages after chat change:', error);
         }
-    }, 50);
+    }, UI_SETTINGS.CHAT_OBSERVER_DEBOUNCE_MS);
 }
 
 /**
@@ -237,7 +238,7 @@ function validateAndCleanupSceneMarkers() {
 
 async function handleMessageReceived() {
     try {
-        setTimeout(validateSceneMarkers, 500);
+        setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
         await handleAutoSummaryMessageReceived();
     } catch (error) {
         console.error('STMemoryBooks: Error in handleMessageReceived:', error);
@@ -246,7 +247,7 @@ async function handleMessageReceived() {
 
 async function handleGroupWrapperFinished() {
     try {
-        setTimeout(validateSceneMarkers, 500);
+        setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
         await handleAutoSummaryGroupFinished();
     } catch (error) {
         console.error('STMemoryBooks: Error in handleGroupWrapperFinished:', error);
@@ -751,7 +752,7 @@ function isRetryableError(error) {
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     currentProfile = profileSettings;
-    const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
+    const maxRetries = MEMORY_GENERATION.MAX_RETRIES;
 
     try {
         // Create and compile scene first
@@ -864,10 +865,19 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         if (!addResult.success) {
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
         }
-
+        
+        // Update auto-summary baseline so the next trigger starts after this scene
+        try {
+            const stmbData = getSceneMarkers() || {};
+            stmbData.highestMemoryProcessed = sceneData.sceneEnd;
+            saveMetadataForCurrentContext();
+        } catch (e) {
+            console.warn('STMemoryBooks: Failed to update highestMemoryProcessed baseline:', e);
+        }
+        
         // Clear auto-summary state after successful memory creation
         clearAutoSummaryState();
-
+        
         // Success notification
         const contextMsg = memoryFetchResult.actualCount > 0 ?
             ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
@@ -885,12 +895,12 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         
         if (shouldRetry) {
             // Show retry notification and attempt again
-            toastr.warning(`Memory creation failed (attempt ${retryCount + 1}). Retrying in 2 seconds...`, 'STMemoryBooks', {
+            toastr.warning(`Memory creation failed (attempt ${retryCount + 1}). Retrying in ${Math.round(MEMORY_GENERATION.RETRY_DELAY_MS / 1000)} seconds...`, 'STMemoryBooks', {
                 timeOut: 3000
             });
             
-            // Wait 2 seconds before retrying
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, MEMORY_GENERATION.RETRY_DELAY_MS));
             
             // Recursive retry
             return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount + 1);

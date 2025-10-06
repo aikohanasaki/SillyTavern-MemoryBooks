@@ -250,8 +250,7 @@ export async function handleAutoSummaryGroupFinished() {
  */
 export function clearAutoSummaryState() {
     if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
+        // Clear scene markers; baseline is updated upon successful memory creation
         clearScene();
-        // RESET auto-summary count so it starts fresh from this point
-        saveMetadataForCurrentContext('autoSummaryLastMessageCount', chat.length);
     }
 }
