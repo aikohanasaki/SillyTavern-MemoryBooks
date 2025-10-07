@@ -103,44 +103,71 @@ function generateUniqueKey(baseName, existingOverrides) {
  * Loads overrides from the server
  * @returns {Promise<Object>} Overrides document
  */
-async function loadOverrides() {
+async function loadOverrides(settings = null) {
     if (cachedOverrides) {
         return cachedOverrides;
     }
-    
+    let mustWrite = false;
+    let data = null;
+
     try {
         const response = await fetch(`/user/files/${PROMPTS_FILE}`, {
             method: 'GET',
             credentials: 'include',
             headers: getRequestHeaders(),
         });
-        
+
         if (!response.ok) {
-            if (response.status === 404) {
-                console.log(`${MODULE_NAME}: Prompts file not found, using built-ins only`);
-                cachedOverrides = { version: SCHEMA.CURRENT_VERSION, overrides: {} };
-                return cachedOverrides;
+            // File does not exist. Always create with built-ins (and migrate legacy custom prompts)
+            mustWrite = true;
+        } else {
+            const text = await response.text();
+            data = JSON.parse(text);
+            if (!validatePromptsFile(data)) {
+                // Corrupt or invalid, overwrite with built-ins
+                mustWrite = true;
             }
-            throw new Error(`Failed to load prompts: ${response.statusText}`);
         }
-        
-        const text = await response.text();
-        const data = JSON.parse(text);
-        
-        // Validate structure
-        if (!validatePromptsFile(data)) {
-            console.warn(`${MODULE_NAME}: Invalid prompts file structure, using built-ins only`);
-            cachedOverrides = { version: SCHEMA.CURRENT_VERSION, overrides: {} };
-            return cachedOverrides;
-        }
-        
-        cachedOverrides = data;
-        return cachedOverrides;
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error loading overrides:`, error);
-        cachedOverrides = { version: SCHEMA.CURRENT_VERSION, overrides: {} };
-        return cachedOverrides;
+        // On any error, create file
+        mustWrite = true;
     }
+
+    if (mustWrite) {
+        const overrides = {};
+        const now = new Date().toISOString();
+        // Add all built-in presets
+        for (const [key, prompt] of Object.entries(PRESET_PROMPTS)) {
+            overrides[key] = {
+                displayName: DEFAULT_DISPLAY_NAMES[key] || toTitleCase(key),
+                prompt: prompt,
+                createdAt: now,
+            };
+        }
+        // Scan profiles for custom prompts (legacy migration, optional)
+        if (settings && settings.profiles && Array.isArray(settings.profiles)) {
+            for (const profile of settings.profiles) {
+                if (profile.prompt && profile.prompt.trim()) {
+                    const displayName = `Custom: ${profile.name || 'Unnamed Profile'}`;
+                    const key = generateUniqueKey(displayName, overrides);
+                    overrides[key] = {
+                        displayName: displayName,
+                        prompt: profile.prompt,
+                        createdAt: now,
+                    };
+                    console.log(`${MODULE_NAME}: Migrated custom prompt from profile "${profile.name}" as "${key}"`);
+                }
+            }
+        }
+        data = {
+            version: SCHEMA.CURRENT_VERSION,
+            overrides: overrides,
+        };
+        await saveOverrides(data);
+    }
+
+    cachedOverrides = data;
+    return cachedOverrides;
 }
 
 /**
@@ -228,91 +255,19 @@ function validatePromptsFile(data) {
  * @returns {Promise<boolean>} True if initialization was performed
  */
 export async function firstRunInitIfMissing(settings) {
-    // If already initialized, return immediately
-    if (hasInitialized) {
-        return false;
-    }
-    
-    // If initialization is in progress, wait for it
-    if (initializationPromise) {
-        await initializationPromise;
-        return false;
-    }
-    
-    // Start initialization and store the promise
-    initializationPromise = (async () => {
-        try {
-            // Check if file exists
-            const response = await fetch(`/user/files/${PROMPTS_FILE}`, {
-                method: 'GET',
-                credentials: 'include',
-                headers: getRequestHeaders(),
-            });
-            
-            if (response.ok) {
-                // File already exists
-                return false;
-            }
-            
-            console.log(`${MODULE_NAME}: Performing first-run initialization`);
-            
-            // Build initial document with all built-ins
-            const overrides = {};
-            const now = new Date().toISOString();
-            
-            // Add all built-in presets
-            for (const [key, prompt] of Object.entries(PRESET_PROMPTS)) {
-                overrides[key] = {
-                    displayName: DEFAULT_DISPLAY_NAMES[key] || toTitleCase(key),
-                    prompt: prompt,
-                    createdAt: now,
-                };
-            }
-            
-            // Scan profiles for custom prompts
-            if (settings && settings.profiles && Array.isArray(settings.profiles)) {
-                for (const profile of settings.profiles) {
-                    if (profile.prompt && profile.prompt.trim()) {
-                        const displayName = `Custom: ${profile.name || 'Unnamed Profile'}`;
-                        const key = generateUniqueKey(displayName, overrides);
-                        
-                        overrides[key] = {
-                            displayName: displayName,
-                            prompt: profile.prompt,
-                            createdAt: now,
-                        };
-                        
-                        console.log(`${MODULE_NAME}: Migrated custom prompt from profile "${profile.name}" as "${key}"`);
-                    }
-                }
-            }
-            
-            const doc = {
-                version: SCHEMA.CURRENT_VERSION,
-                overrides: overrides,
-            };
-            
-            await saveOverrides(doc);
-            toastr.success('Summary prompts initialized. You can now manage them via the Summary Prompt Manager.', 'STMemoryBooks');
-            return true;
-        } catch (error) {
-            console.error(`${MODULE_NAME}: Error during first-run initialization:`, error);
-            return false;
-        } finally {
-            hasInitialized = true;
-            initializationPromise = null;
-        }
-    })();
-    
-    return await initializationPromise;
+    // Always call loadOverrides to guarantee file existence and built-ins
+    await loadOverrides(settings);
+    hasInitialized = true;
+    initializationPromise = null;
+    return true;
 }
 
 /**
  * Lists all available presets
  * @returns {Promise<Array>} Array of preset objects with key, displayName, createdAt
  */
-export async function listPresets() {
-    const data = await loadOverrides();
+export async function listPresets(settings = null) {
+    const data = await loadOverrides(settings);
     const presets = [];
     
     for (const [key, preset] of Object.entries(data.overrides)) {
@@ -338,8 +293,8 @@ export async function listPresets() {
  * @param {string} key - Preset key
  * @returns {Promise<string>} Prompt text
  */
-export async function getPrompt(key) {
-    const data = await loadOverrides();
+export async function getPrompt(key, settings = null) {
+    const data = await loadOverrides(settings);
 
     if (data.overrides[key]) {
         const p = data.overrides[key].prompt;
@@ -357,8 +312,8 @@ export async function getPrompt(key) {
  * @param {string} key - Preset key
  * @returns {Promise<string>} Display name
  */
-export async function getDisplayName(key) {
-    const data = await loadOverrides();
+export async function getDisplayName(key, settings = null) {
+    const data = await loadOverrides(settings);
     
     if (data.overrides[key] && data.overrides[key].displayName) {
         return data.overrides[key].displayName;
@@ -373,8 +328,8 @@ export async function getDisplayName(key) {
  * @param {string} key - Preset key
  * @returns {Promise<boolean>} True if preset exists
  */
-export async function isValid(key) {
-    const data = await loadOverrides();
+export async function isValid(key, settings = null) {
+    const data = await loadOverrides(settings);
     return !!(data.overrides[key] || PRESET_PROMPTS[key]);
 }
 

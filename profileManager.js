@@ -4,8 +4,6 @@ import { moment, Handlebars, DOMPurify } from '../../../../lib.js';
 import {
     validateProfile,
     generateSafeProfileName,
-    formatPresetDisplayName,
-    getPresetNames,
     getCurrentApiInfo,
     createProfileObject
 } from './utils.js';
