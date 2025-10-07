@@ -319,7 +319,6 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     markers.sceneEnd = endId;
 
     saveMetadataForCurrentContext();
-    updateAffectedButtonStates(oldStart, oldEnd, startId, endId);
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
