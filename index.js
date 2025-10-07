@@ -256,48 +256,6 @@ async function handleGroupWrapperFinished() {
 }
 
 /**
- * Debug function to manually check auto-summary status
- * Call this from browser console: window.STMemoryBooks_debugAutoSummary()
- */
-window.STMemoryBooks_debugAutoSummary = function() {
-    const settings = extension_settings.STMemoryBooks;
-    const stmbData = getSceneMarkers() || {};
-    const currentMessageCount = chat.length;
-    const currentLastMessage = currentMessageCount - 1;
-    const requiredInterval = settings.moduleSettings.autoSummaryInterval;
-    const highestProcessed = stmbData.highestMemoryProcessed ?? null;
-
-    console.log('=== STMemoryBooks Auto-Summary Debug ===');
-    console.log('Auto-summary enabled:', settings.moduleSettings.autoSummaryEnabled);
-    console.log('Current message count:', currentMessageCount);
-    console.log('Current last message index:', currentLastMessage);
-    console.log('Required interval:', requiredInterval);
-    console.log('Highest processed:', highestProcessed);
-    console.log('Scene markers:', { start: stmbData.sceneStart, end: stmbData.sceneEnd });
-    console.log('Processing memory flag:', isProcessingMemory);
-
-    if (highestProcessed !== null) {
-        const messagesSince = currentLastMessage - highestProcessed;
-        console.log('Messages since last memory:', messagesSince);
-        console.log('Should trigger:', messagesSince >= requiredInterval);
-    } else {
-        console.log('No previous memories - total messages:', currentMessageCount);
-        console.log('Should trigger:', currentMessageCount >= requiredInterval);
-    }
-
-    console.log('Chat metadata STMemoryBooks:', chat_metadata?.STMemoryBooks);
-    console.log('Chat bound lorebook:', chat_metadata?.[METADATA_KEY]);
-    console.log('Available world_names:', world_names);
-    console.log('Manual mode enabled:', settings.moduleSettings.manualModeEnabled);
-    console.log('=========================================');
-
-    // Manually trigger check
-    console.log('Manually triggering auto-summary check...');
-    checkAutoSummaryTrigger();
-};
-
-
-/**
  * Slash command handlers
  */
 function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
@@ -352,16 +310,23 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    // Set new scene markers (automatically overrides any existing markers)
-    // Wait for both markers to be set before proceeding
-    await setSceneMarker(startId, 'start');
-    await setSceneMarker(endId, 'end');
+    // Atomically set both scene markers for /scenememory
+    const markers = getSceneMarkers();
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;
+
+    markers.sceneStart = startId;
+    markers.sceneEnd = endId;
+    currentSceneState.start = startId;
+    currentSceneState.end = endId;
+
+    saveMetadataForCurrentContext();
+    updateAffectedButtonStates(oldStart, oldEnd, startId, endId);
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
     toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
     
-    // Now that markers are guaranteed to be set, initiate memory creation immediately
     initiateMemoryCreation();
 
     return '';

@@ -563,7 +563,7 @@ export function getPresetPrompt(presetName) {
 
 /**
  * Get effective prompt from profile
- * Determines whether to use custom prompt, preset, or default
+ * Uses ONLY the preset key: built-in or user-defined prompts must be selected as presets.
  * @param {Object} profile - Profile object
  * @returns {string} The effective prompt to use
  */
@@ -571,10 +571,8 @@ export function getEffectivePrompt(profile) {
     if (!profile) {
         return DEFAULT_PROMPT;
     }
-    
-    if (profile.prompt && profile.prompt.trim()) {
-        return profile.prompt;
-    } else if (profile.preset) {
+
+    if (profile.preset) {
         return getPresetPrompt(profile.preset);
     } else {
         return DEFAULT_PROMPT;
