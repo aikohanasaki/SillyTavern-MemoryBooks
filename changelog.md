@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v4.3.2 (October 2025)
+- **Bug Fixes:** 
+  - introduced new bug to /scenememory that I had to fix
+
 ## v4.3.1 (October 2025)
 - **Bug Fixes:** 
   - fix custom prompt manager not reading from stmb-summary-prompts.json

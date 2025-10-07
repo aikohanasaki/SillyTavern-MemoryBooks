@@ -317,8 +317,6 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 
     markers.sceneStart = startId;
     markers.sceneEnd = endId;
-    currentSceneState.start = startId;
-    currentSceneState.end = endId;
 
     saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, startId, endId);
