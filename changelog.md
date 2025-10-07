@@ -2,6 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v4.3.1 (October 2025)
+- **Bug Fixes:** 
+  - fix custom prompt manager not reading from stmb-summary-prompts.json
+  - trying to fix scene memory AGAIN.
+
 ## v4.3.0 (October 2025)
 - **Feature:** Added "Summary Prompt Manager" — a UI and backend system to create, edit, duplicate, delete, import, and export summary prompt presets. Presets control summary generation and can be assigned per profile.
     - Access via settings (“🧩 Summary Prompt Manager” button).
