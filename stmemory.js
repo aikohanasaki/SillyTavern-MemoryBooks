@@ -1,5 +1,5 @@
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo, isValidPreset } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
@@ -530,11 +530,11 @@ function validateInputs(compiledScene, profile) {
         throw new Error('Invalid or empty compiled scene data provided.');
     }
 
-    // profile must have a non-empty prompt OR a valid preset
+    // profile must have a non-empty prompt OR a preset key
     const hasPrompt = typeof profile?.prompt === 'string' && profile.prompt.trim().length > 0;
-    const hasValidPreset = typeof profile?.preset === 'string' && isValidPreset(profile.preset);
+    const hasPreset = typeof profile?.preset === 'string' && profile.preset.trim().length > 0;
 
-    if (!hasPrompt && !hasValidPreset) {
+    if (!hasPrompt && !hasPreset) {
         throw new InvalidProfileError('Invalid profile configuration. You must set either a custom prompt or a valid preset.');
     }
 }
@@ -624,7 +624,7 @@ async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
     
     // Use utils.js to get the effective prompt (now designed for JSON output)
-    const systemPrompt = getEffectivePrompt(profile);
+    const systemPrompt = await getEffectivePrompt(profile);
     
     // Use substituteParams to allow for standard macros like {{char}} and {{user}}
     const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);

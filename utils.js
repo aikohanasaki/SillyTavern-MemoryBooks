@@ -4,6 +4,7 @@ import { selected_group, groups } from '../../../group-chats.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
+import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
@@ -229,12 +230,7 @@ export function getCurrentMemoryBooksContext() {
             const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() || 0.7);
             
             // Get model using the same method as ModelTempLocks
-            let currentModel = '';
-            if (currentApiInfo.completionSource === 'custom') {
-                currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
-            } else {
-                currentModel = $(apiSelectors.model).val() || '';
-            }
+            let currentModel = $(apiSelectors.model).val() || '';
             
             modelSettings = {
                 api: currentApiInfo.api,
@@ -553,27 +549,26 @@ export const DEFAULT_PROMPT = 'Analyze the following chat scene and return a mem
                               'Return ONLY the JSON, no other text.';
 
 /**
- * Get preset prompt based on preset name
+ * Get preset prompt based on preset name (async, supports custom/user presets)
  * @param {string} presetName - Name of the preset
- * @returns {string} The prompt text
+ * @returns {Promise<string>} The prompt text
  */
-export function getPresetPrompt(presetName) {
-    return PRESET_PROMPTS[presetName] || DEFAULT_PROMPT;
+export async function getPresetPrompt(presetName) {
+    return await getCustomPresetPrompt(presetName);
 }
 
 /**
  * Get effective prompt from profile
- * Uses ONLY the preset key: built-in or user-defined prompts must be selected as presets.
+ * Always uses the preset key: built-in or user-defined prompts must be selected as presets.
  * @param {Object} profile - Profile object
- * @returns {string} The effective prompt to use
+ * @returns {Promise<string>} The effective prompt to use
  */
-export function getEffectivePrompt(profile) {
+export async function getEffectivePrompt(profile) {
     if (!profile) {
         return DEFAULT_PROMPT;
     }
-
     if (profile.preset) {
-        return getPresetPrompt(profile.preset);
+        return await getCustomPresetPrompt(profile.preset);
     } else {
         return DEFAULT_PROMPT;
     }

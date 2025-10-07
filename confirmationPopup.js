@@ -22,7 +22,7 @@ const STMB_POPUP_RESULTS = {
 export async function showConfirmationPopup(sceneData, settings, currentModelSettings, currentApiInfo, chat_metadata, selectedProfileIndex = null) {
     const profileIndex = selectedProfileIndex !== null ? selectedProfileIndex : settings.defaultProfile;
     const selectedProfile = settings.profiles[profileIndex];
-    const effectivePrompt = getEffectivePrompt(selectedProfile);    
+    const effectivePrompt = await getEffectivePrompt(selectedProfile);    
     const templateData = {
         ...sceneData,
         profileName: selectedProfile.name,
@@ -102,7 +102,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     // Get available memories count
     const availableMemories = await getAvailableMemoriesCount(settings, chat_metadata);
     
-    const effectivePrompt = getEffectivePrompt(selectedProfile);
+    const effectivePrompt = await getEffectivePrompt(selectedProfile);
     const profileModel = selectedProfile.connection?.model || 'Current SillyTavern model';
     const profileTemperature = selectedProfile.connection?.temperature !== undefined ? 
         selectedProfile.connection.temperature : 'Current SillyTavern temperature';
@@ -299,12 +299,12 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
     popupElement.querySelector('#stmb-effective-prompt-advanced')?.addEventListener('input', checkForChanges);
     popupElement.querySelector('#stmb-context-memories-advanced')?.addEventListener('change', checkForChanges);
     popupElement.querySelector('#stmb-override-settings-advanced')?.addEventListener('change', checkForChanges);
-    popupElement.querySelector('#stmb-profile-select-advanced')?.addEventListener('change', (e) => {
+    popupElement.querySelector('#stmb-profile-select-advanced')?.addEventListener('change', async (e) => {
         const newProfileIndex = parseInt(e.target.value);
         const newProfile = settings.profiles[newProfileIndex];
         
         // Update effective prompt
-        const newEffectivePrompt = getEffectivePrompt(newProfile);
+        const newEffectivePrompt = await getEffectivePrompt(newProfile);
         popupElement.querySelector('#stmb-effective-prompt-advanced').value = newEffectivePrompt;
         
         // Update profile settings display
