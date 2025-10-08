@@ -235,10 +235,10 @@ export const settingsTemplate = Handlebars.compile(`
             <!-- Profile buttons will be dynamically inserted here -->
         </div>
 
-        <h4 data-i18n="STMemoryBooks_ImportExportProfiles">Import/Export Profiles:</h4>
+        <h4 data-i18n="STMemoryBooks_extraFunctionButtons">Extra Function Buttons:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-        <div class="flex-container marginTop5" id="stmb-import-export-buttons" style="justify-content: center;">
-            <!-- Import/Export buttons will be dynamically inserted here -->
+        <div class="flex-container marginTop5" id="stmb-extra-function-buttons" style="justify-content: center;">
+            <!-- extra function buttons will be dynamically inserted here -->
         </div>
 `);
 

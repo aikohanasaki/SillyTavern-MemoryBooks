@@ -108,7 +108,7 @@ export const localeData_en = {
     'STMemoryBooks_Temperature': 'Temperature',
     'STMemoryBooks_ViewPrompt': 'View Prompt',
     'STMemoryBooks_ProfileActions': 'Profile Actions:',
-    'STMemoryBooks_ImportExportProfiles': 'Import/Export Profiles:',
+    'STMemoryBooks_extraFunctionButtons': 'Import/Export Profiles:',
 
     // Confirmation Popup
     'STMemoryBooks_CreateMemory': 'Create Memory',
