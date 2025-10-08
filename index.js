@@ -1082,7 +1082,7 @@ function populateInlineButtons() {
     // Get all button containers
     const manualLorebookContainer = currentPopupInstance.content.querySelector('#stmb-manual-lorebook-buttons');
     const profileButtonsContainer = currentPopupInstance.content.querySelector('#stmb-profile-buttons');
-    const importExportContainer = currentPopupInstance.content.querySelector('#stmb-import-export-buttons');
+    const extraFunctionContainer = currentPopupInstance.content.querySelector('#stmb-extra-function-buttons');
 
     // Populate manual lorebook buttons if container exists and manual mode is enabled
     if (manualLorebookContainer && settings.moduleSettings.manualModeEnabled) {
@@ -1142,7 +1142,7 @@ function populateInlineButtons() {
         });
     }
 
-    if (!profileButtonsContainer || !importExportContainer) return;
+    if (!profileButtonsContainer || !extraFunctionContainer) return;
 
     // Create profile action buttons
     const profileButtons = [
@@ -1218,8 +1218,8 @@ function populateInlineButtons() {
         }
     ];
 
-    // Create import/export buttons
-    const importExportButtons = [
+    // Create additional function buttons
+    const extraFunctionButtons = [
         {
             text: '📤 Export Profiles',
             id: 'stmb-export-profiles',
@@ -1258,7 +1258,7 @@ function populateInlineButtons() {
 
     // Clear containers and populate with buttons
     profileButtonsContainer.innerHTML = '';
-    importExportContainer.innerHTML = '';
+    extraFunctionContainer.innerHTML = '';
 
     // Add profile action buttons
     profileButtons.forEach(buttonConfig => {
@@ -1270,14 +1270,14 @@ function populateInlineButtons() {
         profileButtonsContainer.appendChild(button);
     });
 
-    // Add import/export buttons
-    importExportButtons.forEach(buttonConfig => {
+    // Add Extra Function Buttons buttons
+    extraFunctionButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
         button.className = 'menu_button interactable';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
-        importExportContainer.appendChild(button);
+        extraFunctionContainer.appendChild(button);
     });
 }
 
