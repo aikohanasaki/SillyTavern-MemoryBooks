@@ -182,7 +182,11 @@ export const localeData_en = {
     'STMemoryBooks_OpenPromptManager': '🧩 Open Summary Prompt Manager',
     'STMemoryBooks_MoveToPreset': '📌 Move Current Custom Prompt to Preset',
     'STMemoryBooks_MoveToPresetConfirmTitle': 'Move to Preset',
-    'STMemoryBooks_MoveToPresetConfirmDesc': 'Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?'
+    'STMemoryBooks_MoveToPresetConfirmDesc': 'Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?',
+
+    // Side Prompts
+    'STMemoryBooks_SidePrompts_Title': '🧩 Side Prompts',
+    'STMemoryBooks_SidePrompts_Desc': 'Create and manage side prompts for trackers and other behind-the-scenes functions.'
 };
 
 /**

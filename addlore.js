@@ -827,3 +827,89 @@ function updateHighestMemoryProcessed(memoryResult) {
         console.error(`${MODULE_NAME}: Error updating highest memory processed:`, error);
     }
 }
+
+/**
+ * Get a lorebook entry by its comment/title (exact match).
+ * @param {Object} lorebookData
+ * @param {string} title
+ * @returns {Object|null}
+ */
+export function getEntryByTitle(lorebookData, title) {
+    if (!lorebookData || !lorebookData.entries || !title) return null;
+    const entries = Object.values(lorebookData.entries);
+    for (const entry of entries) {
+        if ((entry.comment || '') === title) {
+            return entry;
+        }
+    }
+    return null;
+}
+
+/**
+ * Upsert a lorebook entry by title. If exists, update content and optional metadata;
+ * otherwise create a new entry using provided defaults.
+ * This does NOT mark entries as STMemoryBooks memories.
+ *
+ * @param {string} lorebookName
+ * @param {Object} lorebookData
+ * @param {string} title
+ * @param {string} content
+ * @param {Object} options
+ * @param {Object} [options.defaults]  Defaults for new entries (vectorized, selective, order, position, etc.)
+ * @param {Object} [options.metadataUpdates]  Key/value pairs to set on entry (e.g., STMB_tracker_lastMsgId)
+ * @param {boolean} [options.refreshEditor=true]
+ * @returns {Promise<{uid:number, created:boolean}>}
+ */
+export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, title, content, options = {}) {
+    const {
+        defaults = {
+            vectorized: true,
+            selective: true,
+            order: 100,
+            position: 0,
+        },
+        metadataUpdates = {},
+        refreshEditor = true,
+    } = options;
+
+    if (!lorebookName || !lorebookData || !title) {
+        throw new Error('Invalid arguments to upsertLorebookEntryByTitle');
+    }
+
+    let entry = getEntryByTitle(lorebookData, title);
+    let created = false;
+
+    if (!entry) {
+        entry = createWorldInfoEntry(lorebookName, lorebookData);
+        if (!entry) {
+            throw new Error('Failed to create lorebook entry');
+        }
+        // Apply defaults for new entry
+        entry.vectorized = !!defaults.vectorized;
+        entry.selective = !!defaults.selective;
+        if (typeof defaults.order === 'number') entry.order = defaults.order;
+        if (typeof defaults.position === 'number') entry.position = defaults.position;
+
+        entry.key = entry.key || [];
+        entry.keysecondary = entry.keysecondary || [];
+        entry.disable = false;
+
+        created = true;
+    }
+
+    // Update core fields
+    entry.comment = title;
+    entry.content = content != null ? String(content) : '';
+
+    // Apply metadata updates
+    for (const [k, v] of Object.entries(metadataUpdates || {})) {
+        entry[k] = v;
+    }
+
+    await saveWorldInfo(lorebookName, lorebookData, true);
+    if (refreshEditor) {
+        reloadEditor(lorebookName);
+    }
+
+    return { uid: entry.uid, created };
+}

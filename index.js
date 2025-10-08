@@ -21,6 +21,8 @@ import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings,
 import { editGroup } from '../../../group-chats.js';
 import * as PromptManager from './summaryPromptManager.js';
 import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
+import { evaluateTrackers, runAfterMemory, runPlotUpdate, runScore } from './sidePrompts.js';
+import { showSidePromptsPopup } from './sidePromptsPopup.js';
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
  */
@@ -241,6 +243,7 @@ async function handleMessageReceived() {
     try {
         setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
         await handleAutoSummaryMessageReceived();
+        await evaluateTrackers();
     } catch (error) {
         console.error('STMemoryBooks: Error in handleMessageReceived:', error);
     }
@@ -250,6 +253,7 @@ async function handleGroupWrapperFinished() {
     try {
         setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
         await handleAutoSummaryGroupFinished();
+        await evaluateTrackers();
     } catch (error) {
         console.error('STMemoryBooks: Error in handleGroupWrapperFinished:', error);
     }
@@ -828,6 +832,13 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         if (!addResult.success) {
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
         }
+
+        // Run side prompts that are enabled to run with memories
+        try {
+            await runAfterMemory(compiledScene);
+        } catch (e) {
+            console.warn('STMemoryBooks: runAfterMemory failed:', e);
+        }
         
         // Update auto-summary baseline so the next trigger starts after this scene
         try {
@@ -1253,6 +1264,18 @@ function populateInlineButtons() {
                     toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
                 }
             }
+        },
+        {
+            text: '🎡 Side Prompts',
+            id: 'stmb-side-prompts',
+            action: async () => {
+                try {
+                    await showSidePromptsPopup();
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error opening Side Prompts:`, error);
+                    toastr.error('Failed to open Side Prompts', 'STMemoryBooks');
+                }
+            }
         }
     ];
 
@@ -1373,6 +1396,7 @@ async function showPromptManagerPopup() {
 /**
  * Setup event handlers for the prompt manager popup
  */
+
 function setupPromptManagerEventHandlers(popup) {
     const dlg = popup.dlg;
     let selectedPresetKey = null;
@@ -2364,9 +2388,41 @@ function registerSlashCommands() {
         helpString: 'Create memory from end of last memory to current message'
     });
 
+    const plotUpdateCmd = SlashCommand.fromProps({
+        name: 'plotupdate',
+        callback: (namedArgs, unnamedArgs) => {
+            return runPlotUpdate(unnamedArgs || '');
+        },
+        helpString: 'Run plotpoints for X-Y (e.g., /plotupdate 10-15)',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Message range (X-Y format)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true
+            })
+        ]
+    });
+
+    const scoreCmd = SlashCommand.fromProps({
+        name: 'score',
+        callback: (namedArgs, unnamedArgs) => {
+            return runScore(unnamedArgs || '');
+        },
+        helpString: 'Run scoreboard template by name (e.g., /score Factions)',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Template name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true
+            })
+        ]
+    });
+
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
+    SlashCommandParser.addCommandObject(plotUpdateCmd);
+    SlashCommandParser.addCommandObject(scoreCmd);
 }
 
 /**
