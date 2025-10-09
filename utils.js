@@ -398,10 +398,39 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
 /**
  * Get current model and temperature settings with comprehensive validation
  */
-export function getCurrentModelSettings() {
+export function getCurrentModelSettings(profile) {
+    try {
+        if (!profile) {
+            throw new Error('getCurrentModelSettings requires a profile');
+        }
+        const conn = profile.effectiveConnection || profile.connection;
+        if (!conn) {
+            throw new Error('Profile is missing connection');
+        }
+        const model = (conn.model || '').trim();
+        if (!model) {
+            throw new Error('Profile is missing required connection.model');
+        }
+        let temp = parseTemperature(conn.temperature);
+        if (temp === null) temp = 0.7;
+
+        return {
+            model,
+            temperature: temp,
+        };
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
+        throw error;
+    }
+}
+
+/**
+ * UI-based model/temperature reader (for dynamic ST settings or overrides)
+ */
+export function getUIModelSettings() {
     try {
         const selectors = getApiSelectors();
-        const currentModel = $(selectors.model).val() || '';
+        const currentModel = ($(selectors.model).val() || '').trim();
         let currentTemp = 0.7;
         const tempValue = $(selectors.temp).val() || $(selectors.tempCounter).val();
         if (tempValue !== null && tempValue !== undefined && tempValue !== '') {
@@ -415,7 +444,7 @@ export function getCurrentModelSettings() {
             temperature: currentTemp,
         };
     } catch (error) {
-        console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
+        console.warn(`${MODULE_NAME}: Error getting UI model settings:`, error);
         return {
             model: '',
             temperature: 0.7
