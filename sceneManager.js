@@ -494,43 +494,9 @@ export function createSceneButtons(messageElement) {
 }
 
 /**
- * Estimate token count for scene (fallback implementation)
- */
-function estimateSceneTokens(startId, endId) {
-    let totalChars = 0;
-    
-    for (let i = startId; i <= endId; i++) {
-        const message = chat[i];
-        if (message && !message.is_system) {
-            totalChars += (message.mes || '').length;
-            totalChars += (message.name || '').length;
-        }
-    }
-    
-    // Rough estimation: 4 characters per token
-    return Math.ceil(totalChars / 4);
-}
-
-/**
- * Estimate token count for scene using enhanced method
- */
-function estimateSceneTokensEnhanced(startId, endId) {
-    try {
-        // Create a temporary scene request for estimation
-        const tempRequest = createSceneRequest(startId, endId);
-        const tempCompiled = compileScene(tempRequest);
-        return estimateTokenCount(tempCompiled);
-    } catch (error) {
-        // Fallback to simple estimation
-        console.warn(`${MODULE_NAME}: Using fallback token estimation (char/4). Enhanced estimation failed:`, error.message);
-        return estimateSceneTokens(startId, endId);
-    }
-}
-
-/**
  * Get scene data with message excerpts
  */
-export function getSceneData() {
+export async function getSceneData() {
     const markers = getSceneMarkers();
     
     if (markers.sceneStart === null || markers.sceneEnd === null) {
@@ -548,6 +514,11 @@ export function getSceneData() {
         const content = message.mes || '';
         return content.length > 100 ? content.substring(0, 100) + '...' : content;
     };
+
+    // Build a temporary compiled scene for consistent token estimation
+    const tempRequest = createSceneRequest(markers.sceneStart, markers.sceneEnd);
+    const tempCompiled = compileScene(tempRequest);
+    const estimatedTokens = await estimateTokenCount(tempCompiled);
     
     return {
         sceneStart: markers.sceneStart,
@@ -557,7 +528,7 @@ export function getSceneData() {
         startSpeaker: startMessage.name || 'Unknown',
         endSpeaker: endMessage.name || 'Unknown',
         messageCount: markers.sceneEnd - markers.sceneStart + 1,
-        estimatedTokens: estimateSceneTokensEnhanced(markers.sceneStart, markers.sceneEnd)
+        estimatedTokens
     };
 }
 

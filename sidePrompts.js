@@ -3,7 +3,8 @@ import { extension_settings } from '../../../extensions.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile } from './utils.js';
+import { requestCompletion } from './stmemory.js';
 import { listEnabledByType, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, getEntryByTitle } from './addlore.js';
 import { sendRawCompletionRequest } from './stmemory.js';
@@ -91,14 +92,15 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  * - If overrides are provided, uses the given api/model/temperature
  */
 async function runLLM(prompt, overrides = null) {
-    let api;
-    let model;
-    let temperature;
+    // Determine connection
+    let api, model, temperature, endpoint, apiKey;
 
     if (overrides && (overrides.api || overrides.model)) {
         api = normalizeCompletionSource(overrides.api || 'openai');
         model = overrides.model || '';
         temperature = typeof overrides.temperature === 'number' ? overrides.temperature : 0.7;
+        endpoint = overrides.endpoint || null;
+        apiKey = overrides.apiKey || null;
         console.debug(`${MODULE_NAME}: runLLM using overrides api=${api} model=${model} temp=${temperature}`);
     } else {
         const apiInfo = getCurrentApiInfo();
@@ -109,11 +111,13 @@ async function runLLM(prompt, overrides = null) {
         console.debug(`${MODULE_NAME}: runLLM using UI settings api=${api} model=${model} temp=${temperature}`);
     }
 
-    const { text } = await sendRawCompletionRequest({
+    const { text } = await requestCompletion({
+        api,
         model,
         prompt,
         temperature,
-        api,
+        endpoint,
+        apiKey,
         extra: {},
     });
     return text || '';
@@ -131,12 +135,10 @@ function resolveSidePromptConnection(profile = null, options = {}) {
     try {
         // Highest priority: explicit profile object (e.g., memory generation profile)
         if (profile && (profile.effectiveConnection || profile.connection)) {
-            const conn = profile.effectiveConnection || profile.connection;
-            const api = normalizeCompletionSource(conn.api || 'openai');
-            const model = conn.model || '';
-            const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
+            const conn = resolveEffectiveConnectionFromProfile(profile);
+            const { api, model, temperature, endpoint, apiKey } = conn;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature };
+            return { api, model, temperature, endpoint, apiKey };
         }
 
         const settings = extension_settings?.STMemoryBooks;
@@ -161,8 +163,10 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const api = normalizeCompletionSource(conn.api || 'openai');
                 const model = conn.model || '';
                 const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
+                const endpoint = conn.endpoint || null;
+                const apiKey = conn.apiKey || null;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature };
+                return { api, model, temperature, endpoint, apiKey };
             }
         }
 
@@ -195,8 +199,10 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const api = normalizeCompletionSource(conn.api || 'openai');
             const model = conn.model || '';
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
+            const endpoint = conn.endpoint || null;
+            const apiKey = conn.apiKey || null;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature };
+            return { api, model, temperature, endpoint, apiKey };
         }
     } catch (err) {
         // Ultimate fallback: UI
