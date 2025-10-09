@@ -465,6 +465,52 @@ export function getUIModelSettings() {
     }
 }
 
+/**
+ * Estimate tokens for a text string using the project tokenizer with a safe fallback.
+ * Returns input (prompt) tokens, an estimated output token count, and the total.
+ *
+ * Callers should pass the exact string they intend to send to the model
+ * (e.g., system + prompt + scene), to ensure accurate budgeting and warnings.
+ *
+ * @param {string} text
+ * @param {{ estimatedOutput?: number }} [options]
+ * @returns {Promise<{ input: number, output: number, total: number }>}
+ */
+export async function estimateTokens(text, options = {}) {
+    const { estimatedOutput = 300 } = options;
+    const content = String(text || '');
+    const inputTokens = Math.ceil(content.length / 4);
+    return {
+        input: inputTokens,
+        output: estimatedOutput,
+        total: inputTokens + estimatedOutput,
+    };
+}
+
+/**
+ * Resolve a profile's effective connection into a normalized shape
+ * { api, model, temperature, endpoint, apiKey }.
+ * - Applies normalizeCompletionSource to api
+ * - Clamps temperature to [0, 2] with default 0.7
+ * - Passes through endpoint/apiKey if provided on the profile connection
+ *
+ * @param {Object} profile
+ * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string }}
+ */
+export function resolveEffectiveConnectionFromProfile(profile) {
+    const conn = (profile?.effectiveConnection || profile?.connection || {});
+    const api = normalizeCompletionSource(conn.api || 'openai');
+    const model = (conn.model || '').trim();
+    let temperature = 0.7;
+    if (typeof conn.temperature === 'number' && !Number.isNaN(conn.temperature)) {
+        temperature = Math.max(0, Math.min(2, conn.temperature));
+    }
+    const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
+    const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
+
+    return { api, model, temperature, endpoint, apiKey };
+}
+
 
 /**
  * Preset prompt definitions - Updated for JSON structured output

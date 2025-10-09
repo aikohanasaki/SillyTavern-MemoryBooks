@@ -1,5 +1,6 @@
 import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
+import { estimateTokens } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ChatCompile';
 const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
@@ -117,23 +118,12 @@ export function createSceneRequest(sceneStart, sceneEnd) {
  * @param {Object} compiledScene - Compiled scene data
  * @returns {number} Estimated token count
  */
-export function estimateTokenCount(compiledScene) {
-    let totalChars = 0;
-    
-    // Count metadata as JSON string
-    totalChars += JSON.stringify(compiledScene.metadata).length;
-    
-    // Count all message content
-    for (const message of compiledScene.messages) {
-        totalChars += (message.mes || '').length;
-        totalChars += (message.name || '').length;
-        // Add overhead for JSON structure
-        totalChars += 50; // Approximate overhead per message
-    }
-    
-    const estimatedTokens = Math.ceil(totalChars / CHARS_PER_TOKEN);
-    
-    return estimatedTokens;
+export async function estimateTokenCount(compiledScene) {
+    // Use the same canonical estimator (char/4) over the readable scene text
+    // and do not include output tokens for UI stats.
+    const text = toReadableText(compiledScene);
+    const { input } = await estimateTokens(text, { estimatedOutput: 0 });
+    return input;
 }
 
 /**
@@ -141,7 +131,7 @@ export function estimateTokenCount(compiledScene) {
  * @param {Object} compiledScene - Compiled scene data
  * @returns {Object} Scene statistics
  */
-export function getSceneStats(compiledScene) {
+export async function getSceneStats(compiledScene) {
     const { metadata, messages } = compiledScene;
     
     // Count speakers
@@ -166,7 +156,7 @@ export function getSceneStats(compiledScene) {
         speakerCount: speakers.size,
         speakers: Array.from(speakers),
         totalCharacters: totalMessageLength,
-        estimatedTokens: estimateTokenCount(compiledScene),
+        estimatedTokens: await estimateTokenCount(compiledScene),
         userMessages,
         characterMessages,
         timeSpan: {

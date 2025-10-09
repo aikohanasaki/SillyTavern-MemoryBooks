@@ -1,5 +1,5 @@
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
@@ -124,6 +124,34 @@ export async function sendRawCompletionRequest({
     }
 
     return { text, full: data };
+}
+
+/**
+ * Unified request wrapper for side prompts and memory generation.
+ * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object }} opts
+ * @returns {Promise<{ text: string, full: object }>}
+ */
+export async function requestCompletion({
+    api,
+    model,
+    prompt,
+    temperature = 0.7,
+    endpoint = null,
+    apiKey = null,
+    extra = {},
+}) {
+    // Delegate all provider-specific shaping to sendRawCompletionRequest which already
+    // handles: full-manual, custom (custom_model_id + oai_settings.custom_url), and normal providers.
+    return await sendRawCompletionRequest({
+        model,
+        prompt,
+        temperature,
+        api,
+        endpoint,
+        apiKey,
+        extra,
+    });
 }
 
 /**
@@ -549,25 +577,7 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
  * @returns {Promise<{input: number, output: number, total: number}>} An object with token counts.
  */
 async function estimateTokenUsage(promptString) {
-    try {
-        const inputTokens = await getTokenCount(promptString);
-        // A reasonable estimate for a memory summary output
-        const estimatedOutputTokens = 300; // Slightly higher for JSON structure
-        
-        return {
-            input: inputTokens,
-            output: estimatedOutputTokens,
-            total: inputTokens + estimatedOutputTokens
-        };
-    } catch (error) {
-        const charCount = promptString.length;
-        const inputTokens = Math.ceil(charCount / 4); // A common approximation
-        return {
-            input: inputTokens,
-            output: 300,
-            total: inputTokens + 300
-        };
-    }
+    return await estimateTokens(promptString, { estimatedOutput: 300 });
 }
 
 /**
