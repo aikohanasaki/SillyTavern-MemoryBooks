@@ -120,6 +120,97 @@ async function runLLM(prompt, overrides = null) {
 }
 
 /**
+ * Resolve which connection to use for side prompts, honoring user defaults.
+ * - If a profile is provided with effectiveConnection/connection, use it.
+ * - Otherwise, use the default memory profile from settings:
+ *   - If default is dynamic "Current SillyTavern Settings", mirror current UI settings.
+ *   - Else use the stored connection of that profile.
+ * Fallback to UI settings only if settings are missing/invalid.
+ */
+function resolveSidePromptConnection(profile = null, options = {}) {
+    try {
+        // Highest priority: explicit profile object (e.g., memory generation profile)
+        if (profile && (profile.effectiveConnection || profile.connection)) {
+            const conn = profile.effectiveConnection || profile.connection;
+            const api = conn.api || 'openai';
+            const model = conn.model || '';
+            const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
+            console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
+            return { api, model, temperature };
+        }
+
+        const settings = extension_settings?.STMemoryBooks;
+        const profiles = settings?.profiles || [];
+        let idxOverride = options && Number.isFinite(options.overrideProfileIndex) ? Number(options.overrideProfileIndex) : null;
+
+        // If a template-specified override index is provided, use it
+        if (idxOverride !== null && profiles.length > 0) {
+            if (idxOverride < 0 || idxOverride >= profiles.length) idxOverride = 0;
+            const over = profiles[idxOverride];
+            if (over?.useDynamicSTSettings) {
+                // Dynamic profile: mirror current UI
+                const apiInfo = getCurrentApiInfo();
+                const modelInfo = getUIModelSettings();
+                const api = apiInfo.completionSource || apiInfo.api || 'openai';
+                const model = modelInfo.model || '';
+                const temperature = modelInfo.temperature ?? 0.7;
+                console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
+                return { api, model, temperature };
+            } else {
+                const conn = over?.connection || {};
+                const api = conn.api || 'openai';
+                const model = conn.model || '';
+                const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
+                console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
+                return { api, model, temperature };
+            }
+        }
+
+        // Otherwise: use STMB default profile (may be dynamic)
+        let idx = Number(settings?.defaultProfile ?? 0);
+        if (!Array.isArray(profiles) || profiles.length === 0) {
+            // No profiles available: mirror UI
+            const apiInfo = getCurrentApiInfo();
+            const modelInfo = getUIModelSettings();
+            const api = apiInfo.completionSource || apiInfo.api || 'openai';
+            const model = modelInfo.model || '';
+            const temperature = modelInfo.temperature ?? 0.7;
+            console.debug(`${MODULE_NAME}: resolveSidePromptConnection fallback to UI (no profiles) api=${api} model=${model} temp=${temperature}`);
+            return { api, model, temperature };
+        }
+        if (!Number.isFinite(idx) || idx < 0 || idx >= profiles.length) idx = 0;
+
+        const def = profiles[idx];
+        if (def?.useDynamicSTSettings) {
+            // Default memory profile is "Current SillyTavern Settings" => use UI
+            const apiInfo = getCurrentApiInfo();
+            const modelInfo = getUIModelSettings();
+            const api = apiInfo.completionSource || apiInfo.api || 'openai';
+            const model = modelInfo.model || '';
+            const temperature = modelInfo.temperature ?? 0.7;
+            console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via dynamic default profile api=${api} model=${model} temp=${temperature}`);
+            return { api, model, temperature };
+        } else {
+            const conn = def?.connection || {};
+            const api = conn.api || 'openai';
+            const model = conn.model || '';
+            const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
+            console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
+            return { api, model, temperature };
+        }
+    } catch (err) {
+        // Ultimate fallback: UI
+        const apiInfo = getCurrentApiInfo();
+        const modelInfo = getUIModelSettings();
+        const api = apiInfo.completionSource || apiInfo.api || 'openai';
+        const model = modelInfo.model || '';
+        const temperature = modelInfo.temperature ?? 0.7;
+        console.warn(`${MODULE_NAME}: resolveSidePromptConnection error; falling back to UI`, err);
+        return { api, model, temperature };
+    }
+}
+
+/**
  * Evaluate tracker prompts and fire if thresholds are met
  */
 export async function evaluateTrackers() {
@@ -176,7 +267,10 @@ export async function evaluateTrackers() {
             // Call LLM
             let resultText = '';
             try {
-                resultText = await runLLM(finalPrompt);
+                const idx = Number(tpl?.settings?.overrideProfileIndex);
+                const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
+                const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
+                resultText = await runLLM(finalPrompt, overrides);
             } catch (err) {
                 console.error(`${MODULE_NAME}: Tracker LLM failed:`, err);
                 toastr.error(`Tracker "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
@@ -227,19 +321,9 @@ export async function runAfterMemory(compiledScene, profile = null) {
 
         const sceneText = toReadableText(compiledScene);
 
-        // Determine if we should use the same model/settings as the memory generation
-        let overrides = null;
-        if (profile && (profile.effectiveConnection || profile.connection)) {
-            const conn = profile.effectiveConnection || profile.connection;
-            overrides = {
-                api: conn.api || 'openai',
-                model: conn.model || '',
-                temperature: typeof conn.temperature === 'number' ? conn.temperature : 0.7,
-            };
-            console.debug(`${MODULE_NAME}: runAfterMemory using profile overrides api=${overrides.api} model=${overrides.model} temp=${overrides.temperature}`);
-        } else {
-            console.debug(`${MODULE_NAME}: runAfterMemory using UI settings (no profile overrides provided)`);
-        }
+        // Determine connection to use for side prompts
+        const overrides = resolveSidePromptConnection(profile);
+        console.debug(`${MODULE_NAME}: runAfterMemory overrides api=${overrides.api} model=${overrides.model} temp=${overrides.temperature}`);
 
         // Plotpoints
         for (const tpl of plotWithMem) {
@@ -343,6 +427,9 @@ export async function runPlotUpdate(rangeString) {
         }
 
         for (const tpl of enabledPlot) {
+            const idx = Number(tpl?.settings?.overrideProfileIndex);
+            const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
+            const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
             const title = `${tpl.name} (STMB Plotpoints)`;
             const existing = getEntryByTitle(lore.data, title);
             const prior = existing?.content || '';
@@ -358,7 +445,7 @@ export async function runPlotUpdate(rangeString) {
             }
 
             try {
-                const text = await runLLM(prompt);
+                const text = await runLLM(prompt, overrides);
                 await upsertLorebookEntryByTitle(lore.name, lore.data, title, text, {
                     defaults: {
                         vectorized: true,
@@ -421,7 +508,10 @@ export async function runScore(nameArg) {
 
         let resultText = '';
         try {
-            resultText = await runLLM(prompt);
+            const idx = Number(tpl?.settings?.overrideProfileIndex);
+            const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
+            const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
+            resultText = await runLLM(prompt, overrides);
             await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
                 defaults: {
                     vectorized: true,
