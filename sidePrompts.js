@@ -3,7 +3,7 @@ import { extension_settings } from '../../../extensions.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getCurrentModelSettings, getCurrentMemoryBooksContext } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext } from './utils.js';
 import { listEnabledByType, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, getEntryByTitle } from './addlore.js';
 import { sendRawCompletionRequest } from './stmemory.js';
@@ -90,7 +90,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  */
 async function runLLM(prompt) {
     const apiInfo = getCurrentApiInfo();
-    const modelInfo = getCurrentModelSettings();
+    const modelInfo = getUIModelSettings();
     const { text } = await sendRawCompletionRequest({
         model: modelInfo.model || '',
         prompt,

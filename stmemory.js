@@ -392,9 +392,6 @@ async function generateMemoryWithAI(promptString, profile) {
         custom_model_id: chatCompletionSource === 'custom' ? (conn.model || undefined) : undefined,
         temperature: (typeof conn.temperature === 'number') ? Math.max(0, Math.min(2, conn.temperature)) : undefined,
 
-        // Defeat model/temp locks in many setups
-        bypass_mtlock: true,
-        force_model: true,
     };
 
     try {

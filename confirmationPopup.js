@@ -4,7 +4,7 @@ import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTemplate } from './templates.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
-import { createProfileObject, getCurrentModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
+import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 
@@ -206,7 +206,7 @@ async function handleAdvancedConfirmation(popup, settings) {
     
     // Determine effective connection settings
     if (overrideSettings) {
-        const currentSettings = getCurrentModelSettings();
+        const currentSettings = getUIModelSettings();
         const currentApiInfo = getCurrentApiInfo();
 
         if (currentApiInfo.api) {
@@ -411,7 +411,7 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
     // Step 2: If overriding, update the data with current SillyTavern settings.
     const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
     if (overrideSettings) {
-        const currentSettings = getCurrentModelSettings();
+        const currentSettings = getUIModelSettings();
         const currentApiInfo = getCurrentApiInfo();
 
         data.api = currentApiInfo.api;

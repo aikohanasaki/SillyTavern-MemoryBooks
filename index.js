@@ -17,7 +17,7 @@ import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles,
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
-import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
+import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getUIModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
 import * as PromptManager from './summaryPromptManager.js';
 import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
@@ -630,7 +630,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
         confirmationResult = await showConfirmationPopup(
             sceneData, 
             settings, 
-            getCurrentModelSettings(), 
+            getUIModelSettings(), 
             getCurrentApiInfo(), 
             chat_metadata,
             profileIndex
@@ -661,7 +661,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
     // Check if this profile should dynamically use ST settings
     if (profileSettings.useDynamicSTSettings || advancedOptions.overrideSettings) {
         const currentApiInfo = getCurrentApiInfo();
-        const currentSettings = getCurrentModelSettings();
+        const currentSettings = getUIModelSettings();
 
         profileSettings.effectiveConnection = {
             api: currentApiInfo.completionSource || 'openai',
@@ -1808,12 +1808,12 @@ async function showSettingsPopup() {
             isSelected: format === settings.titleFormat
         })),
         showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
-        selectedProfile: {
-            ...selectedProfile,
-            connection: selectedProfile.useDynamicSTSettings ?
+            selectedProfile: {
+                ...selectedProfile,
+                connection: selectedProfile.useDynamicSTSettings ?
                 (() => {
                     const currentApiInfo = getCurrentApiInfo();
-                    const currentSettings = getCurrentModelSettings();
+                    const currentSettings = getUIModelSettings();
                     return {
                         api: currentApiInfo.completionSource || 'openai',
                         model: currentSettings.model || 'Not Set',
@@ -2018,7 +2018,7 @@ function setupSettingsEventListeners() {
                 if (selectedProfile.useDynamicSTSettings) {
                     // For dynamic profiles, show current ST settings
                     const currentApiInfo = getCurrentApiInfo();
-                    const currentSettings = getCurrentModelSettings();
+                    const currentSettings = getUIModelSettings();
 
                     if (summaryApi) summaryApi.textContent = currentApiInfo.completionSource || 'openai';
                     if (summaryModel) summaryModel.textContent = currentSettings.model || 'Not Set';
@@ -2293,7 +2293,7 @@ async function refreshPopupContent() {
                 connection: selectedProfile.useDynamicSTSettings ?
                     (() => {
                         const currentApiInfo = getCurrentApiInfo();
-                        const currentSettings = getCurrentModelSettings();
+                        const currentSettings = getUIModelSettings();
                         return {
                             api: currentApiInfo.completionSource || 'openai',
                             model: currentSettings.model || 'Not Set',
@@ -2518,9 +2518,6 @@ function setupEventListeners() {
                 generate_data.temperature = conn.temperature;
             }
 
-            // Defeat model/temp locks
-            generate_data.bypass_mtlock = true;
-            generate_data.force_model = true;
         }
     });
     
