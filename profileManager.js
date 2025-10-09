@@ -32,7 +32,8 @@ const profileEditTemplate = Handlebars.compile(`
 
         <label for="stmb-profile-api">
             <h4>API/Provider:</h4>
-            <select id="stmb-profile-api" class="text_pole">
+            <select id="stmb-profile-api" class="text_pole" {{#if (eq connection.api "current_st")}}disabled title="Provider locked for this profile"{{/if}}>
+                <option value="current_st" {{#if (eq connection.api "current_st")}}selected{{/if}}>Current SillyTavern Settings</option>
                 <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}}>Custom API</option>
                 <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
                 <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Claude</option>
@@ -58,12 +59,12 @@ const profileEditTemplate = Handlebars.compile(`
 
         <label for="stmb-profile-model">
             <h4>Model:</h4>
-            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Paste model ID here">
+            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
         </label>
 
         <label for="stmb-profile-temperature">
             <h4>Temperature (0.0 - 2.0):</h4>
-            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8.">
+            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8." {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
         </label>
 
         <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
@@ -350,8 +351,8 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
     const profile = settings.profiles[profileIndex];
 
-    // Prevent deletion of dynamic ST settings profile
-    if (profile.useDynamicSTSettings) {
+    // Prevent deletion of dynamic ST settings profile or provider-based current_st
+    if (profile.useDynamicSTSettings || (profile?.connection?.api === 'current_st')) {
         toastr.error('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work', 'STMemoryBooks');
         return;
     }
@@ -648,10 +649,22 @@ function setupProfileEditEventHandlers(popupInstance) {
 
     popupElement.querySelector('#stmb-profile-api')?.addEventListener('change', (e) => {
         const fullManualSection = popupElement.querySelector('#stmb-full-manual-section');
+        const modelInput = popupElement.querySelector('#stmb-profile-model');
+        const tempInput = popupElement.querySelector('#stmb-profile-temperature');
         if (e.target.value === 'full-manual') {
             fullManualSection.classList.remove('displayNone');
         } else {
             fullManualSection.classList.add('displayNone');
+        }
+        // Disable model/temp when using Current SillyTavern Settings provider
+        const isCurrentST = e.target.value === 'current_st';
+        if (modelInput) {
+            modelInput.disabled = isCurrentST;
+            modelInput.title = isCurrentST ? 'Managed by SillyTavern UI' : '';
+        }
+        if (tempInput) {
+            tempInput.disabled = isCurrentST;
+            tempInput.title = isCurrentST ? 'Managed by SillyTavern UI' : '';
         }
     });
 
@@ -717,21 +730,27 @@ export function validateAndFixProfiles(settings) {
     }
 
     if (settings.profiles.length === 0) {
-        // Create dynamic profile that uses live ST settings
+        // Create default profile using provider-based "Current SillyTavern Settings"
         const dynamicProfile = createProfileObject({
             name: 'Current SillyTavern Settings',
-            preset: 'summary',
-            isDynamicProfile: true  // Flag to prevent titleFormat creation
+            api: 'current_st',
+            preset: 'summary'
         });
 
-        // Add flag to indicate this profile uses dynamic ST settings
-        dynamicProfile.useDynamicSTSettings = true;
-        // Clear connection since it will be populated dynamically
-        dynamicProfile.connection = {};
-
         settings.profiles.push(dynamicProfile);
-        fixes.push('Added dynamic profile that uses current SillyTavern settings.');
+        fixes.push('Added default profile using provider "Current SillyTavern Settings".');
     }
+
+    // Migrate legacy dynamic profiles to provider-based current_st
+    settings.profiles = settings.profiles.map(p => {
+        if (p && p.useDynamicSTSettings) {
+            p.connection = p.connection || {};
+            p.connection.api = 'current_st';
+            delete p.useDynamicSTSettings;
+            fixes.push(`Migrated legacy dynamic profile "${p.name}" to provider-based current_st`);
+        }
+        return p;
+    });
 
     settings.profiles.forEach((profile, index) => {
         if (!validateProfile(profile)) {

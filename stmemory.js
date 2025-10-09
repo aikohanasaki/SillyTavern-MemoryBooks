@@ -462,7 +462,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 version: '2.0'
             },
             suggestedKeys: processedMemory.suggestedKeys,
-            titleFormat: profile.useDynamicSTSettings ?
+            titleFormat: (profile.useDynamicSTSettings || (profile?.connection?.api === 'current_st')) ?
                 (extension_settings.STMemoryBooks?.titleFormat || '[000] - {{title}}') :
                 (profile.titleFormat || '[000] - {{title}}'),
             lorebookSettings: {

@@ -149,7 +149,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         if (idxOverride !== null && profiles.length > 0) {
             if (idxOverride < 0 || idxOverride >= profiles.length) idxOverride = 0;
             const over = profiles[idxOverride];
-            if (over?.useDynamicSTSettings) {
+            if (over?.useDynamicSTSettings || (over?.connection?.api === 'current_st')) {
                 // Dynamic profile: mirror current UI
                 const apiInfo = getCurrentApiInfo();
                 const modelInfo = getUIModelSettings();
@@ -185,7 +185,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         if (!Number.isFinite(idx) || idx < 0 || idx >= profiles.length) idx = 0;
 
         const def = profiles[idx];
-        if (def?.useDynamicSTSettings) {
+        if (def?.useDynamicSTSettings || (def?.connection?.api === 'current_st')) {
             // Default memory profile is "Current SillyTavern Settings" => use UI
             const apiInfo = getCurrentApiInfo();
             const modelInfo = getUIModelSettings();
