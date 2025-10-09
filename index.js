@@ -66,6 +66,7 @@ const defaultSettings = {
         alwaysUseDefault: true,
         showMemoryPreviews: false,
         showNotifications: true,
+        unhideBeforeMemory: false,
         refreshEditor: true,
         tokenWarningThreshold: 30000,
         defaultMemoryCount: 0,
@@ -528,6 +529,11 @@ function validateSettings(settings) {
         settings.moduleSettings.autoCreateLorebook = false;
     }
 
+    // Validate unhide-before-memory setting (defaults to false)
+    if (settings.moduleSettings.unhideBeforeMemory === undefined) {
+        settings.moduleSettings.unhideBeforeMemory = false;
+    }
+
     // Validate lorebook name template
     if (!settings.moduleSettings.lorebookNameTemplate) {
         settings.moduleSettings.lorebookNameTemplate = 'LTM - {{char}} - {{chat}}';
@@ -716,6 +722,14 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
     const maxRetries = MEMORY_GENERATION.MAX_RETRIES;
 
     try {
+        // Optionally unhide hidden messages before compiling scene
+        if (settings?.moduleSettings?.unhideBeforeMemory) {
+            try {
+                await executeSlashCommands(`/unhide ${sceneData.sceneStart}-${sceneData.sceneEnd}`);
+            } catch (e) {
+                console.warn('STMemoryBooks: /unhide command failed or unavailable:', e);
+            }
+        }
         // Create and compile scene first
         const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
         const compiledScene = compileScene(sceneRequest);
@@ -1788,6 +1802,7 @@ async function showSettingsPopup() {
         alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
         showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
         showNotifications: settings.moduleSettings.showNotifications,
+        unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
         refreshEditor: settings.moduleSettings.refreshEditor,
         allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
         manualModeEnabled: settings.moduleSettings.manualModeEnabled,
@@ -1929,6 +1944,12 @@ function setupSettingsEventListeners() {
         
         if (e.target.matches('#stmb-allow-scene-overlap')) {
             settings.moduleSettings.allowSceneOverlap = e.target.checked;
+            saveSettingsDebounced();
+            return;
+        }
+
+        if (e.target.matches('#stmb-unhide-before-memory')) {
+            settings.moduleSettings.unhideBeforeMemory = e.target.checked;
             saveSettingsDebounced();
             return;
         }
@@ -2168,6 +2189,7 @@ function handleSettingsPopupClose(popup) {
         const alwaysUseDefault = popupElement.querySelector('#stmb-always-use-default')?.checked ?? settings.moduleSettings.alwaysUseDefault;
         const showMemoryPreviews = popupElement.querySelector('#stmb-show-memory-previews')?.checked ?? settings.moduleSettings.showMemoryPreviews;
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
+        const unhideBeforeMemory = popupElement.querySelector('#stmb-unhide-before-memory')?.checked ?? settings.moduleSettings.unhideBeforeMemory;
         const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
         const allowSceneOverlap = popupElement.querySelector('#stmb-allow-scene-overlap')?.checked ?? settings.moduleSettings.allowSceneOverlap;
         const autoHideMode = popupElement.querySelector('#stmb-auto-hide-mode')?.value ?? getAutoHideMode(settings.moduleSettings);
@@ -2205,6 +2227,7 @@ function handleSettingsPopupClose(popup) {
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault ||
                           showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews ||
                           showNotifications !== settings.moduleSettings.showNotifications ||
+                          unhideBeforeMemory !== settings.moduleSettings.unhideBeforeMemory ||
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
                           defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount ||
@@ -2220,6 +2243,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
             settings.moduleSettings.showMemoryPreviews = showMemoryPreviews;
             settings.moduleSettings.showNotifications = showNotifications;
+            settings.moduleSettings.unhideBeforeMemory = unhideBeforeMemory;
             settings.moduleSettings.refreshEditor = refreshEditor;
             settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
             settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
@@ -2268,6 +2292,7 @@ async function refreshPopupContent() {
             alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
             showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
             showNotifications: settings.moduleSettings.showNotifications,
+            unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
             refreshEditor: settings.moduleSettings.refreshEditor,
             allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
             manualModeEnabled: settings.moduleSettings.manualModeEnabled,
