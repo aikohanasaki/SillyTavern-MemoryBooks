@@ -49,6 +49,10 @@ export const settingsTemplate = Handlebars.compile(`
                 <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
             </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
+            </label>
         </div>
 
         <div class="world_entry_form_control">
