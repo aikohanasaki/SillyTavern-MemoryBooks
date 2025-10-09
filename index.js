@@ -290,8 +290,13 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
         return '';
     }
     
-    const startId = parseInt(match[1]);
-    const endId = parseInt(match[2]);
+    const startId = Number(match[1]);
+    const endId = Number(match[2]);
+
+    if (!Number.isFinite(startId) || !Number.isFinite(endId)) {
+        toastr.error('Invalid message IDs parsed. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        return '';
+    }
     
     // Validate range logic (start = end is valid for single message)
     if (startId > endId) {
@@ -403,7 +408,7 @@ function initializeSettings() {
     const currentVersion = extension_settings.STMemoryBooks.migrationVersion || 1;
     if (currentVersion < 4) {
         // Check if dynamic profile already exists (in case of partial migration)
-        const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(p => p.useDynamicSTSettings);
+        const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(p => p.useDynamicSTSettings || p?.connection?.api === 'current_st');
 
         if (!hasDynamicProfile) {
             // Add dynamic profile for existing installations
@@ -415,11 +420,9 @@ function initializeSettings() {
             const dynamicProfile = {
                 name: "Current SillyTavern Settings",
                 connection: {
-                    // Empty connection object - will be populated dynamically from ST
+                    api: 'current_st'
                 },
-                useDynamicSTSettings: true, // Flag to indicate this profile uses live ST settings
                 preset: 'summary',
-                // No titleFormat - will use current settings titleFormat dynamically
                 constVectMode: 'link',
                 position: 0,
                 orderMode: 'auto',
@@ -456,11 +459,9 @@ function initializeSettings() {
         const dynamicProfile = {
             name: "Current SillyTavern Settings",
             connection: {
-                // Empty connection object - will be populated dynamically from ST
+                api: 'current_st'
             },
-            useDynamicSTSettings: true, // Flag to indicate this profile uses live ST settings
             preset: 'summary',
-            // No titleFormat - will use current settings titleFormat dynamically
             constVectMode: 'link',
             position: 0,
             orderMode: 'auto',
@@ -652,7 +653,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
     const { profileSettings, advancedOptions } = confirmationResult;
 
     // Check if this profile should dynamically use ST settings
-    if (profileSettings.useDynamicSTSettings || advancedOptions.overrideSettings) {
+    if ((profileSettings?.connection?.api === 'current_st') || advancedOptions.overrideSettings) {
         const currentApiInfo = getCurrentApiInfo();
         const currentSettings = getUIModelSettings();
 
@@ -1191,10 +1192,12 @@ function populateInlineButtons() {
                     const selectedIndex = parseInt(profileSelect.value);
                     const selectedProfile = settings.profiles[selectedIndex];
 
-                    // Prevent editing of dynamic ST settings profile
+                    // Migrate legacy dynamic flag to provider-based current_st and allow editing of non-connection fields
                     if (selectedProfile.useDynamicSTSettings) {
-                        toastr.error('Cannot edit the Dynamic ST Settings profile. Create a new profile instead.', 'STMemoryBooks');
-                        return;
+                        selectedProfile.connection = selectedProfile.connection || {};
+                        selectedProfile.connection.api = 'current_st';
+                        delete selectedProfile.useDynamicSTSettings;
+                        saveSettingsDebounced();
                     }
 
                     await editProfile(settings, selectedIndex, refreshPopupContent);
@@ -1815,7 +1818,7 @@ async function showSettingsPopup() {
         showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
             selectedProfile: {
                 ...selectedProfile,
-                connection: selectedProfile.useDynamicSTSettings ?
+                connection: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
                 (() => {
                     const currentApiInfo = getCurrentApiInfo();
                     const currentSettings = getUIModelSettings();
@@ -1829,7 +1832,7 @@ async function showSettingsPopup() {
                     model: selectedProfile.connection?.model || 'Not Set',
                     temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                 },
-            titleFormat: selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat),
+            titleFormat: (selectedProfile.titleFormat || settings.titleFormat),
             effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await PromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
         }
     };
@@ -2020,8 +2023,8 @@ function setupSettingsEventListeners() {
                 const summaryTitle = popupElement.querySelector('#stmb-summary-title');
                 const summaryPrompt = popupElement.querySelector('#stmb-summary-prompt');
 
-                if (selectedProfile.useDynamicSTSettings) {
-                    // For dynamic profiles, show current ST settings
+                if (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) {
+                    // For dynamic/current_st profiles, show current ST settings
                     const currentApiInfo = getCurrentApiInfo();
                     const currentSettings = getUIModelSettings();
 
@@ -2034,8 +2037,8 @@ function setupSettingsEventListeners() {
                     if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
                     if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
                 }
-                // For title format, dynamic profiles use current settings, regular profiles use their own
-                if (summaryTitle) summaryTitle.textContent = selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat);
+                // Title format is profile-specific
+                if (summaryTitle) summaryTitle.textContent = (selectedProfile.titleFormat || settings.titleFormat);
                 if (summaryPrompt) summaryPrompt.textContent = await getEffectivePromptAsync(selectedProfile);
             }
             return;
@@ -2295,7 +2298,7 @@ async function refreshPopupContent() {
             showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
             selectedProfile: {
                 ...selectedProfile,
-                connection: selectedProfile.useDynamicSTSettings ?
+                connection: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
                     (() => {
                         const currentApiInfo = getCurrentApiInfo();
                         const currentSettings = getUIModelSettings();
