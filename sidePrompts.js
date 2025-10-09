@@ -3,7 +3,7 @@ import { extension_settings } from '../../../extensions.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource } from './utils.js';
 import { listEnabledByType, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, getEntryByTitle } from './addlore.js';
 import { sendRawCompletionRequest } from './stmemory.js';
@@ -96,14 +96,14 @@ async function runLLM(prompt, overrides = null) {
     let temperature;
 
     if (overrides && (overrides.api || overrides.model)) {
-        api = overrides.api || 'openai';
+        api = normalizeCompletionSource(overrides.api || 'openai');
         model = overrides.model || '';
         temperature = typeof overrides.temperature === 'number' ? overrides.temperature : 0.7;
         console.debug(`${MODULE_NAME}: runLLM using overrides api=${api} model=${model} temp=${temperature}`);
     } else {
         const apiInfo = getCurrentApiInfo();
         const modelInfo = getUIModelSettings();
-        api = apiInfo.completionSource || apiInfo.api || 'openai';
+        api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
         model = modelInfo.model || '';
         temperature = modelInfo.temperature ?? 0.7;
         console.debug(`${MODULE_NAME}: runLLM using UI settings api=${api} model=${model} temp=${temperature}`);
@@ -132,7 +132,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         // Highest priority: explicit profile object (e.g., memory generation profile)
         if (profile && (profile.effectiveConnection || profile.connection)) {
             const conn = profile.effectiveConnection || profile.connection;
-            const api = conn.api || 'openai';
+            const api = normalizeCompletionSource(conn.api || 'openai');
             const model = conn.model || '';
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
@@ -151,14 +151,14 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 // Dynamic profile: mirror current UI
                 const apiInfo = getCurrentApiInfo();
                 const modelInfo = getUIModelSettings();
-                const api = apiInfo.completionSource || apiInfo.api || 'openai';
+                const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
                 const model = modelInfo.model || '';
                 const temperature = modelInfo.temperature ?? 0.7;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
                 return { api, model, temperature };
             } else {
                 const conn = over?.connection || {};
-                const api = conn.api || 'openai';
+                const api = normalizeCompletionSource(conn.api || 'openai');
                 const model = conn.model || '';
                 const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
@@ -172,7 +172,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             // No profiles available: mirror UI
             const apiInfo = getCurrentApiInfo();
             const modelInfo = getUIModelSettings();
-            const api = apiInfo.completionSource || apiInfo.api || 'openai';
+            const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
             const model = modelInfo.model || '';
             const temperature = modelInfo.temperature ?? 0.7;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection fallback to UI (no profiles) api=${api} model=${model} temp=${temperature}`);
@@ -185,14 +185,14 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             // Default memory profile is "Current SillyTavern Settings" => use UI
             const apiInfo = getCurrentApiInfo();
             const modelInfo = getUIModelSettings();
-            const api = apiInfo.completionSource || apiInfo.api || 'openai';
+            const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
             const model = modelInfo.model || '';
             const temperature = modelInfo.temperature ?? 0.7;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via dynamic default profile api=${api} model=${model} temp=${temperature}`);
             return { api, model, temperature };
         } else {
             const conn = def?.connection || {};
-            const api = conn.api || 'openai';
+            const api = normalizeCompletionSource(conn.api || 'openai');
             const model = conn.model || '';
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
@@ -202,7 +202,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         // Ultimate fallback: UI
         const apiInfo = getCurrentApiInfo();
         const modelInfo = getUIModelSettings();
-        const api = apiInfo.completionSource || apiInfo.api || 'openai';
+        const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
         const model = modelInfo.model || '';
         const temperature = modelInfo.temperature ?? 0.7;
         console.warn(`${MODULE_NAME}: resolveSidePromptConnection error; falling back to UI`, err);

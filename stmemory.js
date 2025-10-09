@@ -1,5 +1,5 @@
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
@@ -44,7 +44,7 @@ function getCurrentCompletionEndpoint() {
 *@param {string} opts.model*
 *@param {string} opts.prompt*
 *@param {number} [opts.temperature]*
-*@param {string} [opts.api] - 'openai', 'claude', 'google', 'custom', etc.*
+*@param {string} [opts.api] - 'openai', 'claude', 'makersuite', 'custom', etc. (Note: ST uses 'makersuite' as the canonical provider key; avoid other aliases).*
 *@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
 *@returns {Promise<{text: string, full: object}>}*
@@ -352,51 +352,11 @@ async function generateMemoryWithAI(promptString, profile) {
 
     const conn = profile?.effectiveConnection || profile?.connection || {};
 
-    const apiToSource = {
-        openai: 'openai',
-        claude: 'claude',
-        openrouter: 'openrouter',
-        ai21: 'ai21',
-        makersuite: 'makersuite',
-        google: 'makersuite',
-        vertexai: 'vertexai',
-        mistralai: 'mistralai',
-        custom: 'custom',
-        cohere: 'cohere',
-        perplexity: 'perplexity',
-        groq: 'groq',
-        nanogpt: 'nanogpt',
-        deepseek: 'deepseek',
-        aimlapi: 'aimlapi',
-        xai: 'xai',
-        pollinations: 'pollinations',
-        moonshot: 'moonshot',
-        fireworks: 'fireworks',
-        cometapi: 'cometapi',
-        azure_openai: 'azure_openai',
-        'full-manual': 'custom',
-    };
-    const chatCompletionSource = apiToSource[conn.api] || 'openai';
-
-    const genOptions = {
-        // Pass both to satisfy different ST versions
-        prompt: promptString,
-        quiet_prompt: promptString,
-
-        skipWIAN: true,
-        stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:'],
-
-        // Force provider/engine
-        chat_completion_source: chatCompletionSource,
-        model: conn.model || undefined,
-        custom_model_id: chatCompletionSource === 'custom' ? (conn.model || undefined) : undefined,
-        temperature: (typeof conn.temperature === 'number') ? Math.max(0, Math.min(2, conn.temperature)) : undefined,
-
-    };
 
     try {
         // Prepare connection info
-        const apiType = conn.api || getCurrentApiInfo().api;
+        // Note: ST base uses 'makersuite' as the canonical provider key for this source.
+        const apiType = normalizeCompletionSource(conn.api || getCurrentApiInfo().api);
         const extra = {};
         if (oai_settings.openai_max_tokens) {
             extra.max_tokens = oai_settings.openai_max_tokens;

@@ -65,6 +65,19 @@ const SUPPORTED_COMPLETION_SOURCES = [
 ];
 
 /**
+ * Normalize completion source names.
+ * Note: In ST base code, the provider is represented as 'makersuite'.
+ * Keep 'makersuite' as the canonical key and avoid other aliases.
+ */
+export function normalizeCompletionSource(source) {
+    const s = String(source || '').trim().toLowerCase();
+    // Canonical provider key is 'makersuite' in ST base code.
+    // Accept legacy alias and normalize to 'makersuite' to match ST without changing ST code.
+    if (s === 'google') return 'makersuite';
+    return s === '' ? 'openai' : s;
+}
+
+/**
  * BULLETPROOF: Get current API and completion source information with comprehensive error handling
  */
 export function getCurrentApiInfo() {
