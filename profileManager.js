@@ -32,7 +32,7 @@ const profileEditTemplate = Handlebars.compile(`
 
         <label for="stmb-profile-api">
             <h4>API/Provider:</h4>
-            <select id="stmb-profile-api" class="text_pole" {{#if (eq connection.api "current_st")}}disabled title="Provider locked for this profile"{{/if}}>
+            <select id="stmb-profile-api" class="text_pole" {{#if isProviderLocked}}disabled title="Provider locked for this profile"{{/if}}>
                 <option value="current_st" {{#if (eq connection.api "current_st")}}selected{{/if}}>Current SillyTavern Settings</option>
                 <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}}>Custom API</option>
                 <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
@@ -204,6 +204,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             preset: profile.preset || '',
             currentApi: apiInfo.api || 'Unknown',
             presetOptions: presetOptions,
+            isProviderLocked: profile.name === 'Current SillyTavern Settings',
             // Pass title format data to the template
             titleFormat: profileTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
@@ -284,6 +285,7 @@ export async function newProfile(settings, refreshCallback) {
             preset: '',
             currentApi: apiInfo.api || 'Unknown',
             presetOptions: presetOptions,
+            isProviderLocked: defaultName === 'Current SillyTavern Settings',
             // Pass title format data to the template
             titleFormat: currentTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
@@ -351,8 +353,8 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
     const profile = settings.profiles[profileIndex];
 
-    // Prevent deletion of dynamic ST settings profile or provider-based current_st
-    if (profile.useDynamicSTSettings || (profile?.connection?.api === 'current_st')) {
+    // Prevent deletion of the required default profile
+    if (profile?.name === 'Current SillyTavern Settings') {
         toastr.error('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work', 'STMemoryBooks');
         return;
     }
