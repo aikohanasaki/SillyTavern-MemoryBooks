@@ -262,8 +262,8 @@ async function handleGroupWrapperFinished() {
 /**
  * Slash command handlers
  */
-function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
-    const sceneData = getSceneData();
+async function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
+    const sceneData = await getSceneData();
     if (!sceneData) {
         console.error('STMemoryBooks: No scene markers set for createMemory command');
         toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
@@ -933,7 +933,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         const settings = initializeSettings();
 
         // All the validation and processing logic
-        const sceneData = getSceneData();
+        const sceneData = await getSceneData();
         if (!sceneData) {
             console.error('STMemoryBooks: No scene selected for memory initiation');
             toastr.error('No scene selected', 'STMemoryBooks');
@@ -1772,7 +1772,7 @@ async function importPrompts(event, popup) {
 async function showSettingsPopup() {
     const settings = initializeSettings();
     await PromptManager.firstRunInitIfMissing(settings);
-    const sceneData = getSceneData();
+    const sceneData = await getSceneData();
     const selectedProfile = settings.profiles[settings.defaultProfile];
     const sceneMarkers = getSceneMarkers();
 
@@ -2252,7 +2252,7 @@ async function refreshPopupContent() {
     
     try {
         const settings = initializeSettings();
-        const sceneData = getSceneData();
+        const sceneData = await getSceneData();
         const selectedProfile = settings.profiles[settings.defaultProfile];
         const sceneMarkers = getSceneMarkers();
 
