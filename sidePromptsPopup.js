@@ -1,6 +1,7 @@
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { escapeHtml } from '../../../utils.js';
+import { extension_settings } from '../../../extensions.js';
 import {
     listTemplates,
     getTemplate,
@@ -101,9 +102,11 @@ async function openEditTemplate(parentPopup, key) {
         const s = tpl.settings || {};
 
         const renderSettingsSection = (type, settings) => {
+            // Type-specific section
+            let typeHtml = '';
             if (type === 'tracker') {
                 const interval = Math.max(1, Number.isFinite(settings.intervalVisibleMessages) ? settings.intervalVisibleMessages : 50);
-                return `
+                typeHtml = `
                     <div class="world_entry_form_control">
                         <label for="stmb-sp-edit-interval">
                             <h4>Interval (visible messages):</h4>
@@ -113,7 +116,7 @@ async function openEditTemplate(parentPopup, key) {
                 `;
             } else if (type === 'plotpoints') {
                 const withMem = !!(settings.withMemories ?? true);
-                return `
+                typeHtml = `
                     <div class="world_entry_form_control">
                         <label>
                             <input type="checkbox" id="stmb-sp-edit-withmem" ${withMem ? 'checked' : ''}>
@@ -124,7 +127,7 @@ async function openEditTemplate(parentPopup, key) {
             } else {
                 // scoreboard
                 const withMem = !!(settings.withMemories ?? false);
-                return `
+                typeHtml = `
                     <div class="world_entry_form_control">
                         <label>
                             <input type="checkbox" id="stmb-sp-edit-withmem" ${withMem ? 'checked' : ''}>
@@ -133,6 +136,35 @@ async function openEditTemplate(parentPopup, key) {
                     </div>
                 `;
             }
+
+            // Per-template override controls
+            const profiles = extension_settings?.STMemoryBooks?.profiles || [];
+            let idx = Number.isFinite(settings.overrideProfileIndex) ? Number(settings.overrideProfileIndex) : (extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
+            if (!(idx >= 0 && idx < profiles.length)) idx = 0;
+            const enabled = !!settings.overrideProfileEnabled;
+
+            const options = profiles.map((p, i) =>
+                `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
+            ).join('');
+
+            const overrideHtml = `
+                <div class="world_entry_form_control">
+                    <label>
+                        <input type="checkbox" id="stmb-sp-edit-override-enabled" ${enabled ? 'checked' : ''}>
+                        <span>Override default memory profile</span>
+                    </label>
+                </div>
+                <div class="world_entry_form_control" id="stmb-sp-edit-override-container" style="display: ${enabled ? 'block' : 'none'};">
+                    <label for="stmb-sp-edit-override-index">
+                        <h4>Connection Profile:</h4>
+                        <select id="stmb-sp-edit-override-index" class="text_pole">
+                            ${options}
+                        </select>
+                    </label>
+                </div>
+            `;
+
+            return typeHtml + overrideHtml;
         };
 
         const content = `
@@ -195,8 +227,21 @@ async function openEditTemplate(parentPopup, key) {
             const typeSel = dlg.querySelector('#stmb-sp-edit-type');
             const settingsDiv = dlg.querySelector('#stmb-sp-edit-settings');
 
+            const attachOverrideHandlers = () => {
+                const cb = dlg.querySelector('#stmb-sp-edit-override-enabled');
+                const cont = dlg.querySelector('#stmb-sp-edit-override-container');
+                cb?.addEventListener('change', () => {
+                    if (cont) cont.style.display = cb.checked ? 'block' : 'none';
+                });
+            };
+
             typeSel?.addEventListener('change', () => {
                 const newType = typeSel.value;
+
+                // Carry current override selections across re-render
+                const currentEnabled = !!dlg.querySelector('#stmb-sp-edit-override-enabled')?.checked;
+                const currentIdx = parseInt(dlg.querySelector('#stmb-sp-edit-override-index')?.value ?? '', 10);
+
                 // Re-render settings with sane defaults for the selected type
                 let nextSettings = {};
                 if (newType === 'tracker') {
@@ -212,8 +257,15 @@ async function openEditTemplate(parentPopup, key) {
                         withMemories: s.withMemories ?? false,
                     };
                 }
+                nextSettings.overrideProfileEnabled = currentEnabled;
+                if (!isNaN(currentIdx)) nextSettings.overrideProfileIndex = currentIdx;
+
                 settingsDiv.innerHTML = renderSettingsSection(newType, nextSettings);
+                attachOverrideHandlers();
             });
+
+            // Initial handlers for override controls
+            attachOverrideHandlers();
         };
 
         attachHandlers();
@@ -248,6 +300,16 @@ async function openEditTemplate(parentPopup, key) {
                 settings.withMemories = withMem;
             }
 
+            // Override connection controls
+            const overrideEnabled = !!dlg.querySelector('#stmb-sp-edit-override-enabled')?.checked;
+            settings.overrideProfileEnabled = overrideEnabled;
+            if (overrideEnabled) {
+                const oidx = parseInt(dlg.querySelector('#stmb-sp-edit-override-index')?.value ?? '', 10);
+                if (!isNaN(oidx)) settings.overrideProfileIndex = oidx;
+            } else {
+                delete settings.overrideProfileIndex;
+            }
+
             await upsertTemplate({
                 key: tpl.key,
                 name: newName,
@@ -272,8 +334,10 @@ async function openEditTemplate(parentPopup, key) {
  */
 async function openNewTemplate(parentPopup) {
     const renderSettingsForType = (type) => {
+        // Type-specific section
+        let typeHtml = '';
         if (type === 'tracker') {
-            return `
+            typeHtml = `
                 <div class="world_entry_form_control">
                     <label for="stmb-sp-new-interval">
                         <h4>Interval (visible messages):</h4>
@@ -282,7 +346,7 @@ async function openNewTemplate(parentPopup) {
                 </div>
             `;
         } else if (type === 'plotpoints') {
-            return `
+            typeHtml = `
                 <div class="world_entry_form_control">
                     <label>
                         <input type="checkbox" id="stmb-sp-new-withmem" checked>
@@ -292,7 +356,7 @@ async function openNewTemplate(parentPopup) {
             `;
         } else {
             // scoreboard
-            return `
+            typeHtml = `
                 <div class="world_entry_form_control">
                     <label>
                         <input type="checkbox" id="stmb-sp-new-withmem">
@@ -301,6 +365,34 @@ async function openNewTemplate(parentPopup) {
                 </div>
             `;
         }
+
+        // Per-template override controls
+        const profiles = extension_settings?.STMemoryBooks?.profiles || [];
+        let idx = Number(extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
+        if (!(idx >= 0 && idx < profiles.length)) idx = 0;
+
+        const options = profiles.map((p, i) =>
+            `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
+        ).join('');
+
+        const overrideHtml = `
+            <div class="world_entry_form_control">
+                <label>
+                    <input type="checkbox" id="stmb-sp-new-override-enabled">
+                    <span>Override default memory profile</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control" id="stmb-sp-new-override-container" style="display: none;">
+                <label for="stmb-sp-new-override-index">
+                    <h4>Connection Profile:</h4>
+                    <select id="stmb-sp-new-override-index" class="text_pole">
+                        ${options}
+                    </select>
+                </label>
+            </div>
+        `;
+
+        return typeHtml + overrideHtml;
     };
 
     let initialType = 'tracker';
@@ -359,9 +451,21 @@ async function openNewTemplate(parentPopup) {
         const typeSel = dlg.querySelector('#stmb-sp-new-type');
         const settingsDiv = dlg.querySelector('#stmb-sp-new-settings');
 
+        const attachOverrideHandlersNew = () => {
+            const cb = dlg.querySelector('#stmb-sp-new-override-enabled');
+            const cont = dlg.querySelector('#stmb-sp-new-override-container');
+            cb?.addEventListener('change', () => {
+                if (cont) cont.style.display = cb.checked ? 'block' : 'none';
+            });
+        };
+
         typeSel?.addEventListener('change', () => {
             settingsDiv.innerHTML = renderSettingsForType(typeSel.value);
+            attachOverrideHandlersNew();
         });
+
+        // Initial attach for override controls
+        attachOverrideHandlersNew();
     };
 
     attachHandlers();
@@ -396,6 +500,16 @@ async function openNewTemplate(parentPopup) {
         }
 
         try {
+            // Override connection controls
+            const overrideEnabled = !!dlg.querySelector('#stmb-sp-new-override-enabled')?.checked;
+            settings.overrideProfileEnabled = overrideEnabled;
+            if (overrideEnabled) {
+                const oidx = parseInt(dlg.querySelector('#stmb-sp-new-override-index')?.value ?? '', 10);
+                if (!isNaN(oidx)) settings.overrideProfileIndex = oidx;
+            } else {
+                delete settings.overrideProfileIndex;
+            }
+
             await upsertTemplate({ name, type, enabled, prompt, responseFormat, settings });
             toastr.success('Template created', 'STMemoryBooks');
             await refreshList(parentPopup);
