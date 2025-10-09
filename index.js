@@ -14,7 +14,7 @@ import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, get
 import { generateLorebookName, autoCreateLorebook } from './autocreate.js';
 import { checkAutoSummaryTrigger, handleAutoSummaryMessageReceived, handleAutoSummaryGroupFinished, clearAutoSummaryState } from './autosummary.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
+import { getSceneMarkers, setSceneMarker, setSceneRange, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getUIModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
@@ -315,14 +315,7 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     }
     
     // Atomically set both scene markers for /scenememory
-    const markers = getSceneMarkers();
-    const oldStart = markers.sceneStart ?? null;
-    const oldEnd = markers.sceneEnd ?? null;
-
-    markers.sceneStart = startId;
-    markers.sceneEnd = endId;
-
-    saveMetadataForCurrentContext();
+    setSceneRange(startId, endId);
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
@@ -835,7 +828,13 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
         // Run side prompts that are enabled to run with memories
         try {
-            await runAfterMemory(compiledScene);
+            const connDbg = (profileSettings?.effectiveConnection || profileSettings?.connection || {});
+            console.debug('STMemoryBooks: Passing profile to runAfterMemory', {
+                api: connDbg.api,
+                model: connDbg.model,
+                temperature: connDbg.temperature
+            });
+            await runAfterMemory(compiledScene, profileSettings);
         } catch (e) {
             console.warn('STMemoryBooks: runAfterMemory failed:', e);
         }
@@ -958,9 +957,15 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
                 const existingRange = getRangeFromMemoryEntry(mem.entry); 
 
                 if (existingRange && existingRange.start !== null && existingRange.end !== null) {
-                    if (newStart <= existingRange.end && newEnd >= existingRange.start) {
-                        console.error(`STMemoryBooks: Scene overlap detected with memory: ${mem.title}`);
-                        toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                    const s = Number(existingRange.start);
+                    const e = Number(existingRange.end);
+                    const ns = Number(newStart);
+                    const ne = Number(newEnd);
+                    // Detailed overlap diagnostics
+                    console.debug(`STMemoryBooks: OverlapCheck new=[${ns}-${ne}] existing="${mem.title}" [${s}-${e}] cond1(ns<=e)=${ns <= e} cond2(ne>=s)=${ne >= s}`);
+                    if (ns <= e && ne >= s) {
+                        console.error(`STMemoryBooks: Scene overlap detected with memory: ${mem.title} [${s}-${e}] vs new [${ns}-${ne}]`);
+                        toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${s}-${e})`, 'STMemoryBooks');
                         isProcessingMemory = false;
                         return;
                     }

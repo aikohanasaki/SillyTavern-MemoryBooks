@@ -202,6 +202,32 @@ export function setSceneMarker(messageId, type) {
 }
 
 /**
+ * Atomically set both scene markers (start and end) and keep cache consistent.
+ * This avoids stale currentSceneState overwriting freshly-set metadata.
+ */
+export function setSceneRange(startId, endId) {
+    const markers = getSceneMarkers();
+
+    // Store previous state for optimization
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;
+
+    // Normalize to numbers
+    const s = Number(startId);
+    const e = Number(endId);
+
+    // Update both metadata and cache simultaneously
+    markers.sceneStart = s;
+    markers.sceneEnd = e;
+    currentSceneState.start = s;
+    currentSceneState.end = e;
+
+    // Persist and update only affected DOM
+    saveMetadataForCurrentContext();
+    updateAffectedButtonStates(oldStart, oldEnd, s, e);
+}
+
+/**
  * Clear scene markers
  */
 export function clearScene() {

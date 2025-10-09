@@ -86,16 +86,34 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
 }
 
 /**
- * Perform LLM call using current ST settings (no JSON required)
+ * Perform LLM call
+ * - By default uses current ST UI settings
+ * - If overrides are provided, uses the given api/model/temperature
  */
-async function runLLM(prompt) {
-    const apiInfo = getCurrentApiInfo();
-    const modelInfo = getUIModelSettings();
+async function runLLM(prompt, overrides = null) {
+    let api;
+    let model;
+    let temperature;
+
+    if (overrides && (overrides.api || overrides.model)) {
+        api = overrides.api || 'openai';
+        model = overrides.model || '';
+        temperature = typeof overrides.temperature === 'number' ? overrides.temperature : 0.7;
+        console.debug(`${MODULE_NAME}: runLLM using overrides api=${api} model=${model} temp=${temperature}`);
+    } else {
+        const apiInfo = getCurrentApiInfo();
+        const modelInfo = getUIModelSettings();
+        api = apiInfo.completionSource || apiInfo.api || 'openai';
+        model = modelInfo.model || '';
+        temperature = modelInfo.temperature ?? 0.7;
+        console.debug(`${MODULE_NAME}: runLLM using UI settings api=${api} model=${model} temp=${temperature}`);
+    }
+
     const { text } = await sendRawCompletionRequest({
-        model: modelInfo.model || '',
+        model,
         prompt,
-        temperature: modelInfo.temperature ?? 0.7,
-        api: apiInfo.completionSource || apiInfo.api || 'openai',
+        temperature,
+        api,
         extra: {},
     });
     return text || '';
@@ -196,7 +214,7 @@ export async function evaluateTrackers() {
  * Run plotpoints and auto scoreboards after a memory run using the same compiled scene
  * @param {Object} compiledScene
  */
-export async function runAfterMemory(compiledScene) {
+export async function runAfterMemory(compiledScene, profile = null) {
     try {
         const lore = await requireLorebookStrict();
         const enabledPlot = await listEnabledByType('plotpoints');
@@ -208,6 +226,20 @@ export async function runAfterMemory(compiledScene) {
         if (plotWithMem.length === 0 && scoreWithMem.length === 0) return;
 
         const sceneText = toReadableText(compiledScene);
+
+        // Determine if we should use the same model/settings as the memory generation
+        let overrides = null;
+        if (profile && (profile.effectiveConnection || profile.connection)) {
+            const conn = profile.effectiveConnection || profile.connection;
+            overrides = {
+                api: conn.api || 'openai',
+                model: conn.model || '',
+                temperature: typeof conn.temperature === 'number' ? conn.temperature : 0.7,
+            };
+            console.debug(`${MODULE_NAME}: runAfterMemory using profile overrides api=${overrides.api} model=${overrides.model} temp=${overrides.temperature}`);
+        } else {
+            console.debug(`${MODULE_NAME}: runAfterMemory using UI settings (no profile overrides provided)`);
+        }
 
         // Plotpoints
         for (const tpl of plotWithMem) {
@@ -227,7 +259,7 @@ export async function runAfterMemory(compiledScene) {
 
             let resultText = '';
             try {
-                resultText = await runLLM(prompt);
+                resultText = await runLLM(prompt, overrides);
                 await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
                     defaults: {
                         vectorized: true,
@@ -255,7 +287,7 @@ export async function runAfterMemory(compiledScene) {
 
             let resultText = '';
             try {
-                resultText = await runLLM(prompt);
+                resultText = await runLLM(prompt, overrides);
                 await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
                     defaults: {
                         vectorized: true,
