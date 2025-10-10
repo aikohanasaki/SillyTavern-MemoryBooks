@@ -13,6 +13,26 @@ import {
 } from './sidePromptsManager.js';
 
 /**
+ * Build a human-readable triggers summary array for display/search
+ * @param {any} tpl
+ * @returns {string[]}
+ */
+function getTriggersSummary(tpl) {
+    const badges = [];
+    const trig = tpl?.triggers || {};
+    if (trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1) {
+        badges.push(`Interval:${Number(trig.onInterval.visibleMessages)}`);
+    }
+    if (trig.onAfterMemory && !!trig.onAfterMemory.enabled) {
+        badges.push('AfterMemory');
+    }
+    if (Array.isArray(trig.commands) && trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')) {
+        badges.push('Manual');
+    }
+    return badges;
+}
+
+/**
  * Render the templates table HTML
  * @param {Array} templates
  * @returns {string}
@@ -22,7 +42,7 @@ function renderTemplatesTable(templates) {
     html += '<table style="width: 100%; border-collapse: collapse;">';
     html += '<thead><tr>';
     html += '<th style="text-align:left;">Name</th>';
-    html += '<th style="width: 140px; text-align:left;">Type</th>';
+    html += '<th style="width: 240px; text-align:left;">Triggers</th>';
     html += '<th style="width: 120px; text-align:right;">Actions</th>';
     html += '</tr></thead>';
     html += '<tbody>';
@@ -31,10 +51,14 @@ function renderTemplatesTable(templates) {
         html += '<tr><td colspan="3"><div class="opacity50p">No side prompts available</div></td></tr>';
     } else {
         for (const tpl of templates) {
-            const typeBadge = tpl.type === 'tracker' ? 'Tracker' : tpl.type === 'plotpoints' ? 'Plotpoints' : 'Scoreboard';
+            const badges = getTriggersSummary(tpl);
+            const badgesHtml = badges.length > 0
+                ? badges.map(b => `<span class="badge" style="margin-right:6px;">${escapeHtml(b)}</span>`).join('')
+                : '<span class="opacity50p">None</span>';
+
             html += `<tr data-tpl-key="${escapeHtml(tpl.key)}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">`;
             html += `<td style="padding: 8px;">${escapeHtml(tpl.name)}</td>`;
-            html += `<td style="padding: 8px;"><span class="badge">${escapeHtml(typeBadge)}</span></td>`;
+            html += `<td style="padding: 8px;">${badgesHtml}</td>`;
             html += '<td style="padding: 8px; text-align:right;">' +
                 '<span class="stmb-sp-inline-actions" style="display: inline-flex; gap: 10px;">' +
                 '<button class="stmb-sp-action stmb-sp-action-edit" title="Edit" aria-label="Edit" style="background:none;border:none;cursor:pointer;">' +
@@ -69,7 +93,11 @@ async function refreshList(popup, preserveKey = null) {
 
     const templates = await listTemplates();
     const filtered = searchTerm
-        ? templates.filter(t => t.name.toLowerCase().includes(searchTerm) || t.type.toLowerCase().includes(searchTerm))
+        ? templates.filter(t => {
+            const nameMatch = t.name.toLowerCase().includes(searchTerm);
+            const trigStr = getTriggersSummary(t).join(' ').toLowerCase();
+            return nameMatch || trigStr.includes(searchTerm);
+        })
         : templates;
 
     listContainer.innerHTML = renderTemplatesTable(filtered);
@@ -85,7 +113,7 @@ async function refreshList(popup, preserveKey = null) {
 }
 
 /**
- * Open editor for an existing template
+ * Open editor for an existing template (triggers-based)
  * @param {Popup} parentPopup
  * @param {string} key
  */
@@ -97,75 +125,42 @@ async function openEditTemplate(parentPopup, key) {
             return;
         }
 
-        const currentType = tpl.type || 'tracker';
         const currentEnabled = !!tpl.enabled;
         const s = tpl.settings || {};
+        const trig = tpl.triggers || {};
 
-        const renderSettingsSection = (type, settings) => {
-            // Type-specific section
-            let typeHtml = '';
-            if (type === 'tracker') {
-                const interval = Math.max(1, Number.isFinite(settings.intervalVisibleMessages) ? settings.intervalVisibleMessages : 50);
-                typeHtml = `
-                    <div class="world_entry_form_control">
-                        <label for="stmb-sp-edit-interval">
-                            <h4>Interval (visible messages):</h4>
-                            <input type="number" id="stmb-sp-edit-interval" class="text_pole" min="1" step="1" value="${interval}">
-                        </label>
-                    </div>
-                `;
-            } else if (type === 'plotpoints') {
-                const withMem = !!(settings.withMemories ?? true);
-                typeHtml = `
-                    <div class="world_entry_form_control">
-                        <label>
-                            <input type="checkbox" id="stmb-sp-edit-withmem" ${withMem ? 'checked' : ''}>
-                            <span>Run with Memories</span>
-                        </label>
-                    </div>
-                `;
-            } else {
-                // scoreboard
-                const withMem = !!(settings.withMemories ?? false);
-                typeHtml = `
-                    <div class="world_entry_form_control">
-                        <label>
-                            <input type="checkbox" id="stmb-sp-edit-withmem" ${withMem ? 'checked' : ''}>
-                            <span>Run with Memories</span>
-                        </label>
-                    </div>
-                `;
-            }
+        const intervalEnabled = !!(trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1);
+        const intervalVal = intervalEnabled ? Math.max(1, Number(trig.onInterval.visibleMessages)) : 50;
+        const afterEnabled = !!(trig.onAfterMemory && trig.onAfterMemory.enabled);
+        const manualEnabled = Array.isArray(trig.commands)
+            ? trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')
+            : true; // default to true for manual
 
-            // Per-template override controls
-            const profiles = extension_settings?.STMemoryBooks?.profiles || [];
-            let idx = Number.isFinite(settings.overrideProfileIndex) ? Number(settings.overrideProfileIndex) : (extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
-            if (!(idx >= 0 && idx < profiles.length)) idx = 0;
-            const enabled = !!settings.overrideProfileEnabled;
+        // Per-template override controls
+        const profiles = extension_settings?.STMemoryBooks?.profiles || [];
+        let idx = Number.isFinite(s.overrideProfileIndex) ? Number(s.overrideProfileIndex) : (extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
+        if (!(idx >= 0 && idx < profiles.length)) idx = 0;
+        const overrideEnabled = !!s.overrideProfileEnabled;
+        const options = profiles.map((p, i) =>
+            `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
+        ).join('');
 
-            const options = profiles.map((p, i) =>
-                `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
-            ).join('');
-
-            const overrideHtml = `
-                <div class="world_entry_form_control">
-                    <label>
-                        <input type="checkbox" id="stmb-sp-edit-override-enabled" ${enabled ? 'checked' : ''}>
-                        <span>Override default memory profile</span>
-                    </label>
-                </div>
-                <div class="world_entry_form_control" id="stmb-sp-edit-override-container" style="display: ${enabled ? 'block' : 'none'};">
-                    <label for="stmb-sp-edit-override-index">
-                        <h4>Connection Profile:</h4>
-                        <select id="stmb-sp-edit-override-index" class="text_pole">
-                            ${options}
-                        </select>
-                    </label>
-                </div>
-            `;
-
-            return typeHtml + overrideHtml;
-        };
+        const overrideHtml = `
+            <div class="world_entry_form_control">
+                <label>
+                    <input type="checkbox" id="stmb-sp-edit-override-enabled" ${overrideEnabled ? 'checked' : ''}>
+                    <span>Override default memory profile</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control" id="stmb-sp-edit-override-container" style="display: ${overrideEnabled ? 'block' : 'none'};">
+                <label for="stmb-sp-edit-override-index">
+                    <h4>Connection Profile:</h4>
+                    <select id="stmb-sp-edit-override-index" class="text_pole">
+                        ${options}
+                    </select>
+                </label>
+            </div>
+        `;
 
         const content = `
             <h3>Edit Side Prompt</h3>
@@ -179,19 +174,30 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
             <div class="world_entry_form_control">
-                <label for="stmb-sp-edit-type">
-                    <h4>Type:</h4>
-                    <select id="stmb-sp-edit-type" class="text_pole">
-                        <option value="tracker" ${currentType === 'tracker' ? 'selected' : ''}>Tracker</option>
-                        <option value="plotpoints" ${currentType === 'plotpoints' ? 'selected' : ''}>Plotpoints</option>
-                        <option value="scoreboard" ${currentType === 'scoreboard' ? 'selected' : ''}>Scoreboard</option>
-                    </select>
-                </label>
-            </div>
-            <div class="world_entry_form_control">
                 <label>
                     <input type="checkbox" id="stmb-sp-edit-enabled" ${currentEnabled ? 'checked' : ''}>
                     <span>Enabled</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <h4>Triggers:</h4>
+                <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                    <input type="checkbox" id="stmb-sp-edit-trg-interval" ${intervalEnabled ? 'checked' : ''}>
+                    <span>Run on visible message interval</span>
+                </label>
+                <div class="world_entry_form_control" id="stmb-sp-edit-interval-container" style="display:${intervalEnabled ? 'block' : 'none'};margin-left:20px;">
+                    <label for="stmb-sp-edit-interval">
+                        <h4>Interval (visible messages):</h4>
+                        <input type="number" id="stmb-sp-edit-interval" class="text_pole" min="1" step="1" value="${intervalVal}">
+                    </label>
+                </div>
+                <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                    <input type="checkbox" id="stmb-sp-edit-trg-aftermem" ${afterEnabled ? 'checked' : ''}>
+                    <span>Run automatically after memory</span>
+                </label>
+                <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                    <input type="checkbox" id="stmb-sp-edit-trg-manual" ${manualEnabled ? 'checked' : ''}>
+                    <span>Allow manual run via /sideprompt</span>
                 </label>
             </div>
             <div class="world_entry_form_control">
@@ -207,10 +213,8 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
             <div class="world_entry_form_control">
-                <h4>Settings:</h4>
-                <div id="stmb-sp-edit-settings">
-                    ${renderSettingsSection(currentType, s)}
-                </div>
+                <h4>Overrides:</h4>
+                ${overrideHtml}
             </div>
         `;
 
@@ -224,48 +228,17 @@ async function openEditTemplate(parentPopup, key) {
             const dlg = editPopup.dlg;
             if (!dlg) return;
 
-            const typeSel = dlg.querySelector('#stmb-sp-edit-type');
-            const settingsDiv = dlg.querySelector('#stmb-sp-edit-settings');
-
-            const attachOverrideHandlers = () => {
-                const cb = dlg.querySelector('#stmb-sp-edit-override-enabled');
-                const cont = dlg.querySelector('#stmb-sp-edit-override-container');
-                cb?.addEventListener('change', () => {
-                    if (cont) cont.style.display = cb.checked ? 'block' : 'none';
-                });
-            };
-
-            typeSel?.addEventListener('change', () => {
-                const newType = typeSel.value;
-
-                // Carry current override selections across re-render
-                const currentEnabled = !!dlg.querySelector('#stmb-sp-edit-override-enabled')?.checked;
-                const currentIdx = parseInt(dlg.querySelector('#stmb-sp-edit-override-index')?.value ?? '', 10);
-
-                // Re-render settings with sane defaults for the selected type
-                let nextSettings = {};
-                if (newType === 'tracker') {
-                    nextSettings = {
-                        intervalVisibleMessages: Math.max(1, Number.isFinite(s.intervalVisibleMessages) ? s.intervalVisibleMessages : 50),
-                    };
-                } else if (newType === 'plotpoints') {
-                    nextSettings = {
-                        withMemories: s.withMemories ?? true,
-                    };
-                } else {
-                    nextSettings = {
-                        withMemories: s.withMemories ?? false,
-                    };
-                }
-                nextSettings.overrideProfileEnabled = currentEnabled;
-                if (!isNaN(currentIdx)) nextSettings.overrideProfileIndex = currentIdx;
-
-                settingsDiv.innerHTML = renderSettingsSection(newType, nextSettings);
-                attachOverrideHandlers();
+            const cbInterval = dlg.querySelector('#stmb-sp-edit-trg-interval');
+            const intervalCont = dlg.querySelector('#stmb-sp-edit-interval-container');
+            cbInterval?.addEventListener('change', () => {
+                if (intervalCont) intervalCont.style.display = cbInterval.checked ? 'block' : 'none';
             });
 
-            // Initial handlers for override controls
-            attachOverrideHandlers();
+            const cbOverride = dlg.querySelector('#stmb-sp-edit-override-enabled');
+            const overrideCont = dlg.querySelector('#stmb-sp-edit-override-container');
+            cbOverride?.addEventListener('change', () => {
+                if (overrideCont) overrideCont.style.display = cbOverride.checked ? 'block' : 'none';
+            });
         };
 
         attachHandlers();
@@ -275,7 +248,6 @@ async function openEditTemplate(parentPopup, key) {
             const newName = dlg.querySelector('#stmb-sp-edit-name')?.value.trim() || '';
             const newPrompt = dlg.querySelector('#stmb-sp-edit-prompt')?.value.trim() || '';
             const newResponseFormat = dlg.querySelector('#stmb-sp-edit-response-format')?.value.trim() || '';
-            const newType = dlg.querySelector('#stmb-sp-edit-type')?.value || currentType;
             const newEnabled = !!dlg.querySelector('#stmb-sp-edit-enabled')?.checked;
 
             if (!newName) {
@@ -287,23 +259,29 @@ async function openEditTemplate(parentPopup, key) {
                 return;
             }
 
-            // Collect settings by type
-            let settings = {};
-            if (newType === 'tracker') {
-                const interval = parseInt(dlg.querySelector('#stmb-sp-edit-interval')?.value ?? '50', 10);
-                settings.intervalVisibleMessages = Math.max(1, isNaN(interval) ? 50 : interval);
-            } else if (newType === 'plotpoints') {
-                const withMem = !!dlg.querySelector('#stmb-sp-edit-withmem')?.checked;
-                settings.withMemories = withMem;
-            } else {
-                const withMem = !!dlg.querySelector('#stmb-sp-edit-withmem')?.checked;
-                settings.withMemories = withMem;
+            // Triggers
+            const triggers = {};
+            const intervalOn = !!dlg.querySelector('#stmb-sp-edit-trg-interval')?.checked;
+            const afterOn = !!dlg.querySelector('#stmb-sp-edit-trg-aftermem')?.checked;
+            const manualOn = !!dlg.querySelector('#stmb-sp-edit-trg-manual')?.checked;
+
+            if (intervalOn) {
+                const intervalRaw = parseInt(dlg.querySelector('#stmb-sp-edit-interval')?.value ?? '50', 10);
+                const vis = Math.max(1, isNaN(intervalRaw) ? 50 : intervalRaw);
+                triggers.onInterval = { visibleMessages: vis };
+            }
+            if (afterOn) {
+                triggers.onAfterMemory = { enabled: true };
+            }
+            if (manualOn) {
+                triggers.commands = ['sideprompt'];
             }
 
-            // Override connection controls
-            const overrideEnabled = !!dlg.querySelector('#stmb-sp-edit-override-enabled')?.checked;
-            settings.overrideProfileEnabled = overrideEnabled;
-            if (overrideEnabled) {
+            // Overrides in settings
+            const settings = { ...(tpl.settings || {}) };
+            const overrideEnabled2 = !!dlg.querySelector('#stmb-sp-edit-override-enabled')?.checked;
+            settings.overrideProfileEnabled = overrideEnabled2;
+            if (overrideEnabled2) {
                 const oidx = parseInt(dlg.querySelector('#stmb-sp-edit-override-index')?.value ?? '', 10);
                 if (!isNaN(oidx)) settings.overrideProfileIndex = oidx;
             } else {
@@ -313,11 +291,11 @@ async function openEditTemplate(parentPopup, key) {
             await upsertTemplate({
                 key: tpl.key,
                 name: newName,
-                type: newType,
                 enabled: newEnabled,
                 prompt: newPrompt,
                 responseFormat: newResponseFormat,
                 settings,
+                triggers,
             });
             toastr.success('Template updated', 'STMemoryBooks');
             await refreshList(parentPopup, tpl.key);
@@ -329,53 +307,68 @@ async function openEditTemplate(parentPopup, key) {
 }
 
 /**
- * Open create-new template dialog
+ * Open create-new template dialog (triggers-based)
  * @param {Popup} parentPopup
  */
 async function openNewTemplate(parentPopup) {
-    const renderSettingsForType = (type) => {
-        // Type-specific section
-        let typeHtml = '';
-        if (type === 'tracker') {
-            typeHtml = `
-                <div class="world_entry_form_control">
-                    <label for="stmb-sp-new-interval">
-                        <h4>Interval (visible messages):</h4>
-                        <input type="number" id="stmb-sp-new-interval" class="text_pole" min="1" step="1" value="50">
-                    </label>
-                </div>
-            `;
-        } else if (type === 'plotpoints') {
-            typeHtml = `
-                <div class="world_entry_form_control">
-                    <label>
-                        <input type="checkbox" id="stmb-sp-new-withmem" checked>
-                        <span>Run with Memories</span>
-                    </label>
-                </div>
-            `;
-        } else {
-            // scoreboard
-            typeHtml = `
-                <div class="world_entry_form_control">
-                    <label>
-                        <input type="checkbox" id="stmb-sp-new-withmem">
-                        <span>Run with Memories</span>
-                    </label>
-                </div>
-            `;
-        }
+    // Default triggers: manual enabled; others off
+    const profiles = extension_settings?.STMemoryBooks?.profiles || [];
+    let idx = Number(extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
+    if (!(idx >= 0 && idx < profiles.length)) idx = 0;
 
-        // Per-template override controls
-        const profiles = extension_settings?.STMemoryBooks?.profiles || [];
-        let idx = Number(extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
-        if (!(idx >= 0 && idx < profiles.length)) idx = 0;
+    const options = profiles.map((p, i) =>
+        `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
+    ).join('');
 
-        const options = profiles.map((p, i) =>
-            `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
-        ).join('');
-
-        const overrideHtml = `
+    const content = `
+        <h3>New Side Prompt</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-name">
+                <h4>Name:</h4>
+                <input type="text" id="stmb-sp-new-name" class="text_pole" placeholder="My Side Prompt" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label>
+                <input type="checkbox" id="stmb-sp-new-enabled">
+                <span>Enabled</span>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <h4>Triggers:</h4>
+            <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                <input type="checkbox" id="stmb-sp-new-trg-interval">
+                <span>Run on visible message interval</span>
+            </label>
+            <div class="world_entry_form_control displayNone" id="stmb-sp-new-interval-container" style="margin-left:20px;">
+                <label for="stmb-sp-new-interval">
+                    <h4>Interval (visible messages):</h4>
+                    <input type="number" id="stmb-sp-new-interval" class="text_pole" min="1" step="1" value="50">
+                </label>
+            </div>
+            <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                <input type="checkbox" id="stmb-sp-new-trg-aftermem">
+                <span>Run automatically after memory</span>
+            </label>
+            <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                <input type="checkbox" id="stmb-sp-new-trg-manual" checked>
+                <span>Allow manual run via /sideprompt</span>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-prompt">
+                <h4>Prompt:</h4>
+                <textarea id="stmb-sp-new-prompt" class="text_pole textarea_compact" rows="8" placeholder="Enter your prompt..."></textarea>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-response-format">
+                <h4>Response Format (optional):</h4>
+                <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6" placeholder="Optional response format"></textarea>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <h4>Overrides:</h4>
             <div class="world_entry_form_control">
                 <label>
                     <input type="checkbox" id="stmb-sp-new-override-enabled">
@@ -390,54 +383,6 @@ async function openNewTemplate(parentPopup) {
                     </select>
                 </label>
             </div>
-        `;
-
-        return typeHtml + overrideHtml;
-    };
-
-    let initialType = 'tracker';
-
-    const content = `
-        <h3>New Side Prompt</h3>
-        <div class="world_entry_form_control">
-            <label for="stmb-sp-new-name">
-                <h4>Name:</h4>
-                <input type="text" id="stmb-sp-new-name" class="text_pole" placeholder="My Side Prompt" />
-            </label>
-        </div>
-        <div class="world_entry_form_control">
-            <label for="stmb-sp-new-type">
-                <h4>Type:</h4>
-                <select id="stmb-sp-new-type" class="text_pole">
-                    <option value="tracker" selected>Tracker</option>
-                    <option value="plotpoints">Plotpoints</option>
-                    <option value="scoreboard">Scoreboard</option>
-                </select>
-            </label>
-        </div>
-        <div class="world_entry_form_control">
-            <label>
-                <input type="checkbox" id="stmb-sp-new-enabled">
-                <span>Enabled</span>
-            </label>
-        </div>
-        <div class="world_entry_form_control">
-            <label for="stmb-sp-new-prompt">
-                <h4>Prompt:</h4>
-                <textarea id="stmb-sp-new-prompt" class="text_pole textarea_compact" rows="8" placeholder="Enter your prompt..."></textarea>
-            </label>
-        </div>
-        <div class="world_entry_form_control">
-            <label for="stmb-sp-new-response-format">
-                <h4>Response Format (optional):</h4>
-                <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6">placeholder for template</textarea>
-            </label>
-        </div>
-        <div class="world_entry_form_control">
-            <h4>Settings:</h4>
-            <div id="stmb-sp-new-settings">
-                ${renderSettingsForType(initialType)}
-            </div>
         </div>
     `;
 
@@ -448,24 +393,18 @@ async function openNewTemplate(parentPopup) {
 
     const attachHandlers = () => {
         const dlg = newPopup.dlg;
-        const typeSel = dlg.querySelector('#stmb-sp-new-type');
-        const settingsDiv = dlg.querySelector('#stmb-sp-new-settings');
 
-        const attachOverrideHandlersNew = () => {
-            const cb = dlg.querySelector('#stmb-sp-new-override-enabled');
-            const cont = dlg.querySelector('#stmb-sp-new-override-container');
-            cb?.addEventListener('change', () => {
-                if (cont) cont.style.display = cb.checked ? 'block' : 'none';
-            });
-        };
-
-        typeSel?.addEventListener('change', () => {
-            settingsDiv.innerHTML = renderSettingsForType(typeSel.value);
-            attachOverrideHandlersNew();
+        const cbInterval = dlg.querySelector('#stmb-sp-new-trg-interval');
+        const intervalCont = dlg.querySelector('#stmb-sp-new-interval-container');
+        cbInterval?.addEventListener('change', () => {
+            if (intervalCont) intervalCont.style.display = cbInterval.checked ? 'block' : 'none';
         });
 
-        // Initial attach for override controls
-        attachOverrideHandlersNew();
+        const cbOverride = dlg.querySelector('#stmb-sp-new-override-enabled');
+        const overrideCont = dlg.querySelector('#stmb-sp-new-override-container');
+        cbOverride?.addEventListener('change', () => {
+            if (overrideCont) overrideCont.style.display = cbOverride.checked ? 'block' : 'none';
+        });
     };
 
     attachHandlers();
@@ -473,7 +412,6 @@ async function openNewTemplate(parentPopup) {
     if (result === POPUP_RESULT.AFFIRMATIVE) {
         const dlg = newPopup.dlg;
         const name = dlg.querySelector('#stmb-sp-new-name')?.value.trim() || '';
-        const type = dlg.querySelector('#stmb-sp-new-type')?.value || 'tracker';
         const enabled = !!dlg.querySelector('#stmb-sp-new-enabled')?.checked;
         const prompt = dlg.querySelector('#stmb-sp-new-prompt')?.value.trim() || '';
         const responseFormat = dlg.querySelector('#stmb-sp-new-response-format')?.value.trim() || '';
@@ -487,30 +425,35 @@ async function openNewTemplate(parentPopup) {
             return;
         }
 
-        let settings = {};
-        if (type === 'tracker') {
-            const interval = parseInt(dlg.querySelector('#stmb-sp-new-interval')?.value ?? '50', 10);
-            settings.intervalVisibleMessages = Math.max(1, isNaN(interval) ? 50 : interval);
-        } else if (type === 'plotpoints') {
-            const withMem = !!dlg.querySelector('#stmb-sp-new-withmem')?.checked;
-            settings.withMemories = withMem;
-        } else {
-            const withMem = !!dlg.querySelector('#stmb-sp-new-withmem')?.checked;
-            settings.withMemories = withMem;
+        // Build triggers
+        const triggers = {};
+        const intervalOn = !!dlg.querySelector('#stmb-sp-new-trg-interval')?.checked;
+        const afterOn = !!dlg.querySelector('#stmb-sp-new-trg-aftermem')?.checked;
+        const manualOn = !!dlg.querySelector('#stmb-sp-new-trg-manual')?.checked;
+
+        if (intervalOn) {
+            const intervalRaw = parseInt(dlg.querySelector('#stmb-sp-new-interval')?.value ?? '50', 10);
+            const vis = Math.max(1, isNaN(intervalRaw) ? 50 : intervalRaw);
+            triggers.onInterval = { visibleMessages: vis };
+        }
+        if (afterOn) {
+            triggers.onAfterMemory = { enabled: true };
+        }
+        if (manualOn) {
+            triggers.commands = ['sideprompt'];
+        }
+
+        // Settings - overrides
+        const settings = {};
+        const overrideEnabled = !!dlg.querySelector('#stmb-sp-new-override-enabled')?.checked;
+        settings.overrideProfileEnabled = overrideEnabled;
+        if (overrideEnabled) {
+            const oidx = parseInt(dlg.querySelector('#stmb-sp-new-override-index')?.value ?? '', 10);
+            if (!isNaN(oidx)) settings.overrideProfileIndex = oidx;
         }
 
         try {
-            // Override connection controls
-            const overrideEnabled = !!dlg.querySelector('#stmb-sp-new-override-enabled')?.checked;
-            settings.overrideProfileEnabled = overrideEnabled;
-            if (overrideEnabled) {
-                const oidx = parseInt(dlg.querySelector('#stmb-sp-new-override-index')?.value ?? '', 10);
-                if (!isNaN(oidx)) settings.overrideProfileIndex = oidx;
-            } else {
-                delete settings.overrideProfileIndex;
-            }
-
-            await upsertTemplate({ name, type, enabled, prompt, responseFormat, settings });
+            await upsertTemplate({ name, enabled, prompt, responseFormat, settings, triggers });
             toastr.success('Template created', 'STMemoryBooks');
             await refreshList(parentPopup);
         } catch (err) {
@@ -572,7 +515,7 @@ export async function showSidePromptsPopup() {
 
         // Search/filter box
         content += '<div class="world_entry_form_control">';
-        content += '<input type="text" id="stmb-sp-search" class="text_pole" placeholder="Search by name or type..." aria-label="Search side prompts" />';
+        content += '<input type="text" id="stmb-sp-search" class="text_pole" placeholder="Search by name or trigger..." aria-label="Search side prompts" />';
         content += '</div>';
 
         // List container

@@ -5,7 +5,7 @@ import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile } from './utils.js';
 import { requestCompletion } from './stmemory.js';
-import { listEnabledByType, findTemplateByName } from './sidePromptsManager.js';
+import { listEnabledByType, listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, getEntryByTitle } from './addlore.js';
 import { sendRawCompletionRequest } from './stmemory.js';
 
@@ -221,8 +221,8 @@ function resolveSidePromptConnection(profile = null, options = {}) {
  */
 export async function evaluateTrackers() {
     try {
-        const enabledTrackers = await listEnabledByType('tracker');
-        if (!enabledTrackers || enabledTrackers.length === 0) return;
+        const enabledInterval = await listByTrigger('onInterval');
+        if (!enabledInterval || enabledInterval.length === 0) return;
 
         // Ensure lorebook exists up-front
         const lore = await requireLorebookStrict();
@@ -230,13 +230,20 @@ export async function evaluateTrackers() {
         const currentLast = chat.length - 1;
         if (currentLast < 0) return;
 
-        for (const tpl of enabledTrackers) {
-            const title = `${tpl.name} (STMB Tracker)`;
+        for (const tpl of enabledInterval) {
+            const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+            const legacyTitle = `${tpl.name} (STMB Tracker)`;
 
-            // Read existing entry to get last checkpoint
-            const existing = getEntryByTitle(lore.data, title);
-            const lastMsgId = Number(existing?.STMB_tracker_lastMsgId ?? -1);
-            const lastRunAt = existing?.STMB_tracker_lastRunAt ? Date.parse(existing.STMB_tracker_lastRunAt) : null;
+            // Read existing entry to get last checkpoint (generic first, then legacy)
+            const existing = getEntryByTitle(lore.data, unifiedTitle) || getEntryByTitle(lore.data, legacyTitle);
+            const lastMsgId = Number(
+                (existing && existing[`STMB_sp_${tpl.key}_lastMsgId`]) ??
+                (existing && existing.STMB_tracker_lastMsgId) ??
+                -1
+            );
+            const lastRunAt = existing?.[`STMB_sp_${tpl.key}_lastRunAt`]
+                ? Date.parse(existing[`STMB_sp_${tpl.key}_lastRunAt`])
+                : (existing?.STMB_tracker_lastRunAt ? Date.parse(existing.STMB_tracker_lastRunAt) : null);
             const now = Date.now();
 
             // Internal debounce to prevent disk thrash (not user-configurable)
@@ -247,14 +254,13 @@ export async function evaluateTrackers() {
 
             // Count visible messages since last checkpoint
             const visibleSince = countVisibleMessagesSince(lastMsgId, currentLast);
-            const threshold = Math.max(1, Number(tpl.settings?.intervalVisibleMessages || 50));
+            const threshold = Math.max(1, Number(tpl?.triggers?.onInterval?.visibleMessages || 50));
             if (visibleSince < threshold) {
                 continue;
             }
 
-            // Build compiled scene for (lastMsgId+1 .. currentLast)
+            // Build compiled scene for (lastMsgId+1 .. currentLast) with cap
             const start = Math.max(0, lastMsgId + 1);
-            // Safety: cap extremely large windows (e.g., last 200 messages)
             const cap = 200;
             const boundedStart = Math.max(start, currentLast - cap + 1);
 
@@ -262,7 +268,7 @@ export async function evaluateTrackers() {
             try {
                 compiled = compileRange(boundedStart, currentLast);
             } catch (err) {
-                console.warn(`${MODULE_NAME}: Tracker compile failed:`, err);
+                console.warn(`${MODULE_NAME}: Interval compile failed:`, err);
                 continue;
             }
 
@@ -278,15 +284,14 @@ export async function evaluateTrackers() {
                 const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
                 resultText = await runLLM(finalPrompt, overrides);
             } catch (err) {
-                console.error(`${MODULE_NAME}: Tracker LLM failed:`, err);
-                toastr.error(`Tracker "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
+                console.error(`${MODULE_NAME}: Interval sideprompt LLM failed:`, err);
+                toastr.error(`SidePrompt "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
                 continue;
             }
 
-            // Upsert entry and update metadata checkpoint
+            // Upsert entry and update metadata checkpoint (generic + legacy for one-way compat)
             try {
-                await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
-                    // Use defaults similar to memories
+                await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
                     defaults: {
                         vectorized: true,
                         selective: true,
@@ -294,14 +299,16 @@ export async function evaluateTrackers() {
                         position: 0,
                     },
                     metadataUpdates: {
+                        [`STMB_sp_${tpl.key}_lastMsgId`]: currentLast,
+                        [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         STMB_tracker_lastMsgId: currentLast,
                         STMB_tracker_lastRunAt: new Date().toISOString(),
                     },
                     refreshEditor: false,
                 });
             } catch (err) {
-                console.error(`${MODULE_NAME}: Tracker upsert failed:`, err);
-                toastr.error(`Failed to update tracker entry "${tpl.name}"`, 'STMemoryBooks');
+                console.error(`${MODULE_NAME}: Interval sideprompt upsert failed:`, err);
+                toastr.error(`Failed to update sideprompt entry "${tpl.name}"`, 'STMemoryBooks');
                 continue;
             }
         }
@@ -317,13 +324,9 @@ export async function evaluateTrackers() {
 export async function runAfterMemory(compiledScene, profile = null) {
     try {
         const lore = await requireLorebookStrict();
-        const enabledPlot = await listEnabledByType('plotpoints');
-        const enabledScore = await listEnabledByType('scoreboard');
+        const enabledAfter = await listByTrigger('onAfterMemory');
 
-        const plotWithMem = (enabledPlot || []).filter(x => x.settings?.withMemories);
-        const scoreWithMem = (enabledScore || []).filter(x => x.settings?.withMemories);
-
-        if (plotWithMem.length === 0 && scoreWithMem.length === 0) return;
+        if (!enabledAfter || enabledAfter.length === 0) return;
 
         const sceneText = toReadableText(compiledScene);
 
@@ -331,65 +334,40 @@ export async function runAfterMemory(compiledScene, profile = null) {
         const overrides = resolveSidePromptConnection(profile);
         console.debug(`${MODULE_NAME}: runAfterMemory overrides api=${overrides.api} model=${overrides.model} temp=${overrides.temperature}`);
 
-        // Plotpoints
-        for (const tpl of plotWithMem) {
-            const title = `${tpl.name} (STMB Plotpoints)`;
-            const existing = getEntryByTitle(lore.data, title);
+        for (const tpl of enabledAfter) {
+            const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+            const existing = getEntryByTitle(lore.data, unifiedTitle)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`);
             const prior = existing?.content || '';
-            let promptParts = [tpl.prompt || ''];
+
+            let prompt = tpl.prompt || '';
             if (prior && String(prior).trim()) {
-                promptParts.push('\n' + String(prior).trim());
+                prompt += '\n' + String(prior).trim();
             }
-            promptParts.push('\n=== SCENE TEXT ===\n');
-            promptParts.push(sceneText);
-            let prompt = promptParts.join('');
+            prompt += '\n=== SCENE TEXT ===\n' + sceneText;
             if (tpl.responseFormat && String(tpl.responseFormat).trim()) {
                 prompt += '\n=== RESPONSE FORMAT ===\n' + String(tpl.responseFormat).trim();
             }
 
-            let resultText = '';
             try {
-                resultText = await runLLM(prompt, overrides);
-                await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
+                const text = await runLLM(prompt, overrides);
+                await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, text, {
                     defaults: {
                         vectorized: true,
                         selective: true,
                         order: 100,
                         position: 0,
                     },
-                    refreshEditor: false,
-                });
-            } catch (err) {
-                console.error(`${MODULE_NAME}: Plotpoints failed:`, err);
-                toastr.error(`Plotpoints "${tpl.name}" failed`, 'STMemoryBooks');
-            }
-        }
-
-        // Auto scoreboards (do not adjust STMB_score_lastMsgId on auto runs)
-        for (const tpl of scoreWithMem) {
-            const title = `${tpl.name} (STMB Scoreboard)`;
-            const existing = getEntryByTitle(lore.data, title);
-            const prior = existing?.content || '';
-            let prompt = [tpl.prompt || '', '\n=== SCENE TEXT ===\n', sceneText].join('');
-            if (tpl.responseFormat && String(tpl.responseFormat).trim()) {
-                prompt += '\n=== RESPONSE FORMAT ===\n' + String(tpl.responseFormat).trim();
-            }
-
-            let resultText = '';
-            try {
-                resultText = await runLLM(prompt, overrides);
-                await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
-                    defaults: {
-                        vectorized: true,
-                        selective: true,
-                        order: 100,
-                        position: 0,
+                    // Do not adjust lastMsgId on auto runs; just record lastRunAt
+                    metadataUpdates: {
+                        [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                     },
                     refreshEditor: false,
                 });
             } catch (err) {
-                console.error(`${MODULE_NAME}: Auto Scoreboard failed:`, err);
-                toastr.error(`Scoreboard "${tpl.name}" failed`, 'STMemoryBooks');
+                console.error(`${MODULE_NAME}: runAfterMemory failed for "${tpl.name}":`, err);
+                toastr.error(`SidePrompt "${tpl.name}" failed`, 'STMemoryBooks');
             }
         }
     } catch (outer) {
@@ -425,34 +403,35 @@ export async function runPlotUpdate(rangeString) {
         }
 
         const sceneText = toReadableText(compiled);
-        const enabledPlot = await listEnabledByType('plotpoints');
+        const enabledAfter = await listByTrigger('onAfterMemory');
 
-        if (!enabledPlot || enabledPlot.length === 0) {
-            toastr.info('No plotpoints templates are enabled.', 'STMemoryBooks');
+        if (!enabledAfter || enabledAfter.length === 0) {
+            toastr.info('No side prompt templates with after-memory trigger are enabled.', 'STMemoryBooks');
             return '';
         }
 
-        for (const tpl of enabledPlot) {
+        for (const tpl of enabledAfter) {
             const idx = Number(tpl?.settings?.overrideProfileIndex);
             const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
             const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
-            const title = `${tpl.name} (STMB Plotpoints)`;
-            const existing = getEntryByTitle(lore.data, title);
+            const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+            const existing = getEntryByTitle(lore.data, unifiedTitle)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`);
             const prior = existing?.content || '';
-            let promptParts = [tpl.prompt || ''];
+
+            let prompt = tpl.prompt || '';
             if (prior && String(prior).trim()) {
-                promptParts.push('\n' + String(prior).trim());
+                prompt += '\n' + String(prior).trim();
             }
-            promptParts.push('\n=== SCENE TEXT ===\n');
-            promptParts.push(sceneText);
-            let prompt = promptParts.join('');
+            prompt += '\n=== SCENE TEXT ===\n' + sceneText;
             if (tpl.responseFormat && String(tpl.responseFormat).trim()) {
                 prompt += '\n=== RESPONSE FORMAT ===\n' + String(tpl.responseFormat).trim();
             }
 
             try {
                 const text = await runLLM(prompt, overrides);
-                await upsertLorebookEntryByTitle(lore.name, lore.data, title, text, {
+                await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, text, {
                     defaults: {
                         vectorized: true,
                         selective: true,
@@ -463,11 +442,11 @@ export async function runPlotUpdate(rangeString) {
                 });
             } catch (err) {
                 console.error(`${MODULE_NAME}: /plotupdate failed for "${tpl.name}":`, err);
-                toastr.error(`Plotpoints "${tpl.name}" failed`, 'STMemoryBooks');
+                toastr.error(`SidePrompt "${tpl.name}" failed`, 'STMemoryBooks');
             }
         }
 
-        toastr.success('Plotpoints updated for the specified range.', 'STMemoryBooks');
+        toastr.success('Side prompts updated for the specified range.', 'STMemoryBooks');
         return '';
     } catch (outer) {
         return '';
@@ -478,47 +457,99 @@ export async function runPlotUpdate(rangeString) {
  * /score name-of-prompt -> manual scoreboard since last score
  */
 export async function runScore(nameArg) {
+    // Alias to unified sideprompt command
+    return runSidePrompt(nameArg || '');
+}
+
+/**
+ * Unified manual side prompt runner
+ * Usage: /sideprompt "Name" [X-Y]
+ */
+export async function runSidePrompt(args) {
     try {
         const lore = await requireLorebookStrict();
 
-        const tpl = await findTemplateByName(nameArg);
-        if (!tpl || tpl.type !== 'scoreboard') {
-            toastr.error('Scoreboard template not found. Check name.', 'STMemoryBooks');
+        const { name, range } = parseNameAndRange(args);
+        if (!name) {
+            toastr.error('SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]', 'STMemoryBooks');
             return '';
         }
 
-        const title = `${tpl.name} (STMB Scoreboard)`;
-        const existing = getEntryByTitle(lore.data, title);
-        const lastMsgId = Number(existing?.STMB_score_lastMsgId ?? -1);
+        const tpl = await findTemplateByName(name);
+        if (!tpl) {
+            toastr.error('SidePrompt template not found. Check name.', 'STMemoryBooks');
+            return '';
+        }
 
         const currentLast = chat.length - 1;
         if (currentLast < 0) {
-            toastr.error('No messages available for scoring.', 'STMemoryBooks');
+            toastr.error('No messages available.', 'STMemoryBooks');
             return '';
         }
 
-        const start = Math.max(0, lastMsgId + 1);
-        const cap = 200;
-        const boundedStart = Math.max(start, currentLast - cap + 1);
-
+        // Compile window
         let compiled = null;
-        try {
-            compiled = compileRange(boundedStart, currentLast);
-        } catch (err) {
-            toastr.error('Failed to compile messages for /score', 'STMemoryBooks');
-            return '';
+        if (range) {
+            const m = String(range).trim().match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+            if (!m) {
+                toastr.error('Invalid range format. Use X-Y', 'STMemoryBooks');
+                return '';
+            }
+            const start = parseInt(m[1], 10);
+            const end = parseInt(m[2], 10);
+            if (!(start >= 0 && end >= start && end < chat.length)) {
+                toastr.error('Invalid message range for /sideprompt', 'STMemoryBooks');
+                return '';
+            }
+            try {
+                compiled = compileRange(start, end);
+            } catch (err) {
+                toastr.error('Failed to compile the specified range', 'STMemoryBooks');
+                return '';
+            }
+        } else {
+            // Since-last behavior with cap
+            const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+            const existingForLast = getEntryByTitle(lore.data, unifiedTitle)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
+                || getEntryByTitle(lore.data, `${tpl.name} (STMB Tracker)`);
+            const lastMsgId = Number(
+                (existingForLast && existingForLast[`STMB_sp_${tpl.key}_lastMsgId`]) ??
+                (existingForLast && existingForLast.STMB_score_lastMsgId) ??
+                (existingForLast && existingForLast.STMB_tracker_lastMsgId) ??
+                -1
+            );
+
+            const start = Math.max(0, lastMsgId + 1);
+            const cap = 200;
+            const boundedStart = Math.max(start, currentLast - cap + 1);
+
+            try {
+                compiled = compileRange(boundedStart, currentLast);
+            } catch (err) {
+                toastr.error('Failed to compile messages for /sideprompt', 'STMemoryBooks');
+                return '';
+            }
         }
 
+        // Build prompt with prior
+        const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+        const existing = getEntryByTitle(lore.data, unifiedTitle)
+            || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`)
+            || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
+            || getEntryByTitle(lore.data, `${tpl.name} (STMB Tracker)`);
         const prior = existing?.content || '';
-        const prompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat);
+        const finalPrompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat);
 
+        // Call LLM
         let resultText = '';
         try {
             const idx = Number(tpl?.settings?.overrideProfileIndex);
             const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
             const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
-            resultText = await runLLM(prompt, overrides);
-            await upsertLorebookEntryByTitle(lore.name, lore.data, title, resultText, {
+            resultText = await runLLM(finalPrompt, overrides);
+            await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
                 defaults: {
                     vectorized: true,
                     selective: true,
@@ -526,20 +557,59 @@ export async function runScore(nameArg) {
                     position: 0,
                 },
                 metadataUpdates: {
-                    STMB_score_lastMsgId: currentLast,
-                    STMB_score_lastRunAt: new Date().toISOString(),
+                    [`STMB_sp_${tpl.key}_lastMsgId`]: chat.length - 1,
+                    [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                 },
                 refreshEditor: false,
             });
         } catch (err) {
-            console.error(`${MODULE_NAME}: /score failed:`, err);
-            toastr.error(`Scoreboard "${tpl.name}" failed`, 'STMemoryBooks');
+            console.error(`${MODULE_NAME}: /sideprompt failed:`, err);
+            toastr.error(`SidePrompt "${tpl.name}" failed`, 'STMemoryBooks');
             return '';
         }
 
-        toastr.success(`Scoreboard "${tpl.name}" updated.`, 'STMemoryBooks');
+        toastr.success(`SidePrompt "${tpl.name}" updated.`, 'STMemoryBooks');
         return '';
     } catch (outer) {
         return '';
     }
+}
+
+/**
+ * Parse sideprompt args: "Name" [X-Y] or Name [X-Y]
+ */
+function parseNameAndRange(input) {
+    const s = String(input || '').trim();
+    if (!s) return { name: '', range: null };
+
+    let name = '';
+    let rest = '';
+
+    const mQuoteD = s.match(/^"([^"]+)"\s*(.*)$/);
+    const mQuoteS = !mQuoteD && s.match(/^'([^']+)'\s*(.*)$/);
+    if (mQuoteD) {
+        name = mQuoteD[1];
+        rest = mQuoteD[2] || '';
+    } else if (mQuoteS) {
+        name = mQuoteS[1];
+        rest = mQuoteS[2] || '';
+    } else {
+        // If a range appears at the end, strip it from name
+        const mRange = s.match(/(\d+)\s*[-–—]\s*(\d+)\s*$/);
+        if (mRange) {
+            name = s.slice(0, mRange.index).trim();
+            rest = s.slice(mRange.index);
+        } else {
+            name = s;
+            rest = '';
+        }
+    }
+
+    let range = null;
+    if (rest) {
+        const r = rest.match(/(\d+)\s*[-–—]\s*(\d+)/);
+        if (r) range = `${r[1]}-${r[2]}`;
+    }
+
+    return { name, range };
 }
