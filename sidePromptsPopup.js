@@ -298,6 +298,7 @@ async function openEditTemplate(parentPopup, key) {
                 triggers,
             });
             toastr.success('Template updated', 'STMemoryBooks');
+            window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
             await refreshList(parentPopup, tpl.key);
         }
     } catch (err) {
