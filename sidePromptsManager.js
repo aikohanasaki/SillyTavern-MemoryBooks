@@ -29,9 +29,9 @@ function safeSlug(str) {
 }
 
 /**
- * Validate document structure
+ * Validate V2 document structure (triggers-based)
  */
-function validateSidePromptsFile(data) {
+function validateSidePromptsFileV2(data) {
     if (!data || typeof data !== 'object') return false;
     if (typeof data.version !== 'number') return false;
     if (!data.prompts || typeof data.prompts !== 'object') return false;
@@ -40,16 +40,105 @@ function validateSidePromptsFile(data) {
         if (!p || typeof p !== 'object') return false;
         if (p.key !== key) return false;
         if (typeof p.name !== 'string' || !p.name.trim()) return false;
-        if (!['tracker', 'plotpoints', 'scoreboard'].includes(p.type)) return false;
         if (typeof p.enabled !== 'boolean') return false;
         if (typeof p.prompt !== 'string') return false;
         if (!p.settings || typeof p.settings !== 'object') return false;
+
+        // triggers must exist in v2
+        if (!p.triggers || typeof p.triggers !== 'object') return false;
+
+        // onInterval validation (optional)
+        if (p.triggers.onInterval != null) {
+            const oi = p.triggers.onInterval;
+            if (typeof oi !== 'object') return false;
+            const vis = Number(oi.visibleMessages);
+            if (!Number.isFinite(vis) || vis < 1) return false;
+        }
+
+        // onAfterMemory validation (optional)
+        if (p.triggers.onAfterMemory != null) {
+            const oam = p.triggers.onAfterMemory;
+            if (typeof oam !== 'object') return false;
+            if (typeof oam.enabled !== 'boolean') return false;
+        }
+
+        // commands validation (optional)
+        if (p.triggers.commands != null) {
+            if (!Array.isArray(p.triggers.commands)) return false;
+            for (const c of p.triggers.commands) {
+                if (typeof c !== 'string' || !c.trim()) return false;
+            }
+        }
     }
+
     return true;
 }
 
 /**
- * Default built-in templates (seeded with placeholder prompt)
+ * Quick check if data looks like V1 (type-based) structure
+ */
+function looksLikeV1(data) {
+    if (!data || typeof data !== 'object') return false;
+    if (!data.prompts || typeof data.prompts !== 'object') return false;
+
+    // If any prompt has "type" and no "triggers", treat as V1
+    return Object.values(data.prompts).some((p) => p && typeof p === 'object' && 'type' in p && !('triggers' in p));
+}
+
+/**
+ * Migrate V1 (type-based) document to V2 (triggers-based)
+ */
+function migrateV1toV2(v1) {
+    const createdAt = nowIso();
+    const v2 = {
+        version: Math.max(2, Number(v1.version || 1) + 1),
+        prompts: {},
+    };
+
+    for (const [key, p] of Object.entries(v1.prompts || {})) {
+        const next = {
+            key,
+            name: String(p.name || 'Side Prompt'),
+            enabled: !!p.enabled,
+            prompt: String(p.prompt != null ? p.prompt : 'this is a placeholder prompt'),
+            responseFormat: String(p.responseFormat || ''),
+            settings: { ...(p.settings || {}) },
+            createdAt: p.createdAt || createdAt,
+            updatedAt: createdAt,
+            triggers: {
+                onInterval: undefined,
+                onAfterMemory: undefined,
+                commands: ['sideprompt'],
+            },
+        };
+
+        // Map types to triggers
+        const type = String(p.type || '').toLowerCase();
+        if (type === 'tracker') {
+            const intervalVisibleMessages = Math.max(1, Number(p.settings?.intervalVisibleMessages || 50));
+            next.triggers.onInterval = { visibleMessages: intervalVisibleMessages };
+            // trackers don't need after-memory by default
+        } else if (type === 'plotpoints') {
+            const withMemories = !!(p.settings?.withMemories ?? true);
+            next.triggers.onAfterMemory = { enabled: !!withMemories };
+        } else if (type === 'scoreboard') {
+            const withMemories = !!(p.settings?.withMemories ?? false);
+            if (withMemories) {
+                next.triggers.onAfterMemory = { enabled: true };
+            }
+            // scoreboard is primarily manual; commands already filled
+        } else {
+            // Unknown type: leave only manual command trigger
+        }
+
+        v2.prompts[key] = next;
+    }
+
+    return v2;
+}
+
+/**
+ * Default built-in templates (V2 triggers-based, seeded with placeholder prompt)
  */
 function getBuiltinTemplates() {
     const placeholder = 'this is a placeholder prompt';
@@ -57,73 +146,78 @@ function getBuiltinTemplates() {
 
     const prompts = {};
 
-    // Tracker (disabled by default)
+    // Continuity Tracker (disabled by default) -> interval trigger only
     {
         const key = safeSlug('Continuity Tracker');
         prompts[key] = {
             key,
             name: 'Continuity Tracker',
-            type: 'tracker',
             enabled: false,
             prompt: placeholder,
             responseFormat: '',
-            settings: {
-                intervalVisibleMessages: 50,
+            triggers: {
+                onInterval: { visibleMessages: 50 },
+                // no onAfterMemory by default
+                // no commands by default (can still be run via /sideprompt, but keep minimal)
+                commands: ['sideprompt'],
             },
+            settings: {},
             createdAt,
             updatedAt: createdAt,
         };
     }
 
-    // Plot Points Extractor (enabled with memories by default)
+    // Plot Points Extractor (disabled by default) -> after-memory + manual
     {
         const key = safeSlug('Plot Points Extractor');
         prompts[key] = {
             key,
             name: 'Plot Points Extractor',
-            type: 'plotpoints',
             enabled: false,
             prompt: placeholder,
             responseFormat: '',
-            settings: {
-                withMemories: true,
+            triggers: {
+                onAfterMemory: { enabled: true },
+                commands: ['sideprompt'],
             },
+            settings: {},
             createdAt,
             updatedAt: createdAt,
         };
     }
 
-    // Scoreboard - Manual
+    // Scoreboard - Manual -> manual only
     {
         const key = safeSlug('Scoreboard - Manual');
         prompts[key] = {
             key,
             name: 'Scoreboard - Manual',
-            type: 'scoreboard',
             enabled: false,
             prompt: placeholder,
             responseFormat: '',
-            settings: {
-                withMemories: false, // manual only
+            triggers: {
+                commands: ['sideprompt'],
             },
+            settings: {},
             createdAt,
             updatedAt: createdAt,
         };
     }
 
-    // Scoreboard - With Memories (auto)
+    // Scoreboard - With Memories (auto) -> after-memory + manual
     {
         const key = safeSlug('Scoreboard - With Memories');
         prompts[key] = {
             key,
             name: 'Scoreboard - With Memories',
-            type: 'scoreboard',
             enabled: false,
             prompt: placeholder,
             responseFormat: '',
-            settings: {
-                withMemories: true, // run alongside memory
+            triggers: {
+                onAfterMemory: { enabled: true },
+                commands: ['sideprompt'],
             },
+            settings: {},
             createdAt,
             updatedAt: createdAt,
         };
@@ -133,11 +227,11 @@ function getBuiltinTemplates() {
 }
 
 /**
- * Create a new base document
+ * Create a new base document (V2)
  */
 function createBaseDoc() {
     return {
-        version: SCHEMA.CURRENT_VERSION,
+        version: Math.max(2, SCHEMA.CURRENT_VERSION || 2),
         prompts: getBuiltinTemplates(),
     };
 }
@@ -168,12 +262,11 @@ async function saveDoc(doc) {
 }
 
 /**
- * Load document from server, creating it with built-ins if missing/invalid
+ * Load document from server, creating or migrating it if missing/invalid
  */
 export async function loadSidePrompts() {
     if (cachedDoc) return cachedDoc;
 
-    let mustWrite = false;
     let data = null;
 
     try {
@@ -184,19 +277,36 @@ export async function loadSidePrompts() {
         });
 
         if (!res.ok) {
-            mustWrite = true;
+            // Missing -> create base
+            data = createBaseDoc();
+            await saveDoc(data);
         } else {
             const text = await res.text();
-            data = JSON.parse(text);
-            if (!validateSidePromptsFile(data)) {
-                mustWrite = true;
+            const parsed = JSON.parse(text);
+
+            // If looks like old V1 -> migrate to V2
+            if (looksLikeV1(parsed)) {
+                console.log(`${MODULE_NAME}: Migrating side prompts file from V1(type) to V2(triggers)`);
+                data = migrateV1toV2(parsed);
+                await saveDoc(data);
+            } else {
+                // Validate as V2; if invalid generate base
+                if (!validateSidePromptsFileV2(parsed)) {
+                    console.warn(`${MODULE_NAME}: Invalid side prompts file structure; recreating with built-ins`);
+                    data = createBaseDoc();
+                    await saveDoc(data);
+                } else {
+                    data = parsed;
+                    // If version < 2 but passes V2 validation, bump version
+                    if (Number(data.version || 1) < 2) {
+                        data.version = 2;
+                        await saveDoc(data);
+                    }
+                }
             }
         }
     } catch (e) {
-        mustWrite = true;
-    }
-
-    if (mustWrite) {
+        console.warn(`${MODULE_NAME}: Error loading side prompts; creating base doc`, e);
         data = createBaseDoc();
         await saveDoc(data);
     }
@@ -259,7 +369,7 @@ export async function findTemplateByName(name) {
 }
 
 /**
- * Create or update a template
+ * Create or update a template (v2)
  */
 export async function upsertTemplate(input) {
     const data = await loadSidePrompts();
@@ -271,22 +381,30 @@ export async function upsertTemplate(input) {
     const next = {
         key,
         name: String(input.name || (cur?.name || 'Side Prompt')),
-        type: input.type || cur?.type || 'tracker',
         enabled: typeof input.enabled === 'boolean' ? input.enabled : (cur?.enabled ?? false),
         prompt: String(input.prompt != null ? input.prompt : (cur?.prompt || 'this is a placeholder prompt')),
         responseFormat: String(input.responseFormat != null ? input.responseFormat : (cur?.responseFormat || '')),
         settings: { ...(cur?.settings || {}), ...(input.settings || {}) },
+        triggers: input.triggers ? input.triggers : (cur?.triggers || { commands: ['sideprompt'] }),
         createdAt: cur?.createdAt || ts,
         updatedAt: ts,
     };
 
-    // Validate type-specific defaults
-    if (next.type === 'tracker') {
-        next.settings.intervalVisibleMessages = Math.max(1, Number(next.settings.intervalVisibleMessages || 50));
-    } else if (next.type === 'plotpoints') {
-        next.settings.withMemories = !!(next.settings.withMemories ?? true);
-    } else if (next.type === 'scoreboard') {
-        next.settings.withMemories = !!(next.settings.withMemories ?? false);
+    // Normalize triggers for safety
+    if (next.triggers.onInterval) {
+        const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages || 50));
+        next.triggers.onInterval = { visibleMessages: vis };
+    }
+    if (next.triggers.onAfterMemory) {
+        next.triggers.onAfterMemory = { enabled: !!next.triggers.onAfterMemory.enabled };
+    }
+    if (Array.isArray(next.triggers.commands)) {
+        next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
+        if (next.triggers.commands.length === 0) {
+            next.triggers.commands = ['sideprompt'];
+        }
+    } else {
+        next.triggers.commands = ['sideprompt'];
     }
 
     data.prompts[key] = next;
@@ -345,18 +463,63 @@ export async function exportToJSON() {
  */
 export async function importFromJSON(jsonString) {
     const parsed = JSON.parse(jsonString);
-    if (!validateSidePromptsFile(parsed)) {
+
+    // Accept either strict V2 or migrate V1 on import
+    let dataToSave = null;
+    if (validateSidePromptsFileV2(parsed)) {
+        dataToSave = parsed;
+    } else if (looksLikeV1(parsed)) {
+        dataToSave = migrateV1toV2(parsed);
+    } else {
         throw new Error('Invalid side prompts file structure');
     }
-    await saveDoc(parsed);
+
+    await saveDoc(dataToSave);
 }
 
 /**
- * List enabled templates by type
+ * Back-compat: List enabled templates by legacy type
+ * - tracker => has onInterval trigger
+ * - plotpoints => has onAfterMemory enabled
+ * - scoreboard => has commands (manual), also onAfterMemory if originally withMemories
  */
 export async function listEnabledByType(type) {
-    const list = await listTemplates();
-    return list.filter(p => p.type === type && p.enabled);
+    const t = String(type || '').toLowerCase();
+    const all = await listTemplates();
+
+    if (t === 'tracker') {
+        return all.filter(p => p.enabled && p.triggers?.onInterval && Number(p.triggers.onInterval.visibleMessages) >= 1);
+    }
+    if (t === 'plotpoints') {
+        return all.filter(p => p.enabled && p.triggers?.onAfterMemory?.enabled);
+    }
+    if (t === 'scoreboard') {
+        // enabled scoreboard historically was either manual or auto-with-memories
+        return all.filter(p => p.enabled && (Array.isArray(p.triggers?.commands) || p.triggers?.onAfterMemory?.enabled));
+    }
+    return [];
+}
+
+/**
+ * New: List templates by trigger kind
+ * - 'onInterval' => interval-enabled and template.enabled === true
+ * - 'onAfterMemory' => after-memory enabled and template.enabled === true
+ * - 'command:<name>' => has commands including <name> (enabled flag not required for manual run)
+ */
+export async function listByTrigger(kind) {
+    const all = await listTemplates();
+
+    if (kind === 'onInterval') {
+        return all.filter(p => p.enabled && p.triggers?.onInterval && Number(p.triggers.onInterval.visibleMessages) >= 1);
+    }
+    if (kind === 'onAfterMemory') {
+        return all.filter(p => p.enabled && p.triggers?.onAfterMemory?.enabled);
+    }
+    if (kind && kind.startsWith('command:')) {
+        const cmd = kind.slice('command:'.length).trim();
+        return all.filter(p => Array.isArray(p.triggers?.commands) && p.triggers.commands.some(c => c.toLowerCase() === cmd.toLowerCase()));
+    }
+    return [];
 }
 
 /**

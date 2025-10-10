@@ -21,7 +21,7 @@ import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getUIModelSettings, getC
 import { editGroup } from '../../../group-chats.js';
 import * as PromptManager from './summaryPromptManager.js';
 import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
-import { evaluateTrackers, runAfterMemory, runPlotUpdate, runScore } from './sidePrompts.js';
+import { evaluateTrackers, runAfterMemory, runPlotUpdate, runScore, runSidePrompt } from './sidePrompts.js';
 import { showSidePromptsPopup } from './sidePromptsPopup.js';
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
@@ -2421,12 +2421,27 @@ function registerSlashCommands() {
         helpString: 'Create memory from end of last memory to current message'
     });
 
+    const sidePromptCmd = SlashCommand.fromProps({
+        name: 'sideprompt',
+        callback: (namedArgs, unnamedArgs) => {
+            return runSidePrompt(unnamedArgs || '');
+        },
+        helpString: 'Run side prompt by name, optionally with range (e.g., /sideprompt "Plot Points Extractor" 10-15)',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Template name (quote if contains spaces), optionally followed by X-Y range',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true
+            })
+        ]
+    });
+
     const plotUpdateCmd = SlashCommand.fromProps({
         name: 'plotupdate',
         callback: (namedArgs, unnamedArgs) => {
             return runPlotUpdate(unnamedArgs || '');
         },
-        helpString: 'Run plotpoints for X-Y (e.g., /plotupdate 10-15)',
+        helpString: 'Deprecated: use /sideprompt "Plot Points Extractor" X-Y (still supported)',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Message range (X-Y format)',
@@ -2441,7 +2456,7 @@ function registerSlashCommands() {
         callback: (namedArgs, unnamedArgs) => {
             return runScore(unnamedArgs || '');
         },
-        helpString: 'Run scoreboard template by name (e.g., /score Factions)',
+        helpString: 'Deprecated: use /sideprompt "Factions" (still supported)',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Template name',
@@ -2454,6 +2469,7 @@ function registerSlashCommands() {
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
+    SlashCommandParser.addCommandObject(sidePromptCmd);
     SlashCommandParser.addCommandObject(plotUpdateCmd);
     SlashCommandParser.addCommandObject(scoreCmd);
 }
