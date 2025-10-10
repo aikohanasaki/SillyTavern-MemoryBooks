@@ -335,12 +335,12 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
-    try {
-        // Validate lorebook exists
-        const lorebookValidation = await validateLorebook();
-        if (!lorebookValidation.valid) {
-            toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
-            return '';
+    // Validate lorebook exists
+    const lorebookValidation = await validateLorebook();
+    if (!lorebookValidation.valid) {
+        toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
+        return '';
+    }
 }
 
 /**
@@ -487,177 +487,6 @@ function getSPTriggersSummary(tpl) {
     }
     return badges;
 }
-
-/**
- * Show a minimal side prompt picker and run the selected one
- */
-async function showSidePromptPickerAndRun(initialFilter = '') {
-    // Load all templates and prefer those with manual command
-    const templates = await listTemplates();
-    const all = Array.isArray(templates) ? templates : [];
-    const manualFirst = [...all].sort((a, b) => {
-        const aManual = (a?.triggers?.commands || []).some(c => String(c).toLowerCase() === 'sideprompt') ? 1 : 0;
-        const bManual = (b?.triggers?.commands || []).some(c => String(c).toLowerCase() === 'sideprompt') ? 1 : 0;
-        return bManual - aManual;
-    });
-
-    // Build popup content
-    let content = '<h3>Run Side Prompt</h3>';
-    content += '<div class="world_entry_form_control">';
-    content += '<input type="text" id="stmb-sp-picker-search" class="text_pole" placeholder="Search side prompts..." />';
-    content += '</div>';
-    content += '<div id="stmb-sp-picker-list" class="padding10" style="max-height: 340px; overflow-y: auto;"></div>';
-
-    const popup = new Popup(DOMPURIFY.sanitize(content), POPUP_TYPE.TEXT, '', {
-        okButton: false,
-        cancelButton: 'Close',
-        wide: true
-    });
-
-    const renderList = (filter) => {
-        const q = String(filter || '').toLowerCase();
-        const items = manualFirst.filter(t => {
-            if (!q) return true;
-            const hay = (t.name || '').toLowerCase() + ' ' + getSPTriggersSummary(t).join(' ').toLowerCase();
-            return hay.includes(q);
-        });
-
-        const container = popup.dlg?.querySelector('#stmb-sp-picker-list');
-        if (!container) return;
-
-        if (items.length === 0) {
-            container.innerHTML = '<div class="opacity50p">No matches</div>';
-            return;
-        }
-
-        const rows = items.map(t => {
-            const badges = getSPTriggersSummary(t);
-            const badgesHtml = badges.length ? badges.map(b => `<span class="badge" style="margin-right:6px;">${escapeHtml(b)}</span>`).join('') : '';
-            return `
-                <div class="stmb-sp-picker-row" data-name="${escapeHtml(t.name)}" 
-                     style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--SmartThemeBorderColor);cursor:pointer;">
-                    <div>${escapeHtml(t.name)}</div>
-                    <div>${badgesHtml}</div>
-                </div>
-            `;
-        }).join('');
-
-        container.innerHTML = rows;
-
-        // Attach click handlers
-        container.querySelectorAll('.stmb-sp-picker-row').forEach(row => {
-            row.addEventListener('click', async () => {
-                const name = row.getAttribute('data-name') || '';
-                // Run unified sideprompt
-                try {
-                    await runSidePrompt(name);
-                } finally {
-                    popup.completeCancelled();
-                }
-            });
-        });
-    };
-
-    // Attach handlers and show
-    await popup.show();
-    // Pre-fill search
-    const search = popup.dlg?.querySelector('#stmb-sp-picker-search');
-    if (search) {
-        search.value = initialFilter || '';
-        search.addEventListener('input', () => renderList(search.value));
-    }
-    renderList(initialFilter || '');
-}
-
-/**
- * Slash: /sideprompt (with optional name/range)
- * If no args, open a picker for discoverability.
- */
-async function handleSidePromptCommand(namedArgs, unnamedArgs) {
-    const raw = String(unnamedArgs || '').trim();
-    if (!raw) {
-        await showSidePromptPickerAndRun('');
-        return '';
-    }
-
-    // If user typed partial name without range and it doesn't exactly match,
-    // try a quick best effort: if multiple results, show picker filtered; else run directly.
-    const parts = raw.match(/^["']([^"']+)["']\s*(.*)$/) || raw.match(/^(.+?)(\s+\d+\s*[-–—]\s*\d+)?$/);
-    const namePart = parts ? (parts[1] || raw).trim() : raw;
-
-    try {
-        // Load and filter
-        const templates = await listTemplates();
-        const candidates = templates.filter(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
-        if (candidates.length > 1) {
-            await showSidePromptPickerAndRun(namePart);
-            return '';
-        }
-        // Fall back to direct run (runSidePrompt will resolve fuzzy or error toast)
-        return runSidePrompt(raw);
-    } catch {
-        // Fallback to direct run
-        return runSidePrompt(raw);
-    }
-}
-        
-        // Get all memory entries
-        const allMemories = identifyMemoryEntries(lorebookValidation.data);
-        
-        if (allMemories.length === 0) {
-            toastr.error('No memory entries found in lorebook', 'STMemoryBooks');
-            return '';
-        }
-        
-        // Find the most recent memory (highest end message number)
-        let mostRecentMemory = null;
-        let highestEndMessage = -1;
-        
-        for (const memory of allMemories) {
-            const range = getRangeFromMemoryEntry(memory.entry);
-            if (range && range.end !== null && range.end > highestEndMessage) {
-                highestEndMessage = range.end;
-                mostRecentMemory = memory;
-            }
-        }
-        
-        if (!mostRecentMemory) {
-            toastr.error('No memory entries with valid message ranges found', 'STMemoryBooks');
-            return '';
-        }
-        
-        // Calculate next memory start (last memory end + 1)
-        const nextStart = highestEndMessage + 1;
-        
-        // Use current last message as end
-        const activeChat = chat;
-        const nextEnd = activeChat.length - 1;
-        
-        // Validate the range
-        if (nextStart >= activeChat.length) {
-            toastr.error('No new messages since last memory', 'STMemoryBooks');
-            return '';
-        }
-        
-        if (nextStart > nextEnd) {
-            toastr.error('Not enough messages for a new memory', 'STMemoryBooks');
-            return '';
-        }
-        
-        // Execute scenememory with the calculated range
-        const rangeString = `${nextStart}-${nextEnd}`;
-        toastr.info(`Auto-detected next memory range: ${rangeString}`, 'STMemoryBooks');
-        
-        // Use the scenememory handler directly
-        return handleSceneMemoryCommand({}, rangeString);
-        
-    } catch (error) {
-        console.error('STMemoryBooks: Error in /nextmemory command:', error);
-        toastr.error(`Failed to determine next memory range: ${error.message}`, 'STMemoryBooks');
-        return '';
-    }
-}
-
 
 /**
  * Initialize and validate extension settings
@@ -2911,4 +2740,4 @@ $(document).ready(() => {
     }    
     // Fallback initialization
     setTimeout(init, 2000);    
-});
+})
