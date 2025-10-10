@@ -344,24 +344,6 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 /**
- * Helper: build triggers badges for prompt picker
- */
-function getSPTriggersSummary(tpl) {
-    const badges = [];
-    const trig = tpl?.triggers || {};
-    if (trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1) {
-        badges.push(`Interval:${Number(trig.onInterval.visibleMessages)}`);
-    }
-    if (trig.onAfterMemory && !!trig.onAfterMemory.enabled) {
-        badges.push('AfterMemory');
-    }
-    if (Array.isArray(trig.commands) && trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')) {
-        badges.push('Manual');
-    }
-    return badges;
-}
-
-/**
  * Show a minimal side prompt picker and run the selected one
  */
 async function showSidePromptPickerAndRun(initialFilter = '') {
