@@ -2,6 +2,23 @@
 
 **← [Back to README](readme.md)**
 
+## v4.4.0 (October 2025)
+- **New Feature: Side Prompts (ALPHA, UNDER DEVELOPMENT)**
+  - Define reusable, supplemental prompt snippets that augment memory/summary generation without modifying global presets
+  - Per‑context overrides: enable/disable and customize prompts for the current chat/context while keeping global defaults intact
+  - New Side Prompts popup with quick toggles, inline editing, and clear visibility of active prompts
+  - Side Prompts Manager for organizing prompts (create, duplicate, rename, delete, import/export)
+  - Fully integrated into the generation pipeline; behavior remains unchanged unless Side Prompts are explicitly enabled
+
+- **Enhancements / Refactors:**
+  - Consolidated LLM generation code paths for maintainability and reduced duplication (utils.js, stmemory.js)
+  - Dynamic Profile handling refactor (profile lookup/location and related flows)
+  - Functional enhancement: Auto‑unhide during scene compilation — when creating a scene, the extension issues “/unhide x‑y” so previously hidden messages are included and can be recompiled
+
+- **Bug Fixes:** 
+  - Fixed `current_st` locking issue in profile management
+  - Re‑implemented `/scenememory` handling to restore expected range‑based memory creation
+
 ## v4.3.2 (October 2025)
 - **Bug Fixes:** 
   - introduced new bug to /scenememory that I had to fix
