@@ -25,6 +25,7 @@ import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js
 import { evaluateTrackers, runAfterMemory, runPlotUpdate, runScore, runSidePrompt } from './sidePrompts.js';
 import { showSidePromptsPopup } from './sidePromptsPopup.js';
 import { listTemplates } from './sidePromptsManager.js';
+import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
  */
@@ -1438,39 +1439,8 @@ async function showPromptManagerPopup() {
         content += '<input type="text" id="stmb-prompt-search" class="text_pole" placeholder="Search presets..." aria-label="Search presets" data-i18n="STMemoryBooks_PromptManager_Search" />';
         content += '</div>';
         
-        // Preset list
-        content += '<div id="stmb-preset-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;">';
-        
-        if (presets.length === 0) {
-            content += '<div class="opacity50p" data-i18n="STMemoryBooks_PromptManager_NoPresets">No presets available</div>';
-        } else {
-            content += '<table style="width: 100%; border-collapse: collapse;">';
-            content += '<thead><tr><th data-i18n="STMemoryBooks_PromptManager_DisplayName">Display Name</th></tr></thead>';
-            content += '<tbody>';
-            
-            for (const preset of presets) {
-                content += `<tr data-preset-key="${preset.key}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">`;
-                content += `<td style="padding: 8px;">` +
-                           `<span class="stmb-preset-name">${escapeHtml(preset.displayName)}</span>` +
-                           `<span class="stmb-inline-actions" style="float: right; display: inline-flex; gap: 10px;">` +
-                               `<button class="stmb-action stmb-action-edit" title="Edit" aria-label="Edit" style="background:none;border:none;cursor:pointer;">` +
-                                   `<i class="fa-solid fa-pen"></i>` +
-                               `</button>` +
-                               `<button class="stmb-action stmb-action-duplicate" title="Duplicate" aria-label="Duplicate" style="background:none;border:none;cursor:pointer;">` +
-                                   `<i class="fa-solid fa-copy"></i>` +
-                               `</button>` +
-                               `<button class="stmb-action stmb-action-delete" title="Delete" aria-label="Delete" style="background:none;border:none;cursor:pointer;">` +
-                                   `<i class="fa-solid fa-trash"></i>` +
-                               `</button>` +
-                           `</span>` +
-                        `</td>`;
-                content += '</tr>';
-            }
-            
-            content += '</tbody></table>';
-        }
-        
-        content += '</div>';
+        // Preset list container (table content rendered via Handlebars after popup creation)
+        content += '<div id="stmb-preset-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>';
         
         // Action buttons
         content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
@@ -1496,6 +1466,17 @@ async function showPromptManagerPopup() {
 
         // Attach handlers before showing the popup to ensure interactivity
         setupPromptManagerEventHandlers(popup);
+
+        // Initial render of presets table using Handlebars
+        const listEl = popup.dlg?.querySelector('#stmb-preset-list');
+        if (listEl) {
+            const items = (presets || []).map(p => ({
+                key: String(p.key || ''),
+                displayName: String(p.displayName || ''),
+            }));
+            listEl.innerHTML = DOMPurify.sanitize(summaryPromptsTableTemplate({ items }));
+        }
+
         await popup.show();
 
     } catch (error) {

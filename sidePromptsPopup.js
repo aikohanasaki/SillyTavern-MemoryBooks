@@ -11,6 +11,7 @@ import {
     exportToJSON as exportSidePromptsJSON,
     importFromJSON as importSidePromptsJSON,
 } from './sidePromptsManager.js';
+import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -33,51 +34,17 @@ function getTriggersSummary(tpl) {
 }
 
 /**
- * Render the templates table HTML
+ * Render the templates table HTML using Handlebars
  * @param {Array} templates
  * @returns {string}
  */
 function renderTemplatesTable(templates) {
-    let html = '';
-    html += '<table style="width: 100%; border-collapse: collapse;">';
-    html += '<thead><tr>';
-    html += '<th style="text-align:left;">Name</th>';
-    html += '<th style="width: 240px; text-align:left;">Triggers</th>';
-    html += '<th style="width: 120px; text-align:right;">Actions</th>';
-    html += '</tr></thead>';
-    html += '<tbody>';
-
-    if (!templates || templates.length === 0) {
-        html += '<tr><td colspan="3"><div class="opacity50p">No side prompts available</div></td></tr>';
-    } else {
-        for (const tpl of templates) {
-            const badges = getTriggersSummary(tpl);
-            const badgesHtml = badges.length > 0
-                ? badges.map(b => `<span class="badge" style="margin-right:6px;">${escapeHtml(b)}</span>`).join('')
-                : '<span class="opacity50p">None</span>';
-
-            html += `<tr data-tpl-key="${escapeHtml(tpl.key)}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">`;
-            html += `<td style="padding: 8px;">${escapeHtml(tpl.name)}</td>`;
-            html += `<td style="padding: 8px;">${badgesHtml}</td>`;
-            html += '<td style="padding: 8px; text-align:right;">' +
-                '<span class="stmb-sp-inline-actions" style="display: inline-flex; gap: 10px;">' +
-                '<button class="stmb-sp-action stmb-sp-action-edit" title="Edit" aria-label="Edit" style="background:none;border:none;cursor:pointer;">' +
-                '<i class="fa-solid fa-pen"></i>' +
-                '</button>' +
-                '<button class="stmb-sp-action stmb-sp-action-duplicate" title="Duplicate" aria-label="Duplicate" style="background:none;border:none;cursor:pointer;">' +
-                '<i class="fa-solid fa-copy"></i>' +
-                '</button>' +
-                '<button class="stmb-sp-action stmb-sp-action-delete" title="Delete" aria-label="Delete" style="background:none;border:none;cursor:pointer;color:var(--redColor);">' +
-                '<i class="fa-solid fa-trash"></i>' +
-                '</button>' +
-                '</span>' +
-                '</td>';
-            html += '</tr>';
-        }
-    }
-
-    html += '</tbody></table>';
-    return html;
+    const items = (templates || []).map(t => ({
+        key: String(t.key || ''),
+        name: String(t.name || ''),
+        badges: getTriggersSummary(t),
+    }));
+    return sidePromptsTableTemplate({ items });
 }
 
 /**
@@ -100,7 +67,7 @@ async function refreshList(popup, preserveKey = null) {
         })
         : templates;
 
-    listContainer.innerHTML = renderTemplatesTable(filtered);
+    listContainer.innerHTML = DOMPurify.sanitize(renderTemplatesTable(filtered));
 
     // Restore selection
     if (preserveKey) {
