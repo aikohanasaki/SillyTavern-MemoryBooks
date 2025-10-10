@@ -23,6 +23,7 @@ import * as PromptManager from './summaryPromptManager.js';
 import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
 import { evaluateTrackers, runAfterMemory, runPlotUpdate, runScore, runSidePrompt } from './sidePrompts.js';
 import { showSidePromptsPopup } from './sidePromptsPopup.js';
+import { listTemplates } from './sidePromptsManager.js';
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
  */
@@ -339,7 +340,138 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
         if (!lorebookValidation.valid) {
             toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
             return '';
+}
+
+/**
+ * Helper: build triggers badges for prompt picker
+ */
+function getSPTriggersSummary(tpl) {
+    const badges = [];
+    const trig = tpl?.triggers || {};
+    if (trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1) {
+        badges.push(`Interval:${Number(trig.onInterval.visibleMessages)}`);
+    }
+    if (trig.onAfterMemory && !!trig.onAfterMemory.enabled) {
+        badges.push('AfterMemory');
+    }
+    if (Array.isArray(trig.commands) && trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')) {
+        badges.push('Manual');
+    }
+    return badges;
+}
+
+/**
+ * Show a minimal side prompt picker and run the selected one
+ */
+async function showSidePromptPickerAndRun(initialFilter = '') {
+    // Load all templates and prefer those with manual command
+    const templates = await listTemplates();
+    const all = Array.isArray(templates) ? templates : [];
+    const manualFirst = [...all].sort((a, b) => {
+        const aManual = (a?.triggers?.commands || []).some(c => String(c).toLowerCase() === 'sideprompt') ? 1 : 0;
+        const bManual = (b?.triggers?.commands || []).some(c => String(c).toLowerCase() === 'sideprompt') ? 1 : 0;
+        return bManual - aManual;
+    });
+
+    // Build popup content
+    let content = '<h3>Run Side Prompt</h3>';
+    content += '<div class="world_entry_form_control">';
+    content += '<input type="text" id="stmb-sp-picker-search" class="text_pole" placeholder="Search side prompts..." />';
+    content += '</div>';
+    content += '<div id="stmb-sp-picker-list" class="padding10" style="max-height: 340px; overflow-y: auto;"></div>';
+
+    const popup = new Popup(DOMPURIFY.sanitize(content), POPUP_TYPE.TEXT, '', {
+        okButton: false,
+        cancelButton: 'Close',
+        wide: true
+    });
+
+    const renderList = (filter) => {
+        const q = String(filter || '').toLowerCase();
+        const items = manualFirst.filter(t => {
+            if (!q) return true;
+            const hay = (t.name || '').toLowerCase() + ' ' + getSPTriggersSummary(t).join(' ').toLowerCase();
+            return hay.includes(q);
+        });
+
+        const container = popup.dlg?.querySelector('#stmb-sp-picker-list');
+        if (!container) return;
+
+        if (items.length === 0) {
+            container.innerHTML = '<div class="opacity50p">No matches</div>';
+            return;
         }
+
+        const rows = items.map(t => {
+            const badges = getSPTriggersSummary(t);
+            const badgesHtml = badges.length ? badges.map(b => `<span class="badge" style="margin-right:6px;">${escapeHtml(b)}</span>`).join('') : '';
+            return `
+                <div class="stmb-sp-picker-row" data-name="${escapeHtml(t.name)}" 
+                     style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--SmartThemeBorderColor);cursor:pointer;">
+                    <div>${escapeHtml(t.name)}</div>
+                    <div>${badgesHtml}</div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = rows;
+
+        // Attach click handlers
+        container.querySelectorAll('.stmb-sp-picker-row').forEach(row => {
+            row.addEventListener('click', async () => {
+                const name = row.getAttribute('data-name') || '';
+                // Run unified sideprompt
+                try {
+                    await runSidePrompt(name);
+                } finally {
+                    popup.completeCancelled();
+                }
+            });
+        });
+    };
+
+    // Attach handlers and show
+    await popup.show();
+    // Pre-fill search
+    const search = popup.dlg?.querySelector('#stmb-sp-picker-search');
+    if (search) {
+        search.value = initialFilter || '';
+        search.addEventListener('input', () => renderList(search.value));
+    }
+    renderList(initialFilter || '');
+}
+
+/**
+ * Slash: /sideprompt (with optional name/range)
+ * If no args, open a picker for discoverability.
+ */
+async function handleSidePromptCommand(namedArgs, unnamedArgs) {
+    const raw = String(unnamedArgs || '').trim();
+    if (!raw) {
+        await showSidePromptPickerAndRun('');
+        return '';
+    }
+
+    // If user typed partial name without range and it doesn't exactly match,
+    // try a quick best effort: if multiple results, show picker filtered; else run directly.
+    const parts = raw.match(/^["']([^"']+)["']\s*(.*)$/) || raw.match(/^(.+?)(\s+\d+\s*[-–—]\s*\d+)?$/);
+    const namePart = parts ? (parts[1] || raw).trim() : raw;
+
+    try {
+        // Load and filter
+        const templates = await listTemplates();
+        const candidates = templates.filter(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
+        if (candidates.length > 1) {
+            await showSidePromptPickerAndRun(namePart);
+            return '';
+        }
+        // Fall back to direct run (runSidePrompt will resolve fuzzy or error toast)
+        return runSidePrompt(raw);
+    } catch {
+        // Fallback to direct run
+        return runSidePrompt(raw);
+    }
+}
         
         // Get all memory entries
         const allMemories = identifyMemoryEntries(lorebookValidation.data);
@@ -2423,15 +2555,13 @@ function registerSlashCommands() {
 
     const sidePromptCmd = SlashCommand.fromProps({
         name: 'sideprompt',
-        callback: (namedArgs, unnamedArgs) => {
-            return runSidePrompt(unnamedArgs || '');
-        },
-        helpString: 'Run side prompt by name, optionally with range (e.g., /sideprompt "Plot Points Extractor" 10-15)',
+        callback: handleSidePromptCommand,
+        helpString: 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Template name (quote if contains spaces), optionally followed by X-Y range',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true
+                isRequired: false
             })
         ]
     });
