@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.4.1 (October 11, 2025)
+- **Summarize Prompt Fix:** fixed prompt missing bullet-point instructions.
+
 ## v4.4.0 (October 2025)
 - **New Feature: Side Prompts (ALPHA, UNDER DEVELOPMENT)**
   - Define reusable, supplemental prompt snippets that augment memory/summary generation without modifying global presets

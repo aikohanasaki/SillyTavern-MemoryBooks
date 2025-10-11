@@ -541,7 +541,7 @@ export const PRESET_PROMPTS = {
                  '  "content": "Detailed summary with markdown headers...",\n' +
                  '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                  "}\n\n" +
-                 "For the content field, create a detailed summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):\n" +
+                 "For the content field, create a detailed bullet-point summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):\n" +
                  "- **Timeline**: Day/time this scene covers.\n" +
                  "- **Story Beats**: List all important plot events and story developments that occurred.\n" +
                  "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
