@@ -1,210 +1,199 @@
-# 📕 ST Memory Books User Guide
+# 📕 ST Memory Books - Your AI Chat Memory Assistant
 
-Welcome to ST Memory Books! This guide explains how to use 📕 ST Memory Books for organizing, summarizing, and automating your chat lore and memories in SillyTavern.
+**Turn your endless chat conversations into organized, searchable memories!** 
 
-Quick links:
-- 📄 Changelog: [changelog.md](changelog.md)
-- 🔧 Lorebook Converter: [lorebookconverter.html](lorebookconverter.html)
-- 📘 README: [readme.md](readme.md)
-
-Works in all (single-character/group) chats.
+Ever wished you could remember what happened 500 messages ago? Or automatically track important plot points without manually taking notes? ST Memory Books does exactly that - it watches your chats and creates smart summaries so you never lose track of your story again.
 
 ---
 
-## 1. What is ST Memory Books?
+## 🚀 Quick Start (5 Minutes to Your First Memory!)
 
-STMB is a SillyTavern extension that lets you:
-- Mark scenes in chat and generate AI-powered memory summaries.
-- Automatically store memories with rich metadata in lorebooks.
-- Automate summarization, analytics, and advanced workflows via side prompts and auto-summary.
-- Manage lorebooks, profiles, and prompts with flexible settings.
+**New to ST Memory Books?** Let's get you set up with your first automatic memory in just a few clicks:
+
+### Step 1: Find the Extension
+- Look for the magic wand icon (🪄) next to your chat input box
+- Click it, then click **"Memory Books"**
+- You'll see the ST Memory Books control panel
+
+### Step 2: Turn On Auto-Magic
+- In the control panel, find **"Auto-Summary"** 
+- Turn it ON
+- Set it to create memories every **20-30 messages** (good starting point)
+- That's it! 🎉
+
+### Step 3: Chat Normally
+- Keep chatting as usual
+- After 20-30 new messages, ST Memory Books will automatically:
+  - Pick the best scene boundaries
+  - Ask your AI to write a summary
+  - Save it to your memory collection
+  - Show you a notification when done
+
+**Congratulations!** You now have automated memory management. No more forgetting what happened chapters ago!
 
 ---
 
-## 2. Installation & Access
+## 💡 What ST Memory Books Actually Does
 
-1. Requirements:
-   - SillyTavern (latest recommended)
-   - This extension (ST Memory Books)
+Think of ST Memory Books as your **personal AI librarian** for chat conversations:
 
-2. Install:
-   - Place the extension in the SillyTavern plugins/extensions folder.
-   - Enable it in SillyTavern’s Extensions menu.
+### 🤖 **Automatic Summaries** 
+*"I don't want to think about it, just make it work"*
+- Watches your chat in the background
+- Automatically creates memories every X messages
+- Perfect for long roleplays, creative writing, or ongoing stories
 
-3. Access:
-   - Open the Extensions menu (magic wand 🪄 to the left of the input box).
-   - Click “Memory Books” for settings, creation, prompts, and tools.
+### ✋ **Manual Memory Creation**
+*"I want control over what gets saved"*
+- Mark important scenes with simple arrow buttons (► ◄)
+- Create memories on-demand for special moments
+- Great for capturing key plot points or character developments
+
+### 📊 **Smart Trackers** 
+*"I want to track relationships, plot threads, or stats"*
+- Custom AI prompts that track anything you want
+- Automatically update scoreboards, relationship status, plot summaries
+- Examples: "Who likes who?", "Current quest status", "Character mood tracker"
+
+### 📚 **Memory Collections**
+*Where all your memories live*
+- Automatically organized and searchable
+- Works with SillyTavern's built-in lorebook system
+- Your AI can reference past memories in new conversations
 
 ---
 
-## 3. Core User Workflows
-
-### A. Automatic Summaries (“Set and Forget”)
+## 🎯 Choose Your Style
 
 <details>
-<summary><strong>Set-and-Forget Workflow (Auto-Summary)</strong></summary>
+<summary><strong>🔄 "Set and Forget" (Recommended for Beginners)</strong></summary>
 
-- Enable “Auto-Summary” in Memory Books settings.
-- STMB tracks new chat messages and, after a configurable interval, it will:
-  - Mark the appropriate scene boundaries for you,
-  - Generate a memory using AI,
-  - Store it in your lorebook, and
-  - (Optionally) run side prompts or other automation.
-- If no lorebook is present, you’ll be prompted to select/create one or postpone auto-summary for X messages.
-- Runs in single and group chats (group chats trigger after group turn completion).
-- No manual interaction is needed after initial setup.
+**Perfect if you want:** Hands-off automation that just works
+
+**How it works:**
+1. Turn on "Auto-Summary" in settings
+2. Choose how often to create memories (every 20-50 messages works well)
+3. Keep chatting normally - memories happen automatically!
+
+**What you get:** 
+- No manual work required
+- Consistent memory creation
+- Never miss important story beats
+- Works in both single and group chats
+
+**Pro tip:** Start with 30 messages, then adjust based on your chat style. Fast chats might want 50+, slower detailed chats might prefer 20.
 
 </details>
 
-### B. Marking a Scene & Creating a Memory
-
 <details>
-<summary><strong>UI Workflow</strong></summary>
+<summary><strong>✋ "Manual Control" (For Selective Memory Making)</strong></summary>
 
-1. Mark Scene Start/End:
-   - After loading a chat, wait a few seconds for chevron buttons to appear on each message (► ◄).
-   - Click the right-facing chevron (►) to set the start.
-   - Click the left-facing chevron (◄) to set the end.
-   - Click again to unset/reset markers.
+**Perfect if you want:** To decide exactly what becomes a memory
 
-2. Create Memory:
-   - Open the Extensions menu (🪄) → “Memory Books”.
-   - Click “Create Memory”.
-   - Confirm settings if prompted (profile, model, options).
-   - A memory is generated and added to the bound lorebook.
-   - A notification confirms success or explains issues.
+**How it works:**
+1. Look for small arrow buttons (► ◄) on your chat messages
+2. Click ► on the first message of an important scene
+3. Click ◄ on the last message of that scene  
+4. Open Memory Books (🪄) and click "Create Memory"
+
+**What you get:**
+- Complete control over memory content
+- Perfect for capturing specific moments
+- Great for complex scenes that need careful boundaries
+
+**Pro tip:** The arrow buttons appear a few seconds after loading a chat. If you don't see them, wait a moment or refresh the page.
 
 </details>
 
 <details>
-<summary><strong>Slash Command Workflow</strong></summary>
+<summary><strong>⚡ "Power User" (Slash Commands)</strong></summary>
 
-- Mark a range and create:  
-  `/scenememory X-Y` (e.g., `/scenememory 10-15`)
-- Create from current marked selection:  
-  `/creatememory`
-- Create from all new messages since the last memory:  
-  `/nextmemory`
-- Manual side prompt execution:  
-  `/sideprompt "Template Name" [X-Y]`  
-  - If no args provided, a picker opens so you can select a side prompt.
-- Deprecated (still supported, prefer /sideprompt):
-  - `/plotupdate X-Y` (use `/sideprompt "Plot Points Extractor" X-Y`)
-  - `/score Name` (use `/sideprompt "Factions"`)
+**Perfect if you want:** Keyboard shortcuts and advanced features
 
-> Tip: Type `/help` in SillyTavern for command discovery.
+**Essential commands:**
+- `/scenememory 10-25` - Create memory from messages 10 to 25
+- `/creatememory` - Make memory from currently marked scene
+- `/nextmemory` - Summarize everything since the last memory
+- `/sideprompt "Relationship Tracker"` - Run custom tracker
+
+**What you get:**
+- Lightning-fast memory creation
+- Batch operations
+- Integration with custom workflows
 
 </details>
 
-### C. Lorebook Management
+---
 
-- Automatic (Chat-Bound) Mode:
-  - Uses the lorebook bound to your current chat.
-  - Recommended for simplicity and speed.
+## ⚙️ Settings That Actually Matter
 
-- Manual Mode:
-  - Select a specific lorebook per chat from the Memory Books UI.
-  - Good for advanced users directing memories to specialized lorebooks.
+Don't worry - you don't need to configure everything! Here are the settings that make the biggest difference:
 
-- Auto-Create:
-  - If enabled, creates and binds a lorebook automatically when none exists.
-  - Uses your custom name template (e.g., “LTM - {{char}} - {{chat}}”).
+### 🎛️ **Auto-Summary Frequency**
+- **20-30 messages**: Great for detailed, slower chats
+- **40-60 messages**: Perfect for faster, action-packed conversations  
+- **80+ messages**: For very fast group chats or casual conversations
 
-- Mutual Exclusion:
-  - Manual Mode and Auto-Create cannot be active at the same time.
-  - Enabling one disables the other.
+### 📝 **Memory Previews** 
+- Turn this ON to review memories before they're saved
+- You can edit, approve, or regenerate if the AI missed something important
+- Recommended for important storylines
 
-- Group Chat Support:
-  - Scene, memory, and lorebook bindings work in group chats just like single chats.
+### 🏷️ **Memory Titles**
+- Customize how your memories are named
+- Use `{{title}}` for AI-generated titles, `{{scene}}` for message numbers
+- Example: `"Chapter {{title}} ({{scene}})"` becomes `"Chapter The Great Escape (Scene 45-67)"`
 
-### D. Advanced: Side Prompts
-
-- What are Side Prompts?
-  - Custom LLM-backed templates to generate analytics, plot points, dashboards, or any structured/long-form content you want saved to the lorebook.
-  - Generally used for trackers, scoreboards, etc.
-  - Results are saved (and overwritten) in a single lorebook entry in the same lorebook as memories.
-
-- How to Run:
-  - UI: In Memory Books, click “🎡 Side Prompts” to manage and run prompts.
-
-- Triggers:
-  - On Interval: Run automatically after X visible messages.
-  - After Memory: Run automatically right after a memory is created.
-  - Manual: `/sideprompt "Name" [X-Y]` (no args opens a picker).
+### 📚 **Memory Collections** (Lorebooks)
+- **Auto mode**: Uses your chat's default memory collection (easiest)
+- **Manual mode**: Pick a specific collection for each chat (for organization)
+- **Auto-create**: Makes new collections automatically (good for new characters)
 
 ---
 
-## 4. Settings & Customization
+## 🔧 Troubleshooting (When Things Don't Work)
 
-- Profiles
-  - Create, edit, import, export, and delete profiles.
-  - “Current SillyTavern Settings” (dynamic default) mirrors your ST UI’s API/model/temperature at runtime.
-  - Other profiles store fixed API/model/temperature settings.
-  - Each profile can set insertion mode, order, vectorization, recursion flags, etc.
+### "I don't see the Memory Books option!"
+- Check that the extension is installed and enabled
+- Look for the magic wand (🪄) icon next to your chat input
+- Try refreshing the page
 
-- Memory Previews
-  - Enable “Show Memory Previews” to review/edit the AI output before saving to the lorebook.
-  - Accept, edit, retry (limited), or cancel before it’s stored.
+### "The arrow buttons (► ◄) aren't showing up!"
+- Wait 3-5 seconds after loading a chat - they need time to appear
+- If still missing, refresh the page
+- Make sure ST Memory Books is enabled in extensions
 
-- Title Formatting
-  - Use placeholders and numbering patterns for automatic titles.
-  - Placeholders:
-    - `{{title}}`, `{{scene}}`, `{{char}}`, `{{user}}`, `{{messages}}`, `{{profile}}`, `{{date}}`, `{{time}}`
-  - Numbering patterns:
-    - `[000]`, `(000)`, `{000}`, `#[000]` (padding inferred from zeros)
-  - Example: `[000] - {{title}} ({{scene}})` → `[023] - Ambush (Scene 100-112)`
+### "Auto Summary isn't working!"
+- Double-check that "Auto-Summary" is enabled in Memory Books settings
+- Has the message interval been reached? Auto-summary waits for enough new messages
+- If you postponed auto-summary, it might be waiting until a certain message count
+- Auto-summary only processes new messages since the *last* memory. If you deleted old memories, it doesn't go back.
 
-- Auto-Hide
-  - Modes: none, all, last
-    - none: don’t hide anything
-    - all: hide all previous messages (optionally keep the last N unhidden)
-    - last: hide just the scene’s messages (optionally keep the last N unhidden)
-  - “Unhidden entries count” keeps N latest messages visible in either mode.
+### "I get errors about missing lorebooks!"
+- Go to Memory Books settings
+- Either bind a lorebook to your chat (Automatic Mode) or enable "Auto-create lorebook if none exists"
 
-- Token Warning Threshold & Context
-  - Token warning threshold stops generation if the estimated tokens exceed your limit.
-  - “Default previous memories” includes N prior memories as context for better continuity.
-
-- Lorebook Name Template
-  - Template used by Auto-Create (e.g., `LTM - {{char}} - {{chat}}`).
-  - Smart numbering adds `2`, `3`, `4`… to avoid collisions.
-
-- Notifications
-  - Toggle success/error toasts and general UI feedback.
-
-- Mutual Exclusion (reminder)
-  - Enabling Manual Mode disables Auto-Create and vice versa.
+### "My custom prompts aren't working right!"
+- Check the "Summary Prompt Manager" in Memory Books settings
+- Ensure your prompt instructs the AI to respond in **JSON format** (e.g., `{ "title": "...", "content": "..." }`)
 
 ---
 
-## 5. Troubleshooting & FAQ
+## 🚫 What ST Memory Books Doesn't Do
 
-- The extension isn’t visible:
-  - Ensure it’s installed in the correct folder and enabled in Manage Extensions.
-  - Make sure you're checking the right place. 📕ST Memory Books is found in the magic wand (🪄) in the input box.
-
-- Chevrons (► ◄) aren’t visible:
-  - Wait a few seconds after SillyTavern starts. If still not visible, refresh the page.
-
-- No memory generated when clicking Create Memory:
-  - Ensure both scene start and end are set.
-  - Verify a lorebook is bound or that Auto-Create is enabled.
-  - Check token threshold and reduce the scene size if needed.
-
-- Auto-Summary didn’t run:
-  - Confirm Auto-Summary is enabled and the message interval has been reached.
-  - If prompted earlier, auto-summary may be postponed until message N.
-  - if prior memories were deleted, auto-summary does not go back to review, and only processes based on "last message processed". 
-
-- Group chat support:
-  - Auto-summary triggers at the end of group turns; memories and prompts work the same as single chats.
+- **No `/addlore` command:** You can't manually add arbitrary lorebook entries with a slash command. All memory/lore addition is done via the scene marking, memory generation, or side prompt workflows.
+- **Not a general lorebook editor:** This guide focuses on entries created by STMB. For general lorebook editing, use SillyTavern\'s built-in lorebook editor.
 
 ---
 
-## 6. Getting Help
+## 7. Getting Help & More Info
 
-- Read more: [readme.md](readme.md)
-- Changelog: [changelog.md](changelog.md)
-- Converter: [lorebookconverter.html](lorebookconverter.html)
-- Discord: [📕ST Memory Books thread](https://discord.com/channels/1100685673633153084/1389013888045027339) on ST Discord or @tokyoapple in DM
-- Issues/feature requests: Open a GitHub issue in this repository
+- **More detailed info:** [readme.md](readme.md)
+- **Latest updates:** [changelog.md](changelog.md)
+- **Convert old lorebooks:** [lorebookconverter.html](lorebookconverter.html)
+- **Community support:** Join the SillyTavern community on Discord! (Look for the 📕ST Memory Books thread or DM @tokyoapple for direct help.)
+- **Bugs/features:** Found a bug or have a great idea? Open a GitHub issue in this repository.
+
+---
+
+**Enjoy ST Memory Books—your toolkit for next-generation, automated lore and memory management!**
