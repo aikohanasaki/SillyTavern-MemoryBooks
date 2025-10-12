@@ -37,10 +37,16 @@ function interpolate(str, params) {
 }
 
 export function t(key, fallback = '', params) {
-    // Allow passing literal text (no key present in registry)
-    let val = (registry[currentLocale] && registry[currentLocale][key]) ?? undefined;
-    if (val === undefined) {
-        // fallback to provided fallback or the key itself if fallback not given
+    // Lookup order:
+    // 1) current locale
+    // 2) English ('en') base locale
+    // 3) provided fallback or the key itself
+    let val;
+    if (registry[currentLocale] && Object.prototype.hasOwnProperty.call(registry[currentLocale], key)) {
+        val = registry[currentLocale][key];
+    } else if (currentLocale !== 'en' && registry['en'] && Object.prototype.hasOwnProperty.call(registry['en'], key)) {
+        val = registry['en'][key];
+    } else {
         val = fallback || key;
     }
     return interpolate(val, params);
