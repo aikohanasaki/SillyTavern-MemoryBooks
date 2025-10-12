@@ -2,6 +2,7 @@ import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTemplate } from './templates.js';
+import { t } from './i18n.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
 import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
@@ -25,7 +26,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
     const effectivePrompt = await getEffectivePrompt(selectedProfile);    
     const templateData = {
         ...sceneData,
-        profileName: selectedProfile.name,
+        profileName: (selectedProfile?.connection?.api === 'current_st') ? t('STMemoryBooks_Profile_CurrentST', 'Current SillyTavern Settings') : selectedProfile.name,
         effectivePrompt: effectivePrompt,
         profileModel: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
             'Current SillyTavern model' : (selectedProfile.connection?.model || 'Current SillyTavern model'),
@@ -39,6 +40,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000),
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
+            name: (profile?.connection?.api === 'current_st') ? t('STMemoryBooks_Profile_CurrentST', 'Current SillyTavern Settings') : profile.name,
             isDefault: index === settings.defaultProfile,
             isSelected: index === profileIndex
         }))
@@ -112,6 +114,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         availableMemories: availableMemories,
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
+            name: (profile?.connection?.api === 'current_st') ? t('STMemoryBooks_Profile_CurrentST', 'Current SillyTavern Settings') : profile.name,
             isDefault: index === settings.defaultProfile
         })),
         effectivePrompt: effectivePrompt,
@@ -595,7 +598,9 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
             sceneStart: sceneData.sceneStart,
             sceneEnd: sceneData.sceneEnd,
             messageCount: sceneData.messageCount,
-            profileName: profileSettings.name || 'Unknown Profile'
+            profileName: (profileSettings?.connection?.api === 'current_st')
+                ? t('STMemoryBooks_Profile_CurrentST', 'Current SillyTavern Settings')
+                : (profileSettings.name || 'Unknown Profile')
         };
 
         const content = DOMPurify.sanitize(memoryPreviewTemplate(templateData));

@@ -101,6 +101,7 @@ export const localeData_en = {
 
     // Profiles
     'STMemoryBooks_Profiles': 'Memory Profiles:',
+    'STMemoryBooks_Profile_CurrentST': 'Current SillyTavern Settings',
     'STMemoryBooks_Default': '(Default)',
     'STMemoryBooks_ProfileSettings': 'Profile Settings:',
     'STMemoryBooks_Provider': 'Provider',
@@ -186,7 +187,115 @@ export const localeData_en = {
 
     // Side Prompts
     'STMemoryBooks_SidePrompts_Title': '🧩 Side Prompts',
-    'STMemoryBooks_SidePrompts_Desc': 'Create and manage side prompts for trackers and other behind-the-scenes functions.'
+    'STMemoryBooks_SidePrompts_Desc': 'Create and manage side prompts for trackers and other behind-the-scenes functions.',
+
+    // General / Menu
+    'STMemoryBooks_MenuItem': 'Memory Books',
+    'STMemoryBooks_Close': 'Close',
+    'STMemoryBooks_NoMatches': 'No matches',
+
+    // Side Prompt Picker
+    'STMemoryBooks_RunSidePrompt': 'Run Side Prompt',
+    'STMemoryBooks_SearchSidePrompts': 'Search side prompts...',
+
+    // Badges
+    'STMemoryBooks_Interval': 'Interval',
+    'STMemoryBooks_AfterMemory': 'AfterMemory',
+    'STMemoryBooks_Manual': 'Manual',
+
+    // Prompt Manager
+    'STMemoryBooks_PromptManager_Hint': '💡 When creating a new prompt, copy one of the other built-in prompts and then amend it. Don\'t change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.',
+    'STMemoryBooks_ExpandEditor': 'Expand the editor',
+    'STMemoryBooks_ClearAndApply': 'Clear and Apply',
+    'STMemoryBooks_Cancel': 'Cancel',
+    'STMemoryBooks_Create': 'Create',
+    'STMemoryBooks_Save': 'Save',
+    'STMemoryBooks_Delete': 'Delete',
+
+    // Settings Popup Buttons / Toasts
+    'STMemoryBooks_CreateMemoryBtn': 'Create Memory',
+    'STMemoryBooks_ClearSceneBtn': 'Clear Scene',
+    'STMemoryBooks_NoSceneSelected': 'No scene selected. Make sure both start and end points are set.',
+
+    // Runtime and Toasts (added)
+    'STMemoryBooks_NoSceneMarkersToastr': 'No scene markers set. Use chevron buttons to mark start and end points first.',
+    'STMemoryBooks_MissingRangeArgument': 'Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)',
+    'STMemoryBooks_InvalidFormat': 'Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)',
+    'STMemoryBooks_InvalidMessageIDs': 'Invalid message IDs parsed. Use: /scenememory X-Y (e.g., /scenememory 10-15)',
+    'STMemoryBooks_StartGreaterThanEnd': 'Start message cannot be greater than end message',
+    'STMemoryBooks_MessageIDsOutOfRange': 'Message IDs out of range.',
+    'STMemoryBooks_MessagesDoNotExist': 'One or more specified messages do not exist',
+    'STMemoryBooks_SceneSet': 'Scene set.',
+    'STMemoryBooks_MemoryAlreadyInProgress': 'Memory creation is already in progress',
+    'STMemoryBooks_NoLorebookAvailable': 'No lorebook available.',
+    'STMemoryBooks_NoMessagesToSummarize': 'There are no messages to summarize yet.',
+    'STMemoryBooks_NoNewMessagesSinceLastMemory': 'No new messages since the last memory.',
+    'STMemoryBooks_NextMemoryFailed': 'Failed to run /nextmemory.',
+    'STMemoryBooks_OnlyNOfRequestedMemoriesAvailable': 'Only some of the requested memories are available',
+    'STMemoryBooks_NoPreviousMemoriesFound': 'No previous memories found in lorebook',
+    'STMemoryBooks_WorkingToast': 'Creating memory...',
+    'STMemoryBooks_MaximumRetryAttemptsReached': 'Maximum retry attempts reached',
+    'STMemoryBooks_RetryingMemoryGeneration': 'Retrying memory generation...',
+    'STMemoryBooks_UnableToRetrieveEditedMemoryData': 'Unable to retrieve edited memory data',
+    'STMemoryBooks_EditedMemoryDataIncomplete': 'Edited memory data is incomplete',
+    'STMemoryBooks_MemoryCreatedSuccessfully': 'Memory created successfully!',
+    'STMemoryBooks_MemoryCreationFailedWillRetry': 'Memory creation failed. Retrying...',
+    'STMemoryBooks_SceneTooLarge': 'Scene is too large. Try selecting a smaller range.',
+    'STMemoryBooks_AIFailedToGenerateValidMemory': 'AI failed to generate valid memory.',
+    'STMemoryBooks_ProfileConfigurationError': 'Profile configuration error.',
+    'STMemoryBooks_FailedToCreateMemory': 'Failed to create memory.',
+    'STMemoryBooks_LoadingCharacterData': 'SillyTavern is still loading character data, please wait a few seconds and try again.',
+    'STMemoryBooks_GroupChatDataUnavailable': 'Group chat data not available, please wait a few seconds and try again.',
+    'STMemoryBooks_LorebookValidationError': 'Lorebook validation error',
+    'STMemoryBooks_SceneOverlap': 'Scene overlaps with existing memory.',
+    'STMemoryBooks_UnexpectedError': 'An unexpected error occurred.',
+
+    // Manual lorebook and Profiles UI (added)
+    'STMemoryBooks_ChangeManualLorebook': 'Change',
+    'STMemoryBooks_SelectManualLorebook': 'Select',
+    'STMemoryBooks_ManualLorebook': 'Manual Lorebook',
+    'STMemoryBooks_FailedToSelectManualLorebook': 'Failed to select manual lorebook',
+    'STMemoryBooks_ClearManualLorebook': 'Clear Manual Lorebook',
+    'STMemoryBooks_ManualLorebookCleared': 'Manual lorebook cleared',
+    'STMemoryBooks_FailedToClearManualLorebook': 'Failed to clear manual lorebook',
+    'STMemoryBooks_SetAsDefault': 'Set as Default',
+    'STMemoryBooks_SetAsDefaultProfileSuccess': '"{{name}}" is now the default profile.',
+    'STMemoryBooks_EditProfile': 'Edit Profile',
+    'STMemoryBooks_FailedToEditProfile': 'Failed to edit profile',
+    'STMemoryBooks_NewProfile': 'New Profile',
+    'STMemoryBooks_FailedToCreateProfile': 'Failed to create profile',
+    'STMemoryBooks_DeleteProfile': 'Delete Profile',
+    'STMemoryBooks_FailedToDeleteProfile': 'Failed to delete profile',
+    'STMemoryBooks_ExportProfiles': 'Export Profiles',
+    'STMemoryBooks_FailedToExportProfiles': 'Failed to export profiles',
+    'STMemoryBooks_ImportProfiles': 'Import Profiles',
+    'STMemoryBooks_SummaryPromptManager': 'Summary Prompt Manager',
+    'STMemoryBooks_FailedToOpenSummaryPromptManager': 'Failed to open Summary Prompt Manager',
+    'STMemoryBooks_SidePrompts': 'Side Prompts',
+    'STMemoryBooks_FailedToOpenSidePrompts': 'Failed to open Side Prompts',
+    'STMemoryBooks_SelectPresetFirst': 'Select a preset first',
+    'STMemoryBooks_NoProfilesAvailable': 'No profiles available',
+    'STMemoryBooks_SelectedProfileNotFound': 'Selected profile not found',
+    'STMemoryBooks_PresetAppliedToProfile': 'Preset applied to profile',
+    'STMemoryBooks_PromptCannotBeEmpty': 'Prompt cannot be empty',
+    'STMemoryBooks_PresetCreatedSuccessfully': 'Preset created successfully',
+    'STMemoryBooks_FailedToCreatePreset': 'Failed to create preset',
+    'STMemoryBooks_PresetUpdatedSuccessfully': 'Preset updated successfully',
+    'STMemoryBooks_FailedToEditPreset': 'Failed to edit preset',
+    'STMemoryBooks_PresetDuplicatedSuccessfully': 'Preset duplicated successfully',
+    'STMemoryBooks_FailedToDuplicatePreset': 'Failed to duplicate preset',
+    'STMemoryBooks_PresetDeletedSuccessfully': 'Preset deleted successfully',
+    'STMemoryBooks_PromptsExportedSuccessfully': 'Prompts exported successfully',
+    'STMemoryBooks_PromptsImportedSuccessfully': 'Prompts imported successfully',
+    'STMemoryBooks_FailedToImportPrompts': 'Failed to import prompts.',
+    'STMemoryBooks_CreateMemoryButton': 'Create Memory',
+    'STMemoryBooks_NoSceneSelectedMakeSure': 'No scene selected. Make sure both start and end points are set.',
+    'STMemoryBooks_ClearSceneButton': 'Clear Scene',
+    'STMemoryBooks_FailedToImportProfiles': 'Failed to import profiles',
+    'STMemoryBooks_ManualLorebookSet': 'Manual lorebook set to "{{name}}"',
+    'STMemoryBooks_PleaseSelectLorebookForManualMode': 'Please select a lorebook for manual mode',
+    'STMemoryBooks_FailedToSaveSettings': 'Failed to save settings. Please try again.',
+    'STMemoryBooks_FailedToInitializeChatMonitoring': 'STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.'
 };
 
 /**
