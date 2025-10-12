@@ -6,6 +6,7 @@ import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, getEffectiveL
 import { autoCreateLorebook } from './autocreate.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
+import { i18n } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AutoSummary';
 
@@ -41,24 +42,24 @@ async function validateLorebookForAutoSummary() {
         // If no lorebook is selected, ask user what to do
         if (!lorebookName) {
             const popupContent = `
-                <h4>Auto-Summary Ready</h4>
+                <h4 data-i18n="STMemoryBooks_AutoSummaryReadyTitle">Auto-Summary Ready</h4>
                 <div class="world_entry_form_control">
-                    <p>Auto-summary is enabled but there is no assigned lorebook for this chat.</p>
-                    <p>Would you like to select a lorebook for memory storage, or postpone this auto-summary?</p>
-                    <label for="stmb-postpone-messages">Postpone for how many messages?</label>
+                    <p data-i18n="STMemoryBooks_AutoSummaryNoAssignedLorebook">Auto-summary is enabled but there is no assigned lorebook for this chat.</p>
+                    <p data-i18n="STMemoryBooks_AutoSummarySelectOrPostponeQuestion">Would you like to select a lorebook for memory storage, or postpone this auto-summary?</p>
+                    <label for="stmb-postpone-messages" data-i18n="STMemoryBooks_PostponeLabel">Postpone for how many messages?</label>
                     <select id="stmb-postpone-messages" class="text_pole">
-                        <option value="10">10 messages</option>
-                        <option value="20">20 messages</option>
-                        <option value="30">30 messages</option>
-                        <option value="40">40 messages</option>
-                        <option value="50">50 messages</option>
+                        <option value="10" data-i18n="STMemoryBooks_Postpone10">10 messages</option>
+                        <option value="20" data-i18n="STMemoryBooks_Postpone20">20 messages</option>
+                        <option value="30" data-i18n="STMemoryBooks_Postpone30">30 messages</option>
+                        <option value="40" data-i18n="STMemoryBooks_Postpone40">40 messages</option>
+                        <option value="50" data-i18n="STMemoryBooks_Postpone50">50 messages</option>
                     </select>
                 </div>
             `;
 
             const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
-                okButton: 'Select Lorebook',
-                cancelButton: 'Postpone'
+                okButton: i18n('STMemoryBooks_Button_SelectLorebook', 'Select Lorebook'),
+                cancelButton: i18n('STMemoryBooks_Button_Postpone', 'Postpone')
             });
             const result = await popup.show();
 
@@ -70,7 +71,7 @@ async function validateLorebookForAutoSummary() {
                     saveMetadataForCurrentContext();
                     lorebookName = selectedLorebook;
                 } else {
-                    return { valid: false, error: 'No lorebook selected for auto-summary.' };
+                    return { valid: false, error: i18n('STMemoryBooks_Error_NoLorebookSelectedForAutoSummary', 'No lorebook selected for auto-summary.') };
                 }
             } else {
                 // User wants to postpone
@@ -83,18 +84,18 @@ async function validateLorebookForAutoSummary() {
                 saveMetadataForCurrentContext();
 
                 console.log(`STMemoryBooks: Auto-summary postponed for ${postponeMessages} messages (until message ${stmbData.autoSummaryNextPromptAt})`);
-                return { valid: false, error: `Auto-summary postponed for ${postponeMessages} messages.` };
+                return { valid: false, error: i18n('STMemoryBooks_Info_AutoSummaryPostponed', 'Auto-summary postponed for {{count}} messages.', { count: postponeMessages }) };
             }
         }
     }
 
     // At this point we should have a lorebook name - validate it
     if (!lorebookName) {
-        return { valid: false, error: 'No lorebook available for auto-summary.' };
+        return { valid: false, error: i18n('STMemoryBooks_Error_NoLorebookForAutoSummary', 'No lorebook available for auto-summary.') };
     }
 
     if (!world_names || !world_names.includes(lorebookName)) {
-        return { valid: false, error: `Selected lorebook "${lorebookName}" not found.` };
+        return { valid: false, error: i18n('STMemoryBooks_Error_SelectedLorebookNotFound', 'Selected lorebook "{{name}}" not found.', { name: lorebookName }) };
     }
 
     try {
@@ -102,7 +103,7 @@ async function validateLorebookForAutoSummary() {
         const lorebookData = await loadWorldInfo(lorebookName);
         return { valid: !!lorebookData, data: lorebookData, name: lorebookName };
     } catch (error) {
-        return { valid: false, error: 'Failed to load the selected lorebook.' };
+        return { valid: false, error: i18n('STMemoryBooks_Error_FailedToLoadSelectedLorebook', 'Failed to load the selected lorebook.') };
     }
 }
 
@@ -122,14 +123,6 @@ export async function checkAutoSummaryTrigger() {
         const currentLastMessage = currentMessageCount - 1;
         const requiredInterval = settings.moduleSettings.autoSummaryInterval;
         const highestProcessed = stmbData.highestMemoryProcessed ?? null;
-
-        console.log('=== STMemoryBooks Auto-Summary Debug ===');
-        console.log('Auto-summary enabled:', settings.moduleSettings.autoSummaryEnabled);
-        console.log('Current message count:', currentMessageCount);
-        console.log('Current last message index:', currentLastMessage);
-        console.log('Required interval:', requiredInterval);
-        console.log('Highest processed:', highestProcessed);
-        console.log('Scene markers:', { start: stmbData.sceneStart, end: stmbData.sceneEnd });
 
         // Check if memory creation is in progress
         if (isMemoryProcessing()) {

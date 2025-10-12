@@ -29,13 +29,13 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         profileName: (selectedProfile?.connection?.api === 'current_st') ? t('STMemoryBooks_Profile_CurrentST', 'Current SillyTavern Settings') : selectedProfile.name,
         effectivePrompt: effectivePrompt,
         profileModel: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
-            'Current SillyTavern model' : (selectedProfile.connection?.model || 'Current SillyTavern model'),
+            t('STMemoryBooks_Label_CurrentSTModel', 'Current SillyTavern model') : (selectedProfile.connection?.model || t('STMemoryBooks_Label_CurrentSTModel', 'Current SillyTavern model')),
         profileTemperature: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
-            'Current SillyTavern temperature' : (selectedProfile.connection?.temperature !== undefined ?
-                selectedProfile.connection.temperature : 'Current SillyTavern temperature'),
-        currentModel: currentModelSettings?.model || 'Unknown',
+            t('STMemoryBooks_Label_CurrentSTTemperature', 'Current SillyTavern temperature') : (selectedProfile.connection?.temperature !== undefined ?
+                selectedProfile.connection.temperature : t('STMemoryBooks_Label_CurrentSTTemperature', 'Current SillyTavern temperature')),
+        currentModel: currentModelSettings?.model || t('common.unknown', 'Unknown'),
         currentTemperature: currentModelSettings?.temperature || 0.7,
-        currentApi: currentApiInfo?.api || 'Unknown',
+        currentApi: currentApiInfo?.api || t('common.unknown', 'Unknown'),
         tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000),
         profiles: settings.profiles.map((profile, index) => ({
@@ -50,13 +50,13 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
     
     try {
         const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
-            okButton: 'Create Memory',
-            cancelButton: 'Cancel/Close',
+            okButton: t('STMemoryBooks_Button_CreateMemory', 'Create Memory'),
+            cancelButton: t('STMemoryBooks_Button_CancelClose', 'Cancel/Close'),
             allowVerticalScrolling: true,
             wide: false,
             customButtons: [
                 {
-                    text: 'Advanced Options...',
+                    text: t('STMemoryBooks_Button_AdvancedOptions', 'Advanced Options...'),
                     result: STMB_POPUP_RESULTS.ADVANCED,
                     classes: ['menu_button'],
                     action: null
@@ -105,9 +105,9 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     const availableMemories = await getAvailableMemoriesCount(settings, chat_metadata);
     
     const effectivePrompt = await getEffectivePrompt(selectedProfile);
-    const profileModel = selectedProfile.connection?.model || 'Current SillyTavern model';
+    const profileModel = selectedProfile.connection?.model || t('STMemoryBooks_Label_CurrentSTModel', 'Current SillyTavern model');
     const profileTemperature = selectedProfile.connection?.temperature !== undefined ? 
-        selectedProfile.connection.temperature : 'Current SillyTavern temperature';
+        selectedProfile.connection.temperature : t('STMemoryBooks_Label_CurrentSTTemperature', 'Current SillyTavern temperature');
     
     const templateData = {
         ...sceneData,
@@ -121,9 +121,9 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         profileModel: profileModel,
         profileTemperature: profileTemperature,
-        currentModel: currentModelSettings?.model || 'Unknown',
+        currentModel: currentModelSettings?.model || t('common.unknown', 'Unknown'),
         currentTemperature: currentModelSettings?.temperature || 0.7,
-        currentApi: currentApiInfo?.api || 'Unknown',
+        currentApi: currentApiInfo?.api || t('common.unknown', 'Unknown'),
         suggestedProfileName: `${selectedProfile.name} - Modified`,
         tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
         showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000)
@@ -133,14 +133,14 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     
     try {
         const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
-            okButton: 'Create Memory',
-            cancelButton: 'Cancel/Close',
+            okButton: t('STMemoryBooks_Button_CreateMemory', 'Create Memory'),
+            cancelButton: t('STMemoryBooks_Button_CancelClose', 'Cancel/Close'),
             wide: true,
             large: true,
             allowVerticalScrolling: true,
             customButtons: [
                 {
-                    text: 'Save as New Profile',
+                    text: t('STMemoryBooks_Button_SaveAsNewProfile', 'Save as New Profile'),
                     result: STMB_POPUP_RESULTS.SAVE_PROFILE,
                     classes: ['menu_button'],
                     action: null
@@ -185,16 +185,16 @@ async function handleAdvancedConfirmation(popup, settings) {
         if (newProfileName) {
             try {
                 await saveNewProfileFromAdvancedSettings(popupElement, settings, newProfileName);
-                toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
+                toastr.success(t('STMemoryBooks_Toast_ProfileSaved', 'Profile "{{name}}" saved successfully', { name: newProfileName }), 'STMemoryBooks');
             } catch (error) {
                 console.error(`${MODULE_NAME}: Failed to save profile:`, error);
-                toastr.error(`Failed to save profile: ${error.message}`, 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_ProfileSaveFailed', 'Failed to save profile: {{message}}', { message: error.message }), 'STMemoryBooks');
                 // Continues with memory creation even if profile save fails
             }
         } else {
             // No profile name provided, show error and don't proceed
             console.error(`${MODULE_NAME}: Profile creation cancelled - no name provided`);
-            toastr.error('Please enter a profile name or use "Create Memory" to proceed without saving', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_Toast_ProfileNameOrProceed', 'Please enter a profile name or use "Create Memory" to proceed without saving'), 'STMemoryBooks');
             return { confirmed: false };
         }
     }
@@ -240,12 +240,12 @@ async function handleSaveNewProfile(popup, settings) {
     const newProfileName = popup.dlg.querySelector('#stmb-new-profile-name-advanced').value.trim();
     if (!newProfileName) {
         console.error(`${MODULE_NAME}: Profile name validation failed - empty name`);
-        toastr.error('Please enter a profile name', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_Toast_ProfileNameRequired', 'Please enter a profile name'), 'STMemoryBooks');
         return { confirmed: false };
     }
 
     await saveNewProfileFromAdvancedSettings(popup.dlg, settings, newProfileName);
-    toastr.success(`Profile "${newProfileName}" saved successfully`, 'STMemoryBooks');
+    toastr.success(t('STMemoryBooks_Toast_ProfileSaved', 'Profile "{{name}}" saved successfully', { name: newProfileName }), 'STMemoryBooks');
     return { confirmed: false }; // Don't create memory, just save profile
 }
 
@@ -281,12 +281,12 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
         const createButton = popup.dlg.querySelector('.popup_button_ok');
         if (createButton) {
             if (hasChanges) {
-                createButton.textContent = 'Save Profile & Create Memory';
-                createButton.title = 'Save the modified settings as a new profile and create the memory';
+                createButton.textContent = t('STMemoryBooks_Button_SaveProfileAndCreateMemory', 'Save Profile & Create Memory');
+                createButton.title = t('STMemoryBooks_Tooltip_SaveProfileAndCreateMemory', 'Save the modified settings as a new profile and create the memory');
                 createButton.dataset.shouldSave = 'true'; 
             } else {
-                createButton.textContent = 'Create Memory';
-                createButton.title = 'Create memory using the selected profile settings';
+                createButton.textContent = t('STMemoryBooks_Button_CreateMemory', 'Create Memory');
+                createButton.title = t('STMemoryBooks_Tooltip_CreateMemory', 'Create memory using the selected profile settings');
                 createButton.dataset.shouldSave = 'false';
             }
         }
@@ -315,11 +315,11 @@ function setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfi
         const profileTempDisplay = popupElement.querySelector('#stmb-profile-temp-display');
         
         if (profileModelDisplay) {
-            profileModelDisplay.textContent = newProfile.connection?.model || 'Current SillyTavern model';
+            profileModelDisplay.textContent = newProfile.connection?.model || t('STMemoryBooks_Label_CurrentSTModel', 'Current SillyTavern model');
         }
         if (profileTempDisplay) {
             profileTempDisplay.textContent = newProfile.connection?.temperature !== undefined ? 
-                newProfile.connection.temperature : 'Current SillyTavern temperature';
+                newProfile.connection.temperature : t('STMemoryBooks_Label_CurrentSTTemperature', 'Current SillyTavern temperature');
         }
         
         // Update original settings for comparison
@@ -351,7 +351,7 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
             const memoryCount = parseInt(summaryCountSelect.value) || 0;
             
             if (memoryCount === 0) {
-                totalTokensDisplay.textContent = `Total tokens: ${sceneData.estimatedTokens}`;
+                totalTokensDisplay.textContent = t('STMemoryBooks_Label_TotalTokens', 'Total tokens: {{count}}', { count: sceneData.estimatedTokens });
                 if (tokenWarning) {
                     tokenWarning.style.display = sceneData.estimatedTokens > tokenThreshold ? 'block' : 'none';
                 }
@@ -360,7 +360,7 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
             
             // Fetch actual memories for accurate token calculation
             if (!cachedMemories[memoryCount]) {
-                totalTokensDisplay.textContent = `Total tokens: Calculating...`;
+                totalTokensDisplay.textContent = t('STMemoryBooks_Label_TotalTokensCalculating', 'Total tokens: Calculating...');
                 
                 const memoryFetchResult = await fetchPreviousSummaries(memoryCount, settings, chat_metadata);
                 cachedMemories[memoryCount] = memoryFetchResult.summaries;
@@ -368,14 +368,14 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
             
             const memories = cachedMemories[memoryCount];
             const totalTokens = await calculateTokensWithContext(sceneData, memories);
-            totalTokensDisplay.textContent = `Total tokens: ${totalTokens}`;
+            totalTokensDisplay.textContent = t('STMemoryBooks_Label_TotalTokens', 'Total tokens: {{count}}', { count: totalTokens });
             
             // Update warning visibility
             if (tokenWarning) {
                 if (totalTokens > tokenThreshold) {
                     tokenWarning.style.display = 'block';
                     tokenWarning.querySelector('span').textContent = 
-                        `⚠️ Large scene (${totalTokens} tokens) may take some time to process.`;
+                        t('STMemoryBooks_Warn_LargeSceneTokens', '⚠️ Large scene ({{tokens}} tokens) may take some time to process.', { tokens: totalTokens });
                 } else {
                     tokenWarning.style.display = 'none';
                 }
@@ -536,7 +536,7 @@ async function getAvailableMemoriesCount(settings, chat_metadata) {
 export async function confirmSaveNewProfile(profileName) {
     try {
         const result = await new Popup(
-            `Save current settings as new profile "${profileName}"?`,
+            t('STMemoryBooks_Prompt_SaveAsNewProfileConfirm', 'Save current settings as new profile "{{name}}"?', { name: profileName }),
             POPUP_TYPE.CONFIRM,
             ''
         ).show();
@@ -606,19 +606,19 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
         const content = DOMPurify.sanitize(memoryPreviewTemplate(templateData));
 
         const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
-            okButton: 'Accept & Add to Lorebook',
-            cancelButton: 'Cancel',
+            okButton: t('STMemoryBooks_Button_AcceptAndAddToLorebook', 'Accept & Add to Lorebook'),
+            cancelButton: t('STMemoryBooks_Button_Cancel', 'Cancel'),
             allowVerticalScrolling: true,
             wide: true,
             customButtons: [
                 {
-                    text: 'Edit & Save',
+                    text: t('STMemoryBooks_Button_EditAndSave', 'Edit & Save'),
                     result: STMB_POPUP_RESULTS.EDIT,
                     classes: ['menu_button'],
                     action: null
                 },
                 {
-                    text: 'Retry Generation',
+                    text: t('STMemoryBooks_Button_RetryGeneration', 'Retry Generation'),
                     result: STMB_POPUP_RESULTS.RETRY,
                     classes: ['menu_button'],
                     action: null
@@ -641,7 +641,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
             // Check if popup element is still available
             if (!popupElement) {
                 console.error(`${MODULE_NAME}: Popup element not available for reading edited values`);
-                toastr.error('Unable to read edited values', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_UnableToReadEditedValues', 'Unable to read edited values'), 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
@@ -652,7 +652,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
 
             if (!titleElement || !contentElement || !keywordsElement) {
                 console.error(`${MODULE_NAME}: Required input elements not found in popup`);
-                toastr.error('Unable to find input fields', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_UnableToFindInputFields', 'Unable to find input fields'), 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
@@ -663,13 +663,13 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
             // Validate required fields
             if (!editedTitle || editedTitle.length === 0) {
                 console.error(`${MODULE_NAME}: Memory title validation failed - empty title`);
-                toastr.error('Memory title cannot be empty', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_TitleCannotBeEmpty', 'Memory title cannot be empty'), 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
             if (!editedContent || editedContent.length === 0) {
                 console.error(`${MODULE_NAME}: Memory content validation failed - empty content`);
-                toastr.error('Memory content cannot be empty', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_ContentCannotBeEmpty', 'Memory content cannot be empty'), 'STMemoryBooks');
                 return { action: 'cancel' };
             }
 
