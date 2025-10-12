@@ -114,7 +114,7 @@ async function openEditTemplate(parentPopup, key) {
 
         const overrideHtml = `
             <div class="world_entry_form_control">
-                <label>
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-override-enabled" ${overrideEnabled ? 'checked' : ''}>
                     <span>Override default memory profile</span>
                 </label>
@@ -141,14 +141,14 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
             <div class="world_entry_form_control">
-                <label>
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-enabled" ${currentEnabled ? 'checked' : ''}>
                     <span>Enabled</span>
                 </label>
             </div>
             <div class="world_entry_form_control">
                 <h4>Triggers:</h4>
-                <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-interval" ${intervalEnabled ? 'checked' : ''}>
                     <span>Run on visible message interval</span>
                 </label>
@@ -158,11 +158,11 @@ async function openEditTemplate(parentPopup, key) {
                         <input type="number" id="stmb-sp-edit-interval" class="text_pole" min="1" step="1" value="${intervalVal}">
                     </label>
                 </div>
-                <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-aftermem" ${afterEnabled ? 'checked' : ''}>
                     <span>Run automatically after memory</span>
                 </label>
-                <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-manual" ${manualEnabled ? 'checked' : ''}>
                     <span>Allow manual run via /sideprompt</span>
                 </label>
@@ -299,14 +299,14 @@ async function openNewTemplate(parentPopup) {
             </label>
         </div>
         <div class="world_entry_form_control">
-            <label>
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-enabled">
                 <span>Enabled</span>
             </label>
         </div>
         <div class="world_entry_form_control">
             <h4>Triggers:</h4>
-            <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-trg-interval">
                 <span>Run on visible message interval</span>
             </label>
@@ -316,11 +316,11 @@ async function openNewTemplate(parentPopup) {
                     <input type="number" id="stmb-sp-new-interval" class="text_pole" min="1" step="1" value="50">
                 </label>
             </div>
-            <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-trg-aftermem">
                 <span>Run automatically after memory</span>
             </label>
-            <label class="checkbox_label" style="display:block;margin-bottom:6px;">
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-trg-manual" checked>
                 <span>Allow manual run via /sideprompt</span>
             </label>
@@ -342,7 +342,7 @@ async function openNewTemplate(parentPopup) {
         <div class="world_entry_form_control">
             <h4>Overrides:</h4>
             <div class="world_entry_form_control">
-                <label>
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-new-override-enabled">
                     <span>Override default memory profile</span>
                 </label>
