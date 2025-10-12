@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.4.2 (October 11, 2025)
+- **Add maximize buttons:** added to prompt editors.
+
 ## v4.4.1 (October 11, 2025)
 - **Summarize Prompt Fix:** fixed prompt missing bullet-point instructions.
 

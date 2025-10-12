@@ -1664,6 +1664,7 @@ async function createNewPreset(popup) {
         <div class="world_entry_form_control">
             <label for="stmb-pm-new-prompt">
                 <h4>Prompt:</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-pm-new-prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                 <textarea id="stmb-pm-new-prompt" class="text_pole textarea_compact" rows="10" placeholder="Enter your prompt here..."></textarea>
             </label>
         </div>
@@ -1720,6 +1721,7 @@ async function editPreset(popup, presetKey) {
             <div class="world_entry_form_control">
                 <label for="stmb-pm-edit-prompt">
                     <h4>Prompt:</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-pm-edit-prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     <textarea id="stmb-pm-edit-prompt" class="text_pole textarea_compact" rows="10">${escapeHtml(prompt)}</textarea>
                 </label>
             </div>
