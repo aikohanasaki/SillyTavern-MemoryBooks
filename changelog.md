@@ -2,6 +2,20 @@
 
 **← [Back to README](readme.md)**
 
+## v4.5.1 (October 12, 2025)
+- **Unicode & Title Handling Overhaul:**
+  - Title and entry sanitization now matches SillyTavern’s behavior. Only Unicode control characters are stripped; all printable Unicode (including emoji, CJK, etc.) is allowed.
+  - **Consistent Template Substitution:** Title generation and preview support all common numbering tokens, with template logic and extraction fully aligned.
+- **Documentation & Policy Alignment:**
+  - **charset.md:** Updated documentation to reflect the new permissive sanitization policy, with examples and migration notes. Fixed malformed emoji headings.
+- **Code Quality & Review:**
+  - Reviewed and cleaned up all uncommitted changes.
+  - Removed an outdated “invalid characters” comment in addlore.js.
+  - Confirmed no runtime TODOs remain (only in .git sample hook).
+- **Side Prompt & Lorebook Stability:**
+  - Side prompt UI and connection logic reviewed for parameter handling, concurrency limits, and error reporting.
+- **Readiness:** All changes vetted and ready for release.
+
 ## v4.5.0 (October 11, 2025)
 - **Internationalization Work:** i18n tagging proceeding.
 - **Cleanup:** Removed unused functions.
@@ -217,11 +231,16 @@
   - Contextual button text (Select vs Change) based on current state
   - Automatic UI refresh after lorebook selection or mode changes
   - Better visual feedback for manual vs automatic mode operation
-- **Code Quality & Reliability:** Enhanced error handling and state management
-  - Improved scene marker cleanup after successful memory creation
-  - Better null-safe operations throughout lorebook handling
-  - Enhanced debugging output for troubleshooting auto-summary issues
-  - More robust handling of edge cases in lorebook selection and validation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
+  - Better visual feedback for manual vs automatic mode operation
 
 ## v3.6.3 (September 2025)
 - **Memory Preview Feature:** Added comprehensive memory preview system allowing users to review and edit memories before adding to lorebook

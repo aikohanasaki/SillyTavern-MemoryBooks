@@ -2,6 +2,7 @@ import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { escapeHtml } from '../../../utils.js';
 import { extension_settings } from '../../../extensions.js';
+import { saveSettingsDebounced } from '../../../../script.js';
 import {
     listTemplates,
     getTemplate,
@@ -490,6 +491,13 @@ export async function showSidePromptsPopup() {
         content += '<input type="text" id="stmb-sp-search" class="text_pole" placeholder="Search by name or trigger..." aria-label="Search side prompts" />';
         content += '</div>';
 
+        // Global setting: max concurrent side prompts
+        content += '<div class="world_entry_form_control">';
+        content += '<label for="stmb-sp-max-concurrent"><h4>How many concurrent prompts to run at once</h4></label>';
+        content += '<input type="number" id="stmb-sp-max-concurrent" class="text_pole" min="1" max="5" step="1" value="2">';
+        content += '<small class="opacity70p">Range 1–5. Defaults to 2.</small>';
+        content += '</div>';
+
         // List container
         content += '<div id="stmb-sp-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>';
 
@@ -515,6 +523,25 @@ export async function showSidePromptsPopup() {
         const attachHandlers = () => {
             const dlg = popup.dlg;
             if (!dlg) return;
+
+            // Max concurrent control
+            const spMaxInput = dlg.querySelector('#stmb-sp-max-concurrent');
+            if (spMaxInput) {
+                const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+                const current = clamp(Number(extension_settings?.STMemoryBooks?.moduleSettings?.sidePromptsMaxConcurrent ?? 2), 1, 5);
+                spMaxInput.value = String(current);
+                const persist = () => {
+                    const raw = parseInt(spMaxInput.value, 10);
+                    const val = clamp(isNaN(raw) ? 2 : raw, 1, 5);
+                    spMaxInput.value = String(val);
+                    // Ensure settings objects exist
+                    if (!extension_settings.STMemoryBooks) extension_settings.STMemoryBooks = { moduleSettings: {} };
+                    if (!extension_settings.STMemoryBooks.moduleSettings) extension_settings.STMemoryBooks.moduleSettings = {};
+                    extension_settings.STMemoryBooks.moduleSettings.sidePromptsMaxConcurrent = val;
+                    saveSettingsDebounced();
+                };
+                spMaxInput.addEventListener('change', persist);
+            }
 
             // Search
             dlg.querySelector('#stmb-sp-search')?.addEventListener('input', () => refreshList(popup));

@@ -51,7 +51,7 @@ async function executeHideCommand(hideCommand, context = '') {
 /**
  * Helper function to convert old boolean auto-hide settings to new dropdown format
  */
-function getAutoHideMode(moduleSettings) {
+function getAutoHideMode(moduleSettings = {}) {
     // Handle new format
     if (moduleSettings.autoHideMode) {
         return moduleSettings.autoHideMode;
@@ -97,7 +97,6 @@ const DEFAULT_TITLE_FORMATS = [
  * @returns {Promise<Object>} Result object with success status and details
  */
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
-    const context = await getContext();
 
     try {
         if (!memoryResult?.content) {
@@ -389,7 +388,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
         title = title.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
     });
 
-    // Clean up the title (remove invalid characters not in allowed list)
     title = sanitizeTitle(title);
 
     return title;
@@ -637,11 +635,10 @@ export function identifyMemoryEntries(lorebookData) {
  * @returns {string} The sanitized title
  */
 function sanitizeTitle(title) {
-    // Allowed characters: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`, `{`, `}`, `:`, `;`, `,`
-    // Plus alphanumeric characters and standard emoji
-    const allowedCharsPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\{\}:;,&+!\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
-    
-    return title.replace(allowedCharsPattern, '').trim() || i18n('addlore.sanitize.fallback', 'Auto Memory');
+    // Follow SillyTavern: allow all printable Unicode; strip control characters only.
+    // Control chars include C0/C1 ranges: U+0000–U+001F and U+007F–U+009F
+    const cleaned = String(title ?? '').replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+    return cleaned || i18n('addlore.sanitize.fallback', 'Auto Memory');
 }
 
 /**
@@ -666,12 +663,13 @@ export function validateTitleFormat(format) {
         return { valid: false, errors, warnings };
     }
     
-    // Check for disallowed characters (excluding template placeholders)
-    const withoutPlaceholders = format.replace(/\{\{[^}]+\}\}/g, '').replace(/\[0+\]/g, '');
-    const disallowedPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\{\}:;,\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    // Check for control characters (excluding template placeholders)
+    // We follow SillyTavern: only control characters are removed during sanitization
+    const withoutPlaceholders = format.replace(/\{\{[^}]+\}\}/g, '');
+    const controlCharsPattern = /[\u0000-\u001F\u007F-\u009F]/g;
     
-    if (disallowedPattern.test(withoutPlaceholders)) {
-        warnings.push(i18n('addlore.titleFormat.warnings.sanitization', 'Title contains characters that will be removed during sanitization'));
+    if (controlCharsPattern.test(withoutPlaceholders)) {
+        warnings.push(i18n('addlore.titleFormat.warnings.sanitization', 'Title contains control characters that will be removed during sanitization'));
     }
     
     // Check for valid placeholder syntax
@@ -684,15 +682,22 @@ export function validateTitleFormat(format) {
         warnings.push(i18n('addlore.titleFormat.warnings.unknownPlaceholders', 'Unknown placeholders: {{placeholders}}', { placeholders: invalidPlaceholders.join(', ') }));
     }
     
-    // Check for valid numbering patterns (now supports multiple formats)
+    // Check for valid numbering patterns (accept multiple token shapes, including wrapped forms)
     const numberingPatterns = format.match(/[\[\({#][^0\]\)}]*[\]\)}]?/g);
     if (numberingPatterns) {
-        const invalidNumbering = numberingPatterns.filter(pattern => {
-            return !/^[\[\({#]0+[\]\)}]?$/.test(pattern);
-        });
+        const allowed = [
+            /^\[0+\]$/,          // [000]
+            /^\(0+\)$/,          // (000)
+            /^\{0+\}$/,          // {000}
+            /^#0+$/,             // #000
+            /^#\[0+\]$/,         // #[000]
+            /^\(\[0+\]\)$/,      // ([000])
+            /^\{\[0+\]\}$/       // {[000]}
+        ];
+        const invalidNumbering = numberingPatterns.filter(pat => !allowed.some(rx => rx.test(pat)));
         
         if (invalidNumbering.length > 0) {
-            warnings.push(i18n('addlore.titleFormat.warnings.invalidNumbering', 'Invalid numbering patterns: {{patterns}}. Use [0], [00], [000], (0), {0}, #0 etc.', { patterns: invalidNumbering.join(', ') }));
+            warnings.push(i18n('addlore.titleFormat.warnings.invalidNumbering', 'Invalid numbering patterns: {{patterns}}. Use [0], [00], [000], (0), {0}, #0, #[0], ([0]), {[0]} etc.', { patterns: invalidNumbering.join(', ') }));
         }
     }
     
@@ -754,7 +759,7 @@ export function getRangeFromMemoryEntry(entry) {
  */
 export async function getLorebookStats() {
     try {
-        const context = getContext();
+        const context = await getContext();
         const lorebookName = context.chatMetadata[METADATA_KEY];
         
         if (!lorebookName) {
@@ -856,6 +861,86 @@ export function getEntryByTitle(lorebookData, title) {
         }
     }
     return null;
+}
+
+/**
+ * Batch upsert lorebook entries with a single save (and optional single reload).
+ * Each item is staged into the provided lorebookData in-memory object; then
+ * saveWorldInfo is called exactly once for the whole batch.
+ *
+ * @param {string} lorebookName
+ * @param {Object} lorebookData
+ * @param {Array<{title: string, content: string, defaults?: Object, metadataUpdates?: Object}>} items
+ * @param {Object} [options]
+ * @param {boolean} [options.refreshEditor=true]
+ * @returns {Promise<Array<{title:string, uid:number, created:boolean}>>}
+ */
+export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, items, options = {}) {
+    const {
+        refreshEditor = true,
+    } = options;
+
+    if (!lorebookName || !lorebookData || !Array.isArray(items)) {
+        throw new Error(i18n('addlore.upsert.errors.invalidArgs', 'Invalid arguments to upsertLorebookEntriesBatch'));
+    }
+
+    const results = [];
+
+    for (const it of items) {
+        if (!it || !it.title) continue;
+
+        const title = String(it.title);
+        const content = it.content != null ? String(it.content) : '';
+        const defaults = it.defaults || {};
+        const metadataUpdates = it.metadataUpdates || {};
+
+        let entry = getEntryByTitle(lorebookData, title);
+        let created = false;
+
+        if (!entry) {
+            entry = createWorldInfoEntry(lorebookName, lorebookData);
+            if (!entry) {
+                throw new Error(i18n('addlore.upsert.errors.createFailed', 'Failed to create lorebook entry'));
+            }
+
+            // Apply defaults for new entry
+            entry.vectorized = !!defaults.vectorized;
+            entry.selective = !!defaults.selective;
+            if (typeof defaults.order === 'number') entry.order = defaults.order;
+            if (typeof defaults.position === 'number') entry.position = defaults.position;
+
+            entry.key = entry.key || [];
+            entry.keysecondary = entry.keysecondary || [];
+            entry.disable = false;
+
+            created = true;
+        }
+
+        // Normalize expected fields for both new and existing entries
+        entry.key = Array.isArray(entry.key) ? entry.key : [];
+        entry.keysecondary = Array.isArray(entry.keysecondary) ? entry.keysecondary : [];
+        if (typeof entry.disable !== 'boolean') entry.disable = false;
+
+        // Update core fields
+        entry.comment = title;
+        entry.content = content;
+
+        // Apply metadata updates
+        for (const [k, v] of Object.entries(metadataUpdates)) {
+            entry[k] = v;
+        }
+
+        results.push({ title, uid: entry.uid, created });
+    }
+
+    // Single save for the whole batch
+    await saveWorldInfo(lorebookName, lorebookData, true);
+
+    if (refreshEditor) {
+        reloadEditor(lorebookName);
+    }
+
+    return results;
 }
 
 /**
