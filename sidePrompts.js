@@ -3,11 +3,10 @@ import { extension_settings } from '../../../extensions.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile } from './utils.js';
 import { requestCompletion } from './stmemory.js';
-import { listEnabledByType, listByTrigger, findTemplateByName } from './sidePromptsManager.js';
-import { upsertLorebookEntryByTitle, getEntryByTitle } from './addlore.js';
-import { sendRawCompletionRequest } from './stmemory.js';
+import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
+import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
 
@@ -70,13 +69,14 @@ function compileRange(start, end) {
  * Build a plain prompt by combining template prompt + prior content + compiled scene text
  */
 function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat) {
-    const sceneText = toReadableText(compiledScene);
     const parts = [];
     parts.push(String(templatePrompt || ''));
     if (priorContent && String(priorContent).trim()) {
         parts.push('\n=== PRIOR ENTRY ===\n');
         parts.push(String(priorContent));
     }
+    // Derive scene text from the compiled scene here to keep a single source of truth
+    const sceneText = compiledScene ? toReadableText(compiledScene) : '';
     parts.push('\n=== SCENE TEXT ===\n');
     parts.push(sceneText);
     if (responseFormat && String(responseFormat).trim()) {
@@ -304,7 +304,7 @@ export async function evaluateTrackers() {
                         STMB_tracker_lastMsgId: currentLast,
                         STMB_tracker_lastRunAt: new Date().toISOString(),
                     },
-                    refreshEditor: false,
+                    refreshEditor: extension_settings?.STMemoryBooks?.moduleSettings?.refreshEditor !== false,
                 });
             } catch (err) {
                 console.error(`${MODULE_NAME}: Interval sideprompt upsert failed:`, err);
@@ -328,46 +328,118 @@ export async function runAfterMemory(compiledScene, profile = null) {
 
         if (!enabledAfter || enabledAfter.length === 0) return;
 
-        const sceneText = toReadableText(compiledScene);
 
-        // Determine connection to use for side prompts
-        const overrides = resolveSidePromptConnection(profile);
-        console.debug(`${MODULE_NAME}: runAfterMemory overrides api=${overrides.api} model=${overrides.model} temp=${overrides.temperature}`);
+        // Determine default connection to use for side prompts
+        const defaultOverrides = resolveSidePromptConnection(profile);
+        console.debug(`${MODULE_NAME}: runAfterMemory default overrides api=${defaultOverrides.api} model=${defaultOverrides.model} temp=${defaultOverrides.temperature}`);
+        const settings = extension_settings?.STMemoryBooks;
+        const refreshEditor = settings?.moduleSettings?.refreshEditor !== false;
+        const showNotifications = settings?.moduleSettings?.showNotifications !== false;
+        const results = [];
 
-        for (const tpl of enabledAfter) {
-            const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
-            const existing = getEntryByTitle(lore.data, unifiedTitle)
-                || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
-                || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`);
-            const prior = existing?.content || '';
+        const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+        const maxConcurrent = clamp(Number(settings?.moduleSettings?.sidePromptsMaxConcurrent ?? 2), 1, 5);
 
-            let prompt = tpl.prompt || '';
-            if (prior && String(prior).trim()) {
-                prompt += '\n' + String(prior).trim();
+        // Partition into waves of size maxConcurrent
+        const waves = [];
+        for (let i = 0; i < enabledAfter.length; i += maxConcurrent) {
+            waves.push(enabledAfter.slice(i, i + maxConcurrent));
+        }
+
+        for (const wave of waves) {
+            // Run LLMs concurrently for this wave (scene-only prompts)
+            const llmPromises = wave.map(async (tpl) => {
+                try {
+                    const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+                    const existing = getEntryByTitle(lore.data, unifiedTitle)
+                        || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
+                        || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`);
+                    const prior = existing?.content || '';
+
+                    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat);
+                    const idx = Number(tpl?.settings?.overrideProfileIndex);
+                    const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
+                    const conn = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : defaultOverrides;
+                    const text = await runLLM(finalPrompt, conn);
+                    return { ok: true, tpl, text };
+                } catch (e) {
+                    console.error(`${MODULE_NAME}: Wave LLM failed for "${tpl.name}":`, e);
+                    return { ok: false, tpl, error: e };
+                }
+            });
+
+            const llmResults = await Promise.all(llmPromises);
+
+            // Build batch items from successes
+            const items = [];
+            const succeededNames = [];
+            for (const r of llmResults) {
+                if (r.ok) {
+                    const tpl = r.tpl;
+                    const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+                    items.push({
+                        title: unifiedTitle,
+                        content: r.text,
+                        defaults: {
+                            vectorized: true,
+                            selective: true,
+                            order: 100,
+                            position: 0,
+                        },
+                        metadataUpdates: {
+                            [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
+                        },
+                    });
+                    succeededNames.push(tpl.name);
+                } else {
+                    // Count LLM failures immediately
+                    results.push({ name: r.tpl.name, ok: false, error: r.error });
+                }
             }
-            prompt += '\n=== SCENE TEXT ===\n' + sceneText;
-            if (tpl.responseFormat && String(tpl.responseFormat).trim()) {
-                prompt += '\n=== RESPONSE FORMAT ===\n' + String(tpl.responseFormat).trim();
-            }
 
-            try {
-                const text = await runLLM(prompt, overrides);
-                await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, text, {
-                    defaults: {
-                        vectorized: true,
-                        selective: true,
-                        order: 100,
-                        position: 0,
-                    },
-                    // Do not adjust lastMsgId on auto runs; just record lastRunAt
-                    metadataUpdates: {
-                        [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
-                    },
-                    refreshEditor: false,
-                });
-            } catch (err) {
-                console.error(`${MODULE_NAME}: runAfterMemory failed for "${tpl.name}":`, err);
-                toastr.error(`SidePrompt "${tpl.name}" failed`, 'STMemoryBooks');
+            if (items.length > 0) {
+                try {
+                    // Re-load latest lore to include any user edits during LLM phase
+                    const fresh = await loadWorldInfo(lore.name);
+                    // Batch save this wave; refresh editor per directive if enabled globally
+                    await upsertLorebookEntriesBatch(lore.name, fresh, items, { refreshEditor });
+                    // Update reference for subsequent lookups
+                    lore.data = fresh;
+
+                    // Only now count successes and toast per-template successes
+                    for (const name of succeededNames) {
+                        results.push({ name, ok: true });
+                        if (showNotifications) {
+                            toastr.success(`SidePrompt "${name}" updated.`, 'STMemoryBooks');
+                        }
+                    }
+                } catch (saveErr) {
+                    console.error(`${MODULE_NAME}: Wave save failed:`, saveErr);
+                    toastr.error('Failed to save SidePrompt updates for this wave', 'STMemoryBooks');
+                    // Mark these as failed since they were not persisted
+                    for (const name of succeededNames) {
+                        results.push({ name, ok: false, error: saveErr });
+                    }
+                }
+            }
+        }
+        // Aggregated notifications for AfterMemory side prompts
+        if (showNotifications && results.length > 0) {
+            const succeeded = results.filter(r => r.ok).map(r => r.name);
+            const failed = results.filter(r => !r.ok).map(r => r.name);
+            const okCount = succeeded.length;
+            const failCount = failed.length;
+            const summarize = (arr) => {
+                const maxNames = 5;
+                if (arr.length === 0) return '';
+                const names = arr.slice(0, maxNames).join(', ');
+                const more = arr.length > maxNames ? `, +${arr.length - maxNames} more` : '';
+                return `${names}${more}`;
+            };
+            if (failCount === 0) {
+                toastr.info(`Side Prompts after memory: ${okCount} succeeded. ${summarize(succeeded)}`, 'STMemoryBooks');
+            } else {
+                toastr.warning(`Side Prompts after memory: ${okCount} succeeded, ${failCount} failed. ${failCount ? 'Failed: ' + summarize(failed) : ''}`, 'STMemoryBooks');
             }
         }
     } catch (outer) {
@@ -476,7 +548,7 @@ export async function runSidePrompt(args) {
                     [`STMB_sp_${tpl.key}_lastMsgId`]: chat.length - 1,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                 },
-                refreshEditor: false,
+                refreshEditor: extension_settings?.STMemoryBooks?.moduleSettings?.refreshEditor !== false,
             });
         } catch (err) {
             console.error(`${MODULE_NAME}: /sideprompt failed:`, err);

@@ -1,125 +1,81 @@
 [Back to README](readme.md)
 
-# 📝 Character Restrictions in Memory Titles
+# 📝 Character Policy for Memory Titles
 
-STMemoryBooks applies **strict character filtering** to memory titles and metadata fields to ensure compatibility with SillyTavern's lorebook system. This affects title templates and AI-extracted titles, but **memory content itself has no restrictions**.
+We now follow SillyTavern’s behavior: titles/comments are broadly permissive. STMemoryBooks only removes control characters; all other printable Unicode is allowed. Memory content remains completely unrestricted.
 
-## 🎯 What Gets Restricted
+## 🎯 Scope
 
-**Character restrictions apply to:**
+Applies to:
 - 🏷️ AI-extracted titles (`{{title}}`)
-- 👤 Character names in templates (`{{char}}`)
-- 🧑‍💻 User names in templates (`{{user}}`)
+- 👤 Character names (`{{char}}`)
+- 🧑‍💻 User names (`{{user}}`)
 - 📋 Final lorebook entry titles/comments
-- 🎨 Any text used in title format templates
+- 🎨 Text used in title format templates
 
-**🆓 NO character restrictions apply to:**
-- 📝 Memory content (completely unrestricted)
+Does NOT apply to:
+- 📝 Memory content (no restrictions)
 - 💬 Original chat message content
-- 🤖 AI-generated memory text (before title extraction)
 
 ## ✅ Allowed Characters
 
-The title sanitization system **only allows**:
+Everything that is printable Unicode is allowed in titles/comments, including (but not limited to):
+- Latin letters, numbers, spaces, and punctuation
+- International scripts (accents, Cyrillic, CJK, Arabic, etc.)
+- Quotes and apostrophes (single and double)
+- Symbols like `&`, `+`, `!`, `$`, `@`, `_`
+- Emojis and pictographs
 
-### 📝 Basic Text
-- **ASCII Letters**: `A-Z`, `a-z`
-- **Numbers**: `0-9`
-- **Spaces**: ` ` (regular spaces)
+We do not impose a custom “allowed list” anymore.
 
-### 🔤 Allowed Punctuation
-- **Hyphen**: `-`
-- **Period**: `.`
-- **Parentheses**: `(` `)`
-- **Hash/Number sign**: `#`
-- **Square brackets**: `[` `]`
-- **Curly braces**: `{` `}`
-- **Colon**: `:`
-- **Semicolon**: `;`
-- **Comma**: `,`
+## ❌ Removed Characters
 
-### 😀 Limited Emoji Support
-- **Emoticons**: 😀-🙿 (main emoticon block)
-- **Symbols**: 🌀-🗿 (misc symbols and pictographs)
-- **Transport**: 🚀-🛿 (transport and map symbols)
-- **Flags**: 🇠-🇿 (regional indicator symbols)
-- **Misc Symbols**: ☀-⛿ (miscellaneous symbols)
-- **Dingbats**: ✀-➿ (dingbats block)
+Only control characters are removed during sanitization:
+- C0 and C1 controls: `U+0000–U+001F`, `U+007F–U+009F`
 
-## ❌ Blocked Characters
-
-**All other characters are automatically removed**, including:
-
-### 🌍 International Characters
-- **Accented**: `é`, `ñ`, `ü`, `ø`, etc.
-- **Cyrillic**: `Сергей`, `Анна`, etc.
-- **Chinese/Japanese**: `先生`, `田中`, etc.
-- **Arabic**: `العربية`, etc.
-- **All other non-ASCII scripts**
-
-### 💬 Quotes and Apostrophes
-- **Single quotes**: `'` `'` `'`
-- **Double quotes**: `"` `"` `"`
-- **Apostrophes**: `'` (O'Malley → OMalley)
-
-### 🚫 Special Characters
-- **File separators**: `/` `\`
-- **Comparison**: `<` `>`
-- **Logic**: `|` `&`
-- **Math**: `*` `+` `=` `%` `^`
-- **Symbols**: `@` `$` `!` `?` `~` `` ` ``
-- **Underscores**: `_`
+If a title becomes empty after cleaning (e.g., it contained only control characters), we fall back to `"Auto Memory"` to ensure the lorebook entry is still created.
 
 ## 📊 Examples
 
 | Input | Output | Status |
-|-------|--------|---------|
-| `Test Memory` | `Test Memory` | ✅ Perfect |
-| `[001] - Scene` | `[001] - Scene` | ✅ Perfect |
-| `René's Story` | `Rens Story` | ⚠️ Accents & apostrophe removed |
-| `Сергей` | `Auto Memory` | ❌ All characters removed |
-| `先生の話` | `Auto Memory` | ❌ All characters removed |
-| `Test/Problem` | `TestProblem` | ⚠️ Slash removed |
-| `"Chapter 1"` | `Chapter 1` | ⚠️ Quotes removed |
-| `O'Malley & Co.` | `OMalley  Co.` | ⚠️ Apostrophe & ampersand removed |
-| `Test_Name` | `TestName` | ⚠️ Underscore removed |
-| `😀🎯🧠` | `😀🎯` | ⚠️ Some emoji removed |
+|-------|--------|--------|
+| `Test Memory` | `Test Memory` | ✅ |
+| `[001] - Scene` | `[001] - Scene` | ✅ |
+| `René's Story` | `René's Story` | ✅ Quotes, accents preserved |
+| `Сергей` | `Сергей` | ✅ Cyrillic preserved |
+| `先生の話` | `先生の話` | ✅ CJK preserved |
+| `O'Malley & Co.` | `O'Malley & Co.` | ✅ Symbols preserved |
+| `Test_Name + Debug!` | `Test_Name + Debug!` | ✅ Underscore and symbols preserved |
+| `😀🎯🧠` | `😀🎯🧠` | ✅ Emojis preserved |
+| `<control>\u0007Beep</control>` | `<control>Beep</control>` | ⚠️ Control char removed |
+| `\u0008\u0009` | `Auto Memory` | ⚠️ Only controls → fallback |
 
-## 🛡️ Why These Restrictions?
+## 🔢 Template and Numbering Notes
 
-1. **📁 File System Safety**: Prevents issues with SillyTavern's storage system
-2. **💾 JSON Compatibility**: Ensures lorebook metadata parses correctly
-3. **🔍 Search Reliability**: Maintains consistent indexing and retrieval
-4. **⚡ Performance**: Reduces complexity in database operations
+- Title templates can include any printable characters. Only control characters will be stripped.
+- Numbering tokens in formats are flexible. Common supported examples include:
+  - `[000]`, `(000)`, `{000}`, `#000`
+  - Wrapped forms like `#[000]`, `([000])`, `{[000]}`
+- Extraction logic is resilient and can derive sequence numbers from many shapes, including `#7-8` (uses the last number).
 
-## 🔧 Workarounds
+## 🛡️ Why This Policy?
 
-### ✍️ For International Names
-Instead of using restricted characters in titles, include the full names in the memory content:
+1. Aligns with SillyTavern’s permissive handling of text
+2. Preserves user intent and formatting in titles
+3. Keeps compatibility and reduces surprise removals
+4. Still prevents problematic control characters
 
-```
-Title: "Scene with Sergey"
-Content: "In this scene, Сергей (Sergey) discusses..."
-```
+## 🧭 Migration Notes
 
-### 🎨 For Special Characters
-Use allowed punctuation as alternatives:
-
-| Instead of | Use |
-|------------|-----|
-| `René` | `Rene` |
-| `O'Malley` | `O-Malley` or `OMalley` |
-| `Test/Debug` | `Test-Debug` |
-| `"Chapter 1"` | `[Chapter 1]` |
-
-### 🚨 Fallback Behavior
-If a title becomes completely empty after cleaning (all characters were blocked), it automatically defaults to `"Auto Memory"` to ensure the lorebook entry is still created.
+- Previously, we aggressively filtered punctuation, symbols, underscores, quotes, and non-ASCII. That is no longer the case.
+- Existing lorebook entries are unchanged. New titles will preserve more characters.
+- If your workflow depended on strict filtering, consider adjusting templates instead of relying on sanitization.
 
 ## 💡 Pro Tips
 
-1. **🎯 Keep titles simple**: Use basic ASCII characters for maximum compatibility
-2. **📝 Put details in content**: Memory content has no restrictions - include full international names there
-3. **🔤 Use allowed punctuation**: Brackets `[]`, parentheses `()`, and hyphens `-` work great for formatting
-4. **📋 Test your templates**: Preview titles before creating memories to see how they'll be cleaned
+1. Keep titles readable and consistent for easy browsing
+2. Put long or complex details in the memory content
+3. Use title templates to establish structure (e.g., numbering, date/time)
+4. Preview titles to confirm they look the way you expect
 
 [Back to README](readme.md)
