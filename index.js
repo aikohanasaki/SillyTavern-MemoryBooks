@@ -336,12 +336,51 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
-    // Validate lorebook exists
-    const lorebookValidation = await validateLorebook();
-    if (!lorebookValidation.valid) {
-        toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
-        return '';
+    try {
+        // Prevent re-entrancy
+        if (isProcessingMemory) {
+            toastr.info('Memory creation is already in progress', 'STMemoryBooks');
+            return '';
+        }
+
+        // Validate lorebook exists (fast-fail UX);
+        // initiateMemoryCreation will validate again before running
+        const lorebookValidation = await validateLorebook();
+        if (!lorebookValidation.valid) {
+            toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
+            return '';
+        }
+
+        // Compute next range since last memory
+        const stmbData = getSceneMarkers() || {};
+        const lastIndex = chat.length - 1;
+
+        if (lastIndex < 0) {
+            toastr.info('There are no messages to summarize yet.', 'STMemoryBooks');
+            return '';
+        }
+
+        const highestProcessed = (typeof stmbData.highestMemoryProcessed === 'number')
+            ? stmbData.highestMemoryProcessed
+            : null;
+
+        const sceneStart = (highestProcessed === null) ? 0 : (highestProcessed + 1);
+        const sceneEnd = lastIndex;
+
+        if (sceneStart > sceneEnd) {
+            toastr.info('No new messages since the last memory.', 'STMemoryBooks');
+            return '';
+        }
+
+        // Set scene range and run the standard memory pipeline
+        setSceneRange(sceneStart, sceneEnd);
+        await initiateMemoryCreation();
+
+    } catch (error) {
+        console.error('STMemoryBooks: /nextmemory failed:', error);
+        toastr.error('Failed to run /nextmemory: ' + error.message, 'STMemoryBooks');
     }
+    return '';
 }
 
 /**
