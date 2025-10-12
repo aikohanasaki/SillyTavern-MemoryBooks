@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v4.5.0 (October 11, 2025)
+- **Internationalization Work:** i18n tagging proceeding.
+- **Cleanup:** Removed unused functions.
+
 ## v4.4.2 (October 11, 2025)
 - **Add maximize buttons:** added to prompt editors.
 
