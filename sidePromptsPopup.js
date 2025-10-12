@@ -152,9 +152,9 @@ async function openEditTemplate(parentPopup, key) {
                     <input type="checkbox" id="stmb-sp-edit-trg-interval" ${intervalEnabled ? 'checked' : ''}>
                     <span>Run on visible message interval</span>
                 </label>
-                <div class="world_entry_form_control" id="stmb-sp-edit-interval-container" style="display:${intervalEnabled ? 'block' : 'none'};margin-left:20px;">
+                <div id="stmb-sp-edit-interval-container" style="display:${intervalEnabled ? 'block' : 'none'}; margin-left:28px;">
                     <label for="stmb-sp-edit-interval">
-                        <h4>Interval (visible messages):</h4>
+                        <h4 style="margin: 0 0 4px 0;">Interval (visible messages):</h4>
                         <input type="number" id="stmb-sp-edit-interval" class="text_pole" min="1" step="1" value="${intervalVal}">
                     </label>
                 </div>
@@ -310,9 +310,9 @@ async function openNewTemplate(parentPopup) {
                 <input type="checkbox" id="stmb-sp-new-trg-interval">
                 <span>Run on visible message interval</span>
             </label>
-            <div class="world_entry_form_control displayNone" id="stmb-sp-new-interval-container" style="margin-left:20px;">
+            <div id="stmb-sp-new-interval-container" class="displayNone" style="margin-left:28px;">
                 <label for="stmb-sp-new-interval">
-                    <h4>Interval (visible messages):</h4>
+                    <h4 style="margin: 0 0 4px 0;">Interval (visible messages):</h4>
                     <input type="number" id="stmb-sp-new-interval" class="text_pole" min="1" step="1" value="50">
                 </label>
             </div>
