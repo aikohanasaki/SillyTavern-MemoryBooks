@@ -298,4 +298,4 @@ For detailed character restrictions, see [Character Restrictions in Titles](char
 
 ---
 
-*Developed with love using Claude Sonnet 4, extensive testing, and community feedback.* 🤖💕
+*Developed with love using VS Code/Cline, extensive testing, and community feedback.* 🤖💕

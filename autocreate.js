@@ -1,5 +1,6 @@
 import { getCurrentChatId, name1, name2, chat_metadata, saveMetadata } from '../../../../script.js';
 import { createNewWorldInfo, METADATA_KEY, world_names } from '../../../world-info.js';
+import { i18n } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AutoCreate';
 
@@ -11,13 +12,13 @@ const MODULE_NAME = 'STMemoryBooks-AutoCreate';
 export function generateLorebookName(template) {
     // Validate template - fallback to default if empty
     if (!template || template.trim() === '') {
-        template = 'LTM - {{char}} - {{chat}}';
+        template = i18n('STMemoryBooks_LorebookNameTemplatePlaceholder', 'LTM - {{char}} - {{chat}}');
     }
 
     // Template substitutions
-    const chatId = getCurrentChatId() || 'Unknown';
-    const charName = name2 || 'Unknown';
-    const userName = name1 || 'User';
+    const chatId = getCurrentChatId() || i18n('common.unknown', 'Unknown');
+    const charName = name2 || i18n('common.unknown', 'Unknown');
+    const userName = name1 || i18n('addlore.defaults.user', 'User');
 
     let name = template
         .replace(/\{\{chat\}\}/g, chatId)
@@ -58,15 +59,15 @@ export async function autoCreateLorebook(template, context = 'chat') {
             await saveMetadata();
 
             console.log(`${MODULE_NAME}: Successfully created and bound lorebook "${newLorebookName}"`);
-            toastr.success(`Created and bound lorebook "${newLorebookName}"`, 'STMemoryBooks');
+            toastr.success(i18n('autocreate.toast.createdBound', 'Created and bound lorebook "{{name}}"', { name: newLorebookName }), i18n('autocreate.toast.title', 'STMemoryBooks'));
 
             return { success: true, name: newLorebookName };
         } else {
             console.error(`${MODULE_NAME}: Failed to create lorebook`);
-            return { success: false, error: 'Failed to auto-create lorebook.' };
+            return { success: false, error: i18n('autocreate.errors.failedAutoCreate', 'Failed to auto-create lorebook.') };
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error creating lorebook:`, error);
-        return { success: false, error: `Failed to auto-create lorebook: ${error.message}` };
+        return { success: false, error: i18n('autocreate.errors.failedAutoCreateWithMessage', 'Failed to auto-create lorebook: {{message}}', { message: error.message }) };
     }
 }
