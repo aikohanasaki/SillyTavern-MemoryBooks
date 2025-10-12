@@ -2,7 +2,7 @@
 
 **Turn your endless chat conversations into organized, searchable memories!** 
 
-Ever wished you could remember what happened 500 messages ago? Or automatically track important plot points without manually taking notes? ST Memory Books does exactly that - it watches your chats and creates smart summaries so you never lose track of your story again.
+Need bot to remember things, but the chat is too long for context? Want to automatically track important plot points without manually taking notes? ST Memory Books does exactly that - it watches your chats and creates smart summaries so you never lose track of your story again.
 
 ---
 
