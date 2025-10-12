@@ -358,7 +358,40 @@ export const localeData_en = {
     'autocreate.toast.createdBound': 'Created and bound lorebook "{{name}}"',
     'autocreate.errors.failedAutoCreate': 'Failed to auto-create lorebook.',
     'autocreate.errors.failedAutoCreateWithMessage': 'Failed to auto-create lorebook: {{message}}',
-    'common.unknown': 'Unknown'
+    'common.unknown': 'Unknown',
+
+    // Chat Compile
+    'chatcompile.errors.sceneMarkersRequired': 'Scene markers are required for compilation',
+    'chatcompile.errors.startGreaterThanEnd': 'Start marker cannot be greater than end marker',
+    'chatcompile.errors.outOfBounds': 'Scene markers ({{start}}-{{end}}) are out of chat bounds (0-{{max}})',
+    'chatcompile.errors.noVisibleInRange': 'No visible messages found in range {{start}}-{{end}}. All messages may be hidden or missing.',
+
+    'chatcompile.validation.errors.missingMetadata': 'Missing metadata object',
+    'chatcompile.validation.errors.invalidMessagesArray': 'Missing or invalid messages array',
+    'chatcompile.validation.warnings.noMessages': 'No messages in compiled scene',
+    'chatcompile.validation.warnings.messageMissingId': 'Message at index {{index}} missing ID',
+    'chatcompile.validation.warnings.messageMissingName': 'Message at index {{index}} missing speaker name',
+    'chatcompile.validation.warnings.messageMissingContent': 'Message at index {{index}} missing content',
+    'chatcompile.validation.warnings.veryLargeScene': 'Very large scene (>100 messages) - consider breaking into smaller segments',
+
+    'chatcompile.readable.headerMetadata': '=== SCENE METADATA ===',
+    'chatcompile.readable.range': 'Range: Messages {{start}}-{{end}}',
+    'chatcompile.readable.chat': 'Chat: {{chatId}}',
+    'chatcompile.readable.character': 'Character: {{name}}',
+    'chatcompile.readable.compiled': 'Compiled: {{count}} messages',
+    'chatcompile.readable.compiledAt': 'Compiled at: {{date}}',
+    'chatcompile.readable.headerMessages': '=== SCENE MESSAGES ===',
+    'chatcompile.readable.line': '[{{id}}] {{name}}: {{text}}',
+
+    'chatcompile.defaults.user': 'User',
+
+    // Slash Commands
+    'STMemoryBooks_Slash_CreateMemory_Help': 'Create memory from marked scene',
+    'STMemoryBooks_Slash_SceneMemory_Help': 'Set scene range and create memory (e.g., /scenememory 10-15)',
+    'STMemoryBooks_Slash_SceneMemory_ArgRangeDesc': 'Message range (X-Y format)',
+    'STMemoryBooks_Slash_NextMemory_Help': 'Create memory from end of last memory to current message',
+    'STMemoryBooks_Slash_SidePrompt_Help': 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',
+    'STMemoryBooks_Slash_SidePrompt_ArgDesc': 'Template name (quote if contains spaces), optionally followed by X-Y range'
 };
  
 /**

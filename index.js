@@ -22,7 +22,7 @@ import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getUIModelSettings, getC
 import { editGroup } from '../../../group-chats.js';
 import * as PromptManager from './summaryPromptManager.js';
 import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
-import { evaluateTrackers, runAfterMemory, runPlotUpdate, runScore, runSidePrompt } from './sidePrompts.js';
+import { evaluateTrackers, runAfterMemory, runSidePrompt } from './sidePrompts.js';
 import { showSidePromptsPopup } from './sidePromptsPopup.js';
 import { listTemplates } from './sidePromptsManager.js';
 import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
@@ -2510,16 +2510,16 @@ function registerSlashCommands() {
     const createMemoryCmd = SlashCommand.fromProps({
         name: 'creatememory',
         callback: handleCreateMemoryCommand,
-        helpString: 'Create memory from marked scene'
+        helpString: t('STMemoryBooks_Slash_CreateMemory_Help', 'Create memory from marked scene')
     });
     
     const sceneMemoryCmd = SlashCommand.fromProps({
         name: 'scenememory', 
         callback: handleSceneMemoryCommand,
-        helpString: 'Set scene range and create memory (e.g., /scenememory 10-15)',
+        helpString: t('STMemoryBooks_Slash_SceneMemory_Help', 'Set scene range and create memory (e.g., /scenememory 10-15)'),
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Message range (X-Y format)',
+                description: t('STMemoryBooks_Slash_SceneMemory_ArgRangeDesc', 'Message range (X-Y format)'),
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true
             })
@@ -2529,16 +2529,16 @@ function registerSlashCommands() {
     const nextMemoryCmd = SlashCommand.fromProps({
         name: 'nextmemory',
         callback: handleNextMemoryCommand,
-        helpString: 'Create memory from end of last memory to current message'
+        helpString: t('STMemoryBooks_Slash_NextMemory_Help', 'Create memory from end of last memory to current message')
     });
 
     const sidePromptCmd = SlashCommand.fromProps({
         name: 'sideprompt',
         callback: handleSidePromptCommand,
-        helpString: 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',
+        helpString: t('STMemoryBooks_Slash_SidePrompt_Help', 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]'),
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Template name (quote if contains spaces), optionally followed by X-Y range',
+                description: t('STMemoryBooks_Slash_SidePrompt_ArgDesc', 'Template name (quote if contains spaces), optionally followed by X-Y range'),
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
                 enumProvider: () => sidePromptNameCache.map(n => new SlashCommandEnumValue(n))
@@ -2546,42 +2546,12 @@ function registerSlashCommands() {
         ]
     });
 
-    const plotUpdateCmd = SlashCommand.fromProps({
-        name: 'plotupdate',
-        callback: (namedArgs, unnamedArgs) => {
-            return runPlotUpdate(unnamedArgs || '');
-        },
-        helpString: 'Deprecated: use /sideprompt "Plot Points Extractor" X-Y (still supported)',
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'Message range (X-Y format)',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true
-            })
-        ]
-    });
 
-    const scoreCmd = SlashCommand.fromProps({
-        name: 'score',
-        callback: (namedArgs, unnamedArgs) => {
-            return runScore(unnamedArgs || '');
-        },
-        helpString: 'Deprecated: use /sideprompt "Factions" (still supported)',
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'Template name',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true
-            })
-        ]
-    });
 
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
     SlashCommandParser.addCommandObject(sidePromptCmd);
-    SlashCommandParser.addCommandObject(plotUpdateCmd);
-    SlashCommandParser.addCommandObject(scoreCmd);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
 import { estimateTokens } from './utils.js';
+import { t } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ChatCompile';
 const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
@@ -19,15 +20,15 @@ export function compileScene(sceneRequest) {
     
     // Validate input parameters
     if (sceneStart == null || sceneEnd == null) {
-        throw new Error('Scene markers are required for compilation');
+        throw new Error(t('chatcompile.errors.sceneMarkersRequired'));
     }
 
     if (sceneStart > sceneEnd) {
-        throw new Error('Start marker cannot be greater than end marker');
+        throw new Error(t('chatcompile.errors.startGreaterThanEnd'));
     }
 
     if (sceneStart < 0 || sceneEnd >= chat.length) {
-        throw new Error(`Scene markers (${sceneStart}-${sceneEnd}) are out of chat bounds (0-${chat.length - 1})`);
+        throw new Error(t('chatcompile.errors.outOfBounds', '', { start: sceneStart, end: sceneEnd, max: chat.length - 1 }));
     }
     
     // Extract and format messages in range
@@ -71,14 +72,14 @@ export function compileScene(sceneRequest) {
         sceneStart,
         sceneEnd,
         chatId: chatId || 'unknown',
-        characterName: characterName || name2 || 'Unknown',
+        characterName: characterName || name2 || t('common.unknown', 'Unknown'),
         messageCount: sceneMessages.length,
         totalRequestedRange: sceneEnd - sceneStart + 1,
         hiddenMessagesSkipped: hiddenMessageCount,
         messagesSkipped: skippedMessageCount,
         compiledAt: new Date().toISOString(),
         totalChatLength: chat.length,
-        userName: name1 || 'User'
+        userName: name1 || t('chatcompile.defaults.user', 'User')
     };
     
     const compiledScene = {
@@ -88,7 +89,7 @@ export function compileScene(sceneRequest) {
     
     // Validate that we have at least some visible messages
     if (sceneMessages.length === 0) {
-        throw new Error(`No visible messages found in range ${sceneStart}-${sceneEnd}. All messages may be hidden or missing.`);
+        throw new Error(t('chatcompile.errors.noVisibleInRange', '', { start: sceneStart, end: sceneEnd }));
     }
     
     return compiledScene;
@@ -107,7 +108,7 @@ export function createSceneRequest(sceneStart, sceneEnd) {
         sceneStart,
         sceneEnd,
         chatId: context.chatId || 'unknown',
-        characterName: context.name2 || name2 || 'Unknown'
+        characterName: context.name2 || name2 || t('common.unknown', 'Unknown')
     };
     
     return sceneRequest;
@@ -177,37 +178,37 @@ export function validateCompiledScene(compiledScene) {
     
     // Check basic structure
     if (!compiledScene.metadata) {
-        errors.push('Missing metadata object');
+        errors.push(t('chatcompile.validation.errors.missingMetadata'));
     }
     
     if (!compiledScene.messages || !Array.isArray(compiledScene.messages)) {
-        errors.push('Missing or invalid messages array');
+        errors.push(t('chatcompile.validation.errors.invalidMessagesArray'));
     }
     
     if (compiledScene.messages && compiledScene.messages.length === 0) {
-        warnings.push('No messages in compiled scene');
+        warnings.push(t('chatcompile.validation.warnings.noMessages'));
     }
     
     // Check message structure
     if (compiledScene.messages) {
         compiledScene.messages.forEach((message, index) => {
             if (!message.id && message.id !== 0) {
-                warnings.push(`Message at index ${index} missing ID`);
+                warnings.push(t('chatcompile.validation.warnings.messageMissingId', '', { index }));
             }
             
             if (!message.name) {
-                warnings.push(`Message at index ${index} missing speaker name`);
+                warnings.push(t('chatcompile.validation.warnings.messageMissingName', '', { index }));
             }
             
             if (!message.mes && message.mes !== '') {
-                warnings.push(`Message at index ${index} missing content`);
+                warnings.push(t('chatcompile.validation.warnings.messageMissingContent', '', { index }));
             }
         });
     }
     
     // Check for large scenes
     if (compiledScene.messages && compiledScene.messages.length > 100) {
-        warnings.push('Very large scene (>100 messages) - consider breaking into smaller segments');
+        warnings.push(t('chatcompile.validation.warnings.veryLargeScene'));
     }
     
     const isValid = errors.length === 0;
@@ -228,16 +229,16 @@ export function toReadableText(compiledScene) {
     const { metadata, messages } = compiledScene;
     
     let output = [];
-    output.push('=== SCENE METADATA ===');
-    output.push(`Range: Messages ${metadata.sceneStart}-${metadata.sceneEnd}`);
-    output.push(`Chat: ${metadata.chatId}`);
-    output.push(`Character: ${metadata.characterName}`);
-    output.push(`Compiled: ${metadata.messageCount} messages`);
-    output.push(`Compiled at: ${metadata.compiledAt}`);
+    output.push(t('chatcompile.readable.headerMetadata', '=== SCENE METADATA ==='));
+    output.push(t('chatcompile.readable.range', '', { start: metadata.sceneStart, end: metadata.sceneEnd }));
+    output.push(t('chatcompile.readable.chat', '', { chatId: metadata.chatId }));
+    output.push(t('chatcompile.readable.character', '', { name: metadata.characterName }));
+    output.push(t('chatcompile.readable.compiled', '', { count: metadata.messageCount }));
+    output.push(t('chatcompile.readable.compiledAt', '', { date: metadata.compiledAt }));
     output.push('');
-    output.push('=== SCENE MESSAGES ===');
+    output.push(t('chatcompile.readable.headerMessages', '=== SCENE MESSAGES ==='));
     messages.forEach(message => {
-        output.push(`[${message.id}] ${message.name}: ${message.mes}`);
+        output.push(t('chatcompile.readable.line', `[${message.id}] ${message.name}: ${message.mes}`, { id: message.id, name: message.name, text: message.mes }));
     });
     
     return output.join('\n');
@@ -248,8 +249,8 @@ export function toReadableText(compiledScene) {
  * @private
  */
 function cleanSpeakerName(name) {
-    if (!name) return 'Unknown';
-    return name.trim() || 'Unknown';
+    if (!name) return t('common.unknown', 'Unknown');
+    return name.trim() || t('common.unknown', 'Unknown');
 }
 
 /**
