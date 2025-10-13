@@ -2,6 +2,16 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.0 (October 13, 2025)
+- **Side Prompts Enhancements:** Major improvements to the Side Prompts system
+  - **Template System:** Added comprehensive template library for side prompts with pre-built, reusable prompt snippets
+  - **Template Management:** Enhanced side prompts manager with improved template handling and organization
+  - **Bug Fixes:** Fixed issue with dropping prompts that lack names, improving reliability of prompt management
+  - **Stabilization Work:** Multiple rounds of stabilization improvements to the Side Prompts feature
+  - **User Experience:** Improved template selection and management workflow for better usability
+- **Code Quality:** Enhanced error handling and validation in side prompts functionality
+- **Feature Maturation:** Side Prompts feature moved from alpha status toward production readiness
+
 ## v4.5.1 (October 12, 2025)
 - **Unicode & Title Handling Overhaul:**
   - Title and entry sanitization now matches SillyTavern’s behavior. Only Unicode control characters are stripped; all printable Unicode (including emoji, CJK, etc.) is allowed.
