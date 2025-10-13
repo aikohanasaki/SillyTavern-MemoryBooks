@@ -398,12 +398,16 @@ export async function upsertTemplate(input) {
     if (next.triggers.onAfterMemory) {
         next.triggers.onAfterMemory = { enabled: !!next.triggers.onAfterMemory.enabled };
     }
-    if (Array.isArray(next.triggers.commands)) {
-        next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
-        if (next.triggers.commands.length === 0) {
-            next.triggers.commands = ['sideprompt'];
+    if ('commands' in next.triggers) {
+        if (Array.isArray(next.triggers.commands)) {
+            next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
+            // If the user cleared it intentionally, keep it empty to mean “no manual command”
+        } else {
+            // Explicitly provided but not an array => treat as disabled
+            next.triggers.commands = [];
         }
     } else {
+        // commands not provided at all (legacy/programmatic): default to manual for back-compat
         next.triggers.commands = ['sideprompt'];
     }
 

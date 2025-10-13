@@ -9,6 +9,7 @@ import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
+let hasShownSidePromptRangeTip = false;
 
 /**
  * Strict lorebook requirement: no auto-create, no selection popup.
@@ -217,6 +218,53 @@ function resolveSidePromptConnection(profile = null, options = {}) {
 }
 
 /**
+ * Lorebook settings helpers for side prompts
+ */
+function toNumberOr(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Read effective lorebook settings from a template, with safe defaults.
+ * constVectMode: 'link' (vectorized, default) | 'green' (normal) | 'blue' (constant)
+ * orderMode: 'auto' | 'manual' (if manual, orderValue is used)
+ */
+function getEffectiveLorebookSettingsForTemplate(tpl) {
+    const lb = (tpl && tpl.settings && tpl.settings.lorebook) || {};
+    return {
+        constVectMode: lb.constVectMode || 'link',
+        position: toNumberOr(lb.position, 0),
+        orderMode: lb.orderMode === 'manual' ? 'manual' : 'auto',
+        orderValue: toNumberOr(lb.orderValue, 100),
+        preventRecursion: lb.preventRecursion !== false,
+        delayUntilRecursion: !!lb.delayUntilRecursion,
+    };
+}
+
+/**
+ * Build defaults (for create-time) and entryOverrides (for create+update) for upsert calls
+ */
+function makeUpsertParamsFromLorebook(lbs) {
+    const defaults = {
+        vectorized: lbs.constVectMode === 'link',
+        selective: true,
+        order: lbs.orderMode === 'manual' ? toNumberOr(lbs.orderValue, 100) : 100,
+        position: toNumberOr(lbs.position, 0),
+    };
+    const entryOverrides = {
+        constant: lbs.constVectMode === 'blue',
+        vectorized: lbs.constVectMode === 'link',
+        preventRecursion: !!lbs.preventRecursion,
+        delayUntilRecursion: !!lbs.delayUntilRecursion,
+    };
+    if (lbs.orderMode === 'manual') {
+        entryOverrides.order = toNumberOr(lbs.orderValue, 100);
+    }
+    return { defaults, entryOverrides };
+}
+
+/**
  * Evaluate tracker prompts and fire if thresholds are met
  */
 export async function evaluateTrackers() {
@@ -291,13 +339,11 @@ export async function evaluateTrackers() {
 
             // Upsert entry and update metadata checkpoint (generic + legacy for one-way compat)
             try {
+                const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
+                const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
                 await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
-                    defaults: {
-                        vectorized: true,
-                        selective: true,
-                        order: 100,
-                        position: 0,
-                    },
+                    defaults,
+                    entryOverrides,
                     metadataUpdates: {
                         [`STMB_sp_${tpl.key}_lastMsgId`]: currentLast,
                         [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
@@ -377,15 +423,13 @@ export async function runAfterMemory(compiledScene, profile = null) {
                 if (r.ok) {
                     const tpl = r.tpl;
                     const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
+                    const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
+                    const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
                     items.push({
                         title: unifiedTitle,
                         content: r.text,
-                        defaults: {
-                            vectorized: true,
-                            selective: true,
-                            order: 100,
-                            position: 0,
-                        },
+                        defaults,
+                        entryOverrides,
                         metadataUpdates: {
                             [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         },
@@ -468,6 +512,12 @@ export async function runSidePrompt(args) {
             toastr.error('SidePrompt template not found. Check name.', 'STMemoryBooks');
             return '';
         }
+        // Enforce manual gating: only allow /sideprompt if template has the sideprompt command enabled
+        const manualEnabled = Array.isArray(tpl?.triggers?.commands) && tpl.triggers.commands.some(c => String(c).toLowerCase() === 'sideprompt');
+        if (!manualEnabled) {
+            toastr.error('Manual run is disabled for this template. Enable "Allow manual run via /sideprompt" in the template settings.', 'STMemoryBooks');
+            return '';
+        }
 
         const currentLast = chat.length - 1;
         if (currentLast < 0) {
@@ -497,6 +547,10 @@ export async function runSidePrompt(args) {
             }
         } else {
             // Since-last behavior with cap
+            if (!hasShownSidePromptRangeTip) {
+                toastr.info('Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.', 'STMemoryBooks');
+                hasShownSidePromptRangeTip = true;
+            }
             const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
             const existingForLast = getEntryByTitle(lore.data, unifiedTitle)
                 || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`)
@@ -537,13 +591,11 @@ export async function runSidePrompt(args) {
             const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
             const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
             resultText = await runLLM(finalPrompt, overrides);
+            const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
+            const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
             await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
-                defaults: {
-                    vectorized: true,
-                    selective: true,
-                    order: 100,
-                    position: 0,
-                },
+                defaults,
+                entryOverrides,
                 metadataUpdates: {
                     [`STMB_sp_${tpl.key}_lastMsgId`]: chat.length - 1,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
