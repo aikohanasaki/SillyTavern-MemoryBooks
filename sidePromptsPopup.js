@@ -294,13 +294,12 @@ async function openEditTemplate(parentPopup, key) {
             const newResponseFormat = dlg.querySelector('#stmb-sp-edit-response-format')?.value.trim() || '';
             const newEnabled = !!dlg.querySelector('#stmb-sp-edit-enabled')?.checked;
 
-            if (!newName) {
-                toastr.error('Name cannot be empty', 'STMemoryBooks');
-                return;
-            }
             if (!newPrompt) {
                 toastr.error('Prompt cannot be empty', 'STMemoryBooks');
                 return;
+            }
+            if (!newName) {
+                toastr.info('Name was empty. Keeping previous name.', 'STMemoryBooks');
             }
 
             // Triggers
@@ -545,13 +544,12 @@ async function openNewTemplate(parentPopup) {
         const prompt = dlg.querySelector('#stmb-sp-new-prompt')?.value.trim() || '';
         const responseFormat = dlg.querySelector('#stmb-sp-new-response-format')?.value.trim() || '';
 
-        if (!name) {
-            toastr.error('Name cannot be empty', 'STMemoryBooks');
-            return;
-        }
         if (!prompt) {
             toastr.error('Prompt cannot be empty', 'STMemoryBooks');
             return;
+        }
+        if (!name) {
+            toastr.info('No name provided. Using "Untitled Side Prompt".', 'STMemoryBooks');
         }
 
         // Build triggers
