@@ -387,19 +387,38 @@ export async function findTemplateByName(name) {
 export async function upsertTemplate(input) {
     const data = await loadSidePrompts();
     const isNew = !input.key;
-    const key = input.key || safeSlug(input.name || 'Side Prompt');
     const ts = nowIso();
 
-    const cur = data.prompts[key];
+    // Determine final display name with safe default
+    const requestedName = String(input.name ?? '').trim();
+    const cur = isNew ? null : data.prompts[input.key];
+    const finalName = requestedName || (isNew ? 'Untitled Side Prompt' : (cur?.name || 'Untitled Side Prompt'));
+
+    // Determine key (preserve existing on edit; generate unique on create)
+    let key;
+    if (input.key) {
+        key = input.key;
+    } else {
+        const base = safeSlug(finalName || 'Untitled Side Prompt');
+        let candidate = base;
+        let suffix = 2;
+        while (data.prompts[candidate]) {
+            candidate = safeSlug(`${finalName} ${suffix}`);
+            suffix++;
+        }
+        key = candidate;
+    }
+
+    const prev = data.prompts[key];
     const next = {
         key,
-        name: String(input.name || (cur?.name || 'Side Prompt')),
-        enabled: typeof input.enabled === 'boolean' ? input.enabled : (cur?.enabled ?? false),
-        prompt: String(input.prompt != null ? input.prompt : (cur?.prompt || 'this is a placeholder prompt')),
-        responseFormat: String(input.responseFormat != null ? input.responseFormat : (cur?.responseFormat || '')),
-        settings: { ...(cur?.settings || {}), ...(input.settings || {}) },
-        triggers: input.triggers ? input.triggers : (cur?.triggers || { commands: ['sideprompt'] }),
-        createdAt: cur?.createdAt || ts,
+        name: finalName,
+        enabled: typeof input.enabled === 'boolean' ? input.enabled : (prev?.enabled ?? false),
+        prompt: String(input.prompt != null ? input.prompt : (prev?.prompt || 'this is a placeholder prompt')),
+        responseFormat: String(input.responseFormat != null ? input.responseFormat : (prev?.responseFormat || '')),
+        settings: { ...(prev?.settings || {}), ...(input.settings || {}) },
+        triggers: input.triggers ? input.triggers : (prev?.triggers || { commands: ['sideprompt'] }),
+        createdAt: prev?.createdAt || ts,
         updatedAt: ts,
     };
 
