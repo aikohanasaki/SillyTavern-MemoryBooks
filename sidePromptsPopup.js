@@ -204,7 +204,14 @@ async function openEditTemplate(parentPopup, key) {
                     </label>
                     <label>
                         <h4 style="margin: 0 0 4px 0;">Insertion Position:</h4>
-                        <input type="number" id="stmb-sp-edit-lb-position" class="text_pole" step="1" value="${lbPosition}">
+                        <select id="stmb-sp-edit-lb-position" class="text_pole">
+                            <option value="0" ${lbPosition === 0 ? 'selected' : ''}>↑Char</option>
+                            <option value="1" ${lbPosition === 1 ? 'selected' : ''}>↓Char</option>
+                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>↑EM</option>
+                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>↓EM</option>
+                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>↑AN</option>
+                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>↓AN</option>
+                        </select>
                     </label>
                 </div>
                 <div class="world_entry_form_control" style="margin-top: 8px;">
@@ -437,7 +444,14 @@ async function openNewTemplate(parentPopup) {
                 </label>
                 <label>
                     <h4 style="margin: 0 0 4px 0;">Insertion Position:</h4>
-                    <input type="number" id="stmb-sp-new-lb-position" class="text_pole" step="1" value="0">
+                    <select id="stmb-sp-new-lb-position" class="text_pole">
+                        <option value="0" selected>↑Char</option>
+                        <option value="1">↓Char</option>
+                        <option value="2">↑EM</option>
+                        <option value="3">↓EM</option>
+                        <option value="4">↑AN</option>
+                        <option value="5">↓AN</option>
+                    </select>
                 </label>
             </div>
             <div class="world_entry_form_control" style="margin-top: 8px;">

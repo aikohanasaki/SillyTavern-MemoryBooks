@@ -141,10 +141,11 @@ const profileEditTemplate = Handlebars.compile(`
             <small>↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</small>
             <select id="stmb-profile-position" class="text_pole">
                 <option value="0" {{#if (eq position 0)}}selected{{/if}}>↑Char</option>
-                <option value="1" {{#if (eq position 1)}}selected{{/if}}>↓Cha</option>
+                <option value="1" {{#if (eq position 1)}}selected{{/if}}>↓Char</option>
                 <option value="2" {{#if (eq position 2)}}selected{{/if}}>↑EM</option>
                 <option value="3" {{#if (eq position 3)}}selected{{/if}}>↓EM</option>
                 <option value="4" {{#if (eq position 4)}}selected{{/if}}>↑AN</option>
+                <option value="5" {{#if (eq position 5)}}selected{{/if}}>↓AN</option>
             </select>
         </label>
     </div>
