@@ -870,7 +870,7 @@ export function getEntryByTitle(lorebookData, title) {
  *
  * @param {string} lorebookName
  * @param {Object} lorebookData
- * @param {Array<{title: string, content: string, defaults?: Object, metadataUpdates?: Object}>} items
+ * @param {Array<{title: string, content: string, defaults?: Object, metadataUpdates?: Object, entryOverrides?: Object}>} items
  * @param {Object} [options]
  * @param {boolean} [options.refreshEditor=true]
  * @returns {Promise<Array<{title:string, uid:number, created:boolean}>>}
@@ -893,6 +893,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
         const content = it.content != null ? String(it.content) : '';
         const defaults = it.defaults || {};
         const metadataUpdates = it.metadataUpdates || {};
+        const entryOverrides = it.entryOverrides || {};
 
         let entry = getEntryByTitle(lorebookData, title);
         let created = false;
@@ -930,6 +931,11 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
             entry[k] = v;
         }
 
+        // Apply entry overrides (both on create and update)
+        for (const [k, v] of Object.entries(entryOverrides)) {
+            entry[k] = v;
+        }
+
         results.push({ title, uid: entry.uid, created });
     }
 
@@ -955,6 +961,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
  * @param {Object} options
  * @param {Object} [options.defaults]  Defaults for new entries (vectorized, selective, order, position, etc.)
  * @param {Object} [options.metadataUpdates]  Key/value pairs to set on entry (e.g., STMB_tracker_lastMsgId)
+ * @param {Object} [options.entryOverrides]  Fields to set/update on the entry for both create and update (e.g., constant, vectorized, preventRecursion, delayUntilRecursion, order)
  * @param {boolean} [options.refreshEditor=true]
  * @returns {Promise<{uid:number, created:boolean}>}
  */
@@ -968,6 +975,7 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
         },
         metadataUpdates = {},
         refreshEditor = true,
+        entryOverrides = {},
     } = options;
 
     if (!lorebookName || !lorebookData || !title) {
@@ -1001,6 +1009,11 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
 
     // Apply metadata updates
     for (const [k, v] of Object.entries(metadataUpdates || {})) {
+        entry[k] = v;
+    }
+
+    // Apply entry overrides (both on create and update)
+    for (const [k, v] of Object.entries(entryOverrides || {})) {
         entry[k] = v;
     }
 

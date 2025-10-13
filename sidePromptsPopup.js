@@ -100,9 +100,9 @@ async function openEditTemplate(parentPopup, key) {
         const intervalEnabled = !!(trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1);
         const intervalVal = intervalEnabled ? Math.max(1, Number(trig.onInterval.visibleMessages)) : 50;
         const afterEnabled = !!(trig.onAfterMemory && trig.onAfterMemory.enabled);
-        const manualEnabled = Array.isArray(trig.commands)
+            const manualEnabled = Array.isArray(trig.commands)
             ? trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')
-            : true; // default to true for manual
+            : false; // default to false for manual when not specified
 
         // Per-template override controls
         const profiles = extension_settings?.STMemoryBooks?.profiles || [];
@@ -129,6 +129,15 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
         `;
+
+        // Lorebook entry settings (defaults with safe fallbacks)
+        const lb = (s && s.lorebook) || {};
+        const lbMode = lb.constVectMode || 'link';
+        const lbPosition = Number.isFinite(lb.position) ? Number(lb.position) : 0;
+        const lbOrderManual = lb.orderMode === 'manual';
+        const lbOrderValue = Number.isFinite(lb.orderValue) ? Number(lb.orderValue) : 100;
+        const lbPrevent = lb.preventRecursion !== false;
+        const lbDelay = !!lb.delayUntilRecursion;
 
         const content = `
             <h3>Edit Side Prompt</h3>
@@ -183,12 +192,60 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
             <div class="world_entry_form_control">
+                <h4>Lorebook Entry Settings:</h4>
+                <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
+                    <label>
+                        <h4 style="margin: 0 0 4px 0;">Vectorization Mode:</h4>
+                        <select id="stmb-sp-edit-lb-mode" class="text_pole">
+                            <option value="link" ${lbMode === 'link' ? 'selected' : ''}>Vectorized (link)</option>
+                            <option value="green" ${lbMode === 'green' ? 'selected' : ''}>Normal (green)</option>
+                            <option value="blue" ${lbMode === 'blue' ? 'selected' : ''}>Constant (blue)</option>
+                        </select>
+                    </label>
+                    <label>
+                        <h4 style="margin: 0 0 4px 0;">Insertion Position:</h4>
+                        <input type="number" id="stmb-sp-edit-lb-position" class="text_pole" step="1" value="${lbPosition}">
+                    </label>
+                </div>
+                <div class="world_entry_form_control" style="margin-top: 8px;">
+                    <h4>Order:</h4>
+                    <label class="radio_label">
+                        <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-auto" value="auto" ${lbOrderManual ? '' : 'checked'}>
+                        <span>Auto</span>
+                    </label>
+                    <label class="radio_label" style="margin-left: 12px;">
+                        <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-manual" value="manual" ${lbOrderManual ? 'checked' : ''}>
+                        <span>Manual</span>
+                    </label>
+                    <div id="stmb-sp-edit-lb-order-value-container" style="display:${lbOrderManual ? 'block' : 'none'}; margin-left:28px;">
+                        <label>
+                            <h4 style="margin: 0 0 4px 0;">Order Value:</h4>
+                            <input type="number" id="stmb-sp-edit-lb-order-value" class="text_pole" step="1" value="${lbOrderValue}">
+                        </label>
+                    </div>
+                </div>
+                <div class="world_entry_form_control" style="margin-top: 8px;">
+                    <label class="checkbox_label">
+                        <input type="checkbox" id="stmb-sp-edit-lb-prevent" ${lbPrevent ? 'checked' : ''}>
+                        <span>Prevent Recursion</span>
+                    </label>
+                    <label class="checkbox_label" style="margin-left: 12px;">
+                        <input type="checkbox" id="stmb-sp-edit-lb-delay" ${lbDelay ? 'checked' : ''}>
+                        <span>Delay Until Recursion</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="world_entry_form_control">
                 <h4>Overrides:</h4>
                 ${overrideHtml}
             </div>
         `;
 
         const editPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
             okButton: 'Save',
             cancelButton: 'Cancel'
         });
@@ -209,6 +266,16 @@ async function openEditTemplate(parentPopup, key) {
             cbOverride?.addEventListener('change', () => {
                 if (overrideCont) overrideCont.style.display = cbOverride.checked ? 'block' : 'none';
             });
+
+            // Lorebook order mode visibility
+            const orderAuto = dlg.querySelector('#stmb-sp-edit-lb-order-auto');
+            const orderManual = dlg.querySelector('#stmb-sp-edit-lb-order-manual');
+            const orderValCont = dlg.querySelector('#stmb-sp-edit-lb-order-value-container');
+            const syncOrderVisibility = () => {
+                if (orderValCont) orderValCont.style.display = orderManual?.checked ? 'block' : 'none';
+            };
+            orderAuto?.addEventListener('change', syncOrderVisibility);
+            orderManual?.addEventListener('change', syncOrderVisibility);
         };
 
         attachHandlers();
@@ -257,6 +324,23 @@ async function openEditTemplate(parentPopup, key) {
             } else {
                 delete settings.overrideProfileIndex;
             }
+
+            // Lorebook settings
+            const lbModeSel = dlg.querySelector('#stmb-sp-edit-lb-mode')?.value || 'link';
+            const lbPosRaw = parseInt(dlg.querySelector('#stmb-sp-edit-lb-position')?.value ?? '0', 10);
+            const lbOrderManual2 = !!dlg.querySelector('#stmb-sp-edit-lb-order-manual')?.checked;
+            const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-edit-lb-order-value')?.value ?? '100', 10);
+            const lbPrevent2 = !!dlg.querySelector('#stmb-sp-edit-lb-prevent')?.checked;
+            const lbDelay2 = !!dlg.querySelector('#stmb-sp-edit-lb-delay')?.checked;
+
+            settings.lorebook = {
+                constVectMode: ['link', 'green', 'blue'].includes(lbModeSel) ? lbModeSel : 'link',
+                position: Number.isFinite(lbPosRaw) ? lbPosRaw : 0,
+                orderMode: lbOrderManual2 ? 'manual' : 'auto',
+                orderValue: Number.isFinite(lbOrderValRaw) ? lbOrderValRaw : 100,
+                preventRecursion: lbPrevent2,
+                delayUntilRecursion: lbDelay2,
+            };
 
             await upsertTemplate({
                 key: tpl.key,
@@ -341,6 +425,51 @@ async function openNewTemplate(parentPopup) {
             </label>
         </div>
         <div class="world_entry_form_control">
+            <h4>Lorebook Entry Settings:</h4>
+            <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
+                <label>
+                    <h4 style="margin: 0 0 4px 0;">Vectorization Mode:</h4>
+                    <select id="stmb-sp-new-lb-mode" class="text_pole">
+                        <option value="link" selected>Vectorized (link)</option>
+                        <option value="green">Normal (green)</option>
+                        <option value="blue">Constant (blue)</option>
+                    </select>
+                </label>
+                <label>
+                    <h4 style="margin: 0 0 4px 0;">Insertion Position:</h4>
+                    <input type="number" id="stmb-sp-new-lb-position" class="text_pole" step="1" value="0">
+                </label>
+            </div>
+            <div class="world_entry_form_control" style="margin-top: 8px;">
+                <h4>Order:</h4>
+                <label class="radio_label">
+                    <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-auto" value="auto" checked>
+                    <span>Auto</span>
+                </label>
+                <label class="radio_label" style="margin-left: 12px;">
+                    <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-manual" value="manual">
+                    <span>Manual</span>
+                </label>
+                <div id="stmb-sp-new-lb-order-value-container" style="display:none; margin-left:28px;">
+                    <label>
+                        <h4 style="margin: 0 0 4px 0;">Order Value:</h4>
+                        <input type="number" id="stmb-sp-new-lb-order-value" class="text_pole" step="1" value="100">
+                    </label>
+                </div>
+            </div>
+            <div class="world_entry_form_control" style="margin-top: 8px;">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-new-lb-prevent" checked>
+                    <span>Prevent Recursion</span>
+                </label>
+                <label class="checkbox_label" style="margin-left: 12px;">
+                    <input type="checkbox" id="stmb-sp-new-lb-delay">
+                    <span>Delay Until Recursion</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="world_entry_form_control">
             <h4>Overrides:</h4>
             <div class="world_entry_form_control">
                 <label class="checkbox_label">
@@ -360,6 +489,9 @@ async function openNewTemplate(parentPopup) {
     `;
 
     const newPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
         okButton: 'Create',
         cancelButton: 'Cancel'
     });
@@ -378,6 +510,16 @@ async function openNewTemplate(parentPopup) {
         cbOverride?.addEventListener('change', () => {
             if (overrideCont) overrideCont.style.display = cbOverride.checked ? 'block' : 'none';
         });
+
+        // Lorebook order mode visibility
+        const orderAuto = dlg.querySelector('#stmb-sp-new-lb-order-auto');
+        const orderManual = dlg.querySelector('#stmb-sp-new-lb-order-manual');
+        const orderValCont = dlg.querySelector('#stmb-sp-new-lb-order-value-container');
+        const syncOrderVisibility = () => {
+            if (orderValCont) orderValCont.style.display = orderManual?.checked ? 'block' : 'none';
+        };
+        orderAuto?.addEventListener('change', syncOrderVisibility);
+        orderManual?.addEventListener('change', syncOrderVisibility);
     };
 
     attachHandlers();
@@ -424,6 +566,23 @@ async function openNewTemplate(parentPopup) {
             const oidx = parseInt(dlg.querySelector('#stmb-sp-new-override-index')?.value ?? '', 10);
             if (!isNaN(oidx)) settings.overrideProfileIndex = oidx;
         }
+
+        // Settings - lorebook
+        const lbModeSel = dlg.querySelector('#stmb-sp-new-lb-mode')?.value || 'link';
+        const lbPosRaw = parseInt(dlg.querySelector('#stmb-sp-new-lb-position')?.value ?? '0', 10);
+        const lbOrderManual2 = !!dlg.querySelector('#stmb-sp-new-lb-order-manual')?.checked;
+        const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-new-lb-order-value')?.value ?? '100', 10);
+        const lbPrevent2 = !!dlg.querySelector('#stmb-sp-new-lb-prevent')?.checked;
+        const lbDelay2 = !!dlg.querySelector('#stmb-sp-new-lb-delay')?.checked;
+
+        settings.lorebook = {
+            constVectMode: ['link', 'green', 'blue'].includes(lbModeSel) ? lbModeSel : 'link',
+            position: Number.isFinite(lbPosRaw) ? lbPosRaw : 0,
+            orderMode: lbOrderManual2 ? 'manual' : 'auto',
+            orderValue: Number.isFinite(lbOrderValRaw) ? lbOrderValRaw : 100,
+            preventRecursion: lbPrevent2,
+            delayUntilRecursion: lbDelay2,
+        };
 
         try {
             await upsertTemplate({ name, enabled, prompt, responseFormat, settings, triggers });

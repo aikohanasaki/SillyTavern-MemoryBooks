@@ -474,7 +474,7 @@ async function showSidePromptPickerAndRun(initialFilter = '') {
 async function handleSidePromptCommand(namedArgs, unnamedArgs) {
     const raw = String(unnamedArgs || '').trim();
     if (!raw) {
-        await showSidePromptPickerAndRun('');
+        toastr.info('SidePrompt guide: Type a template name after the space to see suggestions. Usage: /sideprompt "Name" [X-Y]. Quote names with spaces.', 'STMemoryBooks');
         return '';
     }
 
@@ -488,7 +488,9 @@ async function handleSidePromptCommand(namedArgs, unnamedArgs) {
         const templates = await listTemplates();
         const candidates = templates.filter(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
         if (candidates.length > 1) {
-            await showSidePromptPickerAndRun(namePart);
+            const top = candidates.slice(0, 5).map(t => t.name).join(', ');
+            const more = candidates.length > 5 ? `, +${candidates.length - 5} more` : '';
+            toastr.info(`Multiple matches: ${top}${more}. Refine the name or use quotes. Usage: /sideprompt "Name" [X-Y]`, 'STMemoryBooks');
             return '';
         }
         // Fall back to direct run (runSidePrompt will resolve fuzzy or error toast)
@@ -506,12 +508,21 @@ let sidePromptNameCache = [];
 async function refreshSidePromptCache() {
     try {
         const tpls = await listTemplates();
-        sidePromptNameCache = (tpls || []).map(t => t.name);
+        sidePromptNameCache = (tpls || [])
+            .filter(t => {
+                const cmds = t?.triggers?.commands;
+                // Back-compat: if commands is missing, treat as manual-enabled for suggestions
+                if (!('commands' in (t?.triggers || {}))) return true;
+                return Array.isArray(cmds) && cmds.some(c => String(c).toLowerCase() === 'sideprompt');
+            })
+            .map(t => t.name);
     } catch (e) {
         console.warn('STMemoryBooks: side prompt cache refresh failed', e);
     }
 }
 window.addEventListener('stmb-sideprompts-updated', refreshSidePromptCache);
+// Preload cache early so suggestions are available even before init() completes
+try { refreshSidePromptCache(); } catch (e) { /* noop */ }
 
 /**
  * Helper: build triggers badges for prompt picker
@@ -2520,7 +2531,7 @@ function registerSlashCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: t('STMemoryBooks_Slash_SceneMemory_ArgRangeDesc', 'Message range (X-Y format)'),
-                typeList: [ARGUMENT_TYPE.STRING],
+            typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true
             })
         ]
@@ -2535,11 +2546,11 @@ function registerSlashCommands() {
     const sidePromptCmd = SlashCommand.fromProps({
         name: 'sideprompt',
         callback: handleSidePromptCommand,
-        helpString: t('STMemoryBooks_Slash_SidePrompt_Help', 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]'),
+        helpString: t('STMemoryBooks_Slash_SidePrompt_Help', 'Run side prompt. Usage: /sideprompt "Name" [X-Y]'),
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: t('STMemoryBooks_Slash_SidePrompt_ArgDesc', 'Template name (quote if contains spaces), optionally followed by X-Y range'),
-                typeList: [ARGUMENT_TYPE.STRING],
+                typeList: [ARGUMENT_TYPE.ENUM],
                 isRequired: false,
                 enumProvider: () => sidePromptNameCache.map(n => new SlashCommandEnumValue(n))
             })
