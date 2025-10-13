@@ -138,91 +138,104 @@ function migrateV1toV2(v1) {
 }
 
 /**
- * Default built-in templates (V2 triggers-based, seeded with placeholder prompt)
+ * Default built-in templates
  */
 function getBuiltinTemplates() {
-    const placeholder = 'this is a placeholder prompt';
     const createdAt = nowIso();
-
     const prompts = {};
-
-    // Continuity Tracker (disabled by default) -> interval trigger only
     {
-        const key = safeSlug('Continuity Tracker');
+        const key = safeSlug('Plotpoints');
         prompts[key] = {
             key,
-            name: 'Continuity Tracker',
+            name: 'Plotpoints',
             enabled: false,
-            prompt: placeholder,
-            responseFormat: '',
-            triggers: {
-                onInterval: { visibleMessages: 50 },
-                // no onAfterMemory by default
-                // no commands by default (can still be run via /sideprompt, but keep minimal)
-                commands: ['sideprompt'],
+            prompt: "Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating.",
+            responseFormat: "=== Plot Points ===\n(as of [point in the story when this analysis was done])\n\n[Overarching Plot Arc]\n(2-3 sentence summary of the superobjective or major plot)\n\n[Thread #1 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n\n[Thread #2 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n...\n\n-- Plot Hooks --\n- (new or potential plot hooks)\n\n-- Character Dynamics --\n- current status of {{user}}'s/{{char}}'s relationships with NPCs\n\n===End Plot Points===\n",
+            settings: {
+                overrideProfileEnabled: false,
+                lorebook: {
+                constVectMode: "link",
+                position: 5,
+                orderMode: "manual",
+                orderValue: 25,
+                preventRecursion: true,
+                delayUntilRecursion: false
+                }
             },
-            settings: {},
+            triggers: {
+                onAfterMemory: {
+                enabled: true
+                },
+                commands: [
+                "sideprompt"
+                ]
+            },
+            createdAt,
+            updatedAt: createdAt,
+        };
+    };    
+    {
+        const key = safeSlug('Status');
+        prompts[key] = {
+            key,
+            name: 'Status',
+            enabled: false,
+            prompt: "Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.",
+            responseFormat: "Follow this general format:\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with lovefactor and lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR and LUSTFACTOR\n(!lovefactor and !lustfactor reports go here)\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)",
+            settings: {
+                overrideProfileEnabled: false,
+                lorebook: {
+                constVectMode: "link",
+                position: 5,
+                orderMode: "manual",
+                orderValue: 25,
+                preventRecursion: true,
+                delayUntilRecursion: false
+                }
+            },
+            triggers: {
+                onAfterMemory: {
+                enabled: true
+                },
+                commands: [
+                "sideprompt"
+                ]
+            },
+            createdAt,
+            updatedAt: createdAt,
+        };
+    };    
+    {
+        const key = safeSlug('Assess');
+        prompts[key] = {
+            key,
+            name: 'Assess',
+            enabled: false,
+            prompt: "Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things.",
+            responseFormat: "Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
+            settings: {
+                overrideProfileEnabled: false,
+                lorebook: {
+                constVectMode: "link",
+                position: 5,
+                orderMode: "manual",
+                orderValue: 30,
+                preventRecursion: true,
+                delayUntilRecursion: false
+                }
+            },
+            triggers: {
+                onAfterMemory: {
+                enabled: true
+                },
+                commands: [
+                "sideprompt"
+                ]
+            },
             createdAt,
             updatedAt: createdAt,
         };
     }
-
-    // Plot Points Extractor (disabled by default) -> after-memory + manual
-    {
-        const key = safeSlug('Plot Points Extractor');
-        prompts[key] = {
-            key,
-            name: 'Plot Points Extractor',
-            enabled: false,
-            prompt: placeholder,
-            responseFormat: '',
-            triggers: {
-                onAfterMemory: { enabled: true },
-                commands: ['sideprompt'],
-            },
-            settings: {},
-            createdAt,
-            updatedAt: createdAt,
-        };
-    }
-
-    // Scoreboard - Manual -> manual only
-    {
-        const key = safeSlug('Scoreboard - Manual');
-        prompts[key] = {
-            key,
-            name: 'Scoreboard - Manual',
-            enabled: false,
-            prompt: placeholder,
-            responseFormat: '',
-            triggers: {
-                commands: ['sideprompt'],
-            },
-            settings: {},
-            createdAt,
-            updatedAt: createdAt,
-        };
-    }
-
-    // Scoreboard - With Memories (auto) -> after-memory + manual
-    {
-        const key = safeSlug('Scoreboard - With Memories');
-        prompts[key] = {
-            key,
-            name: 'Scoreboard - With Memories',
-            enabled: false,
-            prompt: placeholder,
-            responseFormat: '',
-            triggers: {
-                onAfterMemory: { enabled: true },
-                commands: ['sideprompt'],
-            },
-            settings: {},
-            createdAt,
-            updatedAt: createdAt,
-        };
-    }
-
     return prompts;
 }
 
