@@ -154,7 +154,7 @@ function getBuiltinTemplates() {
             settings: {
                 overrideProfileEnabled: false,
                 lorebook: {
-                constVectMode: "link",
+                constVectMode: "blue",
                 position: 5,
                 orderMode: "manual",
                 orderValue: 25,
@@ -206,6 +206,37 @@ function getBuiltinTemplates() {
         };
     };    
     {
+        const key = safeSlug('Cast');
+        prompts[key] = {
+            key,
+            name: 'Cast of Characters',
+            enabled: false,
+            prompt: "You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. \nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. \nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.",
+            responseFormat: "===NPC WHO'S WHO===\n(In order of importance to the plot)\n\nPerson 1: 1-2 sentence desription\nPerson 2: 1-2 sentence desription\n===END NPC WHO'S WHO===",
+            settings: {
+                overrideProfileEnabled: false,
+                lorebook: {
+                constVectMode: "blue",
+                position: 5,
+                orderMode: "manual",
+                orderValue: 15,
+                preventRecursion: true,
+                delayUntilRecursion: false
+                }
+            },
+            triggers: {
+                onAfterMemory: {
+                enabled: true
+                },
+                commands: [
+                "sideprompt"
+                ]
+            },
+            createdAt,
+            updatedAt: createdAt,
+        };
+    };    
+    {
         const key = safeSlug('Assess');
         prompts[key] = {
             key,
@@ -216,7 +247,7 @@ function getBuiltinTemplates() {
             settings: {
                 overrideProfileEnabled: false,
                 lorebook: {
-                constVectMode: "link",
+                constVectMode: "blue",
                 position: 5,
                 orderMode: "manual",
                 orderValue: 30,
