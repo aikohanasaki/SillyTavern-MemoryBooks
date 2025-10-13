@@ -49,8 +49,10 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - Create memories on-demand for special moments
 - Great for capturing key plot points or character developments
 
-### 📊 **Smart Trackers** 
+### 📊 **Side Prompts & Smart Trackers** 
 *"I want to track relationships, plot threads, or stats"*
+- Reusable prompt snippets that enhance memory generation
+- Built-in template library with ready-to-use trackers
 - Custom AI prompts that track anything you want
 - Automatically update scoreboards, relationship status, plot summaries
 - Examples: "Who likes who?", "Current quest status", "Character mood tracker"
@@ -122,6 +124,51 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - Integration with custom workflows
 
 </details>
+
+---
+
+## 🎨 Side Prompts & Templates (Advanced Feature)
+
+**Side Prompts** are reusable prompt snippets that enhance your memory generation without changing your main AI settings. Think of them as "add-ons" that give your memories extra focus or tracking capabilities.
+
+### 🚀 **Quick Start with Templates**
+1. Open Memory Books settings
+2. Click **"Side Prompts"** button
+3. Browse the **template library** - pick something that fits your story:
+   - **Character Development Tracker** - Tracks personality changes and growth
+   - **Relationship Dynamics** - Monitors relationships between characters
+   - **Plot Thread Tracker** - Keeps tabs on ongoing storylines
+   - **Mood & Atmosphere** - Captures the emotional tone of scenes
+   - **World Building Notes** - Records setting details and lore
+4. Enable the templates you want, customize if needed
+5. Your memories will now include this extra tracking automatically!
+
+### ⚙️ **How Side Prompts Work**
+- **Non-Intrusive**: They don't change your main AI settings or character prompts
+- **Per-Chat Control**: Enable different prompts for different chats
+- **Template-Based**: Use pre-built templates or create custom ones
+- **Automatic Integration**: Once enabled, they enhance every memory created
+
+### 🛠️ **Managing Side Prompts**
+- **Side Prompts Manager**: Create, edit, duplicate, and organize your prompts
+- **Import/Export**: Share prompt templates with others or backup your collection
+- **Quick Toggle**: Enable/disable prompts instantly in the Side Prompts popup
+- **Live Preview**: See which prompts are active for the current chat
+
+### 💡 **Template Examples**
+- **"Focus on dialogue and character interactions"**
+- **"Track the current quest status and objectives"** 
+- **"Note any world-building details mentioned"**
+- **"Monitor the relationship between [Character A] and [Character B]"**
+
+### 🔧 **Creating Custom Side Prompts**
+1. Open Side Prompts Manager
+2. Click "Create New"
+3. Write your prompt (example: "Always note what the weather is like in each scene")
+4. Save and enable it
+5. Now all your memories will include weather tracking!
+
+**Pro Tip**: Side Prompts work best when they're specific and focused. Instead of "track everything," try "track romantic tension between main characters."
 
 ---
 
