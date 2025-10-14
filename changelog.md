@@ -2,6 +2,12 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.3 (October 14, 2025)
+- **Side Prompts Import is Now Additive:** Importing `stmb_side_prompts.json` merges side prompts into your current set instead of replacing them. Existing prompts are preserved and only new prompts are added. If an imported prompt’s key conflicts with an existing one, the imported prompt is renamed using its display name (with a numeric suffix if needed).
+- **Import UI Feedback Improved:** The import dialog now displays how many prompts were added and how many were renamed due to key conflicts.
+- **Manual /sideprompt Name Lookup Greatly Improved:** The `/sideprompt` command now matches side prompts by key, display name, or slug (hyphen/underscore/space-insensitive, case-insensitive). For example, `/sideprompt cast-of-characters`, `/sideprompt cast`, and `/sideprompt "Cast of Characters"` will all run the same prompt if it exists.
+- **Bugfix:** Resolves issues where built-in prompts could not be run by slug or key, or where imports previously overwrote existing side prompts.
+
 ## v4.6.2 (October 14, 2025)
 - **Side Prompts Bugfix:** Swapped EM/AN
 
@@ -206,6 +212,36 @@
   - **Aelemar Template**: Focuses on plot points and character memories with comprehensive 300+ word summaries
   - Improved template descriptions and display names for better user understanding
   - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
+  - Updated existing template prompts for better timeline handling and content structure
 - **Code Quality:** Enhanced template rendering and CSS maintainability
   - Removed redundant CSS rules in favor of SillyTavern's built-in styling
   - Better separation between custom styling and framework integration
@@ -231,21 +267,8 @@
   - Visual indicators for chat-bound vs manual lorebook configurations
   - One-click lorebook selection and clearing for manual mode
   - Contextual help text and status messages throughout the interface
-- **Session Management & Cleanup:** Robust handling of orphaned scene markers
-  - Automatic detection and cleanup of stale scene markers from previous sessions
-  - Prevents interference with auto-summary and memory creation processes
-  - Clear logging and user notifications when cleanup occurs
-  - Scene marker validation on chat load to ensure clean state
-- **Auto-Summary System Improvements:** Enhanced reliability and debugging capabilities
-  - Improved trigger logic that works correctly regardless of message count parity
-  - Enhanced logging throughout the auto-summary process for better troubleshooting
-  - Added `window.STMemoryBooks_debugAutoSummary()` developer function for manual debugging
-  - Better handling of postponed auto-summary states and cleanup
-  - Improved lorebook validation with user-friendly selection popups when lorebooks are missing
-- **UI/UX Enhancements:** Streamlined lorebook management experience
-  - Real-time status updates in settings popup
-  - Contextual button text (Select vs Change) based on current state
   - Automatic UI refresh after lorebook selection or mode changes
+  - Better visual feedback for manual vs automatic mode operation
   - Better visual feedback for manual vs automatic mode operation
   - Better visual feedback for manual vs automatic mode operation
   - Better visual feedback for manual vs automatic mode operation
