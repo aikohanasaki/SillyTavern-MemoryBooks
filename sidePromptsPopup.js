@@ -638,8 +638,14 @@ async function importTemplates(event, parentPopup) {
 
     try {
         const text = await file.text();
-        await importSidePromptsJSON(text);
-        toastr.success('Imported side prompts', 'STMemoryBooks');
+        const res = await importSidePromptsJSON(text);
+        if (res && typeof res === 'object') {
+            const { added = 0, renamed = 0 } = res;
+            const detail = renamed > 0 ? ` (${renamed} renamed due to key conflicts)` : '';
+            toastr.success(`Imported side prompts: ${added} added${detail}`, 'STMemoryBooks');
+        } else {
+            toastr.success('Imported side prompts', 'STMemoryBooks');
+        }
         await refreshList(parentPopup);
     } catch (err) {
         console.error('STMemoryBooks: Error importing side prompts:', err);
