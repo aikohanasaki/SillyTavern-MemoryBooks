@@ -395,21 +395,49 @@ export async function getTemplate(key) {
  */
 export async function findTemplateByName(name) {
     const data = await loadSidePrompts();
-    const target = String(name || '').trim().toLowerCase();
-    if (!target) return null;
+    const raw = String(name || '').trim();
+    if (!raw) return null;
 
-    // exact match
-    for (const p of Object.values(data.prompts)) {
-        if (p.name.toLowerCase() === target) return p;
+    const targetLower = raw.toLowerCase();
+    const targetSlug = safeSlug(raw);
+    const targetNorm = targetLower.replace(/[^a-z0-9]+/g, ' ').trim();
+
+    const templates = Object.values(data.prompts);
+
+    // 1) Exact matches: name, key, or slug
+    for (const p of templates) {
+        const nameLower = String(p.name || '').toLowerCase();
+        const keyLower = String(p.key || '').toLowerCase();
+        const nameSlug = safeSlug(p.name || '');
+        if (nameLower === targetLower || keyLower === targetLower || nameSlug === targetSlug) {
+            return p;
+        }
     }
-    // starts with
-    for (const p of Object.values(data.prompts)) {
-        if (p.name.toLowerCase().startsWith(target)) return p;
+
+    // 2) Starts-with matches: name, slug, or key
+    for (const p of templates) {
+        const nameLower = String(p.name || '').toLowerCase();
+        const keyLower = String(p.key || '').toLowerCase();
+        const nameSlug = safeSlug(p.name || '');
+        if (nameLower.startsWith(targetLower) || nameSlug.startsWith(targetSlug) || keyLower.startsWith(targetLower)) {
+            return p;
+        }
     }
-    // contains
-    for (const p of Object.values(data.prompts)) {
-        if (p.name.toLowerCase().includes(target)) return p;
+
+    // 3) Contains matches with normalization tolerance
+    for (const p of templates) {
+        const nameLower = String(p.name || '').toLowerCase();
+        const nameSlug = safeSlug(p.name || '');
+        const nameNorm = nameLower.replace(/[^a-z0-9]+/g, ' ').trim();
+        if (
+            nameLower.includes(targetLower) ||
+            nameSlug.includes(targetSlug) ||
+            (targetNorm && nameNorm.includes(targetNorm))
+        ) {
+            return p;
+        }
     }
+
     return null;
 }
 
