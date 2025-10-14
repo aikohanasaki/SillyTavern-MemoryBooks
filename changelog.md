@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.1 (October 13, 2025)
+- **Side Prompts Bugfix:** Swapped EM/AN
+
 ## v4.6.0 (October 13, 2025)
 - **Side Prompts Enhancements:** Major improvements to the Side Prompts system
   - **Template System:** Added comprehensive template library for side prompts with pre-built, reusable prompt snippets
