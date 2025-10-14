@@ -327,10 +327,20 @@ export async function evaluateTrackers() {
             // Call LLM
             let resultText = '';
             try {
-                const idx = Number(tpl?.settings?.overrideProfileIndex);
-                const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
-                const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
-                resultText = await runLLM(finalPrompt, overrides);
+            const idx = Number(tpl?.settings?.overrideProfileIndex);
+            const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
+            const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
+            console.log(`${MODULE_NAME}: SidePrompt attempt`, {
+                trigger: 'onInterval',
+                name: tpl.name,
+                key: tpl.key,
+                range: `${boundedStart}-${currentLast}`,
+                visibleSince,
+                threshold,
+                api: overrides.api,
+                model: overrides.model,
+            });
+            resultText = await runLLM(finalPrompt, overrides);
             } catch (err) {
                 console.error(`${MODULE_NAME}: Interval sideprompt LLM failed:`, err);
                 toastr.error(`SidePrompt "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
@@ -351,6 +361,13 @@ export async function evaluateTrackers() {
                         STMB_tracker_lastRunAt: new Date().toISOString(),
                     },
                     refreshEditor: extension_settings?.STMemoryBooks?.moduleSettings?.refreshEditor !== false,
+                });
+                console.log(`${MODULE_NAME}: SidePrompt success`, {
+                    trigger: 'onInterval',
+                    name: tpl.name,
+                    key: tpl.key,
+                    saved: true,
+                    contentChars: resultText.length,
                 });
             } catch (err) {
                 console.error(`${MODULE_NAME}: Interval sideprompt upsert failed:`, err);
@@ -406,6 +423,13 @@ export async function runAfterMemory(compiledScene, profile = null) {
                     const idx = Number(tpl?.settings?.overrideProfileIndex);
                     const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
                     const conn = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : defaultOverrides;
+                    console.log(`${MODULE_NAME}: SidePrompt attempt`, {
+                        trigger: 'onAfterMemory',
+                        name: tpl.name,
+                        key: tpl.key,
+                        api: conn.api,
+                        model: conn.model,
+                    });
                     const text = await runLLM(finalPrompt, conn);
                     return { ok: true, tpl, text };
                 } catch (e) {
@@ -456,6 +480,11 @@ export async function runAfterMemory(compiledScene, profile = null) {
                         if (showNotifications) {
                             toastr.success(`SidePrompt "${name}" updated.`, 'STMemoryBooks');
                         }
+                        console.log(`${MODULE_NAME}: SidePrompt success`, {
+                            trigger: 'onAfterMemory',
+                            name,
+                            saved: true,
+                        });
                     }
                 } catch (saveErr) {
                     console.error(`${MODULE_NAME}: Wave save failed:`, saveErr);
@@ -590,6 +619,14 @@ export async function runSidePrompt(args) {
             const idx = Number(tpl?.settings?.overrideProfileIndex);
             const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
             const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
+            console.log(`${MODULE_NAME}: SidePrompt attempt`, {
+                trigger: 'manual',
+                name: tpl.name,
+                key: tpl.key,
+                rangeProvided: !!range,
+                api: overrides.api,
+                model: overrides.model,
+            });
             resultText = await runLLM(finalPrompt, overrides);
             const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
             const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
@@ -601,6 +638,13 @@ export async function runSidePrompt(args) {
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                 },
                 refreshEditor: extension_settings?.STMemoryBooks?.moduleSettings?.refreshEditor !== false,
+            });
+            console.log(`${MODULE_NAME}: SidePrompt success`, {
+                trigger: 'manual',
+                name: tpl.name,
+                key: tpl.key,
+                saved: true,
+                contentChars: resultText.length,
             });
         } catch (err) {
             console.error(`${MODULE_NAME}: /sideprompt failed:`, err);
