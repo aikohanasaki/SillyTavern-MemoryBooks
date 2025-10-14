@@ -44,7 +44,7 @@ function parseSceneRange(sceneRange) {
  */
 async function executeHideCommand(hideCommand, context = '') {
     const contextStr = context ? ` (${context})` : '';
-    console.log(`${MODULE_NAME}: Executing hide command${contextStr}: ${hideCommand}`);
+    console.log(i18n('addlore.log.executingHideCommand', `${MODULE_NAME}: Executing hide command${contextStr}: {{hideCommand}}`, { hideCommand }));
     await executeSlashCommands(hideCommand);
 }
 
@@ -69,15 +69,15 @@ function getAutoHideMode(moduleSettings = {}) {
 
 // Default title formats that users can select from
 const DEFAULT_TITLE_FORMATS = [
-    '[000] - {{title}} ({{profile}})',
-    '{{date}} [000] 🎬{{title}}, {{messages}} msgs',
-    '[000] {{date}} - {{char}} Memory',
-    '[00] - {{user}} & {{char}} {{scene}}',
-    '🧠 [000] ({{messages}} msgs)',
-    '📚 Memory #[000] - {{profile}} {{date}} {{time}}',
-    '[000] - {{scene}}: {{title}}',
-    '[000] - {{title}} ({{scene}})',
-    '[000] - {{title}}'
+    '[000] - {{title}} ({{profile}})', // i18n('addlore.titleFormats.0', '[000] - {{title}} ({{profile}})')
+    '{{date}} [000] 🎬{{title}}, {{messages}} msgs', // i18n('addlore.titleFormats.1', '{{date}} [000] 🎬{{title}}, {{messages}} msgs')
+    '[000] {{date}} - {{char}} Memory', // i18n('addlore.titleFormats.2', '[000] {{date}} - {{char}} Memory')
+    '[00] - {{user}} & {{char}} {{scene}}', // i18n('addlore.titleFormats.3', '[00] - {{user}} & {{char}} {{scene}}')
+    '🧠 [000] ({{messages}} msgs)', // i18n('addlore.titleFormats.4', '🧠 [000] ({{messages}} msgs)')
+    '📚 Memory #[000] - {{profile}} {{date}} {{time}}', // i18n('addlore.titleFormats.5', '📚 Memory #[000] - {{profile}} {{date}} {{time}}')
+    '[000] - {{scene}}: {{title}}', // i18n('addlore.titleFormats.6', '[000] - {{scene}}: {{title}}')
+    '[000] - {{title}} ({{scene}})', // i18n('addlore.titleFormats.7', '[000] - {{title}} ({{scene}})')
+    '[000] - {{title}}' // i18n('addlore.titleFormats.8', '[000] - {{title}}')
 ];
 
 /**
@@ -110,7 +110,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         const settings = extension_settings.STMemoryBooks || {};
         let titleFormat = memoryResult.titleFormat;
         if (!titleFormat) {
-            titleFormat = settings.titleFormat || '[000] - {{title}}';
+            titleFormat = settings.titleFormat || i18n('addlore.titleFormats.8', '[000] - {{title}}');
         }
         const refreshEditor = settings.moduleSettings?.refreshEditor !== false;
 
@@ -154,7 +154,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
 
                 if (!sceneData) {
-                    console.warn(`${MODULE_NAME}: Auto-hide skipped - invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
+                    console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: memoryResult.metadata?.sceneRange }));
                     toastr.warning(
                         i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
                         i18n('addlore.toast.title', 'STMemoryBooks')
@@ -163,11 +163,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
 
                     if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide 0-${sceneEnd}`, 'all mode - complete');
+                        await executeHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
                     } else {
                         const hideEndIndex = sceneEnd - unhiddenCount;
                         if (hideEndIndex >= 0) {
-                            await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
+                            await executeHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
                         }
                         // Auto-hide silently skipped if not enough messages
                     }
@@ -175,7 +175,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             } else if (autoHideMode === 'last') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
                 if (!sceneData) {
-                    console.warn(`${MODULE_NAME}: Auto-hide skipped - invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
+                    console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: memoryResult.metadata?.sceneRange }));
                     toastr.warning(
                         i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
                         i18n('addlore.toast.title', 'STMemoryBooks')
@@ -187,11 +187,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     if (unhiddenCount >= sceneSize) {
                         // No hiding needed - want to keep more messages than scene contains
                     } else if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, 'last mode - hide all');
+                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
                     } else {
                         const hideEnd = sceneEnd - unhiddenCount;
                         if (hideEnd >= sceneStart) {
-                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, 'last mode - partial');
+                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
                         }
                         // Auto-hide silently skipped if not enough scene messages
                     }
@@ -211,7 +211,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         };
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Failed to add memory to lorebook:`, error);
+        console.error(i18n('addlore.log.addFailed', `${MODULE_NAME}: Failed to add memory to lorebook:`), error);
         
         if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
             toastr.error(
@@ -669,7 +669,7 @@ export function validateTitleFormat(format) {
     const controlCharsPattern = /[\u0000-\u001F\u007F-\u009F]/g;
     
     if (controlCharsPattern.test(withoutPlaceholders)) {
-        warnings.push(i18n('addlore.titleFormat.warnings.sanitization', 'Title contains control characters that will be removed during sanitization'));
+        warnings.push(i18n('addlore.titleFormat.warnings.sanitization', 'Title contains characters that will be removed during sanitization'));
     }
     
     // Check for valid placeholder syntax
@@ -681,7 +681,7 @@ export function validateTitleFormat(format) {
     if (invalidPlaceholders && invalidPlaceholders.length > 0) {
         warnings.push(i18n('addlore.titleFormat.warnings.unknownPlaceholders', 'Unknown placeholders: {{placeholders}}', { placeholders: invalidPlaceholders.join(', ') }));
     }
-    
+
     // Check for valid numbering patterns (accept multiple token shapes, including wrapped forms)
     const numberingPatterns = format.match(/[\[\({#][^0\]\)}]*[\]\)}]?/g);
     if (numberingPatterns) {
@@ -695,16 +695,16 @@ export function validateTitleFormat(format) {
             /^\{\[0+\]\}$/       // {[000]}
         ];
         const invalidNumbering = numberingPatterns.filter(pat => !allowed.some(rx => rx.test(pat)));
-        
+
         if (invalidNumbering.length > 0) {
             warnings.push(i18n('addlore.titleFormat.warnings.invalidNumbering', 'Invalid numbering patterns: {{patterns}}. Use [0], [00], [000], (0), {0}, #0, #[0], ([0]), {[0]} etc.', { patterns: invalidNumbering.join(', ') }));
         }
     }
-    
+
     if (format.length > 100) {
         warnings.push(i18n('addlore.titleFormat.warnings.tooLong', 'Title format is very long and may be truncated'));
     }
-    
+
     return {
         valid: errors.length === 0,
         errors,
@@ -792,7 +792,7 @@ export async function getLorebookStats() {
         };
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error getting lorebook stats:`, error);
+        console.error(i18n('addlore.log.getStatsError', `${MODULE_NAME}: Error getting lorebook stats:`), error);
         return { valid: false, error: error.message };
     }
 }
@@ -803,33 +803,33 @@ export async function getLorebookStats() {
  */
 function updateHighestMemoryProcessed(memoryResult) {
     try {
-        console.log(`${MODULE_NAME}: updateHighestMemoryProcessed called with:`, memoryResult);
+        console.log(i18n('addlore.log.updateHighestCalled', `${MODULE_NAME}: updateHighestMemoryProcessed called with:`), memoryResult);
 
         // Extract the end message number from the scene range
         const sceneRange = memoryResult.metadata?.sceneRange;
-        console.log(`${MODULE_NAME}: sceneRange extracted:`, sceneRange);
+        console.log(i18n('addlore.log.sceneRangeExtracted', `${MODULE_NAME}: sceneRange extracted:`), sceneRange);
 
         if (!sceneRange) {
-            console.warn(`${MODULE_NAME}: No scene range found in memory result, cannot update highest processed`);
+            console.warn(i18n('addlore.warn.noSceneRange', `${MODULE_NAME}: No scene range found in memory result, cannot update highest processed`));
             return;
         }
 
         const rangeParts = sceneRange.split('-');
         if (rangeParts.length !== 2) {
-            console.warn(`${MODULE_NAME}: Invalid scene range format: ${sceneRange}`);
+            console.warn(i18n('addlore.warn.invalidSceneRangeFormat', `${MODULE_NAME}: Invalid scene range format: {{range}}`, { range: sceneRange }));
             return;
         }
 
         const endMessage = parseInt(rangeParts[1], 10);
         if (isNaN(endMessage)) {
-            console.warn(`${MODULE_NAME}: Invalid end message number: ${rangeParts[1]}`);
+            console.warn(i18n('addlore.warn.invalidEndMessage', `${MODULE_NAME}: Invalid end message number: {{end}}`, { end: rangeParts[1] }));
             return;
         }
 
         // Get current scene markers (which handles both single and group chats)
         const sceneMarkers = getSceneMarkers();
         if (!sceneMarkers) {
-            console.warn(`${MODULE_NAME}: Could not get scene markers to update highest processed`);
+            console.warn(i18n('addlore.warn.noSceneMarkers', `${MODULE_NAME}: Could not get scene markers to update highest processed`));
             return;
         }
 
@@ -839,10 +839,10 @@ function updateHighestMemoryProcessed(memoryResult) {
         // Save the metadata (works for both group chats and single-character chats)
         saveMetadataForCurrentContext();
 
-        console.log(`${MODULE_NAME}: Set highest memory processed to message ${endMessage}`);
+        console.log(i18n('addlore.log.setHighest', `${MODULE_NAME}: Set highest memory processed to message {{endMessage}}`, { endMessage }));
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error updating highest memory processed:`, error);
+        console.error(i18n('addlore.log.updateHighestError', `${MODULE_NAME}: Error updating highest memory processed:`), error);
     }
 }
 

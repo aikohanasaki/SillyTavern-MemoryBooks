@@ -180,14 +180,14 @@ async function openEditTemplate(parentPopup, key) {
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-prompt">
                     <h4>Prompt:</h4>
-                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
                     <textarea id="stmb-sp-edit-prompt" class="text_pole textarea_compact" rows="10">${escapeHtml(tpl.prompt || '')}</textarea>
                 </label>
             </div>
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-response-format">
                     <h4>Response Format (optional):</h4>
-                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-response-format" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-response-format" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
                     <textarea id="stmb-sp-edit-response-format" class="text_pole textarea_compact" rows="6">${escapeHtml(tpl.responseFormat || '')}</textarea>
                 </label>
             </div>
@@ -419,14 +419,14 @@ async function openNewTemplate(parentPopup) {
         <div class="world_entry_form_control">
             <label for="stmb-sp-new-prompt">
                 <h4>Prompt:</h4>
-                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
                 <textarea id="stmb-sp-new-prompt" class="text_pole textarea_compact" rows="8" placeholder="Enter your prompt..."></textarea>
             </label>
         </div>
         <div class="world_entry_form_control">
             <label for="stmb-sp-new-response-format">
                 <h4>Response Format (optional):</h4>
-                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-response-format" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-response-format" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
                 <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6" placeholder="Optional response format"></textarea>
             </label>
         </div>

@@ -7,6 +7,7 @@ import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resol
 import { requestCompletion } from './stmemory.js';
 import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
+import { t } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
 let hasShownSidePromptRangeTip = false;
@@ -30,16 +31,16 @@ async function requireLorebookStrict() {
     }
 
     if (!lorebookName || !world_names || !world_names.includes(lorebookName)) {
-        toastr.error('No memory lorebook is assigned. Open Memory Books settings and select or bind a lorebook.', 'STMemoryBooks');
-        throw new Error('No memory lorebook assigned');
+        toastr.error(t('STMemoryBooks_Toast_NoMemoryLorebookAssigned', 'No memory lorebook is assigned. Open Memory Books settings and select or bind a lorebook.'), 'STMemoryBooks');
+        throw new Error(t('STMemoryBooks_Error_NoMemoryLorebookAssigned', 'No memory lorebook assigned'));
     }
 
     try {
         const lorebookData = await loadWorldInfo(lorebookName);
-        if (!lorebookData) throw new Error('Failed to load lorebook');
+        if (!lorebookData) throw new Error(t('STMemoryBooks_Error_FailedToLoadLorebook', 'Failed to load lorebook'));
         return { name: lorebookName, data: lorebookData };
     } catch (err) {
-        toastr.error('Failed to load the selected lorebook.', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_Toast_FailedToLoadLorebook', 'Failed to load the selected lorebook.'), 'STMemoryBooks');
         throw err;
     }
 }
@@ -343,7 +344,7 @@ export async function evaluateTrackers() {
             resultText = await runLLM(finalPrompt, overrides);
             } catch (err) {
                 console.error(`${MODULE_NAME}: Interval sideprompt LLM failed:`, err);
-                toastr.error(`SidePrompt "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_SidePromptFailed', 'SidePrompt "{{name}}" failed: {{message}}', { name: tpl.name, message: err.message }), 'STMemoryBooks');
                 continue;
             }
 
@@ -371,7 +372,7 @@ export async function evaluateTrackers() {
                 });
             } catch (err) {
                 console.error(`${MODULE_NAME}: Interval sideprompt upsert failed:`, err);
-                toastr.error(`Failed to update sideprompt entry "${tpl.name}"`, 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_FailedToUpdateSidePrompt', 'Failed to update sideprompt entry "{{name}}"', { name: tpl.name }), 'STMemoryBooks');
                 continue;
             }
         }
@@ -478,7 +479,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
                     for (const name of succeededNames) {
                         results.push({ name, ok: true });
                         if (showNotifications) {
-                            toastr.success(`SidePrompt "${name}" updated.`, 'STMemoryBooks');
+                            toastr.success(t('STMemoryBooks_Toast_SidePromptUpdated', 'SidePrompt "{{name}}" updated.', { name }), 'STMemoryBooks');
                         }
                         console.log(`${MODULE_NAME}: SidePrompt success`, {
                             trigger: 'onAfterMemory',
@@ -488,7 +489,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
                     }
                 } catch (saveErr) {
                     console.error(`${MODULE_NAME}: Wave save failed:`, saveErr);
-                    toastr.error('Failed to save SidePrompt updates for this wave', 'STMemoryBooks');
+                    toastr.error(t('STMemoryBooks_Toast_FailedToSaveWave', 'Failed to save SidePrompt updates for this wave'), 'STMemoryBooks');
                     // Mark these as failed since they were not persisted
                     for (const name of succeededNames) {
                         results.push({ name, ok: false, error: saveErr });
@@ -510,9 +511,9 @@ export async function runAfterMemory(compiledScene, profile = null) {
                 return `${names}${more}`;
             };
             if (failCount === 0) {
-                toastr.info(`Side Prompts after memory: ${okCount} succeeded. ${summarize(succeeded)}`, 'STMemoryBooks');
+                toastr.info(t('STMemoryBooks_Toast_SidePromptsSucceeded', 'Side Prompts after memory: {{okCount}} succeeded. {{succeeded}}', { okCount: okCount, succeeded: summarize(succeeded) }), 'STMemoryBooks');
             } else {
-                toastr.warning(`Side Prompts after memory: ${okCount} succeeded, ${failCount} failed. ${failCount ? 'Failed: ' + summarize(failed) : ''}`, 'STMemoryBooks');
+                toastr.warning(t('STMemoryBooks_Toast_SidePromptsPartiallyFailed', 'Side Prompts after memory: {{okCount}} succeeded, {{failCount}} failed. {{failed}}', { okCount: okCount, failCount: failCount, failed: failCount ? 'Failed: ' + summarize(failed) : '' }), 'STMemoryBooks');
             }
         }
     } catch (outer) {
@@ -532,25 +533,25 @@ export async function runSidePrompt(args) {
 
         const { name, range } = parseNameAndRange(args);
         if (!name) {
-            toastr.error('SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_Toast_SidePromptNameNotProvided', 'SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]'), 'STMemoryBooks');
             return '';
         }
 
         const tpl = await findTemplateByName(name);
         if (!tpl) {
-            toastr.error('SidePrompt template not found. Check name.', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_Toast_SidePromptNotFound', 'SidePrompt template not found. Check name.'), 'STMemoryBooks');
             return '';
         }
         // Enforce manual gating: only allow /sideprompt if template has the sideprompt command enabled
         const manualEnabled = Array.isArray(tpl?.triggers?.commands) && tpl.triggers.commands.some(c => String(c).toLowerCase() === 'sideprompt');
         if (!manualEnabled) {
-            toastr.error('Manual run is disabled for this template. Enable "Allow manual run via /sideprompt" in the template settings.', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_Toast_ManualRunDisabled', 'Manual run is disabled for this template. Enable "Allow manual run via /sideprompt" in the template settings.'), 'STMemoryBooks');
             return '';
         }
 
         const currentLast = chat.length - 1;
         if (currentLast < 0) {
-            toastr.error('No messages available.', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_Toast_NoMessagesAvailable', 'No messages available.'), 'STMemoryBooks');
             return '';
         }
 
@@ -559,25 +560,25 @@ export async function runSidePrompt(args) {
         if (range) {
             const m = String(range).trim().match(/^(\d+)\s*[-–—]\s*(\d+)$/);
             if (!m) {
-                toastr.error('Invalid range format. Use X-Y', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_InvalidRangeFormat', 'Invalid range format. Use X-Y'), 'STMemoryBooks');
                 return '';
             }
             const start = parseInt(m[1], 10);
             const end = parseInt(m[2], 10);
             if (!(start >= 0 && end >= start && end < chat.length)) {
-                toastr.error('Invalid message range for /sideprompt', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_InvalidMessageRange', 'Invalid message range for /sideprompt'), 'STMemoryBooks');
                 return '';
             }
             try {
                 compiled = compileRange(start, end);
             } catch (err) {
-                toastr.error('Failed to compile the specified range', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_FailedToCompileRange', 'Failed to compile the specified range'), 'STMemoryBooks');
                 return '';
             }
         } else {
             // Since-last behavior with cap
             if (!hasShownSidePromptRangeTip) {
-                toastr.info('Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.', 'STMemoryBooks');
+                toastr.info(t('STMemoryBooks_Toast_SidePromptRangeTip', 'Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.'), 'STMemoryBooks');
                 hasShownSidePromptRangeTip = true;
             }
             const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
@@ -599,12 +600,10 @@ export async function runSidePrompt(args) {
             try {
                 compiled = compileRange(boundedStart, currentLast);
             } catch (err) {
-                toastr.error('Failed to compile messages for /sideprompt', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_Toast_FailedToCompileMessages', 'Failed to compile messages for /sideprompt'), 'STMemoryBooks');
                 return '';
             }
         }
-
-        // Build prompt with prior
         const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
         const existing = getEntryByTitle(lore.data, unifiedTitle)
             || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`)
@@ -646,13 +645,13 @@ export async function runSidePrompt(args) {
                 saved: true,
                 contentChars: resultText.length,
             });
-        } catch (err) {
-            console.error(`${MODULE_NAME}: /sideprompt failed:`, err);
-            toastr.error(`SidePrompt "${tpl.name}" failed`, 'STMemoryBooks');
-            return '';
-        }
+            } catch (err) {
+                console.error(`${MODULE_NAME}: /sideprompt failed:`, err);
+                toastr.error(t('STMemoryBooks_Toast_SidePromptFailed', 'SidePrompt "{{name}}" failed: {{message}}', { name: tpl.name, message: err.message }), 'STMemoryBooks');
+                return '';
+            }
 
-        toastr.success(`SidePrompt "${tpl.name}" updated.`, 'STMemoryBooks');
+        toastr.success(t('STMemoryBooks_Toast_SidePromptUpdated', 'SidePrompt "{{name}}" updated.', { name: tpl.name }), 'STMemoryBooks');
         return '';
     } catch (outer) {
         return '';

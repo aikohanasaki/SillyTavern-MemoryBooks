@@ -50,7 +50,7 @@ export async function autoCreateLorebook(template, context = 'chat') {
     try {
         const newLorebookName = generateLorebookName(template);
 
-        console.log(`${MODULE_NAME}: Auto-creating lorebook "${newLorebookName}" for ${context}`);
+        console.log(i18n('autocreate.log.creating', `${MODULE_NAME}: Auto-creating lorebook "{{name}}" for {{context}}`, { name: newLorebookName, context }));
         const created = await createNewWorldInfo(newLorebookName);
 
         if (created) {
@@ -58,16 +58,16 @@ export async function autoCreateLorebook(template, context = 'chat') {
             chat_metadata[METADATA_KEY] = newLorebookName;
             await saveMetadata();
 
-            console.log(`${MODULE_NAME}: Successfully created and bound lorebook "${newLorebookName}"`);
+            console.log(i18n('autocreate.log.created', `${MODULE_NAME}: Successfully created and bound lorebook "{{name}}"`, { name: newLorebookName }));
             toastr.success(i18n('autocreate.toast.createdBound', 'Created and bound lorebook "{{name}}"', { name: newLorebookName }), i18n('autocreate.toast.title', 'STMemoryBooks'));
 
             return { success: true, name: newLorebookName };
         } else {
-            console.error(`${MODULE_NAME}: Failed to create lorebook`);
+            console.error(i18n('autocreate.log.createFailed', `${MODULE_NAME}: Failed to create lorebook`));
             return { success: false, error: i18n('autocreate.errors.failedAutoCreate', 'Failed to auto-create lorebook.') };
         }
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error creating lorebook:`, error);
+        console.error(i18n('autocreate.log.createError', `${MODULE_NAME}: Error creating lorebook:`), error);
         return { success: false, error: i18n('autocreate.errors.failedAutoCreateWithMessage', 'Failed to auto-create lorebook: {{message}}', { message: error.message }) };
     }
 }

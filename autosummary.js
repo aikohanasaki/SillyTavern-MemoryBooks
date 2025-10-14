@@ -25,7 +25,7 @@ async function validateLorebookForAutoSummary() {
         // Check if auto-create is enabled and no lorebook exists
         if (!lorebookName && settings?.moduleSettings?.autoCreateLorebook) {
             // Auto-create lorebook using template
-            const template = settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}';
+            const template = settings.moduleSettings.lorebookNameTemplate || i18n('STMemoryBooks_LorebookNameTemplatePlaceholder', 'LTM - {{char}} - {{chat}}');
             const result = await autoCreateLorebook(template, 'auto-summary');
 
             if (result.success) {
@@ -83,7 +83,7 @@ async function validateLorebookForAutoSummary() {
                 stmbData.autoSummaryNextPromptAt = currentMessageCount + postponeMessages;
                 saveMetadataForCurrentContext();
 
-                console.log(`STMemoryBooks: Auto-summary postponed for ${postponeMessages} messages (until message ${stmbData.autoSummaryNextPromptAt})`);
+                console.log(i18n('autosummary.log.postponed', 'STMemoryBooks: Auto-summary postponed for {{count}} messages (until message {{until}})', { count: postponeMessages, until: stmbData.autoSummaryNextPromptAt }));
                 return { valid: false, error: i18n('STMemoryBooks_Info_AutoSummaryPostponed', 'Auto-summary postponed for {{count}} messages.', { count: postponeMessages }) };
             }
         }
@@ -126,7 +126,7 @@ export async function checkAutoSummaryTrigger() {
 
         // Check if memory creation is in progress
         if (isMemoryProcessing()) {
-            console.log('STMemoryBooks: Auto-summary skipped - memory creation in progress');
+            console.log(i18n('autosummary.log.skippedInProgress', 'STMemoryBooks: Auto-summary skipped - memory creation in progress'));
             return;
         }
 
@@ -135,30 +135,30 @@ export async function checkAutoSummaryTrigger() {
         if (highestProcessed === null) {
             // No previous memories processed - count from beginning
             messagesSinceLastMemory = currentMessageCount;
-            console.log('STMemoryBooks: No previous memories found - counting from start');
+            console.log(i18n('autosummary.log.noPrevious', 'STMemoryBooks: No previous memories found - counting from start'));
         } else {
             // Count messages since the last processed memory
             messagesSinceLastMemory = currentLastMessage - highestProcessed;
-            console.log(`STMemoryBooks: Messages since last memory (${highestProcessed}): ${messagesSinceLastMemory}`);
+            console.log(i18n('autosummary.log.sinceLast', 'STMemoryBooks: Messages since last memory ({{highestProcessed}}): {{count}}', { highestProcessed, count: messagesSinceLastMemory }));
         }
 
-        console.log(`STMemoryBooks: Auto-summary trigger check: ${messagesSinceLastMemory} >= ${requiredInterval}?`);
+        console.log(i18n('autosummary.log.triggerCheck', 'STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?', { count: messagesSinceLastMemory, required: requiredInterval }));
 
         if (messagesSinceLastMemory < requiredInterval) {
-            console.log(`STMemoryBooks: Auto-summary not triggered - need ${requiredInterval - messagesSinceLastMemory} more messages`);
+            console.log(i18n('autosummary.log.notTriggered', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages', { needed: requiredInterval - messagesSinceLastMemory }));
             return;
         }
 
         // Check if user has postponed auto-summary
         if (stmbData.autoSummaryNextPromptAt && currentMessageCount < stmbData.autoSummaryNextPromptAt) {
-            console.log(`STMemoryBooks: Auto-summary postponed until message ${stmbData.autoSummaryNextPromptAt}`);
+            console.log(i18n('autosummary.log.postponedUntil', 'STMemoryBooks: Auto-summary postponed until message {{until}}', { until: stmbData.autoSummaryNextPromptAt }));
             return; // Still in postpone period
         }
 
         // Auto-summary will set new scene markers - no need to clear existing ones
         const lorebookValidation = await validateLorebookForAutoSummary();
         if (!lorebookValidation.valid) {
-            console.log(`STMemoryBooks: Auto-summary blocked - lorebook validation failed: ${lorebookValidation.error}`);
+            console.log(i18n('autosummary.log.blocked', 'STMemoryBooks: Auto-summary blocked - lorebook validation failed: {{error}}', { error: lorebookValidation.error }));
             return; // No lorebook available or user cancelled
         }
 
@@ -166,7 +166,7 @@ export async function checkAutoSummaryTrigger() {
         if (stmbData.autoSummaryNextPromptAt) {
             delete stmbData.autoSummaryNextPromptAt;
             saveMetadataForCurrentContext();
-            console.log('STMemoryBooks: Cleared auto-summary postpone flag');
+            console.log(i18n('autosummary.log.clearedPostpone', 'STMemoryBooks: Cleared auto-summary postpone flag'));
         }
 
         // Calculate the scene range for auto-summary
@@ -181,7 +181,7 @@ export async function checkAutoSummaryTrigger() {
             sceneEnd = currentLastMessage;
         }
 
-        console.log(`STMemoryBooks: Auto-summary triggered - creating memory for range ${sceneStart}-${sceneEnd}`);
+        console.log(i18n('autosummary.log.triggered', 'STMemoryBooks: Auto-summary triggered - creating memory for range {{start}}-{{end}}', { start: sceneStart, end: sceneEnd }));
 
         // Set scene markers for the range we want to process
         stmbData.sceneStart = sceneStart;
@@ -192,7 +192,7 @@ export async function checkAutoSummaryTrigger() {
         const { executeSlashCommands } = await import('../../../slash-commands.js');
         await executeSlashCommands('/creatememory');
     } catch (error) {
-        console.error('STMemoryBooks: Error in auto-summary trigger check:', error);
+        console.error(i18n('autosummary.log.triggerError', 'STMemoryBooks: Error in auto-summary trigger check:'), error);
     }
 }
 
@@ -208,14 +208,14 @@ export async function handleAutoSummaryMessageReceived() {
         // Group chats will be handled by GROUP_WRAPPER_FINISHED event
         if (!context.isGroupChat && extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
             const currentMessageCount = chat.length;
-            console.log(`STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: ${currentMessageCount}`);
+            console.log(i18n('autosummary.log.messageReceivedSingle', 'STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
 
             await checkAutoSummaryTrigger();
         } else if (context.isGroupChat) {
-            console.log('STMemoryBooks: Message received in group chat - deferring to GROUP_WRAPPER_FINISHED');
+            console.log(i18n('autosummary.log.messageReceivedGroup', 'STMemoryBooks: Message received in group chat - deferring to GROUP_WRAPPER_FINISHED'));
         }
     } catch (error) {
-        console.error('STMemoryBooks: Error in auto-summary message received handler:', error);
+        console.error(i18n('autosummary.log.messageHandlerError', 'STMemoryBooks: Error in auto-summary message received handler:'), error);
     }
 }
 
@@ -227,13 +227,13 @@ export async function handleAutoSummaryGroupFinished() {
     try {
         if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
             const currentMessageCount = chat.length;
-            console.log(`STMemoryBooks: Group conversation finished - auto-summary enabled, current count: ${currentMessageCount}`);
+            console.log(i18n('autosummary.log.groupFinished', 'STMemoryBooks: Group conversation finished - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
 
             // Check auto-summary trigger after all group members have finished speaking
             await checkAutoSummaryTrigger();
         }
     } catch (error) {
-        console.error('STMemoryBooks: Error in auto-summary group finished handler:', error);
+        console.error(i18n('autosummary.log.groupHandlerError', 'STMemoryBooks: Error in auto-summary group finished handler:'), error);
     }
 }
 

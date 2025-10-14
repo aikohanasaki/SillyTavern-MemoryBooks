@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STMemoryBooks Lorebook Converter (v3)</title>
+    <title data-i18n="STMemoryBooks_ConverterTitle">STMemoryBooks Lorebook Converter (v3)</title>
     <link rel="stylesheet" href="s22.css">
     <script src="nav.js"></script>
     <style>
@@ -145,35 +145,35 @@
         <div id="nav-container"></div>
 
         <header class="header">
-            <h1>Lorebook Converter</h1>
-            <p>This tool flags entries by adding <code>stmemorybooks: true</code>. An entry is converted only if it matches the title format, is <strong>not</strong> set to <code>"vectorized": false</code>, and has its <code>"position"</code> set to <code>0</code>.</p>
+            <h1 data-i18n="STMemoryBooks_ConverterHeader">Lorebook Converter</h1>
+            <p data-i18n="STMemoryBooks_ConverterDescription">This tool flags entries by adding <code>stmemorybooks: true</code>. An entry is converted only if it matches the title format, is <strong>not</strong> set to <code>"vectorized": false</code>, and has its <code>"position"</code> set to <code>0</code>.</p>
         </header>
 
         <div class="input-group">
-            <label for="sampleTitleInput">Sample Title Format (Optional)</label>
-            <input type="text" id="sampleTitleInput" placeholder="e.g., 01 - My First Memory">
-            <small>The tool will find the first number and use it to create a pattern. If blank, it defaults to matching titles like "01 - title".</small>
+            <label for="sampleTitleInput" data-i18n="STMemoryBooks_ConverterSampleTitleLabel">Sample Title Format (Optional)</label>
+            <input type="text" id="sampleTitleInput" data-i18n="[placeholder]STMemoryBooks_ConverterSampleTitlePlaceholder" placeholder="e.g., 01 - My First Memory">
+            <small data-i18n="STMemoryBooks_ConverterSampleTitleDescription">The tool will find the first number and use it to create a pattern. If blank, it defaults to matching titles like "01 - title".</small>
             <div id="regexDisplay"></div>
         </div>
 
         <div class="file-upload-wrapper">
             <input type="file" id="jsonUpload" accept=".json">
-            <span class="file-upload-label">Click or Drag to Upload Lorebook File</span>
+            <span class="file-upload-label" data-i18n="STMemoryBooks_ConverterFileUploadLabel">Click or Drag to Upload Lorebook File</span>
             <span id="fileName"></span>
         </div>
         
         <div class="input-group">
             <label for="vectorizedToggle">
                 <input type="checkbox" id="vectorizedToggle" checked>
-                Include 🔵 entries
+                <span data-i18n="STMemoryBooks_ConverterIncludeVectorizedLabel">Include 🔵 entries</span>
             </label>
-            <small>If enabled, entries with <code>vectorized: false</code> will also be included as memories.</small>
+            <small data-i18n="STMemoryBooks_ConverterIncludeVectorizedDescription">If enabled, entries with <code>vectorized: false</code> will also be included as memories.</small>
         </div>
 
-        <button id="convertBtn" class="btn">Convert File</button>
+        <button id="convertBtn" class="btn" data-i18n="STMemoryBooks_ConverterConvertButton">Convert File</button>
 
         <div id="downloadLinkContainer" style="display:none;">
-            <p>Conversion complete!</p>
+            <p data-i18n="STMemoryBooks_ConverterConversionComplete">Conversion complete!</p>
             <span id="downloadLink"></span>
         </div>
     </div>
@@ -228,7 +228,7 @@
                         const newFileName = file.name.replace('.json', '_converted.json');
                         triggerDownload(convertedData, newFileName);
                     } catch (error) {
-                        alert('Error processing file. Please ensure it is a valid JSON lorebook. Error: ' + error.message);
+                        alert(t('STMemoryBooks_ConverterErrorProcessingFile', 'Error processing file. Please ensure it is a valid JSON lorebook. Error: {{message}}', { message: error.message }));
                     }
                 };
                 reader.readAsText(file);
@@ -254,7 +254,7 @@
 
             function convertLorebook(data) {
                 if (!data || !data.entries) {
-                    throw new Error("Invalid lorebook structure: 'entries' object not found.");
+                    throw new Error(t('STMemoryBooks_ConverterInvalidLorebookStructure', "Invalid lorebook structure: 'entries' object not found."));
                 }
 
                 const sample = sampleTitleInput.value.trim();
@@ -265,7 +265,7 @@
                     regexDisplay.textContent = isMemoryRegex.toString();
                 } else {
                     isMemoryRegex = /^\d+\s*-\s*.+/;
-                    regexDisplay.textContent = `Using default: ${isMemoryRegex.toString()}`;
+                    regexDisplay.textContent = t('STMemoryBooks_ConverterUsingDefaultRegex', 'Using default: {{regex}}', { regex: isMemoryRegex.toString() });
                 }
 
                 let memoriesConverted = 0;
@@ -286,7 +286,7 @@
                     }
                 });
 
-                alert(`Conversion complete. Checked ${totalEntries} entries and flagged ${memoriesConverted} as memories.`);
+                alert(t('STMemoryBooks_ConverterConversionStats', 'Conversion complete. Checked {{totalEntries}} entries and flagged {{memoriesConverted}} as memories.', { totalEntries, memoriesConverted }));
                 return data;
             }
 
@@ -298,7 +298,7 @@
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = filename;
-                a.textContent = `Download ${filename}`;
+                a.textContent = t('STMemoryBooks_ConverterDownloadLink', 'Download {{filename}}', { filename });
                 
                 downloadLink.innerHTML = '';
                 downloadLink.appendChild(a);

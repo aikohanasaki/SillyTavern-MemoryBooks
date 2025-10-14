@@ -9,6 +9,7 @@ import {
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
 import * as PromptManager from './summaryPromptManager.js';
+import { t } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
@@ -19,22 +20,22 @@ const profileEditTemplate = Handlebars.compile(`
 <div class="popup-content">
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-name">
-            <h4>Profile Name:</h4>
-            <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" placeholder="Profile name">
+            <h4 data-i18n="STMemoryBooks_ProfileName">Profile Name:</h4>
+            <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ProfileNamePlaceholder" placeholder="Profile name">
         </label>
     </div>
 
     <div class="world_entry_form_control marginTop5">
-        <h4>Model & Temperature Settings:</h4>
-        <div class="info-block hint marginBot10">
+        <h4 data-i18n="STMemoryBooks_ModelAndTempSettings">Model & Temperature Settings:</h4>
+        <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_ModelHint">
             For model, copy-paste the exact model ID, eg. <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code>, etc.
         </div>
 
         <label for="stmb-profile-api">
-            <h4>API/Provider:</h4>
+            <h4 data-i18n="STMemoryBooks_APIProvider">API/Provider:</h4>
             <select id="stmb-profile-api" class="text_pole" {{#if isProviderLocked}}disabled title="Provider locked for this profile"{{/if}}>
-                <option value="current_st" {{#if (eq connection.api "current_st")}}selected{{/if}}>Current SillyTavern Settings</option>
-                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}}>Custom API</option>
+                <option value="current_st" {{#if (eq connection.api "current_st")}}selected{{/if}} data-i18n="STMemoryBooks_CurrentSTSettings">Current SillyTavern Settings</option>
+                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}} data-i18n="STMemoryBooks_CustomAPI">Custom API</option>
                 <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
                 <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Claude</option>
                 <option value="makersuite" {{#if (eq connection.api "makersuite")}}selected{{/if}}>Google AI Studio</option>
@@ -53,29 +54,29 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="fireworks" {{#if (eq connection.api "fireworks")}}selected{{/if}}>Fireworks</option>
                 <option value="cometapi" {{#if (eq connection.api "cometapi")}}selected{{/if}}>Comet API</option>
                 <option value="azure_openai" {{#if (eq connection.api "azure_openai")}}selected{{/if}}>Azure OpenAI</option>
-                <option value="full-manual" {{#if (eq connection.api "full-manual")}}selected{{/if}} title="⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option.">Full Manual Configuration</option>
+                <option value="full-manual" {{#if (eq connection.api "full-manual")}}selected{{/if}} title="⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option." data-i18n="STMemoryBooks_FullManualConfig">Full Manual Configuration</option>
             </select>
         </label>
 
         <label for="stmb-profile-model">
-            <h4>Model:</h4>
-            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
+            <h4 data-i18n="STMemoryBooks_Model">Model:</h4>
+            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ModelPlaceholder" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
         </label>
 
         <label for="stmb-profile-temperature">
-            <h4>Temperature (0.0 - 2.0):</h4>
-            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8." {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
+            <h4 data-i18n="STMemoryBooks_TemperatureRange">Temperature (0.0 - 2.0):</h4>
+            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" data-i18n="[placeholder]STMemoryBooks_TemperaturePlaceholder" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8." {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
         </label>
 
         <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
             <label for="stmb-profile-endpoint">
-                <h4>API Endpoint URL:</h4>
-                <input type="text" id="stmb-profile-endpoint" value="{{connection.endpoint}}" class="text_pole" placeholder="https://api.example.com/v1/chat/completions">
+                <h4 data-i18n="STMemoryBooks_APIEndpointURL">API Endpoint URL:</h4>
+                <input type="text" id="stmb-profile-endpoint" value="{{connection.endpoint}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIEndpointPlaceholder" placeholder="https://api.example.com/v1/chat/completions">
             </label>
 
             <label for="stmb-profile-apikey">
-                <h4>API Key:</h4>
-                <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" placeholder="Enter your API key">
+                <h4 data-i18n="STMemoryBooks_APIKey">API Key:</h4>
+                <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIKeyPlaceholder" placeholder="Enter your API key">
             </label>
         </div>
     </div>
@@ -106,68 +107,68 @@ const profileEditTemplate = Handlebars.compile(`
     </div>
 
     <div class="world_entry_form_control marginTop5">
-        <h4>Memory Title Format:</h4>
-        <small class="opacity50p">Use [0], [00], etc. for numbering. Available tags: \\{{title}}, \\{{scene}}, \\{{char}}, \\{{user}}, \\{{messages}}, \\{{profile}}, \\{{date}}, \\{{time}}</small>
+        <h4 data-i18n="STMemoryBooks_TitleFormat">Memory Title Format:</h4>
+        <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], etc. for numbering. Available tags: \\{{title}}, \\{{scene}}, \\{{char}}, \\{{user}}, \\{{messages}}, \\{{profile}}, \\{{date}}, \\{{time}}</small>
         <select id="stmb-profile-title-format-select" class="text_pole">
             {{#each titleFormats}}
             <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
             {{/each}}
-            <option value="custom">Custom Title Format...</option>
+            <option value="custom" data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
         </select>
         <input type="text" id="stmb-profile-custom-title-format" class="text_pole marginTop5 {{#unless showCustomTitleInput}}displayNone{{/unless}}"
-            placeholder="Enter custom format" value="{{titleFormat}}">
+            data-i18n="[placeholder]STMemoryBooks_EnterCustomFormat" placeholder="Enter custom format" value="{{titleFormat}}">
     </div>
     <hr>
-    <h4>Lorebook Entry Settings</h4>
-    <div class="info-block hint marginBot10">
+    <h4 data-i18n="STMemoryBooks_LorebookEntrySettings">Lorebook Entry Settings</h4>
+    <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_LorebookEntrySettingsDesc">
         These settings control how the generated memory is saved into the lorebook.
     </div>
 
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-const-vect">
-            <h4>Activation Mode:</h4>
-            <small>🔗 Vectorized is recommended for memories.</small>
+            <h4 data-i18n="STMemoryBooks_ActivationMode">Activation Mode:</h4>
+            <small data-i18n="STMemoryBooks_ActivationModeDesc">🔗 Vectorized is recommended for memories.</small>
             <select id="stmb-profile-const-vect" class="text_pole">
-                <option value="link" {{#if (eq constVectMode "link")}}selected{{/if}}>🔗 Vectorized (Default)</option>
-                <option value="blue" {{#if (eq constVectMode "blue")}}selected{{/if}}>🔵 Constant</option>
-                <option value="green" {{#if (eq constVectMode "green")}}selected{{/if}}>🟢 Normal</option>
+                <option value="link" {{#if (eq constVectMode "link")}}selected{{/if}} data-i18n="STMemoryBooks_Vectorized">🔗 Vectorized (Default)</option>
+                <option value="blue" {{#if (eq constVectMode "blue")}}selected{{/if}} data-i18n="STMemoryBooks_Constant">🔵 Constant</option>
+                <option value="green" {{#if (eq constVectMode "green")}}selected{{/if}} data-i18n="STMemoryBooks_Normal">🟢 Normal</option>
             </select>
         </label>
     </div>
 
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-position">
-            <h4>Insertion Position:</h4>
-            <small>↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</small>
+            <h4 data-i18n="STMemoryBooks_InsertionPosition">Insertion Position:</h4>
+            <small data-i18n="STMemoryBooks_InsertionPositionDesc">↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</small>
             <select id="stmb-profile-position" class="text_pole">
-                <option value="0" {{#if (eq position 0)}}selected{{/if}}>↑Char</option>
-                <option value="1" {{#if (eq position 1)}}selected{{/if}}>↓Char</option>
-                <option value="2" {{#if (eq position 4)}}selected{{/if}}>↑AN</option>
-                <option value="3" {{#if (eq position 5)}}selected{{/if}}>↓AN</option>
-                <option value="4" {{#if (eq position 2)}}selected{{/if}}>↑EM</option>
-                <option value="5" {{#if (eq position 3)}}selected{{/if}}>↓EM</option>
+                <option value="0" {{#if (eq position 0)}}selected{{/if}} data-i18n="STMemoryBooks_CharUp">↑Char</option>
+                <option value="1" {{#if (eq position 1)}}selected{{/if}} data-i18n="STMemoryBooks_CharDown">↓Char</option>
+                <option value="2" {{#if (eq position 4)}}selected{{/if}} data-i18n="STMemoryBooks_ANUp">↑AN</option>
+                <option value="3" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
+                <option value="4" {{#if (eq position 2)}}selected{{/if}} data-i18n="STMemoryBooks_EMUp">↑EM</option>
+                <option value="5" {{#if (eq position 3)}}selected{{/if}} data-i18n="STMemoryBooks_EMDown">↓EM</option>
             </select>
         </label>
     </div>
 
     <div class="world_entry_form_control marginTop5">
-        <h4>Insertion Order:</h4>
+        <h4 data-i18n="STMemoryBooks_InsertionOrder">Insertion Order:</h4>
         <div class="buttons_block justifyCenter gap10px">
-            <label class="checkbox_label"><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> Auto (uses memory #)</label>
-            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> Manual <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> <span data-i18n="STMemoryBooks_AutoOrder">Auto (uses memory #)</span></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ManualOrder">Manual</span> <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
         </div>
     </div>
 
     <div class="world_entry_form_control marginTop5">
-        <h4>Recursion Settings:</h4>
+        <h4 data-i18n="STMemoryBooks_RecursionSettings">Recursion Settings:</h4>
         <div class="buttons_block justifyCenter">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-profile-prevent-recursion" {{#if preventRecursion}}checked{{/if}}>
-                <span>Prevent Recursion</span>
+                <span data-i18n="STMemoryBooks_PreventRecursion">Prevent Recursion</span>
             </label>
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-profile-delay-recursion" {{#if delayUntilRecursion}}checked{{/if}}>
-                <span>Delay Until Recursion</span>
+                <span data-i18n="STMemoryBooks_DelayUntilRecursion">Delay Until Recursion</span>
             </label>
         </div>
     </div>
@@ -224,9 +225,9 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
 
-        const popupInstance = new Popup(`<h3>Edit Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: 'Save',
-            cancelButton: 'Cancel/Close',
+        const popupInstance = new Popup(`<h3>${t('STMemoryBooks_ProfileEditTitle', 'Edit Profile')}</h3>${content}`, POPUP_TYPE.TEXT, '', {
+            okButton: t('STMemoryBooks_Save', 'Save'),
+            cancelButton: t('STMemoryBooks_CancelClose', 'Cancel/Close'),
             wide: true,
             large: true,
             allowVerticalScrolling: true,
@@ -240,7 +241,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name);
 
             if (!validateProfile(updatedProfile)) {
-                toastr.error('Invalid profile data', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_InvalidProfileData', 'Invalid profile data'), 'STMemoryBooks');
                 return;
             }
 
@@ -249,11 +250,11 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
             if (refreshCallback) refreshCallback();
 
-            toastr.success('Profile updated successfully', 'STMemoryBooks');
+            toastr.success(t('STMemoryBooks_ProfileUpdatedSuccess', 'Profile updated successfully'), 'STMemoryBooks');
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error editing profile:`, error);
-        toastr.error('Failed to edit profile', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_FailedToEditProfile', 'Failed to edit profile'), 'STMemoryBooks');
     }
 }
 
@@ -304,9 +305,9 @@ export async function newProfile(settings, refreshCallback) {
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
 
-        const popupInstance = new Popup(`<h3>New Profile</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: 'Create',
-            cancelButton: 'Cancel/Close',
+        const popupInstance = new Popup(`<h3>${t('STMemoryBooks_NewProfileTitle', 'New Profile')}</h3>${content}`, POPUP_TYPE.TEXT, '', {
+            okButton: t('STMemoryBooks_Create', 'Create'),
+            cancelButton: t('STMemoryBooks_CancelClose', 'Cancel/Close'),
             wide: true,
             large: true,
             allowVerticalScrolling: true,
@@ -323,7 +324,7 @@ export async function newProfile(settings, refreshCallback) {
             newProfileData.name = finalName;
 
             if (!validateProfile(newProfileData)) {
-                toastr.error('Invalid profile data', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_InvalidProfileData', 'Invalid profile data'), 'STMemoryBooks');
                 return;
             }
 
@@ -332,11 +333,11 @@ export async function newProfile(settings, refreshCallback) {
 
             if (refreshCallback) refreshCallback();
 
-            toastr.success('Profile created successfully', 'STMemoryBooks');
+            toastr.success(t('STMemoryBooks_ProfileCreatedSuccess', 'Profile created successfully'), 'STMemoryBooks');
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error creating profile:`, error);
-        toastr.error('Failed to create profile', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_FailedToCreateProfile', 'Failed to create profile'), 'STMemoryBooks');
     }
 }
 
@@ -348,7 +349,7 @@ export async function newProfile(settings, refreshCallback) {
  */
 export async function deleteProfile(settings, profileIndex, refreshCallback) {
     if (settings.profiles.length <= 1) {
-        toastr.error('Cannot delete the last profile', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_CannotDeleteLastProfile', 'Cannot delete the last profile'), 'STMemoryBooks');
         return;
     }
 
@@ -356,12 +357,12 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
     // Prevent deletion of the required default profile
     if (profile?.name === 'Current SillyTavern Settings') {
-        toastr.error('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_CannotDeleteDefaultProfile', 'Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work'), 'STMemoryBooks');
         return;
     }
 
     try {
-        const result = await new Popup(`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
+        const result = await new Popup(t('STMemoryBooks_DeleteProfileConfirm', 'Delete profile "{{name}}"?', { name: profile.name }), POPUP_TYPE.CONFIRM, '').show();
 
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const deletedName = profile.name;
@@ -380,11 +381,11 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
             if (refreshCallback) refreshCallback();
 
-            toastr.success('Profile deleted successfully', 'STMemoryBooks');
+            toastr.success(t('STMemoryBooks_ProfileDeletedSuccess', 'Profile deleted successfully'), 'STMemoryBooks');
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error deleting profile:`, error);
-        toastr.error('Failed to delete profile', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_FailedToDeleteProfile', 'Failed to delete profile'), 'STMemoryBooks');
     }
 }
 
@@ -414,10 +415,10 @@ export function exportProfiles(settings) {
         // Clean up the object URL
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 
-        toastr.success('Profiles exported successfully', 'STMemoryBooks');
+        toastr.success(t('STMemoryBooks_ProfilesExportedSuccess', 'Profiles exported successfully'), 'STMemoryBooks');
     } catch (error) {
         console.error(`${MODULE_NAME}: Error exporting profiles:`, error);
-        toastr.error('Failed to export profiles', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_FailedToExportProfiles', 'Failed to export profiles'), 'STMemoryBooks');
     }
 }
 
@@ -441,7 +442,7 @@ export function importProfiles(event, settings, refreshCallback) {
             const importData = JSON.parse(e.target.result);
 
             if (!importData.profiles || !Array.isArray(importData.profiles)) {
-                throw new Error('Invalid profile data format - missing profiles array');
+                throw new Error(t('STMemoryBooks_ImportErrorInvalidFormat', 'Invalid profile data format - missing profiles array'));
             }
 
             // Validate and clean profile structure
@@ -450,7 +451,7 @@ export function importProfiles(event, settings, refreshCallback) {
                 .map(profile => cleanProfile(profile));
 
             if (validProfiles.length === 0) {
-                throw new Error('No valid profiles found in import file');
+                throw new Error(t('STMemoryBooks_ImportErrorNoValidProfiles', 'No valid profiles found in import file'));
             }
 
             let importedCount = 0;
@@ -477,25 +478,25 @@ export function importProfiles(event, settings, refreshCallback) {
                 saveSettingsDebounced();
                 if (refreshCallback) refreshCallback();
 
-                let message = `Imported ${importedCount} profile${importedCount === 1 ? '' : 's'}`;
+                let message = t('STMemoryBooks_ImportSuccess', 'Imported {{importedCount}} profile{{plural}}', { importedCount, plural: importedCount === 1 ? '' : 's' });
                 if (skippedCount > 0) {
-                    message += ` (${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} skipped)`;
+                    message += t('STMemoryBooks_ImportSkipped', ' ({{skippedCount}} duplicate{{plural}} skipped)', { skippedCount, plural: skippedCount === 1 ? '' : 's' });
                 }
 
-                toastr.success(message, 'STMemoryBooks profile import completed');
+                toastr.success(message, t('STMemoryBooks_ImportComplete', 'STMemoryBooks profile import completed'));
             } else {
-                toastr.warning('No new profiles imported - all profiles already exist', 'STMemoryBooks');
+                toastr.warning(t('STMemoryBooks_ImportNoNewProfiles', 'No new profiles imported - all profiles already exist'), 'STMemoryBooks');
             }
 
         } catch (error) {
             console.error(`${MODULE_NAME}: Error importing profiles:`, error);
-            toastr.error(`Failed to import profiles: ${error.message}`, 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_ImportFailed', 'Failed to import profiles: {{message}}', { message: error.message }), 'STMemoryBooks');
         }
     };
 
     reader.onerror = function() {
         console.error(`${MODULE_NAME}: Error reading import file`);
-        toastr.error('Failed to read import file', 'STMemoryBooks');
+        toastr.error(t('STMemoryBooks_ImportReadError', 'Failed to read import file'), 'STMemoryBooks');
     };
 
     reader.readAsText(file);
@@ -517,11 +518,11 @@ function setupProfileEditEventHandlers(popupInstance) {
             if (btn) {
                 btn.click();
             } else {
-                toastr.error('Prompt Manager button not found. Open main settings and try again.', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_PromptManagerNotFound', 'Prompt Manager button not found. Open main settings and try again.'), 'STMemoryBooks');
             }
         } catch (err) {
             console.error(`${MODULE_NAME}: Error opening prompt manager from profile editor:`, err);
-            toastr.error('Failed to open Summary Prompt Manager', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_FailedToOpenSummaryPromptManager', 'Failed to open Summary Prompt Manager'), 'STMemoryBooks');
         }
     });
 
@@ -548,10 +549,10 @@ function setupProfileEditEventHandlers(popupInstance) {
                 selectEl.selectedIndex = 0;
             }
 
-            toastr.success('Preset list refreshed', 'STMemoryBooks');
+            toastr.success(t('STMemoryBooks_PresetListRefreshed', 'Preset list refreshed'), 'STMemoryBooks');
         } catch (err) {
             console.error(`${MODULE_NAME}: Error refreshing presets:`, err);
-            toastr.error('Failed to refresh presets', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_FailedToRefreshPresets', 'Failed to refresh presets'), 'STMemoryBooks');
         }
     });
 
@@ -590,7 +591,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             const legacyPromptEl = popupElement.querySelector('#stmb-legacy-custom-prompt');
             const legacyPrompt = legacyPromptEl ? legacyPromptEl.textContent : '';
             if (!legacyPrompt || !legacyPrompt.trim()) {
-                toastr.error('No custom prompt to migrate', 'STMemoryBooks');
+                toastr.error(t('STMemoryBooks_NoCustomPromptToMigrate', 'No custom prompt to migrate'), 'STMemoryBooks');
                 return;
             }
             const profileNameInput = popupElement.querySelector('#stmb-profile-name');
@@ -603,7 +604,7 @@ function setupProfileEditEventHandlers(popupInstance) {
                 '<h3 data-i18n="STMemoryBooks_MoveToPresetConfirmTitle">Move to Preset</h3><p data-i18n="STMemoryBooks_MoveToPresetConfirmDesc">Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?</p>',
                 POPUP_TYPE.CONFIRM,
                 '',
-                { okButton: 'Apply', cancelButton: 'Cancel' }
+                { okButton: t('STMemoryBooks_Apply', 'Apply'), cancelButton: t('STMemoryBooks_Cancel', 'Cancel') }
             );
             const res = await confirmPopup.show();
             if (res === POPUP_RESULT.AFFIRMATIVE) {
@@ -619,11 +620,11 @@ function setupProfileEditEventHandlers(popupInstance) {
                 }
                 legacyPromptEl?.remove();
                 popupElement.querySelector('#stmb-move-to-preset')?.remove();
-                toastr.success('Preset created and selected. Remember to Save.', 'STMemoryBooks');
+                toastr.success(t('STMemoryBooks_CustomPromptMigrated', 'Preset created and selected. Remember to Save.'), 'STMemoryBooks');
             }
         } catch (error) {
             console.error(`${MODULE_NAME}: Error moving custom prompt to preset:`, error);
-            toastr.error('Failed to move custom prompt to preset', 'STMemoryBooks');
+            toastr.error(t('STMemoryBooks_FailedToMigrateCustomPrompt', 'Failed to move custom prompt to preset'), 'STMemoryBooks');
         }
     });
 
