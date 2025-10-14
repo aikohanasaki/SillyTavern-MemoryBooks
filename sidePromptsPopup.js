@@ -207,10 +207,10 @@ async function openEditTemplate(parentPopup, key) {
                         <select id="stmb-sp-edit-lb-position" class="text_pole">
                             <option value="0" ${lbPosition === 0 ? 'selected' : ''}>↑Char</option>
                             <option value="1" ${lbPosition === 1 ? 'selected' : ''}>↓Char</option>
-                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>↑EM</option>
-                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>↓EM</option>
-                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>↑AN</option>
-                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>↓AN</option>
+                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>↑AN</option>
+                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>↓AN</option>
+                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>↑EM</option>
+                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>↓EM</option>
                         </select>
                     </label>
                 </div>
@@ -446,10 +446,10 @@ async function openNewTemplate(parentPopup) {
                     <select id="stmb-sp-new-lb-position" class="text_pole">
                         <option value="0" selected>↑Char</option>
                         <option value="1">↓Char</option>
-                        <option value="2">↑EM</option>
-                        <option value="3">↓EM</option>
-                        <option value="4">↑AN</option>
-                        <option value="5">↓AN</option>
+                        <option value="2">↑AN</option>
+                        <option value="3">↓AN</option>
+                        <option value="4">↑EM</option>
+                        <option value="5">↓EM</option>
                     </select>
                 </label>
             </div>
