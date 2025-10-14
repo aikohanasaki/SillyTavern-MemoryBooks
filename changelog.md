@@ -2,8 +2,11 @@
 
 **← [Back to README](readme.md)**
 
-## v4.6.1 (October 13, 2025)
+## v4.6.2 (October 14, 2025)
 - **Side Prompts Bugfix:** Swapped EM/AN
+
+## v4.6.1 (October 13, 2025)
+- **Better Errors:** Added "increase max tokens" hints for truncated JSON.
 
 ## v4.6.0 (October 13, 2025)
 - **Side Prompts Enhancements:** Major improvements to the Side Prompts system

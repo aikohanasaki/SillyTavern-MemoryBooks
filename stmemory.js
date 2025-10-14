@@ -287,6 +287,42 @@ function extractFromClaudeStructuredFormat(aiResponse) {
     }
 }
 
+function likelyUnbalanced(raw) {
+    try {
+        let braces = 0, brackets = 0, inString = false, escape = false;
+        for (let i = 0; i < raw.length; i++) {
+            const ch = raw[i];
+            if (inString) {
+                if (escape) {
+                    escape = false;
+                } else if (ch === '\\') {
+                    escape = true;
+                } else if (ch === '"') {
+                    inString = false;
+                }
+            } else {
+                if (ch === '"') { inString = true; }
+                else if (ch === '{') braces++;
+                else if (ch === '}') braces--;
+                else if (ch === '[') brackets++;
+                else if (ch === ']') brackets--;
+            }
+            if (braces < 0 || brackets < 0) return true;
+        }
+        return inString || braces !== 0 || brackets !== 0;
+    } catch {
+        return false;
+    }
+}
+
+function endsNicely(text) {
+    const t = (text || '').trim();
+    if (!t) return true;
+    if (/[.!?]["'’\)\]]?$/.test(t)) return true;
+    if (t.length >= 80 && !/[.!?]$/.test(t)) return false;
+    return true;
+}
+
 /**
  * Parses AI response as JSON with robust error handling
  * @private
@@ -335,6 +371,11 @@ function parseAIJsonResponse(aiResponse) {
         cleanResponse = cleanResponse.slice(0, jsonEnd + 1);
     }
 
+    // Pre-parse structural sanity
+    if (likelyUnbalanced(cleanResponse)) {
+        throw new AIResponseError('AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.');
+    }
+
     // Now try to parse
     try {
         const parsed = JSON.parse(cleanResponse);
@@ -347,12 +388,20 @@ function parseAIJsonResponse(aiResponse) {
             throw new AIResponseError('AI response missing title field');
         }
         if (!Array.isArray(parsed.keywords)) {
-            throw new AIResponseError('AI response missing or invalid keywords array');
+            throw new AIResponseError('AI response missing or invalid keywords array. Try increasing Max Response Length.');
         }
+
+        // Post-parse heuristic: detect mid-sentence cutoff in main text
+        const mainText = (parsed.content || parsed.summary || parsed.memory_content || '').trim();
+        if (mainText && mainText.length >= 80 && !endsNicely(mainText)) {
+            throw new AIResponseError('AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.');
+        }
+
         return parsed;
+
     } catch (parseError) {
         throw new AIResponseError(
-            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
+            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. Try increasing Max Response Length.` +
             `Parse error: ${parseError.message}`
         );
     }
@@ -390,7 +439,7 @@ async function generateMemoryWithAI(promptString, profile) {
             extra.max_tokens = oai_settings.openai_max_tokens;
         }
 
-        const { text: aiResponseText } = await sendRawCompletionRequest({
+        const { text: aiResponseText, full: aiFull } = await sendRawCompletionRequest({
             model: conn.model,
             prompt: promptString,
             temperature: conn.temperature,
@@ -399,6 +448,16 @@ async function generateMemoryWithAI(promptString, profile) {
             apiKey: conn.apiKey,
             extra: extra
         });
+
+        // Detect provider-reported truncation before attempting to parse
+        const finishReason = aiFull?.choices?.[0]?.finish_reason || aiFull?.finish_reason || aiFull?.stop_reason;
+        const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
+        if (fr.includes('length') || fr.includes('max')) {
+            throw new AIResponseError('Model response appears truncated (provider finish_reason). Please increase Max Response Length.');
+        }
+        if (aiFull?.truncated === true) {
+            throw new AIResponseError('Model response appears truncated (provider flag). Please increase Max Response Length.');
+        }
 
         const jsonResult = parseAIJsonResponse(aiResponseText);
 
