@@ -527,22 +527,89 @@ export async function exportToJSON() {
 }
 
 /**
- * Import JSON (overwrites file after validation)
+ * Import JSON (additively merges into existing prompts; does not overwrite)
  */
 export async function importFromJSON(jsonString) {
     const parsed = JSON.parse(jsonString);
 
     // Accept either strict V2 or migrate V1 on import
-    let dataToSave = null;
+    let incoming = null;
     if (validateSidePromptsFileV2(parsed)) {
-        dataToSave = parsed;
+        incoming = parsed;
     } else if (looksLikeV1(parsed)) {
-        dataToSave = migrateV1toV2(parsed);
+        incoming = migrateV1toV2(parsed);
     } else {
         throw new Error(t('STMemoryBooks_InvalidSidePromptsJSON', 'Invalid side prompts file structure'));
     }
 
-    await saveDoc(dataToSave);
+    // Load existing and merge additively
+    const existing = await loadSidePrompts();
+    const merged = {
+        version: Math.max(2, Number(existing.version || 2), Number(incoming.version || 2)),
+        prompts: { ...existing.prompts },
+    };
+
+    // Utility to ensure a unique key in merged.prompts without overwriting existing entries
+    const ensureUniqueKey = (desiredKey, name) => {
+        const baseName = String(name || '').trim() || desiredKey || 'sideprompt';
+        const base = safeSlug(baseName);
+        let candidate = desiredKey && !merged.prompts[desiredKey] ? desiredKey : base;
+        if (!candidate) candidate = 'sideprompt';
+        let suffix = 2;
+        while (merged.prompts[candidate]) {
+            candidate = safeSlug(`${baseName} ${suffix}`);
+            suffix++;
+        }
+        return candidate;
+    };
+
+    let added = 0;
+    let renamed = 0;
+
+    for (const [key, p] of Object.entries(incoming.prompts || {})) {
+        // If an entry with the same key already exists, do not overwrite; add with a new unique key
+        const finalKey = merged.prompts[key] ? ensureUniqueKey(null, p?.name || key) : key;
+        if (finalKey !== key) {
+            renamed++;
+        }
+
+        const ts = nowIso();
+        const next = {
+            key: finalKey,
+            name: String(p.name || 'Side Prompt'),
+            enabled: !!p.enabled,
+            prompt: String(p.prompt != null ? p.prompt : 'this is a placeholder prompt'),
+            responseFormat: String(p.responseFormat || ''),
+            settings: { ...(p.settings || {}) },
+            triggers: p.triggers ? { ...p.triggers } : { commands: ['sideprompt'] },
+            createdAt: p.createdAt || ts,
+            updatedAt: ts,
+        };
+
+        // Normalize triggers similar to upsert safety
+        if (next.triggers.onInterval) {
+            const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages || 50));
+            next.triggers.onInterval = { visibleMessages: vis };
+        }
+        if (next.triggers.onAfterMemory) {
+            next.triggers.onAfterMemory = { enabled: !!next.triggers.onAfterMemory.enabled };
+        }
+        if ('commands' in next.triggers) {
+            if (Array.isArray(next.triggers.commands)) {
+                next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
+            } else {
+                next.triggers.commands = [];
+            }
+        } else {
+            next.triggers.commands = ['sideprompt'];
+        }
+
+        merged.prompts[finalKey] = next;
+        added++;
+    }
+
+    await saveDoc(merged);
+    return { added, renamed };
 }
 
 /**
