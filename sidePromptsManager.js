@@ -1,5 +1,6 @@
 import { getRequestHeaders } from '../../../../script.js';
 import { FILE_NAMES, SCHEMA } from './constants.js';
+import { t } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePromptsManager';
 const SIDE_PROMPTS_FILE = FILE_NAMES.SIDE_PROMPTS_FILE;
@@ -147,9 +148,9 @@ function getBuiltinTemplates() {
         const key = safeSlug('Plotpoints');
         prompts[key] = {
             key,
-            name: 'Plotpoints',
+            name: t('STMemoryBooks_Plotpoints', 'Plotpoints'),
             enabled: false,
-            prompt: "Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating.",
+            prompt: t('STMemoryBooks_PlotpointsPrompt', "Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating."),
             responseFormat: "=== Plot Points ===\n(as of [point in the story when this analysis was done])\n\n[Overarching Plot Arc]\n(2-3 sentence summary of the superobjective or major plot)\n\n[Thread #1 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n\n[Thread #2 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n...\n\n-- Plot Hooks --\n- (new or potential plot hooks)\n\n-- Character Dynamics --\n- current status of {{user}}'s/{{char}}'s relationships with NPCs\n\n===End Plot Points===\n",
             settings: {
                 overrideProfileEnabled: false,
@@ -178,9 +179,9 @@ function getBuiltinTemplates() {
         const key = safeSlug('Status');
         prompts[key] = {
             key,
-            name: 'Status',
+            name: t('STMemoryBooks_Status', 'Status'),
             enabled: false,
-            prompt: "Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.",
+            prompt: t('STMemoryBooks_StatusPrompt', "Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it."),
             responseFormat: "Follow this general format:\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR and LUSTFACTOR\n(!lovefactor and !lustfactor reports go here)\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)",
             settings: {
                 overrideProfileEnabled: false,
@@ -209,9 +210,9 @@ function getBuiltinTemplates() {
         const key = safeSlug('Cast');
         prompts[key] = {
             key,
-            name: 'Cast of Characters',
+            name: t('STMemoryBooks_CastOfCharacters', 'Cast of Characters'),
             enabled: false,
-            prompt: "You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. \nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.\nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.",
+            prompt: t('STMemoryBooks_CastOfCharactersPrompt', "You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. \nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.\nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot."),
             responseFormat: "===NPC WHO'S WHO===\n(In order of importance to the plot)\n\nPerson 1: 1-2 sentence desription\nPerson 2: 1-2 sentence desription\n===END NPC WHO'S WHO===",
             settings: {
                 overrideProfileEnabled: false,
@@ -240,9 +241,9 @@ function getBuiltinTemplates() {
         const key = safeSlug('Assess');
         prompts[key] = {
             key,
-            name: 'Assess',
+            name: t('STMemoryBooks_Assess', 'Assess'),
             enabled: false,
-            prompt: "Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things.",
+            prompt: t('STMemoryBooks_AssessPrompt', "Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things."),
             responseFormat: "Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
             settings: {
                 overrideProfileEnabled: false,
@@ -298,11 +299,11 @@ async function saveDoc(doc) {
     });
 
     if (!res.ok) {
-        throw new Error(`Failed to save side prompts: ${res.status} ${res.statusText}`);
+        throw new Error(t('STMemoryBooks_FailedToSaveSidePrompts', 'Failed to save side prompts: {{status}} {{statusText}}', { status: res.status, statusText: res.statusText }));
     }
 
     cachedDoc = doc;
-    console.log(`${MODULE_NAME}: Side prompts saved successfully`);
+    console.log(`${MODULE_NAME}: ${t('STMemoryBooks_SidePromptsSaved', 'Side prompts saved successfully')}`);
 }
 
 /**
@@ -330,13 +331,13 @@ export async function loadSidePrompts() {
 
             // If looks like old V1 -> migrate to V2
             if (looksLikeV1(parsed)) {
-                console.log(`${MODULE_NAME}: Migrating side prompts file from V1(type) to V2(triggers)`);
+                console.log(`${MODULE_NAME}: ${t('STMemoryBooks_MigratingSidePrompts', 'Migrating side prompts file from V1(type) to V2(triggers)')}`);
                 data = migrateV1toV2(parsed);
                 await saveDoc(data);
             } else {
                 // Validate as V2; if invalid generate base
                 if (!validateSidePromptsFileV2(parsed)) {
-                    console.warn(`${MODULE_NAME}: Invalid side prompts file structure; recreating with built-ins`);
+                    console.warn(`${MODULE_NAME}: ${t('STMemoryBooks_InvalidSidePromptsFile', 'Invalid side prompts file structure; recreating with built-ins')}`);
                     data = createBaseDoc();
                     await saveDoc(data);
                 } else {
@@ -350,7 +351,7 @@ export async function loadSidePrompts() {
             }
         }
     } catch (e) {
-        console.warn(`${MODULE_NAME}: Error loading side prompts; creating base doc`, e);
+        console.warn(`${MODULE_NAME}: ${t('STMemoryBooks_ErrorLoadingSidePrompts', 'Error loading side prompts; creating base doc')}`, e);
         data = createBaseDoc();
         await saveDoc(data);
     }
@@ -423,14 +424,14 @@ export async function upsertTemplate(input) {
     // Determine final display name with safe default
     const requestedName = String(input.name ?? '').trim();
     const cur = isNew ? null : data.prompts[input.key];
-    const finalName = requestedName || (isNew ? 'Untitled Side Prompt' : (cur?.name || 'Untitled Side Prompt'));
+    const finalName = requestedName || (isNew ? t('STMemoryBooks_UntitledSidePrompt', 'Untitled Side Prompt') : (cur?.name || t('STMemoryBooks_UntitledSidePrompt', 'Untitled Side Prompt')));
 
     // Determine key (preserve existing on edit; generate unique on create)
     let key;
     if (input.key) {
         key = input.key;
     } else {
-        const base = safeSlug(finalName || 'Untitled Side Prompt');
+        const base = safeSlug(finalName || t('STMemoryBooks_UntitledSidePrompt', 'Untitled Side Prompt'));
         let candidate = base;
         let suffix = 2;
         while (data.prompts[candidate]) {
@@ -485,9 +486,9 @@ export async function upsertTemplate(input) {
 export async function duplicateTemplate(sourceKey) {
     const data = await loadSidePrompts();
     const src = data.prompts[sourceKey];
-    if (!src) throw new Error(`Template "${sourceKey}" not found`);
+    if (!src) throw new Error(t('STMemoryBooks_TemplateNotFound', 'Template "{{key}}" not found', { key: sourceKey }));
 
-    let base = `${src.name} (Copy)`;
+    let base = t('STMemoryBooks_CopyOfTemplate', '{{name}} (Copy)', { name: src.name });
     let key = safeSlug(base);
     let suffix = 2;
     while (data.prompts[key]) {
@@ -512,7 +513,7 @@ export async function duplicateTemplate(sourceKey) {
  */
 export async function removeTemplate(key) {
     const data = await loadSidePrompts();
-    if (!data.prompts[key]) throw new Error(`Template "${key}" not found`);
+    if (!data.prompts[key]) throw new Error(t('STMemoryBooks_TemplateNotFound', 'Template "{{key}}" not found', { key }));
     delete data.prompts[key];
     await saveDoc(data);
 }
@@ -538,7 +539,7 @@ export async function importFromJSON(jsonString) {
     } else if (looksLikeV1(parsed)) {
         dataToSave = migrateV1toV2(parsed);
     } else {
-        throw new Error('Invalid side prompts file structure');
+        throw new Error(t('STMemoryBooks_InvalidSidePromptsJSON', 'Invalid side prompts file structure'));
     }
 
     await saveDoc(dataToSave);

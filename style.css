@@ -156,19 +156,8 @@
     }
 }
 
-/* --- BUTTON STYLING --- */
-
-/* Button container classes for consistent layout - using ST base classes */
-
 /* Manual lorebook buttons use ST base classes */
 #stmb-manual-lorebook-buttons .menu_button {
     padding: 6px 12px;
     white-space: nowrap;
 }
-
-/* Using ST's .menu_button class instead of custom .stmb-menu-button */
-
-/* --- RESPONSIVE & ACCESSIBILITY --- */
-
-
-

@@ -387,38 +387,38 @@ export function handleMessageDeletion(deletedId, settings) {
     let hasChanges = false;
     let toastrMessage = '';
 
-    // If start marker was deleted, clear entire scene
-    if (markers.sceneStart === deletedId) {
-        markers.sceneStart = null;
-        markers.sceneEnd = null; // Also clear the end marker
+    if (deletedId === markers.sceneStart && deletedId === markers.sceneEnd) {
+        // Deleting a message that is both start and end
+        clearScene();
         hasChanges = true;
-        toastrMessage = 'Scene cleared due to start marker deletion';
-
-    // If end marker was deleted, just clear the end marker
-    } else if (markers.sceneEnd === deletedId) {
+        toastrMessage = t('STMemoryBooks_Toast_SceneClearedStart', 'Scene cleared due to start marker deletion');
+    } else if (deletedId === markers.sceneStart) {
+        // Deleting the start message
+        markers.sceneStart = null;
+        hasChanges = true;
+        toastrMessage = t('STMemoryBooks_Toast_SceneEndPointCleared', 'Scene end point cleared due to message deletion');
+    } else if (deletedId === markers.sceneEnd) {
+        // Deleting the end message
         markers.sceneEnd = null;
         hasChanges = true;
-        toastrMessage = 'Scene end point cleared due to message deletion';
+        toastrMessage = t('STMemoryBooks_Toast_SceneEndPointCleared', 'Scene end point cleared due to message deletion');
+    } else if (markers.sceneStart !== null && deletedId > markers.sceneStart && (markers.sceneEnd === null || deletedId < markers.sceneEnd)) {
+        // Deleting a message within the scene (or after start but before end is set)
+        if (markers.sceneStart !== null) markers.sceneStart--;
+        if (markers.sceneEnd !== null) markers.sceneEnd--;
+        hasChanges = true;
+        toastrMessage = t('STMemoryBooks_Toast_SceneMarkersAdjusted', 'Scene markers adjusted due to message deletion.');
+    }
+    
+    // If a message *before* the end marker is deleted, shift the end marker down.
+    if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
+        markers.sceneEnd--;
+        endChanged = true;
+    }
 
-    } else {
-        let startChanged = false;
-        let endChanged = false;
-
-        // If a message *before* the start marker is deleted, shift the start marker down.
-        if (markers.sceneStart !== null && markers.sceneStart > deletedId) {
-            markers.sceneStart--;
-            startChanged = true;
-        }
-        // If a message *before* the end marker is deleted, shift the end marker down.
-        if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
-            markers.sceneEnd--;
-            endChanged = true;
-        }
-
-        if (startChanged || endChanged) {
-            hasChanges = true;
-            toastrMessage = 'Scene markers adjusted due to message deletion.';
-        }
+    if (startChanged || endChanged) {
+        hasChanges = true;
+        toastrMessage = t('STMemoryBooks_Toast_SceneMarkersAdjusted', 'Scene markers adjusted due to message deletion.');
     }
 
     if (hasChanges) {
@@ -465,17 +465,17 @@ export function createSceneButtons(messageElement) {
     
     // Create start button
     const startButton = document.createElement('div');
-    startButton.title = 'Mark Scene Start';
+    startButton.title = t('STMemoryBooks_MarkSceneStart', 'Mark Scene Start');
     startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
     startButton.setAttribute('tabindex', '0');
-    startButton.setAttribute('data-i18n', '[title]Mark Scene Start');
-    
+    startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
+
     // Create end button
     const endButton = document.createElement('div');
-    endButton.title = 'Mark Scene End';
+    endButton.title = t('STMemoryBooks_MarkSceneEnd', 'Mark Scene End');
     endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
     endButton.setAttribute('tabindex', '0');
-    endButton.setAttribute('data-i18n', '[title]Mark Scene End');
+    endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
     
     // Add event listeners
     startButton.addEventListener('click', (e) => {
