@@ -702,10 +702,10 @@ export async function showSidePromptsPopup() {
         content += '<div id="stmb-sp-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>';
 
         // Action buttons
-        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
-        content += '<button id="stmb-sp-new" class="menu_button">➕ New</button>';
-        content += '<button id="stmb-sp-export" class="menu_button">📤 Export JSON</button>';
-        content += '<button id="stmb-sp-import" class="menu_button">📥 Import JSON</button>';
+        content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
+        content += '<button id="stmb-sp-new" class="menu_button whitespacenowrap">➕ New</button>';
+        content += '<button id="stmb-sp-export" class="menu_button whitespacenowrap">📤 Export JSON</button>';
+        content += '<button id="stmb-sp-import" class="menu_button whitespacenowrap">📥 Import JSON</button>';
         content += '</div>';
 
         // Hidden file input for import

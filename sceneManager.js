@@ -525,20 +525,31 @@ export async function getSceneData() {
     };
 
     // Build a temporary compiled scene for consistent token estimation
-    const tempRequest = createSceneRequest(markers.sceneStart, markers.sceneEnd);
-    const tempCompiled = compileScene(tempRequest);
-    const estimatedTokens = await estimateTokenCount(tempCompiled);
-    
-    return {
-        sceneStart: markers.sceneStart,
-        sceneEnd: markers.sceneEnd,
-        startExcerpt: getExcerpt(startMessage),
-        endExcerpt: getExcerpt(endMessage),
-        startSpeaker: startMessage.name || 'Unknown',
-        endSpeaker: endMessage.name || 'Unknown',
-        messageCount: markers.sceneEnd - markers.sceneStart + 1,
-        estimatedTokens
-    };
+    try {
+        const tempRequest = createSceneRequest(markers.sceneStart, markers.sceneEnd);
+        const tempCompiled = compileScene(tempRequest);
+        const estimatedTokens = await estimateTokenCount(tempCompiled);
+        
+        return {
+            sceneStart: markers.sceneStart,
+            sceneEnd: markers.sceneEnd,
+            startExcerpt: getExcerpt(startMessage),
+            endExcerpt: getExcerpt(endMessage),
+            startSpeaker: startMessage.name || 'Unknown',
+            endSpeaker: endMessage.name || 'Unknown',
+            messageCount: markers.sceneEnd - markers.sceneStart + 1,
+            estimatedTokens
+        };
+    } catch (e) {
+        console.warn('STMemoryBooks-SceneManager: getSceneData failed:', e);
+        try {
+            const msg = e?.message || '';
+            if (msg.includes('No visible messages')) {
+                toastr?.warning?.(translate('Selected range has no visible messages. Adjust start/end.', 'STMemoryBooks_NoVisibleMessages'), 'STMemoryBooks');
+            }
+        } catch {}
+        return null;
+    }
 }
 
 /**

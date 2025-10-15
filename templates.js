@@ -98,7 +98,7 @@ export const settingsTemplate = Handlebars.compile(`
             </h5>
 
             <div id="stmb-manual-controls" style="display: {{#if manualModeEnabled}}block{{else}}none{{/if}};">
-                <div class="flex-container marginTop5" id="stmb-manual-lorebook-buttons" style="justify-content: center;">
+                <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-manual-lorebook-buttons">
                     <!-- Manual lorebook buttons will be dynamically inserted here -->
                 </div>
             </div>
@@ -235,13 +235,13 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
 
         <h4 data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
-        <div class="flex-container marginTop5" id="stmb-profile-buttons" style="justify-content: center;">
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-profile-buttons">
             <!-- Profile buttons will be dynamically inserted here -->
         </div>
 
         <h4 data-i18n="STMemoryBooks_extraFunctionButtons">Extra Function Buttons:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-        <div class="flex-container marginTop5" id="stmb-extra-function-buttons" style="justify-content: center;">
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-extra-function-buttons">
             <!-- extra function buttons will be dynamically inserted here -->
         </div>
 `);
