@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.2 (October 14, 2025)
+- **Bugfix:** Chevron broke, fixed
+
 ## v4.6.3 (October 14, 2025)
 - **Side Prompts Import is Now Additive:** Importing `stmb_side_prompts.json` merges side prompts into your current set instead of replacing them. Existing prompts are preserved and only new prompts are added. If an imported prompt’s key conflicts with an existing one, the imported prompt is renamed using its display name (with a numeric suffix if needed).
 - **Import UI Feedback Improved:** The import dialog now displays how many prompts were added and how many were renamed due to key conflicts.

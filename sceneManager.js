@@ -386,6 +386,8 @@ export function handleMessageDeletion(deletedId, settings) {
     const oldEnd = markers.sceneEnd ?? null;
     let hasChanges = false;
     let toastrMessage = '';
+    let startChanged = false;
+    let endChanged = false;
 
     if (deletedId === markers.sceneStart && deletedId === markers.sceneEnd) {
         // Deleting a message that is both start and end
@@ -410,6 +412,12 @@ export function handleMessageDeletion(deletedId, settings) {
         toastrMessage = t('STMemoryBooks_Toast_SceneMarkersAdjusted', 'Scene markers adjusted due to message deletion.');
     }
     
+    // If a message *before* the start marker is deleted, shift the start marker down.
+    if (markers.sceneStart !== null && markers.sceneStart > deletedId) {
+        markers.sceneStart--;
+        startChanged = true;
+    }
+
     // If a message *before* the end marker is deleted, shift the end marker down.
     if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
         markers.sceneEnd--;
