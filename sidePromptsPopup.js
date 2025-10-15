@@ -13,6 +13,17 @@ import {
     importFromJSON as importSidePromptsJSON,
 } from './sidePromptsManager.js';
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
+import { translate, applyLocale } from '../../../i18n.js';
+
+/** Helper: keyed translation with Mustache-style interpolation using ST translate() */
+function tr(key, fallback, params) {
+    const localized = translate(fallback, key);
+    if (!params) return localized;
+    return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
+        const v = params[p1];
+        return v !== undefined && v !== null ? String(v) : '';
+    });
+}
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -23,13 +34,13 @@ function getTriggersSummary(tpl) {
     const badges = [];
     const trig = tpl?.triggers || {};
     if (trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1) {
-        badges.push(`Interval:${Number(trig.onInterval.visibleMessages)}`);
+        badges.push(`${translate('Interval', 'STMemoryBooks_Interval')}:${Number(trig.onInterval.visibleMessages)}`);
     }
     if (trig.onAfterMemory && !!trig.onAfterMemory.enabled) {
-        badges.push('AfterMemory');
+        badges.push(translate('AfterMemory', 'STMemoryBooks_AfterMemory'));
     }
     if (Array.isArray(trig.commands) && trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')) {
-        badges.push('Manual');
+        badges.push(translate('Manual', 'STMemoryBooks_Manual'));
     }
     return badges;
 }
@@ -69,6 +80,7 @@ async function refreshList(popup, preserveKey = null) {
         : templates;
 
     listContainer.innerHTML = DOMPurify.sanitize(renderTemplatesTable(filtered));
+    try { applyLocale(listContainer); } catch (e) { /* no-op */ }
 
     // Restore selection
     if (preserveKey) {
@@ -89,7 +101,7 @@ async function openEditTemplate(parentPopup, key) {
     try {
         const tpl = await getTemplate(key);
         if (!tpl) {
-            toastr.error('Template not found', 'STMemoryBooks');
+            toastr.error(tr('STMemoryBooks_TemplateNotFound', 'Template "{{key}}" not found', { key }), translate('STMemoryBooks', 'index.toast.title'));
             return;
         }
 
@@ -117,12 +129,12 @@ async function openEditTemplate(parentPopup, key) {
             <div class="world_entry_form_control">
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-override-enabled" ${overrideEnabled ? 'checked' : ''}>
-                    <span>Override default memory profile</span>
+                    <span>${escapeHtml(translate('Override default memory profile', 'STMemoryBooks_OverrideDefaultMemoryProfile'))}</span>
                 </label>
             </div>
             <div class="world_entry_form_control" id="stmb-sp-edit-override-container" style="display: ${overrideEnabled ? 'block' : 'none'};">
                 <label for="stmb-sp-edit-override-index">
-                    <h4>Connection Profile:</h4>
+                    <h4>${escapeHtml(translate('Connection Profile:', 'STMemoryBooks_ConnectionProfile'))}</h4>
                     <select id="stmb-sp-edit-override-index" class="text_pole">
                         ${options}
                     </select>
@@ -141,93 +153,93 @@ async function openEditTemplate(parentPopup, key) {
         const lbDelay = !!lb.delayUntilRecursion;
 
         const content = `
-            <h3>Edit Side Prompt</h3>
+            <h3>${escapeHtml(translate('Edit Side Prompt', 'STMemoryBooks_EditSidePrompt'))}</h3>
             <div class="world_entry_form_control">
-                <small>Key: <code>${escapeHtml(tpl.key)}</code></small>
+                <small>${escapeHtml(translate('Key:', 'STMemoryBooks_Key'))} <code>${escapeHtml(tpl.key)}</code></small>
             </div>
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-name">
-                    <h4>Name:</h4>
+                    <h4>${escapeHtml(translate('Name:', 'STMemoryBooks_Name'))}</h4>
                     <input type="text" id="stmb-sp-edit-name" class="text_pole" value="${escapeHtml(tpl.name)}" />
                 </label>
             </div>
             <div class="world_entry_form_control">
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-enabled" ${currentEnabled ? 'checked' : ''}>
-                    <span>Enabled</span>
+                    <span>${escapeHtml(translate('Enabled', 'STMemoryBooks_Enabled'))}</span>
                 </label>
             </div>
             <div class="world_entry_form_control">
-                <h4>Triggers:</h4>
+                <h4>${escapeHtml(translate('Triggers:', 'STMemoryBooks_Triggers'))}</h4>
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-interval" ${intervalEnabled ? 'checked' : ''}>
-                    <span>Run on visible message interval</span>
+                    <span>${escapeHtml(translate('Run on visible message interval', 'STMemoryBooks_RunOnVisibleMessageInterval'))}</span>
                 </label>
                 <div id="stmb-sp-edit-interval-container" style="display:${intervalEnabled ? 'block' : 'none'}; margin-left:28px;">
                     <label for="stmb-sp-edit-interval">
-                        <h4 style="margin: 0 0 4px 0;">Interval (visible messages):</h4>
+                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Interval (visible messages):', 'STMemoryBooks_IntervalVisibleMessages'))}</h4>
                         <input type="number" id="stmb-sp-edit-interval" class="text_pole" min="1" step="1" value="${intervalVal}">
                     </label>
                 </div>
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-aftermem" ${afterEnabled ? 'checked' : ''}>
-                    <span>Run automatically after memory</span>
+                    <span>${escapeHtml(translate('Run automatically after memory', 'STMemoryBooks_RunAutomaticallyAfterMemory'))}</span>
                 </label>
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-manual" ${manualEnabled ? 'checked' : ''}>
-                    <span>Allow manual run via /sideprompt</span>
+                    <span>${escapeHtml(translate('Allow manual run via /sideprompt', 'STMemoryBooks_AllowManualRunViaSideprompt'))}</span>
                 </label>
             </div>
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-prompt">
-                    <h4>Prompt:</h4>
+                    <h4>${escapeHtml(translate('Prompt:', 'STMemoryBooks_PromptTitle'))}</h4>
                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
                     <textarea id="stmb-sp-edit-prompt" class="text_pole textarea_compact" rows="10">${escapeHtml(tpl.prompt || '')}</textarea>
                 </label>
             </div>
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-response-format">
-                    <h4>Response Format (optional):</h4>
+                    <h4>${escapeHtml(translate('Response Format (optional):', 'STMemoryBooks_ResponseFormatOptional'))}</h4>
                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-response-format" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
                     <textarea id="stmb-sp-edit-response-format" class="text_pole textarea_compact" rows="6">${escapeHtml(tpl.responseFormat || '')}</textarea>
                 </label>
             </div>
             <div class="world_entry_form_control">
-                <h4>Lorebook Entry Settings:</h4>
+                <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
                 <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                     <label>
-                        <h4 style="margin: 0 0 4px 0;">Vectorization Mode:</h4>
+                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h4>
                         <select id="stmb-sp-edit-lb-mode" class="text_pole">
-                            <option value="link" ${lbMode === 'link' ? 'selected' : ''}>Vectorized (link)</option>
-                            <option value="green" ${lbMode === 'green' ? 'selected' : ''}>Normal (green)</option>
-                            <option value="blue" ${lbMode === 'blue' ? 'selected' : ''}>Constant (blue)</option>
+                            <option value="link" ${lbMode === 'link' ? 'selected' : ''}>${escapeHtml(translate('🔗 Vectorized (Default)', 'STMemoryBooks_Vectorized'))}</option>
+                            <option value="green" ${lbMode === 'green' ? 'selected' : ''}>${escapeHtml(translate('🟢 Normal', 'STMemoryBooks_Normal'))}</option>
+                            <option value="blue" ${lbMode === 'blue' ? 'selected' : ''}>${escapeHtml(translate('🔵 Constant', 'STMemoryBooks_Constant'))}</option>
                         </select>
                     </label>
                     <label>
-                        <h4 style="margin: 0 0 4px 0;">Insertion Position:</h4>
+                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Insertion Position:', 'STMemoryBooks_InsertionPosition'))}</h4>
                         <select id="stmb-sp-edit-lb-position" class="text_pole">
-                            <option value="0" ${lbPosition === 0 ? 'selected' : ''}>↑Char</option>
-                            <option value="1" ${lbPosition === 1 ? 'selected' : ''}>↓Char</option>
-                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>↑AN</option>
-                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>↓AN</option>
-                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>↑EM</option>
-                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>↓EM</option>
+                            <option value="0" ${lbPosition === 0 ? 'selected' : ''}>${escapeHtml(translate('↑Char', 'STMemoryBooks_CharUp'))}</option>
+                            <option value="1" ${lbPosition === 1 ? 'selected' : ''}>${escapeHtml(translate('↓Char', 'STMemoryBooks_CharDown'))}</option>
+                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>${escapeHtml(translate('↑AN', 'STMemoryBooks_ANUp'))}</option>
+                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
+                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
+                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
                         </select>
                     </label>
                 </div>
                 <div class="world_entry_form_control" style="margin-top: 8px;">
-                    <h4>Order:</h4>
+                    <h4>${escapeHtml(translate('Insertion Order:', 'STMemoryBooks_InsertionOrder'))}</h4>
                     <label class="radio_label">
                         <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-auto" value="auto" ${lbOrderManual ? '' : 'checked'}>
-                        <span>Auto</span>
+                        <span>${escapeHtml(translate('Auto (uses memory #)', 'STMemoryBooks_AutoOrder'))}</span>
                     </label>
                     <label class="radio_label" style="margin-left: 12px;">
                         <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-manual" value="manual" ${lbOrderManual ? 'checked' : ''}>
-                        <span>Manual</span>
+                        <span>${escapeHtml(translate('Manual', 'STMemoryBooks_ManualOrder'))}</span>
                     </label>
                     <div id="stmb-sp-edit-lb-order-value-container" style="display:${lbOrderManual ? 'block' : 'none'}; margin-left:28px;">
                         <label>
-                            <h4 style="margin: 0 0 4px 0;">Order Value:</h4>
+                            <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Order Value:', 'STMemoryBooks_OrderValue'))}</h4>
                             <input type="number" id="stmb-sp-edit-lb-order-value" class="text_pole" step="1" value="${lbOrderValue}">
                         </label>
                     </div>
@@ -235,25 +247,25 @@ async function openEditTemplate(parentPopup, key) {
                 <div class="world_entry_form_control" style="margin-top: 8px;">
                     <label class="checkbox_label">
                         <input type="checkbox" id="stmb-sp-edit-lb-prevent" ${lbPrevent ? 'checked' : ''}>
-                        <span>Prevent Recursion</span>
+                        <span>${escapeHtml(translate('Prevent Recursion', 'STMemoryBooks_PreventRecursion'))}</span>
                     </label>
                     <label class="checkbox_label" style="margin-left: 12px;">
                         <input type="checkbox" id="stmb-sp-edit-lb-delay" ${lbDelay ? 'checked' : ''}>
-                        <span>Delay Until Recursion</span>
+                        <span>${escapeHtml(translate('Delay Until Recursion', 'STMemoryBooks_DelayUntilRecursion'))}</span>
                     </label>
                 </div>
             </div>
 
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-prev-mem-count">
-                    <h4>Previous memories for context:</h4>
+                    <h4>${escapeHtml(translate('Previous memories for context:', 'STMemoryBooks_PreviousMemoriesForContext'))}</h4>
 <input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${prevMemCount}">
                 </label>
-                <small class="opacity70p">Number of previous memory entries to include before scene text (0 = none).</small>
+                <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
             </div>
 
             <div class="world_entry_form_control">
-                <h4>Overrides:</h4>
+                <h4>${escapeHtml(translate('Overrides:', 'STMemoryBooks_Overrides'))}</h4>
                 ${overrideHtml}
             </div>
         `;
@@ -262,8 +274,8 @@ async function openEditTemplate(parentPopup, key) {
             wide: true,
             large: true,
             allowVerticalScrolling: true,
-            okButton: 'Save',
-            cancelButton: 'Cancel'
+            okButton: translate('Save', 'STMemoryBooks_Save'),
+            cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
         });
 
         // Attach dynamic handlers before show
@@ -304,11 +316,11 @@ async function openEditTemplate(parentPopup, key) {
             const newEnabled = !!dlg.querySelector('#stmb-sp-edit-enabled')?.checked;
 
             if (!newPrompt) {
-                toastr.error('Prompt cannot be empty', 'STMemoryBooks');
+                toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), translate('STMemoryBooks', 'index.toast.title'));
                 return;
             }
             if (!newName) {
-                toastr.info('Name was empty. Keeping previous name.', 'STMemoryBooks');
+                toastr.info(translate('Name was empty. Keeping previous name.', 'STMemoryBooks_NameEmptyKeepPrevious'), translate('STMemoryBooks', 'index.toast.title'));
             }
 
             // Triggers
@@ -369,13 +381,13 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
                 settings,
                 triggers,
             });
-            toastr.success('Template updated', 'STMemoryBooks');
+            toastr.success(tr('STMemoryBooks_Toast_SidePromptUpdated', 'SidePrompt "{{name}}" updated.', { name: newName || tpl.name }), translate('STMemoryBooks', 'index.toast.title'));
             window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
             await refreshList(parentPopup, tpl.key);
         }
     } catch (err) {
         console.error('STMemoryBooks: Error editing side prompt:', err);
-        toastr.error('Failed to edit template', 'STMemoryBooks');
+        toastr.error(translate('Failed to edit SidePrompt', 'STMemoryBooks_FailedToEditSidePrompt'), translate('STMemoryBooks', 'index.toast.title'));
     }
 }
 
@@ -394,90 +406,90 @@ async function openNewTemplate(parentPopup) {
     ).join('');
 
     const content = `
-        <h3>New Side Prompt</h3>
+        <h3>${escapeHtml(translate('New Side Prompt', 'STMemoryBooks_NewSidePrompt'))}</h3>
         <div class="world_entry_form_control">
             <label for="stmb-sp-new-name">
-                <h4>Name:</h4>
-                <input type="text" id="stmb-sp-new-name" class="text_pole" placeholder="My Side Prompt" />
+                <h4>${escapeHtml(translate('Name:', 'STMemoryBooks_Name'))}</h4>
+                <input type="text" id="stmb-sp-new-name" class="text_pole" placeholder="${escapeHtml(translate('My Side Prompt', 'STMemoryBooks_MySidePromptPlaceholder'))}" />
             </label>
         </div>
         <div class="world_entry_form_control">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-enabled">
-                <span>Enabled</span>
+                <span>${escapeHtml(translate('Enabled', 'STMemoryBooks_Enabled'))}</span>
             </label>
         </div>
         <div class="world_entry_form_control">
-            <h4>Triggers:</h4>
+            <h4>${escapeHtml(translate('Triggers:', 'STMemoryBooks_Triggers'))}</h4>
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-trg-interval">
-                <span>Run on visible message interval</span>
+                <span>${escapeHtml(translate('Run on visible message interval', 'STMemoryBooks_RunOnVisibleMessageInterval'))}</span>
             </label>
             <div id="stmb-sp-new-interval-container" class="displayNone" style="margin-left:28px;">
                 <label for="stmb-sp-new-interval">
-                    <h4 style="margin: 0 0 4px 0;">Interval (visible messages):</h4>
+                    <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Interval (visible messages):', 'STMemoryBooks_IntervalVisibleMessages'))}</h4>
                     <input type="number" id="stmb-sp-new-interval" class="text_pole" min="1" step="1" value="50">
                 </label>
             </div>
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-trg-aftermem">
-                <span>Run automatically after memory</span>
+                <span>${escapeHtml(translate('Run automatically after memory', 'STMemoryBooks_RunAutomaticallyAfterMemory'))}</span>
             </label>
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-sp-new-trg-manual" checked>
-                <span>Allow manual run via /sideprompt</span>
+                <span>${escapeHtml(translate('Allow manual run via /sideprompt', 'STMemoryBooks_AllowManualRunViaSideprompt'))}</span>
             </label>
         </div>
         <div class="world_entry_form_control">
             <label for="stmb-sp-new-prompt">
-                <h4>Prompt:</h4>
+                <h4>${escapeHtml(translate('Prompt:', 'STMemoryBooks_PromptTitle'))}</h4>
                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
-                <textarea id="stmb-sp-new-prompt" class="text_pole textarea_compact" rows="8" placeholder="Enter your prompt..."></textarea>
+                <textarea id="stmb-sp-new-prompt" class="text_pole textarea_compact" rows="8" placeholder="${escapeHtml(translate('Enter your prompt here...', 'STMemoryBooks_EnterPromptPlaceholder'))}"></textarea>
             </label>
         </div>
         <div class="world_entry_form_control">
             <label for="stmb-sp-new-response-format">
-                <h4>Response Format (optional):</h4>
+                <h4>${escapeHtml(translate('Response Format (optional):', 'STMemoryBooks_ResponseFormatOptional'))}</h4>
                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-response-format" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
-                <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6" placeholder="Optional response format"></textarea>
+                <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6" placeholder="${escapeHtml(translate('Optional response format', 'STMemoryBooks_ResponseFormatPlaceholder'))}"></textarea>
             </label>
         </div>
         <div class="world_entry_form_control">
-            <h4>Lorebook Entry Settings:</h4>
+            <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
             <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                 <label>
-                    <h4 style="margin: 0 0 4px 0;">Vectorization Mode:</h4>
+                    <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h4>
                     <select id="stmb-sp-new-lb-mode" class="text_pole">
-                        <option value="link" selected>Vectorized (link)</option>
-                        <option value="green">Normal (green)</option>
-                        <option value="blue">Constant (blue)</option>
+                        <option value="link" selected>${escapeHtml(translate('🔗 Vectorized (Default)', 'STMemoryBooks_Vectorized'))}</option>
+                        <option value="green">${escapeHtml(translate('🟢 Normal', 'STMemoryBooks_Normal'))}</option>
+                        <option value="blue">${escapeHtml(translate('🔵 Constant', 'STMemoryBooks_Constant'))}</option>
                     </select>
                 </label>
                 <label>
-                    <h4 style="margin: 0 0 4px 0;">Insertion Position:</h4>
+                    <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Insertion Position:', 'STMemoryBooks_InsertionPosition'))}</h4>
                     <select id="stmb-sp-new-lb-position" class="text_pole">
-                        <option value="0" selected>↑Char</option>
-                        <option value="1">↓Char</option>
-                        <option value="2">↑AN</option>
-                        <option value="3">↓AN</option>
-                        <option value="4">↑EM</option>
-                        <option value="5">↓EM</option>
+                        <option value="0" selected>${escapeHtml(translate('↑Char', 'STMemoryBooks_CharUp'))}</option>
+                        <option value="1">${escapeHtml(translate('↓Char', 'STMemoryBooks_CharDown'))}</option>
+                        <option value="2">${escapeHtml(translate('↑AN', 'STMemoryBooks_ANUp'))}</option>
+                        <option value="3">${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
+                        <option value="4">${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
+                        <option value="5">${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
                     </select>
                 </label>
             </div>
             <div class="world_entry_form_control" style="margin-top: 8px;">
-                <h4>Order:</h4>
+                <h4>${escapeHtml(translate('Insertion Order:', 'STMemoryBooks_InsertionOrder'))}</h4>
                 <label class="radio_label">
                     <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-auto" value="auto" checked>
-                    <span>Auto</span>
+                    <span>${escapeHtml(translate('Auto (uses memory #)', 'STMemoryBooks_AutoOrder'))}</span>
                 </label>
                 <label class="radio_label" style="margin-left: 12px;">
                     <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-manual" value="manual">
-                    <span>Manual</span>
+                    <span>${escapeHtml(translate('Manual', 'STMemoryBooks_ManualOrder'))}</span>
                 </label>
                 <div id="stmb-sp-new-lb-order-value-container" style="display:none; margin-left:28px;">
                     <label>
-                        <h4 style="margin: 0 0 4px 0;">Order Value:</h4>
+                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Order Value:', 'STMemoryBooks_OrderValue'))}</h4>
                         <input type="number" id="stmb-sp-new-lb-order-value" class="text_pole" step="1" value="100">
                     </label>
                 </div>
@@ -485,34 +497,34 @@ async function openNewTemplate(parentPopup) {
             <div class="world_entry_form_control" style="margin-top: 8px;">
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-new-lb-prevent" checked>
-                    <span>Prevent Recursion</span>
+                    <span>${escapeHtml(translate('Prevent Recursion', 'STMemoryBooks_PreventRecursion'))}</span>
                 </label>
                 <label class="checkbox_label" style="margin-left: 12px;">
                     <input type="checkbox" id="stmb-sp-new-lb-delay">
-                    <span>Delay Until Recursion</span>
+                    <span>${escapeHtml(translate('Delay Until Recursion', 'STMemoryBooks_DelayUntilRecursion'))}</span>
                 </label>
             </div>
         </div>
 
         <div class="world_entry_form_control">
             <label for="stmb-sp-new-prev-mem-count">
-                <h4>Previous memories for context:</h4>
+                <h4>${escapeHtml(translate('Previous memories for context:', 'STMemoryBooks_PreviousMemoriesForContext'))}</h4>
 <input type="number" id="stmb-sp-new-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="0">
             </label>
-            <small class="opacity70p">Number of previous memory entries to include before scene text (0 = none).</small>
+            <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
         </div>
 
         <div class="world_entry_form_control">
-            <h4>Overrides:</h4>
+            <h4>${escapeHtml(translate('Overrides:', 'STMemoryBooks_Overrides'))}</h4>
             <div class="world_entry_form_control">
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-new-override-enabled">
-                    <span>Override default memory profile</span>
+                    <span>${escapeHtml(translate('Override default memory profile', 'STMemoryBooks_OverrideDefaultMemoryProfile'))}</span>
                 </label>
             </div>
             <div class="world_entry_form_control" id="stmb-sp-new-override-container" style="display: none;">
                 <label for="stmb-sp-new-override-index">
-                    <h4>Connection Profile:</h4>
+                    <h4>${escapeHtml(translate('Connection Profile:', 'STMemoryBooks_ConnectionProfile'))}</h4>
                     <select id="stmb-sp-new-override-index" class="text_pole">
                         ${options}
                     </select>
@@ -525,8 +537,8 @@ async function openNewTemplate(parentPopup) {
         wide: true,
         large: true,
         allowVerticalScrolling: true,
-        okButton: 'Create',
-        cancelButton: 'Cancel'
+        okButton: translate('Create', 'STMemoryBooks_Create'),
+        cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
     });
 
     const attachHandlers = () => {
@@ -565,11 +577,11 @@ async function openNewTemplate(parentPopup) {
         const responseFormat = dlg.querySelector('#stmb-sp-new-response-format')?.value.trim() || '';
 
         if (!prompt) {
-            toastr.error('Prompt cannot be empty', 'STMemoryBooks');
+            toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), translate('STMemoryBooks', 'index.toast.title'));
             return;
         }
         if (!name) {
-            toastr.info('No name provided. Using "Untitled Side Prompt".', 'STMemoryBooks');
+            toastr.info(tr('STMemoryBooks_SidePrompts_NoNameProvidedUsingUntitled', 'No name provided. Using "{{name}}".', { name: translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt') }), translate('STMemoryBooks', 'index.toast.title'));
         }
 
         // Build triggers
@@ -621,11 +633,11 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
 
         try {
             await upsertTemplate({ name, enabled, prompt, responseFormat, settings, triggers });
-            toastr.success('Template created', 'STMemoryBooks');
+            toastr.success(translate('SidePrompt created', 'STMemoryBooks_SidePromptCreated'), translate('STMemoryBooks', 'index.toast.title'));
             await refreshList(parentPopup);
         } catch (err) {
             console.error('STMemoryBooks: Error creating side prompt:', err);
-            toastr.error('Failed to create template', 'STMemoryBooks');
+            toastr.error(translate('Failed to create SidePrompt', 'STMemoryBooks_FailedToCreateSidePrompt'), translate('STMemoryBooks', 'index.toast.title'));
         }
     }
 }
@@ -643,10 +655,10 @@ async function exportTemplates() {
         a.download = 'stmb-side-prompts.json';
         a.click();
         URL.revokeObjectURL(url);
-        toastr.success('Exported side prompts', 'STMemoryBooks');
+        toastr.success(translate('Side prompts exported successfully', 'STMemoryBooks_SidePromptsExported'), translate('STMemoryBooks', 'index.toast.title'));
     } catch (err) {
         console.error('STMemoryBooks: Error exporting side prompts:', err);
-        toastr.error('Failed to export', 'STMemoryBooks');
+        toastr.error(translate('Failed to export side prompts', 'STMemoryBooks_FailedToExportSidePrompts'), translate('STMemoryBooks', 'index.toast.title'));
     }
 }
 
@@ -664,15 +676,15 @@ async function importTemplates(event, parentPopup) {
         const res = await importSidePromptsJSON(text);
         if (res && typeof res === 'object') {
             const { added = 0, renamed = 0 } = res;
-            const detail = renamed > 0 ? ` (${renamed} renamed due to key conflicts)` : '';
-            toastr.success(`Imported side prompts: ${added} added${detail}`, 'STMemoryBooks');
+            const detail = renamed > 0 ? tr('STMemoryBooks_ImportedSidePromptsRenamedDetail', ' ({{count}} renamed due to key conflicts)', { count: renamed }) : '';
+            toastr.success(tr('STMemoryBooks_ImportedSidePromptsDetail', 'Imported side prompts: {{added}} added{{detail}}', { added, detail }), translate('STMemoryBooks', 'index.toast.title'));
         } else {
-            toastr.success('Imported side prompts', 'STMemoryBooks');
+            toastr.success(translate('Imported side prompts', 'STMemoryBooks_ImportedSidePrompts'), translate('STMemoryBooks', 'index.toast.title'));
         }
         await refreshList(parentPopup);
     } catch (err) {
         console.error('STMemoryBooks: Error importing side prompts:', err);
-        toastr.error('Failed to import: ' + (err?.message || 'Unknown error'), 'STMemoryBooks');
+        toastr.error(tr('STMemoryBooks_FailedToImportSidePrompts', 'Failed to import: {{message}}', { message: err?.message || 'Unknown error' }), translate('STMemoryBooks', 'index.toast.title'));
     }
 }
 
@@ -688,14 +700,14 @@ export async function showSidePromptsPopup() {
 
         // Search/filter box
         content += '<div class="world_entry_form_control">';
-        content += '<input type="text" id="stmb-sp-search" class="text_pole" placeholder="Search by name or trigger..." aria-label="Search side prompts" />';
+        content += '<input type="text" id="stmb-sp-search" class="text_pole" data-i18n="[placeholder]STMemoryBooks_SearchSidePrompts;[aria-label]STMemoryBooks_SearchSidePrompts" placeholder="Search side prompts..." aria-label="Search side prompts" />';
         content += '</div>';
 
         // Global setting: max concurrent side prompts
         content += '<div class="world_entry_form_control">';
-        content += '<label for="stmb-sp-max-concurrent"><h4>How many concurrent prompts to run at once</h4></label>';
+        content += `<label for="stmb-sp-max-concurrent"><h4>${escapeHtml(translate('How many concurrent prompts to run at once', 'STMemoryBooks_SidePrompts_MaxConcurrentLabel'))}</h4></label>`;
         content += '<input type="number" id="stmb-sp-max-concurrent" class="text_pole" min="1" max="5" step="1" value="2">';
-        content += '<small class="opacity70p">Range 1–5. Defaults to 2.</small>';
+        content += `<small class="opacity70p">${escapeHtml(translate('Range 1–5. Defaults to 2.', 'STMemoryBooks_SidePrompts_MaxConcurrentHelp'))}</small>`;
         content += '</div>';
 
         // List container
@@ -703,9 +715,9 @@ export async function showSidePromptsPopup() {
 
         // Action buttons
         content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
-        content += '<button id="stmb-sp-new" class="menu_button whitespacenowrap">➕ New</button>';
-        content += '<button id="stmb-sp-export" class="menu_button whitespacenowrap">📤 Export JSON</button>';
-        content += '<button id="stmb-sp-import" class="menu_button whitespacenowrap">📥 Import JSON</button>';
+        content += `<button id="stmb-sp-new" class="menu_button whitespacenowrap">➕ ${escapeHtml(translate('New', 'STMemoryBooks_SidePrompts_New'))}</button>`;
+        content += `<button id="stmb-sp-export" class="menu_button whitespacenowrap">📤 ${escapeHtml(translate('Export JSON', 'STMemoryBooks_SidePrompts_ExportJSON'))}</button>`;
+        content += `<button id="stmb-sp-import" class="menu_button whitespacenowrap">📥 ${escapeHtml(translate('Import JSON', 'STMemoryBooks_SidePrompts_ImportJSON'))}</button>`;
         content += '</div>';
 
         // Hidden file input for import
@@ -716,7 +728,7 @@ export async function showSidePromptsPopup() {
             large: true,
             allowVerticalScrolling: true,
             okButton: false,
-            cancelButton: 'Close'
+            cancelButton: translate('Close', 'STMemoryBooks_Close')
         });
 
         // Attach handlers before show
@@ -785,28 +797,28 @@ export async function showSidePromptsPopup() {
                     } else if (actionBtn.classList.contains('stmb-sp-action-duplicate')) {
                         try {
                             const newKey = await duplicateTemplate(tplKey);
-                            toastr.success('Template duplicated', 'STMemoryBooks');
+                            toastr.success(translate('SidePrompt duplicated', 'STMemoryBooks_SidePromptDuplicated'), translate('STMemoryBooks', 'index.toast.title'));
                             await refreshList(popup, newKey);
                         } catch (err) {
                             console.error('STMemoryBooks: Error duplicating side prompt:', err);
-                            toastr.error('Failed to duplicate', 'STMemoryBooks');
+                            toastr.error(translate('Failed to duplicate SidePrompt', 'STMemoryBooks_FailedToDuplicateSidePrompt'), translate('STMemoryBooks', 'index.toast.title'));
                         }
                     } else if (actionBtn.classList.contains('stmb-sp-action-delete')) {
                         const confirmPopup = new Popup(
-                            `<h3>Delete Side Prompt</h3><p>Are you sure you want to delete this template?</p>`,
+                            `<h3>${escapeHtml(translate('Delete Side Prompt', 'STMemoryBooks_DeleteSidePromptTitle'))}</h3><p>${escapeHtml(translate('Are you sure you want to delete this template?', 'STMemoryBooks_DeleteSidePromptConfirm'))}</p>`,
                             POPUP_TYPE.CONFIRM,
                             '',
-                            { okButton: 'Delete', cancelButton: 'Cancel' }
+                            { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
                         );
                         const res = await confirmPopup.show();
                         if (res === POPUP_RESULT.AFFIRMATIVE) {
                             try {
                                 await removeTemplate(tplKey);
-                                toastr.success('Template deleted', 'STMemoryBooks');
+                                toastr.success(translate('SidePrompt deleted', 'STMemoryBooks_SidePromptDeleted'), translate('STMemoryBooks', 'index.toast.title'));
                                 await refreshList(popup);
                             } catch (err) {
                                 console.error('STMemoryBooks: Error deleting side prompt:', err);
-                                toastr.error('Failed to delete', 'STMemoryBooks');
+                                toastr.error(translate('Failed to delete SidePrompt', 'STMemoryBooks_FailedToDeleteSidePrompt'), translate('STMemoryBooks', 'index.toast.title'));
                             }
                         }
                     }
@@ -820,8 +832,9 @@ export async function showSidePromptsPopup() {
         // Initial render BEFORE show so the table appears immediately
         await refreshList(popup);
         await popup.show();
+        try { applyLocale(popup); } catch (e) { /* no-op */ }
     } catch (error) {
         console.error('STMemoryBooks: Error showing Side Prompts:', error);
-        toastr.error('Failed to open Side Prompts', 'STMemoryBooks');
+        toastr.error(translate('Failed to open Side Prompts', 'STMemoryBooks_FailedToOpenSidePrompts'), translate('STMemoryBooks', 'index.toast.title'));
     }
 }
