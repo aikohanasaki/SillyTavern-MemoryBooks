@@ -10,9 +10,22 @@ import { extension_settings } from '../../../extensions.js';
 import { moment } from '../../../../lib.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
-import { i18n } from './i18n.js';
+import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
+
+/**
+ * Local i18n wrapper to maintain legacy i18n(key, fallback, params) calls.
+ * Uses SillyTavern translate(fallback, key) and simple {{var}} interpolation.
+ */
+function i18n(key, fallback, params) {
+    const localized = translate(fallback, key);
+    if (!params) return localized;
+    return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
+        const v = params[p1];
+        return v !== undefined && v !== null ? String(v) : '';
+    });
+}
 
 /**
  * Parse scene range from metadata string format "start-end"
