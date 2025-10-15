@@ -228,7 +228,6 @@ Don't worry - you don't need to configure everything! Here are the settings that
 
 ## 🚫 What ST Memory Books Doesn't Do
 
-- **No `/addlore` command:** You can't manually add arbitrary lorebook entries with a slash command. All memory/lore addition is done via the scene marking, memory generation, or side prompt workflows.
 - **Not a general lorebook editor:** This guide focuses on entries created by STMB. For general lorebook editing, use SillyTavern\'s built-in lorebook editor.
 
 ---
