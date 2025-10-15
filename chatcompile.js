@@ -1,7 +1,7 @@
 import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
 import { estimateTokens } from './utils.js';
-import { t } from './i18n.js';
+import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ChatCompile';
 const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
@@ -20,15 +20,15 @@ export function compileScene(sceneRequest) {
     
     // Validate input parameters
     if (sceneStart == null || sceneEnd == null) {
-        throw new Error(t('chatcompile.errors.sceneMarkersRequired'));
+        throw new Error(translate('Scene markers are required', 'chatcompile.errors.sceneMarkersRequired'));
     }
 
     if (sceneStart > sceneEnd) {
-        throw new Error(t('chatcompile.errors.startGreaterThanEnd'));
+        throw new Error(translate('Start message cannot be greater than end message', 'chatcompile.errors.startGreaterThanEnd'));
     }
 
     if (sceneStart < 0 || sceneEnd >= chat.length) {
-        throw new Error(t('chatcompile.errors.outOfBounds', '', { start: sceneStart, end: sceneEnd, max: chat.length - 1 }));
+        throw new Error(__st_t_tag`Message IDs out of bounds: ${sceneStart}-${sceneEnd} (0-${chat.length - 1})`);
     }
     
     // Extract and format messages in range
@@ -72,14 +72,14 @@ export function compileScene(sceneRequest) {
         sceneStart,
         sceneEnd,
         chatId: chatId || 'unknown',
-        characterName: characterName || name2 || t('common.unknown', 'Unknown'),
+        characterName: characterName || name2 || translate('Unknown', 'common.unknown'),
         messageCount: sceneMessages.length,
         totalRequestedRange: sceneEnd - sceneStart + 1,
         hiddenMessagesSkipped: hiddenMessageCount,
         messagesSkipped: skippedMessageCount,
         compiledAt: new Date().toISOString(),
         totalChatLength: chat.length,
-        userName: name1 || t('chatcompile.defaults.user', 'User')
+        userName: name1 || translate('User', 'chatcompile.defaults.user')
     };
     
     const compiledScene = {
@@ -89,7 +89,7 @@ export function compileScene(sceneRequest) {
     
     // Validate that we have at least some visible messages
     if (sceneMessages.length === 0) {
-        throw new Error(t('chatcompile.errors.noVisibleInRange', '', { start: sceneStart, end: sceneEnd }));
+        throw new Error(__st_t_tag`No visible messages in range ${sceneStart}-${sceneEnd}`);
     }
     
     return compiledScene;
@@ -108,7 +108,7 @@ export function createSceneRequest(sceneStart, sceneEnd) {
         sceneStart,
         sceneEnd,
         chatId: context.chatId || 'unknown',
-        characterName: context.name2 || name2 || t('common.unknown', 'Unknown')
+        characterName: context.name2 || name2 || translate('Unknown', 'common.unknown')
     };
     
     return sceneRequest;
@@ -178,37 +178,37 @@ export function validateCompiledScene(compiledScene) {
     
     // Check basic structure
     if (!compiledScene.metadata) {
-        errors.push(t('chatcompile.validation.errors.missingMetadata'));
+        errors.push(translate('Missing metadata', 'chatcompile.validation.errors.missingMetadata'));
     }
     
     if (!compiledScene.messages || !Array.isArray(compiledScene.messages)) {
-        errors.push(t('chatcompile.validation.errors.invalidMessagesArray'));
+        errors.push(translate('Invalid messages array', 'chatcompile.validation.errors.invalidMessagesArray'));
     }
     
     if (compiledScene.messages && compiledScene.messages.length === 0) {
-        warnings.push(t('chatcompile.validation.warnings.noMessages'));
+        warnings.push(translate('No messages', 'chatcompile.validation.warnings.noMessages'));
     }
     
     // Check message structure
     if (compiledScene.messages) {
         compiledScene.messages.forEach((message, index) => {
             if (!message.id && message.id !== 0) {
-                warnings.push(t('chatcompile.validation.warnings.messageMissingId', '', { index }));
+                warnings.push(__st_t_tag`Message at index ${index} missing id`);
             }
             
             if (!message.name) {
-                warnings.push(t('chatcompile.validation.warnings.messageMissingName', '', { index }));
+                warnings.push(__st_t_tag`Message at index ${index} missing name`);
             }
             
             if (!message.mes && message.mes !== '') {
-                warnings.push(t('chatcompile.validation.warnings.messageMissingContent', '', { index }));
+                warnings.push(__st_t_tag`Message at index ${index} missing content`);
             }
         });
     }
     
     // Check for large scenes
     if (compiledScene.messages && compiledScene.messages.length > 100) {
-        warnings.push(t('chatcompile.validation.warnings.veryLargeScene'));
+        warnings.push(translate('Very large scene', 'chatcompile.validation.warnings.veryLargeScene'));
     }
     
     const isValid = errors.length === 0;
@@ -229,16 +229,16 @@ export function toReadableText(compiledScene) {
     const { metadata, messages } = compiledScene;
     
     let output = [];
-    output.push(t('chatcompile.readable.headerMetadata', '=== SCENE METADATA ==='));
-    output.push(t('chatcompile.readable.range', '', { start: metadata.sceneStart, end: metadata.sceneEnd }));
-    output.push(t('chatcompile.readable.chat', '', { chatId: metadata.chatId }));
-    output.push(t('chatcompile.readable.character', '', { name: metadata.characterName }));
-    output.push(t('chatcompile.readable.compiled', '', { count: metadata.messageCount }));
-    output.push(t('chatcompile.readable.compiledAt', '', { date: metadata.compiledAt }));
+    output.push(translate('=== SCENE METADATA ===', 'chatcompile.readable.headerMetadata'));
+    output.push(__st_t_tag`Range: ${metadata.sceneStart}-${metadata.sceneEnd}`);
+    output.push(__st_t_tag`Chat: ${metadata.chatId}`);
+    output.push(__st_t_tag`Character: ${metadata.characterName}`);
+    output.push(__st_t_tag`Compiled: ${metadata.messageCount}`);
+    output.push(__st_t_tag`Compiled at: ${metadata.compiledAt}`);
     output.push('');
-    output.push(t('chatcompile.readable.headerMessages', '=== SCENE MESSAGES ==='));
+    output.push(translate('=== SCENE MESSAGES ===', 'chatcompile.readable.headerMessages'));
     messages.forEach(message => {
-        output.push(t('chatcompile.readable.line', `[${message.id}] ${message.name}: ${message.mes}`, { id: message.id, name: message.name, text: message.mes }));
+        output.push(__st_t_tag`[${message.id}] ${message.name}: ${message.mes}`);
     });
     
     return output.join('\n');
@@ -249,8 +249,8 @@ export function toReadableText(compiledScene) {
  * @private
  */
 function cleanSpeakerName(name) {
-    if (!name) return t('common.unknown', 'Unknown');
-    return name.trim() || t('common.unknown', 'Unknown');
+    if (!name) return translate('Unknown', 'common.unknown');
+    return name.trim() || translate('Unknown', 'common.unknown');
 }
 
 /**
