@@ -5,6 +5,10 @@
  * Usage: Import this and call addLocaleData() during extension initialization
  */
 
+import { localeData_zh_cn } from './locales/zh-cn.js';
+// import { localeData_fr } from './locales/fr-fr.js';
+// import { localeData_es } from './locales/es-es.js';
+
 /**
  * English (default) locale data
  */
@@ -645,6 +649,7 @@ export const localeData_en = {
  */
 export const localeData = {
     'en': localeData_en,
+    'zh-cn': localeData_zh_cn,
     // Add more locales here:
     // 'fr-fr': localeData_fr,
     // 'es-es': localeData_es,

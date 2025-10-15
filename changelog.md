@@ -2,7 +2,10 @@
 
 **← [Back to README](readme.md)**
 
-## v4.6.2 (October 14, 2025)
+## v4.6.5 (October 15, 2025)
+- **Internationalization:** Added zh-cn (Chinese) locale data
+
+## v4.6.4 (October 14, 2025)
 - **Bugfix:** Chevron broke, fixed
 
 ## v4.6.3 (October 14, 2025)
