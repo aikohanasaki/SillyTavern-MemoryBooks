@@ -7,6 +7,11 @@
 - **Import UI Feedback Improved:** The import dialog now displays how many prompts were added and how many were renamed due to key conflicts.
 - **Manual /sideprompt Name Lookup Greatly Improved:** The `/sideprompt` command now matches side prompts by key, display name, or slug (hyphen/underscore/space-insensitive, case-insensitive). For example, `/sideprompt cast-of-characters`, `/sideprompt cast`, and `/sideprompt "Cast of Characters"` will all run the same prompt if it exists.
 - **Bugfix:** Resolves issues where built-in prompts could not be run by slug or key, or where imports previously overwrote existing side prompts.
+- **Feature:** Side Prompts now support including previous memories for context (up to 7, matching main memory popup).
+  - Added per-template "Previous memories for context" option to Side Prompt editor and new prompt dialog.
+  - When set, up to 7 previous memories are fetched from the active lorebook and included in the side prompt input (in the same block format as main memory context).
+  - Cap enforced in both UI and runtime.
+  - Fully backward compatible; existing prompts default to 0.
 
 ## v4.6.2 (October 14, 2025)
 - **Side Prompts Bugfix:** Swapped EM/AN
