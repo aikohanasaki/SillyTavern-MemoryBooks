@@ -1320,7 +1320,7 @@ toastr.error(translate('Failed to select manual lorebook', 'STMemoryBooks_Failed
         manualLorebookContainer.innerHTML = '';
         manualLorebookButtons.forEach(buttonConfig => {
             const button = document.createElement('div');
-            button.className = 'menu_button interactable';
+            button.className = 'menu_button interactable whitespacenowrap';
             button.id = buttonConfig.id;
             button.textContent = buttonConfig.text;
             button.addEventListener('click', buttonConfig.action);
@@ -1466,7 +1466,7 @@ toastr.error(translate('Failed to open Side Prompts', 'STMemoryBooks_FailedToOpe
     // Add profile action buttons
     profileButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
-        button.className = 'menu_button interactable';
+        button.className = 'menu_button interactable whitespacenowrap';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
@@ -1476,7 +1476,7 @@ toastr.error(translate('Failed to open Side Prompts', 'STMemoryBooks_FailedToOpe
     // Add Extra Function Buttons buttons
     extraFunctionButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
-        button.className = 'menu_button interactable';
+        button.className = 'menu_button interactable whitespacenowrap';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
@@ -1511,11 +1511,11 @@ async function showPromptManagerPopup() {
         content += '<div id="stmb-preset-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>';
         
         // Action buttons
-        content += '<div class="flex-container marginTop10" style="justify-content: center; gap: 10px;">';
-        content += '<button id="stmb-pm-new" class="menu_button" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
-        content += '<button id="stmb-pm-export" class="menu_button" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
-        content += '<button id="stmb-pm-import" class="menu_button" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
-        content += '<button id="stmb-pm-apply" class="menu_button" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
+        content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
+        content += '<button id="stmb-pm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
+        content += '<button id="stmb-pm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
+        content += '<button id="stmb-pm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
+        content += '<button id="stmb-pm-apply" class="menu_button whitespacenowrap" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
         content += '</div>';
         
         // Hint re: prompting
@@ -2000,7 +2000,7 @@ const customButtons = [
         {
             text: '🧠 ' + translate('Create Memory', 'STMemoryBooks_CreateMemoryButton'),
             result: null,
-            classes: ['menu_button', 'interactable'],
+            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
             action: async () => {
                 if (!sceneData) {
                     toastr.error(translate('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks_NoSceneSelectedMakeSure'), 'STMemoryBooks');
@@ -2023,7 +2023,7 @@ const customButtons = [
 {
             text: '🗑️ ' + translate('Clear Scene', 'STMemoryBooks_ClearSceneButton'),
             result: null,
-            classes: ['menu_button', 'interactable'],
+            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
             action: () => {
                 clearScene();
                 refreshPopupContent();

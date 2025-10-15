@@ -68,7 +68,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
                 {
                     text: translate('Advanced Options...', 'STMemoryBooks_Button_AdvancedOptions'),
                     result: STMB_POPUP_RESULTS.ADVANCED,
-                    classes: ['menu_button'],
+                    classes: ['menu_button', 'whitespacenowrap'],
                     action: null
                 }
             ]
@@ -152,7 +152,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
                 {
                     text: translate('Save as New Profile', 'STMemoryBooks_Button_SaveAsNewProfile'),
                     result: STMB_POPUP_RESULTS.SAVE_PROFILE,
-                    classes: ['menu_button'],
+                    classes: ['menu_button', 'whitespacenowrap'],
                     action: null
                 }
             ]
@@ -624,13 +624,13 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
                 {
                     text: translate('Edit & Save', 'STMemoryBooks_EditAndSave'),
                     result: STMB_POPUP_RESULTS.EDIT,
-                    classes: ['menu_button'],
+                    classes: ['menu_button', 'whitespacenowrap'],
                     action: null
                 },
                 {
                     text: translate('Retry Generation', 'STMemoryBooks_RetryGeneration'),
                     result: STMB_POPUP_RESULTS.RETRY,
-                    classes: ['menu_button'],
+                    classes: ['menu_button', 'whitespacenowrap'],
                     action: null
                 }
             ]
