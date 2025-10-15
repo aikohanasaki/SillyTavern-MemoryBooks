@@ -11,7 +11,7 @@ Need bot to remember things, but the chat is too long for context? Want to autom
 **New to ST Memory Books?** Let's get you set up with your first automatic memory in just a few clicks:
 
 ### Step 1: Find the Extension
-- Look for the magic wand icon (🪄) next to your chat input box
+- Look for the magic wand icon (�) next to your chat input box
 - Click it, then click **"Memory Books"**
 - You'll see the ST Memory Books control panel
 
@@ -202,7 +202,7 @@ Don't worry - you don't need to configure everything! Here are the settings that
 
 ### "I don't see the Memory Books option!"
 - Check that the extension is installed and enabled
-- Look for the magic wand (🪄) icon next to your chat input
+- Look for the magic wand (�) icon next to your chat input
 - Try refreshing the page
 
 ### "The arrow buttons (► ◄) aren't showing up!"
