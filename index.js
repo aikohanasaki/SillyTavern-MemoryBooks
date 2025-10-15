@@ -27,7 +27,7 @@ import { showSidePromptsPopup } from './sidePromptsPopup.js';
 import { listTemplates } from './sidePromptsManager.js';
 import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
 import { addLocaleData, setLocale, t, applyI18n } from './i18n.js';
-import { localeData_en } from './locales.js';
+import { localeData } from './locales.js';
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
  */
@@ -2672,7 +2672,14 @@ async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
     console.log('STMemoryBooks: Initializing');
-    addLocaleData('en', localeData_en);
+    // Register all available locales from the registry (en, zh-cn, etc.)
+    try {
+        Object.entries(localeData).forEach(([tag, data]) => addLocaleData(tag, data));
+    } catch (e) {
+        // If registry is unavailable for some reason, proceed without crashing
+        console.warn('STMemoryBooks: Failed to register locales from registry:', e);
+    }
+    // Default to English; runtime can call setLocale(...) later if needed
     setLocale('en');
     // Wait for SillyTavern to be ready
     let attempts = 0;
