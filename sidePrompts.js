@@ -7,6 +7,7 @@ import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resol
 import { requestCompletion } from './stmemory.js';
 import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
+import { fetchPreviousSummaries } from './confirmationPopup.js';
 import { t } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -70,12 +71,25 @@ function compileRange(start, end) {
 /**
  * Build a plain prompt by combining template prompt + prior content + compiled scene text
  */
-function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat) {
+function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat, previousSummaries = []) {
     const parts = [];
     parts.push(String(templatePrompt || ''));
     if (priorContent && String(priorContent).trim()) {
         parts.push('\n=== PRIOR ENTRY ===\n');
         parts.push(String(priorContent));
+    }
+    if (Array.isArray(previousSummaries) && previousSummaries.length > 0) {
+        parts.push('\n=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===\n');
+        parts.push('These are previous memories for context only. Do NOT include them in your new output.\n\n');
+        previousSummaries.forEach((m, i) => {
+            parts.push(`Context ${i + 1} - ${m.title || 'Memory'}:\n`);
+            parts.push(`${m.content || ''}\n`);
+            if (Array.isArray(m.keywords) && m.keywords.length) {
+                parts.push(`Keywords: ${m.keywords.join(', ')}\n`);
+            }
+            parts.push('\n');
+        });
+        parts.push('=== END PREVIOUS SCENE CONTEXT ===\n');
     }
     // Derive scene text from the compiled scene here to keep a single source of truth
     const sceneText = compiledScene ? toReadableText(compiledScene) : '';
@@ -321,9 +335,18 @@ export async function evaluateTrackers() {
                 continue;
             }
 
-            // Build prompt with prior content
+            // Build prompt with prior content and optional previous memories
             const prior = existing?.content || '';
-            const finalPrompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat);
+            let prevSummaries = [];
+const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+const pmCount = Math.max(0, Math.min(7, pmCountRaw));
+            if (pmCount > 0) {
+                try {
+                    const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);
+                    prevSummaries = res?.summaries || [];
+                } catch {}
+            }
+            const finalPrompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat, prevSummaries);
 
             // Call LLM
             let resultText = '';
@@ -420,7 +443,16 @@ export async function runAfterMemory(compiledScene, profile = null) {
                         || getEntryByTitle(lore.data, `${tpl.name} (STMB Scoreboard)`);
                     const prior = existing?.content || '';
 
-                    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat);
+                    let prevSummaries = [];
+const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+const pmCount = Math.max(0, Math.min(7, pmCountRaw));
+                    if (pmCount > 0) {
+                        try {
+                            const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);
+                            prevSummaries = res?.summaries || [];
+                        } catch {}
+                    }
+                    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat, prevSummaries);
                     const idx = Number(tpl?.settings?.overrideProfileIndex);
                     const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
                     const conn = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : defaultOverrides;
@@ -610,7 +642,16 @@ export async function runSidePrompt(args) {
             || getEntryByTitle(lore.data, `${tpl.name} (STMB Plotpoints)`)
             || getEntryByTitle(lore.data, `${tpl.name} (STMB Tracker)`);
         const prior = existing?.content || '';
-        const finalPrompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat);
+        let prevSummaries = [];
+const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+const pmCount = Math.max(0, Math.min(7, pmCountRaw));
+        if (pmCount > 0) {
+            try {
+                const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);
+                prevSummaries = res?.summaries || [];
+            } catch {}
+        }
+        const finalPrompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat, prevSummaries);
 
         // Call LLM
         let resultText = '';

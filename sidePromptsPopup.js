@@ -131,6 +131,7 @@ async function openEditTemplate(parentPopup, key) {
         `;
 
         // Lorebook entry settings (defaults with safe fallbacks)
+        const prevMemCount = Number.isFinite(s.previousMemoriesCount) ? Number(s.previousMemoriesCount) : 0;
         const lb = (s && s.lorebook) || {};
         const lbMode = lb.constVectMode || 'link';
         const lbPosition = Number.isFinite(lb.position) ? Number(lb.position) : 0;
@@ -244,6 +245,14 @@ async function openEditTemplate(parentPopup, key) {
             </div>
 
             <div class="world_entry_form_control">
+                <label for="stmb-sp-edit-prev-mem-count">
+                    <h4>Previous memories for context:</h4>
+<input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${prevMemCount}">
+                </label>
+                <small class="opacity70p">Number of previous memory entries to include before scene text (0 = none).</small>
+            </div>
+
+            <div class="world_entry_form_control">
                 <h4>Overrides:</h4>
                 ${overrideHtml}
             </div>
@@ -338,6 +347,9 @@ async function openEditTemplate(parentPopup, key) {
             const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-edit-lb-order-value')?.value ?? '100', 10);
             const lbPrevent2 = !!dlg.querySelector('#stmb-sp-edit-lb-prevent')?.checked;
             const lbDelay2 = !!dlg.querySelector('#stmb-sp-edit-lb-delay')?.checked;
+
+            const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-edit-prev-mem-count')?.value ?? '0', 10);
+settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
 
             settings.lorebook = {
                 constVectMode: ['link', 'green', 'blue'].includes(lbModeSel) ? lbModeSel : 'link',
@@ -483,6 +495,14 @@ async function openNewTemplate(parentPopup) {
         </div>
 
         <div class="world_entry_form_control">
+            <label for="stmb-sp-new-prev-mem-count">
+                <h4>Previous memories for context:</h4>
+<input type="number" id="stmb-sp-new-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="0">
+            </label>
+            <small class="opacity70p">Number of previous memory entries to include before scene text (0 = none).</small>
+        </div>
+
+        <div class="world_entry_form_control">
             <h4>Overrides:</h4>
             <div class="world_entry_form_control">
                 <label class="checkbox_label">
@@ -586,6 +606,9 @@ async function openNewTemplate(parentPopup) {
         const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-new-lb-order-value')?.value ?? '100', 10);
         const lbPrevent2 = !!dlg.querySelector('#stmb-sp-new-lb-prevent')?.checked;
         const lbDelay2 = !!dlg.querySelector('#stmb-sp-new-lb-delay')?.checked;
+
+        const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-new-prev-mem-count')?.value ?? '0', 10);
+settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
 
         settings.lorebook = {
             constVectMode: ['link', 'green', 'blue'].includes(lbModeSel) ? lbModeSel : 'link',

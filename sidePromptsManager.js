@@ -243,7 +243,7 @@ function getBuiltinTemplates() {
             key,
             name: t('STMemoryBooks_Assess', 'Assess'),
             enabled: false,
-            prompt: t('STMemoryBooks_AssessPrompt', "Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things."),
+            prompt: t('STMemoryBooks_AssessPrompt', "Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things."),
             responseFormat: "Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
             settings: {
                 overrideProfileEnabled: false,
