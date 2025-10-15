@@ -9,7 +9,7 @@ import {
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
 import * as PromptManager from './summaryPromptManager.js';
-import { t } from './i18n.js';
+import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 
@@ -225,9 +225,9 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
 
-        const popupInstance = new Popup(`<h3>${t('STMemoryBooks_ProfileEditTitle', 'Edit Profile')}</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: t('STMemoryBooks_Save', 'Save'),
-            cancelButton: t('STMemoryBooks_CancelClose', 'Cancel/Close'),
+        const popupInstance = new Popup(`<h3>${translate('Edit Profile', 'STMemoryBooks_ProfileEditTitle')}</h3>${content}`, POPUP_TYPE.TEXT, '', {
+            okButton: translate('Save', 'STMemoryBooks_Save'),
+            cancelButton: translate('Cancel/Close', 'STMemoryBooks_CancelClose'),
             wide: true,
             large: true,
             allowVerticalScrolling: true,
@@ -241,7 +241,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name);
 
             if (!validateProfile(updatedProfile)) {
-                toastr.error(t('STMemoryBooks_InvalidProfileData', 'Invalid profile data'), 'STMemoryBooks');
+                toastr.error(translate('Invalid profile data', 'STMemoryBooks_InvalidProfileData'), 'STMemoryBooks');
                 return;
             }
 
@@ -250,11 +250,11 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
             if (refreshCallback) refreshCallback();
 
-            toastr.success(t('STMemoryBooks_ProfileUpdatedSuccess', 'Profile updated successfully'), 'STMemoryBooks');
+            toastr.success(translate('Profile updated successfully', 'STMemoryBooks_ProfileUpdatedSuccess'), 'STMemoryBooks');
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error editing profile:`, error);
-        toastr.error(t('STMemoryBooks_FailedToEditProfile', 'Failed to edit profile'), 'STMemoryBooks');
+        toastr.error(translate('Failed to edit profile', 'STMemoryBooks_FailedToEditProfile'), 'STMemoryBooks');
     }
 }
 
@@ -305,9 +305,9 @@ export async function newProfile(settings, refreshCallback) {
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
 
-        const popupInstance = new Popup(`<h3>${t('STMemoryBooks_NewProfileTitle', 'New Profile')}</h3>${content}`, POPUP_TYPE.TEXT, '', {
-            okButton: t('STMemoryBooks_Create', 'Create'),
-            cancelButton: t('STMemoryBooks_CancelClose', 'Cancel/Close'),
+        const popupInstance = new Popup(`<h3>${translate('New Profile', 'STMemoryBooks_NewProfileTitle')}</h3>${content}`, POPUP_TYPE.TEXT, '', {
+            okButton: translate('Create', 'STMemoryBooks_Create'),
+            cancelButton: translate('Cancel/Close', 'STMemoryBooks_CancelClose'),
             wide: true,
             large: true,
             allowVerticalScrolling: true,
@@ -324,7 +324,7 @@ export async function newProfile(settings, refreshCallback) {
             newProfileData.name = finalName;
 
             if (!validateProfile(newProfileData)) {
-                toastr.error(t('STMemoryBooks_InvalidProfileData', 'Invalid profile data'), 'STMemoryBooks');
+                toastr.error(translate('Invalid profile data', 'STMemoryBooks_InvalidProfileData'), 'STMemoryBooks');
                 return;
             }
 
@@ -333,11 +333,11 @@ export async function newProfile(settings, refreshCallback) {
 
             if (refreshCallback) refreshCallback();
 
-            toastr.success(t('STMemoryBooks_ProfileCreatedSuccess', 'Profile created successfully'), 'STMemoryBooks');
+            toastr.success(translate('Profile created successfully', 'STMemoryBooks_ProfileCreatedSuccess'), 'STMemoryBooks');
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error creating profile:`, error);
-        toastr.error(t('STMemoryBooks_FailedToCreateProfile', 'Failed to create profile'), 'STMemoryBooks');
+        toastr.error(translate('Failed to create profile', 'STMemoryBooks_FailedToCreateProfile'), 'STMemoryBooks');
     }
 }
 
@@ -349,7 +349,7 @@ export async function newProfile(settings, refreshCallback) {
  */
 export async function deleteProfile(settings, profileIndex, refreshCallback) {
     if (settings.profiles.length <= 1) {
-        toastr.error(t('STMemoryBooks_CannotDeleteLastProfile', 'Cannot delete the last profile'), 'STMemoryBooks');
+        toastr.error(translate('Cannot delete the last profile', 'STMemoryBooks_CannotDeleteLastProfile'), 'STMemoryBooks');
         return;
     }
 
@@ -357,12 +357,12 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
     // Prevent deletion of the required default profile
     if (profile?.name === 'Current SillyTavern Settings') {
-        toastr.error(t('STMemoryBooks_CannotDeleteDefaultProfile', 'Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work'), 'STMemoryBooks');
+        toastr.error(translate('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work', 'STMemoryBooks_CannotDeleteDefaultProfile'), 'STMemoryBooks');
         return;
     }
 
     try {
-        const result = await new Popup(t('STMemoryBooks_DeleteProfileConfirm', 'Delete profile "{{name}}"?', { name: profile.name }), POPUP_TYPE.CONFIRM, '').show();
+        const result = await new Popup(__st_t_tag`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
 
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const deletedName = profile.name;
@@ -381,11 +381,11 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
 
             if (refreshCallback) refreshCallback();
 
-            toastr.success(t('STMemoryBooks_ProfileDeletedSuccess', 'Profile deleted successfully'), 'STMemoryBooks');
+            toastr.success(translate('Profile deleted successfully', 'STMemoryBooks_ProfileDeletedSuccess'), 'STMemoryBooks');
         }
     } catch (error) {
         console.error(`${MODULE_NAME}: Error deleting profile:`, error);
-        toastr.error(t('STMemoryBooks_FailedToDeleteProfile', 'Failed to delete profile'), 'STMemoryBooks');
+        toastr.error(translate('Failed to delete profile', 'STMemoryBooks_FailedToDeleteProfile'), 'STMemoryBooks');
     }
 }
 
@@ -415,10 +415,10 @@ export function exportProfiles(settings) {
         // Clean up the object URL
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 
-        toastr.success(t('STMemoryBooks_ProfilesExportedSuccess', 'Profiles exported successfully'), 'STMemoryBooks');
+        toastr.success(translate('Profiles exported successfully', 'STMemoryBooks_ProfilesExportedSuccess'), 'STMemoryBooks');
     } catch (error) {
         console.error(`${MODULE_NAME}: Error exporting profiles:`, error);
-        toastr.error(t('STMemoryBooks_FailedToExportProfiles', 'Failed to export profiles'), 'STMemoryBooks');
+        toastr.error(translate('Failed to export profiles', 'STMemoryBooks_FailedToExportProfiles'), 'STMemoryBooks');
     }
 }
 
@@ -442,7 +442,7 @@ export function importProfiles(event, settings, refreshCallback) {
             const importData = JSON.parse(e.target.result);
 
             if (!importData.profiles || !Array.isArray(importData.profiles)) {
-                throw new Error(t('STMemoryBooks_ImportErrorInvalidFormat', 'Invalid profile data format - missing profiles array'));
+                throw new Error(translate('Invalid profile data format - missing profiles array', 'STMemoryBooks_ImportErrorInvalidFormat'));
             }
 
             // Validate and clean profile structure
@@ -451,7 +451,7 @@ export function importProfiles(event, settings, refreshCallback) {
                 .map(profile => cleanProfile(profile));
 
             if (validProfiles.length === 0) {
-                throw new Error(t('STMemoryBooks_ImportErrorNoValidProfiles', 'No valid profiles found in import file'));
+                throw new Error(translate('No valid profiles found in import file', 'STMemoryBooks_ImportErrorNoValidProfiles'));
             }
 
             let importedCount = 0;
@@ -478,25 +478,25 @@ export function importProfiles(event, settings, refreshCallback) {
                 saveSettingsDebounced();
                 if (refreshCallback) refreshCallback();
 
-                let message = t('STMemoryBooks_ImportSuccess', 'Imported {{importedCount}} profile{{plural}}', { importedCount, plural: importedCount === 1 ? '' : 's' });
+                let message = __st_t_tag`Imported ${importedCount} profile${importedCount === 1 ? '' : 's'}`;
                 if (skippedCount > 0) {
-                    message += t('STMemoryBooks_ImportSkipped', ' ({{skippedCount}} duplicate{{plural}} skipped)', { skippedCount, plural: skippedCount === 1 ? '' : 's' });
+                    message += __st_t_tag` (${skippedCount} duplicate${skippedCount === 1 ? '' : 's'} skipped)`;
                 }
 
-                toastr.success(message, t('STMemoryBooks_ImportComplete', 'STMemoryBooks profile import completed'));
+                toastr.success(message, translate('STMemoryBooks profile import completed', 'STMemoryBooks_ImportComplete'));
             } else {
-                toastr.warning(t('STMemoryBooks_ImportNoNewProfiles', 'No new profiles imported - all profiles already exist'), 'STMemoryBooks');
+                toastr.warning(translate('No new profiles imported - all profiles already exist', 'STMemoryBooks_ImportNoNewProfiles'), 'STMemoryBooks');
             }
 
         } catch (error) {
             console.error(`${MODULE_NAME}: Error importing profiles:`, error);
-            toastr.error(t('STMemoryBooks_ImportFailed', 'Failed to import profiles: {{message}}', { message: error.message }), 'STMemoryBooks');
+            toastr.error(__st_t_tag`Failed to import profiles: ${error.message}`, 'STMemoryBooks');
         }
     };
 
     reader.onerror = function() {
         console.error(`${MODULE_NAME}: Error reading import file`);
-        toastr.error(t('STMemoryBooks_ImportReadError', 'Failed to read import file'), 'STMemoryBooks');
+        toastr.error(translate('Failed to read import file', 'STMemoryBooks_ImportReadError'), 'STMemoryBooks');
     };
 
     reader.readAsText(file);
@@ -518,11 +518,11 @@ function setupProfileEditEventHandlers(popupInstance) {
             if (btn) {
                 btn.click();
             } else {
-                toastr.error(t('STMemoryBooks_PromptManagerNotFound', 'Prompt Manager button not found. Open main settings and try again.'), 'STMemoryBooks');
+                toastr.error(translate('Prompt Manager button not found. Open main settings and try again.', 'STMemoryBooks_PromptManagerNotFound'), 'STMemoryBooks');
             }
         } catch (err) {
             console.error(`${MODULE_NAME}: Error opening prompt manager from profile editor:`, err);
-            toastr.error(t('STMemoryBooks_FailedToOpenSummaryPromptManager', 'Failed to open Summary Prompt Manager'), 'STMemoryBooks');
+            toastr.error(translate('Failed to open Summary Prompt Manager', 'STMemoryBooks_FailedToOpenSummaryPromptManager'), 'STMemoryBooks');
         }
     });
 
@@ -549,10 +549,10 @@ function setupProfileEditEventHandlers(popupInstance) {
                 selectEl.selectedIndex = 0;
             }
 
-            toastr.success(t('STMemoryBooks_PresetListRefreshed', 'Preset list refreshed'), 'STMemoryBooks');
+            toastr.success(translate('Preset list refreshed', 'STMemoryBooks_PresetListRefreshed'), 'STMemoryBooks');
         } catch (err) {
             console.error(`${MODULE_NAME}: Error refreshing presets:`, err);
-            toastr.error(t('STMemoryBooks_FailedToRefreshPresets', 'Failed to refresh presets'), 'STMemoryBooks');
+            toastr.error(translate('Failed to refresh presets', 'STMemoryBooks_FailedToRefreshPresets'), 'STMemoryBooks');
         }
     });
 
@@ -604,7 +604,7 @@ function setupProfileEditEventHandlers(popupInstance) {
                 '<h3 data-i18n="STMemoryBooks_MoveToPresetConfirmTitle">Move to Preset</h3><p data-i18n="STMemoryBooks_MoveToPresetConfirmDesc">Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?</p>',
                 POPUP_TYPE.CONFIRM,
                 '',
-                { okButton: t('STMemoryBooks_Apply', 'Apply'), cancelButton: t('STMemoryBooks_Cancel', 'Cancel') }
+                { okButton: translate('Apply', 'STMemoryBooks_Apply'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
             );
             const res = await confirmPopup.show();
             if (res === POPUP_RESULT.AFFIRMATIVE) {
@@ -620,11 +620,11 @@ function setupProfileEditEventHandlers(popupInstance) {
                 }
                 legacyPromptEl?.remove();
                 popupElement.querySelector('#stmb-move-to-preset')?.remove();
-                toastr.success(t('STMemoryBooks_CustomPromptMigrated', 'Preset created and selected. Remember to Save.'), 'STMemoryBooks');
+                toastr.success(translate('Preset created and selected. Remember to Save.', 'STMemoryBooks_CustomPromptMigrated'), 'STMemoryBooks');
             }
         } catch (error) {
             console.error(`${MODULE_NAME}: Error moving custom prompt to preset:`, error);
-            toastr.error(t('STMemoryBooks_FailedToMigrateCustomPrompt', 'Failed to move custom prompt to preset'), 'STMemoryBooks');
+            toastr.error(translate('Failed to move custom prompt to preset', 'STMemoryBooks_FailedToMigrateCustomPrompt'), 'STMemoryBooks');
         }
     });
 

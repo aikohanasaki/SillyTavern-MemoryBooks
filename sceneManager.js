@@ -4,7 +4,7 @@ import { createSceneRequest, estimateTokenCount, compileScene } from './chatcomp
 import { getCurrentMemoryBooksContext } from './utils.js';
 import { groups, editGroup } from '../../../group-chats.js';
 import { SCENE_MANAGEMENT } from './constants.js';
-import { t } from './i18n.js';
+import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
@@ -394,23 +394,23 @@ export function handleMessageDeletion(deletedId, settings) {
         // Deleting a message that is both start and end
         clearScene();
         hasChanges = true;
-        toastrMessage = t('STMemoryBooks_Toast_SceneClearedStart', 'Scene cleared due to start marker deletion');
+        toastrMessage = translate('Scene cleared due to start marker deletion', 'STMemoryBooks_Toast_SceneClearedStart');
     } else if (deletedId === markers.sceneStart) {
         // Deleting the start message
         markers.sceneStart = null;
         hasChanges = true;
-        toastrMessage = t('STMemoryBooks_Toast_SceneEndPointCleared', 'Scene end point cleared due to message deletion');
+        toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
     } else if (deletedId === markers.sceneEnd) {
         // Deleting the end message
         markers.sceneEnd = null;
         hasChanges = true;
-        toastrMessage = t('STMemoryBooks_Toast_SceneEndPointCleared', 'Scene end point cleared due to message deletion');
+        toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
     } else if (markers.sceneStart !== null && deletedId > markers.sceneStart && (markers.sceneEnd === null || deletedId < markers.sceneEnd)) {
         // Deleting a message within the scene (or after start but before end is set)
         if (markers.sceneStart !== null) markers.sceneStart--;
         if (markers.sceneEnd !== null) markers.sceneEnd--;
         hasChanges = true;
-        toastrMessage = t('STMemoryBooks_Toast_SceneMarkersAdjusted', 'Scene markers adjusted due to message deletion.');
+        toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
     }
     
     // If a message *before* the start marker is deleted, shift the start marker down.
@@ -427,7 +427,7 @@ export function handleMessageDeletion(deletedId, settings) {
 
     if (startChanged || endChanged) {
         hasChanges = true;
-        toastrMessage = t('STMemoryBooks_Toast_SceneMarkersAdjusted', 'Scene markers adjusted due to message deletion.');
+        toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
     }
 
     if (hasChanges) {
@@ -474,14 +474,14 @@ export function createSceneButtons(messageElement) {
     
     // Create start button
     const startButton = document.createElement('div');
-    startButton.title = t('STMemoryBooks_MarkSceneStart', 'Mark Scene Start');
+    startButton.title = translate('Mark Scene Start', 'STMemoryBooks_MarkSceneStart');
     startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
     startButton.setAttribute('tabindex', '0');
     startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
 
     // Create end button
     const endButton = document.createElement('div');
-    endButton.title = t('STMemoryBooks_MarkSceneEnd', 'Mark Scene End');
+    endButton.title = translate('Mark Scene End', 'STMemoryBooks_MarkSceneEnd');
     endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
     endButton.setAttribute('tabindex', '0');
     endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
