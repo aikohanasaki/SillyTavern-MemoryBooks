@@ -6,6 +6,7 @@
  */
 
 import { localeData_zh_cn } from './locales/zh-cn.js';
+import { localeData_zh_tw } from './locales/zh-tw.js';
 // import { localeData_fr } from './locales/fr-fr.js';
 // import { localeData_es } from './locales/es-es.js';
 
@@ -650,6 +651,7 @@ export const localeData_en = {
 export const localeData = {
     'en': localeData_en,
     'zh-cn': localeData_zh_cn,
+    'zh-tw': localeData_zh_tw,
     // Add more locales here:
     // 'fr-fr': localeData_fr,
     // 'es-es': localeData_es,

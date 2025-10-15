@@ -1,4 +1,4 @@
-import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2, saveMetadata, getCurrentChatId } from '../../../../script.js';
+import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2, saveMetadata, getCurrentChatId, settings as st_settings } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
@@ -2680,7 +2680,8 @@ async function init() {
         console.warn('STMemoryBooks: Failed to register locales from registry:', e);
     }
     // Default to English; runtime can call setLocale(...) later if needed
-    setLocale('en');
+    const stLocale = st_settings.language ?? 'en';
+    setLocale(stLocale);
     // Wait for SillyTavern to be ready
     let attempts = 0;
     const maxAttempts = 20;
