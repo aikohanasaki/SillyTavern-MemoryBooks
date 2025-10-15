@@ -6,7 +6,7 @@ import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, getEffectiveL
 import { autoCreateLorebook } from './autocreate.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
-import { i18n } from './i18n.js';
+import { t as i18n } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AutoSummary';
 
