@@ -4,7 +4,7 @@ export const summaryPromptsTableTemplate = Handlebars.compile(`
 <table style="width: 100%; border-collapse: collapse;">
   <thead>
     <tr>
-      <th data-i18n="STMemoryBooks_PromptManager_DisplayName" style="text-align:left;">Display Name</th>
+      <th data-i18n="STMemoryBooks_PromptManager_DisplayName">Display Name</th>
     </tr>
   </thead>
   <tbody>
