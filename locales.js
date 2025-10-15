@@ -5,8 +5,37 @@
  * Usage: Import this and call addLocaleData() during extension initialization
  */
 
-import zh_cn from './locales/zh-cn.json' assert { type: 'json' };
-import zh_tw from './locales/zh-tw.json' assert { type: 'json' };
+/**
+ * Runtime JSON loader for locales that don't support JSON import assertions
+ */
+export async function loadLocaleJson(lang) {
+    const alias = {
+        'zh': 'zh-cn',
+        'zh_cn': 'zh-cn',
+        'zh_tw': 'zh-tw',
+        'zh.tw': 'zh-tw',
+        'zh-CN': 'zh-cn',
+        'zh-TW': 'zh-tw',
+    };
+    const normalized = alias[lang] || lang;
+
+    const paths = {
+        'zh-cn': './locales/zh-cn.json',
+        'zh-tw': './locales/zh-tw.json',
+    };
+
+    const rel = paths[normalized];
+    if (!rel) return null;
+
+    try {
+        const res = await fetch(new URL(rel, import.meta.url));
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (e) {
+        console.warn('STMemoryBooks: Failed to load locale JSON for', normalized, e);
+        return null;
+    }
+}
 // import { localeData_fr } from './locales/fr-fr.js';
 // import { localeData_es } from './locales/es-es.js';
 
@@ -650,8 +679,6 @@ export const localeData_en = {
  */
 export const localeData = {
     'en': localeData_en,
-    'zh-cn': zh_cn,
-    'zh-tw': zh_tw,
     // Add more locales here:
     // 'fr-fr': localeData_fr,
     // 'es-es': localeData_es,

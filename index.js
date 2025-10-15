@@ -27,7 +27,7 @@ import { showSidePromptsPopup } from './sidePromptsPopup.js';
 import { listTemplates } from './sidePromptsManager.js';
 import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
 import { t as __st_t_tag, translate, applyLocale, addLocaleData, getCurrentLocale } from '../../../i18n.js';
-import { localeData } from './locales.js';
+import { localeData, loadLocaleJson } from './locales.js';
 
 /**
  * DEPRECATED: Legacy t(key, fallback?, params?) wrapper retained temporarily.
@@ -2694,15 +2694,25 @@ async function init() {
     console.log('STMemoryBooks: Initializing');
     // Merge this extension's locale data into SillyTavern's current locale:
     // - Do not reinitialize ST i18n (host owns init)
-    // - Add current locale data (if present) and ensure English fallback exists
+    // - Load JSON for current locale if available, then ensure English fallback exists
     try {
         const current = getCurrentLocale?.() || 'en';
+
+        // Try to fetch JSON bundle for current locale (works without JSON import assertions)
+        try {
+            const jsonData = await loadLocaleJson(current);
+            if (jsonData) {
+                addLocaleData(current, jsonData);
+            }
+        } catch (e) {
+            console.warn('STMemoryBooks: Failed to load JSON locale bundle:', e);
+        }
+
+        // Merge statically-bundled locales (English fallback, and any inline bundles)
         if (localeData && typeof localeData === 'object') {
-            // Add current-locale bundle if present
             if (localeData[current]) {
                 addLocaleData(current, localeData[current]);
             }
-            // Ensure en fallback is available
             if (current !== 'en' && localeData['en']) {
                 addLocaleData(current, Object.fromEntries(
                     Object.entries(localeData['en']).filter(([k]) => true)
