@@ -4,6 +4,7 @@ import { createSceneRequest, estimateTokenCount, compileScene } from './chatcomp
 import { getCurrentMemoryBooksContext } from './utils.js';
 import { groups, editGroup } from '../../../group-chats.js';
 import { SCENE_MANAGEMENT } from './constants.js';
+import { t } from './i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
