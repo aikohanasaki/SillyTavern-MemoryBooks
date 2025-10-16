@@ -1,10 +1,10 @@
 # 📕 Memory Books (A SillyTavern Extension)
 
-A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. Supports 简体中文 (zh-cn), 繁體中文 (zh-tw).
+A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
 
 **📘 [User Guide](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
 
-> Note: Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
+> Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
 
 ## FAQ 
 ### Where is the entry in the Extensions menu?
@@ -22,33 +22,30 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 
 ---
 
-## 🚦 What's New (v4.3.0)
+## 🚦 What's New (v4.6.6)
 
-### 🧩 Summary Prompt Manager
+### 🎡 Side Prompts
 
-SillyTavern-MemoryBooks now provides a powerful "Summary Prompt Manager" for customizing how summaries are generated.
-- **Access:** From the Memory Books settings, click “🧩 Summary Prompt Manager”.
+Side Prompts can be used like trackers and will create entries in your memory lorebook. 
+- **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
 - **Features:**
-    - View all summary prompt presets.
-    - Create new or duplicate presets to experiment with different prompt styles.
+    - View all side prompts.
+    - Create new or duplicate prompts to experiment with different prompt styles.
     - Edit or delete any preset (including built-ins).
     - Export and import presets as JSON files for backup or sharing.
-    - Apply a preset to any configured Memory Books profile.
+    - Run them manually or automatically with memory creation.
 - **Usage Tips:**
     - When creating a new prompt, you can copy from built-ins for best compatibility.
-    - Do not remove the "respond with JSON" instruction unless you are sure, as Memory Books relies on the AI’s output structure.
 
-### ⚡ Improvements and Fixes
+### 🌐 Internationalization
 
-- Improved handling for scene memory creation, reducing errors and overlap issues.
-- Enhanced migration logic for settings and profiles—dynamic profiles now update more reliably to new formats.
-
----
-
-## 🚦 What's New (v4.2.2)
-
-- **Bug Fixes:** Critical auto-hide and manual lorebook mode fixes
-- **Performance:** Removed excessive DEBUG logging for cleaner console output
+- Added language support for: 
+  - Simplified Chinese
+  - Traditional Chinese
+  - Japanese
+  - Russian
+  - Spanish
+(More to come...)
 
 ---
 
@@ -60,7 +57,6 @@ SillyTavern-MemoryBooks now provides a powerful "Summary Prompt Manager" for cus
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
 
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
-(If these settings are not used it is unlikely the memories will be pulled in!)
 
 - **Match Whole Words:** leave unchecked (false)
 - **Scan Depth:** higher is better (at least 4)

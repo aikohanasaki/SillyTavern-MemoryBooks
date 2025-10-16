@@ -1,10 +1,10 @@
 # 📕 Libros de Memoria (una extensión de SillyTavern)
 
-Una extensión de SillyTavern de nueva generación para la creación de memorias automática, estructurada y fiable. Marque escenas en el chat, genere resúmenes basados en JSON con IA y guárdelos como entradas "[vectorizadas](#vectorized)" en sus libros de conocimiento. Admite chats grupales, gestión avanzada de perfiles y manejo a prueba de balas de API/modelos. Admite 简体中文 (zh-cn), 繁體中文 (zh-tw).
+Una extensión de SillyTavern de nueva generación para la creación de memorias automática, estructurada y fiable. Marque escenas en el chat, genere resúmenes basados en JSON con IA y guárdelos como entradas "[vectorizadas](#vectorized)" en sus libros de conocimiento. Admite chats grupales, gestión avanzada de perfiles y manejo a prueba de balas de API/modelos.
 
 **📘 [Guía de Usuario](USER_GUIDE.md)** |  **📋 [Historial de Versiones y Registro de Cambios](changelog.md)** | **🔧 [Convertidor de Libros de Conocimiento](lorebookconverter.html)**
 
-> Nota: Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides).
+> Nota: Admite varios idiomas: consulte la carpeta [`/locales`](locales) para ver la lista. Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides).
 
 ## FAQ (Preguntas Frecuentes)
 ### ¿Dónde está la entrada en el menú de Extensiones?
@@ -22,33 +22,30 @@ La entrada 🔗 en la información del mundo se llama "vectorized" en la interfa
 
 ---
 
-## 🚦 Novedades (v4.3.0)
+## 🚦 Novedades (v4.6.6)
 
-### 🧩 Gestor de Prompts de Resumen
+### 🎡 Prompts Laterales
 
-SillyTavern-MemoryBooks ahora proporciona un potente "Gestor de Prompts de Resumen" para personalizar cómo se generan los resúmenes.
-- **Acceso:** Desde los ajustes de Libros de Memoria, haga clic en “🧩 Gestor de Prompts de Resumen”.
+Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su libro de memorias.
+- **Acceso:** Desde los ajustes de Libros de Memoria, haga clic en “🎡 Gestor de Prompts Laterales”.
 - **Características:**
-    - Ver todos los preajustes de prompts de resumen.
-    - Crear nuevos preajustes o duplicarlos para experimentar con diferentes estilos de prompt.
+    - Ver todos los prompts laterales.
+    - Crear nuevos prompts o duplicarlos para experimentar con diferentes estilos de prompt.
     - Editar o eliminar cualquier preajuste (incluidos los integrados).
     - Exportar e importar preajustes como archivos JSON para copia de seguridad o para compartir.
-    - Aplicar un preajuste a cualquier perfil de Libros de Memoria configurado.
+    - Ejecutarlos manualmente o automáticamente con la creación de memorias.
 - **Consejos de uso:**
     - Al crear un nuevo prompt, puede copiar de los integrados para una mejor compatibilidad.
-    - No elimine la instrucción "responder con JSON" a menos que esté seguro, ya que Libros de Memoria depende de la estructura de salida de la IA.
 
-### ⚡ Mejoras y Correcciones
+### 🌐 Internacionalización
 
-- Se ha mejorado el manejo de la creación de memorias de escena, reduciendo errores y problemas de superposición.
-- Se ha mejorado la lógica de migración para ajustes y perfiles: los perfiles dinámicos ahora se actualizan de manera más fiable a los nuevos formatos.
-
----
-
-## 🚦 Novedades (v4.2.2)
-
-- **Corrección de errores:** Correcciones críticas en el modo de ocultación automática y en el modo de libro de conocimiento manual.
-- **Rendimiento:** Se eliminó el registro excesivo de DEBUG para una salida de consola más limpia.
+- Se ha añadido soporte para los siguientes idiomas:
+  - Chino Simplificado
+  - Chino Tradicional
+  - Japonés
+  - Ruso
+  - Español
+(Más por venir...)
 
 ---
 
@@ -60,7 +57,6 @@ SillyTavern-MemoryBooks ahora proporciona un potente "Gestor de Prompts de Resum
 - **Soporte de finalización de texto:** Las API de finalización de texto (Kobold, TextGen, etc.) son compatibles cuando se conectan a través de la configuración manual completa o una fuente de finalización personalizada en SillyTavern.
 
 ## 💡 Ajustes recomendados de activación global de Información del Mundo/Libro de Conocimiento
-(¡Si no se utilizan estos ajustes, es poco probable que se carguen las memorias!)
 
 - **Coincidir palabras completas:** dejar sin marcar (falso)
 - **Profundidad de escaneo:** cuanto más alta, mejor (al menos 4)
