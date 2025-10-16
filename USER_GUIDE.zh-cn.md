@@ -1,4 +1,5 @@
 # 📕 ST 记忆书 - 你的 AI 聊天记忆助手
+(This document is AI translated.)
 
 **把你无尽的聊天对话变成有组织的、可搜索的记忆！**
 
@@ -236,7 +237,7 @@
 
 ---
 
-## 7. 获取帮助和更多信息
+## 💡 获取帮助和更多信息
 
 - **更详细的信息：** [readme.md](readme.md)
 - **最新更新：** [changelog.md](changelog.md)
