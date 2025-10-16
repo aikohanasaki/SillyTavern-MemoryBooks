@@ -4,6 +4,7 @@
 
 ## v4.6.8 (October 16, 2025)
 - **Enhancement:** Add previews to side prompts
+- **Bugfix:** Interval checkbox fixed
 
 ## v4.6.7 (October 16, 2025)
 - **Housekeeping:** Doc rewrite, reorganizing files

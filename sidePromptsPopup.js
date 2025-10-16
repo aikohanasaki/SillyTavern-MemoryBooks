@@ -287,6 +287,7 @@ async function openEditTemplate(parentPopup, key) {
             const intervalCont = dlg.querySelector('#stmb-sp-edit-interval-container');
             cbInterval?.addEventListener('change', () => {
                 if (intervalCont) intervalCont.style.display = cbInterval.checked ? 'block' : 'none';
+                if (cbInterval.checked) dlg.querySelector('#stmb-sp-edit-interval')?.focus();
             });
 
             const cbOverride = dlg.querySelector('#stmb-sp-edit-override-enabled');
@@ -306,8 +307,9 @@ async function openEditTemplate(parentPopup, key) {
             orderManual?.addEventListener('change', syncOrderVisibility);
         };
 
+        const showPromise = editPopup.show();
         attachHandlers();
-        const result = await editPopup.show();
+        const result = await showPromise;
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const dlg = editPopup.dlg;
             const newName = dlg.querySelector('#stmb-sp-edit-name')?.value.trim() || '';
@@ -548,6 +550,7 @@ async function openNewTemplate(parentPopup) {
         const intervalCont = dlg.querySelector('#stmb-sp-new-interval-container');
         cbInterval?.addEventListener('change', () => {
             if (intervalCont) intervalCont.style.display = cbInterval.checked ? 'block' : 'none';
+            if (cbInterval.checked) dlg.querySelector('#stmb-sp-new-interval')?.focus();
         });
 
         const cbOverride = dlg.querySelector('#stmb-sp-new-override-enabled');
@@ -567,8 +570,9 @@ async function openNewTemplate(parentPopup) {
         orderManual?.addEventListener('change', syncOrderVisibility);
     };
 
+    const showPromise = newPopup.show();
     attachHandlers();
-    const result = await newPopup.show();
+    const result = await showPromise;
     if (result === POPUP_RESULT.AFFIRMATIVE) {
         const dlg = newPopup.dlg;
         const name = dlg.querySelector('#stmb-sp-new-name')?.value.trim() || '';
