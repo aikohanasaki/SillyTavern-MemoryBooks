@@ -220,6 +220,10 @@ Don't worry - you don't need to configure everything! Here are the settings that
 - Go to Memory Books settings
 - Either bind a lorebook to your chat (Automatic Mode) or enable "Auto-create lorebook if none exists"
 
+### "Sometimes it fails for no reason!"
+- Make sure that your Max Response Length (in SillyTavern presets) are set at a large enough number. Aiko recommends at least 2000 tokens (Aiko runs 4000.)
+- The error messages are more detailed now, but if you are still having problems please contact Aiko on Github or Discord.
+
 ### "My custom prompts aren't working right!"
 - Check the "Summary Prompt Manager" in Memory Books settings
 - Ensure your prompt instructs the AI to respond in **JSON format** (e.g., `{ "title": "...", "content": "..." }`)
