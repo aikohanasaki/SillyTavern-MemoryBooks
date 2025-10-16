@@ -16,12 +16,16 @@ export async function loadLocaleJson(lang) {
         'zh.tw': 'zh-tw',
         'zh-CN': 'zh-cn',
         'zh-TW': 'zh-tw',
+        'ja': 'ja',
+        'ja_jp': 'ja',
+        'ja-JP': 'ja',
     };
     const normalized = alias[lang] || lang;
 
     const paths = {
         'zh-cn': './locales/zh-cn.json',
         'zh-tw': './locales/zh-tw.json',
+        'ja': './locales/ja.json',
     };
 
     const rel = paths[normalized];
