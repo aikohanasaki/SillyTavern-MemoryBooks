@@ -1,6 +1,10 @@
 # 📕 Memory Books - Version History
 
 **← [Back to README](readme.md)**
+
+## v4.6.8 (October 16, 2025)
+- **Enhancement:** Add previews to side prompts
+
 ## v4.6.7 (October 16, 2025)
 - **Housekeeping:** Doc rewrite, reorganizing files
   - reorganized resources into a `/resources` folder
