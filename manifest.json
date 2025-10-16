@@ -10,5 +10,5 @@
     "license": "AGPL-3.0",
     "homePage": "https://github.com/aikohanasaki/SillyTavern-MemoryBooks",
     "auto_update": true,
-    "description": "Creates and saves chat memories to SillyTavern lorebooks with keywords and numbered titles. Just set start and end messages and click Create!"
+    "description": "Creates and saves chat memories to SillyTavern lorebooks with keywords and numbered titles. Localization ongoing in multiple languages."
 }

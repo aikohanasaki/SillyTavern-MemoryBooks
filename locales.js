@@ -19,6 +19,9 @@ export async function loadLocaleJson(lang) {
         'ja': 'ja',
         'ja_jp': 'ja',
         'ja-JP': 'ja',
+        'ru': 'ru',
+        'ru_ru': 'ru',
+        'ru-RU': 'ru',
     };
     const normalized = alias[lang] || lang;
 
@@ -26,6 +29,7 @@ export async function loadLocaleJson(lang) {
         'zh-cn': './locales/zh-cn.json',
         'zh-tw': './locales/zh-tw.json',
         'ja': './locales/ja.json',
+        'ru': './locales/ru.json',
     };
 
     const rel = paths[normalized];
