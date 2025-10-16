@@ -391,18 +391,25 @@ function parseAIJsonResponse(aiResponse) {
             throw new AIResponseError('AI response missing or invalid keywords array. Try increasing Max Response Length.');
         }
 
-        // Post-parse heuristic: detect mid-sentence cutoff in main text
-        const mainText = (parsed.content || parsed.summary || parsed.memory_content || '').trim();
-        if (mainText && mainText.length >= 80 && !endsNicely(mainText)) {
-            throw new AIResponseError('AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.');
-        }
+        
 
         return parsed;
 
     } catch (parseError) {
+        if (parseError instanceof AIResponseError) {
+            throw parseError;
+        }
+        // On pure parse failure, optionally detect mid-sentence cutoff in raw text
+        try {
+            const textCandidate = (typeof cleanResponse === 'string' ? cleanResponse.trim() : '');
+            if (textCandidate && textCandidate.length >= 80 && !endsNicely(textCandidate)) {
+                throw new AIResponseError('AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.');
+            }
+        } catch (e) {
+            if (e instanceof AIResponseError) throw e;
+        }
         throw new AIResponseError(
-            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. Try increasing Max Response Length.` +
-            `Parse error: ${parseError.message}`
+            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. Try increasing Max Response Length. Parse error: ${parseError.message}`
         );
     }
 }

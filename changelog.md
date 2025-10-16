@@ -4,6 +4,7 @@
 
 ## v4.6.6 (October 15, 2025)
 - **Internationalization:** Added Japanese, Russian, Spanish
+- **Bugfix:** Fix bad-end on "finish-reason: stop"
 
 ## v4.6.5 (October 15, 2025)
 - **Internationalization:** Added zh-cn (Chinese) locale data
