@@ -11,7 +11,7 @@
     "STMemoryBooks_ProcessedUpTo": "已处理至消息",
     "STMemoryBooks_NoMemoriesProcessed": "此聊天尚无已处理的记忆",
     "STMemoryBooks_SinceVersion": "(自更新至 3.6.2 或更高版本)",
-	"STMemoryBooks_AutoSummaryNote": "Please note that Auto-Summary requires you to \"prime\" every chat with at least one manual memory. After that, summaries will be made automatically.",
+	"STMemoryBooks_AutoSummaryNote": "请注意，自动摘要功能要求您为每个聊天“启动”至少一个手动记忆。之后，摘要将会自动生成。",
     "STMemoryBooks_Preferences": "偏好设置:",
     "STMemoryBooks_AlwaysUseDefault": "始终使用默认配置文件 (无确认提示)",
     "STMemoryBooks_ShowMemoryPreviews": "显示记忆预览",

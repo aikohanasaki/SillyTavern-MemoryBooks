@@ -715,9 +715,9 @@ export async function showSidePromptsPopup() {
 
         // Action buttons
         content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
-        content += `<button id="stmb-sp-new" class="menu_button whitespacenowrap">➕ ${escapeHtml(translate('New', 'STMemoryBooks_SidePrompts_New'))}</button>`;
-        content += `<button id="stmb-sp-export" class="menu_button whitespacenowrap">📤 ${escapeHtml(translate('Export JSON', 'STMemoryBooks_SidePrompts_ExportJSON'))}</button>`;
-        content += `<button id="stmb-sp-import" class="menu_button whitespacenowrap">📥 ${escapeHtml(translate('Import JSON', 'STMemoryBooks_SidePrompts_ImportJSON'))}</button>`;
+        content += `<button id="stmb-sp-new" class="menu_button whitespacenowrap">${escapeHtml(translate('New', 'STMemoryBooks_SidePrompts_New'))}</button>`;
+        content += `<button id="stmb-sp-export" class="menu_button whitespacenowrap">${escapeHtml(translate('Export JSON', 'STMemoryBooks_SidePrompts_ExportJSON'))}</button>`;
+        content += `<button id="stmb-sp-import" class="menu_button whitespacenowrap">${escapeHtml(translate('Import JSON', 'STMemoryBooks_SidePrompts_ImportJSON'))}</button>`;
         content += '</div>';
 
         // Hidden file input for import
