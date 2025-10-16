@@ -563,7 +563,7 @@ export async function confirmSaveNewProfile(profileName) {
  * @param {Object} profileSettings - Profile settings used for generation
  * @returns {Promise<Object>} Result object with action and optional edited memory data
  */
-export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSettings) {
+export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSettings, options = {}) {
     try {
         // Input validation
         if (!memoryResult || typeof memoryResult !== 'object') {
@@ -608,6 +608,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
             sceneStart: sceneData.sceneStart,
             sceneEnd: sceneData.sceneEnd,
             messageCount: sceneData.messageCount,
+            titleReadonly: !!options.lockTitle,
             profileName: (profileSettings?.connection?.api === 'current_st')
                 ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST')
                 : (profileSettings.name || translate('Unknown Profile', 'STMemoryBooks_UnknownProfile'))
@@ -666,9 +667,14 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
                 return { action: 'cancel' };
             }
 
-            const editedTitle = titleElement.value?.trim() || '';
+            let editedTitle = titleElement.value?.trim() || '';
             const editedContent = contentElement.value?.trim() || '';
             const editedKeywordsText = keywordsElement.value?.trim() || '';
+
+            // If title is locked for side prompts, ignore any user edits and keep the original
+            if (options?.lockTitle) {
+                editedTitle = memoryResult.extractedTitle || editedTitle;
+            }
 
             // Validate required fields
             if (!editedTitle || editedTitle.length === 0) {

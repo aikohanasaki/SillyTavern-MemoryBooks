@@ -7,12 +7,21 @@ import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resol
 import { requestCompletion } from './stmemory.js';
 import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
-import { fetchPreviousSummaries } from './confirmationPopup.js';
+import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
 let hasShownSidePromptRangeTip = false;
+
+// Serialize preview popups to avoid overlap; enqueue in order of receipt
+let previewQueue = Promise.resolve();
+function enqueuePreview(task) {
+    previewQueue = previewQueue.then(task).catch(err => {
+        console.warn(`${MODULE_NAME}: preview task failed`, err);
+    });
+    return previewQueue;
+}
 
 /**
  * Strict lorebook requirement: no auto-create, no selection popup.
@@ -339,8 +348,8 @@ export async function evaluateTrackers() {
             // Build prompt with prior content and optional previous memories
             const prior = existing?.content || '';
             let prevSummaries = [];
-const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
-const pmCount = Math.max(0, Math.min(7, pmCountRaw));
+            const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+            const pmCount = Math.max(0, Math.min(7, pmCountRaw));
             if (pmCount > 0) {
                 try {
                     const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);
@@ -372,11 +381,42 @@ const pmCount = Math.max(0, Math.min(7, pmCountRaw));
                 continue;
             }
 
+            // Preview gating if enabled
+            try {
+                const settings = extension_settings?.STMemoryBooks;
+                if (settings?.moduleSettings?.showMemoryPreviews) {
+                    const memoryResult = {
+                        extractedTitle: unifiedTitle,
+                        content: resultText,
+                        suggestedKeys: [],
+                    };
+                    const sceneDataForPreview = {
+                        sceneStart: compiled?.metadata?.sceneStart ?? boundedStart,
+                        sceneEnd: compiled?.metadata?.sceneEnd ?? currentLast,
+                        messageCount: compiled?.metadata?.messageCount ?? (compiled?.messages?.length ?? 0),
+                    };
+                    const profileSettingsForPreview = { name: 'SidePrompt' };
+                    let previewResult;
+                    await enqueuePreview(async () => {
+                        previewResult = await showMemoryPreviewPopup(memoryResult, sceneDataForPreview, profileSettingsForPreview, { lockTitle: true });
+                    });
+                    if (previewResult?.action === 'cancel' || previewResult?.action === 'retry') {
+                        console.log(`${MODULE_NAME}: SidePrompt "${tpl.name}" canceled or retry requested in preview; skipping save`);
+                        continue;
+                    } else if (previewResult?.action === 'edit' && previewResult.memoryData) {
+                        resultText = previewResult.memoryData.content ?? resultText;
+                    }
+                }
+            } catch (previewErr) {
+                console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
+            }
+
             // Upsert entry and update metadata checkpoint (generic + legacy for one-way compat)
             try {
                 const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
-                const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
-                await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
+            const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
+            const endId = compiled?.metadata?.sceneEnd ?? currentLast;
+            await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
                     defaults,
                     entryOverrides,
                     metadataUpdates: {
@@ -445,8 +485,8 @@ export async function runAfterMemory(compiledScene, profile = null) {
                     const prior = existing?.content || '';
 
                     let prevSummaries = [];
-const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
-const pmCount = Math.max(0, Math.min(7, pmCountRaw));
+                    const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+                    const pmCount = Math.max(0, Math.min(7, pmCountRaw));
                     if (pmCount > 0) {
                         try {
                             const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);
@@ -472,20 +512,59 @@ const pmCount = Math.max(0, Math.min(7, pmCountRaw));
                 }
             });
 
-            const llmResults = await Promise.all(llmPromises);
+            const llmResults = await Promise.all(llmPromises.map(p => p.then(r => ({ ...r, _completedAt: performance.now() }))));
 
-            // Build batch items from successes
+            // Present previews in order of receipt
+            llmResults.sort((a, b) => a._completedAt - b._completedAt);
+
+            // Build batch items from successes (preview-gated, receipt order)
             const items = [];
             const succeededNames = [];
             for (const r of llmResults) {
-                if (r.ok) {
+                if (!r.ok) {
+                    results.push({ name: r.tpl?.name || 'unknown', ok: false, error: r.error });
+                    continue;
+                }
+
+                let textToSave = r.text;
+                let approved = true;
+
+                try {
+                    const settings = extension_settings?.STMemoryBooks;
+                    if (settings?.moduleSettings?.showMemoryPreviews) {
+                        const memoryResult = {
+                            extractedTitle: `${r.tpl.name} (STMB SidePrompt)`,
+                            content: textToSave,
+                            suggestedKeys: [],
+                        };
+                        const sceneDataForPreview = {
+                            sceneStart: compiledScene?.metadata?.sceneStart ?? 0,
+                            sceneEnd: compiledScene?.metadata?.sceneEnd ?? 0,
+                            messageCount: compiledScene?.metadata?.messageCount ?? (compiledScene?.messages?.length ?? 0),
+                        };
+                        const profileSettingsForPreview = { name: 'SidePrompt' };
+                        let previewResult;
+                        await enqueuePreview(async () => {
+                            previewResult = await showMemoryPreviewPopup(memoryResult, sceneDataForPreview, profileSettingsForPreview, { lockTitle: true });
+                        });
+                        if (previewResult?.action === 'cancel' || previewResult?.action === 'retry') {
+                            approved = false;
+                        } else if (previewResult?.action === 'edit' && previewResult.memoryData) {
+                            textToSave = previewResult.memoryData.content ?? textToSave;
+                        }
+                    }
+                } catch (previewErr) {
+                    console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
+                }
+
+                if (approved) {
                     const tpl = r.tpl;
                     const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
                     const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
                     const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
                     items.push({
                         title: unifiedTitle,
-                        content: r.text,
+                        content: textToSave,
                         defaults,
                         entryOverrides,
                         metadataUpdates: {
@@ -494,8 +573,7 @@ const pmCount = Math.max(0, Math.min(7, pmCountRaw));
                     });
                     succeededNames.push(tpl.name);
                 } else {
-                    // Count LLM failures immediately
-                    results.push({ name: r.tpl.name, ok: false, error: r.error });
+                    results.push({ name: r.tpl.name, ok: false, error: new Error('User canceled or retry in preview') });
                 }
             }
 
@@ -669,14 +747,50 @@ const pmCount = Math.max(0, Math.min(7, pmCountRaw));
                 model: overrides.model,
             });
             resultText = await runLLM(finalPrompt, overrides);
+
+            // Preview gating if enabled
+            try {
+                const settings = extension_settings?.STMemoryBooks;
+                if (settings?.moduleSettings?.showMemoryPreviews) {
+                    const memoryResult = {
+                        extractedTitle: unifiedTitle,
+                        content: resultText,
+                        suggestedKeys: [],
+                    };
+                    const sceneDataForPreview = {
+                        sceneStart: compiled?.metadata?.sceneStart ?? 0,
+                        sceneEnd: compiled?.metadata?.sceneEnd ?? 0,
+                        messageCount: compiled?.metadata?.messageCount ?? (compiled?.messages?.length ?? 0),
+                    };
+                    const profileSettingsForPreview = { name: 'SidePrompt' };
+                    const previewResult = await showMemoryPreviewPopup(
+                        memoryResult,
+                        sceneDataForPreview,
+                        profileSettingsForPreview,
+                        { lockTitle: true }
+                    );
+
+                    if (previewResult?.action === 'cancel' || previewResult?.action === 'retry') {
+                        toastr.info(__st_t_tag`SidePrompt "${tpl.name}" canceled.`, 'STMemoryBooks');
+                        return '';
+                    } else if (previewResult?.action === 'edit' && previewResult.memoryData) {
+                        resultText = previewResult.memoryData.content ?? resultText;
+                    }
+                }
+            } catch (previewErr) {
+                console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
+            }
             const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
             const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
+            const endId = compiled?.metadata?.sceneEnd ?? currentLast;
             await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
                 defaults,
                 entryOverrides,
                 metadataUpdates: {
-                    [`STMB_sp_${tpl.key}_lastMsgId`]: chat.length - 1,
+                    [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
+                    STMB_tracker_lastMsgId: endId,
+                    STMB_tracker_lastRunAt: new Date().toISOString(),
                 },
                 refreshEditor: extension_settings?.STMemoryBooks?.moduleSettings?.refreshEditor !== false,
             });
