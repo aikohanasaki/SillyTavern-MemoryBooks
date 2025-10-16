@@ -23,6 +23,15 @@ export async function loadLocaleJson(lang) {
         'ru_ru': 'ru',
         'ru-RU': 'ru',
         'es': 'es',
+        'ko': 'ko',
+        'ko_kr': 'ko',
+        'ko-KR': 'ko',
+        'ms': 'ms',
+        'ms_my': 'ms',
+        'ms-MY': 'ms',
+        'id': 'id',
+        'id_id': 'id',
+        'id-ID': 'id',
     };
     const normalized = alias[lang] || lang;
 
@@ -32,6 +41,9 @@ export async function loadLocaleJson(lang) {
         'ja': './locales/ja.json',
         'ru': './locales/ru.json',
         'es': './locales/es.json',
+        'ko': './locales/ko.json',
+        'ms': './locales/ms.json',
+        'id': './locales/id.json',
     };
 
     const rel = paths[normalized];

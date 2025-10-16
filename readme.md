@@ -2,9 +2,10 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
 
-**📘 [User Guide](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
+**📘 [User Guid (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)**
 
 > Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
+> Lorebook converter and side prompt template library are in the [`/resources`](resources) folder.
 
 ## FAQ 
 ### Where is the entry in the Extensions menu?
@@ -22,30 +23,13 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 
 ---
 
-## 🚦 What's New (v4.6.6)
+## 🚦 What's New (v4.6.7)
 
-### 🎡 Side Prompts
-
-Side Prompts can be used like trackers and will create entries in your memory lorebook. 
-- **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
-- **Features:**
-    - View all side prompts.
-    - Create new or duplicate prompts to experiment with different prompt styles.
-    - Edit or delete any preset (including built-ins).
-    - Export and import presets as JSON files for backup or sharing.
-    - Run them manually or automatically with memory creation.
-- **Usage Tips:**
-    - When creating a new prompt, you can copy from built-ins for best compatibility.
+### 🪲 Various Bug Fixes
+- fix auto-create and auto-summary
 
 ### 🌐 Internationalization
-
-- Added language support for: 
-  - Simplified Chinese
-  - Traditional Chinese
-  - Japanese
-  - Russian
-  - Spanish
-(More to come...)
+- Continued internationalization (please check [`/locales`](locales) folder for list.)
 
 ---
 
@@ -166,7 +150,23 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 - **Editor Refresh:** Optionally auto-refreshes the lorebook editor after adding a memory.
 
 > **Existing memories must be converted!**
-> Use the [Lorebook Converter](https://github.com/aikohanasaki/SillyTavern-MemoryBooks/blob/main/lorebookconverter.html) to add the `stmemorybooks` flag and required fields.
+> Use the [Lorebook Converter](/resources/lorebookconverter.html) to add the `stmemorybooks` flag and required fields.
+
+---
+
+### 🎡 Side Prompts
+
+Side Prompts can be used like trackers and will create entries in your memory lorebook. 
+- **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
+- **Features:**
+    - View all side prompts.
+    - Create new or duplicate prompts to experiment with different prompt styles.
+    - Edit or delete any preset (including built-ins).
+    - Export and import presets as JSON files for backup or sharing.
+    - Run them manually or automatically with memory creation.
+- **Usage Tips:**
+    - When creating a new prompt, you can copy from built-ins for best compatibility.
+    - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use
 
 ---
 

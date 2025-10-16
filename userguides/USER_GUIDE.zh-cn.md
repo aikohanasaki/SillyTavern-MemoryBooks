@@ -157,6 +157,7 @@
 - **实时预览**：查看当前聊天激活了哪些提示
 
 ### 💡 **模板示例**
+- 侧边提示模板库 (导入此 JSON): [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
 - **"专注于对话和角色互动"**
 - **"追踪当前任务状态和目标"**
 - **"记录提到的任何世界观细节"**

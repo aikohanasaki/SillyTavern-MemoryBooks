@@ -52,7 +52,7 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 ### 📊 **Side Prompts & Smart Trackers** 
 *"I want to track relationships, plot threads, or stats"*
 - Reusable prompt snippets that enhance memory generation
-- Built-in template library with ready-to-use trackers
+- Template library with ready-to-use trackers
 - Custom AI prompts that track anything you want
 - Automatically update scoreboards, relationship status, plot summaries
 - Examples: "Who likes who?", "Current quest status", "Character mood tracker"
@@ -156,6 +156,7 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - **Live Preview**: See which prompts are active for the current chat
 
 ### 💡 **Template Examples**
+- Side Prompt Template Library (import this JSON): [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
 - **"Focus on dialogue and character interactions"**
 - **"Track the current quest status and objectives"** 
 - **"Note any world-building details mentioned"**

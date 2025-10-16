@@ -2,9 +2,10 @@
 
 Una extensión de SillyTavern de nueva generación para la creación de memorias automática, estructurada y fiable. Marque escenas en el chat, genere resúmenes basados en JSON con IA y guárdelos como entradas "[vectorizadas](#vectorized)" en sus libros de conocimiento. Admite chats grupales, gestión avanzada de perfiles y manejo a prueba de balas de API/modelos.
 
-**📘 [Guía de Usuario](USER_GUIDE.md)** |  **📋 [Historial de Versiones y Registro de Cambios](changelog.md)** | **🔧 [Convertidor de Libros de Conocimiento](lorebookconverter.html)**
+**📘 [Guía de Usuario (ES)](USER_GUIDE.md)** |  **📋 [Historial de Versiones y Registro de Cambios](changelog.md)**
 
-> Nota: Admite varios idiomas: consulte la carpeta [`/locales`](locales) para ver la lista. Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides).
+> Nota: Admite varios idiomas: consulte la carpeta [`/locales`](locales) para ver la lista. Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides). 
+> El convertidor de libros de conocimiento y la biblioteca de plantillas de prompts laterales se encuentran en la carpeta [`/resources`](resources).
 
 ## FAQ (Preguntas Frecuentes)
 ### ¿Dónde está la entrada en el menú de Extensiones?
@@ -22,30 +23,13 @@ La entrada 🔗 en la información del mundo se llama "vectorized" en la interfa
 
 ---
 
-## 🚦 Novedades (v4.6.6)
+## 🚦 Novedades (v4.6.7)
 
-### 🎡 Prompts Laterales
-
-Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su libro de memorias.
-- **Acceso:** Desde los ajustes de Libros de Memoria, haga clic en “🎡 Gestor de Prompts Laterales”.
-- **Características:**
-    - Ver todos los prompts laterales.
-    - Crear nuevos prompts o duplicarlos para experimentar con diferentes estilos de prompt.
-    - Editar o eliminar cualquier preajuste (incluidos los integrados).
-    - Exportar e importar preajustes como archivos JSON para copia de seguridad o para compartir.
-    - Ejecutarlos manualmente o automáticamente con la creación de memorias.
-- **Consejos de uso:**
-    - Al crear un nuevo prompt, puede copiar de los integrados para una mejor compatibilidad.
+### 🪲 Varias Correcciones de Errores
+- corregir la creación automática y el resumen automático
 
 ### 🌐 Internacionalización
-
-- Se ha añadido soporte para los siguientes idiomas:
-  - Chino Simplificado
-  - Chino Tradicional
-  - Japonés
-  - Ruso
-  - Español
-(Más por venir...)
+- Internacionalización continua (consulte la carpeta [`/locales`](locales) para ver la lista).
 
 ---
 
@@ -166,7 +150,23 @@ Todos los prompts y preajustes **deben** indicar a la IA que devuelva solo JSON 
 - **Actualización del editor:** Opcionalmente, actualiza automáticamente el editor del libro de conocimiento después de añadir una memoria.
 
 > **¡Las memorias existentes deben ser convertidas!**
-> Use el [Convertidor de Libros de Conocimiento](https://github.com/aikohanasaki/SillyTavern-MemoryBooks/blob/main/lorebookconverter.html) para añadir el indicador `stmemorybooks` y los campos requeridos.
+> Use el [Convertidor de Libros de Conocimiento](/resources/lorebookconverter.html) para añadir el indicador `stmemorybooks` y los campos requeridos.
+
+---
+
+### 🎡 Prompts Laterales
+
+Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su libro de memorias. 
+- **Acceso:** Desde los ajustes de Libros de Memoria, haga clic en “🎡 Gestor de Prompts Laterales”.
+- **Características:**
+    - Ver todos los prompts laterales.
+    - Crear nuevos prompts o duplicarlos para experimentar con diferentes estilos de prompt.
+    - Editar o eliminar cualquier preajuste (incluidos los integrados).
+    - Exportar e importar preajustes como archivos JSON para copia de seguridad o para compartir.
+    - Ejecutarlos manualmente o automáticamente con la creación de memorias.
+- **Consejos de uso:**
+    - Al crear un nuevo prompt, puede copiar de los integrados para una mejor compatibilidad.
+    - Biblioteca de Plantillas de Prompts Laterales adicional [archivo JSON](resources/SidePromptTemplateLibrary.json) - simplemente importe para usar
 
 ---
 
