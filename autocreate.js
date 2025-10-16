@@ -1,8 +1,22 @@
 import { getCurrentChatId, name1, name2, chat_metadata, saveMetadata } from '../../../../script.js';
 import { createNewWorldInfo, METADATA_KEY, world_names } from '../../../world-info.js';
-import { t as i18n } from '../../../i18n.js';
+import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AutoCreate';
+
+/**
+ * i18n helper: translate with Mustache-style {{var}} interpolation
+ * Mirrors the local 'tr' used in index.js to keep calls like i18n('key','fallback',{...})
+ * compatible with SillyTavern's translate(fallback, key).
+ */
+function i18n(key, fallback, params) {
+    const localized = translate(fallback, key);
+    if (!params) return localized;
+    return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
+        const v = params[p1];
+        return v !== undefined && v !== null ? String(v) : '';
+    });
+}
 
 /**
  * Generate lorebook name from template with auto-numbering

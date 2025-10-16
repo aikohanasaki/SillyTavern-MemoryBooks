@@ -6,9 +6,23 @@ import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, getEffectiveL
 import { autoCreateLorebook } from './autocreate.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
-import { t as i18n } from '../../../i18n.js';
+import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AutoSummary';
+
+/**
+ * i18n helper: translate with Mustache-style {{var}} interpolation
+ * Use like i18n('KEY', 'Fallback {{var}}', { var: 'value' })
+ * Internally calls SillyTavern's translate(fallback, key).
+ */
+function i18n(key, fallback, params) {
+    const localized = translate(fallback, key);
+    if (!params) return localized;
+    return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
+        const v = params[p1];
+        return v !== undefined && v !== null ? String(v) : '';
+    });
+}
 
 /**
  * Validates lorebook for auto-summary with user-friendly prompts
