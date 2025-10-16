@@ -405,7 +405,7 @@ export const memoryPreviewTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <label for="stmb-preview-title">
             <h4 data-i18n="STMemoryBooks_MemoryTitle">Memory Title:</h4>
-            <input type="text" id="stmb-preview-title" class="text_pole" value="{{#if title}}{{title}}{{else}}Memory{{/if}}" data-i18n="[placeholder]STMemoryBooks_MemoryTitlePlaceholder" placeholder="Memory title">
+            <input type="text" id="stmb-preview-title" class="text_pole" value="{{#if title}}{{title}}{{else}}Memory{{/if}}" data-i18n="[placeholder]STMemoryBooks_MemoryTitlePlaceholder" placeholder="Memory title" {{#if titleReadonly}}readonly disabled{{/if}}>
         </label>
     </div>
 
