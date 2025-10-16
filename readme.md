@@ -4,6 +4,8 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 **📘 [User Guide](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | **🔧 [Lorebook Converter](lorebookconverter.html)**
 
+> Note: Localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
+
 ## FAQ 
 ### Where is the entry in the Extensions menu?
 Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
