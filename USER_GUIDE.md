@@ -236,7 +236,7 @@ Don't worry - you don't need to configure everything! Here are the settings that
 
 ---
 
-## 7. Getting Help & More Info
+## 💡 Getting Help & More Info
 
 - **More detailed info:** [readme.md](readme.md)
 - **Latest updates:** [changelog.md](changelog.md)
