@@ -31,6 +31,7 @@ export const settingsTemplate = Handlebars.compile(`
         {{else}}
         <div id="stmb-memory-status" class="info-block">
             <span>📊 <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: <span data-i18n="STMemoryBooks_NoMemoriesProcessed">No memories have been processed for this chat yet</span> <small data-i18n="STMemoryBooks_SinceVersion">(since updating to version 3.6.2 or higher.)</small></span>
+            <small data-i18n="STMemoryBooks_AutoSummaryNote">Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.</small>
         </div>
         {{/if}}
 
@@ -136,7 +137,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
             </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc">Automatically run /nextmemory after a specified number of messages.</small>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc">Automatically run /nextmemory after a specified number of messages.</small>            
         </div>
 
         <div class="world_entry_form_control">
