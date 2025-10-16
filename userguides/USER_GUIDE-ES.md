@@ -156,6 +156,7 @@ Los **Prompts Laterales** son fragmentos de prompt reutilizables que mejoran la 
 - **Vista Previa en Vivo**: Ve qué prompts están activos para el chat actual
 
 ### 💡 **Ejemplos de Plantillas**
+- Biblioteca de Plantillas de Prompts Laterales (importa este JSON): [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
 - **"Centrarse en el diálogo y las interacciones de los personajes"**
 - **"Rastrear el estado actual de la misión y los objetivos"**
 - **"Anotar cualquier detalle de construcción de mundo mencionado"**

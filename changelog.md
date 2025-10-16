@@ -1,19 +1,26 @@
 # 📕 Memory Books - Version History
 
 **← [Back to README](readme.md)**
+## v4.6.7 (October 16, 2025)
+- **Housekeeping:** Doc rewrite, reorganizing files
+  - reorganized resources into a `/resources` folder
+  - rewrote documentation for clarity
+  - reran translations
+- **Internationalization:** Added Korean, Malay, Indonesian
+- **Bugfix:** Localisation broke auto-create (SORRY)--fixed
 
 ## v4.6.6 (October 15, 2025)
 - **Internationalization:** Added Japanese, Russian, Spanish
 - **Bugfix:** Fix bad-end on "finish-reason: stop"
 
 ## v4.6.5 (October 15, 2025)
-- **Internationalization:** Added zh-cn (Chinese) locale data
+- **Internationalization:** Added simplified/traditional Chinese
 
 ## v4.6.4 (October 14, 2025)
 - **Bugfix:** Chevron broke, fixed
 
 ## v4.6.3 (October 14, 2025)
-- **Side Prompts Import is Now Additive:** Importing `stmb_side_prompts.json` merges side prompts into your current set instead of replacing them. Existing prompts are preserved and only new prompts are added. If an imported prompt’s key conflicts with an existing one, the imported prompt is renamed using its display name (with a numeric suffix if needed).
+- **Side Prompts Import is Now Additive:** Importing merges side prompts into your current set instead of replacing them. Existing prompts are preserved and only new prompts are added. If an imported prompt’s key conflicts with an existing one, the imported prompt is renamed using its display name (with a numeric suffix if needed).
 - **Import UI Feedback Improved:** The import dialog now displays how many prompts were added and how many were renamed due to key conflicts.
 - **Manual /sideprompt Name Lookup Greatly Improved:** The `/sideprompt` command now matches side prompts by key, display name, or slug (hyphen/underscore/space-insensitive, case-insensitive). For example, `/sideprompt cast-of-characters`, `/sideprompt cast`, and `/sideprompt "Cast of Characters"` will all run the same prompt if it exists.
 - **Bugfix:** Resolves issues where built-in prompts could not be run by slug or key, or where imports previously overwrote existing side prompts.
