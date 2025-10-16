@@ -1,0 +1,198 @@
+{
+  "version": 2,
+  "prompts": {
+    "plot-points-extractor": {
+      "key": "plot-points-extractor",
+      "name": "Plotpoints",
+      "enabled": true,
+      "prompt": "You are a skilled story and plot analyst. \nPhase 1: Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. Previous scenes have been included to provide context. \nPhase 2: Generate a token-efficient but accurate story thread report, sorted oldest to newest in terms of in-game time. If there is a tie, sort tied results from completed to active. If a report already exists in context, update it instead of recreating. \nPhase 3: If the response will exceed 2000 tokens, trim the response by removing oldest completed plot points.",
+      "responseFormat": "=== Plot Points ===\n(as of [point in the story when this analysis was done])\n\n[Overarching Plot Arc]\n(2-3 sentence summary of the superobjective or major plot)\n\n[Thread #1 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n\n[Thread #2 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n...\n\n-- Plot Hooks --\n- (new or potential plot hooks)\n\n-- Character Dynamics --\n- current status of {{user}}'s/{{char}}'s relationships with NPCs\n\n===End Plot Points===",
+      "settings": {
+        "withMemories": true,
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 10,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        },
+        "previousMemoriesCount": 0
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-10T19:02:42.574Z",
+      "updatedAt": "2025-10-16T04:40:52.143Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "Status",
+      "enabled": false,
+      "prompt": "You are a skilled relationship analysis expert. Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}}. Note: If there is a pre-existing status report, you must update it with edits and changes as required.",
+      "responseFormat": "===STATUS REPORT===\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with lovefactor and lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR (0-10 where 0 is none and 10 is convinced they are The One)\n- Romantic attraction score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the score\n\n### LUSTFACTOR\n- Sexual attraction score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the score\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)\n===END STATUS REPORT===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        },
+        "previousMemoriesCount": 0
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-12T09:16:21.677Z",
+      "updatedAt": "2025-10-16T04:45:18.922Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "Assess",
+      "enabled": true,
+      "prompt": "You are a personal assistant who maintains CRM-like notes for {{char}}. Assess the interaction between {{char}} and {{user}} in this scene. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it, including editing erroneous information if found. Try to keep this list maximally token-efficient and focused on the most important things.",
+      "responseFormat": "Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-12T09:37:55.487Z",
+      "updatedAt": "2025-10-14T06:02:07.350Z"
+    },
+    "cast-of-characters": {
+      "key": "cast-of-characters",
+      "name": "Cast of Characters",
+      "enabled": true,
+      "prompt": "You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. \nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.\nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.",
+      "responseFormat": "===NPC WHO'S WHO===\n(In order of importance to the plot)\n\nPerson 1: 1-2 sentence desription\nPerson 2: 1-2 sentence desription\n===END NPC WHO'S WHO===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 900,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-13T22:01:59.212Z",
+      "updatedAt": "2025-10-14T06:02:54.624Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Character Development",
+      "enabled": false,
+      "prompt": "Steps: \n1. Review the provided scenes. \n2. Identify and describe changes in {{char}}'s personality due to their experiences.\n3. Write a short description of how {{char}} has changed due to what events.",
+      "responseFormat": "==={{char}}'s Character Growth===\n(short description of key changes\n===END {{char}}'s Character Growth===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "previousMemoriesCount": 0,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 0,
+          "orderMode": "auto",
+          "orderValue": 100,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        }
+      },
+      "triggers": {
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-16T17:20:04.111Z",
+      "updatedAt": "2025-10-16T17:21:12.113Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Mood and Atmosphere",
+      "enabled": true,
+      "prompt": "Review the accompanying scene and describe what the current mood and atmosphere is like.",
+      "responseFormat": "===CURRENT MOOD===\n(quick description of current mood and atmosphere)\n===END CURRENT MOOD===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "previousMemoriesCount": 0,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 0,
+          "orderMode": "auto",
+          "orderValue": 100,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        }
+      },
+      "triggers": {
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-16T17:22:36.929Z",
+      "updatedAt": "2025-10-16T17:22:36.929Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Worldbuilding",
+      "enabled": true,
+      "prompt": "Describe what the current state of the world is, especially changes due to the plot or scene.",
+      "responseFormat": "===WORLD NOTES===\n(short but dense note here)\n===END WORLD NOTES===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "previousMemoriesCount": 0,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 0,
+          "orderMode": "auto",
+          "orderValue": 100,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        }
+      },
+      "triggers": {
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-16T17:24:26.783Z",
+      "updatedAt": "2025-10-16T17:24:26.783Z"
+    }
+  }
+}
