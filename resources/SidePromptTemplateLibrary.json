@@ -34,7 +34,7 @@
     "status": {
       "key": "status",
       "name": "Status",
-      "enabled": false,
+      "enabled": true,
       "prompt": "You are a skilled relationship analysis expert. Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}}. Note: If there is a pre-existing status report, you must update it with edits and changes as required.",
       "responseFormat": "===STATUS REPORT===\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with lovefactor and lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR (0-10 where 0 is none and 10 is convinced they are The One)\n- Romantic attraction score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the score\n\n### LUSTFACTOR\n- Sexual attraction score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the score\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)\n===END STATUS REPORT===",
       "settings": {
@@ -58,14 +58,14 @@
         ]
       },
       "createdAt": "2025-10-12T09:16:21.677Z",
-      "updatedAt": "2025-10-16T04:45:18.922Z"
+      "updatedAt": "2025-10-16T17:49:26.028Z"
     },
     "assess": {
       "key": "assess",
       "name": "Assess",
       "enabled": true,
       "prompt": "You are a personal assistant who maintains CRM-like notes for {{char}}. Assess the interaction between {{char}} and {{user}} in this scene. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it, including editing erroneous information if found. Try to keep this list maximally token-efficient and focused on the most important things.",
-      "responseFormat": "Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
+      "responseFormat": "=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
       "settings": {
         "overrideProfileEnabled": false,
         "lorebook": {
@@ -75,7 +75,8 @@
           "orderValue": 30,
           "preventRecursion": true,
           "delayUntilRecursion": false
-        }
+        },
+        "previousMemoriesCount": 0
       },
       "triggers": {
         "onAfterMemory": {
@@ -86,7 +87,7 @@
         ]
       },
       "createdAt": "2025-10-12T09:37:55.487Z",
-      "updatedAt": "2025-10-14T06:02:07.350Z"
+      "updatedAt": "2025-10-16T17:48:53.885Z"
     },
     "cast-of-characters": {
       "key": "cast-of-characters",
@@ -193,6 +194,35 @@
       },
       "createdAt": "2025-10-16T17:24:26.783Z",
       "updatedAt": "2025-10-16T17:24:26.783Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Body Position Tracker",
+      "enabled": true,
+      "prompt": "Review the scene and then fill in or update the Body Position Tracker for {{char}}. If {{char}} is multiple people, fill one in for each person. Be concise and token-efficient but prioritize accuracy and logistical correctness. Do not violate the laws of physics.",
+      "responseFormat": "==={{char}} Body Position Tracker===\nOverall position & state of clothing: \nHead: \nLeft arm/hand: \nRight arm/hand: \nTorso/chest/back: \nLeft leg/foot: \nRight leg/foot: \n===END {{char}} Body Position Tracker===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "previousMemoriesCount": 0,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 0,
+          "orderMode": "auto",
+          "orderValue": 100,
+          "preventRecursion": true,
+          "delayUntilRecursion": false
+        }
+      },
+      "triggers": {
+        "onInterval": {
+          "visibleMessages": 4
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2025-10-16T22:59:28.370Z",
+      "updatedAt": "2025-10-16T23:17:41.798Z"
     }
   }
 }
