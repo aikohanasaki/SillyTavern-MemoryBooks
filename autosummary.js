@@ -176,28 +176,10 @@ export async function checkAutoSummaryTrigger() {
             console.log('STMemoryBooks: Cleared auto-summary postpone flag');
         }
 
-        // Calculate the scene range for auto-summary
-        let sceneStart, sceneEnd;
-        if (highestProcessed === null) {
-            // First memory - include everything from start
-            sceneStart = 0;
-            sceneEnd = currentLastMessage;
-        } else {
-            // Start from the message after the last processed memory
-            sceneStart = highestProcessed + 1;
-            sceneEnd = currentLastMessage;
-        }
-
-        console.log(`STMemoryBooks: Auto-summary triggered - creating memory for range ${sceneStart}-${sceneEnd}`);
-
-        // Set scene markers for the range we want to process
-        stmbData.sceneStart = sceneStart;
-        stmbData.sceneEnd = sceneEnd;
-        saveMetadataForCurrentContext();
-
-        // Use the existing memory creation system via slash command
+        // Use the new arc analysis system to propose chapters for auto-summary
+        console.log('STMemoryBooks: Auto-summary triggered - calling Arc Analyzer.');
         const { executeSlashCommands } = await import('../../../slash-commands.js');
-        await executeSlashCommands('/creatememory');
+        await executeSlashCommands('/autochapter');
     } catch (error) {
         console.error('STMemoryBooks: Error in auto-summary trigger check:', error);
     }
@@ -252,6 +234,9 @@ export function clearAutoSummaryState() {
     if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
         clearScene();
         // RESET auto-summary count so it starts fresh from this point
-        saveMetadataForCurrentContext('autoSummaryLastMessageCount', chat.length);
+        if (chat_metadata.STMemoryBooks) {
+            chat_metadata.STMemoryBooks.autoSummaryLastMessageCount = chat.length;
+        }
+        saveMetadataForCurrentContext();
     }
 }

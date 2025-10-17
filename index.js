@@ -11,6 +11,7 @@ import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats 
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
 import { generateLorebookName, autoCreateLorebook } from './autocreate.js';
+import { analyzeArcs } from './arc-analyzer.js';
 import { checkAutoSummaryTrigger, handleAutoSummaryMessageReceived, handleAutoSummaryGroupFinished, clearAutoSummaryState } from './autosummary.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
 import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
@@ -1683,20 +1684,20 @@ function handleSettingsPopupClose(popup) {
         
         // Save token warning threshold
         const tokenWarningThresholdInput = popupElement.querySelector('#stmb-token-warning-threshold');
-        const tokenWarningThreshold = tokenWarningThresholdInput ? 
-            parseInt(tokenWarningThresholdInput.value) || 30000 : 
+        const tokenWarningThreshold = tokenWarningThresholdInput ?
+            parseInt(tokenWarningThresholdInput.value) || 30000 :
             settings.moduleSettings.tokenWarningThreshold || 30000;
 
         // Save default memory count
         const defaultMemoryCountInput = popupElement.querySelector('#stmb-default-memory-count');
-        const defaultMemoryCount = defaultMemoryCountInput ? 
-            parseInt(defaultMemoryCountInput.value) || 0 : 
+        const defaultMemoryCount = defaultMemoryCountInput ?
+            parseInt(defaultMemoryCountInput.value) || 0 :
             settings.moduleSettings.defaultMemoryCount || 0;
 
         // Save unhidden entries count
         const unhiddenEntriesCountInput = popupElement.querySelector('#stmb-unhidden-entries-count');
-        const unhiddenEntriesCount = unhiddenEntriesCountInput ? 
-            parseInt(unhiddenEntriesCountInput.value) || 0 : 
+        const unhiddenEntriesCount = unhiddenEntriesCountInput ?
+            parseInt(unhiddenEntriesCountInput.value) || 0 :
             settings.moduleSettings.unhiddenEntriesCount || 0;
 
         const manualModeEnabled = popupElement.querySelector('#stmb-manual-mode-enabled')?.checked ?? settings.moduleSettings.manualModeEnabled;
@@ -1880,6 +1881,12 @@ function processExistingMessages() {
  * Register slash commands using proper SlashCommand classes
  */
 function registerSlashCommands() {
+    const autoChapterCmd = SlashCommand.fromProps({
+        name: 'autochapter',
+        callback: analyzeArcs,
+        helpString: 'Analyze chat for narrative arcs and suggest chapter endpoints.'
+    });
+
     const createMemoryCmd = SlashCommand.fromProps({
         name: 'creatememory',
         callback: handleCreateMemoryCommand,
@@ -1905,6 +1912,7 @@ function registerSlashCommands() {
         helpString: 'Create memory from end of last memory to current message'
     });
 
+    SlashCommandParser.addCommandObject(autoChapterCmd);
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -1914,7 +1922,7 @@ function registerSlashCommands() {
  * Create main menu UI
  */
 function createUI() {
-    const menuItem = $(`
+    const memoryBooksButton = $(`
         <div id="stmb-menu-item-container" class="extension_container interactable" tabindex="0">            
             <div id="stmb-menu-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
                 <div class="fa-fw fa-solid fa-book extensionsMenuExtensionButton"></div>
@@ -1922,11 +1930,20 @@ function createUI() {
             </div>
         </div>
     `);
-    
-    
+
+    const autoChapterButton = $(`
+        <div id="stmb-autochapter-item-container" class="extension_container interactable" tabindex="0">            
+            <div id="stmb-autochapter-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
+                <div class="fa-fw fa-solid fa-magic extensionsMenuExtensionButton"></div>
+                <span>Auto Chapter</span>
+            </div>
+        </div>
+    `);
+
     const extensionsMenu = $('#extensionsMenu');
     if (extensionsMenu.length > 0) {
-        extensionsMenu.append(menuItem);
+        extensionsMenu.append(memoryBooksButton);
+        extensionsMenu.append(autoChapterButton);
     } else {
         console.warn('STMemoryBooks: Extensions menu not found - retrying initialization');
     }
@@ -1936,7 +1953,8 @@ function createUI() {
  * Setup event listeners
  */
 function setupEventListeners() {
-    $(document).on('click', SELECTORS.menuItem, showSettingsPopup);
+    $(document).on('click', '#stmb-menu-item', showSettingsPopup);
+    $(document).on('click', '#stmb-autochapter-item', () => executeSlashCommands('/autochapter'));
     
     eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
     eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
