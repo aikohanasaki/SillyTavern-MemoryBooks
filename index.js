@@ -53,7 +53,7 @@ export function isMemoryProcessing() {
     return isProcessingMemory;
 }
 
-export { currentProfile, validateLorebook };
+export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
 

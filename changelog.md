@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.9 (October 16, 2025)
+- **Tweak:** change PromptManager to SummaryPromptManager to avoid confusion w ST base prompt manager
+
 ## v4.6.8 (October 16, 2025)
 - **Enhancement:** Add previews to side prompts
 - **Bugfix:** Interval checkbox fixed
