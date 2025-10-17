@@ -225,7 +225,7 @@
     "STMemoryBooks_NotSet": "설정되지 않음",
     "STMemoryBooks_ProfileNamePlaceholder": "프로필 이름",
     "STMemoryBooks_ModelAndTempSettings": "모델 및 온도 설정:",
-    "STMemoryBooks_ModelHint": "모델의 경우, 정확한 모델 ID를 복사하여 붙여넣으세요. 예: <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code> 등.",
+    "STMemoryBooks_ModelHint": "모델의 경우, 정확한 모델 ID를 복사하여 붙여넣으세요. 예: `gemini-2.5-pro`, `deepseek/deepseek-r1-0528:free`, `gpt-4o-mini-2024-07-18` 등.",
     "STMemoryBooks_ModelPlaceholder": "여기에 모델 ID 붙여넣기",
     "STMemoryBooks_APIProvider": "API/제공자:",
     "STMemoryBooks_CustomAPI": "사용자 지정 API",

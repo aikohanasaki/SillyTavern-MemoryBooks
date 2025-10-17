@@ -225,7 +225,7 @@
     "STMemoryBooks_NotSet": "No Establecido",
     "STMemoryBooks_ProfileNamePlaceholder": "Nombre del perfil",
     "STMemoryBooks_ModelAndTempSettings": "Ajustes de Modelo y Temperatura:",
-    "STMemoryBooks_ModelHint": "Para el modelo, copie y pegue el ID exacto del modelo, ej. <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code>, etc.",
+    "STMemoryBooks_ModelHint": "Para el modelo, copie y pegue el ID exacto del modelo, ej. `gemini-2.5-pro`, `deepseek/deepseek-r1-0528:free`, `gpt-4o-mini-2024-07-18`, etc.",
     "STMemoryBooks_ModelPlaceholder": "Pegue el ID del modelo aquí",
     "STMemoryBooks_APIProvider": "API/Proveedor:",
     "STMemoryBooks_CustomAPI": "API Personalizada",

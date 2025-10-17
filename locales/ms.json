@@ -225,7 +225,7 @@
     "STMemoryBooks_NotSet": "Tidak Ditetapkan",
     "STMemoryBooks_ProfileNamePlaceholder": "Nama profil",
     "STMemoryBooks_ModelAndTempSettings": "Tetapan Model & Suhu:",
-    "STMemoryBooks_ModelHint": "Untuk model, salin-tampal ID model yang tepat, cth. <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code>, dll.",
+    "STMemoryBooks_ModelHint": "Untuk model, salin-tampal ID model yang tepat, cth. `gemini-2.5-pro`, `deepseek/deepseek-r1-0528:free`, `gpt-4o-mini-2024-07-18`, dll.",
     "STMemoryBooks_ModelPlaceholder": "Tampalkan ID model di sini",
     "STMemoryBooks_APIProvider": "API/Penyedia:",
     "STMemoryBooks_CustomAPI": "API Tersuai",
