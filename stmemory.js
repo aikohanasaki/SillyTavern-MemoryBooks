@@ -1,5 +1,5 @@
 import { getTokenCount } from '../../../tokenizers.js';
-import { getEffectivePrompt, getCurrentApiInfo, isValidPreset } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { groups } from '../../../group-chats.js';
@@ -44,7 +44,7 @@ function getCurrentCompletionEndpoint() {
 *@param {string} opts.model*
 *@param {string} opts.prompt*
 *@param {number} [opts.temperature]*
-*@param {string} [opts.api] - 'openai', 'claude', 'google', 'custom', etc.*
+*@param {string} [opts.api] - 'openai', 'claude', 'makersuite', 'custom', etc. (Note: ST uses 'makersuite' as the canonical provider key; avoid other aliases).*
 *@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
 *@returns {Promise<{text: string, full: object}>}*
@@ -124,6 +124,34 @@ export async function sendRawCompletionRequest({
     }
 
     return { text, full: data };
+}
+
+/**
+ * Unified request wrapper for side prompts and memory generation.
+ * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object }} opts
+ * @returns {Promise<{ text: string, full: object }>}
+ */
+export async function requestCompletion({
+    api,
+    model,
+    prompt,
+    temperature = 0.7,
+    endpoint = null,
+    apiKey = null,
+    extra = {},
+}) {
+    // Delegate all provider-specific shaping to sendRawCompletionRequest which already
+    // handles: full-manual, custom (custom_model_id + oai_settings.custom_url), and normal providers.
+    return await sendRawCompletionRequest({
+        model,
+        prompt,
+        temperature,
+        api,
+        endpoint,
+        apiKey,
+        extra,
+    });
 }
 
 /**
@@ -259,6 +287,42 @@ function extractFromClaudeStructuredFormat(aiResponse) {
     }
 }
 
+function likelyUnbalanced(raw) {
+    try {
+        let braces = 0, brackets = 0, inString = false, escape = false;
+        for (let i = 0; i < raw.length; i++) {
+            const ch = raw[i];
+            if (inString) {
+                if (escape) {
+                    escape = false;
+                } else if (ch === '\\') {
+                    escape = true;
+                } else if (ch === '"') {
+                    inString = false;
+                }
+            } else {
+                if (ch === '"') { inString = true; }
+                else if (ch === '{') braces++;
+                else if (ch === '}') braces--;
+                else if (ch === '[') brackets++;
+                else if (ch === ']') brackets--;
+            }
+            if (braces < 0 || brackets < 0) return true;
+        }
+        return inString || braces !== 0 || brackets !== 0;
+    } catch {
+        return false;
+    }
+}
+
+function endsNicely(text) {
+    const t = (text || '').trim();
+    if (!t) return true;
+    if (/[.!?]["'’\)\]]?$/.test(t)) return true;
+    if (t.length >= 80 && !/[.!?]$/.test(t)) return false;
+    return true;
+}
+
 /**
  * Parses AI response as JSON with robust error handling
  * @private
@@ -307,6 +371,11 @@ function parseAIJsonResponse(aiResponse) {
         cleanResponse = cleanResponse.slice(0, jsonEnd + 1);
     }
 
+    // Pre-parse structural sanity
+    if (likelyUnbalanced(cleanResponse)) {
+        throw new AIResponseError('AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.');
+    }
+
     // Now try to parse
     try {
         const parsed = JSON.parse(cleanResponse);
@@ -319,13 +388,28 @@ function parseAIJsonResponse(aiResponse) {
             throw new AIResponseError('AI response missing title field');
         }
         if (!Array.isArray(parsed.keywords)) {
-            throw new AIResponseError('AI response missing or invalid keywords array');
+            throw new AIResponseError('AI response missing or invalid keywords array. Try increasing Max Response Length.');
         }
+
+        
+
         return parsed;
+
     } catch (parseError) {
+        if (parseError instanceof AIResponseError) {
+            throw parseError;
+        }
+        // On pure parse failure, optionally detect mid-sentence cutoff in raw text
+        try {
+            const textCandidate = (typeof cleanResponse === 'string' ? cleanResponse.trim() : '');
+            if (textCandidate && textCandidate.length >= 80 && !endsNicely(textCandidate)) {
+                throw new AIResponseError('AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.');
+            }
+        } catch (e) {
+            if (e instanceof AIResponseError) throw e;
+        }
         throw new AIResponseError(
-            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. ` +
-            `Parse error: ${parseError.message}`
+            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. Try increasing Max Response Length. Parse error: ${parseError.message}`
         );
     }
 }
@@ -352,60 +436,17 @@ async function generateMemoryWithAI(promptString, profile) {
 
     const conn = profile?.effectiveConnection || profile?.connection || {};
 
-    const apiToSource = {
-        openai: 'openai',
-        claude: 'claude',
-        openrouter: 'openrouter',
-        ai21: 'ai21',
-        makersuite: 'makersuite',
-        google: 'makersuite',
-        vertexai: 'vertexai',
-        mistralai: 'mistralai',
-        custom: 'custom',
-        cohere: 'cohere',
-        perplexity: 'perplexity',
-        groq: 'groq',
-        nanogpt: 'nanogpt',
-        deepseek: 'deepseek',
-        aimlapi: 'aimlapi',
-        xai: 'xai',
-        pollinations: 'pollinations',
-        moonshot: 'moonshot',
-        fireworks: 'fireworks',
-        cometapi: 'cometapi',
-        azure_openai: 'azure_openai',
-        'full-manual': 'custom',
-    };
-    const chatCompletionSource = apiToSource[conn.api] || 'openai';
-
-    const genOptions = {
-        // Pass both to satisfy different ST versions
-        prompt: promptString,
-        quiet_prompt: promptString,
-
-        skipWIAN: true,
-        stopping_strings: ['\n\n---', '\n\n```', '\n\nHuman:', '\n\nAssistant:'],
-
-        // Force provider/engine
-        chat_completion_source: chatCompletionSource,
-        model: conn.model || undefined,
-        custom_model_id: chatCompletionSource === 'custom' ? (conn.model || undefined) : undefined,
-        temperature: (typeof conn.temperature === 'number') ? Math.max(0, Math.min(2, conn.temperature)) : undefined,
-
-        // Defeat model/temp locks in many setups
-        bypass_mtlock: true,
-        force_model: true,
-    };
 
     try {
         // Prepare connection info
-        const apiType = conn.api || getCurrentApiInfo().api;
+        // Note: ST base uses 'makersuite' as the canonical provider key for this source.
+        const apiType = normalizeCompletionSource(conn.api || getCurrentApiInfo().api);
         const extra = {};
         if (oai_settings.openai_max_tokens) {
             extra.max_tokens = oai_settings.openai_max_tokens;
         }
 
-        const { text: aiResponseText } = await sendRawCompletionRequest({
+        const { text: aiResponseText, full: aiFull } = await sendRawCompletionRequest({
             model: conn.model,
             prompt: promptString,
             temperature: conn.temperature,
@@ -414,6 +455,16 @@ async function generateMemoryWithAI(promptString, profile) {
             apiKey: conn.apiKey,
             extra: extra
         });
+
+        // Detect provider-reported truncation before attempting to parse
+        const finishReason = aiFull?.choices?.[0]?.finish_reason || aiFull?.finish_reason || aiFull?.stop_reason;
+        const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
+        if (fr.includes('length') || fr.includes('max')) {
+            throw new AIResponseError('Model response appears truncated (provider finish_reason). Please increase Max Response Length.');
+        }
+        if (aiFull?.truncated === true) {
+            throw new AIResponseError('Model response appears truncated (provider flag). Please increase Max Response Length.');
+        }
 
         const jsonResult = parseAIJsonResponse(aiResponseText);
 
@@ -477,7 +528,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 version: '2.0'
             },
             suggestedKeys: processedMemory.suggestedKeys,
-            titleFormat: profile.useDynamicSTSettings ?
+            titleFormat: (profile.useDynamicSTSettings || (profile?.connection?.api === 'current_st')) ?
                 (extension_settings.STMemoryBooks?.titleFormat || '[000] - {{title}}') :
                 (profile.titleFormat || '[000] - {{title}}'),
             lorebookSettings: {
@@ -530,11 +581,11 @@ function validateInputs(compiledScene, profile) {
         throw new Error('Invalid or empty compiled scene data provided.');
     }
 
-    // profile must have a non-empty prompt OR a valid preset
+    // profile must have a non-empty prompt OR a preset key
     const hasPrompt = typeof profile?.prompt === 'string' && profile.prompt.trim().length > 0;
-    const hasValidPreset = typeof profile?.preset === 'string' && isValidPreset(profile.preset);
+    const hasPreset = typeof profile?.preset === 'string' && profile.preset.trim().length > 0;
 
-    if (!hasPrompt && !hasValidPreset) {
+    if (!hasPrompt && !hasPreset) {
         throw new InvalidProfileError('Invalid profile configuration. You must set either a custom prompt or a valid preset.');
     }
 }
@@ -592,25 +643,7 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
  * @returns {Promise<{input: number, output: number, total: number}>} An object with token counts.
  */
 async function estimateTokenUsage(promptString) {
-    try {
-        const inputTokens = await getTokenCount(promptString);
-        // A reasonable estimate for a memory summary output
-        const estimatedOutputTokens = 300; // Slightly higher for JSON structure
-        
-        return {
-            input: inputTokens,
-            output: estimatedOutputTokens,
-            total: inputTokens + estimatedOutputTokens
-        };
-    } catch (error) {
-        const charCount = promptString.length;
-        const inputTokens = Math.ceil(charCount / 4); // A common approximation
-        return {
-            input: inputTokens,
-            output: 300,
-            total: inputTokens + 300
-        };
-    }
+    return await estimateTokens(promptString, { estimatedOutput: 300 });
 }
 
 /**
@@ -624,7 +657,7 @@ async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
     
     // Use utils.js to get the effective prompt (now designed for JSON output)
-    const systemPrompt = getEffectivePrompt(profile);
+    const systemPrompt = await getEffectivePrompt(profile);
     
     // Use substituteParams to allow for standard macros like {{char}} and {{user}}
     const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);

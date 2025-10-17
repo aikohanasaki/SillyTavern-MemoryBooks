@@ -2,6 +2,116 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.9 (October 16, 2025)
+- **Tweak:** change PromptManager to SummaryPromptManager to avoid confusion w ST base prompt manager
+
+## v4.6.8 (October 16, 2025)
+- **Enhancement:** Add previews to side prompts
+- **Bugfix:** Interval checkbox fixed
+
+## v4.6.7 (October 16, 2025)
+- **Housekeeping:** Doc rewrite, reorganizing files
+  - reorganized resources into a `/resources` folder
+  - rewrote documentation for clarity
+  - reran translations
+- **Internationalization:** Added Korean, Malay, Indonesian
+- **Bugfix:** Localisation broke auto-create (SORRY)--fixed
+
+## v4.6.6 (October 15, 2025)
+- **Internationalization:** Added Japanese, Russian, Spanish
+- **Bugfix:** Fix bad-end on "finish-reason: stop"
+
+## v4.6.5 (October 15, 2025)
+- **Internationalization:** Added simplified/traditional Chinese
+
+## v4.6.4 (October 14, 2025)
+- **Bugfix:** Chevron broke, fixed
+
+## v4.6.3 (October 14, 2025)
+- **Side Prompts Import is Now Additive:** Importing merges side prompts into your current set instead of replacing them. Existing prompts are preserved and only new prompts are added. If an imported prompt’s key conflicts with an existing one, the imported prompt is renamed using its display name (with a numeric suffix if needed).
+- **Import UI Feedback Improved:** The import dialog now displays how many prompts were added and how many were renamed due to key conflicts.
+- **Manual /sideprompt Name Lookup Greatly Improved:** The `/sideprompt` command now matches side prompts by key, display name, or slug (hyphen/underscore/space-insensitive, case-insensitive). For example, `/sideprompt cast-of-characters`, `/sideprompt cast`, and `/sideprompt "Cast of Characters"` will all run the same prompt if it exists.
+- **Bugfix:** Resolves issues where built-in prompts could not be run by slug or key, or where imports previously overwrote existing side prompts.
+- **Feature:** Side Prompts now support including previous memories for context (up to 7, matching main memory popup).
+  - Added per-template "Previous memories for context" option to Side Prompt editor and new prompt dialog.
+  - When set, up to 7 previous memories are fetched from the active lorebook and included in the side prompt input (in the same block format as main memory context).
+  - Cap enforced in both UI and runtime.
+  - Fully backward compatible; existing prompts default to 0.
+
+## v4.6.2 (October 14, 2025)
+- **Side Prompts Bugfix:** Swapped EM/AN
+
+## v4.6.1 (October 13, 2025)
+- **Better Errors:** Added "increase max tokens" hints for truncated JSON.
+
+## v4.6.0 (October 13, 2025)
+- **Side Prompts Enhancements:** Major improvements to the Side Prompts system
+  - **Template System:** Added comprehensive template library for side prompts with pre-built, reusable prompt snippets
+  - **Template Management:** Enhanced side prompts manager with improved template handling and organization
+  - **Bug Fixes:** Fixed issue with dropping prompts that lack names, improving reliability of prompt management
+  - **Stabilization Work:** Multiple rounds of stabilization improvements to the Side Prompts feature
+  - **User Experience:** Improved template selection and management workflow for better usability
+- **Code Quality:** Enhanced error handling and validation in side prompts functionality
+- **Feature Maturation:** Side Prompts feature moved from alpha status toward production readiness
+
+## v4.5.1 (October 12, 2025)
+- **Unicode & Title Handling Overhaul:**
+  - Title and entry sanitization now matches SillyTavern’s behavior. Only Unicode control characters are stripped; all printable Unicode (including emoji, CJK, etc.) is allowed.
+  - **Consistent Template Substitution:** Title generation and preview support all common numbering tokens, with template logic and extraction fully aligned.
+- **Documentation & Policy Alignment:**
+  - **charset.md:** Updated documentation to reflect the new permissive sanitization policy, with examples and migration notes. Fixed malformed emoji headings.
+- **Code Quality & Review:**
+  - Reviewed and cleaned up all uncommitted changes.
+  - Removed an outdated “invalid characters” comment in addlore.js.
+  - Confirmed no runtime TODOs remain (only in .git sample hook).
+- **Side Prompt & Lorebook Stability:**
+  - Side prompt UI and connection logic reviewed for parameter handling, concurrency limits, and error reporting.
+- **Readiness:** All changes vetted and ready for release.
+
+## v4.5.0 (October 11, 2025)
+- **Internationalization Work:** i18n tagging proceeding.
+- **Cleanup:** Removed unused functions.
+
+## v4.4.2 (October 11, 2025)
+- **Add maximize buttons:** added to prompt editors.
+
+## v4.4.1 (October 11, 2025)
+- **Summarize Prompt Fix:** fixed prompt missing bullet-point instructions.
+
+## v4.4.0 (October 2025)
+- **New Feature: Side Prompts (ALPHA, UNDER DEVELOPMENT)**
+  - Define reusable, supplemental prompt snippets that augment memory/summary generation without modifying global presets
+  - Per‑context overrides: enable/disable and customize prompts for the current chat/context while keeping global defaults intact
+  - New Side Prompts popup with quick toggles, inline editing, and clear visibility of active prompts
+  - Side Prompts Manager for organizing prompts (create, duplicate, rename, delete, import/export)
+  - Fully integrated into the generation pipeline; behavior remains unchanged unless Side Prompts are explicitly enabled
+
+- **Enhancements / Refactors:**
+  - Consolidated LLM generation code paths for maintainability and reduced duplication (utils.js, stmemory.js)
+  - Dynamic Profile handling refactor (profile lookup/location and related flows)
+  - Functional enhancement: Auto‑unhide during scene compilation — when creating a scene, the extension issues “/unhide x‑y” so previously hidden messages are included and can be recompiled
+
+- **Bug Fixes:** 
+  - Fixed `current_st` locking issue in profile management
+  - Re‑implemented `/scenememory` handling to restore expected range‑based memory creation
+
+## v4.3.2 (October 2025)
+- **Bug Fixes:** 
+  - introduced new bug to /scenememory that I had to fix
+
+## v4.3.1 (October 2025)
+- **Bug Fixes:** 
+  - fix custom prompt manager not reading from stmb-summary-prompts.json
+  - trying to fix scene memory AGAIN.
+
+## v4.3.0 (October 2025)
+- **Feature:** Added "Summary Prompt Manager" — a UI and backend system to create, edit, duplicate, delete, import, and export summary prompt presets. Presets control summary generation and can be assigned per profile.
+    - Access via settings (“🧩 Summary Prompt Manager” button).
+    - Presets are editable, exportable/importable as JSON, and can be applied to profiles.
+- **Enhancement:** Improved “Dynamic Profile” and migration logic for backward compatibility.
+- **Fix:** Resolved race condition in scene memory creation.
+- **Other:** Minor logic tweaks and UI polish.
+
 ## v4.2.5 (October 2025)
 - Fix: Eliminated “EventEmitter: Cannot listen to undefined event” by removing the nonexistent `CHAT_LOADED` subscription and consolidating initialization into `CHAT_CHANGED` and `init()`.
 - Cleanup: Removed legacy API compatibility gating (`checkApiCompatibility`, `isExtensionEnabled`, and API change listener). The extension is now always active and profile-driven.
@@ -157,27 +267,8 @@
   - Visual indicators for chat-bound vs manual lorebook configurations
   - One-click lorebook selection and clearing for manual mode
   - Contextual help text and status messages throughout the interface
-- **Session Management & Cleanup:** Robust handling of orphaned scene markers
-  - Automatic detection and cleanup of stale scene markers from previous sessions
-  - Prevents interference with auto-summary and memory creation processes
-  - Clear logging and user notifications when cleanup occurs
-  - Scene marker validation on chat load to ensure clean state
-- **Auto-Summary System Improvements:** Enhanced reliability and debugging capabilities
-  - Improved trigger logic that works correctly regardless of message count parity
-  - Enhanced logging throughout the auto-summary process for better troubleshooting
-  - Added `window.STMemoryBooks_debugAutoSummary()` developer function for manual debugging
-  - Better handling of postponed auto-summary states and cleanup
-  - Improved lorebook validation with user-friendly selection popups when lorebooks are missing
-- **UI/UX Enhancements:** Streamlined lorebook management experience
-  - Real-time status updates in settings popup
-  - Contextual button text (Select vs Change) based on current state
   - Automatic UI refresh after lorebook selection or mode changes
   - Better visual feedback for manual vs automatic mode operation
-- **Code Quality & Reliability:** Enhanced error handling and state management
-  - Improved scene marker cleanup after successful memory creation
-  - Better null-safe operations throughout lorebook handling
-  - Enhanced debugging output for troubleshooting auto-summary issues
-  - More robust handling of edge cases in lorebook selection and validation
 
 ## v3.6.3 (September 2025)
 - **Memory Preview Feature:** Added comprehensive memory preview system allowing users to review and edit memories before adding to lorebook

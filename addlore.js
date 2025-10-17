@@ -10,8 +10,22 @@ import { extension_settings } from '../../../extensions.js';
 import { moment } from '../../../../lib.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
+import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
+
+/**
+ * Local i18n wrapper to maintain legacy i18n(key, fallback, params) calls.
+ * Uses SillyTavern translate(fallback, key) and simple {{var}} interpolation.
+ */
+function i18n(key, fallback, params) {
+    const localized = translate(fallback, key);
+    if (!params) return localized;
+    return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
+        const v = params[p1];
+        return v !== undefined && v !== null ? String(v) : '';
+    });
+}
 
 /**
  * Parse scene range from metadata string format "start-end"
@@ -43,14 +57,14 @@ function parseSceneRange(sceneRange) {
  */
 async function executeHideCommand(hideCommand, context = '') {
     const contextStr = context ? ` (${context})` : '';
-    console.log(`${MODULE_NAME}: Executing hide command${contextStr}: ${hideCommand}`);
+    console.log(i18n('addlore.log.executingHideCommand', `${MODULE_NAME}: Executing hide command${contextStr}: {{hideCommand}}`, { hideCommand }));
     await executeSlashCommands(hideCommand);
 }
 
 /**
  * Helper function to convert old boolean auto-hide settings to new dropdown format
  */
-function getAutoHideMode(moduleSettings) {
+function getAutoHideMode(moduleSettings = {}) {
     // Handle new format
     if (moduleSettings.autoHideMode) {
         return moduleSettings.autoHideMode;
@@ -68,15 +82,15 @@ function getAutoHideMode(moduleSettings) {
 
 // Default title formats that users can select from
 const DEFAULT_TITLE_FORMATS = [
-    '[000] - {{title}} ({{profile}})',
-    '{{date}} [000] 🎬{{title}}, {{messages}} msgs',
-    '[000] {{date}} - {{char}} Memory',
-    '[00] - {{user}} & {{char}} {{scene}}',
-    '🧠 [000] ({{messages}} msgs)',
-    '📚 Memory #[000] - {{profile}} {{date}} {{time}}',
-    '[000] - {{scene}}: {{title}}',
-    '[000] - {{title}} ({{scene}})',
-    '[000] - {{title}}'
+    '[000] - {{title}} ({{profile}})', // i18n('addlore.titleFormats.0', '[000] - {{title}} ({{profile}})')
+    '{{date}} [000] 🎬{{title}}, {{messages}} msgs', // i18n('addlore.titleFormats.1', '{{date}} [000] 🎬{{title}}, {{messages}} msgs')
+    '[000] {{date}} - {{char}} Memory', // i18n('addlore.titleFormats.2', '[000] {{date}} - {{char}} Memory')
+    '[00] - {{user}} & {{char}} {{scene}}', // i18n('addlore.titleFormats.3', '[00] - {{user}} & {{char}} {{scene}}')
+    '🧠 [000] ({{messages}} msgs)', // i18n('addlore.titleFormats.4', '🧠 [000] ({{messages}} msgs)')
+    '📚 Memory #[000] - {{profile}} {{date}} {{time}}', // i18n('addlore.titleFormats.5', '📚 Memory #[000] - {{profile}} {{date}} {{time}}')
+    '[000] - {{scene}}: {{title}}', // i18n('addlore.titleFormats.6', '[000] - {{scene}}: {{title}}')
+    '[000] - {{title}} ({{scene}})', // i18n('addlore.titleFormats.7', '[000] - {{title}} ({{scene}})')
+    '[000] - {{title}}' // i18n('addlore.titleFormats.8', '[000] - {{title}}')
 ];
 
 /**
@@ -96,21 +110,20 @@ const DEFAULT_TITLE_FORMATS = [
  * @returns {Promise<Object>} Result object with success status and details
  */
 export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
-    const context = await getContext();
 
     try {
         if (!memoryResult?.content) {
-            throw new Error('Invalid memory result: missing content');
+            throw new Error(i18n('addlore.errors.invalidContent', 'Invalid memory result: missing content'));
         }
 
         if (!lorebookValidation?.valid || !lorebookValidation.data) {
-            throw new Error('Invalid lorebook validation data');
+            throw new Error(i18n('addlore.errors.invalidLorebookValidation', 'Invalid lorebook validation data'));
         }
 
         const settings = extension_settings.STMemoryBooks || {};
         let titleFormat = memoryResult.titleFormat;
         if (!titleFormat) {
-            titleFormat = settings.titleFormat || '[000] - {{title}}';
+            titleFormat = settings.titleFormat || i18n('addlore.titleFormats.8', '[000] - {{title}}');
         }
         const refreshEditor = settings.moduleSettings?.refreshEditor !== false;
 
@@ -126,7 +139,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
 
         if (!newEntry) {
-            throw new Error('Failed to create new lorebook entry');
+            throw new Error(i18n('addlore.errors.createEntryFailed', 'Failed to create new lorebook entry'));
         }
 
         const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
@@ -134,7 +147,10 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
 
         if (settings.moduleSettings?.showNotifications !== false) {
-            toastr.success(`Memory "${entryTitle}" added to "${lorebookValidation.name}"`, 'STMemoryBooks');
+            toastr.success(
+                i18n('addlore.toast.added', 'Memory "{{entryTitle}}" added to "{{lorebookName}}"', { entryTitle: entryTitle, lorebookName: lorebookValidation.name }),
+                i18n('addlore.toast.title', 'STMemoryBooks')
+            );
         }
         
         if (refreshEditor) {
@@ -151,17 +167,20 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
 
                 if (!sceneData) {
-                    console.warn(`${MODULE_NAME}: Auto-hide skipped - invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
-                    toastr.warning('Auto-hide skipped: invalid scene range metadata', 'STMemoryBooks');
+                    console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: memoryResult.metadata?.sceneRange }));
+                    toastr.warning(
+                        i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
+                        i18n('addlore.toast.title', 'STMemoryBooks')
+                    );
                 } else {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
 
                     if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide 0-${sceneEnd}`, 'all mode - complete');
+                        await executeHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
                     } else {
                         const hideEndIndex = sceneEnd - unhiddenCount;
                         if (hideEndIndex >= 0) {
-                            await executeHideCommand(`/hide 0-${hideEndIndex}`, 'all mode - partial');
+                            await executeHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
                         }
                         // Auto-hide silently skipped if not enough messages
                     }
@@ -169,8 +188,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             } else if (autoHideMode === 'last') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
                 if (!sceneData) {
-                    console.warn(`${MODULE_NAME}: Auto-hide skipped - invalid scene range: "${memoryResult.metadata?.sceneRange}"`);
-                    toastr.warning('Auto-hide skipped: invalid scene range metadata', 'STMemoryBooks');
+                    console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: memoryResult.metadata?.sceneRange }));
+                    toastr.warning(
+                        i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
+                        i18n('addlore.toast.title', 'STMemoryBooks')
+                    );
                 } else {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
                     const sceneSize = sceneEnd - sceneStart + 1;
@@ -178,11 +200,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     if (unhiddenCount >= sceneSize) {
                         // No hiding needed - want to keep more messages than scene contains
                     } else if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, 'last mode - hide all');
+                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
                     } else {
                         const hideEnd = sceneEnd - unhiddenCount;
                         if (hideEnd >= sceneStart) {
-                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, 'last mode - partial');
+                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
                         }
                         // Auto-hide silently skipped if not enough scene messages
                     }
@@ -198,20 +220,23 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             entryTitle: entryTitle,
             lorebookName: lorebookValidation.name,
             keywordCount: memoryResult.suggestedKeys?.length || 0,
-            message: `Memory successfully added to "${lorebookValidation.name}"`
+            message: i18n('addlore.result.added', 'Memory successfully added to "{{lorebookName}}"', { lorebookName: lorebookValidation.name })
         };
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Failed to add memory to lorebook:`, error);
+        console.error(i18n('addlore.log.addFailed', `${MODULE_NAME}: Failed to add memory to lorebook:`), error);
         
         if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
-            toastr.error(`Failed to add memory: ${error.message}`, 'STMemoryBooks');
+            toastr.error(
+                i18n('addlore.toast.addFailed', 'Failed to add memory: {{message}}', { message: error.message }),
+                i18n('addlore.toast.title', 'STMemoryBooks')
+            );
         }
         
         return {
             success: false,
             error: error.message,
-            message: `Failed to add memory to lorebook: ${error.message}`
+            message: i18n('addlore.result.addFailed', 'Failed to add memory to lorebook: {{message}}', { message: error.message })
         };
     }
 }
@@ -361,12 +386,12 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
     // Template substitutions
     const metadata = memoryResult.metadata || {};
     const substitutions = {
-        '{{title}}': memoryResult.extractedTitle || 'Memory',
-        '{{scene}}': `Scene ${metadata.sceneRange || 'Unknown'}`,
-        '{{char}}': metadata.characterName || 'Unknown',
-        '{{user}}': metadata.userName || 'User',
+        '{{title}}': memoryResult.extractedTitle || i18n('addlore.defaults.title', 'Memory'),
+        '{{scene}}': i18n('addlore.defaults.scene', 'Scene {{range}}', { range: metadata.sceneRange || i18n('common.unknown', 'Unknown') }),
+        '{{char}}': metadata.characterName || i18n('common.unknown', 'Unknown'),
+        '{{user}}': metadata.userName || i18n('addlore.defaults.user', 'User'),
         '{{messages}}': metadata.messageCount || 0,
-        '{{profile}}': metadata.profileUsed || 'Unknown',
+        '{{profile}}': metadata.profileUsed || i18n('common.unknown', 'Unknown'),
         '{{date}}': moment().format('YYYY-MM-DD'),
         '{{time}}': moment().format('HH:mm:ss')
     };
@@ -376,7 +401,6 @@ function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
         title = title.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
     });
 
-    // Clean up the title (remove invalid characters not in allowed list)
     title = sanitizeTitle(title);
 
     return title;
@@ -624,11 +648,10 @@ export function identifyMemoryEntries(lorebookData) {
  * @returns {string} The sanitized title
  */
 function sanitizeTitle(title) {
-    // Allowed characters: `-`, ` `, `.`, `(`, `)`, `#`, `[`, `]`, `{`, `}`, `:`, `;`, `,`
-    // Plus alphanumeric characters and standard emoji
-    const allowedCharsPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\{\}:;,&+!\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
-    
-    return title.replace(allowedCharsPattern, '').trim() || 'Auto Memory';
+    // Follow SillyTavern: allow all printable Unicode; strip control characters only.
+    // Control chars include C0/C1 ranges: U+0000–U+001F and U+007F–U+009F
+    const cleaned = String(title ?? '').replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+    return cleaned || i18n('addlore.sanitize.fallback', 'Auto Memory');
 }
 
 /**
@@ -636,7 +659,7 @@ function sanitizeTitle(title) {
  * @returns {Array<string>} Array of title format options
  */
 export function getDefaultTitleFormats() {
-    return [...DEFAULT_TITLE_FORMATS];
+    return DEFAULT_TITLE_FORMATS.map((fmt, idx) => i18n(`addlore.titleFormats.${idx}`, fmt));
 }
 
 /**
@@ -649,16 +672,17 @@ export function validateTitleFormat(format) {
     const warnings = [];
     
     if (!format || typeof format !== 'string') {
-        errors.push('Title format must be a non-empty string');
+        errors.push(i18n('addlore.titleFormat.errors.nonEmpty', 'Title format must be a non-empty string'));
         return { valid: false, errors, warnings };
     }
     
-    // Check for disallowed characters (excluding template placeholders)
-    const withoutPlaceholders = format.replace(/\{\{[^}]+\}\}/g, '').replace(/\[0+\]/g, '');
-    const disallowedPattern = /[^a-zA-Z0-9\-\s\.\(\)#\[\]\{\}:;,\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    // Check for control characters (excluding template placeholders)
+    // We follow SillyTavern: only control characters are removed during sanitization
+    const withoutPlaceholders = format.replace(/\{\{[^}]+\}\}/g, '');
+    const controlCharsPattern = /[\u0000-\u001F\u007F-\u009F]/g;
     
-    if (disallowedPattern.test(withoutPlaceholders)) {
-        warnings.push('Title contains characters that will be removed during sanitization');
+    if (controlCharsPattern.test(withoutPlaceholders)) {
+        warnings.push(i18n('addlore.titleFormat.warnings.sanitization', 'Title contains characters that will be removed during sanitization'));
     }
     
     // Check for valid placeholder syntax
@@ -668,25 +692,32 @@ export function validateTitleFormat(format) {
     });
     
     if (invalidPlaceholders && invalidPlaceholders.length > 0) {
-        warnings.push(`Unknown placeholders: ${invalidPlaceholders.join(', ')}`);
+        warnings.push(i18n('addlore.titleFormat.warnings.unknownPlaceholders', 'Unknown placeholders: {{placeholders}}', { placeholders: invalidPlaceholders.join(', ') }));
     }
-    
-    // Check for valid numbering patterns (now supports multiple formats)
+
+    // Check for valid numbering patterns (accept multiple token shapes, including wrapped forms)
     const numberingPatterns = format.match(/[\[\({#][^0\]\)}]*[\]\)}]?/g);
     if (numberingPatterns) {
-        const invalidNumbering = numberingPatterns.filter(pattern => {
-            return !/^[\[\({#]0+[\]\)}]?$/.test(pattern);
-        });
-        
+        const allowed = [
+            /^\[0+\]$/,          // [000]
+            /^\(0+\)$/,          // (000)
+            /^\{0+\}$/,          // {000}
+            /^#0+$/,             // #000
+            /^#\[0+\]$/,         // #[000]
+            /^\(\[0+\]\)$/,      // ([000])
+            /^\{\[0+\]\}$/       // {[000]}
+        ];
+        const invalidNumbering = numberingPatterns.filter(pat => !allowed.some(rx => rx.test(pat)));
+
         if (invalidNumbering.length > 0) {
-            warnings.push(`Invalid numbering patterns: ${invalidNumbering.join(', ')}. Use [0], [00], [000], (0), {0}, #0 etc.`);
+            warnings.push(i18n('addlore.titleFormat.warnings.invalidNumbering', 'Invalid numbering patterns: {{patterns}}. Use [0], [00], [000], (0), {0}, #0, #[0], ([0]), {[0]} etc.', { patterns: invalidNumbering.join(', ') }));
         }
     }
-    
+
     if (format.length > 100) {
-        warnings.push('Title format is very long and may be truncated');
+        warnings.push(i18n('addlore.titleFormat.warnings.tooLong', 'Title format is very long and may be truncated'));
     }
-    
+
     return {
         valid: errors.length === 0,
         errors,
@@ -702,13 +733,13 @@ export function validateTitleFormat(format) {
  */
 export function previewTitle(titleFormat, sampleData = {}) {
     const defaultSampleData = {
-        extractedTitle: 'Sample Memory Title',
+        extractedTitle: i18n('addlore.preview.sampleTitle', 'Sample Memory Title'),
         metadata: {
             sceneRange: '15-23',
             characterName: 'Alice',
             userName: 'Bob',
             messageCount: 9,
-            profileUsed: 'Summary'
+            profileUsed: i18n('addlore.preview.sampleProfile', 'Summary')
         }
     };
     
@@ -724,7 +755,7 @@ export function previewTitle(titleFormat, sampleData = {}) {
     try {
         return generateEntryTitle(titleFormat, mergedData, mockLorebookData);
     } catch (error) {
-        return `Error: ${error.message}`;
+        return i18n('addlore.preview.error', 'Error: {{message}}', { message: error.message });
     }
 }
 
@@ -741,16 +772,16 @@ export function getRangeFromMemoryEntry(entry) {
  */
 export async function getLorebookStats() {
     try {
-        const context = getContext();
+        const context = await getContext();
         const lorebookName = context.chatMetadata[METADATA_KEY];
         
         if (!lorebookName) {
-            return { valid: false, error: 'No lorebook bound to chat' };
+            return { valid: false, error: i18n('addlore.stats.errors.noBinding', 'No lorebook bound to chat') };
         }
         
         const lorebookData = await loadWorldInfo(lorebookName);
         if (!lorebookData) {
-            return { valid: false, error: 'Failed to load lorebook' };
+            return { valid: false, error: i18n('addlore.stats.errors.loadFailed', 'Failed to load lorebook') };
         }
         
         const entries = Object.values(lorebookData.entries || {});
@@ -774,7 +805,7 @@ export async function getLorebookStats() {
         };
         
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error getting lorebook stats:`, error);
+        console.error(i18n('addlore.log.getStatsError', `${MODULE_NAME}: Error getting lorebook stats:`), error);
         return { valid: false, error: error.message };
     }
 }
@@ -785,33 +816,33 @@ export async function getLorebookStats() {
  */
 function updateHighestMemoryProcessed(memoryResult) {
     try {
-        console.log(`${MODULE_NAME}: updateHighestMemoryProcessed called with:`, memoryResult);
+        console.log(i18n('addlore.log.updateHighestCalled', `${MODULE_NAME}: updateHighestMemoryProcessed called with:`), memoryResult);
 
         // Extract the end message number from the scene range
         const sceneRange = memoryResult.metadata?.sceneRange;
-        console.log(`${MODULE_NAME}: sceneRange extracted:`, sceneRange);
+        console.log(i18n('addlore.log.sceneRangeExtracted', `${MODULE_NAME}: sceneRange extracted:`), sceneRange);
 
         if (!sceneRange) {
-            console.warn(`${MODULE_NAME}: No scene range found in memory result, cannot update highest processed`);
+            console.warn(i18n('addlore.warn.noSceneRange', `${MODULE_NAME}: No scene range found in memory result, cannot update highest processed`));
             return;
         }
 
         const rangeParts = sceneRange.split('-');
         if (rangeParts.length !== 2) {
-            console.warn(`${MODULE_NAME}: Invalid scene range format: ${sceneRange}`);
+            console.warn(i18n('addlore.warn.invalidSceneRangeFormat', `${MODULE_NAME}: Invalid scene range format: {{range}}`, { range: sceneRange }));
             return;
         }
 
         const endMessage = parseInt(rangeParts[1], 10);
         if (isNaN(endMessage)) {
-            console.warn(`${MODULE_NAME}: Invalid end message number: ${rangeParts[1]}`);
+            console.warn(i18n('addlore.warn.invalidEndMessage', `${MODULE_NAME}: Invalid end message number: {{end}}`, { end: rangeParts[1] }));
             return;
         }
 
         // Get current scene markers (which handles both single and group chats)
         const sceneMarkers = getSceneMarkers();
         if (!sceneMarkers) {
-            console.warn(`${MODULE_NAME}: Could not get scene markers to update highest processed`);
+            console.warn(i18n('addlore.warn.noSceneMarkers', `${MODULE_NAME}: Could not get scene markers to update highest processed`));
             return;
         }
 
@@ -821,9 +852,188 @@ function updateHighestMemoryProcessed(memoryResult) {
         // Save the metadata (works for both group chats and single-character chats)
         saveMetadataForCurrentContext();
 
-        console.log(`${MODULE_NAME}: Set highest memory processed to message ${endMessage}`);
+        console.log(i18n('addlore.log.setHighest', `${MODULE_NAME}: Set highest memory processed to message {{endMessage}}`, { endMessage }));
 
     } catch (error) {
-        console.error(`${MODULE_NAME}: Error updating highest memory processed:`, error);
+        console.error(i18n('addlore.log.updateHighestError', `${MODULE_NAME}: Error updating highest memory processed:`), error);
     }
+}
+
+/**
+ * Get a lorebook entry by its comment/title (exact match).
+ * @param {Object} lorebookData
+ * @param {string} title
+ * @returns {Object|null}
+ */
+export function getEntryByTitle(lorebookData, title) {
+    if (!lorebookData || !lorebookData.entries || !title) return null;
+    const entries = Object.values(lorebookData.entries);
+    for (const entry of entries) {
+        if ((entry.comment || '') === title) {
+            return entry;
+        }
+    }
+    return null;
+}
+
+/**
+ * Batch upsert lorebook entries with a single save (and optional single reload).
+ * Each item is staged into the provided lorebookData in-memory object; then
+ * saveWorldInfo is called exactly once for the whole batch.
+ *
+ * @param {string} lorebookName
+ * @param {Object} lorebookData
+ * @param {Array<{title: string, content: string, defaults?: Object, metadataUpdates?: Object, entryOverrides?: Object}>} items
+ * @param {Object} [options]
+ * @param {boolean} [options.refreshEditor=true]
+ * @returns {Promise<Array<{title:string, uid:number, created:boolean}>>}
+ */
+export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, items, options = {}) {
+    const {
+        refreshEditor = true,
+    } = options;
+
+    if (!lorebookName || !lorebookData || !Array.isArray(items)) {
+        throw new Error(i18n('addlore.upsert.errors.invalidArgs', 'Invalid arguments to upsertLorebookEntriesBatch'));
+    }
+
+    const results = [];
+
+    for (const it of items) {
+        if (!it || !it.title) continue;
+
+        const title = String(it.title);
+        const content = it.content != null ? String(it.content) : '';
+        const defaults = it.defaults || {};
+        const metadataUpdates = it.metadataUpdates || {};
+        const entryOverrides = it.entryOverrides || {};
+
+        let entry = getEntryByTitle(lorebookData, title);
+        let created = false;
+
+        if (!entry) {
+            entry = createWorldInfoEntry(lorebookName, lorebookData);
+            if (!entry) {
+                throw new Error(i18n('addlore.upsert.errors.createFailed', 'Failed to create lorebook entry'));
+            }
+
+            // Apply defaults for new entry
+            entry.vectorized = !!defaults.vectorized;
+            entry.selective = !!defaults.selective;
+            if (typeof defaults.order === 'number') entry.order = defaults.order;
+            if (typeof defaults.position === 'number') entry.position = defaults.position;
+
+            entry.key = entry.key || [];
+            entry.keysecondary = entry.keysecondary || [];
+            entry.disable = false;
+
+            created = true;
+        }
+
+        // Normalize expected fields for both new and existing entries
+        entry.key = Array.isArray(entry.key) ? entry.key : [];
+        entry.keysecondary = Array.isArray(entry.keysecondary) ? entry.keysecondary : [];
+        if (typeof entry.disable !== 'boolean') entry.disable = false;
+
+        // Update core fields
+        entry.comment = title;
+        entry.content = content;
+
+        // Apply metadata updates
+        for (const [k, v] of Object.entries(metadataUpdates)) {
+            entry[k] = v;
+        }
+
+        // Apply entry overrides (both on create and update)
+        for (const [k, v] of Object.entries(entryOverrides)) {
+            entry[k] = v;
+        }
+
+        results.push({ title, uid: entry.uid, created });
+    }
+
+    // Single save for the whole batch
+    await saveWorldInfo(lorebookName, lorebookData, true);
+
+    if (refreshEditor) {
+        reloadEditor(lorebookName);
+    }
+
+    return results;
+}
+
+/**
+ * Upsert a lorebook entry by title. If exists, update content and optional metadata;
+ * otherwise create a new entry using provided defaults.
+ * This does NOT mark entries as STMemoryBooks memories.
+ *
+ * @param {string} lorebookName
+ * @param {Object} lorebookData
+ * @param {string} title
+ * @param {string} content
+ * @param {Object} options
+ * @param {Object} [options.defaults]  Defaults for new entries (vectorized, selective, order, position, etc.)
+ * @param {Object} [options.metadataUpdates]  Key/value pairs to set on entry (e.g., STMB_tracker_lastMsgId)
+ * @param {Object} [options.entryOverrides]  Fields to set/update on the entry for both create and update (e.g., constant, vectorized, preventRecursion, delayUntilRecursion, order)
+ * @param {boolean} [options.refreshEditor=true]
+ * @returns {Promise<{uid:number, created:boolean}>}
+ */
+export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, title, content, options = {}) {
+    const {
+        defaults = {
+            vectorized: true,
+            selective: true,
+            order: 100,
+            position: 0,
+        },
+        metadataUpdates = {},
+        refreshEditor = true,
+        entryOverrides = {},
+    } = options;
+
+    if (!lorebookName || !lorebookData || !title) {
+        throw new Error(i18n('addlore.upsert.errors.invalidArgs', 'Invalid arguments to upsertLorebookEntryByTitle'));
+    }
+
+    let entry = getEntryByTitle(lorebookData, title);
+    let created = false;
+
+    if (!entry) {
+        entry = createWorldInfoEntry(lorebookName, lorebookData);
+        if (!entry) {
+                throw new Error(i18n('addlore.upsert.errors.createFailed', 'Failed to create lorebook entry'));
+        }
+        // Apply defaults for new entry
+        entry.vectorized = !!defaults.vectorized;
+        entry.selective = !!defaults.selective;
+        if (typeof defaults.order === 'number') entry.order = defaults.order;
+        if (typeof defaults.position === 'number') entry.position = defaults.position;
+
+        entry.key = entry.key || [];
+        entry.keysecondary = entry.keysecondary || [];
+        entry.disable = false;
+
+        created = true;
+    }
+
+    // Update core fields
+    entry.comment = title;
+    entry.content = content != null ? String(content) : '';
+
+    // Apply metadata updates
+    for (const [k, v] of Object.entries(metadataUpdates || {})) {
+        entry[k] = v;
+    }
+
+    // Apply entry overrides (both on create and update)
+    for (const [k, v] of Object.entries(entryOverrides || {})) {
+        entry[k] = v;
+    }
+
+    await saveWorldInfo(lorebookName, lorebookData, true);
+    if (refreshEditor) {
+        reloadEditor(lorebookName);
+    }
+
+    return { uid: entry.uid, created };
 }

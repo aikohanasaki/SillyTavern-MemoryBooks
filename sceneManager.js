@@ -3,6 +3,8 @@ import { saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { getCurrentMemoryBooksContext } from './utils.js';
 import { groups, editGroup } from '../../../group-chats.js';
+import { SCENE_MANAGEMENT } from './constants.js';
+import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SceneManager';
 
@@ -122,7 +124,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     if (newStart !== null && newEnd === null) {
         // Start set, no end - all messages after start could be valid end points
         // Limit the range to avoid scanning thousands of messages
-        const maxScan = Math.min(newStart + 100, chat.length - 1);
+        const maxScan = Math.min(newStart + SCENE_MANAGEMENT.MAX_SCAN_RANGE, chat.length - 1);
         for (let i = newStart + 1; i <= maxScan; i++) {
             affectedIds.add(i);
         }
@@ -131,7 +133,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     if (newEnd !== null && newStart === null) {
         // End set, no start - all messages before end could be valid start points
         // Limit the range to avoid scanning thousands of messages  
-        const minScan = Math.max(newEnd - 100, 0);
+        const minScan = Math.max(newEnd - SCENE_MANAGEMENT.MAX_SCAN_RANGE, 0);
         for (let i = minScan; i < newEnd; i++) {
             affectedIds.add(i);
         }
@@ -140,7 +142,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     // Add messages that had valid-point classes in the old state but won't in the new state
     if (oldStart !== null && oldEnd === null && newStart !== null && newEnd !== null) {
         // Transitioning from "start only" to "complete scene" - need to clear valid-end-point from messages after newEnd
-        const maxScan = Math.min(oldStart + 100, chat.length - 1);
+        const maxScan = Math.min(oldStart + SCENE_MANAGEMENT.MAX_SCAN_RANGE, chat.length - 1);
         for (let i = newEnd + 1; i <= maxScan; i++) {
             affectedIds.add(i);
         }
@@ -148,7 +150,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
     
     if (oldEnd !== null && oldStart === null && newStart !== null && newEnd !== null) {
         // Transitioning from "end only" to "complete scene" - need to clear valid-start-point from messages before newStart
-        const minScan = Math.max(oldEnd - 100, 0);
+        const minScan = Math.max(oldEnd - SCENE_MANAGEMENT.MAX_SCAN_RANGE, 0);
         for (let i = minScan; i < newStart; i++) {
             affectedIds.add(i);
         }
@@ -158,8 +160,8 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
         return { min: null, max: null, needsFullUpdate: false };
     }
     
-    // If we're affecting more than 200 messages, fall back to full update
-    if (affectedIds.size > 200) {
+    // If we're affecting more than MAX_AFFECTED_MESSAGES, fall back to full update
+    if (affectedIds.size > SCENE_MANAGEMENT.MAX_AFFECTED_MESSAGES) {
         return { needsFullUpdate: true };
     }
     
@@ -173,6 +175,8 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
 
 /**
  * Set scene marker with validation
+ * Returns a Promise that resolves immediately after state is committed to cache
+ * (The debounced save to disk happens asynchronously in the background)
  */
 export function setSceneMarker(messageId, type) {
     const markers = getSceneMarkers();
@@ -193,6 +197,35 @@ export function setSceneMarker(messageId, type) {
     // Persist to metadata and update DOM to match committed state
     saveMetadataForCurrentContext();
     updateAffectedButtonStates(oldStart, oldEnd, newState.start, newState.end);
+    
+    // Return resolved Promise to signal that cache is updated and getSceneData() will work
+    return Promise.resolve();
+}
+
+/**
+ * Atomically set both scene markers (start and end) and keep cache consistent.
+ * This avoids stale currentSceneState overwriting freshly-set metadata.
+ */
+export function setSceneRange(startId, endId) {
+    const markers = getSceneMarkers();
+
+    // Store previous state for optimization
+    const oldStart = markers.sceneStart ?? null;
+    const oldEnd = markers.sceneEnd ?? null;
+
+    // Normalize to numbers
+    const s = Number(startId);
+    const e = Number(endId);
+
+    // Update both metadata and cache simultaneously
+    markers.sceneStart = s;
+    markers.sceneEnd = e;
+    currentSceneState.start = s;
+    currentSceneState.end = e;
+
+    // Persist and update only affected DOM
+    saveMetadataForCurrentContext();
+    updateAffectedButtonStates(oldStart, oldEnd, s, e);
 }
 
 /**
@@ -354,39 +387,47 @@ export function handleMessageDeletion(deletedId, settings) {
     const oldEnd = markers.sceneEnd ?? null;
     let hasChanges = false;
     let toastrMessage = '';
+    let startChanged = false;
+    let endChanged = false;
 
-    // If start marker was deleted, clear entire scene
-    if (markers.sceneStart === deletedId) {
-        markers.sceneStart = null;
-        markers.sceneEnd = null; // Also clear the end marker
+    if (deletedId === markers.sceneStart && deletedId === markers.sceneEnd) {
+        // Deleting a message that is both start and end
+        clearScene();
         hasChanges = true;
-        toastrMessage = 'Scene cleared due to start marker deletion';
-
-    // If end marker was deleted, just clear the end marker
-    } else if (markers.sceneEnd === deletedId) {
+        toastrMessage = translate('Scene cleared due to start marker deletion', 'STMemoryBooks_Toast_SceneClearedStart');
+    } else if (deletedId === markers.sceneStart) {
+        // Deleting the start message
+        markers.sceneStart = null;
+        hasChanges = true;
+        toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
+    } else if (deletedId === markers.sceneEnd) {
+        // Deleting the end message
         markers.sceneEnd = null;
         hasChanges = true;
-        toastrMessage = 'Scene end point cleared due to message deletion';
+        toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
+    } else if (markers.sceneStart !== null && deletedId > markers.sceneStart && (markers.sceneEnd === null || deletedId < markers.sceneEnd)) {
+        // Deleting a message within the scene (or after start but before end is set)
+        if (markers.sceneStart !== null) markers.sceneStart--;
+        if (markers.sceneEnd !== null) markers.sceneEnd--;
+        hasChanges = true;
+        toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
+    }
+    
+    // If a message *before* the start marker is deleted, shift the start marker down.
+    if (markers.sceneStart !== null && markers.sceneStart > deletedId) {
+        markers.sceneStart--;
+        startChanged = true;
+    }
 
-    } else {
-        let startChanged = false;
-        let endChanged = false;
+    // If a message *before* the end marker is deleted, shift the end marker down.
+    if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
+        markers.sceneEnd--;
+        endChanged = true;
+    }
 
-        // If a message *before* the start marker is deleted, shift the start marker down.
-        if (markers.sceneStart !== null && markers.sceneStart > deletedId) {
-            markers.sceneStart--;
-            startChanged = true;
-        }
-        // If a message *before* the end marker is deleted, shift the end marker down.
-        if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
-            markers.sceneEnd--;
-            endChanged = true;
-        }
-
-        if (startChanged || endChanged) {
-            hasChanges = true;
-            toastrMessage = 'Scene markers adjusted due to message deletion.';
-        }
+    if (startChanged || endChanged) {
+        hasChanges = true;
+        toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
     }
 
     if (hasChanges) {
@@ -433,17 +474,17 @@ export function createSceneButtons(messageElement) {
     
     // Create start button
     const startButton = document.createElement('div');
-    startButton.title = 'Mark Scene Start';
+    startButton.title = translate('Mark Scene Start', 'STMemoryBooks_MarkSceneStart');
     startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
     startButton.setAttribute('tabindex', '0');
-    startButton.setAttribute('data-i18n', '[title]Mark Scene Start');
-    
+    startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
+
     // Create end button
     const endButton = document.createElement('div');
-    endButton.title = 'Mark Scene End';
+    endButton.title = translate('Mark Scene End', 'STMemoryBooks_MarkSceneEnd');
     endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
     endButton.setAttribute('tabindex', '0');
-    endButton.setAttribute('data-i18n', '[title]Mark Scene End');
+    endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
     
     // Add event listeners
     startButton.addEventListener('click', (e) => {
@@ -462,43 +503,9 @@ export function createSceneButtons(messageElement) {
 }
 
 /**
- * Estimate token count for scene (fallback implementation)
- */
-function estimateSceneTokens(startId, endId) {
-    let totalChars = 0;
-    
-    for (let i = startId; i <= endId; i++) {
-        const message = chat[i];
-        if (message && !message.is_system) {
-            totalChars += (message.mes || '').length;
-            totalChars += (message.name || '').length;
-        }
-    }
-    
-    // Rough estimation: 4 characters per token
-    return Math.ceil(totalChars / 4);
-}
-
-/**
- * Estimate token count for scene using enhanced method
- */
-function estimateSceneTokensEnhanced(startId, endId) {
-    try {
-        // Create a temporary scene request for estimation
-        const tempRequest = createSceneRequest(startId, endId);
-        const tempCompiled = compileScene(tempRequest);
-        return estimateTokenCount(tempCompiled);
-    } catch (error) {
-        // Fallback to simple estimation
-        console.warn(`${MODULE_NAME}: Using fallback token estimation (char/4). Enhanced estimation failed:`, error.message);
-        return estimateSceneTokens(startId, endId);
-    }
-}
-
-/**
  * Get scene data with message excerpts
  */
-export function getSceneData() {
+export async function getSceneData() {
     const markers = getSceneMarkers();
     
     if (markers.sceneStart === null || markers.sceneEnd === null) {
@@ -516,17 +523,33 @@ export function getSceneData() {
         const content = message.mes || '';
         return content.length > 100 ? content.substring(0, 100) + '...' : content;
     };
-    
-    return {
-        sceneStart: markers.sceneStart,
-        sceneEnd: markers.sceneEnd,
-        startExcerpt: getExcerpt(startMessage),
-        endExcerpt: getExcerpt(endMessage),
-        startSpeaker: startMessage.name || 'Unknown',
-        endSpeaker: endMessage.name || 'Unknown',
-        messageCount: markers.sceneEnd - markers.sceneStart + 1,
-        estimatedTokens: estimateSceneTokensEnhanced(markers.sceneStart, markers.sceneEnd)
-    };
+
+    // Build a temporary compiled scene for consistent token estimation
+    try {
+        const tempRequest = createSceneRequest(markers.sceneStart, markers.sceneEnd);
+        const tempCompiled = compileScene(tempRequest);
+        const estimatedTokens = await estimateTokenCount(tempCompiled);
+        
+        return {
+            sceneStart: markers.sceneStart,
+            sceneEnd: markers.sceneEnd,
+            startExcerpt: getExcerpt(startMessage),
+            endExcerpt: getExcerpt(endMessage),
+            startSpeaker: startMessage.name || 'Unknown',
+            endSpeaker: endMessage.name || 'Unknown',
+            messageCount: markers.sceneEnd - markers.sceneStart + 1,
+            estimatedTokens
+        };
+    } catch (e) {
+        console.warn('STMemoryBooks-SceneManager: getSceneData failed:', e);
+        try {
+            const msg = e?.message || '';
+            if (msg.includes('No visible messages')) {
+                toastr?.warning?.(translate('Selected range has no visible messages. Adjust start/end.', 'STMemoryBooks_NoVisibleMessages'), 'STMemoryBooks');
+            }
+        } catch {}
+        return null;
+    }
 }
 
 /**
@@ -574,4 +597,3 @@ export function updateSceneStateCache() {
 export function getCurrentSceneState() {
     return { ...currentSceneState };
 }
-

@@ -1,12 +1,14 @@
-import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2, saveMetadata, getCurrentChatId } from '../../../../script.js';
+import { eventSource, event_types, chat, chat_metadata, saveSettingsDebounced, characters, this_chid, name1, name2, saveMetadata, getCurrentChatId, settings as st_settings } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { extension_settings, saveMetadataDebounced } from '../../../extensions.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { SlashCommandEnumValue } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { METADATA_KEY, world_names, loadWorldInfo, createNewWorldInfo } from '../../../world-info.js';
 import { lodash, Handlebars, DOMPurify } from '../../../../lib.js';
+import { escapeHtml } from '../../../utils.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
 import { createMemory } from './stmemory.js';
 import { addMemoryToLorebook, getDefaultTitleFormats, identifyMemoryEntries, getRangeFromMemoryEntry } from './addlore.js';
@@ -14,11 +16,36 @@ import { generateLorebookName, autoCreateLorebook } from './autocreate.js';
 import { analyzeArcs } from './arc-analyzer.js';
 import { checkAutoSummaryTrigger, handleAutoSummaryMessageReceived, handleAutoSummaryGroupFinished, clearAutoSummaryState } from './autosummary.js';
 import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles, validateAndFixProfiles } from './profileManager.js';
-import { getSceneMarkers, setSceneMarker, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
+import { getSceneMarkers, setSceneMarker, setSceneRange, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
-import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getCurrentModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
+import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getUIModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
+import * as SummaryPromptManager from './summaryPromptManager.js';
+import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
+import { evaluateTrackers, runAfterMemory, runSidePrompt } from './sidePrompts.js';
+import { showSidePromptsPopup } from './sidePromptsPopup.js';
+import { listTemplates } from './sidePromptsManager.js';
+import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
+import { t as __st_t_tag, translate, applyLocale, addLocaleData, getCurrentLocale } from '../../../i18n.js';
+import { localeData, loadLocaleJson } from './locales.js';
+
+/**
+ * Async effective prompt that respects Summary Prompt Manager overrides
+ */
+async function getEffectivePromptAsync(profile) {
+    try {
+        if (profile?.prompt && String(profile.prompt).trim()) {
+            return profile.prompt;
+        }
+        if (profile?.preset) {
+            return await SummaryPromptManager.getPrompt(profile.preset);
+        }
+    } catch (e) {
+        console.warn(translate('STMemoryBooks: getEffectivePromptAsync fallback due to error:', 'index.warn.getEffectivePromptAsync'), e);
+    }
+    return DEFAULT_PROMPT;
+}
 /**
  * Check if memory is currently being processed
  * @returns {boolean} True if memory creation is in progress
@@ -27,9 +54,10 @@ export function isMemoryProcessing() {
     return isProcessingMemory;
 }
 
-export { currentProfile, validateLorebook };
+export { currentProfile };
 
 const MODULE_NAME = 'STMemoryBooks';
+
 let hasBeenInitialized = false; 
 
 // Supported Chat Completion sources
@@ -40,12 +68,12 @@ const SUPPORTED_COMPLETION_SOURCES = [
     'moonshot', 'fireworks', 'cometapi', 'azure_openai'
 ];
 
-
 const defaultSettings = {
     moduleSettings: {
         alwaysUseDefault: true,
         showMemoryPreviews: false,
         showNotifications: true,
+        unhideBeforeMemory: false,
         refreshEditor: true,
         tokenWarningThreshold: 30000,
         defaultMemoryCount: 0,
@@ -73,7 +101,6 @@ let isDryRun = false;
 
 /* Settings cache for restoration */
 let cachedSettings = null;
-
 
 // MutationObserver for chat message monitoring
 let chatObserver = null;
@@ -120,7 +147,7 @@ function initializeChatObserver() {
 
     const chatContainer = document.getElementById('chat');
     if (!chatContainer) {
-        throw new Error('STMemoryBooks: Chat container not found. SillyTavern DOM structure may have changed.');
+        throw new Error(translate('STMemoryBooks: Chat container not found. SillyTavern DOM structure may have changed.', 'index.error.chatContainerNotFound'));
     }
 
     // Ensure scene state is initialized before starting observer
@@ -140,7 +167,7 @@ function initializeChatObserver() {
                         const processed = processNodeForMessages(node);
                         newlyProcessedMessages.push(...processed);
                     } catch (error) {
-                        console.error('STMemoryBooks: Error processing new chat elements:', error);
+                        console.error(translate('STMemoryBooks: Error processing new chat elements:', 'index.error.processingChatElements'), error);
                     }
                 }
             }
@@ -154,9 +181,9 @@ function initializeChatObserver() {
                     // Use partial update for new messages only
                     updateNewMessageButtonStates(newlyProcessedMessages);
                 } catch (error) {
-                    console.error('STMemoryBooks: Error updating button states:', error);
+                    console.error(translate('STMemoryBooks: Error updating button states:', 'index.error.updatingButtonStates'), error);
                 }
-            }, 50);
+            }, UI_SETTINGS.CHAT_OBSERVER_DEBOUNCE_MS);
         }
     });
 
@@ -166,7 +193,7 @@ function initializeChatObserver() {
         subtree: true 
     });
 
-    console.log('STMemoryBooks: Performance-optimized chat observer initialized');
+    console.log(translate('STMemoryBooks: Chat observer initialized', 'index.log.chatObserverInitialized'));
 }
 
 /**
@@ -176,7 +203,7 @@ function cleanupChatObserver() {
     if (chatObserver) {
         chatObserver.disconnect();
         chatObserver = null;
-        console.log('STMemoryBooks: Chat observer disconnected');
+        console.log(translate('STMemoryBooks: Chat observer disconnected', 'index.log.chatObserverDisconnected'));
     }
     
     if (updateTimeout) {
@@ -186,7 +213,7 @@ function cleanupChatObserver() {
 }
 
 function handleChatChanged() {
-    console.log('STMemoryBooks: Chat changed - updating scene state');
+    console.log(translate('STMemoryBooks: Chat changed - updating scene state', 'index.log.chatChanged'));
     updateSceneStateCache();
     validateAndCleanupSceneMarkers();
     
@@ -195,9 +222,9 @@ function handleChatChanged() {
             // Full update needed for chat changes
             processExistingMessages();
         } catch (error) {
-            console.error('STMemoryBooks: Error processing messages after chat change:', error);
+            console.error(translate('STMemoryBooks: Error processing messages after chat change:', 'index.error.processingMessagesAfterChange'), error);
         }
-    }, 50);
+    }, UI_SETTINGS.CHAT_OBSERVER_DEBOUNCE_MS);
 }
 
 /**
@@ -209,7 +236,7 @@ function validateAndCleanupSceneMarkers() {
 
     // Check if we have orphaned scene markers (scene markers without active memory creation)
     if (sceneStart !== null || sceneEnd !== null) {
-        console.log(`STMemoryBooks: Found orphaned scene markers on chat load (start: ${sceneStart}, end: ${sceneEnd})`);
+console.log(__st_t_tag`Found orphaned scene markers: start=${sceneStart}, end=${sceneEnd}`);
 
         // Check if memory creation is actually in progress
         if (!isProcessingMemory && extension_settings[MODULE_NAME].moduleSettings.autoSummaryEnabled) {
@@ -221,72 +248,32 @@ function validateAndCleanupSceneMarkers() {
 
 async function handleMessageReceived() {
     try {
-        setTimeout(validateSceneMarkers, 500);
+        setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
         await handleAutoSummaryMessageReceived();
+        await evaluateTrackers();
     } catch (error) {
-        console.error('STMemoryBooks: Error in handleMessageReceived:', error);
+        console.error(translate('STMemoryBooks: Error in handleMessageReceived:', 'index.error.handleMessageReceived'), error);
     }
 }
 
 async function handleGroupWrapperFinished() {
     try {
-        setTimeout(validateSceneMarkers, 500);
+        setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
         await handleAutoSummaryGroupFinished();
+        await evaluateTrackers();
     } catch (error) {
-        console.error('STMemoryBooks: Error in handleGroupWrapperFinished:', error);
+        console.error(translate('STMemoryBooks: Error in handleGroupWrapperFinished:', 'index.error.handleGroupWrapperFinished'), error);
     }
 }
 
 /**
- * Debug function to manually check auto-summary status
- * Call this from browser console: window.STMemoryBooks_debugAutoSummary()
- */
-window.STMemoryBooks_debugAutoSummary = function() {
-    const settings = extension_settings.STMemoryBooks;
-    const stmbData = getSceneMarkers() || {};
-    const currentMessageCount = chat.length;
-    const currentLastMessage = currentMessageCount - 1;
-    const requiredInterval = settings.moduleSettings.autoSummaryInterval;
-    const highestProcessed = stmbData.highestMemoryProcessed ?? null;
-
-    console.log('=== STMemoryBooks Auto-Summary Debug ===');
-    console.log('Auto-summary enabled:', settings.moduleSettings.autoSummaryEnabled);
-    console.log('Current message count:', currentMessageCount);
-    console.log('Current last message index:', currentLastMessage);
-    console.log('Required interval:', requiredInterval);
-    console.log('Highest processed:', highestProcessed);
-    console.log('Scene markers:', { start: stmbData.sceneStart, end: stmbData.sceneEnd });
-    console.log('Processing memory flag:', isProcessingMemory);
-
-    if (highestProcessed !== null) {
-        const messagesSince = currentLastMessage - highestProcessed;
-        console.log('Messages since last memory:', messagesSince);
-        console.log('Should trigger:', messagesSince >= requiredInterval);
-    } else {
-        console.log('No previous memories - total messages:', currentMessageCount);
-        console.log('Should trigger:', currentMessageCount >= requiredInterval);
-    }
-
-    console.log('Chat metadata STMemoryBooks:', chat_metadata?.STMemoryBooks);
-    console.log('Chat bound lorebook:', chat_metadata?.[METADATA_KEY]);
-    console.log('Available world_names:', world_names);
-    console.log('Manual mode enabled:', settings.moduleSettings.manualModeEnabled);
-    console.log('=========================================');
-
-    // Manually trigger check
-    console.log('Manually triggering auto-summary check...');
-    checkAutoSummaryTrigger();
-};
-
-
-/**
  * Slash command handlers
  */
-function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
-    const sceneData = getSceneData();
+async function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
+    const sceneData = await getSceneData();
     if (!sceneData) {
-        console.error('STMemoryBooks: No scene markers set for createMemory command');
-        toastr.error('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks');
+        console.error(translate('STMemoryBooks: No scene markers set for createMemory command', 'index.error.noSceneMarkersForCreate'));
+        toastr.error(translate('No scene markers set. Use chevron buttons to mark start and end points first.', 'STMemoryBooks_NoSceneMarkersToastr'), translate('STMemoryBooks', 'index.toast.title'));
         return ''; 
     }
     
@@ -295,27 +282,32 @@ function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 
-function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
+async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     const range = String(unnamedArgs || '').trim();
     
     if (!range) {
-        toastr.error('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        toastr.error(translate('Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks_MissingRangeArgument'), translate('STMemoryBooks', 'index.toast.title'));
         return '';
     }
    
     const match = range.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
     
     if (!match) {
-        toastr.error('Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks');
+        toastr.error(translate('Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks_InvalidFormat'), translate('STMemoryBooks', 'index.toast.title'));
         return '';
     }
     
-    const startId = parseInt(match[1]);
-    const endId = parseInt(match[2]);
+    const startId = Number(match[1]);
+    const endId = Number(match[2]);
+
+    if (!Number.isFinite(startId) || !Number.isFinite(endId)) {
+        toastr.error(translate('Invalid message IDs parsed. Use: /scenememory X-Y (e.g., /scenememory 10-15)', 'STMemoryBooks_InvalidMessageIDs'), translate('STMemoryBooks', 'index.toast.title'));
+        return '';
+    }
     
     // Validate range logic (start = end is valid for single message)
     if (startId > endId) {
-        toastr.error('Start message cannot be greater than end message', 'STMemoryBooks');
+        toastr.error(translate('Start message cannot be greater than end message', 'STMemoryBooks_StartGreaterThanEnd'), translate('STMemoryBooks', 'index.toast.title'));
         return '';
     }
     
@@ -324,95 +316,154 @@ function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 
     // Validate message IDs exist in current chat
     if (startId < 0 || endId >= activeChat.length) {
-        toastr.error(`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`, 'STMemoryBooks');
+        toastr.error(__st_t_tag`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`, translate('STMemoryBooks', 'index.toast.title'));
         return '';
     }
     
     // check if messages actually exist
     if (!activeChat[startId] || !activeChat[endId]) {
-        toastr.error('One or more specified messages do not exist', 'STMemoryBooks');
+        toastr.error(translate('One or more specified messages do not exist', 'STMemoryBooks_MessagesDoNotExist'), translate('STMemoryBooks', 'index.toast.title'));
         return '';
     }
     
-    // Set new scene markers (automatically overrides any existing markers)
-    setSceneMarker(startId, 'start');
-    setSceneMarker(endId, 'end');
+    // Atomically set both scene markers for /scenememory
+    setSceneRange(startId, endId);
     
     const context = getCurrentMemoryBooksContext();
     const contextMsg = context.isGroupChat ? ` in group "${context.groupName}"` : '';
-    toastr.info(`Scene set: messages ${startId}-${endId}${contextMsg}`, 'STMemoryBooks');
+    toastr.info(__st_t_tag`Scene set: messages ${startId}-${endId}${contextMsg}`, translate('STMemoryBooks', 'index.toast.title'));
     
-    setTimeout(() => initiateMemoryCreation(), 500);
+    initiateMemoryCreation();
 
     return '';
 }
 
 async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
     try {
-        // Validate lorebook exists
+        // Prevent re-entrancy
+        if (isProcessingMemory) {
+            toastr.info(translate('Memory creation is already in progress', 'STMemoryBooks_MemoryAlreadyInProgress'), translate('STMemoryBooks', 'index.toast.title'));
+            return '';
+        }
+
+        // Validate lorebook exists (fast-fail UX);
+        // initiateMemoryCreation will validate again before running
         const lorebookValidation = await validateLorebook();
         if (!lorebookValidation.valid) {
-            toastr.error('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks');
+            toastr.error(translate('No lorebook available: ' + lorebookValidation.error, 'STMemoryBooks_NoLorebookAvailable'), translate('STMemoryBooks', 'index.toast.title'));
             return '';
         }
-        
-        // Get all memory entries
-        const allMemories = identifyMemoryEntries(lorebookValidation.data);
-        
-        if (allMemories.length === 0) {
-            toastr.error('No memory entries found in lorebook', 'STMemoryBooks');
+
+        // Compute next range since last memory
+        const stmbData = getSceneMarkers() || {};
+        const lastIndex = chat.length - 1;
+
+        if (lastIndex < 0) {
+            toastr.info(translate('There are no messages to summarize yet.', 'STMemoryBooks_NoMessagesToSummarize'), translate('STMemoryBooks', 'index.toast.title'));
             return '';
         }
-        
-        // Find the most recent memory (highest end message number)
-        let mostRecentMemory = null;
-        let highestEndMessage = -1;
-        
-        for (const memory of allMemories) {
-            const range = getRangeFromMemoryEntry(memory.entry);
-            if (range && range.end !== null && range.end > highestEndMessage) {
-                highestEndMessage = range.end;
-                mostRecentMemory = memory;
-            }
-        }
-        
-        if (!mostRecentMemory) {
-            toastr.error('No memory entries with valid message ranges found', 'STMemoryBooks');
+
+        const highestProcessed = (typeof stmbData.highestMemoryProcessed === 'number')
+            ? stmbData.highestMemoryProcessed
+            : null;
+
+        const sceneStart = (highestProcessed === null) ? 0 : (highestProcessed + 1);
+        const sceneEnd = lastIndex;
+
+        if (sceneStart > sceneEnd) {
+            toastr.info(translate('No new messages since the last memory.', 'STMemoryBooks_NoNewMessagesSinceLastMemory'), translate('STMemoryBooks', 'index.toast.title'));
             return '';
         }
-        
-        // Calculate next memory start (last memory end + 1)
-        const nextStart = highestEndMessage + 1;
-        
-        // Use current last message as end
-        const activeChat = chat;
-        const nextEnd = activeChat.length - 1;
-        
-        // Validate the range
-        if (nextStart >= activeChat.length) {
-            toastr.error('No new messages since last memory', 'STMemoryBooks');
-            return '';
-        }
-        
-        if (nextStart > nextEnd) {
-            toastr.error('Not enough messages for a new memory', 'STMemoryBooks');
-            return '';
-        }
-        
-        // Execute scenememory with the calculated range
-        const rangeString = `${nextStart}-${nextEnd}`;
-        toastr.info(`Auto-detected next memory range: ${rangeString}`, 'STMemoryBooks');
-        
-        // Use the scenememory handler directly
-        return handleSceneMemoryCommand({}, rangeString);
-        
+
+        // Set scene range and run the standard memory pipeline
+        setSceneRange(sceneStart, sceneEnd);
+        await initiateMemoryCreation();
+
     } catch (error) {
-        console.error('STMemoryBooks: Error in /nextmemory command:', error);
-        toastr.error(`Failed to determine next memory range: ${error.message}`, 'STMemoryBooks');
+        console.error(translate('STMemoryBooks: /nextmemory failed:', 'index.error.nextMemoryFailed'), error);
+        toastr.error(translate('Failed to run /nextmemory: ' + error.message, 'STMemoryBooks_NextMemoryFailed'), translate('STMemoryBooks', 'index.toast.title'));
+    }
+    return '';
+}
+
+/**
+ * Slash: /sideprompt (with optional name/range)
+ * If no args, open a picker for discoverability.
+ */
+async function handleSidePromptCommand(namedArgs, unnamedArgs) {
+    const raw = String(unnamedArgs || '').trim();
+    if (!raw) {
+        toastr.info(translate('SidePrompt guide: Type a template name after the space to see suggestions. Usage: /sideprompt "Name" [X-Y]. Quote names with spaces.', 'STMemoryBooks_SidePromptGuide'), translate('STMemoryBooks', 'index.toast.title'));
         return '';
+    }
+
+    // If user typed partial name without range and it doesn't exactly match,
+    // try a quick best effort: if multiple results, show picker filtered; else run directly.
+    const parts = raw.match(/^["']([^"']+)["']\s*(.*)$/) || raw.match(/^(.+?)(\s+\d+\s*[-–—]\s*\d+)?$/);
+    const namePart = parts ? (parts[1] || raw).trim() : raw;
+
+    try {
+        // Load and filter
+        const templates = await listTemplates();
+        const candidates = templates.filter(t => t.name.toLowerCase().includes(namePart.toLowerCase()));
+        if (candidates.length > 1) {
+            const top = candidates.slice(0, 5).map(t => t.name).join(', ');
+            const more = candidates.length > 5 ? `, +${candidates.length - 5} more` : '';
+toastr.info(__st_t_tag`Multiple matches: ${top}${more}. Refine the name or use quotes. Usage: /sideprompt "Name" [X-Y]`, translate('STMemoryBooks', 'index.toast.title'));
+            return '';
+        }
+        // Fall back to direct run (runSidePrompt will resolve fuzzy or error toast)
+        return runSidePrompt(raw);
+    } catch {
+        // Fallback to direct run
+        return runSidePrompt(raw);
     }
 }
 
+/**
+ * Side Prompt names cache for autocomplete
+ */
+let sidePromptNameCache = [];
+async function refreshSidePromptCache() {
+    try {
+        const tpls = await listTemplates();
+        sidePromptNameCache = (tpls || [])
+            .filter(t => {
+                const cmds = t?.triggers?.commands;
+                // Back-compat: if commands is missing, treat as manual-enabled for suggestions
+                if (!('commands' in (t?.triggers || {}))) return true;
+                return Array.isArray(cmds) && cmds.some(c => String(c).toLowerCase() === 'sideprompt');
+            })
+            .map(t => t.name);
+    } catch (e) {
+        console.warn(translate('STMemoryBooks: side prompt cache refresh failed', 'index.warn.sidePromptCacheRefreshFailed'), e);
+    }
+}
+window.addEventListener('stmb-sideprompts-updated', refreshSidePromptCache);
+// Preload cache early so suggestions are available even before init() completes
+try { refreshSidePromptCache(); } catch (e) { /* noop */ }
+
+// Synchronous enum provider for slash command suggestions (mirrors extension-enum pattern)
+const sidePromptTemplateEnumProvider = () =>
+    sidePromptNameCache.map(n => new SlashCommandEnumValue(n));
+
+/**
+ * Helper: build triggers badges for prompt picker
+ */
+function getSPTriggersSummary(tpl) {
+    const badges = [];
+    const trig = tpl?.triggers || {};
+    if (trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1) {
+        badges.push(`Interval:${Number(trig.onInterval.visibleMessages)}`);
+    }
+    if (trig.onAfterMemory && !!trig.onAfterMemory.enabled) {
+        badges.push('AfterMemory');
+    }
+    if (trig.commands && Array.isArray(trig.commands) && trig.commands.some(c => String(c).toLowerCase() === 'sideprompt')) {
+        badges.push('Manual');
+    }
+    return badges;
+}
 
 /**
  * Initialize and validate extension settings
@@ -424,7 +475,7 @@ function initializeSettings() {
     const currentVersion = extension_settings.STMemoryBooks.migrationVersion || 1;
     if (currentVersion < 4) {
         // Check if dynamic profile already exists (in case of partial migration)
-        const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(p => p.useDynamicSTSettings);
+        const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(p => p.useDynamicSTSettings || p?.connection?.api === 'current_st');
 
         if (!hasDynamicProfile) {
             // Add dynamic profile for existing installations
@@ -436,11 +487,9 @@ function initializeSettings() {
             const dynamicProfile = {
                 name: "Current SillyTavern Settings",
                 connection: {
-                    // Empty connection object - will be populated dynamically from ST
+                    api: 'current_st'
                 },
-                useDynamicSTSettings: true, // Flag to indicate this profile uses live ST settings
                 preset: 'summary',
-                // No titleFormat - will use current settings titleFormat dynamically
                 constVectMode: 'link',
                 position: 0,
                 orderMode: 'auto',
@@ -456,14 +505,14 @@ function initializeSettings() {
                 extension_settings.STMemoryBooks.defaultProfile += 1;
             }
 
-            console.log(`${MODULE_NAME}: Added dynamic profile for existing installation (migration to v3)`);
+console.log(__st_t_tag`${MODULE_NAME}: Added dynamic profile for existing installation (migration to v3)`);
         }
 
         // Clean up any existing dynamic profiles that may have titleFormat
         extension_settings.STMemoryBooks.profiles.forEach(profile => {
             if (profile.useDynamicSTSettings && profile.titleFormat) {
                 delete profile.titleFormat;
-                console.log(`${MODULE_NAME}: Removed static titleFormat from dynamic profile`);
+console.log(__st_t_tag`${MODULE_NAME}: Removed static titleFormat from dynamic profile`);
             }
         });
 
@@ -477,11 +526,9 @@ function initializeSettings() {
         const dynamicProfile = {
             name: "Current SillyTavern Settings",
             connection: {
-                // Empty connection object - will be populated dynamically from ST
+                api: 'current_st'
             },
-            useDynamicSTSettings: true, // Flag to indicate this profile uses live ST settings
             preset: 'summary',
-            // No titleFormat - will use current settings titleFormat dynamically
             constVectMode: 'link',
             position: 0,
             orderMode: 'auto',
@@ -491,7 +538,7 @@ function initializeSettings() {
         };
 
         extension_settings.STMemoryBooks.profiles = [dynamicProfile];
-        console.log(`${MODULE_NAME}: Created dynamic profile for fresh installation`);
+console.log(__st_t_tag`${MODULE_NAME}: Created dynamic profile for fresh installation`);
     }
 
     const validationResult = validateSettings(extension_settings.STMemoryBooks);
@@ -499,7 +546,7 @@ function initializeSettings() {
     // Also validate profiles structure
     const profileValidation = validateAndFixProfiles(extension_settings.STMemoryBooks);
     if (profileValidation.fixes.length > 0) {
-        console.log(`${MODULE_NAME}: Applied profile fixes:`, profileValidation.fixes);
+console.log(__st_t_tag`${MODULE_NAME}: Applied profile fixes:`, profileValidation.fixes);
         saveSettingsDebounced();
     }
 
@@ -511,7 +558,8 @@ function initializeSettings() {
  */
 function validateSettings(settings) {
     if (!settings.profiles || settings.profiles.length === 0) {
-        settings.profiles = [deepClone(defaultSettings.profiles[0])];
+        // Avoid creating [undefined]; allow downstream validator to create a proper dynamic profile.
+        settings.profiles = [];
         settings.defaultProfile = 0;
     }
     
@@ -547,6 +595,11 @@ function validateSettings(settings) {
         settings.moduleSettings.autoCreateLorebook = false;
     }
 
+    // Validate unhide-before-memory setting (defaults to false)
+    if (settings.moduleSettings.unhideBeforeMemory === undefined) {
+        settings.moduleSettings.unhideBeforeMemory = false;
+    }
+
     // Validate lorebook name template
     if (!settings.moduleSettings.lorebookNameTemplate) {
         settings.moduleSettings.lorebookNameTemplate = 'LTM - {{char}} - {{chat}}';
@@ -556,17 +609,17 @@ function validateSettings(settings) {
     if (settings.moduleSettings.manualModeEnabled && settings.moduleSettings.autoCreateLorebook) {
         // If both are somehow true, prioritize manual mode (since it was added first)
         settings.moduleSettings.autoCreateLorebook = false;
-        console.warn('STMemoryBooks: Both manualModeEnabled and autoCreateLorebook were true - setting autoCreateLorebook to false');
+        console.warn(translate('STMemoryBooks: Both manualModeEnabled and autoCreateLorebook were true - setting autoCreateLorebook to false', 'index.warn.mutualExclusion'));
     }
     
     // Migrate to version 2 if needed (JSON-based architecture)
     if (!settings.migrationVersion || settings.migrationVersion < 2) {
-        console.log(`${MODULE_NAME}: Migrating to JSON-based architecture (v2)`);
+console.log(__st_t_tag`${MODULE_NAME}: Migrating to JSON-based architecture (v2)`);
         settings.migrationVersion = 2;
         // Update any old tool-based prompts to JSON prompts
         settings.profiles.forEach(profile => {
             if (profile.prompt && profile.prompt.includes('createMemory')) {
-                console.log(`${MODULE_NAME}: Updating profile "${profile.name}" to use JSON output`);
+console.log(__st_t_tag`${MODULE_NAME}: Updating profile "${profile.name}" to use JSON output`);
                 profile.prompt = DEFAULT_PROMPT; // Reset to new JSON-based default
             }
         });
@@ -575,19 +628,11 @@ function validateSettings(settings) {
     return settings;
 }
 
-/**
- * Check if chat has a valid bound lorebook
- */
-function hasLorebook() {
-    const lorebookName = chat_metadata[METADATA_KEY];
-    return lorebookName && world_names && world_names.includes(lorebookName);
-}
-
 
 /**
  * Validate lorebook and return status with data
  */
-async function validateLorebook() {
+export async function validateLorebook() {
     const settings = extension_settings.STMemoryBooks;
     let lorebookName = await getEffectiveLorebookName();
 
@@ -643,7 +688,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
         confirmationResult = await showConfirmationPopup(
             sceneData, 
             settings, 
-            getCurrentModelSettings(), 
+            getUIModelSettings(), 
             getCurrentApiInfo(), 
             chat_metadata,
             profileIndex
@@ -659,7 +704,7 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
             confirmed: true,
             profileSettings: {
                 ...selectedProfile,
-                effectivePrompt: getEffectivePrompt(selectedProfile) // Use shared function
+                effectivePrompt: await getEffectivePromptAsync(selectedProfile)
             },
             advancedOptions: {
                 memoryCount: settings.moduleSettings.defaultMemoryCount || 0,
@@ -672,9 +717,9 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
     const { profileSettings, advancedOptions } = confirmationResult;
 
     // Check if this profile should dynamically use ST settings
-    if (profileSettings.useDynamicSTSettings || advancedOptions.overrideSettings) {
+    if ((profileSettings?.connection?.api === 'current_st') || advancedOptions.overrideSettings) {
         const currentApiInfo = getCurrentApiInfo();
-        const currentSettings = getCurrentModelSettings();
+        const currentSettings = getUIModelSettings();
 
         profileSettings.effectiveConnection = {
             api: currentApiInfo.completionSource || 'openai',
@@ -732,9 +777,17 @@ function isRetryableError(error) {
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     currentProfile = profileSettings;
-    const maxRetries = 2; // Allow up to 2 retries (3 total attempts)
+    const maxRetries = MEMORY_GENERATION.MAX_RETRIES;
 
     try {
+        // Optionally unhide hidden messages before compiling scene
+        if (settings?.moduleSettings?.unhideBeforeMemory) {
+            try {
+                await executeSlashCommands(`/unhide ${sceneData.sceneStart}-${sceneData.sceneEnd}`);
+            } catch (e) {
+                console.warn('STMemoryBooks: /unhide command failed or unavailable:', e);
+            }
+        }
         // Create and compile scene first
         const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
         const compiledScene = compileScene(sceneRequest);
@@ -755,11 +808,11 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
             if (memoryFetchResult.actualCount > 0) {
                 if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
-                    toastr.warning(`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
+toastr.warning(__st_t_tag`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
                 }
                 console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
             } else {
-                toastr.warning('No previous memories found in lorebook', 'STMemoryBooks');
+                toastr.warning(translate('No previous memories found in lorebook', 'STMemoryBooks_NoPreviousMemoriesFound'), 'STMemoryBooks');
             }
         }
 
@@ -772,7 +825,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 ? `Creating memory with ${memoryFetchResult.actualCount} context memories...`
                 : 'Creating memory...';
         }
-        toastr.info(workingToastMessage, 'STMemoryBooks', { timeOut: 0 });
+        toastr.info(translate(workingToastMessage, 'STMemoryBooks_WorkingToast'), 'STMemoryBooks', { timeOut: 0 });
         
         // Add context and get stats (no intermediate toast)
         compiledScene.previousSummariesContext = previousMemories;
@@ -802,11 +855,11 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 const currentUserRetries = retryCount >= maxRetries ? retryCount - maxRetries : 0;
 
                 if (currentUserRetries >= maxUserRetries) {
-                    toastr.warning(`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
+toastr.warning(__st_t_tag`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
                     return { action: 'cancel' };
                 }
 
-                toastr.info(`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
+toastr.info(__st_t_tag`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
                 // Keep the retry count properly incremented to track total attempts
                 const nextRetryCount = Math.max(retryCount + 1, maxRetries + currentUserRetries + 1);
                 return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, nextRetryCount);
@@ -820,14 +873,14 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 // User edited the data, validate and use edited version
                 if (!previewResult.memoryData) {
                     console.error('STMemoryBooks: Edit action missing memoryData');
-                    toastr.error('Unable to retrieve edited memory data', 'STMemoryBooks');
+                    toastr.error(translate('Unable to retrieve edited memory data', 'STMemoryBooks_UnableToRetrieveEditedMemoryData'), 'STMemoryBooks');
                     return;
                 }
 
                 // Validate that edited memory data has required fields
                 if (!previewResult.memoryData.extractedTitle || !previewResult.memoryData.content) {
                     console.error('STMemoryBooks: Edited memory data missing required fields');
-                    toastr.error('Edited memory data is incomplete', 'STMemoryBooks');
+                    toastr.error(translate('Edited memory data is incomplete', 'STMemoryBooks_EditedMemoryDataIncomplete'), 'STMemoryBooks');
                     return;
                 }
 
@@ -846,9 +899,31 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
             throw new Error(addResult.error || 'Failed to add memory to lorebook');
         }
 
+        // Run side prompts that are enabled to run with memories
+        try {
+            const connDbg = (profileSettings?.effectiveConnection || profileSettings?.connection || {});
+            console.debug('STMemoryBooks: Passing profile to runAfterMemory', {
+                api: connDbg.api,
+                model: connDbg.model,
+                temperature: connDbg.temperature
+            });
+            await runAfterMemory(compiledScene, profileSettings);
+        } catch (e) {
+            console.warn('STMemoryBooks: runAfterMemory failed:', e);
+        }
+        
+        // Update auto-summary baseline so the next trigger starts after this scene
+        try {
+            const stmbData = getSceneMarkers() || {};
+            stmbData.highestMemoryProcessed = sceneData.sceneEnd;
+            saveMetadataForCurrentContext();
+        } catch (e) {
+            console.warn('STMemoryBooks: Failed to update highestMemoryProcessed baseline:', e);
+        }
+        
         // Clear auto-summary state after successful memory creation
         clearAutoSummaryState();
-
+        
         // Success notification
         const contextMsg = memoryFetchResult.actualCount > 0 ?
             ` (with ${memoryFetchResult.actualCount} context ${memoryFetchResult.actualCount === 1 ? 'memory' : 'memories'})` : '';
@@ -856,7 +931,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         // Clear working toast and show success
         toastr.clear();
         const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
-        toastr.success(`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
+toastr.success(__st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
@@ -866,12 +941,12 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         
         if (shouldRetry) {
             // Show retry notification and attempt again
-            toastr.warning(`Memory creation failed (attempt ${retryCount + 1}). Retrying in 2 seconds...`, 'STMemoryBooks', {
+            toastr.warning(__st_t_tag`Memory creation failed (attempt ${retryCount + 1}). Retrying in ${Math.round(MEMORY_GENERATION.RETRY_DELAY_MS / 1000)} seconds...`, 'STMemoryBooks', {
                 timeOut: 3000
             });
             
-            // Wait 2 seconds before retrying
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, MEMORY_GENERATION.RETRY_DELAY_MS));
             
             // Recursive retry
             return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount + 1);
@@ -882,19 +957,19 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
         
         // Provide specific error messages for different types of failures
         if (error.name === 'TokenWarningError') {
-            toastr.error(`Scene is too large (${error.tokenCount} tokens). Try selecting a smaller range${retryMsg}.`, 'STMemoryBooks', {
+            toastr.error(__st_t_tag`Scene is too large (${error.tokenCount} tokens). Try selecting a smaller range${retryMsg}.`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else if (error.name === 'AIResponseError') {
-            toastr.error(`AI failed to generate valid memory: ${error.message}${retryMsg}`, 'STMemoryBooks', {
+            toastr.error(__st_t_tag`AI failed to generate valid memory: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else if (error.name === 'InvalidProfileError') {
-            toastr.error(`Profile configuration error: ${error.message}${retryMsg}`, 'STMemoryBooks', {
+            toastr.error(__st_t_tag`Profile configuration error: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else {
-            toastr.error(`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
+            toastr.error(__st_t_tag`Failed to create memory: ${error.message}${retryMsg}`, 'STMemoryBooks');
         }
     }
 }
@@ -906,14 +981,14 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     // For single character chats, check character data
     if (!context.isGroupChat) {
         if (!characters || characters.length === 0 || !characters[this_chid]) {
-            toastr.error('SillyTavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks');
+toastr.error(translate('SillyTavern is still loading character data, please wait a few seconds and try again.', 'STMemoryBooks_LoadingCharacterData'), 'STMemoryBooks');
             return;
         }
     }
     // For group chats, check that we have group data
     else {
         if (!context.groupId || !context.groupName) {
-            toastr.error('Group chat data not available, please wait a few seconds and try again.', 'STMemoryBooks');
+toastr.error(translate('Group chat data not available, please wait a few seconds and try again.', 'STMemoryBooks_GroupChatDataUnavailable'), 'STMemoryBooks');
             return;
         }
     }
@@ -930,10 +1005,10 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         const settings = initializeSettings();
 
         // All the validation and processing logic
-        const sceneData = getSceneData();
+        const sceneData = await getSceneData();
         if (!sceneData) {
             console.error('STMemoryBooks: No scene selected for memory initiation');
-            toastr.error('No scene selected', 'STMemoryBooks');
+toastr.error(translate('No scene selected', 'STMemoryBooks_NoSceneSelected'), 'STMemoryBooks');
             isProcessingMemory = false;
             return;
         }
@@ -941,7 +1016,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         const lorebookValidation = await validateLorebook();
         if (!lorebookValidation.valid) {
             console.error('STMemoryBooks: Lorebook validation failed:', lorebookValidation.error);
-            toastr.error(lorebookValidation.error, 'STMemoryBooks');
+toastr.error(translate(lorebookValidation.error, 'STMemoryBooks_LorebookValidationError'), 'STMemoryBooks');
             isProcessingMemory = false;
             return;
         }
@@ -955,9 +1030,15 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
                 const existingRange = getRangeFromMemoryEntry(mem.entry); 
 
                 if (existingRange && existingRange.start !== null && existingRange.end !== null) {
-                    if (newStart <= existingRange.end && newEnd >= existingRange.start) {
-                        console.error(`STMemoryBooks: Scene overlap detected with memory: ${mem.title}`);
-                        toastr.error(`Scene overlaps with existing memory: "${mem.title}" (messages ${existingRange.start}-${existingRange.end})`, 'STMemoryBooks');
+                    const s = Number(existingRange.start);
+                    const e = Number(existingRange.end);
+                    const ns = Number(newStart);
+                    const ne = Number(newEnd);
+                    // Detailed overlap diagnostics
+                    console.debug(`STMemoryBooks: OverlapCheck new=[${ns}-${ne}] existing="${mem.title}" [${s}-${e}] cond1(ns<=e)=${ns <= e} cond2(ne>=s)=${ne >= s}`);
+                    if (ns <= e && ne >= s) {
+                        console.error(`STMemoryBooks: Scene overlap detected with memory: ${mem.title} [${s}-${e}] vs new [${ns}-${ne}]`);
+toastr.error(__st_t_tag`Scene overlaps with existing memory: "${mem.title}" (messages ${s}-${e})`, 'STMemoryBooks');
                         isProcessingMemory = false;
                         return;
                     }
@@ -982,7 +1063,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         
     } catch (error) {
         console.error('STMemoryBooks: Critical error during memory initiation:', error);
-        toastr.error(`An unexpected error occurred: ${error.message}`, 'STMemoryBooks');
+toastr.error(__st_t_tag`An unexpected error occurred: ${error.message}`, 'STMemoryBooks');
     } finally {
         // ALWAYS reset the flag, no matter how we exit
         isProcessingMemory = false;
@@ -1021,7 +1102,7 @@ function updateLorebookStatusDisplay() {
     // Update mode badge
     const modeBadge = document.querySelector('#stmb-mode-badge');
     if (modeBadge) {
-        modeBadge.textContent = isManualMode ? 'Manual' : 'Automatic (Chat-bound)';
+        modeBadge.textContent = isManualMode ? translate('Manual', 'STMemoryBooks_Manual') : translate('Automatic (Chat-bound)', 'STMemoryBooks_AutomaticChatBound');
     }
 
     // Update active lorebook display
@@ -1031,7 +1112,7 @@ function updateLorebookStatusDisplay() {
             stmbData.manualLorebook :
             chat_metadata?.[METADATA_KEY];
 
-        activeLorebookSpan.textContent = currentLorebook || 'None selected';
+        activeLorebookSpan.textContent = currentLorebook || translate('None selected', 'STMemoryBooks_NoneSelected');
         activeLorebookSpan.className = currentLorebook ? '' : 'opacity50p';
     }
 
@@ -1052,8 +1133,8 @@ function updateLorebookStatusDisplay() {
         if (infoText) {
             const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
             infoText.innerHTML = chatBoundLorebook ?
-                `Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"` :
-                'No chat-bound lorebook. Memories will require lorebook selection.';
+                __st_t_tag`Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"` :
+                translate('No chat-bound lorebook. Memories will require lorebook selection.', 'STMemoryBooks_NoChatBoundLorebook');
         }
     }
 
@@ -1090,15 +1171,15 @@ function populateInlineButtons() {
     // Get all button containers
     const manualLorebookContainer = currentPopupInstance.content.querySelector('#stmb-manual-lorebook-buttons');
     const profileButtonsContainer = currentPopupInstance.content.querySelector('#stmb-profile-buttons');
-    const importExportContainer = currentPopupInstance.content.querySelector('#stmb-import-export-buttons');
+    const extraFunctionContainer = currentPopupInstance.content.querySelector('#stmb-extra-function-buttons');
 
     // Populate manual lorebook buttons if container exists and manual mode is enabled
     if (manualLorebookContainer && settings.moduleSettings.manualModeEnabled) {
         const hasManualLorebook = stmbData.manualLorebook ?? null;
 
-        const manualLorebookButtons = [
+const manualLorebookButtons = [
             {
-                text: `📕 ${hasManualLorebook ? 'Change' : 'Select'} Manual Lorebook`,
+                text: `📕 ${hasManualLorebook ? translate('Change', 'STMemoryBooks_ChangeManualLorebook') : translate('Select', 'STMemoryBooks_SelectManualLorebook')} ` + translate('Manual Lorebook', 'STMemoryBooks_ManualLorebook'),
                 id: 'stmb-select-manual-lorebook',
                 action: async () => {
                     try {
@@ -1110,7 +1191,7 @@ function populateInlineButtons() {
                         }
                     } catch (error) {
                         console.error('STMemoryBooks: Error selecting manual lorebook:', error);
-                        toastr.error('Failed to select manual lorebook', 'STMemoryBooks');
+toastr.error(translate('Failed to select manual lorebook', 'STMemoryBooks_FailedToSelectManualLorebook'), 'STMemoryBooks');
                     }
                 }
             }
@@ -1119,7 +1200,7 @@ function populateInlineButtons() {
         // Add clear button if manual lorebook is set
         if (hasManualLorebook) {
             manualLorebookButtons.push({
-                text: '❌ Clear Manual Lorebook',
+                text: '❌ ' + translate('Clear Manual Lorebook', 'STMemoryBooks_ClearManualLorebook'),
                 id: 'stmb-clear-manual-lorebook',
                 action: () => {
                     try {
@@ -1129,10 +1210,10 @@ function populateInlineButtons() {
 
                         // Refresh the popup content
                         refreshPopupContent();
-                        toastr.success('Manual lorebook cleared', 'STMemoryBooks');
+                        toastr.success(translate('Manual lorebook cleared', 'STMemoryBooks_ManualLorebookCleared'), 'STMemoryBooks');
                     } catch (error) {
                         console.error('STMemoryBooks: Error clearing manual lorebook:', error);
-                        toastr.error('Failed to clear manual lorebook', 'STMemoryBooks');
+                        toastr.error(translate('Failed to clear manual lorebook', 'STMemoryBooks_FailedToClearManualLorebook'), 'STMemoryBooks');
                     }
                 }
             });
@@ -1142,7 +1223,7 @@ function populateInlineButtons() {
         manualLorebookContainer.innerHTML = '';
         manualLorebookButtons.forEach(buttonConfig => {
             const button = document.createElement('div');
-            button.className = 'menu_button interactable';
+            button.className = 'menu_button interactable whitespacenowrap';
             button.id = buttonConfig.id;
             button.textContent = buttonConfig.text;
             button.addEventListener('click', buttonConfig.action);
@@ -1150,12 +1231,12 @@ function populateInlineButtons() {
         });
     }
 
-    if (!profileButtonsContainer || !importExportContainer) return;
+    if (!profileButtonsContainer || !extraFunctionContainer) return;
 
     // Create profile action buttons
     const profileButtons = [
         {
-            text: '⭐ Set as Default',
+            text: '⭐ ' + translate('Set as Default', 'STMemoryBooks_SetAsDefault'),
             id: 'stmb-set-default-profile',
             action: () => {
                 const profileSelect = currentPopupInstance?.dlg?.querySelector('#stmb-profile-select');
@@ -1168,12 +1249,15 @@ function populateInlineButtons() {
 
                 settings.defaultProfile = selectedIndex;
                 saveSettingsDebounced();
-                toastr.success(`"${settings.profiles[selectedIndex].name}" is now the default profile.`, 'STMemoryBooks');
+                const displayName = (settings.profiles[selectedIndex]?.connection?.api === 'current_st')
+                    ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST')
+                    : settings.profiles[selectedIndex].name;
+                toastr.success(__st_t_tag`"${displayName}" is now the default profile.`, 'STMemoryBooks');
                 refreshPopupContent();
             }
         },
         {
-            text: '✏️ Edit Profile',
+            text: '✏️ ' + translate('Edit Profile', 'STMemoryBooks_EditProfile'),
             id: 'stmb-edit-profile',
             action: async () => {
                 try {
@@ -1183,33 +1267,35 @@ function populateInlineButtons() {
                     const selectedIndex = parseInt(profileSelect.value);
                     const selectedProfile = settings.profiles[selectedIndex];
 
-                    // Prevent editing of dynamic ST settings profile
+                    // Migrate legacy dynamic flag to provider-based current_st and allow editing of non-connection fields
                     if (selectedProfile.useDynamicSTSettings) {
-                        toastr.error('Cannot edit the Dynamic ST Settings profile. Create a new profile instead.', 'STMemoryBooks');
-                        return;
+                        selectedProfile.connection = selectedProfile.connection || {};
+                        selectedProfile.connection.api = 'current_st';
+                        delete selectedProfile.useDynamicSTSettings;
+                        saveSettingsDebounced();
                     }
 
                     await editProfile(settings, selectedIndex, refreshPopupContent);
                 } catch (error) {
                     console.error(`${MODULE_NAME}: Error in edit profile:`, error);
-                    toastr.error('Failed to edit profile', 'STMemoryBooks');
+                    toastr.error(translate('Failed to edit profile', 'STMemoryBooks_FailedToEditProfile'), 'STMemoryBooks');
                 }
             }
         },
         {
-            text: '➕ New Profile',
+            text: '➕ ' + translate('New Profile', 'STMemoryBooks_NewProfile'),
             id: 'stmb-new-profile',
             action: async () => {
                 try {
                     await newProfile(settings, refreshPopupContent);
                 } catch (error) {
                     console.error(`${MODULE_NAME}: Error in new profile:`, error);
-                    toastr.error('Failed to create profile', 'STMemoryBooks');
+                    toastr.error(translate('Failed to create profile', 'STMemoryBooks_FailedToCreateProfile'), 'STMemoryBooks');
                 }
             }
         },
         {
-            text: '🗑️ Delete Profile',
+            text: '🗑️ ' + translate('Delete Profile', 'STMemoryBooks_DeleteProfile'),
             id: 'stmb-delete-profile',
             action: async () => {
                 try {
@@ -1220,28 +1306,28 @@ function populateInlineButtons() {
                     await deleteProfile(settings, selectedIndex, refreshPopupContent);
                 } catch (error) {
                     console.error(`${MODULE_NAME}: Error in delete profile:`, error);
-                    toastr.error('Failed to delete profile', 'STMemoryBooks');
+                    toastr.error(translate('Failed to delete profile', 'STMemoryBooks_FailedToDeleteProfile'), 'STMemoryBooks');
                 }
             }
         }
     ];
 
-    // Create import/export buttons
-    const importExportButtons = [
+    // Create additional function buttons
+    const extraFunctionButtons = [
         {
-            text: '📤 Export Profiles',
+            text: '📤 ' + translate('Export Profiles', 'STMemoryBooks_ExportProfiles'),
             id: 'stmb-export-profiles',
             action: () => {
                 try {
                     exportProfiles(settings);
                 } catch (error) {
                     console.error(`${MODULE_NAME}: Error in export profiles:`, error);
-                    toastr.error('Failed to export profiles', 'STMemoryBooks');
+                    toastr.error(translate('Failed to export profiles', 'STMemoryBooks_FailedToExportProfiles'), 'STMemoryBooks');
                 }
             }
         },
         {
-            text: '📥 Import Profiles',
+            text: '📥 ' + translate('Import Profiles', 'STMemoryBooks_ImportProfiles'),
             id: 'stmb-import-profiles',
             action: () => {
                 const importFile = currentPopupInstance?.dlg?.querySelector('#stmb-import-file');
@@ -1249,32 +1335,492 @@ function populateInlineButtons() {
                     importFile.click();
                 }
             }
+        },
+        {       
+            text: '🧩 ' + translate('Summary Prompt Manager', 'STMemoryBooks_SummaryPromptManager'),
+            id: 'stmb-prompt-manager',
+            action: async () => {
+                try {
+                    await showPromptManagerPopup();
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error opening prompt manager:`, error);
+                    toastr.error(translate('Failed to open Summary Prompt Manager', 'STMemoryBooks_FailedToOpenSummaryPromptManager'), 'STMemoryBooks');
+                }
+            }
+        },
+        {
+            text: '🎡 ' + translate('Side Prompts', 'STMemoryBooks_SidePrompts'),
+            id: 'stmb-side-prompts',
+            action: async () => {
+                try {
+                    await showSidePromptsPopup();
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error opening Side Prompts:`, error);
+toastr.error(translate('Failed to open Side Prompts', 'STMemoryBooks_FailedToOpenSidePrompts'), 'STMemoryBooks');
+                }
+            }
         }
     ];
 
     // Clear containers and populate with buttons
     profileButtonsContainer.innerHTML = '';
-    importExportContainer.innerHTML = '';
+    extraFunctionContainer.innerHTML = '';
 
     // Add profile action buttons
     profileButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
-        button.className = 'menu_button interactable';
+        button.className = 'menu_button interactable whitespacenowrap';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
         profileButtonsContainer.appendChild(button);
     });
 
-    // Add import/export buttons
-    importExportButtons.forEach(buttonConfig => {
+    // Add Extra Function Buttons buttons
+    extraFunctionButtons.forEach(buttonConfig => {
         const button = document.createElement('div');
-        button.className = 'menu_button interactable';
+        button.className = 'menu_button interactable whitespacenowrap';
         button.id = buttonConfig.id;
         button.textContent = buttonConfig.text;
         button.addEventListener('click', buttonConfig.action);
-        importExportContainer.appendChild(button);
+        extraFunctionContainer.appendChild(button);
     });
+}
+
+/**
+ * Show the Summary Prompt Manager popup
+ */
+async function showPromptManagerPopup() {
+    try {
+        // Initialize the prompt manager on first use
+        const settings = extension_settings.STMemoryBooks;
+        await SummaryPromptManager.firstRunInitIfMissing(settings);
+        
+        // Get list of presets
+        const presets = await SummaryPromptManager.listPresets();
+        
+        // Build the popup content
+        let content = '<h3 data-i18n="STMemoryBooks_PromptManager_Title">🧩 Summary Prompt Manager</h3>';
+        content += '<div class="world_entry_form_control">';
+        content += '<p data-i18n="STMemoryBooks_PromptManager_Desc">Manage your summary generation prompts. All presets are editable.</p>';
+        content += '</div>';
+        
+        // Search/filter box
+        content += '<div class="world_entry_form_control">';
+        content += '<input type="text" id="stmb-prompt-search" class="text_pole" placeholder="Search presets..." aria-label="Search presets" data-i18n="[placeholder]STMemoryBooks_PromptManager_Search;[aria-label]STMemoryBooks_PromptManager_Search" />';
+        content += '</div>';
+        
+        // Preset list container (table content rendered via Handlebars after popup creation)
+        content += '<div id="stmb-preset-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>';
+        
+        // Action buttons
+        content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
+        content += '<button id="stmb-pm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
+        content += '<button id="stmb-pm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
+        content += '<button id="stmb-pm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
+        content += '<button id="stmb-pm-apply" class="menu_button whitespacenowrap" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
+        content += '</div>';
+        
+        // Hint re: prompting
+        content += `<small>${translate('💡 When creating a new prompt, copy one of the other built-in prompts and then amend it. Don\'t change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.', 'STMemoryBooks_PromptManager_Hint')}</small>`;
+
+        // Hidden file input for import
+        content += '<input type="file" id="stmb-pm-import-file" accept=".json" style="display: none;" />';
+        
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
+            okButton: false,
+            cancelButton: translate('Close', 'STMemoryBooks_Close')
+        });
+
+        // Attach handlers before showing the popup to ensure interactivity
+        setupPromptManagerEventHandlers(popup);
+
+        // Initial render of presets table using Handlebars
+        const listEl = popup.dlg?.querySelector('#stmb-preset-list');
+        if (listEl) {
+            const items = (presets || []).map(p => ({
+                key: String(p.key || ''),
+                displayName: String(p.displayName || ''),
+            }));
+            listEl.innerHTML = DOMPurify.sanitize(summaryPromptsTableTemplate({ items }));
+        }
+
+        await popup.show();
+
+    } catch (error) {
+        console.error('STMemoryBooks: Error showing prompt manager:', error);
+            toastr.error(translate('Failed to open Summary Prompt Manager', 'STMemoryBooks_FailedToOpenSummaryPromptManager'), 'STMemoryBooks');
+    }
+}
+
+/**
+ * Setup event handlers for the prompt manager popup
+ */
+
+function setupPromptManagerEventHandlers(popup) {
+    const dlg = popup.dlg;
+    let selectedPresetKey = null;
+    
+    // Row selection and inline actions
+    dlg.addEventListener('click', async (e) => {
+        // Handle inline action icon buttons first
+        const actionBtn = e.target.closest('.stmb-action');
+        if (actionBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const row = actionBtn.closest('tr[data-preset-key]');
+            const key = row?.dataset.presetKey;
+            if (!key) return;
+
+            // Keep row visually selected using ST theme colors
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.classList.remove('ui-state-active');
+                r.style.backgroundColor = '';
+                r.style.border = '';
+            });
+            if (row) {
+                row.style.backgroundColor = 'var(--cobalt30a)';
+                row.style.border = '';
+                selectedPresetKey = key;
+            }
+            const applyBtn = dlg.querySelector('#stmb-pm-apply');
+            if (applyBtn) applyBtn.disabled = false;
+
+            if (actionBtn.classList.contains('stmb-action-edit')) {
+                await editPreset(popup, key);
+            } else if (actionBtn.classList.contains('stmb-action-duplicate')) {
+                await duplicatePreset(popup, key);
+            } else if (actionBtn.classList.contains('stmb-action-delete')) {
+                await deletePreset(popup, key);
+            }
+            return;
+        }
+
+        // Handle row selection
+        const row = e.target.closest('tr[data-preset-key]');
+        if (row) {
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.classList.remove('ui-state-active');
+                r.style.backgroundColor = '';
+                r.style.border = '';
+            });
+            
+            row.style.backgroundColor = 'var(--cobalt30a)';
+            row.style.border = '';
+            selectedPresetKey = row.dataset.presetKey;
+
+            const applyBtn = dlg.querySelector('#stmb-pm-apply');
+            if (applyBtn) applyBtn.disabled = false;
+        }
+    });
+    
+    // Search functionality
+    const searchInput = dlg.querySelector('#stmb-prompt-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(row => {
+                const displayName = row.querySelector('td:first-child').textContent.toLowerCase();
+                row.style.display = displayName.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
+    // Button handlers
+    dlg.querySelector('#stmb-pm-new')?.addEventListener('click', async () => {
+        await createNewPreset(popup);
+    });
+    
+    dlg.querySelector('#stmb-pm-edit')?.addEventListener('click', async () => {
+        if (selectedPresetKey) {
+            await editPreset(popup, selectedPresetKey);
+        }
+    });
+    
+    dlg.querySelector('#stmb-pm-duplicate')?.addEventListener('click', async () => {
+        if (selectedPresetKey) {
+            await duplicatePreset(popup, selectedPresetKey);
+        }
+    });
+    
+    dlg.querySelector('#stmb-pm-delete')?.addEventListener('click', async () => {
+        if (selectedPresetKey) {
+            await deletePreset(popup, selectedPresetKey);
+        }
+    });
+    
+    dlg.querySelector('#stmb-pm-export')?.addEventListener('click', async () => {
+        await exportPrompts();
+    });
+    
+    dlg.querySelector('#stmb-pm-import')?.addEventListener('click', () => {
+        dlg.querySelector('#stmb-pm-import-file')?.click();
+    });
+    
+    dlg.querySelector('#stmb-pm-import-file')?.addEventListener('change', async (e) => {
+        await importPrompts(e, popup);
+    });
+
+    // Apply selected preset to current profile
+    dlg.querySelector('#stmb-pm-apply')?.addEventListener('click', async () => {
+        if (!selectedPresetKey) {
+            toastr.error(translate('Select a preset first', 'STMemoryBooks_SelectPresetFirst'), 'STMemoryBooks');
+            return;
+        }
+        const settings = extension_settings?.STMemoryBooks;
+        if (!settings || !Array.isArray(settings.profiles) || settings.profiles.length === 0) {
+            toastr.error(translate('No profiles available', 'STMemoryBooks_NoProfilesAvailable'), 'STMemoryBooks');
+            return;
+        }
+
+        // Determine selected profile index from the main settings popup if available
+        let selectedIndex = settings.defaultProfile || 0;
+        if (currentPopupInstance?.dlg) {
+            const profileSelect = currentPopupInstance.dlg.querySelector('#stmb-profile-select');
+            if (profileSelect) {
+                const parsed = parseInt(profileSelect.value);
+                if (!isNaN(parsed)) selectedIndex = parsed;
+            }
+        }
+
+        const prof = settings.profiles[selectedIndex];
+        if (!prof) {
+            toastr.error(translate('Selected profile not found', 'STMemoryBooks_SelectedProfileNotFound'), 'STMemoryBooks');
+            return;
+        }
+
+        // If the profile has a custom prompt, ask to clear it so the preset takes effect
+        if (prof.prompt && prof.prompt.trim()) {
+            const confirmPopup = new Popup(
+                `<h3 data-i18n="STMemoryBooks_ClearCustomPromptTitle">Clear Custom Prompt?</h3><p data-i18n="STMemoryBooks_ClearCustomPromptDesc">This profile has a custom prompt. Clear it so the selected preset is used?</p>`,
+                POPUP_TYPE.CONFIRM,
+                '',
+                { okButton: translate('Clear and Apply', 'STMemoryBooks_ClearAndApply'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
+            );
+            const res = await confirmPopup.show();
+            if (res === POPUP_RESULT.AFFIRMATIVE) {
+                prof.prompt = '';
+            } else {
+                return;
+            }
+        }
+
+        // Apply preset and save
+        prof.preset = selectedPresetKey;
+        saveSettingsDebounced();
+        toastr.success(translate('Preset applied to profile', 'STMemoryBooks_PresetAppliedToProfile'), 'STMemoryBooks');
+
+        // Refresh main settings popup if open
+        if (currentPopupInstance?.dlg) {
+            try { refreshPopupContent(); } catch (e) { /* noop */ }
+        }
+    });
+}
+
+/**
+ * Create a new preset
+ */
+async function createNewPreset(popup) {
+    const content = `
+        <h3 data-i18n="STMemoryBooks_CreateNewPresetTitle">Create New Preset</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-pm-new-display-name">
+                <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                <input type="text" id="stmb-pm-new-display-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_MyCustomPreset" placeholder="My Custom Preset" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-pm-new-prompt">
+                <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-pm-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-pm-new-prompt" class="text_pole textarea_compact" rows="10" data-i18n="[placeholder]STMemoryBooks_EnterPromptPlaceholder" placeholder="Enter your prompt here..."></textarea>
+            </label>
+        </div>
+    `;
+    
+    const editPopup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: translate('Create', 'STMemoryBooks_Create'),
+        cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+    });
+    
+    const result = await editPopup.show();
+    
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        const displayName = editPopup.dlg.querySelector('#stmb-pm-new-display-name').value.trim();
+        const prompt = editPopup.dlg.querySelector('#stmb-pm-new-prompt').value.trim();
+        
+        if (!prompt) {
+            toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), 'STMemoryBooks');
+            return;
+        }
+        
+        try {
+            await SummaryPromptManager.upsertPreset(null, prompt, displayName || null);
+            toastr.success(translate('Preset created successfully', 'STMemoryBooks_PresetCreatedSuccessfully'), 'STMemoryBooks');
+            // Notify other UIs about preset changes
+            window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
+            
+            // Refresh the manager popup
+            popup.completeAffirmative();
+            await showPromptManagerPopup();
+        } catch (error) {
+            console.error('STMemoryBooks: Error creating preset:', error);
+            toastr.error(translate('Failed to create preset', 'STMemoryBooks_FailedToCreatePreset'), 'STMemoryBooks');
+        }
+    }
+}
+
+/**
+ * Edit an existing preset
+ */
+async function editPreset(popup, presetKey) {
+    try {
+        const displayName = await SummaryPromptManager.getDisplayName(presetKey);
+        const prompt = await SummaryPromptManager.getPrompt(presetKey);
+        
+        const content = `
+            <h3 data-i18n="STMemoryBooks_EditPresetTitle">Edit Preset</h3>
+            <div class="world_entry_form_control">
+                <label for="stmb-pm-edit-display-name">
+                    <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                    <input type="text" id="stmb-pm-edit-display-name" class="text_pole" value="${escapeHtml(displayName)}" />
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-pm-edit-prompt">
+                    <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-pm-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                    <textarea id="stmb-pm-edit-prompt" class="text_pole textarea_compact" rows="10">${escapeHtml(prompt)}</textarea>
+                </label>
+            </div>
+        `;
+        
+        const editPopup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            okButton: translate('Save', 'STMemoryBooks_Save'),
+            cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+        });
+        
+        const result = await editPopup.show();
+        
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            const newDisplayName = editPopup.dlg.querySelector('#stmb-pm-edit-display-name').value.trim();
+            const newPrompt = editPopup.dlg.querySelector('#stmb-pm-edit-prompt').value.trim();
+            
+            if (!newPrompt) {
+                toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), 'STMemoryBooks');
+                return;
+            }
+            
+            await SummaryPromptManager.upsertPreset(presetKey, newPrompt, newDisplayName || null);
+            toastr.success(translate('Preset updated successfully', 'STMemoryBooks_PresetUpdatedSuccessfully'), 'STMemoryBooks');
+            // Notify other UIs about preset changes
+            window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
+            
+            // Refresh the manager popup
+            popup.completeAffirmative();
+            await showPromptManagerPopup();
+        }
+    } catch (error) {
+        console.error('STMemoryBooks: Error editing preset:', error);
+        toastr.error(translate('Failed to edit preset', 'STMemoryBooks_FailedToEditPreset'), 'STMemoryBooks');
+    }
+}
+
+/**
+ * Duplicate a preset
+ */
+async function duplicatePreset(popup, presetKey) {
+    try {
+        const newKey = await SummaryPromptManager.duplicatePreset(presetKey);
+        toastr.success(translate('Preset duplicated successfully', 'STMemoryBooks_PresetDuplicatedSuccessfully'), 'STMemoryBooks');
+        // Notify other UIs about preset changes
+        window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
+        
+        // Refresh the manager popup
+        popup.completeAffirmative();
+        await showPromptManagerPopup();
+    } catch (error) {
+        console.error('STMemoryBooks: Error duplicating preset:', error);
+        toastr.error(translate('Failed to duplicate preset', 'STMemoryBooks_FailedToDuplicatePreset'), 'STMemoryBooks');
+    }
+}
+
+/**
+ * Delete a preset
+ */
+async function deletePreset(popup, presetKey) {
+    const displayName = await SummaryPromptManager.getDisplayName(presetKey);
+    
+    const confirmPopup = new Popup(
+        `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p data-i18n="STMemoryBooks_DeletePresetConfirm" data-i18n-params='{"name": "${escapeHtml(displayName)}"}'>Are you sure you want to delete "${escapeHtml(displayName)}"?</p>`,
+        POPUP_TYPE.CONFIRM,
+        '',
+        { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
+    );
+    
+    const result = await confirmPopup.show();
+    
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        try {
+            await SummaryPromptManager.removePreset(presetKey);
+            toastr.success(translate('Preset deleted successfully', 'STMemoryBooks_PresetDeletedSuccessfully'), 'STMemoryBooks');
+            // Notify other UIs about preset changes
+            window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
+            
+            // Refresh the manager popup
+            popup.completeAffirmative();
+            await showPromptManagerPopup();
+        } catch (error) {
+            console.error('STMemoryBooks: Error deleting preset:', error);
+            toastr.error(translate('Failed to delete preset', 'STMemoryBooks_FailedToDeletePreset'), 'STMemoryBooks');
+        }
+    }
+}
+
+/**
+ * Export prompts to JSON
+ */
+async function exportPrompts() {
+    try {
+        const json = await SummaryPromptManager.exportToJSON();
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stmb-summary-prompts.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        toastr.success(translate('Prompts exported successfully', 'STMemoryBooks_PromptsExportedSuccessfully'), 'STMemoryBooks');
+    } catch (error) {
+        console.error('STMemoryBooks: Error exporting prompts:', error);
+        toastr.error(translate('Failed to export prompts', 'STMemoryBooks_FailedToExportPrompts'), 'STMemoryBooks');
+    }
+}
+
+/**
+ * Import prompts from JSON
+ */
+async function importPrompts(event, popup) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+        const text = await file.text();
+        await SummaryPromptManager.importFromJSON(text);
+        toastr.success(translate('Prompts imported successfully', 'STMemoryBooks_PromptsImportedSuccessfully'), 'STMemoryBooks');
+        // Notify other UIs about preset changes
+        window.dispatchEvent(new CustomEvent('stmb-presets-updated'));
+        
+        // Refresh the manager popup
+        popup.completeAffirmative();
+        await showPromptManagerPopup();
+    } catch (error) {
+        console.error('STMemoryBooks: Error importing prompts:', error);
+        toastr.error(__st_t_tag`Failed to import prompts: ${error.message}`, 'STMemoryBooks');
+    }
 }
 
 /**
@@ -1282,7 +1828,8 @@ function populateInlineButtons() {
  */
 async function showSettingsPopup() {
     const settings = initializeSettings();
-    const sceneData = getSceneData();
+    await SummaryPromptManager.firstRunInitIfMissing(settings);
+    const sceneData = await getSceneData();
     const selectedProfile = settings.profiles[settings.defaultProfile];
     const sceneMarkers = getSceneMarkers();
 
@@ -1298,6 +1845,7 @@ async function showSettingsPopup() {
         alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
         showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
         showNotifications: settings.moduleSettings.showNotifications,
+        unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
         refreshEditor: settings.moduleSettings.refreshEditor,
         allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
         manualModeEnabled: settings.moduleSettings.manualModeEnabled,
@@ -1318,6 +1866,7 @@ async function showSettingsPopup() {
         lorebookNameTemplate: settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}',
         profiles: settings.profiles.map((profile, index) => ({
             ...profile,
+            name: (profile?.connection?.api === 'current_st') ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
             isDefault: index === settings.defaultProfile
         })),
         titleFormat: settings.titleFormat,
@@ -1326,12 +1875,12 @@ async function showSettingsPopup() {
             isSelected: format === settings.titleFormat
         })),
         showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
-        selectedProfile: {
-            ...selectedProfile,
-            connection: selectedProfile.useDynamicSTSettings ?
+            selectedProfile: {
+                ...selectedProfile,
+                connection: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
                 (() => {
                     const currentApiInfo = getCurrentApiInfo();
-                    const currentSettings = getCurrentModelSettings();
+                    const currentSettings = getUIModelSettings();
                     return {
                         api: currentApiInfo.completionSource || 'openai',
                         model: currentSettings.model || 'Not Set',
@@ -1342,22 +1891,22 @@ async function showSettingsPopup() {
                     model: selectedProfile.connection?.model || 'Not Set',
                     temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                 },
-            titleFormat: selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat),
-            effectivePrompt: getEffectivePrompt(selectedProfile)
+            titleFormat: (selectedProfile.titleFormat || settings.titleFormat),
+            effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await SummaryPromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
         }
     };
 
     const content = DOMPurify.sanitize(settingsTemplate(templateData));
     
     // Build customButtons array dynamically based on current state
-    const customButtons = [
+const customButtons = [
         {
-            text: '🧠 Create Memory',
+            text: '🧠 ' + translate('Create Memory', 'STMemoryBooks_CreateMemoryButton'),
             result: null,
-            classes: ['menu_button', 'interactable'],
+            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
             action: async () => {
                 if (!sceneData) {
-                    toastr.error('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks');
+                    toastr.error(translate('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks_NoSceneSelectedMakeSure'), 'STMemoryBooks');
                     return;
                 }
 
@@ -1374,10 +1923,10 @@ async function showSettingsPopup() {
                 await initiateMemoryCreation(selectedProfileIndex);
             }
         },
-        {
-            text: '🗑️ Clear Scene',
+{
+            text: '🗑️ ' + translate('Clear Scene', 'STMemoryBooks_ClearSceneButton'),
             result: null,
-            classes: ['menu_button', 'interactable'],
+            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
             action: () => {
                 clearScene();
                 refreshPopupContent();
@@ -1392,7 +1941,7 @@ async function showSettingsPopup() {
         large: true,
         allowVerticalScrolling: true,
         customButtons: customButtons,
-        cancelButton: 'Close',
+        cancelButton: translate('Close', 'STMemoryBooks_Close'),
         okButton: false,
         onClose: handleSettingsPopupClose
     };
@@ -1432,13 +1981,19 @@ function setupSettingsEventListeners() {
                 importProfiles(e, settings, refreshPopupContent);
             } catch (error) {
                 console.error(`${MODULE_NAME}: Error in import profiles:`, error);
-                toastr.error('Failed to import profiles', 'STMemoryBooks');
+toastr.error(translate('Failed to import profiles', 'STMemoryBooks_FailedToImportProfiles'), 'STMemoryBooks');
             }
             return;
         }
         
         if (e.target.matches('#stmb-allow-scene-overlap')) {
             settings.moduleSettings.allowSceneOverlap = e.target.checked;
+            saveSettingsDebounced();
+            return;
+        }
+
+        if (e.target.matches('#stmb-unhide-before-memory')) {
+            settings.moduleSettings.unhideBeforeMemory = e.target.checked;
             saveSettingsDebounced();
             return;
         }
@@ -1465,16 +2020,16 @@ function setupSettingsEventListeners() {
                     // If there's a chat-bound lorebook, suggest using it or selecting a different one
                     if (chatBoundLorebook) {
                         const popupContent = `
-                            <h4>Manual Lorebook Setup</h4>
+                            <h4 data-i18n="STMemoryBooks_ManualLorebookSetupTitle">Manual Lorebook Setup</h4>
                             <div class="world_entry_form_control">
-                                <p>You have a chat-bound lorebook "<strong>${chatBoundLorebook}</strong>".</p>
-                                <p>Would you like to use it for manual mode or select a different one?</p>
+                                <p data-i18n="STMemoryBooks_ManualLorebookSetupDesc1" data-i18n-params='{"name": "${chatBoundLorebook}"}'>You have a chat-bound lorebook "<strong>${chatBoundLorebook}</strong>".</p>
+                                <p data-i18n="STMemoryBooks_ManualLorebookSetupDesc2">Would you like to use it for manual mode or select a different one?</p>
                             </div>
                         `;
 
                         const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', {
-                            okButton: 'Use Chat-bound',
-                            cancelButton: 'Select Different'
+                            okButton: translate('Use Chat-bound', 'STMemoryBooks_UseChatBound'),
+                            cancelButton: translate('Select Different', 'STMemoryBooks_SelectDifferent')
                         });
                         const result = await popup.show();
 
@@ -1482,7 +2037,7 @@ function setupSettingsEventListeners() {
                             // Use the chat-bound lorebook as manual lorebook
                             stmbData.manualLorebook = chatBoundLorebook;
                             saveMetadataForCurrentContext();
-                            toastr.success(`Manual lorebook set to "${chatBoundLorebook}"`, 'STMemoryBooks');
+                            toastr.success(__st_t_tag`Manual lorebook set to "${chatBoundLorebook}"`, 'STMemoryBooks');
                         } else {
                             // Let user select a different lorebook
                             const selectedLorebook = await showLorebookSelectionPopup(chatBoundLorebook);
@@ -1495,7 +2050,7 @@ function setupSettingsEventListeners() {
                         }
                     } else {
                         // No chat-bound lorebook, prompt to select one
-                        toastr.info('Please select a lorebook for manual mode', 'STMemoryBooks');
+                        toastr.info(translate('Please select a lorebook for manual mode', 'STMemoryBooks_PleaseSelectLorebookForManualMode'), 'STMemoryBooks');
                         const selectedLorebook = await showLorebookSelectionPopup();
                         if (!selectedLorebook) {
                             // User cancelled, revert the checkbox
@@ -1533,23 +2088,23 @@ function setupSettingsEventListeners() {
                 const summaryTitle = popupElement.querySelector('#stmb-summary-title');
                 const summaryPrompt = popupElement.querySelector('#stmb-summary-prompt');
 
-                if (selectedProfile.useDynamicSTSettings) {
-                    // For dynamic profiles, show current ST settings
+                if (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) {
+                    // For dynamic/current_st profiles, show current ST settings
                     const currentApiInfo = getCurrentApiInfo();
-                    const currentSettings = getCurrentModelSettings();
+                    const currentSettings = getUIModelSettings();
 
                     if (summaryApi) summaryApi.textContent = currentApiInfo.completionSource || 'openai';
-                    if (summaryModel) summaryModel.textContent = currentSettings.model || 'Not Set';
+                    if (summaryModel) summaryModel.textContent = currentSettings.model || translate('Not Set', 'STMemoryBooks_NotSet');
                     if (summaryTemp) summaryTemp.textContent = currentSettings.temperature || '0.7';
                 } else {
                     // For regular profiles, show stored settings
                     if (summaryApi) summaryApi.textContent = selectedProfile.connection?.api || 'openai';
-                    if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || 'Not Set';
+                    if (summaryModel) summaryModel.textContent = selectedProfile.connection?.model || translate('Not Set', 'STMemoryBooks_NotSet');
                     if (summaryTemp) summaryTemp.textContent = selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : '0.7';
                 }
-                // For title format, dynamic profiles use current settings, regular profiles use their own
-                if (summaryTitle) summaryTitle.textContent = selectedProfile.useDynamicSTSettings ? settings.titleFormat : (selectedProfile.titleFormat || settings.titleFormat);
-                if (summaryPrompt) summaryPrompt.textContent = getEffectivePrompt(selectedProfile);
+                // Title format is profile-specific
+                if (summaryTitle) summaryTitle.textContent = (selectedProfile.titleFormat || settings.titleFormat);
+                if (summaryPrompt) summaryPrompt.textContent = await getEffectivePromptAsync(selectedProfile);
             }
             return;
         }
@@ -1678,6 +2233,7 @@ function handleSettingsPopupClose(popup) {
         const alwaysUseDefault = popupElement.querySelector('#stmb-always-use-default')?.checked ?? settings.moduleSettings.alwaysUseDefault;
         const showMemoryPreviews = popupElement.querySelector('#stmb-show-memory-previews')?.checked ?? settings.moduleSettings.showMemoryPreviews;
         const showNotifications = popupElement.querySelector('#stmb-show-notifications')?.checked ?? settings.moduleSettings.showNotifications;
+        const unhideBeforeMemory = popupElement.querySelector('#stmb-unhide-before-memory')?.checked ?? settings.moduleSettings.unhideBeforeMemory;
         const refreshEditor = popupElement.querySelector('#stmb-refresh-editor')?.checked ?? settings.moduleSettings.refreshEditor;
         const allowSceneOverlap = popupElement.querySelector('#stmb-allow-scene-overlap')?.checked ?? settings.moduleSettings.allowSceneOverlap;
         const autoHideMode = popupElement.querySelector('#stmb-auto-hide-mode')?.value ?? getAutoHideMode(settings.moduleSettings);
@@ -1715,6 +2271,7 @@ function handleSettingsPopupClose(popup) {
         const hasChanges = alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault ||
                           showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews ||
                           showNotifications !== settings.moduleSettings.showNotifications ||
+                          unhideBeforeMemory !== settings.moduleSettings.unhideBeforeMemory ||
                           refreshEditor !== settings.moduleSettings.refreshEditor ||
                           tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
                           defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount ||
@@ -1730,6 +2287,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
             settings.moduleSettings.showMemoryPreviews = showMemoryPreviews;
             settings.moduleSettings.showNotifications = showNotifications;
+            settings.moduleSettings.unhideBeforeMemory = unhideBeforeMemory;
             settings.moduleSettings.refreshEditor = refreshEditor;
             settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
             settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
@@ -1747,7 +2305,7 @@ function handleSettingsPopupClose(popup) {
         }
     } catch (error) {
         console.error('STMemoryBooks: Failed to save settings:', error);
-        toastr.warning('Failed to save settings. Please try again.', 'STMemoryBooks');
+        toastr.warning(translate('Failed to save settings. Please try again.', 'STMemoryBooks_FailedToSaveSettings'), 'STMemoryBooks');
     }
     currentPopupInstance = null;
 }
@@ -1755,14 +2313,14 @@ function handleSettingsPopupClose(popup) {
 /**
  * Refresh popup content while preserving popup properties
  */
-function refreshPopupContent() {
+async function refreshPopupContent() {
     if (!currentPopupInstance || !currentPopupInstance.dlg.hasAttribute('open')) {
         return;
     }
     
     try {
         const settings = initializeSettings();
-        const sceneData = getSceneData();
+        const sceneData = await getSceneData();
         const selectedProfile = settings.profiles[settings.defaultProfile];
         const sceneMarkers = getSceneMarkers();
 
@@ -1778,6 +2336,7 @@ function refreshPopupContent() {
             alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
             showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
             showNotifications: settings.moduleSettings.showNotifications,
+            unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
             refreshEditor: settings.moduleSettings.refreshEditor,
             allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
             manualModeEnabled: settings.moduleSettings.manualModeEnabled,
@@ -1798,6 +2357,7 @@ function refreshPopupContent() {
             lorebookNameTemplate: settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}',
             profiles: settings.profiles.map((profile, index) => ({
                 ...profile,
+                name: (profile?.connection?.api === 'current_st') ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
                 isDefault: index === settings.defaultProfile
             })),
             titleFormat: settings.titleFormat,
@@ -1808,10 +2368,10 @@ function refreshPopupContent() {
             showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
             selectedProfile: {
                 ...selectedProfile,
-                connection: selectedProfile.useDynamicSTSettings ?
+                connection: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
                     (() => {
                         const currentApiInfo = getCurrentApiInfo();
-                        const currentSettings = getCurrentModelSettings();
+                        const currentSettings = getUIModelSettings();
                         return {
                             api: currentApiInfo.completionSource || 'openai',
                             model: currentSettings.model || 'Not Set',
@@ -1823,7 +2383,7 @@ function refreshPopupContent() {
                         temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                     },
                 titleFormat: selectedProfile.titleFormat || settings.titleFormat,
-                effectivePrompt: getEffectivePrompt(selectedProfile)
+                effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await SummaryPromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
             }
         };
         
@@ -1890,17 +2450,17 @@ function registerSlashCommands() {
     const createMemoryCmd = SlashCommand.fromProps({
         name: 'creatememory',
         callback: handleCreateMemoryCommand,
-        helpString: 'Create memory from marked scene'
+        helpString: translate('Create memory from marked scene', 'STMemoryBooks_Slash_CreateMemory_Help')
     });
     
     const sceneMemoryCmd = SlashCommand.fromProps({
         name: 'scenememory', 
         callback: handleSceneMemoryCommand,
-        helpString: 'Set scene range and create memory (e.g., /scenememory 10-15)',
+        helpString: translate('Set scene range and create memory (e.g., /scenememory 10-15)', 'STMemoryBooks_Slash_SceneMemory_Help'),
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Message range (X-Y format)',
-                typeList: [ARGUMENT_TYPE.STRING],
+                description: translate('Message range (X-Y format)', 'STMemoryBooks_Slash_SceneMemory_ArgRangeDesc'),
+            typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true
             })
         ]
@@ -1909,13 +2469,28 @@ function registerSlashCommands() {
     const nextMemoryCmd = SlashCommand.fromProps({
         name: 'nextmemory',
         callback: handleNextMemoryCommand,
-        helpString: 'Create memory from end of last memory to current message'
+        helpString: translate('Create memory from end of last memory to current message', 'STMemoryBooks_Slash_NextMemory_Help')
+    });
+
+    const sidePromptCmd = SlashCommand.fromProps({
+        name: 'sideprompt',
+        callback: handleSidePromptCommand,
+        helpString: translate('Run side prompt. Usage: /sideprompt "Name" [X-Y]', 'STMemoryBooks_Slash_SidePrompt_Help'),
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: translate('Template name (quote if contains spaces), optionally followed by X-Y range', 'STMemoryBooks_Slash_SidePrompt_ArgDesc'),
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: sidePromptTemplateEnumProvider
+            })
+        ]
     });
 
     SlashCommandParser.addCommandObject(autoChapterCmd);
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
+    SlashCommandParser.addCommandObject(sidePromptCmd);
 }
 
 /**
@@ -1926,7 +2501,7 @@ function createUI() {
         <div id="stmb-menu-item-container" class="extension_container interactable" tabindex="0">            
             <div id="stmb-menu-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
                 <div class="fa-fw fa-solid fa-book extensionsMenuExtensionButton"></div>
-                <span>Memory Books</span>
+                <span data-i18n="STMemoryBooks_MenuItem">Memory Books</span>
             </div>
         </div>
     `);
@@ -2021,9 +2596,6 @@ function setupEventListeners() {
                 generate_data.temperature = conn.temperature;
             }
 
-            // Defeat model/temp locks
-            generate_data.bypass_mtlock = true;
-            generate_data.force_model = true;
         }
     });
     
@@ -2037,6 +2609,36 @@ async function init() {
     if (hasBeenInitialized) return;
     hasBeenInitialized = true;
     console.log('STMemoryBooks: Initializing');
+    // Merge this extension's locale data into SillyTavern's current locale:
+    // - Do not reinitialize ST i18n (host owns init)
+    // - Load JSON for current locale if available, then ensure English fallback exists
+    try {
+        const current = getCurrentLocale?.() || 'en';
+
+        // Try to fetch JSON bundle for current locale (works without JSON import assertions)
+        try {
+            const jsonData = await loadLocaleJson(current);
+            if (jsonData) {
+                addLocaleData(current, jsonData);
+            }
+        } catch (e) {
+            console.warn('STMemoryBooks: Failed to load JSON locale bundle:', e);
+        }
+
+        // Merge statically-bundled locales (English fallback, and any inline bundles)
+        if (localeData && typeof localeData === 'object') {
+            if (localeData[current]) {
+                addLocaleData(current, localeData[current]);
+            }
+            if (current !== 'en' && localeData['en']) {
+                addLocaleData(current, Object.fromEntries(
+                    Object.entries(localeData['en']).filter(([k]) => true)
+                ));
+            }
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: Failed to merge plugin locales:', e);
+    }
     // Wait for SillyTavern to be ready
     let attempts = 0;
     const maxAttempts = 20;
@@ -2051,6 +2653,9 @@ async function init() {
 
     // Create UI now that extensions menu is available
     createUI();
+
+    // Apply locale to any initial DOM injected by this module
+    try { applyLocale(); } catch (e) { /* no-op */ }
 
     // Initialize settings with validation
     const settings = initializeSettings();
@@ -2072,12 +2677,15 @@ async function init() {
         initializeChatObserver();
     } catch (error) {
         console.error('STMemoryBooks: Failed to initialize chat observer:', error);
-        toastr.error('STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.', 'STMemoryBooks');
+        toastr.error(translate('STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.', 'STMemoryBooks_FailedToInitializeChatMonitoring'), 'STMemoryBooks');
         return;
     }
     
     // Setup event listeners
     setupEventListeners();
+
+    // Preload side prompt names cache for autocomplete
+    await refreshSidePromptCache();
     
     // Register slash commands
     registerSlashCommands();
@@ -2106,4 +2714,4 @@ $(document).ready(() => {
     }    
     // Fallback initialization
     setTimeout(init, 2000);    
-});
+})

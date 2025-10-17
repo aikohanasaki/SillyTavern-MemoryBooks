@@ -1,5 +1,7 @@
 import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
+import { estimateTokens } from './utils.js';
+import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ChatCompile';
 const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
@@ -18,15 +20,15 @@ export function compileScene(sceneRequest) {
     
     // Validate input parameters
     if (sceneStart == null || sceneEnd == null) {
-        throw new Error('Scene markers are required for compilation');
+        throw new Error(translate('Scene markers are required', 'chatcompile.errors.sceneMarkersRequired'));
     }
 
     if (sceneStart > sceneEnd) {
-        throw new Error('Start marker cannot be greater than end marker');
+        throw new Error(translate('Start message cannot be greater than end message', 'chatcompile.errors.startGreaterThanEnd'));
     }
 
     if (sceneStart < 0 || sceneEnd >= chat.length) {
-        throw new Error(`Scene markers (${sceneStart}-${sceneEnd}) are out of chat bounds (0-${chat.length - 1})`);
+        throw new Error(__st_t_tag`Message IDs out of bounds: ${sceneStart}-${sceneEnd} (0-${chat.length - 1})`);
     }
     
     // Extract and format messages in range
@@ -70,14 +72,14 @@ export function compileScene(sceneRequest) {
         sceneStart,
         sceneEnd,
         chatId: chatId || 'unknown',
-        characterName: characterName || name2 || 'Unknown',
+        characterName: characterName || name2 || translate('Unknown', 'common.unknown'),
         messageCount: sceneMessages.length,
         totalRequestedRange: sceneEnd - sceneStart + 1,
         hiddenMessagesSkipped: hiddenMessageCount,
         messagesSkipped: skippedMessageCount,
         compiledAt: new Date().toISOString(),
         totalChatLength: chat.length,
-        userName: name1 || 'User'
+        userName: name1 || translate('User', 'chatcompile.defaults.user')
     };
     
     const compiledScene = {
@@ -87,7 +89,7 @@ export function compileScene(sceneRequest) {
     
     // Validate that we have at least some visible messages
     if (sceneMessages.length === 0) {
-        throw new Error(`No visible messages found in range ${sceneStart}-${sceneEnd}. All messages may be hidden or missing.`);
+        throw new Error(__st_t_tag`No visible messages in range ${sceneStart}-${sceneEnd}`);
     }
     
     return compiledScene;
@@ -106,7 +108,7 @@ export function createSceneRequest(sceneStart, sceneEnd) {
         sceneStart,
         sceneEnd,
         chatId: context.chatId || 'unknown',
-        characterName: context.name2 || name2 || 'Unknown'
+        characterName: context.name2 || name2 || translate('Unknown', 'common.unknown')
     };
     
     return sceneRequest;
@@ -117,23 +119,12 @@ export function createSceneRequest(sceneStart, sceneEnd) {
  * @param {Object} compiledScene - Compiled scene data
  * @returns {number} Estimated token count
  */
-export function estimateTokenCount(compiledScene) {
-    let totalChars = 0;
-    
-    // Count metadata as JSON string
-    totalChars += JSON.stringify(compiledScene.metadata).length;
-    
-    // Count all message content
-    for (const message of compiledScene.messages) {
-        totalChars += (message.mes || '').length;
-        totalChars += (message.name || '').length;
-        // Add overhead for JSON structure
-        totalChars += 50; // Approximate overhead per message
-    }
-    
-    const estimatedTokens = Math.ceil(totalChars / CHARS_PER_TOKEN);
-    
-    return estimatedTokens;
+export async function estimateTokenCount(compiledScene) {
+    // Use the same canonical estimator (char/4) over the readable scene text
+    // and do not include output tokens for UI stats.
+    const text = toReadableText(compiledScene);
+    const { input } = await estimateTokens(text, { estimatedOutput: 0 });
+    return input;
 }
 
 /**
@@ -141,7 +132,7 @@ export function estimateTokenCount(compiledScene) {
  * @param {Object} compiledScene - Compiled scene data
  * @returns {Object} Scene statistics
  */
-export function getSceneStats(compiledScene) {
+export async function getSceneStats(compiledScene) {
     const { metadata, messages } = compiledScene;
     
     // Count speakers
@@ -166,7 +157,7 @@ export function getSceneStats(compiledScene) {
         speakerCount: speakers.size,
         speakers: Array.from(speakers),
         totalCharacters: totalMessageLength,
-        estimatedTokens: estimateTokenCount(compiledScene),
+        estimatedTokens: await estimateTokenCount(compiledScene),
         userMessages,
         characterMessages,
         timeSpan: {
@@ -187,37 +178,37 @@ export function validateCompiledScene(compiledScene) {
     
     // Check basic structure
     if (!compiledScene.metadata) {
-        errors.push('Missing metadata object');
+        errors.push(translate('Missing metadata', 'chatcompile.validation.errors.missingMetadata'));
     }
     
     if (!compiledScene.messages || !Array.isArray(compiledScene.messages)) {
-        errors.push('Missing or invalid messages array');
+        errors.push(translate('Invalid messages array', 'chatcompile.validation.errors.invalidMessagesArray'));
     }
     
     if (compiledScene.messages && compiledScene.messages.length === 0) {
-        warnings.push('No messages in compiled scene');
+        warnings.push(translate('No messages', 'chatcompile.validation.warnings.noMessages'));
     }
     
     // Check message structure
     if (compiledScene.messages) {
         compiledScene.messages.forEach((message, index) => {
             if (!message.id && message.id !== 0) {
-                warnings.push(`Message at index ${index} missing ID`);
+                warnings.push(__st_t_tag`Message at index ${index} missing id`);
             }
             
             if (!message.name) {
-                warnings.push(`Message at index ${index} missing speaker name`);
+                warnings.push(__st_t_tag`Message at index ${index} missing name`);
             }
             
             if (!message.mes && message.mes !== '') {
-                warnings.push(`Message at index ${index} missing content`);
+                warnings.push(__st_t_tag`Message at index ${index} missing content`);
             }
         });
     }
     
     // Check for large scenes
     if (compiledScene.messages && compiledScene.messages.length > 100) {
-        warnings.push('Very large scene (>100 messages) - consider breaking into smaller segments');
+        warnings.push(translate('Very large scene', 'chatcompile.validation.warnings.veryLargeScene'));
     }
     
     const isValid = errors.length === 0;
@@ -238,16 +229,16 @@ export function toReadableText(compiledScene) {
     const { metadata, messages } = compiledScene;
     
     let output = [];
-    output.push('=== SCENE METADATA ===');
-    output.push(`Range: Messages ${metadata.sceneStart}-${metadata.sceneEnd}`);
-    output.push(`Chat: ${metadata.chatId}`);
-    output.push(`Character: ${metadata.characterName}`);
-    output.push(`Compiled: ${metadata.messageCount} messages`);
-    output.push(`Compiled at: ${metadata.compiledAt}`);
+    output.push(translate('=== SCENE METADATA ===', 'chatcompile.readable.headerMetadata'));
+    output.push(__st_t_tag`Range: ${metadata.sceneStart}-${metadata.sceneEnd}`);
+    output.push(__st_t_tag`Chat: ${metadata.chatId}`);
+    output.push(__st_t_tag`Character: ${metadata.characterName}`);
+    output.push(__st_t_tag`Compiled: ${metadata.messageCount}`);
+    output.push(__st_t_tag`Compiled at: ${metadata.compiledAt}`);
     output.push('');
-    output.push('=== SCENE MESSAGES ===');
+    output.push(translate('=== SCENE MESSAGES ===', 'chatcompile.readable.headerMessages'));
     messages.forEach(message => {
-        output.push(`[${message.id}] ${message.name}: ${message.mes}`);
+        output.push(__st_t_tag`[${message.id}] ${message.name}: ${message.mes}`);
     });
     
     return output.join('\n');
@@ -258,8 +249,8 @@ export function toReadableText(compiledScene) {
  * @private
  */
 function cleanSpeakerName(name) {
-    if (!name) return 'Unknown';
-    return name.trim() || 'Unknown';
+    if (!name) return translate('Unknown', 'common.unknown');
+    return name.trim() || translate('Unknown', 'common.unknown');
 }
 
 /**

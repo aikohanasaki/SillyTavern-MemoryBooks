@@ -31,6 +31,8 @@ export const settingsTemplate = Handlebars.compile(`
         {{else}}
         <div id="stmb-memory-status" class="info-block">
             <span>📊 <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: <span data-i18n="STMemoryBooks_NoMemoriesProcessed">No memories have been processed for this chat yet</span> <small data-i18n="STMemoryBooks_SinceVersion">(since updating to version 3.6.2 or higher.)</small></span>
+            <br />
+            <small data-i18n="STMemoryBooks_AutoSummaryNote">Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.</small>
         </div>
         {{/if}}
 
@@ -48,6 +50,10 @@ export const settingsTemplate = Handlebars.compile(`
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
             </label>
         </div>
 
@@ -94,7 +100,7 @@ export const settingsTemplate = Handlebars.compile(`
             </h5>
 
             <div id="stmb-manual-controls" style="display: {{#if manualModeEnabled}}block{{else}}none{{/if}};">
-                <div class="flex-container marginTop5" id="stmb-manual-lorebook-buttons" style="justify-content: center;">
+                <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-manual-lorebook-buttons">
                     <!-- Manual lorebook buttons will be dynamically inserted here -->
                 </div>
             </div>
@@ -132,7 +138,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
             </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc">Automatically run /nextmemory after a specified number of messages.</small>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc">Automatically run /nextmemory after a specified number of messages.</small>            
         </div>
 
         <div class="world_entry_form_control">
@@ -231,14 +237,14 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
 
         <h4 data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
-        <div class="flex-container marginTop5" id="stmb-profile-buttons" style="justify-content: center;">
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-profile-buttons">
             <!-- Profile buttons will be dynamically inserted here -->
         </div>
 
-        <h4 data-i18n="STMemoryBooks_ImportExportProfiles">Import/Export Profiles:</h4>
+        <h4 data-i18n="STMemoryBooks_extraFunctionButtons">Extra Function Buttons:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
-        <div class="flex-container marginTop5" id="stmb-import-export-buttons" style="justify-content: center;">
-            <!-- Import/Export buttons will be dynamically inserted here -->
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-extra-function-buttons">
+            <!-- extra function buttons will be dynamically inserted here -->
         </div>
 `);
 
@@ -317,7 +323,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
         <label for="stmb-effective-prompt-advanced">
             <h4 data-i18n="STMemoryBooks_MemoryCreationPrompt">Memory Creation Prompt:</h4>
             <small data-i18n="STMemoryBooks_CustomizePromptDesc">Customize the prompt used to generate this memory.</small>
-            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-effective-prompt-advanced" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-effective-prompt-advanced" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
             <textarea id="stmb-effective-prompt-advanced" class="text_pole textarea_compact" rows="6" data-i18n="[placeholder]STMemoryBooks_MemoryPromptPlaceholder" placeholder="Memory creation prompt">{{effectivePrompt}}</textarea>
         </label>
     </div>
@@ -399,14 +405,14 @@ export const memoryPreviewTemplate = Handlebars.compile(`
     <div class="world_entry_form_control">
         <label for="stmb-preview-title">
             <h4 data-i18n="STMemoryBooks_MemoryTitle">Memory Title:</h4>
-            <input type="text" id="stmb-preview-title" class="text_pole" value="{{#if title}}{{title}}{{else}}Memory{{/if}}" data-i18n="[placeholder]STMemoryBooks_MemoryTitlePlaceholder" placeholder="Memory title">
+            <input type="text" id="stmb-preview-title" class="text_pole" value="{{#if title}}{{title}}{{else}}Memory{{/if}}" data-i18n="[placeholder]STMemoryBooks_MemoryTitlePlaceholder" placeholder="Memory title" {{#if titleReadonly}}readonly disabled{{/if}}>
         </label>
     </div>
 
     <div class="world_entry_form_control">
         <label for="stmb-preview-content">
             <h4 data-i18n="STMemoryBooks_MemoryContent">Memory Content:</h4>
-            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-preview-content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-preview-content" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
             <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" data-i18n="[placeholder]STMemoryBooks_MemoryContentPlaceholder" placeholder="Memory content">{{#if content}}{{content}}{{else}}{{/if}}</textarea>
         </label>
     </div>

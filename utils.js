@@ -4,6 +4,7 @@ import { selected_group, groups } from '../../../group-chats.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
+import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
@@ -62,6 +63,19 @@ const SUPPORTED_COMPLETION_SOURCES = [
     'deepseek', 'electronhub', 'aimlapi', 'xai', 'pollinations',
     'moonshot', 'fireworks', 'cometapi', 'azure_openai'
 ];
+
+/**
+ * Normalize completion source names.
+ * Note: In ST base code, the provider is represented as 'makersuite'.
+ * Keep 'makersuite' as the canonical key and avoid other aliases.
+ */
+export function normalizeCompletionSource(source) {
+    const s = String(source || '').trim().toLowerCase();
+    // Canonical provider key is 'makersuite' in ST base code.
+    // Accept legacy alias and normalize to 'makersuite' to match ST without changing ST code.
+    if (s === 'google') return 'makersuite';
+    return s === '' ? 'openai' : s;
+}
 
 /**
  * BULLETPROOF: Get current API and completion source information with comprehensive error handling
@@ -229,12 +243,7 @@ export function getCurrentMemoryBooksContext() {
             const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() || 0.7);
             
             // Get model using the same method as ModelTempLocks
-            let currentModel = '';
-            if (currentApiInfo.completionSource === 'custom') {
-                currentModel = $(SELECTORS.customModelId).val() || $(SELECTORS.modelCustomSelect).val() || '';
-            } else {
-                currentModel = $(apiSelectors.model).val() || '';
-            }
+            let currentModel = $(apiSelectors.model).val() || '';
             
             modelSettings = {
                 api: currentApiInfo.api,
@@ -402,10 +411,39 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
 /**
  * Get current model and temperature settings with comprehensive validation
  */
-export function getCurrentModelSettings() {
+export function getCurrentModelSettings(profile) {
+    try {
+        if (!profile) {
+            throw new Error('getCurrentModelSettings requires a profile');
+        }
+        const conn = profile.effectiveConnection || profile.connection;
+        if (!conn) {
+            throw new Error('Profile is missing connection');
+        }
+        const model = (conn.model || '').trim();
+        if (!model) {
+            throw new Error('Profile is missing required connection.model');
+        }
+        let temp = parseTemperature(conn.temperature);
+        if (temp === null) temp = 0.7;
+
+        return {
+            model,
+            temperature: temp,
+        };
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
+        throw error;
+    }
+}
+
+/**
+ * UI-based model/temperature reader (for dynamic ST settings or overrides)
+ */
+export function getUIModelSettings() {
     try {
         const selectors = getApiSelectors();
-        const currentModel = $(selectors.model).val() || '';
+        const currentModel = ($(selectors.model).val() || '').trim();
         let currentTemp = 0.7;
         const tempValue = $(selectors.temp).val() || $(selectors.tempCounter).val();
         if (tempValue !== null && tempValue !== undefined && tempValue !== '') {
@@ -419,12 +457,58 @@ export function getCurrentModelSettings() {
             temperature: currentTemp,
         };
     } catch (error) {
-        console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
+        console.warn(`${MODULE_NAME}: Error getting UI model settings:`, error);
         return {
             model: '',
             temperature: 0.7
         };
     }
+}
+
+/**
+ * Estimate tokens for a text string using the project tokenizer with a safe fallback.
+ * Returns input (prompt) tokens, an estimated output token count, and the total.
+ *
+ * Callers should pass the exact string they intend to send to the model
+ * (e.g., system + prompt + scene), to ensure accurate budgeting and warnings.
+ *
+ * @param {string} text
+ * @param {{ estimatedOutput?: number }} [options]
+ * @returns {Promise<{ input: number, output: number, total: number }>}
+ */
+export async function estimateTokens(text, options = {}) {
+    const { estimatedOutput = 300 } = options;
+    const content = String(text || '');
+    const inputTokens = Math.ceil(content.length / 4);
+    return {
+        input: inputTokens,
+        output: estimatedOutput,
+        total: inputTokens + estimatedOutput,
+    };
+}
+
+/**
+ * Resolve a profile's effective connection into a normalized shape
+ * { api, model, temperature, endpoint, apiKey }.
+ * - Applies normalizeCompletionSource to api
+ * - Clamps temperature to [0, 2] with default 0.7
+ * - Passes through endpoint/apiKey if provided on the profile connection
+ *
+ * @param {Object} profile
+ * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string }}
+ */
+export function resolveEffectiveConnectionFromProfile(profile) {
+    const conn = (profile?.effectiveConnection || profile?.connection || {});
+    const api = normalizeCompletionSource(conn.api || 'openai');
+    const model = (conn.model || '').trim();
+    let temperature = 0.7;
+    if (typeof conn.temperature === 'number' && !Number.isNaN(conn.temperature)) {
+        temperature = Math.max(0, Math.min(2, conn.temperature));
+    }
+    const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
+    const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
+
+    return { api, model, temperature, endpoint, apiKey };
 }
 
 
@@ -457,7 +541,7 @@ export const PRESET_PROMPTS = {
                  '  "content": "Detailed summary with markdown headers...",\n' +
                  '  "keywords": ["keyword1", "keyword2", "keyword3"]\n' +
                  "}\n\n" +
-                 "For the content field, create a detailed summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):\n" +
+                 "For the content field, create a detailed bullet-point summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):\n" +
                  "- **Timeline**: Day/time this scene covers.\n" +
                  "- **Story Beats**: List all important plot events and story developments that occurred.\n" +
                  "- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.\n" +
@@ -553,29 +637,26 @@ export const DEFAULT_PROMPT = 'Analyze the following chat scene and return a mem
                               'Return ONLY the JSON, no other text.';
 
 /**
- * Get preset prompt based on preset name
+ * Get preset prompt based on preset name (async, supports custom/user presets)
  * @param {string} presetName - Name of the preset
- * @returns {string} The prompt text
+ * @returns {Promise<string>} The prompt text
  */
-export function getPresetPrompt(presetName) {
-    return PRESET_PROMPTS[presetName] || DEFAULT_PROMPT;
+export async function getPresetPrompt(presetName) {
+    return await getCustomPresetPrompt(presetName);
 }
 
 /**
  * Get effective prompt from profile
- * Determines whether to use custom prompt, preset, or default
+ * Always uses the preset key: built-in or user-defined prompts must be selected as presets.
  * @param {Object} profile - Profile object
- * @returns {string} The effective prompt to use
+ * @returns {Promise<string>} The effective prompt to use
  */
-export function getEffectivePrompt(profile) {
+export async function getEffectivePrompt(profile) {
     if (!profile) {
         return DEFAULT_PROMPT;
     }
-    
-    if (profile.prompt && profile.prompt.trim()) {
-        return profile.prompt;
-    } else if (profile.preset) {
-        return getPresetPrompt(profile.preset);
+    if (profile.preset) {
+        return await getCustomPresetPrompt(profile.preset);
     } else {
         return DEFAULT_PROMPT;
     }
