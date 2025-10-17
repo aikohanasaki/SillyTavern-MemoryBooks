@@ -8,7 +8,7 @@ import {
     createProfileObject
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
-import * as PromptManager from './summaryPromptManager.js';
+import * as SummaryPromptManager from './summaryPromptManager.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
@@ -108,7 +108,7 @@ const profileEditTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control marginTop5">
         <h4 data-i18n="STMemoryBooks_TitleFormat">Memory Title Format:</h4>
-        <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], etc. for numbering. Available tags: \\{{title}}, \\{{scene}}, \\{{char}}, \\{{user}}, \\{{messages}}, \\{{profile}}, \\{{date}}, \\{{time}}</small>
+        <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], etc. for numbering. Available tags: \{{title}}, \{{scene}}, \{{char}}, \{{user}}, \{{messages}}, \{{profile}}, \{{date}}, \{{time}}</small>
         <select id="stmb-profile-title-format-select" class="text_pole">
             {{#each titleFormats}}
             <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
@@ -188,8 +188,8 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
     try {
         const apiInfo = getCurrentApiInfo();
-        await PromptManager.firstRunInitIfMissing(settings);
-        const presetList = await PromptManager.listPresets();
+        await SummaryPromptManager.firstRunInitIfMissing(settings);
+        const presetList = await SummaryPromptManager.listPresets();
         const presetOptions = presetList.map(p => ({
             value: p.key,
             displayName: p.displayName,
@@ -271,8 +271,8 @@ export async function newProfile(settings, refreshCallback) {
         // Logic to handle title format for the template
         const currentTitleFormat = settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
-        await PromptManager.firstRunInitIfMissing(settings);
-        const presetList = await PromptManager.listPresets();
+        await SummaryPromptManager.firstRunInitIfMissing(settings);
+        const presetList = await SummaryPromptManager.listPresets();
         const presetOptions = presetList.map(p => ({
             value: p.key,
             displayName: p.displayName,
@@ -533,7 +533,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             if (!selectEl) return;
             const prev = selectEl.value;
 
-            const presetList = await PromptManager.listPresets();
+            const presetList = await SummaryPromptManager.listPresets();
             // Rebuild options
             selectEl.innerHTML = '';
             presetList.forEach(p => {
@@ -563,7 +563,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             if (!selectEl2) return;
             const prev2 = selectEl2.value;
 
-            const presetList2 = await PromptManager.listPresets();
+            const presetList2 = await SummaryPromptManager.listPresets();
             selectEl2.innerHTML = '';
             presetList2.forEach(p => {
                 const opt = document.createElement('option');
@@ -598,7 +598,7 @@ function setupProfileEditEventHandlers(popupInstance) {
             const profileName = profileNameInput?.value?.trim() || 'Profile';
             const displayName = `Custom: ${profileName}`;
 
-            const newKey = await PromptManager.upsertPreset(null, legacyPrompt, displayName);
+            const newKey = await SummaryPromptManager.upsertPreset(null, legacyPrompt, displayName);
 
             const confirmPopup = new Popup(
                 '<h3 data-i18n="STMemoryBooks_MoveToPresetConfirmTitle">Move to Preset</h3><p data-i18n="STMemoryBooks_MoveToPresetConfirmDesc">Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?</p>',
