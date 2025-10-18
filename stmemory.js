@@ -7,6 +7,11 @@ import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
+// Buffers etc for token calculations
+const MIN_RESPONSE_TOKENS = 1500;
+const DEFAULT_CONTEXT_WINDOW = 96600;
+const SAFETY_BUFFER_TOKENS = 50;
+
 
 // --- Custom Error Types for Better UI Handling ---
 class TokenWarningError extends Error {
@@ -60,6 +65,47 @@ export async function sendRawCompletionRequest({
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
+
+    // Compute desired max tokens from any source (highest), integer-only
+    const desiredFromSources = Math.max(
+        Number(extra.max_tokens) || 0,
+        Number(oai_settings.openai_max_tokens) || 0,
+        Number(oai_settings.max_response) || 0,
+        MIN_RESPONSE_TOKENS // ensure at least the minimum
+    );
+    const desiredInt = Math.max(MIN_RESPONSE_TOKENS, Math.floor(desiredFromSources) || 0);
+
+    // Estimate prompt token count and cap by context window if known
+    let capByContext = desiredInt;
+    try {
+        const est = await estimateTokens(prompt, { estimatedOutput: 64 });
+
+        const apiInfo = (getCurrentApiInfo && typeof getCurrentApiInfo === 'function')
+            ? (getCurrentApiInfo() || {})
+            : {};
+
+        const modelContext = Number(apiInfo.modelContext) || DEFAULT_CONTEXT_WINDOW;
+
+        const availableForOutput = Math.max(0, modelContext - (Number(est?.input) || 0));
+        capByContext = Math.max(0, availableForOutput - SAFETY_BUFFER_TOKENS);
+    } catch {
+        // If estimation fails for any reason, keep capByContext = desiredInt
+    }
+
+    // Final max_tokens: never exceed context cap; error if below minimum
+    const finalMax = Math.min(desiredInt, Math.floor(capByContext) || 0);
+    if (finalMax < MIN_RESPONSE_TOKENS) {
+        throw new AIResponseError(
+            `Available model context window (${Math.floor(capByContext)}) cannot satisfy minimum output tokens (${MIN_RESPONSE_TOKENS}). ` +
+            `Shorten the prompt, reduce system/scene context, or use a model with a larger context window.`
+        );
+    }
+    extra.max_tokens = Math.floor(finalMax);
+
+    // Optional: mirror to providers that use a different field if present
+    if (extra.max_output_tokens != null) {
+        extra.max_output_tokens = Math.min(Math.floor(extra.max_output_tokens) || 0, extra.max_tokens);
+    }
 
     let body = {
         messages: [
