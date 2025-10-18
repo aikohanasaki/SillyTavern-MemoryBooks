@@ -18,7 +18,7 @@ import { editProfile, newProfile, deleteProfile, exportProfiles, importProfiles,
 import { getSceneMarkers, setSceneMarker, setSceneRange, clearScene, updateAllButtonStates, updateNewMessageButtonStates, validateSceneMarkers, handleMessageDeletion, createSceneButtons, getSceneData, updateSceneStateCache, getCurrentSceneState, saveMetadataForCurrentContext } from './sceneManager.js';
 import { settingsTemplate } from './templates.js';
 import { showConfirmationPopup, fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
-import { getEffectivePrompt, DEFAULT_PROMPT, deepClone, getUIModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
+import { getEffectivePrompt, getDefaultPrompt, deepClone, getUIModelSettings, getCurrentApiInfo, SELECTORS, getCurrentMemoryBooksContext, getEffectiveLorebookName, showLorebookSelectionPopup } from './utils.js';
 import { editGroup } from '../../../group-chats.js';
 import * as SummaryPromptManager from './summaryPromptManager.js';
 import { MEMORY_GENERATION, SCENE_MANAGEMENT, UI_SETTINGS } from './constants.js';
@@ -43,7 +43,7 @@ async function getEffectivePromptAsync(profile) {
     } catch (e) {
         console.warn(translate('STMemoryBooks: getEffectivePromptAsync fallback due to error:', 'index.warn.getEffectivePromptAsync'), e);
     }
-    return DEFAULT_PROMPT;
+    return getDefaultPrompt();
 }
 /**
  * Check if memory is currently being processed
@@ -619,7 +619,7 @@ console.log(__st_t_tag`${MODULE_NAME}: Migrating to JSON-based architecture (v2)
         settings.profiles.forEach(profile => {
             if (profile.prompt && profile.prompt.includes('createMemory')) {
 console.log(__st_t_tag`${MODULE_NAME}: Updating profile "${profile.name}" to use JSON output`);
-                profile.prompt = DEFAULT_PROMPT; // Reset to new JSON-based default
+                profile.prompt = getDefaultPrompt(); // Reset to new JSON-based default
             }
         });
     }
@@ -1891,7 +1891,7 @@ async function showSettingsPopup() {
                     temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                 },
             titleFormat: (selectedProfile.titleFormat || settings.titleFormat),
-            effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await SummaryPromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
+            effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await SummaryPromptManager.getPrompt(selectedProfile.preset) : getDefaultPrompt()))
         }
     };
 
@@ -2382,7 +2382,7 @@ async function refreshPopupContent() {
                         temperature: selectedProfile.connection?.temperature !== undefined ? selectedProfile.connection.temperature : 0.7
                     },
                 titleFormat: selectedProfile.titleFormat || settings.titleFormat,
-                effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await SummaryPromptManager.getPrompt(selectedProfile.preset) : DEFAULT_PROMPT))
+                effectivePrompt: (selectedProfile.prompt && selectedProfile.prompt.trim() ? selectedProfile.prompt : (selectedProfile.preset ? await SummaryPromptManager.getPrompt(selectedProfile.preset) : getDefaultPrompt()))
             }
         };
         

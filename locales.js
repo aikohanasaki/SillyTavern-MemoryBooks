@@ -734,7 +734,156 @@ export const localeData_en = {
     'STMemoryBooks_Slash_SceneMemory_ArgRangeDesc': 'Message range (X-Y format)',
     'STMemoryBooks_Slash_NextMemory_Help': 'Create memory from end of last memory to current message',
     'STMemoryBooks_Slash_SidePrompt_Help': 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',
-    'STMemoryBooks_Slash_SidePrompt_ArgDesc': 'Template name (quote if contains spaces), optionally followed by X-Y range'
+    'STMemoryBooks_Slash_SidePrompt_ArgDesc': 'Template name (quote if contains spaces), optionally followed by X-Y range',
+
+    // Built-in prompt templates (English fallback; localize in locales/*.json)
+    'STMemoryBooks_Prompt_summary': `You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Detailed beat-by-beat summary in narrative prose...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information EXCEPT FOR [OOC] conversation/interaction. All [OOC] conversation/interaction is not useful for summaries.
+This summary will go in a vectorized database, so include:
+- All important story beats/events that happened
+- Key interaction highlights and character developments
+- Notable details, memorable quotes, and revelations
+- Outcome and anything else important for future interactions between {{user}} and {{char}}
+Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.
+
+For the keywords field, provide 10-30 specific, descriptive, relevant keywords for vectorized database retrieval. Do not use \`{{char}}\` or \`{{user}}\` as keywords.
+
+Return ONLY the JSON, no other text.`,
+
+    'STMemoryBooks_Prompt_summarize': `Analyze the following roleplay scene and return a structured summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Detailed summary with markdown headers...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a detailed bullet-point summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):
+- **Timeline**: Day/time this scene covers.
+- **Story Beats**: List all important plot events and story developments that occurred.
+- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.
+- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.
+- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.
+
+For the keywords field, provide 10-30 specific, descriptive, relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Do not use \`{{char}}\` or \`{{user}}\` as keywords.
+
+Ensure you capture ALL important information - comprehensive detail is more important than brevity.
+
+Return ONLY the JSON, no other text.`,
+
+    'STMemoryBooks_Prompt_synopsis': `Analyze the following roleplay scene and return a comprehensive synopsis as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Long detailed synopsis with markdown structure...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a long and detailed beat-by-beat summary using markdown structure. Capture the most recent scene accurately without losing ANY information. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. Use this structure:
+# [Scene Title]
+**Timeline**: (day/time)
+## Story Beats
+- (List all important plot events and developments)
+## Key Interactions
+- (Detail all significant character interactions and dialogue)
+## Notable Details
+- (Include memorable quotes, revelations, objects, settings)
+## Outcome
+- (Describe results, resolutions, and final state)
+
+Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.
+
+For the keywords field, provide 10-30 specific, descriptive, relevant keywords for vectorized database retrieval. Do not use \`{{char}}\` or \`{{user}}\` as keywords.
+
+Return ONLY the JSON, no other text.`,
+
+    'STMemoryBooks_Prompt_sumup': `Analyze the following roleplay scene and return a beat summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Comprehensive beat summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:
+# Scene Summary - Day X - [Title]
+First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. 
+
+For the keywords field, provide 10-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Do not use \`{{char}}\` or \`{{user}}\` as keywords.
+
+Return ONLY the JSON, no other text.`,
+
+    'STMemoryBooks_Prompt_minimal': `Analyze the following roleplay scene and return a minimal memory entry as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Brief 2-5 sentence summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, provide a very brief 2-5 sentence summary of what happened in this scene. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.
+
+For the keywords field, generate 10-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Do not use \`{{char}}\` or \`{{user}}\` as keywords.
+
+Return ONLY the JSON, no other text.`,
+
+    'STMemoryBooks_Prompt_northgate': `You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+"title": "Concise Scene Title (3-5 words)",
+"content": "A detailed, literary summary of the scene written in a third-person, past-tense narrative style. Capture all key actions, emotional shifts, character development, and significant dialogue. Focus on "showing" what happened through concrete details. Ensure the summary is comprehensive enough to serve as a standalone record of the scene's events and their impact on the characters.",
+"keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the "content" field, write with literary quality. Do not simply list events; synthesize them into a coherent narrative block.
+
+For the "keywords" field, provide 10-15 specific and descriptive keywords that capture the scene's core elements. Include character names, locations, key objects, actions taken, and the emotional tone (e.g., "Tense Standoff," "Vulnerable Confession," "Strategic Planning," "Unexpected Alliance").
+
+Return ONLY the JSON object, with no additional text or explanations.`,
+
+    'STMemoryBooks_Prompt_aelemar': `You are a meticulous archivist, skilled at accurately capturing all key plot points and memories from a story. Analyze the following story scene and extract a detailed summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Concise scene title (3-5 words)",
+  "content": "Detailed summary of key plot points and character memories, beat-by-beat in narrative prose...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include: 
+
+- Story beats, events, actions and consequences, turning points, and outcomes
+- Key character interactions, character developments, significant dialogue, revelations, emotional impact, and relationships
+- Outcomes and anything else important for future interactions between the user and the world
+Capture ALL nuance without repeating verbatim. Do not simply list events; synthesize them into a coherent narrative block. This summary must be comprehensive enough to serve as a standalone record of the story so far, even if the original text is lost. Use at least 300 words. Avoid redundancy.
+
+For the keywords field, provide 10-20 specific and descriptive keywords that capture the scene's core elements. Include character names, identities, locations, key objects, actions taken, and the emotional tone (e.g., "Tense Standoff," "Vulnerable Confession," "Strategic Planning," "Unexpected Alliance"). Do not use \`{{char}}\` or \`{{user}}\` as keywords.
+
+Return ONLY the JSON, no other text.`,
+
+    'STMemoryBooks_Prompt_default': `Analyze the following chat scene and return a memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Concise memory focusing on key plot points, character development, and important interactions",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+Return ONLY the JSON, no other text.`
 };
  
 /**

@@ -1,5 +1,5 @@
 import { getRequestHeaders } from '../../../../script.js';
-import { PRESET_PROMPTS, DEFAULT_PROMPT } from './utils.js';
+import { getBuiltInPresetPrompts, getDefaultPrompt } from './utils.js';
 import { FILE_NAMES, SCHEMA } from './constants.js';
 
 const MODULE_NAME = 'STMemoryBooks-SummaryPromptManager';
@@ -91,7 +91,8 @@ function generateUniqueKey(baseName, existingOverrides) {
     let key = baseSlug;
     let counter = 2;
     
-    while (key in existingOverrides || key in PRESET_PROMPTS) {
+    const builtIns = getBuiltInPresetPrompts();
+    while (key in existingOverrides || key in builtIns) {
         key = `${baseSlug}-${counter}`;
         counter++;
     }
@@ -136,8 +137,9 @@ async function loadOverrides(settings = null) {
     if (mustWrite) {
         const overrides = {};
         const now = new Date().toISOString();
-        // Add all built-in presets
-        for (const [key, prompt] of Object.entries(PRESET_PROMPTS)) {
+        // Add all built-in presets (localized via i18n)
+        const builtIns = getBuiltInPresetPrompts();
+        for (const [key, prompt] of Object.entries(builtIns)) {
             overrides[key] = {
                 displayName: DEFAULT_DISPLAY_NAMES[key] || toTitleCase(key),
                 prompt: prompt,
@@ -303,8 +305,9 @@ export async function getPrompt(key, settings = null) {
         }
     }
 
-    // Fallback to built-in
-    return PRESET_PROMPTS[key] || DEFAULT_PROMPT;
+    // Fallback to built-in (localized)
+    const builtIns = getBuiltInPresetPrompts();
+    return builtIns[key] || getDefaultPrompt();
 }
 
 /**
@@ -330,7 +333,10 @@ export async function getDisplayName(key, settings = null) {
  */
 export async function isValid(key, settings = null) {
     const data = await loadOverrides(settings);
-    return !!(data.overrides[key] || PRESET_PROMPTS[key]);
+    {
+        const builtIns = getBuiltInPresetPrompts();
+        return !!(data.overrides[key] || builtIns[key]);
+    }
 }
 
 /**
