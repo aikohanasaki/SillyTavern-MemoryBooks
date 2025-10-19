@@ -67,9 +67,12 @@ export async function sendRawCompletionRequest({
     let headers = getRequestHeaders();
 
     // Compute desired max tokens from any source (highest), integer-only
+    // Ensure openai_max_context never contributes as 0; fallback to DEFAULT_CONTEXT_WINDOW
+    const rawMaxContext = Number(oai_settings.openai_max_context);
+    const effectiveMaxContext = Number.isFinite(rawMaxContext) && rawMaxContext > 0 ? rawMaxContext : DEFAULT_CONTEXT_WINDOW;
     const desiredFromSources = Math.max(
         Number(extra.max_tokens) || 0,
-        Number(oai_settings.openai_max_context) || 0,
+        effectiveMaxContext,
         Number(oai_settings.max_response) || 0,
         MIN_RESPONSE_TOKENS // ensure at least the minimum
     );
@@ -80,7 +83,7 @@ export async function sendRawCompletionRequest({
     try {
         const est = await estimateTokens(prompt, { estimatedOutput: 64 });
 
-        const modelContext = Number(oai_settings.openai_max_context) || DEFAULT_CONTEXT_WINDOW;
+        const modelContext = effectiveMaxContext;
 
         const availableForOutput = Math.max(0, modelContext - (Number(est?.input) || 0));
         capByContext = Math.max(0, availableForOutput - SAFETY_BUFFER_TOKENS);
