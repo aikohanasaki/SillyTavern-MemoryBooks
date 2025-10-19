@@ -894,7 +894,16 @@ You must respond with ONLY valid JSON in this exact format:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 
-Return ONLY the JSON, no other text.`
+Return ONLY the JSON, no other text.`,
+    
+    // Built-in preset display names (English defaults; can be localized in locales/*.json)
+    'STMemoryBooks_DisplayName_summary': 'Summary - Detailed beat-by-beat summaries in narrative prose',
+    'STMemoryBooks_DisplayName_summarize': 'Summarize - Bullet-point format',
+    'STMemoryBooks_DisplayName_synopsis': 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
+    'STMemoryBooks_DisplayName_sumup': 'Sum Up - Concise story beats in narrative prose',
+    'STMemoryBooks_DisplayName_minimal': 'Minimal - Brief 1-2 sentence summary',
+    'STMemoryBooks_DisplayName_northgate': 'Northgate - Intended for creative writing. By Northgate on ST Discord',
+    'STMemoryBooks_DisplayName_aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord'
 };
  
 /**

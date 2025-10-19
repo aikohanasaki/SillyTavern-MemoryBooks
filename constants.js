@@ -41,3 +41,26 @@ export const FILE_NAMES = {
 export const SCHEMA = {
     CURRENT_VERSION: 1,
 };
+
+
+
+// Display name localization defaults and i18n keys for built-in presets
+export const DISPLAY_NAME_DEFAULTS = {
+    summary: 'Summary - Detailed beat-by-beat summaries in narrative prose',
+    summarize: 'Summarize - Bullet-point format',
+    synopsis: 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
+    sumup: 'Sum Up - Concise story beats in narrative prose',
+    minimal: 'Minimal - Brief 1-2 sentence summary',
+    northgate: 'Northgate - Intended for creative writing. By Northgate on ST Discord',
+    aelemar: 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
+};
+
+export const DISPLAY_NAME_I18N_KEYS = {
+    summary: 'STMemoryBooks_DisplayName_summary',
+    summarize: 'STMemoryBooks_DisplayName_summarize',
+    synopsis: 'STMemoryBooks_DisplayName_synopsis',
+    sumup: 'STMemoryBooks_DisplayName_sumup',
+    minimal: 'STMemoryBooks_DisplayName_minimal',
+    northgate: 'STMemoryBooks_DisplayName_northgate',
+    aelemar: 'STMemoryBooks_DisplayName_aelemar',
+};
