@@ -23,13 +23,14 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 
 ---
 
-## 🚦 What's New (v4.6.7)
+## 🚦 What's New (v4.6.10)
 
-### 🪲 Various Bug Fixes
-- fix auto-create and auto-summary
-
-### 🌐 Internationalization
-- Continued internationalization (please check [`/locales`](locales) folder for list.)
+### 🌐 Localization/Internationalization
+- **Localized Prompts:** 
+  - The English prompts have been localized to return memories in YOUR language.
+  - Language locale is determined via your ST general language settings.
+  - **New users:** No action required, STMB detects your language and does it automatically.
+  - **Existing users:** to switch to localized built-in prompts, delete `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` and then reopen the Summary Prompt Manager. It will re-create with localized built-in prompts. **Note:** Save a backup first if you made any changes!
 
 ---
 
