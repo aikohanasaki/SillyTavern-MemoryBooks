@@ -1,6 +1,6 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
-import { getRegexedString, regex_placement } from '../../../../extensions/regex/engine.js';
+import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
