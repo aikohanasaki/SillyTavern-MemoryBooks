@@ -903,7 +903,13 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_DisplayName_sumup': 'Sum Up - Concise story beats in narrative prose',
     'STMemoryBooks_DisplayName_minimal': 'Minimal - Brief 1-2 sentence summary',
     'STMemoryBooks_DisplayName_northgate': 'Northgate - Intended for creative writing. By Northgate on ST Discord',
-    'STMemoryBooks_DisplayName_aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord'
+    'STMemoryBooks_DisplayName_aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
+    // Summary Prompt Manager - Recreate Built-ins
+    'STMemoryBooks_PromptManager_RecreateBuiltins': '♻️ Recreate Built-in Prompts',
+    'STMemoryBooks_RecreateBuiltinsTitle': 'Recreate Built-in Prompts',
+    'STMemoryBooks_RecreateBuiltinsWarning': 'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
+    'STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom': 'This does not affect your other custom presets.',
+    'STMemoryBooks_RecreateBuiltinsOverwrite': 'Overwrite'
 };
  
 /**
