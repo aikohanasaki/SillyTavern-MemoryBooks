@@ -173,6 +173,47 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 ---
 
+### 🧠 Advanced Text Control with the Regex Extension
+
+**Want ultimate control over the text that gets sent to and received from the AI?** ST Memory Books now seamlessly integrates with the official **Regex** extension, allowing you to automatically transform text using custom rules.
+
+This is an advanced feature perfect for users who want to:
+- Automatically clean up repetitive phrases or artifacts from an AI's response.
+- Reformat parts of the chat transcript before the AI sees it.
+- Standardize terminology or character mannerisms on the fly.
+
+#### **How It Works: Two Simple Hooks**
+
+The integration works by applying your enabled regex scripts at two critical points. You control which scripts run by setting their **Placement** in the Regex extension's editor:
+
+1.  **Modifying the Prompt (Outgoing Text)**
+    *   **Placement to use**: `User Input`
+    *   **What it does**: Intercepts the fully assembled prompt (including chat history, system instructions, etc.) right before it's sent to the AI for memory or side prompt generation.
+    *   **Example Use Case**: You could create a script to automatically replace all instances of a character's nickname with their full name, ensuring the AI has the proper context.
+
+2.  **Modifying the Response (Incoming Text)**
+    *   **Placement to use**: `AI Output`
+    *   **What it does**: Intercepts the raw text response from the AI *before* it gets parsed or saved as a memory.
+    *   **Example Use Case**: If your AI model often includes repetitive phrases like *"As a large language model..."* in its summaries, you can create a regex script to automatically remove this phrase from every memory it generates.
+
+#### **Quick Start Example: Cleaning AI Responses**
+
+Let's say your AI model consistently adds `(OOC: I hope this summary is helpful!)` to its memory generations. Here’s how to automatically remove it:
+
+1.  **Go to the Regex Extension**: Open the main SillyTavern extensions menu and go to **Regex**.
+2.  **Create a New Script**: Click "Open Regex Editor" to create a new regex script.
+3.  **Configure the Script**:
+    *   **Script Name**: `Clean OOC Notes`
+    *   **Find Regex**: `/\\(OOC:.*?\\)/g` (This finds the text "(OOC: ...)" and everything inside it).
+    *   **Replace String**: Leave this blank to delete the matched text.
+    *   **Affects (Placement)**: Uncheck all boxes except for **AI Output**. This is the most important step!
+    *   **Enable the Script**: Make sure the script is not disabled.
+4.  **Save and You're Done!**
+
+Now, every time ST Memory Books gets a response from the AI, this script will run automatically, cleaning the unwanted text before the memory is saved to your lorebook.
+
+---
+
 ## ⚙️ Settings That Actually Matter
 
 Don't worry - you don't need to configure everything! Here are the settings that make the biggest difference:

@@ -173,6 +173,47 @@ Los **Prompts Laterales** son fragmentos de prompt reutilizables que mejoran la 
 
 ---
 
+### 🧠 Control de Texto Avanzado con la Extensión Regex
+
+**¿Quieres el máximo control sobre el texto que se envía y se recibe de la IA?** ST Memory Books ahora se integra a la perfección con la extensión oficial **Regex**, permitiéndote transformar texto automáticamente usando reglas personalizadas.
+
+Esta es una función avanzada perfecta para usuarios que quieren:
+- Limpiar automáticamente frases repetitivas o artefactos de la respuesta de una IA.
+- Reformatear partes de la transcripción del chat antes de que la IA lo vea.
+- Estandarizar la terminología o los gestos de los personajes sobre la marcha.
+
+#### **Cómo Funciona: Dos Ganchos Simples**
+
+La integración funciona aplicando tus scripts de regex habilitados en dos puntos críticos. Tú controlas qué scripts se ejecutan configurando su **Ubicación** en el editor de la extensión Regex:
+
+1.  **Modificando el Prompt (Texto Saliente)**
+    *   **Ubicación a usar**: `User Input`
+    *   **Qué hace**: Intercepta el prompt completamente ensamblado (incluyendo el historial del chat, instrucciones del sistema, etc.) justo antes de que se envíe a la IA para la generación de memorias o prompts laterales.
+    *   **Caso de Uso de Ejemplo**: Podrías crear un script para reemplazar automáticamente todas las instancias del apodo de un personaje por su nombre completo, asegurando que la IA tenga el contexto adecuado.
+
+2.  **Modificando la Respuesta (Texto Entrante)**
+    *   **Ubicación a usar**: `AI Output`
+    *   **Qué hace**: Intercepta la respuesta de texto cruda de la IA *antes* de que se analice o se guarde como una memoria.
+    *   **Caso de Uso de Ejemplo**: Si tu modelo de IA a menudo incluye frases repetitivas como *"Como un gran modelo de lenguaje..."* en sus resúmenes, puedes crear un script de regex para eliminar automáticamente esta frase de cada memoria que genera.
+
+#### **Ejemplo de Inicio Rápido: Limpiando Respuestas de la IA**
+
+Digamos que tu modelo de IA consistentemente añade `(OOC: ¡Espero que este resumen sea útil!)` a sus generaciones de memoria. Así es como puedes eliminarlo automáticamente:
+
+1.  **Ve a la Extensión Regex**: Abre el menú principal de extensiones de SillyTavern y ve a **Regex**.
+2.  **Crea un Nuevo Script**: Haz clic en "Open Regex Editor" para crear un nuevo script de regex.
+3.  **Configura el Script**:
+    *   **Nombre del Script**: `Limpiar Notas OOC`
+    *   **Find Regex**: `/\\(OOC:.*?\\)/g` (Esto encuentra el texto "(OOC: ...)" y todo lo que contiene).
+    *   **Replace String**: Déjalo en blanco para eliminar el texto coincidente.
+    *   **Afecta (Ubicación)**: Desmarca todas las casillas excepto **AI Output**. ¡Este es el paso más importante!
+    *   **Habilita el Script**: Asegúrate de que el script no esté deshabilitado.
+4.  **¡Guarda y Listo!**
+
+Ahora, cada vez que ST Memory Books obtenga una respuesta de la IA, este script se ejecutará automáticamente, limpiando el texto no deseado antes de que la memoria se guarde en tu libro de conocimientos.
+
+---
+
 ## ⚙️ Ajustes que Realmente Importan
 
 No te preocupes, ¡no necesitas configurar todo! Aquí están los ajustes que marcan la mayor diferencia:

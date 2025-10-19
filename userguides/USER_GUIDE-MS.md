@@ -173,6 +173,47 @@ Anggap Buku Memori ST sebagai **pustakawan AI peribadi** anda untuk perbualan se
 
 ---
 
+### 🧠 Kawalan Teks Lanjutan dengan Sambungan Regex
+
+**Ingin kawalan mutlak ke atas teks yang dihantar dan diterima daripada AI?** ST Memory Books kini berintegrasi dengan lancar dengan sambungan rasmi **Regex**, membolehkan anda mengubah teks secara automatik menggunakan peraturan tersuai.
+
+Ini adalah ciri lanjutan yang sesuai untuk pengguna yang ingin:
+- Membersihkan frasa berulang atau artefak daripada respons AI secara automatik.
+- Memformat semula bahagian transkrip sembang sebelum AI melihatnya.
+- Menyeragamkan terminologi atau tingkah laku watak dengan cepat.
+
+#### **Cara Ia Berfungsi: Dua Cangkuk Mudah**
+
+Integrasi ini berfungsi dengan menggunakan skrip regex anda yang didayakan pada dua titik kritikal. Anda mengawal skrip mana yang berjalan dengan menetapkan **Penempatan** mereka dalam editor sambungan Regex:
+
+1.  **Mengubah Suai Prompt (Teks Keluar)**
+    *   **Penempatan untuk digunakan**: `Input Pengguna`
+    *   **Apa yang dilakukannya**: Memintas prompt yang dipasang sepenuhnya (termasuk sejarah sembang, arahan sistem, dll.) sejurus sebelum ia dihantar kepada AI untuk penjanaan memori atau gesaan sampingan.
+    *   **Contoh Penggunaan**: Anda boleh mencipta skrip untuk menggantikan semua contoh nama panggilan watak dengan nama penuh mereka secara automatik, memastikan AI mempunyai konteks yang betul.
+
+2.  **Mengubah Suai Respons (Teks Masuk)**
+    *   **Penempatan untuk digunakan**: `Output AI`
+    *   **Apa yang dilakukannya**: Memintas respons teks mentah daripada AI *sebelum* ia dihuraikan atau disimpan sebagai memori.
+    *   **Contoh Penggunaan**: Jika model AI anda sering menyertakan frasa berulang seperti *"Sebagai model bahasa yang besar..."* dalam ringkasannya, anda boleh mencipta skrip regex untuk membuang frasa ini secara automatik daripada setiap memori yang dihasilkannya.
+
+#### **Contoh Mula Pantas: Membersihkan Respons AI**
+
+Katakan model AI anda secara konsisten menambah `(OOC: Semoga ringkasan ini membantu!)` pada penjanaan memorinya. Berikut ialah cara untuk membuangnya secara automatik:
+
+1.  **Pergi ke Sambungan Regex**: Buka menu sambungan utama SillyTavern dan pergi ke **Regex**.
+2.  **Cipta Skrip Baharu**: Klik "Buka Editor Regex" untuk mencipta skrip regex baharu.
+3.  **Konfigurasikan Skrip**:
+    *   **Nama Skrip**: `Bersihkan Nota OOC`
+    *   **Cari Regex**: `/\\(OOC:.*?\\)/g` (Ini mencari teks "(OOC: ...)" dan semua yang ada di dalamnya).
+    *   **Gantikan Rentetan**: Biarkan kosong untuk memadam teks yang sepadan.
+    *   **Mempengaruhi (Penempatan)**: Nyahtanda semua kotak kecuali **Output AI**. Ini adalah langkah yang paling penting!
+    *   **Dayakan Skrip**: Pastikan skrip tidak dilumpuhkan.
+4.  **Simpan dan Selesai!**
+
+Kini, setiap kali ST Memory Books mendapat respons daripada AI, skrip ini akan berjalan secara automatik, membersihkan teks yang tidak diingini sebelum memori disimpan ke buku cerita anda.
+
+---
+
 ## ⚙️ Tetapan yang Sebenarnya Penting
 
 Jangan risau - anda tidak perlu mengkonfigurasi semuanya! Berikut ialah tetapan yang membuat perbezaan terbesar:
