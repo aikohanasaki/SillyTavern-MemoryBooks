@@ -11,6 +11,7 @@ import {
     removeTemplate,
     exportToJSON as exportSidePromptsJSON,
     importFromJSON as importSidePromptsJSON,
+    recreateBuiltInSidePrompts,
 } from './sidePromptsManager.js';
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 import { translate, applyLocale } from '../../../i18n.js';
@@ -722,6 +723,7 @@ export async function showSidePromptsPopup() {
         content += `<button id="stmb-sp-new" class="menu_button whitespacenowrap">${escapeHtml(translate('New', 'STMemoryBooks_SidePrompts_New'))}</button>`;
         content += `<button id="stmb-sp-export" class="menu_button whitespacenowrap">${escapeHtml(translate('Export JSON', 'STMemoryBooks_SidePrompts_ExportJSON'))}</button>`;
         content += `<button id="stmb-sp-import" class="menu_button whitespacenowrap">${escapeHtml(translate('Import JSON', 'STMemoryBooks_SidePrompts_ImportJSON'))}</button>`;
+        content += `<button id="stmb-sp-recreate-builtins" class="menu_button whitespacenowrap">${escapeHtml(translate('♻️ Recreate Built-in Side Prompts', 'STMemoryBooks_SidePrompts_RecreateBuiltIns'))}</button>`;
         content += '</div>';
 
         // Hidden file input for import
@@ -774,6 +776,30 @@ export async function showSidePromptsPopup() {
             });
             dlg.querySelector('#stmb-sp-import-file')?.addEventListener('change', async (e) => {
                 await importTemplates(e, popup);
+            });
+
+            // Recreate built-in side prompts (localized to current locale)
+            dlg.querySelector('#stmb-sp-recreate-builtins')?.addEventListener('click', async () => {
+                const warning = `<div class="info_block">${escapeHtml(translate('This will overwrite the built-in Side Prompts (Plotpoints, Status, Cast of Characters, Assess) with the current locale versions. Custom/user-created prompts are not touched. This action cannot be undone.', 'STMemoryBooks_SidePrompts_RecreateWarning'))}</div>`;
+                const confirmPopup = new Popup(
+                    `<h3>${escapeHtml(translate('Recreate Built-in Side Prompts', 'STMemoryBooks_SidePrompts_RecreateTitle'))}</h3>${warning}`,
+                    POPUP_TYPE.CONFIRM,
+                    '',
+                    { okButton: translate('Recreate', 'STMemoryBooks_SidePrompts_RecreateOk'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
+                );
+                const res = await confirmPopup.show();
+                if (res === POPUP_RESULT.AFFIRMATIVE) {
+                    try {
+                        const r = await recreateBuiltInSidePrompts('overwrite');
+                        const count = Number(r?.replaced || 0);
+                        toastr.success(tr('STMemoryBooks_SidePrompts_RecreateSuccess', 'Recreated {{count}} built-in side prompts from current locale', { count }), translate('STMemoryBooks', 'index.toast.title'));
+                        window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
+                        await refreshList(popup);
+                    } catch (err) {
+                        console.error('STMemoryBooks: Error recreating built-in side prompts:', err);
+                        toastr.error(translate('Failed to recreate built-in side prompts', 'STMemoryBooks_SidePrompts_RecreateFailed'), translate('STMemoryBooks', 'index.toast.title'));
+                    }
+                }
             });
 
             // Row selection and inline actions
