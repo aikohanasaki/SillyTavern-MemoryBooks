@@ -5,6 +5,7 @@ import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
+import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from './constants.js';
 import { translate } from '../../../i18n.js';
 
 
@@ -848,17 +849,9 @@ export function parseTemperature(input) {
  * @returns {string} Display-friendly name
  */
 export function formatPresetDisplayName(presetName) {
-    const displayNames = {
-        'summary': 'Summary - Detailed beat-by-beat summaries in narrative prose',
-        'summarize': 'Summarize - Bullet-point format',
-        'synopsis': 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
-        'sumup': 'Sum Up - Concise story beats in narrative prose',
-        'minimal': 'Minimal - Brief 1-2 sentence summary',
-        'northgate': 'Northgate - Intended for creative writing. By Northgate on ST Discord',
-        'aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
-    };
-    
-    return displayNames[presetName] || presetName;
+    const def = DISPLAY_NAME_DEFAULTS[presetName];
+    const key = DISPLAY_NAME_I18N_KEYS[presetName];
+    return (def && key && translate(def, key)) || presetName;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { getRequestHeaders } from '../../../../script.js';
 import { getBuiltInPresetPrompts, getDefaultPrompt } from './utils.js';
-import { FILE_NAMES, SCHEMA } from './constants.js';
+import { FILE_NAMES, SCHEMA, DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from './constants.js';
+import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-SummaryPromptManager';
 const PROMPTS_FILE = FILE_NAMES.PROMPTS_FILE;
@@ -24,17 +25,14 @@ let hasInitialized = false;
 let initializationPromise = null;
 
 /**
- * Default display names for built-in presets
+ * Default display names for built-in presets (localized via i18n)
  */
-const DEFAULT_DISPLAY_NAMES = {
-    'summary': 'Summary - Detailed beat-by-beat summaries in narrative prose',
-    'summarize': 'Summarize - Bullet-point format',
-    'synopsis': 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
-    'sumup': 'Sum Up - Concise story beats in narrative prose',
-    'minimal': 'Minimal - Brief 1-2 sentence summary',
-    'northgate': 'Northgate - Intended for creative writing. By Northgate on ST Discord',
-    'aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
-};
+const DEFAULT_DISPLAY_NAMES = Object.fromEntries(
+    Object.keys(DISPLAY_NAME_DEFAULTS).map(k => [
+        k,
+        translate(DISPLAY_NAME_DEFAULTS[k], DISPLAY_NAME_I18N_KEYS[k]),
+    ])
+);
 
 /**
  * Converts a string to title case
