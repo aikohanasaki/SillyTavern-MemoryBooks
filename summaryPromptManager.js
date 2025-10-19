@@ -452,3 +452,34 @@ export function clearCache() {
     cachedOverrides = null;
     hasInitialized = false;
 }
+
+/**
+ * Recreate built-in prompts by removing their overrides so they fall back to current-locale i18n.
+ * This is a destructive operation for built-in keys only and does not preserve customizations.
+ * @param {'overwrite'} mode - Only 'overwrite' is supported (explicit destructive flow).
+ * @returns {Promise<{ removed: number }>} Count of removed overrides.
+ */
+export async function recreateBuiltInPrompts(mode = 'overwrite') {
+    if (mode !== 'overwrite') {
+        console.warn(`${MODULE_NAME}: Unsupported mode for recreateBuiltInPrompts: ${mode}; defaulting to 'overwrite'`);
+    }
+
+    const data = await loadOverrides();
+    const builtIns = getBuiltInPresetPrompts();
+    const builtInKeys = Object.keys(builtIns || {});
+    let removed = 0;
+
+    if (data && data.overrides && typeof data.overrides === 'object') {
+        for (const key of builtInKeys) {
+            if (key in data.overrides) {
+                delete data.overrides[key];
+                removed++;
+            }
+        }
+    }
+
+    await saveOverrides(data);
+    cachedOverrides = data;
+    console.log(`${MODULE_NAME}: Recreated built-in prompts (removed ${removed} overrides)`);
+    return { removed };
+}

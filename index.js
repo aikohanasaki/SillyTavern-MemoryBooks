@@ -1417,6 +1417,7 @@ async function showPromptManagerPopup() {
         content += '<button id="stmb-pm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
         content += '<button id="stmb-pm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
         content += '<button id="stmb-pm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
+        content += '<button id="stmb-pm-recreate-builtins" class="menu_button whitespacenowrap">♻️ Recreate Built-in Prompts</button>';
         content += '<button id="stmb-pm-apply" class="menu_button whitespacenowrap" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
         content += '</div>';
         
@@ -1561,6 +1562,39 @@ function setupPromptManagerEventHandlers(popup) {
     
     dlg.querySelector('#stmb-pm-import-file')?.addEventListener('change', async (e) => {
         await importPrompts(e, popup);
+    });
+
+    // Recreate built-in prompts (destructive; no preservation)
+    dlg.querySelector('#stmb-pm-recreate-builtins')?.addEventListener('click', async () => {
+        try {
+            const content = `
+                <h3>${escapeHtml(translate('Recreate Built-in Prompts', 'STMemoryBooks_RecreateBuiltinsTitle'))}</h3>
+                <div class="info-block warning">
+                    ${escapeHtml(translate(
+                        'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
+                        'STMemoryBooks_RecreateBuiltinsWarning'
+                    ))}
+                </div>
+                <p class="opacity70p">${escapeHtml(translate('This does not affect your other custom presets.', 'STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom'))}</p>
+            `;
+            const confirmPopup = new Popup(content, POPUP_TYPE.CONFIRM, '', {
+                okButton: translate('Overwrite', 'STMemoryBooks_RecreateBuiltinsOverwrite'),
+                cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+            });
+            const res = await confirmPopup.show();
+            if (res === POPUP_RESULT.AFFIRMATIVE) {
+                const result = await SummaryPromptManager.recreateBuiltInPrompts('overwrite');
+                // Notify other UIs about preset changes
+                try { window.dispatchEvent(new CustomEvent('stmb-presets-updated')); } catch (e) { /* noop */ }
+                toastr.success(__st_t_tag`Removed ${result?.removed || 0} built-in overrides`, translate('STMemoryBooks', 'index.toast.title'));
+                // Refresh the manager popup
+                popup.completeAffirmative();
+                await showPromptManagerPopup();
+            }
+        } catch (error) {
+            console.error('STMemoryBooks: Error recreating built-in prompts:', error);
+            toastr.error(translate('Failed to recreate built-in prompts', 'STMemoryBooks_FailedToRecreateBuiltins'), translate('STMemoryBooks', 'index.toast.title'));
+        }
     });
 
     // Apply selected preset to current profile
