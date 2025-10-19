@@ -165,8 +165,16 @@ Gesaan Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam 
     - Eksport dan import pratetap sebagai fail JSON untuk sandaran atau perkongsian.
     - Jalankannya secara manual atau automatik dengan penciptaan memori.
 - **Petua Penggunaan:**
-    - Apabila mencipta gesaan baharu, anda boleh menyalin daripada yang terbina dalam untuk keserasian terbaik.
-    - Perpustakaan Templat Gesaan Sampingan Tambahan [fail JSON](../resources/SidePromptTemplateLibrary.json) - hanya import untuk digunakan
+    - Apabila membuat prom baru, anda boleh menyalin dari yang sedia ada untuk keserasian terbaik.
+    - Perpustakaan Templat Prom Sampingan tambahan [fail JSON](resources/SidePromptTemplateLibrary.json) - hanya import untuk digunakan
+
+---
+
+### 🧠 Integrasi Regex untuk Penyesuaian Lanjutan
+- **Kawalan Penuh ke atas Pemprosesan Teks**: Buku Memori kini berintegrasi dengan sambungan **Regex** SillyTavern, membolehkan anda menggunakan transformasi teks yang kuat pada dua peringkat utama:
+    1.  **Penjanaan Prom**: Ubah suai prom yang dihantar kepada AI secara automatik dengan mencipta skrip regex yang menyasarkan penempatan **Input Pengguna**.
+    2.  **Penghuraian Respons**: Bersihkan, format semula atau seragamkan respons mentah AI sebelum ia disimpan dengan menyasarkan penempatan **Output AI**.
+- **Bagaimana Ia Berfungsi**: Integrasi ini lancar. Cukup cipta dan dayakan skrip yang anda inginkan dalam sambungan Regex, dan Buku Memori akan menggunakannya secara automatik semasa penciptaan memori dan prom sampingan.
 
 ---
 

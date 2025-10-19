@@ -173,6 +173,47 @@ Anggap ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapan o
 
 ---
 
+### 🧠 Kontrol Teks Tingkat Lanjut dengan Ekstensi Regex
+
+**Ingin kontrol penuh atas teks yang dikirim dan diterima dari AI?** ST Memory Books sekarang terintegrasi secara mulus dengan ekstensi resmi **Regex**, memungkinkan Anda untuk secara otomatis mengubah teks menggunakan aturan khusus.
+
+Ini adalah fitur lanjutan yang sempurna untuk pengguna yang ingin:
+- Secara otomatis membersihkan frasa berulang atau artefak dari respons AI.
+- Memformat ulang bagian dari transkrip obrolan sebelum AI melihatnya.
+- Menyeragamkan terminologi atau kebiasaan karakter secara langsung.
+
+#### **Cara Kerjanya: Dua Kait Sederhana**
+
+Integrasi ini bekerja dengan menerapkan skrip regex yang Anda aktifkan pada dua titik kritis. Anda mengontrol skrip mana yang berjalan dengan mengatur **Penempatan** mereka di editor ekstensi Regex:
+
+1.  **Mengubah Prompt (Teks Keluar)**
+    *   **Penempatan yang digunakan**: `User Input`
+    *   **Apa yang dilakukannya**: Mencegat prompt yang telah dirakit sepenuhnya (termasuk riwayat obrolan, instruksi sistem, dll.) tepat sebelum dikirim ke AI untuk pembuatan memori atau prompt sampingan.
+    *   **Contoh Penggunaan**: Anda bisa membuat skrip untuk secara otomatis mengganti semua contoh nama panggilan karakter dengan nama lengkap mereka, memastikan AI memiliki konteks yang tepat.
+
+2.  **Mengubah Respons (Teks Masuk)**
+    *   **Penempatan yang digunakan**: `AI Output`
+    *   **Apa yang dilakukannya**: Mencegat respons teks mentah dari AI *sebelum* diurai atau disimpan sebagai memori.
+    *   **Contoh Penggunaan**: Jika model AI Anda sering menyertakan frasa berulang seperti *"Sebagai model bahasa besar..."* dalam ringkasannya, Anda dapat membuat skrip regex untuk menghapus frasa ini secara otomatis dari setiap memori yang dihasilkannya.
+
+#### **Contoh Mulai Cepat: Membersihkan Respons AI**
+
+Katakanlah model AI Anda secara konsisten menambahkan `(OOC: Semoga ringkasan ini membantu!)` pada generasi memorinya. Berikut cara menghapusnya secara otomatis:
+
+1.  **Buka Ekstensi Regex**: Buka menu ekstensi utama SillyTavern dan buka **Regex**.
+2.  **Buat Skrip Baru**: Klik "Buka Editor Regex" untuk membuat skrip regex baru.
+3.  **Konfigurasikan Skrip**:
+    *   **Nama Skrip**: `Bersihkan Catatan OOC`
+    *   **Regex Pencarian**: `/\\(OOC:.*?\\)/g` (Ini menemukan teks "(OOC: ...)" dan semua yang ada di dalamnya).
+    *   **String Pengganti**: Biarkan kosong untuk menghapus teks yang cocok.
+    *   **Mempengaruhi (Penempatan)**: Hapus centang semua kotak kecuali **AI Output**. Ini adalah langkah terpenting!
+    *   **Aktifkan Skrip**: Pastikan skrip tidak dinonaktifkan.
+4.  **Simpan dan Selesai!**
+
+Sekarang, setiap kali ST Memory Books mendapatkan respons dari AI, skrip ini akan berjalan secara otomatis, membersihkan teks yang tidak diinginkan sebelum memori disimpan ke buku cerita Anda.
+
+---
+
 ## ⚙️ Pengaturan yang Sebenarnya Penting
 
 Jangan khawatir - Anda tidak perlu mengonfigurasi semuanya! Berikut adalah pengaturan yang membuat perbedaan terbesar:

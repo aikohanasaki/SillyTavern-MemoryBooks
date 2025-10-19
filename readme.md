@@ -171,6 +171,14 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 
 ---
 
+### 🧠 Regex Integration for Advanced Customization
+- **Full Control Over Text Processing**: Memory Books now integrates with SillyTavern's **Regex** extension, allowing you to apply powerful text transformations at two key stages:
+    1.  **Prompt Generation**: Automatically modify the prompts sent to the AI by creating regex scripts that target the **User Input** placement.
+    2.  **Response Parsing**: Clean, reformat, or standardize the AI's raw response before it's saved by targeting the **AI Output** placement.
+- **How It Works**: The integration is seamless. Simply create and enable your desired scripts in the Regex extension, and Memory Books will apply them automatically during memory and side prompt creation.
+
+---
+
 ## 👤 Profile Management
 
 - **Profiles:** Each profile includes API, model, temperature, prompt/preset, title format, and lorebook settings.

@@ -170,6 +170,14 @@ Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su
 
 ---
 
+### 🧠 Integración de Regex para Personalización Avanzada
+- **Control Total Sobre el Procesamiento de Texto**: Memory Books ahora se integra con la extensión **Regex** de SillyTavern, permitiéndole aplicar potentes transformaciones de texto en dos etapas clave:
+    1.  **Generación de Prompts**: Modifique automáticamente los prompts enviados a la IA creando scripts de regex que apunten a la ubicación **User Input**.
+    2.  **Análisis de Respuestas**: Limpie, reformatee o estandarice la respuesta cruda de la IA antes de que se guarde, apuntando a la ubicación **AI Output**.
+- **Cómo Funciona**: La integración es perfecta. Simplemente cree y habilite los scripts que desee en la extensión Regex, y Memory Books los aplicará automáticamente durante la creación de memorias y prompts laterales.
+
+---
+
 ## 👤 Gestión de Perfiles
 
 - **Perfiles:** Cada perfil incluye API, modelo, temperatura, prompt/preajuste, formato de título y ajustes del libro de conocimiento.

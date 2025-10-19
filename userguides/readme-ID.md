@@ -165,8 +165,16 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di buku 
     - Ekspor dan impor preset sebagai file JSON untuk cadangan atau berbagi.
     - Jalankan secara manual atau otomatis dengan pembuatan memori.
 - **Kiat Penggunaan:**
-    - Saat membuat prompt baru, Anda dapat menyalin dari yang bawaan untuk kompatibilitas terbaik.
-    - Perpustakaan Templat Prompt Sampingan Tambahan [file JSON](../resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan
+    - Saat membuat prompt baru, Anda dapat menyalin dari yang sudah ada untuk kompatibilitas terbaik.
+    - Pustaka Template Prompt Samping tambahan [file JSON](resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan
+
+---
+
+### 🧠 Integrasi Regex untuk Kustomisasi Lanjutan
+- **Kontrol Penuh atas Pemrosesan Teks**: Memory Books sekarang terintegrasi dengan ekstensi **Regex** SillyTanya, memungkinkan Anda menerapkan transformasi teks yang kuat pada dua tahap penting:
+    1.  **Pembuatan Prompt**: Secara otomatis memodifikasi prompt yang dikirim ke AI dengan membuat skrip regex yang menargetkan penempatan **Input Pengguna**.
+    2.  **Parsing Respons**: Membersihkan, memformat ulang, atau menstandarisasi respons mentah AI sebelum disimpan dengan menargetkan penempatan **Output AI**.
+- **Cara Kerjanya**: Integrasi ini mulus. Cukup buat dan aktifkan skrip yang Anda inginkan di ekstensi Regex, dan Memory Books akan menerapkannya secara otomatis selama pembuatan memori dan prompt samping.
 
 ---
 
