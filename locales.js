@@ -82,6 +82,7 @@ export const localeData_en = {
     'STMemoryBooks_ProcessedUpTo': 'Processed up to message',
     'STMemoryBooks_NoMemoriesProcessed': 'No memories have been processed for this chat yet',
     'STMemoryBooks_SinceVersion': '(since updating to version 3.6.2 or higher.)',
+    'STMemoryBooks_AutoSummaryNote': 'Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.',
 
     // Preferences Section
     'STMemoryBooks_Preferences': 'Preferences:',
@@ -263,6 +264,9 @@ export const localeData_en = {
     // Side Prompts
     'STMemoryBooks_SidePrompts_Title': '🧩 Side Prompts',
     'STMemoryBooks_SidePrompts_Desc': 'Create and manage side prompts for trackers and other behind-the-scenes functions.',
+    'STMemoryBooks_EditSidePrompt': 'Edit Side Prompt',
+    'STMemoryBooks_ResponseFormatPlaceholder': 'Optional response format',
+    'STMemoryBooks_PreviousMemoriesHelp': 'Number of previous memory entries to include before scene text (0 = none).',
     'STMemoryBooks_Name': 'Name',
     'STMemoryBooks_Key': 'Key',
     'STMemoryBooks_Enabled': 'Enabled',
@@ -304,8 +308,8 @@ export const localeData_en = {
     'STMemoryBooks_SidePromptsExported': 'Side prompts exported.',
     'STMemoryBooks_FailedToExportSidePrompts': 'Failed to export side prompts.',
     'STMemoryBooks_ImportedSidePrompts': 'Imported {{count}} side prompts.',
-    'STMemoryBooks_ImportedSidePromptsDetail': 'Imported {{count}} side prompts.',
-    'STMemoryBooks_ImportedSidePromptsRenamedDetail': ' ({{renamedCount}} renamed due to name conflicts)',
+    'STMemoryBooks_ImportedSidePromptsDetail': 'Imported side prompts: {{added}} added{{detail}}',
+    'STMemoryBooks_ImportedSidePromptsRenamedDetail': ' ({{count}} renamed due to key conflicts)',
     'STMemoryBooks_FailedToImportSidePrompts': 'Failed to import side prompts.',
     'STMemoryBooks_DeleteSidePromptTitle': 'Delete Side Prompt',
     'STMemoryBooks_DeleteSidePromptConfirm': 'Are you sure you want to delete "{{name}}"?',
