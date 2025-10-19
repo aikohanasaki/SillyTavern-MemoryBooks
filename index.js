@@ -1417,7 +1417,7 @@ async function showPromptManagerPopup() {
         content += '<button id="stmb-pm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>';
         content += '<button id="stmb-pm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Export">📤 Export JSON</button>';
         content += '<button id="stmb-pm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Import">📥 Import JSON</button>';
-        content += '<button id="stmb-pm-recreate-builtins" class="menu_button whitespacenowrap">♻️ Recreate Built-in Prompts</button>';
+content += '<button id="stmb-pm-recreate-builtins" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_RecreateBuiltins">♻️ Recreate Built-in Prompts</button>';
         content += '<button id="stmb-pm-apply" class="menu_button whitespacenowrap" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>';
         content += '</div>';
         
