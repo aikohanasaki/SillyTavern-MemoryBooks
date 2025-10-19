@@ -80,11 +80,7 @@ export async function sendRawCompletionRequest({
     try {
         const est = await estimateTokens(prompt, { estimatedOutput: 64 });
 
-        const apiInfo = (getCurrentApiInfo && typeof getCurrentApiInfo === 'function')
-            ? (getCurrentApiInfo() || {})
-            : {};
-
-        const modelContext = Number(apiInfo.modelContext) || DEFAULT_CONTEXT_WINDOW;
+        const modelContext = Number(oai_settings.openai_max_tokens) || DEFAULT_CONTEXT_WINDOW;
 
         const availableForOutput = Math.max(0, modelContext - (Number(est?.input) || 0));
         capByContext = Math.max(0, availableForOutput - SAFETY_BUFFER_TOKENS);

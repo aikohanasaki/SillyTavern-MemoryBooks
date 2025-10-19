@@ -2,6 +2,8 @@
 
 **← [Back to README](readme.md)**
 
+## v4.6.11 (October 19, 2025)
+- **Bugfix:** oai_settings.max_tokens reads better
 
 ## v4.6.10 (October 19, 2025)
 - **Localized Prompts:** 
