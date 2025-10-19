@@ -272,12 +272,25 @@ export async function listPresets(settings = null) {
     const data = await loadOverrides(settings);
     const presets = [];
     
+    // Add overrides first (user-defined and any built-ins that are overridden)
     for (const [key, preset] of Object.entries(data.overrides)) {
         presets.push({
             key: key,
             displayName: preset.displayName || toTitleCase(key),
             createdAt: preset.createdAt || null,
         });
+    }
+
+    // Include any built-in presets that are not overridden (virtual entries; i18n-backed at runtime)
+    const builtIns = getBuiltInPresetPrompts() || {};
+    for (const key of Object.keys(builtIns)) {
+        if (!(key in data.overrides)) {
+            presets.push({
+                key: key,
+                displayName: DEFAULT_DISPLAY_NAMES[key] || toTitleCase(key),
+                createdAt: null,
+            });
+        }
     }
     
     // Sort by creation date (newest first)
