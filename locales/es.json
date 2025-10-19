@@ -11,6 +11,7 @@
     "STMemoryBooks_ProcessedUpTo": "Procesado hasta el mensaje",
     "STMemoryBooks_NoMemoriesProcessed": "Aún no se han procesado memorias para este chat",
     "STMemoryBooks_SinceVersion": "(desde la actualización a la versión 3.6.2 o superior).",
+    "STMemoryBooks_AutoSummaryNote": "Tenga en cuenta que el Auto-Resumen requiere que \"prepare\" cada chat con al menos una memoria manual. Después de eso, los resúmenes se harán automáticamente.",
     "STMemoryBooks_Preferences": "Preferencias:",
     "STMemoryBooks_AlwaysUseDefault": "Usar siempre el perfil predeterminado (sin aviso de confirmación)",
     "STMemoryBooks_ShowMemoryPreviews": "Mostrar vistas previas de la memoria",
