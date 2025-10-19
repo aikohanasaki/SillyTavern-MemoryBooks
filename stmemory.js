@@ -2,7 +2,7 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
-import { getRegexedString, regex_placement } from '../../../../extensions/regex/engine.js';
+import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
