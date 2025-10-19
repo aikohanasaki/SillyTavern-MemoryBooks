@@ -2,6 +2,7 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
+import { getRegexedString, regex_placement } from '../../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
@@ -378,6 +379,11 @@ function endsNicely(text) {
 function parseAIJsonResponse(aiResponse) {
     let cleanResponse = aiResponse;
 
+    // Apply regex transformations to the raw response
+    if (typeof cleanResponse === 'string') {
+        cleanResponse = getRegexedString(cleanResponse, regex_placement.AI_OUTPUT);
+    }
+
     // Check for new Claude structured format first
     if (typeof cleanResponse === 'object' && cleanResponse !== null && Array.isArray(cleanResponse.content)) {
         const extractedText = extractFromClaudeStructuredFormat(cleanResponse);
@@ -711,7 +717,10 @@ async function buildPrompt(compiledScene, profile) {
     const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
     
     // Combine system prompt and scene
-    return `${processedSystemPrompt}\n\n${sceneText}`;
+    const finalPrompt = `${processedSystemPrompt}\n\n${sceneText}`;
+
+    // Apply regex transformations
+    return getRegexedString(finalPrompt, regex_placement.USER_INPUT, { isPrompt: true });
 }
 
 /**
