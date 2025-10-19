@@ -1,5 +1,6 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
+import { getRegexedString, regex_placement } from '../../../../extensions/regex/engine.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
@@ -109,7 +110,10 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
         parts.push('\n=== RESPONSE FORMAT ===\n');
         parts.push(String(responseFormat).trim());
     }
-    return parts.join('');
+    const finalPrompt = parts.join('');
+
+    // Apply regex transformations
+    return getRegexedString(finalPrompt, regex_placement.USER_INPUT, { isPrompt: true });
 }
 
 /**
@@ -146,7 +150,10 @@ async function runLLM(prompt, overrides = null) {
         apiKey,
         extra: {},
     });
-    return text || '';
+    
+    // Apply regex transformations to the raw response
+    const regexedText = getRegexedString(text || '', regex_placement.AI_OUTPUT);
+    return regexedText;
 }
 
 /**
