@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.7.0 (October 19, 2025)
+- **Regex:** Added regex functions (uses existing regex extension)
+
 ## v4.6.12 (October 19, 2025)
 - **Internationalization:** Finished translating remaining UI text
 
