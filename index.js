@@ -2825,12 +2825,12 @@ async function showRegexSelectionPopup() {
     const selIn = Array.isArray(settings.moduleSettings.selectedRegexIncoming) ? settings.moduleSettings.selectedRegexIncoming : [];
 
     let content = '';
-    content += '<h3>📐 Regex selection</h3>';
-    content += '<div class="world_entry_form_control"><small class="opacity70p">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small></div>';
+    content += '<h3 data-i18n="STMemoryBooks_RegexSelection_Title">📐 Regex selection</h3>';
+    content += '<div class="world_entry_form_control"><small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small></div>';
 
     // Outgoing
     content += '<div class="world_entry_form_control">';
-    content += '<h4>Run regex before sending to AI</h4>';
+    content += '<h4 data-i18n="STMemoryBooks_RegexSelection_Outgoing">Run regex before sending to AI</h4>';
     content += '<select id="stmb-regex-outgoing" multiple style="width:100%">';
     for (const o of allOptions) {
         const sel = selOut.includes(o.key) ? ' selected' : '';
@@ -2841,7 +2841,7 @@ async function showRegexSelectionPopup() {
 
     // Incoming
     content += '<div class="world_entry_form_control">';
-    content += '<h4>Run regex before adding to lorebook (before previews)</h4>';
+    content += '<h4 data-i18n="STMemoryBooks_RegexSelection_Incoming">Run regex before adding to lorebook (before previews)</h4>';
     content += '<select id="stmb-regex-incoming" multiple style="width:100%">';
     for (const o of allOptions) {
         const sel = selIn.includes(o.key) ? ' selected' : '';
@@ -2857,13 +2857,15 @@ async function showRegexSelectionPopup() {
         okButton: translate('Save', 'STMemoryBooks_Save'),
         cancelButton: translate('Close', 'STMemoryBooks_Close')
     });
+    // Apply i18n to the newly created popup content
+    try { applyLocale(popup.dlg); } catch (e) { /* noop */ }
 
-    // Enhance with select2 when available
     setTimeout(() => {
         try {
             if (window.jQuery && typeof window.jQuery.fn.select2 === 'function') {
-                window.jQuery('#stmb-regex-outgoing').select2({ width: '100%', placeholder: 'Select outgoing regex…', closeOnSelect: false });
-                window.jQuery('#stmb-regex-incoming').select2({ width: '100%', placeholder: 'Select incoming regex…', closeOnSelect: false });
+                const $parent = window.jQuery(popup.dlg);
+                window.jQuery('#stmb-regex-outgoing').select2({ width: '100%', placeholder: translate('Select outgoing regex…', 'STMemoryBooks_RegexSelect_PlaceholderOutgoing'), closeOnSelect: false, dropdownParent: $parent });
+                window.jQuery('#stmb-regex-incoming').select2({ width: '100%', placeholder: translate('Select incoming regex…', 'STMemoryBooks_RegexSelect_PlaceholderIncoming'), closeOnSelect: false, dropdownParent: $parent });
             }
         } catch (e) {
             console.warn('STMemoryBooks: Select2 initialization failed (using native selects)', e);
