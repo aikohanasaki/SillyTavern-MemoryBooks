@@ -2,7 +2,7 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
 
-**📘 [User Guid (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)**
+**📘 [User Guid (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 > Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
 > Lorebook converter and side prompt template library are in the [`/resources`](resources) folder.
