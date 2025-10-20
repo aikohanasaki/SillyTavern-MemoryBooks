@@ -236,6 +236,21 @@ export const settingsTemplate = Handlebars.compile(`
             </details>
         </div>
 
+        <div class="world_entry_form_control" class="flex-container">
+            <div class="flex flexFlowRow alignItemsBaseline">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
+                    <span>Use regex (advanced)</span>
+                </label>
+            </div>
+            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}">
+                    📐 Configure regex…
+                </button>
+            </div>
+            <small class="opacity70p">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
+        </div>
+
         <h4 data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
         <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-profile-buttons">
             <!-- Profile buttons will be dynamically inserted here -->

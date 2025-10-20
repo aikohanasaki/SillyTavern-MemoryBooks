@@ -2,7 +2,7 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
-import { runRegexScript, getRegexScripts, getScriptsByType, SCRIPT_TYPES } from '../../../extensions/regex/engine.js';
+import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
@@ -14,41 +14,7 @@ const MIN_RESPONSE_TOKENS = 1500;
 // --- ST Regex selection-based execution (bypass engine gating) ---
 
 /**
- * Enumerate ALL regex scripts across Global, Scoped, and Preset, regardless of "allowed" flags.
- * Returns an array of { key, script, type, index } entries with a stable key.
- */
-function enumerateAllRegexScripts() {
-    try {
-        const results = [];
-        const types = [SCRIPT_TYPES.GLOBAL, SCRIPT_TYPES.SCOPED, SCRIPT_TYPES.PRESET];
-        types.forEach((type) => {
-            const arr = getScriptsByType(type, { allowedOnly: false }) || [];
-            arr.forEach((script, index) => {
-                const key = (script?.id != null && script.id !== '') ? `t${type}:${script.id}` : `t${type}:${script?.scriptName || 'unnamed'}:${index}`;
-                results.push({ key, script, type, index });
-            });
-        });
-        return results;
-    } catch (e) {
-        console.warn('enumerateAllRegexScripts failed', e);
-        return [];
-    }
-}
-
-/**
- * Build a map key -> { key, script, type, index } for quick lookup.
- */
-function buildRegexScriptIndex() {
-    const entries = enumerateAllRegexScripts();
-    const map = new Map();
-    for (const e of entries) {
-        map.set(e.key, e);
-    }
-    return map;
-}
-
-/**
- * Clone a script and force disabled=false to ensure it runs when selected.
+ * Clone a script and force disabled=false so explicitly selected scripts always run.
  */
 function cloneScriptEnabled(script) {
     try {
@@ -61,23 +27,27 @@ function cloneScriptEnabled(script) {
 }
 
 /**
- * Apply selected regex scripts (by stable keys) in order using ST's runRegexScript.
- * This bypasses promptOnly/markdownOnly/allowed gating while fully reusing ST's regex engine.
+ * Apply selected regex scripts (by flat index keys, e.g., "idx:0") in order.
+ * Uses getRegexScripts({ allowedOnly: false }) as the single source of truth.
+ * Bypasses engine gating; relies on explicit user selection.
  */
 function applySelectedRegex(inputText, selectedKeys) {
     if (typeof inputText !== 'string') return '';
     if (!Array.isArray(selectedKeys) || selectedKeys.length === 0) return inputText;
+
     try {
+        const all = getRegexScripts({ allowedOnly: false }) || [];
+        const order = selectedKeys
+            .map(k => Number(String(k).replace(/^idx:/, '')))
+            .filter(i => Number.isInteger(i) && i >= 0 && i < all.length);
+
         let out = inputText;
-        const index = buildRegexScriptIndex();
-        for (const k of selectedKeys) {
-            const entry = index.get(k);
-            if (!entry || !entry.script) continue;
-            const scriptClone = cloneScriptEnabled(entry.script);
+        for (const i of order) {
+            const script = cloneScriptEnabled(all[i]);
             try {
-                out = runRegexScript(scriptClone, out);
+                out = runRegexScript(script, out);
             } catch (e) {
-                console.warn('applySelectedRegex: script failed', k, e);
+                console.warn('applySelectedRegex: script failed', i, e);
             }
         }
         return out;
