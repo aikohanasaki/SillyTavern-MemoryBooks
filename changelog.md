@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.7.1 (October 19, 2025)
+- **Bugfix:** Remove math calculating context
+
 ## v4.7.0 (October 19, 2025)
 - **Regex:** Added regex functions (uses existing regex extension)
 
