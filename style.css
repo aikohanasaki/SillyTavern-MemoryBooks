@@ -161,3 +161,6 @@
     padding: 6px 12px;
     white-space: nowrap;
 }
+
+/* Ensure Select2 dropdown is above modals/overlays */
+.select2-container--open { z-index: 2147483647 !important; }

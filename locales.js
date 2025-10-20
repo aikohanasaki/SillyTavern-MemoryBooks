@@ -930,7 +930,15 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_RecreateBuiltinsTitle': 'Recreate Built-in Prompts',
     'STMemoryBooks_RecreateBuiltinsWarning': 'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
     'STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom': 'This does not affect your other custom presets.',
-    'STMemoryBooks_RecreateBuiltinsOverwrite': 'Overwrite'
+    'STMemoryBooks_RecreateBuiltinsOverwrite': 'Overwrite',
+    'STMemoryBooks_RegexSelection_Title': '📐 Regex selection',
+    'STMemoryBooks_RegexSelection_Desc': 'Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.',
+    'STMemoryBooks_RegexSelection_Outgoing': 'Run regex before sending to AI',
+    'STMemoryBooks_RegexSelection_Incoming': 'Run regex before adding to lorebook (before previews)',
+    'STMemoryBooks_RegexSelect_PlaceholderOutgoing': 'Select outgoing regex…',
+    'STMemoryBooks_RegexSelect_PlaceholderIncoming': 'Select incoming regex…',
+    'STMemoryBooks_RegexSelectionsSaved': 'Regex selections saved',
+    'STMemoryBooks_FailedToSaveRegexSelections': 'Failed to save regex selections'
 };
  
 /**
