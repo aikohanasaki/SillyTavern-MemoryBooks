@@ -28,7 +28,8 @@ import { listTemplates } from './sidePromptsManager.js';
 import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
 import { t as __st_t_tag, translate, applyLocale, addLocaleData, getCurrentLocale } from '../../../i18n.js';
 import { localeData, loadLocaleJson } from './locales.js';
-import { getScriptsByType, SCRIPT_TYPES } from '../../../extensions/regex/engine.js';
+import { getRegexScripts } from '../../../extensions/regex/engine.js';
+import '../../../../lib/select2.min.js';
 
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
@@ -86,6 +87,9 @@ const defaultSettings = {
         autoSummaryInterval: 100,
         autoCreateLorebook: false,
         lorebookNameTemplate: 'LTM - {{char}} - {{chat}}',
+        useRegex: false,
+        selectedRegexOutgoing: [],
+        selectedRegexIncoming: [],
     },
     titleFormat: '[000] - {{title}}',
     profiles: [], // Will be populated dynamically with current ST settings
@@ -1868,23 +1872,19 @@ async function showSettingsPopup() {
     // Build Regex script options (Global, Scoped, Preset), include disabled too
     const selectedRegexOutgoing = Array.isArray(settings.moduleSettings.selectedRegexOutgoing) ? settings.moduleSettings.selectedRegexOutgoing : [];
     const selectedRegexIncoming = Array.isArray(settings.moduleSettings.selectedRegexIncoming) ? settings.moduleSettings.selectedRegexIncoming : [];
-    const typeName = (t) => t === SCRIPT_TYPES.GLOBAL ? 'Global' : (t === SCRIPT_TYPES.SCOPED ? 'Scoped' : 'Preset');
     const regexOptions = [];
     try {
-        const TYPES = [SCRIPT_TYPES.GLOBAL, SCRIPT_TYPES.SCOPED, SCRIPT_TYPES.PRESET];
-        for (const t of TYPES) {
-            const arr = getScriptsByType(t, { allowedOnly: false }) || [];
-            arr.forEach((script, index) => {
-                const key = (script?.id != null && script.id !== '') ? `t${t}:${script.id}` : `t${t}:${script?.scriptName || 'unnamed'}:${index}`;
-                const label = `[${typeName(t)}] ${script?.scriptName || 'Untitled'}${script?.disabled ? ' (disabled)' : ''}`;
-                regexOptions.push({
-                    key,
-                    label,
-                    selectedOutgoing: selectedRegexOutgoing.includes(key),
-                    selectedIncoming: selectedRegexIncoming.includes(key),
-                });
+        const scripts = getRegexScripts({ allowedOnly: false }) || [];
+        scripts.forEach((script, index) => {
+            const key = `idx:${index}`;
+            const label = `${script?.scriptName || 'Untitled'}${script?.disabled ? ' (disabled)' : ''}`;
+            regexOptions.push({
+                key,
+                label,
+                selectedOutgoing: selectedRegexOutgoing.includes(key),
+                selectedIncoming: selectedRegexIncoming.includes(key),
             });
-        }
+        });
     } catch (e) {
         console.warn('STMemoryBooks: Failed to enumerate Regex scripts for UI', e);
     }
@@ -1929,6 +1929,7 @@ async function showSettingsPopup() {
         })),
         titleFormat: settings.titleFormat,
         // Regex selection UI
+        useRegex: settings.moduleSettings.useRegex || false,
         regexOptions,
         selectedRegexOutgoing,
         selectedRegexIncoming,
@@ -2031,12 +2032,32 @@ function setupSettingsEventListeners() {
     popupElement.addEventListener('click', async (e) => {
         const settings = initializeSettings();
         
+        // Regex selection button (visible only when "Use regex" is checked)
+        if (e.target && e.target.matches('#stmb-configure-regex')) {
+            e.preventDefault();
+            try {
+                await showRegexSelectionPopup();
+            } catch (err) {
+                console.warn('STMemoryBooks: showRegexSelectionPopup failed', err);
+            }
+            return;
+        }
+
         // Note: Manual lorebook and profile management buttons are now handled via customButtons
     });
     
     // Handle change events using delegation
     popupElement.addEventListener('change', async (e) => {
         const settings = initializeSettings();
+
+        // Use regex gate
+        if (e.target.matches('#stmb-use-regex')) {
+            settings.moduleSettings.useRegex = e.target.checked;
+            saveSettingsDebounced();
+            const btn = popupElement.querySelector('#stmb-configure-regex');
+            if (btn) btn.style.display = e.target.checked ? '' : 'none';
+            return;
+        }
 
         // Regex multi-selects
         if (e.target.matches('#stmb-regex-outgoing')) {
@@ -2777,6 +2798,93 @@ async function init() {
     });
     
     console.log('STMemoryBooks: Extension loaded successfully');
+}
+
+/**
+ * Regex selection helpers and popup
+ */
+function buildFlatRegexOptions() {
+    const list = [];
+    try {
+        const scripts = getRegexScripts({ allowedOnly: false }) || [];
+        scripts.forEach((script, index) => {
+            const key = `idx:${index}`;
+            const label = `${script?.scriptName || 'Untitled'}${script?.disabled ? ' (disabled)' : ''}`;
+            list.push({ key, label });
+        });
+    } catch (e) {
+        console.warn('STMemoryBooks: buildFlatRegexOptions failed', e);
+    }
+    return list;
+}
+
+async function showRegexSelectionPopup() {
+    const settings = initializeSettings();
+    const allOptions = buildFlatRegexOptions();
+    const selOut = Array.isArray(settings.moduleSettings.selectedRegexOutgoing) ? settings.moduleSettings.selectedRegexOutgoing : [];
+    const selIn = Array.isArray(settings.moduleSettings.selectedRegexIncoming) ? settings.moduleSettings.selectedRegexIncoming : [];
+
+    let content = '';
+    content += '<h3>📐 Regex selection</h3>';
+    content += '<div class="world_entry_form_control"><small class="opacity70p">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small></div>';
+
+    // Outgoing
+    content += '<div class="world_entry_form_control">';
+    content += '<h4>Run regex before sending to AI</h4>';
+    content += '<select id="stmb-regex-outgoing" multiple style="width:100%">';
+    for (const o of allOptions) {
+        const sel = selOut.includes(o.key) ? ' selected' : '';
+        content += `<option value="${escapeHtml(o.key)}"${sel}>${escapeHtml(o.label)}</option>`;
+    }
+    content += '</select>';
+    content += '</div>';
+
+    // Incoming
+    content += '<div class="world_entry_form_control">';
+    content += '<h4>Run regex before adding to lorebook (before previews)</h4>';
+    content += '<select id="stmb-regex-incoming" multiple style="width:100%">';
+    for (const o of allOptions) {
+        const sel = selIn.includes(o.key) ? ' selected' : '';
+        content += `<option value="${escapeHtml(o.key)}"${sel}>${escapeHtml(o.label)}</option>`;
+    }
+    content += '</select>';
+    content += '</div>';
+
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: translate('Save', 'STMemoryBooks_Save'),
+        cancelButton: translate('Close', 'STMemoryBooks_Close')
+    });
+
+    // Enhance with select2 when available
+    setTimeout(() => {
+        try {
+            if (window.jQuery && typeof window.jQuery.fn.select2 === 'function') {
+                window.jQuery('#stmb-regex-outgoing').select2({ width: '100%', placeholder: 'Select outgoing regex…', closeOnSelect: false });
+                window.jQuery('#stmb-regex-incoming').select2({ width: '100%', placeholder: 'Select incoming regex…', closeOnSelect: false });
+            }
+        } catch (e) {
+            console.warn('STMemoryBooks: Select2 initialization failed (using native selects)', e);
+        }
+    }, 0);
+
+    const res = await popup.show();
+
+    if (res === POPUP_RESULT.AFFIRMATIVE) {
+        try {
+            const outVals = Array.from((popup.dlg?.querySelector('#stmb-regex-outgoing')?.selectedOptions) || []).map(o => o.value);
+            const inVals = Array.from((popup.dlg?.querySelector('#stmb-regex-incoming')?.selectedOptions) || []).map(o => o.value);
+            settings.moduleSettings.selectedRegexOutgoing = outVals;
+            settings.moduleSettings.selectedRegexIncoming = inVals;
+            saveSettingsDebounced();
+            toastr.success(translate('Regex selections saved', 'STMemoryBooks_RegexSelectionsSaved'), 'STMemoryBooks');
+        } catch (e) {
+            console.warn('STMemoryBooks: Failed to save regex selections', e);
+            toastr.error(translate('Failed to save regex selections', 'STMemoryBooks_FailedToSaveRegexSelections'), 'STMemoryBooks');
+        }
+    }
 }
 
 // Initialize when ready
