@@ -2,7 +2,7 @@
 
 자동화되고 구조화되었으며 신뢰할 수 있는 메모리 생성을 위한 차세대 SillyTavern 확장 프로그램입니다. 채팅에서 장면을 표시하고, AI로 JSON 기반 요약을 생성하며, 로어북에 "[벡터화된](#vectorized)" 항목으로 저장하세요. 그룹 채팅, 고급 프로필 관리 및 완벽한 API/모델 처리를 지원합니다.
 
-**📘 [사용자 가이드 (EN)](USER_GUIDE.md)** | **📋 [버전 히스토리 및 변경 로그](changelog.md)**
+**📘 [사용자 가이드 (EN)](USER_GUIDE.md)** | **📋 [버전 히스토리 및 변경 로그](changelog.md)** | [📕 Memory Books와 📚 Lorebook Ordering 사용법](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 > 참고: 다양한 언어를 지원합니다: 목록은 [`/locales`](locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](userguides) 폴더에서 찾을 수 있습니다.
 > 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](resources) 폴더에 있습니다.

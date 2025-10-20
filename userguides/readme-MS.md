@@ -2,7 +2,7 @@
 
 Sambungan SillyTavern generasi akan datang untuk penciptaan memori yang automatik, berstruktur dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpannya sebagai entri "[vektor](#vektor)" dalam buku legenda anda. Menyokong sembang kumpulan, pengurusan profil lanjutan dan pengendalian API/model yang kukuh.
 
-**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)**
+**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 > Nota: Menyokong pelbagai bahasa: lihat folder [`/locales`](../locales) untuk senarai. Readme dan Panduan Pengguna antarabangsa/setempat boleh didapati dalam folder [`/userguides`](../userguides).
 > Penukar buku legenda dan perpustakaan templat gesaan sampingan berada dalam folder [`/resources`](../resources).
