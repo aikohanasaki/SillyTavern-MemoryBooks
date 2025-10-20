@@ -2,6 +2,7 @@ import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
 import { estimateTokens } from './utils.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
+import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
 
 const MODULE_NAME = 'STMemoryBooks-ChatCompile';
 const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
@@ -55,7 +56,7 @@ export function compileScene(sceneRequest) {
         const compiledMessage = {
             id: i,
             name: cleanSpeakerName(message.name),
-            mes: cleanMessageContent(message.mes),
+            mes: cleanMessageContent(message.mes, message.is_user),
             send_date: message.send_date || new Date().toISOString()
         };
         
@@ -257,7 +258,19 @@ function cleanSpeakerName(name) {
  * Clean message content
  * @private
  */
-function cleanMessageContent(content) {
+function cleanMessageContent(content, isUser = false) {
     if (!content) return '';
-    return content.trim();
+    try {
+        // Normalize line endings for consistent regex behavior
+        const normalized = String(content).replace(/\r\n/g, '\n');
+        if (isUser === true) {
+            // Do not alter user inputs here; USER_INPUT rules will be applied when building prompts
+            return normalized.trim();
+        }
+        // Apply the borrowed Regex extension early to AI/character messages only
+        const processed = getRegexedString(normalized.trim(), regex_placement.AI_OUTPUT);
+        return processed;
+    } catch (e) {
+        return String(content).trim();
+    }
 }
