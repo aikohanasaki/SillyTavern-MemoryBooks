@@ -40,7 +40,16 @@ Entri 🔗 dalam maklumat dunia dinamakan "vektor" dalam UI ST. Inilah sebabnya 
 - **Sokongan Pelengkapan Sembang:** Sokongan penuh untuk OpenAI, Claude, Anthropic, OpenRouter atau API pelengkapan sembang lain.
 - **Sokongan Pelengkapan Teks:** API pelengkapan teks (Kobold, TextGen, dll.) disokong apabila disambungkan melalui konfigurasi manual penuh atau sumber pelengkapan tersuai dalam SillyTavern.
 
-## 💡 Tetapan Pengaktifan Maklumat Dunia/Buku Legenda Global yang Disyorkan
+### Petua KoboldCpp untuk menggunakan 📕 ST Memory Books
+Sediakan ini dalam ST (anda boleh kembali ke Pelengkapan Teks SELEPAS STMB berfungsi)
+- Chat Completion API
+- Sumber chat completion tersuai
+- Endpoint `http://localhost:5001/v1` (anda juga boleh gunakan `127.0.0.1:5000/v1`)
+- masukkan apa-apa dalam "custom API key" (tidak penting, tetapi ST memerlukannya)
+- ID model mesti `koboldcpp/namamodel` (jangan letak .gguf dalam nama model!)
+- muat turun dan import satu pratetap chat completion (mana-mana pun boleh) hanya supaya ANDA ADA satu pratetap chat completion. Ia mengelakkan ralat "tidak disokong"
+
+## � Tetapan Pengaktifan Maklumat Dunia/Buku Legenda Global yang Disyorkan
 
 - **Padankan Perkataan Penuh:** biarkan tidak ditandai (palsu)
 - **Kedalaman Imbasan:** lebih tinggi lebih baik (sekurang-kurangnya 4)
@@ -49,7 +58,7 @@ Entri 🔗 dalam maklumat dunia dinamakan "vektor" dalam UI ST. Inilah sebabnya 
 
 ---
 
-## 🚀 Bermula
+## �🚀 Bermula
 
 ### 1. **Pasang & Muatkan**
 - Muatkan SillyTavern dan pilih watak atau sembang kumpulan.

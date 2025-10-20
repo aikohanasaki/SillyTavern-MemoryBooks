@@ -40,7 +40,16 @@ Entri 🔗 di info dunia diberi nama "vektor" di UI ST. Inilah sebabnya saya men
 - **Dukungan Penyelesaian Obrolan:** Dukungan penuh untuk OpenAI, Claude, Anthropic, OpenRouter, atau API penyelesaian obrolan lainnya.
 - **Dukungan Penyelesaian Teks:** API penyelesaian teks (Kobold, TextGen, dll.) didukung saat terhubung melalui konfigurasi manual penuh atau sumber penyelesaian khusus di SillyTavern.
 
-## 💡 Pengaturan Aktivasi Info Dunia/Buku Latar Global yang Direkomendasikan
+### Tips KoboldCpp untuk menggunakan 📕 ST Memory Books
+Siapkan ini di ST (Anda dapat kembali ke Text Completion SETELAH STMB berfungsi)
+- Chat Completion API
+- Sumber chat completion khusus
+- Endpoint `http://localhost:5001/v1` (Anda juga dapat menggunakan `127.0.0.1:5000/v1`)
+- masukkan apa saja di "kunci API khusus" (tidak masalah, tetapi ST memerlukan satu)
+- ID model harus `koboldcpp/namamodel` (jangan masukkan .gguf dalam nama model!)
+- unduh dan impor preset chat completion (apa saja akan berfungsi) hanya agar Anda MEMILIKI preset chat completion. Ini menghindari kesalahan dari "tidak didukung"
+
+## � Pengaturan Aktivasi Info Dunia/Buku Latar Global yang Direkomendasikan
 
 - **Cocokkan Seluruh Kata:** biarkan tidak dicentang (salah)
 - **Kedalaman Pindai:** lebih tinggi lebih baik (setidaknya 4)
@@ -49,7 +58,7 @@ Entri 🔗 di info dunia diberi nama "vektor" di UI ST. Inilah sebabnya saya men
 
 ---
 
-## 🚀 Memulai
+## �🚀 Memulai
 
 ### 1. **Instal & Muat**
 - Muat SillyTavern dan pilih karakter atau obrolan grup.
