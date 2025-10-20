@@ -40,7 +40,16 @@ La entrada 🔗 en la información del mundo se llama "vectorized" en la interfa
 - **Soporte de finalización de chat:** Soporte completo para OpenAI, Claude, Anthropic, OpenRouter u otra API de finalización de chat.
 - **Soporte de finalización de texto:** Las API de finalización de texto (Kobold, TextGen, etc.) son compatibles cuando se conectan a través de la configuración manual completa o una fuente de finalización personalizada en SillyTavern.
 
-## 💡 Ajustes recomendados de activación global de Información del Mundo/Libro de Conocimiento
+### Consejos de KoboldCpp para usar 📕 ST Memory Books
+Configura esto en ST (puedes volver a la Completación de Texto DESPUÉS de que STMB funcione)
+- API de Chat Completion
+- Fuente de chat completion personalizada
+- Endpoint `http://localhost:5001/v1` (también puedes usar `127.0.0.1:5000/v1`)
+- Ingresa cualquier cosa en "clave de API personalizada" (no importa, pero ST requiere una)
+- El ID del modelo debe ser `koboldcpp/nombredelmodelo` (¡no pongas .gguf en el nombre del modelo!)
+- Descarga e importa un preajuste de chat completion (cualquiera servirá) solo para TENER un preajuste de chat completion. Evita errores de "no soportado"
+
+## � Ajustes recomendados de activación global de Información del Mundo/Libro de Conocimiento
 
 - **Coincidir palabras completas:** dejar sin marcar (falso)
 - **Profundidad de escaneo:** cuanto más alta, mejor (al menos 4)
@@ -49,7 +58,7 @@ La entrada 🔗 en la información del mundo se llama "vectorized" en la interfa
 
 ---
 
-## 🚀 Empezando
+## �🚀 Empezando
 
 ### 1. **Instalar y Cargar**
 - Cargue SillyTavern y seleccione un personaje o un chat grupal.

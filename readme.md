@@ -41,6 +41,15 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
 
+### KoboldCpp Tips to using 📕 ST Memory Books
+Set this up in ST (you can change back to Text Completion AFTER you get STMB working)
+- Chat Completion API
+- Custom chat completion source
+- `http://localhost:5001/v1` endpoint (you can also use `127.0.0.1:5000/v1`)
+- enter anything in "custom API key" (doesn't matter, but ST requires one)
+- model ID must be `koboldcpp/modelname` (don't put .gguf in the model name!)
+- download a chat completion preset and import it (any one will do) just so you HAVE a chat completion preset. It avoids errors from "not supported"
+
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 
 - **Match Whole Words:** leave unchecked (false)
