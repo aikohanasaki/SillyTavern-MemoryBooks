@@ -10,40 +10,61 @@
  */
 export async function loadLocaleJson(lang) {
     const alias = {
+        // Chinese (both already match ST base)
         'zh': 'zh-cn',
         'zh_cn': 'zh-cn',
         'zh_tw': 'zh-tw',
         'zh.tw': 'zh-tw',
+        'zh-cn': 'zh-cn',
+        'zh-tw': 'zh-tw',
         'zh-CN': 'zh-cn',
         'zh-TW': 'zh-tw',
-        'ja': 'ja',
-        'ja_jp': 'ja',
-        'ja-JP': 'ja',
-        'ru': 'ru',
-        'ru_ru': 'ru',
-        'ru-RU': 'ru',
-        'es': 'es',
-        'ko': 'ko',
-        'ko_kr': 'ko',
-        'ko-KR': 'ko',
-        'ms': 'ms',
-        'ms_my': 'ms',
-        'ms-MY': 'ms',
-        'id': 'id',
-        'id_id': 'id',
-        'id-ID': 'id',
+
+        // Japanese -> ja-jp
+        'ja': 'ja-jp',
+        'ja_jp': 'ja-jp',
+        'ja-JP': 'ja-jp',
+        'ja-jp': 'ja-jp',
+
+        // Russian -> ru-ru
+        'ru': 'ru-ru',
+        'ru_ru': 'ru-ru',
+        'ru-RU': 'ru-ru',
+        'ru-ru': 'ru-ru',
+
+        // Spanish -> es-es
+        'es': 'es-es',
+        'es-es': 'es-es',
+
+        // Korean -> ko-kr
+        'ko': 'ko-kr',
+        'ko_kr': 'ko-kr',
+        'ko-KR': 'ko-kr',
+        'ko-kr': 'ko-kr',
+
+        // Malay -> ms-my
+        'ms': 'ms-my',
+        'ms_my': 'ms-my',
+        'ms-MY': 'ms-my',
+        'ms-my': 'ms-my',
+
+        // Indonesian -> id-id
+        'id': 'id-id',
+        'id_id': 'id-id',
+        'id-ID': 'id-id',
+        'id-id': 'id-id',
     };
     const normalized = alias[lang] || lang;
 
     const paths = {
         'zh-cn': './locales/zh-cn.json',
         'zh-tw': './locales/zh-tw.json',
-        'ja': './locales/ja.json',
-        'ru': './locales/ru.json',
-        'es': './locales/es.json',
-        'ko': './locales/ko.json',
-        'ms': './locales/ms.json',
-        'id': './locales/id.json',
+        'ja-jp': './locales/ja-jp.json',
+        'ru-ru': './locales/ru-ru.json',
+        'es-es': './locales/es-es.json',
+        'ko-kr': './locales/ko-kr.json',
+        'ms-my': './locales/ms-my.json',
+        'id-id': './locales/id-id.json',
     };
 
     const rel = paths[normalized];
