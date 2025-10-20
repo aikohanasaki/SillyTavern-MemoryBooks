@@ -2,7 +2,7 @@
 
 Ekstensi SillyTavern generasi berikutnya untuk pembuatan memori yang otomatis, terstruktur, dan andal. Tandai adegan dalam obrolan, hasilkan ringkasan berbasis JSON dengan AI, dan simpan sebagai entri "[vektor](#vektor)" di buku latar Anda. Mendukung obrolan grup, manajemen profil tingkat lanjut, dan penanganan API/model yang kuat.
 
-**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Riwayat Versi & Log Perubahan](../changelog.md)**
+**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Riwayat Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 > Catatan: Mendukung berbagai bahasa: lihat folder [`/locales`](../locales) untuk daftar. Readme dan Panduan Pengguna internasional/lokal dapat ditemukan di folder [`/userguides`](../userguides).
 > Konverter buku latar dan perpustakaan templat prompt sampingan ada di folder [`/resources`](../resources).

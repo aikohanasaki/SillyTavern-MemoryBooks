@@ -2,7 +2,7 @@
 
 自動的で構造化された、信頼性の高い記憶作成のための次世代SillyTavern拡張機能です。チャットでシーンをマークし、AIでJSONベースの要約を生成し、ロアブックに「[ベクトル化](#vectorized)」エントリとして保存します。グループチャット、高度なプロファイル管理、そして堅牢なAPI/モデルハンドリングをサポートしています。
 
-**📘 [ユーザーガイド (JP)](USER_GUIDE.md)** |  **📋 [バージョン履歴と変更ログ](changelog.md)**
+**📘 [ユーザーガイド (JP)](USER_GUIDE.md)** |  **📋 [バージョン履歴と変更ログ](changelog.md)** | [📕 Memory Books と 📚 Lorebook Ordering の使い方](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 > 注：多言語に対応しています：リストについては[`/locales`](locales)フォルダを参照してください。国際語/地域語のReadmeとユーザーガイドは[`/userguides`](userguides)フォルダにあります。
 > ロアブックコンバーターとサイドプロンプトテンプレートライブラリは[`/resources`](resources)フォルダにあります。

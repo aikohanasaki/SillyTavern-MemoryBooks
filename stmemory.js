@@ -10,8 +10,6 @@ const $ = window.jQuery;
 const MODULE_NAME = 'STMemoryBooks-Memory';
 // Buffers etc for token calculations
 const MIN_RESPONSE_TOKENS = 1500;
-const DEFAULT_CONTEXT_WINDOW = 96600;
-const SAFETY_BUFFER_TOKENS = 50;
 
 
 // --- Custom Error Types for Better UI Handling ---
@@ -68,39 +66,18 @@ export async function sendRawCompletionRequest({
     let headers = getRequestHeaders();
 
     // Compute desired max tokens from any source (highest), integer-only
-    // Ensure openai_max_context never contributes as 0; fallback to DEFAULT_CONTEXT_WINDOW
-    const rawMaxContext = Number(oai_settings.openai_max_context);
-    const effectiveMaxContext = Number.isFinite(rawMaxContext) && rawMaxContext > 0 ? rawMaxContext : DEFAULT_CONTEXT_WINDOW;
+// Use openai_max_context only if it's a positive finite number
     const desiredFromSources = Math.max(
         Number(extra.max_tokens) || 0,
-        effectiveMaxContext,
         Number(oai_settings.max_response) || 0,
         MIN_RESPONSE_TOKENS // ensure at least the minimum
     );
     const desiredInt = Math.max(MIN_RESPONSE_TOKENS, Math.floor(desiredFromSources) || 0);
 
-    // Estimate prompt token count and cap by context window if known
-    let capByContext = desiredInt;
-    try {
-        const est = await estimateTokens(prompt, { estimatedOutput: 64 });
-
-        const modelContext = effectiveMaxContext;
-
-        const availableForOutput = Math.max(0, modelContext - (Number(est?.input) || 0));
-        capByContext = Math.max(0, availableForOutput - SAFETY_BUFFER_TOKENS);
-    } catch {
-        // If estimation fails for any reason, keep capByContext = desiredInt
+// Set max_tokens based on explicit inputs only; no automatic context-window math
+    if (Number.isFinite(desiredInt) && desiredInt > 0) {
+        extra.max_tokens = Math.floor(desiredInt);
     }
-
-    // Final max_tokens: never exceed context cap; error if below minimum
-    const finalMax = Math.min(desiredInt, Math.floor(capByContext) || 0);
-    if (finalMax < MIN_RESPONSE_TOKENS) {
-        throw new AIResponseError(
-            `Available model context window (${Math.floor(capByContext)}) cannot satisfy minimum output tokens (${MIN_RESPONSE_TOKENS}). ` +
-            `Shorten the prompt, reduce system/scene context, or use a model with a larger context window.`
-        );
-    }
-    extra.max_tokens = Math.floor(finalMax);
 
     // Optional: mirror to providers that use a different field if present
     if (extra.max_output_tokens != null) {

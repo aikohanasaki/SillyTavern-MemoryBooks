@@ -2,7 +2,7 @@
 
 新一代 SillyTavern 擴充，用於自動、結構化和可靠地創建記憶。在聊天中標記場景，使用 AI 生成基於 JSON 的摘要，並將它們作為「[向量化](#向量化)」條目儲存在您的傳說書中。支援群聊、進階設定檔管理和穩定的 API/模型處理。
 
-**📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](changelog.md)**
+**📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 > 注意：支援多種語言：請參閱 [`/locales`](locales) 資料夾以取得清單。國際化/本地化的自述檔案和使用者指南可以在 [`/userguides`](userguides) 資料夾中找到。
 > 傳說書轉換器和側邊提示範本庫位於 [`/resources`](resources) 資料夾中。
