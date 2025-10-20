@@ -28,6 +28,7 @@ import { listTemplates } from './sidePromptsManager.js';
 import { summaryPromptsTableTemplate } from './templatesSummaryPrompts.js';
 import { t as __st_t_tag, translate, applyLocale, addLocaleData, getCurrentLocale } from '../../../i18n.js';
 import { localeData, loadLocaleJson } from './locales.js';
+import { getScriptsByType, SCRIPT_TYPES } from '../../../extensions/regex/engine.js';
 
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
@@ -1863,6 +1864,30 @@ async function showSettingsPopup() {
     const settings = initializeSettings();
     await SummaryPromptManager.firstRunInitIfMissing(settings);
     const sceneData = await getSceneData();
+
+    // Build Regex script options (Global, Scoped, Preset), include disabled too
+    const selectedRegexOutgoing = Array.isArray(settings.moduleSettings.selectedRegexOutgoing) ? settings.moduleSettings.selectedRegexOutgoing : [];
+    const selectedRegexIncoming = Array.isArray(settings.moduleSettings.selectedRegexIncoming) ? settings.moduleSettings.selectedRegexIncoming : [];
+    const typeName = (t) => t === SCRIPT_TYPES.GLOBAL ? 'Global' : (t === SCRIPT_TYPES.SCOPED ? 'Scoped' : 'Preset');
+    const regexOptions = [];
+    try {
+        const TYPES = [SCRIPT_TYPES.GLOBAL, SCRIPT_TYPES.SCOPED, SCRIPT_TYPES.PRESET];
+        for (const t of TYPES) {
+            const arr = getScriptsByType(t, { allowedOnly: false }) || [];
+            arr.forEach((script, index) => {
+                const key = (script?.id != null && script.id !== '') ? `t${t}:${script.id}` : `t${t}:${script?.scriptName || 'unnamed'}:${index}`;
+                const label = `[${typeName(t)}] ${script?.scriptName || 'Untitled'}${script?.disabled ? ' (disabled)' : ''}`;
+                regexOptions.push({
+                    key,
+                    label,
+                    selectedOutgoing: selectedRegexOutgoing.includes(key),
+                    selectedIncoming: selectedRegexIncoming.includes(key),
+                });
+            });
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: Failed to enumerate Regex scripts for UI', e);
+    }
     const selectedProfile = settings.profiles[settings.defaultProfile];
     const sceneMarkers = getSceneMarkers();
 
@@ -1903,6 +1928,10 @@ async function showSettingsPopup() {
             isDefault: index === settings.defaultProfile
         })),
         titleFormat: settings.titleFormat,
+        // Regex selection UI
+        regexOptions,
+        selectedRegexOutgoing,
+        selectedRegexIncoming,
         titleFormats: getDefaultTitleFormats().map(format => ({
             value: format,
             isSelected: format === settings.titleFormat
@@ -2008,6 +2037,28 @@ function setupSettingsEventListeners() {
     // Handle change events using delegation
     popupElement.addEventListener('change', async (e) => {
         const settings = initializeSettings();
+
+        // Regex multi-selects
+        if (e.target.matches('#stmb-regex-outgoing')) {
+            try {
+                const values = Array.from(e.target.selectedOptions || []).map(o => o.value);
+                settings.moduleSettings.selectedRegexOutgoing = values;
+                saveSettingsDebounced();
+            } catch (err) {
+                console.warn('STMemoryBooks: failed to save selectedRegexOutgoing', err);
+            }
+            return;
+        }
+        if (e.target.matches('#stmb-regex-incoming')) {
+            try {
+                const values = Array.from(e.target.selectedOptions || []).map(o => o.value);
+                settings.moduleSettings.selectedRegexIncoming = values;
+                saveSettingsDebounced();
+            } catch (err) {
+                console.warn('STMemoryBooks: failed to save selectedRegexIncoming', err);
+            }
+            return;
+        }
         
         if (e.target.matches('#stmb-import-file')) {
             try {

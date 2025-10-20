@@ -2,7 +2,7 @@ import { getTokenCount } from '../../../tokenizers.js';
 import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
-import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
+import { runRegexScript, getRegexScripts, getScriptsByType, SCRIPT_TYPES } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
@@ -10,6 +10,82 @@ const $ = window.jQuery;
 const MODULE_NAME = 'STMemoryBooks-Memory';
 // Buffers etc for token calculations
 const MIN_RESPONSE_TOKENS = 1500;
+
+// --- ST Regex selection-based execution (bypass engine gating) ---
+
+/**
+ * Enumerate ALL regex scripts across Global, Scoped, and Preset, regardless of "allowed" flags.
+ * Returns an array of { key, script, type, index } entries with a stable key.
+ */
+function enumerateAllRegexScripts() {
+    try {
+        const results = [];
+        const types = [SCRIPT_TYPES.GLOBAL, SCRIPT_TYPES.SCOPED, SCRIPT_TYPES.PRESET];
+        types.forEach((type) => {
+            const arr = getScriptsByType(type, { allowedOnly: false }) || [];
+            arr.forEach((script, index) => {
+                const key = (script?.id != null && script.id !== '') ? `t${type}:${script.id}` : `t${type}:${script?.scriptName || 'unnamed'}:${index}`;
+                results.push({ key, script, type, index });
+            });
+        });
+        return results;
+    } catch (e) {
+        console.warn('enumerateAllRegexScripts failed', e);
+        return [];
+    }
+}
+
+/**
+ * Build a map key -> { key, script, type, index } for quick lookup.
+ */
+function buildRegexScriptIndex() {
+    const entries = enumerateAllRegexScripts();
+    const map = new Map();
+    for (const e of entries) {
+        map.set(e.key, e);
+    }
+    return map;
+}
+
+/**
+ * Clone a script and force disabled=false to ensure it runs when selected.
+ */
+function cloneScriptEnabled(script) {
+    try {
+        const clone = { ...script };
+        clone.disabled = false;
+        return clone;
+    } catch {
+        return script;
+    }
+}
+
+/**
+ * Apply selected regex scripts (by stable keys) in order using ST's runRegexScript.
+ * This bypasses promptOnly/markdownOnly/allowed gating while fully reusing ST's regex engine.
+ */
+function applySelectedRegex(inputText, selectedKeys) {
+    if (typeof inputText !== 'string') return '';
+    if (!Array.isArray(selectedKeys) || selectedKeys.length === 0) return inputText;
+    try {
+        let out = inputText;
+        const index = buildRegexScriptIndex();
+        for (const k of selectedKeys) {
+            const entry = index.get(k);
+            if (!entry || !entry.script) continue;
+            const scriptClone = cloneScriptEnabled(entry.script);
+            try {
+                out = runRegexScript(scriptClone, out);
+            } catch (e) {
+                console.warn('applySelectedRegex: script failed', k, e);
+            }
+        }
+        return out;
+    } catch (e) {
+        console.warn('applySelectedRegex failed', e);
+        return inputText;
+    }
+}
 
 
 // --- Custom Error Types for Better UI Handling ---
@@ -356,9 +432,14 @@ function endsNicely(text) {
 function parseAIJsonResponse(aiResponse) {
     let cleanResponse = aiResponse;
 
-    // Apply regex transformations to the raw response
-    if (typeof cleanResponse === 'string') {
-        cleanResponse = getRegexedString(cleanResponse, regex_placement.AI_OUTPUT);
+    // Apply user-selected incoming regex scripts (bypass engine gating)
+    try {
+        const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexIncoming;
+        if (typeof cleanResponse === 'string' && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            cleanResponse = applySelectedRegex(cleanResponse, selectedKeys);
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: incoming regex application failed', e);
     }
 
     // Check for new Claude structured format first
@@ -696,8 +777,16 @@ async function buildPrompt(compiledScene, profile) {
     // Combine system prompt and scene
     const finalPrompt = `${processedSystemPrompt}\n\n${sceneText}`;
 
-    // Apply regex transformations
-    return getRegexedString(finalPrompt, regex_placement.USER_INPUT, { isPrompt: true });
+    // Apply user-selected outgoing regex scripts (bypass engine gating)
+    try {
+        const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexOutgoing;
+        if (Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            return applySelectedRegex(finalPrompt, selectedKeys);
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: outgoing regex application failed', e);
+    }
+    return finalPrompt;
 }
 
 /**
