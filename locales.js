@@ -53,6 +53,15 @@ export async function loadLocaleJson(lang) {
         'id_id': 'id-id',
         'id-ID': 'id-id',
         'id-id': 'id-id',
+
+        // English -> en (use built-in locales.js, no JSON file)
+        'en': 'en',
+        'en_us': 'en',
+        'en-US': 'en',
+        'en-us': 'en',
+        'en_gb': 'en',
+        'en-GB': 'en',
+        'en-gb': 'en',
     };
     const normalized = alias[lang] || lang;
 
