@@ -753,24 +753,37 @@ async function showAndGetMemorySettings(sceneData, lorebookValidation, selectedP
  * Determine if an error is retryable
  */
 function isRetryableError(error) {
+    // Respect structured recoverability for AIResponseError
+    if (error && error.name === 'AIResponseError') {
+        if (typeof error.recoverable === 'boolean') {
+            return error.recoverable;
+        }
+        // If code hints at truncation, treat as retryable
+        if (error.code && String(error.code).toUpperCase().includes('TRUNCATION')) {
+            return true;
+        }
+    }
+
     // Don't retry these error types
     const nonRetryableErrors = [
         'TokenWarningError',     // User needs to select smaller range
         'InvalidProfileError'    // Configuration issue
     ];
     
-    if (nonRetryableErrors.includes(error.name)) {
+    if (nonRetryableErrors.includes(error?.name)) {
         return false;
     }
     
     // Don't retry validation errors
-    if (error.message.includes('Scene compilation failed') || 
+    if (error?.message && (
+        error.message.includes('Scene compilation failed') || 
         error.message.includes('Invalid memory result') ||
-        error.message.includes('Invalid lorebook')) {
+        error.message.includes('Invalid lorebook')
+    )) {
         return false;
     }
     
-    // Retry AI response errors and network-related issues
+    // Retry AI response errors and network-related issues by default
     return true;
 }
 
@@ -812,7 +825,7 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
             if (memoryFetchResult.actualCount > 0) {
                 if (memoryFetchResult.actualCount < memoryFetchResult.requestedCount) {
-toastr.warning(__st_t_tag`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
+                    toastr.warning(__st_t_tag`Only ${memoryFetchResult.actualCount} of ${memoryFetchResult.requestedCount} requested memories available`, 'STMemoryBooks');
                 }
                 console.log(`STMemoryBooks: Including ${memoryFetchResult.actualCount} previous memories as context`);
             } else {
@@ -859,11 +872,11 @@ toastr.warning(__st_t_tag`Only ${memoryFetchResult.actualCount} of ${memoryFetch
                 const currentUserRetries = retryCount >= maxRetries ? retryCount - maxRetries : 0;
 
                 if (currentUserRetries >= maxUserRetries) {
-toastr.warning(__st_t_tag`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
+                        toastr.warning(__st_t_tag`Maximum retry attempts (${maxUserRetries}) reached`, 'STMemoryBooks');
                     return { action: 'cancel' };
                 }
 
-toastr.info(__st_t_tag`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
+                toastr.info(__st_t_tag`Retrying memory generation (${currentUserRetries + 1}/${maxUserRetries})...`, 'STMemoryBooks');
                 // Keep the retry count properly incremented to track total attempts
                 const nextRetryCount = Math.max(retryCount + 1, maxRetries + currentUserRetries + 1);
                 return await executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, nextRetryCount);
@@ -935,7 +948,7 @@ toastr.info(__st_t_tag`Retrying memory generation (${currentUserRetries + 1}/${m
         // Clear working toast and show success
         toastr.clear();
         const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
-toastr.success(__st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
+        toastr.success(__st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         
     } catch (error) {
         console.error('STMemoryBooks: Error creating memory:', error);
@@ -958,6 +971,7 @@ toastr.success(__st_t_tag`Memory "${addResult.entryTitle}" created successfully$
         
         // No more retries or non-retryable error - show final error
         const retryMsg = retryCount > 0 ? ` (failed after ${retryCount + 1} attempts)` : '';
+        const codeTag = (error && error.code) ? ` [${error.code}]` : '';
         
         // Provide specific error messages for different types of failures
         if (error.name === 'TokenWarningError') {
@@ -965,7 +979,7 @@ toastr.success(__st_t_tag`Memory "${addResult.entryTitle}" created successfully$
                 timeOut: 8000
             });
         } else if (error.name === 'AIResponseError') {
-            toastr.error(__st_t_tag`AI failed to generate valid memory: ${error.message}${retryMsg}`, 'STMemoryBooks', {
+            toastr.error(__st_t_tag`AI failed to generate valid memory${codeTag}: ${error.message}${retryMsg}`, 'STMemoryBooks', {
                 timeOut: 8000
             });
         } else if (error.name === 'InvalidProfileError') {
