@@ -102,6 +102,9 @@ let currentPopupInstance = null;
 let isProcessingMemory = false;
 let currentProfile = null;
 let isDryRun = false;
+/* Ephemeral failure state for AI errors */
+let lastFailedAIError = null;
+let lastFailureToast = null;
 
 /* Settings cache for restoration */
 let cachedSettings = null;
@@ -947,6 +950,8 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
 
         // Clear working toast and show success
         toastr.clear();
+        lastFailureToast = null;
+        lastFailedAIError = null;
         const retryMsg = retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : '';
         toastr.success(__st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`, 'STMemoryBooks');
         
@@ -979,8 +984,16 @@ async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveS
                 timeOut: 8000
             });
         } else if (error.name === 'AIResponseError') {
-            toastr.error(__st_t_tag`AI failed to generate valid memory${codeTag}: ${error.message}${retryMsg}`, 'STMemoryBooks', {
-                timeOut: 8000
+            try { toastr.clear(lastFailureToast); } catch (e) {}
+            lastFailedAIError = error;
+            lastFailureToast = toastr.error(__st_t_tag`AI failed to generate valid memory${codeTag}: ${error.message}${retryMsg}`, 'STMemoryBooks', {
+                timeOut: 0,
+                extendedTimeOut: 0,
+                closeButton: true,
+                tapToDismiss: false,
+                onclick: () => {
+                    try { showFailedAIResponsePopup(lastFailedAIError); } catch (e) { console.error(e); }
+                }
             });
         } else if (error.name === 'InvalidProfileError') {
             toastr.error(__st_t_tag`Profile configuration error: ${error.message}${retryMsg}`, 'STMemoryBooks', {
@@ -2649,6 +2662,14 @@ function setupEventListeners() {
     // Track dry-run state for generation events
     eventSource.on(event_types.GENERATION_STARTED, (type, options, dryRun) => {
         isDryRun = dryRun || false;
+        // Clear any prior persistent failure toast and error when a new generation starts
+        try {
+            if (lastFailureToast) {
+                toastr.clear(lastFailureToast);
+            }
+        } catch (e) { /* noop */ }
+        lastFailureToast = null;
+        lastFailedAIError = null;
     });
 
 
@@ -2707,6 +2728,68 @@ function setupEventListeners() {
     });
     
     window.addEventListener('beforeunload', cleanupChatObserver);
+}
+
+/**
+ * Show a popup with details for a failed AI response, including raw response and provider body if available.
+ */
+function showFailedAIResponsePopup(error) {
+    try {
+        const esc = (s) => escapeHtml(String(s || ''));
+        const code = error?.code ? esc(error.code) : '';
+        const message = esc(error?.message || 'Unknown error');
+        const raw = typeof error?.rawResponse === 'string' ? error.rawResponse : '';
+        const providerBody = typeof error?.providerBody === 'string' ? error.providerBody : '';
+        const MAX_PREVIEW = 100000;
+        const rawPreview = raw && raw.length > MAX_PREVIEW ? raw.slice(0, MAX_PREVIEW) + '\n…(truncated)…' : raw;
+
+        let content = '';
+        content += `<h3>${esc(translate('Review Failed AI Response', 'STMemoryBooks_ReviewFailedAI_Title'))}</h3>`;
+        content += `<div class="world_entry_form_control">`;
+        content += `<div><strong>${esc(translate('Error', 'STMemoryBooks_ReviewFailedAI_ErrorLabel'))}:</strong> ${message}</div>`;
+        if (code) content += `<div><strong>${esc(translate('Code', 'STMemoryBooks_ReviewFailedAI_CodeLabel'))}:</strong> ${code}</div>`;
+        content += `</div>`;
+
+        if (raw) {
+            content += `<div class="world_entry_form_control">`;
+            content += `<h4>${esc(translate('Raw AI Response', 'STMemoryBooks_ReviewFailedAI_RawLabel'))}</h4>`;
+            content += `<pre class="text_pole" style="white-space: pre-wrap; max-height: 300px; overflow:auto;"><code>${escapeHtml(rawPreview)}</code></pre>`;
+            content += `<div class="buttons_block gap10px"><button id="stmb-copy-raw" class="menu_button">${esc(translate('Copy Raw', 'STMemoryBooks_ReviewFailedAI_CopyRaw'))}</button></div>`;
+            content += `</div>`;
+        } else {
+            content += `<div class="world_entry_form_control opacity70p">${esc(translate('No raw response was captured.', 'STMemoryBooks_ReviewFailedAI_NoRaw'))}</div>`;
+        }
+
+        if (providerBody) {
+            content += `<div class="world_entry_form_control">`;
+            content += `<h4>${esc(translate('Provider Error Body', 'STMemoryBooks_ReviewFailedAI_ProviderBody'))}</h4>`;
+            content += `<pre class="text_pole" style="white-space: pre-wrap; max-height: 200px; overflow:auto;"><code>${escapeHtml(providerBody)}</code></pre>`;
+            content += `<div class="buttons_block gap10px"><button id="stmb-copy-provider" class="menu_button">${esc(translate('Copy Provider Body', 'STMemoryBooks_ReviewFailedAI_CopyProvider'))}</button></div>`;
+            content += `</div>`;
+        }
+
+        const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
+            okButton: false,
+            cancelButton: translate('Close', 'STMemoryBooks_Close')
+        });
+
+        popup.show().then(() => {
+            const dlg = popup.dlg;
+            dlg.querySelector('#stmb-copy-raw')?.addEventListener('click', async () => {
+                try { await navigator.clipboard.writeText(raw); toastr.success(translate('Copied raw response', 'STMemoryBooks_CopiedRaw'), 'STMemoryBooks'); }
+                catch { toastr.error(translate('Copy failed', 'STMemoryBooks_CopyFailed'), 'STMemoryBooks'); }
+            });
+            dlg.querySelector('#stmb-copy-provider')?.addEventListener('click', async () => {
+                try { await navigator.clipboard.writeText(providerBody); toastr.success(translate('Copied provider body', 'STMemoryBooks_CopiedProvider'), 'STMemoryBooks'); }
+                catch { toastr.error(translate('Copy failed', 'STMemoryBooks_CopyFailed'), 'STMemoryBooks'); }
+            });
+        });
+    } catch (e) {
+        console.error('STMemoryBooks: Failed to show failed AI response popup:', e);
+    }
 }
 
 /**

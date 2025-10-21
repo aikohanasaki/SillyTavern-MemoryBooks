@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.10.0 (October 21, 2025)
+- **Enhancement:** Error raw code popup window allows clearer insight on AI memory failure.
+
 ## v4.9.0 (October 21, 2025)
 - **Enhancement:** Aggressive JSON parse recovery 
   - clearer errors (recoverable vs unrecoverable)
