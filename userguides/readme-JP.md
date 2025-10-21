@@ -2,7 +2,13 @@
 
 自動的で構造化された、信頼性の高い記憶作成のための次世代SillyTavern拡張機能です。チャットでシーンをマークし、AIでJSONベースの要約を生成し、ロアブックに「[ベクトル化](#vectorized)」エントリとして保存します。グループチャット、高度なプロファイル管理、そして堅牢なAPI/モデルハンドリングをサポートしています。
 
-**📘 [ユーザーガイド (JP)](USER_GUIDE.md)** |  **📋 [バージョン履歴と変更ログ](changelog.md)** | [📕 Memory Books と 📚 Lorebook Ordering の使い方](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [ユーザーガイド (JP)](USER_GUIDE.md)** |  **📋 [バージョン履歴と変更ログ](changelog.md)** | [📕 Memory Books と 📚 Lorebook Ordering の使い方](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)
+
+---
+
+### 📚 Lorebook Ordering (STLO) でパワーアップ
+
+高度なメモリ整理や物語の統合を強化するため、STMBと[SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)の併用を強くおすすめします。ガイドではベストプラクティス、設定方法、コツなどが紹介されています。
 
 > 注：多言語に対応しています：リストについては[`/locales`](locales)フォルダを参照してください。国際語/地域語のReadmeとユーザーガイドは[`/userguides`](userguides)フォルダにあります。
 > ロアブックコンバーターとサイドプロンプトテンプレートライブラリは[`/resources`](resources)フォルダにあります。
@@ -183,6 +189,7 @@ STでこれを設定してください（STMBが動作した後でText Completio
 - **テキスト処理の完全な制御**: Memory BooksはSillyTavernの**Regex**拡張機能と統合され、2つの主要な段階で強力なテキスト変換を適用できます：
     1.  **プロンプト生成**: **User Input**プレースメントをターゲットとする正規表現スクリプトを作成して、AIに送信されるプロンプトを自動的に変更します。
     2.  **応答の解析**: **AI Output**プレースメントをターゲットとして、保存される前にAIの生の応答をクリーンアップ、再フォーマット、または標準化します。
+- **マルチセレクト対応：** 複数の正規表現スクリプトを同時に有効化でき、すべての有効なスクリプトがプロンプト生成や応答解析時に順番に適用され、より高度かつ柔軟な変換が可能です。
 - **仕組み**: 統合はシームレスです。Regex拡張機能で目的のスクリプトを作成して有効にするだけで、Memory Booksはメモリおよびサイドプロンプトの作成中に自動的にそれらを適用します。
 
 ---

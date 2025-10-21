@@ -4,6 +4,12 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 **📘 [User Guid (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
+---
+
+### 📚 Power Up with Lorebook Ordering (STLO)
+
+For advanced memory organization and deeper story integration, we highly recommend using STMB together with [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). See the guide for best practices, setup instructions, and tips!
+
 > Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
 > Lorebook converter and side prompt template library are in the [`/resources`](resources) folder.
 
@@ -184,7 +190,8 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 - **Full Control Over Text Processing**: Memory Books now integrates with SillyTavern's **Regex** extension, allowing you to apply powerful text transformations at two key stages:
     1.  **Prompt Generation**: Automatically modify the prompts sent to the AI by creating regex scripts that target the **User Input** placement.
     2.  **Response Parsing**: Clean, reformat, or standardize the AI's raw response before it's saved by targeting the **AI Output** placement.
-- **How It Works**: The integration is seamless. Simply create and enable your desired scripts in the Regex extension, and Memory Books will apply them automatically during memory and side prompt creation.
+- **Multi-Select Support**: You can now multi-select regex scripts. All enabled scripts will be applied in sequence at each stage (Prompt Generation and Response Parsing), allowing for advanced and flexible transformations.
+- **How It Works**: The integration is seamless. Simply create and enable (multi-select) your desired scripts in the Regex extension, and Memory Books will apply them automatically during memory and side prompt creation.
 
 ---
 

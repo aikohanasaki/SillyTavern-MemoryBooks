@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.8.0 (October 19, 2025)
+- **Enhancement/rewrite ⚠️*BREAKING CHANGE*:** Regex rework (multi-select).
+
 ## v4.7.1 (October 19, 2025)
 - **Bugfix:** Remove math calculating context
 

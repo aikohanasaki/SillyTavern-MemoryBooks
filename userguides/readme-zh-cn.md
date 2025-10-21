@@ -2,7 +2,13 @@
 
 新一代 SillyTavern 扩展，用于自动、结构化和可靠地创建记忆。在聊天中标记场景，使用 AI 生成基于 JSON 的摘要，并将它们作为“[向量化](#向量化)”条目存储在您的传说书中。支持群聊、高级配置文件管理和稳定的 API/模型处理。
 
-**📘 [用户指南 (zh-cn)](USER_GUIDE.md)** |  **📋 [版本历史与更新日志](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [用户指南 (zh-cn)](USER_GUIDE.md)** |  **📋 [版本历史与更新日志](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md)
+
+---
+
+### 📚 搭配 Lorebook Ordering (STLO) 提升体验
+
+为了更高级的记忆管理和更深层次的故事集成，强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md) 搭配使用。请参阅指南获取最佳实践、设置说明和技巧！
 
 > 注意：支持多种语言：请参阅 [`/locales`](locales) 文件夹以获取列表。国际化/本地化的自述文件和用户指南可以在 [`/userguides`](userguides) 文件夹中找到。
 > 传说书转换器和侧边提示模板库位于 [`/resources`](resources) 文件夹中。
@@ -183,6 +189,7 @@
 - **完全控制文本处理**：记忆书现在与 SillyTavern 的 **Regex** 扩展集成，允许您在两个关键阶段应用强大的文本转换：
     1.  **提示生成**：通过创建针对 **用户输入** 位置的正则表达式脚本，自动修改发送给 AI 的提示。
     2.  **响应解析**：在保存之前，通过针对 **AI 输出** 位置来清理、重新格式化或标准化 AI 的原始响应。
+- **多选支持：** 现在您可以同时选择多个正则脚本；所有启用的脚本将在提示生成和响应解析阶段依次应用，实现更高级和灵活的转换。
 - **工作原理**：集成是无缝的。只需在 Regex 扩展中创建并启用您想要的脚本，记忆书就会在创建记忆和侧边提示时自动应用它们。
 
 ---

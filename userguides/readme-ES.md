@@ -2,7 +2,13 @@
 
 Una extensión de SillyTavern de nueva generación para la creación de memorias automática, estructurada y fiable. Marque escenas en el chat, genere resúmenes basados en JSON con IA y guárdelos como entradas "[vectorizadas](#vectorized)" en sus libros de conocimiento. Admite chats grupales, gestión avanzada de perfiles y manejo a prueba de balas de API/modelos.
 
-**📘 [Guía de Usuario (ES)](USER_GUIDE.md)** |  **📋 [Historial de Versiones y Registro de Cambios](changelog.md)** | [Uso de 📕 Memory Books con 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [Guía de Usuario (ES)](USER_GUIDE.md)** |  **📋 [Historial de Versiones y Registro de Cambios](changelog.md)** | [Uso de 📕 Memory Books con 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md)
+
+---
+
+### 📚 Potencia tu experiencia con Lorebook Ordering (STLO)
+
+Para una organización avanzada de memorias y una integración de historias más profunda, se recomienda usar STMB junto con [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md). Consulta la guía para mejores prácticas, instrucciones de configuración y consejos.
 
 > Nota: Admite varios idiomas: consulte la carpeta [`/locales`](locales) para ver la lista. Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides). 
 > El convertidor de libros de conocimiento y la biblioteca de plantillas de prompts laterales se encuentran en la carpeta [`/resources`](resources).
@@ -183,6 +189,7 @@ Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su
 - **Control Total Sobre el Procesamiento de Texto**: Memory Books ahora se integra con la extensión **Regex** de SillyTavern, permitiéndole aplicar potentes transformaciones de texto en dos etapas clave:
     1.  **Generación de Prompts**: Modifique automáticamente los prompts enviados a la IA creando scripts de regex que apunten a la ubicación **User Input**.
     2.  **Análisis de Respuestas**: Limpie, reformatee o estandarice la respuesta cruda de la IA antes de que se guarde, apuntando a la ubicación **AI Output**.
+- **Soporte Multi-selección**: Ahora puede seleccionar varios scripts de regex a la vez; todos los scripts habilitados se aplicarán en orden durante la generación de prompts y el análisis de respuestas, permitiendo transformaciones avanzadas y flexibles.
 - **Cómo Funciona**: La integración es perfecta. Simplemente cree y habilite los scripts que desee en la extensión Regex, y Memory Books los aplicará automáticamente durante la creación de memorias y prompts laterales.
 
 ---
