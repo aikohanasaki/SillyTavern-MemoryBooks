@@ -42,6 +42,7 @@
 ## 📋 전제 조건
 
 - **SillyTavern:** 1.13.4+ (최신 버전 권장)
+- **모든 사용자용 설치:** STMB는 ST 기본 코드의 많은 함수를 재사용하므로 확장 프로그램을 모든 사용자에 대해 설치하여 경로가 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`가 되도록 하세요. 그렇지 않으면 함수 가져오기가 실패합니다.
 - **장면 선택:** 시작 및 끝 마커(시작 < 끝)가 설정되어야 합니다.
 - **채팅 완료 지원:** OpenAI, Claude, Anthropic, OpenRouter 또는 기타 채팅 완료 API를 완벽하게 지원합니다.
 - **텍스트 완료 지원:** 텍스트 완료 API(Kobold, TextGen 등)는 SillyTavern의 전체 수동 구성 또는 사용자 지정 완료 소스를 통해 연결될 때 지원됩니다.

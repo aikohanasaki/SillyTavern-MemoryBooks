@@ -43,6 +43,7 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 ## 📋 Prerequisites
 
 - **SillyTavern:** 1.13.4+ (latest recommended)
+- **INSTALL FOR ALL USERS:** Because STMB re-uses so many functions from ST base code, please ensure that the extension is installed for all users so that the location is `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Otherwise, function imports fail.
 - **Scene Selection:** Start and end markers (start < end) must be set.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.

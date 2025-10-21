@@ -8,8 +8,6 @@ import { extension_settings } from '../../../extensions.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
-// Buffers etc for token calculations
-const MIN_RESPONSE_TOKENS = 1500;
 
 // --- ST Regex selection-based execution (bypass engine gating) ---
 
@@ -111,23 +109,26 @@ export async function sendRawCompletionRequest({
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
 
-    // Compute desired max tokens from any source (highest), integer-only
-// Use openai_max_context only if it's a positive finite number
+    // Compute desired max tokens from explicit sources only (no minimum enforced)
     const desiredFromSources = Math.max(
         Number(extra.max_tokens) || 0,
-        Number(oai_settings.max_response) || 0,
-        MIN_RESPONSE_TOKENS // ensure at least the minimum
+        Number(oai_settings.max_response) || 0
     );
-    const desiredInt = Math.max(MIN_RESPONSE_TOKENS, Math.floor(desiredFromSources) || 0);
+    const desiredInt = Math.floor(desiredFromSources) || 0;
 
-// Set max_tokens based on explicit inputs only; no automatic context-window math
+    // Set max_tokens based on explicit inputs only; no automatic minimums
     if (Number.isFinite(desiredInt) && desiredInt > 0) {
-        extra.max_tokens = Math.floor(desiredInt);
+        extra.max_tokens = desiredInt;
     }
 
     // Optional: mirror to providers that use a different field if present
     if (extra.max_output_tokens != null) {
-        extra.max_output_tokens = Math.min(Math.floor(extra.max_output_tokens) || 0, extra.max_tokens);
+        const mo = Math.floor(extra.max_output_tokens) || 0;
+        if (Number.isFinite(extra.max_tokens) && extra.max_tokens > 0) {
+            extra.max_output_tokens = Math.min(mo, extra.max_tokens);
+        } else {
+            extra.max_output_tokens = mo;
+        }
     }
 
     let body = {

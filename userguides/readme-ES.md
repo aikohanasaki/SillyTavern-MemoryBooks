@@ -42,6 +42,7 @@ La entrada 🔗 en la información del mundo se llama "vectorized" en la interfa
 ## 📋 Prerrequisitos
 
 - **SillyTavern:** 1.13.4+ (se recomienda la última versión)
+- **INSTALAR PARA TODOS LOS USUARIOS:** Como STMB reutiliza muchas funciones del código base de ST, asegúrate de que la extensión esté instalada para todos los usuarios para que la ubicación sea `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. De lo contrario, fallarán las importaciones de funciones.
 - **Selección de escena:** Se deben establecer los marcadores de inicio y fin (inicio < fin).
 - **Soporte de finalización de chat:** Soporte completo para OpenAI, Claude, Anthropic, OpenRouter u otra API de finalización de chat.
 - **Soporte de finalización de texto:** Las API de finalización de texto (Kobold, TextGen, etc.) son compatibles cuando se conectan a través de la configuración manual completa o una fuente de finalización personalizada en SillyTavern.
