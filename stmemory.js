@@ -404,8 +404,9 @@ function parseAIJsonResponse(aiResponse) {
 
     // Apply user-selected incoming regex scripts (bypass engine gating)
     try {
+        const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
         const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexIncoming;
-        if (typeof cleanResponse === 'string' && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+        if (useRegex && typeof cleanResponse === 'string' && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
             cleanResponse = applySelectedRegex(cleanResponse, selectedKeys);
         }
     } catch (e) {
@@ -749,8 +750,9 @@ async function buildPrompt(compiledScene, profile) {
 
     // Apply user-selected outgoing regex scripts (bypass engine gating)
     try {
+        const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
         const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexOutgoing;
-        if (Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+        if (useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
             return applySelectedRegex(finalPrompt, selectedKeys);
         }
     } catch (e) {

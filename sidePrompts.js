@@ -112,8 +112,9 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
     }
     const finalPrompt = parts.join('');
 
-    // Apply regex transformations
-    return getRegexedString(finalPrompt, regex_placement.USER_INPUT, { isPrompt: true });
+    // Apply regex transformations (honor global Use Regex toggle)
+    const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
+    return useRegex ? getRegexedString(finalPrompt, regex_placement.USER_INPUT, { isPrompt: true }) : finalPrompt;
 }
 
 /**
@@ -151,9 +152,9 @@ async function runLLM(prompt, overrides = null) {
         extra: {},
     });
     
-    // Apply regex transformations to the raw response
-    const regexedText = getRegexedString(text || '', regex_placement.AI_OUTPUT);
-    return regexedText;
+    // Apply regex transformations to the raw response (honor global Use Regex toggle)
+    const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
+    return useRegex ? getRegexedString(text || '', regex_placement.AI_OUTPUT) : (text || '');
 }
 
 /**
