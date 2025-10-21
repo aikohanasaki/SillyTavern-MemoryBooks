@@ -2,7 +2,10 @@
 
 **← [Back to README](readme.md)**
 
-## v4.8.0 (October 19, 2025)
+## v4.8.0 (October 20, 2025)
+- **Bugfix:** Regex disables with checkbox now.
+
+## v4.8.0 (October 20, 2025)
 - **Enhancement/rewrite ⚠️*BREAKING CHANGE*:** Regex rework (multi-select).
 
 ## v4.7.1 (October 19, 2025)
