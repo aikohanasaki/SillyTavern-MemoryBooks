@@ -169,7 +169,17 @@ export async function sendRawCompletionRequest({
     });
 
     if (!res.ok) {
-        throw new Error(`LLM request failed: ${res.status} ${res.statusText}`);
+        let providerBody = '';
+        try {
+            providerBody = await res.text();
+        } catch (e) {
+            providerBody = '';
+        }
+        const err = new Error(`LLM request failed: ${res.status} ${res.statusText}`);
+        if (providerBody) {
+            err.providerBody = providerBody;
+        }
+        throw err;
     }
 
     const data = await res.json();
@@ -548,7 +558,9 @@ function parseAIJsonResponse(aiResponse) {
         if (extractedText) {
             cleanResponse = extractedText;
         } else {
-            throw makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
+            const err = makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
+            try { err.rawResponse = JSON.stringify(cleanResponse); } catch {}
+            throw err;
         }
     }
     // If the response is an object with a .content property (but not array), use that.
@@ -575,7 +587,9 @@ function parseAIJsonResponse(aiResponse) {
     }
 
     if (!cleanResponse || typeof cleanResponse !== 'string') {
-        throw makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
+        const err = makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
+        try { err.rawResponse = typeof cleanResponse === 'string' ? cleanResponse : JSON.stringify(cleanResponse); } catch {}
+        throw err;
     }
 
     cleanResponse = cleanResponse.trim();
@@ -645,20 +659,30 @@ function parseAIJsonResponse(aiResponse) {
 
     // Classify failure
     if (!hasAnyJsonDelimiter(normalized)) {
-        throw makeAIError('NO_JSON_BLOCK', 'AI response did not contain a JSON block. The model may have returned prose or declined the request.', true);
+        const err = makeAIError('NO_JSON_BLOCK', 'AI response did not contain a JSON block. The model may have returned prose or declined the request.', true);
+        err.rawResponse = normalized;
+        throw err;
     }
     if (likelyUnbalanced(normalized)) {
-        throw makeAIError('UNBALANCED', 'AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.', false);
+        const err = makeAIError('UNBALANCED', 'AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.', false);
+        err.rawResponse = normalized;
+        throw err;
     }
 
     // Heuristic: ends mid-sentence suggests truncation
     const textCandidate = normalized.trim();
     if (textCandidate && textCandidate.length >= 80 && !endsNicely(textCandidate)) {
-        throw makeAIError('INCOMPLETE_SENTENCE', 'AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.', false);
+        const err = makeAIError('INCOMPLETE_SENTENCE', 'AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.', false);
+        err.rawResponse = normalized;
+        throw err;
     }
 
     // Fallback
-    throw makeAIError('MALFORMED', 'AI did not return valid JSON. This may indicate the model does not support structured output well or the response contained unsupported formatting.', false);
+    {
+        const err = makeAIError('MALFORMED', 'AI did not return valid JSON. This may indicate the model does not support structured output well or the response contained unsupported formatting.', false);
+        err.rawResponse = normalized;
+        throw err;
+    }
 }
 
 /**
@@ -703,10 +727,16 @@ async function generateMemoryWithAI(promptString, profile) {
         const finishReason = aiFull?.choices?.[0]?.finish_reason || aiFull?.finish_reason || aiFull?.stop_reason;
         const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
         if (fr.includes('length') || fr.includes('max')) {
-            throw makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', true);
+            const err = makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', true);
+            try { err.rawResponse = aiResponseText || ''; } catch {}
+            try { err.providerResponse = aiFull || null; } catch {}
+            throw err;
         }
         if (aiFull?.truncated === true) {
-            throw makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', true);
+            const err = makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', true);
+            try { err.rawResponse = aiResponseText || ''; } catch {}
+            try { err.providerResponse = aiFull || null; } catch {}
+            throw err;
         }
 
         const jsonResult = parseAIJsonResponse(aiResponseText);
@@ -719,7 +749,16 @@ async function generateMemoryWithAI(promptString, profile) {
         };
     } catch (error) {
         if (error instanceof AIResponseError) throw error;
-        throw new AIResponseError(`Memory generation failed: ${error.message || error}`);
+        const e = new AIResponseError(`Memory generation failed: ${error.message || error}`);
+        try {
+            if (typeof error?.providerBody === 'string') {
+                e.providerBody = error.providerBody;
+            }
+            if (typeof error?.rawResponse === 'string') {
+                e.rawResponse = error.rawResponse;
+            }
+        } catch {}
+        throw e;
     }
 }
 
