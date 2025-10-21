@@ -618,5 +618,15 @@
   "STMemoryBooks_RecreateBuiltinsTitle": "重建内置提示",
   "STMemoryBooks_RecreateBuiltinsWarning": "这将删除所有内置预设（summary, summarize, synopsis, sumup, minimal, northgate, aelemar）的覆盖。对这些内置预设的任何自定义都将丢失。此后，内置预设将遵循当前的应用程序区域设置。",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "这不会影响您的其他自定义预设。",
-  "STMemoryBooks_RecreateBuiltinsOverwrite": "覆盖"
+  "STMemoryBooks_RecreateBuiltinsOverwrite": "覆盖",
+  "STMemoryBooks_RegexSelection_Title": "📐 正则表达式选择",
+  "STMemoryBooks_RegexSelection_Desc": "在此选择的正则表达式将会运行，无论其是否启用。",
+  "STMemoryBooks_RegexSelection_Outgoing": "在发送给 AI 之前运行正则表达式",
+  "STMemoryBooks_RegexSelection_Incoming": "在添加到故事书之前运行正则表达式（预览前）",
+  "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "选择发送前正则表达式…",
+  "STMemoryBooks_RegexSelect_PlaceholderIncoming": "选择接收前正则表达式…",
+  "STMemoryBooks_RegexSelectionsSaved": "正则表达式选择已保存",
+  "STMemoryBooks_FailedToSaveRegexSelections": "保存正则表达式选择失败",
+  "STMemoryBooks_UseRegexAdvanced": "使用正则表达式（高级）",
+  "STMemoryBooks_ConfigureRegex": "📐 配置正则表达式…"
 }

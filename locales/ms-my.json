@@ -613,5 +613,15 @@
   "STMemoryBooks_DisplayName_sumup": "Sum Up - Concise story beats in narrative prose",
   "STMemoryBooks_DisplayName_minimal": "Minimal - Brief 1-2 sentence summary",
   "STMemoryBooks_DisplayName_northgate": "Northgate - Intended for creative writing. By Northgate on ST Discord",
-  "STMemoryBooks_DisplayName_aelemar": "Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord"
+  "STMemoryBooks_DisplayName_aelemar": "Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord",
+  "STMemoryBooks_RegexSelection_Title": "📐 Pemilihan Ungkapan Biasa (Regex)",
+  "STMemoryBooks_RegexSelection_Desc": "Memilih regex di sini akan menjalankannya tanpa mengira sama ada ia didayakan atau tidak.",
+  "STMemoryBooks_RegexSelection_Outgoing": "Jalankan regex sebelum dihantar kepada AI",
+  "STMemoryBooks_RegexSelection_Incoming": "Jalankan regex sebelum menambah ke buku legenda (sebelum pratonton)",
+  "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "Pilih regex keluar…",
+  "STMemoryBooks_RegexSelect_PlaceholderIncoming": "Pilih regex masuk…",
+  "STMemoryBooks_RegexSelectionsSaved": "Pemilihan regex disimpan",
+  "STMemoryBooks_FailedToSaveRegexSelections": "Gagal menyimpan pemilihan regex",
+  "STMemoryBooks_UseRegexAdvanced": "Gunakan regex (lanjutan)",
+  "STMemoryBooks_ConfigureRegex": "📐 Konfigurasi regex…"
 }

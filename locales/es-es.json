@@ -618,5 +618,15 @@
     "STMemoryBooks_RecreateBuiltinsTitle": "Recrear Prompts Incorporados",
     "STMemoryBooks_RecreateBuiltinsWarning": "Esto eliminará las anulaciones para todos los preajustes incorporados (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Cualquier personalización de estos incorporados se perderá. Después de esto, los incorporados seguirán la configuración regional actual de la aplicación.",
     "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "Esto no afecta a sus otros preajustes personalizados.",
-    "STMemoryBooks_RecreateBuiltinsOverwrite": "Sobrescribir"
+    "STMemoryBooks_RecreateBuiltinsOverwrite": "Sobrescribir",
+    "STMemoryBooks_RegexSelection_Title": "📐 Selección de expresiones regulares",
+    "STMemoryBooks_RegexSelection_Desc": "Seleccionar una expresión regular aquí la ejecutará INDEPENDIENTEMENTE de si está activada o desactivada.",
+    "STMemoryBooks_RegexSelection_Outgoing": "Ejecutar la expresión regular antes de enviar a la IA",
+    "STMemoryBooks_RegexSelection_Incoming": "Ejecutar la expresión regular antes de añadir al lorebook (antes de las previsualizaciones)",
+    "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "Seleccionar expresión regular saliente…",
+    "STMemoryBooks_RegexSelect_PlaceholderIncoming": "Seleccionar expresión regular entrante…",
+    "STMemoryBooks_RegexSelectionsSaved": "Selecciones de expresiones regulares guardadas",
+    "STMemoryBooks_FailedToSaveRegexSelections": "No se pudieron guardar las selecciones de expresiones regulares",
+    "STMemoryBooks_UseRegexAdvanced": "Usar expresiones regulares (avanzado)",
+    "STMemoryBooks_ConfigureRegex": "📐 Configurar expresiones regulares…"
 }
