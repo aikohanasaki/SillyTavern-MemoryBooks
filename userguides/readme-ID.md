@@ -2,7 +2,13 @@
 
 Ekstensi SillyTavern generasi berikutnya untuk pembuatan memori yang otomatis, terstruktur, dan andal. Tandai adegan dalam obrolan, hasilkan ringkasan berbasis JSON dengan AI, dan simpan sebagai entri "[vektor](#vektor)" di buku latar Anda. Mendukung obrolan grup, manajemen profil tingkat lanjut, dan penanganan API/model yang kuat.
 
-**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Riwayat Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Riwayat Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Indonesian.md)
+
+---
+
+### 📚 Tingkatkan dengan Lorebook Ordering (STLO)
+
+Untuk organisasi memori yang lebih canggih dan integrasi cerita yang lebih dalam, sangat disarankan untuk menggunakan STMB bersama dengan [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Indonesian.md). Lihat panduan untuk praktik terbaik, instruksi pengaturan, dan tips!
 
 > Catatan: Mendukung berbagai bahasa: lihat folder [`/locales`](../locales) untuk daftar. Readme dan Panduan Pengguna internasional/lokal dapat ditemukan di folder [`/userguides`](../userguides).
 > Konverter buku latar dan perpustakaan templat prompt sampingan ada di folder [`/resources`](../resources).
@@ -183,6 +189,7 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di buku 
 - **Kontrol Penuh atas Pemrosesan Teks**: Memory Books sekarang terintegrasi dengan ekstensi **Regex** SillyTanya, memungkinkan Anda menerapkan transformasi teks yang kuat pada dua tahap penting:
     1.  **Pembuatan Prompt**: Secara otomatis memodifikasi prompt yang dikirim ke AI dengan membuat skrip regex yang menargetkan penempatan **Input Pengguna**.
     2.  **Parsing Respons**: Membersihkan, memformat ulang, atau menstandarisasi respons mentah AI sebelum disimpan dengan menargetkan penempatan **Output AI**.
+- **Dukungan Multi-Pilih:** Anda sekarang dapat memilih beberapa skrip regex sekaligus; semua skrip yang diaktifkan akan diterapkan secara berurutan selama pembuatan prompt dan pemrosesan respons, memungkinkan transformasi yang lebih canggih dan fleksibel.
 - **Cara Kerjanya**: Integrasi ini mulus. Cukup buat dan aktifkan skrip yang Anda inginkan di ekstensi Regex, dan Memory Books akan menerapkannya secara otomatis selama pembuatan memori dan prompt samping.
 
 ---

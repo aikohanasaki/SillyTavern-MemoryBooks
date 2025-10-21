@@ -177,6 +177,8 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 **Want ultimate control over the text that gets sent to and received from the AI?** ST Memory Books now seamlessly integrates with the official **Regex** extension, allowing you to automatically transform text using custom rules.
 
+**Multi-Select Support:** You can now multi-select regex scripts in the Regex extension. All enabled scripts will be applied in order at each stage (Prompt and Response), allowing for powerful and flexible transformations.
+
 This is an advanced feature perfect for users who want to:
 - Automatically clean up repetitive phrases or artifacts from an AI's response.
 - Reformat parts of the chat transcript before the AI sees it.
@@ -285,3 +287,9 @@ Don't worry - you don't need to configure everything! Here are the settings that
 - **Convert old lorebooks:** [lorebookconverter.html](lorebookconverter.html)
 - **Community support:** Join the SillyTavern community on Discord! (Look for the 📕ST Memory Books thread or DM @tokyoapple for direct help.)
 - **Bugs/features:** Found a bug or have a great idea? Open a GitHub issue in this repository.
+
+---
+
+### 📚 Power Up with Lorebook Ordering (STLO)
+
+For advanced memory organization and deeper story integration, we highly recommend using STMB together with [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). See the guide for best practices, setup instructions, and tips!

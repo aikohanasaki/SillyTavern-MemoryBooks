@@ -2,7 +2,13 @@
 
 新一代 SillyTavern 擴充，用於自動、結構化和可靠地創建記憶。在聊天中標記場景，使用 AI 生成基於 JSON 的摘要，並將它們作為「[向量化](#向量化)」條目儲存在您的傳說書中。支援群聊、進階設定檔管理和穩定的 API/模型處理。
 
-**📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md)
+
+---
+
+### 📚 搭配 Lorebook Ordering (STLO) 提升體驗
+
+為了更進階的記憶管理與更深入的故事整合，強烈建議搭配 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md) 一起使用 STMB。請參閱指南以獲得最佳實務、設定說明與技巧！
 
 > 注意：支援多種語言：請參閱 [`/locales`](locales) 資料夾以取得清單。國際化/本地化的自述檔案和使用者指南可以在 [`/userguides`](userguides) 資料夾中找到。
 > 傳說書轉換器和側邊提示範本庫位於 [`/resources`](resources) 資料夾中。
@@ -183,6 +189,7 @@
 - **完全控制文字處理**：記憶書現在與 SillyTavern 的 **Regex** 擴充功能整合，讓您可以在兩個關鍵階段套用強大的文字轉換：
     1.  **提示生成**：透過建立針對 **使用者輸入** 位置的規則運算式指令碼，自動修改傳送給 AI 的提示。
     2.  **回應解析**：在儲存之前，透過針對 **AI 輸出** 位置來清理、重新格式化或標準化 AI 的原始回應。
+- **多重選擇支援：** 現在您可以同時選擇多個正則腳本，所有啟用的腳本會在提示生成和回應解析階段依序應用，實現更進階和彈性的轉換。
 - **運作方式**：整合是無縫的。只需在 Regex 擴充功能中建立並啟用您想要的指令碼，記憶書就會在建立記憶和側邊提示時自動套用它們。
 
 ---

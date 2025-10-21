@@ -2,7 +2,13 @@
 
 Sambungan SillyTavern generasi akan datang untuk penciptaan memori yang automatik, berstruktur dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpannya sebagai entri "[vektor](#vektor)" dalam buku legenda anda. Menyokong sembang kumpulan, pengurusan profil lanjutan dan pengendalian API/model yang kukuh.
 
-**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md)
+
+---
+
+### 📚 Tingkatkan dengan Lorebook Ordering (STLO)
+
+Untuk organisasi memori yang lebih canggih dan integrasi cerita yang lebih mendalam, sangat disarankan untuk menggunakan STMB bersama dengan [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md). Lihat panduan untuk amalan terbaik, arahan tetapan, dan tip!
 
 > Nota: Menyokong pelbagai bahasa: lihat folder [`/locales`](../locales) untuk senarai. Readme dan Panduan Pengguna antarabangsa/setempat boleh didapati dalam folder [`/userguides`](../userguides).
 > Penukar buku legenda dan perpustakaan templat gesaan sampingan berada dalam folder [`/resources`](../resources).
@@ -183,6 +189,7 @@ Gesaan Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam 
 - **Kawalan Penuh ke atas Pemprosesan Teks**: Buku Memori kini berintegrasi dengan sambungan **Regex** SillyTavern, membolehkan anda menggunakan transformasi teks yang kuat pada dua peringkat utama:
     1.  **Penjanaan Prom**: Ubah suai prom yang dihantar kepada AI secara automatik dengan mencipta skrip regex yang menyasarkan penempatan **Input Pengguna**.
     2.  **Penghuraian Respons**: Bersihkan, format semula atau seragamkan respons mentah AI sebelum ia disimpan dengan menyasarkan penempatan **Output AI**.
+- **Sokongan Multi-Pilih:** Anda kini boleh memilih beberapa skrip regex serentak; semua skrip yang diaktifkan akan digunakan secara berurutan semasa penjanaan prom dan penghuraian respons, membolehkan transformasi yang lebih canggih dan fleksibel.
 - **Bagaimana Ia Berfungsi**: Integrasi ini lancar. Cukup cipta dan dayakan skrip yang anda inginkan dalam sambungan Regex, dan Buku Memori akan menggunakannya secara automatik semasa penciptaan memori dan prom sampingan.
 
 ---

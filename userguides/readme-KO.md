@@ -2,7 +2,13 @@
 
 자동화되고 구조화되었으며 신뢰할 수 있는 메모리 생성을 위한 차세대 SillyTavern 확장 프로그램입니다. 채팅에서 장면을 표시하고, AI로 JSON 기반 요약을 생성하며, 로어북에 "[벡터화된](#vectorized)" 항목으로 저장하세요. 그룹 채팅, 고급 프로필 관리 및 완벽한 API/모델 처리를 지원합니다.
 
-**📘 [사용자 가이드 (EN)](USER_GUIDE.md)** | **📋 [버전 히스토리 및 변경 로그](changelog.md)** | [📕 Memory Books와 📚 Lorebook Ordering 사용법](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+**📘 [사용자 가이드 (EN)](USER_GUIDE.md)** | **📋 [버전 히스토리 및 변경 로그](changelog.md)** | [📕 Memory Books와 📚 Lorebook Ordering 사용법](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)
+
+---
+
+### 📚 Lorebook Ordering (STLO)로 파워업하세요
+
+고급 메모리 정리와 더 깊은 스토리 통합을 위해 STMB와 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)을 함께 사용하는 것을 적극 권장합니다. 가이드에서 모범 사례, 설정 방법, 팁을 확인하세요.
 
 > 참고: 다양한 언어를 지원합니다: 목록은 [`/locales`](locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](userguides) 폴더에서 찾을 수 있습니다.
 > 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](resources) 폴더에 있습니다.
@@ -183,6 +189,7 @@ ST에서 설정하세요 (STMB가 작동한 후 텍스트 완료로 다시 변�
 - **텍스트 처리의 완전한 제어**: 이제 메모리 북은 SillyTavern의 **Regex** 확장 프로그램과 통합되어 두 가지 주요 단계에서 강력한 텍스트 변환을 적용할 수 있습니다.
     1.  **프롬프트 생성**: **사용자 입력** 배치를 대상으로 하는 정규식 스크립트를 만들어 AI에 전송되는 프롬프트를 자동으로 수정합니다.
     2.  **응답 구문 분석**: **AI 출력** 배치를 대상으로 하여 AI의 원시 응답을 저장하기 전에 정리, 재구성 또는 표준화합니다.
+- **다중 선택 지원:** 여러 정규식 스크립트를 동시에 선택할 수 있으며, 활성화된 모든 스크립트가 프롬프트 생성 및 응답 처리 단계에서 순서대로 적용되어 더욱 고급스럽고 유연한 변환이 가능합니다.
 - **작동 방식**: 통합은 원활합니다. Regex 확장 프로그램에서 원하는 스크립트를 만들고 활성화하기만 하면 메모리 북이 메모리 및 사이드 프롬프트 생성 중에 자동으로 적용합니다.
 
 ---
