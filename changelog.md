@@ -8,6 +8,7 @@
   - mitigate and build in better attempts to internally fix trivial formatting errors eg fences, comments, trailing commas
   - identify refusals and cut-off/incomplete responses clearly
   - add Google AI Studio envelope unwrapper
+- **Tweak:** Rewrote message deletion handling.
 
 ## v4.8.2 (October 20, 2025)
 - **Tweak:** Remove minimum token requirement completely. The attempt at resolving cut-off responses has completely backfired... :P Oops.
