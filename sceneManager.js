@@ -349,23 +349,44 @@ export function validateSceneMarkers() {
     
     // Check if markers are within chat bounds
     const chatLength = chat.length;
-    
-    if (markers.sceneStart !== null && markers.sceneStart >= chatLength) {
-        markers.sceneStart = null;
-        hasChanges = true;
-    }
-    
-    if (markers.sceneEnd !== null && markers.sceneEnd >= chatLength) {
-        // For end marker, try to fall back to last message
-        markers.sceneEnd = chatLength - 1;
-        hasChanges = true;
-    }
-    
-    // Ensure start <= end (start = end is valid for single message)
-    if (markers.sceneStart !== null && markers.sceneEnd !== null && markers.sceneStart > markers.sceneEnd) {
-        markers.sceneStart = null;
-        markers.sceneEnd = null;
-        hasChanges = true;
+
+    // If no messages exist, clear markers and exit
+    if (chatLength === 0) {
+        if (markers.sceneStart !== null || markers.sceneEnd !== null) {
+            markers.sceneStart = null;
+            markers.sceneEnd = null;
+            hasChanges = true;
+        }
+    } else {
+        // Lower bound clamps
+        if (markers.sceneStart !== null && markers.sceneStart < 0) {
+            markers.sceneStart = null;
+            hasChanges = true;
+        }
+        
+        if (markers.sceneEnd !== null && markers.sceneEnd < 0) {
+            markers.sceneEnd = null;
+            hasChanges = true;
+        }
+
+        // Upper bounds
+        if (markers.sceneStart !== null && markers.sceneStart >= chatLength) {
+            markers.sceneStart = null;
+            hasChanges = true;
+        }
+        
+        if (markers.sceneEnd !== null && markers.sceneEnd >= chatLength) {
+            // For end marker, try to fall back to last message
+            markers.sceneEnd = chatLength - 1;
+            hasChanges = true;
+        }
+        
+        // Ensure start <= end (start = end is valid for single message)
+        if (markers.sceneStart !== null && markers.sceneEnd !== null && markers.sceneStart > markers.sceneEnd) {
+            markers.sceneStart = null;
+            markers.sceneEnd = null;
+            hasChanges = true;
+        }
     }
     
     if (hasChanges) {
@@ -382,61 +403,102 @@ export function validateSceneMarkers() {
  * Handle message deletion events
  */
 export function handleMessageDeletion(deletedId, settings) {
+    const id = Number(deletedId);
+    if (!Number.isFinite(id)) return;
+
     const markers = getSceneMarkers();
     const oldStart = markers.sceneStart ?? null;
     const oldEnd = markers.sceneEnd ?? null;
-    let hasChanges = false;
+
+    let newStart = markers.sceneStart;
+    let newEnd = markers.sceneEnd;
     let toastrMessage = '';
-    let startChanged = false;
-    let endChanged = false;
 
-    if (deletedId === markers.sceneStart && deletedId === markers.sceneEnd) {
-        // Deleting a message that is both start and end
+    // Deleting a message that is both start and end
+    if (newStart === id && newEnd === id) {
         clearScene();
-        hasChanges = true;
-        toastrMessage = translate('Scene cleared due to start marker deletion', 'STMemoryBooks_Toast_SceneClearedStart');
-    } else if (deletedId === markers.sceneStart) {
-        // Deleting the start message
-        markers.sceneStart = null;
-        hasChanges = true;
-        toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
-    } else if (deletedId === markers.sceneEnd) {
-        // Deleting the end message
-        markers.sceneEnd = null;
-        hasChanges = true;
-        toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
-    } else if (markers.sceneStart !== null && deletedId > markers.sceneStart && (markers.sceneEnd === null || deletedId < markers.sceneEnd)) {
-        // Deleting a message within the scene (or after start but before end is set)
-        if (markers.sceneStart !== null) markers.sceneStart--;
-        if (markers.sceneEnd !== null) markers.sceneEnd--;
-        hasChanges = true;
-        toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
-    }
-    
-    // If a message *before* the start marker is deleted, shift the start marker down.
-    if (markers.sceneStart !== null && markers.sceneStart > deletedId) {
-        markers.sceneStart--;
-        startChanged = true;
-    }
-
-    // If a message *before* the end marker is deleted, shift the end marker down.
-    if (markers.sceneEnd !== null && markers.sceneEnd > deletedId) {
-        markers.sceneEnd--;
-        endChanged = true;
-    }
-
-    if (startChanged || endChanged) {
-        hasChanges = true;
-        toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
-    }
-
-    if (hasChanges) {
-        currentSceneState.start = markers.sceneStart;
-        currentSceneState.end = markers.sceneEnd;
-        saveMetadataForCurrentContext();
-        updateAffectedButtonStates(oldStart, oldEnd, markers.sceneStart, markers.sceneEnd);
 
         if (settings?.moduleSettings?.showNotifications) {
+            // Use existing key to avoid adding new i18n strings
+            toastr.warning(translate('Scene cleared due to start marker deletion', 'STMemoryBooks_Toast_SceneClearedStart'), 'STMemoryBooks');
+        }
+
+        // Always validate the markers after any deletion
+        validateSceneMarkers();
+        return;
+    }
+
+    if (newStart != null && newEnd != null) {
+        if (id < newStart) {
+            // Deletion before the scene: shift both down
+            newStart--;
+            newEnd--;
+            toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
+        } else if (id === newStart) {
+            // Deleting the start marker; also shift end if it is after the deleted id
+            newStart = null;
+            if (newEnd != null && newEnd > id) newEnd--;
+            // Reuse existing key to avoid new locale entries
+            toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
+        } else if (id > newStart && id < newEnd) {
+            // Deleting inside the scene: shift end down only
+            newEnd--;
+            toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
+        } else if (id === newEnd) {
+            // Deleting the end marker
+            newEnd = null;
+            toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
+        }
+        // id > newEnd: no change
+    } else if (newStart != null) {
+        if (id < newStart) {
+            newStart--;
+            toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
+        } else if (id === newStart) {
+            newStart = null;
+            toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
+        }
+        // id > newStart: no change
+    } else if (newEnd != null) {
+        if (id < newEnd) {
+            newEnd--;
+            toastrMessage = translate('Scene markers adjusted due to message deletion.', 'STMemoryBooks_Toast_SceneMarkersAdjusted');
+        } else if (id === newEnd) {
+            newEnd = null;
+            toastrMessage = translate('Scene end point cleared due to message deletion', 'STMemoryBooks_Toast_SceneEndPointCleared');
+        }
+        // id > newEnd: no change
+    } else {
+        // No markers set; still validate and exit
+        validateSceneMarkers();
+        return;
+    }
+
+    // Clamp and validate bounds
+    const chatLength = chat.length;
+    if (chatLength === 0) {
+        newStart = null;
+        newEnd = null;
+    } else {
+        if (newStart != null && (newStart < 0 || newStart >= chatLength)) newStart = null;
+        if (newEnd != null && (newEnd < 0 || newEnd >= chatLength)) newEnd = chatLength - 1;
+        if (newStart != null && newEnd != null && newStart > newEnd) {
+            newStart = null;
+            newEnd = null;
+        }
+    }
+
+    // Persist and update if changed
+    const hasChanges = (newStart !== markers.sceneStart) || (newEnd !== markers.sceneEnd);
+    if (hasChanges) {
+        markers.sceneStart = newStart;
+        markers.sceneEnd = newEnd;
+        currentSceneState.start = newStart;
+        currentSceneState.end = newEnd;
+        saveMetadataForCurrentContext();
+        updateAffectedButtonStates(oldStart, oldEnd, newStart, newEnd);
+
+        if (toastrMessage && settings?.moduleSettings?.showNotifications) {
             toastr.warning(toastrMessage, 'STMemoryBooks');
         }
     }
