@@ -42,6 +42,7 @@
 ## 📋 先決條件
 
 - **SillyTavern:** 1.13.4+ (建議使用最新版本)
+- **為所有使用者安裝：** 由於 STMB 複用了 ST 基礎程式碼中的許多函式，請確保將擴充套件安裝為所有使用者，使路徑為 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`。否則，函式匯入會失敗。
 - **場景選擇：** 必須設定開始和結束標記（開始 < 結束）。
 - **聊天補全支援：** 完全支援 OpenAI、Claude、Anthropic、OpenRouter 或其他聊天補全 API。
 - **文字補全支援：** 當透過 SillyTavern 中的完全手動設定或自訂補全來源連接時，支援文字補全 API（Kobold、TextGen 等）。

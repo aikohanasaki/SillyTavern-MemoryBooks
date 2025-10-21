@@ -42,6 +42,7 @@
 ## 📋 先决条件
 
 - **SillyTavern:** 1.13.4+ (建议使用最新版本)
+- **为所有用户安装：** 由于 STMB 复用了 ST 基础代码中的许多函数，请确保将扩展安装为所有用户，使路径为 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`。否则，函数导入会失败。
 - **场景选择：** 必须设置开始和结束标记（开始 < 结束）。
 - **聊天补全支持：** 完全支持 OpenAI、Claude、Anthropic、OpenRouter 或其他聊天补全 API。
 - **文本补全支持：** 当通过 SillyTavern 中的完全手动配置或自定义补全源连接时，支持文本补全 API（Kobold、TextGen 等）。

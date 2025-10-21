@@ -2,14 +2,17 @@
 
 **← [Back to README](readme.md)**
 
-## v4.8.0 (October 20, 2025)
+## v4.8.2 (October 20, 2025)
+- **Tweak:** Remove minimum token requirement completely. The attempt at resolving cut-off responses has completely backfired... :P Oops.
+
+## v4.8.1 (October 20, 2025)
 - **Bugfix:** Regex disables with checkbox now.
 
 ## v4.8.0 (October 20, 2025)
 - **Enhancement/rewrite ⚠️*BREAKING CHANGE*:** Regex rework (multi-select).
 
 ## v4.7.1 (October 19, 2025)
-- **Bugfix:** Remove math calculating context
+- **Bugfix:** Remove math calculating context to take away "available context is zero" problems. Too many APIs, too many ways to declare max tokens.
 
 ## v4.7.0 (October 19, 2025)
 - **Regex:** Added regex functions (uses existing regex extension)

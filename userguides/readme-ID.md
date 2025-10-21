@@ -42,6 +42,7 @@ Entri 🔗 di info dunia diberi nama "vektor" di UI ST. Inilah sebabnya saya men
 ## 📋 Prasyarat
 
 - **SillyTavern:** 1.13.4+ (terbaru direkomendasikan)
+- **INSTAL UNTUK SEMUA PENGGUNA:** Karena STMB menggunakan kembali banyak fungsi dari kode dasar ST, pastikan ekstensi diinstal untuk semua pengguna sehingga lokasinya adalah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, impor fungsi akan gagal.
 - **Pemilihan Adegan:** Penanda awal dan akhir (awal < akhir) harus diatur.
 - **Dukungan Penyelesaian Obrolan:** Dukungan penuh untuk OpenAI, Claude, Anthropic, OpenRouter, atau API penyelesaian obrolan lainnya.
 - **Dukungan Penyelesaian Teks:** API penyelesaian teks (Kobold, TextGen, dll.) didukung saat terhubung melalui konfigurasi manual penuh atau sumber penyelesaian khusus di SillyTavern.
