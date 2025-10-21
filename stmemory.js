@@ -393,6 +393,134 @@ function endsNicely(text) {
     return true;
 }
 
+// --- Minimal robust helpers for LLM JSON extraction/repair (local-only, low risk) ---
+
+function normalizeText(s) {
+    return String(s)
+        .replace(/\r\n/g, '\n')
+        .replace(/^\uFEFF/, '')
+        .replace(/[\u200B-\u200D\u2060]/g, '');
+}
+
+function extractFencedBlocks(s) {
+    // Matches ```lang\n ... \n``` (lang optional)
+    const re = /```([\w+-]*)\s*([\s\S]*?)```/g;
+    const out = [];
+    let m;
+    while ((m = re.exec(s)) !== null) {
+        out.push((m[2] || '').trim());
+    }
+    return out;
+}
+
+function extractBalancedJson(s) {
+    // Find first '{' or '[' and return balanced substring (ignores braces inside strings)
+    const start = s.search(/[\{\[]/);
+    if (start === -1) return null;
+    const open = s[start];
+    const close = open === '{' ? '}' : ']';
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < s.length; i++) {
+        const ch = s[i];
+        if (inStr) {
+            if (esc) { esc = false; }
+            else if (ch === '\\') { esc = true; }
+            else if (ch === '"') { inStr = false; }
+            continue;
+        }
+        if (ch === '"') { inStr = true; continue; }
+        if (ch === open) depth++;
+        else if (ch === close) {
+            depth--;
+            if (depth === 0) {
+                return s.slice(start, i + 1).trim();
+            }
+        }
+    }
+    return null; // unbalanced
+}
+
+function stripJsonComments(s) {
+    // Remove // and /* */ outside strings
+    let out = '';
+    let inStr = false, esc = false, inLine = false, inBlock = false, modified = false;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i], next = s[i + 1];
+        if (inStr) {
+            out += ch;
+            if (esc) esc = false;
+            else if (ch === '\\') esc = true;
+            else if (ch === '"') inStr = false;
+            continue;
+        }
+        if (inLine) {
+            modified = true;
+            if (ch === '\n') { inLine = false; out += ch; }
+            continue;
+        }
+        if (inBlock) {
+            modified = true;
+            if (ch === '*' && next === '/') { inBlock = false; i++; }
+            continue;
+        }
+        if (ch === '"') { inStr = true; out += ch; continue; }
+        if (ch === '/' && next === '/') { inLine = true; i++; continue; }
+        if (ch === '/' && next === '*') { inBlock = true; i++; continue; }
+        out += ch;
+    }
+    return { text: out, modified };
+}
+
+function stripTrailingCommas(s) {
+    // Remove commas right before } or ] outside strings
+    let out = '';
+    let inStr = false, esc = false, modified = false;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (inStr) {
+            out += ch;
+            if (esc) esc = false;
+            else if (ch === '\\') esc = true;
+            else if (ch === '"') inStr = false;
+            continue;
+        }
+        if (ch === '"') { inStr = true; out += ch; continue; }
+        if (ch === ',') {
+            let j = i + 1;
+            while (j < s.length && /\s/.test(s[j])) j++;
+            if (s[j] === '}' || s[j] === ']') { modified = true; continue; }
+        }
+        out += ch;
+    }
+    return { text: out, modified };
+}
+
+function hasAnyJsonDelimiter(s) {
+    return /[\{\[]/.test(s);
+}
+
+function uniqStrings(arr) {
+    const seen = new Set(); const out = [];
+    for (const x of arr) { if (!seen.has(x)) { seen.add(x); out.push(x); } }
+    return out;
+}
+
+function snippet(s, max = 500) {
+    const t = (s || '').trim();
+    return t.length <= max ? t : t.slice(0, max) + '…';
+}
+
+// Structured error helper with classification and minimal logging
+function makeAIError(code, message, recoverable = true) {
+    const err = new AIResponseError(message);
+    err.code = code;
+    err.recoverable = recoverable; // recoverable = fixable locally without re-asking
+    try {
+        console.debug(`STMemoryBooks: AIResponseError code=${code} recoverable=${recoverable}: ${message}`);
+    } catch {}
+    return err;
+}
+
 /**
  * Parses AI response as JSON with robust error handling
  * @private
@@ -420,7 +548,7 @@ function parseAIJsonResponse(aiResponse) {
         if (extractedText) {
             cleanResponse = extractedText;
         } else {
-            throw new AIResponseError('AI response is empty or invalid');
+            throw makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
         }
     }
     // If the response is an object with a .content property (but not array), use that.
@@ -428,8 +556,26 @@ function parseAIJsonResponse(aiResponse) {
         cleanResponse = cleanResponse.content;
     }
 
+    // Google AI Studio / Gemini envelope unwrap
+    if (typeof cleanResponse === 'object' && cleanResponse !== null) {
+        try {
+            const cand = cleanResponse?.candidates?.[0];
+            const parts = cand?.content?.parts;
+            if (Array.isArray(parts) && parts.length > 0) {
+                const joined = parts
+                    .map(p => (p && typeof p.text === 'string') ? p.text : '')
+                    .join('');
+                if (joined && joined.trim()) {
+                    cleanResponse = joined;
+                }
+            }
+        } catch (e) {
+            // Non-fatal: fall through to existing logic
+        }
+    }
+
     if (!cleanResponse || typeof cleanResponse !== 'string') {
-        throw new AIResponseError('AI response is empty or invalid');
+        throw makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
     }
 
     cleanResponse = cleanResponse.trim();
@@ -437,66 +583,83 @@ function parseAIJsonResponse(aiResponse) {
     // Remove <think> tags and their content
     cleanResponse = cleanResponse.replace(/<think>[\s\S]*?<\/think>/gi, '');
 
-    // Remove code block fences (```json ... ```)
-    cleanResponse = cleanResponse.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+    // Normalize and prepare candidates
+    const normalized = normalizeText(cleanResponse);
+    const candidates = [];
 
-    // Remove any leading explanatory text (before first '{')
-    const jsonStart = cleanResponse.indexOf('{');
-    if (jsonStart > 0) {
-        cleanResponse = cleanResponse.slice(jsonStart);
-    }
+    // 1) Prefer fenced code blocks if present (handles ```json, ```jsonc, ```javascript, etc.)
+    const fenced = extractFencedBlocks(normalized);
+    if (fenced.length) candidates.push(...fenced);
 
-    // Remove any trailing text after the last '}'
-    const jsonEnd = cleanResponse.lastIndexOf('}');
-    if (jsonEnd !== -1 && jsonEnd < cleanResponse.length - 1) {
-        cleanResponse = cleanResponse.slice(0, jsonEnd + 1);
-    }
+    // 2) Consider entire normalized text (in case it's pure JSON already)
+    candidates.push(normalized);
 
-    // Pre-parse structural sanity
-    if (likelyUnbalanced(cleanResponse)) {
-        throw new AIResponseError('AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.');
-    }
+    // 3) Balanced JSON substring from the whole string
+    const balanced = extractBalancedJson(normalized);
+    if (balanced) candidates.push(balanced);
 
-    // Now try to parse
-    try {
-        const parsed = JSON.parse(cleanResponse);
+    const uniq = uniqStrings(candidates);
 
-        // Validate required fields
-        if (!parsed.content && !parsed.summary && !parsed.memory_content) {
-            throw new AIResponseError('AI response missing content field');
-        }
-        if (!parsed.title) {
-            throw new AIResponseError('AI response missing title field');
-        }
-        if (!Array.isArray(parsed.keywords)) {
-            throw new AIResponseError('AI response missing or invalid keywords array. Try increasing Max Response Length.');
-        }
-
-        
-
-        return parsed;
-
-    } catch (parseError) {
-        if (parseError instanceof AIResponseError) {
-            throw parseError;
-        }
-        // On pure parse failure, optionally detect mid-sentence cutoff in raw text
+    // Attempt parse with light repair when needed
+    for (const cand of uniq) {
+        // Direct parse
         try {
-            const textCandidate = (typeof cleanResponse === 'string' ? cleanResponse.trim() : '');
-            if (textCandidate && textCandidate.length >= 80 && !endsNicely(textCandidate)) {
-                throw new AIResponseError('AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.');
+            const parsedDirect = JSON.parse(cand);
+            // Validate required fields
+            if (!parsedDirect.content && !parsedDirect.summary && !parsedDirect.memory_content) {
+                throw makeAIError('MISSING_FIELDS_CONTENT', 'AI response missing content field', false);
             }
-        } catch (e) {
-            if (e instanceof AIResponseError) throw e;
+            if (!parsedDirect.title) {
+                throw makeAIError('MISSING_FIELDS_TITLE', 'AI response missing title field', false);
+            }
+            if (!Array.isArray(parsedDirect.keywords)) {
+                throw makeAIError('INVALID_KEYWORDS', 'AI response missing or invalid keywords array.', false);
+            }
+            return parsedDirect;
+        } catch (_) {
+            // Try repair: comments and trailing commas (do not invent structure)
+            let repaired = cand;
+            const noComments = stripJsonComments(repaired);
+            if (noComments.modified) repaired = noComments.text;
+            const noTrailing = stripTrailingCommas(repaired);
+            if (noTrailing.modified) repaired = noTrailing.text;
+
+            try {
+                const parsedRepaired = JSON.parse(repaired);
+                // Validate required fields
+                if (!parsedRepaired.content && !parsedRepaired.summary && !parsedRepaired.memory_content) {
+                    throw makeAIError('MISSING_FIELDS_CONTENT', 'AI response missing content field', false);
+                }
+                if (!parsedRepaired.title) {
+                    throw makeAIError('MISSING_FIELDS_TITLE', 'AI response missing title field', false);
+                }
+                if (!Array.isArray(parsedRepaired.keywords)) {
+                    throw makeAIError('INVALID_KEYWORDS', 'AI response missing or invalid keywords array.', false);
+                }
+                return parsedRepaired;
+            } catch {
+                // continue trying other candidates
+            }
         }
-        throw new AIResponseError(
-            `AI did not return valid JSON. This may indicate the model doesn't support structured output well. Try increasing Max Response Length. Parse error: ${parseError.message}`
-        );
     }
+
+    // Classify failure
+    if (!hasAnyJsonDelimiter(normalized)) {
+        throw makeAIError('NO_JSON_BLOCK', 'AI response did not contain a JSON block. The model may have returned prose or declined the request.', true);
+    }
+    if (likelyUnbalanced(normalized)) {
+        throw makeAIError('UNBALANCED', 'AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.', false);
+    }
+
+    // Heuristic: ends mid-sentence suggests truncation
+    const textCandidate = normalized.trim();
+    if (textCandidate && textCandidate.length >= 80 && !endsNicely(textCandidate)) {
+        throw makeAIError('INCOMPLETE_SENTENCE', 'AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.', false);
+    }
+
+    // Fallback
+    throw makeAIError('MALFORMED', 'AI did not return valid JSON. This may indicate the model does not support structured output well or the response contained unsupported formatting.', false);
 }
-
-
-
 
 /**
  * Generates memory using AI with structured JSON output instead of tool calling.
@@ -516,7 +679,6 @@ async function generateMemoryWithAI(promptString, profile) {
     }
 
     const conn = profile?.effectiveConnection || profile?.connection || {};
-
 
     try {
         // Prepare connection info
@@ -541,10 +703,10 @@ async function generateMemoryWithAI(promptString, profile) {
         const finishReason = aiFull?.choices?.[0]?.finish_reason || aiFull?.finish_reason || aiFull?.stop_reason;
         const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
         if (fr.includes('length') || fr.includes('max')) {
-            throw new AIResponseError('Model response appears truncated (provider finish_reason). Please increase Max Response Length.');
+            throw makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', true);
         }
         if (aiFull?.truncated === true) {
-            throw new AIResponseError('Model response appears truncated (provider flag). Please increase Max Response Length.');
+            throw makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', true);
         }
 
         const jsonResult = parseAIJsonResponse(aiResponseText);
