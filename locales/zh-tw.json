@@ -618,5 +618,15 @@
   "STMemoryBooks_RecreateBuiltinsTitle": "重新建立內建提示",
   "STMemoryBooks_RecreateBuiltinsWarning": "這將移除所有內建預設（摘要、總結、概要、概述、最小、northgate、aelemar）的覆寫。對這些內建預設的任何自訂都將遺失。此後，內建預設將遵循目前的應用程式語言環境。",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "這不會影響您的其他自訂預設。",
-  "STMemoryBooks_RecreateBuiltinsOverwrite": "覆寫"
+  "STMemoryBooks_RecreateBuiltinsOverwrite": "覆寫",
+  "STMemoryBooks_RegexSelection_Title": "📐 正則表示式選擇",
+  "STMemoryBooks_RegexSelection_Desc": "在這裡選擇的正則表示式將會執行，不論它是否啟用。",
+  "STMemoryBooks_RegexSelection_Outgoing": "在發送到 AI 前執行正則表示式",
+  "STMemoryBooks_RegexSelection_Incoming": "在加入故事書前執行正則表示式（在預覽前）",
+  "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "選擇發送前正則表示式…",
+  "STMemoryBooks_RegexSelect_PlaceholderIncoming": "選擇接收前正則表示式…",
+  "STMemoryBooks_RegexSelectionsSaved": "正則表示式選擇已儲存",
+  "STMemoryBooks_FailedToSaveRegexSelections": "儲存正則表示式選擇失敗",
+  "STMemoryBooks_UseRegexAdvanced": "使用正則表示式（進階）",
+  "STMemoryBooks_ConfigureRegex": "📐 設定正則表示式…"
 }

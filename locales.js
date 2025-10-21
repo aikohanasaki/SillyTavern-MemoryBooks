@@ -938,7 +938,9 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_RegexSelect_PlaceholderOutgoing': 'Select outgoing regex…',
     'STMemoryBooks_RegexSelect_PlaceholderIncoming': 'Select incoming regex…',
     'STMemoryBooks_RegexSelectionsSaved': 'Regex selections saved',
-    'STMemoryBooks_FailedToSaveRegexSelections': 'Failed to save regex selections'
+    'STMemoryBooks_FailedToSaveRegexSelections': 'Failed to save regex selections',
+    'STMemoryBooks_UseRegexAdvanced': 'Use regex (advanced)',
+    'STMemoryBooks_ConfigureRegex': '📐 Configure regex…'
 };
  
 /**

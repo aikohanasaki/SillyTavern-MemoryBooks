@@ -618,5 +618,15 @@
   "STMemoryBooks_RecreateBuiltinsTitle": "組み込みプロンプトを再作成",
   "STMemoryBooks_RecreateBuiltinsWarning": "これにより、すべての組み込みプリセット（summary、summarize、synopsis、sumup、minimal、northgate、aelemar）の上書きが削除されます。これらの組み込みプリセットへのカスタマイズはすべて失われます。この後、組み込みプリセットは現在のアプリのロケールに従います。",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "これは他のカスタムプリセットには影響しません。",
-  "STMemoryBooks_RecreateBuiltinsOverwrite": "上書き"
+  "STMemoryBooks_RecreateBuiltinsOverwrite": "上書き",
+  "STMemoryBooks_RegexSelection_Title": "📐 正規表現の選択",
+  "STMemoryBooks_RegexSelection_Desc": "ここで選択した正規表現は、有効／無効に関わらず実行されます。",
+  "STMemoryBooks_RegexSelection_Outgoing": "AI に送信する前に正規表現を実行",
+  "STMemoryBooks_RegexSelection_Incoming": "ロアブックに追加する前に正規表現を実行（プレビュー前）",
+  "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "送信前の正規表現を選択…",
+  "STMemoryBooks_RegexSelect_PlaceholderIncoming": "受信前の正規表現を選択…",
+  "STMemoryBooks_RegexSelectionsSaved": "正規表現の選択が保存されました",
+  "STMemoryBooks_FailedToSaveRegexSelections": "正規表現の選択を保存できませんでした",
+  "STMemoryBooks_UseRegexAdvanced": "正規表現を使用（上級）",
+  "STMemoryBooks_ConfigureRegex": "📐 正規表現を設定…"
 }

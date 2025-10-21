@@ -618,5 +618,15 @@
     "STMemoryBooks_RecreateBuiltinsTitle": "Buat Ulang Prompt Bawaan",
     "STMemoryBooks_RecreateBuiltinsWarning": "Ini akan menghapus penggantian untuk semua preset bawaan (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Setiap penyesuaian pada preset bawaan ini akan hilang. Setelah ini, preset bawaan akan mengikuti lokal aplikasi saat ini.",
     "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "Ini tidak memengaruhi preset kustom Anda yang lain.",
-    "STMemoryBooks_RecreateBuiltinsOverwrite": "Timpa"
+    "STMemoryBooks_RecreateBuiltinsOverwrite": "Timpa",
+    "STMemoryBooks_RegexSelection_Title": "📐 Pemilihan Ekspresi Reguler",
+    "STMemoryBooks_RegexSelection_Desc": "Memilih ekspresi reguler di sini akan menjalankannya, baik diaktifkan maupun tidak.",
+    "STMemoryBooks_RegexSelection_Outgoing": "Jalankan ekspresi reguler sebelum mengirim ke AI",
+    "STMemoryBooks_RegexSelection_Incoming": "Jalankan ekspresi reguler sebelum menambahkan ke buku latar (sebelum pratinjau)",
+    "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "Pilih ekspresi reguler keluar…",
+    "STMemoryBooks_RegexSelect_PlaceholderIncoming": "Pilih ekspresi reguler masuk…",
+    "STMemoryBooks_RegexSelectionsSaved": "Pilihan ekspresi reguler disimpan",
+    "STMemoryBooks_FailedToSaveRegexSelections": "Gagal menyimpan pilihan ekspresi reguler",
+    "STMemoryBooks_UseRegexAdvanced": "Gunakan ekspresi reguler (lanjutan)",
+    "STMemoryBooks_ConfigureRegex": "📐 Konfigurasi ekspresi reguler…"
 }

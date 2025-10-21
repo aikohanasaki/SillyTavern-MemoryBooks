@@ -618,5 +618,15 @@
   "STMemoryBooks_RecreateBuiltinsTitle": "내장 프롬프트 재성성",
   "STMemoryBooks_RecreateBuiltinsWarning": "이렇게 하면 모든 내장 사전 설정(summary, summarize, synopsis, sumup, minimal, northgate, aelemar)에 대한 재정의가 제거됩니다. 이러한 내장 기능에 대한 모든 사용자 지정은 손실됩니다. 이 후 내장 기능은 현재 앱 로케일을 따릅니다.",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "이것은 다른 사용자 지정 사전 설정에 영향을 미치지 않습니다.",
-  "STMemoryBooks_RecreateBuiltinsOverwrite": "덮어쓰기"
+  "STMemoryBooks_RecreateBuiltinsOverwrite": "덮어쓰기",
+  "STMemoryBooks_RegexSelection_Title": "📐 정규식 선택",
+  "STMemoryBooks_RegexSelection_Desc": "여기에서 선택한 정규식은 활성/비활성 여부와 관계없이 실행됩니다.",
+  "STMemoryBooks_RegexSelection_Outgoing": "AI에 보내기 전에 정규식을 실행",
+  "STMemoryBooks_RegexSelection_Incoming": "로어북에 추가하기 전에 정규식을 실행(미리보기 전에)",
+  "STMemoryBooks_RegexSelect_PlaceholderOutgoing": "발송 전 정규식 선택…",
+  "STMemoryBooks_RegexSelect_PlaceholderIncoming": "수신 전 정규식 선택…",
+  "STMemoryBooks_RegexSelectionsSaved": "정규식 선택이 저장되었습니다",
+  "STMemoryBooks_FailedToSaveRegexSelections": "정규식 선택을 저장하지 못했습니다",
+  "STMemoryBooks_UseRegexAdvanced": "정규식 사용(고급)",
+  "STMemoryBooks_ConfigureRegex": "📐 정규식 구성…"
 }

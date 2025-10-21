@@ -213,6 +213,21 @@ export const settingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], [000] for auto-numbering. Available: \{{title}}, \{{scene}}, &#123;&#123;char}}, &#123;&#123;user}}, \{{messages}}, \{{profile}}, &#123;&#123;date}}, &#123;&#123;time}}</small>
         </div>
 
+        <div class="world_entry_form_control" class="flex-container">
+            <div class="flex flexFlowRow alignItemsBaseline">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
+                    <span data-i18n="STMemoryBooks_UseRegexAdvanced">Use regex (advanced)</span>
+                </label>
+            </div>
+            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}" data-i18n="STMemoryBooks_ConfigureRegex">
+                    📐 Configure regex…
+                </button>
+            </div>
+            <small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
+        </div>
+
         <div class="world_entry_form_control">
             <h4 data-i18n="STMemoryBooks_Profiles">Memory Profiles:</h4>
             <select id="stmb-profile-select" class="text_pole">
@@ -234,21 +249,6 @@ export const settingsTemplate = Handlebars.compile(`
                     <pre><code id="stmb-summary-prompt">{{selectedProfile.effectivePrompt}}</code></pre>
                 </div>
             </details>
-        </div>
-
-        <div class="world_entry_form_control" class="flex-container">
-            <div class="flex flexFlowRow alignItemsBaseline">
-                <label class="checkbox_label">
-                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
-                    <span>Use regex (advanced)</span>
-                </label>
-            </div>
-            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
-                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}">
-                    📐 Configure regex…
-                </button>
-            </div>
-            <small class="opacity70p">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
         </div>
 
         <h4 data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
