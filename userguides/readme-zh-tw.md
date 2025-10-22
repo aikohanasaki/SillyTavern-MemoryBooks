@@ -2,6 +2,8 @@
 
 新一代 SillyTavern 擴充，用於自動、結構化和可靠地創建記憶。在聊天中標記場景，使用 AI 生成基於 JSON 的摘要，並將它們作為「[向量化](#向量化)」條目儲存在您的傳說書中。支援群聊、進階設定檔管理和穩定的 API/模型處理。
 
+⚠️‼️**請閱讀[先決條件](#-先決條件)中的安裝說明！**
+
 **📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md)
 
 ---
@@ -42,7 +44,7 @@
 ## 📋 先決條件
 
 - **SillyTavern:** 1.13.4+ (建議使用最新版本)
-- **為所有使用者安裝：** 由於 STMB 複用了 ST 基礎程式碼中的許多函式，請確保將擴充套件安裝為所有使用者，使路徑為 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`。否則，函式匯入會失敗。
+- ⚠️‼️**為所有使用者安裝：**‼️⚠️ 由於 STMB 複用了 ST 基礎程式碼中的許多函式，請確保將擴充套件安裝為所有使用者，使路徑為 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`。否則，函式匯入會失敗。
 - **場景選擇：** 必須設定開始和結束標記（開始 < 結束）。
 - **聊天補全支援：** 完全支援 OpenAI、Claude、Anthropic、OpenRouter 或其他聊天補全 API。
 - **文字補全支援：** 當透過 SillyTavern 中的完全手動設定或自訂補全來源連接時，支援文字補全 API（Kobold、TextGen 等）。
