@@ -2,6 +2,8 @@
 
 Sambungan SillyTavern generasi akan datang untuk penciptaan memori yang automatik, berstruktur dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpannya sebagai entri "[vektor](#vektor)" dalam buku legenda anda. Menyokong sembang kumpulan, pengurusan profil lanjutan dan pengendalian API/model yang kukuh.
 
+⚠️‼️**Sila baca [prasyarat](#-prasyarat) untuk nota pemasangan!**
+
 **📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md)
 
 ---
@@ -42,7 +44,7 @@ Entri 🔗 dalam maklumat dunia dinamakan "vektor" dalam UI ST. Inilah sebabnya 
 ## 📋 Prasyarat
 
 - **SillyTavern:** 1.13.4+ (terkini disyorkan)
-- **PASANG UNTUK SEMUA PENGGUNA:** Oleh kerana STMB menggunakan semula banyak fungsi daripada kod asas ST, pastikan sambungan dipasang untuk semua pengguna supaya lokasinya ialah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, import fungsi akan gagal.
+- ⚠️‼️**PASANG UNTUK SEMUA PENGGUNA:**‼️⚠️ Oleh kerana STMB menggunakan semula banyak fungsi daripada kod asas ST, pastikan sambungan dipasang untuk semua pengguna supaya lokasinya ialah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, import fungsi akan gagal.
 - **Pemilihan Babak:** Penanda mula dan tamat (mula < tamat) mesti ditetapkan.
 - **Sokongan Pelengkapan Sembang:** Sokongan penuh untuk OpenAI, Claude, Anthropic, OpenRouter atau API pelengkapan sembang lain.
 - **Sokongan Pelengkapan Teks:** API pelengkapan teks (Kobold, TextGen, dll.) disokong apabila disambungkan melalui konfigurasi manual penuh atau sumber pelengkapan tersuai dalam SillyTavern.

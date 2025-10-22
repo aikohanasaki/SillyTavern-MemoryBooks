@@ -2,6 +2,8 @@
 
 Ekstensi SillyTavern generasi berikutnya untuk pembuatan memori yang otomatis, terstruktur, dan andal. Tandai adegan dalam obrolan, hasilkan ringkasan berbasis JSON dengan AI, dan simpan sebagai entri "[vektor](#vektor)" di buku latar Anda. Mendukung obrolan grup, manajemen profil tingkat lanjut, dan penanganan API/model yang kuat.
 
+⚠️‼️**Harap baca [prasyarat](#-prasyarat) untuk catatan pemasangan!**‼️⚠️
+
 **📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Riwayat Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Indonesian.md)
 
 ---
@@ -42,7 +44,7 @@ Entri 🔗 di info dunia diberi nama "vektor" di UI ST. Inilah sebabnya saya men
 ## 📋 Prasyarat
 
 - **SillyTavern:** 1.13.4+ (terbaru direkomendasikan)
-- **INSTAL UNTUK SEMUA PENGGUNA:** Karena STMB menggunakan kembali banyak fungsi dari kode dasar ST, pastikan ekstensi diinstal untuk semua pengguna sehingga lokasinya adalah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, impor fungsi akan gagal.
+- ⚠️‼️**INSTAL UNTUK SEMUA PENGGUNA:**‼️⚠️ Karena STMB menggunakan kembali banyak fungsi dari kode dasar ST, pastikan ekstensi diinstal untuk semua pengguna sehingga lokasinya adalah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, impor fungsi akan gagal.
 - **Pemilihan Adegan:** Penanda awal dan akhir (awal < akhir) harus diatur.
 - **Dukungan Penyelesaian Obrolan:** Dukungan penuh untuk OpenAI, Claude, Anthropic, OpenRouter, atau API penyelesaian obrolan lainnya.
 - **Dukungan Penyelesaian Teks:** API penyelesaian teks (Kobold, TextGen, dll.) didukung saat terhubung melalui konfigurasi manual penuh atau sumber penyelesaian khusus di SillyTavern.

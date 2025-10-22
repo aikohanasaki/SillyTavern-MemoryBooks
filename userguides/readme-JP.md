@@ -2,6 +2,8 @@
 
 自動的で構造化された、信頼性の高い記憶作成のための次世代SillyTavern拡張機能です。チャットでシーンをマークし、AIでJSONベースの要約を生成し、ロアブックに「[ベクトル化](#vectorized)」エントリとして保存します。グループチャット、高度なプロファイル管理、そして堅牢なAPI/モデルハンドリングをサポートしています。
 
+⚠️‼️**インストールに関する注意事項は[前提条件](#-前提条件)を必ずお読みください！**
+
 **📘 [ユーザーガイド (JP)](USER_GUIDE.md)** |  **📋 [バージョン履歴と変更ログ](changelog.md)** | [📕 Memory Books と 📚 Lorebook Ordering の使い方](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)
 
 ---
@@ -42,7 +44,7 @@
 ## 📋 前提条件
 
 - **SillyTavern:** 1.13.4以降（最新版を推奨）
-- **全ユーザー向けにインストール：** STMB は ST のベースコードの多くの関数を再利用するため、拡張機能が全ユーザー向けにインストールされ、場所が `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks` になるようにしてください。そうしないと関数のインポートが失敗します。
+- ⚠️‼️**全ユーザー向けにインストール：**‼️⚠️ STMB は ST のベースコードの多くの関数を再利用するため、拡張機能が全ユーザー向けにインストールされ、場所が `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks` になるようにしてください。そうしないと関数のインポートが失敗します。
 - **シーン選択：** 開始マーカーと終了マーカー（開始 < 終了）が設定されている必要があります。
 - **チャット補完サポート：** OpenAI、Claude、Anthropic、OpenRouter、またはその他のチャット補完APIを完全にサポートしています。
 - **テキスト補完サポート：** テキスト補完API（Kobold、TextGenなど）は、SillyTavernの完全な手動設定またはカスタム補完ソースを介して接続されている場合にサポートされます。

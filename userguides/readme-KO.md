@@ -2,6 +2,8 @@
 
 자동화되고 구조화되었으며 신뢰할 수 있는 메모리 생성을 위한 차세대 SillyTavern 확장 프로그램입니다. 채팅에서 장면을 표시하고, AI로 JSON 기반 요약을 생성하며, 로어북에 "[벡터화된](#vectorized)" 항목으로 저장하세요. 그룹 채팅, 고급 프로필 관리 및 완벽한 API/모델 처리를 지원합니다.
 
+⚠️‼️**설치 안내는 반드시 [전제 조건](#-전제-조건) 섹션을 확인해 주세요!**
+
 **📘 [사용자 가이드 (EN)](USER_GUIDE.md)** | **📋 [버전 히스토리 및 변경 로그](changelog.md)** | [📕 Memory Books와 📚 Lorebook Ordering 사용법](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)
 
 ---
@@ -42,7 +44,7 @@
 ## 📋 전제 조건
 
 - **SillyTavern:** 1.13.4+ (최신 버전 권장)
-- **모든 사용자용 설치:** STMB는 ST 기본 코드의 많은 함수를 재사용하므로 확장 프로그램을 모든 사용자에 대해 설치하여 경로가 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`가 되도록 하세요. 그렇지 않으면 함수 가져오기가 실패합니다.
+- ⚠️‼️**모든 사용자용 설치:**‼️⚠️ STMB는 ST 기본 코드의 많은 함수를 재사용하므로 확장 프로그램을 모든 사용자에 대해 설치하여 경로가 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`가 되도록 하세요. 그렇지 않으면 함수 가져오기가 실패합니다.
 - **장면 선택:** 시작 및 끝 마커(시작 < 끝)가 설정되어야 합니다.
 - **채팅 완료 지원:** OpenAI, Claude, Anthropic, OpenRouter 또는 기타 채팅 완료 API를 완벽하게 지원합니다.
 - **텍스트 완료 지원:** 텍스트 완료 API(Kobold, TextGen 등)는 SillyTavern의 전체 수동 구성 또는 사용자 지정 완료 소스를 통해 연결될 때 지원됩니다.
