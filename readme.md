@@ -2,7 +2,9 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
 
-**📘 [User Guid (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+‼️**Please read [prerequisites](#-prerequisites) for installation notes!**
+
+**📘 [User Guide (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
 
@@ -42,8 +44,8 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 
 ## 📋 Prerequisites
 
-- **SillyTavern:** 1.13.4+ (latest recommended)
-- **INSTALL FOR ALL USERS:** Because STMB re-uses so many functions from ST base code, please ensure that the extension is installed for all users so that the location is `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Otherwise, function imports fail.
+- **SillyTavern:** 1.13.5+ (latest recommended)
+- ‼️**INSTALL FOR ALL USERS:**‼️ Because STMB re-uses so many functions from ST base code, please ensure that the extension is installed for all users so that the location is `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Otherwise, function imports fail.
 - **Scene Selection:** Start and end markers (start < end) must be set.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
