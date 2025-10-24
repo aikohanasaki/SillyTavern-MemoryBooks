@@ -2,41 +2,6 @@
 
 This guide explains how STMB works in clear, programmer‑lite terms for users who don’t write SillyTavern code but want to understand how prompts are built.
 
-## Core Pieces
-
-1) Memory Book  
-   - A named collection of entries (like a binder with labeled cards).  
-   - Can be themed (e.g., “World Lore,” “Character Sheets,” “Writing Style,” “Company Policies”).
-
-2) Entry (a “card”)  
-   - A short chunk of text the AI can see.  
-   - Has metadata: tags/keywords, optional triggers, priority, and scope.  
-   - Example: “Character X always speaks in short, clipped sentences.”
-
-3) Triggers and Matching  
-   - Rules that decide when to include an entry.  
-   - Common patterns:
-     - Keyword match (if the message mentions “Character X”, include their bio).
-     - Context match (e.g., specific channel, mode, or persona).
-     - Manual pinning (always include this entry).
-   - Matching can be fuzzy or exact depending on configuration.
-
-4) Scope (Where and When It Applies)  
-   - Global: applies to all chats.  
-   - Per‑chat/persona: only inject for specific characters or profiles.  
-   - Stage: inject at different prompt sections (e.g., system vs user context).
-
-5) Priority and Limits  
-   - Priority decides which entries win when there’s not enough room.  
-   - Token budgets prevent overloading the AI; the system picks the best‑fitting entries first.
-
-6) Insertion Points  
-   - STMB inserts selected entries into the composed prompt at configured positions:
-     - System/instruction section (rules, style, boundaries).
-     - Context/lore section (world/character knowledge).
-     - Examples (few‑shot samples or do/don’t lists).
-   - Goal: give the AI just enough context right before it answers.
-
 ## What STMB Sends to the AI (Memory Generation)
 
 When you run “Generate Memory,” STMB sends a two‑part prompt:
@@ -143,14 +108,6 @@ Best model behavior
 - Parse: parseAIJsonResponse() extracts and validates title/content/keywords, with light repair if needed.
 - Result: STMB stores the structured memory, applies your title format, and prepares suggested lorebook keys.
 
-### What You Configure (No Coding)
-
-- Which Memory Books are active for a chat/persona.
-- Priority and token limits.
-- Where the entry should be injected (system, context, examples).
-- Optional templates to format entries consistently.
-- Customize your prompt if you wish, or use the built-in prompts.
-
 ## Side Prompts (How‑To)
 
 Side Prompts are auxiliary, template‑driven generators that write structured notes back into your lorebook (e.g., trackers, reports, cast lists). They are separate from the “memory generation” path and can run automatically or on demand.
@@ -249,11 +206,5 @@ Import/export and built‑in reset
 - “Will this change how I write messages?”  
   Not much. You mainly curate entries and let STMB auto‑include the right ones.
 
-- “Can I force something to always be included?”  
-  Yes—pin it or give it a high priority.
-
-- “What if the prompt is too long?”  
-  Token budgets kick in; lower‑priority entries get dropped first.
-
 - “Can I see what was actually sent to the AI?”  
-  Yes—open the composed prompt view in SillyTavern to inspect what was injected.
+  Yes—check your Terminal to inspect what was injected.
