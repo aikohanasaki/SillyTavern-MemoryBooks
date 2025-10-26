@@ -835,7 +835,7 @@ export async function showSidePromptsPopup() {
                         }
                     } else if (actionBtn.classList.contains('stmb-sp-action-delete')) {
                         const confirmPopup = new Popup(
-                            `<h3>${escapeHtml(translate('Delete Side Prompt', 'STMemoryBooks_DeleteSidePromptTitle'))}</h3><p>${escapeHtml(translate('Are you sure you want to delete this template?', 'STMemoryBooks_DeleteSidePromptConfirm'))}</p>`,
+                            `<h3>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptTitle', 'Delete Side Prompt', { name: tplKey }))}</h3><p>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptConfirm', 'Are you sure you want to delete this template?', { name: tplKey }))}</p>`,
                             POPUP_TYPE.CONFIRM,
                             '',
                             { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
