@@ -362,7 +362,8 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
     }
 
     try {
-        const result = await new Popup(__st_t_tag`Delete profile "${profile.name}"?`, POPUP_TYPE.CONFIRM, '').show();
+        const confirmText = translate('Delete profile "{{name}}"?', 'STMemoryBooks_DeleteProfileConfirm').replace('{{name}}', profile.name);
+        const result = await new Popup(confirmText, POPUP_TYPE.CONFIRM, '').show();
 
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const deletedName = profile.name;
