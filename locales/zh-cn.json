@@ -36,6 +36,8 @@
   "STMemoryBooks_AutoSummaryDesc": "在指定数量的消息后自动运行 /nextmemory。",
   "STMemoryBooks_AutoSummaryInterval": "自动摘要间隔:",
   "STMemoryBooks_AutoSummaryIntervalDesc": "自动创建记忆摘要的消息数量。",
+  "STMemoryBooks_AutoSummaryBuffer": "自动摘要缓冲区：",
+  "STMemoryBooks_AutoSummaryBufferDesc": "保留最后X条消息不作处理，以实现延迟。默认0，最大50。",
   "STMemoryBooks_DefaultInterval": "100",
   "STMemoryBooks_AutoSummaryReadyTitle": "自动摘要准备就绪",
   "STMemoryBooks_AutoSummaryNoAssignedLorebook": "自动摘要已启用，但此聊天没有分配的故事书。",

@@ -37,6 +37,8 @@
     "STMemoryBooks_AutoSummaryDesc": "Ejecutar /nextmemory automáticamente después de un número específico de mensajes.",
     "STMemoryBooks_AutoSummaryInterval": "Intervalo de Auto-Resumen:",
     "STMemoryBooks_AutoSummaryIntervalDesc": "Número de mensajes después de los cuales se creará automáticamente un resumen de memoria.",
+    "STMemoryBooks_AutoSummaryBuffer": "Búfer de Auto-Resumen:",
+    "STMemoryBooks_AutoSummaryBufferDesc": "Retrasa manteniendo los últimos X mensajes sin procesar. Por defecto 0, máximo 50.",
     "STMemoryBooks_DefaultInterval": "100",
     "STMemoryBooks_AutoSummaryReadyTitle": "Auto-Resumen Listo",
     "STMemoryBooks_AutoSummaryNoAssignedLorebook": "El auto-resumen está activado pero no hay un lorebook asignado para este chat.",
