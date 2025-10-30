@@ -152,6 +152,15 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
 
         <div class="world_entry_form_control">
+            <label for="stmb-auto-summary-buffer">
+                <h4 data-i18n="STMemoryBooks_AutoSummaryBuffer">Auto-Summary Buffer:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryBufferDesc">Delay by keeping the last X messages unprocessed. Default 0, max 50.</small>
+                <input type="number" id="stmb-auto-summary-buffer" class="text_pole"
+                    value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0">
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
             <label for="stmb-default-memory-count">
                 <h4 data-i18n="STMemoryBooks_DefaultMemoryCount">Default Previous Memories Count:</h4>
                 <small class="opacity50p" data-i18n="STMemoryBooks_DefaultMemoryCountDesc">Default number of previous memories to include as context when creating new memories.</small>

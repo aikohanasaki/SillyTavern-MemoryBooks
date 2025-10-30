@@ -136,6 +136,9 @@ export async function checkAutoSummaryTrigger() {
         const currentMessageCount = chat.length;
         const currentLastMessage = currentMessageCount - 1;
         const requiredInterval = settings.moduleSettings.autoSummaryInterval;
+        const rawBuf = settings?.moduleSettings?.autoSummaryBuffer;
+        const buffer = Math.min(Math.max(parseInt(rawBuf) || 0, 0), 50);
+        const requiredTotal = requiredInterval + buffer;
         const highestProcessed = stmbData.highestMemoryProcessed ?? null;
 
         // Check if memory creation is in progress
@@ -156,10 +159,10 @@ export async function checkAutoSummaryTrigger() {
             console.log(i18n('autosummary.log.sinceLast', 'STMemoryBooks: Messages since last memory ({{highestProcessed}}): {{count}}', { highestProcessed, count: messagesSinceLastMemory }));
         }
 
-        console.log(i18n('autosummary.log.triggerCheck', 'STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?', { count: messagesSinceLastMemory, required: requiredInterval }));
+        console.log(i18n('autosummary.log.triggerCheck', 'STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?', { count: messagesSinceLastMemory, required: requiredTotal }));
 
-        if (messagesSinceLastMemory < requiredInterval) {
-            console.log(i18n('autosummary.log.notTriggered', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages', { needed: requiredInterval - messagesSinceLastMemory }));
+        if (messagesSinceLastMemory < requiredTotal) {
+            console.log(i18n('autosummary.log.notTriggered', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages', { needed: requiredTotal - messagesSinceLastMemory }));
             return;
         }
 
@@ -183,16 +186,22 @@ export async function checkAutoSummaryTrigger() {
             console.log(i18n('autosummary.log.clearedPostpone', 'STMemoryBooks: Cleared auto-summary postpone flag'));
         }
 
-        // Calculate the scene range for auto-summary
+        // Calculate the scene range for auto-summary (apply buffer to end)
         let sceneStart, sceneEnd;
+        const sceneEndCandidate = currentLastMessage - buffer;
+        const safeEnd = Math.max(0, sceneEndCandidate);
         if (highestProcessed === null) {
             // First memory - include everything from start
             sceneStart = 0;
-            sceneEnd = currentLastMessage;
+            sceneEnd = safeEnd;
         } else {
             // Start from the message after the last processed memory
             sceneStart = highestProcessed + 1;
-            sceneEnd = currentLastMessage;
+            sceneEnd = safeEnd;
+        }
+        // Defensive: ensure valid range
+        if (sceneStart > sceneEnd) {
+            return;
         }
 
         console.log(i18n('autosummary.log.triggered', 'STMemoryBooks: Auto-summary triggered - creating memory for range {{start}}-{{end}}', { start: sceneStart, end: sceneEnd }));

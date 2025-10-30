@@ -85,6 +85,7 @@ const defaultSettings = {
         unhiddenEntriesCount: 0,
         autoSummaryEnabled: false,
         autoSummaryInterval: 100,
+        autoSummaryBuffer: 0,
         autoCreateLorebook: false,
         lorebookNameTemplate: 'LTM - {{char}} - {{chat}}',
         useRegex: false,
@@ -595,6 +596,12 @@ function validateSettings(settings) {
     if (settings.moduleSettings.autoSummaryInterval === undefined ||
         settings.moduleSettings.autoSummaryInterval < 10) {
         settings.moduleSettings.autoSummaryInterval = 100;
+    }
+    if (settings.moduleSettings.autoSummaryBuffer === undefined || settings.moduleSettings.autoSummaryBuffer < 0) {
+        settings.moduleSettings.autoSummaryBuffer = 0;
+    }
+    if (settings.moduleSettings.autoSummaryBuffer > 50) {
+        settings.moduleSettings.autoSummaryBuffer = 50;
     }
 
     // Validate auto-create lorebook setting - always defaults to false
@@ -1825,6 +1832,7 @@ async function deletePreset(popup, presetKey) {
         '',
         { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
     );
+    try { applyLocale(confirmPopup.dlg); } catch (e) { /* no-op */ }
     
     const result = await confirmPopup.show();
     
@@ -1947,6 +1955,7 @@ async function showSettingsPopup() {
         defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
         autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
         autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
+        autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer || 0,
         autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
         lorebookNameTemplate: settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}',
         profiles: settings.profiles.map((profile, index) => ({
@@ -2303,6 +2312,14 @@ toastr.error(translate('Failed to import profiles', 'STMemoryBooks_FailedToImpor
             }
             return;
         }
+
+        if (e.target.matches('#stmb-auto-summary-buffer')) {
+            const value = parseInt(e.target.value);
+            const clamped = Math.min(Math.max(isNaN(value) ? 0 : value, 0), 50);
+            settings.moduleSettings.autoSummaryBuffer = clamped;
+            saveSettingsDebounced();
+            return;
+        }
     });
     
     // Handle input events using delegation with debouncing
@@ -2397,6 +2414,11 @@ function handleSettingsPopupClose(popup) {
             parseInt(autoSummaryIntervalInput.value) || 50 :
             settings.moduleSettings.autoSummaryInterval || 50;
 
+        const autoSummaryBufferInput = popupElement.querySelector('#stmb-auto-summary-buffer');
+        const autoSummaryBuffer = autoSummaryBufferInput ?
+            Math.min(Math.max(parseInt(autoSummaryBufferInput.value) || 0, 0), 50) :
+            Math.min(Math.max(settings.moduleSettings.autoSummaryBuffer || 0, 0), 50);
+
         // Save auto-create lorebook setting
         const autoCreateLorebook = popupElement.querySelector('#stmb-auto-create-lorebook')?.checked ?? settings.moduleSettings.autoCreateLorebook;
 
@@ -2413,6 +2435,7 @@ function handleSettingsPopupClose(popup) {
                           unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount ||
                           autoSummaryEnabled !== settings.moduleSettings.autoSummaryEnabled ||
                           autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval ||
+                          autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer ||
                           autoCreateLorebook !== settings.moduleSettings.autoCreateLorebook;
         
         if (hasChanges) {
@@ -2432,6 +2455,7 @@ function handleSettingsPopupClose(popup) {
             settings.moduleSettings.unhiddenEntriesCount = unhiddenEntriesCount;
             settings.moduleSettings.autoSummaryEnabled = autoSummaryEnabled;
             settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
+            settings.moduleSettings.autoSummaryBuffer = autoSummaryBuffer;
             settings.moduleSettings.autoCreateLorebook = autoCreateLorebook;
             saveSettingsDebounced();
         }
@@ -2485,6 +2509,7 @@ async function refreshPopupContent() {
             defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
             autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
             autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
+            autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer || 0,
             autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
             lorebookNameTemplate: settings.moduleSettings.lorebookNameTemplate || 'LTM - {{char}} - {{chat}}',
             profiles: settings.profiles.map((profile, index) => ({
