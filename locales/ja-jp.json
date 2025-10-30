@@ -37,6 +37,8 @@
   "STMemoryBooks_AutoSummaryDesc": "指定されたメッセージ数の後に自動的に/nextmemoryを実行します。",
   "STMemoryBooks_AutoSummaryInterval": "自動サマリー間隔:",
   "STMemoryBooks_AutoSummaryIntervalDesc": "メモリサマリーを自動的に作成するまでのメッセージ数。",
+  "STMemoryBooks_AutoSummaryBuffer": "自動要約バッファ:",
+  "STMemoryBooks_AutoSummaryBufferDesc": "最後のX件のメッセージを未処理のままにして遅延させます。デフォルト0、最大50。",
   "STMemoryBooks_DefaultInterval": "100",
   "STMemoryBooks_AutoSummaryReadyTitle": "自動サマリー準備完了",
   "STMemoryBooks_AutoSummaryNoAssignedLorebook": "自動サマリーは有効ですが、このチャットに割り当てられたロアブックがありません。",

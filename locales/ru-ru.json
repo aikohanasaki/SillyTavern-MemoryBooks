@@ -36,6 +36,8 @@
   "STMemoryBooks_AutoSummaryDesc": "Автоматически выполнять /nextmemory после указанного количества сообщений.",
   "STMemoryBooks_AutoSummaryInterval": "Интервал авто-резюме:",
   "STMemoryBooks_AutoSummaryIntervalDesc": "Количество сообщений, после которого автоматически создается резюме воспоминаний.",
+  "STMemoryBooks_AutoSummaryBuffer": "Буфер авто-резюме:",
+  "STMemoryBooks_AutoSummaryBufferDesc": "Задерживает обработку последних X сообщений. По умолчанию 0, макс. 50.",
   "STMemoryBooks_DefaultInterval": "100",
   "STMemoryBooks_AutoSummaryReadyTitle": "Авто-резюме готово",
   "STMemoryBooks_AutoSummaryNoAssignedLorebook": "Авто-резюме включено, но для этого чата не назначен лорбук.",

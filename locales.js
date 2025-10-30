@@ -150,6 +150,8 @@ export const localeData_en = {
     'STMemoryBooks_AutoSummaryDesc': 'Automatically run /nextmemory after a specified number of messages.',
     'STMemoryBooks_AutoSummaryInterval': 'Auto-Summary Interval:',
     'STMemoryBooks_AutoSummaryIntervalDesc': 'Number of messages after which to automatically create a memory summary.',
+    'STMemoryBooks_AutoSummaryBuffer': 'Auto-Summary Buffer:',
+    'STMemoryBooks_AutoSummaryBufferDesc': 'Delay auto-summary by X messages (belated generation). Default 0, max 50.',
     'STMemoryBooks_DefaultInterval': '100',
 
     // Auto-Summary Popup and Messages
