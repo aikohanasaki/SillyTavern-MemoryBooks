@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.11.0 (October 29, 2025)
+- **Enhancement:** Add generation delay for auto-summaries.
+
 ## v4.10.0 (October 21, 2025)
 - **Enhancement:** Error raw code popup window allows clearer insight on AI memory failure.
 
