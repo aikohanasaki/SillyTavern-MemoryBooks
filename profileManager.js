@@ -25,6 +25,13 @@ const profileEditTemplate = Handlebars.compile(`
         </label>
     </div>
 
+    <div id="stmb-profile-outlet-name-container" class="world_entry_form_control marginTop5 {{#unless (eq position 7)}}displayNone{{/unless}}">
+        <label for="stmb-profile-outlet-name">
+            <h4 data-i18n="STMemoryBooks_OutletName">Outlet Name:</h4>
+            <input type="text" id="stmb-profile-outlet-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_OutletNamePlaceholder" placeholder="Outlet name (e.g., ENDING)" value="{{outletName}}">
+        </label>
+    </div>
+
     <div class="world_entry_form_control marginTop5">
         <h4 data-i18n="STMemoryBooks_ModelAndTempSettings">Model & Temperature Settings:</h4>
         <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_ModelHint">
@@ -143,10 +150,11 @@ const profileEditTemplate = Handlebars.compile(`
             <select id="stmb-profile-position" class="text_pole">
                 <option value="0" {{#if (eq position 0)}}selected{{/if}} data-i18n="STMemoryBooks_CharUp">↑Char</option>
                 <option value="1" {{#if (eq position 1)}}selected{{/if}} data-i18n="STMemoryBooks_CharDown">↓Char</option>
-                <option value="2" {{#if (eq position 4)}}selected{{/if}} data-i18n="STMemoryBooks_ANUp">↑AN</option>
-                <option value="3" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
-                <option value="4" {{#if (eq position 2)}}selected{{/if}} data-i18n="STMemoryBooks_EMUp">↑EM</option>
-                <option value="5" {{#if (eq position 3)}}selected{{/if}} data-i18n="STMemoryBooks_EMDown">↓EM</option>
+                <option value="2" {{#if (eq position 2)}}selected{{/if}} data-i18n="STMemoryBooks_EMUp">↑EM</option>
+                <option value="3" {{#if (eq position 3)}}selected{{/if}} data-i18n="STMemoryBooks_EMDown">↓EM</option>
+                <option value="4" {{#if (eq position 4)}}selected{{/if}} data-i18n="STMemoryBooks_ANUp">↑AN</option>
+                <option value="5" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
+                <option value="7" {{#if (eq position 7)}}selected{{/if}} data-i18n="STMemoryBooks_Outlet">Outlet</option>
             </select>
         </label>
     </div>
@@ -220,6 +228,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             orderValue: profile.orderValue,
             preventRecursion: profile.preventRecursion,
             delayUntilRecursion: profile.delayUntilRecursion,
+            outletName: profile.outletName || '',
             hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false
         };
 
@@ -300,7 +309,8 @@ export async function newProfile(settings, refreshCallback) {
             orderMode: 'auto',
             orderValue: 100,
             preventRecursion: true,
-            delayUntilRecursion: false
+            delayUntilRecursion: false,
+            outletName: ''
         };
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -683,6 +693,13 @@ function setupProfileEditEventHandlers(popupInstance) {
             }
         });
     });
+
+    // Toggle outlet name visibility based on position
+    const positionSelect = popupElement.querySelector('#stmb-profile-position');
+    positionSelect?.addEventListener('change', () => {
+        const cont = popupElement.querySelector('#stmb-profile-outlet-name-container');
+        if (cont) cont.classList.toggle('displayNone', positionSelect.value !== '7');
+    });
 }
 
 /**
@@ -719,6 +736,9 @@ function buildProfileFromForm(popupElement, fallbackName) {
     }
 
     // Step 3: Call the centralized creator function with the gathered and cleaned data.
+    if (data.position === '7' || data.position === 7) {
+        data.outletName = popupElement.querySelector('#stmb-profile-outlet-name')?.value?.trim() || '';
+    }
     return createProfileObject(data);
 }
 

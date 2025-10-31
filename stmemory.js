@@ -820,6 +820,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 orderValue: profile.orderValue,
                 preventRecursion: profile.preventRecursion,
                 delayUntilRecursion: profile.delayUntilRecursion,
+                outletName: (Number(profile.position) === 7 ? (profile.outletName || '') : undefined),
             },
             lorebook: {
                 content: processedMemory.content,

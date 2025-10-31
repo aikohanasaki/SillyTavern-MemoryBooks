@@ -272,6 +272,7 @@ function getEffectiveLorebookSettingsForTemplate(tpl) {
         orderValue: toNumberOr(lb.orderValue, 100),
         preventRecursion: lb.preventRecursion !== false,
         delayUntilRecursion: !!lb.delayUntilRecursion,
+        outletName: String(lb.outletName || ''),
     };
 }
 
@@ -293,6 +294,9 @@ function makeUpsertParamsFromLorebook(lbs) {
     };
     if (lbs.orderMode === 'manual') {
         entryOverrides.order = toNumberOr(lbs.orderValue, 100);
+    }
+    if (Number(lbs.position) === 7 && lbs.outletName) {
+        entryOverrides.outletName = String(lbs.outletName);
     }
     return { defaults, entryOverrides };
 }

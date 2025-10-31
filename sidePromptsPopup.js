@@ -221,11 +221,18 @@ async function openEditTemplate(parentPopup, key) {
                         <select id="stmb-sp-edit-lb-position" class="text_pole">
                             <option value="0" ${lbPosition === 0 ? 'selected' : ''}>${escapeHtml(translate('↑Char', 'STMemoryBooks_CharUp'))}</option>
                             <option value="1" ${lbPosition === 1 ? 'selected' : ''}>${escapeHtml(translate('↓Char', 'STMemoryBooks_CharDown'))}</option>
-                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>${escapeHtml(translate('↑AN', 'STMemoryBooks_ANUp'))}</option>
-                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
-                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
-                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
+                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
+                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
+                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>${escapeHtml(translate('↑AN', 'STMemoryBooks_ANUp'))}</option>
+                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
+                            <option value="7" ${lbPosition === 7 ? 'selected' : ''}>${escapeHtml(translate('Outlet', 'STMemoryBooks_Outlet'))}</option>
                         </select>
+                        <div id="stmb-sp-edit-lb-outlet-name-container" style="display:${lbPosition === 7 ? 'block' : 'none'}; margin-top: 8px;">
+                            <label>
+                                <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Outlet Name:', 'STMemoryBooks_OutletName'))}</h4>
+                                <input type="text" id="stmb-sp-edit-lb-outlet-name" class="text_pole" placeholder="${escapeHtml(translate('Outlet name (e.g., ENDING)', 'STMemoryBooks_OutletNamePlaceholder'))}" value="${escapeHtml(lb.outletName || '')}">
+                            </label>
+                        </div>
                     </label>
                 </div>
                 <div class="world_entry_form_control" style="margin-top: 8px;">
@@ -306,6 +313,13 @@ async function openEditTemplate(parentPopup, key) {
             };
             orderAuto?.addEventListener('change', syncOrderVisibility);
             orderManual?.addEventListener('change', syncOrderVisibility);
+
+            // Toggle Outlet Name based on position
+            const posSel = dlg.querySelector('#stmb-sp-edit-lb-position');
+            const outletCont = dlg.querySelector('#stmb-sp-edit-lb-outlet-name-container');
+            posSel?.addEventListener('change', () => {
+                if (outletCont) outletCont.style.display = posSel.value === '7' ? 'block' : 'none';
+            });
         };
 
         const showPromise = editPopup.show();
@@ -362,6 +376,7 @@ async function openEditTemplate(parentPopup, key) {
             const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-edit-lb-order-value')?.value ?? '100', 10);
             const lbPrevent2 = !!dlg.querySelector('#stmb-sp-edit-lb-prevent')?.checked;
             const lbDelay2 = !!dlg.querySelector('#stmb-sp-edit-lb-delay')?.checked;
+            const outletNameVal = lbPosRaw === 7 ? (dlg.querySelector('#stmb-sp-edit-lb-outlet-name')?.value?.trim() || '') : '';
 
             const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-edit-prev-mem-count')?.value ?? '0', 10);
 settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
@@ -373,6 +388,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
                 orderValue: Number.isFinite(lbOrderValRaw) ? lbOrderValRaw : 100,
                 preventRecursion: lbPrevent2,
                 delayUntilRecursion: lbDelay2,
+                ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
             };
 
             await upsertTemplate({
@@ -477,7 +493,14 @@ async function openNewTemplate(parentPopup) {
                         <option value="3">${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
                         <option value="4">${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
                         <option value="5">${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
+                        <option value="7">${escapeHtml(translate('Outlet', 'STMemoryBooks_Outlet'))}</option>
                     </select>
+                    <div id="stmb-sp-new-lb-outlet-name-container" class="displayNone" style="margin-top: 8px;">
+                        <label>
+                            <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Outlet Name:', 'STMemoryBooks_OutletName'))}</h4>
+                            <input type="text" id="stmb-sp-new-lb-outlet-name" class="text_pole" placeholder="${escapeHtml(translate('Outlet name (e.g., ENDING)', 'STMemoryBooks_OutletNamePlaceholder'))}">
+                        </label>
+                    </div>
                 </label>
             </div>
             <div class="world_entry_form_control" style="margin-top: 8px;">
@@ -569,6 +592,13 @@ async function openNewTemplate(parentPopup) {
         };
         orderAuto?.addEventListener('change', syncOrderVisibility);
         orderManual?.addEventListener('change', syncOrderVisibility);
+
+        // Toggle Outlet Name based on position
+        const posSelNew = dlg.querySelector('#stmb-sp-new-lb-position');
+        const outletContNew = dlg.querySelector('#stmb-sp-new-lb-outlet-name-container');
+        posSelNew?.addEventListener('change', () => {
+            if (outletContNew) outletContNew.classList.toggle('displayNone', posSelNew.value !== '7');
+        });
     };
 
     const showPromise = newPopup.show();
@@ -623,6 +653,7 @@ async function openNewTemplate(parentPopup) {
         const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-new-lb-order-value')?.value ?? '100', 10);
         const lbPrevent2 = !!dlg.querySelector('#stmb-sp-new-lb-prevent')?.checked;
         const lbDelay2 = !!dlg.querySelector('#stmb-sp-new-lb-delay')?.checked;
+        const outletNameVal = lbPosRaw === 7 ? (dlg.querySelector('#stmb-sp-new-lb-outlet-name')?.value?.trim() || '') : '';
 
         const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-new-prev-mem-count')?.value ?? '0', 10);
 settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
@@ -634,6 +665,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
             orderValue: Number.isFinite(lbOrderValRaw) ? lbOrderValRaw : 100,
             preventRecursion: lbPrevent2,
             delayUntilRecursion: lbDelay2,
+            ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
         };
 
         try {

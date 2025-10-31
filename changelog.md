@@ -2,6 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v4.12.0 (October 31, 2025)
+- **Enhancements:** 
+  - Add `/sideprompt-on` and `/sideprompt-off` for side prompts
+  - Add outlet position to lorebook entry settings.
+
 ## v4.11.0 (October 29, 2025)
 - **Enhancement:** Add generation delay for auto-summaries.
 
