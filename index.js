@@ -2704,7 +2704,7 @@ function registerSlashCommands() {
             SlashCommandArgument.fromProps({
                 description: translate('Template name (quote if contains spaces), optionally followed by X-Y range', 'STMemoryBooks_Slash_SidePrompt_ArgDesc'),
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: false,
+                isRequired: true,
                 enumProvider: sidePromptTemplateEnumProvider
             })
         ]
