@@ -778,6 +778,11 @@ export const localeData_en = {
     'STMemoryBooks_Slash_NextMemory_Help': 'Create memory from end of last memory to current message',
     'STMemoryBooks_Slash_SidePrompt_Help': 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',
     'STMemoryBooks_Slash_SidePrompt_ArgDesc': 'Template name (quote if contains spaces), optionally followed by X-Y range',
+    'STMemoryBooks_Slash_SidePromptOn_Help': 'Enable a Side Prompt by name or all. Usage: /sideprompt-on "Name" | all',
+    'STMemoryBooks_Slash_SidePromptOn_ArgDesc': 'Template name (quote if contains spaces) or "all"',
+    'STMemoryBooks_Slash_SidePromptOff_Help': 'Disable a Side Prompt by name or all. Usage: /sideprompt-off "Name" | all',
+    'STMemoryBooks_Slash_SidePromptOff_ArgDesc': 'Template name (quote if contains spaces) or "all"',
+    'STMemoryBooks_SidePromptToggle_MissingName': 'Missing name. Usage: /sideprompt-on "Name" | /sideprompt-off "Name" | all',
 
     // Built-in prompt templates (English fallback; localize in locales/*.json)
     'STMemoryBooks_Prompt_summary': `You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.
