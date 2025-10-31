@@ -630,5 +630,10 @@
   "STMemoryBooks_RegexSelectionsSaved": "正規表現の選択が保存されました",
   "STMemoryBooks_FailedToSaveRegexSelections": "正規表現の選択を保存できませんでした",
   "STMemoryBooks_UseRegexAdvanced": "正規表現を使用（上級）",
-  "STMemoryBooks_ConfigureRegex": "📐 正規表現を設定…"
+  "STMemoryBooks_ConfigureRegex": "📐 正規表現を設定…",
+  "STMemoryBooks_Slash_SidePromptOn_Help": "名前またはすべてでサイドプロンプトを有効にします。使用法: /sideprompt-on \"名前\" | all",
+  "STMemoryBooks_Slash_SidePromptOn_ArgDesc": "テンプレート名（スペースを含む場合は引用符で囲む）または「all」",
+  "STMemoryBooks_Slash_SidePromptOff_Help": "名前またはすべてでサイドプロンプトを無効にします。使用法: /sideprompt-off \"名前\" | all",
+  "STMemoryBooks_Slash_SidePromptOff_ArgDesc": "テンプレート名（スペースを含む場合は引用符で囲む）または「all」",
+  "STMemoryBooks_SidePromptToggle_MissingName": "名前がありません。使用法: /sideprompt-on \"名前\" | /sideprompt-off \"名前\" | all"
 }
