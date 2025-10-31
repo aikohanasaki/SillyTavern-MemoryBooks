@@ -4,7 +4,8 @@ Sambungan SillyTavern generasi akan datang untuk penciptaan memori yang automati
 
 ⚠️‼️**Sila baca [prasyarat](#-prasyarat) untuk nota pemasangan!**
 
-**📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md)
+**📘 [Panduan Pengguna (MS)](USER_GUIDE-MS.md)** | **📋 [Sejarah Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md)
+> Disegerakkan dengan README Bahasa Inggeris: e9f1709 (2025-10-31)
 
 ---
 
@@ -31,19 +32,20 @@ Entri 🔗 dalam maklumat dunia dinamakan "vektor" dalam UI ST. Inilah sebabnya 
 
 ---
 
-## 🚦 Perkara Baharu (v4.6.7)
+## 🚦 Perkara Baharu (v4.6.10)
 
-### 🪲 Pelbagai Pembetulan Pepijat
-- membetulkan ciptaan automatik dan ringkasan automatik
-
-### 🌐 Pengantarabangsaan
-- Pengantarabangsaan berterusan (sila semak folder [`/locales`](../locales) untuk senarai.)
+### 🌐 Penyelarasan/Perlokalan
+- Prom terlokal:
+  - Prom bahasa Inggeris telah dilokalkan untuk mengembalikan memori dalam BAHASA anda.
+  - Lokal bahasa ditentukan melalui tetapan bahasa umum ST.
+  - Pengguna baharu: Tiada tindakan diperlukan; STMB mengesannya dan melakukannya secara automatik.
+  - Pengguna sedia ada: untuk beralih kepada prom terbina dalam yang dilokalkan, padamkan `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` dan buka semula Summary Prompt Manager. Ia akan dicipta semula dengan prom terbina dalam yang dilokalkan. Nota: buat sandaran dahulu jika anda pernah mengubahnya!
 
 ---
 
 ## 📋 Prasyarat
 
-- **SillyTavern:** 1.13.4+ (terkini disyorkan)
+- **SillyTavern:** 1.13.5+ (terkini disyorkan)
 - ⚠️‼️**PASANG UNTUK SEMUA PENGGUNA:**‼️⚠️ Oleh kerana STMB menggunakan semula banyak fungsi daripada kod asas ST, pastikan sambungan dipasang untuk semua pengguna supaya lokasinya ialah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, import fungsi akan gagal.
 - **Pemilihan Babak:** Penanda mula dan tamat (mula < tamat) mesti ditetapkan.
 - **Sokongan Pelengkapan Sembang:** Sokongan penuh untuk OpenAI, Claude, Anthropic, OpenRouter atau API pelengkapan sembang lain.
@@ -184,7 +186,7 @@ Gesaan Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam 
     - Jalankannya secara manual atau automatik dengan penciptaan memori.
 - **Petua Penggunaan:**
     - Apabila membuat prom baru, anda boleh menyalin dari yang sedia ada untuk keserasian terbaik.
-    - Perpustakaan Templat Prom Sampingan tambahan [fail JSON](resources/SidePromptTemplateLibrary.json) - hanya import untuk digunakan
+    - Perpustakaan Templat Prom Sampingan tambahan [fail JSON](../resources/SidePromptTemplateLibrary.json) - hanya import untuk digunakan
 
 ---
 
@@ -235,7 +237,7 @@ Gesaan Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam 
 - **Gesaan atau Pratetap:** Tersuai atau terbina dalam.
 - **Format Tajuk:** Templat setiap profil.
 - **Mod Pengaktifan:** Vektor, Malar, Normal.
-- **Kedudukan:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN.
+- **Kedudukan:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (dan nama medan).
 - **Mod Pesanan:** Auto/manual.
 - **Rekursi:** Cegah/tangguhkan rekursi.
 
