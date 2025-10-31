@@ -630,5 +630,10 @@
   "STMemoryBooks_RegexSelectionsSaved": "정규식 선택이 저장되었습니다",
   "STMemoryBooks_FailedToSaveRegexSelections": "정규식 선택을 저장하지 못했습니다",
   "STMemoryBooks_UseRegexAdvanced": "정규식 사용(고급)",
-  "STMemoryBooks_ConfigureRegex": "📐 정규식 구성…"
+  "STMemoryBooks_ConfigureRegex": "📐 정규식 구성…",
+  "STMemoryBooks_Slash_SidePromptOn_Help": "이름 또는 전체로 사이드 프롬프트를 활성화합니다. 사용법: /sideprompt-on \"이름\" | all",
+  "STMemoryBooks_Slash_SidePromptOn_ArgDesc": "템플릿 이름(공백이 포함된 경우 따옴표로 묶음) 또는 \"all\"",
+  "STMemoryBooks_Slash_SidePromptOff_Help": "이름 또는 전체로 사이드 프롬프트를 비활성화합니다. 사용법: /sideprompt-off \"이름\" | all",
+  "STMemoryBooks_Slash_SidePromptOff_ArgDesc": "템플릿 이름(공백이 포함된 경우 따옴표로 묶음) 또는 \"all\"",
+  "STMemoryBooks_SidePromptToggle_MissingName": "이름이 없습니다. 사용법: /sideprompt-on \"이름\" | /sideprompt-off \"이름\" | all"
 }

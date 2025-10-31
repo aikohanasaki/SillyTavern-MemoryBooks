@@ -630,5 +630,10 @@
     "STMemoryBooks_RegexSelectionsSaved": "Selecciones de expresiones regulares guardadas",
     "STMemoryBooks_FailedToSaveRegexSelections": "No se pudieron guardar las selecciones de expresiones regulares",
     "STMemoryBooks_UseRegexAdvanced": "Usar expresiones regulares (avanzado)",
-    "STMemoryBooks_ConfigureRegex": "📐 Configurar expresiones regulares…"
+    "STMemoryBooks_ConfigureRegex": "📐 Configurar expresiones regulares…",
+    "STMemoryBooks_Slash_SidePromptOn_Help": "Activar un Prompt Lateral por nombre o todos. Uso: /sideprompt-on \"Nombre\" | all",
+    "STMemoryBooks_Slash_SidePromptOn_ArgDesc": "Nombre de la plantilla (entre comillas si contiene espacios) o \"all\"",
+    "STMemoryBooks_Slash_SidePromptOff_Help": "Desactivar un Prompt Lateral por nombre o todos. Uso: /sideprompt-off \"Nombre\" | all",
+    "STMemoryBooks_Slash_SidePromptOff_ArgDesc": "Nombre de la plantilla (entre comillas si contiene espacios) o \"all\"",
+    "STMemoryBooks_SidePromptToggle_MissingName": "Falta el nombre. Uso: /sideprompt-on \"Nombre\" | /sideprompt-off \"Nombre\" | all"
 }

@@ -630,5 +630,10 @@
     "STMemoryBooks_RegexSelectionsSaved": "Pilihan ekspresi reguler disimpan",
     "STMemoryBooks_FailedToSaveRegexSelections": "Gagal menyimpan pilihan ekspresi reguler",
     "STMemoryBooks_UseRegexAdvanced": "Gunakan ekspresi reguler (lanjutan)",
-    "STMemoryBooks_ConfigureRegex": "📐 Konfigurasi ekspresi reguler…"
+    "STMemoryBooks_ConfigureRegex": "📐 Konfigurasi ekspresi reguler…",
+    "STMemoryBooks_Slash_SidePromptOn_Help": "Aktifkan Prompt Sampingan berdasarkan nama atau semua. Penggunaan: /sideprompt-on \"Nama\" | semua",
+    "STMemoryBooks_Slash_SidePromptOn_ArgDesc": "Nama templat (dalam tanda kutip jika mengandung spasi) atau \"semua\"",
+    "STMemoryBooks_Slash_SidePromptOff_Help": "Nonaktifkan Prompt Sampingan berdasarkan nama atau semua. Penggunaan: /sideprompt-off \"Nama\" | semua",
+    "STMemoryBooks_Slash_SidePromptOff_ArgDesc": "Nama templat (dalam tanda kutip jika mengandung spasi) atau \"semua\"",
+    "STMemoryBooks_SidePromptToggle_MissingName": "Nama tidak ditemukan. Penggunaan: /sideprompt-on \"Nama\" | /sideprompt-off \"Nama\" | semua"
 }

@@ -630,5 +630,10 @@
   "STMemoryBooks_RegexSelectionsSaved": "正则表达式选择已保存",
   "STMemoryBooks_FailedToSaveRegexSelections": "保存正则表达式选择失败",
   "STMemoryBooks_UseRegexAdvanced": "使用正则表达式（高级）",
-  "STMemoryBooks_ConfigureRegex": "📐 配置正则表达式…"
+  "STMemoryBooks_ConfigureRegex": "📐 配置正则表达式…",
+  "STMemoryBooks_Slash_SidePromptOn_Help": "按名称或全部启用侧边提示。用法: /sideprompt-on \"名称\" | all",
+  "STMemoryBooks_Slash_SidePromptOn_ArgDesc": "模板名称（如果包含空格，请使用引号）或 \"all\"",
+  "STMemoryBooks_Slash_SidePromptOff_Help": "按名称或全部禁用侧边提示。用法: /sideprompt-off \"名称\" | all",
+  "STMemoryBooks_Slash_SidePromptOff_ArgDesc": "模板名称（如果包含空格，请使用引号）或 \"all\"",
+  "STMemoryBooks_SidePromptToggle_MissingName": "缺少名称。用法: /sideprompt-on \"名称\" | /sideprompt-off \"名称\" | all"
 }
