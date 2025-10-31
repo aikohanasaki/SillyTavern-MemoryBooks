@@ -25,12 +25,6 @@ const profileEditTemplate = Handlebars.compile(`
         </label>
     </div>
 
-    <div id="stmb-profile-outlet-name-container" class="world_entry_form_control marginTop5 {{#unless (eq position 7)}}displayNone{{/unless}}">
-        <label for="stmb-profile-outlet-name">
-            <h4 data-i18n="STMemoryBooks_OutletName">Outlet Name:</h4>
-            <input type="text" id="stmb-profile-outlet-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_OutletNamePlaceholder" placeholder="Outlet name (e.g., ENDING)" value="{{outletName}}">
-        </label>
-    </div>
 
     <div class="world_entry_form_control marginTop5">
         <h4 data-i18n="STMemoryBooks_ModelAndTempSettings">Model & Temperature Settings:</h4>
@@ -156,6 +150,13 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="5" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
                 <option value="7" {{#if (eq position 7)}}selected{{/if}} data-i18n="STMemoryBooks_Outlet">Outlet</option>
             </select>
+        </label>
+    </div>
+
+    <div id="stmb-profile-outlet-name-container" class="world_entry_form_control marginTop5 {{#unless (eq position 7)}}displayNone{{/unless}}">
+        <label for="stmb-profile-outlet-name">
+            <h4 data-i18n="STMemoryBooks_OutletName">Outlet Name:</h4>
+            <input type="text" id="stmb-profile-outlet-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_OutletNamePlaceholder" placeholder="Outlet name" value="{{outletName}}">
         </label>
     </div>
 
@@ -700,6 +701,14 @@ function setupProfileEditEventHandlers(popupInstance) {
         const cont = popupElement.querySelector('#stmb-profile-outlet-name-container');
         if (cont) cont.classList.toggle('displayNone', positionSelect.value !== '7');
     });
+
+    // Initial sync for outlet name visibility on open
+    (function() {
+        const cont = popupElement.querySelector('#stmb-profile-outlet-name-container');
+        if (positionSelect && cont) {
+            cont.classList.toggle('displayNone', positionSelect.value !== '7');
+        }
+    })();
 }
 
 /**
