@@ -230,7 +230,7 @@ async function openEditTemplate(parentPopup, key) {
                         <div id="stmb-sp-edit-lb-outlet-name-container" style="display:${lbPosition === 7 ? 'block' : 'none'}; margin-top: 8px;">
                             <label>
                                 <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Outlet Name:', 'STMemoryBooks_OutletName'))}</h4>
-                                <input type="text" id="stmb-sp-edit-lb-outlet-name" class="text_pole" placeholder="${escapeHtml(translate('Outlet name (e.g., ENDING)', 'STMemoryBooks_OutletNamePlaceholder'))}" value="${escapeHtml(lb.outletName || '')}">
+                                <input type="text" id="stmb-sp-edit-lb-outlet-name" class="text_pole" placeholder="${escapeHtml(translate('Outlet name', 'STMemoryBooks_OutletNamePlaceholder'))}" value="${escapeHtml(lb.outletName || '')}">
                             </label>
                         </div>
                     </label>
