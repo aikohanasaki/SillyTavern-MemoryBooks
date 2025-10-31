@@ -4,7 +4,8 @@
 
 ⚠️‼️**請閱讀[先決條件](#-先決條件)中的安裝說明！**
 
-**📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md)
+**📘 [使用者指南 (zh-tw)](USER_GUIDE.zh-tw.md)** |  **📋 [版本歷史與更新日誌](../changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md)
+> 已與英文 README 同步：e9f1709 (2025-10-31)
 
 ---
 
@@ -12,8 +13,8 @@
 
 為了更進階的記憶管理與更深入的故事整合，強烈建議搭配 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md) 一起使用 STMB。請參閱指南以獲得最佳實務、設定說明與技巧！
 
-> 注意：支援多種語言：請參閱 [`/locales`](locales) 資料夾以取得清單。國際化/本地化的自述檔案和使用者指南可以在 [`/userguides`](userguides) 資料夾中找到。
-> 傳說書轉換器和側邊提示範本庫位於 [`/resources`](resources) 資料夾中。
+> 注意：支援多種語言：請參閱 [`/locales`](../locales) 資料夾以取得清單。國際化/本地化的自述檔案和使用者指南可以在 [`/userguides`](../userguides) 資料夾中找到。
+> 傳說書轉換器和側邊提示範本庫位於 [`/resources`](../resources) 資料夾中。
 
 ## 常見問題
 ### 擴充選單中的條目在哪裡？
@@ -31,13 +32,14 @@
 
 ---
 
-## 🚦 新功能 (v4.6.7)
+## 🚦 新功能 (v4.6.10)
 
-### 🪲 各種錯誤修復
-- 修復自動建立和自動摘要
-
-### 🌐 國際化
-- 持續國際化（請查看 [`/locales`](locales) 資料夾以取得清單。）
+### 🌐 在地化/國際化
+- 在地化的提示：
+  - 英文提示已在地化，會以您的語言回傳記憶。
+  - 語言地區會透過 ST 的一般語言設定自動判定。
+  - 新用戶：不需任何動作；STMB 會自動偵測並處理。
+  - 既有用戶：若要切換到在地化的內建提示，請刪除 `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json`，然後重新開啟 Summary Prompt Manager。它會以在地化的內建提示重新建立。注意：若您有修改，請先備份！
 
 ---
 
@@ -168,7 +170,7 @@
 - **編輯器重新整理：** 在新增記憶後可選擇自動重新整理傳說書編輯器。
 
 > **現有記憶必須轉換！**
-> 使用 [傳說書轉換器](/resources/lorebookconverter.html) 新增 `stmemorybooks` 標誌和必填欄位。
+> 使用 [傳說書轉換器](../resources/lorebookconverter.html) 新增 `stmemorybooks` 標誌和必填欄位。
 
 ---
 
@@ -184,7 +186,7 @@
     - 手動執行或在建立記憶時自動執行。
 - **使用技巧：**
     - 建立新提示時，您可以從內建提示中複製以獲得最佳相容性。
-    - 額外的側邊提示範本庫 [JSON 檔案](resources/SidePromptTemplateLibrary.json) - 只需匯入即可使用
+    - 額外的側邊提示範本庫 [JSON 檔案](../resources/SidePromptTemplateLibrary.json) - 只需匯入即可使用
 
 ---
 
@@ -235,7 +237,7 @@
 - **提示或預設：** 自訂或內建。
 - **標題格式：** 每個設定檔的範本。
 - **啟用模式：** 向量化、常數、正常。
-- **位置：** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN。
+- **位置：** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet（以及欄位名稱）。
 - **順序模式：** 自動/手動。
 - **遞迴：** 阻止/延遲遞迴。
 
@@ -315,7 +317,7 @@
 - **標題中允許：** 允許所有可列印的 Unicode 字元，包括重音字母、表情符號、中日韓字元和符號。
 - **已阻止：** 僅阻止 Unicode 控制字元 (U+0000–U+001F, U+007F–U+009F)；這些字元會自動刪除。
 
-有關範例和遷移說明，請參閱[字元策略詳情](charset.md)。
+有關範例和遷移說明，請參閱[字元策略詳情](../charset.md)。
 ---
 
 *用愛心使用 VS Code/Cline 開發，經過廣泛測試和社群回饋。* 🤖💕

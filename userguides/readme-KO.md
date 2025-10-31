@@ -4,7 +4,8 @@
 
 ⚠️‼️**설치 안내는 반드시 [전제 조건](#-전제-조건) 섹션을 확인해 주세요!**
 
-**📘 [사용자 가이드 (EN)](USER_GUIDE.md)** | **📋 [버전 히스토리 및 변경 로그](changelog.md)** | [📕 Memory Books와 📚 Lorebook Ordering 사용법](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)
+**📘 [사용자 가이드 (KO)](userguide-KO.md)** | **📋 [버전 히스토리 및 변경 로그](../changelog.md)** | [📕 Memory Books와 📚 Lorebook Ordering 사용법](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)
+> 영문 README와 동기화: e9f1709 (2025-10-31)
 
 ---
 
@@ -12,8 +13,8 @@
 
 고급 메모리 정리와 더 깊은 스토리 통합을 위해 STMB와 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)을 함께 사용하는 것을 적극 권장합니다. 가이드에서 모범 사례, 설정 방법, 팁을 확인하세요.
 
-> 참고: 다양한 언어를 지원합니다: 목록은 [`/locales`](locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](userguides) 폴더에서 찾을 수 있습니다.
-> 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](resources) 폴더에 있습니다.
+> 참고: 다양한 언어를 지원합니다: 목록은 [`/locales`](../locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](../userguides) 폴더에서 찾을 수 있습니다.
+> 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](../resources) 폴더에 있습니다.
 
 ## 자주 묻는 질문
 ### 확장 프로그램 메뉴의 항목은 어디에 있나요?
@@ -31,19 +32,20 @@
 
 ---
 
-## 🚦 새로운 기능 (v4.6.7)
+## 🚦 새로운 기능 (v4.6.10)
 
-### 🪲 다양한 버그 수정
-- 자동 생성 및 자동 요약 수정
-
-### 🌐 국제화
-- 국제화 계속 진행 (목록은 [`/locales`](locales) 폴더를 확인하세요.)
+### 🌐 현지화/국제화
+- 로컬라이즈된 프롬프트:
+  - 영어 프롬프트가 현지화되어 사용자의 언어로 메모리를 반환합니다.
+  - 언어 로케일은 ST의 일반 언어 설정으로 자동 판별됩니다.
+  - 신규 사용자: 별도 조치 불필요. STMB가 자동으로 처리합니다.
+  - 기존 사용자: 내장 현지화 프롬프트로 전환하려면 `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` 파일을 삭제한 뒤 Summary Prompt Manager를 다시 열어 주세요. 현지화된 내장 프롬프트로 재생성됩니다. 주의: 변경 내용이 있다면 먼저 백업하세요!
 
 ---
 
 ## 📋 전제 조건
 
-- **SillyTavern:** 1.13.4+ (최신 버전 권장)
+- **SillyTavern:** 1.13.5+ (최신 버전 권장)
 - ⚠️‼️**모든 사용자용 설치:**‼️⚠️ STMB는 ST 기본 코드의 많은 함수를 재사용하므로 확장 프로그램을 모든 사용자에 대해 설치하여 경로가 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`가 되도록 하세요. 그렇지 않으면 함수 가져오기가 실패합니다.
 - **장면 선택:** 시작 및 끝 마커(시작 < 끝)가 설정되어야 합니다.
 - **채팅 완료 지원:** OpenAI, Claude, Anthropic, OpenRouter 또는 기타 채팅 완료 API를 완벽하게 지원합니다.
@@ -168,7 +170,7 @@ ST에서 설정하세요 (STMB가 작동한 후 텍스트 완료로 다시 변�
 - **편집기 새로고침:** 메모리를 추가한 후 선택적으로 로어북 편집기를 자동으로 새로고침합니다.
 
 > **기존 메모리는 변환해야 합니다!**
-> [로어북 변환기](/resources/lorebookconverter.html)를 사용하여 `stmemorybooks` 플래그와 필수 필드를 추가하세요.
+> [로어북 변환기](../resources/lorebookconverter.html)를 사용하여 `stmemorybooks` 플래그와 필수 필드를 추가하세요.
 
 ---
 
@@ -184,7 +186,7 @@ ST에서 설정하세요 (STMB가 작동한 후 텍스트 완료로 다시 변�
     - 수동으로 또는 메모리 생성과 함께 자동으로 실행합니다.
 - **사용 팁:**
     - 새 프롬프트를 만들 때 최상의 호환성을 위해 내장된 프롬프트를 복사할 수 있습니다.
-    - 추가 사이드 프롬프트 템플릿 라이브러리 [JSON 파일](resources/SidePromptTemplateLibrary.json) - 가져오기만 하면 사용할 수 있습니다.
+    - 추가 사이드 프롬프트 템플릿 라이브러리 [JSON 파일](../resources/SidePromptTemplateLibrary.json) - 가져오기만 하면 사용할 수 있습니다.
 
 ---
 
@@ -235,7 +237,7 @@ ST에서 설정하세요 (STMB가 작동한 후 텍스트 완료로 다시 변�
 - **프롬프트 또는 사전 설정:** 사용자 지정 또는 내장.
 - **제목 형식:** 프로필별 템플릿.
 - **활성화 모드:** 벡터화, 상수, 보통.
-- **위치:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN.
+- **위치:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (및 필드명).
 - **순서 모드:** 자동/수동.
 - **재귀:** 재귀 방지/지연.
 
@@ -315,7 +317,7 @@ ST에서 설정하세요 (STMB가 작동한 후 텍스트 완료로 다시 변�
 - **제목에 허용:** 악센트가 있는 문자, 이모지, CJK 및 기호를 포함한 모든 인쇄 가능한 유니코드 문자가 허용됩니다.
 - **차단:** 유니코드 제어 문자(U+0000–U+001F, U+007F–U+009F)만 차단되며, 이들은 자동으로 제거됩니다.
 
-예시 및 마이그레이션 참고 사항은 [문자 정책 세부 정보](charset.md)를 참조하세요.
+예시 및 마이그레이션 참고 사항은 [문자 정책 세부 정보](../charset.md)를 참조하세요.
 ---
 
 *VS Code/Cline, 광범위한 테스트 및 커뮤니티 피드백을 사용하여 사랑으로 개발되었습니다.* 🤖💕

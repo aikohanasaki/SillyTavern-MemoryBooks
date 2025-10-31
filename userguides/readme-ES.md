@@ -4,7 +4,8 @@ Una extensión de SillyTavern de nueva generación para la creación de memorias
 
 ⚠️‼️**¡Por favor, lea los [prerrequisitos](#-prerrequisitos) para notas de instalación!**
 
-**📘 [Guía de Usuario (ES)](USER_GUIDE.md)** |  **📋 [Historial de Versiones y Registro de Cambios](changelog.md)** | [Uso de 📕 Memory Books con 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md)
+**📘 [Guía de Usuario (ES)](USER_GUIDE-ES.md)** |  **📋 [Historial de Versiones y Registro de Cambios](../changelog.md)** | [Uso de 📕 Memory Books con 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md)
+> Sincronizado con README en inglés: e9f1709 (2025-10-31)
 
 ---
 
@@ -12,8 +13,8 @@ Una extensión de SillyTavern de nueva generación para la creación de memorias
 
 Para una organización avanzada de memorias y una integración de historias más profunda, se recomienda usar STMB junto con [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md). Consulta la guía para mejores prácticas, instrucciones de configuración y consejos.
 
-> Nota: Admite varios idiomas: consulte la carpeta [`/locales`](locales) para ver la lista. Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides). 
-> El convertidor de libros de conocimiento y la biblioteca de plantillas de prompts laterales se encuentran en la carpeta [`/resources`](resources).
+> Nota: Admite varios idiomas: consulte la carpeta [`/locales`](../locales) para ver la lista. Los Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](../userguides). 
+> El convertidor de libros de conocimiento y la biblioteca de plantillas de prompts laterales se encuentran en la carpeta [`/resources`](../resources).
 
 ## FAQ (Preguntas Frecuentes)
 ### ¿Dónde está la entrada en el menú de Extensiones?
@@ -31,19 +32,20 @@ La entrada 🔗 en la información del mundo se llama "vectorized" en la interfa
 
 ---
 
-## 🚦 Novedades (v4.6.7)
+## 🚦 Novedades (v4.6.10)
 
-### 🪲 Varias Correcciones de Errores
-- corregir la creación automática y el resumen automático
-
-### 🌐 Internacionalización
-- Internacionalización continua (consulte la carpeta [`/locales`](locales) para ver la lista).
+### 🌐 Localización/Internacionalización
+- Prompts localizados:
+  - Los prompts en inglés se han localizado para devolver memorias en TU idioma.
+  - La configuración regional del idioma se determina a través de los ajustes generales de idioma de ST.
+  - Usuarios nuevos: No se requiere ninguna acción; STMB detecta tu idioma y lo hace automáticamente.
+  - Usuarios existentes: para cambiar a los prompts integrados localizados, elimina `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` y vuelve a abrir el Gestor de Prompts de Resumen. Se volverá a crear con prompts integrados localizados. Nota: ¡haz una copia de seguridad primero si hiciste cambios!
 
 ---
 
 ## 📋 Prerrequisitos
 
-- **SillyTavern:** 1.13.4+ (se recomienda la última versión)
+- **SillyTavern:** 1.13.5+ (se recomienda la última versión)
 - ⚠️‼️**INSTALAR PARA TODOS LOS USUARIOS:**‼️⚠️ Como STMB reutiliza muchas funciones del código base de ST, asegúrate de que la extensión esté instalada para todos los usuarios para que la ubicación sea `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. De lo contrario, fallarán las importaciones de funciones.
 - **Selección de escena:** Se deben establecer los marcadores de inicio y fin (inicio < fin).
 - **Soporte de finalización de chat:** Soporte completo para OpenAI, Claude, Anthropic, OpenRouter u otra API de finalización de chat.
@@ -168,7 +170,7 @@ Todos los prompts y preajustes **deben** indicar a la IA que devuelva solo JSON 
 - **Actualización del editor:** Opcionalmente, actualiza automáticamente el editor del libro de conocimiento después de añadir una memoria.
 
 > **¡Las memorias existentes deben ser convertidas!**
-> Use el [Convertidor de Libros de Conocimiento](/resources/lorebookconverter.html) para añadir el indicador `stmemorybooks` y los campos requeridos.
+> Use el [Convertidor de Libros de Conocimiento](../resources/lorebookconverter.html) para añadir el indicador `stmemorybooks` y los campos requeridos.
 
 ---
 
@@ -184,7 +186,7 @@ Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su
     - Ejecutarlos manualmente o automáticamente con la creación de memorias.
 - **Consejos de uso:**
     - Al crear un nuevo prompt, puede copiar de los integrados para una mejor compatibilidad.
-    - Biblioteca de Plantillas de Prompts Laterales adicional [archivo JSON](resources/SidePromptTemplateLibrary.json) - simplemente importe para usar
+    - Biblioteca de Plantillas de Prompts Laterales adicional [archivo JSON](../resources/SidePromptTemplateLibrary.json) - simplemente importe para usar
 
 ---
 
@@ -235,7 +237,7 @@ Los Prompts Laterales se pueden usar como rastreadores y crearán entradas en su
 - **Prompt o Preajuste:** Personalizado o integrado.
 - **Formato de Título:** Plantilla por perfil.
 - **Modo de Activación:** Vectorizado, Constante, Normal.
-- **Posición:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN.
+- **Posición:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (y nombre del campo).
 - **Modo de Orden:** Automático/manual.
 - **Recursión:** Prevenir/retrasar la recursión.
 
@@ -314,7 +316,7 @@ Personalice los títulos de las entradas de su libro de conocimiento utilizando 
 - **Permitidos en los títulos:** Se permiten todos los caracteres Unicode imprimibles, incluidas las letras acentuadas, emojis, CJK y símbolos.
 - **Bloqueados:** Solo se bloquean los caracteres de control Unicode (U+0000–U+001F, U+007F–U+009F); estos se eliminan automáticamente.
 
-Consulte los [Detalles de la Política de Caracteres](charset.md) para ver ejemplos y notas de migración.
+Consulte los [Detalles de la Política de Caracteres](../charset.md) para ver ejemplos y notas de migración.
 ---
 
 *Desarrollado con amor usando VS Code/Cline, pruebas exhaustivas y los comentarios de la comunidad.* 🤖💕

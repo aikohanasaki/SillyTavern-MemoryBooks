@@ -4,7 +4,8 @@
 
 ⚠️‼️**请阅读[先决条件](#-先决条件)中的安装说明！**
 
-**📘 [用户指南 (zh-cn)](USER_GUIDE.md)** |  **📋 [版本历史与更新日志](changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md)
+**📘 [用户指南 (zh-cn)](USER_GUIDE.zh-cn.md)** |  **📋 [版本历史与更新日志](../changelog.md)** | [使用 📕 Memory Books 搭配 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md)
+> 已与英文 README 同步：e9f1709 (2025-10-31)
 
 ---
 
@@ -12,8 +13,8 @@
 
 为了更高级的记忆管理和更深层次的故事集成，强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md) 搭配使用。请参阅指南获取最佳实践、设置说明和技巧！
 
-> 注意：支持多种语言：请参阅 [`/locales`](locales) 文件夹以获取列表。国际化/本地化的自述文件和用户指南可以在 [`/userguides`](userguides) 文件夹中找到。
-> 传说书转换器和侧边提示模板库位于 [`/resources`](resources) 文件夹中。
+> 注意：支持多种语言：请参阅 [`/locales`](../locales) 文件夹以获取列表。国际化/本地化的自述文件和用户指南可以在 [`/userguides`](../userguides) 文件夹中找到。
+> 传说书转换器和侧边提示模板库位于 [`/resources`](../resources) 文件夹中。
 
 ## 常见问题
 ### 扩展菜单中的条目在哪里？
@@ -31,19 +32,20 @@
 
 ---
 
-## 🚦 新功能 (v4.6.7)
+## 🚦 新功能 (v4.6.10)
 
-### 🪲 各种错误修复
-- 修复自动创建和自动摘要
-
-### 🌐 国际化
-- 持续国际化（请查看 [`/locales`](locales) 文件夹以获取列表。）
+### 🌐 本地化/国际化
+- 本地化的提示：
+  - 英文提示已本地化，可用您的语言返回记忆。
+  - 语言区域由 ST 的通用语言设置自动判定。
+  - 新用户：无需任何操作；STMB 会自动检测并处理。
+  - 现有用户：要切换到本地化的内置提示，请删除 `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json`，然后重新打开 Summary Prompt Manager。它会用本地化的内置提示重新创建。注意：如有修改，请先备份！
 
 ---
 
 ## 📋 先决条件
 
-- **SillyTavern:** 1.13.4+ (建议使用最新版本)
+- **SillyTavern:** 1.13.5+ (建议使用最新版本)
 - ⚠️‼️**为所有用户安装：**‼️⚠️ 由于 STMB 复用了 ST 基础代码中的许多函数，请确保将扩展安装为所有用户，使路径为 `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`。否则，函数导入会失败。
 - **场景选择：** 必须设置开始和结束标记（开始 < 结束）。
 - **聊天补全支持：** 完全支持 OpenAI、Claude、Anthropic、OpenRouter 或其他聊天补全 API。
@@ -168,7 +170,7 @@
 - **编辑器刷新：** 在添加记忆后可选择自动刷新传说书编辑器。
 
 > **现有记忆必须转换！**
-> 使用 [传说书转换器](/resources/lorebookconverter.html) 添加 `stmemorybooks` 标志和必填字段。
+> 使用 [传说书转换器](../resources/lorebookconverter.html) 添加 `stmemorybooks` 标志和必填字段。
 
 ---
 
@@ -184,7 +186,7 @@
     - 手动运行或在创建记忆时自动运行。
 - **使用技巧：**
     - 创建新提示时，您可以从内置提示中复制以获得最佳兼容性。
-    - 额外的侧边提示模板库 [JSON 文件](resources/SidePromptTemplateLibrary.json) - 只需导入即可使用
+    - 额外的侧边提示模板库 [JSON 文件](../resources/SidePromptTemplateLibrary.json) - 只需导入即可使用
 
 ---
 
@@ -235,7 +237,7 @@
 - **提示或预设：** 自定义或内置。
 - **标题格式：** 每个配置文件的模板。
 - **激活模式：** 向量化、常量、正常。
-- **位置：** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN。
+- **位置：** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet（以及字段名称）。
 - **顺序模式：** 自动/手动。
 - **递归：** 阻止/延迟递归。
 
@@ -315,7 +317,7 @@
 - **标题中允许：** 允许所有可打印的 Unicode 字符，包括重音字母、表情符号、中日韩字符和符号。
 - **已阻止：** 仅阻止 Unicode 控制字符 (U+0000–U+001F, U+007F–U+009F)；这些字符会自动删除。
 
-有关示例和迁移说明，请参阅[字符策略详情](charset.md)。
+有关示例和迁移说明，请参阅[字符策略详情](../charset.md)。
 ---
 
 *用爱心使用 VS Code/Cline 开发，经过广泛测试和社区反馈。* 🤖💕

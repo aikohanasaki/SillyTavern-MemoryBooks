@@ -4,7 +4,8 @@
 
 ⚠️‼️**インストールに関する注意事項は[前提条件](#-前提条件)を必ずお読みください！**
 
-**📘 [ユーザーガイド (JP)](USER_GUIDE.md)** |  **📋 [バージョン履歴と変更ログ](changelog.md)** | [📕 Memory Books と 📚 Lorebook Ordering の使い方](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)
+**📘 [ユーザーガイド (JP)](userguide-JP.md)** |  **📋 [バージョン履歴と変更ログ](../changelog.md)** | [📕 Memory Books と 📚 Lorebook Ordering の使い方](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)
+> 英語版READMEと同期: e9f1709 (2025-10-31)
 
 ---
 
@@ -12,8 +13,8 @@
 
 高度なメモリ整理や物語の統合を強化するため、STMBと[SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)の併用を強くおすすめします。ガイドではベストプラクティス、設定方法、コツなどが紹介されています。
 
-> 注：多言語に対応しています：リストについては[`/locales`](locales)フォルダを参照してください。国際語/地域語のReadmeとユーザーガイドは[`/userguides`](userguides)フォルダにあります。
-> ロアブックコンバーターとサイドプロンプトテンプレートライブラリは[`/resources`](resources)フォルダにあります。
+> 注：多言語に対応しています：リストについては[`/locales`](../locales)フォルダを参照してください。国際語/地域語のReadmeとユーザーガイドは[`/userguides`](../userguides)フォルダにあります。
+> ロアブックコンバーターとサイドプロンプトテンプレートライブラリは[`/resources`](../resources)フォルダにあります。
 
 ## FAQ
 ### 拡張機能メニューのどこにありますか？
@@ -31,19 +32,20 @@
 
 ---
 
-## 🚦 新機能（v4.6.7）
+## 🚦 新機能（v4.6.10）
 
-### 🪲 様々なバグ修正
-- 自動作成と自動要約を修正
-
-### 🌐 国際化
-- 国際化を継続（リストについては[`/locales`](locales)フォルダを確認してください。）
+### 🌐 ローカライズ/国際化
+- ローカライズ済みプロンプト:
+  - 英語プロンプトをローカライズし、あなたの言語でメモリを返します。
+  - 言語ロケールは ST の一般言語設定から自動判定されます。
+  - 新規ユーザー: 追加作業は不要です。STMB が自動的に対応します。
+  - 既存ユーザー: 組み込みのローカライズ済みプロンプトへ切り替えるには `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` を削除し、Summary Prompt Manager を開き直してください。ローカライズ済みの組み込みプロンプトで再生成されます。注意: 変更している場合はバックアップを取ってください。
 
 ---
 
 ## 📋 前提条件
 
-- **SillyTavern:** 1.13.4以降（最新版を推奨）
+- **SillyTavern:** 1.13.5以降（最新版を推奨）
 - ⚠️‼️**全ユーザー向けにインストール：**‼️⚠️ STMB は ST のベースコードの多くの関数を再利用するため、拡張機能が全ユーザー向けにインストールされ、場所が `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks` になるようにしてください。そうしないと関数のインポートが失敗します。
 - **シーン選択：** 開始マーカーと終了マーカー（開始 < 終了）が設定されている必要があります。
 - **チャット補完サポート：** OpenAI、Claude、Anthropic、OpenRouter、またはその他のチャット補完APIを完全にサポートしています。
@@ -168,7 +170,7 @@ STでこれを設定してください（STMBが動作した後でText Completio
 - **エディタの更新：** メモリを追加した後にロアブックエディタをオプションで自動更新します。
 
 > **既存のメモリは変換する必要があります！**
-> [ロアブックコンバーター](/resources/lorebookconverter.html)を使用して、`stmemorybooks`フラグと必須フィールドを追加してください。
+> [ロアブックコンバーター](../resources/lorebookconverter.html)を使用して、`stmemorybooks`フラグと必須フィールドを追加してください。
 
 ---
 
@@ -184,7 +186,7 @@ STでこれを設定してください（STMBが動作した後でText Completio
     - 手動またはメモリ作成時に自動で実行します。
 - **使用のヒント：**
     - 新しいプロンプトを作成する際は、互換性を最大限に高めるために組み込みのものをコピーすることをお勧めします。
-    - 追加のサイドプロンプトテンプレートライブラリ[JSONファイル](resources/SidePromptTemplateLibrary.json) - インポートするだけで使用できます
+- 追加のサイドプロンプトテンプレートライブラリ[JSONファイル](../resources/SidePromptTemplateLibrary.json) - インポートするだけで使用できます
 
 ---
 
@@ -235,7 +237,7 @@ STでこれを設定してください（STMBが動作した後でText Completio
 - **プロンプトまたはプリセット：** カスタムまたは組み込み。
 - **タイトル形式：** プロファイルごとのテンプレート。
 - **アクティベーションモード：** ベクトル化、定数、通常。
-- **位置：** ↑Char、↓Cha、↑EM、↓EM、↑AN。
+- **位置：** ↑Char、↓Cha、↑EM、↓EM、↑AN、Outlet（およびフィールド名）。
 - **順序モード：** 自動/手動。
 - **再帰：** 再帰を防止/遅延。
 
@@ -314,7 +316,7 @@ STでこれを設定してください（STMBが動作した後でText Completio
 - **タイトルで許可される文字：** アクセント付き文字、絵文字、CJK、記号など、すべての印刷可能なUnicode文字が許可されます。
 - **ブロックされる文字：** Unicode制御文字（U+0000–U+001F、U+007F–U+009F）のみがブロックされます。これらは自動的に削除されます。
 
-例と移行に関する注意点については、[文字ポリシーの詳細](charset.md)を参照してください。
+例と移行に関する注意点については、[文字ポリシーの詳細](../charset.md)を参照してください。
 ---
 
 *VS Code/Cline、広範なテスト、およびコミュニティのフィードバックを使用して愛情を込めて開発されました。* 🤖💕

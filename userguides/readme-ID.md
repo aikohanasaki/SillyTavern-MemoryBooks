@@ -5,6 +5,7 @@ Ekstensi SillyTavern generasi berikutnya untuk pembuatan memori yang otomatis, t
 ⚠️‼️**Harap baca [prasyarat](#-prasyarat) untuk catatan pemasangan!**‼️⚠️
 
 **📘 [Panduan Pengguna (EN)](../USER_GUIDE.md)** | **📋 [Riwayat Versi & Log Perubahan](../changelog.md)** | [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Indonesian.md)
+> Sinkron dengan README bahasa Inggris: e9f1709 (2025-10-31)
 
 ---
 
@@ -31,19 +32,20 @@ Entri 🔗 di info dunia diberi nama "vektor" di UI ST. Inilah sebabnya saya men
 
 ---
 
-## 🚦 Yang Baru (v4.6.7)
+## 🚦 Yang Baru (v4.6.10)
 
-### 🪲 Berbagai Perbaikan Bug
-- memperbaiki pembuatan otomatis dan ringkasan otomatis
-
-### 🌐 Internasionalisasi
-- Internasionalisasi berkelanjutan (silakan periksa folder [`/locales`](../locales) untuk daftar.)
+### 🌐 Lokalisasi/Internasionalisasi
+- Prompts terlokalisasi:
+  - Prompt bahasa Inggris telah dilokalkan untuk mengembalikan memori dalam bahasa ANDA.
+  - Lokal bahasa ditentukan melalui pengaturan bahasa umum ST.
+  - Pengguna baru: Tidak perlu tindakan; STMB mendeteksi bahasa Anda dan melakukannya otomatis.
+  - Pengguna lama: untuk beralih ke prompt bawaan yang terlokalisasi, hapus `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` lalu buka kembali Summary Prompt Manager. File akan dibuat ulang dengan prompt bawaan terlokalisasi. Catatan: buat cadangan dulu jika Anda pernah mengubahnya!
 
 ---
 
 ## 📋 Prasyarat
 
-- **SillyTavern:** 1.13.4+ (terbaru direkomendasikan)
+- **SillyTavern:** 1.13.5+ (terbaru direkomendasikan)
 - ⚠️‼️**INSTAL UNTUK SEMUA PENGGUNA:**‼️⚠️ Karena STMB menggunakan kembali banyak fungsi dari kode dasar ST, pastikan ekstensi diinstal untuk semua pengguna sehingga lokasinya adalah `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Jika tidak, impor fungsi akan gagal.
 - **Pemilihan Adegan:** Penanda awal dan akhir (awal < akhir) harus diatur.
 - **Dukungan Penyelesaian Obrolan:** Dukungan penuh untuk OpenAI, Claude, Anthropic, OpenRouter, atau API penyelesaian obrolan lainnya.
@@ -184,7 +186,7 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di buku 
     - Jalankan secara manual atau otomatis dengan pembuatan memori.
 - **Kiat Penggunaan:**
     - Saat membuat prompt baru, Anda dapat menyalin dari yang sudah ada untuk kompatibilitas terbaik.
-    - Pustaka Template Prompt Samping tambahan [file JSON](resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan
+    - Pustaka Template Prompt Samping tambahan [file JSON](../resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan
 
 ---
 
@@ -235,7 +237,7 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di buku 
 - **Prompt atau Preset:** Kustom atau bawaan.
 - **Format Judul:** Templat per profil.
 - **Mode Aktivasi:** Vektorisasi, Konstan, Normal.
-- **Posisi:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN.
+- **Posisi:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (dan nama bidang).
 - **Mode Urutan:** Otomatis/manual.
 - **Rekursi:** Cegah/tunda rekursi.
 
