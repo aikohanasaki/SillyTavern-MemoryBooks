@@ -926,5 +926,15 @@ export function createProfileObject(data = {}) {
         profile.preset = 'summary'; 
     }
 
+    // Carry outletName only when using Outlet position (7)
+    try {
+        if (Number(profile.position) === 7 && typeof data.outletName === 'string') {
+            const name = data.outletName.trim();
+            if (name) {
+                profile.outletName = name;
+            }
+        }
+    } catch {}
+
     return profile;
 }

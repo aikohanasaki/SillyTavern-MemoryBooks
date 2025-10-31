@@ -278,6 +278,14 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     // 2. Insertion Position
     entry.position = lorebookSettings.position;
 
+    // 2a. Outlet Name for Outlet position (7)
+    if (Number(lorebookSettings.position) === 7) {
+        const outName = String(lorebookSettings.outletName || '').trim();
+        if (outName) {
+            entry.outletName = outName;
+        }
+    }
+
     // 3. Insertion Order
     if (lorebookSettings.orderMode === 'manual') {
         entry.order = lorebookSettings.orderValue;
