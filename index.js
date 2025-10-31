@@ -429,6 +429,79 @@ toastr.info(__st_t_tag`Multiple matches: ${top}${more}. Refine the name or use q
 }
 
 /**
+ * Slash: /sideprompt-on and /sideprompt-off
+ * Toggle the same underlying "enabled" flag as the UI checkbox (stmb-sp-edit-enabled).
+ * Uses dynamic import to avoid modifying top-level imports.
+ */
+async function handleSidePromptToggle(namedArgs, unnamedArgs, enabled) {
+    const raw = String(unnamedArgs || '').trim();
+    if (!raw) {
+        toastr.error(
+            translate(
+                enabled
+                    ? 'Missing name. Use: /sideprompt-on "Name" OR /sideprompt-on all'
+                    : 'Missing name. Use: /sideprompt-off "Name" OR /sideprompt-off all',
+                'STMemoryBooks_SidePromptToggle_MissingName'
+            ),
+            translate('STMemoryBooks', 'index.toast.title')
+        );
+        return '';
+    }
+
+    try {
+        const { findTemplateByName, upsertTemplate, listTemplates } = await import('./sidePromptsManager.js');
+
+        if (raw.toLowerCase() === 'all') {
+            const templates = await listTemplates();
+            let changed = 0;
+            for (const p of templates) {
+                if (p.enabled !== enabled) {
+                    await upsertTemplate({ key: p.key, enabled });
+                    changed++;
+                }
+            }
+            try { window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated')); } catch (e) { /* noop */ }
+            toastr.success(
+                __st_t_tag`${enabled ? 'Enabled' : 'Disabled'} ${changed} side prompt${changed === 1 ? '' : 's'}`,
+                translate('STMemoryBooks', 'index.toast.title')
+            );
+            return '';
+        }
+
+        const tpl = await findTemplateByName(raw);
+        if (!tpl) {
+            toastr.error(__st_t_tag`Side Prompt not found: ${raw}`, translate('STMemoryBooks', 'index.toast.title'));
+            return '';
+        }
+        if (tpl.enabled === enabled) {
+            toastr.info(
+                __st_t_tag`"${tpl.name}" is already ${enabled ? 'enabled' : 'disabled'}`,
+                translate('STMemoryBooks', 'index.toast.title')
+            );
+            return '';
+        }
+        await upsertTemplate({ key: tpl.key, enabled });
+        try { window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated')); } catch (e) { /* noop */ }
+        toastr.success(
+            __st_t_tag`${enabled ? 'Enabled' : 'Disabled'} "${tpl.name}"`,
+            translate('STMemoryBooks', 'index.toast.title')
+        );
+    } catch (e) {
+        console.error('STMemoryBooks: sideprompt enable/disable failed:', e);
+        toastr.error(__st_t_tag`Failed to toggle side prompt: ${e.message}`, translate('STMemoryBooks', 'index.toast.title'));
+    }
+    return '';
+}
+
+async function handleSidePromptOnCommand(namedArgs, unnamedArgs) {
+    return handleSidePromptToggle(namedArgs, unnamedArgs, true);
+}
+
+async function handleSidePromptOffCommand(namedArgs, unnamedArgs) {
+    return handleSidePromptToggle(namedArgs, unnamedArgs, false);
+}
+
+/**
  * Side Prompt names cache for autocomplete
  */
 let sidePromptNameCache = [];
@@ -2639,10 +2712,41 @@ function registerSlashCommands() {
 
 
 
+    // Register enable/disable sideprompt commands
+    const sidePromptOnCmd = SlashCommand.fromProps({
+        name: 'sideprompt-on',
+        callback: handleSidePromptOnCommand,
+        helpString: translate('Enable a Side Prompt by name or all. Usage: /sideprompt-on "Name" | all', 'STMemoryBooks_Slash_SidePromptOn_Help'),
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: translate('Template name (quote if contains spaces) or "all"', 'STMemoryBooks_Slash_SidePromptOn_ArgDesc'),
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => [new SlashCommandEnumValue('all'), ...sidePromptTemplateEnumProvider()]
+            })
+        ]
+    });
+
+    const sidePromptOffCmd = SlashCommand.fromProps({
+        name: 'sideprompt-off',
+        callback: handleSidePromptOffCommand,
+        helpString: translate('Disable a Side Prompt by name or all. Usage: /sideprompt-off "Name" | all', 'STMemoryBooks_Slash_SidePromptOff_Help'),
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: translate('Template name (quote if contains spaces) or "all"', 'STMemoryBooks_Slash_SidePromptOff_ArgDesc'),
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => [new SlashCommandEnumValue('all'), ...sidePromptTemplateEnumProvider()]
+            })
+        ]
+    });
+
     SlashCommandParser.addCommandObject(createMemoryCmd);
     SlashCommandParser.addCommandObject(sceneMemoryCmd);
     SlashCommandParser.addCommandObject(nextMemoryCmd);
     SlashCommandParser.addCommandObject(sidePromptCmd);
+    SlashCommandParser.addCommandObject(sidePromptOnCmd);
+    SlashCommandParser.addCommandObject(sidePromptOffCmd);
 }
 
 /**
