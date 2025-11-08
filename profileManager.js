@@ -243,7 +243,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             allowVerticalScrolling: true,
         });
 
-        setupProfileEditEventHandlers(popupInstance);
+        setupProfileEditEventHandlers(popupInstance, settings);
 
         const result = await popupInstance.show();
 
@@ -309,8 +309,8 @@ export async function newProfile(settings, refreshCallback) {
             position: 0,
             orderMode: 'auto',
             orderValue: 100,
-            preventRecursion: true,
-            delayUntilRecursion: false,
+            preventRecursion: false,
+            delayUntilRecursion: true,
             outletName: ''
         };
 
@@ -324,7 +324,7 @@ export async function newProfile(settings, refreshCallback) {
             allowVerticalScrolling: true,
         });
 
-        setupProfileEditEventHandlers(popupInstance);
+        setupProfileEditEventHandlers(popupInstance, settings);
 
         const result = await popupInstance.show();
 
@@ -520,7 +520,7 @@ export function importProfiles(event, settings, refreshCallback) {
 /**
  * Setup event handlers for profile edit popup
  */
-function setupProfileEditEventHandlers(popupInstance) {
+function setupProfileEditEventHandlers(popupInstance, settings) {
     const popupElement = popupInstance.dlg;
 
     // Open Summary Prompt Manager from profile editor
@@ -709,6 +709,41 @@ function setupProfileEditEventHandlers(popupInstance) {
             cont.classList.toggle('displayNone', positionSelect.value !== '7');
         }
     })();
+
+    // Inject global "Also convert recursion settings on existing entries" checkbox into Recursion Settings block
+    try {
+        const recursionHeader = popupElement.querySelector('h4[data-i18n="STMemoryBooks_RecursionSettings"]');
+        const recursionBlock = recursionHeader ? recursionHeader.parentElement?.querySelector('.buttons_block') : null;
+        if (recursionBlock && !popupElement.querySelector('#stmb-convert-existing-recursion')) {
+            const lbl = document.createElement('label');
+            lbl.className = 'checkbox_label';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.id = 'stmb-convert-existing-recursion';
+            input.checked = !!(settings && settings.moduleSettings && settings.moduleSettings.convertExistingRecursion);
+
+            const span = document.createElement('span');
+            span.textContent = 'Also convert recursion settings on existing entries';
+            try { span.setAttribute('data-i18n', 'STMemoryBooks_ConvertExistingRecursion'); } catch (e) { /* noop */ }
+
+            lbl.appendChild(input);
+            lbl.appendChild(span);
+            recursionBlock.appendChild(lbl);
+
+            input.addEventListener('change', () => {
+                try {
+                    settings.moduleSettings = settings.moduleSettings || {};
+                    settings.moduleSettings.convertExistingRecursion = !!input.checked;
+                    saveSettingsDebounced();
+                } catch (e) {
+                    console.error(`${MODULE_NAME}: Failed to save convertExistingRecursion flag`, e);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn(`${MODULE_NAME}: Failed to inject convertExistingRecursion checkbox`, e);
+    }
 }
 
 /**
@@ -814,7 +849,7 @@ export function validateAndFixProfiles(settings) {
             fixes.push(`Added default 'order' settings to profile "${profile.name}"`);
         }
         if (profile.preventRecursion === undefined) {
-            profile.preventRecursion = true;
+            profile.preventRecursion = false;
             fixes.push(`Added default 'preventRecursion' to profile "${profile.name}"`);
         }
         if (profile.delayUntilRecursion === undefined) {

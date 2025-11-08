@@ -1,0 +1,304 @@
+<![CDATA[<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>STMB Toggle Utility</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #151a2b;
+      --text: #e8eaf2;
+      --muted: #aab2d5;
+      --accent: #5ae0a1;
+      --accent-2: #7bb3ff;
+      --danger: #ff6b6b;
+      --border: #242a43;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 24px auto 64px;
+      padding: 0 16px;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px 0;
+      font-weight: 700;
+    }
+    p {
+      margin: 6px 0 14px 0;
+      color: var(--muted);
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    input[type="file"] {
+      color: var(--text);
+    }
+    button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: #0e1426;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.primary {
+      background: linear-gradient(135deg, #193b2f, #142d25);
+      border-color: #275741;
+      color: var(--accent);
+    }
+    button.secondary {
+      background: linear-gradient(135deg, #14223c, #101a30);
+      border-color: #273a63;
+      color: var(--accent-2);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      color: var(--muted);
+      border-left: 3px solid var(--border);
+      padding-left: 10px;
+    }
+    .error {
+      color: var(--danger);
+    }
+    textarea {
+      width: 100%;
+      min-height: 360px;
+      resize: vertical;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.4;
+      color: #d8e1ff;
+      background: #0b0f1d;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .footer-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .spacer {
+      height: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>STMB Toggle Utility</h1>
+    <p>
+      This tool reads a JSON file with an "entries" object and updates only entries where <code>stmemorybooks === true</code>:
+      <br>- <code>delayUntilRecursion: false</code> is changed to <code>true</code><br>- <code>preventRecursion: true</code> is changed to <code>false</code>.
+      <br>All other entries remain untouched.
+    </p>
+
+    <div class="card">
+      <div class="row">
+        <input id="fileInput" type="file" accept=".json,application/json" />
+        <button id="processBtn" class="primary" disabled>Process</button>
+        <button id="downloadBtn" class="secondary" disabled>Download Modified JSON</button>
+      </div>
+      <div class="spacer"></div>
+      <div id="status" class="status">No file loaded.</div>
+    </div>
+
+    <div class="card">
+      <label for="output" style="display:block; margin-bottom:8px;">Modified JSON Preview</label>
+      <textarea id="output" placeholder="Modified JSON will appear here..." readonly></textarea>
+      <div class="footer-note">
+        Notes:
+        <ul>
+          <li>Only entries with <code>stmemorybooks: true</code> are targeted.</li>
+          <li>Within those entries, only exact booleans are flipped: <code>false → true</code> for <code>delayUntilRecursion</code> and <code>true → false</code> for <code>preventRecursion</code>.</li>
+          <li>Structure and other fields are preserved as-is.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const fileInput = document.getElementById('fileInput');
+      const processBtn = document.getElementById('processBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const statusEl = document.getElementById('status');
+      const outputEl = document.getElementById('output');
+
+      let originalFilename = '';
+      let parsedJson = null;
+      let modifiedJson = null;
+
+      function setStatus(msg, isError = false) {
+        statusEl.textContent = msg;
+        statusEl.classList.toggle('error', isError);
+      }
+
+      function pretty(obj) {
+        try {
+          return JSON.stringify(obj);
+        } catch (e) {
+          return String(e);
+        }
+      }
+
+      function deepClone(obj) {
+        // Good enough for plain JSON data
+        return JSON.parse(JSON.stringify(obj));
+      }
+
+      function processData() {
+        if (!parsedJson) {
+          setStatus('No JSON loaded to process.', true);
+          return;
+        }
+
+        const working = deepClone(parsedJson);
+
+        if (typeof working !== 'object' || working === null) {
+          setStatus('Top-level JSON is not an object.', true);
+          return;
+        }
+
+        const { entries } = working;
+        if (typeof entries !== 'object' || entries === null) {
+          setStatus('Missing or invalid "entries" object in JSON.', true);
+          return;
+        }
+
+        let targetedEntries = 0;
+        let flippedDelay = 0;
+        let flippedPrevent = 0;
+
+        for (const [k, entry] of Object.entries(entries)) {
+          if (entry && entry.stmemorybooks === true) {
+            targetedEntries++;
+
+            if (entry.delayUntilRecursion === false) {
+              entry.delayUntilRecursion = true;
+              flippedDelay++;
+            }
+            if (entry.preventRecursion === true) {
+              entry.preventRecursion = false;
+              flippedPrevent++;
+            }
+          }
+        }
+
+        modifiedJson = working;
+        outputEl.value = pretty(modifiedJson);
+
+        const lines = [
+          'Processed successfully.',
+          `Targeted entries (stmemorybooks === true): ${targetedEntries}`,
+          `Flipped delayUntilRecursion (false → true): ${flippedDelay}`,
+          `Flipped preventRecursion (true → false): ${flippedPrevent}`,
+          `Original filename: ${originalFilename || '(unknown)'}`,
+        ];
+        setStatus(lines.join('\n'), false);
+
+        downloadBtn.disabled = false;
+      }
+
+      function inferModifiedName(name) {
+        if (!name) return 'modified.json';
+        const i = name.toLowerCase().lastIndexOf('.json');
+        if (i > 0) {
+          return name.slice(0, i) + '-modified.json';
+        }
+        return name + '-modified.json';
+      }
+
+      function handleDownload() {
+        if (!modifiedJson) {
+          setStatus('Nothing to download yet. Process a file first.', true);
+          return;
+        }
+        const blob = new Blob([pretty(modifiedJson)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = inferModifiedName(originalFilename);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function handleFile(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) {
+          parsedJson = null;
+          modifiedJson = null;
+          processBtn.disabled = true;
+          downloadBtn.disabled = true;
+          outputEl.value = '';
+          setStatus('No file loaded.');
+          return;
+        }
+
+        originalFilename = file.name || '';
+        const reader = new FileReader();
+        reader.onerror = () => {
+          parsedJson = null;
+          processBtn.disabled = true;
+          downloadBtn.disabled = true;
+          setStatus('Failed to read file.', true);
+        };
+        reader.onload = () => {
+          try {
+            const text = String(reader.result || '');
+            parsedJson = JSON.parse(text);
+            modifiedJson = null;
+            outputEl.value = '';
+            setStatus(`File loaded: ${originalFilename}\nReady to process.`);
+            processBtn.disabled = false;
+            downloadBtn.disabled = true;
+          } catch (err) {
+            parsedJson = null;
+            modifiedJson = null;
+            processBtn.disabled = true;
+            downloadBtn.disabled = true;
+            outputEl.value = '';
+            setStatus('Invalid JSON: ' + err.message, true);
+          }
+        };
+        reader.readAsText(file, 'utf-8');
+      }
+
+      fileInput.addEventListener('change', handleFile);
+      processBtn.addEventListener('click', processData);
+      downloadBtn.addEventListener('click', handleDownload);
+    })();
+  </script>
+</body>
+</html>
+]]>

@@ -132,8 +132,8 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             position: 0,
             orderMode: 'auto',
             orderValue: 100,
-            preventRecursion: true,
-            delayUntilRecursion: false
+            preventRecursion: false,
+            delayUntilRecursion: true
         };
 
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
