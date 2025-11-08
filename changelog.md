@@ -8,6 +8,7 @@
   - Switched default for "delayuntilRecursion" to `true`
 - **Enhancements:** 
   - added stmb-toggle.html to resources for manually converting lorebooks to follow these defaults
+  - added conversion checkbox to profiles
 
 ## v4.12.0 (October 31, 2025)
 - **Enhancements:** 
