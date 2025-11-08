@@ -834,7 +834,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 disable: false,
                 addMemo: true,
                 excludeRecursion: false,
-                delayUntilRecursion: false,
+                delayUntilRecursion: true,
                 probability: 100,
                 useProbability: false
             }

@@ -6,7 +6,7 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { SlashCommandEnumValue } from '../../../slash-commands/SlashCommandEnumValue.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from '../../../slash-commands/SlashCommandArgument.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
-import { METADATA_KEY, world_names, loadWorldInfo, createNewWorldInfo } from '../../../world-info.js';
+import { METADATA_KEY, world_names, loadWorldInfo, createNewWorldInfo, saveWorldInfo, reloadEditor } from '../../../world-info.js';
 import { lodash, Handlebars, DOMPurify } from '../../../../lib.js';
 import { escapeHtml } from '../../../utils.js';
 import { compileScene, createSceneRequest, validateCompiledScene, getSceneStats } from './chatcompile.js';
@@ -575,8 +575,8 @@ function initializeSettings() {
                 position: 0,
                 orderMode: 'auto',
                 orderValue: 100,
-                preventRecursion: true,
-                delayUntilRecursion: false
+                preventRecursion: false,
+                delayUntilRecursion: true
             };
 
             extension_settings.STMemoryBooks.profiles.unshift(dynamicProfile);
@@ -614,8 +614,8 @@ console.log(__st_t_tag`${MODULE_NAME}: Removed static titleFormat from dynamic p
             position: 0,
             orderMode: 'auto',
             orderValue: 100,
-            preventRecursion: true,
-            delayUntilRecursion: false
+            preventRecursion: false,
+            delayUntilRecursion: true
         };
 
         extension_settings.STMemoryBooks.profiles = [dynamicProfile];
@@ -877,6 +877,62 @@ function isRetryableError(error) {
 async function executeMemoryGeneration(sceneData, lorebookValidation, effectiveSettings, retryCount = 0) {
     const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
     currentProfile = profileSettings;
+
+    // Optional global conversion of recursion flags on existing STMB entries
+    try {
+        if (settings?.moduleSettings?.convertExistingRecursion && lorebookValidation?.valid && lorebookValidation.data?.entries) {
+            const entriesList = identifyMemoryEntries(lorebookValidation.data) || [];
+            const earliest = entriesList.length > 0 ? entriesList[0].entry : null;
+
+            const targetPrevent = !!profileSettings.preventRecursion;
+            const targetDelay = !!profileSettings.delayUntilRecursion;
+
+            let needsConversion = false;
+            if (!earliest) {
+                // No STMB entries, nothing to do
+                needsConversion = false;
+            } else {
+                const ePrev = !!earliest.preventRecursion;
+                const eDelay = !!earliest.delayUntilRecursion;
+                needsConversion = (ePrev !== targetPrevent) || (eDelay !== targetDelay);
+            }
+
+            if (needsConversion) {
+                let examined = 0;
+                let updated = 0;
+                const allEntries = Object.values(lorebookValidation.data.entries || {});
+                for (const entry of allEntries) {
+                    if (entry && entry.stmemorybooks === true) {
+                        examined++;
+                        const prevChanged = (entry.preventRecursion !== targetPrevent);
+                        const delayChanged = (entry.delayUntilRecursion !== targetDelay);
+                        if (prevChanged || delayChanged) {
+                            entry.preventRecursion = targetPrevent;
+                            entry.delayUntilRecursion = targetDelay;
+                            updated++;
+                        }
+                    }
+                }
+
+                if (updated > 0) {
+                    try {
+                        await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
+                        if (settings.moduleSettings?.refreshEditor) {
+                            try { reloadEditor(lorebookValidation.name); } catch (e) { /* noop */ }
+                        }
+                    } catch (e) {
+                        console.warn('STMemoryBooks: Failed to save lorebook during recursion conversion:', e);
+                    }
+                    try {
+                        toastr.info(__st_t_tag`Updated recursion flags on ${updated} of ${examined} memory entr${updated === 1 ? 'y' : 'ies'}`, 'STMemoryBooks');
+                    } catch (e) { /* noop */ }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: convertExistingRecursion check failed:', e);
+    }
+
     const maxRetries = MEMORY_GENERATION.MAX_RETRIES;
 
     try {

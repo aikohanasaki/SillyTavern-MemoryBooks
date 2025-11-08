@@ -2,6 +2,13 @@
 
 **← [Back to README](readme.md)**
 
+## v4.12.1 (November 8, 2025)
+- **Tweak:** 
+  - Switched default for "preventRecursion" to `false`
+  - Switched default for "delayuntilRecursion" to `true`
+- **Enhancements:** 
+  - added stmb-toggle.html to resources for manually converting lorebooks to follow these defaults
+
 ## v4.12.0 (October 31, 2025)
 - **Enhancements:** 
   - Add `/sideprompt-on` and `/sideprompt-off` for side prompts
