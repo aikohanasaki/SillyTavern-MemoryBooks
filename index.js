@@ -2961,17 +2961,19 @@ function showFailedAIResponsePopup(error) {
             cancelButton: translate('Close', 'STMemoryBooks_Close')
         });
 
-        popup.show().then(() => {
-            const dlg = popup.dlg;
-            dlg.querySelector('#stmb-copy-raw')?.addEventListener('click', async () => {
-                try { await navigator.clipboard.writeText(raw); toastr.success(translate('Copied raw response', 'STMemoryBooks_CopiedRaw'), 'STMemoryBooks'); }
-                catch { toastr.error(translate('Copy failed', 'STMemoryBooks_CopyFailed'), 'STMemoryBooks'); }
-            });
-            dlg.querySelector('#stmb-copy-provider')?.addEventListener('click', async () => {
-                try { await navigator.clipboard.writeText(providerBody); toastr.success(translate('Copied provider body', 'STMemoryBooks_CopiedProvider'), 'STMemoryBooks'); }
-                catch { toastr.error(translate('Copy failed', 'STMemoryBooks_CopyFailed'), 'STMemoryBooks'); }
-            });
+        // Attach copy handlers before showing the popup so they are active immediately
+        const dlg = popup.dlg;
+        dlg.querySelector('#stmb-copy-raw')?.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(raw); toastr.success(translate('Copied raw response', 'STMemoryBooks_CopiedRaw'), 'STMemoryBooks'); }
+            catch { toastr.error(translate('Copy failed', 'STMemoryBooks_CopyFailed'), 'STMemoryBooks'); }
         });
+        dlg.querySelector('#stmb-copy-provider')?.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(providerBody); toastr.success(translate('Copied provider body', 'STMemoryBooks_CopiedProvider'), 'STMemoryBooks'); }
+            catch { toastr.error(translate('Copy failed', 'STMemoryBooks_CopyFailed'), 'STMemoryBooks'); }
+        });
+
+        // Now show the popup
+        void popup.show();
     } catch (e) {
         console.error('STMemoryBooks: Failed to show failed AI response popup:', e);
     }
