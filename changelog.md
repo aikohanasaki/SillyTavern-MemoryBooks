@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.12.2 (November 10, 2025)
+- **Bugfix:** Fix copy raw button on "Review Failed AI Response Popup".
+
 ## v4.12.1 (November 8, 2025)
 - **Tweak:** 
   - Switched default for "preventRecursion" to `false`
