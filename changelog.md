@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.0 (November 22, 2025)
+- **Enhancement:** Add new "comprehensive" summary preset.
+
 ## v4.12.2 (November 10, 2025)
 - **Bugfix:** Fix copy raw button on "Review Failed AI Response Popup".
 
