@@ -1739,7 +1739,7 @@ function setupPromptManagerEventHandlers(popup) {
                 <h3>${escapeHtml(translate('Recreate Built-in Prompts', 'STMemoryBooks_RecreateBuiltinsTitle'))}</h3>
                 <div class="info-block warning">
                     ${escapeHtml(translate(
-                        'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
+                        'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
                         'STMemoryBooks_RecreateBuiltinsWarning'
                     ))}
                 </div>
