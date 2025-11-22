@@ -925,6 +925,75 @@ For the keywords field, provide 10-20 specific and descriptive keywords that cap
 
 Return ONLY the JSON, no other text.`,
 
+    'STMemoryBooks_Prompt_comprehensive': `Analyze the following roleplay scene in the context of previous summaries provided (if available) and return a comprehensive synopsis as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short, descriptive scene title (3-6 words)",
+  "content": "Long detailed synopsis with markdown structure...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a beat-by-beat summary of the scene that *replaces reading the full scene* while preserving all plot-relevant nuance and reads like a clean, structured scene log — concise yet complete. This summary needs to be token-efficient: exercise judgment as to whether or not an interaction is flavor-only or truly affects the plot. Flavor scenes (interaction detail that does not advance plot) may be captured through key exchanges and should be skipped when recording story beats. 
+
+Write in **past tense**, **third-person**, and exclude all [OOC] or meta discussion.  
+Use concrete nouns (e.g., “rice cooker” > “appliance”).  
+Only use adjectives/adverbs when they materially affect tone, emotion, or characterization.  
+Focus on **cause → intention → reaction → consequence** chains for clarity and compression.
+
+# [Scene Title]
+**Timeline**: (day/time)
+
+## Story Beats
+- Present all major actions, revelations, and emotional or magical shifts in order.
+- Capture clear cause–effect logic: what triggered what, and why it mattered.
+- Only include plot-affecting interactions and do not capture flavor-only beats.
+
+## Character Dynamics
+- Summarize how each character’s **motives, emotions, and relationships** evolved.
+- Include subtext, tension, or silent implications.
+- Highlight key beats of conflict, vulnerability, trust, or power shifts.
+
+## Key Exchanges
+- Include only pivotal dialogue that defines tone, emotion, or change.
+- Attribute speakers by name; keep quotes short but exact.
+- BE SELECTIVE. Maximum of 8 quotes.
+
+## Outcome & Continuity
+- Detail resulting **decisions, emotional states, physical/magical effects, or narrative consequences**.
+- Include all elements that influence future continuity (knowledge, relationships, injuries, promises, etc.).
+- Note any unresolved threads or foreshadowed elements.
+
+Write compactly but completely — every line should add new information or insight.  
+Synthesize redundant actions or dialogue into unified cause–effect–emotion beats.
+Favor compression over coverage whenever the two conflict; omit anything that can be inferred from context or established characterization.
+
+For the keywords field:
+
+Generate **15–30 standalone topical keywords** that function as retrieval tags, not micro-summaries. 
+Keywords must be:
+- **Concrete and scene-specific** (locations, objects, proper nouns, unique actions, repeated motifs).
+- **One concept per keyword** — do NOT combine multiple ideas into one keyword.
+- **Useful for retrieval if the user later mentions that noun or action alone**, not only in a specific context.
+- Not {{char}}'s or {{user}}'s names.
+- **Not thematic, emotional, or abstract.** Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
+
+Avoid:
+- Overly specific compound keywords (“David Tokyo marriage”).
+- Narrative or plot-summary style keywords (“art dealer date fail”).
+- Keywords that contain multiple facts or descriptors.
+- Keywords that only make sense when the whole scene is remembered.
+
+Prefer:
+- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
+- Specific physical objects ("CPAP machine", "chocolate chip cookies").
+- Distinctive actions ("cookie baking", "piano apology").
+- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
+
+Your goal: **keywords should fire when the noun/action is mentioned alone**, not only when paired with a specific person or backstory.
+
+Return ONLY the JSON — no additional text.`,
+
     'STMemoryBooks_Prompt_default': `Analyze the following chat scene and return a memory as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
@@ -944,10 +1013,11 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_DisplayName_minimal': 'Minimal - Brief 1-2 sentence summary',
     'STMemoryBooks_DisplayName_northgate': 'Northgate - Intended for creative writing. By Northgate on ST Discord',
     'STMemoryBooks_DisplayName_aelemar': 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
+    'STMemoryBooks_DisplayName_comprehensive': 'Comprehensive - Synopsis plus improved keywords extraction',
     // Summary Prompt Manager - Recreate Built-ins
     'STMemoryBooks_PromptManager_RecreateBuiltins': '♻️ Recreate Built-in Prompts',
     'STMemoryBooks_RecreateBuiltinsTitle': 'Recreate Built-in Prompts',
-    'STMemoryBooks_RecreateBuiltinsWarning': 'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
+    'STMemoryBooks_RecreateBuiltinsWarning': 'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
     'STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom': 'This does not affect your other custom presets.',
     'STMemoryBooks_RecreateBuiltinsOverwrite': 'Overwrite',
     'STMemoryBooks_RegexSelection_Title': '📐 Regex selection',

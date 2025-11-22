@@ -53,6 +53,7 @@ export const DISPLAY_NAME_DEFAULTS = {
     minimal: 'Minimal - Brief 1-2 sentence summary',
     northgate: 'Northgate - Intended for creative writing. By Northgate on ST Discord',
     aelemar: 'Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord',
+    comprehensive: 'Comprehensive - Synopsis plus improved keywords extraction',
 };
 
 export const DISPLAY_NAME_I18N_KEYS = {
@@ -63,4 +64,5 @@ export const DISPLAY_NAME_I18N_KEYS = {
     minimal: 'STMemoryBooks_DisplayName_minimal',
     northgate: 'STMemoryBooks_DisplayName_northgate',
     aelemar: 'STMemoryBooks_DisplayName_aelemar',
+    comprehensive: 'STMemoryBooks_DisplayName_comprehensive',
 };
