@@ -36,25 +36,31 @@ const profileEditTemplate = Handlebars.compile(`
             <h4 data-i18n="STMemoryBooks_APIProvider">API/Provider:</h4>
             <select id="stmb-profile-api" class="text_pole" {{#if isProviderLocked}}disabled title="Provider locked for this profile"{{/if}}>
                 <option value="current_st" {{#if (eq connection.api "current_st")}}selected{{/if}} data-i18n="STMemoryBooks_CurrentSTSettings">Current SillyTavern Settings</option>
-                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}} data-i18n="STMemoryBooks_CustomAPI">Custom API</option>
+
                 <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
                 <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Claude</option>
-                <option value="makersuite" {{#if (eq connection.api "makersuite")}}selected{{/if}}>Google AI Studio</option>
                 <option value="openrouter" {{#if (eq connection.api "openrouter")}}selected{{/if}}>OpenRouter</option>
+                <option value="ai21" {{#if (eq connection.api "ai21")}}selected{{/if}}>AI21</option>
+                <option value="makersuite" {{#if (eq connection.api "makersuite")}}selected{{/if}}>Google AI Studio</option>
+                <option value="vertexai" {{#if (eq connection.api "vertexai")}}selected{{/if}}>Vertex AI</option>
                 <option value="mistralai" {{#if (eq connection.api "mistralai")}}selected{{/if}}>MistralAI</option>
+                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}} data-i18n="STMemoryBooks_CustomAPI">Custom API</option>
                 <option value="cohere" {{#if (eq connection.api "cohere")}}selected{{/if}}>Cohere</option>
                 <option value="perplexity" {{#if (eq connection.api "perplexity")}}selected{{/if}}>Perplexity</option>
                 <option value="groq" {{#if (eq connection.api "groq")}}selected{{/if}}>Groq</option>
-                <option value="deepseek" {{#if (eq connection.api "deepseek")}}selected{{/if}}>DeepSeek</option>
                 <option value="electronhub" {{#if (eq connection.api "electronhub")}}selected{{/if}}>Electron Hub</option>
+                <option value="nanogpt" {{#if (eq connection.api "nanogpt")}}selected{{/if}}>NanoGPT</option>
+                <option value="deepseek" {{#if (eq connection.api "deepseek")}}selected{{/if}}>DeepSeek</option>
                 <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
                 <option value="xai" {{#if (eq connection.api "xai")}}selected{{/if}}>xAI</option>
                 <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
-                <option value="vertexai" {{#if (eq connection.api "vertexai")}}selected{{/if}}>Vertex AI</option>
                 <option value="moonshot" {{#if (eq connection.api "moonshot")}}selected{{/if}}>Moonshot</option>
                 <option value="fireworks" {{#if (eq connection.api "fireworks")}}selected{{/if}}>Fireworks</option>
                 <option value="cometapi" {{#if (eq connection.api "cometapi")}}selected{{/if}}>Comet API</option>
                 <option value="azure_openai" {{#if (eq connection.api "azure_openai")}}selected{{/if}}>Azure OpenAI</option>
+                <option value="zai" {{#if (eq connection.api "zai")}}selected{{/if}}>Z.AI</option>
+                <option value="siliconflow" {{#if (eq connection.api "siliconflow")}}selected{{/if}}>SiliconFlow</option>
+
                 <option value="full-manual" {{#if (eq connection.api "full-manual")}}selected{{/if}} title="⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option." data-i18n="STMemoryBooks_FullManualConfig">Full Manual Configuration</option>
             </select>
         </label>
