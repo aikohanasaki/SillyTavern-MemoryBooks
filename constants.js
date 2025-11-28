@@ -35,6 +35,7 @@ export const UI_SETTINGS = {
 export const FILE_NAMES = {
     PROMPTS_FILE: 'stmb-summary-prompts.json',
     SIDE_PROMPTS_FILE: 'stmb-side-prompts.json',
+    ARC_PROMPTS_FILE: 'stmb-arc-prompts.json',
 };
 
 // Schema version
