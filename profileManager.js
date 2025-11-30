@@ -150,10 +150,10 @@ const profileEditTemplate = Handlebars.compile(`
             <select id="stmb-profile-position" class="text_pole">
                 <option value="0" {{#if (eq position 0)}}selected{{/if}} data-i18n="STMemoryBooks_CharUp">↑Char</option>
                 <option value="1" {{#if (eq position 1)}}selected{{/if}} data-i18n="STMemoryBooks_CharDown">↓Char</option>
-                <option value="2" {{#if (eq position 2)}}selected{{/if}} data-i18n="STMemoryBooks_EMUp">↑EM</option>
-                <option value="3" {{#if (eq position 3)}}selected{{/if}} data-i18n="STMemoryBooks_EMDown">↓EM</option>
-                <option value="4" {{#if (eq position 4)}}selected{{/if}} data-i18n="STMemoryBooks_ANUp">↑AN</option>
-                <option value="5" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
+                <option value="5" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_EMUp">↑EM</option>
+                <option value="6" {{#if (eq position 6)}}selected{{/if}} data-i18n="STMemoryBooks_EMDown">↓EM</option>
+                <option value="2" {{#if (eq position 2)}}selected{{/if}} data-i18n="STMemoryBooks_ANUp">↑AN</option>
+                <option value="3" {{#if (eq position 3)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
                 <option value="7" {{#if (eq position 7)}}selected{{/if}} data-i18n="STMemoryBooks_Outlet">Outlet</option>
             </select>
         </label>

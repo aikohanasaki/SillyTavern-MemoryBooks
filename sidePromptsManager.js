@@ -157,7 +157,7 @@ function getBuiltinTemplates() {
                 overrideProfileEnabled: false,
                 lorebook: {
                 constVectMode: "blue",
-                position: 5,
+                position: 2,
                 orderMode: "manual",
                 orderValue: 25,
                 preventRecursion: true,
@@ -188,7 +188,7 @@ function getBuiltinTemplates() {
                 overrideProfileEnabled: false,
                 lorebook: {
                 constVectMode: "link",
-                position: 5,
+                position: 3,
                 orderMode: "manual",
                 orderValue: 25,
                 preventRecursion: true,
@@ -219,7 +219,7 @@ function getBuiltinTemplates() {
                 overrideProfileEnabled: false,
                 lorebook: {
                 constVectMode: "blue",
-                position: 5,
+                position: 3,
                 orderMode: "manual",
                 orderValue: 15,
                 preventRecursion: true,
@@ -250,7 +250,7 @@ function getBuiltinTemplates() {
                 overrideProfileEnabled: false,
                 lorebook: {
                 constVectMode: "blue",
-                position: 5,
+                position: 2,
                 orderMode: "manual",
                 orderValue: 30,
                 preventRecursion: true,

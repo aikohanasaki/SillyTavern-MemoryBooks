@@ -221,10 +221,10 @@ async function openEditTemplate(parentPopup, key) {
                         <select id="stmb-sp-edit-lb-position" class="text_pole">
                             <option value="0" ${lbPosition === 0 ? 'selected' : ''}>${escapeHtml(translate('↑Char', 'STMemoryBooks_CharUp'))}</option>
                             <option value="1" ${lbPosition === 1 ? 'selected' : ''}>${escapeHtml(translate('↓Char', 'STMemoryBooks_CharDown'))}</option>
-                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
-                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
-                            <option value="4" ${lbPosition === 4 ? 'selected' : ''}>${escapeHtml(translate('↑AN', 'STMemoryBooks_ANUp'))}</option>
-                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
+                            <option value="5" ${lbPosition === 5 ? 'selected' : ''}>${escapeHtml(translate('↑EM', 'STMemoryBooks_EMUp'))}</option>
+                            <option value="6" ${lbPosition === 6 ? 'selected' : ''}>${escapeHtml(translate('↓EM', 'STMemoryBooks_EMDown'))}</option>
+                            <option value="2" ${lbPosition === 2 ? 'selected' : ''}>${escapeHtml(translate('↑AN', 'STMemoryBooks_ANUp'))}</option>
+                            <option value="3" ${lbPosition === 3 ? 'selected' : ''}>${escapeHtml(translate('↓AN', 'STMemoryBooks_ANDown'))}</option>
                             <option value="7" ${lbPosition === 7 ? 'selected' : ''}>${escapeHtml(translate('Outlet', 'STMemoryBooks_Outlet'))}</option>
                         </select>
                         <div id="stmb-sp-edit-lb-outlet-name-container" style="display:${lbPosition === 7 ? 'block' : 'none'}; margin-top: 8px;">
