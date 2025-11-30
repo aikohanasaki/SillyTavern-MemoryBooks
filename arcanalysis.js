@@ -1,8 +1,8 @@
 import { estimateTokens, getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource } from './utils.js';
 import { sendRawCompletionRequest } from './stmemory.js';
-import { getDefaultArcPrompt, getBuiltInArcPrompts } from './templatesArcPrompts.js';
+import { getDefaultArcPrompt } from './templatesArcPrompts.js';
 import * as ArcPrompts from './arcAnalysisPromptManager.js';
-import { identifyMemoryEntries, upsertLorebookEntriesBatch } from './addlore.js';
+import { upsertLorebookEntriesBatch } from './addlore.js';
 import { extension_settings } from '../../../extensions.js';
 
 /**
@@ -16,6 +16,30 @@ import { extension_settings } from '../../../extensions.js';
  */
 
 const MODULE_NAME = 'STMemoryBooks-ArcAnalysis';
+
+const KEYWORD_PROMPT = `Based on this narrative arc summary, generate 15–30 standalone topical keywords that function as retrieval tags, not micro-summaries. 
+Keywords must be:
+- Concrete and scene-specific (locations, objects, proper nouns, unique actions, repeated motifs).
+- One concept per keyword — do NOT combine multiple ideas into one keyword.
+- Useful for retrieval if the user later mentions that noun or action alone, not only in a specific context.
+- Not {{char}}'s or {{user}}'s names.
+- Not thematic, emotional, or abstract. Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
+
+Avoid:
+- Overly specific compound keywords (“David Tokyo marriage”).
+- Narrative or plot-summary style keywords (“art dealer date fail”).
+- Keywords that contain multiple facts or descriptors.
+- Keywords that only make sense when the whole scene is remembered.
+
+Prefer:
+- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
+- Specific physical objects ("CPAP machine", "chocolate chip cookies").
+- Distinctive actions ("cookie baking", "piano apology").
+- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
+
+Your goal: keywords should fire when the noun/action is mentioned alone, not only when paired with a specific person or backstory.
+
+Return ONLY a JSON array of 15-30 strings. No commentary, no explanations.`;
 
 // Utility: normalize text
 function normalizeText(s) {
@@ -114,6 +138,98 @@ function stripTrailingCommas(s) {
 }
 
 /**
+ * Keyword generation helpers
+ */
+function sanitizeKeywordArray(items) {
+  const out = [];
+  const seen = new Set();
+  for (const it of items || []) {
+    let k = String(it || '').trim();
+    k = k.replace(/^["']|["']$/g, '');
+    k = k.replace(/^\d+\.\s*/, '');
+    k = k.replace(/^[\-\*\u2022]\s*/, '');
+    k = k.trim();
+    if (!k) continue;
+    const key = k.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(k);
+    if (out.length >= 30) break;
+  }
+  return out;
+}
+
+function parseKeywordsResponse(text) {
+  const normalized = normalizeText(String(text || '').trim());
+  const candidates = [];
+  const fenced = extractFencedBlocks(normalized);
+  if (fenced.length) candidates.push(...fenced);
+  const balanced = extractBalancedJson(normalized);
+  if (balanced) candidates.push(balanced);
+  candidates.push(normalized);
+
+  const uniq = Array.from(new Set(candidates));
+  for (const cand of uniq) {
+    try {
+      const s = stripTrailingCommas(stripJsonComments(cand));
+      const parsed = JSON.parse(s);
+      const arr = Array.isArray(parsed)
+        ? parsed
+        : (parsed && Array.isArray(parsed.keywords) ? parsed.keywords : null);
+      if (arr) return sanitizeKeywordArray(arr);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  // Fallback parsing: bullets or comma-separated
+  const lines = normalized.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  let items = [];
+  if (lines.length > 1) {
+    items = lines.map(x => x.replace(/^[\-\*\u2022]?\s*\d*\.?\s*/, '').trim());
+  } else {
+    items = normalized.split(/[,;]+/).map(x => x.trim());
+  }
+  return sanitizeKeywordArray(items);
+}
+
+async function generateKeywordsForArc(summary, conn) {
+  const base = String(summary || '').trim();
+  const prompt = `${KEYWORD_PROMPT}\n\n=== ARC SUMMARY ===\n${base}\n=== END SUMMARY ===`;
+  const { text } = await sendRawCompletionRequest({
+    model: conn.model,
+    prompt,
+    temperature: typeof conn.temperature === 'number' ? conn.temperature : 0.2,
+    api: conn.api,
+    endpoint: conn.endpoint,
+    apiKey: conn.apiKey,
+    extra: {}
+  });
+  try { console.debug('STMB ArcAnalysis: keyword gen response length=%d', (text || '').length); } catch {}
+
+  let kw = [];
+  try {
+    kw = parseKeywordsResponse(text);
+  } catch {}
+  if (!Array.isArray(kw) || kw.length === 0) {
+    // Retry with explicit JSON-only constraint
+    const repairPrompt = `${prompt}\n\nReturn ONLY a JSON array of 15-30 strings.`;
+    const retry = await sendRawCompletionRequest({
+      model: conn.model,
+      prompt: repairPrompt,
+      temperature: typeof conn.temperature === 'number' ? conn.temperature : 0.2,
+      api: conn.api,
+      endpoint: conn.endpoint,
+      apiKey: conn.apiKey,
+      extra: {}
+    });
+    kw = parseKeywordsResponse(retry.text);
+  }
+  if (kw.length > 30) kw = kw.slice(0, 30);
+  return kw;
+}
+
+/**
  * Build briefs from lorebook memory entries (or pre-filtered selection).
  * Entry is expected to be a lorebook entry object with fields:
  * - uid, content, key (keywords), comment (title), STMB_start/STMB_end optional
@@ -204,10 +320,10 @@ export function parseArcJsonResponse(text) {
       const arcs = Array.isArray(obj.arcs) ? obj.arcs : [];
       const unassigned = Array.isArray(obj.unassigned_memories) ? obj.unassigned_memories : [];
 
+      // Relaxed: accept arcs with missing/non-array keywords. We only require title + summary here.
       const validArcs = arcs.filter(a =>
         a && typeof a.title === 'string' && a.title.trim() &&
-        typeof a.summary === 'string' && a.summary.trim() &&
-        Array.isArray(a.keywords)
+        typeof a.summary === 'string' && a.summary.trim()
       );
 
       const validUnassigned = unassigned.filter(u =>
@@ -248,6 +364,10 @@ export async function runArcAnalysisSequential(selectedEntries, options = {}, pr
     tokenTarget
   } = options;
 
+  // Determine local max passes (single-arc preset defaults to one pass unless explicitly overridden)
+  const singleArcPreset = (presetKey === 'arc_alternate');
+  const maxPassesLocal = (Object.prototype.hasOwnProperty.call(options, 'maxPasses')) ? maxPasses : (singleArcPreset ? 1 : maxPasses);
+
   // Resolve base token budget from shared settings (tokenWarningThreshold), with optional override
   const sharedThreshold = extension_settings?.STMemoryBooks?.moduleSettings?.tokenWarningThreshold;
   const baseTokenTarget = typeof tokenTarget === 'number' ? tokenTarget : (typeof sharedThreshold === 'number' ? sharedThreshold : 30000);
@@ -276,7 +396,7 @@ export async function runArcAnalysisSequential(selectedEntries, options = {}, pr
   let pass = 0;
   let carryBriefs = [];
 
-  while (remainingMap.size > 0 && pass < maxPasses) {
+  while (remainingMap.size > 0 && pass < maxPassesLocal) {
     pass++;
     // Reset the effective budget each pass; we'll only raise it for a single-item batch in this pass if needed
     effectiveTokenTarget = baseTokenTarget;
@@ -299,6 +419,9 @@ export async function runArcAnalysisSequential(selectedEntries, options = {}, pr
     }
 
     if (batch.length === 0) break;
+
+    // Pass/batch debug
+    try { console.debug('STMB ArcAnalysis: pass %d batch=%o', pass, batch.map(b => b.id)); } catch {}
 
     // Token budgeting (simple heuristic): shrink batch if needed; raise budget for single large items
     let prompt = buildArcAnalysisPrompt({ briefs: batch, previousArcSummary, promptText });
@@ -355,6 +478,9 @@ export async function runArcAnalysisSequential(selectedEntries, options = {}, pr
     const unassignedIds = new Set((parsed.unassigned_memories || []).map(x => x.id));
     const assigned = batch.filter(b => !unassignedIds.has(b.id));
 
+    // Parse/assignment debug
+    try { console.debug('STMB ArcAnalysis: pass %d arcs=%d unassigned=%d assigned=%d', pass, Array.isArray(parsed.arcs) ? parsed.arcs.length : 0, unassignedIds.size, assigned.length); } catch {}
+
     if (assigned.length < minAssigned && pass > 1) {
       // low-progress stop to prevent grind
       break;
@@ -399,14 +525,22 @@ export async function runArcAnalysisSequential(selectedEntries, options = {}, pr
     // Remove consumed from remaining
     if (consumedIdSet.size > 0) {
       for (const id of consumedIdSet) remainingMap.delete(String(id));
+      // If everything is consumed into a single arc, note and stop naturally
+      if (remainingMap.size === 0 && acceptedArcs.length === 1) {
+        try { console.info('STMB ArcAnalysis: all memories were consumed into a single arc.'); } catch {}
+      }
     } else {
-      // No usable arc; if nothing assigned, we stop
-      if (assigned.length === 0) break;
+      // No progress this pass — stop to prevent repeated sends
+      try { console.debug('STMB ArcAnalysis: no new IDs consumed on pass %d; stopping.', pass); } catch {}
+      break;
     }
 
     // Prepare carry-over for next pass (subset of unassigned to help stitching)
     const batchUnassigned = batch.filter(b => unassignedIds.has(b.id)).slice(0, Math.max(0, carryOver));
     carryBriefs = batchUnassigned;
+
+    // End-of-pass debug
+    try { console.debug('STMB ArcAnalysis: pass %d consumed=%d remaining=%d', pass, consumedIdSet.size, remainingMap.size); } catch {}
   }
 
   const leftovers = Array.from(remainingMap.values()).map(b => b.id);
@@ -512,15 +646,28 @@ export async function commitArcs({ lorebookName, lorebookData, arcCandidates, di
   const arcTitleFormat = extension_settings?.STMemoryBooks?.arcTitleFormat || '[ARC 000] - {{title}}';
   let nextArcNumber = getNextArcNumber(lorebookData);
 
+  try { console.info('STMB ArcAnalysis: committing %d arc(s): %o', arcCandidates.length, arcCandidates.map(a => a.title)); } catch {}
   for (const arc of arcCandidates) {
     const title = formatArcTitle(arcTitleFormat, arc.title, nextArcNumber++);
     const content = arc.summary;
+
+    // Auto-generate keywords if missing using the arc summary
+    let keywords = Array.isArray(arc.keywords) ? arc.keywords : [];
+    if (keywords.length === 0) {
+      try {
+        const conn = resolveConnection(null);
+        keywords = await generateKeywordsForArc(content, conn);
+      } catch (e) {
+        try { console.warn('STMB ArcAnalysis: keyword generation failed for "%s": %s', title, String(e?.message || e)); } catch {}
+      }
+    }
+
     const defaults = { vectorized: true, selective: true, order: 100, position: 0 };
     const entryOverrides = {
       stmemorybooks: true,
       stmbArc: true,
       type: 'arc',
-      key: Array.isArray(arc.keywords) ? arc.keywords : [],
+      key: Array.isArray(keywords) ? keywords : [],
       // Keep consistent fields present in lorebook entries:
       disable: false
     };
@@ -537,6 +684,9 @@ export async function commitArcs({ lorebookName, lorebookData, arcCandidates, di
     );
     const created = res && res[0];
     const arcEntryId = created ? created.uid : null;
+    if (!arcEntryId) {
+      throw new Error('Arc upsert returned no entry (commitArcs failed)');
+    }
 
     // If requested, disable originals by ID match (memberIds refer to entry.uid string)
     if (disableOriginals && arcEntryId) {
@@ -554,5 +704,6 @@ export async function commitArcs({ lorebookName, lorebookData, arcCandidates, di
 
   // Single save + refresh
   await upsertLorebookEntriesBatch(lorebookName, lorebookData, [], { refreshEditor: true });
+  try { console.info('STMB ArcAnalysis: committed arc IDs: %o', results.map(r => r.arcEntryId)); } catch {}
   return { results };
 }

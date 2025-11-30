@@ -41,10 +41,10 @@ Strict output format (JSON only; no markdown, no prose outside JSON):
   ]
 }
 
-Arc count control:
-- TargetArcCount: If a line “TargetArcCount: N” appears anywhere above the MEMORIES block, produce exactly N arcs unless the content cannot be made coherent. If absent, produce the smallest coherent number of arcs (typically 1–3).
+Arc count rule:
+- Do not force a number of arcs. Produce the smallest coherent number of arcs based on content (often 1–3, possibly 1 if all memories form one arc).
 - Respect chronology using ORDER (ascending).
-- If some memories do not fit the arc(s), place them in unassigned_memories with a short reason.
+- If some memories do not fit the produced arcs, place them in unassigned_memories with a short reason.
 
 Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
 
