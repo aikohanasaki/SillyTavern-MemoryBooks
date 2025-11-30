@@ -6,6 +6,12 @@ import { getBuiltInArcPrompts, getDefaultArcPrompt } from './templatesArcPrompts
 const MODULE_NAME = 'STMemoryBooks-ArcAnalysisPromptManager';
 const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
 
+// Preferred display names for built-in arc presets
+const BUILTIN_DISPLAY_NAMES = {
+  arc_default: 'Multi-Arc Analysis',
+  arc_alternate: 'Single Arc',
+};
+
 /**
  * In-memory cache of loaded overrides
  * @type {Object|null}
@@ -126,7 +132,7 @@ async function loadOverrides(settings = null) {
     // Seed all built-ins as overridable entries for consistent UX
     for (const [key, prompt] of Object.entries(builtIns)) {
       overrides[key] = {
-        displayName: toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt),
+        displayName: (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt)),
         prompt,
         createdAt: now,
       };
@@ -203,7 +209,7 @@ export async function listPresets(settings = null) {
     if (!(key in data.overrides)) {
       presets.push({
         key,
-        displayName: toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')),
+        displayName: (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' '))),
         createdAt: null,
       });
     }
@@ -243,7 +249,7 @@ export async function getDisplayName(key, settings = null) {
   if (data.overrides[key] && data.overrides[key].displayName) {
     return data.overrides[key].displayName;
   }
-  return toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || 'Arc Prompt';
+  return BUILTIN_DISPLAY_NAMES[key] || toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || 'Arc Prompt';
 }
 
 /**
@@ -376,4 +382,63 @@ export async function recreateBuiltInPrompts(mode = 'overwrite') {
   cachedOverrides = data;
   console.log(`${MODULE_NAME}: Recreated arc built-ins (removed ${removed} overrides)`);
   return { removed };
+}
+
+/**
+ * Rebuild prompts file to exactly match current built-ins.
+ * Creates optional timestamped backup of existing overrides file.
+ * @param {{backup?: boolean}} options
+ * @returns {Promise<{count:number, backupName?:string}>}
+ */
+export async function rebuildFromBuiltIns(options = {}) {
+  const backup = options.backup !== false;
+  const builtIns = getBuiltInArcPrompts() || {};
+  const now = new Date().toISOString();
+  const overrides = {};
+  for (const [key, prompt] of Object.entries(builtIns)) {
+    overrides[key] = {
+      displayName:
+        (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt)),
+      prompt,
+      createdAt: now,
+    };
+  }
+
+  // Optional backup of existing file (using current persisted doc)
+  let backupName;
+  try {
+    const existing = await loadOverrides();
+    if (backup && existing) {
+      const base = String(PROMPTS_FILE || 'stmb-arc-prompts.json').replace(/\.json$/i, '');
+      const ts = now.replace(/[:.]/g, '-');
+      backupName = `${base}.backup-${ts}.json`;
+
+      const backupJson = JSON.stringify(existing, null, 2);
+      const backupB64 = btoa(unescape(encodeURIComponent(backupJson)));
+      const resp = await fetch('/api/files/upload', {
+        method: 'POST',
+        credentials: 'include',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ name: backupName, data: backupB64 }),
+      });
+      if (!resp.ok) {
+        console.warn(`${MODULE_NAME}: Failed to write backup "${backupName}": ${resp.statusText}`);
+      }
+    }
+  } catch (e) {
+    console.warn(`${MODULE_NAME}: Backup step failed:`, e);
+  }
+
+  const doc = { version: SCHEMA.CURRENT_VERSION, overrides };
+  await saveOverrides(doc);
+  cachedOverrides = doc;
+
+  // Notify listeners that arc presets changed
+  try {
+    window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+  } catch {
+    /* noop */
+  }
+
+  return { count: Object.keys(overrides).length, backupName };
 }

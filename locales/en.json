@@ -1,1 +1,7 @@
-{}
+{
+  "STMemoryBooks_Arc_RebuildBuiltins": "Rebuild from built-ins",
+  "STMemoryBooks_Arc_RebuildTitle": "Rebuild Arc Prompts from Built-ins",
+  "STMemoryBooks_Arc_RebuildWarning": "This will overwrite your saved Arc prompt presets with the built-ins. A timestamped backup will be created.",
+  "STMemoryBooks_Arc_RebuildNote": "After rebuild, the preset list will refresh automatically.",
+  "STMemoryBooks_Rebuild": "Rebuild"
+}

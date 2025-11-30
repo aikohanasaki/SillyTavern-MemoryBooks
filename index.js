@@ -1505,7 +1505,7 @@ toastr.error(translate('Failed to select manual lorebook', 'STMemoryBooks_Failed
                 }
             }
         },
-        {       
+        {
             text: '🧩 ' + translate('Summary Prompt Manager', 'STMemoryBooks_SummaryPromptManager'),
             id: 'stmb-prompt-manager',
             action: async () => {
@@ -1514,6 +1514,18 @@ toastr.error(translate('Failed to select manual lorebook', 'STMemoryBooks_Failed
                 } catch (error) {
                     console.error(`${MODULE_NAME}: Error opening prompt manager:`, error);
                     toastr.error(translate('Failed to open Summary Prompt Manager', 'STMemoryBooks_FailedToOpenSummaryPromptManager'), 'STMemoryBooks');
+                }
+            }
+        },
+        {
+            text: '🧱 ' + translate('Arc Prompt Manager', 'STMemoryBooks_ArcPromptManager'),
+            id: 'stmb-arc-prompt-manager',
+            action: async () => {
+                try {
+                    await showArcPromptManagerPopup();
+                } catch (error) {
+                    console.error(`${MODULE_NAME}: Error opening Arc Prompt Manager:`, error);
+                    toastr.error(translate('Failed to open Arc Prompt Manager', 'STMemoryBooks_FailedToOpenArcPromptManager'), 'STMemoryBooks');
                 }
             }
         },
@@ -1958,7 +1970,7 @@ async function deletePreset(popup, presetKey) {
     const displayName = await SummaryPromptManager.getDisplayName(presetKey);
     
     const confirmPopup = new Popup(
-        `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p data-i18n="STMemoryBooks_DeletePresetConfirm" data-i18n-params='{"name": "${escapeHtml(displayName)}"}'>Are you sure you want to delete "${escapeHtml(displayName)}"?</p>`,
+        `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${escapeHtml(translate('Are you sure you want to delete "{{name}}"?', 'STMemoryBooks_DeletePresetConfirm', { name: displayName }))}</p>`,
         POPUP_TYPE.CONFIRM,
         '',
         { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
@@ -2028,6 +2040,338 @@ async function importPrompts(event, popup) {
 }
 
 /**
+ * Show Arc Prompt Manager popup
+ */
+async function showArcPromptManagerPopup() {
+    try {
+        // Initialize arc prompts store
+        const settings = extension_settings.STMemoryBooks;
+        await ArcPrompts.firstRunInitIfMissing(settings);
+
+        // Get list of arc presets
+        const presets = await ArcPrompts.listPresets();
+
+        // Build the popup content
+        let content = '<h3 data-i18n="STMemoryBooks_ArcPromptManager_Title">🧱 Arc Prompt Manager</h3>';
+        content += '<div class="world_entry_form_control">';
+        content += '<p data-i18n="STMemoryBooks_ArcPromptManager_Desc">Manage your Arc Analysis prompts. All presets are editable.</p>';
+        content += '</div>';
+
+        // Search/filter box
+        content += '<div class="world_entry_form_control">';
+        content += '<input type="text" id="stmb-apm-search" class="text_pole" placeholder="Search arc presets..." aria-label="Search arc presets" data-i18n="[placeholder]STMemoryBooks_ArcPromptManager_Search;[aria-label]STMemoryBooks_ArcPromptManager_Search" />';
+        content += '</div>';
+
+        // Preset list container
+        content += '<div id="stmb-apm-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>';
+
+        // Action buttons
+        content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
+        content += '<button id="stmb-apm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_New">➕ New Arc Preset</button>';
+        content += '<button id="stmb-apm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_Export">📤 Export JSON</button>';
+        content += '<button id="stmb-apm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_Import">📥 Import JSON</button>';
+        content += '<button id="stmb-apm-recreate-builtins" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_RecreateBuiltins">♻️ Recreate Built-in Arc Prompts</button>';
+        content += '</div>';
+
+        // Hidden file input for import
+        content += '<input type="file" id="stmb-apm-import-file" accept=".json" style="display: none;" />';
+
+        const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
+            okButton: false,
+            cancelButton: translate('Close', 'STMemoryBooks_Close')
+        });
+
+        // Attach handlers before showing the popup
+        setupArcPromptManagerEventHandlers(popup);
+
+        // Initial render of presets table using existing template
+        const listEl = popup.dlg?.querySelector('#stmb-apm-list');
+        if (listEl) {
+            const items = (presets || []).map(p => ({
+                key: String(p.key || ''),
+                displayName: String(p.displayName || ''),
+            }));
+            listEl.innerHTML = DOMPurify.sanitize(summaryPromptsTableTemplate({ items }));
+        }
+
+        await popup.show();
+
+    } catch (error) {
+        console.error('STMemoryBooks: Error showing Arc Prompt Manager:', error);
+        toastr.error(translate('Failed to open Arc Prompt Manager', 'STMemoryBooks_FailedToOpenArcPromptManager'), 'STMemoryBooks');
+    }
+}
+
+/**
+ * Setup event handlers for the Arc prompt manager popup
+ */
+function setupArcPromptManagerEventHandlers(popup) {
+    const dlg = popup.dlg;
+    let selectedPresetKey = null;
+
+    // Row actions and selection
+    dlg.addEventListener('click', async (e) => {
+        const actionBtn = e.target.closest('.stmb-action');
+        if (actionBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const row = actionBtn.closest('tr[data-preset-key]');
+            const key = row?.dataset.presetKey;
+            if (!key) return;
+
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.classList.remove('ui-state-active');
+                r.style.backgroundColor = '';
+                r.style.border = '';
+            });
+            if (row) {
+                row.style.backgroundColor = 'var(--cobalt30a)';
+                row.style.border = '';
+                selectedPresetKey = key;
+            }
+
+            if (actionBtn.classList.contains('stmb-action-edit')) {
+                await editArcPreset(popup, key);
+            } else if (actionBtn.classList.contains('stmb-action-duplicate')) {
+                await duplicateArcPreset(popup, key);
+            } else if (actionBtn.classList.contains('stmb-action-delete')) {
+                await deleteArcPreset(popup, key);
+            }
+            return;
+        }
+
+        const row = e.target.closest('tr[data-preset-key]');
+        if (row) {
+            dlg.querySelectorAll('tr[data-preset-key]').forEach(r => {
+                r.classList.remove('ui-state-active');
+                r.style.backgroundColor = '';
+                r.style.border = '';
+            });
+            row.style.backgroundColor = 'var(--cobalt30a)';
+            row.style.border = '';
+            selectedPresetKey = row.dataset.presetKey;
+        }
+    });
+
+    // Search box
+    dlg.querySelector('#stmb-apm-search')?.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        dlg.querySelectorAll('tr[data-preset-key]').forEach(row => {
+            const displayName = row.querySelector('td:first-child').textContent.toLowerCase();
+            row.style.display = displayName.includes(term) ? '' : 'none';
+        });
+    });
+
+    // Buttons
+    dlg.querySelector('#stmb-apm-new')?.addEventListener('click', async () => {
+        await createNewArcPreset(popup);
+    });
+    dlg.querySelector('#stmb-apm-export')?.addEventListener('click', async () => {
+        await exportArcPrompts();
+    });
+    dlg.querySelector('#stmb-apm-import')?.addEventListener('click', () => {
+        dlg.querySelector('#stmb-apm-import-file')?.click();
+    });
+    dlg.querySelector('#stmb-apm-import-file')?.addEventListener('change', async (e) => {
+        await importArcPrompts(e, popup);
+    });
+
+    // Recreate built-ins (remove overrides for built-in keys)
+    dlg.querySelector('#stmb-apm-recreate-builtins')?.addEventListener('click', async () => {
+        try {
+            const content = `
+                <h3>${escapeHtml(translate('Recreate Built-in Prompts', 'STMemoryBooks_RecreateBuiltinsTitle'))}</h3>
+                <div class="info-block warning">
+                    ${escapeHtml(translate(
+                        'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
+                        'STMemoryBooks_RecreateBuiltinsWarning'
+                    ))}
+                </div>
+                <p class="opacity70p">${escapeHtml(translate('This does not affect your other custom presets.', 'STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom'))}</p>
+            `;
+            const confirmPopup = new Popup(content, POPUP_TYPE.CONFIRM, '', {
+                okButton: translate('Overwrite', 'STMemoryBooks_RecreateBuiltinsOverwrite'),
+                cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+            });
+            const res = await confirmPopup.show();
+            if (res === POPUP_RESULT.AFFIRMATIVE) {
+                const result = await ArcPrompts.recreateBuiltInPrompts('overwrite');
+                try { window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated')); } catch (e) { /* noop */ }
+                toastr.success(__st_t_tag`Removed ${result?.removed || 0} built-in overrides`, translate('STMemoryBooks', 'index.toast.title'));
+                // Refresh the manager popup
+                popup.completeAffirmative();
+                await showArcPromptManagerPopup();
+            }
+        } catch (error) {
+            console.error('STMemoryBooks: Error recreating built-in arc prompts:', error);
+            toastr.error(translate('Failed to recreate built-in prompts', 'STMemoryBooks_FailedToRecreateBuiltins'), translate('STMemoryBooks', 'index.toast.title'));
+        }
+    });
+}
+
+/**
+ * Arc preset CRUD helpers
+ */
+async function createNewArcPreset(popup) {
+    const content = `
+        <h3 data-i18n="STMemoryBooks_CreateNewPresetTitle">Create New Preset</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-apm-new-display-name">
+                <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                <input type="text" id="stmb-apm-new-display-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_MyCustomPreset" placeholder="My Custom Preset" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-apm-new-prompt">
+                <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-apm-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-apm-new-prompt" class="text_pole textarea_compact" rows="10" data-i18n="[placeholder]STMemoryBooks_EnterPromptPlaceholder" placeholder="Enter your prompt here..."></textarea>
+            </label>
+        </div>
+    `;
+    const editPopup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: translate('Create', 'STMemoryBooks_Create'),
+        cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+    });
+    const result = await editPopup.show();
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        const displayName = editPopup.dlg.querySelector('#stmb-apm-new-display-name').value.trim();
+        const prompt = editPopup.dlg.querySelector('#stmb-apm-new-prompt').value.trim();
+        if (!prompt) {
+            toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), 'STMemoryBooks');
+            return;
+        }
+        try {
+            await ArcPrompts.upsertPreset(null, prompt, displayName || null);
+            toastr.success(translate('Preset created successfully', 'STMemoryBooks_PresetCreatedSuccessfully'), 'STMemoryBooks');
+            window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+            popup.completeAffirmative();
+            await showArcPromptManagerPopup();
+        } catch (error) {
+            console.error('STMemoryBooks: Error creating arc preset:', error);
+            toastr.error(translate('Failed to create preset', 'STMemoryBooks_FailedToCreatePreset'), 'STMemoryBooks');
+        }
+    }
+}
+
+async function editArcPreset(popup, presetKey) {
+    try {
+        const displayName = await ArcPrompts.getDisplayName(presetKey);
+        const prompt = await ArcPrompts.getPrompt(presetKey);
+        const content = `
+            <h3 data-i18n="STMemoryBooks_EditPresetTitle">Edit Preset</h3>
+            <div class="world_entry_form_control">
+                <label for="stmb-apm-edit-display-name">
+                    <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                    <input type="text" id="stmb-apm-edit-display-name" class="text_pole" value="${escapeHtml(displayName)}" />
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-apm-edit-prompt">
+                    <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-apm-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                    <textarea id="stmb-apm-edit-prompt" class="text_pole textarea_compact" rows="10">${escapeHtml(prompt)}</textarea>
+                </label>
+            </div>
+        `;
+        const editPopup = new Popup(content, POPUP_TYPE.TEXT, '', {
+            okButton: translate('Save', 'STMemoryBooks_Save'),
+            cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+        });
+        const result = await editPopup.show();
+        if (result === POPUP_RESULT.AFFIRMATIVE) {
+            const newDisplayName = editPopup.dlg.querySelector('#stmb-apm-edit-display-name').value.trim();
+            const newPrompt = editPopup.dlg.querySelector('#stmb-apm-edit-prompt').value.trim();
+            if (!newPrompt) {
+                toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), 'STMemoryBooks');
+                return;
+            }
+            await ArcPrompts.upsertPreset(presetKey, newPrompt, newDisplayName || null);
+            toastr.success(translate('Preset updated successfully', 'STMemoryBooks_PresetUpdatedSuccessfully'), 'STMemoryBooks');
+            window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+            popup.completeAffirmative();
+            await showArcPromptManagerPopup();
+        }
+    } catch (error) {
+        console.error('STMemoryBooks: Error editing arc preset:', error);
+        toastr.error(translate('Failed to edit preset', 'STMemoryBooks_FailedToEditPreset'), 'STMemoryBooks');
+    }
+}
+
+async function duplicateArcPreset(popup, presetKey) {
+    try {
+        const newKey = await ArcPrompts.duplicatePreset(presetKey);
+        toastr.success(translate('Preset duplicated successfully', 'STMemoryBooks_PresetDuplicatedSuccessfully'), 'STMemoryBooks');
+        window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+        popup.completeAffirmative();
+        await showArcPromptManagerPopup();
+    } catch (error) {
+        console.error('STMemoryBooks: Error duplicating arc preset:', error);
+        toastr.error(translate('Failed to duplicate preset', 'STMemoryBooks_FailedToDuplicatePreset'), 'STMemoryBooks');
+    }
+}
+
+async function deleteArcPreset(popup, presetKey) {
+    const displayName = await ArcPrompts.getDisplayName(presetKey);
+    const confirmPopup = new Popup(
+        `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${escapeHtml(translate('Are you sure you want to delete "{{name}}"?', 'STMemoryBooks_DeletePresetConfirm', { name: displayName }))}</p>`,
+        POPUP_TYPE.CONFIRM,
+        '',
+        { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
+    );
+    try { applyLocale(confirmPopup.dlg); } catch (e) { /* no-op */ }
+    const result = await confirmPopup.show();
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+        try {
+            await ArcPrompts.removePreset(presetKey);
+            toastr.success(translate('Preset deleted successfully', 'STMemoryBooks_PresetDeletedSuccessfully'), 'STMemoryBooks');
+            window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+            popup.completeAffirmative();
+            await showArcPromptManagerPopup();
+        } catch (error) {
+            console.error('STMemoryBooks: Error deleting arc preset:', error);
+            toastr.error(translate('Failed to delete preset', 'STMemoryBooks_FailedToDeletePreset'), 'STMemoryBooks');
+        }
+    }
+}
+
+async function exportArcPrompts() {
+    try {
+        const json = await ArcPrompts.exportToJSON();
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'stmb-arc-prompts.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        toastr.success(translate('Prompts exported successfully', 'STMemoryBooks_PromptsExportedSuccessfully'), 'STMemoryBooks');
+    } catch (error) {
+        console.error('STMemoryBooks: Error exporting arc prompts:', error);
+        toastr.error(translate('Failed to export prompts', 'STMemoryBooks_FailedToExportPrompts'), 'STMemoryBooks');
+    }
+}
+
+async function importArcPrompts(event, popup) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+        const text = await file.text();
+        await ArcPrompts.importFromJSON(text);
+        toastr.success(translate('Prompts imported successfully', 'STMemoryBooks_PromptsImportedSuccessfully'), 'STMemoryBooks');
+        window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+        popup.completeAffirmative();
+        await showArcPromptManagerPopup();
+    } catch (error) {
+        console.error('STMemoryBooks: Error importing arc prompts:', error);
+        toastr.error(__st_t_tag`Failed to import prompts: ${error.message}`, 'STMemoryBooks');
+    }
+}
+
+/**
  * Show Arc Consolidation popup
  */
 async function showArcConsolidationPopup() {
@@ -2077,7 +2421,7 @@ async function showArcConsolidationPopup() {
             const sel = key === defaultPresetKey ? ' selected' : '';
             content += `<option value="${escapeHtml(key)}"${sel}>${escapeHtml(name)}</option>`;
         }
-        content += '</select></label></div>';
+        content += `</select></label> <button id="stmb-arc-rebuild-builtins" class="menu_button whitespacenowrap">${escapeHtml(translate('Rebuild from built-ins', 'STMemoryBooks_Arc_RebuildBuiltins'))}</button></div>`;
 
         // Options row
         content += '<div class="flex-container flexGap10">';
@@ -2129,6 +2473,57 @@ async function showArcConsolidationPopup() {
             dlg.querySelectorAll('.stmb-arc-item').forEach(cb => cb.checked = false);
         });
 
+        // Rebuild Arc prompts from built-ins with backup and refresh preset list
+        dlg.querySelector('#stmb-arc-rebuild-builtins')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const confirmContent = `
+                    <h3>${escapeHtml(translate('Rebuild Arc Prompts from Built-ins', 'STMemoryBooks_Arc_RebuildTitle'))}</h3>
+                    <div class="info-block warning">
+                        ${escapeHtml(translate('This will overwrite your saved Arc prompt presets with the built-ins. A timestamped backup will be created.', 'STMemoryBooks_Arc_RebuildWarning'))}
+                    </div>
+                    <p class="opacity70p">${escapeHtml(translate('After rebuild, the preset list will refresh automatically.', 'STMemoryBooks_Arc_RebuildNote'))}</p>
+                `;
+                const confirmPopup = new Popup(confirmContent, POPUP_TYPE.CONFIRM, '', {
+                    okButton: translate('Rebuild', 'STMemoryBooks_Rebuild'),
+                    cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
+                });
+                const cres = await confirmPopup.show();
+                if (cres !== POPUP_RESULT.AFFIRMATIVE) return;
+
+                const result = await ArcPrompts.rebuildFromBuiltIns({ backup: true });
+
+                // Reload presets and repopulate selector
+                const newPresets = await ArcPrompts.listPresets();
+                const selEl = dlg.querySelector('#stmb-arc-preset');
+                if (selEl) {
+                    const selectedBefore = selEl.value || defaultPresetKey;
+                    selEl.innerHTML = '';
+                    for (const p of newPresets) {
+                        const key = String(p.key || '');
+                        const name = String(p.displayName || key);
+                        const opt = document.createElement('option');
+                        opt.value = key;
+                        opt.textContent = name;
+                        selEl.appendChild(opt);
+                    }
+                    if (Array.from(selEl.options).some(o => o.value === selectedBefore)) {
+                        selEl.value = selectedBefore;
+                    } else {
+                        selEl.value = defaultPresetKey;
+                    }
+                }
+
+                try { window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated')); } catch (e2) { /* noop */ }
+
+                const backupMsg = result?.backupName ? ` (backup: ${result.backupName}) ` : '';
+                toastr.success(__st_t_tag`Rebuilt Arc prompts (${result?.count || 0} presets)${backupMsg}`, 'STMemoryBooks');
+            } catch (err) {
+                console.error('STMemoryBooks: Arc prompts rebuild failed:', err);
+                toastr.error(__st_t_tag`Failed to rebuild Arc prompts: ${err.message}`, 'STMemoryBooks');
+            }
+        });
+
         const res = await popup.show();
         if (res !== POPUP_RESULT.AFFIRMATIVE) return;
 
@@ -2175,7 +2570,11 @@ async function showArcConsolidationPopup() {
         try {
             const res2 = await commitArcs({ lorebookName, lorebookData, arcCandidates, disableOriginals });
             const created = Array.isArray(res2?.results) ? res2.results.length : arcCandidates.length;
-            toastr.success(__st_t_tag`Created ${created} arc${created === 1 ? '' : 's'}${leftovers?.length ? `, ${leftovers.length} leftover` : ''}.`, 'STMemoryBooks');
+            let msg = `Created ${created} arc${created === 1 ? '' : 's'}${leftovers?.length ? `, ${leftovers.length} leftover` : ''}.`;
+            if (created === 1 && (!leftovers || leftovers.length === 0)) {
+                msg += ' (all selected memories were consumed into a single arc)';
+            }
+            toastr.success(__st_t_tag`${msg}`, 'STMemoryBooks');
         } catch (e) {
             toastr.error(__st_t_tag`Failed to commit arcs: ${e.message}`, 'STMemoryBooks');
         }
