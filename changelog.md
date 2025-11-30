@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.1 (November 29, 2025)
+- **Bugfix:** Change WI positions based on new position numbers in ST v1.14.0.
+
 ## v4.13.0 (November 22, 2025)
 - **Enhancement:** Add new "comprehensive" summary preset.
 
