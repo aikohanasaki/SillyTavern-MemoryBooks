@@ -161,7 +161,7 @@ export async function sendRawCompletionRequest({
         body.custom_model_id = model;
         body.custom_url = oai_settings.custom_url || '';
     } else if (api === 'deepseek') {
-        body.custom_url = 'https://api.deepseek.com/chat/completions' || 'https://api.deepseek.com/v1/chat/completions';
+        body.custom_url = `https://api.deepseek.com/chat/completions`; // use primary Deepseek endpoint
     }
 
     const res = await fetch(url, {
