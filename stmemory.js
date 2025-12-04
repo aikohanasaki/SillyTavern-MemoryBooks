@@ -160,6 +160,8 @@ export async function sendRawCompletionRequest({
     } else if (api === 'custom' && model) {
         body.custom_model_id = model;
         body.custom_url = oai_settings.custom_url || '';
+    } else if (api === 'deepseek') {
+        body.custom_url = 'https://api.deepseek.com/chat/completions' || 'https://api.deepseek.com/v1/chat/completions';
     }
 
     const res = await fetch(url, {
