@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.3 (December 4, 2025)
+- **Tweak:** Popup buttom resize
+
 ## v4.13.2 (December 3, 2025)
 - **Bugfix:** Write exception for Deepseek connection URL.
 

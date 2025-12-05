@@ -2686,11 +2686,13 @@ async function showSettingsPopup() {
     const content = DOMPurify.sanitize(settingsTemplate(templateData));
     
     // Build customButtons array dynamically based on current state
-const customButtons = [
+    const customButtons = [];
+
+    customButtons.push(
         {
             text: '🧠 ' + translate('Create Memory', 'STMemoryBooks_CreateMemoryButton'),
             result: null,
-            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
+            classes: ['menu_button'],
             action: async () => {
                 if (!sceneData) {
                     toastr.error(translate('No scene selected. Make sure both start and end points are set.', 'STMemoryBooks_NoSceneSelectedMakeSure'), 'STMemoryBooks');
@@ -2709,25 +2711,29 @@ const customButtons = [
 
                 await initiateMemoryCreation(selectedProfileIndex);
             }
-        },
+        }
+    ),
+    customButtons.push(
         {
             text: '🌈 ' + translate('Consolidate Memories into Arcs', 'STMemoryBooks_ConsolidateArcsButton'),
             result: null,
-            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
+            classes: ['menu_button'],
             action: async () => {
                 await showArcConsolidationPopup();
             }
-        },
-{
+        }
+    ),
+    customButtons.push(
+        {
             text: '🗑️ ' + translate('Clear Scene', 'STMemoryBooks_ClearSceneButton'),
             result: null,
-            classes: ['menu_button', 'interactable', 'whitespacenowrap'],
+            classes: ['menu_button'],
             action: () => {
                 clearScene();
                 refreshPopupContent();
             }
         }
-    ];
+    )
 
     // Manual lorebook and profile buttons will be populated after popup creation
     
