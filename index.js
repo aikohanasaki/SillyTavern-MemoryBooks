@@ -3433,9 +3433,9 @@ async function showArcConsolidationPopup() {
 
     // Options row
     content += '<div class="flex-container flexGap10">';
-    content += `<label>${escapeHtml(translate("Max/Pass", "STMemoryBooks_Arc_MaxPerPass"))} <input id="stmb-arc-maxpass" type="number" min="1" max="50" value="12" class="text_pole" style="width:80px"/></label>`;
-    content += `<label>${escapeHtml(translate("Max Passes", "STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`;
-    content += `<label>${escapeHtml(translate("Min Assigned", "STMemoryBooks_Arc_MinAssigned"))} <input id="stmb-arc-minassigned" type="number" min="1" max="12" value="2" class="text_pole" style="width:110px"/></label>`;
+    content += `<label>${escapeHtml(translate("Maximum number of memories to process in each pass", "STMemoryBooks_Arc_MaxPerPass"))} <input id="stmb-arc-maxpass" type="number" min="1" max="50" value="12" class="text_pole" style="width:80px"/></label>`;
+    content += `<label>${escapeHtml(translate("Number of automatic arc attempts", "STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`;
+    content += `<label>${escapeHtml(translate("The minimum number of memories in each arc", "STMemoryBooks_Arc_MinAssigned"))} <input id="stmb-arc-minassigned" type="number" min="1" max="12" value="2" class="text_pole" style="width:110px"/></label>`;
     content += `<label>${escapeHtml(translate("Token Budget", "STMemoryBooks_Arc_TokenBudget"))} <input id="stmb-arc-token" type="number" min="1000" max="100000" value="${tokenThreshold}" class="text_pole" style="width:120px"/></label>`;
     content += "</div>";
 

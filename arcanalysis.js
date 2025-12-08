@@ -293,12 +293,14 @@ export function buildBriefsFromEntries(entries) {
   for (const e of entries) {
     if (!e || typeof e !== "object") continue;
     const id = String(e.uid ?? "");
-    const order = extractNumberFromTitle(e.comment || "") ?? 0;
-    const content = String(e.content || "").trim();
+    const order = extractNumberFromTitle(e.comment ?? "") ?? 0;
+    const content = String(e.content ?? "").trim();
+    const title = (b.comment || "Untitled").toString().trim(); // preserve the memory title
     briefs.push({
       id,
       order,
       content,
+      title,
     });
   }
   briefs.sort((a, b) => a.order - b.order);
@@ -327,19 +329,33 @@ export function buildArcAnalysisPrompt({
   const header = promptText || getDefaultArcPrompt();
   const lines = [];
   if (previousArcSummary) {
-    lines.push("=== PREVIOUS ARC (CANON — DO NOT REWRITE) ===");
+    lines.push(
+      "=== PREVIOUS ARC (CANON — DO NOT REWRITE, DO NOT INCLUDE IN YOUR NEW SUMMARY) ===",
+    );
+    if (typeof previousArcOrder !== "undefined" && previousArcOrder !== null) {
+      lines.push(`Arc ${previousArcOrder}`);
+    }
     lines.push(previousArcSummary.trim());
     lines.push("=== END PREVIOUS ARC ===");
     lines.push("");
   }
-  lines.push("=== MEMORIES (ID | ORDER | FULL TEXT) ===");
-  for (const b of briefs) {
-    lines.push(`[${b.id}] | ${b.order}`);
-    lines.push(b.content);
+
+  // New: memory-by-memory blocks with titles
+  lines.push("=== MEMORIES ===");
+  briefs.forEach((b, idx) => {
+    const memNo = String(idx + 1).padStart(3, "0"); // 001, 002, ...
+    const title = (b.title || "").toString().trim();
+    const content = (b.content || "").toString().trim();
+
+    lines.push(`=== Memory ${memNo} ===`);
+    lines.push(`Title: ${title}`);
+    lines.push(`Contents: ${content}`);
+    lines.push(`=== end Memory ${memNo} ===`);
     lines.push("");
-  }
+  });
   lines.push("=== END MEMORIES ===");
   lines.push("");
+
   // The header already states JSON-only requirements and schema.
   return `${header}\n\n${lines.join("\n")}`;
 }
@@ -520,9 +536,10 @@ export async function runArcAnalysisSequential(
 
     // Token budgeting (simple heuristic): shrink batch if needed; raise budget for single large items
     let prompt = buildArcAnalysisPrompt({
-      briefs: batch,
-      previousArcSummary,
-      promptText,
+      briefs: batch, // use the current batch
+      previousArcSummary, // existing summary string
+      previousArcOrder: previousArcOrderValue, // numeric order of the previous arc, or null
+      promptText: null,
     });
     let tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
     const origLen = batch.length;
@@ -531,9 +548,10 @@ export async function runArcAnalysisSequential(
       batch.pop();
       trimmed = true;
       prompt = buildArcAnalysisPrompt({
-        briefs: batch,
-        previousArcSummary,
-        promptText,
+        briefs: batch, // use the current batch
+        previousArcSummary, // existing summary string
+        previousArcOrder: previousArcOrderValue, // numeric order of the previous arc, or null
+        promptText: null,
       });
       tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
     }
