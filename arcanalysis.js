@@ -295,7 +295,7 @@ export function buildBriefsFromEntries(entries) {
     const id = String(e.uid ?? "");
     const order = extractNumberFromTitle(e.comment ?? "") ?? 0;
     const content = String(e.content ?? "").trim();
-    const title = (b.comment || "Untitled").toString().trim(); // preserve the memory title
+    const title = (e.comment || "Untitled").toString().trim(); // preserve the memory title
     briefs.push({
       id,
       order,
@@ -324,6 +324,7 @@ function extractNumberFromTitle(title) {
 export function buildArcAnalysisPrompt({
   briefs,
   previousArcSummary = null,
+  previousArcOrder = null,
   promptText = null,
 }) {
   const header = promptText || getDefaultArcPrompt();
@@ -496,6 +497,7 @@ export async function runArcAnalysisSequential(
   const conn = resolveConnection(profileOrConnection);
 
   let previousArcSummary = null;
+  let previousArcOrderValue = null;
   let pass = 0;
   let carryBriefs = [];
 
@@ -538,7 +540,7 @@ export async function runArcAnalysisSequential(
     let prompt = buildArcAnalysisPrompt({
       briefs: batch, // use the current batch
       previousArcSummary, // existing summary string
-      previousArcOrder: previousArcOrderValue, // numeric order of the previous arc, or null
+      previousArcOrder: null, // numeric order of the previous arc, or null
       promptText: null,
     });
     let tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
@@ -548,9 +550,9 @@ export async function runArcAnalysisSequential(
       batch.pop();
       trimmed = true;
       prompt = buildArcAnalysisPrompt({
-        briefs: batch, // use the current batch
-        previousArcSummary, // existing summary string
-        previousArcOrder: previousArcOrderValue, // numeric order of the previous arc, or null
+        briefs: batch,
+        previousArcSummary,
+        previousArcOrder: previousArcOrderValue,
         promptText: null,
       });
       tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
@@ -673,6 +675,13 @@ export async function runArcAnalysisSequential(
       acceptedInPass++;
       // Carry forward the last accepted summary as the "previous arc" canon
       previousArcSummary = aobj.summary;
+    }
+
+    // Update previousArcOrderValue for next pass (only if we accepted any arcs this pass)
+    if (acceptedArcs.length > 0) {
+      previousArcOrderValue = acceptedArcs[acceptedArcs.length - 1].order;
+    } else {
+      previousArcOrderValue = null;
     }
 
     // Remove consumed from remaining
