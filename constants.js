@@ -6,7 +6,7 @@
 export const MEMORY_GENERATION = {
     MAX_RETRIES: 2,
     RETRY_DELAY_MS: 2000,
-    TOKEN_WARNING_THRESHOLD_DEFAULT: 30000,
+    TOKEN_WARNING_THRESHOLD_DEFAULT: 50000,
     DEFAULT_MEMORY_COUNT: 0,
 };
 
@@ -21,8 +21,8 @@ export const SCENE_MANAGEMENT = {
 // Auto-summary settings
 export const AUTO_SUMMARY = {
     MIN_INTERVAL: 10,
-    DEFAULT_INTERVAL: 100,
-    MAX_INTERVAL: 200,
+    DEFAULT_INTERVAL: 50,
+    MAX_INTERVAL: 250,
 };
 
 // Settings debounce
@@ -42,8 +42,6 @@ export const FILE_NAMES = {
 export const SCHEMA = {
     CURRENT_VERSION: 1,
 };
-
-
 
 // Display name localization defaults and i18n keys for built-in presets
 export const DISPLAY_NAME_DEFAULTS = {

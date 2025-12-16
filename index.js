@@ -198,11 +198,11 @@ const defaultSettings = {
     autoClearSceneAfterMemory: false,
     manualModeEnabled: false,
     allowSceneOverlap: false,
-    autoHideMode: "none",
-    unhiddenEntriesCount: 0,
+    autoHideMode: "all",
+    unhiddenEntriesCount: 2,
     autoSummaryEnabled: false,
-    autoSummaryInterval: 100,
-    autoSummaryBuffer: 0,
+    autoSummaryInterval: 50,
+    autoSummaryBuffer: 2,
     autoCreateLorebook: false,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     useRegex: false,
@@ -1060,26 +1060,29 @@ function validateSettings(settings) {
 /**
  * Validate lorebook and return status with data
  */
-export async function validateLorebook() {
+export async function validateLorebook(skipAutoCreate = false) {
   const settings = extension_settings.STMemoryBooks;
   let lorebookName = await getEffectiveLorebookName();
 
-  // Check if auto-create is enabled and we're not in manual mode
-  if (
-    !lorebookName &&
-    settings?.moduleSettings?.autoCreateLorebook &&
-    !settings?.moduleSettings?.manualModeEnabled
-  ) {
-    // Auto-create lorebook using template
-    const template =
-      settings.moduleSettings.lorebookNameTemplate ||
-      "LTM - {{char}} - {{chat}}";
-    const result = await autoCreateLorebook(template, "chat");
+  // Only auto-create if not skipping
+  if (!skipAutoCreate) {
+    // Check if auto-create is enabled and we're not in manual mode
+    if (
+      !lorebookName &&
+      settings?.moduleSettings?.autoCreateLorebook &&
+      !settings?.moduleSettings?.manualModeEnabled
+    ) {
+      // Auto-create lorebook using template
+      const template =
+        settings.moduleSettings.lorebookNameTemplate ||
+        "LTM - {{char}} - {{chat}}";
+      const result = await autoCreateLorebook(template, "chat");
 
-    if (result.success) {
-      lorebookName = result.name;
-    } else {
-      return { valid: false, error: result.error };
+      if (result.success) {
+        lorebookName = result.name;
+      } else {
+        return { valid: false, error: result.error };
+      }
     }
   }
 
@@ -3372,21 +3375,24 @@ async function importArcPrompts(event, popup) {
  */
 async function showArcConsolidationPopup() {
   try {
-    const lorebookValidation = await validateLorebook();
-    if (!lorebookValidation.valid) {
-      toastr.error(
-        translate(
-          "No lorebook available: " + lorebookValidation.error,
-          "STMemoryBooks_NoLorebookAvailable",
-        ),
-        "STMemoryBooks",
-      );
-      return;
-    }
-    const lorebookName = lorebookValidation.name;
-    const lorebookData = lorebookValidation.data;
+    // Do not auto-create a lorebook for this path; allow UI to render
+    const lorebookValidation = await validateLorebook(true);
 
-    // Candidate entries: STMB memories that are not arcs and not disabled
+    // If no lorebook is assigned, show a toast but still render the popup
+    let lorebookName = lorebookValidation?.name || null;
+    let lorebookData = lorebookValidation?.data || { entries: {} };
+
+    if (!lorebookValidation?.valid || !lorebookName) {
+      toastr.info(
+        "No memory lorebook currently assigned, no memories found.",
+        "SillyTavern Memory Books",
+      );
+      // Keep rendering the popup with empty data so the UI can render
+      lorebookName = null;
+      lorebookData = { entries: {} };
+    }
+
+    // Use the possibly-empty lorebookData to build the UI
     const allEntries = Object.values(lorebookData.entries || {});
     const parseOrder = (t) => {
       if (typeof t !== "string") return 0;
@@ -3413,7 +3419,7 @@ async function showArcConsolidationPopup() {
     // Defaults from settings
     const settings = initializeSettings();
     const tokenThreshold =
-      settings.moduleSettings.tokenWarningThreshold || 30000;
+      settings?.moduleSettings?.tokenWarningThreshold || 30000;
 
     // Build popup content
     let content = "";
@@ -3435,7 +3441,7 @@ async function showArcConsolidationPopup() {
     content += '<div class="flex-container flexGap10">';
     content += `<label>${escapeHtml(translate("Maximum number of memories to process in each pass", "STMemoryBooks_Arc_MaxPerPass"))} <input id="stmb-arc-maxpass" type="number" min="1" max="50" value="12" class="text_pole" style="width:80px"/></label>`;
     content += `<label>${escapeHtml(translate("Number of automatic arc attempts", "STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`;
-    content += `<label>${escapeHtml(translate("The minimum number of memories in each arc", "STMemoryBooks_Arc_MinAssigned"))} <input id="stmb-arc-minassigned" type="number" min="1" max="12" value="2" class="text_pole" style="width:110px"/></label>`;
+    content += `<label>${escapeHtml(translate("Minimum number of memories in each arc", "STMemoryBooks_Arc_MinAssigned"))} <input id="stmb-arc-minassigned" type="number" min="1" max="12" value="2" class="text_pole" style="width:110px"/></label>`;
     content += `<label>${escapeHtml(translate("Token Budget", "STMemoryBooks_Arc_TokenBudget"))} <input id="stmb-arc-token" type="number" min="1000" max="100000" value="${tokenThreshold}" class="text_pole" style="width:120px"/></label>`;
     content += "</div>";
 
@@ -3582,6 +3588,15 @@ async function showArcConsolidationPopup() {
       return;
     }
 
+    // If there is no lorebook assigned, show a focused toast and stop before heavy work
+    if (!lorebookName) {
+      toastr.info(
+        "Arc consolidation requires a memory lorebook. No lorebook assigned.",
+        "STMemoryBooks",
+      );
+      return;
+    }
+
     const presetKey = String(
       dlg.querySelector("#stmb-arc-preset")?.value || "arc_default",
     );
@@ -3669,10 +3684,10 @@ async function showArcConsolidationPopup() {
         "STMemoryBooks",
       );
     }
-  } catch (e) {
-    console.error("STMemoryBooks: showArcConsolidationPopup failed:", e);
+  } catch (error) {
+    console.error("STMemoryBooks: showArcConsolidationPopup failed:", error);
     toastr.error(
-      __st_t_tag`Failed to open consolidate popup: ${e.message}`,
+      __st_t_tag`Failed to open consolidate popup: ${error.message}`,
       "STMemoryBooks",
     );
   }
@@ -3740,13 +3755,13 @@ async function showSettingsPopup() {
     chatBoundLorebookName: chatBoundLorebook,
     availableLorebooks: world_names || [],
     autoHideMode: getAutoHideMode(settings.moduleSettings),
-    unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
+    unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 2,
     tokenWarningThreshold:
-      settings.moduleSettings.tokenWarningThreshold || 30000,
+      settings.moduleSettings.tokenWarningThreshold || 50000,
     defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
     autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
-    autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer || 0,
+    autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer || 2,
     autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
     lorebookNameTemplate:
       settings.moduleSettings.lorebookNameTemplate ||

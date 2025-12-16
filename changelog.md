@@ -2,6 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.4 (December 15, 2025)
+- **Tweaka:** 
+  - Readme changes for FAQ
+  - Made various default settings changes (no effect on existing users, should affect new installs only)
+
 ## v4.13.3 (December 4, 2025)
 - **Tweak:** Popup buttom resize
 
