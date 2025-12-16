@@ -151,8 +151,8 @@ export const localeData_en = {
     'STMemoryBooks_AutoSummaryInterval': 'Auto-Summary Interval:',
     'STMemoryBooks_AutoSummaryIntervalDesc': 'Number of messages after which to automatically create a memory summary.',
     'STMemoryBooks_AutoSummaryBuffer': 'Auto-Summary Buffer:',
-    'STMemoryBooks_AutoSummaryBufferDesc': 'Delay auto-summary by X messages (belated generation). Default 0, max 50.',
-    'STMemoryBooks_DefaultInterval': '100',
+    'STMemoryBooks_AutoSummaryBufferDesc': 'Delay auto-summary by X messages (belated generation). Default 2, max 50.',
+    'STMemoryBooks_DefaultInterval': '50',
 
     // Auto-Summary Popup and Messages
     'STMemoryBooks_AutoSummaryReadyTitle': 'Auto-Summary Ready',

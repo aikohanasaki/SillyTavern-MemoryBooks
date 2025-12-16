@@ -2,9 +2,15 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
 
-⚠️‼️**Please read [prerequisites](#-prerequisites) for installation notes!**
+Start here: 
+* ⚠️‼️Please read [prerequisites](#-prerequisites) for installation notes (especially if you run Text Completion API)
+* ❓ [Frequently Asked Questions](#FAQ)
+* 🛠️ [Troubleshooting](#Troubleshooting)
 
-**📘 [User Guide (EN)](USER_GUIDE.md)** |  **📋 [Version History & Changelog](changelog.md)** | [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+Other links: 
+* 📘 [User Guide (EN)](USER_GUIDE.md)
+* 📋 [Version History & Changelog](changelog.md)
+* 💡 [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
 
@@ -15,31 +21,6 @@ For advanced memory organization and deeper story integration, we highly recomme
 > Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
 > Lorebook converter and side prompt template library are in the [`/resources`](resources) folder.
 
-## FAQ 
-### Where is the entry in the Extensions menu?
-Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
-
-![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
-
-### Vectorized?
-
-The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use the world vectorized. If you don't use the vectors extension (I don't), it works via keywords. This is all automated so that you don't have to think about what keywords to use.
-
-![ST's strategy dropdown](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/vectorized.png)
-
-![Keywords generated via AI](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/keywords.png)
-
----
-
-## 🚦 What's New (v4.6.10)
-
-### 🌐 Localization/Internationalization
-- **Localized Prompts:** 
-  - The English prompts have been localized to return memories in YOUR language.
-  - Language locale is determined via your ST general language settings.
-  - **New users:** No action required, STMB detects your language and does it automatically.
-  - **Existing users:** to switch to localized built-in prompts, delete `SillyTavern/data/(yourusername)/user/files/stmb-summary-prompts.json` and then reopen the Summary Prompt Manager. It will re-create with localized built-in prompts. **Note:** Save a backup first if you made any changes!
-
 ---
 
 ## 📋 Prerequisites
@@ -48,7 +29,7 @@ The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use
 - ⚠️‼️**INSTALL FOR ALL USERS:**‼️⚠️ Because STMB re-uses so many functions from ST base code, please ensure that the extension is installed for all users so that the location is `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Otherwise, function imports fail.
 - **Scene Selection:** Start and end markers (start < end) must be set.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
-- **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via full manual configuration or custom completion source in SillyTavern.
+- **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via a Chat Completion (OpenAI-compatible) API endpoint. I recommend setting up a Chat Completion API connection according to the KoboldCpp tips below (change as needed if you are Ollama or other software). After that, set up an STMB profile and use Custom (recommended) or full manual configuration (only if Custom fails or you have more than one custom connection).
 
 ### KoboldCpp Tips to using 📕 ST Memory Books
 Set this up in ST (you can change back to Text Completion AFTER you get STMB working)
@@ -62,9 +43,9 @@ Set this up in ST (you can change back to Text Completion AFTER you get STMB wor
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 
 - **Match Whole Words:** leave unchecked (false)
-- **Scan Depth:** higher is better (at least 4)
+- **Scan Depth:** higher is better (mine is set to 8)
 - **Max Recursion Steps:** 2 (general recommendation, not required)
-- **Context %:** 40% (based on a context window of 100,000 tokens) - assumes you don't have super-heavy chat history or bots
+- **Context %:** 80% (based on a context window of 100,000 tokens) - assumes you don't have super-heavy chat history or bots.
 
 ---
 
@@ -212,6 +193,8 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 ![Main settings panel](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
 
 ### **Global Settings**
+[Short video overview on Youtube](https://youtu.be/mG2eRH_EhHs)
+
 - **Manual Lorebook Mode:** Enable to select lorebooks per chat.
 - **Auto-create lorebook if none exists:** ⭐ *New in v4.2.0* - Automatically create and bind lorebooks using your naming template.
 - **Lorebook Name Template:** ⭐ *New in v4.2.0* - Customize auto-created lorebook names with {{char}}, {{user}}, {{chat}} placeholders.
@@ -281,7 +264,32 @@ Customize the titles of your lorebook entries using a powerful template system.
 
 ---
 
-## 🛠️ Troubleshooting
+# FAQ
+
+### I can't find Memory Books in the Extensions menu!
+Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
+
+![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
+### Do I need to run vectors?
+
+The 🔗 entry in world info is named "vectorized" in ST's UI. This is why I use the world vectorized. If you don't use the vectors extension (I don't), it works via keywords. This is all automated so that you don't have to think about what keywords to use.
+
+![ST's strategy dropdown](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/vectorized.png)
+
+![Keywords generated via AI](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/keywords.png)
+
+### Should I make a separate lorebook for memories, or can I use the same lorebook I'm already using for other things?
+
+I recommend that your memory lorebook be a separate book. This makes it easier to organize memories (vs other entries). For example, adding it to a group chat, using it in another chat, or setting an individual lorebook budget (using STLO).
+
+### Should I use 'Delay until recursion' if Memory Books is the only lorebook?
+
+No. If there are no other world info or lorebooks, selecting 'Delay until recursion' may prevent the first loop from triggering, causing nothing to activate. If Memory Books is the sole lorebook, either disable 'Delay until recursion' or ensure at least one additional world info/lorebook is configured.
+
+---
+
+# Troubleshooting
 
 - **No lorebook available or selected:**
   - In Manual Mode, select a lorebook when prompted.
