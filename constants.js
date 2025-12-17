@@ -65,3 +65,18 @@ export const DISPLAY_NAME_I18N_KEYS = {
     aelemar: 'STMemoryBooks_DisplayName_aelemar',
     comprehensive: 'STMemoryBooks_DisplayName_comprehensive',
 };
+
+// First-pass additional constants for common defaults and thresholds
+export const CHARS_PER_TOKEN = 4;
+export const MAX_PREVIEW_CHARS = 100000;
+export const MAX_SCAN_RANGE = SCENE_MANAGEMENT.MAX_SCAN_RANGE;
+export const MAX_AFFECTED_MESSAGES = SCENE_MANAGEMENT.MAX_AFFECTED_MESSAGES;
+
+// First-pass boolean and string defaults to be targeted for consolidation
+export const BOOLEAN_DEFAULTS = {
+    DEFAULT_USE_PROBABILITY: true,
+};
+
+export const STRING_DEFAULTS = {
+    DEFAULT_OUTLET_NAME: '',
+};

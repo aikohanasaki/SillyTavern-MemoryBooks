@@ -224,7 +224,7 @@ export async function requestCompletion({
     extra = {},
 }) {
     // Delegate all provider-specific shaping to sendRawCompletionRequest which already
-    // handles: full-manual, custom (custom_model_id + oai_settings.custom_url), and normal providers.
+    // handles: full-manual, custom (custom_model_id  oai_settings.custom_url), and normal providers.
     return await sendRawCompletionRequest({
         model,
         prompt,
@@ -300,7 +300,7 @@ async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
             return false;
         }
 
-        attemptCount++;
+        attemptCount;
         
         if (context.isGroupChat) {
             // Group chat - check if group data is available
@@ -372,7 +372,7 @@ function extractFromClaudeStructuredFormat(aiResponse) {
 function likelyUnbalanced(raw) {
     try {
         let braces = 0, brackets = 0, inString = false, escape = false;
-        for (let i = 0; i < raw.length; i++) {
+        for (let i = 0; i < raw.length; i) {
             const ch = raw[i];
             if (inString) {
                 if (escape) {
@@ -384,9 +384,9 @@ function likelyUnbalanced(raw) {
                 }
             } else {
                 if (ch === '"') { inString = true; }
-                else if (ch === '{') braces++;
+                else if (ch === '{') braces;
                 else if (ch === '}') braces--;
-                else if (ch === '[') brackets++;
+                else if (ch === '[') brackets;
                 else if (ch === ']') brackets--;
             }
             if (braces < 0 || brackets < 0) return true;
@@ -416,7 +416,7 @@ function normalizeText(s) {
 
 function extractFencedBlocks(s) {
     // Matches ```lang\n ... \n``` (lang optional)
-    const re = /```([\w+-]*)\s*([\s\S]*?)```/g;
+    const re = /```([\w-]*)\s*([\s\S]*?)```/g;
     const out = [];
     let m;
     while ((m = re.exec(s)) !== null) {
@@ -459,7 +459,7 @@ function stripJsonComments(s) {
     for (let i = 0; i < s.length; i++) {
         const ch = s[i], next = s[i + 1];
         if (inStr) {
-            out += ch;
+            out = ch;
             if (esc) esc = false;
             else if (ch === '\\') esc = true;
             else if (ch === '"') inStr = false;
@@ -467,18 +467,18 @@ function stripJsonComments(s) {
         }
         if (inLine) {
             modified = true;
-            if (ch === '\n') { inLine = false; out += ch; }
+            if (ch === '\n') { inLine = false; out = ch; }
             continue;
         }
         if (inBlock) {
             modified = true;
-            if (ch === '*' && next === '/') { inBlock = false; i++; }
+            if (ch === '*' && next === '/') { inBlock = false; i; }
             continue;
         }
-        if (ch === '"') { inStr = true; out += ch; continue; }
-        if (ch === '/' && next === '/') { inLine = true; i++; continue; }
-        if (ch === '/' && next === '*') { inBlock = true; i++; continue; }
-        out += ch;
+        if (ch === '"') { inStr = true; out = ch; continue; }
+        if (ch === '/' && next === '/') { inLine = true; i; continue; }
+        if (ch === '/' && next === '*') { inBlock = true; i; continue; }
+        out = ch;
     }
     return { text: out, modified };
 }
@@ -540,7 +540,7 @@ function makeAIError(code, message, recoverable = true) {
  * @returns {Object} Parsed JSON object
  * @throws {AIResponseError} If JSON parsing fails
  */
-function parseAIJsonResponse(aiResponse) {
+export function parseAIJsonResponse(aiResponse) {
     let cleanResponse = aiResponse;
 
     // Apply user-selected incoming regex scripts (bypass engine gating)
@@ -687,6 +687,26 @@ function parseAIJsonResponse(aiResponse) {
     }
 }
 
+// Build a memory object from a corrected raw response using the existing parser
+ export function generateMemoryFromRaw(correctedRaw, profile) {
+    const jsonResult = parseAIJsonResponse(correctedRaw);
+    return {
+        content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
+        title: jsonResult.title || 'Memory',
+        keywords: Array.isArray(jsonResult.keywords) ? jsonResult.keywords : [],
+        profile
+    };
+}
+
+// Submit corrected raw, return a memory-like object for insertion
+ export async function submitCorrectedRaw(correctedRaw, profile) {
+    // Reuse parsing  memory construction logic
+    const memory = generateMemoryFromRaw(correctedRaw, profile);
+    // In a real app, you might submit to backend or trigger an insertion event.
+    // Here we return the memory object so the caller/UI can insert/use it accordingly.
+    return memory;
+}
+
 /**
  * Generates memory using AI with structured JSON output instead of tool calling.
  * @private
@@ -699,8 +719,7 @@ async function generateMemoryWithAI(promptString, profile) {
     const characterDataReady = await waitForCharacterData();
     if (!characterDataReady) {
         throw new AIResponseError(
-            'Character data is not available. This may indicate that SillyTavern is still loading. ' +
-            'Please wait a moment and try again.'
+            'Character data is not available. This may indicate that SillyTavern is still loading. Please wait a moment and try again.'
         );
     }
 

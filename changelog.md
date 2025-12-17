@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.5 (December 17, 2025)
+- German and French translations added (I'm sorry it took so long)
+
 ## v4.13.4 (December 15, 2025)
 - **Tweaka:** 
   - Readme changes for FAQ
