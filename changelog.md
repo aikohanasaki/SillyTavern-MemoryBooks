@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.6 (December 19, 2025)
+- Readme, user guide, howSTMBworks documents all translated to French and German.
+
 ## v4.13.5 (December 17, 2025)
 - Readme translations updated
 - GPT-5 models now use `max_completion_tokens`
