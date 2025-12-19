@@ -116,9 +116,16 @@ export async function sendRawCompletionRequest({
     );
     const desiredInt = Math.floor(desiredFromSources) || 0;
 
-    // Set max_tokens based on explicit inputs only; no automatic minimums
+    // Set tokens based on explicit inputs; handle special-case for gpt-5 (any model id containing gpt-5)
     if (Number.isFinite(desiredInt) && desiredInt > 0) {
-        extra.max_tokens = desiredInt;
+        const modelId = (typeof model === 'string' ? model.toLowerCase() : '');
+        if (modelId.includes('gpt-5')) {
+            extra.max_completion_tokens = desiredInt;
+            // Ensure we don't send max_tokens for this provider
+            delete extra.max_tokens;
+        } else {
+            extra.max_tokens = desiredInt;
+        }
     }
 
     // Optional: mirror to providers that use a different field if present
