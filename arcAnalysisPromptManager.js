@@ -6,11 +6,11 @@ import { getBuiltInArcPrompts, getDefaultArcPrompt } from './templatesArcPrompts
 const MODULE_NAME = 'STMemoryBooks-ArcAnalysisPromptManager';
 const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
 
-// Preferred display names for built-in arc presets
-const BUILTIN_DISPLAY_NAMES = {
-  arc_default: 'Multi-Arc Analysis',
-  arc_alternate: 'Single Arc',
-};
+ // Preferred translation keys for built-in arc presets
+ const BUILTIN_DISPLAY_NAMES = {
+   arc_default: 'STMemoryBooks_ArcDefaultDisplayName',
+   arc_alternate: 'STMemoryBooks_ArcAlternateDisplayName',
+ };
 
 /**
  * In-memory cache of loaded overrides
@@ -131,12 +131,20 @@ async function loadOverrides(settings = null) {
     const builtIns = getBuiltInArcPrompts() || {};
     // Seed all built-ins as overridable entries for consistent UX
     for (const [key, prompt] of Object.entries(builtIns)) {
+      let displayName;
+      if (BUILTIN_DISPLAY_NAMES[key]) {
+        const translated = translate(BUILTIN_DISPLAY_NAMES[key]);
+        displayName = translated || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt);
+      } else {
+        displayName = toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt);
+      }
       overrides[key] = {
-        displayName: (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt)),
+        displayName,
         prompt,
         createdAt: now,
       };
     }
+
     data = {
       version: SCHEMA.CURRENT_VERSION,
       overrides,
