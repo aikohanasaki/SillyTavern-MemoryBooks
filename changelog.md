@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.13.7 (December 21, 2025)
+- Fix "no new arcs" error
+
 ## v4.13.6 (December 19, 2025)
 - Readme, user guide, howSTMBworks documents all translated to French and German.
 
