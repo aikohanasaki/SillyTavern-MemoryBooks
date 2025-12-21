@@ -612,10 +612,27 @@ export async function runArcAnalysisSequential(
       parsed = parseArcJsonResponse(retry.text);
     }
 
+    // Build ID resolver to handle both UIDs and sequential indices (e.g. "001", "1")
+    const idResolver = new Map();
+    batch.forEach((b, idx) => {
+      const uid = String(b.id);
+      idResolver.set(uid, uid);
+      const seq = String(idx + 1).padStart(3, "0");
+      idResolver.set(seq, uid);
+      idResolver.set(String(idx + 1), uid);
+    });
+
+    const resolveId = (raw) => idResolver.get(String(raw).trim());
+
     // Compute assigned set = batch - unassigned ids
-    const unassignedIds = new Set(
-      (parsed.unassigned_memories || []).map((x) => x.id),
-    );
+    const unassignedIds = new Set();
+    if (Array.isArray(parsed.unassigned_memories)) {
+      parsed.unassigned_memories.forEach((u) => {
+        const rid = resolveId(u.id);
+        if (rid) unassignedIds.add(rid);
+      });
+    }
+
     const assigned = batch.filter((b) => !unassignedIds.has(b.id));
 
     // Parse/assignment debug
@@ -650,13 +667,15 @@ export async function runArcAnalysisSequential(
         continue;
 
       // Optional per-arc membership: member_ids
-      let memberIds = Array.isArray(aobj.member_ids)
-        ? aobj.member_ids.map(String)
-        : null;
-      if (memberIds) {
-        // Keep only IDs from this batch
-        const batchIds = new Set(batch.map((b) => String(b.id)));
-        memberIds = memberIds.filter((id) => batchIds.has(String(id)));
+      let memberIds = null;
+      if (Array.isArray(aobj.member_ids)) {
+        memberIds = aobj.member_ids
+          .map(resolveId)
+          .filter((id) => id !== undefined);
+      }
+      
+      if (memberIds && memberIds.length > 0) {
+        // IDs were resolved successfully
       } else {
         // Fallback: all assigned items in this pass
         memberIds = assigned.map((x) => x.id);
