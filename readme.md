@@ -25,11 +25,11 @@ For advanced memory organization and deeper story integration, we highly recomme
 
 ## 📋 Prerequisites
 
-- **SillyTavern:** 1.13.5+ (latest recommended)
-- ⚠️‼️**INSTALL FOR ALL USERS:**‼️⚠️ Because STMB re-uses so many functions from ST base code, please ensure that the extension is installed for all users so that the location is `/public/scripts/extensions/third-party/SillyTavern-MemoryBooks`. Otherwise, function imports fail.
+- **SillyTavern:** 1.14.0+ (latest recommended)
 - **Scene Selection:** Start and end markers (start < end) must be set.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via a Chat Completion (OpenAI-compatible) API endpoint. I recommend setting up a Chat Completion API connection according to the KoboldCpp tips below (change as needed if you are Ollama or other software). After that, set up an STMB profile and use Custom (recommended) or full manual configuration (only if Custom fails or you have more than one custom connection).
+**NOTE**: Please note that if you use Text Completion, you must 
 
 ### KoboldCpp Tips to using 📕 ST Memory Books
 Set this up in ST (you can change back to Text Completion AFTER you get STMB working)
@@ -39,6 +39,7 @@ Set this up in ST (you can change back to Text Completion AFTER you get STMB wor
 - enter anything in "custom API key" (doesn't matter, but ST requires one)
 - model ID must be `koboldcpp/modelname` (don't put .gguf in the model name!)
 - download a chat completion preset and import it (any one will do) just so you HAVE a chat completion preset. It avoids errors from "not supported"
+- change the max response length on the chat completion preset so that it is at least 2048; 4096 is recommended. (Smaller means you run the risk of getting cut off.)
 
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 
