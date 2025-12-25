@@ -275,7 +275,6 @@
   "STMemoryBooks_SaveProfileAndCreateMemory": "保存配置文件并创建记忆",
   "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "将修改后的设置保存为新配置文件并创建记忆",
   "STMemoryBooks_Tooltip_CreateMemory": "使用所选的配置文件设置创建记忆",
-  "STMemoryBooks_AcceptAndAddToLorebook": "接受并添加到故事书",
   "STMemoryBooks_EditAndSave": "编辑并保存",
   "STMemoryBooks_RetryGeneration": "重试生成",
   "STMemoryBooks_PromptManager_Hint": "💡 创建新提示时，请复制其他内置提示之一，然后进行修改。不要更改“以 JSON 响应”的说明，📕记忆书使用它来处理从 AI 返回的结果。",

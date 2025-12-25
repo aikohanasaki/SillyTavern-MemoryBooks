@@ -279,7 +279,6 @@
     "STMemoryBooks_SaveProfileAndCreateMemory": "Guardar Perfil y Crear Memoria",
     "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "Guardar los ajustes modificados como un nuevo perfil y crear la memoria",
     "STMemoryBooks_Tooltip_CreateMemory": "Crear memoria usando los ajustes del perfil seleccionado",
-    "STMemoryBooks_AcceptAndAddToLorebook": "Aceptar y Añadir al Lorebook",
     "STMemoryBooks_EditAndSave": "Editar y Guardar",
     "STMemoryBooks_RetryGeneration": "Reintentar Generación",
     "STMemoryBooks_PromptManager_Hint": "💡 Al crear un nuevo prompt, copie uno de los otros prompts incorporados y luego modifíquelo. No cambie las instrucciones de \"responder con JSON\", 📕Libros de Memoria lo usa para procesar el resultado devuelto por la IA.",
