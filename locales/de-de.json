@@ -279,7 +279,6 @@
     "STMemoryBooks_SaveProfileAndCreateMemory": "Profil speichern & Erinnerung erstellen",
     "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "Speichert die geänderten Einstellungen als neues Profil und erstellt die Erinnerung",
     "STMemoryBooks_Tooltip_CreateMemory": "Erinnerung mit den gewählten Profileinstellungen erstellen",
-    "STMemoryBooks_AcceptAndAddToLorebook": "Akzeptieren & zum Lorebook hinzufügen",
     "STMemoryBooks_EditAndSave": "Bearbeiten & Speichern",
     "STMemoryBooks_RetryGeneration": "Generierung wiederholen",
     "STMemoryBooks_PromptManager_Hint": "💡 Kopiere beim Erstellen eines neuen Prompts einen der integrierten und passe ihn an. Ändere nicht die „respond with JSON“ Anweisung, da Memory Books diese zur Verarbeitung benötigt.",
