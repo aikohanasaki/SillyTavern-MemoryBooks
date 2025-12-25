@@ -617,17 +617,11 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
     const content = DOMPurify.sanitize(memoryPreviewTemplate(templateData));
 
     const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
-      okButton: translate('Accept & Add to Lorebook', 'STMemoryBooks_AcceptAndAddToLorebook'),
+      okButton: translate('Edit & Save', 'STMemoryBooks_EditAndSave'),
       cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
       allowVerticalScrolling: true,
       wide: true,
       customButtons: [
-        {
-          text: translate('Edit & Save', 'STMemoryBooks_EditAndSave'),
-          result: STMB_POPUP_RESULTS.EDIT,
-          classes: ['menu_button', 'whitespacenowrap'],
-          action: null
-        },
         {
           text: translate('Retry Generation', 'STMemoryBooks_RetryGeneration'),
           result: STMB_POPUP_RESULTS.RETRY,
@@ -639,92 +633,86 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
 
     const result = await popup.show();
 
-    if (result === POPUP_RESULT.AFFIRMATIVE) {
-      // User accepted as-is
-      return {
-        action: 'accept',
-        memoryData: memoryResult
-      };
-    } else if (result === STMB_POPUP_RESULTS.EDIT) {
-      // User wants to edit and save
-      const popupElement = popup.dlg;
+    switch (result) {
+      case POPUP_RESULT.AFFIRMATIVE:
+      case STMB_POPUP_RESULTS.EDIT:
+        // User wants to edit and save
+        const popupElement = popup.dlg;
 
-      // Check if popup element is still available
-      if (!popupElement) {
-        console.error(translate(`${MODULE_NAME}: Popup element not available for reading edited values`, 'confirmationPopup.log.popupNotAvailable'));
-        toastr.error(translate('Unable to read edited values', 'STMemoryBooks_Toast_UnableToReadEditedValues'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
-        return { action: 'cancel' };
-      }
-
-      // Safely extract values with null checks
-      const titleElement = popupElement.querySelector('#stmb-preview-title');
-      const contentElement = popupElement.querySelector('#stmb-preview-content');
-      const keywordsElement = popupElement.querySelector('#stmb-preview-keywords');
-
-      if (!titleElement || !contentElement || !keywordsElement) {
-        console.error(translate(`${MODULE_NAME}: Required input elements not found in popup`, 'confirmationPopup.log.inputsNotFound'));
-        toastr.error(translate('Unable to find input fields', 'STMemoryBooks_Toast_UnableToFindInputFields'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
-        return { action: 'cancel' };
-      }
-
-      let editedTitle = titleElement.value?.trim() || '';
-      const editedContent = contentElement.value?.trim() || '';
-      const editedKeywordsText = keywordsElement.value?.trim() || '';
-
-      // If title is locked for side prompts, ignore any user edits and keep the original
-      if (options?.lockTitle) {
-        editedTitle = memoryResult.extractedTitle || editedTitle;
-      }
-
-      // Validate required fields
-      if (!editedTitle || editedTitle.length === 0) {
-        console.error(translate(`${MODULE_NAME}: Memory title validation failed - empty title`, 'confirmationPopup.log.titleValidationFailed'));
-        toastr.error(translate('Memory title cannot be empty', 'STMemoryBooks_Toast_TitleCannotBeEmpty'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
-        return { action: 'cancel' };
-      }
-
-      if (!editedContent || editedContent.length === 0) {
-        console.error(translate(`${MODULE_NAME}: Memory content validation failed - empty content`, 'confirmationPopup.log.contentValidationFailed'));
-        toastr.error(translate('Memory content cannot be empty', 'STMemoryBooks_Toast_ContentCannotBeEmpty'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
-        return { action: 'cancel' };
-      }
-
-      // Parse keywords back to array with robust handling
-      const parseKeywordsToArray = (keywordText) => {
-        if (!keywordText || typeof keywordText !== 'string') {
-          return [];
+        // Check if popup element is still available
+        if (!popupElement) {
+          console.error(translate(`${MODULE_NAME}: Popup element not available for reading edited values`, 'confirmationPopup.log.popupNotAvailable'));
+          toastr.error(translate('Unable to read edited values', 'STMemoryBooks_Toast_UnableToReadEditedValues'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
+          return { action: 'cancel' };
         }
-        return keywordText
-          .split(',')
-          .map(k => k.trim())
-          .filter(k => k.length > 0 && typeof k === 'string');
-      };
 
-      const editedKeywords = parseKeywordsToArray(editedKeywordsText);
+        // Safely extract values with null checks
+        const titleElement = popupElement.querySelector('#stmb-preview-title');
+        const contentElement = popupElement.querySelector('#stmb-preview-content');
+        const keywordsElement = popupElement.querySelector('#stmb-preview-keywords');
 
-      // Preserve all original memoryResult fields and only override the user-edited ones
-      const editedMemoryResult = {
-        ...memoryResult,  // This preserves metadata, titleFormat, lorebookSettings, etc.
-        extractedTitle: editedTitle,
-        content: editedContent,
-        suggestedKeys: editedKeywords
-      };
+        if (!titleElement || !contentElement || !keywordsElement) {
+          console.error(translate(`${MODULE_NAME}: Required input elements not found in popup`, 'confirmationPopup.log.inputsNotFound'));
+          toastr.error(translate('Unable to find input fields', 'STMemoryBooks_Toast_UnableToFindInputFields'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
+          return { action: 'cancel' };
+        }
 
-      return {
-        action: 'edit',
-        memoryData: editedMemoryResult
-      };
-    } else if (result === STMB_POPUP_RESULTS.RETRY) {
-      // User wants to retry generation
-      return {
-        action: 'retry'
-      };
+        let editedTitle = titleElement.value?.trim() || '';
+        const editedContent = contentElement.value?.trim() || '';
+        const editedKeywordsText = keywordsElement.value?.trim() || '';
+
+        // If title is locked for side prompts, ignore any user edits and keep the original
+        if (options?.lockTitle) {
+          editedTitle = memoryResult.extractedTitle || editedTitle;
+        }
+
+        // Validate required fields
+        if (!editedTitle || editedTitle.length === 0) {
+          console.error(translate(`${MODULE_NAME}: Memory title validation failed - empty title`, 'confirmationPopup.log.titleValidationFailed'));
+          toastr.error(translate('Memory title cannot be empty', 'STMemoryBooks_Toast_TitleCannotBeEmpty'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
+          return { action: 'cancel' };
+        }
+
+        if (!editedContent || editedContent.length === 0) {
+          console.error(translate(`${MODULE_NAME}: Memory content validation failed - empty content`, 'confirmationPopup.log.contentValidationFailed'));
+          toastr.error(translate('Memory content cannot be empty', 'STMemoryBooks_Toast_ContentCannotBeEmpty'), translate('STMemoryBooks', 'confirmationPopup.toast.title'));
+          return { action: 'cancel' };
+        }
+
+        // Parse keywords back to array with robust handling
+        const parseKeywordsToArray = (keywordText) => {
+          if (!keywordText || typeof keywordText !== 'string') {
+            return [];
+          }
+          return keywordText
+            .split(',')
+            .map(k => k.trim())
+            .filter(k => k.length > 0 && typeof k === 'string');
+        };
+
+        const editedKeywords = parseKeywordsToArray(editedKeywordsText);
+
+        // Preserve all original memoryResult fields and only override the user-edited ones
+        const editedMemoryResult = {
+          ...memoryResult,  // This preserves metadata, titleFormat, lorebookSettings, etc.
+          extractedTitle: editedTitle,
+          content: editedContent,
+          suggestedKeys: editedKeywords
+        };
+
+        return {
+          action: 'edit',
+          memoryData: editedMemoryResult
+        };
+      case STMB_POPUP_RESULTS.RETRY:
+        return {
+          action: 'retry'
+        };
+      default:
+        return {
+          action: 'cancel'
+        };
     }
-
-    // User cancelled
-    return {
-      action: 'cancel'
-    };
 
   } catch (error) {
     console.error(translate(`${MODULE_NAME}: Error showing memory preview popup:`, 'confirmationPopup.log.previewError'), error);
