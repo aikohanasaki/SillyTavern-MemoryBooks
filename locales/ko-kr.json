@@ -275,7 +275,6 @@
   "STMemoryBooks_SaveProfileAndCreateMemory": "프로필 저장 및 메모리 생성",
   "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "수정된 설정을 새 프로필로 저장하고 메모리를 생성합니다",
   "STMemoryBooks_Tooltip_CreateMemory": "선택한 프로필 설정을 사용하여 메모리를 생성합니다",
-  "STMemoryBooks_AcceptAndAddToLorebook": "수락 및 로어북에 추가",
   "STMemoryBooks_EditAndSave": "편집 및 저장",
   "STMemoryBooks_RetryGeneration": "생성 재시도",
   "STMemoryBooks_PromptManager_Hint": "💡 새 프롬프트를 만들 때, 다른 내장 프롬프트 중 하나를 복사한 다음 수정하세요. \"JSON으로 응답\" 지침은 변경하지 마세요. 📕메모리 북은 AI에서 반환된 결과를 처리하는 데 사용합니다.",

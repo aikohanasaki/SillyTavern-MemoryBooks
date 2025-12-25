@@ -278,7 +278,6 @@
     "STMemoryBooks_SaveProfileAndCreateMemory": "Simpan Profil & Buat Memori",
     "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "Simpan pengaturan yang diubah sebagai profil baru dan buat memori",
     "STMemoryBooks_Tooltip_CreateMemory": "Buat memori menggunakan pengaturan profil yang dipilih",
-    "STMemoryBooks_AcceptAndAddToLorebook": "Terima & Tambah ke Buku Latar",
     "STMemoryBooks_EditAndSave": "Edit & Simpan",
     "STMemoryBooks_RetryGeneration": "Coba Ulang Pembuatan",
     "STMemoryBooks_PromptManager_Hint": "💡 Saat membuat prompt baru, salin salah satu prompt bawaan lainnya lalu ubah. Jangan ubah instruksi \"balas dengan JSON\", 📕Buku Memori menggunakannya untuk memproses hasil yang dikembalikan dari AI.",
