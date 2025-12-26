@@ -3,14 +3,16 @@
 Una extensión de SillyTavern de próxima generación para la creación automática, estructurada y confiable de memorias. Marca escenas en el chat, genera resúmenes basados en JSON con IA y guárdalos como entradas "vectorizadas" en tus libros de lore. Soporta chats de grupo, gestión avanzada de perfiles y manejo sólido de API/modelos.
 
 Comience aquí:
-* ⚠️‼️ Por favor lea los requisitos previos (especialmente si utiliza la API de finalización de texto de OpenAI)
-* ❓ [Preguntas Frecuentes](#faq)
-* 🛠️ [Solución de problemas](#troubleshooting)
+
+- ⚠️‼️ Por favor lea los requisitos previos (especialmente si utiliza la API de finalización de texto de OpenAI)
+- ❓ [Preguntas Frecuentes](#faq)
+- 🛠️ [Solución de problemas](#troubleshooting)
 
 Otros enlaces:
-* 📘 [Guía de Usuario (ES)](userguides/USER_GUIDE-ES.md)
-* 📋 [Historial de Versiones y Registro de cambios](changelog.md)
-* 💡 [Usando Memory Books con Lorebook Ordering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+
+- 📘 [Guía de Usuario (ES)](userguides/USER_GUIDE-ES.md)
+- 📋 [Historial de Versiones y Registro de cambios](changelog.md)
+- 💡 [Usando Memory Books con Lorebook Ordering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
 
@@ -18,7 +20,7 @@ Otros enlaces:
 
 Para una organización avanzada de memorias e integración más profunda de la historia, recomendamos encarecidamente usar STMB junto con [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). Consulta la guía para mejores prácticas, instrucciones de configuración y consejos!
 
-> Nota: Soporta varios idiomas: ver la carpeta `/locales` para la lista. Las guías de lectura e internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides). 
+> Nota: Soporta varios idiomas: ver la carpeta `/locales` para la lista. Las guías de lectura e internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides).
 > El conversor de Lorebook y la biblioteca de plantillas de Side Prompts se encuentran en la carpeta [`/resources`](resources).
 
 ---
@@ -32,7 +34,9 @@ Para una organización avanzada de memorias e integración más profunda de la h
 - **Soporte de Text Completion:** Las APIs de finalización de texto (Kobold, TextGen, etc.) son compatibles cuando se conectan a través de un endpoint de API de Finalización de Chat compatible con OpenAI. Recomendó configurar una conexión API de finalización de Chat según los consejos de KoboldCpp a continuación (modifique según sea necesario si utiliza Ollama u otro software). Después de eso, configure un perfil STMB y use Custom (recomendado) o configuración manual completa (solo si Custom falla o tiene más de una conexión personalizada).
 
 ### Consejos de KoboldCpp para usar 📕 ST Memory Books
+
 Configúrelo en ST (puede volver a Text Completion después de hacer funcionar STMB)
+
 - API de Finalización de Chat
 - Fuente de finalización de chat personalizada
 - Endpoint `http://localhost:5001/v1` (también puede usar `127.0.0.1:5000/v1`)
@@ -52,18 +56,21 @@ Configúrelo en ST (puede volver a Text Completion después de hacer funcionar S
 ## 🚀 Empezando
 
 ### 1. **Instalar y Cargar**
+
 - Cargue SillyTavern y seleccione un personaje o un chat de grupo.
 - Espere a que aparezcan los botones de chevron (► ◄) en los mensajes de chat (puede tardar hasta 10 segundos).
 
 ![Espere por estos botones](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **Marcar una Escena**
+
 - Haga clic en ► en el primer mensaje de su escena.
 - Haga clic en ◄ en el último mensaje.
 
 ![Indicaciones visuales que muestran la selección de escena](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Crear una Memoria**
+
 - Abra el menú de Extensiones (la varita mágica 🪄) y haga clic en "Memory Books", o use el comando slash `/creatememory`.
 - Confirme la configuración (perfil, contexto, API/modelo) si se le solicita.
 - Espere la generación por IA y la entrada automática en el lorebook.
@@ -87,13 +94,15 @@ Configúrelo en ST (puede volver a Text Completion después de hacer funcionar S
 ## 🧭 Modos de Operación
 
 ### **Modo Automático (Predeterminado)**
+
 - **Cómo funciona:** Usa automáticamente el lorebook vinculado a su chat actual.
 - **Mejor para:** Simplicidad y rapidez. La mayoría de usuarios debería empezar aquí.
 - **Cómo usar:** Asegúrese de que un lorebook esté seleccionado en el listado "Chat Lorebooks" para su personaje o chat de grupo.
 
 ![Ejemplo de enlace del lorebook de chat](https://github.com/aikohanasaki/imagehost/blob/main/STMMemoryBooks/chatlorebook.png)
 
-### **Modo de Auto-Creación de Lorebook** ⭐ *Nuevo en la versión v4.2.0*
+### **Modo de Auto-Creación de Lorebook** ⭐ _Nuevo en la versión v4.2.0_
+
 - **Cómo funciona:** Crea y vincula automáticamente un nuevo lorebook cuando no existe uno, usando su plantilla de nombre personalizada.
 - **Mejor para:** Usuarios nuevos y configuración rápida. Perfecto para crear un Lorebook con un solo clic.
 - **Para usar:**
@@ -105,6 +114,7 @@ Configúrelo en ST (puede volver a Text Completion después de hacer funcionar S
 - **Nota:** No se puede usar simultáneamente con el Modo Manual de Lorebook.
 
 ### **Modo de Lorebook Manual**
+
 - **Cómo funciona:** Le permite seleccionar un lorebook diferente para memorias en un chat específico, ignorando el lorebook vinculado al chat principal.
 - **Mejor para:** Usuarios avanzados que desean dirigir memorias a un lorebook específico y separado.
 - **Para usar:**
@@ -118,6 +128,7 @@ Configúrelo en ST (puede volver a Text Completion después de hacer funcionar S
 ## 📝 Generación de Memorias
 
 ### **Salida JSON Únicamente**
+
 Todos los prompts y presets deben indicar que la IA devuelva solo JSON válido, por ejemplo:
 
 ```json
@@ -127,15 +138,18 @@ Todos los prompts y presets deben indicar que la IA devuelva solo JSON válido, 
   "keywords": ["palabra1", "palabra2"]
 }
 ```
+
 **No se permite texto adicional.**
 
 ### **Presets Integrados**
+
 1. **Resumen:** Resúmenes detallados beat-by-beat.
 2. **Summarize:** Encabezados de Markdown para línea de tiempo, beats, interacciones, resultado.
 3. **Synopsis:** Detallado y estructurado en Markdown.
 4. **Sum Up:** Resumen breve con línea de tiempo.
 
 ### **Prompts Personalizados**
+
 - Crea el tuyo propio, pero debe devolver JSON válido como se muestra arriba.
 
 ---
@@ -156,23 +170,25 @@ Todos los prompts y presets deben indicar que la IA devuelva solo JSON válido, 
 ### 🎡 Prompts Laterales
 
 Los Side Prompts pueden usarse como trackers y crearán entradas en su libro de lore de memorias.
+
 - **Acceso:** Desde la configuración de Memory Books, haga clic en “🎡 Side Prompt Manager”.
 - **Características**:
-    - Ver todos los prompts laterales.
-    - Crear nuevos o duplicar prompts para experimentar con diferentes estilos de prompts.
-    - Editar o eliminar cualquier preset (incluidos los integrados).
-    - Exportar e importar presets como archivos JSON para copias de seguridad o compartir.
-    - Ejecutarlos manualmente o automáticamente con la creación de memorias.
+  - Ver todos los prompts laterales.
+  - Crear nuevos o duplicar prompts para experimentar con diferentes estilos de prompts.
+  - Editar o eliminar cualquier preset (incluidos los integrados).
+  - Exportar e importar presets como archivos JSON para copias de seguridad o compartir.
+  - Ejecutarlos manualmente o automáticamente con la creación de memorias.
 - **Consejos de uso:**
-    - Al crear un nuevo prompt, puede copiar de los integrados para mayor compatibilidad.
-    - Biblioteca adicional de Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - con solo importar para usar
+  - Al crear un nuevo prompt, puede copiar de los integrados para mayor compatibilidad.
+  - Biblioteca adicional de Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - con solo importar para usar
 
 ---
 
 ### 🧠 Integración de Regex para Personalización Avanzada
+
 - **Control total sobre el procesamiento de texto**: Memory Books ahora se integra con la extensión de SillyTavern **Regex**, permitiendo aplicar transformaciones de texto potentes en dos etapas clave:
-    1.  **Generación de prompts**: Modificar automáticamente los prompts enviados al IA creando scripts de regex que apunten a la ubicación de la Entrada del Usuario.
-    2.  **Análisis de respuestas**: Limpiar, reformatear o estandarizar la respuesta cruda de la IA antes de que sea guardada, apuntando a la ubicación de la Salida de IA.
+  1.  **Generación de prompts**: Modificar automáticamente los prompts enviados al IA creando scripts de regex que apunten a la ubicación de la Entrada del Usuario.
+  2.  **Análisis de respuestas**: Limpiar, reformatear o estandarizar la respuesta cruda de la IA antes de que sea guardada, apuntando a la ubicación de la Salida de IA.
 - **Soporte de multi-selección**: Ahora puedes seleccionar múltiples scripts de regex. Todos los scripts habilitados se aplicarán en secuencia en cada etapa (Generación de prompts y Análisis de respuestas), lo que permite transformaciones avanzadas y flexibles.
 - **Cómo funciona**: La integración es fluida. Simplemente crea y habilita (multi-selección) tus scripts deseados en la extensión Regex, y Memory Books los aplicará automáticamente durante la creación de memorias y prompts secundarios.
 
@@ -192,11 +208,12 @@ Los Side Prompts pueden usarse como trackers y crearán entradas en su libro de 
 ![Panel principal de ajustes](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
 
 ### **Ajustes Globales**
+
 [Resumen en video corto en YouTube](https://youtu.be/mG2eRH_EhHs)
 
 - **Modo de Lorebook Manual:** Actívelo para seleccionar lorebooks por chat.
-- **Auto-create lorebook if none exists:** ⭐ *Nuevo en la versión v4.2.0* - Crea y enlaza lorebooks automáticamente usando su plantilla de nombres.
-- **Lorebook Name Template:** ⭐ *Nuevo en la versión v4.2.0* - Personalice los nombres de lorebook creados automáticamente con marcadores de posición {{char}}, {{user}}, {{chat}}.
+- **Auto-create lorebook if none exists:** ⭐ _Nuevo en la versión v4.2.0_ - Crea y enlaza lorebooks automáticamente usando su plantilla de nombres.
+- **Lorebook Name Template:** ⭐ _Nuevo en la versión v4.2.0_ - Personalice los nombres de lorebook creados automáticamente con marcadores de posición {{char}}, {{user}}, {{chat}}.
 - **Allow Scene Overlap:** Permitir o evitar solapamientos de escenas.
 - **Always Use Default Profile:** Omite los cuadros de confirmación.
 - **Show memory previews:** Habilitar vista previa para revisar y editar memorias antes de agregarlas al lorebook.
@@ -211,6 +228,7 @@ Los Side Prompts pueden usarse como trackers y crearán entradas en su libro de 
 ![Configuración de perfil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Campos de Perfil**
+
 - **Name:** Nombre para mostrar.
 - **API/Provider:** openai, claude, custom, etc.
 - **Model:** Nombre del modelo (p. ej., gpt-4, claude-3-opus).
@@ -264,6 +282,7 @@ Personalice los títulos de sus entradas de lorebook usando un sistema de planti
 # FAQ
 
 ### ¿No encuentro Memory Books en el menú de Extensiones?
+
 Los ajustes se encuentran en el menú de Extensiones (la varita 🪄 a la izquierda de su caja de entrada). Busque "Memory Books".
 
 ![Ubicación de los ajustes de STMB](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
@@ -277,10 +296,12 @@ La entrada 🔗 en la información mundial se llama "vectorized" en la interfaz 
 ![Palabras clave generadas por IA](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/keywords.png)
 
 ### ¿Debería hacer un lorebook separado para memorias, o puedo usar el mismo lorebook que ya utilizo para otras cosas?
+
 Recomiendo que su lorebook de memorias sea un libro separado. Esto facilita la organización de memorias (frente a otras entradas).
 Por ejemplo, añadirlo a un chat de grupo, usarlo en otro chat o configurar un presupuesto de lorebook por separado (usando STLO).
 
 ### ¿Debería usar 'Retrasar la recursión' si Memory Books es el único lorebook?
+
 No. Si no hay otros World Info o lorebooks, seleccionar 'Retrasar la recursión' puede evitar que se dispare el primer bucle, haciendo que nada se active. Si Memory Books es el único lorebook, desactívelo o asegúrese de configurar al menos un World Info/lorebook adicional.
 
 ---
@@ -294,4 +315,4 @@ Consulta [Detalles de la Política de Caracteres](charset.md) para ejemplos y no
 
 ---
 
-*Desarrollado con amor usando VS Code/Cline, pruebas extensivas y comentarios de la comunidad.* 🤖💕
+_Desarrollado con amor usando VS Code/Cline, pruebas extensivas y comentarios de la comunidad._ 🤖💕

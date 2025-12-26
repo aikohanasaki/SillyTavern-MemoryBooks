@@ -13,17 +13,20 @@ Braucht dein Bot ein Gedächtnis, aber der Chat ist zu lang für den Kontext? M�
 **Neu bei ST Memory Books?** Richten wir deine erste automatische Erinnerung mit nur wenigen Klicks ein:
 
 ### Schritt 1: Finde die Erweiterung
+
 - Suche nach dem Zauberstab-Symbol (🪄) neben deinem Chat-Eingabefeld.
 - Klicke darauf und dann auf **"Memory Books"**.
 - Du siehst nun das ST Memory Books Bedienfeld.
 
 ### Schritt 2: Schalte die Auto-Magie ein
+
 - Suche im Bedienfeld nach **"Auto-Summary"**.
 - Schalte es auf **ON**.
 - Stelle ein, dass alle **20-30 Nachrichten** eine Erinnerung erstellt wird (ein guter Startpunkt).
 - Das war's! 🎉
 
 ### Schritt 3: Chatte ganz normal
+
 - Chatte wie gewohnt weiter.
 - Nach 20-30 neuen Nachrichten wird ST Memory Books automatisch:
   - Die besten Szenengrenzen auswählen
@@ -40,19 +43,25 @@ Braucht dein Bot ein Gedächtnis, aber der Chat ist zu lang für den Kontext? M�
 Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat-Gespräche:
 
 ### 🤖 **Automatische Zusammenfassungen**
-*"Ich will nicht darüber nachdenken, es soll einfach funktionieren"*
+
+_"Ich will nicht darüber nachdenken, es soll einfach funktionieren"_
+
 - Beobachtet deinen Chat im Hintergrund
 - Erstellt automatisch alle X Nachrichten Erinnerungen
 - Perfekt für lange Rollenspiele, kreatives Schreiben oder fortlaufende Geschichten
 
 ### ✋ **Manuelle Erinnerungserstellung**
-*"Ich möchte die Kontrolle darüber, was gespeichert wird"*
+
+_"Ich möchte die Kontrolle darüber, was gespeichert wird"_
+
 - Markiere wichtige Szenen mit einfachen Pfeiltasten (► ◄)
 - Erstelle Erinnerungen auf Abruf für besondere Momente
 - Großartig, um wichtige Handlungspunkte oder Charakterentwicklungen festzuhalten
 
 ### 📊 **Side Prompts & Smarte Tracker**
-*"Ich möchte Beziehungen, Handlungsstränge oder Statistiken verfolgen"*
+
+_"Ich möchte Beziehungen, Handlungsstränge oder Statistiken verfolgen"_
+
 - Wiederverwendbare Prompt-Schnipsel, die die Generierung von Erinnerungen verbessern
 - Vorlagenbibliothek mit gebrauchsfertigen Trackern
 - Benutzerdefinierte KI-Prompts, die alles verfolgen, was du willst
@@ -60,7 +69,9 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 - Beispiele: "Wer mag wen?", "Aktueller Quest-Status", "Charakter-Stimmungs-Tracker"
 
 ### 📚 **Erinnerungssammlungen (Memory Collections)**
-*Wo all deine Erinnerungen leben*
+
+_Wo all deine Erinnerungen leben_
+
 - Automatisch organisiert und durchsuchbar
 - Funktioniert mit dem eingebauten Lorebook-System von SillyTavern
 - Deine KI kann in neuen Gesprächen auf vergangene Erinnerungen zurückgreifen
@@ -75,11 +86,13 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 **Perfekt, wenn du willst:** Hands-off-Automatisierung, die einfach funktioniert
 
 **So funktioniert es:**
+
 1. Schalte "Auto-Summary" in den Einstellungen ein.
 2. Wähle, wie oft Erinnerungen erstellt werden sollen (alle 20-50 Nachrichten funktioniert gut).
 3. Chatte ganz normal weiter – Erinnerungen passieren automatisch!
 
 **Was du bekommst:**
+
 - Keine manuelle Arbeit erforderlich
 - Konsistente Erstellung von Erinnerungen
 - Verpasse nie wichtige Story-Beats
@@ -95,12 +108,14 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 **Perfekt, wenn du willst:** Genau entscheiden, was zu einer Erinnerung wird
 
 **So funktioniert es:**
+
 1. Suche nach kleinen Pfeiltasten (► ◄) an deinen Chat-Nachrichten.
 2. Klicke ► bei der ersten Nachricht einer wichtigen Szene.
 3. Klicke ◄ bei der letzten Nachricht dieser Szene.
 4. Öffne Memory Books (🪄) und klicke auf "Create Memory" (Erinnerung erstellen).
 
 **Was du bekommst:**
+
 - Volle Kontrolle über den Inhalt der Erinnerung
 - Perfekt zum Festhalten spezifischer Momente
 - Großartig für komplexe Szenen, die genaue Abgrenzungen benötigen
@@ -115,12 +130,14 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 **Perfekt, wenn du willst:** Tastaturkürzel und erweiterte Funktionen
 
 **Wichtige Befehle:**
+
 - `/scenememory 10-25` - Erstelle eine Erinnerung aus den Nachrichten 10 bis 25
 - `/creatememory` - Erstelle eine Erinnerung aus der aktuell markierten Szene
 - `/nextmemory` - Fasse alles seit der letzten Erinnerung zusammen
 - `/sideprompt "Relationship Tracker"` - Führe einen benutzerdefinierten Tracker aus
 
 **Was du bekommst:**
+
 - Blitzschnelle Erstellung von Erinnerungen
 - Stapelverarbeitung
 - Integration in benutzerdefinierte Workflows
@@ -134,6 +151,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 **Side Prompts** sind wiederverwendbare Prompt-Schnipsel, die deine Erinnerungsgenerierung verbessern, ohne deine KI-Haupteinstellungen zu ändern. Betrachte sie als "Add-ons", die deinen Erinnerungen zusätzlichen Fokus oder Tracking-Fähigkeiten verleihen.
 
 ### 🚀 **Schnellstart mit Vorlagen**
+
 1. Öffne die Memory Books Einstellungen.
 2. Klicke auf den Button **"Side Prompts"**.
 3. Durchstöbere die **Vorlagenbibliothek (Template Library)** – wähle etwas, das zu deiner Geschichte passt:
@@ -146,18 +164,21 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 5. Deine Erinnerungen enthalten nun automatisch dieses zusätzliche Tracking!
 
 ### ⚙️ **Wie Side Prompts funktionieren**
+
 - **Nicht-invasiv**: Sie ändern weder deine KI-Haupteinstellungen noch die Charakter-Prompts.
 - **Pro-Chat-Kontrolle**: Aktiviere unterschiedliche Prompts für verschiedene Chats.
 - **Vorlagenbasiert**: Nutze vorgefertigte Vorlagen oder erstelle eigene.
 - **Automatische Integration**: Einmal aktiviert, verbessern sie jede erstellte Erinnerung.
 
 ### 🛠️ **Verwalten von Side Prompts**
+
 - **Side Prompts Manager**: Erstelle, bearbeite, dupliziere und organisiere deine Prompts.
 - **Import/Export**: Teile Prompt-Vorlagen mit anderen oder sichere deine Sammlung.
 - **Schnell-Schalter**: Aktiviere/deaktiviere Prompts sofort im Side Prompts Popup.
 - **Live-Vorschau**: Sieh, welche Prompts für den aktuellen Chat aktiv sind.
 
 ### 💡 **Vorlagen-Beispiele**
+
 - Side Prompt Vorlagenbibliothek (importiere diese JSON): [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
 - **"Konzentriere dich auf Dialoge und Charakterinteraktionen"**
 - **"Verfolge den aktuellen Quest-Status und Ziele"**
@@ -165,6 +186,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 - **"Überwache die Beziehung zwischen [Charakter A] und [Charakter B]"**
 
 ### 🔧 **Erstellen eigener Side Prompts**
+
 1. Öffne den Side Prompts Manager.
 2. Klicke auf "Create New" (Neu erstellen).
 3. Schreibe deinen Prompt (Beispiel: "Notiere immer, wie das Wetter in jeder Szene ist").
@@ -182,6 +204,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 **Unterstützung für Mehrfachauswahl:** Du kannst jetzt mehrere Regex-Skripte in der Regex-Erweiterung auswählen. Alle aktivierten Skripte werden in der Reihenfolge bei jedem Schritt (Prompt und Antwort) angewendet, was mächtige und flexible Transformationen ermöglicht.
 
 Dies ist eine fortgeschrittene Funktion, perfekt für Benutzer, die:
+
 - Automatisch wiederholende Phrasen oder Artefakte aus einer KI-Antwort bereinigen wollen.
 - Teile des Chat-Transkripts umformatieren wollen, bevor die KI sie sieht.
 - Terminologie oder Charakter-Eigenarten "on the fly" standardisieren wollen.
@@ -191,14 +214,14 @@ Dies ist eine fortgeschrittene Funktion, perfekt für Benutzer, die:
 Die Integration funktioniert, indem deine aktivierten Regex-Skripte an zwei kritischen Punkten angewendet werden. Du kontrollierst, welche Skripte ausgeführt werden, indem du deren **Placement** (Platzierung) im Editor der Regex-Erweiterung festlegst:
 
 1.  **Bearbeiten des Prompts (Ausgehender Text)**
-    * **Zu verwendende Platzierung**: `User Input`
-    * **Was es tut**: Fängt den fertig zusammengestellten Prompt ab (inklusive Chat-Verlauf, Systemanweisungen usw.), kurz bevor er zur Erstellung von Erinnerungen oder Side Prompts an die KI gesendet wird.
-    * **Anwendungsbeispiel**: Du könntest ein Skript erstellen, das automatisch alle Instanzen des Spitznamens eines Charakters durch seinen vollen Namen ersetzt, um sicherzustellen, dass die KI den richtigen Kontext hat.
+    - **Zu verwendende Platzierung**: `User Input`
+    - **Was es tut**: Fängt den fertig zusammengestellten Prompt ab (inklusive Chat-Verlauf, Systemanweisungen usw.), kurz bevor er zur Erstellung von Erinnerungen oder Side Prompts an die KI gesendet wird.
+    - **Anwendungsbeispiel**: Du könntest ein Skript erstellen, das automatisch alle Instanzen des Spitznamens eines Charakters durch seinen vollen Namen ersetzt, um sicherzustellen, dass die KI den richtigen Kontext hat.
 
 2.  **Bearbeiten der Antwort (Eingehender Text)**
-    * **Zu verwendende Platzierung**: `AI Output`
-    * **Was es tut**: Fängt die rohe Textantwort der KI ab, *bevor* sie geparst oder als Erinnerung gespeichert wird.
-    * **Anwendungsbeispiel**: Wenn dein KI-Modell oft wiederholende Phrasen wie *"Als großes Sprachmodell..."* in seinen Zusammenfassungen verwendet, kannst du ein Regex-Skript erstellen, um diese Phrase automatisch aus jeder generierten Erinnerung zu entfernen.
+    - **Zu verwendende Platzierung**: `AI Output`
+    - **Was es tut**: Fängt die rohe Textantwort der KI ab, _bevor_ sie geparst oder als Erinnerung gespeichert wird.
+    - **Anwendungsbeispiel**: Wenn dein KI-Modell oft wiederholende Phrasen wie _"Als großes Sprachmodell..."_ in seinen Zusammenfassungen verwendet, kannst du ein Regex-Skript erstellen, um diese Phrase automatisch aus jeder generierten Erinnerung zu entfernen.
 
 #### **Schnellstart-Beispiel: Bereinigen von KI-Antworten**
 
@@ -207,11 +230,11 @@ Nehmen wir an, dein KI-Modell fügt konsequent `(OOC: Ich hoffe, diese Zusammenf
 1.  **Gehe zur Regex-Erweiterung**: Öffne das Hauptmenü für SillyTavern-Erweiterungen und gehe zu **Regex**.
 2.  **Erstelle ein neues Skript**: Klicke auf "Open Regex Editor", um ein neues Regex-Skript zu erstellen.
 3.  **Konfiguriere das Skript**:
-    * **Script Name**: `Clean OOC Notes`
-    * **Find Regex**: `/\\(OOC:.*?\\)/g` (Dies findet den Text "(OOC: ...)" und alles darin).
-    * **Replace String**: Lasse dies leer, um den übereinstimmenden Text zu löschen.
-    * **Affects (Placement)**: Deaktiviere alle Kästchen außer **AI Output**. Das ist der wichtigste Schritt!
-    * **Aktiviere das Skript**: Stelle sicher, dass das Skript nicht deaktiviert ist.
+    - **Script Name**: `Clean OOC Notes`
+    - **Find Regex**: `/\\(OOC:.*?\\)/g` (Dies findet den Text "(OOC: ...)" und alles darin).
+    - **Replace String**: Lasse dies leer, um den übereinstimmenden Text zu löschen.
+    - **Affects (Placement)**: Deaktiviere alle Kästchen außer **AI Output**. Das ist der wichtigste Schritt!
+    - **Aktiviere das Skript**: Stelle sicher, dass das Skript nicht deaktiviert ist.
 4.  **Speichern und Fertig!**
 
 Jedes Mal, wenn ST Memory Books nun eine Antwort von der KI erhält, wird dieses Skript automatisch ausgeführt und den unerwünschten Text bereinigen, bevor die Erinnerung in deinem Lorebook gespeichert wird.
@@ -223,21 +246,25 @@ Jedes Mal, wenn ST Memory Books nun eine Antwort von der KI erhält, wird dieses
 Keine Sorge – du musst nicht alles konfigurieren! Hier sind die Einstellungen, die den größten Unterschied machen:
 
 ### 🎛️ **Häufigkeit der Auto-Zusammenfassung**
+
 - **20-30 Nachrichten**: Großartig für detaillierte, langsamere Chats.
 - **40-60 Nachrichten**: Perfekt für schnellere, actionreiche Unterhaltungen.
 - **80+ Nachrichten**: Für sehr schnelle Gruppenchats oder lockere Gespräche.
 
 ### 📝 **Erinnerungsvorschau (Memory Previews)**
+
 - Schalte dies EIN, um Erinnerungen zu überprüfen, bevor sie gespeichert werden.
 - Du kannst sie bearbeiten, genehmigen oder neu generieren lassen, falls die KI etwas Wichtiges übersehen hat.
 - Empfohlen für wichtige Handlungsstränge.
 
 ### 🏷️ **Erinnerungstitel**
+
 - Passe an, wie deine Erinnerungen benannt werden.
 - Verwende `{{title}}` für KI-generierte Titel, `{{scene}}` für Nachrichtennummern.
 - Beispiel: `"Kapitel {{title}} ({{scene}})"` wird zu `"Kapitel Die große Flucht (Szene 45-67)"`.
 
 ### 📚 **Erinnerungssammlungen** (Lorebooks)
+
 - **Auto mode**: Verwendet die Standard-Erinnerungssammlung deines Chats (am einfachsten).
 - **Manual mode**: Wähle eine spezifische Sammlung für jeden Chat (zur Organisation).
 - **Auto-create**: Erstellt automatisch neue Sammlungen (gut für neue Charaktere).
@@ -247,30 +274,36 @@ Keine Sorge – du musst nicht alles konfigurieren! Hier sind die Einstellungen,
 ## 🔧 Fehlerbehebung (Wenn Dinge nicht funktionieren)
 
 ### "Ich sehe die Memory Books Option nicht!"
+
 - Prüfe, ob die Erweiterung installiert und aktiviert ist.
 - Suche nach dem Zauberstab-Symbol (🪄) neben deiner Chat-Eingabe.
 - Versuche, die Seite neu zu laden.
 
 ### "Die Pfeiltasten (► ◄) tauchen nicht auf!"
+
 - Warte 3-5 Sekunden nach dem Laden eines Chats – sie brauchen Zeit zum Erscheinen.
 - Wenn sie immer noch fehlen, aktualisiere die Seite.
 - Stelle sicher, dass ST Memory Books in den Erweiterungen aktiviert ist.
 
 ### "Auto-Summary funktioniert nicht!"
+
 - Überprüfe doppelt, ob "Auto-Summary" in den Memory Books Einstellungen aktiviert ist.
 - Wurde das Nachrichtenintervall erreicht? Auto-Summary wartet auf genügend neue Nachrichten.
 - Wenn du Auto-Summary aufgeschoben hast, wartet es vielleicht bis zu einer bestimmten Nachrichtenanzahl.
-- Auto-Summary verarbeitet nur neue Nachrichten seit der *letzten* Erinnerung. Wenn du alte Erinnerungen gelöscht hast, geht es nicht zurück.
+- Auto-Summary verarbeitet nur neue Nachrichten seit der _letzten_ Erinnerung. Wenn du alte Erinnerungen gelöscht hast, geht es nicht zurück.
 
 ### "Ich bekomme Fehler wegen fehlender Lorebooks!"
+
 - Gehe zu den Memory Books Einstellungen.
 - Binde entweder ein Lorebook an deinen Chat (Automatic Mode) oder aktiviere "Auto-create lorebook if none exists" (Lorebook automatisch erstellen, falls keins existiert).
 
 ### "Manchmal schlägt es ohne Grund fehl!"
+
 - Stelle sicher, dass deine "Max Response Length" (in den SillyTavern Voreinstellungen) auf eine ausreichend große Zahl eingestellt ist. Aiko empfiehlt mindestens 2000 Tokens (Aiko verwendet 4000).
 - Die Fehlermeldungen sind jetzt detaillierter, aber wenn du immer noch Probleme hast, kontaktiere bitte Aiko auf Github oder Discord.
 
 ### "Meine eigenen Prompts funktionieren nicht richtig!"
+
 - Überprüfe den "Summary Prompt Manager" in den Memory Books Einstellungen.
 - Stelle sicher, dass dein Prompt die KI anweist, im **JSON-Format** zu antworten (z. B. `{ "title": "...", "content": "..." }`).
 

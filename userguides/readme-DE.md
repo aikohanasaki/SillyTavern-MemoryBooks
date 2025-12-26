@@ -3,14 +3,16 @@
 Eine SillyTavern-Erweiterung der nächsten Generation für automatische, strukturierte und zuverlässige Speichererstellung. Markieren Sie Szenen im Chat, generieren Sie JSON-basierte Zusammenfassungen mit KI und speichern Sie diese als „[vektorisierte](#vectorized)“ Einträge in Ihren Lorebooks. Unterstützt Gruppenchats, erweiterte Profilverwaltung und bietet eine robuste API/Modell-Handhabung.
 
 Hier starten:
-* ⚠️‼️Bitte lesen Sie die [Voraussetzungen](#-voraussetzungen) für Installationshinweise (besonders wenn Sie die Text Completion API verwenden)
-* ❓ [Häufig gestellte Fragen (FAQ)](#faq)
-* 🛠️ [Fehlerbehebung (Troubleshooting)](#fehlerbehebung)
+
+- ⚠️‼️Bitte lesen Sie die [Voraussetzungen](#-voraussetzungen) für Installationshinweise (besonders wenn Sie die Text Completion API verwenden)
+- ❓ [Häufig gestellte Fragen (FAQ)](#faq)
+- 🛠️ [Fehlerbehebung (Troubleshooting)](#fehlerbehebung)
 
 Weitere Links:
-* 📘 [Benutzerhandbuch (EN)](USER_GUIDE.md)
-* 📋 [Versionsverlauf & Änderungsprotokoll](changelog.md)
-* 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+
+- 📘 [Benutzerhandbuch (EN)](USER_GUIDE.md)
+- 📋 [Versionsverlauf & Änderungsprotokoll](changelog.md)
+- 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
 
@@ -32,7 +34,9 @@ Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integr
 - **Unterstützung für Text Completion:** Text Completion APIs (Kobold, TextGen usw.) werden unterstützt, wenn sie über einen Chat Completion (OpenAI-kompatiblen) API-Endpunkt verbunden sind. Ich empfehle, eine Chat Completion API-Verbindung gemäß den untenstehenden KoboldCpp-Tipps einzurichten (passen Sie dies an, wenn Sie Ollama oder andere Software verwenden). Richten Sie danach ein STMB-Profil ein und verwenden Sie Custom (empfohlen) oder die vollständige manuelle Konfiguration (nur wenn Custom fehlschlägt oder Sie mehr als eine benutzerdefinierte Verbindung haben).
 
 ### KoboldCpp-Tipps zur Verwendung von 📕 ST Memory Books
+
 Richten Sie dies in ST ein (Sie können zu Text Completion zurückkehren, NACHDEM Sie STMB zum Laufen gebracht haben):
+
 - Chat Completion API
 - Quelle: Custom (OpenAI-compatible)
 - `http://localhost:5001/v1` Endpunkt (Sie können auch `127.0.0.1:5000/v1` verwenden)
@@ -52,18 +56,21 @@ Richten Sie dies in ST ein (Sie können zu Text Completion zurückkehren, NACHDE
 ## 🚀 Erste Schritte
 
 ### 1. **Installieren & Laden**
+
 - Laden Sie SillyTavern und wählen Sie einen Charakter oder Gruppenchat aus.
 - Warten Sie, bis die Chevron-Schaltflächen (► ◄) an den Chat-Nachrichten erscheinen (kann bis zu 10 Sekunden dauern).
 
 ![Warten Sie auf diese Schaltflächen](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **Eine Szene markieren**
+
 - Klicken Sie auf ► bei der ersten Nachricht Ihrer Szene.
 - Klicken Sie auf ◄ bei der letzten Nachricht.
 
 ![Visuelles Feedback, das die Szenenauswahl zeigt](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Eine Erinnerung erstellen**
+
 - Öffnen Sie das Erweiterungsmenü (der Zauberstab 🪄) und klicken Sie auf „Memory Books“ oder verwenden Sie den Befehl `/creatememory`.
 - Bestätigen Sie die Einstellungen (Profil, Kontext, API/Modell), falls Sie dazu aufgefordert werden.
 - Warten Sie auf die KI-Generierung und den automatischen Lorebook-Eintrag.
@@ -87,13 +94,15 @@ Richten Sie dies in ST ein (Sie können zu Text Completion zurückkehren, NACHDE
 ## 🧭 Betriebsmodi
 
 ### **Automatischer Modus (Standard)**
+
 - **Wie es funktioniert:** Verwendet automatisch das Lorebook, das an Ihren aktuellen Chat gebunden ist.
 - **Am besten für:** Einfachheit und Geschwindigkeit. Die meisten Benutzer sollten hiermit beginnen.
 - **Verwendung:** Stellen Sie sicher, dass im Dropdown-Menü „Chat Lorebooks“ für Ihren Charakter oder Gruppenchat ein Lorebook ausgewählt ist.
 
 ![Beispiel für Chat-Lorebook-Bindung](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
-### **Modus zum automatischen Erstellen von Lorebooks** ⭐ *Neu in v4.2.0*
+### **Modus zum automatischen Erstellen von Lorebooks** ⭐ _Neu in v4.2.0_
+
 - **Wie es funktioniert:** Erstellt und bindet automatisch ein neues Lorebook, wenn keines existiert, unter Verwendung Ihrer benutzerdefinierten Namensvorlage.
 - **Am besten für:** Neue Benutzer und schnelle Einrichtung. Perfekt für die Erstellung von Lorebooks mit einem Klick.
 - **Verwendung:**
@@ -105,6 +114,7 @@ Richten Sie dies in ST ein (Sie können zu Text Completion zurückkehren, NACHDE
 - **Hinweis:** Kann nicht gleichzeitig mit dem manuellen Lorebook-Modus verwendet werden.
 
 ### **Manueller Lorebook-Modus**
+
 - **Wie es funktioniert:** Ermöglicht es Ihnen, ein anderes Lorebook für Erinnerungen auf Chat-Basis auszuwählen und das an den Haupt-Chat gebundene Lorebook zu ignorieren.
 - **Am besten für:** Fortgeschrittene Benutzer, die Erinnerungen in ein bestimmtes, separates Lorebook leiten möchten.
 - **Verwendung:**
@@ -118,6 +128,7 @@ Richten Sie dies in ST ein (Sie können zu Text Completion zurückkehren, NACHDE
 ## 📝 Generierung von Erinnerungen
 
 ### **Nur JSON-Ausgabe**
+
 Alle Prompts und Presets **müssen** die KI anweisen, nur valides JSON zurückzugeben, z. B.:
 
 ```json
@@ -126,7 +137,6 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur valides JSON zurückzu
   "content": "Detaillierte Zusammenfassung der Szene...",
   "keywords": ["stichwort1", "stichwort2"]
 }
-
 ```
 
 **Kein anderer Text ist in der Antwort erlaubt.**
@@ -141,17 +151,17 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur valides JSON zurückzu
 
 ### **Benutzerdefinierte Prompts**
 
-* Erstellen Sie Ihre eigenen, aber sie **müssen** valides JSON wie oben zurückgeben.
+- Erstellen Sie Ihre eigenen, aber sie **müssen** valides JSON wie oben zurückgeben.
 
 ---
 
 ## 📚 Lorebook Integration
 
-* **Automatische Eintragserstellung:** Neue Erinnerungen werden als Einträge mit allen Metadaten gespeichert.
-* **Flag-basierte Erkennung:** Nur Einträge mit dem `stmemorybooks`-Flag werden als Erinnerungen erkannt.
-* **Automatische Nummerierung:** Sequentielle, mit Nullen aufgefüllte Nummerierung mit mehreren unterstützten Formaten (`[000]`, `(000)`, `{000}`, `#000`).
-* **Manuelle/Automatische Reihenfolge:** Einstellungen für die Einfügereihenfolge pro Profil.
-* **Editor-Aktualisierung:** Aktualisiert optional den Lorebook-Editor nach dem Hinzufügen einer Erinnerung.
+- **Automatische Eintragserstellung:** Neue Erinnerungen werden als Einträge mit allen Metadaten gespeichert.
+- **Flag-basierte Erkennung:** Nur Einträge mit dem `stmemorybooks`-Flag werden als Erinnerungen erkannt.
+- **Automatische Nummerierung:** Sequentielle, mit Nullen aufgefüllte Nummerierung mit mehreren unterstützten Formaten (`[000]`, `(000)`, `{000}`, `#000`).
+- **Manuelle/Automatische Reihenfolge:** Einstellungen für die Einfügereihenfolge pro Profil.
+- **Editor-Aktualisierung:** Aktualisiert optional den Lorebook-Editor nach dem Hinzufügen einer Erinnerung.
 
 > **Vorhandene Erinnerungen müssen konvertiert werden!**
 > Verwenden Sie den [Lorebook Converter](https://www.google.com/search?q=/resources/lorebookconverter.html), um das `stmemorybooks`-Flag und die erforderlichen Felder hinzuzufügen.
@@ -162,41 +172,38 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur valides JSON zurückzu
 
 Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihrem Speicher-Lorebook.
 
-* **Zugriff:** Klicken Sie in den Memory Books-Einstellungen auf „🎡 Side Prompt Manager“.
-* **Funktionen:**
-* Alle Side Prompts anzeigen.
-* Neue Prompts erstellen oder duplizieren, um mit verschiedenen Prompt-Stilen zu experimentieren.
-* Bearbeiten oder löschen Sie jedes Preset (einschließlich der eingebauten).
-* Exportieren und importieren Sie Presets als JSON-Dateien zur Sicherung oder Weitergabe.
-* Führen Sie sie manuell oder automatisch mit der Speichererstellung aus.
+- **Zugriff:** Klicken Sie in den Memory Books-Einstellungen auf „🎡 Side Prompt Manager“.
+- **Funktionen:**
+- Alle Side Prompts anzeigen.
+- Neue Prompts erstellen oder duplizieren, um mit verschiedenen Prompt-Stilen zu experimentieren.
+- Bearbeiten oder löschen Sie jedes Preset (einschließlich der eingebauten).
+- Exportieren und importieren Sie Presets als JSON-Dateien zur Sicherung oder Weitergabe.
+- Führen Sie sie manuell oder automatisch mit der Speichererstellung aus.
 
-
-* **Tipps zur Verwendung:**
-* Wenn Sie einen neuen Prompt erstellen, können Sie von den eingebauten kopieren, um die beste Kompatibilität zu gewährleisten.
-* Zusätzliche Side Prompts Vorlagenbibliothek [JSON-Datei](https://www.google.com/search?q=resources/SidePromptTemplateLibrary.json) - einfach importieren, um sie zu verwenden.
-
-
+- **Tipps zur Verwendung:**
+- Wenn Sie einen neuen Prompt erstellen, können Sie von den eingebauten kopieren, um die beste Kompatibilität zu gewährleisten.
+- Zusätzliche Side Prompts Vorlagenbibliothek [JSON-Datei](https://www.google.com/search?q=resources/SidePromptTemplateLibrary.json) - einfach importieren, um sie zu verwenden.
 
 ---
 
 ### 🧠 Regex-Integration für erweiterte Anpassung
 
-* **Volle Kontrolle über die Textverarbeitung**: Memory Books integriert sich jetzt in die **Regex**-Erweiterung von SillyTavern und ermöglicht es Ihnen, leistungsstarke Texttransformationen in zwei Schlüsselphasen anzuwenden:
+- **Volle Kontrolle über die Textverarbeitung**: Memory Books integriert sich jetzt in die **Regex**-Erweiterung von SillyTavern und ermöglicht es Ihnen, leistungsstarke Texttransformationen in zwei Schlüsselphasen anzuwenden:
+
 1. **Prompt-Generierung**: Ändern Sie automatisch die an die KI gesendeten Prompts, indem Sie Regex-Skripte erstellen, die auf die Platzierung **User Input** abzielen.
 2. **Antwort-Parsing**: Bereinigen, neu formatieren oder standardisieren Sie die Rohantwort der KI, bevor sie gespeichert wird, indem Sie auf die Platzierung **AI Output** abzielen.
 
-
-* **Mehrfachauswahl-Unterstützung**: Sie können jetzt mehrere Regex-Skripte auswählen. Alle aktivierten Skripte werden nacheinander in jeder Phase (Prompt-Generierung und Antwort-Parsing) angewendet, was fortgeschrittene und flexible Transformationen ermöglicht.
-* **Wie es funktioniert**: Die Integration ist nahtlos. Erstellen und aktivieren (Mehrfachauswahl) Sie einfach Ihre gewünschten Skripte in der Regex-Erweiterung, und Memory Books wendet sie automatisch während der Erstellung von Erinnerungen und Side Prompts an.
+- **Mehrfachauswahl-Unterstützung**: Sie können jetzt mehrere Regex-Skripte auswählen. Alle aktivierten Skripte werden nacheinander in jeder Phase (Prompt-Generierung und Antwort-Parsing) angewendet, was fortgeschrittene und flexible Transformationen ermöglicht.
+- **Wie es funktioniert**: Die Integration ist nahtlos. Erstellen und aktivieren (Mehrfachauswahl) Sie einfach Ihre gewünschten Skripte in der Regex-Erweiterung, und Memory Books wendet sie automatisch während der Erstellung von Erinnerungen und Side Prompts an.
 
 ---
 
 ## 👤 Profilverwaltung
 
-* **Profile:** Jedes Profil enthält API, Modell, Temperatur, Prompt/Preset, Titelformat und Lorebook-Einstellungen.
-* **Importieren/Exportieren:** Profile als JSON teilen.
-* **Profil erstellen:** Verwenden Sie das Popup für erweiterte Optionen, um neue Profile zu speichern.
-* **Überschreibungen pro Profil:** Wechseln Sie vorübergehend API/Modell/Temp für die Speichererstellung und stellen Sie dann Ihre ursprünglichen Einstellungen wieder her.
+- **Profile:** Jedes Profil enthält API, Modell, Temperatur, Prompt/Preset, Titelformat und Lorebook-Einstellungen.
+- **Importieren/Exportieren:** Profile als JSON teilen.
+- **Profil erstellen:** Verwenden Sie das Popup für erweiterte Optionen, um neue Profile zu speichern.
+- **Überschreibungen pro Profil:** Wechseln Sie vorübergehend API/Modell/Temp für die Speichererstellung und stellen Sie dann Ihre ursprünglichen Einstellungen wieder her.
 
 ---
 
@@ -206,32 +213,32 @@ Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihr
 
 [Kurzes Video-Overview auf Youtube](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode:** Aktivieren, um Lorebooks pro Chat auszuwählen.
-* **Auto-create lorebook if none exists:** ⭐ *Neu in v4.2.0* - Lorebooks automatisch mit Ihrer Namensvorlage erstellen und binden.
-* **Lorebook Name Template:** ⭐ *Neu in v4.2.0* - Passen Sie automatisch erstellte Lorebook-Namen mit {{char}}, {{user}}, {{chat}} Platzhaltern an.
-* **Allow Scene Overlap:** Überlappende Speicherbereiche zulassen oder verhindern.
-* **Always Use Default Profile:** Bestätigungs-Popups überspringen.
-* **Show memory previews:** Vorschau-Popup aktivieren, um Erinnerungen vor dem Hinzufügen zum Lorebook zu überprüfen und zu bearbeiten.
-* **Show Notifications:** Toast-Benachrichtigungen umschalten.
-* **Refresh Editor:** Lorebook-Editor nach Speichererstellung automatisch aktualisieren.
-* **Token Warning Threshold:** Warnstufe für große Szenen festlegen (Standard: 30.000).
-* **Default Previous Memories:** Anzahl der vorherigen Erinnerungen, die als Kontext einbezogen werden sollen (0-7).
-* **Auto-create memory summaries:** Automatische Speichererstellung in Intervallen aktivieren.
-* **Auto-Summary Interval:** Anzahl der Nachrichten, nach denen automatisch eine Speicherzusammenfassung erstellt werden soll (10-200, Standard: 100).
-* **Memory Title Format:** Wählen oder anpassen (siehe unten).
+- **Manual Lorebook Mode:** Aktivieren, um Lorebooks pro Chat auszuwählen.
+- **Auto-create lorebook if none exists:** ⭐ _Neu in v4.2.0_ - Lorebooks automatisch mit Ihrer Namensvorlage erstellen und binden.
+- **Lorebook Name Template:** ⭐ _Neu in v4.2.0_ - Passen Sie automatisch erstellte Lorebook-Namen mit {{char}}, {{user}}, {{chat}} Platzhaltern an.
+- **Allow Scene Overlap:** Überlappende Speicherbereiche zulassen oder verhindern.
+- **Always Use Default Profile:** Bestätigungs-Popups überspringen.
+- **Show memory previews:** Vorschau-Popup aktivieren, um Erinnerungen vor dem Hinzufügen zum Lorebook zu überprüfen und zu bearbeiten.
+- **Show Notifications:** Toast-Benachrichtigungen umschalten.
+- **Refresh Editor:** Lorebook-Editor nach Speichererstellung automatisch aktualisieren.
+- **Token Warning Threshold:** Warnstufe für große Szenen festlegen (Standard: 30.000).
+- **Default Previous Memories:** Anzahl der vorherigen Erinnerungen, die als Kontext einbezogen werden sollen (0-7).
+- **Auto-create memory summaries:** Automatische Speichererstellung in Intervallen aktivieren.
+- **Auto-Summary Interval:** Anzahl der Nachrichten, nach denen automatisch eine Speicherzusammenfassung erstellt werden soll (10-200, Standard: 100).
+- **Memory Title Format:** Wählen oder anpassen (siehe unten).
 
 ### **Profil-Felder**
 
-* **Name:** Anzeigename.
-* **API/Provider:** openai, claude, custom, usw.
-* **Model:** Modellname (z. B. gpt-4, claude-3-opus).
-* **Temperature:** 0.0–2.0.
-* **Prompt or Preset:** Benutzerdefiniert oder eingebaut.
-* **Title Format:** Vorlage pro Profil.
-* **Activation Mode:** Vectorized, Constant, Normal.
-* **Position:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (und Feldname).
-* **Order Mode:** Auto/Manuell.
-* **Recursion:** Rekursion verhindern/verzögern.
+- **Name:** Anzeigename.
+- **API/Provider:** openai, claude, custom, usw.
+- **Model:** Modellname (z. B. gpt-4, claude-3-opus).
+- **Temperature:** 0.0–2.0.
+- **Prompt or Preset:** Benutzerdefiniert oder eingebaut.
+- **Title Format:** Vorlage pro Profil.
+- **Activation Mode:** Vectorized, Constant, Normal.
+- **Position:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (und Feldname).
+- **Order Mode:** Auto/Manuell.
+- **Recursion:** Rekursion verhindern/verzögern.
 
 ---
 
@@ -239,38 +246,34 @@ Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihr
 
 Passen Sie die Titel Ihrer Lorebook-Einträge mit einem leistungsstarken Vorlagensystem an.
 
-* **Platzhalter:**
-* `{{title}}` - Der von der KI generierte Titel (z. B. „Eine schicksalhafte Begegnung“).
-* `{{scene}}` - Der Nachrichtenbereich (z. B. „Szene 15-23“).
-* `{{char}}` - Der Name des Charakters.
-* `{{user}}` - Ihr Benutzername.
-* `{{messages}}` - Die Anzahl der Nachrichten in der Szene.
-* `{{profile}}` - Der Name des für die Generierung verwendeten Profils.
-* Aktuelle Datums-/Zeit-Platzhalter in verschiedenen Formaten (z. B. `August 13, 2025` für Datum, `11:08 PM` für Zeit).
+- **Platzhalter:**
+- `{{title}}` - Der von der KI generierte Titel (z. B. „Eine schicksalhafte Begegnung“).
+- `{{scene}}` - Der Nachrichtenbereich (z. B. „Szene 15-23“).
+- `{{char}}` - Der Name des Charakters.
+- `{{user}}` - Ihr Benutzername.
+- `{{messages}}` - Die Anzahl der Nachrichten in der Szene.
+- `{{profile}}` - Der Name des für die Generierung verwendeten Profils.
+- Aktuelle Datums-/Zeit-Platzhalter in verschiedenen Formaten (z. B. `August 13, 2025` für Datum, `11:08 PM` für Zeit).
 
-
-* **Automatische Nummerierung:** Verwenden Sie `[0]`, `[00]`, `(0)`, `{0}`, `#0` und jetzt auch die umschlossenen Formen wie `#[000]`, `([000])`, `{[000]}` für sequentielle, mit Nullen aufgefüllte Nummerierung.
-* **Benutzerdefinierte Formate:** Sie können Ihre eigenen Formate erstellen. Ab v4.5.1 sind alle druckbaren Unicode-Zeichen (einschließlich Emoji, CJK, Akzente, Symbole usw.) in Titeln erlaubt; nur Unicode-Steuerzeichen werden blockiert.
+- **Automatische Nummerierung:** Verwenden Sie `[0]`, `[00]`, `(0)`, `{0}`, `#0` und jetzt auch die umschlossenen Formen wie `#[000]`, `([000])`, `{[000]}` für sequentielle, mit Nullen aufgefüllte Nummerierung.
+- **Benutzerdefinierte Formate:** Sie können Ihre eigenen Formate erstellen. Ab v4.5.1 sind alle druckbaren Unicode-Zeichen (einschließlich Emoji, CJK, Akzente, Symbole usw.) in Titeln erlaubt; nur Unicode-Steuerzeichen werden blockiert.
 
 ---
 
 ## 🧵 Kontext-Erinnerungen
 
-* **Bis zu 7 vorherige Erinnerungen einbeziehen** als Kontext für bessere Kontinuität.
-* **Token-Schätzung** schließt Kontext-Erinnerungen für Genauigkeit ein.
+- **Bis zu 7 vorherige Erinnerungen einbeziehen** als Kontext für bessere Kontinuität.
+- **Token-Schätzung** schließt Kontext-Erinnerungen für Genauigkeit ein.
 
 ---
 
 ## 🎨 Visuelles Feedback & Barrierefreiheit
 
-* **Schaltflächen-Zustände:**
-* Inaktiv, aktiv, gültige Auswahl, in-szene, verarbeitung.
+- **Schaltflächen-Zustände:**
+- Inaktiv, aktiv, gültige Auswahl, in-szene, verarbeitung.
 
-
-* **Barrierefreiheit:**
-* Tastaturnavigation, Fokusindikatoren, ARIA-Attribute, reduzierte Bewegung, mobilfreundlich.
-
-
+- **Barrierefreiheit:**
+- Tastaturnavigation, Fokusindikatoren, ARIA-Attribute, reduzierte Bewegung, mobilfreundlich.
 
 ---
 
@@ -296,45 +299,37 @@ Nein. Wenn es keine anderen World Info oder Lorebooks gibt, kann die Auswahl von
 
 # Fehlerbehebung (Troubleshooting)
 
-* **Kein Lorebook verfügbar oder ausgewählt:**
-* Wählen Sie im manuellen Modus ein Lorebook aus, wenn Sie dazu aufgefordert werden.
-* Binden Sie im automatischen Modus ein Lorebook an Ihren Chat.
-* Oder aktivieren Sie „Auto-create lorebook if none exists“ für die automatische Erstellung.
+- **Kein Lorebook verfügbar oder ausgewählt:**
+- Wählen Sie im manuellen Modus ein Lorebook aus, wenn Sie dazu aufgefordert werden.
+- Binden Sie im automatischen Modus ein Lorebook an Ihren Chat.
+- Oder aktivieren Sie „Auto-create lorebook if none exists“ für die automatische Erstellung.
 
+- **Keine Szene ausgewählt:**
+- Markieren Sie sowohl Start- (►) als auch Endpunkte (◄).
 
-* **Keine Szene ausgewählt:**
-* Markieren Sie sowohl Start- (►) als auch Endpunkte (◄).
+- **Szene überlappt mit vorhandener Erinnerung:**
+- Wählen Sie einen anderen Bereich oder aktivieren Sie „Allow scene overlap“ in den Einstellungen.
 
+- **KI konnte keine gültige Erinnerung generieren:**
+- Verwenden Sie ein Modell, das JSON-Ausgabe unterstützt.
+- Überprüfen Sie Ihre Prompt- und Modelleinstellungen.
 
-* **Szene überlappt mit vorhandener Erinnerung:**
-* Wählen Sie einen anderen Bereich oder aktivieren Sie „Allow scene overlap“ in den Einstellungen.
+- **Token-Warnschwelle überschritten:**
+- Verwenden Sie eine kleinere Szene oder erhöhen Sie den Schwellenwert.
 
+- **Fehlende Chevron-Schaltflächen:**
+- Warten Sie, bis die Erweiterung geladen ist, oder aktualisieren Sie die Seite.
 
-* **KI konnte keine gültige Erinnerung generieren:**
-* Verwenden Sie ein Modell, das JSON-Ausgabe unterstützt.
-* Überprüfen Sie Ihre Prompt- und Modelleinstellungen.
-
-
-* **Token-Warnschwelle überschritten:**
-* Verwenden Sie eine kleinere Szene oder erhöhen Sie den Schwellenwert.
-
-
-* **Fehlende Chevron-Schaltflächen:**
-* Warten Sie, bis die Erweiterung geladen ist, oder aktualisieren Sie die Seite.
-
-
-* **Charakterdaten nicht verfügbar:**
-* Warten Sie, bis der Chat/die Gruppe vollständig geladen ist.
-
-
+- **Charakterdaten nicht verfügbar:**
+- Warten Sie, bis der Chat/die Gruppe vollständig geladen ist.
 
 ---
 
 ## 📝 Zeichenrichtlinie (v4.5.1+)
 
-* **In Titeln erlaubt:** Alle druckbaren Unicode-Zeichen sind erlaubt, einschließlich akzentuierter Buchstaben, Emoji, CJK und Symbole.
-* **Blockiert:** Nur Unicode-Steuerzeichen (U+0000–U+001F, U+007F–U+009F) werden blockiert; diese werden automatisch entfernt.
+- **In Titeln erlaubt:** Alle druckbaren Unicode-Zeichen sind erlaubt, einschließlich akzentuierter Buchstaben, Emoji, CJK und Symbole.
+- **Blockiert:** Nur Unicode-Steuerzeichen (U+0000–U+001F, U+007F–U+009F) werden blockiert; diese werden automatisch entfernt.
 
 ## Siehe [Details zur Zeichenrichtlinie](https://www.google.com/search?q=charset.md) für Beispiele und Migrationshinweise.
 
-*Entwickelt mit Liebe unter Verwendung von VS Code/Cline, umfangreichen Tests und Community-Feedback.* 🤖💕
+_Entwickelt mit Liebe unter Verwendung von VS Code/Cline, umfangreichen Tests und Community-Feedback._ 🤖💕

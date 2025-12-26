@@ -7,6 +7,7 @@ Panduan ini menerangkan cara STMB berfungsi dalam istilah yang jelas dan ringkas
 Apabila anda menjalankan "Jana Memori," STMB menghantar gesaan dua bahagian:
 
 A) Arahan Sistem (daripada pratetap seperti "ringkasan," "sinopsis," dsb.)
+
 - Blok arahan pendek yang:
   - Memberitahu model untuk menganalisis adegan
   - Mengarahkannya untuk mengembalikan JSON SAHAJA
@@ -15,6 +16,7 @@ A) Arahan Sistem (daripada pratetap seperti "ringkasan," "sinopsis," dsb.)
 - Ini BUKAN pratetap anda! Gesaan ini berdiri sendiri dan boleh diuruskan daripada 🧩Pengurus Gesaan Ringkasan.
 
 B) Adegan, diformatkan untuk analisis
+
 - STMB memformatkan mesej terbaharu anda seperti skrip:
   - Blok konteks pilihan memori sebelumnya (ditandakan dengan jelas JANGAN RINGKASKAN).
   - Transkrip adegan semasa, satu baris setiap mesej:
@@ -22,6 +24,7 @@ B) Adegan, diformatkan untuk analisis
     Bob: …
 
 Rangka bentuk gesaan
+
 ```
 — Arahan Sistem (daripada pratetap pilihan anda) —
 Analisis adegan sembang berikut dan kembalikan memori sebagai JSON.
@@ -51,43 +54,69 @@ Kata kunci: alfa, beta, …
 ```
 
 Nota
+
 - Keselamatan token: STMB menganggarkan penggunaan token dan memberi amaran jika anda melebihi ambang.
 - Jika anda mendayakan regex keluar dalam Tetapan, STMB menggunakan skrip regex pilihan anda pada teks gesaan sejurus sebelum menghantar.
 
 ## Perkara yang Mesti Dikembalikan oleh AI (Kontrak JSON)
 
 AI mesti mengembalikan satu objek JSON dengan medan ini:
+
 - title: rentetan (pendek)
 - content: rentetan (teks ringkasan/memori)
 - keywords: tatasusunan rentetan (10–30 istilah khusus yang disyorkan oleh pratetap)
 
 Ketegasan dan keserasian
+
 - Kembalikan objek JSON SAHAJA — tiada prosa, tiada penjelasan.
 - Kunci hendaklah betul-betul: "title", "content", "keywords".
   - STMB bertolak ansur dengan "summary" atau "memory_content" untuk kandungan, tetapi "content" ialah amalan terbaik.
 - keywords mestilah tatasusunan rentetan (bukan rentetan dipisahkan koma).
 
 Contoh minimum (sah)
+
 ```json
 {
   "title": "Pengakuan Senyap",
   "content": "Lewat petang, Alice mengaku penggodaman itu bersifat peribadi. Bob mencabar etika; mereka bersetuju dengan sempadan dan merancang langkah seterusnya yang teliti.",
-  "keywords": ["Alice", "Bob", "pengakuan", "sempadan", "godam", "etika", "petang", "langkah seterusnya"]
+  "keywords": [
+    "Alice",
+    "Bob",
+    "pengakuan",
+    "sempadan",
+    "godam",
+    "etika",
+    "petang",
+    "langkah seterusnya"
+  ]
 }
 ```
 
 Contoh lebih panjang (sah)
+
 ```json
 {
   "title": "Gencatan Senjata di Atas Bumbung",
   "content": "Garis Masa: Malam selepas insiden pasar. Rentak Cerita: Alice mendedahkan dia yang menanam pengesan. Bob kecewa tetapi mendengar; mereka memainkan semula petunjuk dan mengenal pasti gudang. Interaksi Utama: Alice memohon maaf tanpa alasan; Bob menetapkan syarat untuk meneruskan. Butiran Penting: Radio rosak, label gudang \"K‑17\", siren jauh. Hasil: Mereka membentuk gencatan senjata sementara dan bersetuju untuk meninjau K‑17 pada waktu subuh.",
-  "keywords": ["Alice", "Bob", "gencatan senjata", "gudang K-17", "maaf", "syarat", "siren", "rancangan peninjauan", "malam", "insiden pasar"]
+  "keywords": [
+    "Alice",
+    "Bob",
+    "gencatan senjata",
+    "gudang K-17",
+    "maaf",
+    "syarat",
+    "siren",
+    "rancangan peninjauan",
+    "malam",
+    "insiden pasar"
+  ]
 }
 ```
 
 ### Jika Model Berkelakuan Buruk
 
 STMB cuba menyelamatkan output yang sedikit cacat:
+
 - Menerima JSON di dalam pagar kod dan mengekstrak blok.
 - Mengalih keluar ulasan dan koma di belakang sebelum menghurai.
 - Mengesan JSON yang terpotong/tidak seimbang dan menimbulkan ralat yang jelas, cth.:
@@ -96,6 +125,7 @@ STMB cuba menyelamatkan output yang sedikit cacat:
   - MISSING_FIELDS_TITLE / MISSING_FIELDS_CONTENT / INVALID_KEYWORDS — isu skema
 
 Tingkah laku model terbaik
+
 - Keluarkan satu objek JSON dengan medan yang diperlukan.
 - Jangan tambah teks sekeliling atau pagar Markdown.
 - Pastikan "title" pendek; jadikan "keywords" khusus dan mesra pengambilan.
@@ -113,24 +143,28 @@ Tingkah laku model terbaik
 Gesaan Sampingan ialah penjana tambahan dipacu templat yang menulis nota berstruktur kembali ke dalam buku lore anda (cth., penjejak, laporan, senarai pelakon). Ia berasingan daripada laluan "penjanaan memori" dan boleh berjalan secara automatik atau atas permintaan.
 
 Kegunaannya
+
 - Penjejak plot/keadaan (cth., "Titik Plot")
 - Papan pemuka status/hubungan (cth., "Status")
 - Senarai pelakon / siapa siapa NPC (cth., "Senarai Watak")
 - Nota POV atau penilaian (cth., "Nilai")
 
 Templat terbina dalam (dihantar oleh STMB)
+
 - Titik Plot — menjejaki benang cerita dan cangkuk
 - Status — meringkaskan maklumat hubungan/pertalian
 - Senarai Watak — menyimpan senarai NPC mengikut kepentingan plot
 - Nilai — mencatat perkara yang telah dipelajari oleh {{char}} tentang {{user}}
 
 Tempat untuk mengurus
+
 - Buka Pengurus Gesaan Sampingan (dalam STMB) untuk melihat, mencipta, mengimport/mengeksport, mendayakan atau mengkonfigurasi templat.
 
 Cipta atau dayakan Gesaan Sampingan
-1) Buka Pengurus Gesaan Sampingan.
-2) Cipta templat baharu atau dayakan templat terbina dalam.
-3) Konfigurasikan:
+
+1. Buka Pengurus Gesaan Sampingan.
+2. Cipta templat baharu atau dayakan templat terbina dalam.
+3. Konfigurasikan:
    - Nama: Tajuk paparan (entri buku lore yang disimpan akan bertajuk "Nama (Gesaan Sampingan STMB)").
    - Gesaan: Teks arahan yang akan diikuti oleh model.
    - Format Respons: Blok panduan pilihan yang dilampirkan pada gesaan (bukan skema, hanya arahan).
@@ -147,6 +181,7 @@ Cipta atau dayakan Gesaan Sampingan
      • preventRecursion/delayUntilRecursion: bendera boolean
 
 Larian manual dengan /sideprompt
+
 - Sintaks: /sideprompt "Nama" [X‑Y]
   - Contoh:
     • /sideprompt "Status"
@@ -155,14 +190,17 @@ Larian manual dengan /sideprompt
 - Larian manual memerlukan templat untuk membenarkan perintah sideprompt (dayakan "Benarkan larian manual melalui /sideprompt" dalam tetapan templat). Jika dilumpuhkan, perintah itu akan ditolak.
 
 Larian automatik
+
 - Selepas Memori: Semua templat yang didayakan dengan pencetus onAfterMemory berjalan menggunakan adegan yang telah disusun. STMB menjalankan larian secara berkelompok dengan had serentak yang kecil dan boleh menunjukkan roti bakar kejayaan/kegagalan setiap templat.
-- Penjejak selang masa: Templat yang didayakan dengan onInterval berjalan sebaik sahaja bilangan mesej yang boleh dilihat (bukan sistem) sejak larian terakhir memenuhi visibleMessages. STMB menyimpan pusat pemeriksaan setiap templat (cth., STMB_sp_<key>_lastMsgId) dan menyahlecit larian (~10s). Penyusunan adegan dihadkan kepada tetingkap terbaharu untuk keselamatan.
+- Penjejak selang masa: Templat yang didayakan dengan onInterval berjalan sebaik sahaja bilangan mesej yang boleh dilihat (bukan sistem) sejak larian terakhir memenuhi visibleMessages. STMB menyimpan pusat pemeriksaan setiap templat (cth., STMB*sp*<key>\_lastMsgId) dan menyahlecit larian (~10s). Penyusunan adegan dihadkan kepada tetingkap terbaharu untuk keselamatan.
 
 Pratonton dan simpanan
+
 - Jika "tunjukkan pratonton memori" didayakan dalam tetapan STMB, tetingkap timbul pratonton akan muncul. Anda boleh menerima, mengedit, mencuba semula atau membatalkan. Kandungan yang diterima ditulis ke buku lore terikat anda di bawah "Nama (Gesaan Sampingan STMB)".
 - Gesaan Sampingan memerlukan buku lore memori untuk diikat pada sembang (atau dipilih dalam Mod Manual). Jika tiada yang terikat, STMB akan menunjukkan pemberitahuan dan melangkau larian.
 
 Import/eksport dan tetapan semula terbina dalam
+
 - Eksport: Simpan dokumen Gesaan Sampingan anda sebagai JSON.
 - Import: Menggabungkan entri secara tambahan; pendua dinamakan semula dengan selamat (tiada tulis ganti).
 - Cipta Semula Terbina Dalam: Tetapkan semula templat terbina dalam kepada lalai tempatan semasa (templat ciptaan pengguna tidak disentuh).

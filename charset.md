@@ -7,6 +7,7 @@ We now follow SillyTavern’s behavior: titles/comments are broadly permissive. 
 ## 🎯 Scope
 
 Applies to:
+
 - 🏷️ AI-extracted titles (`{{title}}`)
 - 👤 Character names (`{{char}}`)
 - 🧑‍💻 User names (`{{user}}`)
@@ -14,12 +15,14 @@ Applies to:
 - 🎨 Text used in title format templates
 
 Does NOT apply to:
+
 - 📝 Memory content (no restrictions)
 - 💬 Original chat message content
 
 ## ✅ Allowed Characters
 
 Everything that is printable Unicode is allowed in titles/comments, including (but not limited to):
+
 - Latin letters, numbers, spaces, and punctuation
 - International scripts (accents, Cyrillic, CJK, Arabic, etc.)
 - Quotes and apostrophes (single and double)
@@ -31,24 +34,25 @@ We do not impose a custom “allowed list” anymore.
 ## ❌ Removed Characters
 
 Only control characters are removed during sanitization:
+
 - C0 and C1 controls: `U+0000–U+001F`, `U+007F–U+009F`
 
 If a title becomes empty after cleaning (e.g., it contained only control characters), we fall back to `"Auto Memory"` to ensure the lorebook entry is still created.
 
 ## 📊 Examples
 
-| Input | Output | Status |
-|-------|--------|--------|
-| `Test Memory` | `Test Memory` | ✅ |
-| `[001] - Scene` | `[001] - Scene` | ✅ |
-| `René's Story` | `René's Story` | ✅ Quotes, accents preserved |
-| `Сергей` | `Сергей` | ✅ Cyrillic preserved |
-| `先生の話` | `先生の話` | ✅ CJK preserved |
-| `O'Malley & Co.` | `O'Malley & Co.` | ✅ Symbols preserved |
-| `Test_Name + Debug!` | `Test_Name + Debug!` | ✅ Underscore and symbols preserved |
-| `😀🎯🧠` | `😀🎯🧠` | ✅ Emojis preserved |
-| `<control>\u0007Beep</control>` | `<control>Beep</control>` | ⚠️ Control char removed |
-| `\u0008\u0009` | `Auto Memory` | ⚠️ Only controls → fallback |
+| Input                           | Output                    | Status                              |
+| ------------------------------- | ------------------------- | ----------------------------------- |
+| `Test Memory`                   | `Test Memory`             | ✅                                  |
+| `[001] - Scene`                 | `[001] - Scene`           | ✅                                  |
+| `René's Story`                  | `René's Story`            | ✅ Quotes, accents preserved        |
+| `Сергей`                        | `Сергей`                  | ✅ Cyrillic preserved               |
+| `先生の話`                      | `先生の話`                | ✅ CJK preserved                    |
+| `O'Malley & Co.`                | `O'Malley & Co.`          | ✅ Symbols preserved                |
+| `Test_Name + Debug!`            | `Test_Name + Debug!`      | ✅ Underscore and symbols preserved |
+| `😀🎯🧠`                        | `😀🎯🧠`                  | ✅ Emojis preserved                 |
+| `<control>\u0007Beep</control>` | `<control>Beep</control>` | ⚠️ Control char removed             |
+| `\u0008\u0009`                  | `Auto Memory`             | ⚠️ Only controls → fallback         |
 
 ## 🔢 Template and Numbering Notes
 
