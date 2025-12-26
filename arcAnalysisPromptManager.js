@@ -1,16 +1,19 @@
-import { getRequestHeaders } from '../../../../script.js';
-import { FILE_NAMES, SCHEMA } from './constants.js';
-import { translate } from '../../../i18n.js';
-import { getBuiltInArcPrompts, getDefaultArcPrompt } from './templatesArcPrompts.js';
+import { getRequestHeaders } from "../../../../script.js";
+import { FILE_NAMES, SCHEMA } from "./constants.js";
+import { translate } from "../../../i18n.js";
+import {
+  getBuiltInArcPrompts,
+  getDefaultArcPrompt,
+} from "./templatesArcPrompts.js";
 
-const MODULE_NAME = 'STMemoryBooks-ArcAnalysisPromptManager';
+const MODULE_NAME = "STMemoryBooks-ArcAnalysisPromptManager";
 const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
 
- // Preferred translation keys for built-in arc presets
- const BUILTIN_DISPLAY_NAMES = {
-   arc_default: 'STMemoryBooks_ArcDefaultDisplayName',
-   arc_alternate: 'STMemoryBooks_ArcAlternateDisplayName',
- };
+// Preferred translation keys for built-in arc presets
+const BUILTIN_DISPLAY_NAMES = {
+  arc_default: "STMemoryBooks_ArcDefaultDisplayName",
+  arc_alternate: "STMemoryBooks_ArcAlternateDisplayName",
+};
 
 /**
  * In-memory cache of loaded overrides
@@ -24,10 +27,10 @@ let cachedOverrides = null;
  * @returns {string}
  */
 function safeSlug(str) {
-  return String(str || '')
+  return String(str || "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .substring(0, 50);
 }
 
@@ -37,7 +40,7 @@ function safeSlug(str) {
  * @returns {string}
  */
 function toTitleCase(str) {
-  return String(str || '').replace(/\w\S*/g, (txt) => {
+  return String(str || "").replace(/\w\S*/g, (txt) => {
     return txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
   });
 }
@@ -48,16 +51,18 @@ function toTitleCase(str) {
  * @returns {string}
  */
 function generateDisplayNameFromContent(prompt) {
-  const lines = String(prompt || '').split('\n').filter((l) => l.trim());
+  const lines = String(prompt || "")
+    .split("\n")
+    .filter((l) => l.trim());
   if (lines.length > 0) {
     const first = lines[0].trim();
     const cleaned = first
-      .replace(/^(You are|Analyze|Create|Generate|Write)\s+/i, '')
-      .replace(/[:.]/g, '')
+      .replace(/^(You are|Analyze|Create|Generate|Write)\s+/i, "")
+      .replace(/[:.]/g, "")
       .trim();
     return toTitleCase(cleaned.substring(0, 50));
   }
-  return 'Arc Prompt';
+  return "Arc Prompt";
 }
 
 /**
@@ -69,7 +74,7 @@ function generateDisplayNameFromContent(prompt) {
 function generateUniqueKey(baseName, existingOverrides) {
   const builtIns = getBuiltInArcPrompts() || {};
   const existing = existingOverrides || {};
-  const baseSlug = safeSlug(baseName || 'arc-prompt');
+  const baseSlug = safeSlug(baseName || "arc-prompt");
   let key = baseSlug;
   let counter = 2;
   while (key in existing || key in builtIns) {
@@ -84,13 +89,14 @@ function generateUniqueKey(baseName, existingOverrides) {
  * @returns {boolean}
  */
 function validatePromptsFile(data) {
-  if (!data || typeof data !== 'object') return false;
-  if (typeof data.version !== 'number') return false;
-  if (!data.overrides || typeof data.overrides !== 'object') return false;
+  if (!data || typeof data !== "object") return false;
+  if (typeof data.version !== "number") return false;
+  if (!data.overrides || typeof data.overrides !== "object") return false;
   for (const [key, ov] of Object.entries(data.overrides)) {
-    if (!ov || typeof ov !== 'object') return false;
-    if (typeof ov.prompt !== 'string' || !ov.prompt.trim()) return false;
-    if (ov.displayName !== undefined && typeof ov.displayName !== 'string') return false;
+    if (!ov || typeof ov !== "object") return false;
+    if (typeof ov.prompt !== "string" || !ov.prompt.trim()) return false;
+    if (ov.displayName !== undefined && typeof ov.displayName !== "string")
+      return false;
   }
   return true;
 }
@@ -108,8 +114,8 @@ async function loadOverrides(settings = null) {
 
   try {
     const response = await fetch(`/user/files/${PROMPTS_FILE}`, {
-      method: 'GET',
-      credentials: 'include',
+      method: "GET",
+      credentials: "include",
       headers: getRequestHeaders(),
     });
     if (!response.ok) {
@@ -134,9 +140,14 @@ async function loadOverrides(settings = null) {
       let displayName;
       if (BUILTIN_DISPLAY_NAMES[key]) {
         const translated = translate(BUILTIN_DISPLAY_NAMES[key]);
-        displayName = translated || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt);
+        displayName =
+          translated ||
+          toTitleCase(key.replace(/^arc[_-]?/, "").replace(/[_-]/g, " ")) ||
+          generateDisplayNameFromContent(prompt);
       } else {
-        displayName = toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt);
+        displayName =
+          toTitleCase(key.replace(/^arc[_-]?/, "").replace(/[_-]/g, " ")) ||
+          generateDisplayNameFromContent(prompt);
       }
       overrides[key] = {
         displayName,
@@ -164,9 +175,9 @@ async function loadOverrides(settings = null) {
 async function saveOverrides(doc) {
   const json = JSON.stringify(doc, null, 2);
   const base64 = btoa(unescape(encodeURIComponent(json)));
-  const response = await fetch('/api/files/upload', {
-    method: 'POST',
-    credentials: 'include',
+  const response = await fetch("/api/files/upload", {
+    method: "POST",
+    credentials: "include",
     headers: getRequestHeaders(),
     body: JSON.stringify({
       name: PROMPTS_FILE,
@@ -174,7 +185,10 @@ async function saveOverrides(doc) {
     }),
   });
   if (!response.ok) {
-    const msg = translate("Failed to save arc prompts", "STMemoryBooks_ArcPromptManager_SaveFailed");
+    const msg = translate(
+      "Failed to save arc prompts",
+      "STMemoryBooks_ArcPromptManager_SaveFailed",
+    );
     throw new Error(`${msg}: ${response.statusText}`);
   }
   cachedOverrides = doc;
@@ -218,7 +232,9 @@ export async function listPresets(settings = null) {
     if (!(key in data.overrides)) {
       presets.push({
         key,
-        displayName: (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' '))),
+        displayName:
+          BUILTIN_DISPLAY_NAMES[key] ||
+          toTitleCase(key.replace(/^arc[_-]?/, "").replace(/[_-]/g, " ")),
         createdAt: null,
       });
     }
@@ -241,7 +257,11 @@ export async function listPresets(settings = null) {
  */
 export async function getPrompt(key, settings = null) {
   const data = await loadOverrides(settings);
-  if (data.overrides[key] && typeof data.overrides[key].prompt === 'string' && data.overrides[key].prompt.trim()) {
+  if (
+    data.overrides[key] &&
+    typeof data.overrides[key].prompt === "string" &&
+    data.overrides[key].prompt.trim()
+  ) {
     return data.overrides[key].prompt;
   }
   const builtIns = getBuiltInArcPrompts();
@@ -258,7 +278,15 @@ export async function getDisplayName(key, settings = null) {
   if (data.overrides[key] && data.overrides[key].displayName) {
     return data.overrides[key].displayName;
   }
-  return BUILTIN_DISPLAY_NAMES[key] || toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || 'Arc Prompt';
+  return (
+    BUILTIN_DISPLAY_NAMES[key] ||
+    toTitleCase(
+      String(key || "")
+        .replace(/^arc[_-]?/, "")
+        .replace(/[_-]/g, " "),
+    ) ||
+    "Arc Prompt"
+  );
 }
 
 /**
@@ -285,12 +313,16 @@ export async function upsertPreset(key, prompt, displayName) {
 
   let actualKey = key;
   if (!actualKey) {
-    actualKey = generateUniqueKey(displayName || generateDisplayNameFromContent(prompt), data.overrides);
+    actualKey = generateUniqueKey(
+      displayName || generateDisplayNameFromContent(prompt),
+      data.overrides,
+    );
   }
 
   if (data.overrides[actualKey]) {
     data.overrides[actualKey].prompt = prompt;
-    data.overrides[actualKey].displayName = displayName || data.overrides[actualKey].displayName;
+    data.overrides[actualKey].displayName =
+      displayName || data.overrides[actualKey].displayName;
     data.overrides[actualKey].updatedAt = now;
   } else {
     data.overrides[actualKey] = {
@@ -354,7 +386,7 @@ export async function exportToJSON() {
 export async function importFromJSON(jsonString) {
   const obj = JSON.parse(jsonString);
   if (!validatePromptsFile(obj)) {
-    throw new Error('Invalid arc prompts file structure.');
+    throw new Error("Invalid arc prompts file structure.");
   }
   await saveOverrides(obj);
 }
@@ -371,15 +403,17 @@ export function clearCache() {
  * @param {'overwrite'} mode
  * @returns {Promise<{ removed: number }>}
  */
-export async function recreateBuiltInPrompts(mode = 'overwrite') {
-  if (mode !== 'overwrite') {
-    console.warn(`${MODULE_NAME}: Unsupported mode "${mode}", defaulting to overwrite`);
+export async function recreateBuiltInPrompts(mode = "overwrite") {
+  if (mode !== "overwrite") {
+    console.warn(
+      `${MODULE_NAME}: Unsupported mode "${mode}", defaulting to overwrite`,
+    );
   }
   const data = await loadOverrides();
   const builtIns = getBuiltInArcPrompts() || {};
   const keys = Object.keys(builtIns);
   let removed = 0;
-  if (data && data.overrides && typeof data.overrides === 'object') {
+  if (data && data.overrides && typeof data.overrides === "object") {
     for (const k of keys) {
       if (k in data.overrides) {
         delete data.overrides[k];
@@ -389,7 +423,9 @@ export async function recreateBuiltInPrompts(mode = 'overwrite') {
   }
   await saveOverrides(data);
   cachedOverrides = data;
-  console.log(`${MODULE_NAME}: Recreated arc built-ins (removed ${removed} overrides)`);
+  console.log(
+    `${MODULE_NAME}: Recreated arc built-ins (removed ${removed} overrides)`,
+  );
   return { removed };
 }
 
@@ -407,7 +443,9 @@ export async function rebuildFromBuiltIns(options = {}) {
   for (const [key, prompt] of Object.entries(builtIns)) {
     overrides[key] = {
       displayName:
-        (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt)),
+        BUILTIN_DISPLAY_NAMES[key] ||
+        toTitleCase(key.replace(/^arc[_-]?/, "").replace(/[_-]/g, " ")) ||
+        generateDisplayNameFromContent(prompt),
       prompt,
       createdAt: now,
     };
@@ -418,20 +456,25 @@ export async function rebuildFromBuiltIns(options = {}) {
   try {
     const existing = await loadOverrides();
     if (backup && existing) {
-      const base = String(PROMPTS_FILE || 'stmb-arc-prompts.json').replace(/\.json$/i, '');
-      const ts = now.replace(/[:.]/g, '-');
+      const base = String(PROMPTS_FILE || "stmb-arc-prompts.json").replace(
+        /\.json$/i,
+        "",
+      );
+      const ts = now.replace(/[:.]/g, "-");
       backupName = `${base}.backup-${ts}.json`;
 
       const backupJson = JSON.stringify(existing, null, 2);
       const backupB64 = btoa(unescape(encodeURIComponent(backupJson)));
-      const resp = await fetch('/api/files/upload', {
-        method: 'POST',
-        credentials: 'include',
+      const resp = await fetch("/api/files/upload", {
+        method: "POST",
+        credentials: "include",
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: backupName, data: backupB64 }),
       });
       if (!resp.ok) {
-        console.warn(`${MODULE_NAME}: Failed to write backup "${backupName}": ${resp.statusText}`);
+        console.warn(
+          `${MODULE_NAME}: Failed to write backup "${backupName}": ${resp.statusText}`,
+        );
       }
     }
   } catch (e) {
@@ -444,7 +487,7 @@ export async function rebuildFromBuiltIns(options = {}) {
 
   // Notify listeners that arc presets changed
   try {
-    window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
+    window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated"));
   } catch {
     /* noop */
   }

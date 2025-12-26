@@ -7,6 +7,7 @@ Panduan ini menjelaskan cara kerja STMB dalam istilah yang jelas dan ringan bagi
 Saat Anda menjalankan "Hasilkan Memori," STMB mengirimkan prompt dua bagian:
 
 A) Instruksi Sistem (dari preset seperti "ringkasan," "sinopsis," dll.)
+
 - Blok instruksi singkat yang:
   - Memberi tahu model untuk menganalisis adegan
   - Menginstruksikannya untuk mengembalikan HANYA JSON
@@ -15,6 +16,7 @@ A) Instruksi Sistem (dari preset seperti "ringkasan," "sinopsis," dll.)
 - Ini BUKAN preset Anda! Prompt ini berdiri sendiri dan dapat dikelola dari 🧩Manajer Prompt Ringkasan.
 
 B) Adegan, diformat untuk analisis
+
 - STMB memformat pesan terbaru Anda seperti skrip:
   - Blok konteks opsional dari memori sebelumnya (ditandai dengan jelas JANGAN RINGKAS).
   - Transkrip adegan saat ini, satu baris per pesan:
@@ -22,6 +24,7 @@ B) Adegan, diformat untuk analisis
     Bob: …
 
 Kerangka bentuk prompt
+
 ```
 — Instruksi Sistem (dari preset yang Anda pilih) —
 Analisis adegan obrolan berikut dan kembalikan memori sebagai JSON.
@@ -51,43 +54,69 @@ Kata kunci: alfa, beta, …
 ```
 
 Catatan
+
 - Keamanan token: STMB memperkirakan penggunaan token dan memperingatkan jika Anda melebihi ambang batas.
 - Jika Anda mengaktifkan regex keluar di Pengaturan, STMB menerapkan skrip regex yang Anda pilih ke teks prompt tepat sebelum mengirim.
 
 ## Apa yang Harus Dikembalikan AI (Kontrak JSON)
 
 AI harus mengembalikan satu objek JSON dengan bidang-bidang ini:
+
 - title: string (pendek)
 - content: string (teks ringkasan/memori)
 - keywords: array string (10–30 istilah spesifik yang direkomendasikan oleh preset)
 
 Keketatan dan kompatibilitas
+
 - Kembalikan HANYA objek JSON — tanpa prosa, tanpa penjelasan.
 - Kunci harus persis: "title", "content", "keywords".
   - STMB mentolerir "summary" atau "memory_content" untuk konten, tetapi "content" adalah praktik terbaik.
 - keywords harus berupa array string (bukan string yang dipisahkan koma).
 
 Contoh minimal (valid)
+
 ```json
 {
   "title": "Pengakuan Diam-diam",
   "content": "Larut malam, Alice mengakui peretasan itu bersifat pribadi. Bob menantang etika; mereka menyetujui batasan dan merencanakan langkah selanjutnya dengan hati-hati.",
-  "keywords": ["Alice", "Bob", "pengakuan", "batasan", "peretasan", "etika", "malam", "langkah selanjutnya"]
+  "keywords": [
+    "Alice",
+    "Bob",
+    "pengakuan",
+    "batasan",
+    "peretasan",
+    "etika",
+    "malam",
+    "langkah selanjutnya"
+  ]
 }
 ```
 
 Contoh lebih panjang (valid)
+
 ```json
 {
   "title": "Gencatan Senjata di Atap",
   "content": "Garis Waktu: Malam setelah insiden pasar. Alur Cerita: Alice mengungkapkan bahwa dia yang menanam pelacak. Bob frustrasi tetapi mendengarkan; mereka memutar ulang petunjuk dan mengidentifikasi gudang. Interaksi Kunci: Alice meminta maaf tanpa alasan; Bob menetapkan syarat untuk melanjutkan. Detail Penting: Radio rusak, label gudang \"K‑17\", sirene jauh. Hasil: Mereka membentuk gencatan senjata sementara dan setuju untuk mengintai K‑17 saat fajar.",
-  "keywords": ["Alice", "Bob", "gencatan senjata", "gudang K-17", "permintaan maaf", "syarat", "sirene", "rencana pengintaian", "malam", "insiden pasar"]
+  "keywords": [
+    "Alice",
+    "Bob",
+    "gencatan senjata",
+    "gudang K-17",
+    "permintaan maaf",
+    "syarat",
+    "sirene",
+    "rencana pengintaian",
+    "malam",
+    "insiden pasar"
+  ]
 }
 ```
 
 ### Jika Model Berperilaku Buruk
 
 STMB mencoba menyelamatkan output yang sedikit salah format:
+
 - Menerima JSON di dalam pagar kode dan mengekstrak bloknya.
 - Menghapus komentar dan koma di akhir sebelum parsing.
 - Mendeteksi JSON yang terpotong/tidak seimbang dan memberikan kesalahan yang jelas, mis.:
@@ -96,6 +125,7 @@ STMB mencoba menyelamatkan output yang sedikit salah format:
   - MISSING_FIELDS_TITLE / MISSING_FIELDS_CONTENT / INVALID_KEYWORDS — masalah skema
 
 Perilaku model terbaik
+
 - Mengeluarkan satu objek JSON dengan bidang yang diperlukan.
 - Jangan menambahkan teks di sekitarnya atau pagar Markdown.
 - Jaga agar "title" tetap pendek; buat "keywords" spesifik dan ramah pengambilan.
@@ -113,24 +143,28 @@ Perilaku model terbaik
 Prompt Sampingan adalah generator tambahan yang digerakkan oleh templat yang menulis catatan terstruktur kembali ke buku lore Anda (mis., pelacak, laporan, daftar pemeran). Mereka terpisah dari jalur "pembuatan memori" dan dapat berjalan secara otomatis atau sesuai permintaan.
 
 Kegunaannya
+
 - Pelacak plot/status (mis., "Plotpoints")
 - Dasbor status/hubungan (mis., "Status")
 - Daftar pemeran / siapa siapa NPC (mis., "Pemeran Karakter")
 - Catatan POV atau penilaian (mis., "Menilai")
 
 Templat bawaan (dikirim oleh STMB)
+
 - Plotpoints — melacak alur cerita dan kaitan
 - Status — merangkum informasi hubungan/afinitas
 - Pemeran Karakter — menyimpan daftar NPC dalam urutan kepentingan plot
 - Menilai — mencatat apa yang telah dipelajari {{char}} tentang {{user}}
 
 Tempat mengelola
+
 - Buka Manajer Prompt Sampingan (di dalam STMB) untuk melihat, membuat, mengimpor/mengekspor, mengaktifkan, atau mengonfigurasi templat.
 
 Buat atau aktifkan Prompt Sampingan
-1) Buka Manajer Prompt Sampingan.
-2) Buat templat baru atau aktifkan yang sudah ada.
-3) Konfigurasikan:
+
+1. Buka Manajer Prompt Sampingan.
+2. Buat templat baru atau aktifkan yang sudah ada.
+3. Konfigurasikan:
    - Nama: Judul tampilan (entri buku lore yang disimpan akan diberi judul "Nama (STMB SidePrompt)").
    - Prompt: Teks instruksi yang akan diikuti model.
    - Format Respons: Blok panduan opsional yang ditambahkan ke prompt (bukan skema, hanya arahan).
@@ -147,6 +181,7 @@ Buat atau aktifkan Prompt Sampingan
      • preventRecursion/delayUntilRecursion: flag boolean
 
 Jalankan manual dengan /sideprompt
+
 - Sintaks: /sideprompt "Nama" [X‑Y]
   - Contoh:
     • /sideprompt "Status"
@@ -155,14 +190,17 @@ Jalankan manual dengan /sideprompt
 - Proses manual mengharuskan templat untuk mengizinkan perintah sideprompt (aktifkan "Izinkan proses manual melalui /sideprompt" di pengaturan templat). Jika dinonaktifkan, perintah akan ditolak.
 
 Proses otomatis
+
 - Setelah Memori: Semua templat yang diaktifkan dengan pemicu onAfterMemory berjalan menggunakan adegan yang sudah dikompilasi. STMB memproses proses secara batch dengan batas konkurensi kecil dan dapat menampilkan toast keberhasilan/kegagalan per templat.
-- Pelacak interval: Templat yang diaktifkan dengan onInterval berjalan setelah jumlah pesan yang terlihat (non-sistem) sejak proses terakhir memenuhi visibleMessages. STMB menyimpan pos pemeriksaan per templat (mis., STMB_sp_<key>_lastMsgId) dan melakukan debounce proses (~10 detik). Kompilasi adegan dibatasi pada jendela terbaru untuk keamanan.
+- Pelacak interval: Templat yang diaktifkan dengan onInterval berjalan setelah jumlah pesan yang terlihat (non-sistem) sejak proses terakhir memenuhi visibleMessages. STMB menyimpan pos pemeriksaan per templat (mis., STMB*sp*<key>\_lastMsgId) dan melakukan debounce proses (~10 detik). Kompilasi adegan dibatasi pada jendela terbaru untuk keamanan.
 
 Pratinjau dan penyimpanan
+
 - Jika "tampilkan pratinjau memori" diaktifkan di pengaturan STMB, popup pratinjau akan muncul. Anda dapat menerima, mengedit, mencoba lagi, atau membatalkan. Konten yang diterima ditulis ke buku lore terikat Anda di bawah "Nama (STMB SidePrompt)".
 - Prompt Sampingan memerlukan buku lore memori untuk diikat ke obrolan (atau dipilih dalam Mode Manual). Jika tidak ada yang terikat, STMB akan menampilkan pemberitahuan dan melewati proses.
 
 Impor/ekspor dan reset bawaan
+
 - Ekspor: Simpan dokumen Prompt Sampingan Anda sebagai JSON.
 - Impor: Menggabungkan entri secara aditif; duplikat diganti namanya dengan aman (tidak ada penimpaan).
 - Buat Ulang Bawaan: Mengatur ulang templat bawaan ke default lokal saat ini (templat buatan pengguna tidak tersentuh).

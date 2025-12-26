@@ -7,6 +7,7 @@ Esta guía explica cómo funciona STMB en términos claros y sencillos para usua
 Cuando ejecutas "Generar Memoria", STMB envía un prompt de dos partes:
 
 A) Instrucciones del Sistema (de un preajuste como "summary", "synopsis", etc.)
+
 - Un bloque corto de instrucciones que:
   - Le dice al modelo que analice la escena.
   - Le instruye que devuelva ÚNICAMENTE JSON.
@@ -15,6 +16,7 @@ A) Instrucciones del Sistema (de un preajuste como "summary", "synopsis", etc.)
 - ¡Este NO es tu preajuste! Estos prompts son independientes y se pueden gestionar desde el 🧩Administrador de Prompts de Resumen.
 
 B) La Escena, formateada para el análisis
+
 - STMB formatea tus mensajes recientes como un guion:
   - Un bloque de contexto opcional de memorias anteriores (claramente marcado como NO RESUMIR).
   - La transcripción de la escena actual, una línea por mensaje:
@@ -22,6 +24,7 @@ B) La Escena, formateada para el análisis
     Bob: …
 
 Esqueleto de la forma del prompt
+
 ```
 — Instrucciones del Sistema (de tu preajuste seleccionado) —
 Analiza la siguiente escena de chat y devuelve una memoria como JSON.
@@ -51,43 +54,69 @@ Palabras clave: alfa, beta, …
 ```
 
 Notas
+
 - Seguridad de tokens: STMB estima el uso de tokens y te advierte si excedes un umbral.
 - Si habilitaste las expresiones regulares de salida en la Configuración, STMB aplica tus scripts de regex seleccionados al texto del prompt justo antes de enviarlo.
 
 ## Lo que la IA debe devolver (Contrato JSON)
 
 La IA debe devolver un único objeto JSON con estos campos:
+
 - title: string (corto)
 - content: string (el texto del resumen/memoria)
 - keywords: array de strings (se recomiendan 10–30 términos específicos por los preajustes)
 
 Rigor y compatibilidad
+
 - Devuelve ÚNICAMENTE el objeto JSON — sin prosa, sin explicaciones.
 - Las claves deben ser exactamente: "title", "content", "keywords".
   - STMB tolera "summary" o "memory_content" para el contenido, pero "content" es la mejor práctica.
 - keywords debe ser un array de strings (no una cadena separada por comas).
 
 Ejemplo mínimo (válido)
+
 ```json
 {
   "title": "Confesión Silenciosa",
   "content": "Tarde en la noche, Alice admite que el hackeo fue personal. Bob cuestiona la ética; acuerdan límites y planean un siguiente paso cuidadoso.",
-  "keywords": ["Alice", "Bob", "confesión", "límites", "hackeo", "ética", "noche", "siguientes pasos"]
+  "keywords": [
+    "Alice",
+    "Bob",
+    "confesión",
+    "límites",
+    "hackeo",
+    "ética",
+    "noche",
+    "siguientes pasos"
+  ]
 }
 ```
 
 Ejemplo más largo (válido)
+
 ```json
 {
   "title": "Tregua en la Azotea",
   "content": "Línea de tiempo: Noche después del incidente del mercado. Hitos de la historia: Alice revela que ella plantó el rastreador. Bob está frustrado pero escucha; repasan la pista e identifican el almacén. Interacciones clave: Alice se disculpa sin excusas; Bob establece condiciones para continuar. Detalles notables: Radio rota, etiqueta del almacén \"K‑17\", sirenas distantes. Resultado: Forman una tregua provisional y acuerdan explorar K‑17 al amanecer.",
-  "keywords": ["Alice", "Bob", "tregua", "almacén K-17", "disculpa", "condiciones", "sirenas", "plan de exploración", "noche", "incidente del mercado"]
+  "keywords": [
+    "Alice",
+    "Bob",
+    "tregua",
+    "almacén K-17",
+    "disculpa",
+    "condiciones",
+    "sirenas",
+    "plan de exploración",
+    "noche",
+    "incidente del mercado"
+  ]
 }
 ```
 
 ### Si el Modelo se comporta mal
 
 STMB intenta rescatar salidas ligeramente malformadas:
+
 - Acepta JSON dentro de bloques de código y extrae el bloque.
 - Elimina comentarios y comas finales antes de analizar.
 - Detecta JSON truncado/desequilibrado y genera errores claros, por ejemplo:
@@ -96,6 +125,7 @@ STMB intenta rescatar salidas ligeramente malformadas:
   - MISSING_FIELDS_TITLE / MISSING_FIELDS_CONTENT / INVALID_KEYWORDS — problemas de esquema.
 
 Mejor comportamiento del modelo
+
 - Emitir un único objeto JSON con los campos requeridos.
 - No agregar texto circundante ni bloques de Markdown.
 - Mantener el "title" corto; hacer que las "keywords" sean específicas y fáciles de recuperar.
@@ -113,24 +143,28 @@ Mejor comportamiento del modelo
 Los Prompts Laterales son generadores auxiliares, impulsados por plantillas, que escriben notas estructuradas en tu lorebook (por ejemplo, rastreadores, informes, listas de personajes). Son independientes de la ruta de "generación de memoria" y pueden ejecutarse automáticamente o bajo demanda.
 
 Para qué son buenos
+
 - Rastreadores de trama/estado (por ejemplo, "Puntos de Trama")
 - Paneles de estado/relación (por ejemplo, "Estado")
 - Listas de personajes / quién es quién de los NPCs (por ejemplo, "Elenco de Personajes")
 - Notas de punto de vista o evaluaciones (por ejemplo, "Evaluar")
 
 Plantillas incorporadas (incluidas por STMB)
+
 - Puntos de Trama — rastrea hilos y ganchos de la historia.
 - Estado — resume la información de relación/afinidad.
 - Elenco de Personajes — mantiene una lista de NPCs en orden de importancia para la trama.
 - Evaluar — anota lo que {{char}} ha aprendido sobre {{user}}.
 
 Dónde gestionar
+
 - Abre el Administrador de Prompts Laterales (dentro de STMB) para ver, crear, importar/exportar, habilitar o configurar plantillas.
 
 Crear o habilitar un Prompt Lateral
-1) Abre el Administrador de Prompts Laterales.
-2) Crea una nueva plantilla o habilita una incorporada.
-3) Configura:
+
+1. Abre el Administrador de Prompts Laterales.
+2. Crea una nueva plantilla o habilita una incorporada.
+3. Configura:
    - Nombre: Título de visualización (la entrada del lorebook guardada se titulará "Nombre (STMB SidePrompt)").
    - Prompt: Texto de instrucción que seguirá el modelo.
    - Formato de Respuesta: Bloque de guía opcional añadido al prompt (no es un esquema, solo indicaciones).
@@ -147,6 +181,7 @@ Crear o habilitar un Prompt Lateral
      • preventRecursion/delayUntilRecursion: banderas booleanas.
 
 Ejecución manual con /sideprompt
+
 - Sintaxis: /sideprompt "Nombre" [X‑Y]
   - Ejemplos:
     • /sideprompt "Estado"
@@ -155,14 +190,17 @@ Ejecución manual con /sideprompt
 - La ejecución manual requiere que la plantilla permita el comando sideprompt (habilita "Permitir ejecución manual a través de /sideprompt" en la configuración de la plantilla). Si está deshabilitado, el comando será rechazado.
 
 Ejecuciones automáticas
+
 - Después de la Memoria: Todas las plantillas habilitadas con el disparador onAfterMemory se ejecutan utilizando la escena ya compilada. STMB agrupa las ejecuciones con un pequeño límite de concurrencia y puede mostrar notificaciones de éxito/fallo por plantilla.
-- Rastreadores por intervalo: Las plantillas habilitadas con onInterval se ejecutan una vez que el número de mensajes visibles (no del sistema) desde la última ejecución alcanza visibleMessages. STMB almacena puntos de control por plantilla (por ejemplo, STMB_sp_<key>_lastMsgId) y retrasa las ejecuciones (~10s). La compilación de la escena está limitada a una ventana reciente por seguridad.
+- Rastreadores por intervalo: Las plantillas habilitadas con onInterval se ejecutan una vez que el número de mensajes visibles (no del sistema) desde la última ejecución alcanza visibleMessages. STMB almacena puntos de control por plantilla (por ejemplo, STMB*sp*<key>\_lastMsgId) y retrasa las ejecuciones (~10s). La compilación de la escena está limitada a una ventana reciente por seguridad.
 
 Vistas previas y guardado
+
 - Si "mostrar vistas previas de la memoria" está habilitado en la configuración de STMB, aparece una ventana emergente de vista previa. Puedes aceptar, editar, reintentar o cancelar. El contenido aceptado se escribe en tu lorebook vinculado bajo "Nombre (STMB SidePrompt)".
 - Los Prompts Laterales requieren que un lorebook de memoria esté vinculado al chat (o seleccionado en Modo Manual). Si no hay ninguno vinculado, STMB mostrará una notificación y omitirá la ejecución.
 
 Importar/exportar y restablecer incorporados
+
 - Exportar: Guarda tu documento de Prompts Laterales como JSON.
 - Importar: Fusiona las entradas de forma aditiva; los duplicados se renombran de forma segura (sin sobrescrituras).
 - Recrear Incorporados: Restablece las plantillas incorporadas a los valores predeterminados del idioma actual (las plantillas creadas por el usuario no se modifican).

@@ -1,23 +1,26 @@
 # 📕 Memory Books (A SillyTavern Extension)
 
-A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
+A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling.
 
 ### ❓ Vocabulary
-- Scene → Memory  
-- Many Scenes → Arc Summary  
+
+- Scene → Memory
+- Many Scenes → Arc Summary
 - Always-On → Side Prompt (Tracker)
 
 ## ❗ Read Me First!
 
-Start here: 
-* ⚠️‼️Please read [prerequisites](#-prerequisites) for installation notes (especially if you run Text Completion API)
-* ❓ [Frequently Asked Questions](#FAQ)
-* 🛠️ [Troubleshooting](#Troubleshooting)
+Start here:
 
-Other links: 
-* 📘 [User Guide (EN)](USER_GUIDE.md)
-* 📋 [Version History & Changelog](changelog.md)
-* 💡 [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+- ⚠️‼️Please read [prerequisites](#-prerequisites) for installation notes (especially if you run Text Completion API)
+- ❓ [Frequently Asked Questions](#FAQ)
+- 🛠️ [Troubleshooting](#Troubleshooting)
+
+Other links:
+
+- 📘 [User Guide (EN)](USER_GUIDE.md)
+- 📋 [Version History & Changelog](changelog.md)
+- 💡 [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
 
@@ -25,7 +28,7 @@ Other links:
 
 For advanced memory organization and deeper story integration, we highly recommend using STMB together with [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). See the guide for best practices, setup instructions, and tips!
 
-> Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
+> Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder.
 > Lorebook converter and side prompt template library are in the [`/resources`](resources) folder.
 
 ---
@@ -36,10 +39,12 @@ For advanced memory organization and deeper story integration, we highly recomme
 - **Scene Selection:** Start and end markers (start < end) must be set.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via a Chat Completion (OpenAI-compatible) API endpoint. I recommend setting up a Chat Completion API connection according to the KoboldCpp tips below (change as needed if you are Ollama or other software). After that, set up an STMB profile and use Custom (recommended) or full manual configuration (only if Custom fails or you have more than one custom connection).
-**NOTE**: Please note that if you use Text Completion, you must 
+  **NOTE**: Please note that if you use Text Completion, you must
 
 ### KoboldCpp Tips to using 📕 ST Memory Books
+
 Set this up in ST (you can change back to Text Completion AFTER you get STMB working)
+
 - Chat Completion API
 - Custom chat completion source
 - `http://localhost:5001/v1` endpoint (you can also use `127.0.0.1:5000/v1`)
@@ -49,7 +54,9 @@ Set this up in ST (you can change back to Text Completion AFTER you get STMB wor
 - change the max response length on the chat completion preset so that it is at least 2048; 4096 is recommended. (Smaller means you run the risk of getting cut off.)
 
 ### Llama.cpp Tips to using 📕 ST Memory Books
+
 Just like Kobold, set the following up as a _Chat Completion API_ in ST (you can change back to Chat Completion after you've verified STMB is working):
+
 - Create a new connection profile for a Chat Completion API
 - Completion Source: `Custom (Open-AI Compatible)`
 - Endpoint URL: `http://host.docker.internal:8080/v1` if running ST in docker, else `http://localhost:8080/v1`
@@ -58,10 +65,10 @@ Just like Kobold, set the following up as a _Chat Completion API_ in ST (you can
 - Prompt post-processing: none
 
 For starting Llama.cpp, I recommend placing something similar to the following in a shell script or bat file, so startup is easier:
+
 ```sh
 llama-server -m <model-path> -c <context-size> --port 8080
 ```
-
 
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 
@@ -75,18 +82,21 @@ llama-server -m <model-path> -c <context-size> --port 8080
 ## 🚀 Getting Started
 
 ### 1. **Install & Load**
+
 - Load SillyTavern and select a character or group chat.
 - Wait for the chevron buttons (► ◄) to appear on chat messages (may take up to 10 seconds).
 
 ![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **Mark a Scene**
+
 - Click ► on the first message of your scene.
 - Click ◄ on the last message.
 
 ![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Create a Memory**
+
 - Open the Extensions menu (the magic wand 🪄) and click "Memory Books", or use `/creatememory` slash command.
 - Confirm settings (profile, context, API/model) if prompted.
 - Wait for AI generation and automatic lorebook entry.
@@ -96,8 +106,8 @@ llama-server -m <model-path> -c <context-size> --port 8080
 ## 🆕 Slash Command Shortcuts
 
 - `/creatememory` will use existing chevron start/end markers to create a memory
-- `/scenememory x-y` will make a memory starting with message x and ending with message y 
-- `/nextmemory` will make a memory with all messages since the last memory. 
+- `/scenememory x-y` will make a memory starting with message x and ending with message y
+- `/nextmemory` will make a memory with all messages since the last memory.
 
 ## 👥 Group Chat Support
 
@@ -110,13 +120,15 @@ llama-server -m <model-path> -c <context-size> --port 8080
 ## 🧭 Modes of Operation
 
 ### **Automatic Mode (Default)**
+
 - **How it works:** Automatically uses the lorebook that is bound to your current chat.
 - **Best for:** Simplicity and speed. Most users should start here.
 - **To use:** Ensure a lorebook is selected in the "Chat Lorebooks" dropdown for your character or group chat.
 
 ![Chat lorebook binding example](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
-### **Auto-Create Lorebook Mode** ⭐ *New in v4.2.0*
+### **Auto-Create Lorebook Mode** ⭐ _New in v4.2.0_
+
 - **How it works:** Automatically creates and binds a new lorebook when none exists, using your custom naming template.
 - **Best for:** New users and quick setup. Perfect for one-click lorebook creation.
 - **To use:**
@@ -128,6 +140,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - **Note:** Cannot be used simultaneously with Manual Lorebook Mode.
 
 ### **Manual Lorebook Mode**
+
 - **How it works:** Allows you to select a different lorebook for memories on a per-chat basis, ignoring the main chat-bound lorebook.
 - **Best for:** Advanced users who want to direct memories to a specific, separate lorebook.
 - **To use:**
@@ -143,6 +156,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 📕 Memory Books supports **two levels of narrative memory**, each designed for different kinds of continuity.
 
 ### 🎬 Scene Memories (Default)
+
 Scene memories capture **what happened** in a specific range of messages.
 
 - Based on explicit scene selection (► ◄)
@@ -154,10 +168,12 @@ This is the standard and most commonly used memory type.
 
 ---
 
-### 🧭 Arc Summaries *(Beta)*
+### 🧭 Arc Summaries _(Beta)_
+
 Arc summaries capture **what changed over time** across multiple scenes.
 
 Instead of summarizing events, arc summaries focus on:
+
 - Character development and relationship shifts
 - Long-term goals, tensions, and resolutions
 - Emotional trajectory and narrative direction
@@ -165,15 +181,17 @@ Instead of summarizing events, arc summaries focus on:
 
 Arc summaries are **higher-level, lower-frequency memories** designed to prevent character drift and narrative loss in long-running chats.
 
-> 💡 Think of arc summaries as *season recaps*, not scene logs.
+> 💡 Think of arc summaries as _season recaps_, not scene logs.
 
 #### When to use Arc Summaries
+
 - After a major relationship shift
 - At the end of a story chapter or arc
 - When motivations, trust, or power dynamics change
 - Before starting a new phase of the story
 
 #### Beta Notes
+
 - Arc summaries are prompt-sensitive and intentionally conservative
 - Recommended to review before committing to lorebook
 - Best paired with lower-priority or meta-style lorebook entries
@@ -181,6 +199,7 @@ Arc summaries are **higher-level, lower-frequency memories** designed to prevent
 Arc summaries are generated **from existing scene memories**, not directly from raw chat.
 
 This gives you:
+
 - reduce token usage
 - AI has better understanding of the narrative flow
 
@@ -189,6 +208,7 @@ This gives you:
 ## 📝 Memory Generation
 
 ### **JSON-Only Output**
+
 All prompts and presets **must** instruct the AI to return only valid JSON, e.g.:
 
 ```json
@@ -198,9 +218,11 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
   "keywords": ["keyword1", "keyword2"]
 }
 ```
+
 **No other text is allowed in the response.**
 
 ### **Built-in Presets**
+
 1. **Summary:** Detailed beat-by-beat summaries.
 2. **Summarize:** Markdown headers for timeline, beats, interactions, outcome.
 3. **Synopsis:** Comprehensive, structured markdown.
@@ -208,6 +230,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 5. **Minimal:** 1-2 sentence summary.
 
 ### **Custom Prompts**
+
 - Create your own, but **must** return valid JSON as above.
 
 ---
@@ -227,7 +250,8 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 
 ### 🎡 Trackers & Side Prompts
 
-Side Prompts can be used like trackers and will create entries in your memory lorebook. Side Prompts allow you to track **ongoing state**, not just past events. For example: 
+Side Prompts can be used like trackers and will create entries in your memory lorebook. Side Prompts allow you to track **ongoing state**, not just past events. For example:
+
 - 💰 Inventory & Resources ("What items does the user have?")
 - ❤️ Relationship Status ("How does X feel about Y?")
 - 📊 Character Stats ("Current health, skills, reputation")
@@ -235,22 +259,27 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 - 🌍 World State ("What's changed in the setting?")
 
 #### **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
+
 #### **Features:**
+
     - View all side prompts.
     - Create new or duplicate prompts to experiment with different prompt styles.
     - Edit or delete any preset (including built-ins).
     - Export and import presets as JSON files for backup or sharing.
     - Run them manually or automatically with memory creation.
+
 #### **Usage Tips:**
+
     - When creating a new prompt, you can copy from built-ins for best compatibility.
     - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use
 
 ---
 
 ### 🧠 Regex Integration for Advanced Customization
+
 - **Full Control Over Text Processing**: Memory Books now integrates with SillyTavern's **Regex** extension, allowing you to apply powerful text transformations at two key stages:
-    1.  **Prompt Generation**: Automatically modify the prompts sent to the AI by creating regex scripts that target the **User Input** placement.
-    2.  **Response Parsing**: Clean, reformat, or standardize the AI's raw response before it's saved by targeting the **AI Output** placement.
+  1.  **Prompt Generation**: Automatically modify the prompts sent to the AI by creating regex scripts that target the **User Input** placement.
+  2.  **Response Parsing**: Clean, reformat, or standardize the AI's raw response before it's saved by targeting the **AI Output** placement.
 - **Multi-Select Support**: You can now multi-select regex scripts. All enabled scripts will be applied in sequence at each stage (Prompt Generation and Response Parsing), allowing for advanced and flexible transformations.
 - **How It Works**: The integration is seamless. Simply create and enable (multi-select) your desired scripts in the Regex extension, and Memory Books will apply them automatically during memory and side prompt creation.
 
@@ -270,11 +299,12 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 ![Main settings panel](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
 
 ### **Global Settings**
+
 [Short video overview on Youtube](https://youtu.be/mG2eRH_EhHs)
 
 - **Manual Lorebook Mode:** Enable to select lorebooks per chat.
-- **Auto-create lorebook if none exists:** ⭐ *New in v4.2.0* - Automatically create and bind lorebooks using your naming template.
-- **Lorebook Name Template:** ⭐ *New in v4.2.0* - Customize auto-created lorebook names with {{char}}, {{user}}, {{chat}} placeholders.
+- **Auto-create lorebook if none exists:** ⭐ _New in v4.2.0_ - Automatically create and bind lorebooks using your naming template.
+- **Lorebook Name Template:** ⭐ _New in v4.2.0_ - Customize auto-created lorebook names with {{char}}, {{user}}, {{chat}} placeholders.
 - **Allow Scene Overlap:** Permit or prevent overlapping memory ranges.
 - **Always Use Default Profile:** Skip confirmation popups.
 - **Show memory previews:** Enable preview popup to review and edit memories before adding to lorebook.
@@ -289,6 +319,7 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 ![Profile configuration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Profile Fields**
+
 - **Name:** Display name.
 - **API/Provider:** openai, claude, custom, etc.
 - **Model:** Model name (e.g., gpt-4, claude-3-opus).
@@ -335,7 +366,6 @@ Customize the titles of your lorebook entries using a powerful template system.
 
 ![Complete scene selection showing all visual states](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
-
 - **Accessibility:**
   - Keyboard navigation, focus indicators, ARIA attributes, reduced motion, mobile-friendly.
 
@@ -344,6 +374,7 @@ Customize the titles of your lorebook entries using a powerful template system.
 # FAQ
 
 ### I can't find Memory Books in the Extensions menu!
+
 Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
 
 ![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
@@ -401,7 +432,6 @@ No. If there are no other world info or lorebooks, selecting 'Delay until recurs
 - **Allowed in titles:** All printable Unicode characters are allowed, including accented letters, emoji, CJK, and symbols.
 - **Blocked:** Only Unicode control characters (U+0000–U+001F, U+007F–U+009F) are blocked; these are removed automatically.
 
-See [Character Policy Details](charset.md) for examples and migration notes.
----
+## See [Character Policy Details](charset.md) for examples and migration notes.
 
-*Developed with love using VS Code/Cline, extensive testing, and community feedback.* 🤖💕
+_Developed with love using VS Code/Cline, extensive testing, and community feedback._ 🤖💕

@@ -24,9 +24,7 @@
         "onAfterMemory": {
           "enabled": true
         },
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-10T19:02:42.574Z",
       "updatedAt": "2025-10-16T04:40:52.143Z"
@@ -53,9 +51,7 @@
         "onAfterMemory": {
           "enabled": true
         },
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-12T09:16:21.677Z",
       "updatedAt": "2025-10-16T17:49:26.028Z"
@@ -82,9 +78,7 @@
         "onAfterMemory": {
           "enabled": true
         },
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-12T09:37:55.487Z",
       "updatedAt": "2025-10-16T17:48:53.885Z"
@@ -110,9 +104,7 @@
         "onAfterMemory": {
           "enabled": true
         },
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-13T22:01:59.212Z",
       "updatedAt": "2025-10-14T06:02:54.624Z"
@@ -136,9 +128,7 @@
         }
       },
       "triggers": {
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-16T17:20:04.111Z",
       "updatedAt": "2025-10-16T17:21:12.113Z"
@@ -162,9 +152,7 @@
         }
       },
       "triggers": {
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-16T17:22:36.929Z",
       "updatedAt": "2025-10-16T17:22:36.929Z"
@@ -188,9 +176,7 @@
         }
       },
       "triggers": {
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-16T17:24:26.783Z",
       "updatedAt": "2025-10-16T17:24:26.783Z"
@@ -217,9 +203,7 @@
         "onInterval": {
           "visibleMessages": 4
         },
-        "commands": [
-          "sideprompt"
-        ]
+        "commands": ["sideprompt"]
       },
       "createdAt": "2025-10-16T22:59:28.370Z",
       "updatedAt": "2025-10-16T23:17:41.798Z"

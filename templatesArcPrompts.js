@@ -1,4 +1,4 @@
-import { translate } from '../../../i18n.js';
+import { translate } from "../../../i18n.js";
 
 /**
  * Built-in Arc Analysis prompts (default + alternates).
@@ -13,8 +13,9 @@ import { translate } from '../../../i18n.js';
  * Returns an object where keys are stable IDs and values are translated strings.
  */
 function getDefinitions() {
-    return {
-        arc_default: translate(`You are an expert narrative analyst and memory-engine assistant.
+  return {
+    arc_default: translate(
+      `You are an expert narrative analyst and memory-engine assistant.
 Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, identify self-contained story arcs, and output each arc as a single memory entry in JSON.
 
 Each arc must be token-efficient, plot-accurate, and compatible with long-running RP memory systems such as STMB.
@@ -140,9 +141,12 @@ Classification of non-fitting memories:
 
 JSON-only:
 - Return only the JSON object described above.
-- No markdown fences, no commentary, no system prompts, no extra text.`, 'STMemoryBooks_ArcPrompt_Default'),
+- No markdown fences, no commentary, no system prompts, no extra text.`,
+      "STMemoryBooks_ArcPrompt_Default",
+    ),
 
-        arc_alternate: translate(`You are an expert narrative analyst and memory-engine assistant.
+    arc_alternate: translate(
+      `You are an expert narrative analyst and memory-engine assistant.
 Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, and output a single memory arc entry in JSON. The arc must be token-efficient and plot-accurate.
 
 You will receive input in this exact format:
@@ -263,9 +267,12 @@ Classification of non-fitting memories:
 
 JSON-only:
 - Return only the JSON object described above.
-- No markdown fences, no commentary, no system prompts, no extra text.`, 'STMemoryBooks_ArcPrompt_Alternate'),
+- No markdown fences, no commentary, no system prompts, no extra text.`,
+      "STMemoryBooks_ArcPrompt_Alternate",
+    ),
 
-        arc_tiny: translate(`You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
+    arc_tiny: translate(
+      `You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
 
 Return JSON only:
 { "arcs": [ { "title": "...", "summary": "...", "keywords": ["..."], "member_ids": ["<ID>", "..."] } ], "unassigned_memories": [ { "id": "...", "reason": "..." } ] }
@@ -274,8 +281,10 @@ Rules:
 - 5–15% length compression
 - Focus on plot, emotional progression, decisions, conflicts, continuity
 - Identify non-fitting items in unassigned_memories with a brief reason
-- No quotes, no OOC, no commentary outside JSON`, 'STMemoryBooks_ArcPrompt_Tiny')
-    };
+- No quotes, no OOC, no commentary outside JSON`,
+      "STMemoryBooks_ArcPrompt_Tiny",
+    ),
+  };
 }
 
 /**

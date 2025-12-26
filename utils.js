@@ -1,69 +1,95 @@
-import { chat_metadata, characters, name2, this_chid } from '../../../../script.js';
-import { getContext, extension_settings } from '../../../extensions.js';
-import { selected_group, groups } from '../../../group-chats.js';
-import { METADATA_KEY, world_names } from '../../../world-info.js';
-import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
-import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
-import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
-import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from './constants.js';
-import { translate } from '../../../i18n.js';
+import {
+  chat_metadata,
+  characters,
+  name2,
+  this_chid,
+} from "../../../../script.js";
+import { getContext, extension_settings } from "../../../extensions.js";
+import { selected_group, groups } from "../../../group-chats.js";
+import { METADATA_KEY, world_names } from "../../../world-info.js";
+import { Popup, POPUP_TYPE, POPUP_RESULT } from "../../../popup.js";
+import {
+  getSceneMarkers,
+  saveMetadataForCurrentContext,
+} from "./sceneManager.js";
+import { getPrompt as getCustomPresetPrompt } from "./summaryPromptManager.js";
+import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from "./constants.js";
+import { translate } from "../../../i18n.js";
 
-
-const MODULE_NAME = 'STMemoryBooks-Utils';
+const MODULE_NAME = "STMemoryBooks-Utils";
 const $ = window.jQuery;
 
 // Prefer the first selector that exists in the DOM
 function pick$(...selectors) {
-    for (const s of selectors) {
-        const $el = $(s);
-        if ($el.length) return $el;
-    }
-    return $(); // empty jQuery
+  for (const s of selectors) {
+    const $el = $(s);
+    if ($el.length) return $el;
+  }
+  return $(); // empty jQuery
 }
 
 // Returns '#group_' if group UI controls are present, otherwise '#'
 function groupPrefix() {
-    return document.querySelector('#group_chat_completion_source') ? '#group_' : '#';
+  return document.querySelector("#group_chat_completion_source")
+    ? "#group_"
+    : "#";
 }
 
 // Centralized DOM selectors - single source of truth
 export const SELECTORS = {
-    extensionsMenu: '#extensionsMenu .list-group',
-    menuItem: '#stmb-menu-item',
-    chatContainer: '#chat',
-    // API and model selectors for profile settings
-    mainApi: '#main_api',
-    completionSource: '#chat_completion_source',
-    modelOpenai: '#model_openai_select',
-    modelClaude: '#model_claude_select',
-    modelOpenrouter: '#model_openrouter_select',
-    modelAi21: '#model_ai21_select',
-    modelGoogle: '#model_google_select',
-    modelMistralai: '#model_mistralai_select',
-    modelCohere: '#model_cohere_select',
-    modelPerplexity: '#model_perplexity_select',
-    modelGroq: '#model_groq_select',
-    modelNanogpt: '#model_nanogpt_select',
-    modelDeepseek: '#model_deepseek_select',
-    modelElectronhub: '#model_electronhub_select',
-    modelVertexai: '#model_vertexai_select',
-    modelAimlapi: '#model_aimlapi_select',
-    modelXai: '#model_xai_select',
-    modelPollinations: '#model_pollinations_select',
-    modelMoonshot: '#model_moonshot_select',
-    modelFireworks: '#model_fireworks_select',
-    modelCometapi: '#model_cometapi_select',
-    modelAzureOpenai: '#model_azure_openai_select',
-    tempOpenai: '#temp_openai',
-    tempCounterOpenai: '#temp_counter_openai'
+  extensionsMenu: "#extensionsMenu .list-group",
+  menuItem: "#stmb-menu-item",
+  chatContainer: "#chat",
+  // API and model selectors for profile settings
+  mainApi: "#main_api",
+  completionSource: "#chat_completion_source",
+  modelOpenai: "#model_openai_select",
+  modelClaude: "#model_claude_select",
+  modelOpenrouter: "#model_openrouter_select",
+  modelAi21: "#model_ai21_select",
+  modelGoogle: "#model_google_select",
+  modelMistralai: "#model_mistralai_select",
+  modelCohere: "#model_cohere_select",
+  modelPerplexity: "#model_perplexity_select",
+  modelGroq: "#model_groq_select",
+  modelNanogpt: "#model_nanogpt_select",
+  modelDeepseek: "#model_deepseek_select",
+  modelElectronhub: "#model_electronhub_select",
+  modelVertexai: "#model_vertexai_select",
+  modelAimlapi: "#model_aimlapi_select",
+  modelXai: "#model_xai_select",
+  modelPollinations: "#model_pollinations_select",
+  modelMoonshot: "#model_moonshot_select",
+  modelFireworks: "#model_fireworks_select",
+  modelCometapi: "#model_cometapi_select",
+  modelAzureOpenai: "#model_azure_openai_select",
+  tempOpenai: "#temp_openai",
+  tempCounterOpenai: "#temp_counter_openai",
 };
 
 // Supported Chat Completion sources - BULLETPROOF
 const SUPPORTED_COMPLETION_SOURCES = [
-    'openai', 'claude', 'openrouter', 'ai21', 'makersuite', 'vertexai',
-    'mistralai', 'custom', 'cohere', 'perplexity', 'groq', 'nanogpt',
-    'deepseek', 'electronhub', 'aimlapi', 'xai', 'pollinations',
-    'moonshot', 'fireworks', 'cometapi', 'azure_openai'
+  "openai",
+  "claude",
+  "openrouter",
+  "ai21",
+  "makersuite",
+  "vertexai",
+  "mistralai",
+  "custom",
+  "cohere",
+  "perplexity",
+  "groq",
+  "nanogpt",
+  "deepseek",
+  "electronhub",
+  "aimlapi",
+  "xai",
+  "pollinations",
+  "moonshot",
+  "fireworks",
+  "cometapi",
+  "azure_openai",
 ];
 
 /**
@@ -72,94 +98,101 @@ const SUPPORTED_COMPLETION_SOURCES = [
  * Keep 'makersuite' as the canonical key and avoid other aliases.
  */
 export function normalizeCompletionSource(source) {
-    const s = String(source || '').trim().toLowerCase();
-    // Canonical provider key is 'makersuite' in ST base code.
-    // Accept legacy alias and normalize to 'makersuite' to match ST without changing ST code.
-    if (s === 'google') return 'makersuite';
-    return s === '' ? 'openai' : s;
+  const s = String(source || "")
+    .trim()
+    .toLowerCase();
+  // Canonical provider key is 'makersuite' in ST base code.
+  // Accept legacy alias and normalize to 'makersuite' to match ST without changing ST code.
+  if (s === "google") return "makersuite";
+  return s === "" ? "openai" : s;
 }
 
 /**
  * BULLETPROOF: Get current API and completion source information with comprehensive error handling
  */
 export function getCurrentApiInfo() {
-    try {
-        let api = 'unknown';
-        let model = 'unknown';
-        let completionSource = 'unknown';
+  try {
+    let api = "unknown";
+    let model = "unknown";
+    let completionSource = "unknown";
 
-        // Try SillyTavern's built-in functions first
-        if (typeof window.getGeneratingApi === 'function') {
-            api = window.getGeneratingApi();
-        } else {
-            api = $(SELECTORS.mainApi).val() || 'unknown';
-        }
-
-        if (typeof window.getGeneratingModel === 'function') {
-            model = window.getGeneratingModel();
-        }
-
-        completionSource = $(SELECTORS.completionSource).val() || api;
-
-        // Validate completion source
-        if (!SUPPORTED_COMPLETION_SOURCES.includes(completionSource)) {
-            console.warn(`${MODULE_NAME}: Unsupported completion source: ${completionSource}, falling back to openai`);
-            completionSource = 'openai';
-        }
-
-        return { api, model, completionSource };
-    } catch (e) {
-        console.warn(`${MODULE_NAME}: Error getting API info:`, e);
-        return {
-            api: $(SELECTORS.mainApi).val() || 'unknown',
-            model: 'unknown',
-            completionSource: $(SELECTORS.completionSource).val() || 'openai'
-        };
+    // Try SillyTavern's built-in functions first
+    if (typeof window.getGeneratingApi === "function") {
+      api = window.getGeneratingApi();
+    } else {
+      api = $(SELECTORS.mainApi).val() || "unknown";
     }
+
+    if (typeof window.getGeneratingModel === "function") {
+      model = window.getGeneratingModel();
+    }
+
+    completionSource = $(SELECTORS.completionSource).val() || api;
+
+    // Validate completion source
+    if (!SUPPORTED_COMPLETION_SOURCES.includes(completionSource)) {
+      console.warn(
+        `${MODULE_NAME}: Unsupported completion source: ${completionSource}, falling back to openai`,
+      );
+      completionSource = "openai";
+    }
+
+    return { api, model, completionSource };
+  } catch (e) {
+    console.warn(`${MODULE_NAME}: Error getting API info:`, e);
+    return {
+      api: $(SELECTORS.mainApi).val() || "unknown",
+      model: "unknown",
+      completionSource: $(SELECTORS.completionSource).val() || "openai",
+    };
+  }
 }
 
 /**
  * BULLETPROOF: Get the appropriate model and temperature selectors for current completion source
  */
 export function getApiSelectors() {
-    const prefix = groupPrefix();
+  const prefix = groupPrefix();
 
-    // current completion source from active UI (group or normal)
-    const $source = pick$(`${prefix}chat_completion_source`, '#chat_completion_source');
-    const completionSource = ($source.val?.() || 'openai');
+  // current completion source from active UI (group or normal)
+  const $source = pick$(
+    `${prefix}chat_completion_source`,
+    "#chat_completion_source",
+  );
+  const completionSource = $source.val?.() || "openai";
 
-    // Model selectors per provider/source (group-aware via prefix)
-    const modelSelectorMap = {
-        openai:        `${prefix}model_openai_select`,
-        claude:        `${prefix}model_claude_select`,
-        openrouter:    `${prefix}model_openrouter_select`,
-        ai21:          `${prefix}model_ai21_select`,
-        makersuite:    `${prefix}model_google_select`,
-        mistralai:     `${prefix}model_mistralai_select`,
-        custom:        `${prefix}model_custom_select`,
-        cohere:        `${prefix}model_cohere_select`,
-        perplexity:    `${prefix}model_perplexity_select`,
-        groq:          `${prefix}model_groq_select`,
-        nanogpt:       `${prefix}model_nanogpt_select`,
-        deepseek:      `${prefix}model_deepseek_select`,
-        electronhub:   `${prefix}model_electronhub_select`,
-        vertexai:      `${prefix}model_vertexai_select`,
-        aimlapi:       `${prefix}model_aimlapi_select`,
-        xai:           `${prefix}model_xai_select`,
-        pollinations:  `${prefix}model_pollinations_select`,
-        moonshot:      `${prefix}model_moonshot_select`,
-        fireworks:     `${prefix}model_fireworks_select`,
-        cometapi:      `${prefix}model_cometapi_select`,
-        azure_openai:  `${prefix}model_azure_openai_select`,
-    };
+  // Model selectors per provider/source (group-aware via prefix)
+  const modelSelectorMap = {
+    openai: `${prefix}model_openai_select`,
+    claude: `${prefix}model_claude_select`,
+    openrouter: `${prefix}model_openrouter_select`,
+    ai21: `${prefix}model_ai21_select`,
+    makersuite: `${prefix}model_google_select`,
+    mistralai: `${prefix}model_mistralai_select`,
+    custom: `${prefix}model_custom_select`,
+    cohere: `${prefix}model_cohere_select`,
+    perplexity: `${prefix}model_perplexity_select`,
+    groq: `${prefix}model_groq_select`,
+    nanogpt: `${prefix}model_nanogpt_select`,
+    deepseek: `${prefix}model_deepseek_select`,
+    electronhub: `${prefix}model_electronhub_select`,
+    vertexai: `${prefix}model_vertexai_select`,
+    aimlapi: `${prefix}model_aimlapi_select`,
+    xai: `${prefix}model_xai_select`,
+    pollinations: `${prefix}model_pollinations_select`,
+    moonshot: `${prefix}model_moonshot_select`,
+    fireworks: `${prefix}model_fireworks_select`,
+    cometapi: `${prefix}model_cometapi_select`,
+    azure_openai: `${prefix}model_azure_openai_select`,
+  };
 
-    const model = modelSelectorMap[completionSource] || modelSelectorMap.openai;
+  const model = modelSelectorMap[completionSource] || modelSelectorMap.openai;
 
-    // Temps share same ids per UI set
-    const temp = `${prefix}temp_openai`.replace('##', '#');
-    const tempCounter = `${prefix}temp_counter_openai`.replace('##', '#');
+  // Temps share same ids per UI set
+  const temp = `${prefix}temp_openai`.replace("##", "#");
+  const tempCounter = `${prefix}temp_counter_openai`.replace("##", "#");
 
-    return { model, temp, tempCounter };
+  return { model, temp, tempCounter };
 }
 
 /**
@@ -167,126 +200,131 @@ export function getApiSelectors() {
  * @returns {Object} Context information including group/character detection
  */
 export function getCurrentMemoryBooksContext() {
-    try {
-        let characterName = null;
-        let chatId = null;
-        let chatName = null;
+  try {
+    let characterName = null;
+    let chatId = null;
+    let chatName = null;
 
-        // Check if we're in a group chat (following group-chats.js pattern)
-        const isGroupChat = !!selected_group;
-        const groupId = selected_group || null;
-        let groupName = null;
+    // Check if we're in a group chat (following group-chats.js pattern)
+    const isGroupChat = !!selected_group;
+    const groupId = selected_group || null;
+    let groupName = null;
 
-        if (isGroupChat) {
-            // Group chat context (following group-chats.js pattern)
-            const group = groups?.find(x => x.id === groupId);
-            if (group) {
-                groupName = group.name;
-                chatId = group.chat_id;
-                chatName = chatId;
-                // For group chats, use the group name as the "character" identifier for compatibility
-                characterName = groupName;
-            }
-        } else {
-            // Single character chat context (following group-chats.js and script.js patterns)
-            
-            // Method 1: Use name2 variable (primary character name from script.js)
-            if (name2 && name2.trim()) {
-                characterName = String(name2).trim();
-            }
-            // Method 2: Try to get current character from characters array and this_chid
-            else if (this_chid !== undefined && characters && characters[this_chid]) {
-                characterName = characters[this_chid].name;
-            }
-            // Method 3: Try chat_metadata.character_name as fallback
-            else if (chat_metadata?.character_name) {
-                characterName = String(chat_metadata.character_name).trim();
-            }
-            
-            // Normalize unicode characters for consistency
-            if (characterName && characterName.normalize) {
-                characterName = characterName.normalize('NFC');
-            }
+    if (isGroupChat) {
+      // Group chat context (following group-chats.js pattern)
+      const group = groups?.find((x) => x.id === groupId);
+      if (group) {
+        groupName = group.name;
+        chatId = group.chat_id;
+        chatName = chatId;
+        // For group chats, use the group name as the "character" identifier for compatibility
+        characterName = groupName;
+      }
+    } else {
+      // Single character chat context (following group-chats.js and script.js patterns)
 
-            // Get chat information using SillyTavern's context system
-            try {
-                const context = getContext();
-                if (context?.chatId) {
-                    chatId = context.chatId;
-                    chatName = chatId;
-                } else if (typeof window.getCurrentChatId === 'function') {
-                    chatId = window.getCurrentChatId();
-                    chatName = chatId;
-                }
-            } catch (error) {
-                console.warn(`${MODULE_NAME}: Could not get context, trying fallback methods`);
-                if (typeof window.getCurrentChatId === 'function') {
-                    chatId = window.getCurrentChatId();
-                    chatName = chatId;
-                }
-            }
+      // Method 1: Use name2 variable (primary character name from script.js)
+      if (name2 && name2.trim()) {
+        characterName = String(name2).trim();
+      }
+      // Method 2: Try to get current character from characters array and this_chid
+      else if (this_chid !== undefined && characters && characters[this_chid]) {
+        characterName = characters[this_chid].name;
+      }
+      // Method 3: Try chat_metadata.character_name as fallback
+      else if (chat_metadata?.character_name) {
+        characterName = String(chat_metadata.character_name).trim();
+      }
+
+      // Normalize unicode characters for consistency
+      if (characterName && characterName.normalize) {
+        characterName = characterName.normalize("NFC");
+      }
+
+      // Get chat information using SillyTavern's context system
+      try {
+        const context = getContext();
+        if (context?.chatId) {
+          chatId = context.chatId;
+          chatName = chatId;
+        } else if (typeof window.getCurrentChatId === "function") {
+          chatId = window.getCurrentChatId();
+          chatName = chatId;
         }
-
-        // Get bound lorebook information
-        let lorebookName = null;
-        if (chat_metadata && METADATA_KEY in chat_metadata) {
-            lorebookName = chat_metadata[METADATA_KEY];
+      } catch (error) {
+        console.warn(
+          `${MODULE_NAME}: Could not get context, trying fallback methods`,
+        );
+        if (typeof window.getCurrentChatId === "function") {
+          chatId = window.getCurrentChatId();
+          chatName = chatId;
         }
-
-        // Get current model/temperature settings (following ModelTempLocks approach)
-        let modelSettings = null;
-        
-        try {
-            // Get API info using the same method as ModelTempLocks
-            const currentApiInfo = getCurrentApiInfo();
-            
-            // Get temperature using the same method as ModelTempLocks
-            const apiSelectors = getApiSelectors();
-            const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() || 0.7);
-            
-            // Get model using the same method as ModelTempLocks
-            let currentModel = $(apiSelectors.model).val() || '';
-            
-            modelSettings = {
-                api: currentApiInfo.api,
-                model: currentModel,
-                temperature: currentTemp,
-                completionSource: currentApiInfo.completionSource,
-                source: 'current_ui'
-            };
-            
-        } catch (error) {
-            console.warn(`${MODULE_NAME}: Could not get current model/temperature settings:`, error);
-            modelSettings = null;
-        }
-
-        const result = {
-            characterName,
-            chatId,
-            chatName,
-            groupId,
-            isGroupChat,
-            lorebookName,
-            modelSettings
-        };
-
-        // Add group-specific properties when in group chat
-        if (isGroupChat) {
-            result.groupName = groupName;
-        }
-        return result;
-
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Error getting context:`, error);
-        return {
-            characterName: null,
-            chatId: null,
-            chatName: null,
-            groupId: null,
-            groupName: null,
-            isGroupChat: false
-        };
+      }
     }
+
+    // Get bound lorebook information
+    let lorebookName = null;
+    if (chat_metadata && METADATA_KEY in chat_metadata) {
+      lorebookName = chat_metadata[METADATA_KEY];
+    }
+
+    // Get current model/temperature settings (following ModelTempLocks approach)
+    let modelSettings = null;
+
+    try {
+      // Get API info using the same method as ModelTempLocks
+      const currentApiInfo = getCurrentApiInfo();
+
+      // Get temperature using the same method as ModelTempLocks
+      const apiSelectors = getApiSelectors();
+      const currentTemp = parseFloat(
+        $(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() || 0.7,
+      );
+
+      // Get model using the same method as ModelTempLocks
+      let currentModel = $(apiSelectors.model).val() || "";
+
+      modelSettings = {
+        api: currentApiInfo.api,
+        model: currentModel,
+        temperature: currentTemp,
+        completionSource: currentApiInfo.completionSource,
+        source: "current_ui",
+      };
+    } catch (error) {
+      console.warn(
+        `${MODULE_NAME}: Could not get current model/temperature settings:`,
+        error,
+      );
+      modelSettings = null;
+    }
+
+    const result = {
+      characterName,
+      chatId,
+      chatName,
+      groupId,
+      isGroupChat,
+      lorebookName,
+      modelSettings,
+    };
+
+    // Add group-specific properties when in group chat
+    if (isGroupChat) {
+      result.groupName = groupName;
+    }
+    return result;
+  } catch (error) {
+    console.warn(`${MODULE_NAME}: Error getting context:`, error);
+    return {
+      characterName: null,
+      chatId: null,
+      chatName: null,
+      groupId: null,
+      groupName: null,
+      isGroupChat: false,
+    };
+  }
 }
 
 /**
@@ -300,34 +338,38 @@ export function getCurrentMemoryBooksContext() {
  * @returns {Promise<string|null>} The name of the effective lorebook, or null if none is available/selected.
  */
 export async function getEffectiveLorebookName() {
-    const settings = extension_settings.STMemoryBooks;
-    
-    // If manual mode is OFF, use the default chat-bound lorebook
-    if (!settings.moduleSettings.manualModeEnabled) {
-        return chat_metadata?.[METADATA_KEY] || null;
-    }
+  const settings = extension_settings.STMemoryBooks;
 
-    // Manual mode is ON. Check if a manual lorebook has already been designated for this chat.
-    const stmbData = getSceneMarkers(); // This function already gets the right metadata object
-    if (stmbData.manualLorebook ?? null) {
-        // Ensure the designated lorebook still exists
-        if (world_names.includes(stmbData.manualLorebook)) {
-            return stmbData.manualLorebook;
-        } else {
-            toastr.error(`The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`);
-            delete stmbData.manualLorebook; // Clear the invalid entry
-        }
-    }
+  // If manual mode is OFF, use the default chat-bound lorebook
+  if (!settings.moduleSettings.manualModeEnabled) {
+    return chat_metadata?.[METADATA_KEY] || null;
+  }
 
-    // No manual lorebook is set. We need to ask the user.
-    const lorebookOptions = world_names.map(name => `<option value="${name}">${name}</option>`).join('');
-    
-    if (lorebookOptions.length === 0) {
-        toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
-        return null;
+  // Manual mode is ON. Check if a manual lorebook has already been designated for this chat.
+  const stmbData = getSceneMarkers(); // This function already gets the right metadata object
+  if (stmbData.manualLorebook ?? null) {
+    // Ensure the designated lorebook still exists
+    if (world_names.includes(stmbData.manualLorebook)) {
+      return stmbData.manualLorebook;
+    } else {
+      toastr.error(
+        `The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`,
+      );
+      delete stmbData.manualLorebook; // Clear the invalid entry
     }
+  }
 
-    const popupContent = `
+  // No manual lorebook is set. We need to ask the user.
+  const lorebookOptions = world_names
+    .map((name) => `<option value="${name}">${name}</option>`)
+    .join("");
+
+  if (lorebookOptions.length === 0) {
+    toastr.error("No lorebooks found to select from.", "STMemoryBooks");
+    return null;
+  }
+
+  const popupContent = `
         <h4>Select a Memory Book</h4>
         <div class="world_entry_form_control">
             <p>Manual mode is enabled, but no lorebook has been designated for this chat's memories. Please select one.</p>
@@ -337,22 +379,30 @@ export async function getEffectiveLorebookName() {
         </div>
     `;
 
-    const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', { okButton: 'Select', cancelButton: 'Cancel' });
-    const result = await popup.show();
+  const popup = new Popup(popupContent, POPUP_TYPE.TEXT, "", {
+    okButton: "Select",
+    cancelButton: "Cancel",
+  });
+  const result = await popup.show();
 
-    if (result === POPUP_RESULT.AFFIRMATIVE) {
-        const selectedLorebook = popup.dlg.querySelector('#stmb-manual-lorebook-select').value;
-        
-        // Save the selection to the chat's metadata
-        stmbData.manualLorebook = selectedLorebook;
-        saveMetadataForCurrentContext(); // Use the existing function from sceneManager to save correctly for groups/single chats
-        
-        toastr.success(`"${selectedLorebook}" is now the Memory Book for this chat.`, 'STMemoryBooks');
-        return selectedLorebook;
-    }
+  if (result === POPUP_RESULT.AFFIRMATIVE) {
+    const selectedLorebook = popup.dlg.querySelector(
+      "#stmb-manual-lorebook-select",
+    ).value;
 
-    // User cancelled the selection
-    return null;
+    // Save the selection to the chat's metadata
+    stmbData.manualLorebook = selectedLorebook;
+    saveMetadataForCurrentContext(); // Use the existing function from sceneManager to save correctly for groups/single chats
+
+    toastr.success(
+      `"${selectedLorebook}" is now the Memory Book for this chat.`,
+      "STMemoryBooks",
+    );
+    return selectedLorebook;
+  }
+
+  // User cancelled the selection
+  return null;
 }
 
 /**
@@ -363,108 +413,120 @@ export async function getEffectiveLorebookName() {
  * @returns {Promise<string|null>} The name of the selected lorebook, or null if cancelled/no selection made.
  */
 export async function showLorebookSelectionPopup(currentLorebook = null) {
-    // Check if lorebooks are available
-    if (world_names.length === 0) {
-        toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
-        return null;
-    }
+  // Check if lorebooks are available
+  if (world_names.length === 0) {
+    toastr.error("No lorebooks found to select from.", "STMemoryBooks");
+    return null;
+  }
 
-    const lorebookOptions = world_names.map(name => {
-        const selected = name === currentLorebook ? ' selected' : '';
-        return `<option value="${name}"${selected}>${name}</option>`;
-    }).join('');
+  const lorebookOptions = world_names
+    .map((name) => {
+      const selected = name === currentLorebook ? " selected" : "";
+      return `<option value="${name}"${selected}>${name}</option>`;
+    })
+    .join("");
 
-    const popupContent = `
+  const popupContent = `
         <h4>Select a Memory Book</h4>
         <div class="world_entry_form_control">
             <p>Choose which lorebook should be used for this chat's memories.</p>
-            ${currentLorebook ? `<p><strong>Current:</strong> ${currentLorebook}</p>` : ''}
+            ${currentLorebook ? `<p><strong>Current:</strong> ${currentLorebook}</p>` : ""}
             <select id="stmb-manual-lorebook-select" class="text_pole">
                 ${lorebookOptions}
             </select>
         </div>
     `;
 
-    const popup = new Popup(popupContent, POPUP_TYPE.TEXT, '', { okButton: 'Select', cancelButton: 'Cancel' });
-    const result = await popup.show();
+  const popup = new Popup(popupContent, POPUP_TYPE.TEXT, "", {
+    okButton: "Select",
+    cancelButton: "Cancel",
+  });
+  const result = await popup.show();
 
-    if (result === POPUP_RESULT.AFFIRMATIVE) {
-        const selectedLorebook = popup.dlg.querySelector('#stmb-manual-lorebook-select').value;
+  if (result === POPUP_RESULT.AFFIRMATIVE) {
+    const selectedLorebook = popup.dlg.querySelector(
+      "#stmb-manual-lorebook-select",
+    ).value;
 
-        // Only save and show success if a different lorebook was actually selected
-        if (selectedLorebook !== currentLorebook) {
-            const stmbData = getSceneMarkers();
-            stmbData.manualLorebook = selectedLorebook;
-            saveMetadataForCurrentContext();
+    // Only save and show success if a different lorebook was actually selected
+    if (selectedLorebook !== currentLorebook) {
+      const stmbData = getSceneMarkers();
+      stmbData.manualLorebook = selectedLorebook;
+      saveMetadataForCurrentContext();
 
-            toastr.success(`Manual lorebook changed to: ${selectedLorebook}`, 'STMemoryBooks');
-            return selectedLorebook;
-        } else {
-            // Same lorebook selected, no need to save or show success
-            return selectedLorebook;
-        }
+      toastr.success(
+        `Manual lorebook changed to: ${selectedLorebook}`,
+        "STMemoryBooks",
+      );
+      return selectedLorebook;
+    } else {
+      // Same lorebook selected, no need to save or show success
+      return selectedLorebook;
     }
+  }
 
-    // User cancelled the selection
-    return null;
+  // User cancelled the selection
+  return null;
 }
-
 
 /**
  * Get current model and temperature settings with comprehensive validation
  */
 export function getCurrentModelSettings(profile) {
-    try {
-        if (!profile) {
-            throw new Error('getCurrentModelSettings requires a profile');
-        }
-        const conn = profile.effectiveConnection || profile.connection;
-        if (!conn) {
-            throw new Error('Profile is missing connection');
-        }
-        const model = (conn.model || '').trim();
-        if (!model) {
-            throw new Error('Profile is missing required connection.model');
-        }
-        let temp = parseTemperature(conn.temperature);
-        if (temp === null) temp = 0.7;
-
-        return {
-            model,
-            temperature: temp,
-        };
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Error getting current model settings:`, error);
-        throw error;
+  try {
+    if (!profile) {
+      throw new Error("getCurrentModelSettings requires a profile");
     }
+    const conn = profile.effectiveConnection || profile.connection;
+    if (!conn) {
+      throw new Error("Profile is missing connection");
+    }
+    const model = (conn.model || "").trim();
+    if (!model) {
+      throw new Error("Profile is missing required connection.model");
+    }
+    let temp = parseTemperature(conn.temperature);
+    if (temp === null) temp = 0.7;
+
+    return {
+      model,
+      temperature: temp,
+    };
+  } catch (error) {
+    console.warn(
+      `${MODULE_NAME}: Error getting current model settings:`,
+      error,
+    );
+    throw error;
+  }
 }
 
 /**
  * UI-based model/temperature reader (for dynamic ST settings or overrides)
  */
 export function getUIModelSettings() {
-    try {
-        const selectors = getApiSelectors();
-        const currentModel = ($(selectors.model).val() || '').trim();
-        let currentTemp = 0.7;
-        const tempValue = $(selectors.temp).val() || $(selectors.tempCounter).val();
-        if (tempValue !== null && tempValue !== undefined && tempValue !== '') {
-            const parsedTemp = parseFloat(tempValue);
-            if (!isNaN(parsedTemp) && parsedTemp >= 0 && parsedTemp <= 2) {
-                currentTemp = parsedTemp;
-            }
-        }
-        return {
-            model: currentModel,
-            temperature: currentTemp,
-        };
-    } catch (error) {
-        console.warn(`${MODULE_NAME}: Error getting UI model settings:`, error);
-        return {
-            model: '',
-            temperature: 0.7
-        };
+  try {
+    const selectors = getApiSelectors();
+    const currentModel = ($(selectors.model).val() || "").trim();
+    let currentTemp = 0.7;
+    const tempValue = $(selectors.temp).val() || $(selectors.tempCounter).val();
+    if (tempValue !== null && tempValue !== undefined && tempValue !== "") {
+      const parsedTemp = parseFloat(tempValue);
+      if (!isNaN(parsedTemp) && parsedTemp >= 0 && parsedTemp <= 2) {
+        currentTemp = parsedTemp;
+      }
     }
+    return {
+      model: currentModel,
+      temperature: currentTemp,
+    };
+  } catch (error) {
+    console.warn(`${MODULE_NAME}: Error getting UI model settings:`, error);
+    return {
+      model: "",
+      temperature: 0.7,
+    };
+  }
 }
 
 /**
@@ -479,14 +541,14 @@ export function getUIModelSettings() {
  * @returns {Promise<{ input: number, output: number, total: number }>}
  */
 export async function estimateTokens(text, options = {}) {
-    const { estimatedOutput = 300 } = options;
-    const content = String(text || '');
-    const inputTokens = Math.ceil(content.length / 4);
-    return {
-        input: inputTokens,
-        output: estimatedOutput,
-        total: inputTokens + estimatedOutput,
-    };
+  const { estimatedOutput = 300 } = options;
+  const content = String(text || "");
+  const inputTokens = Math.ceil(content.length / 4);
+  return {
+    input: inputTokens,
+    output: estimatedOutput,
+    total: inputTokens + estimatedOutput,
+  };
 }
 
 /**
@@ -500,19 +562,18 @@ export async function estimateTokens(text, options = {}) {
  * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string }}
  */
 export function resolveEffectiveConnectionFromProfile(profile) {
-    const conn = (profile?.effectiveConnection || profile?.connection || {});
-    const api = normalizeCompletionSource(conn.api || 'openai');
-    const model = (conn.model || '').trim();
-    let temperature = 0.7;
-    if (typeof conn.temperature === 'number' && !Number.isNaN(conn.temperature)) {
-        temperature = Math.max(0, Math.min(2, conn.temperature));
-    }
-    const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
-    const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
+  const conn = profile?.effectiveConnection || profile?.connection || {};
+  const api = normalizeCompletionSource(conn.api || "openai");
+  const model = (conn.model || "").trim();
+  let temperature = 0.7;
+  if (typeof conn.temperature === "number" && !Number.isNaN(conn.temperature)) {
+    temperature = Math.max(0, Math.min(2, conn.temperature));
+  }
+  const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
+  const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
 
-    return { api, model, temperature, endpoint, apiKey };
+  return { api, model, temperature, endpoint, apiKey };
 }
-
 
 /**
  * Localized built-in preset prompts via i18n.
@@ -520,9 +581,9 @@ export function resolveEffectiveConnectionFromProfile(profile) {
  * JSON keys in responses must remain: "title", "content", "keywords".
  */
 export function getBuiltInPresetPrompts() {
-    return {
-        summary: translate(
-`You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.
+  return {
+    summary: translate(
+      `You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -542,10 +603,10 @@ Capture ALL nuance without repeating verbatim. Make it comprehensive yet digesti
 For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
-            'STMemoryBooks_Prompt_summary'
-        ),
-        summarize: translate(
-`Analyze the following roleplay scene and return a structured summary as JSON.
+      "STMemoryBooks_Prompt_summary",
+    ),
+    summarize: translate(
+      `Analyze the following roleplay scene and return a structured summary as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -566,10 +627,10 @@ For the keywords field, provide 15-30 specific, descriptive, relevant keywords t
 Ensure you capture ALL important information - comprehensive detail is more important than brevity.
 
 Return ONLY the JSON, no other text.`,
-            'STMemoryBooks_Prompt_summarize'
-        ),
-        synopsis: translate(
-`Analyze the following roleplay scene and return a comprehensive synopsis as JSON.
+      "STMemoryBooks_Prompt_summarize",
+    ),
+    synopsis: translate(
+      `Analyze the following roleplay scene and return a comprehensive synopsis as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -595,10 +656,10 @@ Include EVERYTHING important for future interactions between {{user}} and {{char
 For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
-            'STMemoryBooks_Prompt_synopsis'
-        ),
-        sumup: translate(
-`Analyze the following roleplay scene and return a beat summary as JSON.
+      "STMemoryBooks_Prompt_synopsis",
+    ),
+    sumup: translate(
+      `Analyze the following roleplay scene and return a beat summary as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -614,10 +675,10 @@ First note the dates/time covered by the scene. Then narrate ALL important story
 For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
-            'STMemoryBooks_Prompt_sumup'
-        ),
-        minimal: translate(
-`Analyze the following roleplay scene and return a minimal memory entry as JSON.
+      "STMemoryBooks_Prompt_sumup",
+    ),
+    minimal: translate(
+      `Analyze the following roleplay scene and return a minimal memory entry as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -631,10 +692,10 @@ For the content field, provide a very brief 2-5 sentence summary of what happene
 For the keywords field, generate 15-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
-            'STMemoryBooks_Prompt_minimal'
-        ),
-        northgate: translate(
-`You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.
+      "STMemoryBooks_Prompt_minimal",
+    ),
+    northgate: translate(
+      `You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -648,10 +709,10 @@ For the "content" field, write with literary quality. Do not simply list events;
 For the "keywords" field, provide 15-30 specific and descriptive keywords that capture the scene's core elements. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON object, with no additional text or explanations.`,
-            'STMemoryBooks_Prompt_northgate'
-        ),
-        aelemar: translate(
-`You are a meticulous archivist, skilled at accurately capturing all key plot points and memories from a story. Analyze the following story scene and extract a detailed summary as JSON.
+      "STMemoryBooks_Prompt_northgate",
+    ),
+    aelemar: translate(
+      `You are a meticulous archivist, skilled at accurately capturing all key plot points and memories from a story. Analyze the following story scene and extract a detailed summary as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -670,10 +731,10 @@ Capture ALL nuance without repeating verbatim. Do not simply list events; synthe
 For the keywords field, provide 15-30 specific and descriptive keywords that capture the scene's core elements. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
-            'STMemoryBooks_Prompt_aelemar'
-        ),
-        comprehensive: translate(
-`Analyze the following roleplay scene in the context of previous summaries provided (if available) and return a comprehensive synopsis as JSON.
+      "STMemoryBooks_Prompt_aelemar",
+    ),
+    comprehensive: translate(
+      `Analyze the following roleplay scene in the context of previous summaries provided (if available) and return a comprehensive synopsis as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -741,17 +802,17 @@ Prefer:
 Your goal: **keywords should fire when the noun/action is mentioned alone**, not only when paired with a specific person or backstory.
 
 Return ONLY the JSON — no additional text.`,
-            'STMemoryBooks_Prompt_comprehensive'
-        )
-    };
+      "STMemoryBooks_Prompt_comprehensive",
+    ),
+  };
 }
 
 /**
  * Localized default prompt
  */
 export function getDefaultPrompt() {
-    return translate(
-`Analyze the following chat scene and return a memory as JSON.
+  return translate(
+    `Analyze the following chat scene and return a memory as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -761,8 +822,8 @@ You must respond with ONLY valid JSON in this exact format:
 }
 
 Return ONLY the JSON, no other text.`,
-        'STMemoryBooks_Prompt_default'
-    );
+    "STMemoryBooks_Prompt_default",
+  );
 }
 
 /**
@@ -776,7 +837,7 @@ Return ONLY the JSON, no other text.`,
  * @returns {Promise<string>} The prompt text
  */
 export async function getPresetPrompt(presetName) {
-    return await getCustomPresetPrompt(presetName);
+  return await getCustomPresetPrompt(presetName);
 }
 
 /**
@@ -786,14 +847,14 @@ export async function getPresetPrompt(presetName) {
  * @returns {Promise<string>} The effective prompt to use
  */
 export async function getEffectivePrompt(profile) {
-    if (!profile) {
-        return getDefaultPrompt();
-    }
-    if (profile.preset) {
-        return await getCustomPresetPrompt(profile.preset);
-    } else {
-        return getDefaultPrompt();
-    }
+  if (!profile) {
+    return getDefaultPrompt();
+  }
+  if (profile.preset) {
+    return await getCustomPresetPrompt(profile.preset);
+  } else {
+    return getDefaultPrompt();
+  }
 }
 
 /**
@@ -802,23 +863,25 @@ export async function getEffectivePrompt(profile) {
  * @returns {boolean} Whether the profile is valid
  */
 export function validateProfile(profile) {
-    if (!profile || typeof profile !== 'object') {
-        console.warn(`${MODULE_NAME}: Profile validation failed - not an object`);
-        return false;
-    }
-    
-    if (!profile.name || typeof profile.name !== 'string') {
-        console.warn(`${MODULE_NAME}: Profile validation failed - invalid name`);
-        return false;
-    }
-    
-    // Connection is optional but if present should be an object
-    if (profile.connection && typeof profile.connection !== 'object') {
-        console.warn(`${MODULE_NAME}: Profile validation failed - invalid connection`);
-        return false;
-    }
-    
-    return true;
+  if (!profile || typeof profile !== "object") {
+    console.warn(`${MODULE_NAME}: Profile validation failed - not an object`);
+    return false;
+  }
+
+  if (!profile.name || typeof profile.name !== "string") {
+    console.warn(`${MODULE_NAME}: Profile validation failed - invalid name`);
+    return false;
+  }
+
+  // Connection is optional but if present should be an object
+  if (profile.connection && typeof profile.connection !== "object") {
+    console.warn(
+      `${MODULE_NAME}: Profile validation failed - invalid connection`,
+    );
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -827,26 +890,26 @@ export function validateProfile(profile) {
  * @returns {any} Deep cloned object
  */
 export function deepClone(obj) {
-    if (obj === null || typeof obj !== 'object') {
-        return obj;
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+
+  if (obj instanceof Date) {
+    return new Date(obj.getTime());
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => deepClone(item));
+  }
+
+  const cloned = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      cloned[key] = deepClone(obj[key]);
     }
-    
-    if (obj instanceof Date) {
-        return new Date(obj.getTime());
-    }
-    
-    if (Array.isArray(obj)) {
-        return obj.map(item => deepClone(item));
-    }
-    
-    const cloned = {};
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            cloned[key] = deepClone(obj[key]);
-        }
-    }
-    
-    return cloned;
+  }
+
+  return cloned;
 }
 
 /**
@@ -854,7 +917,16 @@ export function deepClone(obj) {
  * @returns {string[]} Array of preset names
  */
 export function getPresetNames() {
-    return ['summary', 'summarize', 'synopsis', 'sumup', 'minimal', 'northgate', 'aelemar', 'comprehensive'];
+  return [
+    "summary",
+    "summarize",
+    "synopsis",
+    "sumup",
+    "minimal",
+    "northgate",
+    "aelemar",
+    "comprehensive",
+  ];
 }
 
 /**
@@ -863,8 +935,17 @@ export function getPresetNames() {
  * @returns {boolean} Whether the preset exists
  */
 export function isValidPreset(presetName) {
-    const builtIns = new Set(['summary', 'summarize', 'synopsis', 'sumup', 'minimal', 'northgate', 'aelemar', 'comprehensive']);
-    return builtIns.has(presetName);
+  const builtIns = new Set([
+    "summary",
+    "summarize",
+    "synopsis",
+    "sumup",
+    "minimal",
+    "northgate",
+    "aelemar",
+    "comprehensive",
+  ]);
+  return builtIns.has(presetName);
 }
 
 /**
@@ -874,26 +955,26 @@ export function isValidPreset(presetName) {
  * @returns {string} Safe, unique profile name
  */
 export function generateSafeProfileName(input, existingNames = []) {
-    if (!input || typeof input !== 'string') {
-        input = 'New Profile';
-    }
-    
-    // Clean the input
-    let safeName = input.trim().replace(/[<>:"/\\|?*]/g, '');
-    if (!safeName) {
-        safeName = 'New Profile';
-    }
-    
-    // Ensure uniqueness
-    let finalName = safeName;
-    let counter = 1;
-    
-    while (existingNames.includes(finalName)) {
-        finalName = `${safeName} (${counter})`;
-        counter++;
-    }
-    
-    return finalName;
+  if (!input || typeof input !== "string") {
+    input = "New Profile";
+  }
+
+  // Clean the input
+  let safeName = input.trim().replace(/[<>:"/\\|?*]/g, "");
+  if (!safeName) {
+    safeName = "New Profile";
+  }
+
+  // Ensure uniqueness
+  let finalName = safeName;
+  let counter = 1;
+
+  while (existingNames.includes(finalName)) {
+    finalName = `${safeName} (${counter})`;
+    counter++;
+  }
+
+  return finalName;
 }
 
 /**
@@ -902,16 +983,16 @@ export function generateSafeProfileName(input, existingNames = []) {
  * @returns {number|null} Parsed temperature or null if invalid
  */
 export function parseTemperature(input) {
-    if (typeof input === 'number') {
-        return isNaN(input) ? null : Math.max(0, Math.min(2, input));
-    }
-    
-    if (typeof input === 'string') {
-        const parsed = parseFloat(input);
-        return isNaN(parsed) ? null : Math.max(0, Math.min(2, parsed));
-    }
-    
-    return null;
+  if (typeof input === "number") {
+    return isNaN(input) ? null : Math.max(0, Math.min(2, input));
+  }
+
+  if (typeof input === "string") {
+    const parsed = parseFloat(input);
+    return isNaN(parsed) ? null : Math.max(0, Math.min(2, parsed));
+  }
+
+  return null;
 }
 
 /**
@@ -920,9 +1001,9 @@ export function parseTemperature(input) {
  * @returns {string} Display-friendly name
  */
 export function formatPresetDisplayName(presetName) {
-    const def = DISPLAY_NAME_DEFAULTS[presetName];
-    const key = DISPLAY_NAME_I18N_KEYS[presetName];
-    return (def && key && translate(def, key)) || presetName;
+  const def = DISPLAY_NAME_DEFAULTS[presetName];
+  const key = DISPLAY_NAME_I18N_KEYS[presetName];
+  return (def && key && translate(def, key)) || presetName;
 }
 
 /**
@@ -945,67 +1026,69 @@ export function formatPresetDisplayName(presetName) {
  * @returns {Object} A structured and validated profile object.
  */
 export function createProfileObject(data = {}) {
-    let temperature = parseTemperature(data.temperature);
-    if (temperature === null) {
-        temperature = 0.7;
+  let temperature = parseTemperature(data.temperature);
+  if (temperature === null) {
+    temperature = 0.7;
+  }
+
+  const profile = {
+    name: (data.name || "New Profile").trim(),
+    connection: {
+      api: data.api || "openai",
+      temperature: temperature,
+    },
+    prompt: (data.prompt || "").trim(),
+    preset: data.preset || "",
+    constVectMode: data.constVectMode || "link",
+    position: data.position !== undefined ? Number(data.position) : 0,
+    orderMode: data.orderMode || "auto",
+    orderValue: data.orderValue !== undefined ? Number(data.orderValue) : 100,
+    preventRecursion:
+      data.preventRecursion !== undefined ? data.preventRecursion : true,
+    delayUntilRecursion:
+      data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : true,
+  };
+
+  // Set titleFormat if explicitly provided, or if it's not a dynamic profile
+  if (data.titleFormat || !data.isDynamicProfile) {
+    profile.titleFormat = data.titleFormat || "[000] - {{title}}";
+  }
+
+  const model = (data.model || "").trim();
+  if (model) {
+    profile.connection.model = model;
+  }
+
+  // Add endpoint and apiKey for full-manual configuration
+  const endpoint = (data.endpoint || "").trim();
+  if (endpoint) {
+    profile.connection.endpoint = endpoint;
+  }
+
+  const apiKey = (data.apiKey || "").trim();
+  if (apiKey) {
+    profile.connection.apiKey = apiKey;
+  }
+
+  // A profile should have a preset OR a custom prompt. The custom prompt takes precedence.
+  if (profile.prompt && profile.preset) {
+    profile.preset = "";
+  }
+
+  // If there's no custom prompt and no preset specified, default to the 'summary' preset.
+  if (!profile.prompt && !profile.preset) {
+    profile.preset = "summary";
+  }
+
+  // Carry outletName only when using Outlet position (7)
+  try {
+    if (Number(profile.position) === 7 && typeof data.outletName === "string") {
+      const name = data.outletName.trim();
+      if (name) {
+        profile.outletName = name;
+      }
     }
+  } catch {}
 
-    const profile = {
-        name: (data.name || 'New Profile').trim(),
-        connection: {
-            api: data.api || 'openai',
-            temperature: temperature,
-        },
-        prompt: (data.prompt || '').trim(),
-        preset: data.preset || '',
-        constVectMode: data.constVectMode || 'link',
-        position: data.position !== undefined ? Number(data.position) : 0,
-        orderMode: data.orderMode || 'auto',
-        orderValue: data.orderValue !== undefined ? Number(data.orderValue) : 100,
-        preventRecursion: data.preventRecursion !== undefined ? data.preventRecursion : true,
-        delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : true,
-    };
-
-    // Set titleFormat if explicitly provided, or if it's not a dynamic profile
-    if (data.titleFormat || !data.isDynamicProfile) {
-        profile.titleFormat = data.titleFormat || '[000] - {{title}}';
-    }
-
-    const model = (data.model || '').trim();
-    if (model) {
-        profile.connection.model = model;
-    }
-
-    // Add endpoint and apiKey for full-manual configuration
-    const endpoint = (data.endpoint || '').trim();
-    if (endpoint) {
-        profile.connection.endpoint = endpoint;
-    }
-
-    const apiKey = (data.apiKey || '').trim();
-    if (apiKey) {
-        profile.connection.apiKey = apiKey;
-    }
-
-    // A profile should have a preset OR a custom prompt. The custom prompt takes precedence.
-    if (profile.prompt && profile.preset) {
-        profile.preset = '';
-    }
-    
-    // If there's no custom prompt and no preset specified, default to the 'summary' preset.
-    if (!profile.prompt && !profile.preset) {
-        profile.preset = 'summary'; 
-    }
-
-    // Carry outletName only when using Outlet position (7)
-    try {
-        if (Number(profile.position) === 7 && typeof data.outletName === 'string') {
-            const name = data.outletName.trim();
-            if (name) {
-                profile.outletName = name;
-            }
-        }
-    } catch {}
-
-    return profile;
+  return profile;
 }

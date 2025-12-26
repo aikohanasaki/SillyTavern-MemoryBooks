@@ -1,4 +1,4 @@
-import { Handlebars } from '../../../../lib.js';
+import { Handlebars } from "../../../../lib.js";
 
 /**
  * Main settings template
