@@ -251,7 +251,7 @@ async function generateKeywordsForArc(summary, conn) {
     api: conn.api,
     endpoint: conn.endpoint,
     apiKey: conn.apiKey,
-    extra: {},
+    // extra: {},
   });
   try {
     console.debug(
@@ -275,7 +275,7 @@ async function generateKeywordsForArc(summary, conn) {
       api: conn.api,
       endpoint: conn.endpoint,
       apiKey: conn.apiKey,
-      extra: {},
+      // extra: {},
     });
     kw = parseKeywordsResponse(retry.text);
   }
