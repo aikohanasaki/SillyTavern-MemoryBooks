@@ -138,6 +138,11 @@ export async function sendRawCompletionRequest({
         }
     }
 
+    // Set default max_tokens if not already set
+    if (!extra.max_tokens || extra.max_tokens <= 0) {
+        extra.max_tokens = 1500;
+    }
+
     let body = {
         messages: [
             { role: 'user', content: prompt }
