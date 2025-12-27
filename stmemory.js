@@ -418,7 +418,7 @@ function normalizeText(s) {
     return String(s)
         .replace(/\r\n/g, '\n')
         .replace(/^\uFEFF/, '')
-        .replace(/[\u200B-\u200D\u2060]/g, '');
+        .replace(/[\u0000-\u001F\u200B-\u200D\u2060]/g, '');
 }
 
 function extractFencedBlocks(s) {
