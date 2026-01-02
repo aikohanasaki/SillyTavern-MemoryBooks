@@ -1,310 +1,380 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <!-- This is a converter and it is entirely standalone. -->
 <!-- Just drop it anywhere (desktop of your computer?) and then use it to convert your lorebook JSONs. -->
 
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="STMemoryBooks_ConverterTitle">STMemoryBooks Lorebook Converter (v3)</title>
-    <link rel="stylesheet" href="s22.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="STMemoryBooks_ConverterTitle">
+      STMemoryBooks Lorebook Converter (v3)
+    </title>
+    <link rel="stylesheet" href="s22.css" />
     <script src="nav.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px 0;
-        }
-        .container {
-            background-color: #2a2a2a;
-            padding: 30px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            max-width: 600px;
-            width: 90%;
-        }
-        h1 {
-            color: #4CAF50;
-            margin-top: 0;
-        }
-        p {
-            color: #b0b0b0;
-            line-height: 1.6;
-        }
-        .input-group {
-            margin: 20px 0;
-            text-align: left;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #ccc;
-        }
-        .input-group input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            background-color: #333;
-            border: 1px solid #444;
-            color: #e0e0e0;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        .input-group small {
-            display: block;
-            margin-top: 5px;
-            color: #888;
-        }
-        #regexDisplay {
-            background-color: #111;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
-            color: #f39c12;
-            word-wrap: break-word;
-            margin-top: 5px;
-            min-height: 1.2em;
-        }
-        .file-upload-wrapper {
-            position: relative;
-            margin: 20px 0;
-            padding: 15px;
-            border: 2px dashed #444;
-            border-radius: 8px;
-            background-color: #333;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        .file-upload-wrapper:hover {
-            background-color: #3a3a3a;
-            border-color: #4CAF50;
-        }
-        .file-upload-wrapper input[type="file"] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-        .file-upload-label {
-            font-size: 1.1em;
-            color: #ccc;
-        }
-        #fileName {
-            display: block;
-            margin-top: 10px;
-            color: #4CAF50;
-            font-weight: bold;
-        }
-        .btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s;
-            opacity: 0.5;
-            pointer-events: none;
-            margin-top: 10px;
-        }
-        .btn:hover:not(:disabled) {
-            background-color: #45a049;
-        }
-        .btn.enabled {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #downloadLinkContainer {
-            margin-top: 20px;
-            font-size: 1.1em;
-        }
-        #downloadLink a {
-            color: #2196F3;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        #downloadLink a:hover {
-            text-decoration: underline;
-        }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px 0;
+      }
+      .container {
+        background-color: #2a2a2a;
+        padding: 30px 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        max-width: 600px;
+        width: 90%;
+      }
+      h1 {
+        color: #4caf50;
+        margin-top: 0;
+      }
+      p {
+        color: #b0b0b0;
+        line-height: 1.6;
+      }
+      .input-group {
+        margin: 20px 0;
+        text-align: left;
+      }
+      .input-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #ccc;
+      }
+      .input-group input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        background-color: #333;
+        border: 1px solid #444;
+        color: #e0e0e0;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+      .input-group small {
+        display: block;
+        margin-top: 5px;
+        color: #888;
+      }
+      #regexDisplay {
+        background-color: #111;
+        padding: 8px;
+        border-radius: 4px;
+        font-family: "Courier New", Courier, monospace;
+        color: #f39c12;
+        word-wrap: break-word;
+        margin-top: 5px;
+        min-height: 1.2em;
+      }
+      .file-upload-wrapper {
+        position: relative;
+        margin: 20px 0;
+        padding: 15px;
+        border: 2px dashed #444;
+        border-radius: 8px;
+        background-color: #333;
+        transition:
+          background-color 0.3s,
+          border-color 0.3s;
+      }
+      .file-upload-wrapper:hover {
+        background-color: #3a3a3a;
+        border-color: #4caf50;
+      }
+      .file-upload-wrapper input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+      .file-upload-label {
+        font-size: 1.1em;
+        color: #ccc;
+      }
+      #fileName {
+        display: block;
+        margin-top: 10px;
+        color: #4caf50;
+        font-weight: bold;
+      }
+      .btn {
+        background-color: #4caf50;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.3s;
+        opacity: 0.5;
+        pointer-events: none;
+        margin-top: 10px;
+      }
+      .btn:hover:not(:disabled) {
+        background-color: #45a049;
+      }
+      .btn.enabled {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      #downloadLinkContainer {
+        margin-top: 20px;
+        font-size: 1.1em;
+      }
+      #downloadLink a {
+        color: #2196f3;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      #downloadLink a:hover {
+        text-decoration: underline;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <!-- Navigation container - will be filled by JavaScript -->
-        <div id="nav-container"></div>
+      <!-- Navigation container - will be filled by JavaScript -->
+      <div id="nav-container"></div>
 
-        <header class="header">
-            <h1 data-i18n="STMemoryBooks_ConverterHeader">Lorebook Converter</h1>
-            <p data-i18n="STMemoryBooks_ConverterDescription">This tool flags entries by adding <code>stmemorybooks: true</code>. An entry is converted only if it matches the title format, is <strong>not</strong> set to <code>"vectorized": false</code>, and has its <code>"position"</code> set to <code>0</code>.</p>
-        </header>
+      <header class="header">
+        <h1 data-i18n="STMemoryBooks_ConverterHeader">Lorebook Converter</h1>
+        <p data-i18n="STMemoryBooks_ConverterDescription">
+          This tool flags entries by adding <code>stmemorybooks: true</code>. An
+          entry is converted only if it matches the title format, is
+          <strong>not</strong> set to <code>"vectorized": false</code>, and has
+          its <code>"position"</code> set to <code>0</code>.
+        </p>
+      </header>
 
-        <div class="input-group">
-            <label for="sampleTitleInput" data-i18n="STMemoryBooks_ConverterSampleTitleLabel">Sample Title Format (Optional)</label>
-            <input type="text" id="sampleTitleInput" data-i18n="[placeholder]STMemoryBooks_ConverterSampleTitlePlaceholder" placeholder="e.g., 01 - My First Memory">
-            <small data-i18n="STMemoryBooks_ConverterSampleTitleDescription">The tool will find the first number and use it to create a pattern. If blank, it defaults to matching titles like "01 - title".</small>
-            <div id="regexDisplay"></div>
-        </div>
+      <div class="input-group">
+        <label
+          for="sampleTitleInput"
+          data-i18n="STMemoryBooks_ConverterSampleTitleLabel"
+          >Sample Title Format (Optional)</label
+        >
+        <input
+          type="text"
+          id="sampleTitleInput"
+          data-i18n="[placeholder]STMemoryBooks_ConverterSampleTitlePlaceholder"
+          placeholder="e.g., 01 - My First Memory"
+        />
+        <small data-i18n="STMemoryBooks_ConverterSampleTitleDescription"
+          >The tool will find the first number and use it to create a pattern.
+          If blank, it defaults to matching titles like "01 - title".</small
+        >
+        <div id="regexDisplay"></div>
+      </div>
 
-        <div class="file-upload-wrapper">
-            <input type="file" id="jsonUpload" accept=".json">
-            <span class="file-upload-label" data-i18n="STMemoryBooks_ConverterFileUploadLabel">Click or Drag to Upload Lorebook File</span>
-            <span id="fileName"></span>
-        </div>
-        
-        <div class="input-group">
-            <label for="vectorizedToggle">
-                <input type="checkbox" id="vectorizedToggle" checked>
-                <span data-i18n="STMemoryBooks_ConverterIncludeVectorizedLabel">Include 🔵 entries</span>
-            </label>
-            <small data-i18n="STMemoryBooks_ConverterIncludeVectorizedDescription">If enabled, entries with <code>vectorized: false</code> will also be included as memories.</small>
-        </div>
+      <div class="file-upload-wrapper">
+        <input type="file" id="jsonUpload" accept=".json" />
+        <span
+          class="file-upload-label"
+          data-i18n="STMemoryBooks_ConverterFileUploadLabel"
+          >Click or Drag to Upload Lorebook File</span
+        >
+        <span id="fileName"></span>
+      </div>
 
-        <button id="convertBtn" class="btn" data-i18n="STMemoryBooks_ConverterConvertButton">Convert File</button>
+      <div class="input-group">
+        <label for="vectorizedToggle">
+          <input type="checkbox" id="vectorizedToggle" checked />
+          <span data-i18n="STMemoryBooks_ConverterIncludeVectorizedLabel"
+            >Include 🔵 entries</span
+          >
+        </label>
+        <small data-i18n="STMemoryBooks_ConverterIncludeVectorizedDescription"
+          >If enabled, entries with <code>vectorized: false</code> will also be
+          included as memories.</small
+        >
+      </div>
 
-        <div id="downloadLinkContainer" style="display:none;">
-            <p data-i18n="STMemoryBooks_ConverterConversionComplete">Conversion complete!</p>
-            <span id="downloadLink"></span>
-        </div>
+      <button
+        id="convertBtn"
+        class="btn"
+        data-i18n="STMemoryBooks_ConverterConvertButton"
+      >
+        Convert File
+      </button>
+
+      <div id="downloadLinkContainer" style="display: none">
+        <p data-i18n="STMemoryBooks_ConverterConversionComplete">
+          Conversion complete!
+        </p>
+        <span id="downloadLink"></span>
+      </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const uploadInput = document.getElementById('jsonUpload');
-            const convertBtn = document.getElementById('convertBtn');
-            const fileNameDisplay = document.getElementById('fileName');
-            const downloadLinkContainer = document.getElementById('downloadLinkContainer');
-            const downloadLink = document.getElementById('downloadLink');
-            const sampleTitleInput = document.getElementById('sampleTitleInput');
-            const regexDisplay = document.getElementById('regexDisplay');
-            const vectorizedToggle = document.getElementById('vectorizedToggle');
+      document.addEventListener("DOMContentLoaded", () => {
+        const uploadInput = document.getElementById("jsonUpload");
+        const convertBtn = document.getElementById("convertBtn");
+        const fileNameDisplay = document.getElementById("fileName");
+        const downloadLinkContainer = document.getElementById(
+          "downloadLinkContainer",
+        );
+        const downloadLink = document.getElementById("downloadLink");
+        const sampleTitleInput = document.getElementById("sampleTitleInput");
+        const regexDisplay = document.getElementById("regexDisplay");
+        const vectorizedToggle = document.getElementById("vectorizedToggle");
 
-            let uploadedFile = null;
+        let uploadedFile = null;
 
-            uploadInput.addEventListener('change', (event) => {
-                if (event.target.files.length > 0) {
-                    uploadedFile = event.target.files[0];
-                    fileNameDisplay.textContent = uploadedFile.name;
-                    convertBtn.classList.add('enabled');
-                } else {
-                    uploadedFile = null;
-                    fileNameDisplay.textContent = '';
-                    convertBtn.classList.remove('enabled');
-                }
-            });
-
-            sampleTitleInput.addEventListener('input', () => {
-                const sample = sampleTitleInput.value;
-                if (sample) {
-                    const regex = createRegexFromSample(sample);
-                    regexDisplay.textContent = regex.toString();
-                } else {
-                    regexDisplay.textContent = '';
-                }
-            });
-
-            convertBtn.addEventListener('click', () => {
-                if (uploadedFile) {
-                    processFile(uploadedFile);
-                }
-            });
-
-            function processFile(file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const lorebookData = JSON.parse(event.target.result);
-                        const convertedData = convertLorebook(lorebookData);
-                        const newFileName = file.name.replace('.json', '_converted.json');
-                        triggerDownload(convertedData, newFileName);
-                    } catch (error) {
-                        alert(t('STMemoryBooks_ConverterErrorProcessingFile', 'Error processing file. Please ensure it is a valid JSON lorebook. Error: {{message}}', { message: error.message }));
-                    }
-                };
-                reader.readAsText(file);
-            }
-
-            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-            function createRegexFromSample(sample) {
-                const numberMatch = sample.match(/\d+/);
-                if (!numberMatch) {
-                    return new RegExp(`^${escapeRegex(sample)}`);
-                }
-                
-                const numberIndex = numberMatch.index;
-                const numberLength = numberMatch[0].length;
-
-                const prefix = sample.substring(0, numberIndex);
-                const suffix = sample.substring(numberIndex + numberLength);
-
-                const pattern = `^${escapeRegex(prefix)}(\\d+)${escapeRegex(suffix)}`;
-                return new RegExp(pattern);
-            }
-
-            function convertLorebook(data) {
-                if (!data || !data.entries) {
-                    throw new Error(t('STMemoryBooks_ConverterInvalidLorebookStructure', "Invalid lorebook structure: 'entries' object not found."));
-                }
-
-                const sample = sampleTitleInput.value.trim();
-                let isMemoryRegex;
-
-                if (sample) {
-                    isMemoryRegex = createRegexFromSample(sample);
-                    regexDisplay.textContent = isMemoryRegex.toString();
-                } else {
-                    isMemoryRegex = /^\d+\s*-\s*.+/;
-                    regexDisplay.textContent = t('STMemoryBooks_ConverterUsingDefaultRegex', 'Using default: {{regex}}', { regex: isMemoryRegex.toString() });
-                }
-
-                let memoriesConverted = 0;
-                const entries = Object.values(data.entries);
-                const totalEntries = entries.length;
-
-                // NEW: read toggle value
-                const skipVectorizedCheck = vectorizedToggle.checked;
-
-                entries.forEach(entry => {
-                    const titleMatches = entry.comment && isMemoryRegex.test(entry.comment);
-                    const isVectorized = skipVectorizedCheck ? true : (entry.vectorized !== false);
-                    const isPositionZero = entry.position === 0;
-
-                    if (titleMatches && isVectorized && isPositionZero) {
-                        entry.stmemorybooks = true;
-                        memoriesConverted++;
-                    }
-                });
-
-                alert(t('STMemoryBooks_ConverterConversionStats', 'Conversion complete. Checked {{totalEntries}} entries and flagged {{memoriesConverted}} as memories.', { totalEntries, memoriesConverted }));
-                return data;
-            }
-
-            function triggerDownload(data, filename) {
-                const jsonStr = JSON.stringify(data, null, 4);
-                const blob = new Blob([jsonStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                a.textContent = t('STMemoryBooks_ConverterDownloadLink', 'Download {{filename}}', { filename });
-                
-                downloadLink.innerHTML = '';
-                downloadLink.appendChild(a);
-                downloadLinkContainer.style.display = 'block';
-            }
+        uploadInput.addEventListener("change", (event) => {
+          if (event.target.files.length > 0) {
+            uploadedFile = event.target.files[0];
+            fileNameDisplay.textContent = uploadedFile.name;
+            convertBtn.classList.add("enabled");
+          } else {
+            uploadedFile = null;
+            fileNameDisplay.textContent = "";
+            convertBtn.classList.remove("enabled");
+          }
         });
+
+        sampleTitleInput.addEventListener("input", () => {
+          const sample = sampleTitleInput.value;
+          if (sample) {
+            const regex = createRegexFromSample(sample);
+            regexDisplay.textContent = regex.toString();
+          } else {
+            regexDisplay.textContent = "";
+          }
+        });
+
+        convertBtn.addEventListener("click", () => {
+          if (uploadedFile) {
+            processFile(uploadedFile);
+          }
+        });
+
+        function processFile(file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const lorebookData = JSON.parse(event.target.result);
+              const convertedData = convertLorebook(lorebookData);
+              const newFileName = file.name.replace(".json", "_converted.json");
+              triggerDownload(convertedData, newFileName);
+            } catch (error) {
+              alert(
+                t(
+                  "STMemoryBooks_ConverterErrorProcessingFile",
+                  "Error processing file. Please ensure it is a valid JSON lorebook. Error: {{message}}",
+                  { message: error.message },
+                ),
+              );
+            }
+          };
+          reader.readAsText(file);
+        }
+
+        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+        function createRegexFromSample(sample) {
+          const numberMatch = sample.match(/\d+/);
+          if (!numberMatch) {
+            return new RegExp(`^${escapeRegex(sample)}`);
+          }
+
+          const numberIndex = numberMatch.index;
+          const numberLength = numberMatch[0].length;
+
+          const prefix = sample.substring(0, numberIndex);
+          const suffix = sample.substring(numberIndex + numberLength);
+
+          const pattern = `^${escapeRegex(prefix)}(\\d+)${escapeRegex(suffix)}`;
+          return new RegExp(pattern);
+        }
+
+        function convertLorebook(data) {
+          if (!data || !data.entries) {
+            throw new Error(
+              t(
+                "STMemoryBooks_ConverterInvalidLorebookStructure",
+                "Invalid lorebook structure: 'entries' object not found.",
+              ),
+            );
+          }
+
+          const sample = sampleTitleInput.value.trim();
+          let isMemoryRegex;
+
+          if (sample) {
+            isMemoryRegex = createRegexFromSample(sample);
+            regexDisplay.textContent = isMemoryRegex.toString();
+          } else {
+            isMemoryRegex = /^\d+\s*-\s*.+/;
+            regexDisplay.textContent = t(
+              "STMemoryBooks_ConverterUsingDefaultRegex",
+              "Using default: {{regex}}",
+              { regex: isMemoryRegex.toString() },
+            );
+          }
+
+          let memoriesConverted = 0;
+          const entries = Object.values(data.entries);
+          const totalEntries = entries.length;
+
+          // NEW: read toggle value
+          const skipVectorizedCheck = vectorizedToggle.checked;
+
+          entries.forEach((entry) => {
+            const titleMatches =
+              entry.comment && isMemoryRegex.test(entry.comment);
+            const isVectorized = skipVectorizedCheck
+              ? true
+              : entry.vectorized !== false;
+            const isPositionZero = entry.position === 0;
+
+            if (titleMatches && isVectorized && isPositionZero) {
+              entry.stmemorybooks = true;
+              memoriesConverted++;
+            }
+          });
+
+          alert(
+            t(
+              "STMemoryBooks_ConverterConversionStats",
+              "Conversion complete. Checked {{totalEntries}} entries and flagged {{memoriesConverted}} as memories.",
+              { totalEntries, memoriesConverted },
+            ),
+          );
+          return data;
+        }
+
+        function triggerDownload(data, filename) {
+          const jsonStr = JSON.stringify(data, null, 4);
+          const blob = new Blob([jsonStr], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.textContent = t(
+            "STMemoryBooks_ConverterDownloadLink",
+            "Download {{filename}}",
+            { filename },
+          );
+
+          downloadLink.innerHTML = "";
+          downloadLink.appendChild(a);
+          downloadLinkContainer.style.display = "block";
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

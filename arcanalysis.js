@@ -673,7 +673,7 @@ export async function runArcAnalysisSequential(
           .map(resolveId)
           .filter((id) => id !== undefined);
       }
-      
+
       if (memberIds && memberIds.length > 0) {
         // IDs were resolved successfully
       } else {

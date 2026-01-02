@@ -1,7 +1,7 @@
 /**
  * Built-in Arc Analysis prompts (default + alternates).
  * These mirror the Summary Prompt Manager pattern but are specific to Arc Analysis.
- * 
+ *
  * Exports:
  *  - getBuiltInArcPrompts(): { [key: string]: string }
  *  - getDefaultArcPrompt(): string
@@ -275,7 +275,7 @@ Rules:
 - 5–15% length compression
 - Focus on plot, emotional progression, decisions, conflicts, continuity
 - Identify non-fitting items in unassigned_memories with a brief reason
-- No quotes, no OOC, no commentary outside JSON`
+- No quotes, no OOC, no commentary outside JSON`,
 };
 
 /**

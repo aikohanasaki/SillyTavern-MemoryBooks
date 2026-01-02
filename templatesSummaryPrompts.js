@@ -1,4 +1,4 @@
-import { Handlebars } from '../../../../lib.js';
+import { Handlebars } from "../../../../lib.js";
 
 export const summaryPromptsTableTemplate = Handlebars.compile(`
 <table style="width: 100%; border-collapse: collapse;">
