@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.14.0 (January 2, 2026)
+- **Enhancement:** Arcs now in international beta (localized into all STMB languages).
+
 ## v4.13.7 (December 21, 2025)
 - Fix "no new arcs" error
 
