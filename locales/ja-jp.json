@@ -279,7 +279,6 @@
   "STMemoryBooks_SaveProfileAndCreateMemory": "プロファイルを保存してメモリを作成",
   "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "変更した設定を新しいプロファイルとして保存し、メモリを作成します",
   "STMemoryBooks_Tooltip_CreateMemory": "選択したプロファイル設定を使用してメモリを作成します",
-  "STMemoryBooks_AcceptAndAddToLorebook": "承認してロアブックに追加",
   "STMemoryBooks_EditAndSave": "編集して保存",
   "STMemoryBooks_RetryGeneration": "再生成",
   "STMemoryBooks_PromptManager_Hint": "💡 新しいプロンプトを作成する際は、他の組み込みプロンプトの1つをコピーしてから修正してください。「JSONで応答」という指示は変更しないでください。📕メモリーブックはそれを使用してAIから返された結果を処理します。",
