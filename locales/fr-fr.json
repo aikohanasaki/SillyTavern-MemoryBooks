@@ -279,7 +279,6 @@
     "STMemoryBooks_SaveProfileAndCreateMemory": "Sauver & Créer",
     "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "Sauve comme nouveau profil et crée la mémoire",
     "STMemoryBooks_Tooltip_CreateMemory": "Crée avec les réglages sélectionnés",
-    "STMemoryBooks_AcceptAndAddToLorebook": "Accepter & Ajouter",
     "STMemoryBooks_EditAndSave": "Éditer & Sauver",
     "STMemoryBooks_RetryGeneration": "Régénérer",
     "STMemoryBooks_PromptManager_Hint": "💡 Copiez un prompt intégré pour commencer. Ne changez pas l'instruction \"respond with JSON\".",

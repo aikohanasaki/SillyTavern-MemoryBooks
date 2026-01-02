@@ -280,7 +280,6 @@
   "STMemoryBooks_SaveProfileAndCreateMemory": "Simpan Profil & Cipta Memori",
   "STMemoryBooks_Tooltip_SaveProfileAndCreateMemory": "Simpan tetapan yang diubah suai sebagai profil baharu dan cipta memori",
   "STMemoryBooks_Tooltip_CreateMemory": "Cipta memori menggunakan tetapan profil yang dipilih",
-  "STMemoryBooks_AcceptAndAddToLorebook": "Terima & Tambah ke Buku Legenda",
   "STMemoryBooks_EditAndSave": "Edit & Simpan",
   "STMemoryBooks_RetryGeneration": "Cuba Semula Penjanaan",
   "STMemoryBooks_PromptManager_Hint": "💡 Apabila mencipta gesaan baharu, salin salah satu gesaan terbina dalam yang lain dan kemudian pinda. Jangan ubah arahan \"balas dengan JSON\", 📕Buku Memori menggunakannya untuk memproses hasil yang dikembalikan daripada AI.",

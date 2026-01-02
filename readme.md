@@ -41,6 +41,21 @@ Set this up in ST (you can change back to Text Completion AFTER you get STMB wor
 - download a chat completion preset and import it (any one will do) just so you HAVE a chat completion preset. It avoids errors from "not supported"
 - change the max response length on the chat completion preset so that it is at least 2048; 4096 is recommended. (Smaller means you run the risk of getting cut off.)
 
+### Llama.cpp Tips to using 📕 ST Memory Books
+Just like Kobold, set the following up as a _Chat Completion API_ in ST (you can change back to Chat Completion after you've verified STMB is working):
+- Create a new connection profile for a Chat Completion API
+- Completion Source: `Custom (Open-AI Compatible)`
+- Endpoint URL: `http://host.docker.internal:8080/v1` if running ST in docker, else `http://localhost:8080/v1`
+- Custom API key: enter anything (ST requires one)
+- Model ID: `llama2-7b-chat.gguf` (or your model, doesn't matter if you're not running more than one in llama.cpp)
+- Prompt post-processing: none
+
+For starting Llama.cpp, I recommend placing something similar to the following in a shell script or bat file, so startup is easier:
+```sh
+llama-server -m <model-path> -c <context-size> --port 8080
+```
+
+
 ## 💡 Recommended Global World Info/Lorebook Activation Settings
 
 - **Match Whole Words:** leave unchecked (false)

@@ -432,7 +432,6 @@ export const localeData_en = {
 	'STMemoryBooks_SaveProfileAndCreateMemory': 'Save Profile & Create Memory',
 	'STMemoryBooks_Tooltip_SaveProfileAndCreateMemory': 'Save the modified settings as a new profile and create the memory',
 	'STMemoryBooks_Tooltip_CreateMemory': 'Create memory using the selected profile settings',
-	'STMemoryBooks_AcceptAndAddToLorebook': 'Accept & Add to Lorebook',
 	'STMemoryBooks_EditAndSave': 'Edit & Save',
 	'STMemoryBooks_RetryGeneration': 'Retry Generation',
     'STMemoryBooks_PromptManager_Hint': '💡 When creating a new prompt, copy one of the other built-in prompts and then amend it. Don\'t change the "respond with JSON" instructions, 📕Memory Books uses that to process the returned result from the AI.',
@@ -1141,7 +1140,7 @@ You must respond with ONLY valid JSON in this exact format:
 
 For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:
 # Scene Summary - Day X - [Title]
-First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. 
+First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.
 
 For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
@@ -1186,7 +1185,7 @@ You must respond with ONLY valid JSON in this exact format:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 
-For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include: 
+For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include:
 
 - Story beats, events, actions and consequences, turning points, and outcomes
 - Key character interactions, character developments, significant dialogue, revelations, emotional impact, and relationships
@@ -1206,11 +1205,11 @@ You must respond with ONLY valid JSON in this exact format:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 
-For the content field, create a beat-by-beat summary of the scene that *replaces reading the full scene* while preserving all plot-relevant nuance and reads like a clean, structured scene log — concise yet complete. This summary needs to be token-efficient: exercise judgment as to whether or not an interaction is flavor-only or truly affects the plot. Flavor scenes (interaction detail that does not advance plot) may be captured through key exchanges and should be skipped when recording story beats. 
+For the content field, create a beat-by-beat summary of the scene that *replaces reading the full scene* while preserving all plot-relevant nuance and reads like a clean, structured scene log — concise yet complete. This summary needs to be token-efficient: exercise judgment as to whether or not an interaction is flavor-only or truly affects the plot. Flavor scenes (interaction detail that does not advance plot) may be captured through key exchanges and should be skipped when recording story beats.
 
-Write in **past tense**, **third-person**, and exclude all [OOC] or meta discussion.  
-Use concrete nouns (e.g., “rice cooker” > “appliance”).  
-Only use adjectives/adverbs when they materially affect tone, emotion, or characterization.  
+Write in **past tense**, **third-person**, and exclude all [OOC] or meta discussion.
+Use concrete nouns (e.g., “rice cooker” > “appliance”).
+Only use adjectives/adverbs when they materially affect tone, emotion, or characterization.
 Focus on **cause → intention → reaction → consequence** chains for clarity and compression.
 
 # [Scene Title]
@@ -1236,13 +1235,13 @@ Focus on **cause → intention → reaction → consequence** chains for clarity
 - Include all elements that influence future continuity (knowledge, relationships, injuries, promises, etc.).
 - Note any unresolved threads or foreshadowed elements.
 
-Write compactly but completely — every line should add new information or insight.  
+Write compactly but completely — every line should add new information or insight.
 Synthesize redundant actions or dialogue into unified cause–effect–emotion beats.
 Favor compression over coverage whenever the two conflict; omit anything that can be inferred from context or established characterization.
 
 For the keywords field:
 
-Generate **15–30 standalone topical keywords** that function as retrieval tags, not micro-summaries. 
+Generate **15–30 standalone topical keywords** that function as retrieval tags, not micro-summaries.
 Keywords must be:
 - **Concrete and scene-specific** (locations, objects, proper nouns, unique actions, repeated motifs).
 - **One concept per keyword** — do NOT combine multiple ideas into one keyword.
@@ -1276,7 +1275,7 @@ You must respond with ONLY valid JSON in this exact format:
 }
 
 Return ONLY the JSON, no other text.`,
-    
+
     // Built-in preset display names (English defaults; can be localized in locales/*.json)
     'STMemoryBooks_DisplayName_summary': 'Summary - Detailed beat-by-beat summaries in narrative prose',
     'STMemoryBooks_DisplayName_summarize': 'Summarize - Bullet-point format',
@@ -1303,7 +1302,7 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_UseRegexAdvanced': 'Use regex (advanced)',
     'STMemoryBooks_ConfigureRegex': '📐 Configure regex…'
 };
- 
+
 /**
  * All available locale data
  * Add more languages here as they become available
