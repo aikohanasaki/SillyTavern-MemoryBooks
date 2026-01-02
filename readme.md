@@ -2,6 +2,13 @@
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as "[vectorized](#vectorized)" entries in your lorebooks. Supports group chats, advanced profile management, and bulletproof API/model handling. 
 
+### ❓ Vocabulary
+- Scene → Memory  
+- Many Scenes → Arc Summary  
+- Always-On → Side Prompt (Tracker)
+
+## ❗ Read Me First!
+
 Start here: 
 * ⚠️‼️Please read [prerequisites](#-prerequisites) for installation notes (especially if you run Text Completion API)
 * ❓ [Frequently Asked Questions](#FAQ)
@@ -131,6 +138,54 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
+## 🧩 Memory Types: Scenes vs Arcs
+
+📕 Memory Books supports **two levels of narrative memory**, each designed for different kinds of continuity.
+
+### 🎬 Scene Memories (Default)
+Scene memories capture **what happened** in a specific range of messages.
+
+- Based on explicit scene selection (► ◄)
+- Ideal for moment-to-moment recall
+- Preserves dialogue, actions, and immediate outcomes
+- Best used frequently
+
+This is the standard and most commonly used memory type.
+
+---
+
+### 🧭 Arc Summaries *(Beta)*
+Arc summaries capture **what changed over time** across multiple scenes.
+
+Instead of summarizing events, arc summaries focus on:
+- Character development and relationship shifts
+- Long-term goals, tensions, and resolutions
+- Emotional trajectory and narrative direction
+- Persistent state changes that should remain stable
+
+Arc summaries are **higher-level, lower-frequency memories** designed to prevent character drift and narrative loss in long-running chats.
+
+> 💡 Think of arc summaries as *season recaps*, not scene logs.
+
+#### When to use Arc Summaries
+- After a major relationship shift
+- At the end of a story chapter or arc
+- When motivations, trust, or power dynamics change
+- Before starting a new phase of the story
+
+#### Beta Notes
+- Arc summaries are prompt-sensitive and intentionally conservative
+- Recommended to review before committing to lorebook
+- Best paired with lower-priority or meta-style lorebook entries
+
+Arc summaries are generated **from existing scene memories**, not directly from raw chat.
+
+This gives you:
+- reduce token usage
+- AI has better understanding of the narrative flow
+
+---
+
 ## 📝 Memory Generation
 
 ### **JSON-Only Output**
@@ -170,17 +225,23 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 
 ---
 
-### 🎡 Side Prompts
+### 🎡 Trackers & Side Prompts
 
-Side Prompts can be used like trackers and will create entries in your memory lorebook. 
-- **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
-- **Features:**
+Side Prompts can be used like trackers and will create entries in your memory lorebook. Side Prompts allow you to track **ongoing state**, not just past events. For example: 
+- 💰 Inventory & Resources ("What items does the user have?")
+- ❤️ Relationship Status ("How does X feel about Y?")
+- 📊 Character Stats ("Current health, skills, reputation")
+- 🎯 Quest Progress ("What goals are active?")
+- 🌍 World State ("What's changed in the setting?")
+
+#### **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
+#### **Features:**
     - View all side prompts.
     - Create new or duplicate prompts to experiment with different prompt styles.
     - Edit or delete any preset (including built-ins).
     - Export and import presets as JSON files for backup or sharing.
     - Run them manually or automatically with memory creation.
-- **Usage Tips:**
+#### **Usage Tips:**
     - When creating a new prompt, you can copy from built-ins for best compatibility.
     - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use
 
