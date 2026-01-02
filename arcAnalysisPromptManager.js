@@ -174,7 +174,8 @@ async function saveOverrides(doc) {
     }),
   });
   if (!response.ok) {
-    throw new Error(`Failed to save arc prompts: ${response.statusText}`);
+    const msg = translate("Failed to save arc prompts", "STMemoryBooks_ArcPromptManager_SaveFailed");
+    throw new Error(`${msg}: ${response.statusText}`);
   }
   cachedOverrides = doc;
   console.log(`${MODULE_NAME}: Arc prompts saved`);

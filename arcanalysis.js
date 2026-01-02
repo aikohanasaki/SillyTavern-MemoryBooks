@@ -9,6 +9,7 @@ import { getDefaultArcPrompt } from "./templatesArcPrompts.js";
 import * as ArcPrompts from "./arcAnalysisPromptManager.js";
 import { upsertLorebookEntriesBatch } from "./addlore.js";
 import { extension_settings } from "../../../extensions.js";
+import { translate } from '../../../i18n.js';
 
 /**
  * Arc Analysis pipeline (stateless wrt model; stateful in controller).
@@ -371,7 +372,7 @@ export function buildArcAnalysisPrompt({
  */
 export function parseArcJsonResponse(text) {
   if (!text || typeof text !== "string") {
-    throw new Error("Empty AI response");
+    throw new Error(translate("Empty AI response", "STMemoryBooks_ArcAnalysis_EmptyResponse"));
   }
   const normalized = normalizeText(
     text.trim().replace(/<think>[\s\S]*?<\/think>/gi, ""),
@@ -425,7 +426,7 @@ export function parseArcJsonResponse(text) {
       // try next candidate
     }
   }
-  throw new Error("Model did not return valid arc JSON");
+  throw new Error(translate("Model did not return valid arc JSON", "STMemoryBooks_ArcAnalysis_InvalidJSON"));
 }
 
 /**
@@ -852,7 +853,7 @@ export async function commitArcs({
   disableOriginals = false,
 }) {
   if (!lorebookName || !lorebookData) {
-    throw new Error("Missing lorebookName or lorebookData");
+    throw new Error(translate("Missing lorebookName or lorebookData", "STMemoryBooks_ArcAnalysis_MissingLorebookData"));
   }
   const results = [];
 
@@ -921,7 +922,7 @@ export async function commitArcs({
     const created = res && res[0];
     const arcEntryId = created ? created.uid : null;
     if (!arcEntryId) {
-      throw new Error("Arc upsert returned no entry (commitArcs failed)");
+      throw new Error(translate("Arc upsert returned no entry (commitArcs failed)", "STMemoryBooks_ArcAnalysis_UpsertFailed"));
     }
 
     // If requested, disable originals by ID match (memberIds refer to entry.uid string)
