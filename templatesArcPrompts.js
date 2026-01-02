@@ -1,21 +1,20 @@
+import { translate } from '../../../i18n.js';
+
 /**
  * Built-in Arc Analysis prompts (default + alternates).
  * These mirror the Summary Prompt Manager pattern but are specific to Arc Analysis.
- * 
- * Exports:
- *  - getBuiltInArcPrompts(): { [key: string]: string }
- *  - getDefaultArcPrompt(): string
+ * * Exports:
+ * - getBuiltInArcPrompts(): { [key: string]: string }
+ * - getDefaultArcPrompt(): string
  */
 
 /**
- * Keys are stable IDs used in preset storage
- * NOTE: arc_default includes a fenced JSON example; backticks are escaped as \`\`\` inside this
- * template literal to prevent terminating the JavaScript string. If editing the fenced block,
- * preserve the escapes or convert the example to an indented code sample.
- * Users with existing overrides can use “Recreate Built-in Arc Prompts” to adopt updated defaults.
+ * Helper to generate defined prompts with translation support.
+ * Returns an object where keys are stable IDs and values are translated strings.
  */
-const ARC_BUILT_INS = {
-  arc_default: `You are an expert narrative analyst and memory-engine assistant.
+function getDefinitions() {
+    return {
+        arc_default: translate(`You are an expert narrative analyst and memory-engine assistant.
 Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, identify self-contained story arcs, and output each arc as a single memory entry in JSON.
 
 Each arc must be token-efficient, plot-accurate, and compatible with long-running RP memory systems such as STMB.
@@ -141,11 +140,10 @@ Classification of non-fitting memories:
 
 JSON-only:
 - Return only the JSON object described above.
-- No markdown fences, no commentary, no system prompts, no extra text.`,
-  arc_alternate: `You are an expert narrative analyst and memory-engine assistant.
-Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, identify self-contained story arcs, and output a single memory arc entry in JSON.
+- No markdown fences, no commentary, no system prompts, no extra text.`, 'STMemoryBooks_ArcPrompt_Default'),
 
-Each arc must be token-efficient, plot-accurate, and compatible with long-running RP memory systems such as STMB.
+        arc_alternate: translate(`You are an expert narrative analyst and memory-engine assistant.
+Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, and output a single memory arc entry in JSON. The arc must be token-efficient and plot-accurate.
 
 You will receive input in this exact format:
 - An optional PREVIOUS ARC block, which is canon and must not be rewritten.
@@ -265,8 +263,9 @@ Classification of non-fitting memories:
 
 JSON-only:
 - Return only the JSON object described above.
-- No markdown fences, no commentary, no system prompts, no extra text.`,
-  arc_tiny: `You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
+- No markdown fences, no commentary, no system prompts, no extra text.`, 'STMemoryBooks_ArcPrompt_Alternate'),
+
+        arc_tiny: translate(`You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
 
 Return JSON only:
 { "arcs": [ { "title": "...", "summary": "...", "keywords": ["..."], "member_ids": ["<ID>", "..."] } ], "unassigned_memories": [ { "id": "...", "reason": "..." } ] }
@@ -275,19 +274,20 @@ Rules:
 - 5–15% length compression
 - Focus on plot, emotional progression, decisions, conflicts, continuity
 - Identify non-fitting items in unassigned_memories with a brief reason
-- No quotes, no OOC, no commentary outside JSON`
-};
+- No quotes, no OOC, no commentary outside JSON`, 'STMemoryBooks_ArcPrompt_Tiny')
+    };
+}
 
 /**
  * Get built-in Arc Analysis prompts
  */
 export function getBuiltInArcPrompts() {
-  return { ...ARC_BUILT_INS };
+  return getDefinitions();
 }
 
 /**
  * Get default Arc Analysis prompt text
  */
 export function getDefaultArcPrompt() {
-  return ARC_BUILT_INS.arc_default;
+  return getDefinitions().arc_default;
 }
