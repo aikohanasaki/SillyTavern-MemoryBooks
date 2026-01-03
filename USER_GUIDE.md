@@ -231,7 +231,7 @@ Example prompt ideas:
 
 1. Open Side Prompts Manager
 2. Click **Create New**
-3. Write a short, clear instruction
+3. Write a short, clear instructionCiao
    *(example: “Always note what the weather is like in each scene”)*
 4. Save and enable it
 5. The tracker will now update this information over time
