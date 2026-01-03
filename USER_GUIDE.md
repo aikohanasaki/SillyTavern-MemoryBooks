@@ -129,49 +129,117 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 ---
 
-## 🎨 Side Prompts & Templates (Advanced Feature)
+## 🌈 Arc Summaries
 
-**Side Prompts** are reusable prompt snippets that enhance your memory generation without changing your main AI settings. Think of them as "add-ons" that give your memories extra focus or tracking capabilities.
+Arc Summaries are created manually. Nothing is summarized or removed unless you choose to do it.
+
+### Q: What are Arc Summaries?
+
+**A:** Arc Summaries help keep long stories manageable. Over time, you may collect many old memory entries. Some of them describe the same part of the story.
+An Arc Summary lets you combine several older memories into one shorter summary.
+
+### Q: What happens when I make an Arc Summary?
+
+**A:** When you create an Arc Summary:
+
+* The selected memories are combined into one new entry
+* The new summary replaces those older memories
+  *(older memories can be hidden automatically — not deleted)*
+* The story is still remembered, but with fewer tokens
+
+### Q: Why make Arc Summaries?
+
+**A:** Arc Summaries are useful when:
+
+* Your memory list is getting very long
+* Older memories are no longer needed in full detail
+* You want to reduce token usage in long chats
+
+### Q: How do I make an Arc Summary?
+
+**A:** To create an Arc Summary:
+
+1. Click **🌈 Consolidate Memories into Arcs** at the bottom of the main STMB popup.
+2. Choose an arc type:
+
+   * **Multi-Arc**
+     The AI looks for natural breaks and creates multiple arcs.
+     You can set a minimum number of memories per arc.
+     *Works best with strong models (GPT, Gemini, Sonnet). Local models may struggle.*
+   * **Single Arc**
+     The AI combines all selected memories into one arc.
+     Previous arcs are included to help keep the story consistent.
+   * **Tiny**
+     A faster, simpler option that may work better with local models,
+     but results may be less detailed.
+3. Select the memories you want to include.
+4. Click **Run** and wait for the arc analysis to finish.
+
+---
+
+## 🎨 Trackers, Side Prompts, & Templates (Advanced Feature)
+
+**Side Prompts** are background trackers that help maintain ongoing story information.
+They run alongside memory creation and can update the same notes over time. Think of them as **helpers that watch your story and keep certain details up to date**.
 
 ### 🚀 **Quick Start with Templates**
+
 1. Open Memory Books settings
-2. Click **"Side Prompts"** button
-3. Browse the **template library** - pick something that fits your story:
-   - **Character Development Tracker** - Tracks personality changes and growth
-   - **Relationship Dynamics** - Monitors relationships between characters
-   - **Plot Thread Tracker** - Keeps tabs on ongoing storylines
-   - **Mood & Atmosphere** - Captures the emotional tone of scenes
-   - **World Building Notes** - Records setting details and lore
-4. Enable the templates you want, customize if needed
-5. Your memories will now include this extra tracking automatically!
+2. Click **Side Prompts**
+3. Browse the **template library** and choose what fits your story:
+
+   * **Character Development Tracker** – Tracks personality changes and growth
+   * **Relationship Dynamics** – Tracks relationships between characters
+   * **Plot Thread Tracker** – Tracks ongoing storylines
+   * **Mood & Atmosphere** – Tracks emotional tone
+   * **World Building Notes** – Tracks setting details and lore
+4. Enable the templates you want (you can customize them later)
+5. Your memories will now include this tracking automatically
 
 ### ⚙️ **How Side Prompts Work**
-- **Non-Intrusive**: They don't change your main AI settings or character prompts
-- **Per-Chat Control**: Enable different prompts for different chats
-- **Template-Based**: Use pre-built templates or create custom ones
-- **Automatic Integration**: Once enabled, they enhance every memory created
+
+* **Background Trackers**: They run quietly and update information over time
+* **Non-Intrusive**: They do not change your main AI settings or character prompts
+* **Per-Chat Control**: Different chats can use different trackers
+* **Template-Based**: Use built-in templates or create your own
+* **Automatic or Manual**: Some run automatically, others can be run by command
+
+This makes the trigger behavior understandable without technical terms.
 
 ### 🛠️ **Managing Side Prompts**
-- **Side Prompts Manager**: Create, edit, duplicate, and organize your prompts
-- **Import/Export**: Share prompt templates with others or backup your collection
-- **Quick Toggle**: Enable/disable prompts instantly in the Side Prompts popup
-- **Live Preview**: See which prompts are active for the current chat
+
+* **Side Prompts Manager**: Create, edit, duplicate, and organize trackers
+* **Enable / Disable**: Turn trackers on or off at any time
+* **Import / Export**: Share templates or back them up
+* **Status View**: See which trackers are active in the current chat
+
+“Status View” is clearer than “Live Preview” for ESL readers.
 
 ### 💡 **Template Examples**
-- Side Prompt Template Library (import this JSON): [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
-- **"Focus on dialogue and character interactions"**
-- **"Track the current quest status and objectives"** 
-- **"Note any world-building details mentioned"**
-- **"Monitor the relationship between [Character A] and [Character B]"**
+
+* Side Prompt Template Library (import this JSON):
+  [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
+
+Example prompt ideas:
+
+* “Track important dialogue and character interactions”
+* “Keep the current quest status up to date”
+* “Note new world-building details when they appear”
+* “Track the relationship between Character A and Character B”
 
 ### 🔧 **Creating Custom Side Prompts**
-1. Open Side Prompts Manager
-2. Click "Create New"
-3. Write your prompt (example: "Always note what the weather is like in each scene")
-4. Save and enable it
-5. Now all your memories will include weather tracking!
 
-**Pro Tip**: Side Prompts work best when they're specific and focused. Instead of "track everything," try "track romantic tension between main characters."
+1. Open Side Prompts Manager
+2. Click **Create New**
+3. Write a short, clear instruction
+   *(example: “Always note what the weather is like in each scene”)*
+4. Save and enable it
+5. The tracker will now update this information over time
+
+### 💬 **Pro Tip**
+
+Side Prompts work best when they are **small and focused**.
+Instead of “track everything,” try “track romantic tension between the main characters.”
 
 ---
 
