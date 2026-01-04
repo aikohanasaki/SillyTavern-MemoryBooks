@@ -69,6 +69,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - **Scan Depth:** higher is better (mine is set to 8)
 - **Max Recursion Steps:** 2 (general recommendation, not required)
 - **Context %:** 80% (based on a context window of 100,000 tokens) - assumes you don't have super-heavy chat history or bots.
+- Additional note: If the memory lorebook is your only lorebook, disable 'Delay until recursion' in the STMB profile or the memories will not trigger!
 
 ---
 
