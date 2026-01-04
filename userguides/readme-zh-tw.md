@@ -250,7 +250,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * 🎯 任務進度 ("哪些目標是活躍的？")
 * 🌍 世界狀態 ("設定中有什麼變化？")
 
-#### **存取:** 從 Memory Books 設定中，點擊 “🎡 Side Prompt Manager” (側邊提示詞管理器)。
+#### **存取:** 從 Memory Books 設定中，點擊 “🎡 追蹤器與側邊提示詞” (側邊提示詞管理器)。
 
 #### **功能:**
 

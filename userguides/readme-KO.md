@@ -258,7 +258,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * 🎯 퀘스트 진행 ("어떤 목표가 활성화되었는가?")
 * 🌍 월드 상태 ("설정에서 무엇이 변경되었는가?")
 
-#### **접근:** Memory Books 설정에서 “🎡 Side Prompt Manager”를 클릭하세요.
+#### **접근:** Memory Books 설정에서 “🎡 트래커 & 사이드 프롬프트”를 클릭하세요.
 
 #### **기능:**
 

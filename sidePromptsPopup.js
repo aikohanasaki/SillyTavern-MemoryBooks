@@ -730,7 +730,7 @@ async function importTemplates(event, parentPopup) {
  */
 export async function showSidePromptsPopup() {
     try {
-        let content = '<h3 data-i18n="STMemoryBooks_SidePrompts_Title">🧩 Side Prompts</h3>';
+        let content = '<h3 data-i18n="STMemoryBooks_SidePrompts_Title">🎡 Trackers & Side Prompts</h3>';
         content += '<div class="world_entry_form_control">';
         content += '<p class="opacity70p" data-i18n="STMemoryBooks_SidePrompts_Desc">Create and manage side prompts for trackers and other behind-the-scenes functions.</p>';
         content += '</div>';

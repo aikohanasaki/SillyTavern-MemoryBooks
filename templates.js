@@ -271,11 +271,14 @@ export const settingsTemplate = Handlebars.compile(`
             <!-- extra function buttons will be dynamically inserted here -->
         </div>
 
-        <hr>
-        <h4 data-i18n="STMemoryBooks_promptManagerButtons">Prompt Manager Buttons:</h4>
-        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-prompt-manager-buttons">
-            <!-- prompt manager buttons will be dynamically inserted here -->
+        <div class="info-block">
+            <h4 data-i18n="STMemoryBooks_promptManagerButtons">Prompt Managers</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_PromptManagerButtonsHint">Want to tweak things? Use the buttons below to customize each prompt type.</small>
+            <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-prompt-manager-buttons">
+                <!-- prompt manager buttons will be dynamically inserted here -->
+            </div>
         </div>
+
 `);
 
 /**

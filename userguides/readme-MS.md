@@ -250,7 +250,7 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam lo
 * 🎯 Kemajuan Misi ("Apa matlamat yang aktif?")
 * 🌍 Keadaan Dunia ("Apa yang berubah dalam latar tempat?")
 
-#### **Akses:** Dari tetapan Memory Books, klik “🎡 Side Prompt Manager”.
+#### **Akses:** Dari tetapan Memory Books, klik “🎡 Penjejak & Prom Sampingan”.
 
 #### **Ciri-ciri:**
 

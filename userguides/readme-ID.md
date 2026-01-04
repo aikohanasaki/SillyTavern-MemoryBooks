@@ -250,7 +250,7 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di loreb
 * 🎯 Kemajuan Quest ("Tujuan apa yang aktif?")
 * 🌍 Keadaan Dunia ("Apa yang berubah di latar tempat?")
 
-#### **Akses:** Dari pengaturan Memory Books, klik “🎡 Side Prompt Manager”.
+#### **Akses:** Dari pengaturan Memory Books, klik “🎡 Pelacak & Prompt Sampingan”.
 
 #### **Fitur:**
 

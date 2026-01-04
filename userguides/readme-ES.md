@@ -250,7 +250,7 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas en tu loreb
 * 🎯 Progreso de Misión ("¿Qué objetivos están activos?")
 * 🌍 Estado del Mundo ("¿Qué ha cambiado en el entorno?")
 
-#### **Acceso:** Desde la configuración de Memory Books, haz clic en “🎡 Side Prompt Manager”.
+#### **Acceso:** Desde la configuración de Memory Books, haz clic en “🎡 Rastreadores y Side Prompts”.
 
 #### **Características:**
 
