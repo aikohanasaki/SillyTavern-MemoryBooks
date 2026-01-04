@@ -13,7 +13,7 @@ Need bot to remember things, but the chat is too long for context? Want to autom
 **New to ST Memory Books?** Let's get you set up with your first automatic memory in just a few clicks:
 
 ### Step 1: Find the Extension
-- Look for the magic wand icon (�) next to your chat input box
+- Look for the magic wand icon (🪄) next to your chat input box
 - Click it, then click **"Memory Books"**
 - You'll see the ST Memory Books control panel
 
