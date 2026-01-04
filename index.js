@@ -1918,6 +1918,9 @@ function populateInlineButtons() {
   const extraFunctionContainer = currentPopupInstance.content.querySelector(
     "#stmb-extra-function-buttons",
   );
+  const promptButtonsContainer = currentPopupInstance.content.querySelector(
+    "#stmb-prompt-manager-buttons",
+  );
 
   // Populate manual lorebook buttons if container exists and manual mode is enabled
   if (manualLorebookContainer && settings.moduleSettings.manualModeEnabled) {
@@ -2155,6 +2158,10 @@ function populateInlineButtons() {
         }
       },
     },
+  ];
+
+  // Create additional function buttons
+  const promptManagerButtons = [
     {
       text:
         "🧩 " +
@@ -2224,6 +2231,7 @@ function populateInlineButtons() {
   // Clear containers and populate with buttons
   profileButtonsContainer.innerHTML = "";
   extraFunctionContainer.innerHTML = "";
+  promptButtonsContainer.innerHTML = "";
 
   // Add profile action buttons
   profileButtons.forEach((buttonConfig) => {
@@ -2243,6 +2251,16 @@ function populateInlineButtons() {
     button.textContent = buttonConfig.text;
     button.addEventListener("click", buttonConfig.action);
     extraFunctionContainer.appendChild(button);
+  });
+
+  // break out prompt manager buttons
+  promptManagerButtons.forEach((buttonConfig) => {
+    const button = document.createElement("div");
+    button.className = "menu_button interactable whitespacenowrap";
+    button.id = buttonConfig.id;
+    button.textContent = buttonConfig.text;
+    button.addEventListener("click", buttonConfig.action);
+    promptButtonsContainer.appendChild(button);
   });
 }
 

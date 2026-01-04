@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.14.2 (January 4, 2026)
+- **Bugfix:** Fix popup buttons not wrapping.
+
 ## v4.14.1 (January 3, 2026)
 - **Bugfix:** Fix not passing max_tokens for arc requests.
 

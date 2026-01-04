@@ -90,6 +90,7 @@
   "STMemoryBooks_ViewPrompt": "프롬프트 보기",
   "STMemoryBooks_ProfileActions": "프로필 작업:",
   "STMemoryBooks_extraFunctionButtons": "프로필 가져오기/내보내기:",
+  "STMemoryBooks_promptManagerButtons": "프롬프트 관리자 버튼:",
   "STMemoryBooks_CreateMemory": "메모리 생성",
   "STMemoryBooks_ScenePreview": "장면 미리보기:",
   "STMemoryBooks_UsingProfile": "프로필 사용 중",

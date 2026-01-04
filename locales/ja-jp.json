@@ -91,6 +91,7 @@
   "STMemoryBooks_ViewPrompt": "プロンプトを表示",
   "STMemoryBooks_ProfileActions": "プロファイルアクション:",
   "STMemoryBooks_extraFunctionButtons": "プロファイルのインポート/エクスポート:",
+  "STMemoryBooks_promptManagerButtons": "プロンプトマネージャーボタン:",
   "STMemoryBooks_CreateMemory": "メモリを作成",
   "STMemoryBooks_ScenePreview": "シーンプレビュー:",
   "STMemoryBooks_UsingProfile": "使用中のプロファイル",
