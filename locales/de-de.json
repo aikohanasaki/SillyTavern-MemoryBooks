@@ -92,6 +92,7 @@
     "STMemoryBooks_ProfileActions": "Profil-Aktionen:",
     "STMemoryBooks_extraFunctionButtons": "Profile Importieren/Exportieren:",
     "STMemoryBooks_promptManagerButtons": "Schaltflächen des Prompt-Managers:",
+    "STMemoryBooks_PromptManagerButtonsHint": "Möchtest du Dinge anpassen? Nutze die untenstehenden Schaltflächen, um jeden Prompt-Typ zu individualisieren.",
     "STMemoryBooks_CreateMemory": "Erinnerung erstellen",
     "STMemoryBooks_ScenePreview": "Szenenvorschau:",
     "STMemoryBooks_UsingProfile": "Verwende Profil",

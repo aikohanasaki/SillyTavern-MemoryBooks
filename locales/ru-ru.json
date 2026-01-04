@@ -92,6 +92,7 @@
     "STMemoryBooks_ProfileActions": "Действия с профилем:",
     "STMemoryBooks_extraFunctionButtons": "Импорт/Экспорт профилей:",
     "STMemoryBooks_promptManagerButtons": "Кнопки менеджера промптов:",
+    "STMemoryBooks_PromptManagerButtonsHint": "Хотите что-то настроить? Используйте кнопки ниже, чтобы настроить каждый тип промпта.",
     "STMemoryBooks_CreateMemory": "Создать Память",
     "STMemoryBooks_ScenePreview": "Предпросмотр сцены:",
     "STMemoryBooks_UsingProfile": "Использование профиля",

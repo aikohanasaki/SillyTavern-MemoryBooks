@@ -92,6 +92,7 @@
   "STMemoryBooks_ProfileActions": "Tindakan Profil:",
   "STMemoryBooks_extraFunctionButtons": "Import/Eksport Profil:",
   "STMemoryBooks_promptManagerButtons": "Butang Pengurus Prompt:",
+  "STMemoryBooks_PromptManagerButtonsHint": "Ingin menyesuaikan? Gunakan butang di bawah untuk menyesuaikan setiap jenis prom.",
   "STMemoryBooks_ConfirmationPopup": "Popup Pengesahan",
   "STMemoryBooks_CreateMemory": "Cipta Memori",
   "STMemoryBooks_ScenePreview": "Pratonton Babak:",

@@ -219,6 +219,7 @@ export const localeData_en = {
     'STMemoryBooks_ProfileActions': 'Profile Actions:',
     'STMemoryBooks_extraFunctionButtons': 'Import/Export Profiles:',
     'STMemoryBooks_promptManagerButtons': 'Prompt Managers',
+    'STMemoryBooks_PromptManagerButtonsHint': 'Want to tweak things? Use the buttons below to customize each prompt type.',
 
     // Confirmation Popup
     'STMemoryBooks_CreateMemory': 'Create Memory',
