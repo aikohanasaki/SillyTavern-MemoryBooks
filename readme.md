@@ -297,9 +297,9 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 - **Prompt or Preset:** Custom or built-in.
 - **Title Format:** Per-profile template.
 - **Activation Mode:** Vectorized, Constant, Normal.
-- **Position:** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (and field name).
+- **Position:** ↑Char, ↓Char, ↑EM, ↓EM, ↑AN, ↓AN, Outlet (and field name).
 - **Order Mode:** Auto/manual.
-- **Recursion:** Prevent/delay recursion.
+- **Recursion:** Prevent/delay until recursion.
 
 ---
 
