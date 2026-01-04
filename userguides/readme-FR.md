@@ -250,7 +250,7 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 * 🎯 Progression de Quête ("Quels objectifs sont actifs ?")
 * 🌍 État du Monde ("Qu'est-ce qui a changé dans le cadre ?")
 
-#### **Accès :** Depuis les paramètres de Memory Books, cliquez sur “🎡 Side Prompt Manager”.
+#### **Accès :** Depuis les paramètres de Memory Books, cliquez sur “🎡 Suivis & Prompts Secondaires”.
 
 #### **Fonctionnalités :**
 

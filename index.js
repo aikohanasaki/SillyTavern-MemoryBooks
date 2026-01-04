@@ -2209,16 +2209,16 @@ function populateInlineButtons() {
       },
     },
     {
-      text: "🎡 " + translate("Side Prompts", "STMemoryBooks_SidePrompts"),
+      text: "🎡 " + translate("Trackers & Side Prompts", "STMemoryBooks_SidePrompts"),
       id: "stmb-side-prompts",
       action: async () => {
         try {
           await showSidePromptsPopup();
         } catch (error) {
-          console.error(`${MODULE_NAME}: Error opening Side Prompts:`, error);
+          console.error(`${MODULE_NAME}: Error opening Trackers & Side Prompts Manager:`, error);
           toastr.error(
             translate(
-              "Failed to open Side Prompts",
+              "Failed to open Trackers & Side Prompts Manager",
               "STMemoryBooks_FailedToOpenSidePrompts",
             ),
             "STMemoryBooks",

@@ -4,6 +4,9 @@
 
 ## v4.14.2 (January 4, 2026)
 - **Bugfix:** Fix popup buttons not wrapping.
+- **Tweaks:** 
+  - Prompt Manager buttons broken out into their own section.
+  - Renamed "Side Prompts" to "Trackers & Side Prompts"
 
 ## v4.14.1 (January 3, 2026)
 - **Bugfix:** Fix not passing max_tokens for arc requests.

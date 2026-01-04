@@ -258,7 +258,7 @@ Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihr
 * 🎯 Quest-Fortschritt ("Welche Ziele sind aktiv?")
 * 🌍 Weltzustand ("Was hat sich im Setting geändert?")
 
-#### **Zugriff:** Klicken Sie in den Memory Books Einstellungen auf „🎡 Side Prompt Manager“.
+#### **Zugriff:** Klicken Sie in den Memory Books Einstellungen auf „🎡 Tracker & Neben-Prompts“.
 
 #### **Funktionen:**
 

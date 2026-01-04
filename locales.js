@@ -218,7 +218,7 @@ export const localeData_en = {
     'STMemoryBooks_ViewPrompt': 'View Prompt',
     'STMemoryBooks_ProfileActions': 'Profile Actions:',
     'STMemoryBooks_extraFunctionButtons': 'Import/Export Profiles:',
-    'STMemoryBooks_promptManagerButtons': 'Prompt Manager Buttons:',
+    'STMemoryBooks_promptManagerButtons': 'Prompt Managers',
 
     // Confirmation Popup
     'STMemoryBooks_CreateMemory': 'Create Memory',
@@ -295,7 +295,7 @@ export const localeData_en = {
     'STMemoryBooks_MoveToPresetConfirmDesc': 'Create a preset from this profile\'s custom prompt, set the preset on this profile, and clear the custom prompt?',
 
     // Side Prompts
-    'STMemoryBooks_SidePrompts_Title': '🧩 Side Prompts',
+    'STMemoryBooks_SidePrompts_Title': '🎡 Trackers & Side Prompts',
     'STMemoryBooks_SidePrompts_Desc': 'Create and manage side prompts for trackers and other behind-the-scenes functions.',
     'STMemoryBooks_EditSidePrompt': 'Edit Side Prompt',
     'STMemoryBooks_ResponseFormatPlaceholder': 'Optional response format',

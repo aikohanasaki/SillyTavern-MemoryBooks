@@ -250,7 +250,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * 🎯 任务进度 ("哪些目标处于激活状态？")
 * 🌍 世界状态 ("设定中发生了什么变化？")
 
-#### **访问:** 从 Memory Books 设置中，点击 “🎡 Side Prompt Manager”。
+#### **访问:** 从 Memory Books 设置中，点击 “🎡 追踪器 & 侧边提示词”。
 
 #### **功能:**
 

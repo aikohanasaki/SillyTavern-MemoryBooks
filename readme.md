@@ -155,7 +155,7 @@ This is the standard and most commonly used memory type.
 
 ---
 
-### 🧭 Arc Summaries *(Beta)*
+### 🌈 Arc Summaries *(Beta)*
 Arc summaries capture **what changed over time** across multiple scenes.
 
 Instead of summarizing events, arc summaries focus on:
@@ -235,7 +235,7 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 - 🎯 Quest Progress ("What goals are active?")
 - 🌍 World State ("What's changed in the setting?")
 
-#### **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
+#### **Access:** From the Memory Books settings, click “🎡 Trackers & Side Prompts”.
 #### **Features:**
 - View all side prompts.
 - Create new or duplicate prompts to experiment with different prompt styles.
