@@ -453,6 +453,7 @@ export async function runArcAnalysisSequential(
     minAssigned = 2,
     tokenTarget,
   } = options;
+  const extra = options?.extra ?? {};
 
   // Determine local max passes (single-arc preset defaults to one pass unless explicitly overridden)
   const singleArcPreset = presetKey === "arc_alternate";
