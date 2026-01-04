@@ -164,3 +164,9 @@
 
 /* Ensure Select2 dropdown is above modals/overlays */
 .select2-container--open { z-index: 2147483647 !important; }
+
+/* make menu buttons wrap */
+.popup-button-custom {
+    display: inline-flex;
+    flex-wrap: wrap !important;
+}
