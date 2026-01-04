@@ -1,0 +1,2215 @@
+var H7=Object.create;var{getPrototypeOf:B7,defineProperty:B8,getOwnPropertyNames:mZ,getOwnPropertyDescriptor:O7}=Object,dZ=Object.prototype.hasOwnProperty;var L6=(Z,Q,G)=>{G=Z!=null?H7(B7(Z)):{};let J=Q||!Z||!Z.__esModule?B8(G,"default",{value:Z,enumerable:!0}):G;for(let W of mZ(Z))if(!dZ.call(J,W))B8(J,W,{get:()=>Z[W],enumerable:!0});return J},uZ=new WeakMap,R7=(Z)=>{var Q=uZ.get(Z),G;if(Q)return Q;if(Q=B8({},"__esModule",{value:!0}),Z&&typeof Z==="object"||typeof Z==="function")mZ(Z).map((J)=>!dZ.call(Q,J)&&B8(Q,J,{get:()=>Z[J],enumerable:!(G=O7(Z,J))||G.enumerable}));return uZ.set(Z,Q),Q},u0=(Z,Q)=>()=>(Q||Z((Q={exports:{}}).exports,Q),Q.exports);var cZ=(Z,Q)=>{for(var G in Q)B8(Z,G,{get:Q[G],enumerable:!0,configurable:!0,set:(J)=>Q[G]=()=>J})};var H0=(Z,Q)=>()=>(Z&&(Q=Z(Z=0)),Q);var pZ=((Z)=>typeof require<"u"?require:typeof Proxy<"u"?new Proxy(Z,{get:(Q,G)=>(typeof require<"u"?require:Q)[G]}):Z)(function(Z){if(typeof require<"u")return require.apply(this,arguments);throw Error('Dynamic require of "'+Z+'" is not supported')});var k8,h1,C6,m0,o1,O8,g8,vJ,PJ;var B0=H0(()=>{k8={MAX_RETRIES:2,RETRY_DELAY_MS:2000,TOKEN_WARNING_THRESHOLD_DEFAULT:50000,DEFAULT_MEMORY_COUNT:0},h1={MAX_SCAN_RANGE:100,MAX_AFFECTED_MESSAGES:200,BUTTON_UPDATE_DEBOUNCE_MS:50,VALIDATION_DELAY_MS:500},C6={INPUT_DEBOUNCE_MS:1000,CHAT_OBSERVER_DEBOUNCE_MS:50},m0={PROMPTS_FILE:"stmb-summary-prompts.json",SIDE_PROMPTS_FILE:"stmb-side-prompts.json",ARC_PROMPTS_FILE:"stmb-arc-prompts.json"},o1={CURRENT_VERSION:1},O8={summary:"Summary - Detailed beat-by-beat summaries in narrative prose",summarize:"Summarize - Bullet-point format",synopsis:"Synopsis - Long and comprehensive (beats, interactions, details) with headings",sumup:"Sum Up - Concise story beats in narrative prose",minimal:"Minimal - Brief 1-2 sentence summary",northgate:"Northgate - Intended for creative writing. By Northgate on ST Discord",aelemar:"Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord",comprehensive:"Comprehensive - Synopsis plus improved keywords extraction"},g8={summary:"STMemoryBooks_DisplayName_summary",summarize:"STMemoryBooks_DisplayName_summarize",synopsis:"STMemoryBooks_DisplayName_synopsis",sumup:"STMemoryBooks_DisplayName_sumup",minimal:"STMemoryBooks_DisplayName_minimal",northgate:"STMemoryBooks_DisplayName_northgate",aelemar:"STMemoryBooks_DisplayName_aelemar",comprehensive:"STMemoryBooks_DisplayName_comprehensive"},vJ=h1.MAX_SCAN_RANGE,PJ=h1.MAX_AFFECTED_MESSAGES});import{chat as c0,chat_metadata as EJ}from"../../../../script.js";import{saveMetadataDebounced as A7,getContext as T7}from"../../../extensions.js";import{t as gJ,translate as w1}from"../../../i18n.js";function g(){let Q=T7().chatMetadata;if(!Q)return{sceneStart:null,sceneEnd:null};if(!Q.STMemoryBooks)Q.STMemoryBooks={};return Q.STMemoryBooks.sceneStart=V1.start??Q.STMemoryBooks.sceneStart??null,Q.STMemoryBooks.sceneEnd=V1.end??Q.STMemoryBooks.sceneEnd??null,Q.STMemoryBooks}function Q1(){A7()}function lZ(){let Q=g()?.highestMemoryProcessed;return Number.isFinite(Q)?Q:null}function u8(Z,Q,G,J){let W=N7(Z,Q,G,J);if(W.needsFullUpdate){m8();return}if(W.min===null||W.max===null)return;let q="#chat .mes[mesid]",Y=document.querySelectorAll(q),z=Array.from(Y).filter((V)=>{let X=parseInt(V.getAttribute("mesid")),j=W.min!==null?X>=W.min:!0,F=W.max!==null&&W.max!==void 0?X<=W.max:!0;return j&&F});if(z.length>0){let V=g();h6(z,V)}}function N7(Z,Q,G,J){let W=new Set;if(Z!==null&&Q!==null)for(let Y=Z;Y<=Q;Y++)W.add(Y);if(Z!==null)W.add(Z);if(Q!==null)W.add(Q);if(G!==null&&J!==null)for(let Y=G;Y<=J;Y++)W.add(Y);if(G!==null)W.add(G);if(J!==null)W.add(J);if(G!==null&&J===null){let Y=Math.min(G+h1.MAX_SCAN_RANGE,c0.length-1);for(let z=G+1;z<=Y;z++)W.add(z)}if(J!==null&&G===null){let Y=Math.max(J-h1.MAX_SCAN_RANGE,0);for(let z=Y;z<J;z++)W.add(z)}if(Z!==null&&Q===null&&G!==null&&J!==null){let Y=Math.min(Z+h1.MAX_SCAN_RANGE,c0.length-1);for(let z=J+1;z<=Y;z++)W.add(z)}if(Q!==null&&Z===null&&G!==null&&J!==null){let Y=Math.max(Q-h1.MAX_SCAN_RANGE,0);for(let z=Y;z<G;z++)W.add(z)}if(W.size===0)return{min:null,max:null,needsFullUpdate:!1};if(W.size>h1.MAX_AFFECTED_MESSAGES)return{needsFullUpdate:!0};let q=Array.from(W).sort((Y,z)=>Y-z);return{min:q[0],max:q[q.length-1],needsFullUpdate:!1}}function iZ(Z,Q){let G=g(),J=G.sceneStart??null,W=G.sceneEnd??null,q=D7(G,Z,Q);return G.sceneStart=q.start,G.sceneEnd=q.end,V1.start=q.start,V1.end=q.end,Q1(),u8(J,W,q.start,q.end),Promise.resolve()}function M6(Z,Q){let G=g(),J=G.sceneStart??null,W=G.sceneEnd??null,q=Number(Z),Y=Number(Q);G.sceneStart=q,G.sceneEnd=Y,V1.start=q,V1.end=Y,Q1(),u8(J,W,q,Y)}function p0(){let Z=g(),Q=Z.sceneStart??null,G=Z.sceneEnd??null;Z.sceneStart=null,Z.sceneEnd=null,V1.start=null,V1.end=null,Q1(),m8()}function m8(){let Z=g(),Q=document.querySelectorAll("#chat .mes[mesid]");h6(Q,Z)}function oZ(Z){if(!Z||Z.length===0)return;let Q=g();h6(Z,Q)}function h6(Z,Q){let{sceneStart:G,sceneEnd:J}=Q;Z.forEach((W)=>{let q=parseInt(W.getAttribute("mesid")),Y=W.querySelector(".mes_stmb_start"),z=W.querySelector(".mes_stmb_end");if(!Y||!z)return;if(Y.classList.remove("on","valid-start-point","in-scene"),z.classList.remove("on","valid-end-point","in-scene"),G!=null&&J!=null){if(q===G)Y.classList.add("on");else if(q===J)z.classList.add("on");else if(q>G&&q<J)Y.classList.add("in-scene"),z.classList.add("in-scene")}else if(G!=null){if(q===G)Y.classList.add("on");else if(q>G)z.classList.add("valid-end-point")}else if(J!=null){if(q===J)z.classList.add("on");else if(q<J)Y.classList.add("valid-start-point")}})}function d0(){let Z=g(),Q=Z.sceneStart??null,G=Z.sceneEnd??null,J=!1,W=c0.length;if(W===0){if(Z.sceneStart!==null||Z.sceneEnd!==null)Z.sceneStart=null,Z.sceneEnd=null,J=!0}else{if(Z.sceneStart!==null&&Z.sceneStart<0)Z.sceneStart=null,J=!0;if(Z.sceneEnd!==null&&Z.sceneEnd<0)Z.sceneEnd=null,J=!0;if(Z.sceneStart!==null&&Z.sceneStart>=W)Z.sceneStart=null,J=!0;if(Z.sceneEnd!==null&&Z.sceneEnd>=W)Z.sceneEnd=W-1,J=!0;if(Z.sceneStart!==null&&Z.sceneEnd!==null&&Z.sceneStart>Z.sceneEnd)Z.sceneStart=null,Z.sceneEnd=null,J=!0}if(J)V1.start=Z.sceneStart,V1.end=Z.sceneEnd,Q1(),u8(Q,G,Z.sceneStart,Z.sceneEnd)}function nZ(Z,Q){let G=Number(Z);if(!Number.isFinite(G))return;let J=g(),W=J.sceneStart??null,q=J.sceneEnd??null,Y=J.sceneStart,z=J.sceneEnd,V="";if(Y===G&&z===G){if(p0(),Q?.moduleSettings?.showNotifications)toastr.warning(w1("Scene cleared due to start marker deletion","STMemoryBooks_Toast_SceneClearedStart"),"STMemoryBooks");d0();return}if(Y!=null&&z!=null){if(G<Y)Y--,z--,V=w1("Scene markers adjusted due to message deletion.","STMemoryBooks_Toast_SceneMarkersAdjusted");else if(G===Y){if(Y=null,z!=null&&z>G)z--;V=w1("Scene end point cleared due to message deletion","STMemoryBooks_Toast_SceneEndPointCleared")}else if(G>Y&&G<z)z--,V=w1("Scene markers adjusted due to message deletion.","STMemoryBooks_Toast_SceneMarkersAdjusted");else if(G===z)z=null,V=w1("Scene end point cleared due to message deletion","STMemoryBooks_Toast_SceneEndPointCleared")}else if(Y!=null){if(G<Y)Y--,V=w1("Scene markers adjusted due to message deletion.","STMemoryBooks_Toast_SceneMarkersAdjusted");else if(G===Y)Y=null,V=w1("Scene end point cleared due to message deletion","STMemoryBooks_Toast_SceneEndPointCleared")}else if(z!=null){if(G<z)z--,V=w1("Scene markers adjusted due to message deletion.","STMemoryBooks_Toast_SceneMarkersAdjusted");else if(G===z)z=null,V=w1("Scene end point cleared due to message deletion","STMemoryBooks_Toast_SceneEndPointCleared")}else{d0();return}let X=c0.length;if(X===0)Y=null,z=null;else{if(Y!=null&&(Y<0||Y>=X))Y=null;if(z!=null&&(z<0||z>=X))z=X-1;if(Y!=null&&z!=null&&Y>z)Y=null,z=null}if(Y!==J.sceneStart||z!==J.sceneEnd){if(J.sceneStart=Y,J.sceneEnd=z,V1.start=Y,V1.end=z,Q1(),u8(W,q,Y,z),V&&Q?.moduleSettings?.showNotifications)toastr.warning(V,"STMemoryBooks")}d0()}function d8(Z){let Q=parseInt(Z.getAttribute("mesid")),G=Z.querySelector(".extraMesButtons");if(!G){G=document.createElement("div"),G.classList.add("extraMesButtons");let q=Z.querySelector(".mes_block");if(q)q.appendChild(G);else Z.appendChild(G)}if(Z.querySelector(".mes_stmb_start"))return;let J=document.createElement("div");J.title=w1("Mark Scene Start","STMemoryBooks_MarkSceneStart"),J.classList.add("mes_stmb_start","mes_button","fa-solid","fa-caret-right","interactable"),J.setAttribute("tabindex","0"),J.setAttribute("data-i18n","[title]STMemoryBooks_MarkSceneStart");let W=document.createElement("div");W.title=w1("Mark Scene End","STMemoryBooks_MarkSceneEnd"),W.classList.add("mes_stmb_end","mes_button","fa-solid","fa-caret-left","interactable"),W.setAttribute("tabindex","0"),W.setAttribute("data-i18n","[title]STMemoryBooks_MarkSceneEnd"),J.addEventListener("click",(q)=>{q.stopPropagation(),iZ(Q,"start")}),W.addEventListener("click",(q)=>{q.stopPropagation(),iZ(Q,"end")}),G.appendChild(J),G.appendChild(W)}async function R8(){let Z=g();if(Z.sceneStart===null||Z.sceneEnd===null)return null;let Q=c0[Z.sceneStart],G=c0[Z.sceneEnd];if(!Q||!G)return null;let J=(W)=>{let q=W.mes||"";return q.length>100?q.substring(0,100)+"...":q};try{let W=o0(Z.sceneStart,Z.sceneEnd),q=l0(W),Y=await v6(q);return{sceneStart:Z.sceneStart,sceneEnd:Z.sceneEnd,startExcerpt:J(Q),endExcerpt:J(G),startSpeaker:Q.name||"Unknown",endSpeaker:G.name||"Unknown",messageCount:Z.sceneEnd-Z.sceneStart+1,estimatedTokens:Y}}catch(W){console.warn("STMemoryBooks-SceneManager: getSceneData failed:",W);try{if((W?.message||"").includes("No visible messages"))toastr?.warning?.(w1("Selected range has no visible messages. Adjust start/end.","STMemoryBooks_NoVisibleMessages"),"STMemoryBooks")}catch{}return null}}function D7(Z,Q,G){let J=parseInt(Q),W=Z.sceneStart,q=Z.sceneEnd;if(G==="start"){if(Z.sceneEnd!==null&&(Z.sceneEnd??null)<J)q=null;W=Z.sceneStart===J?null:J}else if(G==="end"){if(Z.sceneStart!==null&&(Z.sceneStart??null)>J)W=null;q=Z.sceneEnd===J?null:J}return{start:W,end:q}}function c8(){let Z=g();V1.start=Z.sceneStart,V1.end=Z.sceneEnd}function sZ(){return{...V1}}var V1;var i0=H0(()=>{p8();B0();V1={start:null,end:null}});import{getRequestHeaders as aZ}from"../../../../script.js";import{translate as _7}from"../../../i18n.js";function A8(Z){return Z.replace(/\w\S*/g,(Q)=>{return Q.charAt(0).toUpperCase()+Q.slice(1).toLowerCase()})}function L7(Z){return Z.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").substring(0,50)}function rZ(Z){let Q=Z.split(`
+`).filter((G)=>G.trim());if(Q.length>0){let J=Q[0].trim().replace(/^(You are|Analyze|Create|Generate|Write)\s+/i,"").replace(/[:.]/g,"").trim();return A8(J.substring(0,50))}return"Custom Prompt"}function x6(Z,Q){let G=L7(Z),J=G,W=2,q=R0();while(J in Q||J in q)J=`${G}-${W}`,W++;return J}async function n1(Z=null){if(n0)return n0;let Q=!1,G=null;try{let J=await fetch(`/user/files/${tZ}`,{method:"GET",credentials:"include",headers:aZ()});if(!J.ok)Q=!0;else{let W=await J.text();if(G=JSON.parse(W),!eZ(G))Q=!0}}catch(J){Q=!0}if(Q){let J={},W=new Date().toISOString(),q=R0();for(let[Y,z]of Object.entries(q))J[Y]={displayName:P6[Y]||A8(Y),prompt:z,createdAt:W};if(Z&&Z.profiles&&Array.isArray(Z.profiles)){for(let Y of Z.profiles)if(Y.prompt&&Y.prompt.trim()){let z=`Custom: ${Y.name||"Unnamed Profile"}`,V=x6(z,J);J[V]={displayName:z,prompt:Y.prompt,createdAt:W},console.log(`${R1}: Migrated custom prompt from profile "${Y.name}" as "${V}"`)}}G={version:o1.CURRENT_VERSION,overrides:J},await s0(G)}return n0=G,n0}async function s0(Z){try{let Q=JSON.stringify(Z,null,2),G=btoa(unescape(encodeURIComponent(Q))),J=await fetch("/api/files/upload",{method:"POST",credentials:"include",headers:aZ(),body:JSON.stringify({name:tZ,data:G})});if(!J.ok)throw Error(`Failed to save prompts: ${J.statusText}`);n0=Z,console.log(`${R1}: Prompts saved successfully`)}catch(Q){throw console.error(`${R1}: Error saving overrides:`,Q),Q}}function eZ(Z){if(!Z||typeof Z!=="object")return console.error(`${R1}: Invalid data type`),!1;if(typeof Z.version!=="number")return console.error(`${R1}: Invalid schema version type: ${Z.version}`),!1;if(Z.version!==o1.CURRENT_VERSION)console.warn(`${R1}: Unexpected schema version: ${Z.version} (expected ${o1.CURRENT_VERSION})`);if(!Z.overrides||typeof Z.overrides!=="object")return console.error(`${R1}: Missing or invalid overrides object`),!1;for(let[Q,G]of Object.entries(Z.overrides)){if(!G||typeof G!=="object")return console.error(`${R1}: Invalid override entry for key: ${Q}`),!1;if(typeof G.prompt!=="string"||!G.prompt.trim())return console.error(`${R1}: Invalid or empty prompt for key: ${Q}`),!1;if(G.displayName!==void 0&&typeof G.displayName!=="string")return console.error(`${R1}: Invalid displayName for key: ${Q}`),!1}return!0}async function r0(Z){return await n1(Z),w7=!0,I7=null,!0}async function O0(Z=null){let Q=await n1(Z),G=[];for(let[W,q]of Object.entries(Q.overrides))G.push({key:W,displayName:q.displayName||A8(W),createdAt:q.createdAt||null});let J=R0()||{};for(let W of Object.keys(J))if(!(W in Q.overrides))G.push({key:W,displayName:P6[W]||A8(W),createdAt:null});return G.sort((W,q)=>{if(!W.createdAt)return 1;if(!q.createdAt)return-1;return new Date(q.createdAt)-new Date(W.createdAt)}),G}async function Q0(Z,Q=null){let G=await n1(Q);if(G.overrides[Z]){let W=G.overrides[Z].prompt;if(typeof W==="string"&&W.trim())return W}return R0()[Z]||u1()}async function S6(Z,Q=null){let G=await n1(Q);if(G.overrides[Z]&&G.overrides[Z].displayName)return G.overrides[Z].displayName;return P6[Z]||A8(Z)}async function T8(Z,Q,G){let J=await n1(),W=new Date().toISOString();if(!Z)Z=x6(G||rZ(Q),J.overrides);if(J.overrides[Z])J.overrides[Z].prompt=Q,J.overrides[Z].displayName=G||J.overrides[Z].displayName,J.overrides[Z].updatedAt=W;else J.overrides[Z]={displayName:G||rZ(Q),prompt:Q,createdAt:W};return await s0(J),Z}async function Z4(Z){let Q=await n1(),G=Q.overrides[Z];if(!G)throw Error(`Preset "${Z}" not found`);let J=`${G.displayName} (Copy)`,W=x6(J,Q.overrides),q=new Date().toISOString();return Q.overrides[W]={displayName:J,prompt:G.prompt,createdAt:q},await s0(Q),W}async function Q4(Z){let Q=await n1();if(!Q.overrides[Z])throw Error(`Preset "${Z}" not found`);delete Q.overrides[Z],await s0(Q)}async function G4(){let Z=await n1();return JSON.stringify(Z,null,2)}async function J4(Z){try{let Q=JSON.parse(Z);if(!eZ(Q))throw Error("Invalid prompts file structure - see console for details");await s0(Q)}catch(Q){throw console.error(`${R1}: Error importing prompts:`,Q),Q}}async function $4(Z="overwrite"){if(Z!=="overwrite")console.warn(`${R1}: Unsupported mode for recreateBuiltInPrompts: ${Z}; defaulting to 'overwrite'`);let Q=await n1(),G=R0(),J=Object.keys(G||{}),W=0;if(Q&&Q.overrides&&typeof Q.overrides==="object"){for(let q of J)if(q in Q.overrides)delete Q.overrides[q],W++}return await s0(Q),n0=Q,console.log(`${R1}: Recreated built-in prompts (removed ${W} overrides)`),{removed:W}}var R1="STMemoryBooks-SummaryPromptManager",tZ,n0=null,w7=!1,I7=null,P6;var i8=H0(()=>{v1();B0();tZ=m0.PROMPTS_FILE,P6=Object.fromEntries(Object.keys(O8).map((Z)=>[Z,_7(O8[Z],g8[Z])]))});var V4={};cZ(V4,{validateProfile:()=>Q8,showLorebookSelectionPopup:()=>A0,resolveEffectiveConnectionFromProfile:()=>g6,readIntInput:()=>$1,parseTemperature:()=>u6,normalizeCompletionSource:()=>Y1,isValidPreset:()=>b7,getUIModelSettings:()=>Z1,getPresetPrompt:()=>S7,getPresetNames:()=>E7,getEffectivePrompt:()=>T0,getEffectiveLorebookName:()=>Z8,getDefaultPrompt:()=>u1,getCurrentModelSettings:()=>x7,getCurrentMemoryBooksContext:()=>e0,getCurrentApiInfo:()=>l,getBuiltInPresetPrompts:()=>R0,getApiSelectors:()=>k6,generateSafeProfileName:()=>N0,formatPresetDisplayName:()=>y7,estimateTokens:()=>G0,deepClone:()=>t0,createProfileObject:()=>D0,clampInt:()=>j1,SELECTORS:()=>s1});import{chat_metadata as a0,characters as E6,name2 as b6,this_chid as y6}from"../../../../script.js";import{getContext as C7,extension_settings as q4}from"../../../extensions.js";import{selected_group as Y4,groups as M7}from"../../../group-chats.js";import{METADATA_KEY as f6,world_names as l8}from"../../../world-info.js";import{Popup as z4,POPUP_TYPE as X4,POPUP_RESULT as o8}from"../../../popup.js";import{translate as m1}from"../../../i18n.js";function h7(...Z){for(let Q of Z){let G=I1(Q);if(G.length)return G}return I1()}function v7(){return document.querySelector("#group_chat_completion_source")?"#group_":"#"}function $1(Z,Q){if(!Z)return Q;let G=parseInt(Z.value,10);return Number.isFinite(G)?G:Q}function j1(Z,Q,G){return Math.min(Math.max(Z,Q),G)}function Y1(Z){let Q=String(Z||"").trim().toLowerCase();if(Q==="google")return"makersuite";return Q===""?"openai":Q}function l(){try{let Z="unknown",Q="unknown",G="unknown";if(typeof window.getGeneratingApi==="function")Z=window.getGeneratingApi();else Z=I1(s1.mainApi).val()||"unknown";if(typeof window.getGeneratingModel==="function")Q=window.getGeneratingModel();if(G=I1(s1.completionSource).val()||Z,!P7.includes(G))console.warn(`${d1}: Unsupported completion source: ${G}, falling back to openai`),G="openai";return{api:Z,model:Q,completionSource:G}}catch(Z){return console.warn(`${d1}: Error getting API info:`,Z),{api:I1(s1.mainApi).val()||"unknown",model:"unknown",completionSource:I1(s1.completionSource).val()||"openai"}}}function k6(){let Z=v7(),G=h7(`${Z}chat_completion_source`,"#chat_completion_source").val?.()||"openai",J={openai:`${Z}model_openai_select`,claude:`${Z}model_claude_select`,openrouter:`${Z}model_openrouter_select`,ai21:`${Z}model_ai21_select`,makersuite:`${Z}model_google_select`,mistralai:`${Z}model_mistralai_select`,custom:`${Z}model_custom_select`,cohere:`${Z}model_cohere_select`,perplexity:`${Z}model_perplexity_select`,groq:`${Z}model_groq_select`,nanogpt:`${Z}model_nanogpt_select`,deepseek:`${Z}model_deepseek_select`,electronhub:`${Z}model_electronhub_select`,vertexai:`${Z}model_vertexai_select`,aimlapi:`${Z}model_aimlapi_select`,xai:`${Z}model_xai_select`,pollinations:`${Z}model_pollinations_select`,moonshot:`${Z}model_moonshot_select`,fireworks:`${Z}model_fireworks_select`,cometapi:`${Z}model_cometapi_select`,azure_openai:`${Z}model_azure_openai_select`},W=J[G]||J.openai,q=`${Z}temp_openai`.replace("##","#"),Y=`${Z}temp_counter_openai`.replace("##","#");return{model:W,temp:q,tempCounter:Y}}function e0(){try{let Z=null,Q=null,G=null,J=!!Y4,W=Y4||null,q=null;if(J){let X=M7?.find((j)=>j.id===W);if(X)q=X.name,Q=X.chat_id,G=Q,Z=q}else{if(b6&&b6.trim())Z=String(b6).trim();else if(y6!==void 0&&E6&&E6[y6])Z=E6[y6].name;else if(a0?.character_name)Z=String(a0.character_name).trim();if(Z&&Z.normalize)Z=Z.normalize("NFC");try{let X=C7();if(X?.chatId)Q=X.chatId,G=Q;else if(typeof window.getCurrentChatId==="function")Q=window.getCurrentChatId(),G=Q}catch(X){if(console.warn(`${d1}: Could not get context, trying fallback methods`),typeof window.getCurrentChatId==="function")Q=window.getCurrentChatId(),G=Q}}let Y=null;if(a0&&f6 in a0)Y=a0[f6];let z=null;try{let X=l(),j=k6(),F=I1(j.temp).val()??I1(j.tempCounter).val(),K=Number.isFinite(parseFloat(F))?parseFloat(F):0.7,H=I1(j.model).val()||"";z={api:X.api,model:H,temperature:K,completionSource:X.completionSource,source:"current_ui"}}catch(X){console.warn(`${d1}: Could not get current model/temperature settings:`,X),z=null}let V={characterName:Z,chatId:Q,chatName:G,groupId:W,isGroupChat:J,lorebookName:Y,modelSettings:z};if(J)V.groupName=q;return V}catch(Z){return console.warn(`${d1}: Error getting context:`,Z),{characterName:null,chatId:null,chatName:null,groupId:null,groupName:null,isGroupChat:!1}}}async function Z8(){if(!q4.STMemoryBooks.moduleSettings.manualModeEnabled)return a0?.[f6]||null;let Q=g();if(Q.manualLorebook??null)if(l8.includes(Q.manualLorebook))return Q.manualLorebook;else toastr.error(`The designated manual lorebook "${Q.manualLorebook}" no longer exists. Please select a new one.`),delete Q.manualLorebook;let G=l8.map((Y)=>`<option value="${Y}">${Y}</option>`).join("");if(G.length===0)return toastr.error("No lorebooks found to select from.","STMemoryBooks"),null;let J=`
+        <h4>Select a Memory Book</h4>
+        <div class="world_entry_form_control">
+            <p>Manual mode is enabled, but no lorebook has been designated for this chat's memories. Please select one.</p>
+            <select id="stmb-manual-lorebook-select" class="text_pole">
+                ${G}
+            </select>
+        </div>
+    `,W=new z4(J,X4.TEXT,"",{okButton:"Select",cancelButton:"Cancel"});if(await W.show()===o8.AFFIRMATIVE){let Y=W.dlg.querySelector("#stmb-manual-lorebook-select").value;return Q.manualLorebook=Y,Q1(),toastr.success(`"${Y}" is now the Memory Book for this chat.`,"STMemoryBooks"),Y}return null}async function A0(Z=null){if(l8.length===0)return toastr.error("No lorebooks found to select from.","STMemoryBooks"),null;let Q=l8.map((q)=>{return`<option value="${q}"${q===Z?" selected":""}>${q}</option>`}).join(""),G=`
+        <h4>Select a Memory Book</h4>
+        <div class="world_entry_form_control">
+            <p>Choose which lorebook should be used for this chat's memories.</p>
+            ${Z?`<p><strong>Current:</strong> ${Z}</p>`:""}
+            <select id="stmb-manual-lorebook-select" class="text_pole">
+                ${Q}
+            </select>
+        </div>
+    `,J=new z4(G,X4.TEXT,"",{okButton:"Select",cancelButton:"Cancel"});if(await J.show()===o8.AFFIRMATIVE){let q=J.dlg.querySelector("#stmb-manual-lorebook-select").value;if(q!==Z){let Y=g();return Y.manualLorebook=q,Q1(),toastr.success(`Manual lorebook changed to: ${q}`,"STMemoryBooks"),q}else return q}return null}function x7(Z){try{if(!Z)throw Error("getCurrentModelSettings requires a profile");let Q=Z.effectiveConnection||Z.connection;if(!Q)throw Error("Profile is missing connection");let G=(Q.model||"").trim();if(!G)throw Error("Profile is missing required connection.model");let J=u6(Q.temperature);if(J===null)J=0.7;return{model:G,temperature:J}}catch(Q){throw console.warn(`${d1}: Error getting current model settings:`,Q),Q}}function Z1(){try{let Z=k6(),Q=(I1(Z.model).val()||"").trim(),G=0.7,J=I1(Z.temp).val()||I1(Z.tempCounter).val();if(J!==null&&J!==void 0&&J!==""){let W=parseFloat(J);if(!isNaN(W)&&W>=0&&W<=2)G=W}return{model:Q,temperature:G}}catch(Z){return console.warn(`${d1}: Error getting UI model settings:`,Z),{model:"",temperature:0.7}}}async function G0(Z,Q={}){let{estimatedOutput:G=300}=Q,J=String(Z||""),W=Math.ceil(J.length/4);return{input:W,output:G,total:W+G}}function g6(Z){let Q=Z?.effectiveConnection||Z?.connection||{},G=Y1(Q.api||"openai"),J=(Q.model||"").trim(),W=0.7;if(typeof Q.temperature==="number"&&!Number.isNaN(Q.temperature))W=Math.max(0,Math.min(2,Q.temperature));let q=Q.endpoint?String(Q.endpoint):void 0,Y=Q.apiKey?String(Q.apiKey):void 0;return{api:G,model:J,temperature:W,endpoint:q,apiKey:Y}}function R0(){return{summary:m1(`You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Detailed beat-by-beat summary in narrative prose...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information EXCEPT FOR [OOC] conversation/interaction. All [OOC] conversation/interaction is not useful for summaries.
+This summary will go in a vectorized database, so include:
+- All important story beats/events that happened
+- Key interaction highlights and character developments
+- Notable details, memorable quotes, and revelations
+- Outcome and anything else important for future interactions between {{user}} and {{char}}
+Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_summary"),summarize:m1(`Analyze the following roleplay scene and return a structured summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Detailed summary with markdown headers...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a detailed bullet-point summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):
+- **Timeline**: Day/time this scene covers.
+- **Story Beats**: List all important plot events and story developments that occurred.
+- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.
+- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.
+- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Ensure you capture ALL important information - comprehensive detail is more important than brevity.
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_summarize"),synopsis:m1(`Analyze the following roleplay scene and return a comprehensive synopsis as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Long detailed synopsis with markdown structure...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a long and detailed beat-by-beat summary using markdown structure. Capture the most recent scene accurately without losing ANY information. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. Use this structure:
+# [Scene Title]
+**Timeline**: (day/time)
+## Story Beats
+- (List all important plot events and developments)
+## Key Interactions
+- (Detail all significant character interactions and dialogue)
+## Notable Details
+- (Include memorable quotes, revelations, objects, settings)
+## Outcome
+- (Describe results, resolutions, and final state)
+
+Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_synopsis"),sumup:m1(`Analyze the following roleplay scene and return a beat summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Comprehensive beat summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:
+# Scene Summary - Day X - [Title]
+First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. 
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_sumup"),minimal:m1(`Analyze the following roleplay scene and return a minimal memory entry as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Brief 2-5 sentence summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, provide a very brief 2-5 sentence summary of what happened in this scene. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.
+
+For the keywords field, generate 15-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_minimal"),northgate:m1(`You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+"title": "Concise Scene Title (3-5 words)",
+"content": "A detailed, literary summary of the scene written in a third-person, past-tense narrative style. Capture all key actions, emotional shifts, character development, and significant dialogue. Focus on "showing" what happened through concrete details. Ensure the summary is comprehensive enough to serve as a standalone record of the scene's events and their impact on the characters.",
+"keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the "content" field, write with literary quality. Do not simply list events; synthesize them into a coherent narrative block.
+
+For the "keywords" field, provide 15-30 specific and descriptive keywords that capture the scene's core elements. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON object, with no additional text or explanations.`,"STMemoryBooks_Prompt_northgate"),aelemar:m1(`You are a meticulous archivist, skilled at accurately capturing all key plot points and memories from a story. Analyze the following story scene and extract a detailed summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Concise scene title (3-5 words)",
+  "content": "Detailed summary of key plot points and character memories, beat-by-beat in narrative prose...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include: 
+
+- Story beats, events, actions and consequences, turning points, and outcomes
+- Key character interactions, character developments, significant dialogue, revelations, emotional impact, and relationships
+- Outcomes and anything else important for future interactions between the user and the world
+Capture ALL nuance without repeating verbatim. Do not simply list events; synthesize them into a coherent narrative block. This summary must be comprehensive enough to serve as a standalone record of the story so far, even if the original text is lost. Use at least 300 words. Avoid redundancy.
+
+For the keywords field, provide 15-30 specific and descriptive keywords that capture the scene's core elements. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_aelemar"),comprehensive:m1(`Analyze the following roleplay scene in the context of previous summaries provided (if available) and return a comprehensive synopsis as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short, descriptive scene title (3-6 words)",
+  "content": "Long detailed synopsis with markdown structure...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a beat-by-beat summary of the scene that *replaces reading the full scene* while preserving all plot-relevant nuance and reads like a clean, structured scene log — concise yet complete. This summary needs to be token-efficient: exercise judgment as to whether or not an interaction is flavor-only or truly affects the plot. Flavor scenes (interaction detail that does not advance plot) may be captured through key exchanges and should be skipped when recording story beats. 
+
+Write in **past tense**, **third-person**, and exclude all [OOC] or meta discussion.  
+Use concrete nouns (e.g., “rice cooker” > “appliance”).  
+Only use adjectives/adverbs when they materially affect tone, emotion, or characterization.  
+Focus on **cause → intention → reaction → consequence** chains for clarity and compression.
+
+# [Scene Title]
+**Timeline**: (day/time)
+
+## Story Beats
+- Present all major actions, revelations, and emotional or magical shifts in order.
+- Capture clear cause–effect logic: what triggered what, and why it mattered.
+- Only include plot-affecting interactions and do not capture flavor-only beats.
+
+## Character Dynamics
+- Summarize how each character’s **motives, emotions, and relationships** evolved.
+- Include subtext, tension, or silent implications.
+- Highlight key beats of conflict, vulnerability, trust, or power shifts.
+
+## Key Exchanges
+- Include only pivotal dialogue that defines tone, emotion, or change.
+- Attribute speakers by name; keep quotes short but exact.
+- BE SELECTIVE. Maximum of 8 quotes.
+
+## Outcome & Continuity
+- Detail resulting **decisions, emotional states, physical/magical effects, or narrative consequences**.
+- Include all elements that influence future continuity (knowledge, relationships, injuries, promises, etc.).
+- Note any unresolved threads or foreshadowed elements.
+
+Write compactly but completely — every line should add new information or insight.  
+Synthesize redundant actions or dialogue into unified cause–effect–emotion beats.
+Favor compression over coverage whenever the two conflict; omit anything that can be inferred from context or established characterization.
+
+For the keywords field:
+
+Generate **15–30 standalone topical keywords** that function as retrieval tags, not micro-summaries. 
+Keywords must be:
+- **Concrete and scene-specific** (locations, objects, proper nouns, unique actions, repeated motifs).
+- **One concept per keyword** — do NOT combine multiple ideas into one keyword.
+- **Useful for retrieval if the user later mentions that noun or action alone**, not only in a specific context.
+- Not {{char}}'s or {{user}}'s names.
+- **Not thematic, emotional, or abstract.** Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
+
+Avoid:
+- Overly specific compound keywords (“David Tokyo marriage”).
+- Narrative or plot-summary style keywords (“art dealer date fail”).
+- Keywords that contain multiple facts or descriptors.
+- Keywords that only make sense when the whole scene is remembered.
+
+Prefer:
+- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
+- Specific physical objects ("CPAP machine", "chocolate chip cookies").
+- Distinctive actions ("cookie baking", "piano apology").
+- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
+
+Your goal: **keywords should fire when the noun/action is mentioned alone**, not only when paired with a specific person or backstory.
+
+Return ONLY the JSON — no additional text.`,"STMemoryBooks_Prompt_comprehensive")}}function u1(){return m1(`Analyze the following chat scene and return a memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Concise memory focusing on key plot points, character development, and important interactions",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+Return ONLY the JSON, no other text.`,"STMemoryBooks_Prompt_default")}async function S7(Z){return await Q0(Z)}async function T0(Z){if(!Z)return u1();if(Z.preset)return await Q0(Z.preset);else return u1()}function Q8(Z){if(!Z||typeof Z!=="object")return console.warn(`${d1}: Profile validation failed - not an object`),!1;if(!Z.name||typeof Z.name!=="string")return console.warn(`${d1}: Profile validation failed - invalid name`),!1;if(Z.connection&&typeof Z.connection!=="object")return console.warn(`${d1}: Profile validation failed - invalid connection`),!1;return!0}function t0(Z){if(Z===null||typeof Z!=="object")return Z;if(Z instanceof Date)return new Date(Z.getTime());if(Array.isArray(Z))return Z.map((G)=>t0(G));let Q={};for(let G in Z)if(Z.hasOwnProperty(G))Q[G]=t0(Z[G]);return Q}function E7(){return["summary","summarize","synopsis","sumup","minimal","northgate","aelemar","comprehensive"]}function b7(Z){return new Set(["summary","summarize","synopsis","sumup","minimal","northgate","aelemar","comprehensive"]).has(Z)}function N0(Z,Q=[]){if(!Z||typeof Z!=="string")Z="New Profile";let G=Z.trim().replace(/[<>:"/\\|?*]/g,"");if(!G)G="New Profile";let J=G,W=1;while(Q.includes(J))J=`${G} (${W})`,W++;return J}function u6(Z){if(typeof Z==="number")return isNaN(Z)?null:Math.max(0,Math.min(2,Z));if(typeof Z==="string"){let Q=parseFloat(Z);return isNaN(Q)?null:Math.max(0,Math.min(2,Q))}return null}function y7(Z){let Q=O8[Z],G=g8[Z];return Q&&G&&m1(Q,G)||Z}function D0(Z={}){let Q=u6(Z.temperature);if(Q===null)Q=0.7;let G={name:(Z.name||"New Profile").trim(),connection:{api:Z.api||"openai",temperature:Q},prompt:(Z.prompt||"").trim(),preset:Z.preset||"",constVectMode:Z.constVectMode||"link",position:Z.position!==void 0?Number(Z.position):0,orderMode:Z.orderMode||"auto",orderValue:Z.orderValue!==void 0?Number(Z.orderValue):100,preventRecursion:Z.preventRecursion!==void 0?Z.preventRecursion:!0,delayUntilRecursion:Z.delayUntilRecursion!==void 0?Z.delayUntilRecursion:!0};if(Z.titleFormat||!Z.isDynamicProfile)G.titleFormat=Z.titleFormat||"[000] - {{title}}";let J=(Z.model||"").trim();if(J)G.connection.model=J;let W=(Z.endpoint||"").trim();if(W)G.connection.endpoint=W;let q=(Z.apiKey||"").trim();if(q)G.connection.apiKey=q;if(G.prompt&&G.preset)G.preset="";if(!G.prompt&&!G.preset)G.preset="summary";try{if(Number(G.position)===7&&typeof Z.outletName==="string"){let Y=Z.outletName.trim();if(Y)G.outletName=Y}}catch{}return G}var d1="STMemoryBooks-Utils",I1,s1,P7;var v1=H0(()=>{i0();i8();B0();I1=window.jQuery;s1={extensionsMenu:"#extensionsMenu .list-group",menuItem:"#stmb-menu-item",chatContainer:"#chat",mainApi:"#main_api",completionSource:"#chat_completion_source",modelOpenai:"#model_openai_select",modelClaude:"#model_claude_select",modelOpenrouter:"#model_openrouter_select",modelAi21:"#model_ai21_select",modelGoogle:"#model_google_select",modelMistralai:"#model_mistralai_select",modelCohere:"#model_cohere_select",modelPerplexity:"#model_perplexity_select",modelGroq:"#model_groq_select",modelNanogpt:"#model_nanogpt_select",modelDeepseek:"#model_deepseek_select",modelElectronhub:"#model_electronhub_select",modelVertexai:"#model_vertexai_select",modelAimlapi:"#model_aimlapi_select",modelXai:"#model_xai_select",modelPollinations:"#model_pollinations_select",modelMoonshot:"#model_moonshot_select",modelFireworks:"#model_fireworks_select",modelCometapi:"#model_cometapi_select",modelAzureOpenai:"#model_azure_openai_select",tempOpenai:"#temp_openai",tempCounterOpenai:"#temp_counter_openai"},P7=["openai","claude","openrouter","ai21","makersuite","vertexai","mistralai","custom","cohere","perplexity","groq","nanogpt","deepseek","electronhub","aimlapi","xai","pollinations","moonshot","fireworks","cometapi","azure_openai"]});import{chat as n8,name1 as f7,name2 as j4}from"../../../../script.js";import{getContext as k7}from"../../../extensions.js";import{t as P1,translate as A1}from"../../../i18n.js";function l0(Z){let{sceneStart:Q,sceneEnd:G,chatId:J,characterName:W}=Z;if(Q==null||G==null)throw Error(A1("Scene markers are required","chatcompile.errors.sceneMarkersRequired"));if(Q>G)throw Error(A1("Start message cannot be greater than end message","chatcompile.errors.startGreaterThanEnd"));if(Q<0||G>=n8.length)throw Error(P1`Message IDs out of bounds: ${Q}-${G} (0-${n8.length-1})`);let q=[],Y=0,z=0;for(let j=Q;j<=G;j++){let F=n8[j];if(!F){z++;continue}if(F.is_system){Y++;continue}let K={id:j,name:g7(F.name),mes:u7(F.mes,F.is_user),send_date:F.send_date||new Date().toISOString()};if(F.is_user!==void 0)K.is_user=F.is_user;q.push(K)}let X={metadata:{sceneStart:Q,sceneEnd:G,chatId:J||"unknown",characterName:W||j4||A1("Unknown","common.unknown"),messageCount:q.length,totalRequestedRange:G-Q+1,hiddenMessagesSkipped:Y,messagesSkipped:z,compiledAt:new Date().toISOString(),totalChatLength:n8.length,userName:f7||A1("User","chatcompile.defaults.user")},messages:q};if(q.length===0)throw Error(P1`No visible messages in range ${Q}-${G}`);return X}function o0(Z,Q){let G=k7();return{sceneStart:Z,sceneEnd:Q,chatId:G.chatId||"unknown",characterName:G.name2||j4||A1("Unknown","common.unknown")}}async function v6(Z){let Q=m6(Z),{input:G}=await G0(Q,{estimatedOutput:0});return G}async function F4(Z){let{metadata:Q,messages:G}=Z,J=new Set,W=0,q=0,Y=0;return G.forEach((z)=>{if(J.add(z.name),W+=(z.mes||"").length,z.is_user)q++;else Y++}),{messageCount:G.length,speakerCount:J.size,speakers:Array.from(J),totalCharacters:W,estimatedTokens:await v6(Z),userMessages:q,characterMessages:Y,timeSpan:{start:G[0]?.send_date,end:G[G.length-1]?.send_date}}}function K4(Z){let Q=[],G=[];if(!Z.metadata)Q.push(A1("Missing metadata","chatcompile.validation.errors.missingMetadata"));if(!Z.messages||!Array.isArray(Z.messages))Q.push(A1("Invalid messages array","chatcompile.validation.errors.invalidMessagesArray"));if(Z.messages&&Z.messages.length===0)G.push(A1("No messages","chatcompile.validation.warnings.noMessages"));if(Z.messages)Z.messages.forEach((W,q)=>{if(!W.id&&W.id!==0)G.push(P1`Message at index ${q} missing id`);if(!W.name)G.push(P1`Message at index ${q} missing name`);if(!W.mes&&W.mes!=="")G.push(P1`Message at index ${q} missing content`)});if(Z.messages&&Z.messages.length>100)G.push(A1("Very large scene","chatcompile.validation.warnings.veryLargeScene"));return{valid:Q.length===0,errors:Q,warnings:G}}function m6(Z){let{metadata:Q,messages:G}=Z,J=[];return J.push(A1("=== SCENE METADATA ===","chatcompile.readable.headerMetadata")),J.push(P1`Range: ${Q.sceneStart}-${Q.sceneEnd}`),J.push(P1`Chat: ${Q.chatId}`),J.push(P1`Character: ${Q.characterName}`),J.push(P1`Compiled: ${Q.messageCount}`),J.push(P1`Compiled at: ${Q.compiledAt}`),J.push(""),J.push(A1("=== SCENE MESSAGES ===","chatcompile.readable.headerMessages")),G.forEach((W)=>{J.push(P1`[${W.id}] ${W.name}: ${W.mes}`)}),J.join(`
+`)}function g7(Z){if(!Z)return A1("Unknown","common.unknown");return Z.trim()||A1("Unknown","common.unknown")}function u7(Z,Q=!1){if(!Z)return"";try{return String(Z).replace(/\r\n/g,`
+`).trim()}catch(G){return String(Z).trim()}}var p8=H0(()=>{v1()});var U4=u0((W$,s8)=>{if(typeof s8==="object"&&typeof s8.exports==="object")s8.exports=d6;d6.defunct=function(Z){throw Error("Unexpected character at index "+(this.index-1)+": "+Z)};function d6(Z){if(typeof Z!=="function")Z=d6.defunct;var Q=[],G=[],J=0;this.state=0,this.index=0,this.input="",this.addRule=function(q,Y,z){var V=q.global;if(!V){var X="g";if(q.multiline)X+="m";if(q.ignoreCase)X+="i";q=new RegExp(q.source,X)}if(Object.prototype.toString.call(z)!=="[object Array]")z=[0];return G.push({pattern:q,global:V,action:Y,start:z}),this},this.setInput=function(q){return J=0,this.state=0,this.index=0,Q.length=0,this.input=q,this},this.lex=function(){if(Q.length)return Q.shift();this.reject=!0;while(this.index<=this.input.length){var q=W.call(this).splice(J),Y=this.index;while(q.length)if(this.reject){var z=q.shift(),V=z.result,X=z.length;this.index+=X,this.reject=!1,J++;var j=z.action.apply(this,V);if(this.reject)this.index=V.index;else if(typeof j<"u")switch(Object.prototype.toString.call(j)){case"[object Array]":Q=j.slice(1),j=j[0];default:if(X)J=0;return j}}else break;var F=this.input;if(Y<F.length)if(this.reject){J=0;var j=Z.call(this,F.charAt(this.index++));if(typeof j<"u")if(Object.prototype.toString.call(j)==="[object Array]")return Q=j.slice(1),j[0];else return j}else{if(this.index!==Y)J=0;this.reject=!0}else if(q.length)this.reject=!0;else break}};function W(){var q=[],Y=0,z=this.state,V=this.index,X=this.input;for(var j=0,F=G.length;j<F;j++){var K=G[j],H=K.start,B=H.length;if(!B||H.indexOf(z)>=0||z%2&&B===1&&!H[0]){var A=K.pattern;A.lastIndex=V;var O=A.exec(X);if(O&&O.index===V){var T=q.push({result:O,action:K.action,length:O[0].length});if(K.global)Y=T;while(--T>Y){var D=T-1;if(q[T].length>q[D].length){var L=q[T];q[T]=q[D],q[D]=L}}}}}return q}}});var m7={};var H4=H0(()=>{/*! http://mths.be/fromcodepoint v0.2.1 by @mathias */if(!String.fromCodePoint)(function(){var Z=function(){try{var W={},q=Object.defineProperty,Y=q(W,W,W)&&q}catch(z){}return Y}(),Q=String.fromCharCode,G=Math.floor,J=function(W){var q=16384,Y=[],z,V,X=-1,j=arguments.length;if(!j)return"";var F="";while(++X<j){var K=Number(arguments[X]);if(!isFinite(K)||K<0||K>1114111||G(K)!=K)throw RangeError("Invalid code point: "+K);if(K<=65535)Y.push(K);else K-=65536,z=(K>>10)+55296,V=K%1024+56320,Y.push(z,V);if(X+1==j||Y.length>q)F+=Q.apply(null,Y),Y.length=0}return F};if(Z)Z(String,"fromCodePoint",{value:J,configurable:!0,writable:!0});else String.fromCodePoint=J})()});var R4=u0((c6,B4)=>{Object.defineProperty(c6,"__esModule",{value:!0});c6.default=void 0;H4();var d7=/\\(u\{([0-9A-Fa-f]+)\}|u([0-9A-Fa-f]{4})|x([0-9A-Fa-f]{2})|([1-7][0-7]{0,2}|[0-7]{2,3})|(['"tbrnfv0\\]))|\\U([0-9A-Fa-f]{8})/g,c7={"0":"\x00",b:"\b",f:"\f",n:`
+`,r:"\r",t:"\t",v:"\v","'":"'",'"':'"',"\\":"\\"},r8=function(Q){return String.fromCodePoint(parseInt(Q,16))},p7=function(Q){return String.fromCodePoint(parseInt(Q,8))},i7=function(Q){return Q.replace(d7,function(G,J,W,q,Y,z,V,X){if(W!==void 0)return r8(W);else if(q!==void 0)return r8(q);else if(Y!==void 0)return r8(Y);else if(z!==void 0)return p7(z);else if(X!==void 0)return r8(X);else return c7[V]})};c6.default=i7;B4.exports=c6.default});var A4=u0((a8)=>{/*! https://mths.be/utf8js v3.0.0 by @mathias */(function(Z){var Q=String.fromCharCode;function G(B){var A=[],O=0,T=B.length,D,L;while(O<T)if(D=B.charCodeAt(O++),D>=55296&&D<=56319&&O<T)if(L=B.charCodeAt(O++),(L&64512)==56320)A.push(((D&1023)<<10)+(L&1023)+65536);else A.push(D),O--;else A.push(D);return A}function J(B){var A=B.length,O=-1,T,D="";while(++O<A){if(T=B[O],T>65535)T-=65536,D+=Q(T>>>10&1023|55296),T=56320|T&1023;D+=Q(T)}return D}function W(B){if(B>=55296&&B<=57343)throw Error("Lone surrogate U+"+B.toString(16).toUpperCase()+" is not a scalar value")}function q(B,A){return Q(B>>A&63|128)}function Y(B){if((B&4294967168)==0)return Q(B);var A="";if((B&4294965248)==0)A=Q(B>>6&31|192);else if((B&4294901760)==0)W(B),A=Q(B>>12&15|224),A+=q(B,6);else if((B&4292870144)==0)A=Q(B>>18&7|240),A+=q(B,12),A+=q(B,6);return A+=Q(B&63|128),A}function z(B){var A=G(B),O=A.length,T=-1,D,L="";while(++T<O)D=A[T],L+=Y(D);return L}function V(){if(K>=F)throw Error("Invalid byte index");var B=j[K]&255;if(K++,(B&192)==128)return B&63;throw Error("Invalid continuation byte")}function X(){var B,A,O,T,D;if(K>F)throw Error("Invalid byte index");if(K==F)return!1;if(B=j[K]&255,K++,(B&128)==0)return B;if((B&224)==192)if(A=V(),D=(B&31)<<6|A,D>=128)return D;else throw Error("Invalid continuation byte");if((B&240)==224)if(A=V(),O=V(),D=(B&15)<<12|A<<6|O,D>=2048)return W(D),D;else throw Error("Invalid continuation byte");if((B&248)==240){if(A=V(),O=V(),T=V(),D=(B&7)<<18|A<<12|O<<6|T,D>=65536&&D<=1114111)return D}throw Error("Invalid UTF-8 detected")}var j,F,K;function H(B){j=G(B),F=j.length,K=0;var A=[],O;while((O=X())!==!1)A.push(O);return J(A)}Z.version="3.0.0",Z.encode=z,Z.decode=H})(typeof a8>"u"?a8.utf8={}:a8)});var D4=u0((a7,p6)=>{var l7=U4(),o7=R4(),Y$=A4(),n7=[[/\s*:\s*/,-1],[/\s*,\s*/,-2],[/\s*{\s*/,-3],[/\s*}\s*/,13],[/\s*\[\s*/,-4],[/\s*\]\s*/,12],[/\s*\.\s*/,-5]];function T4(Z){return Z=Z.replace(/\\\//,"/"),o7(Z)}function s7(Z){let Q=new l7,G=0,J=0;return Q.addRule(/"((?:\\.|[^"])*?)($|")/,(W,q)=>{return G+=W.length,{type:11,value:T4(q),row:J,col:G,single:!1}}),Q.addRule(/'((?:\\.|[^'])*?)($|'|(",?[ \t]*\n))/,(W,q)=>{return G+=W.length,{type:11,value:T4(q),row:J,col:G,single:!0}}),Q.addRule(/[\-0-9]*\.[0-9]*([eE][\+\-]?)?[0-9]*(?:\s*)/,(W)=>{return G+=W.length,{type:6,value:parseFloat(W),row:J,col:G}}),Q.addRule(/\-?[0-9]+([eE][\+\-]?)[0-9]*(?:\s*)/,(W)=>{return G+=W.length,{type:6,value:parseFloat(W),row:J,col:G}}),Q.addRule(/\-?[0-9]+(?:\s*)/,(W)=>{return G+=W.length,{type:7,value:parseInt(W),row:J,col:G}}),n7.forEach((W)=>{Q.addRule(W[0],(q)=>{return G+=q.length,{type:W[1],value:q,row:J,col:G}})}),Q.addRule(/\s/,(W)=>{if(W==`
+`)G=0,J++;else G+=W.length}),Q.addRule(/\S[ \t]*/,(W)=>{return G+=W.length,{type:14,value:W,row:J,col:G}}),Q.setInput(Z),Q}a7.lexString=N4;function N4(Z,Q){let G=s7(Z),J="";while(J=G.lex())Q(J)}a7.getAllTokens=r7;function r7(Z){let Q=[];return N4(Z,function(J){Q.push(J)}),Q}});var L4=u0((WQ,I4)=>{var ZQ=D4(),i6=0,_0=1,J0=2,l6=3,t8=4,e8=5,QQ=6,_4=7,z1=8,S1=9,$0=10,GQ=11,J8=12,$8=13,JQ=14,W1=15,G8=-1,x1=-2,o6=-3,w0=-4;function w4(Z){if(Z.peek==null)Object.defineProperty(Z,"peek",{enumerable:!1,value:function(){return this[this.length-1]}});if(Z.last==null)Object.defineProperty(Z,"last",{enumerable:!1,value:function(Q){return this[this.length-(1+Q)]}})}function I(Z,Q){return Z&&Z.hasOwnProperty("type")&&Z.type==Q}function w(Z){}WQ.parse=$Q;function $Q(Z,Q){let G=[],J=[];w4(G),w4(J);let W=function(q){J.push(q)};if(ZQ.lexString(Z,W),J[0].type==w0&&J.last(0).type!=J8)J.push({type:J8,value:"]",row:-1,col:-1});if(J[0].type==o6&&J.last(0).type!=$8)J.push({type:$8,value:"}",row:-1,col:-1});for(let q=0;q<J.length;q++){w("Shifting "+J[q].type),G.push(J[q]),w(G),w("Reducing...");while(r1(G))w(G),w("Reducing...")}if(G.length==1&&G[0].type==_0)w("Pre-compile error fix 1"),G=[{type:$0,value:G[0].value}];return Z6(G[0],Q)}function r1(Z){let Q=Z.pop();switch(Q.type){case z1:if(Q.value.trim()=="true")return w("Rule 5"),Z.push({type:l6,value:"true"}),!0;if(Q.value.trim()=="false")return w("Rule 6"),Z.push({type:l6,value:"false"}),!0;if(Q.value.trim()=="null")return w("Rule 7"),Z.push({type:W1,value:null}),!0;break;case JQ:if(I(Z.peek(),z1))return w("Rule 11a"),Z.peek().value+=Q.value,!0;return w("Rule 11c"),Z.push({type:z1,value:Q.value}),!0;case _4:if(I(Q,_4)&&I(Z.peek(),z1))return w("Rule 11b"),Z.peek().value+=Q.value,!0;return w("Rule 11f"),Q.type=W1,Z.push(Q),!0;case GQ:return w("Rule 11d"),Q.type=W1,Q.value=Q.value,Z.push(Q),!0;case l6:if(w("Rule 11e"),Q.type=W1,Q.value=="true")Q.value=!0;else Q.value=!1;return Z.push(Q),!0;case QQ:return w("Rule 11g"),Q.type=W1,Z.push(Q),!0;case W1:if(I(Z.peek(),x1))return w("Rule 12"),Q.type=e8,Z.pop(),Z.push(Q),!0;if(I(Z.peek(),G8))return w("Rule 13"),Q.type=t8,Z.pop(),Z.push(Q),!0;if(I(Z.peek(),z1)&&I(Z.last(1),W1)){w("Error rule 1");let G=Z.pop();return Z.peek().value+='"'+G.value+'"',Z.peek().value+=Q.value,!0}if(I(Z.peek(),z1)&&I(Z.last(1),J0)){w("Error rule 2");let G=Z.pop(),J=Z.peek().value.pop();return J+='"'+G.value+'"',J+=Q.value,Z.peek().value.push(J),!0}if(I(Z.peek(),z1)&&I(Z.last(1),_0)){w("Error rule 3");let G=Z.pop(),J=Z.peek().value.pop(),W=Q.single?"'":'"';return J.value+=W+G.value+W,J.value+=Q.value,Z.peek().value.push(J),!0}if(I(Z.peek(),z1)){w("Error rule 4");let G=Z.pop().value;return Q.value=G+Q.value,Z.push(Q),!0}break;case S1:if(I(Q,S1)&&I(Z.peek(),x1))return w("Rule 12a"),Q.type=e8,Z.pop(),Z.push(Q),!0;if(I(Z.peek(),G8))return w("Rule 13a"),Q.type=t8,Z.pop(),Z.push(Q),!0;break;case $0:if(I(Z.peek(),x1)){w("Rule 12b");let G={type:e8,value:Q};return Z.pop(),Z.push(G),!0}if(I(Z.peek(),G8)){w("Rule 13b");let G={type:t8,value:Q};return Z.pop(),Z.push(G),!0}if(I(Z.peek(),z1)){w("Error rule 9");let G=Z.pop();return Z.push({type:i6,key:G.value.trim(),value:Q}),!0}break;case e8:if(I(Z.peek(),J0))return w("Rule 14"),Z.peek().value.push(Q.value),!0;return w("Rule 15"),Z.push({type:J0,value:[Q.value]}),!0;case J0:if(I(Z.peek(),W1))return w("Rule 15a"),Q.value.unshift(Z.peek().value),Z.pop(),Z.push(Q),!0;if(I(Z.peek(),S1))return w("Rule 15b"),Q.value.unshift(Z.peek().value),Z.pop(),Z.push(Q),!0;if(I(Z.peek(),$0))return w("Rule 15c"),Q.value.unshift(Z.peek()),Z.pop(),Z.push(Q),!0;if(I(Z.peek(),z1)&&(Z.last(1),x1)){w("Error rule 7");let G=Z.pop();Z.push({type:W1,value:G.value}),w("Start subreduce... ("+G.value+")");while(r1(Z));return w("End subreduce"),Z.push(Q),!0}if(I(Z.peek(),J0))return w("Error rule 8"),Z.peek().value.push(Q.value[0]),!0;break;case t8:if(I(Z.peek(),z1)||I(Z.peek(),W1)||I(Z.peek(),J0)){w("Rule 16");let G=Z.pop();return Z.push({type:i6,key:G.value,value:Q.value}),!0}throw Error("Got a :value that can't be handled at line "+Q.row+":"+Q.col);case i6:if(I(Z.last(0),x1)&&I(Z.last(1),_0))return w("Rule 17"),Z.last(1).value.push(Q),Z.pop(),!0;return w("Rule 18"),Z.push({type:_0,value:[Q]}),!0;case _0:if(I(Z.peek(),_0))return w("Rule 17a"),Q.value.forEach(function(G){Z.peek().value.push(G)}),!0;break;case J8:if(I(Z.peek(),J0)&&I(Z.last(1),w0)){w("Rule 19");let G=Z.pop();return Z.pop(),Z.push({type:S1,value:G.value}),!0}if(I(Z.peek(),S1)&&I(Z.last(1),w0)){w("Rule 19b");let G=Z.pop();return Z.pop(),Z.push({type:S1,value:[G.value]}),!0}if(I(Z.peek(),w0))return w("Rule 22"),Z.pop(),Z.push({type:S1,value:[]}),!0;if(I(Z.peek(),W1)&&I(Z.last(1),w0)){w("Rule 23");let G=Z.pop().value;return Z.pop(),Z.push({type:S1,value:[G]}),!0}if(I(Z.peek(),$0)&&I(Z.last(1),w0)){w("Rule 23b");let G=Z.pop();return Z.pop(),Z.push({type:S1,value:[G]}),!0}if(I(Z.peek(),z1)&&I(Z.last(1),x1)){w("Error rule 5");let G=Z.pop();Z.push({type:W1,value:G.value}),w("Start subreduce... ("+G.value+")");while(r1(Z));return w("End subreduce"),Z.push({type:J8}),!0}if(I(Z.peek(),x1)&&(I(Z.last(1),z1)||I(Z.last(1),$0)||I(Z.last(1),W1))){w("Error rule 5a"),Z.pop(),Z.push({type:J8,value:"]"}),w("Start subreduce..."),w("Content: "+JSON.stringify(Z));while(r1(Z));return w("End subreduce"),!0}if(I(Z.peek(),z1)&&I(Z.last(1),w0)){w("Error rule 5b");let G=Z.pop();return Z.pop(),Z.push({type:S1,value:[G.value]}),!0}if(I(Z.peek(),x1)&&I(Z.last(1),J0)){w("Error rule 5c"),Z.pop(),Z.push({type:J8}),w("Start subreduce..."),w("Content: "+JSON.stringify(Z));while(r1(Z));return w("End subreduce"),!0}break;case $8:if(I(Z.peek(),_0)&&I(Z.last(1),o6)){w("Rule 20");let G=Z.pop();return Z.pop(),Z.push({type:$0,value:G.value}),!0}if(I(Z.peek(),o6))return w("Rule 21"),Z.pop(),Z.push({type:$0,value:null}),!0;if(I(Z.peek(),z1)&&I(Z.last(1),G8)){w("Error rule 4a");let G=Z.pop();Z.push({type:W1,value:G.value}),w("Start subreduce... ("+G.value+")");while(r1(Z));return w("End subreduce"),Z.push({type:$8}),!0}if(I(Z.peek(),G8)){w("Error rule 4b"),Z.push({type:W1,value:null}),w("Starting subreduce...");while(r1(Z));return w("End subreduce."),Z.push({type:$8}),!0}if(I(Z.peek(),x1))return w("Error rule 10a"),Z.pop(),Z.push({type:$8}),!0;throw Error("Found } that I can't handle at line "+Q.row+":"+Q.col);case x1:if(I(Z.peek(),x1))return w("Comma error rule 1"),!0;if(I(Z.peek(),z1)){w("Comma error rule 2");let G=Z.pop();Z.push({type:W1,value:G.value}),w("Starting subreduce...");while(r1(Z));return w("End subreduce."),Z.push(Q),!0}if(I(Z.peek(),G8)){w("Comma error rule 3"),Z.push({type:W1,value:null}),w("Starting subreduce...");while(r1(Z));return w("End subreduce."),Z.push(Q),!0}}return Z.push(Q),!1}function Z6(Z,Q){if(["boolean","number","string"].indexOf(typeof Z)!=-1)return Z;if(Z===null)return null;if(Array.isArray(Z)){let J=[];while(Z.length>0)J.unshift(Z6(Z.pop()));return J}if(I(Z,$0)){let J={};if(Z.value===null)return{};return Z.value.forEach(function(W){let q=W.key,Y=Z6(W.value);if(Q&&q in J)J[q]={value:J[q],next:Y};else J[q]=Y}),J}if(I(Z,S1))return Z6(Z.value);return Z.value}});var M4=u0((XQ,C4)=>{var YQ=L4();XQ.parse=zQ;function zQ(Z,Q){let G=!0,J=!1;if(Q){if("fallback"in Q&&Q[G]===!1)G=!1;J="duplicateKeys"in Q&&Q.duplicateKeys===!0}try{return YQ.parse(Z,J)}catch(W){if(G===!1)throw W;try{let q=JSON.parse(Z);return console.warn("dirty-json got valid JSON that failed with the custom parser. We're returning the valid JSON, but please file a bug report here: https://github.com/RyanMarcus/dirty-json/issues  -- the JSON that caused the failure was: "+Z),q}catch(q){throw W}}}});var B5={};cZ(B5,{upsertTemplate:()=>X6,removeTemplate:()=>FZ,recreateBuiltInSidePrompts:()=>HZ,loadSidePrompts:()=>E1,listTemplates:()=>Y0,listEnabledByType:()=>BG,listByTrigger:()=>V6,importFromJSON:()=>UZ,getTemplate:()=>XZ,firstRunInitIfMissing:()=>HG,findTemplateByName:()=>VZ,exportToJSON:()=>KZ,duplicateTemplate:()=>jZ,clearCache:()=>OG});import{getRequestHeaders as V5}from"../../../../script.js";import{t as z6,translate as e}from"../../../i18n.js";function L8(){return new Date().toISOString()}function H1(Z){return String(Z||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").substring(0,50)||"sideprompt"}function F5(Z){if(!Z||typeof Z!=="object")return!1;if(typeof Z.version!=="number")return!1;if(!Z.prompts||typeof Z.prompts!=="object")return!1;for(let[Q,G]of Object.entries(Z.prompts)){if(!G||typeof G!=="object")return!1;if(G.key!==Q)return!1;if(typeof G.name!=="string"||!G.name.trim())return!1;if(typeof G.enabled!=="boolean")return!1;if(typeof G.prompt!=="string")return!1;if(!G.settings||typeof G.settings!=="object")return!1;if(!G.triggers||typeof G.triggers!=="object")return!1;if(G.triggers.onInterval!=null){let J=G.triggers.onInterval;if(typeof J!=="object")return!1;let W=Number(J.visibleMessages);if(!Number.isFinite(W)||W<1)return!1}if(G.triggers.onAfterMemory!=null){let J=G.triggers.onAfterMemory;if(typeof J!=="object")return!1;if(typeof J.enabled!=="boolean")return!1}if(G.triggers.commands!=null){if(!Array.isArray(G.triggers.commands))return!1;for(let J of G.triggers.commands)if(typeof J!=="string"||!J.trim())return!1}}return!0}function K5(Z){if(!Z||typeof Z!=="object")return!1;if(!Z.prompts||typeof Z.prompts!=="object")return!1;return Object.values(Z.prompts).some((Q)=>Q&&typeof Q==="object"&&("type"in Q)&&!("triggers"in Q))}function U5(Z){let Q=L8(),G={version:Math.max(2,Number(Z.version||1)+1),prompts:{}};for(let[J,W]of Object.entries(Z.prompts||{})){let q={key:J,name:String(W.name||"Side Prompt"),enabled:!!W.enabled,prompt:String(W.prompt!=null?W.prompt:"this is a placeholder prompt"),responseFormat:String(W.responseFormat||""),settings:{...W.settings||{}},createdAt:W.createdAt||Q,updatedAt:Q,triggers:{onInterval:void 0,onAfterMemory:void 0,commands:["sideprompt"]}},Y=String(W.type||"").toLowerCase();if(Y==="tracker"){let z=Math.max(1,Number(W.settings?.intervalVisibleMessages??50));q.triggers.onInterval={visibleMessages:z}}else if(Y==="plotpoints"){let z=!!(W.settings?.withMemories??!0);q.triggers.onAfterMemory={enabled:!!z}}else if(Y==="scoreboard"){if(!!(W.settings?.withMemories??!1))q.triggers.onAfterMemory={enabled:!0}}G.prompts[J]=q}return G}function H5(){let Z=L8(),Q={};{let G=H1("Plotpoints");Q[G]={key:G,name:e("Plotpoints","STMemoryBooks_Plotpoints"),enabled:!1,prompt:e("Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating.","STMemoryBooks_PlotpointsPrompt"),responseFormat:e(`=== Plot Points ===
+(as of [point in the story when this analysis was done])
+
+[Overarching Plot Arc]
+(2-3 sentence summary of the superobjective or major plot)
+
+[Thread #1 Title]
+- Summary: (1 sentence)
+- Status: (active / on hold)
+- At Stake: (how resolution will affect the ongoing story)
+- Last Known: (location or time)
+- Key Characters: ...
+
+
+[Thread #2 Title]
+- Summary: (1 sentence)
+- Status: (active / on hold)
+- At Stake: (how resolution will affect the ongoing story)
+- Last Known: (location or time)
+- Key Characters: ...
+
+...
+
+-- Plot Hooks --
+- (new or potential plot hooks)
+
+-- Character Dynamics --
+- current status of {{user}}'s/{{char}}'s relationships with NPCs
+
+===End Plot Points===
+`,"STMemoryBooks_PlotpointsResponseFormat"),settings:{overrideProfileEnabled:!1,lorebook:{constVectMode:"blue",position:2,orderMode:"manual",orderValue:25,preventRecursion:!0,delayUntilRecursion:!1}},triggers:{onAfterMemory:{enabled:!0},commands:["sideprompt"]},createdAt:Z,updatedAt:Z}}{let G=H1("Status");Q[G]={key:G,name:e("Status","STMemoryBooks_Status"),enabled:!1,prompt:e("Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.","STMemoryBooks_StatusPrompt"),responseFormat:e(`Follow this general format:
+
+## Witty Headline or Summary
+
+### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)
+- Score with evidence
+- Recent changes 
+- Supporting quotes
+- Anything else that might be illustrative of the current affinity
+
+### LOVEFACTOR and LUSTFACTOR
+(!lovefactor and !lustfactor reports go here)
+
+### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)
+- Trust/boundaries/communication
+- Key events
+- Issues
+- Any other pertinent points
+
+### GOALS
+- Short/long-term objectives
+- Progress/obstacles
+- Growth areas
+- Any other pertinent points
+
+### ANALYSIS
+- Psychology/POV
+- Development/triggers
+- Story suggestions
+- Any other pertinent points
+
+### WRAP-UP
+- OOC Summary (1 paragraph)`,"STMemoryBooks_StatusResponseFormat"),settings:{overrideProfileEnabled:!1,lorebook:{constVectMode:"link",position:3,orderMode:"manual",orderValue:25,preventRecursion:!0,delayUntilRecursion:!1}},triggers:{onAfterMemory:{enabled:!0},commands:["sideprompt"]},createdAt:Z,updatedAt:Z}}{let G=H1("Cast");Q[G]={key:G,name:e("Cast of Characters","STMemoryBooks_CastOfCharacters"),enabled:!1,prompt:e(`You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. 
+Step 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.
+Step 2: This list should be kept in order of importance to the plot, so it may need to be reordered.
+Step 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.`,"STMemoryBooks_CastOfCharactersPrompt"),responseFormat:e(`===NPC WHO'S WHO===
+(In order of importance to the plot)
+
+Person 1: 1-2 sentence desription
+Person 2: 1-2 sentence desription
+===END NPC WHO'S WHO===`,"STMemoryBooks_CastOfCharactersResponseFormat"),settings:{overrideProfileEnabled:!1,lorebook:{constVectMode:"blue",position:3,orderMode:"manual",orderValue:15,preventRecursion:!0,delayUntilRecursion:!1}},triggers:{onAfterMemory:{enabled:!0},commands:["sideprompt"]},createdAt:Z,updatedAt:Z}}{let G=H1("Assess");Q[G]={key:G,name:e("Assess","STMemoryBooks_Assess"),enabled:!1,prompt:e('Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} through observation, questioning, or drawing conclusions from interaction (similar to a mental "note to self"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things.',"STMemoryBooks_AssessPrompt"),responseFormat:e(`Use this format: 
+=== Things {{char}} has learned about {{user}} ===
+(detailed list, in {{char}}'s POV/tone of voice)
+===`,"STMemoryBooks_AssessResponseFormat"),settings:{overrideProfileEnabled:!1,lorebook:{constVectMode:"blue",position:2,orderMode:"manual",orderValue:30,preventRecursion:!0,delayUntilRecursion:!1}},triggers:{onAfterMemory:{enabled:!0},commands:["sideprompt"]},createdAt:Z,updatedAt:Z}}return Q}function zZ(){return{version:Math.max(2,o1.CURRENT_VERSION??2),prompts:H5()}}async function c1(Z){let Q=JSON.stringify(Z,null,2),G=btoa(unescape(encodeURIComponent(Q))),J=await fetch("/api/files/upload",{method:"POST",credentials:"include",headers:V5(),body:JSON.stringify({name:j5,data:G})});if(!J.ok)throw Error(z6`Failed to save side prompts: ${J.status} ${J.statusText}`);v0=Z,console.log(`${X8}: ${e("Side prompts saved successfully","STMemoryBooks_SidePromptsSaved")}`)}async function E1(){if(v0)return v0;let Z=null;try{let Q=await fetch(`/user/files/${j5}`,{method:"GET",credentials:"include",headers:V5()});if(!Q.ok)Z=zZ(),await c1(Z);else{let G=await Q.text(),J=JSON.parse(G);if(K5(J))console.log(`${X8}: ${e("Migrating side prompts file from V1(type) to V2(triggers)","STMemoryBooks_MigratingSidePrompts")}`),Z=U5(J),await c1(Z);else if(!F5(J))console.warn(`${X8}: ${e("Invalid side prompts file structure; recreating with built-ins","STMemoryBooks_InvalidSidePromptsFile")}`),Z=zZ(),await c1(Z);else if(Z=J,Number(Z.version||1)<2)Z.version=2,await c1(Z)}}catch(Q){console.warn(`${X8}: ${e("Error loading side prompts; creating base doc","STMemoryBooks_ErrorLoadingSidePrompts")}`,Q),Z=zZ(),await c1(Z)}return v0=Z,v0}async function HG(){return await E1(),!0}async function Y0(){let Z=await E1(),Q=Object.values(Z.prompts);return Q.sort((G,J)=>{let W=G.updatedAt||G.createdAt||"";return(J.updatedAt||J.createdAt||"").localeCompare(W)}),Q}async function XZ(Z){return(await E1()).prompts[Z]||null}async function VZ(Z){let Q=await E1(),G=String(Z||"").trim();if(!G)return null;let J=G.toLowerCase(),W=H1(G),q=J.replace(/[^a-z0-9]+/g," ").trim(),Y=Object.values(Q.prompts);for(let z of Y){let V=String(z.name||"").toLowerCase(),X=String(z.key||"").toLowerCase(),j=H1(z.name||"");if(V===J||X===J||j===W)return z}for(let z of Y){let V=String(z.name||"").toLowerCase(),X=String(z.key||"").toLowerCase(),j=H1(z.name||"");if(V.startsWith(J)||j.startsWith(W)||X.startsWith(J))return z}for(let z of Y){let V=String(z.name||"").toLowerCase(),X=H1(z.name||""),j=V.replace(/[^a-z0-9]+/g," ").trim();if(V.includes(J)||X.includes(W)||q&&j.includes(q))return z}return null}async function X6(Z){let Q=await E1(),G=!Z.key,J=L8(),W=String(Z.name??"").trim(),q=G?null:Q.prompts[Z.key],Y=W||(G?e("Untitled Side Prompt","STMemoryBooks_UntitledSidePrompt"):q?.name||e("Untitled Side Prompt","STMemoryBooks_UntitledSidePrompt")),z;if(Z.key)z=Z.key;else{let F=H1(Y||e("Untitled Side Prompt","STMemoryBooks_UntitledSidePrompt")),K=2;while(Q.prompts[F])F=H1(`${Y} ${K}`),K++;z=F}let V=Q.prompts[z],X={key:z,name:Y,enabled:typeof Z.enabled==="boolean"?Z.enabled:V?.enabled??!1,prompt:String(Z.prompt!=null?Z.prompt:V?.prompt||"this is a placeholder prompt"),responseFormat:String(Z.responseFormat!=null?Z.responseFormat:V?.responseFormat||""),settings:{...V?.settings||{},...Z.settings||{}},triggers:Z.triggers?Z.triggers:V?.triggers||{commands:["sideprompt"]},createdAt:V?.createdAt||J,updatedAt:J};if(X.triggers.onInterval){let j=Math.max(1,Number(X.triggers.onInterval.visibleMessages??50));X.triggers.onInterval={visibleMessages:j}}if(X.triggers.onAfterMemory)X.triggers.onAfterMemory={enabled:!!X.triggers.onAfterMemory.enabled};if("commands"in X.triggers)if(Array.isArray(X.triggers.commands))X.triggers.commands=X.triggers.commands.filter((j)=>typeof j==="string"&&j.trim());else X.triggers.commands=[];else X.triggers.commands=["sideprompt"];return Q.prompts[z]=X,await c1(Q),z}async function jZ(Z){let Q=await E1(),G=Q.prompts[Z];if(!G)throw Error(z6`Template "${Z}" not found`);let J=z6`${G.name} (Copy)`,W=H1(J),q=2;while(Q.prompts[W])W=H1(`${J} ${q}`),q++;let Y=L8();return Q.prompts[W]={...G,key:W,name:J,createdAt:Y,updatedAt:Y},await c1(Q),W}async function FZ(Z){let Q=await E1();if(!Q.prompts[Z])throw Error(z6`Template "${Z}" not found`);delete Q.prompts[Z],await c1(Q)}async function KZ(){let Z=await E1();return JSON.stringify(Z,null,2)}async function UZ(Z){let Q=JSON.parse(Z),G=null;if(F5(Q))G=Q;else if(K5(Q))G=U5(Q);else throw Error(e("Invalid side prompts file structure","STMemoryBooks_InvalidSidePromptsJSON"));let J=await E1(),W={version:Math.max(2,Number(J.version??2),Number(G.version??2)),prompts:{...J.prompts}},q=(V,X)=>{let j=String(X||"").trim()||V||"sideprompt",F=H1(j),K=V&&!W.prompts[V]?V:F;if(!K)K="sideprompt";let H=2;while(W.prompts[K])K=H1(`${j} ${H}`),H++;return K},Y=0,z=0;for(let[V,X]of Object.entries(G.prompts||{})){let j=W.prompts[V]?q(null,X?.name||V):V;if(j!==V)z++;let F=L8(),K={key:j,name:String(X.name||"Side Prompt"),enabled:!!X.enabled,prompt:String(X.prompt!=null?X.prompt:"this is a placeholder prompt"),responseFormat:String(X.responseFormat||""),settings:{...X.settings||{}},triggers:X.triggers?{...X.triggers}:{commands:["sideprompt"]},createdAt:X.createdAt||F,updatedAt:F};if(K.triggers.onInterval){let H=Math.max(1,Number(K.triggers.onInterval.visibleMessages??50));K.triggers.onInterval={visibleMessages:H}}if(K.triggers.onAfterMemory)K.triggers.onAfterMemory={enabled:!!K.triggers.onAfterMemory.enabled};if("commands"in K.triggers)if(Array.isArray(K.triggers.commands))K.triggers.commands=K.triggers.commands.filter((H)=>typeof H==="string"&&H.trim());else K.triggers.commands=[];else K.triggers.commands=["sideprompt"];W.prompts[j]=K,Y++}return await c1(W),{added:Y,renamed:z}}async function HZ(Z="overwrite"){if(Z!=="overwrite")console.warn(`${X8}: Unsupported mode for recreateBuiltInSidePrompts: ${Z}; defaulting to 'overwrite'`);let Q=await E1(),G=H5(),J=Object.keys(G||{}),W=0;if(!Q||!Q.prompts||typeof Q.prompts!=="object")throw Error(e("Invalid side prompts document","STMemoryBooks_InvalidSidePromptsJSON"));for(let q of J)Q.prompts[q]=G[q],W++;return await c1(Q),v0=Q,console.log(`${X8}: Recreated built-in side prompts (overwrote ${W} entries)`),{replaced:W}}async function BG(Z){let Q=String(Z||"").toLowerCase(),G=await Y0();if(Q==="tracker")return G.filter((J)=>J.enabled&&J.triggers?.onInterval&&Number(J.triggers.onInterval.visibleMessages)>=1);if(Q==="plotpoints")return G.filter((J)=>J.enabled&&J.triggers?.onAfterMemory?.enabled);if(Q==="scoreboard")return G.filter((J)=>J.enabled&&(Array.isArray(J.triggers?.commands)||J.triggers?.onAfterMemory?.enabled));return[]}async function V6(Z){let Q=await Y0();if(Z==="onInterval")return Q.filter((G)=>G.enabled&&G.triggers?.onInterval&&Number(G.triggers.onInterval.visibleMessages)>=1);if(Z==="onAfterMemory")return Q.filter((G)=>G.enabled&&G.triggers?.onAfterMemory?.enabled);if(Z&&Z.startsWith("command:")){let G=Z.slice(8).trim();return Q.filter((J)=>Array.isArray(J.triggers?.commands)&&J.triggers.commands.some((W)=>W.toLowerCase()===G.toLowerCase()))}return[]}function OG(){v0=null}var X8="STMemoryBooks-SidePromptsManager",j5,v0=null;var C8=H0(()=>{B0();j5=m0.SIDE_PROMPTS_FILE});p8();import{eventSource as t1,event_types as K0,chat as q7,chat_metadata as f0,saveSettingsDebounced as s,characters as xZ,this_chid as kG,settings as sW}from"../../../../script.js";import{Popup as J1,POPUP_TYPE as a,POPUP_RESULT as p}from"../../../popup.js";import{extension_settings as o}from"../../../extensions.js";import{SlashCommandParser as b0}from"../../../slash-commands/SlashCommandParser.js";import{SlashCommand as y0}from"../../../slash-commands/SlashCommand.js";import{SlashCommandEnumValue as bZ}from"../../../slash-commands/SlashCommandEnumValue.js";import{ARGUMENT_TYPE as O6,SlashCommandArgument as R6}from"../../../slash-commands/SlashCommandArgument.js";import{executeSlashCommands as gG}from"../../../slash-commands.js";import{METADATA_KEY as y8,world_names as N6,loadWorldInfo as uG,saveWorldInfo as mG,reloadEditor as dG}from"../../../world-info.js";import{lodash as cG,Handlebars as pG,DOMPurify as F8}from"../../../../lib.js";import{escapeHtml as E}from"../../../utils.js";v1();var P4=L6(M4(),1);import{characters as n6,this_chid as h4,substituteParams as jQ,getRequestHeaders as FQ}from"../../../../script.js";import{oai_settings as Q6}from"../../../openai.js";import{runRegexScript as KQ,getRegexScripts as UQ}from"../../../extensions/regex/engine.js";import{groups as v4}from"../../../group-chats.js";import{extension_settings as N8}from"../../../extensions.js";var U$=window.jQuery;function HQ(Z){try{let Q={...Z};return Q.disabled=!1,Q}catch{return Z}}function x4(Z,Q){if(typeof Z!=="string")return"";if(!Array.isArray(Q)||Q.length===0)return Z;try{let G=UQ({allowedOnly:!1})||[],J=Q.map((q)=>Number(String(q).replace(/^idx:/,""))).filter((q)=>Number.isInteger(q)&&q>=0&&q<G.length),W=Z;for(let q of J){let Y=HQ(G[q]);try{W=KQ(Y,W)}catch(z){console.warn("applySelectedRegex: script failed",q,z)}}return W}catch(G){return console.warn("applySelectedRegex failed",G),Z}}class s6 extends Error{constructor(Z,Q){super(Z);this.name="TokenWarningError",this.tokenCount=Q}}class W8 extends Error{constructor(Z){super(Z);this.name="AIResponseError"}}class r6 extends Error{constructor(Z){super(Z);this.name="InvalidProfileError"}}function BQ(){return"/api/backends/chat-completions/generate"}async function I0({model:Z,prompt:Q,temperature:G=0.7,api:J="openai",endpoint:W=null,apiKey:q=null,extra:Y={}}){let z=BQ(),V=FQ(),X=Math.max(Number(Y.max_tokens)||0,Number(Q6.max_response)||0),j=Math.floor(X)||0;if(Number.isFinite(j)&&j>0)if((typeof Z==="string"?Z.toLowerCase():"").includes("gpt-5"))Y.max_completion_tokens=j,delete Y.max_tokens;else Y.max_tokens=j;if(Y.max_output_tokens!=null){let A=Math.floor(Y.max_output_tokens)??0;if(Number.isFinite(Y.max_tokens)&&Y.max_tokens>0)Y.max_output_tokens=Math.min(A,Y.max_tokens);else Y.max_output_tokens=A}let F={messages:[{role:"user",content:Q}],model:Z,temperature:G,chat_completion_source:J,...Y};if(J==="full-manual"&&W&&q)z=W,V={"Content-Type":"application/json",Authorization:`Bearer ${q}`},F={model:Z,messages:[{role:"user",content:Q}],temperature:G,...Y};else if(J==="custom"&&Z)F.custom_model_id=Z,F.custom_url=Q6.custom_url||"";else if(J==="deepseek")F.custom_url="https://api.deepseek.com/chat/completions";let K=await fetch(z,{method:"POST",headers:V,body:JSON.stringify(F)});if(!K.ok){let A="";try{A=await K.text()}catch(T){A=""}let O=Error(`LLM request failed: ${K.status} ${K.statusText}`);if(A)O.providerBody=A;throw O}let H=await K.json(),B="";if(H.choices?.[0]?.message?.content)B=H.choices[0].message.content;else if(H.completion)B=H.completion;else if(H.choices?.[0]?.text)B=H.choices[0].text;else if(H.content&&Array.isArray(H.content))B=H.content.find((O)=>O&&typeof O==="object"&&O.type==="text"&&O.text)?.text||"";else if(typeof H.content==="string")B=H.content;return{text:B,full:H}}async function S4({api:Z,model:Q,prompt:G,temperature:J=0.7,endpoint:W=null,apiKey:q=null,extra:Y={}}){return await I0({model:Q,prompt:G,temperature:J,api:Z,endpoint:W,apiKey:q,extra:Y})}async function OQ(Z={},Q=null){let G;if(typeof Z==="number")G={maxWaitMs:Z,initialIntervalMs:Q||250,maxIntervalMs:1000,backoffMultiplier:1.2,useExponentialBackoff:!1};else G={maxWaitMs:5000,initialIntervalMs:100,maxIntervalMs:1000,backoffMultiplier:1.5,useExponentialBackoff:!0,...Z};let{maxWaitMs:J,initialIntervalMs:W,maxIntervalMs:q,backoffMultiplier:Y,useExponentialBackoff:z,signal:V}=G,X=Date.now(),j=W,F=0,{getCurrentMemoryBooksContext:K}=await Promise.resolve().then(() => (v1(),V4)),H=K();while(Date.now()-X<J){if(V?.aborted)return!1;if(H.isGroupChat){if(v4&&H.groupId){if(v4.find((A)=>A.id===H.groupId))return!0}}else if(n6&&n6.length>h4&&n6[h4])return!0;if(await new Promise((B,A)=>{let O=setTimeout(B,j);if(V){let T=()=>{clearTimeout(O),A(Error("Cancelled"))};V.addEventListener("abort",T,{once:!0})}}).catch(()=>{return!1}),z&&j<q)j=Math.min(j*Y,q)}return!1}function RQ(Z){try{if(typeof Z==="object"&&Z!==null&&Array.isArray(Z.content)){let Q=Z.content.find((G)=>G&&typeof G==="object"&&G.type==="text"&&G.text);if(Q&&typeof Q.text==="string")return Q.text}return null}catch(Q){return null}}function AQ(Z){try{let Q=0,G=0,J=!1,W=!1;for(let q=0;q<Z.length;q){let Y=Z[q];if(J){if(W)W=!1;else if(Y==="\\")W=!0;else if(Y==='"')J=!1}else if(Y==='"')J=!0;else if(Y==="{");else if(Y==="}")Q--;else if(Y==="[");else if(Y==="]")G--;if(Q<0||G<0)return!0}return J||Q!==0||G!==0}catch{return!1}}function TQ(Z){let Q=(Z||"").trim();if(!Q)return!0;if(/[.!?]["'’\)\]]?$/.test(Q))return!0;if(Q.length>=80&&!/[.!?]$/.test(Q))return!1;return!0}function NQ(Z){return String(Z).replace(/\r\n/g,`
+`).replace(/^\uFEFF/,"").replace(/[\u0000-\u001F\u200B-\u200D\u2060]/g,"")}function DQ(Z){let Q=/```([\w-]*)\s*([\s\S]*?)```/g,G=[],J;while((J=Q.exec(Z))!==null)G.push((J[2]||"").trim());return G}function _Q(Z){let Q=Z.search(/[\{\[]/);if(Q===-1)return null;let G=Z[Q],J=G==="{"?"}":"]",W=0,q=!1,Y=!1;for(let z=Q;z<Z.length;z++){let V=Z[z];if(q){if(Y)Y=!1;else if(V==="\\")Y=!0;else if(V==='"')q=!1;continue}if(V==='"'){q=!0;continue}if(V===G)W++;else if(V===J){if(W--,W===0)return Z.slice(Q,z+1).trim()}}return null}function wQ(Z){return/[\{\[]/.test(Z)}function IQ(Z){let Q=new Set,G=[];for(let J of Z)if(!Q.has(J))Q.add(J),G.push(J);return G}function U1(Z,Q,G=!0){let J=new W8(Q);J.code=Z,J.recoverable=G;try{console.debug(`STMemoryBooks: AIResponseError code=${Z} recoverable=${G}: ${Q}`)}catch{}return J}function LQ(Z){let Q=Z;try{let V=!!N8?.STMemoryBooks?.moduleSettings?.useRegex,X=N8?.STMemoryBooks?.moduleSettings?.selectedRegexIncoming;if(V&&typeof Q==="string"&&Array.isArray(X)&&X.length>0)Q=x4(Q,X)}catch(V){console.warn("STMemoryBooks: incoming regex application failed",V)}if(typeof Q==="object"&&Q!==null&&Array.isArray(Q.content)){let V=RQ(Q);if(V)Q=V;else{let X=U1("EMPTY_OR_INVALID","AI response is empty or invalid",!1);try{X.rawResponse=JSON.stringify(Q)}catch{}throw X}}else if(typeof Q==="object"&&Q!==null&&Q.content)Q=Q.content;if(typeof Q==="object"&&Q!==null)try{let X=Q?.candidates?.[0]?.content?.parts;if(Array.isArray(X)&&X.length>0){let j=X.map((F)=>F&&typeof F.text==="string"?F.text:"").join("");if(j&&j.trim())Q=j}}catch(V){}if(!Q||typeof Q!=="string"){let V=U1("EMPTY_OR_INVALID","AI response is empty or invalid",!1);try{V.rawResponse=typeof Q==="string"?Q:JSON.stringify(Q)}catch{}throw V}Q=Q.trim(),Q=Q.replace(/<think>[\s\S]*?<\/think>/gi,"");let G=NQ(Q),J=[],W=DQ(G);if(W.length)J.push(...W);J.push(G);let q=_Q(G);if(q)J.push(q);let Y=IQ(J);for(let V of Y)try{let X=JSON.parse(V);if(!X.content&&!X.summary&&!X.memory_content)throw U1("MISSING_FIELDS_CONTENT","AI response missing content field",!1);if(!X.title)throw U1("MISSING_FIELDS_TITLE","AI response missing title field",!1);if(!Array.isArray(X.keywords))throw U1("INVALID_KEYWORDS","AI response missing or invalid keywords array.",!1);return X}catch(X){try{let j=P4.default.parse(V);if(!j.content&&!j.summary&&!j.memory_content)throw U1("MISSING_FIELDS_CONTENT","AI response missing content field",!1);if(!j.title)throw U1("MISSING_FIELDS_TITLE","AI response missing title field",!1);if(!Array.isArray(j.keywords))throw U1("INVALID_KEYWORDS","AI response missing or invalid keywords array.",!1);return j}catch{}}if(!wQ(G)){let V=U1("NO_JSON_BLOCK","AI response did not contain a JSON block. The model may have returned prose or declined the request.",!0);throw V.rawResponse=G,V}if(AQ(G)){let V=U1("UNBALANCED","AI response appears truncated or invalid JSON (unbalanced structures). Try increasing Max Response Length.",!1);throw V.rawResponse=G,V}let z=G.trim();if(z&&z.length>=80&&!TQ(z)){let V=U1("INCOMPLETE_SENTENCE","AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.",!1);throw V.rawResponse=G,V}{let V=U1("MALFORMED","AI did not return valid JSON. This may indicate the model does not support structured output well or the response contained unsupported formatting.",!1);throw V.rawResponse=G,V}}async function CQ(Z,Q){if(!await OQ())throw new W8("Character data is not available. This may indicate that SillyTavern is still loading. Please wait a moment and try again.");let J=Q?.effectiveConnection||Q?.connection||{};try{let W=Y1(J.api||l().api),q={};if(Q6.openai_max_tokens)q.max_tokens=Q6.openai_max_tokens;let{text:Y,full:z}=await I0({model:J.model,prompt:Z,temperature:J.temperature,api:W,endpoint:J.endpoint,apiKey:J.apiKey,extra:q}),V=z?.choices?.[0]?.finish_reason||z?.finish_reason||z?.stop_reason,X=typeof V==="string"?V.toLowerCase():"";if(X.includes("length")||X.includes("max")){let F=U1("PROVIDER_TRUNCATION","Model response appears truncated (provider finish_reason). Please increase Max Response Length.",!0);try{F.rawResponse=Y||""}catch{}try{F.providerResponse=z||null}catch{}throw F}if(z?.truncated===!0){let F=U1("PROVIDER_TRUNCATION_FLAG","Model response appears truncated (provider flag). Please increase Max Response Length.",!0);try{F.rawResponse=Y||""}catch{}try{F.providerResponse=z||null}catch{}throw F}let j=LQ(Y);return{content:j.content||j.summary||j.memory_content||"",title:j.title||"Memory",keywords:j.keywords||[],profile:Q}}catch(W){if(W instanceof W8)throw W;let q=new W8(`Memory generation failed: ${W.message||W}`);try{if(typeof W?.providerBody==="string")q.providerBody=W.providerBody;if(typeof W?.rawResponse==="string")q.rawResponse=W.rawResponse}catch{}throw q}}async function E4(Z,Q,G={}){try{MQ(Z,Q);let J=await PQ(Z,Q),W=await vQ(J),q=G.tokenWarningThreshold??30000;if(W.total>q)throw new s6("Token warning threshold exceeded.",W.total);let Y=await CQ(J,Q),z=xQ(Y,Z);return{content:z.content,extractedTitle:z.extractedTitle,metadata:{sceneRange:`${Z.metadata.sceneStart}-${Z.metadata.sceneEnd}`,messageCount:Z.metadata.messageCount,characterName:Z.metadata.characterName,userName:Z.metadata.userName,chatId:Z.metadata.chatId,createdAt:new Date().toISOString(),profileUsed:Q.name,presetUsed:Q.preset||"custom",tokenUsage:W,generationMethod:"json-structured-output",version:"2.0"},suggestedKeys:z.suggestedKeys,titleFormat:Q.useDynamicSTSettings||Q?.connection?.api==="current_st"?N8.STMemoryBooks?.titleFormat||"[000] - {{title}}":Q.titleFormat||"[000] - {{title}}",lorebookSettings:{constVectMode:Q.constVectMode,position:Q.position,orderMode:Q.orderMode,orderValue:Q.orderValue,preventRecursion:Q.preventRecursion,delayUntilRecursion:Q.delayUntilRecursion,outletName:Number(Q.position)===7?Q.outletName||"":void 0},lorebook:{content:z.content,comment:`Auto-generated memory from messages ${Z.metadata.sceneStart}-${Z.metadata.sceneEnd}. Profile: ${Q.name}.`,key:z.suggestedKeys||[],keysecondary:[],selective:!0,constant:!1,order:100,position:"before_char",disable:!1,addMemo:!0,excludeRecursion:!1,delayUntilRecursion:!0,probability:100,useProbability:!1}}}catch(J){if(J instanceof s6||J instanceof W8||J instanceof r6)throw J;throw Error(`Memory creation failed: ${J.message}`)}}function MQ(Z,Q){if(!Z||!Array.isArray(Z.messages)||Z.messages.length===0)throw Error("Invalid or empty compiled scene data provided.");let G=typeof Q?.prompt==="string"&&Q.prompt.trim().length>0,J=typeof Q?.preset==="string"&&Q.preset.trim().length>0;if(!G&&!J)throw new r6("Invalid profile configuration. You must set either a custom prompt or a valid preset.")}function hQ(Z,Q,G=[]){let J=Z.map((q)=>{let Y=q.name||"Unknown",z=(q.mes||"").trim();return z?`${Y}: ${z}`:null}).filter(Boolean),W=[""];if(G&&G.length>0)W.push("=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ==="),W.push("These are previous memories for context only. Do NOT include them in your new memory:"),W.push(""),G.forEach((q,Y)=>{if(W.push(`Context ${Y+1} - ${q.title}:`),W.push(q.content),q.keywords&&q.keywords.length>0)W.push(`Keywords: ${q.keywords.join(", ")}`);W.push("")}),W.push("=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ==="),W.push("");return W.push("=== SCENE TRANSCRIPT ==="),W.push(...J),W.push(""),W.push("=== END SCENE ==="),W.join(`
+`)}async function vQ(Z){return await G0(Z,{estimatedOutput:300})}async function PQ(Z,Q){let{metadata:G,messages:J,previousSummariesContext:W}=Z,q=await T0(Q),Y=jQ(q,G.userName,G.characterName),z=hQ(J,G,W),V=`${Y}
+
+${z}`;try{let X=!!N8?.STMemoryBooks?.moduleSettings?.useRegex,j=N8?.STMemoryBooks?.moduleSettings?.selectedRegexOutgoing;if(X&&Array.isArray(j)&&j.length>0)return x4(V,j)}catch(X){console.warn("STMemoryBooks: outgoing regex application failed",X)}return V}function xQ(Z,Q){let{content:G,title:J,keywords:W}=Z,q=(G||Z.summary||Z.memory_content||"").trim(),Y=(J||"Memory").trim(),z=Array.isArray(W)?W.filter((V)=>V&&typeof V==="string"&&V.trim()!=="").map((V)=>V.trim()):[];return{content:q,extractedTitle:Y,suggestedKeys:z}}i0();import{getContext as O$}from"../../../extensions.js";import{METADATA_KEY as A$,loadWorldInfo as T$,createWorldInfoEntry as a6,saveWorldInfo as t6,reloadEditor as e6}from"../../../world-info.js";import{extension_settings as b4}from"../../../extensions.js";import{moment as y4}from"../../../../lib.js";import{executeSlashCommands as SQ}from"../../../slash-commands.js";import{translate as EQ}from"../../../i18n.js";var L1="STMemoryBooks-AddLore";function P(Z,Q,G){let J=EQ(Q,Z);if(!G)return J;return J.replace(/{{\s*(\w+)\s*}}/g,(W,q)=>{let Y=G[q];return Y!==void 0&&Y!==null?String(Y):""})}function f4(Z){if(!Z)return null;let Q=Z.split("-");if(Q.length!==2)return null;let G=parseInt(Q[0],10),J=parseInt(Q[1],10);if(isNaN(G)||isNaN(J)||G<0||J<0)return null;return{start:G,end:J}}async function G6(Z,Q=""){let G=Q?` (${Q})`:"";console.log(P("addlore.log.executingHideCommand",`${L1}: Executing hide command${G}: {{hideCommand}}`,{hideCommand:Z})),await SQ(Z)}function bQ(Z={}){if(Z.autoHideMode)return Z.autoHideMode;if(Z.autoHideAllMessages)return"all";else if(Z.autoHideLastMemory)return"last";else return"none"}var yQ=["[000] - {{title}} ({{profile}})","{{date}} [000] \uD83C\uDFAC{{title}}, {{messages}} msgs","[000] {{date}} - {{char}} Memory","[00] - {{user}} & {{char}} {{scene}}","\uD83E\uDDE0 [000] ({{messages}} msgs)","\uD83D\uDCDA Memory #[000] - {{profile}} {{date}} {{time}}","[000] - {{scene}}: {{title}}","[000] - {{title}} ({{scene}})","[000] - {{title}}"];async function k4(Z,Q){try{if(!Z?.content)throw Error(P("addlore.errors.invalidContent","Invalid memory result: missing content"));if(!Q?.valid||!Q.data)throw Error(P("addlore.errors.invalidLorebookValidation","Invalid lorebook validation data"));let G=b4.STMemoryBooks||{},J=Z.titleFormat;if(!J)J=G.titleFormat||P("addlore.titleFormats.8","[000] - {{title}}");let W=G.moduleSettings?.refreshEditor!==!1,q=Z.lorebookSettings||{constVectMode:"link",position:0,orderMode:"auto",orderValue:100,preventRecursion:!1,delayUntilRecursion:!0},Y=a6(Q.name,Q.data);if(!Y)throw Error(P("addlore.errors.createEntryFailed","Failed to create new lorebook entry"));let z=kQ(J,Z,Q.data);if(fQ(Y,Z,z,q),await t6(Q.name,Q.data,!0),G.moduleSettings?.showNotifications!==!1)toastr.success(P("addlore.toast.added",'Memory "{{entryTitle}}" added to "{{lorebookName}}"',{entryTitle:z,lorebookName:Q.name}),P("addlore.toast.title","STMemoryBooks"));if(W)e6(Q.name);let V=bQ(G.moduleSettings);if(V!=="none"){let X=G.moduleSettings.unhiddenEntriesCount??2;if(V==="all"){let j=f4(Z.metadata?.sceneRange);if(!j)console.warn(P("addlore.warn.autohideSkippedInvalidRange",`${L1}: Auto-hide skipped - invalid scene range: "{{range}}"`,{range:Z.metadata?.sceneRange})),toastr.warning(P("addlore.toast.autohideInvalidRange","Auto-hide skipped: invalid scene range metadata"),P("addlore.toast.title","STMemoryBooks"));else{let{start:F,end:K}=j;if(X===0)await G6(`/hide 0-${K}`,P("addlore.hideCommand.allComplete","all mode - complete"));else{let H=K-X;if(H>=0)await G6(`/hide 0-${H}`,P("addlore.hideCommand.allPartial","all mode - partial"))}}}else if(V==="last"){let j=f4(Z.metadata?.sceneRange);if(!j)console.warn(P("addlore.warn.autohideSkippedInvalidRange",`${L1}: Auto-hide skipped - invalid scene range: "{{range}}"`,{range:Z.metadata?.sceneRange})),toastr.warning(P("addlore.toast.autohideInvalidRange","Auto-hide skipped: invalid scene range metadata"),P("addlore.toast.title","STMemoryBooks"));else{let{start:F,end:K}=j,H=K-F+1;if(X>=H);else if(X===0)await G6(`/hide ${F}-${K}`,P("addlore.hideCommand.lastHideAll","last mode - hide all"));else{let B=K-X;if(B>=F)await G6(`/hide ${F}-${B}`,P("addlore.hideCommand.lastPartial","last mode - partial"))}}}}return cQ(Z),{success:!0,entryId:Y.uid,entryTitle:z,lorebookName:Q.name,keywordCount:Z.suggestedKeys?.length||0,message:P("addlore.result.added",'Memory successfully added to "{{lorebookName}}"',{lorebookName:Q.name})}}catch(G){if(console.error(P("addlore.log.addFailed",`${L1}: Failed to add memory to lorebook:`),G),b4.STMemoryBooks?.moduleSettings?.showNotifications!==!1)toastr.error(P("addlore.toast.addFailed","Failed to add memory: {{message}}",{message:G.message}),P("addlore.toast.title","STMemoryBooks"));return{success:!1,error:G.message,message:P("addlore.result.addFailed","Failed to add memory to lorebook: {{message}}",{message:G.message})}}}function fQ(Z,Q,G,J){Z.content=Q.content,Z.key=Q.suggestedKeys||[],Z.comment=G;let W=D8(G)||1;switch(J.constVectMode){case"blue":Z.constant=!0,Z.vectorized=!1;break;case"green":Z.constant=!1,Z.vectorized=!1;break;case"link":default:Z.constant=!1,Z.vectorized=!0;break}if(Z.position=J.position,Number(J.position)===7){let q=String(J.outletName||"").trim();if(q)Z.outletName=q}if(J.orderMode==="manual")Z.order=J.orderValue;else Z.order=W;if(Z.preventRecursion=J.preventRecursion,Z.delayUntilRecursion=J.delayUntilRecursion,Z.keysecondary=[],Z.selective=!0,Z.selectiveLogic=0,Z.addMemo=!0,Z.disable=!1,Z.excludeRecursion=!1,Z.probability=100,Z.useProbability=!0,Z.depth=4,Z.group="",Z.groupOverride=!1,Z.groupWeight=100,Z.scanDepth=null,Z.caseSensitive=null,Z.matchWholeWords=null,Z.useGroupScoring=null,Z.automationId="",Z.role=null,Z.sticky=0,Z.cooldown=0,Z.delay=0,Z.displayIndex=W,Z.stmemorybooks=!0,Q.metadata?.sceneRange){let q=Q.metadata.sceneRange.split("-");if(q.length===2)Z.STMB_start=parseInt(q[0],10),Z.STMB_end=parseInt(q[1],10)}}function g4(Z){return Z.stmemorybooks===!0}function kQ(Z,Q,G){let J=Z,W=[{pattern:/\[\[0+\]\]/g,prefix:"[",suffix:"]"},{pattern:/\[0+\]/g,prefix:"",suffix:""},{pattern:/\(\[0+\]\)/g,prefix:"(",suffix:")"},{pattern:/\{\[0+\]\}/g,prefix:"{",suffix:"}"},{pattern:/#\[0+\]/g,prefix:"#",suffix:""}];for(let{pattern:z,prefix:V,suffix:X}of W){let j=J.match(z);if(j){let F=gQ(G,Z);j.forEach((K)=>{let H;if(z.source.includes("\\[\\["))H=K.length-4;else if(z.source.includes("\\(\\[")||z.source.includes("\\{\\["))H=K.length-4;else if(z.source.includes("#\\["))H=K.length-3;else if(z.source.includes("\\["))H=K.length-2;else H=K.length-2;let B=F.toString().padStart(H,"0"),A=V+B+X;J=J.replace(K,A)});break}}let q=Q.metadata||{},Y={"{{title}}":Q.extractedTitle||P("addlore.defaults.title","Memory"),"{{scene}}":P("addlore.defaults.scene","Scene {{range}}",{range:q.sceneRange||P("common.unknown","Unknown")}),"{{char}}":q.characterName||P("common.unknown","Unknown"),"{{user}}":q.userName||P("addlore.defaults.user","User"),"{{messages}}":q.messageCount||0,"{{profile}}":q.profileUsed||P("common.unknown","Unknown"),"{{date}}":y4().format("YYYY-MM-DD"),"{{time}}":y4().format("HH:mm:ss")};return Object.entries(Y).forEach(([z,V])=>{J=J.replace(new RegExp(z.replace(/[{}]/g,"\\$&"),"g"),V)}),J=dQ(J),J}function gQ(Z,Q=null){if(!Z.entries)return 1;let G=Object.values(Z.entries),J=[];if(G.forEach((q)=>{if(g4(q)&&q.comment){let Y=Q?uQ(q.comment,Q):D8(q.comment);if(Y!==null)J.push(Y)}}),J.length===0)return 1;return Math.max(...J)+1}function uQ(Z,Q){if(!Z||typeof Z!=="string"||!Q||typeof Q!=="string")return null;let G=[/\[0+\]/g,/\(0+\)/g,/\{0+\}/g,/#0+/g],J=[],W=null;for(let Y of G){let z=[...Q.matchAll(Y)];if(z.length>0){J=z,W=Y;break}}if(J.length===0)return D8(Z);let q=mQ(Q);if(q=q.replace(/\\\{\\\{[^}]+\\\}\\\}/g,".*?"),W.source.includes("\\["))q=q.replace(/\\\[0+\\\]/g,"(\\d+)");else if(W.source.includes("\\("))q=q.replace(/\\\(0+\\\)/g,"(\\d+)");else if(W.source.includes("\\{"))q=q.replace(/\\\{0+\\\}/g,"(\\d+)");else if(W.source.includes("#"))q=q.replace(/#0+/g,"(\\d+)");try{let Y=Z.match(new RegExp(q));if(Y&&Y[1]){let z=parseInt(Y[1],10);return isNaN(z)?null:z}}catch(Y){}return D8(Z)}function mQ(Z){return Z.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function D8(Z){if(!Z||typeof Z!=="string")return null;let Q=Z.match(/\[(\d+)\]/);if(Q){let z=parseInt(Q[1],10);return isNaN(z)?null:z}let G=Z.match(/\((\d+)\)/);if(G){let z=parseInt(G[1],10);return isNaN(z)?null:z}let J=Z.match(/\{(\d+)\}/);if(J){let z=parseInt(J[1],10);return isNaN(z)?null:z}let W=Z.match(/#(\d+)(?:-(\d+))?/);if(W){let z=parseInt(W[1],10),V=W[2]?parseInt(W[2],10):null,X=V!==null?V:z;return isNaN(X)?null:X}let q=Z.match(/^(\d+)(?:\s*[-\s])/);if(q){let z=parseInt(q[1],10);return isNaN(z)?null:z}let Y=[...Z.matchAll(/(\d+)/g)];for(let z of Y){let V=parseInt(z[1],10);if(isNaN(V))continue;let X=z[0],j=z.index,F=Z.substring(Math.max(0,j-10),j),K=Z.substring(j+X.length,j+X.length+10);if(!(/\d{4}-\d{2}-\d{2}/.test(F+X+K)||/\d{4}-\d{1,2}/.test(F+X)||/-\d{1,2}-\d{1,2}/.test(X+K)))return V}return null}function q8(Z){if(!Z.entries)return[];let Q=Object.values(Z.entries),G=[];return Q.forEach((J)=>{if(g4(J)){let W=D8(J.comment)||0;G.push({number:W,title:J.comment,content:J.content,keywords:J.key||[],entry:J})}}),G.sort((J,W)=>J.number-W.number),G}function dQ(Z){return String(Z??"").replace(/[\u0000-\u001F\u007F-\u009F]/g,"").trim()||P("addlore.sanitize.fallback","Auto Memory")}function W0(){return yQ.map((Z,Q)=>P(`addlore.titleFormats.${Q}`,Z))}function u4(Z){if(typeof Z.STMB_start==="number"&&typeof Z.STMB_end==="number")return{start:Z.STMB_start,end:Z.STMB_end};return null}function cQ(Z){try{console.log(P("addlore.log.updateHighestCalled",`${L1}: updateHighestMemoryProcessed called with:`),Z);let Q=Z.metadata?.sceneRange;if(console.log(P("addlore.log.sceneRangeExtracted",`${L1}: sceneRange extracted:`),Q),!Q){console.warn(P("addlore.warn.noSceneRange",`${L1}: No scene range found in memory result, cannot update highest processed`));return}let G=Q.split("-");if(G.length!==2){console.warn(P("addlore.warn.invalidSceneRangeFormat",`${L1}: Invalid scene range format: {{range}}`,{range:Q}));return}let J=parseInt(G[1],10);if(isNaN(J)){console.warn(P("addlore.warn.invalidEndMessage",`${L1}: Invalid end message number: {{end}}`,{end:G[1]}));return}let W=g();if(!W){console.warn(P("addlore.warn.noSceneMarkers",`${L1}: Could not get scene markers to update highest processed`));return}W.highestMemoryProcessed=J,Q1(),console.log(P("addlore.log.setHighest",`${L1}: Set highest memory processed to message {{endMessage}}`,{endMessage:J}))}catch(Q){console.error(P("addlore.log.updateHighestError",`${L1}: Error updating highest memory processed:`),Q)}}function X1(Z,Q){if(!Z||!Z.entries||!Q)return null;let G=Object.values(Z.entries);for(let J of G)if((J.comment||"")===Q)return J;return null}async function _8(Z,Q,G,J={}){let{refreshEditor:W=!0}=J;if(!Z||!Q||!Array.isArray(G))throw Error(P("addlore.upsert.errors.invalidArgs","Invalid arguments to upsertLorebookEntriesBatch"));let q=[];for(let Y of G){if(!Y||!Y.title)continue;let z=String(Y.title),V=Y.content!=null?String(Y.content):"",X=Y.defaults||{},j=Y.metadataUpdates||{},F=Y.entryOverrides||{},K=X1(Q,z),H=!1;if(!K){if(K=a6(Z,Q),!K)throw Error(P("addlore.upsert.errors.createFailed","Failed to create lorebook entry"));if(K.vectorized=!!X.vectorized,K.selective=!!X.selective,typeof X.order==="number")K.order=X.order;if(typeof X.position==="number")K.position=X.position;K.disable=!1,H=!0}if(K.key=Array.isArray(K.key)?K.key:[],K.keysecondary=Array.isArray(K.keysecondary)?K.keysecondary:[],typeof K.disable!=="boolean")K.disable=!1;K.comment=z,K.content=V;for(let[B,A]of Object.entries(j))K[B]=A;for(let[B,A]of Object.entries(F))K[B]=A;q.push({title:z,uid:K.uid,created:H})}if(await t6(Z,Q,!0),W)e6(Z);return q}async function ZZ(Z,Q,G,J,W={}){let{defaults:q={vectorized:!0,selective:!0,order:100,position:0},metadataUpdates:Y={},refreshEditor:z=!0,entryOverrides:V={}}=W;if(!Z||!Q||!G)throw Error(P("addlore.upsert.errors.invalidArgs","Invalid arguments to upsertLorebookEntryByTitle"));let X=X1(Q,G),j=!1;if(!X){if(X=a6(Z,Q),!X)throw Error(P("addlore.upsert.errors.createFailed","Failed to create lorebook entry"));if(X.vectorized=!!q.vectorized,X.selective=!!q.selective,typeof q.order==="number")X.order=q.order;if(typeof q.position==="number")X.position=q.position;X.key=X.key||[],X.keysecondary=X.keysecondary||[],X.disable=!1,j=!0}X.comment=G,X.content=J!=null?String(J):"";for(let[F,K]of Object.entries(Y||{}))X[F]=K;for(let[F,K]of Object.entries(V||{}))X[F]=K;if(await t6(Z,Q,!0),z)e6(Z);return{uid:X.uid,created:j}}import{getCurrentChatId as pQ,name1 as iQ,name2 as lQ,chat_metadata as oQ,saveMetadata as nQ}from"../../../../script.js";import{createNewWorldInfo as sQ,METADATA_KEY as rQ,world_names as QZ}from"../../../world-info.js";import{translate as aQ}from"../../../i18n.js";var J6="STMemoryBooks-AutoCreate";function C1(Z,Q,G){let J=aQ(Q,Z);if(!G)return J;return J.replace(/{{\s*(\w+)\s*}}/g,(W,q)=>{let Y=G[q];return Y!==void 0&&Y!==null?String(Y):""})}function tQ(Z){if(!Z||Z.trim()==="")Z=C1("STMemoryBooks_LorebookNameTemplatePlaceholder","LTM - {{char}} - {{chat}}");let Q=pQ()||C1("common.unknown","Unknown"),G=lQ||C1("common.unknown","Unknown"),J=iQ||C1("addlore.defaults.user","User"),W=Z.replace(/\{\{chat\}\}/g,Q).replace(/\{\{char\}\}/g,G).replace(/\{\{user\}\}/g,J);if(W=W.replace(/[\/\\:*?"<>|]/g,"_").replace(/_{2,}/g,"_").substring(0,60),!QZ||!QZ.includes(W))return W;for(let q=2;q<=999;q++){let Y=`${W} ${q}`;if(!QZ.includes(Y))return Y}return`${W} ${Date.now()}`}async function $6(Z,Q="chat"){try{let G=tQ(Z);if(console.log(C1("autocreate.log.creating",`${J6}: Auto-creating lorebook "{{name}}" for {{context}}`,{name:G,context:Q})),await sQ(G))return oQ[rQ]=G,await nQ(),console.log(C1("autocreate.log.created",`${J6}: Successfully created and bound lorebook "{{name}}"`,{name:G})),toastr.success(C1("autocreate.toast.createdBound",'Created and bound lorebook "{{name}}"',{name:G}),C1("autocreate.toast.title","STMemoryBooks")),{success:!0,name:G};else return console.error(C1("autocreate.log.createFailed",`${J6}: Failed to create lorebook`)),{success:!1,error:C1("autocreate.errors.failedAutoCreate","Failed to auto-create lorebook.")}}catch(G){return console.error(C1("autocreate.log.createError",`${J6}: Error creating lorebook:`),G),{success:!1,error:C1("autocreate.errors.failedAutoCreateWithMessage","Failed to auto-create lorebook: {{message}}",{message:G.message})}}}i0();v1();import{extension_settings as w8}from"../../../extensions.js";import{chat as W6,chat_metadata as eQ}from"../../../../script.js";import{METADATA_KEY as ZG,world_names as m4}from"../../../world-info.js";import{Popup as QG,POPUP_TYPE as GG,POPUP_RESULT as d4}from"../../../popup.js";import{translate as JG}from"../../../i18n.js";function n(Z,Q,G){let J=JG(Q,Z);if(!G)return J;return J.replace(/{{\s*(\w+)\s*}}/g,(W,q)=>{let Y=G[q];return Y!==void 0&&Y!==null?String(Y):""})}async function $G(){let Z=w8.STMemoryBooks,Q;if(!Z.moduleSettings.manualModeEnabled){if(Q=eQ?.[ZG]||null,!Q&&Z?.moduleSettings?.autoCreateLorebook){let G=Z.moduleSettings.lorebookNameTemplate||n("STMemoryBooks_LorebookNameTemplatePlaceholder","LTM - {{char}} - {{chat}}"),J=await $6(G,"auto-summary");if(J.success)Q=J.name;else return{valid:!1,error:J.error}}}else{let G=g()||{};if(Q=G.manualLorebook??null,!Q){let W=new QG(`
+                <h4 data-i18n="STMemoryBooks_AutoSummaryReadyTitle">Auto-Summary Ready</h4>
+                <div class="world_entry_form_control">
+                    <p data-i18n="STMemoryBooks_AutoSummaryNoAssignedLorebook">Auto-summary is enabled but there is no assigned lorebook for this chat.</p>
+                    <p data-i18n="STMemoryBooks_AutoSummarySelectOrPostponeQuestion">Would you like to select a lorebook for memory storage, or postpone this auto-summary?</p>
+                    <label for="stmb-postpone-messages" data-i18n="STMemoryBooks_PostponeLabel">Postpone for how many messages?</label>
+                    <select id="stmb-postpone-messages" class="text_pole">
+                        <option value="10" data-i18n="STMemoryBooks_Postpone10">10 messages</option>
+                        <option value="20" data-i18n="STMemoryBooks_Postpone20">20 messages</option>
+                        <option value="30" data-i18n="STMemoryBooks_Postpone30">30 messages</option>
+                        <option value="40" data-i18n="STMemoryBooks_Postpone40">40 messages</option>
+                        <option value="50" data-i18n="STMemoryBooks_Postpone50">50 messages</option>
+                    </select>
+                </div>
+            `,GG.TEXT,"",{okButton:n("STMemoryBooks_Button_SelectLorebook","Select Lorebook"),cancelButton:n("STMemoryBooks_Button_Postpone","Postpone")});if(await W.show()===d4.AFFIRMATIVE){let Y=await A0();if(Y)G.manualLorebook=Y,Q1(),Q=Y;else return{valid:!1,error:n("STMemoryBooks_Error_NoLorebookSelectedForAutoSummary","No lorebook selected for auto-summary.")}}else{let Y=W.dlg.querySelector("#stmb-postpone-messages"),z=parseInt(Y.value,10),V=Number.isFinite(z)?z:10,X=W6.length;return G.autoSummaryNextPromptAt=X+V,Q1(),console.log(n("autosummary.log.postponed","STMemoryBooks: Auto-summary postponed for {{count}} messages (until message {{until}})",{count:V,until:G.autoSummaryNextPromptAt})),{valid:!1,error:n("STMemoryBooks_Info_AutoSummaryPostponed","Auto-summary postponed for {{count}} messages.",{count:V})}}}}if(!Q)return{valid:!1,error:n("STMemoryBooks_Error_NoLorebookForAutoSummary","No lorebook available for auto-summary.")};if(!m4||!m4.includes(Q))return{valid:!1,error:n("STMemoryBooks_Error_SelectedLorebookNotFound",'Selected lorebook "{{name}}" not found.',{name:Q})};try{let{loadWorldInfo:G}=await import("../../../world-info.js"),J=await G(Q);return{valid:!!J,data:J,name:Q}}catch(G){return{valid:!1,error:n("STMemoryBooks_Error_FailedToLoadSelectedLorebook","Failed to load the selected lorebook.")}}}async function c4(){try{let Z=w8.STMemoryBooks;if(!Z?.moduleSettings?.autoSummaryEnabled)return;let Q=g()||{},G=W6.length,J=G-1,W=Z.moduleSettings.autoSummaryInterval,q=Z?.moduleSettings?.autoSummaryBuffer,Y=j1(parseInt(q)||0,0,50),z=W+Y,V=Q.highestMemoryProcessed??null;if(o4()){console.log(n("autosummary.log.skippedInProgress","STMemoryBooks: Auto-summary skipped - memory creation in progress"));return}let X;if(V===null)X=G,console.log(n("autosummary.log.noPrevious","STMemoryBooks: No previous memories found - counting from start"));else X=J-V,console.log(n("autosummary.log.sinceLast","STMemoryBooks: Messages since last memory ({{highestProcessed}}): {{count}}",{highestProcessed:V,count:X}));if(console.log(n("autosummary.log.triggerCheck","STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?",{count:X,required:z})),X<z){console.log(n("autosummary.log.notTriggered","STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages",{needed:z-X}));return}if(Q.autoSummaryNextPromptAt&&G<Q.autoSummaryNextPromptAt){console.log(n("autosummary.log.postponedUntil","STMemoryBooks: Auto-summary postponed until message {{until}}",{until:Q.autoSummaryNextPromptAt}));return}let j=await $G();if(!j.valid){console.log(n("autosummary.log.blocked","STMemoryBooks: Auto-summary blocked - lorebook validation failed: {{error}}",{error:j.error}));return}if(Q.autoSummaryNextPromptAt)delete Q.autoSummaryNextPromptAt,Q1(),console.log(n("autosummary.log.clearedPostpone","STMemoryBooks: Cleared auto-summary postpone flag"));let F,K,H=J-Y,B=Math.max(0,H);if(V===null)F=0,K=B;else F=V+1,K=B;if(F>K)return;console.log(n("autosummary.log.triggered","STMemoryBooks: Auto-summary triggered - creating memory for range {{start}}-{{end}}",{start:F,end:K})),Q.sceneStart=F,Q.sceneEnd=K,Q1();let{executeSlashCommands:A}=await import("../../../slash-commands.js");await A("/creatememory")}catch(Z){console.error(n("autosummary.log.triggerError","STMemoryBooks: Error in auto-summary trigger check:"),Z)}}async function p4(){try{let Z=e0();if(!Z.isGroupChat&&w8.STMemoryBooks.moduleSettings.autoSummaryEnabled){let Q=W6.length;console.log(n("autosummary.log.messageReceivedSingle","STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: {{count}}",{count:Q})),await c4()}else if(Z.isGroupChat)console.log(n("autosummary.log.messageReceivedGroup","STMemoryBooks: Message received in group chat - deferring to GROUP_WRAPPER_FINISHED"))}catch(Z){console.error(n("autosummary.log.messageHandlerError","STMemoryBooks: Error in auto-summary message received handler:"),Z)}}async function i4(){try{if(w8.STMemoryBooks.moduleSettings.autoSummaryEnabled){let Z=W6.length;console.log(n("autosummary.log.groupFinished","STMemoryBooks: Group conversation finished - auto-summary enabled, current count: {{count}}",{count:Z})),await c4()}}catch(Z){console.error(n("autosummary.log.groupHandlerError","STMemoryBooks: Error in auto-summary group finished handler:"),Z)}}function l4(){if(w8.STMemoryBooks?.moduleSettings?.autoSummaryEnabled)p0()}v1();import{saveSettingsDebounced as I8}from"../../../../script.js";import{Popup as q6,POPUP_TYPE as Y8,POPUP_RESULT as q0}from"../../../popup.js";import{moment as n4,Handlebars as WG,DOMPurify as s4}from"../../../../lib.js";i8();import{t as GZ,translate as y}from"../../../i18n.js";var T1="STMemoryBooks-ProfileManager",r4=WG.compile(`
+<div class="popup-content">
+    <div class="world_entry_form_control marginTop5">
+        <label for="stmb-profile-name">
+            <h4 data-i18n="STMemoryBooks_ProfileName">Profile Name:</h4>
+            <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ProfileNamePlaceholder" placeholder="Profile name">
+        </label>
+    </div>
+
+
+    <div class="world_entry_form_control marginTop5">
+        <h4 data-i18n="STMemoryBooks_ModelAndTempSettings">Model & Temperature Settings:</h4>
+        <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_ModelHint">
+            For model, copy-paste the exact model ID, eg. <code>gemini-2.5-pro</code>, <code>deepseek/deepseek-r1-0528:free</code>, <code>gpt-4o-mini-2024-07-18</code>, etc.
+        </div>
+
+        <label for="stmb-profile-api">
+            <h4 data-i18n="STMemoryBooks_APIProvider">API/Provider:</h4>
+            <select id="stmb-profile-api" class="text_pole" {{#if isProviderLocked}}disabled title="Provider locked for this profile"{{/if}}>
+                <option value="current_st" {{#if (eq connection.api "current_st")}}selected{{/if}} data-i18n="STMemoryBooks_CurrentSTSettings">Current SillyTavern Settings</option>
+
+                <option value="openai" {{#if (eq connection.api "openai")}}selected{{/if}}>OpenAI</option>
+                <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Claude</option>
+                <option value="openrouter" {{#if (eq connection.api "openrouter")}}selected{{/if}}>OpenRouter</option>
+                <option value="ai21" {{#if (eq connection.api "ai21")}}selected{{/if}}>AI21</option>
+                <option value="makersuite" {{#if (eq connection.api "makersuite")}}selected{{/if}}>Google AI Studio</option>
+                <option value="vertexai" {{#if (eq connection.api "vertexai")}}selected{{/if}}>Vertex AI</option>
+                <option value="mistralai" {{#if (eq connection.api "mistralai")}}selected{{/if}}>MistralAI</option>
+                <option value="custom" {{#if (eq connection.api "custom")}}selected{{/if}} data-i18n="STMemoryBooks_CustomAPI">Custom API</option>
+                <option value="cohere" {{#if (eq connection.api "cohere")}}selected{{/if}}>Cohere</option>
+                <option value="perplexity" {{#if (eq connection.api "perplexity")}}selected{{/if}}>Perplexity</option>
+                <option value="groq" {{#if (eq connection.api "groq")}}selected{{/if}}>Groq</option>
+                <option value="electronhub" {{#if (eq connection.api "electronhub")}}selected{{/if}}>Electron Hub</option>
+                <option value="nanogpt" {{#if (eq connection.api "nanogpt")}}selected{{/if}}>NanoGPT</option>
+                <option value="deepseek" {{#if (eq connection.api "deepseek")}}selected{{/if}}>DeepSeek</option>
+                <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
+                <option value="xai" {{#if (eq connection.api "xai")}}selected{{/if}}>xAI</option>
+                <option value="pollinations" {{#if (eq connection.api "pollinations")}}selected{{/if}}>Pollinations</option>
+                <option value="moonshot" {{#if (eq connection.api "moonshot")}}selected{{/if}}>Moonshot</option>
+                <option value="fireworks" {{#if (eq connection.api "fireworks")}}selected{{/if}}>Fireworks</option>
+                <option value="cometapi" {{#if (eq connection.api "cometapi")}}selected{{/if}}>Comet API</option>
+                <option value="azure_openai" {{#if (eq connection.api "azure_openai")}}selected{{/if}}>Azure OpenAI</option>
+                <option value="zai" {{#if (eq connection.api "zai")}}selected{{/if}}>Z.AI</option>
+                <option value="siliconflow" {{#if (eq connection.api "siliconflow")}}selected{{/if}}>SiliconFlow</option>
+
+                <option value="full-manual" {{#if (eq connection.api "full-manual")}}selected{{/if}} title="⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option." data-i18n="STMemoryBooks_FullManualConfig">Full Manual Configuration</option>
+            </select>
+        </label>
+
+        <label for="stmb-profile-model">
+            <h4 data-i18n="STMemoryBooks_Model">Model:</h4>
+            <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ModelPlaceholder" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
+        </label>
+
+        <label for="stmb-profile-temperature">
+            <h4 data-i18n="STMemoryBooks_TemperatureRange">Temperature (0.0 - 2.0):</h4>
+            <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" data-i18n="[placeholder]STMemoryBooks_TemperaturePlaceholder" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8." {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
+        </label>
+
+        <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
+            <label for="stmb-profile-endpoint">
+                <h4 data-i18n="STMemoryBooks_APIEndpointURL">API Endpoint URL:</h4>
+                <input type="text" id="stmb-profile-endpoint" value="{{connection.endpoint}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIEndpointPlaceholder" placeholder="https://api.example.com/v1/chat/completions">
+            </label>
+
+            <label for="stmb-profile-apikey">
+                <h4 data-i18n="STMemoryBooks_APIKey">API Key:</h4>
+                <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIKeyPlaceholder" placeholder="Enter your API key">
+            </label>
+        </div>
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <label for="stmb-profile-preset">
+            <h4 data-i18n="STMemoryBooks_Profile_MemoryMethod">Memory Creation Method:</h4>
+            <small data-i18n="STMemoryBooks_Profile_PresetSelectDesc">Choose a summary prompt. Edit or create custom prompts in the Summary Prompt Manager to see them in this list.</small>
+            <select id="stmb-profile-preset" class="text_pole">
+                {{#each presetOptions}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
+                {{/each}}
+            </select>
+        </label>
+        {{#if hasLegacyCustomPrompt}}
+        <div id="stmb-legacy-custom-prompt" class="displayNone">{{prompt}}</div>
+        {{/if}}
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <div class="buttons_block justifyCenter gap10px whitespacenowrap">
+            <div id="stmb-open-prompt-manager" class="menu_button interactable" data-i18n="STMemoryBooks_OpenPromptManager">\uD83E\uDDE9 Open Summary Prompt Manager</div>
+            <div id="stmb-refresh-presets" class="menu_button interactable" data-i18n="STMemoryBooks_RefreshPresets">\uD83D\uDD04 Refresh Presets</div>
+            {{#if hasLegacyCustomPrompt}}
+            <div id="stmb-move-to-preset" class="menu_button interactable" data-i18n="STMemoryBooks_MoveToPreset">\uD83D\uDCCC Move Current Custom Prompt to Preset</div>
+            {{/if}}
+        </div>
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <h4 data-i18n="STMemoryBooks_TitleFormat">Memory Title Format:</h4>
+        <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], etc. for numbering. Available tags: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}</small>
+        <select id="stmb-profile-title-format-select" class="text_pole">
+            {{#each titleFormats}}
+            <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
+            {{/each}}
+            <option value="custom" data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
+        </select>
+        <input type="text" id="stmb-profile-custom-title-format" class="text_pole marginTop5 {{#unless showCustomTitleInput}}displayNone{{/unless}}"
+            data-i18n="[placeholder]STMemoryBooks_EnterCustomFormat" placeholder="Enter custom format" value="{{titleFormat}}">
+    </div>
+    <hr>
+    <h4 data-i18n="STMemoryBooks_LorebookEntrySettings">Lorebook Entry Settings</h4>
+    <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_LorebookEntrySettingsDesc">
+        These settings control how the generated memory is saved into the lorebook.
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <label for="stmb-profile-const-vect">
+            <h4 data-i18n="STMemoryBooks_ActivationMode">Activation Mode:</h4>
+            <small data-i18n="STMemoryBooks_ActivationModeDesc">\uD83D\uDD17 Vectorized is recommended for memories.</small>
+            <select id="stmb-profile-const-vect" class="text_pole">
+                <option value="link" {{#if (eq constVectMode "link")}}selected{{/if}} data-i18n="STMemoryBooks_Vectorized">\uD83D\uDD17 Vectorized (Default)</option>
+                <option value="blue" {{#if (eq constVectMode "blue")}}selected{{/if}} data-i18n="STMemoryBooks_Constant">\uD83D\uDD35 Constant</option>
+                <option value="green" {{#if (eq constVectMode "green")}}selected{{/if}} data-i18n="STMemoryBooks_Normal">\uD83D\uDFE2 Normal</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <label for="stmb-profile-position">
+            <h4 data-i18n="STMemoryBooks_InsertionPosition">Insertion Position:</h4>
+            <small data-i18n="STMemoryBooks_InsertionPositionDesc">↑Char is recommended. Aiko recommends memories never go lower than ↑AN.</small>
+            <select id="stmb-profile-position" class="text_pole">
+                <option value="0" {{#if (eq position 0)}}selected{{/if}} data-i18n="STMemoryBooks_CharUp">↑Char</option>
+                <option value="1" {{#if (eq position 1)}}selected{{/if}} data-i18n="STMemoryBooks_CharDown">↓Char</option>
+                <option value="5" {{#if (eq position 5)}}selected{{/if}} data-i18n="STMemoryBooks_EMUp">↑EM</option>
+                <option value="6" {{#if (eq position 6)}}selected{{/if}} data-i18n="STMemoryBooks_EMDown">↓EM</option>
+                <option value="2" {{#if (eq position 2)}}selected{{/if}} data-i18n="STMemoryBooks_ANUp">↑AN</option>
+                <option value="3" {{#if (eq position 3)}}selected{{/if}} data-i18n="STMemoryBooks_ANDown">↓AN</option>
+                <option value="7" {{#if (eq position 7)}}selected{{/if}} data-i18n="STMemoryBooks_Outlet">Outlet</option>
+            </select>
+        </label>
+    </div>
+
+    <div id="stmb-profile-outlet-name-container" class="world_entry_form_control marginTop5 {{#unless (eq position 7)}}displayNone{{/unless}}">
+        <label for="stmb-profile-outlet-name">
+            <h4 data-i18n="STMemoryBooks_OutletName">Outlet Name:</h4>
+            <input type="text" id="stmb-profile-outlet-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_OutletNamePlaceholder" placeholder="Outlet name" value="{{outletName}}">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <h4 data-i18n="STMemoryBooks_InsertionOrder">Insertion Order:</h4>
+        <div class="buttons_block justifyCenter gap10px">
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> <span data-i18n="STMemoryBooks_AutoOrder">Auto (uses memory #)</span></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ManualOrder">Manual</span> <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
+        </div>
+    </div>
+
+    <div class="world_entry_form_control marginTop5">
+        <h4 data-i18n="STMemoryBooks_RecursionSettings">Recursion Settings:</h4>
+        <div class="buttons_block justifyCenter">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-profile-prevent-recursion" {{#if preventRecursion}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_PreventRecursion">Prevent Recursion</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-profile-delay-recursion" {{#if delayUntilRecursion}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_DelayUntilRecursion">Delay Until Recursion</span>
+            </label>
+        </div>
+    </div>
+</div>
+`);async function a4(Z,Q,G){let J=Z.profiles[Q];if(!J){console.error(`${T1}: No profile found at index ${Q}`);return}try{let W=l();await r0(Z);let Y=(await O0()).map((B)=>({value:B.key,displayName:B.displayName,selected:B.key===(J.preset||"")})),z=J.connection||{temperature:0.7},V=J.titleFormat||Z.titleFormat||"[000] - {{title}}",X=W0(),j={name:J.name,connection:z,api:"openai",prompt:J.prompt||"",preset:J.preset||"",currentApi:W.api||"Unknown",presetOptions:Y,isProviderLocked:J.name==="Current SillyTavern Settings",titleFormat:V,titleFormats:X.map((B)=>({value:B,isSelected:B===V})),showCustomTitleInput:!X.includes(V),constVectMode:J.constVectMode,position:J.position,orderMode:J.orderMode,orderValue:J.orderValue,preventRecursion:J.preventRecursion,delayUntilRecursion:J.delayUntilRecursion,outletName:J.outletName||"",hasLegacyCustomPrompt:J.prompt&&J.prompt.trim()?!0:!1},F=s4.sanitize(r4(j)),K=new q6(`<h3>${y("Edit Profile","STMemoryBooks_ProfileEditTitle")}</h3>${F}`,Y8.TEXT,"",{okButton:y("Save","STMemoryBooks_Save"),cancelButton:y("Cancel/Close","STMemoryBooks_CancelClose"),wide:!0,large:!0,allowVerticalScrolling:!0});if(G5(K,Z),await K.show()===q0.AFFIRMATIVE){let B=J5(K.dlg,J.name);if(!Q8(B)){toastr.error(y("Invalid profile data","STMemoryBooks_InvalidProfileData"),"STMemoryBooks");return}if(Z.profiles[Q]=B,I8(),G)G();toastr.success(y("Profile updated successfully","STMemoryBooks_ProfileUpdatedSuccess"),"STMemoryBooks")}}catch(W){console.error(`${T1}: Error editing profile:`,W),toastr.error(y("Failed to edit profile","STMemoryBooks_FailedToEditProfile"),"STMemoryBooks")}}async function t4(Z,Q){try{let G=Z.profiles.map((H)=>H.name),J=N0("New Profile",G),W=l(),q=Z.titleFormat||"[000] - {{title}}",Y=W0();await r0(Z);let V=(await O0()).map((H)=>({value:H.key,displayName:H.displayName,selected:!1})),X={name:J,connection:{temperature:0.7},api:"",prompt:"",preset:"",currentApi:W.api||"Unknown",presetOptions:V,isProviderLocked:J==="Current SillyTavern Settings",titleFormat:q,titleFormats:Y.map((H)=>({value:H,isSelected:H===q})),showCustomTitleInput:!Y.includes(q),constVectMode:"link",position:0,orderMode:"auto",orderValue:100,preventRecursion:!1,delayUntilRecursion:!0,outletName:""},j=s4.sanitize(r4(X)),F=new q6(`<h3>${y("New Profile","STMemoryBooks_NewProfileTitle")}</h3>${j}`,Y8.TEXT,"",{okButton:y("Create","STMemoryBooks_Create"),cancelButton:y("Cancel/Close","STMemoryBooks_CancelClose"),wide:!0,large:!0,allowVerticalScrolling:!0});if(G5(F,Z),await F.show()===q0.AFFIRMATIVE){let H=J5(F.dlg,J),B=N0(H.name,G);if(H.name=B,!Q8(H)){toastr.error(y("Invalid profile data","STMemoryBooks_InvalidProfileData"),"STMemoryBooks");return}if(Z.profiles.push(H),I8(),Q)Q();toastr.success(y("Profile created successfully","STMemoryBooks_ProfileCreatedSuccess"),"STMemoryBooks")}}catch(G){console.error(`${T1}: Error creating profile:`,G),toastr.error(y("Failed to create profile","STMemoryBooks_FailedToCreateProfile"),"STMemoryBooks")}}async function e4(Z,Q,G){if(Z.profiles.length<=1){toastr.error(y("Cannot delete the last profile","STMemoryBooks_CannotDeleteLastProfile"),"STMemoryBooks");return}let J=Z.profiles[Q];if(J?.name==="Current SillyTavern Settings"){toastr.error(y('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work',"STMemoryBooks_CannotDeleteDefaultProfile"),"STMemoryBooks");return}try{let W=y('Delete profile "{{name}}"?',"STMemoryBooks_DeleteProfileConfirm").replace("{{name}}",J.name);if(await new q6(W,Y8.CONFIRM,"").show()===q0.AFFIRMATIVE){let Y=J.name;if(Z.profiles.splice(Q,1),Z.defaultProfile===Q)Z.defaultProfile=0;else if(Z.defaultProfile>Q)Z.defaultProfile--;if(I8(),G)G();toastr.success(y("Profile deleted successfully","STMemoryBooks_ProfileDeletedSuccess"),"STMemoryBooks")}}catch(W){console.error(`${T1}: Error deleting profile:`,W),toastr.error(y("Failed to delete profile","STMemoryBooks_FailedToDeleteProfile"),"STMemoryBooks")}}function Z5(Z){try{let Q={profiles:Z.profiles,exportDate:n4().toISOString(),version:1,moduleVersion:Z.migrationVersion||1},G=JSON.stringify(Q,null,2),J=new Blob([G],{type:"application/json"}),W=document.createElement("a");W.href=URL.createObjectURL(J),W.download=`stmemorybooks-profiles-${n4().format("YYYY-MM-DD")}.json`,document.body.appendChild(W),W.click(),document.body.removeChild(W),setTimeout(()=>URL.revokeObjectURL(W.href),1000),toastr.success(y("Profiles exported successfully","STMemoryBooks_ProfilesExportedSuccess"),"STMemoryBooks")}catch(Q){console.error(`${T1}: Error exporting profiles:`,Q),toastr.error(y("Failed to export profiles","STMemoryBooks_FailedToExportProfiles"),"STMemoryBooks")}}function qG(Z){return D0(Z)}function Q5(Z,Q,G){let J=Z.target.files[0];if(!J)return;let W=new FileReader;W.onload=function(q){try{let Y=JSON.parse(q.target.result);if(!Y.profiles||!Array.isArray(Y.profiles))throw Error(y("Invalid profile data format - missing profiles array","STMemoryBooks_ImportErrorInvalidFormat"));let z=Y.profiles.filter((F)=>Q8(F)).map((F)=>qG(F));if(z.length===0)throw Error(y("No valid profiles found in import file","STMemoryBooks_ImportErrorNoValidProfiles"));let V=0,X=0,j=Q.profiles.map((F)=>F.name);if(z.forEach((F)=>{if(!j.includes(F.name)){let H=N0(F.name,j);F.name=H,j.push(H),Q.profiles.push(F),V++}else X++}),V>0){if(I8(),G)G();let F=GZ`Imported ${V} profile${V===1?"":"s"}`;if(X>0)F+=GZ` (${X} duplicate${X===1?"":"s"} skipped)`;toastr.success(F,y("STMemoryBooks profile import completed","STMemoryBooks_ImportComplete"))}else toastr.warning(y("No new profiles imported - all profiles already exist","STMemoryBooks_ImportNoNewProfiles"),"STMemoryBooks")}catch(Y){console.error(`${T1}: Error importing profiles:`,Y),toastr.error(GZ`Failed to import profiles: ${Y.message}`,"STMemoryBooks")}},W.onerror=function(){console.error(`${T1}: Error reading import file`),toastr.error(y("Failed to read import file","STMemoryBooks_ImportReadError"),"STMemoryBooks")},W.readAsText(J),Z.target.value=""}function G5(Z,Q){let G=Z.dlg;G.querySelector("#stmb-open-prompt-manager")?.addEventListener("click",()=>{try{let q=document.querySelector("#stmb-prompt-manager");if(q)q.click();else toastr.error(y("Prompt Manager button not found. Open main settings and try again.","STMemoryBooks_PromptManagerNotFound"),"STMemoryBooks")}catch(q){console.error(`${T1}: Error opening prompt manager from profile editor:`,q),toastr.error(y("Failed to open Summary Prompt Manager","STMemoryBooks_FailedToOpenSummaryPromptManager"),"STMemoryBooks")}}),G.querySelector("#stmb-refresh-presets")?.addEventListener("click",async()=>{try{let q=G.querySelector("#stmb-profile-preset");if(!q)return;let Y=q.value,z=await O0();if(q.innerHTML="",z.forEach((V)=>{let X=document.createElement("option");if(X.value=V.key,X.textContent=V.displayName,V.key===Y)X.selected=!0;q.appendChild(X)}),![...q.options].some((V)=>V.value===Y)&&q.options.length>0)q.selectedIndex=0;toastr.success(y("Preset list refreshed","STMemoryBooks_PresetListRefreshed"),"STMemoryBooks")}catch(q){console.error(`${T1}: Error refreshing presets:`,q),toastr.error(y("Failed to refresh presets","STMemoryBooks_FailedToRefreshPresets"),"STMemoryBooks")}});let J=async()=>{try{let q=G.querySelector("#stmb-profile-preset");if(!q)return;let Y=q.value,z=await O0();if(q.innerHTML="",z.forEach((V)=>{let X=document.createElement("option");if(X.value=V.key,X.textContent=V.displayName,V.key===Y)X.selected=!0;q.appendChild(X)}),![...q.options].some((V)=>V.value===Y)&&q.options.length>0)q.selectedIndex=0}catch(q){console.error(`${T1}: Error auto-refreshing presets on update:`,q)}};window.addEventListener("stmb-presets-updated",J),Z?.dlg?.addEventListener("close",()=>{window.removeEventListener("stmb-presets-updated",J)}),G.querySelector("#stmb-move-to-preset")?.addEventListener("click",async()=>{try{let q=G.querySelector("#stmb-legacy-custom-prompt"),Y=q?q.textContent:"";if(!Y||!Y.trim()){toastr.error(t("STMemoryBooks_NoCustomPromptToMigrate","No custom prompt to migrate"),"STMemoryBooks");return}let X=`Custom: ${G.querySelector("#stmb-profile-name")?.value?.trim()||"Profile"}`,j=await T8(null,Y,X);if(await new q6(`<h3 data-i18n="STMemoryBooks_MoveToPresetConfirmTitle">Move to Preset</h3><p data-i18n="STMemoryBooks_MoveToPresetConfirmDesc">Create a preset from this profile's custom prompt, set the preset on this profile, and clear the custom prompt?</p>`,Y8.CONFIRM,"",{okButton:y("Apply","STMemoryBooks_Apply"),cancelButton:y("Cancel","STMemoryBooks_Cancel")}).show()===q0.AFFIRMATIVE){let H=G.querySelector("#stmb-profile-preset");if(H){if(![...H.options].some((B)=>B.value===j)){let B=document.createElement("option");B.value=j,B.textContent=X,H.appendChild(B)}H.value=j}q?.remove(),G.querySelector("#stmb-move-to-preset")?.remove(),toastr.success(y("Preset created and selected. Remember to Save.","STMemoryBooks_CustomPromptMigrated"),"STMemoryBooks")}}catch(q){console.error(`${T1}: Error moving custom prompt to preset:`,q),toastr.error(y("Failed to move custom prompt to preset","STMemoryBooks_FailedToMigrateCustomPrompt"),"STMemoryBooks")}}),G.querySelector("#stmb-profile-title-format-select")?.addEventListener("change",(q)=>{let Y=G.querySelector("#stmb-profile-custom-title-format");if(q.target.value==="custom")Y.classList.remove("displayNone"),Y.focus();else Y.classList.add("displayNone")}),G.querySelector("#stmb-profile-temperature")?.addEventListener("input",(q)=>{let Y=parseFloat(q.target.value);if(!isNaN(Y)){if(Y<0)q.target.value=0;if(Y>2)q.target.value=2}}),G.querySelector("#stmb-profile-model")?.addEventListener("input",(q)=>{q.target.value=q.target.value.replace(/[<>]/g,"")}),G.querySelector("#stmb-profile-api")?.addEventListener("change",(q)=>{let Y=G.querySelector("#stmb-full-manual-section"),z=G.querySelector("#stmb-profile-model"),V=G.querySelector("#stmb-profile-temperature");if(q.target.value==="full-manual")Y.classList.remove("displayNone");else Y.classList.add("displayNone");let X=q.target.value==="current_st";if(z)z.disabled=X,z.title=X?"Managed by SillyTavern UI":"";if(V)V.disabled=X,V.title=X?"Managed by SillyTavern UI":""}),G.querySelectorAll('input[name="order-mode"]').forEach((q)=>{q.addEventListener("change",(Y)=>{let z=G.querySelector("#stmb-profile-order-value");if(Y.target.value==="manual")z.classList.remove("displayNone");else z.classList.add("displayNone")})});let W=G.querySelector("#stmb-profile-position");W?.addEventListener("change",()=>{let q=G.querySelector("#stmb-profile-outlet-name-container");if(q)q.classList.toggle("displayNone",W.value!=="7")}),function(){let q=G.querySelector("#stmb-profile-outlet-name-container");if(W&&q)q.classList.toggle("displayNone",W.value!=="7")}();try{let q=G.querySelector('h4[data-i18n="STMemoryBooks_RecursionSettings"]'),Y=q?q.parentElement?.querySelector(".buttons_block"):null;if(Y&&!G.querySelector("#stmb-convert-existing-recursion")){let z=document.createElement("label");z.className="checkbox_label";let V=document.createElement("input");V.type="checkbox",V.id="stmb-convert-existing-recursion",V.checked=!!(Q&&Q.moduleSettings&&Q.moduleSettings.convertExistingRecursion);let X=document.createElement("span");X.textContent="Also convert recursion settings on existing entries";try{X.setAttribute("data-i18n","STMemoryBooks_ConvertExistingRecursion")}catch(j){}z.appendChild(V),z.appendChild(X),Y.appendChild(z),V.addEventListener("change",()=>{try{Q.moduleSettings=Q.moduleSettings||{},Q.moduleSettings.convertExistingRecursion=!!V.checked,I8()}catch(j){console.error(`${T1}: Failed to save convertExistingRecursion flag`,j)}})}}catch(q){console.warn(`${T1}: Failed to inject convertExistingRecursion checkbox`,q)}}function J5(Z,Q){let G={name:Z.querySelector("#stmb-profile-name")?.value.trim()||Q,api:Z.querySelector("#stmb-profile-api")?.value,model:Z.querySelector("#stmb-profile-model")?.value,temperature:Z.querySelector("#stmb-profile-temperature")?.value,endpoint:Z.querySelector("#stmb-profile-endpoint")?.value,apiKey:Z.querySelector("#stmb-profile-apikey")?.value,constVectMode:Z.querySelector("#stmb-profile-const-vect")?.value,position:Z.querySelector("#stmb-profile-position")?.value,orderMode:Z.querySelector('input[name="order-mode"]:checked')?.value,orderValue:Z.querySelector("#stmb-profile-order-value")?.value,preventRecursion:Z.querySelector("#stmb-profile-prevent-recursion")?.checked,delayUntilRecursion:Z.querySelector("#stmb-profile-delay-recursion")?.checked},J=Z.querySelector("#stmb-profile-preset");G.prompt="",G.preset=J?.value||"";let W=Z.querySelector("#stmb-profile-title-format-select");if(W?.value==="custom")G.titleFormat=Z.querySelector("#stmb-profile-custom-title-format")?.value;else if(W)G.titleFormat=W.value;if(G.position==="7"||G.position===7)G.outletName=Z.querySelector("#stmb-profile-outlet-name")?.value?.trim()||"";return D0(G)}function JZ(Z){let Q=[],G=[];if(!Z.profiles||!Array.isArray(Z.profiles))Z.profiles=[],G.push("Created empty profiles array");if(Z.profiles.length===0){let J=D0({name:"Current SillyTavern Settings",api:"current_st",preset:"summary"});Z.profiles.push(J),G.push('Added default profile using provider "Current SillyTavern Settings".')}if(Z.profiles=Z.profiles.map((J)=>{if(J&&J.useDynamicSTSettings)J.connection=J.connection||{},J.connection.api="current_st",delete J.useDynamicSTSettings,G.push(`Migrated legacy dynamic profile "${J.name}" to provider-based current_st`);return J}),Z.profiles.forEach((J,W)=>{if(!Q8(J)){if(Q.push(`Profile ${W} is invalid`),!J.name)J.name=`Profile ${W+1}`,G.push(`Fixed missing name for profile ${W}`);if(!J.connection)J.connection={},G.push(`Fixed missing connection for profile ${W}`)}if(J.constVectMode===void 0)J.constVectMode="link",G.push(`Added default 'constVectMode' to profile "${J.name}"`);if(J.position===void 0)J.position=0,G.push(`Added default 'position' to profile "${J.name}"`);if(J.orderMode===void 0)J.orderMode="auto",J.orderValue=100,G.push(`Added default 'order' settings to profile "${J.name}"`);if(J.preventRecursion===void 0)J.preventRecursion=!1,G.push(`Added default 'preventRecursion' to profile "${J.name}"`);if(J.delayUntilRecursion===void 0)J.delayUntilRecursion=!0,G.push(`Added default 'delayUntilRecursion' to profile "${J.name}"`);if(!J.titleFormat)J.titleFormat=Z.titleFormat||"[000] - {{title}}",G.push(`Added missing title format to profile "${J.name}"`)}),Z.defaultProfile>=Z.profiles.length)Z.defaultProfile=0,G.push("Fixed invalid default profile index");return{valid:Q.length===0,issues:Q,fixes:G,profileCount:Z.profiles.length}}i0();import{Handlebars as Y6}from"../../../../lib.js";var $Z=Y6.compile(`
+    <h3 data-i18n="STMemoryBooks_Settings">\uD83D\uDCD5 Memory Books Settings</h3>
+        {{#if hasScene}}
+        <div id="stmb-scene" class="padding10 marginBot10">
+            <div class="marginBot5" data-i18n="STMemoryBooks_CurrentScene">Current Scene:</div>
+            <div class="padding10 marginTop5 stmb-box">
+                <pre><code id="stmb-scene-block"><span data-i18n="STMemoryBooks_Start">Start</span>: <span data-i18n="STMemoryBooks_Message">Message</span> #{{sceneData.sceneStart}} ({{sceneData.startSpeaker}})
+{{sceneData.startExcerpt}}
+
+<span data-i18n="STMemoryBooks_End">End</span>: <span data-i18n="STMemoryBooks_Message">Message</span> #{{sceneData.sceneEnd}} ({{sceneData.endSpeaker}})
+{{sceneData.endExcerpt}}
+
+<span data-i18n="STMemoryBooks_Messages">Messages</span>: {{sceneData.messageCount}} | <span data-i18n="STMemoryBooks_EstimatedTokens">Estimated tokens</span>: {{sceneData.estimatedTokens}}</code></pre>
+            </div>
+        </div>
+        {{else}}
+        <div class="info-block warning">
+            <span data-i18n="STMemoryBooks_NoSceneMarkers">No scene markers set. Use the chevron buttons in chat messages to mark start (►) and end (◄) points.</span>
+        </div>
+        {{/if}}
+
+        {{#if highestMemoryProcessed}}
+        <div id="stmb-memory-status" class="info-block">
+            <span>\uD83D\uDCCA <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: <span data-i18n="STMemoryBooks_ProcessedUpTo">Processed up to message</span> #{{highestMemoryProcessed}}</span>
+        </div>
+        {{else}}
+        <div id="stmb-memory-status" class="info-block">
+            <span>\uD83D\uDCCA <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: <span data-i18n="STMemoryBooks_NoMemoriesProcessed">No memories have been processed for this chat yet</span> <small data-i18n="STMemoryBooks_SinceVersion">(since updating to version 3.6.2 or higher.)</small></span>
+            <br />
+            <small data-i18n="STMemoryBooks_AutoSummaryNote">Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.</small>
+        </div>
+        {{/if}}
+
+        <h4 data-i18n="STMemoryBooks_Preferences">Preferences:</h4>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_ShowMemoryPreviews">Show memory previews</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}} {{#if autoCreateLorebook}}disabled{{/if}}>
+                <span data-i18n="STMemoryBooks_EnableManualMode">Enable Manual Lorebook Mode</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_ManualModeDesc">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-auto-create-lorebook" {{#if autoCreateLorebook}}checked{{/if}} {{#if manualModeEnabled}}disabled{{/if}}>
+                <span data-i18n="STMemoryBooks_AutoCreateLorebook">Auto-create lorebook if none exists</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoCreateLorebookDesc">When enabled, automatically creates and binds a lorebook to the chat if none exists.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-lorebook-name-template">
+                <h4 data-i18n="STMemoryBooks_LorebookNameTemplate">Lorebook Name Template:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_LorebookNameTemplateDesc">Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.</small>
+                <input type="text" id="stmb-lorebook-name-template" class="text_pole"
+                    value="{{lorebookNameTemplate}}" data-i18n="[placeholder]STMemoryBooks_LorebookNameTemplatePlaceholder"
+                    placeholder="LTM - {{char}} - {{chat}}"
+                    {{#unless autoCreateLorebook}}disabled{{/unless}}>
+            </label>
+        </div>
+
+        <h4 data-i18n="STMemoryBooks_CurrentLorebookConfig">Current Lorebook Configuration</h4>
+
+        <div class="info-block">
+            <small class="opacity50p" data-i18n="STMemoryBooks_Mode">Mode:</small>
+            <h5 id="stmb-mode-badge">{{lorebookMode}}</h5>
+
+            <small class="opacity50p" data-i18n="STMemoryBooks_ActiveLorebook">Active Lorebook:</small>
+            <h5 id="stmb-active-lorebook" class="{{#unless currentLorebookName}}opacity50p{{/unless}}">
+                {{#if currentLorebookName}}
+                    {{currentLorebookName}}
+                {{else}}
+                    <span data-i18n="STMemoryBooks_NoneSelected">None selected</span>
+                {{/if}}
+            </h5>
+
+            <div id="stmb-manual-controls" style="display: {{#if manualModeEnabled}}block{{else}}none{{/if}};">
+                <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-manual-lorebook-buttons">
+                    <!-- Manual lorebook buttons will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <div id="stmb-automatic-info" class="marginTop5" style="display: {{#if manualModeEnabled}}none{{else}}block{{/if}};">
+                <small class="opacity50p">
+                    {{#if chatBoundLorebookName}}
+                        <span data-i18n="STMemoryBooks_UsingChatBound">Using chat-bound lorebook</span> "{{chatBoundLorebookName}}"
+                    {{else}}
+                        <span data-i18n="STMemoryBooks_NoChatBound">No chat-bound lorebook. Memories will require lorebook selection.</span>
+                    {{/if}}
+                </small>
+            </div>
+        </div>
+
+        <hr class="marginTop10 marginBot10">
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_AllowSceneOverlap">Allow scene overlap</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AllowSceneOverlapDesc">Check this box to skip checking for overlapping memories/scenes.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_RefreshEditor">Refresh lorebook editor after adding memories</span>
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc">Automatically run /nextmemory after a specified number of messages.</small>            
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-auto-summary-interval">
+                <h4 data-i18n="STMemoryBooks_AutoSummaryInterval">Auto-Summary Interval:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryIntervalDesc">Number of messages after which to automatically create a memory summary.</small>
+                <input type="number" id="stmb-auto-summary-interval" class="text_pole"
+                    value="{{autoSummaryInterval}}" min="10" max="200" step="1"
+                    data-i18n="[placeholder]STMemoryBooks_DefaultInterval" placeholder="50">
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-auto-summary-buffer">
+                <h4 data-i18n="STMemoryBooks_AutoSummaryBuffer">Auto-Summary Buffer:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryBufferDesc">Delay auto-summary by X messages (belated generation). Default 2, max 50.</small>
+                <input type="number" id="stmb-auto-summary-buffer" class="text_pole"
+                    value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0">
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-default-memory-count">
+                <h4 data-i18n="STMemoryBooks_DefaultMemoryCount">Default Previous Memories Count:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_DefaultMemoryCountDesc">Default number of previous memories to include as context when creating new memories.</small>
+                <select id="stmb-default-memory-count" class="text_pole">
+                    <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount0">None (0 memories)</option>
+                    <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount1">Last 1 memory</option>
+                    <option value="2" {{#if (eq defaultMemoryCount 2)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount2">Last 2 memories</option>
+                    <option value="3" {{#if (eq defaultMemoryCount 3)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount3">Last 3 memories</option>
+                    <option value="4" {{#if (eq defaultMemoryCount 4)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount4">Last 4 memories</option>
+                    <option value="5" {{#if (eq defaultMemoryCount 5)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount5">Last 5 memories</option>
+                    <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount6">Last 6 memories</option>
+                    <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount7">Last 7 memories</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-auto-hide-mode">
+                <h4 data-i18n="STMemoryBooks_AutoHideMode">Auto-hide messages after adding memory:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_AutoHideModeDesc">Choose what messages to automatically hide after creating a memory.</small>
+                <select id="stmb-auto-hide-mode" class="text_pole">
+                    <option value="none" {{#if (eq autoHideMode "none")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideNone">Do not auto-hide</option>
+                    <option value="all" {{#if (eq autoHideMode "all")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideAll">Auto-hide all messages up to the last memory</option>
+                    <option value="last" {{#if (eq autoHideMode "last")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideLast">Auto-hide only messages in the last memory</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-unhidden-entries-count">
+                <h4 data-i18n="STMemoryBooks_UnhiddenCount">Messages to leave unhidden:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_UnhiddenCountDesc">Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)</small>
+                <input type="number" id="stmb-unhidden-entries-count" class="text_pole"
+                    value="{{unhiddenEntriesCount}}" min="0" max="50" step="1"
+                    data-i18n="[placeholder]STMemoryBooks_DefaultUnhidden" placeholder="2">
+            </label>
+        </div>
+        
+        <div class="world_entry_form_control">
+            <label for="stmb-token-warning-threshold">
+                <h4 data-i18n="STMemoryBooks_TokenWarning">Token Warning Threshold:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_TokenWarningDesc">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
+                <input type="number" id="stmb-token-warning-threshold" class="text_pole"
+                    value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
+                    data-i18n="[placeholder]STMemoryBooks_DefaultTokenWarning" placeholder="30000">
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
+            <h4 data-i18n="STMemoryBooks_TitleFormat">Memory Title Format:</h4>
+            <select id="stmb-title-format-select" class="text_pole">
+                {{#each titleFormats}}
+                <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
+                {{/each}}
+                <option value="custom" data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
+            </select>
+            <input type="text" id="stmb-custom-title-format" class="text_pole marginTop5 {{#unless showCustomInput}}displayNone{{/unless}}"
+                data-i18n="[placeholder]STMemoryBooks_EnterCustomFormat" placeholder="Enter custom format" value="{{titleFormat}}">
+            <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, &#123;&#123;char}}, &#123;&#123;user}}, {{messages}}, {{profile}}, &#123;&#123;date}}, &#123;&#123;time}}</small>
+        </div>
+
+        <div class="world_entry_form_control" class="flex-container">
+            <div class="flex flexFlowRow alignItemsBaseline">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
+                    <span data-i18n="STMemoryBooks_UseRegexAdvanced">Use regex (advanced)</span>
+                </label>
+            </div>
+            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}" data-i18n="STMemoryBooks_ConfigureRegex">
+                    \uD83D\uDCD0 Configure regex…
+                </button>
+            </div>
+            <small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <h4 data-i18n="STMemoryBooks_Profiles">Memory Profiles:</h4>
+            <select id="stmb-profile-select" class="text_pole">
+                {{#each profiles}}
+                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
+                {{/each}}
+            </select>
+        </div>
+
+        <div id="stmb-profile-summary" class="padding10 marginBot10">
+            <div class="marginBot5" data-i18n="STMemoryBooks_ProfileSettings">Profile Settings:</div>
+            <div><span data-i18n="STMemoryBooks_Provider">Provider</span>: <span id="stmb-summary-api">{{selectedProfile.connection.api}}</span></div>
+            <div><span data-i18n="STMemoryBooks_Model">Model</span>: <span id="stmb-summary-model">{{selectedProfile.connection.model}}</span></div>
+            <div><span data-i18n="STMemoryBooks_Temperature">Temperature</span>: <span id="stmb-summary-temp">{{selectedProfile.connection.temperature}}</span></div>
+            <div><span data-i18n="STMemoryBooks_TitleFormat">Title Format</span>: <span id="stmb-summary-title">{{selectedProfile.titleFormat}}</span></div>
+            <details class="marginTop10">
+                <summary data-i18n="STMemoryBooks_ViewPrompt">View Prompt</summary>
+                <div class="padding10 marginTop5 stmb-box">
+                    <pre><code id="stmb-summary-prompt">{{selectedProfile.effectivePrompt}}</code></pre>
+                </div>
+            </details>
+        </div>
+
+        <h4 data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-profile-buttons">
+            <!-- Profile buttons will be dynamically inserted here -->
+        </div>
+
+        <h4 data-i18n="STMemoryBooks_extraFunctionButtons">Extra Function Buttons:</h4>
+        <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-extra-function-buttons">
+            <!-- extra function buttons will be dynamically inserted here -->
+        </div>
+
+        <div class="info-block">
+            <h4 data-i18n="STMemoryBooks_promptManagerButtons">Prompt Managers</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_PromptManagerButtonsHint">Want to tweak things? Use the buttons below to customize each prompt type.</small>
+            <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-prompt-manager-buttons">
+                <!-- prompt manager buttons will be dynamically inserted here -->
+            </div>
+        </div>
+
+`),$5=Y6.compile(`
+    <h3 data-i18n="STMemoryBooks_CreateMemory">Create Memory</h3>
+    <div id="stmb-scene" class="padding10 marginBot10">
+        <div class="marginBot5" data-i18n="STMemoryBooks_ScenePreview">Scene Preview:</div>
+        <div class="padding10 marginTop5 stmb-box">
+            <pre><code id="stmb-scene-block"><span data-i18n="STMemoryBooks_Start">Start</span>: <span data-i18n="STMemoryBooks_Message">Message</span> #{{sceneStart}} ({{startSpeaker}})
+{{startExcerpt}}
+
+<span data-i18n="STMemoryBooks_End">End</span>: <span data-i18n="STMemoryBooks_Message">Message</span> #{{sceneEnd}} ({{endSpeaker}})
+{{endExcerpt}}
+
+<span data-i18n="STMemoryBooks_Messages">Messages</span>: {{messageCount}} | <span data-i18n="STMemoryBooks_EstimatedTokens">Estimated tokens</span>: {{estimatedTokens}}</code></pre>
+        </div>
+    </div>
+
+    <div class="world_entry_form_control">
+        <h5><span data-i18n="STMemoryBooks_UsingProfile">Using Profile</span>: <span class="success">{{profileName}}</span></h5>
+
+        <div id="stmb-profile-summary" class="padding10 marginBot10">
+            <div class="marginBot5" data-i18n="STMemoryBooks_ProfileSettings">Profile Settings:</div>
+            <div><span data-i18n="STMemoryBooks_Model">Model</span>: <span id="stmb-summary-model">{{profileModel}}</span></div>
+            <div><span data-i18n="STMemoryBooks_Temperature">Temperature</span>: <span id="stmb-summary-temp">{{profileTemperature}}</span></div>
+            <details class="marginTop10">
+                <summary data-i18n="STMemoryBooks_ViewPrompt">View Prompt</summary>
+                <div class="padding10 marginTop5 stmb-box">
+                    <pre><code id="stmb-summary-prompt">{{effectivePrompt}}</code></pre>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    {{#if showWarning}}
+    <div class="info-block warning marginTop10">
+        ⚠️ <span data-i18n="STMemoryBooks_LargeSceneWarning">Large scene</span> ({{estimatedTokens}} tokens) <span data-i18n="STMemoryBooks_MayTakeTime">may take some time to process.</span>
+    </div>
+    {{/if}}
+
+    <div class="marginTop10 opacity50p fontsize90p" data-i18n="STMemoryBooks_AdvancedOptionsHint">
+        Click "Advanced Options" to customize prompt, context memories, or API settings.
+    </div>
+`),W5=Y6.compile(`
+    <h3 data-i18n="STMemoryBooks_AdvancedOptions">Advanced Memory Options</h3>
+    <div class="world_entry_form_control">
+        <h4 data-i18n="STMemoryBooks_SceneInformation">Scene Information:</h4>
+        <div class="padding10 marginBot15" style="background-color: var(--SmartThemeBlurTintColor); border-radius: 5px;">
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Messages">Messages</span> {{sceneStart}}-{{sceneEnd}} ({{messageCount}} <span data-i18n="STMemoryBooks_Total">total</span>)</div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_BaseTokens">Base tokens</span>: {{estimatedTokens}}</div>
+            <div class="fontsize90p" id="stmb-total-tokens-display"><span data-i18n="STMemoryBooks_TotalTokens">Total tokens</span>: {{estimatedTokens}}</div>
+        </div>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-profile-select-advanced">
+            <h4 data-i18n="STMemoryBooks_Profile">Profile:</h4>
+            <small data-i18n="STMemoryBooks_ChangeProfileDesc">Change the profile to use different base settings.</small>
+            <select id="stmb-profile-select-advanced" class="text_pole">
+                {{#each profiles}}
+                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
+                {{/each}}
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-effective-prompt-advanced">
+            <h4 data-i18n="STMemoryBooks_MemoryCreationPrompt">Memory Creation Prompt:</h4>
+            <small data-i18n="STMemoryBooks_CustomizePromptDesc">Customize the prompt used to generate this memory.</small>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-effective-prompt-advanced" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+            <textarea id="stmb-effective-prompt-advanced" class="text_pole textarea_compact" rows="6" data-i18n="[placeholder]STMemoryBooks_MemoryPromptPlaceholder" placeholder="Memory creation prompt">{{effectivePrompt}}</textarea>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-context-memories-advanced">
+            <h4 data-i18n="STMemoryBooks_IncludePreviousMemories">Include Previous Memories as Context:</h4>
+            <small>
+                <span data-i18n="STMemoryBooks_PreviousMemoriesDesc">Previous memories provide context for better continuity.</span>
+                {{#if availableMemories}}
+                <br><span data-i18n="STMemoryBooks_Found">Found</span> {{availableMemories}} {{#if (eq availableMemories 1)}}<span data-i18n="STMemoryBooks_ExistingMemorySingular">existing memory in lorebook.</span>{{else}}<span data-i18n="STMemoryBooks_ExistingMemoriesPlural">existing memories in lorebook.</span>{{/if}}
+                {{else}}
+                <br><span data-i18n="STMemoryBooks_NoMemoriesFound">No existing memories found in lorebook.</span>
+                {{/if}}
+            </small>
+            <select id="stmb-context-memories-advanced" class="text_pole">
+                <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount0">None (0 memories)</option>
+                <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount1">Last 1 memory</option>
+                <option value="2" {{#if (eq defaultMemoryCount 2)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount2">Last 2 memories</option>
+                <option value="3" {{#if (eq defaultMemoryCount 3)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount3">Last 3 memories</option>
+                <option value="4" {{#if (eq defaultMemoryCount 4)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount4">Last 4 memories</option>
+                <option value="5" {{#if (eq defaultMemoryCount 5)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount5">Last 5 memories</option>
+                <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount6">Last 6 memories</option>
+                <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount7">Last 7 memories</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <h4 data-i18n="STMemoryBooks_APIOverride">API Override Settings:</h4>
+
+        <div class="padding10 marginBot10" style="background-color: var(--SmartThemeBlurTintColor); border-radius: 5px; filter: brightness(1.2);">
+            <div class="marginBot5" data-i18n="STMemoryBooks_ProfileSettings">Profile Settings:</div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Model">Model</span>: <span class="success" id="stmb-profile-model-display">{{profileModel}}</span></div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Temperature">Temperature</span>: <span class="success" id="stmb-profile-temp-display">{{profileTemperature}}</span></div>
+        </div>
+
+        <div class="padding10 marginBot10" style="background-color: var(--SmartThemeBlurTintColor); border-radius: 5px;">
+            <div class="marginBot5" data-i18n="STMemoryBooks_CurrentSTSettings">Current SillyTavern Settings:</div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Model">Model</span>: <span style="color: var(--SmartThemeQuoteColor);">{{currentModel}}</span></div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Temperature">Temperature</span>: <span style="color: var(--SmartThemeQuoteColor);">{{currentTemperature}}</span></div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_API">API</span>: <span style="color: var(--SmartThemeQuoteColor);">{{currentApi}}</span></div>
+        </div>
+
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-override-settings-advanced">
+            <span data-i18n="STMemoryBooks_UseCurrentSettings">Use current SillyTavern settings instead of profile settings</span>
+        </label>
+        <small class="opacity50p marginTop5" data-i18n="STMemoryBooks_OverrideDesc">
+            Override the profile's model and temperature with your current SillyTavern settings.
+        </small>
+    </div>
+
+    <div class="world_entry_form_control displayNone" id="stmb-save-profile-section-advanced">
+        <h4 data-i18n="STMemoryBooks_SaveAsNewProfile">Save as New Profile:</h4>
+        <label for="stmb-new-profile-name-advanced">
+            <h4 data-i18n="STMemoryBooks_ProfileName">Profile Name:</h4>
+            <small data-i18n="STMemoryBooks_SaveProfileDesc">Your current settings differ from the selected profile. Save them as a new profile.</small>
+            <input type="text" id="stmb-new-profile-name-advanced" class="text_pole" data-i18n="[placeholder]STMemoryBooks_EnterProfileName" placeholder="Enter new profile name" value="{{suggestedProfileName}}">
+        </label>
+    </div>
+
+    {{#if showWarning}}
+    <div class="info-block warning marginTop10" id="stmb-token-warning-advanced">
+        <span data-i18n="STMemoryBooks_LargeSceneWarningShort">⚠️ Large scene may take some time to process.</span>
+    </div>
+    {{/if}}
+`),q5=Y6.compile(`
+    <h3 data-i18n="STMemoryBooks_MemoryPreview">\uD83D\uDCD6 Memory Preview</h3>
+    <div class="world_entry_form_control">
+        <small class="marginBot10" data-i18n="STMemoryBooks_MemoryPreviewDesc">Review the generated memory below. You can edit the content while preserving the structure.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-preview-title">
+            <h4 data-i18n="STMemoryBooks_MemoryTitle">Memory Title:</h4>
+            <input type="text" id="stmb-preview-title" class="text_pole" value="{{#if title}}{{title}}{{else}}Memory{{/if}}" data-i18n="[placeholder]STMemoryBooks_MemoryTitlePlaceholder" placeholder="Memory title" {{#if titleReadonly}}readonly disabled{{/if}}>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-preview-content">
+            <h4 data-i18n="STMemoryBooks_MemoryContent">Memory Content:</h4>
+            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-preview-content" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+            <textarea id="stmb-preview-content" class="text_pole textarea_compact" rows="8" data-i18n="[placeholder]STMemoryBooks_MemoryContentPlaceholder" placeholder="Memory content">{{#if content}}{{content}}{{else}}{{/if}}</textarea>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-preview-keywords">
+            <h4 data-i18n="STMemoryBooks_Keywords">Keywords:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_KeywordsDesc">Separate keywords with commas</small>
+            <input type="text" id="stmb-preview-keywords" class="text_pole" value="{{#if keywordsText}}{{keywordsText}}{{else}}{{/if}}" data-i18n="[placeholder]STMemoryBooks_KeywordsPlaceholder" placeholder="keyword1, keyword2, keyword3">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <h4 data-i18n="STMemoryBooks_SceneInformation">Scene Information:</h4>
+        <div class="padding10 marginBot10 stmb-box">
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Messages">Messages</span>: {{#if sceneStart}}{{sceneStart}}{{else}}?{{/if}}-{{#if sceneEnd}}{{sceneEnd}}{{else}}?{{/if}} ({{#if messageCount}}{{messageCount}}{{else}}?{{/if}} <span data-i18n="STMemoryBooks_Total">total</span>)</div>
+            <div class="fontsize90p"><span data-i18n="STMemoryBooks_Profile">Profile</span>: {{#if profileName}}{{profileName}}{{else}}<span data-i18n="STMemoryBooks_UnknownProfile">Unknown Profile</span>{{/if}}</div>
+        </div>
+    </div>
+`);import{saveSettingsDebounced as YG}from"../../../../script.js";import{Popup as WZ,POPUP_TYPE as qZ,POPUP_RESULT as L0}from"../../../popup.js";import{DOMPurify as YZ}from"../../../../lib.js";import{translate as C}from"../../../i18n.js";import{loadWorldInfo as Y5}from"../../../world-info.js";v1();var M1="STMemoryBooks-ConfirmationPopup";function C0(Z,Q,G){let J=C(Q,Z);if(!G)return J;return J.replace(/{{\s*(\w+)\s*}}/g,(W,q)=>{let Y=G[q];return Y!==void 0&&Y!==null?String(Y):""})}var M0={ADVANCED:L0.CUSTOM1,SAVE_PROFILE:L0.CUSTOM2,EDIT:L0.CUSTOM3,RETRY:L0.CUSTOM4};async function z5(Z,Q,G,J,W,q=null){let Y=q!==null?q:Q.defaultProfile,z=Q.profiles[Y],V=await T0(z),X={...Z,profileName:z?.connection?.api==="current_st"?C("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):z.name,effectivePrompt:V,profileModel:z.useDynamicSTSettings||z?.connection?.api==="current_st"?C("Current SillyTavern model","STMemoryBooks_Label_CurrentSTModel"):z.connection?.model||C("Current SillyTavern model","STMemoryBooks_Label_CurrentSTModel"),profileTemperature:z.useDynamicSTSettings||z?.connection?.api==="current_st"?C("Current SillyTavern temperature","STMemoryBooks_Label_CurrentSTTemperature"):z.connection?.temperature!==void 0?z.connection.temperature:C("Current SillyTavern temperature","STMemoryBooks_Label_CurrentSTTemperature"),currentModel:G?.model||C("Unknown","common.unknown"),currentTemperature:G?.temperature??0.7,currentApi:J?.api||C("Unknown","common.unknown"),tokenThreshold:Q.moduleSettings.tokenWarningThreshold??30000,showWarning:Z.estimatedTokens>(Q.moduleSettings.tokenWarningThreshold??30000),profiles:Q.profiles.map((F,K)=>({...F,name:F?.connection?.api==="current_st"?C("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):F.name,isDefault:K===Q.defaultProfile,isSelected:K===Y}))},j=YZ.sanitize($5(X));try{let K=await new WZ(j,qZ.TEXT,"",{okButton:C("Create Memory","STMemoryBooks_CreateMemory"),cancelButton:C("Cancel","STMemoryBooks_Cancel"),allowVerticalScrolling:!0,wide:!1,customButtons:[{text:C("Advanced Options...","STMemoryBooks_Button_AdvancedOptions"),result:M0.ADVANCED,classes:["menu_button","whitespacenowrap"],action:null}]}).show();if(K===L0.AFFIRMATIVE)return{confirmed:!0,profileSettings:{...z,effectivePrompt:V},advancedOptions:{memoryCount:Q.moduleSettings.defaultMemoryCount??0,overrideSettings:!1}};else if(K===M0.ADVANCED)return await zG(Z,Q,z,G,J,W);return{confirmed:!1}}catch(F){return{confirmed:!1}}}async function zG(Z,Q,G,J,W,q){let Y=await UG(Q,q),z=await T0(G),V=G.connection?.model||C("Current SillyTavern model","STMemoryBooks_Label_CurrentSTModel"),X=G.connection?.temperature!==void 0?G.connection.temperature:C("Current SillyTavern temperature","STMemoryBooks_Label_CurrentSTTemperature"),j={...Z,availableMemories:Y,profiles:Q.profiles.map((K,H)=>({...K,name:K?.connection?.api==="current_st"?C("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):K.name,isDefault:H===Q.defaultProfile})),effectivePrompt:z,defaultMemoryCount:Q.moduleSettings.defaultMemoryCount??0,profileModel:V,profileTemperature:X,currentModel:J?.model||C("Unknown","common.unknown"),currentTemperature:J?.temperature??0.7,currentApi:W?.api||C("Unknown","common.unknown"),suggestedProfileName:C0("STMemoryBooks_ModifiedProfileName","{{name}} - Modified",{name:G.name}),tokenThreshold:Q.moduleSettings.tokenWarningThreshold??30000,showWarning:Z.estimatedTokens>(Q.moduleSettings.tokenWarningThreshold??30000)},F=YZ.sanitize(W5(j));try{let K=new WZ(F,qZ.TEXT,"",{okButton:C("Create Memory","STMemoryBooks_Button_CreateMemory"),cancelButton:C("Cancel","STMemoryBooks_Cancel"),wide:!0,large:!0,allowVerticalScrolling:!0,customButtons:[{text:C("Save as New Profile","STMemoryBooks_Button_SaveAsNewProfile"),result:M0.SAVE_PROFILE,classes:["menu_button","whitespacenowrap"],action:null}]});jG(K,Z,Q,G,q);let H=await K.show();if(H===L0.AFFIRMATIVE)return await XG(K,Q);else if(H===M0.SAVE_PROFILE)return await VG(K,Q);return{confirmed:!1}}catch(K){return{confirmed:!1}}}async function XG(Z,Q){let G=Z.dlg,J=Number(G.querySelector("#stmb-profile-select-advanced").value),W=G.querySelector("#stmb-effective-prompt-advanced")?.value,q=Number(G.querySelector("#stmb-context-memories-advanced").value),Y=G.querySelector("#stmb-override-settings-advanced")?.checked||!1;if(Z.dlg.querySelector(".popup_button_ok")?.dataset.shouldSave==="true"){let F=G.querySelector("#stmb-new-profile-name-advanced").value.trim();if(F)try{await X5(G,Q,F),toastr.success(C0("STMemoryBooks_Toast_ProfileSaved",'Profile "{{name}}" saved successfully',{name:F}),C("STMemoryBooks","confirmationPopup.toast.title"))}catch(K){console.error(C(`${M1}: Failed to save profile:`,"confirmationPopup.log.saveFailed"),K),toastr.error(C0("STMemoryBooks_Toast_ProfileSaveFailed","Failed to save profile: {{message}}",{message:K.message}),C("STMemoryBooks","confirmationPopup.toast.title"))}else return console.error(C(`${M1}: Profile creation cancelled - no name provided`,"confirmationPopup.log.saveCancelledNoName")),toastr.error(C('Please enter a profile name or use "Create Memory" to proceed without saving',"STMemoryBooks_Toast_ProfileNameOrProceed"),C("STMemoryBooks","confirmationPopup.toast.title")),{confirmed:!1}}let X=Q.profiles[J],j={...X,prompt:W||X.prompt,effectiveConnection:{...X.connection}};if(Y){let F=Z1(),K=l();if(K.api)j.effectiveConnection.api=K.api;if(F.model)j.effectiveConnection.model=F.model;if(typeof F.temperature==="number")j.effectiveConnection.temperature=F.temperature}return{confirmed:!0,profileSettings:j,advancedOptions:{memoryCount:q,overrideSettings:Y}}}async function VG(Z,Q){let G=Z.dlg.querySelector("#stmb-new-profile-name-advanced").value.trim();if(!G)return console.error(C(`${M1}: Profile name validation failed - empty name`,"confirmationPopup.log.validationFailedEmptyName")),toastr.error(C("Please enter a profile name","STMemoryBooks_Toast_ProfileNameRequired"),C("STMemoryBooks","confirmationPopup.toast.title")),{confirmed:!1};return await X5(Z.dlg,Q,G),toastr.success(C0("STMemoryBooks_Toast_ProfileSaved",'Profile "{{name}}" saved successfully',{name:G}),C("STMemoryBooks","confirmationPopup.toast.title")),{confirmed:!1}}function jG(Z,Q,G,J,W){let q=Z.dlg,Y={prompt:q.querySelector("#stmb-effective-prompt-advanced").value,memoryCount:parseInt(q.querySelector("#stmb-context-memories-advanced").value),overrideSettings:q.querySelector("#stmb-override-settings-advanced").checked,profileIndex:parseInt(q.querySelector("#stmb-profile-select-advanced").value)},z=()=>{let V=q.querySelector("#stmb-effective-prompt-advanced").value,X=parseInt(q.querySelector("#stmb-context-memories-advanced").value),j=q.querySelector("#stmb-override-settings-advanced").checked,F=parseInt(q.querySelector("#stmb-profile-select-advanced").value),K=V!==Y.prompt||X!==Y.memoryCount||j!==Y.overrideSettings||F!==Y.profileIndex,H=q.querySelector("#stmb-save-profile-section-advanced"),B=Z.dlg.querySelector(".popup_button_ok");if(B)if(K)B.textContent=C("Save Profile & Create Memory","STMemoryBooks_SaveProfileAndCreateMemory"),B.title=C("Save the modified settings as a new profile and create the memory","STMemoryBooks_Tooltip_SaveProfileAndCreateMemory"),B.dataset.shouldSave="true";else B.textContent=C("Create Memory","STMemoryBooks_CreateMemory"),B.title=C("Create memory using the selected profile settings","STMemoryBooks_Tooltip_CreateMemory"),B.dataset.shouldSave="false";if(K)H.style.display="block";else H.style.display="none"};q.querySelector("#stmb-effective-prompt-advanced")?.addEventListener("input",z),q.querySelector("#stmb-context-memories-advanced")?.addEventListener("change",z),q.querySelector("#stmb-override-settings-advanced")?.addEventListener("change",z),q.querySelector("#stmb-profile-select-advanced")?.addEventListener("change",async(V)=>{let X=parseInt(V.target.value),j=G.profiles[X],F=await T0(j);q.querySelector("#stmb-effective-prompt-advanced").value=F;let K=q.querySelector("#stmb-profile-model-display"),H=q.querySelector("#stmb-profile-temp-display");if(K)K.textContent=j.connection?.model||C("Current SillyTavern model","STMemoryBooks_Label_CurrentSTModel");if(H)H.textContent=j.connection?.temperature!==void 0?j.connection.temperature:C("Current SillyTavern temperature","STMemoryBooks_Label_CurrentSTTemperature");Y.prompt=F,Y.profileIndex=X,z()}),FG(q,Q,G,W,z),z()}function FG(Z,Q,G,J,W){let q=Z.querySelector("#stmb-context-memories-advanced"),Y=Z.querySelector("#stmb-total-tokens-display"),z=Z.querySelector("#stmb-token-warning-advanced"),V=G.moduleSettings.tokenWarningThreshold??50000;if(q&&Y){let X={},j=async()=>{let F=Number(q.value);if(F===0){if(Y.textContent=C0("STMemoryBooks_Label_TotalTokens","Total tokens: {{count}}",{count:Q.estimatedTokens}),z)z.style.display=Q.estimatedTokens>V?"block":"none";return}if(!X[F]){Y.textContent=C("Total tokens: Calculating...","STMemoryBooks_Label_TotalTokensCalculating");let B=await h0(F,G,J);X[F]=B.summaries}let K=X[F],H=await KG(Q,K);if(Y.textContent=C0("STMemoryBooks_Label_TotalTokens","Total tokens: {{count}}",{count:H}),z)if(H>V)z.style.display="block",z.querySelector("span").textContent=C0("STMemoryBooks_Warn_LargeSceneTokens","⚠️ Large scene ({{tokens}} tokens) may take some time to process.",{tokens:H});else z.style.display="none"};q.addEventListener("change",()=>{j(),W()}),j()}}async function X5(Z,Q,G){let J=parseInt(Z.querySelector("#stmb-profile-select-advanced")?.value||Q.defaultProfile),W=Q.profiles[J],q={name:G,prompt:Z.querySelector("#stmb-effective-prompt-advanced")?.value,api:W.connection?.api,model:W.connection?.model,temperature:W.connection?.temperature,preset:W.preset,titleFormat:W.titleFormat||Q.titleFormat};if(Z.querySelector("#stmb-override-settings-advanced")?.checked||!1){let X=Z1(),j=l();q.api=j.api,q.model=X.model,q.temperature=X.temperature}let z=D0(q),V=Q.profiles.map((X)=>X.name);z.name=N0(z.name,V),Q.profiles.push(z),YG()}async function h0(Z,Q,G){if(Z<=0)return{summaries:[],actualCount:0,requestedCount:0};try{let J=await Z8();if(!J)return{summaries:[],actualCount:0,requestedCount:Z};let W=await Y5(J);if(!W)return{summaries:[],actualCount:0,requestedCount:Z};let Y=q8(W).slice(-Z),z=Y.length;return{summaries:Y.map((V)=>({number:V.number,title:V.title,content:V.content,keywords:V.keywords})),actualCount:z,requestedCount:Z}}catch(J){return{summaries:[],actualCount:0,requestedCount:Z}}}async function KG(Z,Q){let G=Z.estimatedTokens;if(Q&&Q.length>0){let J=200;for(let W of Q){let q=W.content||"",Y=Math.ceil(q.length/4);J+=Y}return G+J}return G}async function UG(Z,Q){try{let G=await Z8();if(!G)return 0;let J=await Y5(G);if(!J)return 0;return q8(J).length}catch(G){return 0}}async function z8(Z,Q,G,J={}){try{if(!Z||typeof Z!=="object")return console.error(C(`${M1}: Invalid memoryResult passed to showMemoryPreviewPopup`,"confirmationPopup.log.invalidMemoryResult")),{action:"cancel"};if(!Q||typeof Q!=="object")return console.error(C(`${M1}: Invalid sceneData passed to showMemoryPreviewPopup`,"confirmationPopup.log.invalidSceneData")),{action:"cancel"};if(!G||typeof G!=="object")return console.error(C(`${M1}: Invalid profileSettings passed to showMemoryPreviewPopup`,"confirmationPopup.log.invalidProfileSettings")),{action:"cancel"};if(typeof Q.sceneStart!=="number"||typeof Q.sceneEnd!=="number"||typeof Q.messageCount!=="number")return console.error(C(`${M1}: sceneData missing required numeric properties`,"confirmationPopup.log.sceneDataMissingProps")),{action:"cancel"};let W=(X)=>{if(Array.isArray(X))return X.filter((j)=>j&&typeof j==="string").join(", ");else if(typeof X==="string")return X.trim();else return""},q={title:Z.extractedTitle||C("Memory","addlore.defaults.title"),content:Z.content||"",keywordsText:W(Z.suggestedKeys),sceneStart:Q.sceneStart,sceneEnd:Q.sceneEnd,messageCount:Q.messageCount,titleReadonly:!!J.lockTitle,profileName:G?.connection?.api==="current_st"?C("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):G.name||C("Unknown Profile","STMemoryBooks_UnknownProfile")},Y=YZ.sanitize(q5(q)),z=new WZ(Y,qZ.TEXT,"",{okButton:C("Edit & Save","STMemoryBooks_EditAndSave"),cancelButton:C("Cancel","STMemoryBooks_Cancel"),allowVerticalScrolling:!0,wide:!0,customButtons:[{text:C("Retry Generation","STMemoryBooks_RetryGeneration"),result:M0.RETRY,classes:["menu_button","whitespacenowrap"],action:null}]});switch(await z.show()){case L0.AFFIRMATIVE:case M0.EDIT:let X=z.dlg;if(!X)return console.error(C(`${M1}: Popup element not available for reading edited values`,"confirmationPopup.log.popupNotAvailable")),toastr.error(C("Unable to read edited values","STMemoryBooks_Toast_UnableToReadEditedValues"),C("STMemoryBooks","confirmationPopup.toast.title")),{action:"cancel"};let j=X.querySelector("#stmb-preview-title"),F=X.querySelector("#stmb-preview-content"),K=X.querySelector("#stmb-preview-keywords");if(!j||!F||!K)return console.error(C(`${M1}: Required input elements not found in popup`,"confirmationPopup.log.inputsNotFound")),toastr.error(C("Unable to find input fields","STMemoryBooks_Toast_UnableToFindInputFields"),C("STMemoryBooks","confirmationPopup.toast.title")),{action:"cancel"};let H=j.value?.trim()||"",B=F.value?.trim()||"",A=K.value?.trim()||"";if(J?.lockTitle)H=Z.extractedTitle||H;if(!H||H.length===0)return console.error(C(`${M1}: Memory title validation failed - empty title`,"confirmationPopup.log.titleValidationFailed")),toastr.error(C("Memory title cannot be empty","STMemoryBooks_Toast_TitleCannotBeEmpty"),C("STMemoryBooks","confirmationPopup.toast.title")),{action:"cancel"};if(!B||B.length===0)return console.error(C(`${M1}: Memory content validation failed - empty content`,"confirmationPopup.log.contentValidationFailed")),toastr.error(C("Memory content cannot be empty","STMemoryBooks_Toast_ContentCannotBeEmpty"),C("STMemoryBooks","confirmationPopup.toast.title")),{action:"cancel"};let T=((L)=>{if(!L||typeof L!=="string")return[];return L.split(",").map((f)=>f.trim()).filter((f)=>f.length>0&&typeof f==="string")})(A);return{action:"edit",memoryData:{...Z,extractedTitle:H,content:B,suggestedKeys:T}};case M0.RETRY:return{action:"retry"};default:return{action:"cancel"}}}catch(W){return console.error(C(`${M1}: Error showing memory preview popup:`,"confirmationPopup.log.previewError"),W),{action:"cancel"}}}v1();i8();B0();i0();p8();v1();import{chat as h8,chat_metadata as F6}from"../../../../script.js";import{extension_settings as N1}from"../../../extensions.js";import{getRegexedString as A5,regex_placement as j6}from"../../../extensions/regex/engine.js";import{METADATA_KEY as RG,world_names as O5,loadWorldInfo as T5}from"../../../world-info.js";C8();import{t as z0,translate as B1}from"../../../i18n.js";var c="STMemoryBooks-SidePrompts",R5=!1,BZ=Promise.resolve();function N5(Z){return BZ=BZ.then(Z).catch((Q)=>{console.warn(`${c}: preview task failed`,Q)}),BZ}async function RZ(){let Z=N1.STMemoryBooks,Q=null;if(Z?.moduleSettings?.manualModeEnabled)Q=(g()||{}).manualLorebook??null;else Q=F6?.[RG]||null;if(!Q||!O5||!O5.includes(Q))throw toastr.error(B1("No memory lorebook is assigned. Open Memory Books settings and select or bind a lorebook.","STMemoryBooks_Toast_NoMemoryLorebookAssigned"),"STMemoryBooks"),Error(B1("No memory lorebook assigned","STMemoryBooks_Error_NoMemoryLorebookAssigned"));try{let G=await T5(Q);if(!G)throw Error(B1("Failed to load lorebook","STMemoryBooks_Error_FailedToLoadLorebook"));return{name:Q,data:G}}catch(G){throw toastr.error(B1("Failed to load the selected lorebook.","STMemoryBooks_Toast_FailedToLoadLorebook"),"STMemoryBooks"),G}}function AG(Z,Q){let G=0,J=Math.max(-1,Number.isFinite(Z)?Z:-1),W=Math.max(-1,Q);for(let q=J+1;q<=W&&q<h8.length;q++){let Y=h8[q];if(Y&&!Y.is_system)G++}return G}function OZ(Z,Q){let G=o0(Z,Q);return l0(G)}function AZ(Z,Q,G,J,W=[]){let q=[];if(q.push(String(Z||"")),Q&&String(Q).trim())q.push(`
+=== PRIOR ENTRY ===
+`),q.push(String(Q));if(Array.isArray(W)&&W.length>0)q.push(`
+=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+`),q.push(`These are previous memories for context only. Do NOT include them in your new output.
+
+`),W.forEach((X,j)=>{if(q.push(`Context ${j+1} - ${X.title||"Memory"}:
+`),q.push(`${X.content||""}
+`),Array.isArray(X.keywords)&&X.keywords.length)q.push(`Keywords: ${X.keywords.join(", ")}
+`);q.push(`
+`)}),q.push(`=== END PREVIOUS SCENE CONTEXT ===
+`);let Y=G?m6(G):"";if(q.push(`
+=== SCENE TEXT ===
+`),q.push(Y),J&&String(J).trim())q.push(`
+=== RESPONSE FORMAT ===
+`),q.push(String(J).trim());let z=q.join("");return N1?.STMemoryBooks?.moduleSettings?.useRegex?A5(z,j6.USER_INPUT,{isPrompt:!0}):z}async function TZ(Z,Q=null){let G,J,W,q,Y;if(Q&&(Q.api||Q.model))G=Y1(Q.api||"openai"),J=Q.model||"",W=typeof Q.temperature==="number"?Q.temperature:0.7,q=Q.endpoint||null,Y=Q.apiKey||null,console.debug(`${c}: runLLM using overrides api=${G} model=${J} temp=${W}`);else{let X=l(),j=Z1();G=Y1(X.completionSource||X.api||"openai"),J=j.model||"",W=j.temperature??0.7,console.debug(`${c}: runLLM using UI settings api=${G} model=${J} temp=${W}`)}let{text:z}=await S4({api:G,model:J,prompt:Z,temperature:W,endpoint:q,apiKey:Y,extra:{}});return N1?.STMemoryBooks?.moduleSettings?.useRegex?A5(z||"",j6.AI_OUTPUT):z||""}function V8(Z=null,Q={}){try{if(Z&&(Z.effectiveConnection||Z.connection)){let z=g6(Z),{api:V,model:X,temperature:j,endpoint:F,apiKey:K}=z;return console.debug(`${c}: resolveSidePromptConnection using provided profile api=${V} model=${X} temp=${j}`),{api:V,model:X,temperature:j,endpoint:F,apiKey:K}}let G=N1?.STMemoryBooks,J=G?.profiles||[],W=Q&&Number.isFinite(Q.overrideProfileIndex)?Number(Q.overrideProfileIndex):null;if(W!==null&&J.length>0){if(W<0||W>=J.length)W=0;let z=J[W];if(z?.useDynamicSTSettings||z?.connection?.api==="current_st"){let V=l(),X=Z1(),j=Y1(V.completionSource||V.api||"openai"),F=X.model||"",K=X.temperature??0.7;return console.debug(`${c}: resolveSidePromptConnection using UI via template override profile index=${W} api=${j} model=${F} temp=${K}`),{api:j,model:F,temperature:K}}else{let V=z?.connection||{},X=Y1(V.api||"openai"),j=V.model||"",F=typeof V.temperature==="number"?V.temperature:0.7,K=V.endpoint||null,H=V.apiKey||null;return console.debug(`${c}: resolveSidePromptConnection using template override profile index=${W} api=${X} model=${j} temp=${F}`),{api:X,model:j,temperature:F,endpoint:K,apiKey:H}}}let q=Number(G?.defaultProfile??0);if(!Array.isArray(J)||J.length===0){let z=l(),V=Z1(),X=Y1(z.completionSource||z.api||"openai"),j=V.model||"",F=V.temperature??0.7;return console.debug(`${c}: resolveSidePromptConnection fallback to UI (no profiles) api=${X} model=${j} temp=${F}`),{api:X,model:j,temperature:F}}if(!Number.isFinite(q)||q<0||q>=J.length)q=0;let Y=J[q];if(Y?.useDynamicSTSettings||Y?.connection?.api==="current_st"){let z=l(),V=Z1(),X=Y1(z.completionSource||z.api||"openai"),j=V.model||"",F=V.temperature??0.7;return console.debug(`${c}: resolveSidePromptConnection using UI via dynamic default profile api=${X} model=${j} temp=${F}`),{api:X,model:j,temperature:F}}else{let z=Y?.connection||{},V=Y1(z.api||"openai"),X=z.model||"",j=typeof z.temperature==="number"?z.temperature:0.7,F=z.endpoint||null,K=z.apiKey||null;return console.debug(`${c}: resolveSidePromptConnection using default profile api=${V} model=${X} temp=${j}`),{api:V,model:X,temperature:j,endpoint:F,apiKey:K}}}catch(G){let J=l(),W=Z1(),q=Y1(J.completionSource||J.api||"openai"),Y=W.model||"",z=W.temperature??0.7;return console.warn(`${c}: resolveSidePromptConnection error; falling back to UI`,G),{api:q,model:Y,temperature:z}}}function M8(Z,Q){let G=Number(Z);return Number.isFinite(G)?G:Q}function NZ(Z){let Q=Z&&Z.settings&&Z.settings.lorebook||{};return{constVectMode:Q.constVectMode||"link",position:M8(Q.position,0),orderMode:Q.orderMode==="manual"?"manual":"auto",orderValue:M8(Q.orderValue,100),preventRecursion:Q.preventRecursion!==!1,delayUntilRecursion:!!Q.delayUntilRecursion,outletName:String(Q.outletName||"")}}function DZ(Z){let Q={vectorized:Z.constVectMode==="link",selective:!0,order:Z.orderMode==="manual"?M8(Z.orderValue,100):100,position:M8(Z.position,0)},G={constant:Z.constVectMode==="blue",vectorized:Z.constVectMode==="link",preventRecursion:!!Z.preventRecursion,delayUntilRecursion:!!Z.delayUntilRecursion};if(Z.orderMode==="manual")G.order=M8(Z.orderValue,100);if(Number(Z.position)===7&&Z.outletName)G.outletName=String(Z.outletName);return{defaults:Q,entryOverrides:G}}async function _Z(){try{let Z=await V6("onInterval");if(!Z||Z.length===0)return;let Q=await RZ(),G=h8.length-1;if(G<0)return;for(let J of Z){let W=`${J.name} (STMB SidePrompt)`,q=`${J.name} (STMB Tracker)`,Y=X1(Q.data,W)||X1(Q.data,q),z=Number((Y&&Y[`STMB_sp_${J.key}_lastMsgId`])??(Y&&Y.STMB_tracker_lastMsgId)??-1),V=Y?.[`STMB_sp_${J.key}_lastRunAt`]?Date.parse(Y[`STMB_sp_${J.key}_lastRunAt`]):Y?.STMB_tracker_lastRunAt?Date.parse(Y.STMB_tracker_lastRunAt):null,X=Date.now(),j=1e4;if(V&&X-V<1e4)continue;let F=AG(z,G),K=Math.max(1,Number(J?.triggers?.onInterval?.visibleMessages??50));if(F<K)continue;let H=Math.max(0,z+1),A=Math.max(H,G-200+1),O=null;try{O=OZ(A,G)}catch(_){console.warn(`${c}: Interval compile failed:`,_);continue}let T=Y?.content||"",D=[],L=Number(J?.settings?.previousMemoriesCount??0),f=Math.max(0,Math.min(7,L));if(f>0)try{D=(await h0(f,N1,F6))?.summaries||[]}catch{}let m=AZ(J.prompt,T,O,J.responseFormat,D),M="";try{let _=Number(J?.settings?.overrideProfileIndex),S=!!J?.settings?.overrideProfileEnabled&&Number.isFinite(_)?V8(null,{overrideProfileIndex:_}):V8(null);console.log(`${c}: SidePrompt attempt`,{trigger:"onInterval",name:J.name,key:J.key,range:`${A}-${G}`,visibleSince:F,threshold:K,api:S.api,model:S.model}),M=await TZ(m,S)}catch(_){console.error(`${c}: Interval sideprompt LLM failed:`,_),toastr.error(z0`SidePrompt "${J.name}" failed: ${_.message}`,"STMemoryBooks");continue}try{if(N1?.STMemoryBooks?.moduleSettings?.showMemoryPreviews){let v={extractedTitle:W,content:M,suggestedKeys:[]},S={sceneStart:O?.metadata?.sceneStart??A,sceneEnd:O?.metadata?.sceneEnd??G,messageCount:O?.metadata?.messageCount??(O?.messages?.length??0)},b={name:"SidePrompt"},d;if(await N5(async()=>{d=await z8(v,S,b,{lockTitle:!0})}),d?.action==="cancel"||d?.action==="retry"){console.log(`${c}: SidePrompt "${J.name}" canceled or retry requested in preview; skipping save`);continue}else if(d?.action==="edit"&&d.memoryData)M=d.memoryData.content??M}}catch(_){console.warn(`${c}: Preview step failed; proceeding without preview`,_)}try{let _=NZ(J),{defaults:v,entryOverrides:S}=DZ(_),b=O?.metadata?.sceneEnd??G;await ZZ(Q.name,Q.data,W,M,{defaults:v,entryOverrides:S,metadataUpdates:{[`STMB_sp_${J.key}_lastMsgId`]:G,[`STMB_sp_${J.key}_lastRunAt`]:new Date().toISOString(),STMB_tracker_lastMsgId:G,STMB_tracker_lastRunAt:new Date().toISOString()},refreshEditor:N1?.STMemoryBooks?.moduleSettings?.refreshEditor!==!1}),console.log(`${c}: SidePrompt success`,{trigger:"onInterval",name:J.name,key:J.key,saved:!0,contentChars:M.length})}catch(_){console.error(`${c}: Interval sideprompt upsert failed:`,_),toastr.error(z0`Failed to update sideprompt entry "${J.name}"`,"STMemoryBooks");continue}}}catch(Z){}}async function D5(Z,Q=null){try{let G=await RZ(),J=await V6("onAfterMemory");if(!J||J.length===0)return;let W=V8(Q);console.debug(`${c}: runAfterMemory default overrides api=${W.api} model=${W.model} temp=${W.temperature}`);let q=N1?.STMemoryBooks,Y=q?.moduleSettings?.refreshEditor!==!1,z=q?.moduleSettings?.showNotifications!==!1,V=[],X=j1(Number(q?.moduleSettings?.sidePromptsMaxConcurrent??2),1,5),j=[];for(let F=0;F<J.length;F+=X)j.push(J.slice(F,F+X));for(let F of j){let K=F.map(async(O)=>{try{let T=`${O.name} (STMB SidePrompt)`,L=(X1(G.data,T)||X1(G.data,`${O.name} (STMB Plotpoints)`)||X1(G.data,`${O.name} (STMB Scoreboard)`))?.content||"",f=[],m=Number(O?.settings?.previousMemoriesCount??0),M=Math.max(0,Math.min(7,m));if(M>0)try{f=(await h0(M,N1,F6))?.summaries||[]}catch{}let _=AZ(O.prompt,L,Z,O.responseFormat,f),v=Number(O?.settings?.overrideProfileIndex),b=!!O?.settings?.overrideProfileEnabled&&Number.isFinite(v)?V8(null,{overrideProfileIndex:v}):W;console.log(`${c}: SidePrompt attempt`,{trigger:"onAfterMemory",name:O.name,key:O.key,api:b.api,model:b.model});let d=await TZ(_,b);return{ok:!0,tpl:O,text:d}}catch(T){return console.error(`${c}: Wave LLM failed for "${O.name}":`,T),{ok:!1,tpl:O,error:T}}}),H=await Promise.all(K.map((O)=>O.then((T)=>({...T,_completedAt:performance.now()}))));H.sort((O,T)=>O._completedAt-T._completedAt);let B=[],A=[];for(let O of H){if(!O.ok){V.push({name:O.tpl?.name||"unknown",ok:!1,error:O.error});continue}let T=O.text,D=!0;try{if(N1?.STMemoryBooks?.moduleSettings?.showMemoryPreviews){let f={extractedTitle:`${O.tpl.name} (STMB SidePrompt)`,content:T,suggestedKeys:[]},m={sceneStart:Z?.metadata?.sceneStart??0,sceneEnd:Z?.metadata?.sceneEnd??0,messageCount:Z?.metadata?.messageCount??(Z?.messages?.length??0)},M={name:"SidePrompt"},_;if(await N5(async()=>{_=await z8(f,m,M,{lockTitle:!0})}),_?.action==="cancel"||_?.action==="retry")D=!1;else if(_?.action==="edit"&&_.memoryData)T=_.memoryData.content??T}}catch(L){console.warn(`${c}: Preview step failed; proceeding without preview`,L)}if(D){let L=O.tpl,f=`${L.name} (STMB SidePrompt)`,m=NZ(L),{defaults:M,entryOverrides:_}=DZ(m);B.push({title:f,content:T,defaults:M,entryOverrides:_,metadataUpdates:{[`STMB_sp_${L.key}_lastRunAt`]:new Date().toISOString()}}),A.push(L.name)}else V.push({name:O.tpl.name,ok:!1,error:Error("User canceled or retry in preview")})}if(B.length>0)try{let O=await T5(G.name);await _8(G.name,O,B,{refreshEditor:Y}),G.data=O;for(let T of A){if(V.push({name:T,ok:!0}),z)toastr.success(z0`SidePrompt "${T}" updated.`,"STMemoryBooks");console.log(`${c}: SidePrompt success`,{trigger:"onAfterMemory",name:T,saved:!0})}}catch(O){console.error(`${c}: Wave save failed:`,O),toastr.error(B1("Failed to save SidePrompt updates for this wave","STMemoryBooks_Toast_FailedToSaveWave"),"STMemoryBooks");for(let T of A)V.push({name:T,ok:!1,error:O})}}if(z&&V.length>0){let F=V.filter((O)=>O.ok).map((O)=>O.name),K=V.filter((O)=>!O.ok).map((O)=>O.name),H=F.length,B=K.length,A=(O)=>{if(O.length===0)return"";let D=O.slice(0,5).join(", "),L=O.length>5?`, +${O.length-5} more`:"";return`${D}${L}`};if(B===0)toastr.info(z0`Side Prompts after memory: ${H} succeeded. ${A(F)}`,"STMemoryBooks");else toastr.warning(z0`Side Prompts after memory: ${H} succeeded, ${B} failed. ${B?"Failed: "+A(K):""}`,"STMemoryBooks")}}catch(G){}}async function wZ(Z){try{let Q=await RZ(),{name:G,range:J}=TG(Z);if(!G)return toastr.error(B1('SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]',"STMemoryBooks_Toast_SidePromptNameNotProvided"),"STMemoryBooks"),"";let W=await VZ(G);if(!W)return toastr.error(B1("SidePrompt template not found. Check name.","STMemoryBooks_Toast_SidePromptNotFound"),"STMemoryBooks"),"";if(!(Array.isArray(W?.triggers?.commands)&&W.triggers.commands.some((O)=>String(O).toLowerCase()==="sideprompt")))return toastr.error(B1('Manual run is disabled for this template. Enable "Allow manual run via /sideprompt" in the template settings.',"STMemoryBooks_Toast_ManualRunDisabled"),"STMemoryBooks"),"";let Y=h8.length-1;if(Y<0)return toastr.error(B1("No messages available.","STMemoryBooks_Toast_NoMessagesAvailable"),"STMemoryBooks"),"";let z=null;if(J){let O=String(J).trim().match(/^(\d+)\s*[-–—]\s*(\d+)$/);if(!O)return toastr.error(B1("Invalid range format. Use X-Y","STMemoryBooks_Toast_InvalidRangeFormat"),"STMemoryBooks"),"";let T=parseInt(O[1],10),D=parseInt(O[2],10);if(!(T>=0&&D>=T&&D<h8.length))return toastr.error(B1("Invalid message range for /sideprompt","STMemoryBooks_Toast_InvalidMessageRange"),"STMemoryBooks"),"";try{z=OZ(T,D)}catch(L){return toastr.error(B1("Failed to compile the specified range","STMemoryBooks_Toast_FailedToCompileRange"),"STMemoryBooks"),""}}else{if(!R5)toastr.info(B1('Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.',"STMemoryBooks_Toast_SidePromptRangeTip"),"STMemoryBooks"),R5=!0;let O=`${W.name} (STMB SidePrompt)`,T=X1(Q.data,O)||X1(Q.data,`${W.name} (STMB Scoreboard)`)||X1(Q.data,`${W.name} (STMB Plotpoints)`)||X1(Q.data,`${W.name} (STMB Tracker)`),D=Number((T&&T[`STMB_sp_${W.key}_lastMsgId`])??(T&&T.STMB_score_lastMsgId)??(T&&T.STMB_tracker_lastMsgId)??-1),L=Math.max(0,D+1),m=Math.max(L,Y-200+1);try{z=OZ(m,Y)}catch(M){return toastr.error(B1("Failed to compile messages for /sideprompt","STMemoryBooks_Toast_FailedToCompileMessages"),"STMemoryBooks"),""}}let V=`${W.name} (STMB SidePrompt)`,j=(X1(Q.data,V)||X1(Q.data,`${W.name} (STMB Scoreboard)`)||X1(Q.data,`${W.name} (STMB Plotpoints)`)||X1(Q.data,`${W.name} (STMB Tracker)`))?.content||"",F=[],K=Number(W?.settings?.previousMemoriesCount??0),H=Math.max(0,Math.min(7,K));if(H>0)try{F=(await h0(H,N1,F6))?.summaries||[]}catch{}let B=AZ(W.prompt,j,z,W.responseFormat,F),A="";try{let O=Number(W?.settings?.overrideProfileIndex),D=!!W?.settings?.overrideProfileEnabled&&Number.isFinite(O)?V8(null,{overrideProfileIndex:O}):V8(null);console.log(`${c}: SidePrompt attempt`,{trigger:"manual",name:W.name,key:W.key,rangeProvided:!!J,api:D.api,model:D.model}),A=await TZ(B,D);try{if(N1?.STMemoryBooks?.moduleSettings?.showMemoryPreviews){let v={extractedTitle:V,content:A,suggestedKeys:[]},S={sceneStart:z?.metadata?.sceneStart??0,sceneEnd:z?.metadata?.sceneEnd??0,messageCount:z?.metadata?.messageCount??(z?.messages?.length??0)},d=await z8(v,S,{name:"SidePrompt"},{lockTitle:!0});if(d?.action==="cancel"||d?.action==="retry")return toastr.info(z0`SidePrompt "${W.name}" canceled.`,"STMemoryBooks"),"";else if(d?.action==="edit"&&d.memoryData)A=d.memoryData.content??A}}catch(_){console.warn(`${c}: Preview step failed; proceeding without preview`,_)}let L=NZ(W),{defaults:f,entryOverrides:m}=DZ(L),M=z?.metadata?.sceneEnd??Y;await ZZ(Q.name,Q.data,V,A,{defaults:f,entryOverrides:m,metadataUpdates:{[`STMB_sp_${W.key}_lastMsgId`]:M,[`STMB_sp_${W.key}_lastRunAt`]:new Date().toISOString(),STMB_tracker_lastMsgId:M,STMB_tracker_lastRunAt:new Date().toISOString()},refreshEditor:N1?.STMemoryBooks?.moduleSettings?.refreshEditor!==!1}),console.log(`${c}: SidePrompt success`,{trigger:"manual",name:W.name,key:W.key,saved:!0,contentChars:A.length})}catch(O){return console.error(`${c}: /sideprompt failed:`,O),toastr.error(z0`SidePrompt "${W.name}" failed: ${O.message}`,"STMemoryBooks"),""}return toastr.success(z0`SidePrompt "${W.name}" updated.`,"STMemoryBooks"),""}catch(Q){return""}}function TG(Z){let Q=String(Z||"").trim();if(!Q)return{name:"",range:null};let G="",J="",W=Q.match(/^"([^"]+)"\s*(.*)$/),q=!W&&Q.match(/^'([^']+)'\s*(.*)$/);if(W)G=W[1],J=W[2]||"";else if(q)G=q[1],J=q[2]||"";else{let z=Q.match(/(\d+)\s*[-–—]\s*(\d+)\s*$/);if(z)G=Q.slice(0,z.index).trim(),J=Q.slice(z.index);else G=Q,J=""}let Y=null;if(J){let z=J.match(/(\d+)\s*[-–—]\s*(\d+)/);if(z)Y=`${z[1]}-${z[2]}`}return{name:G,range:Y}}C8();import{Popup as v8,POPUP_TYPE as P0,POPUP_RESULT as V0}from"../../../popup.js";import{DOMPurify as K6}from"../../../../lib.js";import{escapeHtml as N}from"../../../utils.js";import{extension_settings as p1}from"../../../extensions.js";import{saveSettingsDebounced as DG}from"../../../../script.js";import{Handlebars as NG}from"../../../../lib.js";var _5=NG.compile(`
+<table style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th style="text-align:left;" data-i18n="STMemoryBooks_Name">Name</th>
+      <th style="width: 240px; text-align:left;" data-i18n="STMemoryBooks_Triggers">Triggers</th>
+      <th style="width: 120px; text-align:right;" data-i18n="STMemoryBooks_Actions">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#if items}}
+      {{#each items}}
+        <tr data-tpl-key="{{key}}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">
+          <td style="padding: 8px;">{{name}}</td>
+          <td style="padding: 8px;">
+              {{#if badges}}
+                {{#each badges}}
+                  <span class="badge" style="margin-right:6px;">{{this}}</span>
+                {{/each}}
+              {{else}}
+                <span class="opacity50p" data-i18n="STMemoryBooks_None">None</span>
+              {{/if}}
+          </td>
+          <td style="padding: 8px; text-align:right;">
+            <span class="stmb-sp-inline-actions" style="display: inline-flex; gap: 10px;">
+              <button class="stmb-sp-action stmb-sp-action-edit" title="Edit" aria-label="Edit" data-i18n="[title]STMemoryBooks_Edit;[aria-label]STMemoryBooks_Edit" style="background:none;border:none;cursor:pointer;">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="stmb-sp-action stmb-sp-action-duplicate" title="Duplicate" aria-label="Duplicate" data-i18n="[title]STMemoryBooks_Duplicate;[aria-label]STMemoryBooks_Duplicate" style="background:none;border:none;cursor:pointer;">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+              <button class="stmb-sp-action stmb-sp-action-delete" title="Delete" aria-label="Delete" data-i18n="[title]STMemoryBooks_Delete;[aria-label]STMemoryBooks_Delete" style="background:none;border:none;cursor:pointer;color:var(--redColor);">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </span>
+          </td>
+        </tr>
+      {{/each}}
+    {{else}}
+      <tr>
+        <td colspan="3">
+          <div class="opacity50p" data-i18n="STMemoryBooks_NoSidePromptsAvailable">No side prompts available</div>
+        </td>
+      </tr>
+    {{/if}}
+  </tbody>
+</table>
+`);import{translate as R,applyLocale as w5}from"../../../i18n.js";function a1(Z,Q,G){let J=R(Q,Z);if(!G)return J;return J.replace(/{{\s*(\w+)\s*}}/g,(W,q)=>{let Y=G[q];return Y!==void 0&&Y!==null?String(Y):""})}function I5(Z){let Q=[],G=Z?.triggers||{};if(G.onInterval&&Number(G.onInterval.visibleMessages)>=1)Q.push(`${R("Interval","STMemoryBooks_Interval")}:${Number(G.onInterval.visibleMessages)}`);if(G.onAfterMemory&&!!G.onAfterMemory.enabled)Q.push(R("AfterMemory","STMemoryBooks_AfterMemory"));if(Array.isArray(G.commands)&&G.commands.some((J)=>String(J).toLowerCase()==="sideprompt"))Q.push(R("Manual","STMemoryBooks_Manual"));return Q}function _G(Z){let Q=(Z||[]).map((G)=>({key:String(G.key||""),name:String(G.name||""),badges:I5(G)}));return _5({items:Q})}async function X0(Z,Q=null){let G=Z?.dlg?.querySelector("#stmb-sp-list");if(!G)return;let J=(Z?.dlg?.querySelector("#stmb-sp-search")?.value||"").toLowerCase(),W=await Y0(),q=J?W.filter((Y)=>{let z=Y.name.toLowerCase().includes(J),V=I5(Y).join(" ").toLowerCase();return z||V.includes(J)}):W;G.innerHTML=K6.sanitize(_G(q));try{w5(G)}catch(Y){}if(Q){let Y=G.querySelector(`tr[data-tpl-key="${CSS.escape(Q)}"]`);if(Y)Y.style.backgroundColor="var(--cobalt30a)",Y.style.border=""}}async function wG(Z,Q){try{let G=await XZ(Q);if(!G){toastr.error(a1("STMemoryBooks_TemplateNotFound",'Template "{{key}}" not found',{key:Q}),R("STMemoryBooks","index.toast.title"));return}let J=!!G.enabled,W=G.settings||{},q=G.triggers||{},Y=!!(q.onInterval&&Number(q.onInterval.visibleMessages)>=1),z=Y?Math.max(1,Number(q.onInterval.visibleMessages)):50,V=!!(q.onAfterMemory&&q.onAfterMemory.enabled),X=Array.isArray(q.commands)?q.commands.some((h)=>String(h).toLowerCase()==="sideprompt"):!1,j=p1?.STMemoryBooks?.profiles||[],F=Number.isFinite(W.overrideProfileIndex)?Number(W.overrideProfileIndex):p1?.STMemoryBooks?.defaultProfile??0;if(!(F>=0&&F<j.length))F=0;let K=!!W.overrideProfileEnabled,H=j.map((h,r)=>`<option value="${r}" ${r===F?"selected":""}>${N(h?.name||"Profile "+(r+1))}</option>`).join(""),B=`
+            <div class="world_entry_form_control">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-edit-override-enabled" ${K?"checked":""}>
+                    <span>${N(R("Override default memory profile","STMemoryBooks_OverrideDefaultMemoryProfile"))}</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control" id="stmb-sp-edit-override-container" style="display: ${K?"block":"none"};">
+                <label for="stmb-sp-edit-override-index">
+                    <h4>${N(R("Connection Profile:","STMemoryBooks_ConnectionProfile"))}</h4>
+                    <select id="stmb-sp-edit-override-index" class="text_pole">
+                        ${H}
+                    </select>
+                </label>
+            </div>
+        `,A=Number.isFinite(W.previousMemoriesCount)?Number(W.previousMemoriesCount):0,O=W&&W.lorebook||{},T=O.constVectMode||"link",D=Number.isFinite(O.position)?Number(O.position):0,L=O.orderMode==="manual",f=Number.isFinite(O.orderValue)?Number(O.orderValue):100,m=O.preventRecursion!==!1,M=!!O.delayUntilRecursion,_=`
+            <h3>${N(R("Edit Side Prompt","STMemoryBooks_EditSidePrompt"))}</h3>
+            <div class="world_entry_form_control">
+                <small>${N(R("Key:","STMemoryBooks_Key"))} <code>${N(G.key)}</code></small>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-sp-edit-name">
+                    <h4>${N(R("Name:","STMemoryBooks_Name"))}</h4>
+                    <input type="text" id="stmb-sp-edit-name" class="text_pole" value="${N(G.name)}" />
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-edit-enabled" ${J?"checked":""}>
+                    <span>${N(R("Enabled","STMemoryBooks_Enabled"))}</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <h4>${N(R("Triggers:","STMemoryBooks_Triggers"))}</h4>
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-edit-trg-interval" ${Y?"checked":""}>
+                    <span>${N(R("Run on visible message interval","STMemoryBooks_RunOnVisibleMessageInterval"))}</span>
+                </label>
+                <div id="stmb-sp-edit-interval-container" style="display:${Y?"block":"none"}; margin-left:28px;">
+                    <label for="stmb-sp-edit-interval">
+                        <h4 style="margin: 0 0 4px 0;">${N(R("Interval (visible messages):","STMemoryBooks_IntervalVisibleMessages"))}</h4>
+                        <input type="number" id="stmb-sp-edit-interval" class="text_pole" min="1" step="1" value="${z}">
+                    </label>
+                </div>
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-edit-trg-aftermem" ${V?"checked":""}>
+                    <span>${N(R("Run automatically after memory","STMemoryBooks_RunAutomaticallyAfterMemory"))}</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-edit-trg-manual" ${X?"checked":""}>
+                    <span>${N(R("Allow manual run via /sideprompt","STMemoryBooks_AllowManualRunViaSideprompt"))}</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-sp-edit-prompt">
+                    <h4>${N(R("Prompt:","STMemoryBooks_PromptTitle"))}</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                    <textarea id="stmb-sp-edit-prompt" class="text_pole textarea_compact" rows="10">${N(G.prompt||"")}</textarea>
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-sp-edit-response-format">
+                    <h4>${N(R("Response Format (optional):","STMemoryBooks_ResponseFormatOptional"))}</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-edit-response-format" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                    <textarea id="stmb-sp-edit-response-format" class="text_pole textarea_compact" rows="6">${N(G.responseFormat||"")}</textarea>
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <h4>${N(R("Lorebook Entry Settings","STMemoryBooks_LorebookEntrySettings"))}:</h4>
+                <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
+                    <label>
+                        <h4 style="margin: 0 0 4px 0;">${N(R("Activation Mode","STMemoryBooks_ActivationMode"))}:</h4>
+                        <select id="stmb-sp-edit-lb-mode" class="text_pole">
+                            <option value="link" ${T==="link"?"selected":""}>${N(R("\uD83D\uDD17 Vectorized (Default)","STMemoryBooks_Vectorized"))}</option>
+                            <option value="green" ${T==="green"?"selected":""}>${N(R("\uD83D\uDFE2 Normal","STMemoryBooks_Normal"))}</option>
+                            <option value="blue" ${T==="blue"?"selected":""}>${N(R("\uD83D\uDD35 Constant","STMemoryBooks_Constant"))}</option>
+                        </select>
+                    </label>
+                    <label>
+                        <h4 style="margin: 0 0 4px 0;">${N(R("Insertion Position:","STMemoryBooks_InsertionPosition"))}</h4>
+                        <select id="stmb-sp-edit-lb-position" class="text_pole">
+                            <option value="0" ${D===0?"selected":""}>${N(R("↑Char","STMemoryBooks_CharUp"))}</option>
+                            <option value="1" ${D===1?"selected":""}>${N(R("↓Char","STMemoryBooks_CharDown"))}</option>
+                            <option value="5" ${D===5?"selected":""}>${N(R("↑EM","STMemoryBooks_EMUp"))}</option>
+                            <option value="6" ${D===6?"selected":""}>${N(R("↓EM","STMemoryBooks_EMDown"))}</option>
+                            <option value="2" ${D===2?"selected":""}>${N(R("↑AN","STMemoryBooks_ANUp"))}</option>
+                            <option value="3" ${D===3?"selected":""}>${N(R("↓AN","STMemoryBooks_ANDown"))}</option>
+                            <option value="7" ${D===7?"selected":""}>${N(R("Outlet","STMemoryBooks_Outlet"))}</option>
+                        </select>
+                        <div id="stmb-sp-edit-lb-outlet-name-container" style="display:${D===7?"block":"none"}; margin-top: 8px;">
+                            <label>
+                                <h4 style="margin: 0 0 4px 0;">${N(R("Outlet Name:","STMemoryBooks_OutletName"))}</h4>
+                                <input type="text" id="stmb-sp-edit-lb-outlet-name" class="text_pole" placeholder="${N(R("Outlet name","STMemoryBooks_OutletNamePlaceholder"))}" value="${N(O.outletName||"")}">
+                            </label>
+                        </div>
+                    </label>
+                </div>
+                <div class="world_entry_form_control" style="margin-top: 8px;">
+                    <h4>${N(R("Insertion Order:","STMemoryBooks_InsertionOrder"))}</h4>
+                    <label class="radio_label">
+                        <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-auto" value="auto" ${L?"":"checked"}>
+                        <span>${N(R("Auto (uses memory #)","STMemoryBooks_AutoOrder"))}</span>
+                    </label>
+                    <label class="radio_label" style="margin-left: 12px;">
+                        <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-manual" value="manual" ${L?"checked":""}>
+                        <span>${N(R("Manual","STMemoryBooks_ManualOrder"))}</span>
+                    </label>
+                    <div id="stmb-sp-edit-lb-order-value-container" style="display:${L?"block":"none"}; margin-left:28px;">
+                        <label>
+                            <h4 style="margin: 0 0 4px 0;">${N(R("Order Value:","STMemoryBooks_OrderValue"))}</h4>
+                            <input type="number" id="stmb-sp-edit-lb-order-value" class="text_pole" step="1" value="${f}">
+                        </label>
+                    </div>
+                </div>
+                <div class="world_entry_form_control" style="margin-top: 8px;">
+                    <label class="checkbox_label">
+                        <input type="checkbox" id="stmb-sp-edit-lb-prevent" ${m?"checked":""}>
+                        <span>${N(R("Prevent Recursion","STMemoryBooks_PreventRecursion"))}</span>
+                    </label>
+                    <label class="checkbox_label" style="margin-left: 12px;">
+                        <input type="checkbox" id="stmb-sp-edit-lb-delay" ${M?"checked":""}>
+                        <span>${N(R("Delay Until Recursion","STMemoryBooks_DelayUntilRecursion"))}</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="world_entry_form_control">
+                <label for="stmb-sp-edit-prev-mem-count">
+                    <h4>${N(R("Previous memories for context:","STMemoryBooks_PreviousMemoriesForContext"))}</h4>
+<input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${A}">
+                </label>
+                <small class="opacity70p">${N(R("Number of previous memory entries to include before scene text (0 = none).","STMemoryBooks_PreviousMemoriesHelp"))}</small>
+            </div>
+
+            <div class="world_entry_form_control">
+                <h4>${N(R("Overrides:","STMemoryBooks_Overrides"))}</h4>
+                ${B}
+            </div>
+        `,v=new v8(K6.sanitize(_),P0.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:R("Save","STMemoryBooks_Save"),cancelButton:R("Cancel","STMemoryBooks_Cancel")}),S=()=>{let h=v.dlg;if(!h)return;let r=h.querySelector("#stmb-sp-edit-trg-interval"),f1=h.querySelector("#stmb-sp-edit-interval-container");r?.addEventListener("change",()=>{if(f1)f1.style.display=r.checked?"block":"none";if(r.checked)h.querySelector("#stmb-sp-edit-interval")?.focus()});let k1=h.querySelector("#stmb-sp-edit-override-enabled"),G1=h.querySelector("#stmb-sp-edit-override-container");k1?.addEventListener("change",()=>{if(G1)G1.style.display=k1.checked?"block":"none"});let K1=h.querySelector("#stmb-sp-edit-lb-order-auto"),i1=h.querySelector("#stmb-sp-edit-lb-order-manual"),O1=h.querySelector("#stmb-sp-edit-lb-order-value-container"),Z0=()=>{if(O1)O1.style.display=i1?.checked?"block":"none"};K1?.addEventListener("change",Z0),i1?.addEventListener("change",Z0);let _1=h.querySelector("#stmb-sp-edit-lb-position"),g1=h.querySelector("#stmb-sp-edit-lb-outlet-name-container");_1?.addEventListener("change",()=>{if(g1)g1.style.display=_1.value==="7"?"block":"none"})},b=v.show();if(S(),await b===V0.AFFIRMATIVE){let h=v.dlg,r=h.querySelector("#stmb-sp-edit-name")?.value.trim()||"",f1=h.querySelector("#stmb-sp-edit-prompt")?.value.trim()||"",k1=h.querySelector("#stmb-sp-edit-response-format")?.value.trim()||"",G1=!!h.querySelector("#stmb-sp-edit-enabled")?.checked;if(!f1){toastr.error(R("Prompt cannot be empty","STMemoryBooks_PromptCannotBeEmpty"),R("STMemoryBooks","index.toast.title"));return}if(!r)toastr.info(R("Name was empty. Keeping previous name.","STMemoryBooks_NameEmptyKeepPrevious"),R("STMemoryBooks","index.toast.title"));let K1={},i1=!!h.querySelector("#stmb-sp-edit-trg-interval")?.checked,O1=!!h.querySelector("#stmb-sp-edit-trg-aftermem")?.checked,Z0=!!h.querySelector("#stmb-sp-edit-trg-manual")?.checked;if(i1){let H8=parseInt(h.querySelector("#stmb-sp-edit-interval")?.value??"50",10),U7=Math.max(1,isNaN(H8)?50:H8);K1.onInterval={visibleMessages:U7}}if(O1)K1.onAfterMemory={enabled:!0};if(Z0)K1.commands=["sideprompt"];let _1={...G.settings||{}},g1=!!h.querySelector("#stmb-sp-edit-override-enabled")?.checked;if(_1.overrideProfileEnabled=g1,g1){let H8=parseInt(h.querySelector("#stmb-sp-edit-override-index")?.value??"",10);if(!isNaN(H8))_1.overrideProfileIndex=H8}else delete _1.overrideProfileIndex;let f8=h.querySelector("#stmb-sp-edit-lb-mode")?.value||"link",U8=parseInt(h.querySelector("#stmb-sp-edit-lb-position")?.value??"0",10),k=!!h.querySelector("#stmb-sp-edit-lb-order-manual")?.checked,i=parseInt(h.querySelector("#stmb-sp-edit-lb-order-value")?.value??"100",10),q1=!!h.querySelector("#stmb-sp-edit-lb-prevent")?.checked,l1=!!h.querySelector("#stmb-sp-edit-lb-delay")?.checked,gZ=U8===7?h.querySelector("#stmb-sp-edit-lb-outlet-name")?.value?.trim()||"":"",I6=parseInt(h.querySelector("#stmb-sp-edit-prev-mem-count")?.value??"0",10);_1.previousMemoriesCount=Number.isFinite(I6)&&I6>0?Math.min(I6,7):0,_1.lorebook={constVectMode:["link","green","blue"].includes(f8)?f8:"link",position:Number.isFinite(U8)?U8:0,orderMode:k?"manual":"auto",orderValue:Number.isFinite(i)?i:100,preventRecursion:q1,delayUntilRecursion:l1,...U8===7&&gZ?{outletName:gZ}:{}},await X6({key:G.key,name:r,enabled:G1,prompt:f1,responseFormat:k1,settings:_1,triggers:K1}),toastr.success(a1("STMemoryBooks_Toast_SidePromptUpdated",'SidePrompt "{{name}}" updated.',{name:r||G.name}),R("STMemoryBooks","index.toast.title")),window.dispatchEvent(new CustomEvent("stmb-sideprompts-updated")),await X0(Z,G.key)}}catch(G){console.error("STMemoryBooks: Error editing side prompt:",G),toastr.error(R("Failed to edit SidePrompt","STMemoryBooks_FailedToEditSidePrompt"),R("STMemoryBooks","index.toast.title"))}}async function IG(Z){let Q=p1?.STMemoryBooks?.profiles||[],G=Number(p1?.STMemoryBooks?.defaultProfile??0);if(!(G>=0&&G<Q.length))G=0;let J=Q.map((X,j)=>`<option value="${j}" ${j===G?"selected":""}>${N(X?.name||"Profile "+(j+1))}</option>`).join(""),W=`
+        <h3>${N(R("New Side Prompt","STMemoryBooks_NewSidePrompt"))}</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-name">
+                <h4>${N(R("Name:","STMemoryBooks_Name"))}</h4>
+                <input type="text" id="stmb-sp-new-name" class="text_pole" placeholder="${N(R("My Side Prompt","STMemoryBooks_MySidePromptPlaceholder"))}" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-sp-new-enabled">
+                <span>${N(R("Enabled","STMemoryBooks_Enabled"))}</span>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <h4>${N(R("Triggers:","STMemoryBooks_Triggers"))}</h4>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-sp-new-trg-interval">
+                <span>${N(R("Run on visible message interval","STMemoryBooks_RunOnVisibleMessageInterval"))}</span>
+            </label>
+            <div id="stmb-sp-new-interval-container" class="displayNone" style="margin-left:28px;">
+                <label for="stmb-sp-new-interval">
+                    <h4 style="margin: 0 0 4px 0;">${N(R("Interval (visible messages):","STMemoryBooks_IntervalVisibleMessages"))}</h4>
+                    <input type="number" id="stmb-sp-new-interval" class="text_pole" min="1" step="1" value="50">
+                </label>
+            </div>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-sp-new-trg-aftermem">
+                <span>${N(R("Run automatically after memory","STMemoryBooks_RunAutomaticallyAfterMemory"))}</span>
+            </label>
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-sp-new-trg-manual" checked>
+                <span>${N(R("Allow manual run via /sideprompt","STMemoryBooks_AllowManualRunViaSideprompt"))}</span>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-prompt">
+                <h4>${N(R("Prompt:","STMemoryBooks_PromptTitle"))}</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-sp-new-prompt" class="text_pole textarea_compact" rows="8" placeholder="${N(R("Enter your prompt here...","STMemoryBooks_EnterPromptPlaceholder"))}"></textarea>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-response-format">
+                <h4>${N(R("Response Format (optional):","STMemoryBooks_ResponseFormatOptional"))}</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-sp-new-response-format" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6" placeholder="${N(R("Optional response format","STMemoryBooks_ResponseFormatPlaceholder"))}"></textarea>
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <h4>${N(R("Lorebook Entry Settings","STMemoryBooks_LorebookEntrySettings"))}:</h4>
+            <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
+                <label>
+                    <h4 style="margin: 0 0 4px 0;">${N(R("Activation Mode","STMemoryBooks_ActivationMode"))}:</h4>
+                    <select id="stmb-sp-new-lb-mode" class="text_pole">
+                        <option value="link" selected>${N(R("\uD83D\uDD17 Vectorized (Default)","STMemoryBooks_Vectorized"))}</option>
+                        <option value="green">${N(R("\uD83D\uDFE2 Normal","STMemoryBooks_Normal"))}</option>
+                        <option value="blue">${N(R("\uD83D\uDD35 Constant","STMemoryBooks_Constant"))}</option>
+                    </select>
+                </label>
+                <label>
+                    <h4 style="margin: 0 0 4px 0;">${N(R("Insertion Position:","STMemoryBooks_InsertionPosition"))}</h4>
+                    <select id="stmb-sp-new-lb-position" class="text_pole">
+                        <option value="0" selected>${N(R("↑Char","STMemoryBooks_CharUp"))}</option>
+                        <option value="1">${N(R("↓Char","STMemoryBooks_CharDown"))}</option>
+                        <option value="2">${N(R("↑AN","STMemoryBooks_ANUp"))}</option>
+                        <option value="3">${N(R("↓AN","STMemoryBooks_ANDown"))}</option>
+                        <option value="4">${N(R("↑EM","STMemoryBooks_EMUp"))}</option>
+                        <option value="5">${N(R("↓EM","STMemoryBooks_EMDown"))}</option>
+                        <option value="7">${N(R("Outlet","STMemoryBooks_Outlet"))}</option>
+                    </select>
+                    <div id="stmb-sp-new-lb-outlet-name-container" class="displayNone" style="margin-top: 8px;">
+                        <label>
+                            <h4 style="margin: 0 0 4px 0;">${N(R("Outlet Name:","STMemoryBooks_OutletName"))}</h4>
+                            <input type="text" id="stmb-sp-new-lb-outlet-name" class="text_pole" placeholder="${N(R("Outlet name (e.g., ENDING)","STMemoryBooks_OutletNamePlaceholder"))}">
+                        </label>
+                    </div>
+                </label>
+            </div>
+            <div class="world_entry_form_control" style="margin-top: 8px;">
+                <h4>${N(R("Insertion Order:","STMemoryBooks_InsertionOrder"))}</h4>
+                <label class="radio_label">
+                    <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-auto" value="auto" checked>
+                    <span>${N(R("Auto (uses memory #)","STMemoryBooks_AutoOrder"))}</span>
+                </label>
+                <label class="radio_label" style="margin-left: 12px;">
+                    <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-manual" value="manual">
+                    <span>${N(R("Manual","STMemoryBooks_ManualOrder"))}</span>
+                </label>
+                <div id="stmb-sp-new-lb-order-value-container" style="display:none; margin-left:28px;">
+                    <label>
+                        <h4 style="margin: 0 0 4px 0;">${N(R("Order Value:","STMemoryBooks_OrderValue"))}</h4>
+                        <input type="number" id="stmb-sp-new-lb-order-value" class="text_pole" step="1" value="100">
+                    </label>
+                </div>
+            </div>
+            <div class="world_entry_form_control" style="margin-top: 8px;">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-new-lb-prevent" checked>
+                    <span>${N(R("Prevent Recursion","STMemoryBooks_PreventRecursion"))}</span>
+                </label>
+                <label class="checkbox_label" style="margin-left: 12px;">
+                    <input type="checkbox" id="stmb-sp-new-lb-delay">
+                    <span>${N(R("Delay Until Recursion","STMemoryBooks_DelayUntilRecursion"))}</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-new-prev-mem-count">
+                <h4>${N(R("Previous memories for context:","STMemoryBooks_PreviousMemoriesForContext"))}</h4>
+<input type="number" id="stmb-sp-new-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="0">
+            </label>
+            <small class="opacity70p">${N(R("Number of previous memory entries to include before scene text (0 = none).","STMemoryBooks_PreviousMemoriesHelp"))}</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <h4>${N(R("Overrides:","STMemoryBooks_Overrides"))}</h4>
+            <div class="world_entry_form_control">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-sp-new-override-enabled">
+                    <span>${N(R("Override default memory profile","STMemoryBooks_OverrideDefaultMemoryProfile"))}</span>
+                </label>
+            </div>
+            <div class="world_entry_form_control" id="stmb-sp-new-override-container" style="display: none;">
+                <label for="stmb-sp-new-override-index">
+                    <h4>${N(R("Connection Profile:","STMemoryBooks_ConnectionProfile"))}</h4>
+                    <select id="stmb-sp-new-override-index" class="text_pole">
+                        ${J}
+                    </select>
+                </label>
+            </div>
+        </div>
+    `,q=new v8(K6.sanitize(W),P0.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:R("Create","STMemoryBooks_Create"),cancelButton:R("Cancel","STMemoryBooks_Cancel")}),Y=()=>{let X=q.dlg,j=X.querySelector("#stmb-sp-new-trg-interval"),F=X.querySelector("#stmb-sp-new-interval-container");j?.addEventListener("change",()=>{if(F)F.style.display=j.checked?"block":"none";if(j.checked)X.querySelector("#stmb-sp-new-interval")?.focus()});let K=X.querySelector("#stmb-sp-new-override-enabled"),H=X.querySelector("#stmb-sp-new-override-container");K?.addEventListener("change",()=>{if(H)H.style.display=K.checked?"block":"none"});let B=X.querySelector("#stmb-sp-new-lb-order-auto"),A=X.querySelector("#stmb-sp-new-lb-order-manual"),O=X.querySelector("#stmb-sp-new-lb-order-value-container"),T=()=>{if(O)O.style.display=A?.checked?"block":"none"};B?.addEventListener("change",T),A?.addEventListener("change",T);let D=X.querySelector("#stmb-sp-new-lb-position"),L=X.querySelector("#stmb-sp-new-lb-outlet-name-container");D?.addEventListener("change",()=>{if(L)L.classList.toggle("displayNone",D.value!=="7")})},z=q.show();if(Y(),await z===V0.AFFIRMATIVE){let X=q.dlg,j=X.querySelector("#stmb-sp-new-name")?.value.trim()||"",F=!!X.querySelector("#stmb-sp-new-enabled")?.checked,K=X.querySelector("#stmb-sp-new-prompt")?.value.trim()||"",H=X.querySelector("#stmb-sp-new-response-format")?.value.trim()||"";if(!K){toastr.error(R("Prompt cannot be empty","STMemoryBooks_PromptCannotBeEmpty"),R("STMemoryBooks","index.toast.title"));return}if(!j)toastr.info(a1("STMemoryBooks_SidePrompts_NoNameProvidedUsingUntitled",'No name provided. Using "{{name}}".',{name:R("Untitled Side Prompt","STMemoryBooks_UntitledSidePrompt")}),R("STMemoryBooks","index.toast.title"));let B={},A=!!X.querySelector("#stmb-sp-new-trg-interval")?.checked,O=!!X.querySelector("#stmb-sp-new-trg-aftermem")?.checked,T=!!X.querySelector("#stmb-sp-new-trg-manual")?.checked;if(A){let h=parseInt(X.querySelector("#stmb-sp-new-interval")?.value??"50",10),r=Math.max(1,isNaN(h)?50:h);B.onInterval={visibleMessages:r}}if(O)B.onAfterMemory={enabled:!0};if(T)B.commands=["sideprompt"];let D={},L=!!X.querySelector("#stmb-sp-new-override-enabled")?.checked;if(D.overrideProfileEnabled=L,L){let h=parseInt(X.querySelector("#stmb-sp-new-override-index")?.value??"",10);if(!isNaN(h))D.overrideProfileIndex=h}let f=X.querySelector("#stmb-sp-new-lb-mode")?.value||"link",m=parseInt(X.querySelector("#stmb-sp-new-lb-position")?.value??"0",10),M=!!X.querySelector("#stmb-sp-new-lb-order-manual")?.checked,_=parseInt(X.querySelector("#stmb-sp-new-lb-order-value")?.value??"100",10),v=!!X.querySelector("#stmb-sp-new-lb-prevent")?.checked,S=!!X.querySelector("#stmb-sp-new-lb-delay")?.checked,b=m===7?X.querySelector("#stmb-sp-new-lb-outlet-name")?.value?.trim()||"":"",d=parseInt(X.querySelector("#stmb-sp-new-prev-mem-count")?.value??"0",10);D.previousMemoriesCount=Number.isFinite(d)&&d>0?Math.min(d,7):0,D.lorebook={constVectMode:["link","green","blue"].includes(f)?f:"link",position:Number.isFinite(m)?m:0,orderMode:M?"manual":"auto",orderValue:Number.isFinite(_)?_:100,preventRecursion:v,delayUntilRecursion:S,...m===7&&b?{outletName:b}:{}};try{await X6({name:j,enabled:F,prompt:K,responseFormat:H,settings:D,triggers:B}),toastr.success(R("SidePrompt created","STMemoryBooks_SidePromptCreated"),R("STMemoryBooks","index.toast.title")),await X0(Z)}catch(h){console.error("STMemoryBooks: Error creating side prompt:",h),toastr.error(R("Failed to create SidePrompt","STMemoryBooks_FailedToCreateSidePrompt"),R("STMemoryBooks","index.toast.title"))}}}async function LG(){try{let Z=await KZ(),Q=new Blob([Z],{type:"application/json"}),G=URL.createObjectURL(Q),J=document.createElement("a");J.href=G,J.download="stmb-side-prompts.json",J.click(),URL.revokeObjectURL(G),toastr.success(R("Side prompts exported successfully","STMemoryBooks_SidePromptsExported"),R("STMemoryBooks","index.toast.title"))}catch(Z){console.error("STMemoryBooks: Error exporting side prompts:",Z),toastr.error(R("Failed to export side prompts","STMemoryBooks_FailedToExportSidePrompts"),R("STMemoryBooks","index.toast.title"))}}async function CG(Z,Q){let G=Z.target.files?.[0];if(!G)return;try{let J=await G.text(),W=await UZ(J);if(W&&typeof W==="object"){let{added:q=0,renamed:Y=0}=W,z=Y>0?a1("STMemoryBooks_ImportedSidePromptsRenamedDetail"," ({{count}} renamed due to key conflicts)",{count:Y}):"";toastr.success(a1("STMemoryBooks_ImportedSidePromptsDetail","Imported side prompts: {{added}} added{{detail}}",{added:q,detail:z}),R("STMemoryBooks","index.toast.title"))}else toastr.success(R("Imported side prompts","STMemoryBooks_ImportedSidePrompts"),R("STMemoryBooks","index.toast.title"));await X0(Q)}catch(J){console.error("STMemoryBooks: Error importing side prompts:",J),toastr.error(a1("STMemoryBooks_FailedToImportSidePrompts","Failed to import: {{message}}",{message:J?.message||"Unknown error"}),R("STMemoryBooks","index.toast.title"))}}async function L5(){try{let Z='<h3 data-i18n="STMemoryBooks_SidePrompts_Title">\uD83C\uDFA1 Trackers & Side Prompts</h3>';Z+='<div class="world_entry_form_control">',Z+='<p class="opacity70p" data-i18n="STMemoryBooks_SidePrompts_Desc">Create and manage side prompts for trackers and other behind-the-scenes functions.</p>',Z+="</div>",Z+='<div class="world_entry_form_control">',Z+='<input type="text" id="stmb-sp-search" class="text_pole" data-i18n="[placeholder]STMemoryBooks_SearchSidePrompts;[aria-label]STMemoryBooks_SearchSidePrompts" placeholder="Search side prompts..." aria-label="Search side prompts" />',Z+="</div>",Z+='<div class="world_entry_form_control">',Z+=`<label for="stmb-sp-max-concurrent"><h4>${N(R("How many concurrent prompts to run at once","STMemoryBooks_SidePrompts_MaxConcurrentLabel"))}</h4></label>`,Z+='<input type="number" id="stmb-sp-max-concurrent" class="text_pole" min="1" max="5" step="1" value="2">',Z+=`<small class="opacity70p">${N(R("Range 1–5. Defaults to 2.","STMemoryBooks_SidePrompts_MaxConcurrentHelp"))}</small>`,Z+="</div>",Z+='<div id="stmb-sp-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>',Z+='<div class="buttons_block justifyCenter gap10px whitespacenowrap">',Z+=`<button id="stmb-sp-new" class="menu_button whitespacenowrap">${N(R("New","STMemoryBooks_SidePrompts_New"))}</button>`,Z+=`<button id="stmb-sp-export" class="menu_button whitespacenowrap">${N(R("Export JSON","STMemoryBooks_SidePrompts_ExportJSON"))}</button>`,Z+=`<button id="stmb-sp-import" class="menu_button whitespacenowrap">${N(R("Import JSON","STMemoryBooks_SidePrompts_ImportJSON"))}</button>`,Z+=`<button id="stmb-sp-recreate-builtins" class="menu_button whitespacenowrap">${N(R("♻️ Recreate Built-in Side Prompts","STMemoryBooks_SidePrompts_RecreateBuiltIns"))}</button>`,Z+="</div>",Z+='<input type="file" id="stmb-sp-import-file" accept=".json" style="display: none;" />';let Q=new v8(K6.sanitize(Z),P0.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:!1,cancelButton:R("Close","STMemoryBooks_Close")});(()=>{let J=Q.dlg;if(!J)return;let W=J.querySelector("#stmb-sp-max-concurrent");if(W){let q=(V,X,j)=>Math.max(X,Math.min(j,V)),Y=q(Number(p1?.STMemoryBooks?.moduleSettings?.sidePromptsMaxConcurrent??2),1,5);W.value=String(Y);let z=()=>{let V=parseInt(W.value,10),X=q(isNaN(V)?2:V,1,5);if(W.value=String(X),!p1.STMemoryBooks)p1.STMemoryBooks={moduleSettings:{}};if(!p1.STMemoryBooks.moduleSettings)p1.STMemoryBooks.moduleSettings={};p1.STMemoryBooks.moduleSettings.sidePromptsMaxConcurrent=X,DG()};W.addEventListener("change",z)}J.querySelector("#stmb-sp-search")?.addEventListener("input",()=>X0(Q)),J.querySelector("#stmb-sp-new")?.addEventListener("click",async()=>{await IG(Q)}),J.querySelector("#stmb-sp-export")?.addEventListener("click",async()=>{await LG()}),J.querySelector("#stmb-sp-import")?.addEventListener("click",()=>{J.querySelector("#stmb-sp-import-file")?.click()}),J.querySelector("#stmb-sp-import-file")?.addEventListener("change",async(q)=>{await CG(q,Q)}),J.querySelector("#stmb-sp-recreate-builtins")?.addEventListener("click",async()=>{let q=`<div class="info_block">${N(R("This will overwrite the built-in Side Prompts (Plotpoints, Status, Cast of Characters, Assess) with the current locale versions. Custom/user-created prompts are not touched. This action cannot be undone.","STMemoryBooks_SidePrompts_RecreateWarning"))}</div>`;if(await new v8(`<h3>${N(R("Recreate Built-in Side Prompts","STMemoryBooks_SidePrompts_RecreateTitle"))}</h3>${q}`,P0.CONFIRM,"",{okButton:R("Recreate","STMemoryBooks_SidePrompts_RecreateOk"),cancelButton:R("Cancel","STMemoryBooks_Cancel")}).show()===V0.AFFIRMATIVE)try{let V=await HZ("overwrite"),X=Number(V?.replaced||0);toastr.success(a1("STMemoryBooks_SidePrompts_RecreateSuccess","Recreated {{count}} built-in side prompts from current locale",{count:X}),R("STMemoryBooks","index.toast.title")),window.dispatchEvent(new CustomEvent("stmb-sideprompts-updated")),await X0(Q)}catch(V){console.error("STMemoryBooks: Error recreating built-in side prompts:",V),toastr.error(R("Failed to recreate built-in side prompts","STMemoryBooks_SidePrompts_RecreateFailed"),R("STMemoryBooks","index.toast.title"))}}),J.addEventListener("click",async(q)=>{let Y=q.target.closest(".stmb-sp-action"),z=q.target.closest("tr[data-tpl-key]");if(!z)return;let V=z.dataset.tplKey;if(J.querySelectorAll("tr[data-tpl-key]").forEach((X)=>{X.classList.remove("ui-state-active"),X.style.backgroundColor="",X.style.border=""}),z.style.backgroundColor="var(--cobalt30a)",z.style.border="",Y){if(q.preventDefault(),q.stopPropagation(),Y.classList.contains("stmb-sp-action-edit"))await wG(Q,V);else if(Y.classList.contains("stmb-sp-action-duplicate"))try{let X=await jZ(V);toastr.success(R("SidePrompt duplicated","STMemoryBooks_SidePromptDuplicated"),R("STMemoryBooks","index.toast.title")),await X0(Q,X)}catch(X){console.error("STMemoryBooks: Error duplicating side prompt:",X),toastr.error(R("Failed to duplicate SidePrompt","STMemoryBooks_FailedToDuplicateSidePrompt"),R("STMemoryBooks","index.toast.title"))}else if(Y.classList.contains("stmb-sp-action-delete")){if(await new v8(`<h3>${N(a1("STMemoryBooks_DeleteSidePromptTitle","Delete Side Prompt",{name:V}))}</h3><p>${N(a1("STMemoryBooks_DeleteSidePromptConfirm","Are you sure you want to delete this template?",{name:V}))}</p>`,P0.CONFIRM,"",{okButton:R("Delete","STMemoryBooks_Delete"),cancelButton:R("Cancel","STMemoryBooks_Cancel")}).show()===V0.AFFIRMATIVE)try{await FZ(V),toastr.success(R("SidePrompt deleted","STMemoryBooks_SidePromptDeleted"),R("STMemoryBooks","index.toast.title")),await X0(Q)}catch(F){console.error("STMemoryBooks: Error deleting side prompt:",F),toastr.error(R("Failed to delete SidePrompt","STMemoryBooks_FailedToDeleteSidePrompt"),R("STMemoryBooks","index.toast.title"))}}return}})})(),await X0(Q),await Q.show();try{w5(Q)}catch(J){}}catch(Z){console.error("STMemoryBooks: Error showing Side Prompts:",Z),toastr.error(R("Failed to open Side Prompts","STMemoryBooks_FailedToOpenSidePrompts"),R("STMemoryBooks","index.toast.title"))}}C8();v1();import{translate as IZ}from"../../../i18n.js";function C5(){return{arc_default:IZ(`You are an expert narrative analyst and memory-engine assistant.
+Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, identify self-contained story arcs, and output each arc as a single memory entry in JSON.
+
+Each arc must be token-efficient, plot-accurate, and compatible with long-running RP memory systems such as STMB.
+
+You will receive input in this exact format:
+- An optional PREVIOUS ARC block, which is canon and must not be rewritten.
+- A MEMORIES block containing entries formatted as:
+  [ID] | ORDER
+  Full text of the memory (may span multiple paragraphs)
+
+Strict output format (JSON only; no markdown, no prose outside JSON):
+{
+  "arcs": [
+    {
+      "title": "Short descriptive arc title (3–6 words)",
+      "summary": "Structured arc summary as a single string (see Summary Content Structure below).",
+      "keywords": ["keyword1", "keyword2", "..."],
+      "member_ids": ["<ID from MEMORIES>", "..."]  // optional: IDs of memories that belong to this arc
+    }
+  ],
+  "unassigned_memories": [
+    { "id": "memory-id", "reason": "Brief explanation of why this memory does not fit the produced arcs." }
+  ]
+}
+
+Arc count rule:
+- Do not force a number of arcs. Produce the smallest coherent number of arcs based on content (often 1–3, possibly 1 if all memories form one arc).
+- Respect chronology using ORDER (ascending).
+- If some memories do not fit the produced arcs, place them in unassigned_memories with a short reason.
+
+Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
+
+PROCESS
+
+STEP 1 — UNIFIED STORY (internal only)
+- Combine ALL memories into a single chronological retelling.
+- Ignore OOC/meta content.
+- Preserve plot-relevant events, character choices, emotional shifts, decisions, consequences, conflicts, promises, boundary negotiations.
+- Exclude flavor-only content unless it affects future behavior.
+- Normalize to past-tense, third-person.
+- Focus on cause → intention → reaction → consequence chains.
+- Do NOT output this unified story.
+
+STEP 2 — IDENTIFY STORY ARCS
+- From the unified story, extract arcs that begin when a meaningful shift occurs in:
+  relationship dynamics; emotional vulnerability; intimacy or distance; conflict/reconciliation; routine/ritual changes; boundaries/negotiations; logistical shifts (travel, location, communication); any event with lasting consequences.
+- Ensure each arc is self-contained and represents a significant movement.
+
+STEP 3 — ARC OBJECTS (fill arcs[] in JSON)
+For each arc, fill fields as follows:
+
+title:
+- 3–6 words, descriptive of the arc’s core.
+
+summary:
+- The entire “Summary Content Structure” below must appear inside this single string (use headings and bullets as plain text).
+- Keep total length 5–15% of the combined text for the arc’s memories.
+- Do not include OOC/meta or filler.
+
+Summary Content Structure (must be followed inside summary string):
+
+# [Arc Title]
+Time period: What timeframe the arc covers (e.g. "March 3–10, 2024", "Week of July 15, 2023")
+
+Arc Premise: One sentence describing what this arc is about.
+
+## Major Beats
+- 3–7 bullets capturing the major plot movements of this arc
+- Focus on cause → effect logic
+- Include only plot-affecting events
+
+## Character Dynamics
+- 1–2 paragraphs describing how the characters’ emotions, motives, boundaries, or relationship changed
+- Include subtext, tension shifts, power exchange changes, new trust/vulnerabilities, or new conflicts
+- Include silent implications if relevant
+
+## Key Exchanges
+- Up to 8 short, exact quotes
+- Only include dialogue that materially shifted tone, emotion, or relationship dynamics
+
+## Outcome & Continuity
+- 4–8 bullets capturing:
+  - decisions
+  - promises
+  - new emotional states
+  - new routines/rituals
+  - injuries or physical changes
+  - foreshadowed future events
+  - unresolved threads
+  - permanent consequences
+
+STEP 4 — KEYWORDS
+- Provide 15–30 standalone retrieval keywords in keywords[] per arc.
+
+MUST:
+- Concrete nouns, physical objects, places, proper nouns, distinctive actions, or memorable scene elements
+- Each keyword = ONE concept only
+- Each keyword must be retrievable if mentioned ALONE
+- Use ONLY nouns or noun-phrases
+
+MUST NOT:
+- No narrative/summary keywords (“start of affair”, “argument resolved”)
+- No emotional/abstract words (intimacy, vulnerability, trust, jealousy, dominance, submission, aftercare, connection, longing, etc.)
+- No multi-fact keywords (“Denver airport Lyft ride and call”)
+- No themes or vibes
+
+Examples of valid keywords:
+- Four Seasons bar
+- Macallan 25
+- private elevator
+- Aston Martin
+- CPAP machine
+- Gramercy Tavern
+- yuzu soda
+- satellite map
+- Life360 app
+- marble desk
+- “pack for forever”
+- “dick-measuring contest”
+
+Classification of non-fitting memories:
+- If a memory obviously belongs to a later arc, is unrelated, flavor-only with no continuity impact, duplicates, or conflicts with PREVIOUS ARC chronology, put it in unassigned_memories with a short reason.
+
+JSON-only:
+- Return only the JSON object described above.
+- No markdown fences, no commentary, no system prompts, no extra text.`,"STMemoryBooks_ArcPrompt_Default"),arc_alternate:IZ(`You are an expert narrative analyst and memory-engine assistant.
+Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, and output a single memory arc entry in JSON. The arc must be token-efficient and plot-accurate.
+
+You will receive input in this exact format:
+- An optional PREVIOUS ARC block, which is canon and must not be rewritten.
+- A MEMORIES block containing entries formatted as:
+  [ID] | ORDER
+  Full text of the memory (may span multiple paragraphs)
+
+Strict output format (JSON only; no markdown, no prose outside JSON):
+{
+  "arcs": [
+    {
+      "title": "Short descriptive arc title (3–6 words)",
+      "summary": "Structured arc summary as a single string (see Summary Content Structure below).",
+      "keywords": ["keyword1", "keyword2", "..."],
+      "member_ids": ["<ID from MEMORIES>", "..."]  // optional: IDs of memories that belong to this arc
+    }
+  ],
+  "unassigned_memories": [
+    { "id": "memory-id", "reason": "Brief explanation of why this memory does not fit the produced arcs." }
+  ]
+}
+
+Notes:
+- Respect chronology using ORDER (ascending).
+- If some memories do not fit the arc, place them in unassigned_memories with a short reason.
+
+Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
+
+PROCESS
+
+STEP 1 — UNIFIED STORY (internal only)
+- Combine ALL memories into a single chronological retelling.
+- Ignore OOC/meta content.
+- Preserve plot-relevant events, character choices, emotional shifts, decisions, consequences, conflicts, promises, boundary negotiations.
+- Exclude flavor-only content unless it affects future behavior.
+- Normalize to past-tense, third-person.
+- Focus on cause → intention → reaction → consequence chains.
+- Do NOT output this unified story.
+
+STEP 2 — IDENTIFY STORY ARCS
+- From the unified story, identify a self-contained arc that represents a significant narrative movement.
+
+STEP 3 — ARC OBJECTS (fill arcs[] in JSON)
+For the story arc, fill fields as follows:
+
+title:
+- 3–6 words, descriptive of the arc’s core.
+
+summary:
+- The entire “Summary Content Structure” below must appear inside this single string (use headings and bullets as plain text).
+- Keep total length 5–15% of the combined text for the arc’s memories.
+- Do not include OOC/meta or filler.
+
+Summary Content Structure (must be followed inside summary string):
+
+# [Arc Title]
+Time period: What timeframe the arc covers (e.g. "March 3–10, 2024", "Week of July 15, 2023")
+
+Arc Premise: One sentence describing what this arc is about.
+
+## Major Beats
+- 3–7 bullets capturing the major plot movements of this arc
+- Focus on cause → effect logic
+- Include only plot-affecting events
+
+## Character Dynamics
+- 1–2 paragraphs describing how the characters’ emotions, motives, boundaries, or relationship changed
+- Include subtext, tension shifts, power exchange changes, new trust/vulnerabilities, or new conflicts
+- Include silent implications if relevant
+
+## Key Exchanges
+- Up to 8 short, exact quotes
+- Only include dialogue that materially shifted tone, emotion, or relationship dynamics
+
+## Outcome & Continuity
+- 4–8 bullets capturing:
+  - decisions
+  - promises
+  - new emotional states
+  - new routines/rituals
+  - injuries or physical changes
+  - foreshadowed future events
+  - unresolved threads
+  - permanent consequences
+
+STEP 4 — KEYWORDS
+- Provide 15–30 standalone retrieval keywords in keywords[] per arc.
+
+MUST:
+- Concrete nouns, physical objects, places, proper nouns, distinctive actions, or memorable scene elements
+- Each keyword = ONE concept only
+- Each keyword must be retrievable if mentioned ALONE
+- Use ONLY nouns or noun-phrases
+
+MUST NOT:
+- No narrative/summary keywords (“start of affair”, “argument resolved”)
+- No emotional/abstract words (intimacy, vulnerability, trust, jealousy, dominance, submission, aftercare, connection, longing, etc.)
+- No multi-fact keywords (“Denver airport Lyft ride and call”)
+- No themes or vibes
+
+Examples of valid keywords:
+- Four Seasons bar
+- Macallan 25
+- private elevator
+- Aston Martin
+- CPAP machine
+- Gramercy Tavern
+- yuzu soda
+- satellite map
+- Life360 app
+- marble desk
+- “pack for forever”
+- “dick-measuring contest”
+
+Classification of non-fitting memories:
+- If a memory obviously belongs to a later arc, is unrelated, flavor-only with no continuity impact, duplicates, or conflicts with PREVIOUS ARC chronology, put it in unassigned_memories with a short reason.
+
+JSON-only:
+- Return only the JSON object described above.
+- No markdown fences, no commentary, no system prompts, no extra text.`,"STMemoryBooks_ArcPrompt_Alternate"),arc_tiny:IZ(`You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
+
+Return JSON only:
+{ "arcs": [ { "title": "...", "summary": "...", "keywords": ["..."], "member_ids": ["<ID>", "..."] } ], "unassigned_memories": [ { "id": "...", "reason": "..." } ] }
+
+Rules:
+- 5–15% length compression
+- Focus on plot, emotional progression, decisions, conflicts, continuity
+- Identify non-fitting items in unassigned_memories with a brief reason
+- No quotes, no OOC, no commentary outside JSON`,"STMemoryBooks_ArcPrompt_Tiny")}}function j0(){return C5()}function P8(){return C5().arc_default}B0();import{getRequestHeaders as LZ}from"../../../../script.js";import{translate as M5}from"../../../i18n.js";var x8="STMemoryBooks-ArcAnalysisPromptManager",CZ=m0.ARC_PROMPTS_FILE,S8={arc_default:"STMemoryBooks_ArcDefaultDisplayName",arc_alternate:"STMemoryBooks_ArcAlternateDisplayName"},x0=null;function MG(Z){return String(Z||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").substring(0,50)}function F0(Z){return String(Z||"").replace(/\w\S*/g,(Q)=>{return Q.charAt(0).toUpperCase()+Q.slice(1).toLowerCase()})}function E8(Z){let Q=String(Z||"").split(`
+`).filter((G)=>G.trim());if(Q.length>0){let J=Q[0].trim().replace(/^(You are|Analyze|Create|Generate|Write)\s+/i,"").replace(/[:.]/g,"").trim();return F0(J.substring(0,50))}return"Arc Prompt"}function h5(Z,Q){let G=j0()||{},J=Q||{},W=MG(Z||"arc-prompt"),q=W,Y=2;while(q in J||q in G)q=`${W}-${Y++}`;return q}function v5(Z){if(!Z||typeof Z!=="object")return!1;if(typeof Z.version!=="number")return!1;if(!Z.overrides||typeof Z.overrides!=="object")return!1;for(let[Q,G]of Object.entries(Z.overrides)){if(!G||typeof G!=="object")return!1;if(typeof G.prompt!=="string"||!G.prompt.trim())return!1;if(G.displayName!==void 0&&typeof G.displayName!=="string")return!1}return!0}async function b1(Z=null){if(x0)return x0;let Q=!1,G=null;try{let J=await fetch(`/user/files/${CZ}`,{method:"GET",credentials:"include",headers:LZ()});if(!J.ok)Q=!0;else{let W=await J.text();if(G=JSON.parse(W),!v5(G))Q=!0}}catch{Q=!0}if(Q){let J={},W=new Date().toISOString(),q=j0()||{};for(let[Y,z]of Object.entries(q)){let V;if(S8[Y])V=M5(S8[Y])||F0(Y.replace(/^arc[_-]?/,"").replace(/[_-]/g," "))||E8(z);else V=F0(Y.replace(/^arc[_-]?/,"").replace(/[_-]/g," "))||E8(z);J[Y]={displayName:V,prompt:z,createdAt:W}}G={version:o1.CURRENT_VERSION,overrides:J},await S0(G)}return x0=G,x0}async function S0(Z){let Q=JSON.stringify(Z,null,2),G=btoa(unescape(encodeURIComponent(Q))),J=await fetch("/api/files/upload",{method:"POST",credentials:"include",headers:LZ(),body:JSON.stringify({name:CZ,data:G})});if(!J.ok){let W=M5("Failed to save arc prompts","STMemoryBooks_ArcPromptManager_SaveFailed");throw Error(`${W}: ${J.statusText}`)}x0=Z,console.log(`${x8}: Arc prompts saved`)}async function MZ(Z){return await b1(Z),!0}async function U6(Z=null){let Q=await b1(Z),G=[];for(let[W,q]of Object.entries(Q.overrides))G.push({key:W,displayName:q.displayName||F0(W),createdAt:q.createdAt||null});let J=j0()||{};for(let W of Object.keys(J))if(!(W in Q.overrides))G.push({key:W,displayName:S8[W]||F0(W.replace(/^arc[_-]?/,"").replace(/[_-]/g," ")),createdAt:null});return G.sort((W,q)=>{if(!W.createdAt)return 1;if(!q.createdAt)return-1;return new Date(q.createdAt)-new Date(W.createdAt)}),G}async function H6(Z,Q=null){let G=await b1(Q);if(G.overrides[Z]&&typeof G.overrides[Z].prompt==="string"&&G.overrides[Z].prompt.trim())return G.overrides[Z].prompt;return j0()[Z]||P8()}async function hZ(Z,Q=null){let G=await b1(Q);if(G.overrides[Z]&&G.overrides[Z].displayName)return G.overrides[Z].displayName;return S8[Z]||F0(String(Z||"").replace(/^arc[_-]?/,"").replace(/[_-]/g," "))||"Arc Prompt"}async function P5(Z,Q=null){let G=await b1(Q),J=j0()||{};return!!(G.overrides[Z]||J[Z])}async function vZ(Z,Q,G){let J=await b1(),W=new Date().toISOString(),q=Z;if(!q)q=h5(G||E8(Q),J.overrides);if(J.overrides[q])J.overrides[q].prompt=Q,J.overrides[q].displayName=G||J.overrides[q].displayName,J.overrides[q].updatedAt=W;else J.overrides[q]={displayName:G||E8(Q),prompt:Q,createdAt:W};return await S0(J),q}async function x5(Z){let Q=await b1(),G=Q.overrides[Z];if(!G)throw Error(`Arc preset "${Z}" not found`);let J=`${G.displayName||F0(Z)} (Copy)`,W=h5(J,Q.overrides),q=new Date().toISOString();return Q.overrides[W]={displayName:J,prompt:G.prompt,createdAt:q},await S0(Q),W}async function S5(Z){let Q=await b1();if(!Q.overrides[Z])throw Error(`Arc preset "${Z}" not found`);delete Q.overrides[Z],await S0(Q)}async function E5(){let Z=await b1();return JSON.stringify(Z,null,2)}async function b5(Z){let Q=JSON.parse(Z);if(!v5(Q))throw Error("Invalid arc prompts file structure.");await S0(Q)}async function y5(Z="overwrite"){if(Z!=="overwrite")console.warn(`${x8}: Unsupported mode "${Z}", defaulting to overwrite`);let Q=await b1(),G=j0()||{},J=Object.keys(G),W=0;if(Q&&Q.overrides&&typeof Q.overrides==="object"){for(let q of J)if(q in Q.overrides)delete Q.overrides[q],W++}return await S0(Q),x0=Q,console.log(`${x8}: Recreated arc built-ins (removed ${W} overrides)`),{removed:W}}async function f5(Z={}){let Q=Z.backup!==!1,G=j0()||{},J=new Date().toISOString(),W={};for(let[z,V]of Object.entries(G))W[z]={displayName:S8[z]||F0(z.replace(/^arc[_-]?/,"").replace(/[_-]/g," "))||E8(V),prompt:V,createdAt:J};let q;try{let z=await b1();if(Q&&z){let V=String(CZ||"stmb-arc-prompts.json").replace(/\.json$/i,""),X=J.replace(/[:.]/g,"-");q=`${V}.backup-${X}.json`;let j=JSON.stringify(z,null,2),F=btoa(unescape(encodeURIComponent(j))),K=await fetch("/api/files/upload",{method:"POST",credentials:"include",headers:LZ(),body:JSON.stringify({name:q,data:F})});if(!K.ok)console.warn(`${x8}: Failed to write backup "${q}": ${K.statusText}`)}}catch(z){console.warn(`${x8}: Backup step failed:`,z)}let Y={version:o1.CURRENT_VERSION,overrides:W};await S0(Y),x0=Y;try{window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated"))}catch{}return{count:Object.keys(W).length,backupName:q}}import{extension_settings as c5}from"../../../extensions.js";import{translate as B6}from"../../../i18n.js";var hG=`Based on this narrative arc summary, generate 15–30 standalone topical keywords that function as retrieval tags, not micro-summaries.
+Keywords must be:
+- Concrete and scene-specific (locations, objects, proper nouns, unique actions, repeated motifs).
+- One concept per keyword — do NOT combine multiple ideas into one keyword.
+- Useful for retrieval if the user later mentions that noun or action alone, not only in a specific context.
+- Not {{char}}'s or {{user}}'s names.
+- Not thematic, emotional, or abstract. Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
+
+Avoid:
+- Overly specific compound keywords (“David Tokyo marriage”).
+- Narrative or plot-summary style keywords (“art dealer date fail”).
+- Keywords that contain multiple facts or descriptors.
+- Keywords that only make sense when the whole scene is remembered.
+
+Prefer:
+- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
+- Specific physical objects ("CPAP machine", "chocolate chip cookies").
+- Distinctive actions ("cookie baking", "piano apology").
+- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
+
+Your goal: keywords should fire when the noun/action is mentioned alone, not only when paired with a specific person or backstory.
+
+Return ONLY a JSON array of 15-30 strings. No commentary, no explanations.`;function p5(Z){return String(Z||"").replace(/\r\n/g,`
+`).replace(/^\uFEFF/,"").replace(/[\u200B-\u200D\u2060]/g,"")}function i5(Z){let Q=/```([\w+-]*)\s*([\s\S]*?)```/g,G=[],J;while((J=Q.exec(Z))!==null)G.push((J[2]||"").trim());return G}function l5(Z){let Q=Z.search(/[\{\[]/);if(Q===-1)return null;let G=Z[Q],J=G==="{"?"}":"]",W=0,q=!1,Y=!1;for(let z=Q;z<Z.length;z++){let V=Z[z];if(q){if(Y)Y=!1;else if(V==="\\")Y=!0;else if(V==='"')q=!1;continue}if(V==='"'){q=!0;continue}if(V===G)W++;else if(V===J){if(W--,W===0)return Z.slice(Q,z+1).trim()}}return null}function o5(Z){let Q="",G=!1,J=!1,W=!1,q=!1;for(let Y=0;Y<Z.length;Y++){let z=Z[Y],V=Z[Y+1];if(G){if(Q+=z,J)J=!1;else if(z==="\\")J=!0;else if(z==='"')G=!1;continue}if(W){if(z===`
+`)W=!1,Q+=z;continue}if(q){if(z==="*"&&V==="/")q=!1,Y++;continue}if(z==='"'){G=!0,Q+=z;continue}if(z==="/"&&V==="/"){W=!0,Y++;continue}if(z==="/"&&V==="*"){q=!0,Y++;continue}Q+=z}return Q}function n5(Z){let Q="",G=!1,J=!1;for(let W=0;W<Z.length;W++){let q=Z[W];if(G){if(Q+=q,J)J=!1;else if(q==="\\")J=!0;else if(q==='"')G=!1;continue}if(q==='"'){G=!0,Q+=q;continue}if(q===","){let Y=W+1;while(Y<Z.length&&/\s/.test(Z[Y]))Y++;if(Z[Y]==="}"||Z[Y]==="]")continue}Q+=q}return Q}function g5(Z){let Q=[],G=new Set;for(let J of Z||[]){let W=String(J||"").trim();if(W=W.replace(/^["']|["']$/g,""),W=W.replace(/^\d+\.\s*/,""),W=W.replace(/^[\-\*\u2022]\s*/,""),W=W.trim(),!W)continue;let q=W.toLowerCase();if(G.has(q))continue;if(G.add(q),Q.push(W),Q.length>=30)break}return Q}function u5(Z){let Q=p5(String(Z||"").trim()),G=[],J=i5(Q);if(J.length)G.push(...J);let W=l5(Q);if(W)G.push(W);G.push(Q);let q=Array.from(new Set(G));for(let V of q)try{let X=n5(o5(V)),j=JSON.parse(X),F=Array.isArray(j)?j:j&&Array.isArray(j.keywords)?j.keywords:null;if(F)return g5(F)}catch{}let Y=Q.split(/\r?\n/).map((V)=>V.trim()).filter(Boolean),z=[];if(Y.length>1)z=Y.map((V)=>V.replace(/^[\-\*\u2022]?\s*\d*\.?\s*/,"").trim());else z=Q.split(/[,;]+/).map((V)=>V.trim());return g5(z)}async function vG(Z,Q){let G=String(Z||"").trim(),J=`${hG}
+
+=== ARC SUMMARY ===
+${G}
+=== END SUMMARY ===`,{text:W}=await I0({model:Q.model,prompt:J,temperature:typeof Q.temperature==="number"?Q.temperature:0.2,api:Q.api,endpoint:Q.endpoint,apiKey:Q.apiKey,extra});try{console.debug("STMB ArcAnalysis: keyword gen response length=%d",(W||"").length)}catch{}let q=[];try{q=u5(W)}catch{}if(!Array.isArray(q)||q.length===0){let Y=`${J}
+
+Return ONLY a JSON array of 15-30 strings.`,z=await I0({model:Q.model,prompt:Y,temperature:typeof Q.temperature==="number"?Q.temperature:0.2,api:Q.api,endpoint:Q.endpoint,apiKey:Q.apiKey,extra});q=u5(z.text)}if(q.length>30)q=q.slice(0,30);return q}function PG(Z){let Q=[];for(let G of Z){if(!G||typeof G!=="object")continue;let J=String(G.uid??""),W=xG(G.comment??"")??0,q=String(G.content??"").trim(),Y=(G.comment||"Untitled").toString().trim();Q.push({id:J,order:W,content:q,title:Y})}return Q.sort((G,J)=>G.order-J.order),Q}function xG(Z){if(!Z)return null;let Q=Z.match(/\[(\d+)\]/);if(Q)return parseInt(Q[1],10);let G=Z.match(/^(\d+)[\s-]/);if(G)return parseInt(G[1],10);return null}function m5({briefs:Z,previousArcSummary:Q=null,previousArcOrder:G=null,promptText:J=null}){let W=J||P8(),q=[];if(Q){if(q.push("=== PREVIOUS ARC (CANON — DO NOT REWRITE, DO NOT INCLUDE IN YOUR NEW SUMMARY) ==="),typeof G<"u"&&G!==null)q.push(`Arc ${G}`);q.push(Q.trim()),q.push("=== END PREVIOUS ARC ==="),q.push("")}return q.push("=== MEMORIES ==="),Z.forEach((Y,z)=>{let V=String(z+1).padStart(3,"0"),X=(Y.title||"").toString().trim(),j=(Y.content||"").toString().trim();q.push(`=== Memory ${V} ===`),q.push(`Title: ${X}`),q.push(`Contents: ${j}`),q.push(`=== end Memory ${V} ===`),q.push("")}),q.push("=== END MEMORIES ==="),q.push(""),`${W}
+
+${q.join(`
+`)}`}function d5(Z){if(!Z||typeof Z!=="string")throw Error(B6("Empty AI response","STMemoryBooks_ArcAnalysis_EmptyResponse"));let Q=p5(Z.trim().replace(/<think>[\s\S]*?<\/think>/gi,"")),G=[],J=i5(Q);if(J.length)G.push(...J);G.push(Q);let W=l5(Q);if(W)G.push(W);let q=Array.from(new Set(G));for(let Y of q)try{let z=Y;z=o5(z),z=n5(z);let V=JSON.parse(z);if(!V||typeof V!=="object")continue;if(!("arcs"in V)||!("unassigned_memories"in V))continue;let X=Array.isArray(V.arcs)?V.arcs:[],j=Array.isArray(V.unassigned_memories)?V.unassigned_memories:[],F=X.filter((H)=>H&&typeof H.title==="string"&&H.title.trim()&&typeof H.summary==="string"&&H.summary.trim()),K=j.filter((H)=>H&&typeof H.id==="string"&&H.id.trim()&&typeof H.reason==="string");return{arcs:F,unassigned_memories:K}}catch{}throw Error(B6("Model did not return valid arc JSON","STMemoryBooks_ArcAnalysis_InvalidJSON"))}async function s5(Z,Q={},G=null){let{presetKey:J="arc_default",maxItemsPerPass:W=12,maxPasses:q=10,minAssigned:Y=2,tokenTarget:z}=Q,V=Q?.extra??{},X=J==="arc_alternate",j=Object.prototype.hasOwnProperty.call(Q,"maxPasses")?q:X?1:q,F=c5?.STMemoryBooks?.moduleSettings?.tokenWarningThreshold,K=typeof z==="number"?z:typeof F==="number"?F:30000,H=K,B=Z.map((S)=>S&&S.entry?S.entry:S).filter(Boolean),A=PG(B),O=new Map(A.map((S)=>[S.id,S])),T=[],D=null;try{if(J&&await P5(J))D=await H6(J)}catch{}if(!D)D=P8();let L=r5(G),f=null,m=null,M=0,_=[];while(O.size>0&&M<j){M++,H=K;let S=Array.from(O.values()).sort((k,i)=>k.order-i.order),b=[];for(let k of _)if(O.has(k.id)&&b.length<W)b.push(k);for(let k of S){if(b.length>=W)break;if(!b.find((i)=>i.id===k.id))b.push(k)}if(b.length===0)break;try{console.debug("STMB ArcAnalysis: pass %d batch=%o",M,b.map((k)=>k.id))}catch{}let d=m5({briefs:b,previousArcSummary:f,previousArcOrder:null,promptText:null}),h=await G0(d,{estimatedOutput:500}),r=b.length,f1=!1;while(h.total>H&&b.length>1)b.pop(),f1=!0,d=m5({briefs:b,previousArcSummary:f,previousArcOrder:m,promptText:null}),h=await G0(d,{estimatedOutput:500});if(f1)try{console.debug("STMB ArcAnalysis: trimmed batch from %d to %d (est=%d, budget=%d)",r,b.length,h.total,H)}catch{}if(h.total>H&&b.length===1){let k=H;H=h.total;try{console.debug("STMB ArcAnalysis: raised budget for single item from %d to %d (est=%d)",k,H,h.total)}catch{}}let{text:k1}=await I0({model:L.model,prompt:d,temperature:L.temperature??0.2,api:L.api,endpoint:L.endpoint,apiKey:L.apiKey,extra:V}),G1;try{G1=d5(k1)}catch(k){let i=`${d}
+
+Return ONLY the JSON object, nothing else. Ensure arrays and commas are valid.`,q1=await I0({model:L.model,prompt:i,temperature:L.temperature??0.2,api:L.api,endpoint:L.endpoint,apiKey:L.apiKey,extra:V});G1=d5(q1.text)}let K1=new Map;b.forEach((k,i)=>{let q1=String(k.id);K1.set(q1,q1);let l1=String(i+1).padStart(3,"0");K1.set(l1,q1),K1.set(String(i+1),q1)});let i1=(k)=>K1.get(String(k).trim()),O1=new Set;if(Array.isArray(G1.unassigned_memories))G1.unassigned_memories.forEach((k)=>{let i=i1(k.id);if(i)O1.add(i)});let Z0=b.filter((k)=>!O1.has(k.id));try{console.debug("STMB ArcAnalysis: pass %d arcs=%d unassigned=%d assigned=%d",M,Array.isArray(G1.arcs)?G1.arcs.length:0,O1.size,Z0.length)}catch{}if(Z0.length<Y&&M>1)break;let _1=Array.isArray(G1.arcs)?G1.arcs:[],g1=new Set,f8=0;for(let k=0;k<_1.length;k++){let i=_1[k];if(!i||typeof i.title!=="string"||typeof i.summary!=="string")continue;let q1=null;if(Array.isArray(i.member_ids))q1=i.member_ids.map(i1).filter((l1)=>l1!==void 0);if(q1&&q1.length>0);else q1=Z0.map((l1)=>l1.id);if(q1.length===0)continue;T.push({order:M*10+k,title:i.title,summary:i.summary,keywords:Array.isArray(i.keywords)?i.keywords:[],memberIds:q1}),q1.forEach((l1)=>g1.add(String(l1))),f8++,f=i.summary}if(T.length>0)m=T[T.length-1].order;else m=null;if(g1.size>0){for(let k of g1)O.delete(String(k));if(O.size===0&&T.length===1)try{console.info("STMB ArcAnalysis: all memories were consumed into a single arc.")}catch{}}else{try{console.debug("STMB ArcAnalysis: no new IDs consumed on pass %d; stopping.",M)}catch{}break}_=b.filter((k)=>O1.has(k.id));try{console.debug("STMB ArcAnalysis: pass %d consumed=%d remaining=%d",M,g1.size,O.size)}catch{}}let v=Array.from(O.values()).map((S)=>S.id);return{arcCandidates:T,leftovers:v}}function r5(Z){if(Z&&Z.api&&Z.model)return Z;if(Z&&(Z.effectiveConnection||Z.connection)){let J=Z.effectiveConnection||Z.connection;return{api:Y1(J.api||l().completionSource||"openai"),model:J.model||Z1().model||"",temperature:typeof J.temperature==="number"?J.temperature:Z1().temperature??0.2,endpoint:J.endpoint,apiKey:J.apiKey}}let Q=l(),G=Z1();return{api:Y1(Q.completionSource||"openai"),model:G.model||"",temperature:G.temperature??0.2}}function SG(Z){if(!Z||typeof Z!=="string")return null;let Q=Z.match(/\[ARC\s+(\d+)\]/i);if(Q)return parseInt(Q[1],10);if(Q=Z.match(/\[ARC\s+\[(\d+)\]\]/i),Q)return parseInt(Q[1],10);return null}function EG(Z){let Q=Object.values(Z?.entries||{}),G=0;for(let J of Q)if(J&&J.stmbArc===!0&&typeof J.comment==="string"){let W=SG(J.comment);if(typeof W==="number"&&W>G)G=W}return G+1}function bG(Z,Q,G){let J=String(Q||"").trim(),W=String(Z||"").trim()||"[ARC 000] - {{title}}";W=W.replace(/\{\{\s*title\s*\}\}/g,J);let q=W.match(/\[([^\]]*?)(0{2,})([^\]]*?)\]/);if(q){let z=q[2].length,V=String(G).padStart(z,"0"),X=`[${q[1]}${V}${q[3]}]`;return W.replace(q[0],X)}return`[ARC ${String(G).padStart(3,"0")}] ${J}`}async function a5({lorebookName:Z,lorebookData:Q,arcCandidates:G,disableOriginals:J=!1}){if(!Z||!Q)throw Error(B6("Missing lorebookName or lorebookData","STMemoryBooks_ArcAnalysis_MissingLorebookData"));let W=[],q=c5?.STMemoryBooks?.arcTitleFormat||"[ARC 000] - {{title}}",Y=EG(Q);try{console.info("STMB ArcAnalysis: committing %d arc(s): %o",G.length,G.map((z)=>z.title))}catch{}for(let z of G){let V=bG(q,z.title,Y++),X=z.summary,j=Array.isArray(z.keywords)?z.keywords:[];if(j.length===0)try{let O=r5(null);j=await vG(X,O)}catch(O){try{console.warn('STMB ArcAnalysis: keyword generation failed for "%s": %s',V,String(O?.message||O))}catch{}}let F={vectorized:!0,selective:!0,order:100,position:0},K={stmemorybooks:!0,stmbArc:!0,type:"arc",key:Array.isArray(j)?j:[],disable:!1},H=await _8(Z,Q,[{title:V,content:X,defaults:F,entryOverrides:K}],{refreshEditor:!1}),B=H&&H[0],A=B?B.uid:null;if(!A)throw Error(B6("Arc upsert returned no entry (commitArcs failed)","STMemoryBooks_ArcAnalysis_UpsertFailed"));if(J&&A){let O=new Set(z.memberIds.map(String)),T=Object.values(Q.entries||{});for(let D of T)if(O.has(String(D.uid)))D.disable=!0,D.disabledByArcId=A}W.push({arcEntryId:A,title:V})}await _8(Z,Q,[],{refreshEditor:!0});try{console.info("STMB ArcAnalysis: committed arc IDs: %o",W.map((z)=>z.arcEntryId))}catch{}return{results:W}}import{Handlebars as yG}from"../../../../lib.js";var PZ=yG.compile(`
+<table style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th data-i18n="STMemoryBooks_PromptManager_DisplayName">Display Name</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#if items}}
+      {{#each items}}
+        <tr data-preset-key="{{key}}" style="cursor: pointer; border-bottom: 1px solid var(--SmartThemeBorderColor);">
+          <td style="padding: 8px;">
+            <span class="stmb-preset-name">{{displayName}}</span>
+            <span class="stmb-inline-actions" style="float: right; display: inline-flex; gap: 10px;">
+              <button class="stmb-action stmb-action-edit" title="Edit" aria-label="Edit" data-i18n="[title]STMemoryBooks_Edit;[aria-label]STMemoryBooks_Edit" style="background:none;border:none;cursor:pointer;">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="stmb-action stmb-action-duplicate" title="Duplicate" aria-label="Duplicate" data-i18n="[title]STMemoryBooks_Duplicate;[aria-label]STMemoryBooks_Duplicate" style="background:none;border:none;cursor:pointer;">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+              <button class="stmb-action stmb-action-delete" title="Delete" aria-label="Delete" data-i18n="[title]STMemoryBooks_Delete;[aria-label]STMemoryBooks_Delete" style="background:none;border:none;cursor:pointer;">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </span>
+          </td>
+        </tr>
+      {{/each}}
+    {{else}}
+      <tr>
+        <td>
+          <div class="opacity50p" data-i18n="STMemoryBooks_PromptManager_NoPresets">No presets available</div>
+        </td>
+      </tr>
+    {{/if}}
+  </tbody>
+</table>
+`);import{t as x,translate as U,applyLocale as K8,addLocaleData as SZ,getCurrentLocale as iG}from"../../../i18n.js";async function t5(Z){let G={zh:"zh-cn",zh_cn:"zh-cn",zh_tw:"zh-tw","zh.tw":"zh-tw","zh-cn":"zh-cn","zh-tw":"zh-tw","zh-CN":"zh-cn","zh-TW":"zh-tw",ja:"ja-jp",ja_jp:"ja-jp","ja-JP":"ja-jp","ja-jp":"ja-jp",ru:"ru-ru",ru_ru:"ru-ru","ru-RU":"ru-ru","ru-ru":"ru-ru",es:"es-es","es-es":"es-es",ko:"ko-kr",ko_kr:"ko-kr","ko-KR":"ko-kr","ko-kr":"ko-kr",ms:"ms-my",ms_my:"ms-my","ms-MY":"ms-my","ms-my":"ms-my",id:"id-id",id_id:"id-id","id-ID":"id-id","id-id":"id-id",en:"en",en_us:"en","en-US":"en","en-us":"en",en_gb:"en","en-GB":"en","en-gb":"en"}[Z]||Z,W={"zh-cn":"./locales/zh-cn.json","zh-tw":"./locales/zh-tw.json","ja-jp":"./locales/ja-jp.json","ru-ru":"./locales/ru-ru.json","es-es":"./locales/es-es.json","ko-kr":"./locales/ko-kr.json","ms-my":"./locales/ms-my.json","id-id":"./locales/id-id.json"}[G];if(!W)return null;try{let q=await fetch(new URL(W,import.meta.url));if(!q.ok)return null;return await q.json()}catch(q){return console.warn("STMemoryBooks: Failed to load locale JSON for",G,q),null}}var fG={STMemoryBooks_Settings:"\uD83D\uDCD5 Memory Books Settings",STMemoryBooks_CurrentScene:"Current Scene:",STMemoryBooks_Start:"Start",STMemoryBooks_End:"End",STMemoryBooks_Message:"Message",STMemoryBooks_Messages:"Messages",STMemoryBooks_EstimatedTokens:"Estimated tokens",STMemoryBooks_NoSceneMarkers:"No scene markers set. Use the chevron buttons in chat messages to mark start (►) and end (◄) points.",STMemoryBooks_MemoryStatus:"Memory Status",STMemoryBooks_ProcessedUpTo:"Processed up to message",STMemoryBooks_NoMemoriesProcessed:"No memories have been processed for this chat yet",STMemoryBooks_SinceVersion:"(since updating to version 3.6.2 or higher.)",STMemoryBooks_AutoSummaryNote:'Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.',STMemoryBooks_Preferences:"Preferences:",STMemoryBooks_AlwaysUseDefault:"Always use default profile (no confirmation prompt)",STMemoryBooks_ShowMemoryPreviews:"Show memory previews",STMemoryBooks_ShowNotifications:"Show notifications",STMemoryBooks_UnhideBeforeMemory:"Unhide hidden messages for memory generation (runs /unhide X-Y)",STMemoryBooks_EnableManualMode:"Enable Manual Lorebook Mode",STMemoryBooks_ManualModeDesc:"When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.",STMemoryBooks_AutoCreateLorebook:"Auto-create lorebook if none exists",STMemoryBooks_AutoCreateLorebookDesc:"When enabled, automatically creates and binds a lorebook to the chat if none exists.",STMemoryBooks_LorebookNameTemplate:"Lorebook Name Template:",STMemoryBooks_LorebookNameTemplateDesc:"Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.",STMemoryBooks_LorebookNameTemplatePlaceholder:"LTM - {{char}} - {{chat}}",STMemoryBooks_CurrentLorebookConfig:"Current Lorebook Configuration",STMemoryBooks_Mode:"Mode:",STMemoryBooks_ActiveLorebook:"Active Lorebook:",STMemoryBooks_NoneSelected:"None selected",STMemoryBooks_UsingChatBound:"Using chat-bound lorebook",STMemoryBooks_NoChatBound:"No chat-bound lorebook. Memories will require lorebook selection.",STMemoryBooks_AllowSceneOverlap:"Allow scene overlap",STMemoryBooks_AllowSceneOverlapDesc:"Check this box to skip checking for overlapping memories/scenes.",STMemoryBooks_RefreshEditor:"Refresh lorebook editor after adding memories",STMemoryBooks_AutoSummaryEnabled:"Auto-create memory summaries",STMemoryBooks_AutoSummaryDesc:"Automatically run /nextmemory after a specified number of messages.",STMemoryBooks_AutoSummaryInterval:"Auto-Summary Interval:",STMemoryBooks_AutoSummaryIntervalDesc:"Number of messages after which to automatically create a memory summary.",STMemoryBooks_AutoSummaryBuffer:"Auto-Summary Buffer:",STMemoryBooks_AutoSummaryBufferDesc:"Delay auto-summary by X messages (belated generation). Default 2, max 50.",STMemoryBooks_DefaultInterval:"50",STMemoryBooks_AutoSummaryReadyTitle:"Auto-Summary Ready",STMemoryBooks_AutoSummaryNoAssignedLorebook:"Auto-summary is enabled but there is no assigned lorebook for this chat.",STMemoryBooks_AutoSummarySelectOrPostponeQuestion:"Would you like to select a lorebook for memory storage, or postpone this auto-summary?",STMemoryBooks_PostponeLabel:"Postpone for how many messages?",STMemoryBooks_Postpone10:"10 messages",STMemoryBooks_Postpone20:"20 messages",STMemoryBooks_Postpone30:"30 messages",STMemoryBooks_Postpone40:"40 messages",STMemoryBooks_Postpone50:"50 messages",STMemoryBooks_Button_SelectLorebook:"Select Lorebook",STMemoryBooks_Button_Postpone:"Postpone",STMemoryBooks_Error_NoLorebookSelectedForAutoSummary:"No lorebook selected for auto-summary.",STMemoryBooks_Info_AutoSummaryPostponed:"Auto-summary postponed for {{count}} messages.",STMemoryBooks_Error_NoLorebookForAutoSummary:"No lorebook available for auto-summary.",STMemoryBooks_Error_SelectedLorebookNotFound:'Selected lorebook "{{name}}" not found.',STMemoryBooks_Error_FailedToLoadSelectedLorebook:"Failed to load the selected lorebook.",STMemoryBooks_DefaultMemoryCount:"Default Previous Memories Count:",STMemoryBooks_DefaultMemoryCountDesc:"Default number of previous memories to include as context when creating new memories.",STMemoryBooks_MemoryCount0:"None (0 memories)",STMemoryBooks_MemoryCount1:"Last 1 memory",STMemoryBooks_MemoryCount2:"Last 2 memories",STMemoryBooks_MemoryCount3:"Last 3 memories",STMemoryBooks_MemoryCount4:"Last 4 memories",STMemoryBooks_MemoryCount5:"Last 5 memories",STMemoryBooks_MemoryCount6:"Last 6 memories",STMemoryBooks_MemoryCount7:"Last 7 memories",STMemoryBooks_AutoHideMode:"Auto-hide messages after adding memory:",STMemoryBooks_AutoHideModeDesc:"Choose what messages to automatically hide after creating a memory.",STMemoryBooks_AutoHideNone:"Do not auto-hide",STMemoryBooks_AutoHideAll:"Auto-hide all messages up to the last memory",STMemoryBooks_AutoHideLast:"Auto-hide only messages in the last memory",STMemoryBooks_UnhiddenCount:"Messages to leave unhidden:",STMemoryBooks_UnhiddenCountDesc:"Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)",STMemoryBooks_DefaultUnhidden:"0",STMemoryBooks_TokenWarning:"Token Warning Threshold:",STMemoryBooks_TokenWarningDesc:"Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000",STMemoryBooks_DefaultTokenWarning:"30000",STMemoryBooks_TitleFormat:"Memory Title Format:",STMemoryBooks_CustomTitleFormat:"Custom Title Format...",STMemoryBooks_EnterCustomFormat:"Enter custom format",STMemoryBooks_TitleFormatDesc:"Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",STMemoryBooks_Profiles:"Memory Profiles:",STMemoryBooks_Profile_CurrentST:"Current SillyTavern Settings",STMemoryBooks_Default:"(Default)",STMemoryBooks_ProfileSettings:"Profile Settings:",STMemoryBooks_Provider:"Provider",STMemoryBooks_Model:"Model",STMemoryBooks_Temperature:"Temperature",STMemoryBooks_ViewPrompt:"View Prompt",STMemoryBooks_ProfileActions:"Profile Actions:",STMemoryBooks_extraFunctionButtons:"Import/Export Profiles:",STMemoryBooks_promptManagerButtons:"Prompt Managers",STMemoryBooks_PromptManagerButtonsHint:"Want to tweak things? Use the buttons below to customize each prompt type.",STMemoryBooks_CreateMemory:"Create Memory",STMemoryBooks_ScenePreview:"Scene Preview:",STMemoryBooks_UsingProfile:"Using Profile",STMemoryBooks_LargeSceneWarning:"Large scene",STMemoryBooks_MayTakeTime:"may take some time to process.",STMemoryBooks_AdvancedOptionsHint:'Click "Advanced Options" to customize prompt, context memories, or API settings.',STMemoryBooks_AdvancedOptions:"Advanced Memory Options",STMemoryBooks_SceneInformation:"Scene Information:",STMemoryBooks_Total:"total",STMemoryBooks_BaseTokens:"Base tokens",STMemoryBooks_TotalTokens:"Total tokens",STMemoryBooks_Profile:"Profile",STMemoryBooks_ChangeProfileDesc:"Change the profile to use different base settings.",STMemoryBooks_MemoryCreationPrompt:"Memory Creation Prompt:",STMemoryBooks_CustomizePromptDesc:"Customize the prompt used to generate this memory.",STMemoryBooks_MemoryPromptPlaceholder:"Memory creation prompt",STMemoryBooks_IncludePreviousMemories:"Include Previous Memories as Context:",STMemoryBooks_PreviousMemoriesDesc:"Previous memories provide context for better continuity.",STMemoryBooks_Found:"Found",STMemoryBooks_ExistingMemorySingular:"existing memory in lorebook.",STMemoryBooks_ExistingMemoriesPlural:"existing memories in lorebook.",STMemoryBooks_NoMemoriesFound:"No existing memories found in lorebook.",STMemoryBooks_APIOverride:"API Override Settings:",STMemoryBooks_CurrentSTSettings:"Current SillyTavern Settings:",STMemoryBooks_API:"API",STMemoryBooks_UseCurrentSettings:"Use current SillyTavern settings instead of profile settings",STMemoryBooks_OverrideDesc:"Override the profile's model and temperature with your current SillyTavern settings.",STMemoryBooks_SaveAsNewProfile:"Save as New Profile:",STMemoryBooks_ProfileName:"Profile Name:",STMemoryBooks_SaveProfileDesc:"Your current settings differ from the selected profile. Save them as a new profile.",STMemoryBooks_EnterProfileName:"Enter new profile name",STMemoryBooks_LargeSceneWarningShort:"⚠️ Large scene may take some time to process.",STMemoryBooks_MemoryPreview:"\uD83D\uDCD6 Memory Preview",STMemoryBooks_MemoryPreviewDesc:"Review the generated memory below. You can edit the content while preserving the structure.",STMemoryBooks_MemoryTitle:"Memory Title:",STMemoryBooks_MemoryTitlePlaceholder:"Memory title",STMemoryBooks_MemoryContent:"Memory Content:",STMemoryBooks_MemoryContentPlaceholder:"Memory content",STMemoryBooks_Keywords:"Keywords:",STMemoryBooks_KeywordsDesc:"Separate keywords with commas",STMemoryBooks_KeywordsPlaceholder:"keyword1, keyword2, keyword3",STMemoryBooks_UnknownProfile:"Unknown Profile",STMemoryBooks_PromptManager_Title:"\uD83E\uDDE9 Summary Prompt Manager",STMemoryBooks_PromptManager_Desc:"Manage your summary generation prompts. All presets are editable.",STMemoryBooks_PromptManager_Search:"Search presets...",STMemoryBooks_PromptManager_DisplayName:"Display Name",STMemoryBooks_PromptManager_DateCreated:"Date Created",STMemoryBooks_PromptManager_New:"➕ New Preset",STMemoryBooks_PromptManager_Edit:"✏️ Edit",STMemoryBooks_PromptManager_Duplicate:"\uD83D\uDCCB Duplicate",STMemoryBooks_PromptManager_Delete:"\uD83D\uDDD1️ Delete",STMemoryBooks_PromptManager_Export:"\uD83D\uDCE4 Export JSON",STMemoryBooks_PromptManager_Import:"\uD83D\uDCE5 Import JSON",STMemoryBooks_PromptManager_ApplyToProfile:"✅ Apply to Selected Profile",STMemoryBooks_PromptManager_NoPresets:"No presets available",STMemoryBooks_Profile_MemoryMethod:"Memory Creation Method:",STMemoryBooks_Profile_PresetSelectDesc:"Choose a preset. Create and edit presets in the Summary Prompt Manager.",STMemoryBooks_CustomPromptManaged:"Custom prompts are now controlled by the Summary Prompt Manager.",STMemoryBooks_OpenPromptManager:"\uD83E\uDDE9 Open Summary Prompt Manager",STMemoryBooks_MoveToPreset:"\uD83D\uDCCC Move Current Custom Prompt to Preset",STMemoryBooks_MoveToPresetConfirmTitle:"Move to Preset",STMemoryBooks_MoveToPresetConfirmDesc:"Create a preset from this profile's custom prompt, set the preset on this profile, and clear the custom prompt?",STMemoryBooks_SidePrompts_Title:"\uD83C\uDFA1 Trackers & Side Prompts",STMemoryBooks_SidePrompts_Desc:"Create and manage side prompts for trackers and other behind-the-scenes functions.",STMemoryBooks_EditSidePrompt:"Edit Side Prompt",STMemoryBooks_ResponseFormatPlaceholder:"Optional response format",STMemoryBooks_PreviousMemoriesHelp:"Number of previous memory entries to include before scene text (0 = none).",STMemoryBooks_Name:"Name",STMemoryBooks_Key:"Key",STMemoryBooks_Enabled:"Enabled",STMemoryBooks_RunOnVisibleMessageInterval:"Run on visible message interval",STMemoryBooks_IntervalVisibleMessages:"Interval (visible messages):",STMemoryBooks_RunAutomaticallyAfterMemory:"Run automatically after memory",STMemoryBooks_AllowManualRunViaSideprompt:"Allow manual run via /sideprompt",STMemoryBooks_Triggers:"Triggers",STMemoryBooks_ResponseFormatOptional:"Response Format (optional)",STMemoryBooks_OrderValue:"Order Value",STMemoryBooks_PreviousMemoriesForContext:"Previous memories for context",STMemoryBooks_Overrides:"Overrides",STMemoryBooks_OverrideDefaultMemoryProfile:"Override default memory profile",STMemoryBooks_ConnectionProfile:"Connection Profile",STMemoryBooks_NewSidePrompt:"New Side Prompt",STMemoryBooks_MySidePromptPlaceholder:"My Side Prompt",STMemoryBooks_Actions:"Actions",STMemoryBooks_None:"None",STMemoryBooks_Edit:"Edit",STMemoryBooks_Duplicate:"Duplicate",STMemoryBooks_NoSidePromptsAvailable:"No side prompts available.",STMemoryBooks_SidePrompts_New:"➕ New",STMemoryBooks_SidePrompts_ExportJSON:"\uD83D\uDCE4 Export JSON",STMemoryBooks_SidePrompts_ImportJSON:"\uD83D\uDCE5 Import JSON",STMemoryBooks_SidePrompts_RecreateBuiltIns:"♻️ Recreate Built-in Side Prompts",STMemoryBooks_SidePrompts_RecreateTitle:"Recreate Built-in Side Prompts",STMemoryBooks_SidePrompts_RecreateWarning:"This will overwrite the built-in Side Prompts (Plotpoints, Status, Cast of Characters, Assess) with the current locale versions. Custom/user-created prompts are not touched. This action cannot be undone.",STMemoryBooks_SidePrompts_RecreateOk:"Recreate",STMemoryBooks_SidePrompts_RecreateSuccess:"Recreated {{count}} built-in side prompts from current locale",STMemoryBooks_SidePrompts_RecreateFailed:"Failed to recreate built-in side prompts",STMemoryBooks_SidePrompts_MaxConcurrentLabel:"Max concurrent side prompts",STMemoryBooks_SidePrompts_MaxConcurrentHelp:"This controls how many side prompts can be running at one time. Lower this value if you have a slow connection or are running into rate limits. Default: 3",STMemoryBooks_SidePromptCreated:'SidePrompt "{{name}}" created.',STMemoryBooks_FailedToCreateSidePrompt:"Failed to create SidePrompt.",STMemoryBooks_SidePromptDuplicated:'SidePrompt "{{name}}" duplicated.',STMemoryBooks_FailedToDuplicateSidePrompt:"Failed to duplicate SidePrompt.",STMemoryBooks_SidePromptDeleted:'SidePrompt "{{name}}" deleted.',STMemoryBooks_FailedToDeleteSidePrompt:"Failed to delete SidePrompt.",STMemoryBooks_SidePromptsExported:"Side prompts exported.",STMemoryBooks_FailedToExportSidePrompts:"Failed to export side prompts.",STMemoryBooks_ImportedSidePrompts:"Imported {{count}} side prompts.",STMemoryBooks_ImportedSidePromptsDetail:"Imported side prompts: {{added}} added{{detail}}",STMemoryBooks_ImportedSidePromptsRenamedDetail:" ({{count}} renamed due to key conflicts)",STMemoryBooks_FailedToImportSidePrompts:"Failed to import side prompts.",STMemoryBooks_DeleteSidePromptTitle:"Delete Side Prompt",STMemoryBooks_DeleteSidePromptConfirm:'Are you sure you want to delete "{{name}}"?',STMemoryBooks_NameEmptyKeepPrevious:"Name was empty. Keeping previous name.",STMemoryBooks_SidePrompts_NoNameProvidedUsingUntitled:'No name provided. Using "Untitled Side Prompt".',STMemoryBooks_MenuItem:"Memory Books",STMemoryBooks_Close:"Close",STMemoryBooks_NoMatches:"No matches",STMemoryBooks_RunSidePrompt:"Run Side Prompt",STMemoryBooks_SearchSidePrompts:"Search side prompts...",STMemoryBooks_Interval:"Interval",STMemoryBooks_AfterMemory:"AfterMemory",STMemoryBooks_Manual:"Manual",STMemoryBooks_AutomaticChatBound:"Automatic (Chat-bound)",STMemoryBooks_UsingChatBoundLorebook:'Using chat-bound lorebook "<strong>{{lorebookName}}</strong>"',STMemoryBooks_NoChatBoundLorebook:"No chat-bound lorebook. Memories will require lorebook selection.",STMemoryBooks_ManualLorebookSetupTitle:"Manual Lorebook Setup",STMemoryBooks_ManualLorebookSetupDesc1:'You have a chat-bound lorebook "<strong>{{name}}</strong>".',STMemoryBooks_ManualLorebookSetupDesc2:"Would you like to use it for manual mode or select a different one?",STMemoryBooks_UseChatBound:"Use Chat-bound",STMemoryBooks_SelectDifferent:"Select Different",STMemoryBooks_SidePromptGuide:'SidePrompt guide: Type a template name after the space to see suggestions. Usage: /sideprompt "Name" [X-Y]. Quote names with spaces.',STMemoryBooks_MultipleMatches:'Multiple matches: {{top}}{{more}}. Refine the name or use quotes. Usage: /sideprompt "Name" [X-Y]',STMemoryBooks_ClearCustomPromptTitle:"Clear Custom Prompt?",STMemoryBooks_ClearCustomPromptDesc:"This profile has a custom prompt. Clear it so the selected preset is used?",STMemoryBooks_CreateNewPresetTitle:"Create New Preset",STMemoryBooks_DisplayNameTitle:"Display Name:",STMemoryBooks_MyCustomPreset:"My Custom Preset",STMemoryBooks_PromptTitle:"Prompt:",STMemoryBooks_EnterPromptPlaceholder:"Enter your prompt here...",STMemoryBooks_EditPresetTitle:"Edit Preset",STMemoryBooks_DeletePresetTitle:"Delete Preset",STMemoryBooks_DeletePresetConfirm:'Are you sure you want to delete "{{name}}"?',STMemoryBooks_NotSet:"Not Set",STMemoryBooks_ProfileNamePlaceholder:"Profile name",STMemoryBooks_ModelAndTempSettings:"Model & Temperature Settings:",STMemoryBooks_ModelHint:"For model, copy-paste the exact model ID, eg. `gemini-2.5-pro`, `deepseek/deepseek-r1-0528:free`, `gpt-4o-mini-2024-07-18`, etc.",STMemoryBooks_ModelPlaceholder:"Paste model ID here",STMemoryBooks_APIProvider:"API/Provider:",STMemoryBooks_CustomAPI:"Custom API",STMemoryBooks_FullManualConfig:"Full Manual Configuration",STMemoryBooks_TemperatureRange:"Temperature (0.0 - 2.0):",STMemoryBooks_TemperaturePlaceholder:"DO NOT LEAVE BLANK! If unsure put 0.8.",STMemoryBooks_APIEndpointURL:"API Endpoint URL:",STMemoryBooks_APIEndpointPlaceholder:"https://api.example.com/v1/chat/completions",STMemoryBooks_APIKey:"API Key:",STMemoryBooks_APIKeyPlaceholder:"Enter your API key",STMemoryBooks_LorebookEntrySettings:"Lorebook Entry Settings",STMemoryBooks_LorebookEntrySettingsDesc:"These settings control how the generated memory is saved into the lorebook.",STMemoryBooks_OutletName:"Outlet Name",STMemoryBooks_OutletNamePlaceholder:"e.g., ENDING",STMemoryBooks_ActivationMode:"Activation Mode:",STMemoryBooks_ActivationModeDesc:"\uD83D\uDD17 Vectorized is recommended for memories.",STMemoryBooks_Vectorized:"\uD83D\uDD17 Vectorized (Default)",STMemoryBooks_Constant:"\uD83D\uDD35 Constant",STMemoryBooks_Normal:"\uD83D\uDFE2 Normal",STMemoryBooks_InsertionPosition:"Insertion Position:",STMemoryBooks_InsertionPositionDesc:"↑Char is recommended. Aiko recommends memories never go lower than ↑AN.",STMemoryBooks_CharUp:"↑Char",STMemoryBooks_CharDown:"↓Char",STMemoryBooks_ANUp:"↑AN",STMemoryBooks_ANDown:"↓AN",STMemoryBooks_EMUp:"↑EM",STMemoryBooks_EMDown:"↓EM",STMemoryBooks_Outlet:"Outlet",STMemoryBooks_InsertionOrder:"Insertion Order:",STMemoryBooks_AutoOrder:"Auto (uses memory #)",STMemoryBooks_ManualOrder:"Manual",STMemoryBooks_RecursionSettings:"Recursion Settings:",STMemoryBooks_PreventRecursion:"Prevent Recursion",STMemoryBooks_DelayUntilRecursion:"Delay Until Recursion",STMemoryBooks_RefreshPresets:"\uD83D\uDD04 Refresh Presets",STMemoryBooks_Button_CreateMemory:"Create Memory",STMemoryBooks_Button_AdvancedOptions:"Advanced Options...",STMemoryBooks_Button_SaveAsNewProfile:"Save as New Profile",STMemoryBooks_SaveProfileAndCreateMemory:"Save Profile & Create Memory",STMemoryBooks_Tooltip_SaveProfileAndCreateMemory:"Save the modified settings as a new profile and create the memory",STMemoryBooks_Tooltip_CreateMemory:"Create memory using the selected profile settings",STMemoryBooks_EditAndSave:"Edit & Save",STMemoryBooks_RetryGeneration:"Retry Generation",STMemoryBooks_PromptManager_Hint:`\uD83D\uDCA1 When creating a new prompt, copy one of the other built-in prompts and then amend it. Don't change the "respond with JSON" instructions, \uD83D\uDCD5Memory Books uses that to process the returned result from the AI.`,STMemoryBooks_ExpandEditor:"Expand the editor",STMemoryBooks_ClearAndApply:"Clear and Apply",STMemoryBooks_Cancel:"Cancel",STMemoryBooks_Create:"Create",STMemoryBooks_Save:"Save",STMemoryBooks_Delete:"Delete",STMemoryBooks_Toast_ProfileSaved:'Profile "{{name}}" saved successfully',STMemoryBooks_Toast_ProfileSaveFailed:"Failed to save profile: {{message}}",STMemoryBooks_Toast_ProfileNameOrProceed:'Please enter a profile name or use "Create Memory" to proceed without saving',STMemoryBooks_Toast_ProfileNameRequired:"Please enter a profile name",STMemoryBooks_Toast_UnableToReadEditedValues:"Unable to read edited values",STMemoryBooks_Toast_UnableToFindInputFields:"Unable to find input fields",STMemoryBooks_Toast_TitleCannotBeEmpty:"Memory title cannot be empty",STMemoryBooks_Toast_ContentCannotBeEmpty:"Memory content cannot be empty",STMemoryBooks_Toast_NoMemoryLorebookAssigned:"No memory lorebook is assigned. Open Memory Books settings and select or bind a lorebook.",STMemoryBooks_Error_NoMemoryLorebookAssigned:"No memory lorebook assigned",STMemoryBooks_Error_FailedToLoadLorebook:"Failed to load lorebook",STMemoryBooks_Toast_FailedToLoadLorebook:"Failed to load the selected lorebook.",STMemoryBooks_Toast_SidePromptFailed:'SidePrompt "{{name}}" failed: {{message}}',STMemoryBooks_Toast_FailedToUpdateSidePrompt:'Failed to update sideprompt entry "{{name}}"',STMemoryBooks_Toast_FailedToSaveWave:"Failed to save SidePrompt updates for this wave",STMemoryBooks_Toast_SidePromptsSucceeded:"Side Prompts after memory: {{okCount}} succeeded. {{succeeded}}",STMemoryBooks_Toast_SidePromptsPartiallyFailed:"Side Prompts after memory: {{okCount}} succeeded, {{failCount}} failed. {{failed}}",STMemoryBooks_Toast_SidePromptNameNotProvided:'SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]',STMemoryBooks_Toast_SceneClearedStart:"Scene cleared due to start marker deletion",STMemoryBooks_Toast_SceneEndPointCleared:"Scene end point cleared due to message deletion",STMemoryBooks_Toast_SceneMarkersAdjusted:"Scene markers adjusted due to message deletion.",STMemoryBooks_MarkSceneStart:"Mark Scene Start",STMemoryBooks_MarkSceneEnd:"Mark Scene End",STMemoryBooks_CreateMemoryBtn:"Create Memory",STMemoryBooks_ClearSceneBtn:"Clear Scene",STMemoryBooks_NoSceneSelected:"No scene selected. Make sure both start and end points are set.",STMemoryBooks_NoSceneMarkersToastr:"No scene markers set. Use chevron buttons to mark start and end points first.",STMemoryBooks_MissingRangeArgument:"Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)",STMemoryBooks_InvalidFormat:"Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)",STMemoryBooks_InvalidMessageIDs:"Invalid message IDs parsed. Use: /scenememory X-Y (e.g., /scenememory 10-15)",STMemoryBooks_StartGreaterThanEnd:"Start message cannot be greater than end message",STMemoryBooks_MessageIDsOutOfRange:"Message IDs out of range.",STMemoryBooks_MessagesDoNotExist:"One or more specified messages do not exist",STMemoryBooks_SceneSet:"Scene set.",STMemoryBooks_MemoryAlreadyInProgress:"Memory creation is already in progress",STMemoryBooks_NoLorebookAvailable:"No lorebook available.",STMemoryBooks_NoMessagesToSummarize:"There are no messages to summarize yet.",STMemoryBooks_NoNewMessagesSinceLastMemory:"No new messages since the last memory.",STMemoryBooks_NextMemoryFailed:"Failed to run /nextmemory.",STMemoryBooks_OnlyNOfRequestedMemoriesAvailable:"Only some of the requested memories are available",STMemoryBooks_NoPreviousMemoriesFound:"No previous memories found in lorebook",STMemoryBooks_WorkingToast:"Creating memory...",STMemoryBooks_MaximumRetryAttemptsReached:"Maximum retry attempts reached",STMemoryBooks_RetryingMemoryGeneration:"Retrying memory generation...",STMemoryBooks_UnableToRetrieveEditedMemoryData:"Unable to retrieve edited memory data",STMemoryBooks_EditedMemoryDataIncomplete:"Edited memory data is incomplete",STMemoryBooks_MemoryCreatedSuccessfully:"Memory created successfully!",STMemoryBooks_MemoryCreationFailedWillRetry:"Memory creation failed. Retrying...",STMemoryBooks_SceneTooLarge:"Scene is too large. Try selecting a smaller range.",STMemoryBooks_AIFailedToGenerateValidMemory:"AI failed to generate valid memory.",STMemoryBooks_ProfileConfigurationError:"Profile configuration error.",STMemoryBooks_FailedToCreateMemory:"Failed to create memory.",STMemoryBooks_LoadingCharacterData:"SillyTavern is still loading character data, please wait a few seconds and try again.",STMemoryBooks_GroupChatDataUnavailable:"Group chat data not available, please wait a few seconds and try again.",STMemoryBooks_LorebookValidationError:"Lorebook validation error",STMemoryBooks_SceneOverlap:"Scene overlaps with existing memory.",STMemoryBooks_UnexpectedError:"An unexpected error occurred.",STMemoryBooks_ChangeManualLorebook:"Change",STMemoryBooks_SelectManualLorebook:"Select",STMemoryBooks_ManualLorebook:"Manual Lorebook",STMemoryBooks_FailedToSelectManualLorebook:"Failed to select manual lorebook",STMemoryBooks_ClearManualLorebook:"Clear Manual Lorebook",STMemoryBooks_ManualLorebookCleared:"Manual lorebook cleared",STMemoryBooks_FailedToClearManualLorebook:"Failed to clear manual lorebook",STMemoryBooks_SetAsDefault:"Set as Default",STMemoryBooks_SetAsDefaultProfileSuccess:'"{{name}}" is now the default profile.',STMemoryBooks_EditProfile:"Edit Profile",STMemoryBooks_FailedToEditProfile:"Failed to edit profile",STMemoryBooks_NewProfile:"New Profile",STMemoryBooks_FailedToCreateProfile:"Failed to create profile",STMemoryBooks_DeleteProfile:"Delete Profile",STMemoryBooks_FailedToDeleteProfile:"Failed to delete profile",STMemoryBooks_ExportProfiles:"Export Profiles",STMemoryBooks_FailedToExportProfiles:"Failed to export profiles",STMemoryBooks_ImportProfiles:"Import Profiles",STMemoryBooks_SummaryPromptManager:"Summary Prompt Manager",STMemoryBooks_FailedToOpenSummaryPromptManager:"Failed to open Summary Prompt Manager",STMemoryBooks_SidePrompts:"Side Prompts",STMemoryBooks_FailedToOpenSidePrompts:"Failed to open Side Prompts",STMemoryBooks_SelectPresetFirst:"Select a preset first",STMemoryBooks_NoProfilesAvailable:"No profiles available",STMemoryBooks_SelectedProfileNotFound:"Selected profile not found",STMemoryBooks_PresetAppliedToProfile:"Preset applied to profile",STMemoryBooks_PromptCannotBeEmpty:"Prompt cannot be empty",STMemoryBooks_PresetCreatedSuccessfully:"Preset created successfully",STMemoryBooks_FailedToCreatePreset:"Failed to create preset",STMemoryBooks_PresetUpdatedSuccessfully:"Preset updated successfully",STMemoryBooks_FailedToEditPreset:"Failed to edit preset",STMemoryBooks_PresetDuplicatedSuccessfully:"Preset duplicated successfully",STMemoryBooks_FailedToDuplicatePreset:"Failed to duplicate preset",STMemoryBooks_PresetDeletedSuccessfully:"Preset deleted successfully",STMemoryBooks_PromptsExportedSuccessfully:"Prompts exported successfully",STMemoryBooks_PromptsImportedSuccessfully:"Prompts imported successfully",STMemoryBooks_FailedToImportPrompts:"Failed to import prompts.",STMemoryBooks_CreateMemoryButton:"Create Memory",STMemoryBooks_ConsolidateArcsButton:"Consolidate Memories into Arcs",STMemoryBooks_NoSceneSelectedMakeSure:"No scene selected. Make sure both start and end points are set.",STMemoryBooks_ClearSceneButton:"Clear Scene",STMemoryBooks_FailedToImportProfiles:"Failed to import profiles",STMemoryBooks_ManualLorebookSet:'Manual lorebook set to "{{name}}"',STMemoryBooks_PleaseSelectLorebookForManualMode:"Please select a lorebook for manual mode",STMemoryBooks_FailedToSaveSettings:"Failed to save settings. Please try again.",STMemoryBooks_FailedToInitializeChatMonitoring:"STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.",STMemoryBooks_Label_CurrentSTModel:"Current SillyTavern model",STMemoryBooks_Label_CurrentSTTemperature:"Current SillyTavern temperature",STMemoryBooks_Label_TotalTokens:"Total tokens: {{count}}",STMemoryBooks_Label_TotalTokensCalculating:"Total tokens: Calculating...",STMemoryBooks_Warn_LargeSceneTokens:"⚠️ Large scene ({{tokens}} tokens) may take some time to process.",STMemoryBooks_ModifiedProfileName:"{{name}} - Modified",STMemoryBooks_ProfileEditTitle:"Edit Profile",STMemoryBooks_CancelClose:"Cancel/Close",STMemoryBooks_InvalidProfileData:"Invalid profile data",STMemoryBooks_ProfileUpdatedSuccess:"Profile updated successfully",STMemoryBooks_NewProfileTitle:"New Profile",STMemoryBooks_ProfileCreatedSuccess:"Profile created successfully",STMemoryBooks_DeleteProfileConfirm:'Delete profile "{{name}}"?',STMemoryBooks_CannotDeleteLastProfile:"Cannot delete the last profile",STMemoryBooks_CannotDeleteDefaultProfile:'Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work',STMemoryBooks_ProfileDeletedSuccess:"Profile deleted successfully",STMemoryBooks_ProfilesExportedSuccess:"Profiles exported successfully",STMemoryBooks_ImportErrorInvalidFormat:"Invalid profile data format - missing profiles array",STMemoryBooks_ImportErrorNoValidProfiles:"No valid profiles found in import file",STMemoryBooks_ImportSuccess:"Imported {{importedCount}} profile{{plural}}",STMemoryBooks_ImportSkipped:" ({{skippedCount}} duplicate{{plural}} skipped)",STMemoryBooks_ImportComplete:"STMemoryBooks profile import completed",STMemoryBooks_ImportNoNewProfiles:"No new profiles imported - all profiles already exist",STMemoryBooks_ImportFailed:"Failed to import profiles: {{message}}",STMemoryBooks_ImportReadError:"Failed to read import file",STMemoryBooks_PromptManagerNotFound:"Prompt Manager button not found. Open main settings and try again.",STMemoryBooks_PresetListRefreshed:"Preset list refreshed",STMemoryBooks_FailedToRefreshPresets:"Failed to refresh presets",STMemoryBooks_NoCustomPromptToMigrate:"No custom prompt to migrate",STMemoryBooks_CustomPromptMigrated:"Preset created and selected. Remember to Save.",STMemoryBooks_FailedToMigrateCustomPrompt:"Failed to move custom prompt to preset",STMemoryBooks_Toast_SidePromptUpdated:'SidePrompt "{{name}}" updated.',STMemoryBooks_Toast_SidePromptNotFound:"SidePrompt template not found. Check name.",STMemoryBooks_Toast_ManualRunDisabled:'Manual run is disabled for this template. Enable "Allow manual run via /sideprompt" in the template settings.',STMemoryBooks_Toast_NoMessagesAvailable:"No messages available.",STMemoryBooks_Toast_InvalidRangeFormat:"Invalid range format. Use X-Y",STMemoryBooks_Toast_InvalidMessageRange:"Invalid message range for /sideprompt",STMemoryBooks_Toast_FailedToCompileRange:"Failed to compile the specified range",STMemoryBooks_Toast_SidePromptRangeTip:'Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.',STMemoryBooks_Toast_FailedToCompileMessages:"Failed to compile messages for /sideprompt",STMemoryBooks_Plotpoints:"Plotpoints",STMemoryBooks_PlotpointsPrompt:"Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating.",STMemoryBooks_Status:"Status",STMemoryBooks_StatusPrompt:"Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.",STMemoryBooks_CastOfCharacters:"Cast of Characters",STMemoryBooks_CastOfCharactersPrompt:`You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. 
+Step 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.
+Step 2: This list should be kept in order of importance to the plot, so it may need to be reordered.
+Step 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.`,STMemoryBooks_Assess:"Assess",STMemoryBooks_AssessPrompt:'Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental "note to self"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things.',STMemoryBooks_PlotpointsResponseFormat:`=== Plot Points ===
+(as of [point in the story when this analysis was done])
+
+[Overarching Plot Arc]
+(2-3 sentence summary of the superobjective or major plot)
+
+[Thread #1 Title]
+- Summary: (1 sentence)
+- Status: (active / on hold)
+- At Stake: (how resolution will affect the ongoing story)
+- Last Known: (location or time)
+- Key Characters: ...
+
+
+[Thread #2 Title]
+- Summary: (1 sentence)
+- Status: (active / on hold)
+- At Stake: (how resolution will affect the ongoing story)
+- Last Known: (location or time)
+- Key Characters: ...
+
+...
+
+-- Plot Hooks --
+- (new or potential plot hooks)
+
+-- Character Dynamics --
+- current status of {{user}}'s/{{char}}'s relationships with NPCs
+
+===End Plot Points===
+`,STMemoryBooks_StatusResponseFormat:`Follow this general format:
+
+## Witty Headline or Summary
+
+### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)
+- Score with evidence
+- Recent changes 
+- Supporting quotes
+- Anything else that might be illustrative of the current affinity
+
+### LOVEFACTOR and LUSTFACTOR
+(!lovefactor and !lustfactor reports go here)
+
+### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)
+- Trust/boundaries/communication
+- Key events
+- Issues
+- Any other pertinent points
+
+### GOALS
+- Short/long-term objectives
+- Progress/obstacles
+- Growth areas
+- Any other pertinent points
+
+### ANALYSIS
+- Psychology/POV
+- Development/triggers
+- Story suggestions
+- Any other pertinent points
+
+### WRAP-UP
+- OOC Summary (1 paragraph)`,STMemoryBooks_CastOfCharactersResponseFormat:`===NPC WHO'S WHO===
+(In order of importance to the plot)
+
+Person 1: 1-2 sentence desription
+Person 2: 1-2 sentence desription
+===END NPC WHO'S WHO===`,STMemoryBooks_AssessResponseFormat:`Use this format: 
+=== Things {{char}} has learned about {{user}} ===
+(detailed list, in {{char}}'s POV/tone of voice)
+===`,STMemoryBooks_FailedToSaveSidePrompts:"Failed to save side prompts: {{status}} {{statusText}}",STMemoryBooks_SidePromptsSaved:"Side prompts saved successfully",STMemoryBooks_MigratingSidePrompts:"Migrating side prompts file from V1(type) to V2(triggers)",STMemoryBooks_InvalidSidePromptsFile:"Invalid side prompts file structure; recreating with built-ins",STMemoryBooks_ErrorLoadingSidePrompts:"Error loading side prompts; creating base doc",STMemoryBooks_UntitledSidePrompt:"Untitled Side Prompt",STMemoryBooks_TemplateNotFound:'Template "{{key}}" not found',STMemoryBooks_CopyOfTemplate:"{{name}} (Copy)",STMemoryBooks_InvalidSidePromptsJSON:"Invalid side prompts file structure",STMemoryBooks_ConverterTitle:"STMemoryBooks Lorebook Converter (v3)",STMemoryBooks_ConverterHeader:"Lorebook Converter",STMemoryBooks_ConverterDescription:'This tool flags entries by adding `stmemorybooks: true`. An entry is converted only if it matches the title format, is <strong>not</strong> set to `"vectorized": false`, and has its `"position"` set to `0`.',STMemoryBooks_ConverterSampleTitleLabel:"Sample Title Format (Optional)",STMemoryBooks_ConverterSampleTitlePlaceholder:"e.g., 01 - My First Memory",STMemoryBooks_ConverterSampleTitleDescription:'The tool will find the first number and use it to create a pattern. If blank, it defaults to matching titles like "01 - title".',STMemoryBooks_ConverterFileUploadLabel:"Click or Drag to Upload Lorebook File",STMemoryBooks_ConverterIncludeVectorizedLabel:"Include \uD83D\uDD35 entries",STMemoryBooks_ConverterIncludeVectorizedDescription:"If enabled, entries with `vectorized: false` will also be included as memories.",STMemoryBooks_ConverterConvertButton:"Convert File",STMemoryBooks_ConverterConversionComplete:"Conversion complete!",STMemoryBooks_ConverterDownloadLink:"Download {{filename}}",STMemoryBooks_ConverterErrorProcessingFile:"Error processing file. Please ensure it is a valid JSON lorebook. Error: {{message}}",STMemoryBooks_ConverterInvalidLorebookStructure:"Invalid lorebook structure: 'entries' object not found.",STMemoryBooks_ConverterUsingDefaultRegex:"Using default: {{regex}}",STMemoryBooks_ConverterConversionStats:"Conversion complete. Checked {{totalEntries}} entries and flagged {{memoriesConverted}} as memories.","addlore.errors.invalidContent":"Invalid memory result: missing content","addlore.errors.invalidLorebookValidation":"Invalid lorebook validation data","addlore.errors.createEntryFailed":"Failed to create new lorebook entry","addlore.toast.added":'Memory "{{entryTitle}}" added to "{{lorebookName}}"',"addlore.toast.addFailed":"Failed to add memory: {{message}}","addlore.toast.autohideInvalidRange":"Auto-hide skipped: invalid scene range metadata","addlore.toast.title":"STMemoryBooks","addlore.result.added":'Memory successfully added to "{{lorebookName}}"',"addlore.result.addFailed":"Failed to add memory to lorebook: {{message}}","addlore.defaults.title":"Memory","addlore.defaults.scene":"Scene {{range}}","addlore.defaults.user":"User","addlore.sanitize.fallback":"Auto Memory","addlore.preview.error":"Error: {{message}}","addlore.preview.sampleTitle":"Sample Memory Title","addlore.preview.sampleProfile":"Summary","addlore.stats.errors.noBinding":"No lorebook bound to chat","addlore.stats.errors.loadFailed":"Failed to load lorebook","addlore.titleFormat.errors.nonEmpty":"Title format must be a non-empty string","addlore.titleFormat.warnings.sanitization":"Title contains characters that will be removed during sanitization","addlore.titleFormat.warnings.unknownPlaceholders":"Unknown placeholders: {{placeholders}}","addlore.titleFormat.warnings.invalidNumbering":"Invalid numbering patterns: {{patterns}}. Use [0], [00], [000], (0), {0}, #0 etc.","addlore.titleFormat.warnings.tooLong":"Title format is very long and may be truncated","addlore.upsert.errors.invalidArgs":"Invalid arguments to upsertLorebookEntryByTitle","addlore.upsert.errors.createFailed":"Failed to create lorebook entry","addlore.titleFormats.0":"[000] - {{title}} ({{profile}})","addlore.titleFormats.1":"{{date}} [000] \uD83C\uDFAC{{title}}, {{messages}} msgs","addlore.titleFormats.2":"[000] {{date}} - {{char}} Memory","addlore.titleFormats.3":"[00] - {{user}} & {{char}} {{scene}}","addlore.titleFormats.4":"\uD83E\uDDE0 [000] ({{messages}} msgs)","addlore.titleFormats.5":"\uD83D\uDCDA Memory #[000] - {{profile}} {{date}} {{time}}","addlore.titleFormats.6":"[000] - {{scene}}: {{title}}","addlore.titleFormats.7":"[000] - {{title}} ({{scene}})","addlore.titleFormats.8":"[000] - {{title}}","addlore.log.executingHideCommand":"STMemoryBooks-AddLore: Executing hide command{{context}}: {{hideCommand}}","addlore.warn.autohideSkippedInvalidRange":'STMemoryBooks-AddLore: Auto-hide skipped - invalid scene range: "{{range}}"',"addlore.hideCommand.allComplete":"all mode - complete","addlore.hideCommand.allPartial":"all mode - partial","addlore.hideCommand.lastHideAll":"last mode - hide all","addlore.hideCommand.lastPartial":"last mode - partial","addlore.log.addFailed":"STMemoryBooks-AddLore: Failed to add memory to lorebook:","addlore.log.getStatsError":"STMemoryBooks-AddLore: Error getting lorebook stats:","addlore.log.updateHighestCalled":"STMemoryBooks-AddLore: updateHighestMemoryProcessed called with:","addlore.log.sceneRangeExtracted":"STMemoryBooks-AddLore: sceneRange extracted:","addlore.warn.noSceneRange":"STMemoryBooks-AddLore: No scene range found in memory result, cannot update highest processed","addlore.warn.invalidSceneRangeFormat":"STMemoryBooks-AddLore: Invalid scene range format: {{range}}","addlore.warn.invalidEndMessage":"STMemoryBooks-AddLore: Invalid end message number: {{end}}","addlore.warn.noSceneMarkers":"STMemoryBooks-AddLore: Could not get scene markers to update highest processed","addlore.log.setHighest":"STMemoryBooks-AddLore: Set highest memory processed to message {{endMessage}}","addlore.log.updateHighestError":"STMemoryBooks-AddLore: Error updating highest memory processed:","autocreate.log.creating":'STMemoryBooks-AutoCreate: Auto-creating lorebook "{{name}}" for {{context}}',"autocreate.log.created":'STMemoryBooks-AutoCreate: Successfully created and bound lorebook "{{name}}"',"autocreate.log.createFailed":"STMemoryBooks-AutoCreate: Failed to create lorebook","autocreate.log.createError":"STMemoryBooks-AutoCreate: Error creating lorebook:","autosummary.log.postponed":"STMemoryBooks: Auto-summary postponed for {{count}} messages (until message {{until}})","autosummary.log.skippedInProgress":"STMemoryBooks: Auto-summary skipped - memory creation in progress","autosummary.log.noPrevious":"STMemoryBooks: No previous memories found - counting from start","autosummary.log.sinceLast":"STMemoryBooks: Messages since last memory ({{highestProcessed}}): {{count}}","autosummary.log.triggerCheck":"STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?","autosummary.log.notTriggered":"STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages","autosummary.log.postponedUntil":"STMemoryBooks: Auto-summary postponed until message {{until}}","autosummary.log.blocked":"STMemoryBooks: Auto-summary blocked - lorebook validation failed: {{error}}","autosummary.log.clearedPostpone":"STMemoryBooks: Cleared auto-summary postpone flag","autosummary.log.triggered":"STMemoryBooks: Auto-summary triggered - creating memory for range {{start}}-{{end}}","autosummary.log.triggerError":"STMemoryBooks: Error in auto-summary trigger check:","autosummary.log.messageReceivedSingle":"STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: {{count}}","autosummary.log.messageReceivedGroup":"STMemoryBooks: Message received in group chat - deferring to GROUP_WRAPPER_FINISHED","autosummary.log.messageHandlerError":"STMemoryBooks: Error in auto-summary message received handler:","autosummary.log.groupFinished":"STMemoryBooks: Group conversation finished - auto-summary enabled, current count: {{count}}","autosummary.log.groupHandlerError":"STMemoryBooks: Error in auto-summary group finished handler:","autocreate.toast.title":"STMemoryBooks","autocreate.toast.createdBound":'Created and bound lorebook "{{name}}"',"autocreate.errors.failedAutoCreate":"Failed to auto-create lorebook.","autocreate.errors.failedAutoCreateWithMessage":"Failed to auto-create lorebook: {{message}}","common.unknown":"Unknown",STMemoryBooks_ArcPromptManager:"Arc Prompt Manager",STMemoryBooks_Arc_RebuildBuiltins:"Rebuild from built-ins",STMemoryBooks_Arc_MaxPerPass:"Maximum number of memories to process in each pass",STMemoryBooks_Arc_MaxPasses:"Number of automatic arc attempts",STMemoryBooks_Arc_MinAssigned:"Minimum number of memories in each arc",STMemoryBooks_Arc_TokenBudget:"Token Budget",STMemoryBooks_Arc_RebuildTitle:"Rebuild Arc Prompts from Built-ins",STMemoryBooks_Arc_RebuildWarning:"This will overwrite your saved Arc prompt presets with the built-ins. A timestamped backup will be created.",STMemoryBooks_Arc_RebuildNote:"After rebuild, the preset list will refresh automatically.",STMemoryBooks_ConsolidateArcs_DisableOriginals:"Disable originals after creating arcs",STMemoryBooks_ConsolidateArcs_Tip:"Tip: uncheck memories that should not be included.",STMemoryBooks_ArcAnalysis_EmptyResponse:"Empty AI response",STMemoryBooks_ArcAnalysis_InvalidJSON:"Model did not return valid arc JSON",STMemoryBooks_ArcAnalysis_MissingLorebookData:"Missing lorebookName or lorebookData",STMemoryBooks_ArcAnalysis_UpsertFailed:"Arc upsert returned no entry (commitArcs failed)",STMemoryBooks_ArcPromptManager_SaveFailed:"Failed to save arc prompts",STMemoryBooks_ArcPrompt_Default:`You are an expert narrative analyst and memory-engine assistant.
+Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, identify self-contained story arcs, and output each arc as a single memory entry in JSON.
+
+Each arc must be token-efficient, plot-accurate, and compatible with long-running RP memory systems such as STMB.
+
+You will receive input in this exact format:
+- An optional PREVIOUS ARC block, which is canon and must not be rewritten.
+- A MEMORIES block containing entries formatted as:
+  [ID] | ORDER
+  Full text of the memory (may span multiple paragraphs)
+
+Strict output format (JSON only; no markdown, no prose outside JSON):
+{
+  "arcs": [
+    {
+      "title": "Short descriptive arc title (3–6 words)",
+      "summary": "Structured arc summary as a single string (see Summary Content Structure below).",
+      "keywords": ["keyword1", "keyword2", "..."],
+      "member_ids": ["<ID from MEMORIES>", "..."]  // optional: IDs of memories that belong to this arc
+    }
+  ],
+  "unassigned_memories": [
+    { "id": "memory-id", "reason": "Brief explanation of why this memory does not fit the produced arcs." }
+  ]
+}
+
+Arc count rule:
+- Do not force a number of arcs. Produce the smallest coherent number of arcs based on content (often 1–3, possibly 1 if all memories form one arc).
+- Respect chronology using ORDER (ascending).
+- If some memories do not fit the produced arcs, place them in unassigned_memories with a short reason.
+
+Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
+
+PROCESS
+
+STEP 1 — UNIFIED STORY (internal only)
+- Combine ALL memories into a single chronological retelling.
+- Ignore OOC/meta content.
+- Preserve plot-relevant events, character choices, emotional shifts, decisions, consequences, conflicts, promises, boundary negotiations.
+- Exclude flavor-only content unless it affects future behavior.
+- Normalize to past-tense, third-person.
+- Focus on cause → intention → reaction → consequence chains.
+- Do NOT output this unified story.
+
+STEP 2 — IDENTIFY STORY ARCS
+- From the unified story, extract arcs that begin when a meaningful shift occurs in:
+  relationship dynamics; emotional vulnerability; intimacy or distance; conflict/reconciliation; routine/ritual changes; boundaries/negotiations; logistical shifts (travel, location, communication); any event with lasting consequences.
+- Ensure each arc is self-contained and represents a significant movement.
+
+STEP 3 — ARC OBJECTS (fill arcs[] in JSON)
+For each arc, fill fields as follows:
+
+title:
+- 3–6 words, descriptive of the arc’s core.
+
+summary:
+- The entire “Summary Content Structure” below must appear inside this single string (use headings and bullets as plain text).
+- Keep total length 5–15% of the combined text for the arc’s memories.
+- Do not include OOC/meta or filler.
+
+Summary Content Structure (must be followed inside summary string):
+
+# [Arc Title]
+Time period: What timeframe the arc covers (e.g. "March 3–10, 2024", "Week of July 15, 2023")
+
+Arc Premise: One sentence describing what this arc is about.
+
+## Major Beats
+- 3–7 bullets capturing the major plot movements of this arc
+- Focus on cause → effect logic
+- Include only plot-affecting events
+
+## Character Dynamics
+- 1–2 paragraphs describing how the characters’ emotions, motives, boundaries, or relationship changed
+- Include subtext, tension shifts, power exchange changes, new trust/vulnerabilities, or new conflicts
+- Include silent implications if relevant
+
+## Key Exchanges
+- Up to 8 short, exact quotes
+- Only include dialogue that materially shifted tone, emotion, or relationship dynamics
+
+## Outcome & Continuity
+- 4–8 bullets capturing:
+  - decisions
+  - promises
+  - new emotional states
+  - new routines/rituals
+  - injuries or physical changes
+  - foreshadowed future events
+  - unresolved threads
+  - permanent consequences
+
+STEP 4 — KEYWORDS
+- Provide 15–30 standalone retrieval keywords in keywords[] per arc.
+
+MUST:
+- Concrete nouns, physical objects, places, proper nouns, distinctive actions, or memorable scene elements
+- Each keyword = ONE concept only
+- Each keyword must be retrievable if mentioned ALONE
+- Use ONLY nouns or noun-phrases
+
+MUST NOT:
+- No narrative/summary keywords (“start of affair”, “argument resolved”)
+- No emotional/abstract words (intimacy, vulnerability, trust, jealousy, dominance, submission, aftercare, connection, longing, etc.)
+- No multi-fact keywords (“Denver airport Lyft ride and call”)
+- No themes or vibes
+
+Examples of valid keywords:
+- Four Seasons bar
+- Macallan 25
+- private elevator
+- Aston Martin
+- CPAP machine
+- Gramercy Tavern
+- yuzu soda
+- satellite map
+- Life360 app
+- marble desk
+- “pack for forever”
+- “dick-measuring contest”
+
+Classification of non-fitting memories:
+- If a memory obviously belongs to a later arc, is unrelated, flavor-only with no continuity impact, duplicates, or conflicts with PREVIOUS ARC chronology, put it in unassigned_memories with a short reason.
+
+JSON-only:
+- Return only the JSON object described above.
+- No markdown fences, no commentary, no system prompts, no extra text.`,STMemoryBooks_ArcPrompt_Alternate:`You are an expert narrative analyst and memory-engine assistant.
+Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, and output a single memory arc entry in JSON. The arc must be token-efficient and plot-accurate.
+
+You will receive input in this exact format:
+- An optional PREVIOUS ARC block, which is canon and must not be rewritten.
+- A MEMORIES block containing entries formatted as:
+  [ID] | ORDER
+  Full text of the memory (may span multiple paragraphs)
+
+Strict output format (JSON only; no markdown, no prose outside JSON):
+{
+  "arcs": [
+    {
+      "title": "Short descriptive arc title (3–6 words)",
+      "summary": "Structured arc summary as a single string (see Summary Content Structure below).",
+      "keywords": ["keyword1", "keyword2", "..."],
+      "member_ids": ["<ID from MEMORIES>", "..."]  // optional: IDs of memories that belong to this arc
+    }
+  ],
+  "unassigned_memories": [
+    { "id": "memory-id", "reason": "Brief explanation of why this memory does not fit the produced arcs." }
+  ]
+}
+
+Notes:
+- Respect chronology using ORDER (ascending).
+- If some memories do not fit the arc, place them in unassigned_memories with a short reason.
+
+Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
+
+PROCESS
+
+STEP 1 — UNIFIED STORY (internal only)
+- Combine ALL memories into a single chronological retelling.
+- Ignore OOC/meta content.
+- Preserve plot-relevant events, character choices, emotional shifts, decisions, consequences, conflicts, promises, boundary negotiations.
+- Exclude flavor-only content unless it affects future behavior.
+- Normalize to past-tense, third-person.
+- Focus on cause → intention → reaction → consequence chains.
+- Do NOT output this unified story.
+
+STEP 2 — IDENTIFY STORY ARCS
+- From the unified story, identify a self-contained arc that represents a significant narrative movement.
+
+STEP 3 — ARC OBJECTS (fill arcs[] in JSON)
+For the story arc, fill fields as follows:
+
+title:
+- 3–6 words, descriptive of the arc’s core.
+
+summary:
+- The entire "Summary Content Structure" below must appear inside this single string (use headings and bullets as plain text).
+- Keep total length 5–15% of the combined text for the arc’s memories.
+- Do not include OOC/meta or filler.
+
+Summary Content Structure (must be followed inside summary string):
+
+# [Arc Title]
+Time period: What timeframe the arc covers (e.g. "March 3–10, 2024", "Week of July 15, 2023")
+
+Arc Premise: One sentence describing what this arc is about.
+
+## Major Beats
+- 3–7 bullets capturing the major plot movements of this arc
+- Focus on cause → effect logic
+- Include only plot-affecting events
+
+## Character Dynamics
+- 1–2 paragraphs describing how the characters’ emotions, motives, boundaries, or relationship changed
+- Include subtext, tension shifts, power exchange changes, new trust/vulnerabilities, or new conflicts
+- Include silent implications if relevant
+
+## Key Exchanges
+- Up to 8 short, exact quotes
+- Only include dialogue that materially shifted tone, emotion, or relationship dynamics
+
+## Outcome & Continuity
+- 4–8 bullets capturing:
+  - decisions
+  - promises
+  - new emotional states
+  - new routines/rituals
+  - injuries or physical changes
+  - foreshadowed future events
+  - unresolved threads
+  - permanent consequences
+
+STEP 4 — KEYWORDS
+- Provide 15–30 standalone retrieval keywords in keywords[] per arc.
+
+MUST:
+- Concrete nouns, physical objects, places, proper nouns, distinctive actions, or memorable scene elements
+- Each keyword = ONE concept only
+- Each keyword must be retrievable if mentioned ALONE
+- Use ONLY nouns or noun-phrases
+
+MUST NOT:
+- No narrative/summary keywords (“start of affair”, “argument resolved”)
+- No emotional/abstract words (intimacy, vulnerability, trust, jealousy, dominance, submission, aftercare, connection, longing, etc.)
+- No multi-fact keywords (“Denver airport Lyft ride and call”)
+- No themes or vibes
+
+Examples of valid keywords:
+- Four Seasons bar
+- Macallan 25
+- private elevator
+- Aston Martin
+- CPAP machine
+- Gramercy Tavern
+- yuzu soda
+- satellite map
+- Life360 app
+- marble desk
+- “pack for forever”
+- “dick-measuring contest”
+
+Classification of non-fitting memories:
+- If a memory obviously belongs to a later arc, is unrelated, flavor-only with no continuity impact, duplicates, or conflicts with PREVIOUS ARC chronology, put it in unassigned_memories with a short reason.
+
+JSON-only:
+- Return only the JSON object described above.
+- No markdown fences, no commentary, no system prompts, no extra text.`,STMemoryBooks_ArcPrompt_Tiny:`You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
+
+Return JSON only:
+{ "arcs": [ { "title": "...", "summary": "...", "keywords": ["..."], "member_ids": ["<ID>", "..."] } ], "unassigned_memories": [ { "id": "...", "reason": "..." } ] }
+
+Rules:
+- 5–15% length compression
+- Focus on plot, emotional progression, decisions, conflicts, continuity
+- Identify non-fitting items in unassigned_memories with a brief reason
+- No quotes, no OOC, no commentary outside JSON`,"chatcompile.errors.sceneMarkersRequired":"Scene markers are required for compilation","chatcompile.errors.startGreaterThanEnd":"Start marker cannot be greater than end marker","chatcompile.errors.outOfBounds":"Scene markers ({{start}}-{{end}}) are out of chat bounds (0-{{max}})","chatcompile.errors.noVisibleInRange":"No visible messages found in range {{start}}-{{end}}. All messages may be hidden or missing.","chatcompile.validation.errors.missingMetadata":"Missing metadata object","chatcompile.validation.errors.invalidMessagesArray":"Missing or invalid messages array","chatcompile.validation.warnings.noMessages":"No messages in compiled scene","chatcompile.validation.warnings.messageMissingId":"Message at index {{index}} missing ID","chatcompile.validation.warnings.messageMissingName":"Message at index {{index}} missing speaker name","chatcompile.validation.warnings.messageMissingContent":"Message at index {{index}} missing content","chatcompile.validation.warnings.veryLargeScene":"Very large scene (>100 messages) - consider breaking into smaller segments","chatcompile.readable.headerMetadata":"=== SCENE METADATA ===","chatcompile.readable.range":"Range: Messages {{start}}-{{end}}","chatcompile.readable.chat":"Chat: {{chatId}}","chatcompile.readable.character":"Character: {{name}}","chatcompile.readable.compiled":"Compiled: {{count}} messages","chatcompile.readable.compiledAt":"Compiled at: {{date}}","chatcompile.readable.headerMessages":"=== SCENE MESSAGES ===","chatcompile.readable.line":"[{{id}}] {{name}}: {{text}}","chatcompile.defaults.user":"User","confirmationPopup.toast.title":"STMemoryBooks","confirmationPopup.log.saveFailed":"STMemoryBooks-ConfirmationPopup: Failed to save profile:","confirmationPopup.log.saveCancelledNoName":"STMemoryBooks-ConfirmationPopup: Profile creation cancelled - no name provided","confirmationPopup.log.validationFailedEmptyName":"STMemoryBooks-ConfirmationPopup: Profile name validation failed - empty name","confirmationPopup.log.invalidMemoryResult":"STMemoryBooks-ConfirmationPopup: Invalid memoryResult passed to showMemoryPreviewPopup","confirmationPopup.log.invalidSceneData":"STMemoryBooks-ConfirmationPopup: Invalid sceneData passed to showMemoryPreviewPopup","confirmationPopup.log.invalidProfileSettings":"STMemoryBooks-ConfirmationPopup: Invalid profileSettings passed to showMemoryPreviewPopup","confirmationPopup.log.sceneDataMissingProps":"STMemoryBooks-ConfirmationPopup: sceneData missing required numeric properties","confirmationPopup.log.popupNotAvailable":"STMemoryBooks-ConfirmationPopup: Popup element not available for reading edited values","confirmationPopup.log.inputsNotFound":"STMemoryBooks-ConfirmationPopup: Required input elements not found in popup","confirmationPopup.log.titleValidationFailed":"STMemoryBooks-ConfirmationPopup: Memory title validation failed - empty title","confirmationPopup.log.contentValidationFailed":"STMemoryBooks-ConfirmationPopup: Memory content validation failed - empty content","confirmationPopup.log.previewError":"STMemoryBooks-ConfirmationPopup: Error showing memory preview popup:","index.warn.getEffectivePromptAsync":"STMemoryBooks: getEffectivePromptAsync fallback due to error:","index.error.chatContainerNotFound":"STMemoryBooks: Chat container not found. SillyTavern DOM structure may have changed.","index.error.processingChatElements":"STMemoryBooks: Error processing new chat elements:","index.error.updatingButtonStates":"STMemoryBooks: Error updating button states:","index.log.chatObserverInitialized":"STMemoryBooks: Chat observer initialized","index.log.chatObserverDisconnected":"STMemoryBooks: Chat observer disconnected","index.log.chatChanged":"STMemoryBooks: Chat changed - updating scene state","index.error.processingMessagesAfterChange":"STMemoryBooks: Error processing messages after chat change:","index.log.foundOrphanedMarkers":"STMemoryBooks: Found orphaned scene markers on chat load (start: {{start}}, end: {{end}})","index.error.handleMessageReceived":"STMemoryBooks: Error in handleMessageReceived:","index.error.handleGroupWrapperFinished":"STMemoryBooks: Error in handleGroupWrapperFinished:","index.error.noSceneMarkersForCreate":"STMemoryBooks: No scene markers set for createMemory command","index.toast.title":"STMemoryBooks","index.error.nextMemoryFailed":"STMemoryBooks: /nextmemory failed:","index.warn.sidePromptCacheRefreshFailed":"STMemoryBooks: side prompt cache refresh failed","index.log.addedDynamicProfile":"STMemoryBooks: Added dynamic profile for existing installation (migration to v3)","index.log.removedStaticTitleFormat":"STMemoryBooks: Removed static titleFormat from dynamic profile","index.log.createdDynamicProfile":"STMemoryBooks: Created dynamic profile for fresh installation","index.log.appliedProfileFixes":"STMemoryBooks: Applied profile fixes:","index.warn.mutualExclusion":"STMemoryBooks: Both manualModeEnabled and autoCreateLorebook were true - setting autoCreateLorebook to false","index.log.migratingV2":"STMemoryBooks: Migrating to JSON-based architecture (v2)","index.log.updatingProfileToJSON":'STMemoryBooks: Updating profile "{{name}}" to use JSON output',STMemoryBooks_Slash_CreateMemory_Help:"Create memory from marked scene",STMemoryBooks_Slash_SceneMemory_Help:"Set scene range and create memory (e.g., /scenememory 10-15)",STMemoryBooks_Slash_SceneMemory_ArgRangeDesc:"Message range (X-Y format)",STMemoryBooks_Slash_NextMemory_Help:"Create memory from end of last memory to current message",STMemoryBooks_Slash_SidePrompt_Help:'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',STMemoryBooks_Slash_SidePrompt_ArgDesc:"Template name (quote if contains spaces), optionally followed by X-Y range",STMemoryBooks_Slash_SidePromptOn_Help:'Enable a Side Prompt by name or all. Usage: /sideprompt-on "Name" | all',STMemoryBooks_Slash_SidePromptOn_ArgDesc:'Template name (quote if contains spaces) or "all"',STMemoryBooks_Slash_SidePromptOff_Help:'Disable a Side Prompt by name or all. Usage: /sideprompt-off "Name" | all',STMemoryBooks_Slash_SidePromptOff_ArgDesc:'Template name (quote if contains spaces) or "all"',STMemoryBooks_SidePromptToggle_MissingName:'Missing name. Usage: /sideprompt-on "Name" | /sideprompt-off "Name" | all',STMemoryBooks_Prompt_summary:`You are a talented summarist skilled at capturing scenes from stories comprehensively. Analyze the following roleplay scene and return a detailed memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Detailed beat-by-beat summary in narrative prose...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information EXCEPT FOR [OOC] conversation/interaction. All [OOC] conversation/interaction is not useful for summaries.
+This summary will go in a vectorized database, so include:
+- All important story beats/events that happened
+- Key interaction highlights and character developments
+- Notable details, memorable quotes, and revelations
+- Outcome and anything else important for future interactions between {{user}} and {{char}}
+Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_Prompt_summarize:`Analyze the following roleplay scene and return a structured summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Detailed summary with markdown headers...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a detailed bullet-point summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):
+- **Timeline**: Day/time this scene covers.
+- **Story Beats**: List all important plot events and story developments that occurred.
+- **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.
+- **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.
+- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Ensure you capture ALL important information - comprehensive detail is more important than brevity.
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_Prompt_synopsis:`Analyze the following roleplay scene and return a comprehensive synopsis as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Long detailed synopsis with markdown structure...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a long and detailed beat-by-beat summary using markdown structure. Capture the most recent scene accurately without losing ANY information. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded. Use this structure:
+# [Scene Title]
+**Timeline**: (day/time)
+## Story Beats
+- (List all important plot events and developments)
+## Key Interactions
+- (Detail all significant character interactions and dialogue)
+## Notable Details
+- (Include memorable quotes, revelations, objects, settings)
+## Outcome
+- (Describe results, resolutions, and final state)
+
+Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_Prompt_sumup:`Analyze the following roleplay scene and return a beat summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Comprehensive beat summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, write a comprehensive beat summary that captures this scene completely. Format it as:
+# Scene Summary - Day X - [Title]
+First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.
+
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_Prompt_minimal:`Analyze the following roleplay scene and return a minimal memory entry as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Brief 2-5 sentence summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, provide a very brief 2-5 sentence summary of what happened in this scene. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.
+
+For the keywords field, generate 15-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important terms that would help find this scene later. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_Prompt_northgate:`You are a memory archivist for a long-form narrative. Your function is to analyze the provided scene and extract all pertinent information into a structured JSON object.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+"title": "Concise Scene Title (3-5 words)",
+"content": "A detailed, literary summary of the scene written in a third-person, past-tense narrative style. Capture all key actions, emotional shifts, character development, and significant dialogue. Focus on "showing" what happened through concrete details. Ensure the summary is comprehensive enough to serve as a standalone record of the scene's events and their impact on the characters.",
+"keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the "content" field, write with literary quality. Do not simply list events; synthesize them into a coherent narrative block.
+
+For the "keywords" field, provide 15-30 specific and descriptive keywords that capture the scene's core elements. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON object, with no additional text or explanations.`,STMemoryBooks_Prompt_aelemar:`You are a meticulous archivist, skilled at accurately capturing all key plot points and memories from a story. Analyze the following story scene and extract a detailed summary as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Concise scene title (3-5 words)",
+  "content": "Detailed summary of key plot points and character memories, beat-by-beat in narrative prose...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include:
+
+- Story beats, events, actions and consequences, turning points, and outcomes
+- Key character interactions, character developments, significant dialogue, revelations, emotional impact, and relationships
+- Outcomes and anything else important for future interactions between the user and the world
+Capture ALL nuance without repeating verbatim. Do not simply list events; synthesize them into a coherent narrative block. This summary must be comprehensive enough to serve as a standalone record of the story so far, even if the original text is lost. Use at least 300 words. Avoid redundancy.
+
+For the keywords field, provide 15-30 specific and descriptive keywords that capture the scene's core elements. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_Prompt_comprehensive:`Analyze the following roleplay scene in the context of previous summaries provided (if available) and return a comprehensive synopsis as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short, descriptive scene title (3-6 words)",
+  "content": "Long detailed synopsis with markdown structure...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+For the content field, create a beat-by-beat summary of the scene that *replaces reading the full scene* while preserving all plot-relevant nuance and reads like a clean, structured scene log — concise yet complete. This summary needs to be token-efficient: exercise judgment as to whether or not an interaction is flavor-only or truly affects the plot. Flavor scenes (interaction detail that does not advance plot) may be captured through key exchanges and should be skipped when recording story beats.
+
+Write in **past tense**, **third-person**, and exclude all [OOC] or meta discussion.
+Use concrete nouns (e.g., “rice cooker” > “appliance”).
+Only use adjectives/adverbs when they materially affect tone, emotion, or characterization.
+Focus on **cause → intention → reaction → consequence** chains for clarity and compression.
+
+# [Scene Title]
+**Timeline**: (day/time)
+
+## Story Beats
+- Present all major actions, revelations, and emotional or magical shifts in order.
+- Capture clear cause–effect logic: what triggered what, and why it mattered.
+- Only include plot-affecting interactions and do not capture flavor-only beats.
+
+## Character Dynamics
+- Summarize how each character’s **motives, emotions, and relationships** evolved.
+- Include subtext, tension, or silent implications.
+- Highlight key beats of conflict, vulnerability, trust, or power shifts.
+
+## Key Exchanges
+- Include only pivotal dialogue that defines tone, emotion, or change.
+- Attribute speakers by name; keep quotes short but exact.
+- BE SELECTIVE. Maximum of 8 quotes.
+
+## Outcome & Continuity
+- Detail resulting **decisions, emotional states, physical/magical effects, or narrative consequences**.
+- Include all elements that influence future continuity (knowledge, relationships, injuries, promises, etc.).
+- Note any unresolved threads or foreshadowed elements.
+
+Write compactly but completely — every line should add new information or insight.
+Synthesize redundant actions or dialogue into unified cause–effect–emotion beats.
+Favor compression over coverage whenever the two conflict; omit anything that can be inferred from context or established characterization.
+
+For the keywords field:
+
+Generate **15–30 standalone topical keywords** that function as retrieval tags, not micro-summaries.
+Keywords must be:
+- **Concrete and scene-specific** (locations, objects, proper nouns, unique actions, repeated motifs).
+- **One concept per keyword** — do NOT combine multiple ideas into one keyword.
+- **Useful for retrieval if the user later mentions that noun or action alone**, not only in a specific context.
+- Not {{char}}'s or {{user}}'s names.
+- **Not thematic, emotional, or abstract.** Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
+
+Avoid:
+- Overly specific compound keywords (“David Tokyo marriage”).
+- Narrative or plot-summary style keywords (“art dealer date fail”).
+- Keywords that contain multiple facts or descriptors.
+- Keywords that only make sense when the whole scene is remembered.
+
+Prefer:
+- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
+- Specific physical objects ("CPAP machine", "chocolate chip cookies").
+- Distinctive actions ("cookie baking", "piano apology").
+- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
+
+Your goal: **keywords should fire when the noun/action is mentioned alone**, not only when paired with a specific person or backstory.
+
+Return ONLY the JSON — no additional text.`,STMemoryBooks_Prompt_default:`Analyze the following chat scene and return a memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Concise memory focusing on key plot points, character development, and important interactions",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+Return ONLY the JSON, no other text.`,STMemoryBooks_DisplayName_summary:"Summary - Detailed beat-by-beat summaries in narrative prose",STMemoryBooks_DisplayName_summarize:"Summarize - Bullet-point format",STMemoryBooks_DisplayName_synopsis:"Synopsis - Long and comprehensive (beats, interactions, details) with headings",STMemoryBooks_DisplayName_sumup:"Sum Up - Concise story beats in narrative prose",STMemoryBooks_DisplayName_minimal:"Minimal - Brief 1-2 sentence summary",STMemoryBooks_DisplayName_northgate:"Northgate - Intended for creative writing. By Northgate on ST Discord",STMemoryBooks_DisplayName_aelemar:"Aelemar - Focuses on plot points and character memories. By Aelemar on ST Discord",STMemoryBooks_DisplayName_comprehensive:"Comprehensive - Synopsis plus improved keywords extraction",STMemoryBooks_PromptManager_RecreateBuiltins:"♻️ Recreate Built-in Prompts",STMemoryBooks_RecreateBuiltinsTitle:"Recreate Built-in Prompts",STMemoryBooks_RecreateBuiltinsWarning:"This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.",STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom:"This does not affect your other custom presets.",STMemoryBooks_RecreateBuiltinsOverwrite:"Overwrite",STMemoryBooks_RegexSelection_Title:"\uD83D\uDCD0 Regex selection",STMemoryBooks_RegexSelection_Desc:"Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.",STMemoryBooks_RegexSelection_Outgoing:"Run regex before sending to AI",STMemoryBooks_RegexSelection_Incoming:"Run regex before adding to lorebook (before previews)",STMemoryBooks_RegexSelect_PlaceholderOutgoing:"Select outgoing regex…",STMemoryBooks_RegexSelect_PlaceholderIncoming:"Select incoming regex…",STMemoryBooks_RegexSelectionsSaved:"Regex selections saved",STMemoryBooks_FailedToSaveRegexSelections:"Failed to save regex selections",STMemoryBooks_UseRegexAdvanced:"Use regex (advanced)",STMemoryBooks_ConfigureRegex:"\uD83D\uDCD0 Configure regex…"},E0={en:fG};import{getRegexScripts as Y7}from"../../../extensions/regex/engine.js";import"../../../../lib/select2.min.js";async function z7(Z){try{if(Z?.prompt&&String(Z.prompt).trim())return Z.prompt;if(Z?.preset)return await Q0(Z.preset)}catch(Q){console.warn(U("STMemoryBooks: getEffectivePromptAsync fallback due to error:","index.warn.getEffectivePromptAsync"),Q)}return u1()}async function lG(){return String(lZ())}function o4(){return y1}var F1="STMemoryBooks",e5=!1;var X7={moduleSettings:{alwaysUseDefault:!0,showMemoryPreviews:!1,showNotifications:!0,unhideBeforeMemory:!1,refreshEditor:!0,tokenWarningThreshold:50000,defaultMemoryCount:0,autoClearSceneAfterMemory:!1,manualModeEnabled:!1,allowSceneOverlap:!1,autoHideMode:"all",unhiddenEntriesCount:2,autoSummaryEnabled:!1,autoSummaryInterval:50,autoSummaryBuffer:2,autoCreateLorebook:!1,lorebookNameTemplate:"LTM - {{char}} - {{chat}}",useRegex:!1,selectedRegexOutgoing:[],selectedRegexIncoming:[]},titleFormat:"[000] - {{title}}",profiles:[],defaultProfile:0,migrationVersion:4},u=null,y1=!1,A6=null,Z7=!1,T6=null,j8=null;var U0=null,b8=null;function oG(Z){let Q=[];if(Z.matches&&Z.matches("#chat .mes[mesid]")){if(!Z.querySelector(".mes_stmb_start"))d8(Z),Q.push(Z)}else if(Z.querySelectorAll)Z.querySelectorAll("#chat .mes[mesid]").forEach((J)=>{if(!J.querySelector(".mes_stmb_start"))d8(J),Q.push(J)});return Q}function nG(){if(U0)U0.disconnect(),U0=null;let Z=document.getElementById("chat");if(!Z)throw Error(U("STMemoryBooks: Chat container not found. SillyTavern DOM structure may have changed.","index.error.chatContainerNotFound"));let Q=sZ();if(!Q||Q.start===null&&Q.end===null)c8();U0=new MutationObserver((G)=>{let J=[];for(let W of G)for(let q of W.addedNodes)if(q.nodeType===Node.ELEMENT_NODE)try{let Y=oG(q);J.push(...Y)}catch(Y){console.error(U("STMemoryBooks: Error processing new chat elements:","index.error.processingChatElements"),Y)}if(J.length>0)clearTimeout(b8),b8=setTimeout(()=>{try{oZ(J)}catch(W){console.error(U("STMemoryBooks: Error updating button states:","index.error.updatingButtonStates"),W)}},C6.CHAT_OBSERVER_DEBOUNCE_MS)}),U0.observe(Z,{childList:!0,subtree:!0}),console.log(U("STMemoryBooks: Chat observer initialized","index.log.chatObserverInitialized"))}function sG(){if(U0)U0.disconnect(),U0=null,console.log(U("STMemoryBooks: Chat observer disconnected","index.log.chatObserverDisconnected"));if(b8)clearTimeout(b8),b8=null}function rG(){console.log(U("STMemoryBooks: Chat changed - updating scene state","index.log.chatChanged")),c8(),V7(),setTimeout(()=>{try{K7()}catch(Z){console.error(U("STMemoryBooks: Error processing messages after chat change:","index.error.processingMessagesAfterChange"),Z)}},C6.CHAT_OBSERVER_DEBOUNCE_MS)}function V7(){let Z=g()||{},{sceneStart:Q,sceneEnd:G}=Z;if(Q!==null||G!==null){if(console.log(x`Found orphaned scene markers: start=${Q}, end=${G}`),!y1&&o[F1].moduleSettings.autoSummaryEnabled)p0()}}async function aG(){try{setTimeout(d0,h1.VALIDATION_DELAY_MS),await p4(),await _Z()}catch(Z){console.error(U("STMemoryBooks: Error in handleMessageReceived:","index.error.handleMessageReceived"),Z)}}async function tG(){try{setTimeout(d0,h1.VALIDATION_DELAY_MS),await i4(),await _Z()}catch(Z){console.error(U("STMemoryBooks: Error in handleGroupWrapperFinished:","index.error.handleGroupWrapperFinished"),Z)}}async function eG(Z,Q){if(!await R8())return console.error(U("STMemoryBooks: No scene markers set for createMemory command","index.error.noSceneMarkersForCreate")),toastr.error(U("No scene markers set. Use chevron buttons to mark start and end points first.","STMemoryBooks_NoSceneMarkersToastr"),U("STMemoryBooks","index.toast.title")),"";return w6(),""}async function ZJ(Z,Q){let G=String(Q||"").trim();if(!G)return toastr.error(U("Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)","STMemoryBooks_MissingRangeArgument"),U("STMemoryBooks","index.toast.title")),"";let J=G.match(/^(\d+)\s*[-–—]\s*(\d+)$/);if(!J)return toastr.error(U("Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)","STMemoryBooks_InvalidFormat"),U("STMemoryBooks","index.toast.title")),"";let W=Number(J[1]),q=Number(J[2]);if(!Number.isFinite(W)||!Number.isFinite(q))return toastr.error(U("Invalid message IDs parsed. Use: /scenememory X-Y (e.g., /scenememory 10-15)","STMemoryBooks_InvalidMessageIDs"),U("STMemoryBooks","index.toast.title")),"";if(W>q)return toastr.error(U("Start message cannot be greater than end message","STMemoryBooks_StartGreaterThanEnd"),U("STMemoryBooks","index.toast.title")),"";let Y=q7;if(W<0||q>=Y.length)return toastr.error(x`Message IDs out of range. Valid range: 0-${Y.length-1}`,U("STMemoryBooks","index.toast.title")),"";if(!Y[W]||!Y[q])return toastr.error(U("One or more specified messages do not exist","STMemoryBooks_MessagesDoNotExist"),U("STMemoryBooks","index.toast.title")),"";M6(W,q);let z=e0(),V=z.isGroupChat?` in group "${z.groupName}"`:"";return toastr.info(x`Scene set: messages ${W}-${q}${V}`,U("STMemoryBooks","index.toast.title")),w6(),""}async function QJ(Z,Q){try{if(y1)return toastr.info(U("Memory creation is already in progress","STMemoryBooks_MemoryAlreadyInProgress"),U("STMemoryBooks","index.toast.title")),"";let G=await kZ();if(!G.valid)return toastr.error(U("No lorebook available: "+G.error,"STMemoryBooks_NoLorebookAvailable"),U("STMemoryBooks","index.toast.title")),"";let J=g()||{},W=q7.length-1;if(W<0)return toastr.info(U("There are no messages to summarize yet.","STMemoryBooks_NoMessagesToSummarize"),U("STMemoryBooks","index.toast.title")),"";let q=typeof J.highestMemoryProcessed==="number"?J.highestMemoryProcessed:null,Y=q===null?0:q+1,z=W;if(Y>z)return toastr.info(U("No new messages since the last memory.","STMemoryBooks_NoNewMessagesSinceLastMemory"),U("STMemoryBooks","index.toast.title")),"";M6(Y,z),await w6()}catch(G){console.error(U("STMemoryBooks: /nextmemory failed:","index.error.nextMemoryFailed"),G),toastr.error(U("Failed to run /nextmemory: "+G.message,"STMemoryBooks_NextMemoryFailed"),U("STMemoryBooks","index.toast.title"))}return""}async function GJ(Z,Q){let G=String(Q||"").trim();if(!G)return toastr.info(U('SidePrompt guide: Type a template name after the space to see suggestions. Usage: /sideprompt "Name" [X-Y]. Quote names with spaces.',"STMemoryBooks_SidePromptGuide"),U("STMemoryBooks","index.toast.title")),"";let J=G.match(/^["']([^"']+)["']\s*(.*)$/)||G.match(/^(.+?)(\s+\d+\s*[-–—]\s*\d+)?$/),W=J?(J[1]||G).trim():G;try{let Y=(await Y0()).filter((z)=>z.name.toLowerCase().includes(W.toLowerCase()));if(Y.length>1){let z=Y.slice(0,5).map((X)=>X.name).join(", "),V=Y.length>5?`, +${Y.length-5} more`:"";return toastr.info(x`Multiple matches: ${z}${V}. Refine the name or use quotes. Usage: /sideprompt "Name" [X-Y]`,U("STMemoryBooks","index.toast.title")),""}return wZ(G)}catch{return wZ(G)}}async function j7(Z,Q,G){let J=String(Q||"").trim();if(!J)return toastr.error(U(G?'Missing name. Use: /sideprompt-on "Name" OR /sideprompt-on all':'Missing name. Use: /sideprompt-off "Name" OR /sideprompt-off all',"STMemoryBooks_SidePromptToggle_MissingName"),U("STMemoryBooks","index.toast.title")),"";try{let{findTemplateByName:W,upsertTemplate:q,listTemplates:Y}=await Promise.resolve().then(() => (C8(),B5));if(J.toLowerCase()==="all"){let V=await Y(),X=0;for(let j of V)if(j.enabled!==G)await q({key:j.key,enabled:G}),X++;try{window.dispatchEvent(new CustomEvent("stmb-sideprompts-updated"))}catch(j){}return toastr.success(x`${G?"Enabled":"Disabled"} ${X} side prompt${X===1?"":"s"}`,U("STMemoryBooks","index.toast.title")),""}let z=await W(J);if(!z)return toastr.error(x`Side Prompt not found: ${J}`,U("STMemoryBooks","index.toast.title")),"";if(z.enabled===G)return toastr.info(x`"${z.name}" is already ${G?"enabled":"disabled"}`,U("STMemoryBooks","index.toast.title")),"";await q({key:z.key,enabled:G});try{window.dispatchEvent(new CustomEvent("stmb-sideprompts-updated"))}catch(V){}toastr.success(x`${G?"Enabled":"Disabled"} "${z.name}"`,U("STMemoryBooks","index.toast.title"))}catch(W){console.error("STMemoryBooks: sideprompt enable/disable failed:",W),toastr.error(x`Failed to toggle side prompt: ${W.message}`,U("STMemoryBooks","index.toast.title"))}return""}async function JJ(Z,Q){return j7(Z,Q,!0)}async function $J(Z,Q){return j7(Z,Q,!1)}var F7=[];async function fZ(){try{F7=(await Y0()||[]).filter((Q)=>{let G=Q?.triggers?.commands;if(!("commands"in(Q?.triggers||{})))return!0;return Array.isArray(G)&&G.some((J)=>String(J).toLowerCase()==="sideprompt")}).map((Q)=>Q.name)}catch(Z){console.warn(U("STMemoryBooks: side prompt cache refresh failed","index.warn.sidePromptCacheRefreshFailed"),Z)}}window.addEventListener("stmb-sideprompts-updated",fZ);try{fZ()}catch(Z){}var EZ=()=>F7.map((Z)=>new bZ(Z));function D1(){if(o.STMemoryBooks=o.STMemoryBooks||t0(X7),(o.STMemoryBooks.migrationVersion??1)<4){if(!o.STMemoryBooks.profiles?.some((W)=>W.useDynamicSTSettings||W?.connection?.api==="current_st")){if(!o.STMemoryBooks.profiles)o.STMemoryBooks.profiles=[];let W={name:"Current SillyTavern Settings",connection:{api:"current_st"},preset:"summary",constVectMode:"link",position:0,orderMode:"auto",orderValue:100,preventRecursion:!1,delayUntilRecursion:!0};if(o.STMemoryBooks.profiles.unshift(W),o.STMemoryBooks.defaultProfile!==void 0)o.STMemoryBooks.defaultProfile+=1;console.log(x`${F1}: Added dynamic profile for existing installation (migration to v3)`)}o.STMemoryBooks.profiles.forEach((W)=>{if(W.useDynamicSTSettings&&W.titleFormat)delete W.titleFormat,console.log(x`${F1}: Removed static titleFormat from dynamic profile`)}),o.STMemoryBooks.migrationVersion=4,s()}if(!o.STMemoryBooks.profiles||o.STMemoryBooks.profiles.length===0){let J={name:"Current SillyTavern Settings",connection:{api:"current_st"},preset:"summary",constVectMode:"link",position:0,orderMode:"auto",orderValue:100,preventRecursion:!1,delayUntilRecursion:!0};o.STMemoryBooks.profiles=[J],console.log(x`${F1}: Created dynamic profile for fresh installation`)}let Q=WJ(o.STMemoryBooks),G=JZ(o.STMemoryBooks);if(G.fixes.length>0)console.log(x`${F1}: Applied profile fixes:`,G.fixes),s();return Q}function WJ(Z){if(!Z.profiles||Z.profiles.length===0)Z.profiles=[],Z.defaultProfile=0;if(Z.defaultProfile>=Z.profiles.length)Z.defaultProfile=0;if(!Z.moduleSettings)Z.moduleSettings=t0(X7.moduleSettings);if(!Z.moduleSettings.tokenWarningThreshold||Z.moduleSettings.tokenWarningThreshold<1000)Z.moduleSettings.tokenWarningThreshold=30000;if(Z.moduleSettings.defaultMemoryCount=j1(Z.moduleSettings.defaultMemoryCount??0,0,7),Z.moduleSettings.unhiddenEntriesCount===void 0||Z.moduleSettings.unhiddenEntriesCount===null)Z.moduleSettings.unhiddenEntriesCount=2;if(Z.moduleSettings.autoSummaryEnabled===void 0)Z.moduleSettings.autoSummaryEnabled=!1;if(Z.moduleSettings.autoSummaryInterval===void 0||Z.moduleSettings.autoSummaryInterval<10)Z.moduleSettings.autoSummaryInterval=100;if(Z.moduleSettings.autoSummaryBuffer=j1(Z.moduleSettings.autoSummaryBuffer??0,0,50),Z.moduleSettings.autoCreateLorebook===void 0)Z.moduleSettings.autoCreateLorebook=!1;if(Z.moduleSettings.unhideBeforeMemory===void 0)Z.moduleSettings.unhideBeforeMemory=!1;if(!Z.moduleSettings.lorebookNameTemplate)Z.moduleSettings.lorebookNameTemplate="LTM - {{char}} - {{chat}}";if(Z.moduleSettings.manualModeEnabled&&Z.moduleSettings.autoCreateLorebook)Z.moduleSettings.autoCreateLorebook=!1,console.warn(U("STMemoryBooks: Both manualModeEnabled and autoCreateLorebook were true - setting autoCreateLorebook to false","index.warn.mutualExclusion"));if(!Z.migrationVersion||Z.migrationVersion<2)console.log(x`${F1}: Migrating to JSON-based architecture (v2)`),Z.migrationVersion=2,Z.profiles.forEach((Q)=>{if(Q.prompt&&Q.prompt.includes("createMemory"))console.log(x`${F1}: Updating profile "${Q.name}" to use JSON output`),Q.prompt=u1()});return Z}async function kZ(Z=!1){let Q=o.STMemoryBooks,G=await Z8();if(!Z){if(!G&&Q?.moduleSettings?.autoCreateLorebook&&!Q?.moduleSettings?.manualModeEnabled){let J=Q.moduleSettings.lorebookNameTemplate||"LTM - {{char}} - {{chat}}",W=await $6(J,"chat");if(W.success)G=W.name;else return{valid:!1,error:W.error}}}if(!G)return{valid:!1,error:"No lorebook available or selected."};if(!N6||!N6.includes(G))return{valid:!1,error:`Selected lorebook "${G}" not found.`};try{let J=await uG(G);return{valid:!!J,data:J,name:G}}catch(J){return{valid:!1,error:"Failed to load the selected lorebook."}}}async function qJ(Z,Q,G=null){let J=D1(),W=J.moduleSettings.tokenWarningThreshold??30000,q=!J.moduleSettings.alwaysUseDefault||Z.estimatedTokens>W,Y=null;if(q){let X=G!==null?G:J.defaultProfile;if(Y=await z5(Z,J,Z1(),l(),f0,X),!Y.confirmed)return null}else{let X=J.profiles[J.defaultProfile];Y={confirmed:!0,profileSettings:{...X,effectivePrompt:await z7(X)},advancedOptions:{memoryCount:j1(J.moduleSettings.defaultMemoryCount??0,0,7),overrideSettings:!1}}}let{profileSettings:z,advancedOptions:V}=Y;if(z?.connection?.api==="current_st"||V.overrideSettings){let X=l(),j=Z1();if(z.effectiveConnection={api:X.completionSource||"openai",model:j.model||"",temperature:j.temperature??0.7},z.useDynamicSTSettings)console.log("STMemoryBooks: Using dynamic ST settings profile - current settings:",z.effectiveConnection);else console.log("STMemoryBooks: Using current SillyTavern settings override for memory creation")}else z.effectiveConnection={...z.connection},console.log("STMemoryBooks: Using profile connection settings for memory creation");return{profileSettings:z,summaryCount:V.memoryCount??0,tokenThreshold:W,settings:J}}function YJ(Z){if(Z&&Z.name==="AIResponseError"){if(typeof Z.recoverable==="boolean")return Z.recoverable;if(Z.code&&String(Z.code).toUpperCase().includes("TRUNCATION"))return!0}if(["TokenWarningError","InvalidProfileError"].includes(Z?.name))return!1;if(Z?.message&&(Z.message.includes("Scene compilation failed")||Z.message.includes("Invalid memory result")||Z.message.includes("Invalid lorebook")))return!1;return!0}async function yZ(Z,Q,G,J=0){let{profileSettings:W,summaryCount:q,tokenThreshold:Y,settings:z}=G;A6=W;try{if(z?.moduleSettings?.convertExistingRecursion&&Q?.valid&&Q.data?.entries){let X=q8(Q.data)||[],j=X.length>0?X[0].entry:null,F=!!W.preventRecursion,K=!!W.delayUntilRecursion,H=!1;if(!j)H=!1;else{let B=!!j.preventRecursion,A=!!j.delayUntilRecursion;H=B!==F||A!==K}if(H){let B=0,A=0,O=Object.values(Q.data.entries||{});for(let T of O)if(T&&T.stmemorybooks===!0){B++;let D=T.preventRecursion!==F,L=T.delayUntilRecursion!==K;if(D||L)T.preventRecursion=F,T.delayUntilRecursion=K,A++}if(A>0){try{if(await mG(Q.name,Q.data,!0),z.moduleSettings?.refreshEditor)try{dG(Q.name)}catch(T){}}catch(T){console.warn("STMemoryBooks: Failed to save lorebook during recursion conversion:",T)}try{toastr.info(x`Updated recursion flags on ${A} of ${B} memory entr${A===1?"y":"ies"}`,"STMemoryBooks")}catch(T){}}}}}catch(X){console.warn("STMemoryBooks: convertExistingRecursion check failed:",X)}let V=k8.MAX_RETRIES;try{if(z?.moduleSettings?.unhideBeforeMemory)try{await gG(`/unhide ${Z.sceneStart}-${Z.sceneEnd}`)}catch(M){console.warn("STMemoryBooks: /unhide command failed or unavailable:",M)}let X=o0(Z.sceneStart,Z.sceneEnd),j=l0(X),F=K4(j);if(!F.valid)throw Error(`Scene compilation failed: ${F.errors.join(", ")}`);let K=[],H={summaries:[],actualCount:0,requestedCount:0};if(q>0)if(H=await h0(q,z,f0),K=H.summaries,H.actualCount>0){if(H.actualCount<H.requestedCount)toastr.warning(x`Only ${H.actualCount} of ${H.requestedCount} requested memories available`,"STMemoryBooks");console.log(`STMemoryBooks: Including ${H.actualCount} previous memories as context`)}else toastr.warning(U("No previous memories found in lorebook","STMemoryBooks_NoPreviousMemoriesFound"),"STMemoryBooks");let B;if(J>0)B=`Retrying memory creation (attempt ${J+1}/${V+1})...`;else B=H.actualCount>0?`Creating memory with ${H.actualCount} context memories...`:"Creating memory...";toastr.info(U(B,"STMemoryBooks_WorkingToast"),"STMemoryBooks",{timeOut:0}),j.previousSummariesContext=K;let O=F4(j).estimatedTokens,T=await E4(j,W,{tokenWarningThreshold:Y}),D=T;if(z.moduleSettings.showMemoryPreviews){toastr.clear();let M=await z8(T,Z,W);if(M.action==="cancel")return;else if(M.action==="retry"){let v=J>=V?J-V:0;if(v>=3)return toastr.warning(x`Maximum retry attempts (${3}) reached`,"STMemoryBooks"),{action:"cancel"};toastr.info(x`Retrying memory generation (${v+1}/${3})...`,"STMemoryBooks");let S=Math.max(J+1,V+v+1);return await yZ(Z,Q,G,S)}if(M.action==="accept")D=T;else if(M.action==="edit"){if(!M.memoryData){console.error("STMemoryBooks: Edit action missing memoryData"),toastr.error(U("Unable to retrieve edited memory data","STMemoryBooks_UnableToRetrieveEditedMemoryData"),"STMemoryBooks");return}if(!M.memoryData.extractedTitle||!M.memoryData.content){console.error("STMemoryBooks: Edited memory data missing required fields"),toastr.error(U("Edited memory data is incomplete","STMemoryBooks_EditedMemoryDataIncomplete"),"STMemoryBooks");return}D=M.memoryData}else console.warn(`STMemoryBooks: Unexpected preview action: ${M.action}`),D=T}let L=await k4(D,Q);if(!L.success)throw Error(L.error||"Failed to add memory to lorebook");try{let M=W?.effectiveConnection||W?.connection||{};console.debug("STMemoryBooks: Passing profile to runAfterMemory",{api:M.api,model:M.model,temperature:M.temperature}),await D5(j,W)}catch(M){console.warn("STMemoryBooks: runAfterMemory failed:",M)}try{let M=g()||{};M.highestMemoryProcessed=Z.sceneEnd,Q1()}catch(M){console.warn("STMemoryBooks: Failed to update highestMemoryProcessed baseline:",M)}l4();let f=H.actualCount>0?` (with ${H.actualCount} context ${H.actualCount===1?"memory":"memories"})`:"";toastr.clear(),j8=null,T6=null;let m=J>0?` (succeeded on attempt ${J+1})`:"";toastr.success(x`Memory "${L.entryTitle}" created successfully${f}${m}!`,"STMemoryBooks")}catch(X){if(console.error("STMemoryBooks: Error creating memory:",X),J<V&&YJ(X))return toastr.warning(x`Memory creation failed (attempt ${J+1}). Retrying in ${Math.round(k8.RETRY_DELAY_MS/1000)} seconds...`,"STMemoryBooks",{timeOut:3000}),await new Promise((H)=>setTimeout(H,k8.RETRY_DELAY_MS)),await yZ(Z,Q,G,J+1);let F=J>0?` (failed after ${J+1} attempts)`:"",K=X&&X.code?` [${X.code}]`:"";if(X.name==="TokenWarningError")toastr.error(x`Scene is too large (${X.tokenCount} tokens). Try selecting a smaller range${F}.`,"STMemoryBooks",{timeOut:8000});else if(X.name==="AIResponseError"){try{toastr.clear(j8)}catch(H){}T6=X,j8=toastr.error(x`AI failed to generate valid memory${K}: ${X.message}${F}`,"STMemoryBooks",{timeOut:0,extendedTimeOut:0,closeButton:!0,tapToDismiss:!1,onclick:()=>{try{LJ(T6)}catch(H){console.error(H)}}})}else if(X.name==="InvalidProfileError")toastr.error(x`Profile configuration error: ${X.message}${F}`,"STMemoryBooks",{timeOut:8000});else toastr.error(x`Failed to create memory: ${X.message}${F}`,"STMemoryBooks")}}async function w6(Z=null){let Q=e0();if(!Q.isGroupChat){if(!xZ||xZ.length===0||!xZ[kG]){toastr.error(U("SillyTavern is still loading character data, please wait a few seconds and try again.","STMemoryBooks_LoadingCharacterData"),"STMemoryBooks");return}}else if(!Q.groupId||!Q.groupName){toastr.error(U("Group chat data not available, please wait a few seconds and try again.","STMemoryBooks_GroupChatDataUnavailable"),"STMemoryBooks");return}if(y1)return;y1=!0;try{let G=D1(),J=await R8();if(!J){console.error("STMemoryBooks: No scene selected for memory initiation"),toastr.error(U("No scene selected","STMemoryBooks_NoSceneSelected"),"STMemoryBooks"),y1=!1;return}let W=await kZ();if(!W.valid){console.error("STMemoryBooks: Lorebook validation failed:",W.error),toastr.error(U(W.error,"STMemoryBooks_LorebookValidationError"),"STMemoryBooks"),y1=!1;return}let q=q8(W.data),Y=J.sceneStart,z=J.sceneEnd;if(!G.moduleSettings.allowSceneOverlap)for(let X of q){let j=u4(X.entry);if(j&&j.start!==null&&j.end!==null){let F=Number(j.start),K=Number(j.end),H=Number(Y),B=Number(z);if(console.debug(`STMemoryBooks: OverlapCheck new=[${H}-${B}] existing="${X.title}" [${F}-${K}] cond1(ns<=e)=${H<=K} cond2(ne>=s)=${B>=F}`),H<=K&&B>=F){console.error(`STMemoryBooks: Scene overlap detected with memory: ${X.title} [${F}-${K}] vs new [${H}-${B}]`),toastr.error(x`Scene overlaps with existing memory: "${X.title}" (messages ${F}-${K})`,"STMemoryBooks"),y1=!1;return}}}let V=await qJ(J,W,Z);if(!V){y1=!1;return}if(u)u.completeCancelled(),u=null;await yZ(J,W,V)}catch(G){console.error("STMemoryBooks: Critical error during memory initiation:",G),toastr.error(x`An unexpected error occurred: ${G.message}`,"STMemoryBooks")}finally{y1=!1}}function D6(Z){if(Z.autoHideMode)return Z.autoHideMode;if(Z.autoHideAllMessages)return"all";else if(Z.autoHideLastMemory)return"last";else return"none"}function Q7(){let Z=o.STMemoryBooks;if(!Z)return;let Q=g()||{},G=Z.moduleSettings.manualModeEnabled,J=document.querySelector("#stmb-mode-badge");if(J)J.textContent=G?U("Manual","STMemoryBooks_Manual"):U("Automatic (Chat-bound)","STMemoryBooks_AutomaticChatBound");let W=document.querySelector("#stmb-active-lorebook");if(W){let j=G?Q.manualLorebook:f0?.[y8];W.textContent=j||U("None selected","STMemoryBooks_NoneSelected"),W.className=j?"":"opacity50p"}let q=document.querySelector("#stmb-manual-controls");if(q)q.style.display=G?"block":"none";let Y=document.querySelector("#stmb-automatic-info");if(Y){Y.style.display=G?"none":"block";let j=Y.querySelector("small");if(j){let F=f0?.[y8]??null;j.innerHTML=F?x`Using chat-bound lorebook "<strong>${F}</strong>"`:U("No chat-bound lorebook. Memories will require lorebook selection.","STMemoryBooks_NoChatBoundLorebook")}}let z=document.querySelector("#stmb-auto-create-lorebook"),V=document.querySelector("#stmb-manual-mode-enabled"),X=document.querySelector("#stmb-lorebook-name-template");if(z&&V){let j=Z.moduleSettings.autoCreateLorebook;if(z.disabled=G,V.disabled=j,X)X.disabled=!j}}function _6(){if(!u?.dlg)return;let Z=D1(),Q=g()||{},G=u.content.querySelector("#stmb-manual-lorebook-buttons"),J=u.content.querySelector("#stmb-profile-buttons"),W=u.content.querySelector("#stmb-extra-function-buttons"),q=u.content.querySelector("#stmb-prompt-manager-buttons");if(G&&Z.moduleSettings.manualModeEnabled){let X=Q.manualLorebook??null,j=[{text:`\uD83D\uDCD5 ${X?U("Change","STMemoryBooks_ChangeManualLorebook"):U("Select","STMemoryBooks_SelectManualLorebook")} `+U("Manual Lorebook","STMemoryBooks_ManualLorebook"),id:"stmb-select-manual-lorebook",action:async()=>{try{if(await A0(X?Q.manualLorebook:null))e1()}catch(F){console.error("STMemoryBooks: Error selecting manual lorebook:",F),toastr.error(U("Failed to select manual lorebook","STMemoryBooks_FailedToSelectManualLorebook"),"STMemoryBooks")}}}];if(X)j.push({text:"❌ "+U("Clear Manual Lorebook","STMemoryBooks_ClearManualLorebook"),id:"stmb-clear-manual-lorebook",action:()=>{try{let F=g()||{};delete F.manualLorebook,Q1(),e1(),toastr.success(U("Manual lorebook cleared","STMemoryBooks_ManualLorebookCleared"),"STMemoryBooks")}catch(F){console.error("STMemoryBooks: Error clearing manual lorebook:",F),toastr.error(U("Failed to clear manual lorebook","STMemoryBooks_FailedToClearManualLorebook"),"STMemoryBooks")}}});G.innerHTML="",j.forEach((F)=>{let K=document.createElement("div");K.className="menu_button interactable whitespacenowrap",K.id=F.id,K.textContent=F.text,K.addEventListener("click",F.action),G.appendChild(K)})}if(!J||!W)return;let Y=[{text:"⭐ "+U("Set as Default","STMemoryBooks_SetAsDefault"),id:"stmb-set-default-profile",action:()=>{let X=u?.dlg?.querySelector("#stmb-profile-select");if(!X)return;let j=j1($1(X,Z.defaultProfile??0),0,Z.profiles.length-1);if(j===Z.defaultProfile)return;Z.defaultProfile=j,s();let F=Z.profiles[j]?.connection?.api==="current_st"?U("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):Z.profiles[j].name;toastr.success(x`"${F}" is now the default profile.`,"STMemoryBooks"),e1()}},{text:"✏️ "+U("Edit Profile","STMemoryBooks_EditProfile"),id:"stmb-edit-profile",action:async()=>{try{let X=u?.dlg?.querySelector("#stmb-profile-select");if(!X)return;let j=j1($1(X,Z.defaultProfile??0),0,Z.profiles.length-1),F=Z.profiles[j];if(F.useDynamicSTSettings)F.connection=F.connection||{},F.connection.api="current_st",delete F.useDynamicSTSettings,s();await a4(Z,j,e1)}catch(X){console.error(`${F1}: Error in edit profile:`,X),toastr.error(U("Failed to edit profile","STMemoryBooks_FailedToEditProfile"),"STMemoryBooks")}}},{text:"➕ "+U("New Profile","STMemoryBooks_NewProfile"),id:"stmb-new-profile",action:async()=>{try{await t4(Z,e1)}catch(X){console.error(`${F1}: Error in new profile:`,X),toastr.error(U("Failed to create profile","STMemoryBooks_FailedToCreateProfile"),"STMemoryBooks")}}},{text:"\uD83D\uDDD1️ "+U("Delete Profile","STMemoryBooks_DeleteProfile"),id:"stmb-delete-profile",action:async()=>{try{let X=u?.dlg?.querySelector("#stmb-profile-select");if(!X)return;let j=$1(X,Z.defaultProfile??0);await e4(Z,j,e1)}catch(X){console.error(`${F1}: Error in delete profile:`,X),toastr.error(U("Failed to delete profile","STMemoryBooks_FailedToDeleteProfile"),"STMemoryBooks")}}}],z=[{text:"\uD83D\uDCE4 "+U("Export Profiles","STMemoryBooks_ExportProfiles"),id:"stmb-export-profiles",action:()=>{try{Z5(Z)}catch(X){console.error(`${F1}: Error in export profiles:`,X),toastr.error(U("Failed to export profiles","STMemoryBooks_FailedToExportProfiles"),"STMemoryBooks")}}},{text:"\uD83D\uDCE5 "+U("Import Profiles","STMemoryBooks_ImportProfiles"),id:"stmb-import-profiles",action:()=>{let X=u?.dlg?.querySelector("#stmb-import-file");if(X)X.click()}}],V=[{text:"\uD83E\uDDE9 "+U("Summary Prompt Manager","STMemoryBooks_SummaryPromptManager"),id:"stmb-prompt-manager",action:async()=>{try{await k0()}catch(X){console.error(`${F1}: Error opening prompt manager:`,X),toastr.error(U("Failed to open Summary Prompt Manager","STMemoryBooks_FailedToOpenSummaryPromptManager"),"STMemoryBooks")}}},{text:"\uD83E\uDDF1 "+U("Arc Prompt Manager","STMemoryBooks_ArcPromptManager"),id:"stmb-arc-prompt-manager",action:async()=>{try{await g0()}catch(X){console.error(`${F1}: Error opening Arc Prompt Manager:`,X),toastr.error(U("Failed to open Arc Prompt Manager","STMemoryBooks_FailedToOpenArcPromptManager"),"STMemoryBooks")}}},{text:"\uD83C\uDFA1 "+U("Trackers & Side Prompts","STMemoryBooks_SidePrompts"),id:"stmb-side-prompts",action:async()=>{try{await L5()}catch(X){console.error(`${F1}: Error opening Trackers & Side Prompts Manager:`,X),toastr.error(U("Failed to open Trackers & Side Prompts Manager","STMemoryBooks_FailedToOpenSidePrompts"),"STMemoryBooks")}}}];J.innerHTML="",W.innerHTML="",q.innerHTML="",Y.forEach((X)=>{let j=document.createElement("div");j.className="menu_button interactable whitespacenowrap",j.id=X.id,j.textContent=X.text,j.addEventListener("click",X.action),J.appendChild(j)}),z.forEach((X)=>{let j=document.createElement("div");j.className="menu_button interactable whitespacenowrap",j.id=X.id,j.textContent=X.text,j.addEventListener("click",X.action),W.appendChild(j)}),V.forEach((X)=>{let j=document.createElement("div");j.className="menu_button interactable whitespacenowrap",j.id=X.id,j.textContent=X.text,j.addEventListener("click",X.action),q.appendChild(j)})}async function k0(){try{let Z=o.STMemoryBooks;await r0(Z);let Q=await O0(),G='<h3 data-i18n="STMemoryBooks_PromptManager_Title">\uD83E\uDDE9 Summary Prompt Manager</h3>';G+='<div class="world_entry_form_control">',G+='<p data-i18n="STMemoryBooks_PromptManager_Desc">Manage your summary generation prompts. All presets are editable.</p>',G+="</div>",G+='<div class="world_entry_form_control">',G+='<input type="text" id="stmb-prompt-search" class="text_pole" placeholder="Search presets..." aria-label="Search presets" data-i18n="[placeholder]STMemoryBooks_PromptManager_Search;[aria-label]STMemoryBooks_PromptManager_Search" />',G+="</div>",G+='<div id="stmb-preset-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>',G+='<div class="buttons_block justifyCenter gap10px whitespacenowrap">',G+='<button id="stmb-pm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_New">➕ New Preset</button>',G+='<button id="stmb-pm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Export">\uD83D\uDCE4 Export JSON</button>',G+='<button id="stmb-pm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_Import">\uD83D\uDCE5 Import JSON</button>',G+='<button id="stmb-pm-recreate-builtins" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_PromptManager_RecreateBuiltins">♻️ Recreate Built-in Prompts</button>',G+='<button id="stmb-pm-apply" class="menu_button whitespacenowrap" disabled data-i18n="STMemoryBooks_PromptManager_ApplyToProfile">✅ Apply to Selected Profile</button>',G+="</div>",G+=`<small>${U(`\uD83D\uDCA1 When creating a new prompt, copy one of the other built-in prompts and then amend it. Don't change the "respond with JSON" instructions, \uD83D\uDCD5Memory Books uses that to process the returned result from the AI.`,"STMemoryBooks_PromptManager_Hint")}</small>`,G+='<input type="file" id="stmb-pm-import-file" accept=".json" style="display: none;" />';let J=new J1(G,a.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:!1,cancelButton:U("Close","STMemoryBooks_Close")});zJ(J);let W=J.dlg?.querySelector("#stmb-preset-list");if(W){let q=(Q||[]).map((Y)=>({key:String(Y.key||""),displayName:String(Y.displayName||"")}));W.innerHTML=F8.sanitize(PZ({items:q}))}await J.show()}catch(Z){console.error("STMemoryBooks: Error showing prompt manager:",Z),toastr.error(U("Failed to open Summary Prompt Manager","STMemoryBooks_FailedToOpenSummaryPromptManager"),"STMemoryBooks")}}function zJ(Z){let Q=Z.dlg,G=null;Q.addEventListener("click",async(W)=>{let q=W.target.closest(".stmb-action");if(q){W.preventDefault(),W.stopPropagation();let z=q.closest("tr[data-preset-key]"),V=z?.dataset.presetKey;if(!V)return;if(Q.querySelectorAll("tr[data-preset-key]").forEach((j)=>{j.classList.remove("ui-state-active"),j.style.backgroundColor="",j.style.border=""}),z)z.style.backgroundColor="var(--cobalt30a)",z.style.border="",G=V;let X=Q.querySelector("#stmb-pm-apply");if(X)X.disabled=!1;if(q.classList.contains("stmb-action-edit"))await G7(Z,V);else if(q.classList.contains("stmb-action-duplicate"))await J7(Z,V);else if(q.classList.contains("stmb-action-delete"))await $7(Z,V);return}let Y=W.target.closest("tr[data-preset-key]");if(Y){Q.querySelectorAll("tr[data-preset-key]").forEach((V)=>{V.classList.remove("ui-state-active"),V.style.backgroundColor="",V.style.border=""}),Y.style.backgroundColor="var(--cobalt30a)",Y.style.border="",G=Y.dataset.presetKey;let z=Q.querySelector("#stmb-pm-apply");if(z)z.disabled=!1}});let J=Q.querySelector("#stmb-prompt-search");if(J)J.addEventListener("input",(W)=>{let q=W.target.value.toLowerCase();Q.querySelectorAll("tr[data-preset-key]").forEach((Y)=>{let z=Y.querySelector("td:first-child").textContent.toLowerCase();Y.style.display=z.includes(q)?"":"none"})});Q.querySelector("#stmb-pm-new")?.addEventListener("click",async()=>{await XJ(Z)}),Q.querySelector("#stmb-pm-edit")?.addEventListener("click",async()=>{if(G)await G7(Z,G)}),Q.querySelector("#stmb-pm-duplicate")?.addEventListener("click",async()=>{if(G)await J7(Z,G)}),Q.querySelector("#stmb-pm-delete")?.addEventListener("click",async()=>{if(G)await $7(Z,G)}),Q.querySelector("#stmb-pm-export")?.addEventListener("click",async()=>{await VJ()}),Q.querySelector("#stmb-pm-import")?.addEventListener("click",()=>{Q.querySelector("#stmb-pm-import-file")?.click()}),Q.querySelector("#stmb-pm-import-file")?.addEventListener("change",async(W)=>{await jJ(W,Z)}),Q.querySelector("#stmb-pm-recreate-builtins")?.addEventListener("click",async()=>{try{let W=`
+                <h3>${E(U("Recreate Built-in Prompts","STMemoryBooks_RecreateBuiltinsTitle"))}</h3>
+                <div class="info-block warning">
+                    ${E(U("This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.","STMemoryBooks_RecreateBuiltinsWarning"))}
+                </div>
+                <p class="opacity70p">${E(U("This does not affect your other custom presets.","STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom"))}</p>
+            `;if(await new J1(W,a.CONFIRM,"",{okButton:U("Overwrite","STMemoryBooks_RecreateBuiltinsOverwrite"),cancelButton:U("Cancel","STMemoryBooks_Cancel")}).show()===p.AFFIRMATIVE){let z=await $4("overwrite");try{window.dispatchEvent(new CustomEvent("stmb-presets-updated"))}catch(V){}toastr.success(x`Removed ${z?.removed||0} built-in overrides`,U("STMemoryBooks","index.toast.title")),Z.completeAffirmative(),await k0()}}catch(W){console.error("STMemoryBooks: Error recreating built-in prompts:",W),toastr.error(U("Failed to recreate built-in prompts","STMemoryBooks_FailedToRecreateBuiltins"),U("STMemoryBooks","index.toast.title"))}}),Q.querySelector("#stmb-pm-apply")?.addEventListener("click",async()=>{if(!G){toastr.error(U("Select a preset first","STMemoryBooks_SelectPresetFirst"),"STMemoryBooks");return}let W=o?.STMemoryBooks;if(!W||!Array.isArray(W.profiles)||W.profiles.length===0){toastr.error(U("No profiles available","STMemoryBooks_NoProfilesAvailable"),"STMemoryBooks");return}let q=W.defaultProfile??0;if(u?.dlg){let z=u.dlg.querySelector("#stmb-profile-select");if(z)q=$1(z,W.defaultProfile??0)}let Y=W.profiles[q];if(!Y){toastr.error(U("Selected profile not found","STMemoryBooks_SelectedProfileNotFound"),"STMemoryBooks");return}if(Y.prompt&&Y.prompt.trim())if(await new J1('<h3 data-i18n="STMemoryBooks_ClearCustomPromptTitle">Clear Custom Prompt?</h3><p data-i18n="STMemoryBooks_ClearCustomPromptDesc">This profile has a custom prompt. Clear it so the selected preset is used?</p>',a.CONFIRM,"",{okButton:U("Clear and Apply","STMemoryBooks_ClearAndApply"),cancelButton:U("Cancel","STMemoryBooks_Cancel")}).show()===p.AFFIRMATIVE)Y.prompt="";else return;if(Y.preset=G,s(),toastr.success(U("Preset applied to profile","STMemoryBooks_PresetAppliedToProfile"),"STMemoryBooks"),u?.dlg)try{e1()}catch(z){}})}async function XJ(Z){let G=new J1(`
+        <h3 data-i18n="STMemoryBooks_CreateNewPresetTitle">Create New Preset</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-pm-new-display-name">
+                <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                <input type="text" id="stmb-pm-new-display-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_MyCustomPreset" placeholder="My Custom Preset" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-pm-new-prompt">
+                <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-pm-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-pm-new-prompt" class="text_pole textarea_compact" rows="10" data-i18n="[placeholder]STMemoryBooks_EnterPromptPlaceholder" placeholder="Enter your prompt here..."></textarea>
+            </label>
+        </div>
+    `,a.TEXT,"",{okButton:U("Create","STMemoryBooks_Create"),cancelButton:U("Cancel","STMemoryBooks_Cancel")});if(await G.show()===p.AFFIRMATIVE){let W=G.dlg.querySelector("#stmb-pm-new-display-name").value.trim(),q=G.dlg.querySelector("#stmb-pm-new-prompt").value.trim();if(!q){toastr.error(U("Prompt cannot be empty","STMemoryBooks_PromptCannotBeEmpty"),"STMemoryBooks");return}try{await T8(null,q,W||null),toastr.success(U("Preset created successfully","STMemoryBooks_PresetCreatedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-presets-updated")),Z.completeAffirmative(),await k0()}catch(Y){console.error("STMemoryBooks: Error creating preset:",Y),toastr.error(U("Failed to create preset","STMemoryBooks_FailedToCreatePreset"),"STMemoryBooks")}}}async function G7(Z,Q){try{let G=await S6(Q),J=await Q0(Q),W=`
+            <h3 data-i18n="STMemoryBooks_EditPresetTitle">Edit Preset</h3>
+            <div class="world_entry_form_control">
+                <label for="stmb-pm-edit-display-name">
+                    <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                    <input type="text" id="stmb-pm-edit-display-name" class="text_pole" value="${E(G)}" />
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-pm-edit-prompt">
+                    <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-pm-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                    <textarea id="stmb-pm-edit-prompt" class="text_pole textarea_compact" rows="10">${E(J)}</textarea>
+                </label>
+            </div>
+        `,q=new J1(W,a.TEXT,"",{okButton:U("Save","STMemoryBooks_Save"),cancelButton:U("Cancel","STMemoryBooks_Cancel")});if(await q.show()===p.AFFIRMATIVE){let z=q.dlg.querySelector("#stmb-pm-edit-display-name").value.trim(),V=q.dlg.querySelector("#stmb-pm-edit-prompt").value.trim();if(!V){toastr.error(U("Prompt cannot be empty","STMemoryBooks_PromptCannotBeEmpty"),"STMemoryBooks");return}await T8(Q,V,z||null),toastr.success(U("Preset updated successfully","STMemoryBooks_PresetUpdatedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-presets-updated")),Z.completeAffirmative(),await k0()}}catch(G){console.error("STMemoryBooks: Error editing preset:",G),toastr.error(U("Failed to edit preset","STMemoryBooks_FailedToEditPreset"),"STMemoryBooks")}}async function J7(Z,Q){try{let G=await Z4(Q);toastr.success(U("Preset duplicated successfully","STMemoryBooks_PresetDuplicatedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-presets-updated")),Z.completeAffirmative(),await k0()}catch(G){console.error("STMemoryBooks: Error duplicating preset:",G),toastr.error(U("Failed to duplicate preset","STMemoryBooks_FailedToDuplicatePreset"),"STMemoryBooks")}}async function $7(Z,Q){let G=await S6(Q),J=new J1(`<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${E(U('Are you sure you want to delete "{{name}}"?',"STMemoryBooks_DeletePresetConfirm",{name:G}))}</p>`,a.CONFIRM,"",{okButton:U("Delete","STMemoryBooks_Delete"),cancelButton:U("Cancel","STMemoryBooks_Cancel")});try{K8(J.dlg)}catch(q){}if(await J.show()===p.AFFIRMATIVE)try{await Q4(Q),toastr.success(U("Preset deleted successfully","STMemoryBooks_PresetDeletedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-presets-updated")),Z.completeAffirmative(),await k0()}catch(q){console.error("STMemoryBooks: Error deleting preset:",q),toastr.error(U("Failed to delete preset","STMemoryBooks_FailedToDeletePreset"),"STMemoryBooks")}}async function VJ(){try{let Z=await G4(),Q=new Blob([Z],{type:"application/json"}),G=URL.createObjectURL(Q),J=document.createElement("a");J.href=G,J.download="stmb-summary-prompts.json",J.click(),URL.revokeObjectURL(G),toastr.success(U("Prompts exported successfully","STMemoryBooks_PromptsExportedSuccessfully"),"STMemoryBooks")}catch(Z){console.error("STMemoryBooks: Error exporting prompts:",Z),toastr.error(U("Failed to export prompts","STMemoryBooks_FailedToExportPrompts"),"STMemoryBooks")}}async function jJ(Z,Q){let G=Z.target.files[0];if(!G)return;try{let J=await G.text();await J4(J),toastr.success(U("Prompts imported successfully","STMemoryBooks_PromptsImportedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-presets-updated")),Q.completeAffirmative(),await k0()}catch(J){console.error("STMemoryBooks: Error importing prompts:",J),toastr.error(x`Failed to import prompts: ${J.message}`,"STMemoryBooks")}}async function g0(){try{let Z=o.STMemoryBooks;await MZ(Z);let Q=await U6(),G='<h3 data-i18n="STMemoryBooks_ArcPromptManager_Title">\uD83E\uDDF1 Arc Prompt Manager</h3>';G+='<div class="world_entry_form_control">',G+='<p data-i18n="STMemoryBooks_ArcPromptManager_Desc">Manage your Arc Analysis prompts. All presets are editable.</p>',G+="</div>",G+='<div class="world_entry_form_control">',G+='<input type="text" id="stmb-apm-search" class="text_pole" placeholder="Search arc presets..." aria-label="Search arc presets" data-i18n="[placeholder]STMemoryBooks_ArcPromptManager_Search;[aria-label]STMemoryBooks_ArcPromptManager_Search" />',G+="</div>",G+='<div id="stmb-apm-list" class="padding10 marginBot10" style="max-height: 400px; overflow-y: auto;"></div>',G+='<div class="buttons_block justifyCenter gap10px whitespacenowrap">',G+='<button id="stmb-apm-new" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_New">➕ New Arc Preset</button>',G+='<button id="stmb-apm-export" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_Export">\uD83D\uDCE4 Export JSON</button>',G+='<button id="stmb-apm-import" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_Import">\uD83D\uDCE5 Import JSON</button>',G+='<button id="stmb-apm-recreate-builtins" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_ArcPromptManager_RecreateBuiltins">♻️ Recreate Built-in Arc Prompts</button>',G+="</div>",G+='<input type="file" id="stmb-apm-import-file" accept=".json" style="display: none;" />';let J=new J1(G,a.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:!1,cancelButton:U("Close","STMemoryBooks_Close")});FJ(J);let W=J.dlg?.querySelector("#stmb-apm-list");if(W){let q=(Q||[]).map((Y)=>({key:String(Y.key||""),displayName:String(Y.displayName||"")}));W.innerHTML=F8.sanitize(PZ({items:q}))}await J.show()}catch(Z){console.error("STMemoryBooks: Error showing Arc Prompt Manager:",Z),toastr.error(U("Failed to open Arc Prompt Manager","STMemoryBooks_FailedToOpenArcPromptManager"),"STMemoryBooks")}}function FJ(Z){let Q=Z.dlg,G=null;Q.addEventListener("click",async(J)=>{let W=J.target.closest(".stmb-action");if(W){J.preventDefault(),J.stopPropagation();let Y=W.closest("tr[data-preset-key]"),z=Y?.dataset.presetKey;if(!z)return;if(Q.querySelectorAll("tr[data-preset-key]").forEach((V)=>{V.classList.remove("ui-state-active"),V.style.backgroundColor="",V.style.border=""}),Y)Y.style.backgroundColor="var(--cobalt30a)",Y.style.border="",G=z;if(W.classList.contains("stmb-action-edit"))await UJ(Z,z);else if(W.classList.contains("stmb-action-duplicate"))await HJ(Z,z);else if(W.classList.contains("stmb-action-delete"))await BJ(Z,z);return}let q=J.target.closest("tr[data-preset-key]");if(q)Q.querySelectorAll("tr[data-preset-key]").forEach((Y)=>{Y.classList.remove("ui-state-active"),Y.style.backgroundColor="",Y.style.border=""}),q.style.backgroundColor="var(--cobalt30a)",q.style.border="",G=q.dataset.presetKey}),Q.querySelector("#stmb-apm-search")?.addEventListener("input",(J)=>{let W=J.target.value.toLowerCase();Q.querySelectorAll("tr[data-preset-key]").forEach((q)=>{let Y=q.querySelector("td:first-child").textContent.toLowerCase();q.style.display=Y.includes(W)?"":"none"})}),Q.querySelector("#stmb-apm-new")?.addEventListener("click",async()=>{await KJ(Z)}),Q.querySelector("#stmb-apm-export")?.addEventListener("click",async()=>{await OJ()}),Q.querySelector("#stmb-apm-import")?.addEventListener("click",()=>{Q.querySelector("#stmb-apm-import-file")?.click()}),Q.querySelector("#stmb-apm-import-file")?.addEventListener("change",async(J)=>{await RJ(J,Z)}),Q.querySelector("#stmb-apm-recreate-builtins")?.addEventListener("click",async()=>{try{let J=`
+                <h3>${E(U("Recreate Built-in Prompts","STMemoryBooks_RecreateBuiltinsTitle"))}</h3>
+                <div class="info-block warning">
+                    ${E(U("This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.","STMemoryBooks_RecreateBuiltinsWarning"))}
+                </div>
+                <p class="opacity70p">${E(U("This does not affect your other custom presets.","STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom"))}</p>
+            `;if(await new J1(J,a.CONFIRM,"",{okButton:U("Overwrite","STMemoryBooks_RecreateBuiltinsOverwrite"),cancelButton:U("Cancel","STMemoryBooks_Cancel")}).show()===p.AFFIRMATIVE){let Y=await y5("overwrite");try{window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated"))}catch(z){}toastr.success(x`Removed ${Y?.removed||0} built-in overrides`,U("STMemoryBooks","index.toast.title")),Z.completeAffirmative(),await g0()}}catch(J){console.error("STMemoryBooks: Error recreating built-in arc prompts:",J),toastr.error(U("Failed to recreate built-in prompts","STMemoryBooks_FailedToRecreateBuiltins"),U("STMemoryBooks","index.toast.title"))}})}async function KJ(Z){let G=new J1(`
+        <h3 data-i18n="STMemoryBooks_CreateNewPresetTitle">Create New Preset</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-apm-new-display-name">
+                <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                <input type="text" id="stmb-apm-new-display-name" class="text_pole" data-i18n="[placeholder]STMemoryBooks_MyCustomPreset" placeholder="My Custom Preset" />
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label for="stmb-apm-new-prompt">
+                <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-apm-new-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-apm-new-prompt" class="text_pole textarea_compact" rows="10" data-i18n="[placeholder]STMemoryBooks_EnterPromptPlaceholder" placeholder="Enter your prompt here..."></textarea>
+            </label>
+        </div>
+    `,a.TEXT,"",{okButton:U("Create","STMemoryBooks_Create"),cancelButton:U("Cancel","STMemoryBooks_Cancel")});if(await G.show()===p.AFFIRMATIVE){let W=G.dlg.querySelector("#stmb-apm-new-display-name").value.trim(),q=G.dlg.querySelector("#stmb-apm-new-prompt").value.trim();if(!q){toastr.error(U("Prompt cannot be empty","STMemoryBooks_PromptCannotBeEmpty"),"STMemoryBooks");return}try{await vZ(null,q,W||null),toastr.success(U("Preset created successfully","STMemoryBooks_PresetCreatedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated")),Z.completeAffirmative(),await g0()}catch(Y){console.error("STMemoryBooks: Error creating arc preset:",Y),toastr.error(U("Failed to create preset","STMemoryBooks_FailedToCreatePreset"),"STMemoryBooks")}}}async function UJ(Z,Q){try{let G=await hZ(Q),J=await H6(Q),W=`
+            <h3 data-i18n="STMemoryBooks_EditPresetTitle">Edit Preset</h3>
+            <div class="world_entry_form_control">
+                <label for="stmb-apm-edit-display-name">
+                    <h4 data-i18n="STMemoryBooks_DisplayNameTitle">Display Name:</h4>
+                    <input type="text" id="stmb-apm-edit-display-name" class="text_pole" value="${E(G)}" />
+                </label>
+            </div>
+            <div class="world_entry_form_control">
+                <label for="stmb-apm-edit-prompt">
+                    <h4 data-i18n="STMemoryBooks_PromptTitle">Prompt:</h4>
+                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-apm-edit-prompt" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                    <textarea id="stmb-apm-edit-prompt" class="text_pole textarea_compact" rows="10">${E(J)}</textarea>
+                </label>
+            </div>
+        `,q=new J1(W,a.TEXT,"",{okButton:U("Save","STMemoryBooks_Save"),cancelButton:U("Cancel","STMemoryBooks_Cancel")});if(await q.show()===p.AFFIRMATIVE){let z=q.dlg.querySelector("#stmb-apm-edit-display-name").value.trim(),V=q.dlg.querySelector("#stmb-apm-edit-prompt").value.trim();if(!V){toastr.error(U("Prompt cannot be empty","STMemoryBooks_PromptCannotBeEmpty"),"STMemoryBooks");return}await vZ(Q,V,z||null),toastr.success(U("Preset updated successfully","STMemoryBooks_PresetUpdatedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated")),Z.completeAffirmative(),await g0()}}catch(G){console.error("STMemoryBooks: Error editing arc preset:",G),toastr.error(U("Failed to edit preset","STMemoryBooks_FailedToEditPreset"),"STMemoryBooks")}}async function HJ(Z,Q){try{let G=await x5(Q);toastr.success(U("Preset duplicated successfully","STMemoryBooks_PresetDuplicatedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated")),Z.completeAffirmative(),await g0()}catch(G){console.error("STMemoryBooks: Error duplicating arc preset:",G),toastr.error(U("Failed to duplicate preset","STMemoryBooks_FailedToDuplicatePreset"),"STMemoryBooks")}}async function BJ(Z,Q){let G=await hZ(Q),J=new J1(`<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${E(U('Are you sure you want to delete "{{name}}"?',"STMemoryBooks_DeletePresetConfirm",{name:G}))}</p>`,a.CONFIRM,"",{okButton:U("Delete","STMemoryBooks_Delete"),cancelButton:U("Cancel","STMemoryBooks_Cancel")});try{K8(J.dlg)}catch(q){}if(await J.show()===p.AFFIRMATIVE)try{await S5(Q),toastr.success(U("Preset deleted successfully","STMemoryBooks_PresetDeletedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated")),Z.completeAffirmative(),await g0()}catch(q){console.error("STMemoryBooks: Error deleting arc preset:",q),toastr.error(U("Failed to delete preset","STMemoryBooks_FailedToDeletePreset"),"STMemoryBooks")}}async function OJ(){try{let Z=await E5(),Q=new Blob([Z],{type:"application/json"}),G=URL.createObjectURL(Q),J=document.createElement("a");J.href=G,J.download="stmb-arc-prompts.json",J.click(),URL.revokeObjectURL(G),toastr.success(U("Prompts exported successfully","STMemoryBooks_PromptsExportedSuccessfully"),"STMemoryBooks")}catch(Z){console.error("STMemoryBooks: Error exporting arc prompts:",Z),toastr.error(U("Failed to export prompts","STMemoryBooks_FailedToExportPrompts"),"STMemoryBooks")}}async function RJ(Z,Q){let G=Z.target.files[0];if(!G)return;try{let J=await G.text();await b5(J),toastr.success(U("Prompts imported successfully","STMemoryBooks_PromptsImportedSuccessfully"),"STMemoryBooks"),window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated")),Q.completeAffirmative(),await g0()}catch(J){console.error("STMemoryBooks: Error importing arc prompts:",J),toastr.error(x`Failed to import prompts: ${J.message}`,"STMemoryBooks")}}async function AJ(){try{let Z=await kZ(!0),Q=Z?.name||null,G=Z?.data||{entries:{}};if(!Z?.valid||!Q)toastr.info("No memory lorebook currently assigned, no memories found.","SillyTavern Memory Books"),Q=null,G={entries:{}};let J=Object.values(G.entries||{}),W=(_)=>{if(typeof _!=="string")return 0;let v=_.match(/\[(\d+)\]/);if(v)return parseInt(v[1],10);let S=_.match(/^(\d+)[\s-]/);if(S)return parseInt(S[1],10);return 0},q=J.filter((_)=>_&&_.stmemorybooks===!0&&_.stmbArc!==!0&&!_.disable).sort((_,v)=>W(_.comment||"")-W(v.comment||""));await MZ(o?.STMemoryBooks);let Y=await U6(),z="arc_default",X=D1()?.moduleSettings?.tokenWarningThreshold??30000,j="";j+=`<h3>${E(U("\uD83C\uDF08 Consolidate Memories into Arcs","STMemoryBooks_ConsolidateArcs_Title"))}</h3>`,j+='<div class="world_entry_form_control">',j+=`<label><strong>${E(U("Preset","STMemoryBooks_ConsolidateArcs_Preset"))}:</strong> `,j+='<select id="stmb-arc-preset" class="text_pole">';for(let _ of Y){let v=String(_.key||""),S=String(_.displayName||v),b=v===z?" selected":"";j+=`<option value="${E(v)}"${b}>${E(S)}</option>`}j+=`</select></label> <button id="stmb-arc-rebuild-builtins" class="menu_button whitespacenowrap">${E(U("Rebuild from built-ins","STMemoryBooks_Arc_RebuildBuiltins"))}</button></div>`,j+='<div class="flex-container flexGap10">',j+=`<label>${E(U("Maximum number of memories to process in each pass","STMemoryBooks_Arc_MaxPerPass"))} <input id="stmb-arc-maxpass" type="number" min="1" max="50" value="12" class="text_pole" style="width:80px"/></label>`,j+=`<label>${E(U("Number of automatic arc attempts","STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`,j+=`<label>${E(U("Minimum number of memories in each arc","STMemoryBooks_Arc_MinAssigned"))} <input id="stmb-arc-minassigned" type="number" min="1" max="12" value="2" class="text_pole" style="width:110px"/></label>`,j+=`<label>${E(U("Token Budget","STMemoryBooks_Arc_TokenBudget"))} <input id="stmb-arc-token" type="number" min="1000" max="100000" value="${X}" class="text_pole" style="width:120px"/></label>`,j+="</div>",j+='<div class="world_entry_form_control">',j+=`<label><input id="stmb-arc-disable-originals" type="checkbox"/> ${E(U("Disable originals after creating arcs","STMemoryBooks_ConsolidateArcs_DisableOriginals"))}</label>`,j+="</div>",j+='<div class="world_entry_form_control"><div class="flex-container flexGap10 marginBot5">',j+=`<button id="stmb-arc-select-all" class="menu_button">${E(U("Select All","STMemoryBooks_SelectAll"))}</button>`,j+=`<button id="stmb-arc-deselect-all" class="menu_button">${E(U("Deselect All","STMemoryBooks_DeselectAll"))}</button>`,j+="</div>",j+='<div id="stmb-arc-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--SmartHover2); padding:6px">';for(let _ of q){let v=_.comment||"(untitled)",S=String(_.uid),b=W(v);j+=`<label class="flex-container flexGap10" style="align-items:center; margin:2px 0;"><input type="checkbox" class="stmb-arc-item" value="${E(S)}" checked /> <span class="opacity70p">[${String(b).padStart(3,"0")}]</span> <span>${E(v)}</span></label>`}j+="</div>",j+=`<small class="opacity70p">${E(U("Tip: uncheck memories that should not be included.","STMemoryBooks_ConsolidateArcs_Tip"))}</small>`,j+="</div>";let F=new J1(F8.sanitize(j),a.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:U("Run","STMemoryBooks_Run"),cancelButton:U("Cancel","STMemoryBooks_Cancel")}),K=F.dlg;try{K8(K)}catch(_){}if(K.querySelector("#stmb-arc-select-all")?.addEventListener("click",(_)=>{_.preventDefault(),K.querySelectorAll(".stmb-arc-item").forEach((v)=>v.checked=!0)}),K.querySelector("#stmb-arc-deselect-all")?.addEventListener("click",(_)=>{_.preventDefault(),K.querySelectorAll(".stmb-arc-item").forEach((v)=>v.checked=!1)}),K.querySelector("#stmb-arc-rebuild-builtins")?.addEventListener("click",async(_)=>{_.preventDefault();try{let v=`
+                    <h3>${E(U("Rebuild Arc Prompts from Built-ins","STMemoryBooks_Arc_RebuildTitle"))}</h3>
+                    <div class="info-block warning">
+                        ${E(U("This will overwrite your saved Arc prompt presets with the built-ins. A timestamped backup will be created.","STMemoryBooks_Arc_RebuildWarning"))}
+                    </div>
+                    <p class="opacity70p">${E(U("After rebuild, the preset list will refresh automatically.","STMemoryBooks_Arc_RebuildNote"))}</p>
+                `;if(await new J1(v,a.CONFIRM,"",{okButton:U("Rebuild","STMemoryBooks_Rebuild"),cancelButton:U("Cancel","STMemoryBooks_Cancel")}).show()!==p.AFFIRMATIVE)return;let d=await f5({backup:!0}),h=await U6(),r=K.querySelector("#stmb-arc-preset");if(r){let k1=r.value||z;r.innerHTML="";for(let G1 of h){let K1=String(G1.key||""),i1=String(G1.displayName||K1),O1=document.createElement("option");O1.value=K1,O1.textContent=i1,r.appendChild(O1)}if(Array.from(r.options).some((G1)=>G1.value===k1))r.value=k1;else r.value=z}try{window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated"))}catch(k1){}let f1=d?.backupName?` (backup: ${d.backupName}) `:"";toastr.success(x`Rebuilt Arc prompts (${d?.count||0} presets)${f1}`,"STMemoryBooks")}catch(v){console.error("STMemoryBooks: Arc prompts rebuild failed:",v),toastr.error(x`Failed to rebuild Arc prompts: ${v.message}`,"STMemoryBooks")}}),await F.show()!==p.AFFIRMATIVE)return;let B=Array.from(K.querySelectorAll(".stmb-arc-item")).filter((_)=>_.checked).map((_)=>_.value);if(B.length===0){toastr.error(U("Select at least one memory to consolidate.","STMemoryBooks_SelectAtLeastOne"),"STMemoryBooks");return}if(!Q){toastr.info("Arc consolidation requires a memory lorebook. No lorebook assigned.","STMemoryBooks");return}let O={presetKey:String(K.querySelector("#stmb-arc-preset")?.value||"arc_default"),maxItemsPerPass:Math.max(1,$1(K.querySelector("#stmb-arc-maxpass"),12)),maxPasses:Math.max(1,$1(K.querySelector("#stmb-arc-maxpasses"),10)),minAssigned:Math.max(1,$1(K.querySelector("#stmb-arc-minassigned"),2)),tokenTarget:Math.max(1000,$1(K.querySelector("#stmb-arc-token"),X))},T=!!K.querySelector("#stmb-arc-disable-originals")?.checked,D=new Map(q.map((_)=>[String(_.uid),_])),L=B.map((_)=>D.get(String(_))).filter(Boolean);toastr.info(U("Consolidating memories into arcs...","STMemoryBooks_ConsolidatingArcs"),"STMemoryBooks",{timeOut:0});let f;try{f=await s5(L,O,null)}catch(_){toastr.error(x`Arc analysis failed: ${_.message}`,"STMemoryBooks");return}let{arcCandidates:m,leftovers:M}=f||{arcCandidates:[],leftovers:[]};if(!m||m.length===0){toastr.warning(U("No arcs were produced. Try different settings or selection.","STMemoryBooks_NoArcsProduced"),"STMemoryBooks");return}try{let _=await a5({lorebookName:Q,lorebookData:G,arcCandidates:m,disableOriginals:T}),v=Array.isArray(_?.results)?_.results.length:m.length,S=`Created ${v} arc${v===1?"":"s"}${M?.length?`, ${M.length} leftover`:""}.`;if(v===1&&(!M||M.length===0))S+=" (all selected memories were consumed into a single arc)";toastr.success(x`${S}`,"STMemoryBooks")}catch(_){toastr.error(x`Failed to commit arcs: ${_.message}`,"STMemoryBooks")}}catch(Z){console.error("STMemoryBooks: showArcConsolidationPopup failed:",Z),toastr.error(x`Failed to open consolidate popup: ${Z.message}`,"STMemoryBooks")}}async function TJ(){let Z=D1();await r0(Z);let Q=await R8(),G=Array.isArray(Z.moduleSettings.selectedRegexOutgoing)?Z.moduleSettings.selectedRegexOutgoing:[],J=Array.isArray(Z.moduleSettings.selectedRegexIncoming)?Z.moduleSettings.selectedRegexIncoming:[],W=[];try{(Y7({allowedOnly:!1})||[]).forEach((A,O)=>{let T=`idx:${O}`,D=`${A?.scriptName||"Untitled"}${A?.disabled?" (disabled)":""}`;W.push({key:T,label:D,selectedOutgoing:G.includes(T),selectedIncoming:J.includes(T)})})}catch(B){console.warn("STMemoryBooks: Failed to enumerate Regex scripts for UI",B)}let q=Z.profiles[Z.defaultProfile],Y=g(),z=Z.moduleSettings.manualModeEnabled,V=f0?.[y8]??null,X=Y?.manualLorebook??null,j={hasScene:!!Q,sceneData:Q,highestMemoryProcessed:Y?.highestMemoryProcessed,alwaysUseDefault:Z.moduleSettings.alwaysUseDefault,showMemoryPreviews:Z.moduleSettings.showMemoryPreviews,showNotifications:Z.moduleSettings.showNotifications,unhideBeforeMemory:Z.moduleSettings.unhideBeforeMemory||!1,refreshEditor:Z.moduleSettings.refreshEditor,allowSceneOverlap:Z.moduleSettings.allowSceneOverlap,manualModeEnabled:Z.moduleSettings.manualModeEnabled,lorebookMode:z?"Manual":"Automatic (Chat-bound)",currentLorebookName:z?X:V,manualLorebookName:X,chatBoundLorebookName:V,availableLorebooks:N6??[],autoHideMode:D6(Z.moduleSettings),unhiddenEntriesCount:Z.moduleSettings.unhiddenEntriesCount??2,tokenWarningThreshold:Z.moduleSettings.tokenWarningThreshold??50000,defaultMemoryCount:Z.moduleSettings.defaultMemoryCount??0,autoSummaryEnabled:Z.moduleSettings.autoSummaryEnabled??!1,autoSummaryInterval:Z.moduleSettings.autoSummaryInterval??50,autoSummaryBuffer:Z.moduleSettings.autoSummaryBuffer??2,autoCreateLorebook:Z.moduleSettings.autoCreateLorebook??!1,lorebookNameTemplate:Z.moduleSettings.lorebookNameTemplate||"LTM - {{char}} - {{chat}}",profiles:Z.profiles.map((B,A)=>({...B,name:B?.connection?.api==="current_st"?U("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):B.name,isDefault:A===Z.defaultProfile})),titleFormat:Z.titleFormat,useRegex:Z.moduleSettings.useRegex||!1,regexOptions:W,selectedRegexOutgoing:G,selectedRegexIncoming:J,titleFormats:W0().map((B)=>({value:B,isSelected:B===Z.titleFormat})),showCustomInput:!W0().includes(Z.titleFormat),selectedProfile:{...q,connection:q.useDynamicSTSettings||q?.connection?.api==="current_st"?(()=>{let B=l(),A=Z1();return{api:B.completionSource||"openai",model:A.model||"Not Set",temperature:A.temperature??0.7}})():{api:q.connection?.api||"openai",model:q.connection?.model||"Not Set",temperature:q.connection?.temperature!==void 0?q.connection.temperature:0.7},titleFormat:q.titleFormat||Z.titleFormat,effectivePrompt:q.prompt&&q.prompt.trim()?q.prompt:q.preset?await Q0(q.preset):u1()}},F=F8.sanitize($Z(j)),K=[];K.push({text:"\uD83E\uDDE0 "+U("Create Memory","STMemoryBooks_CreateMemoryButton"),result:null,classes:["menu_button"],action:async()=>{if(!Q){toastr.error(U("No scene selected. Make sure both start and end points are set.","STMemoryBooks_NoSceneSelectedMakeSure"),"STMemoryBooks");return}let B=Z.defaultProfile;if(u&&u.dlg){let A=u.dlg.querySelector("#stmb-profile-select");if(A)B=parseInt(A.value)||Z.defaultProfile,console.log(`STMemoryBooks: Using profile index ${B} (${Z.profiles[B]?.name}) from main popup selection`)}await w6(B)}}),K.push({text:"\uD83C\uDF08 "+U("Consolidate Memories into Arcs","STMemoryBooks_ConsolidateArcsButton"),result:null,classes:["menu_button"],action:async()=>{await AJ()}}),K.push({text:"\uD83D\uDDD1️ "+U("Clear Scene","STMemoryBooks_ClearSceneButton"),result:null,classes:["menu_button"],action:()=>{p0(),e1()}});let H={wide:!0,large:!0,allowVerticalScrolling:!0,customButtons:K,cancelButton:U("Close","STMemoryBooks_Close"),okButton:!1,onClose:DJ};try{u=new J1(F,a.TEXT,"",H),NJ(),_6(),await u.show()}catch(B){console.error("STMemoryBooks: Error showing settings popup:",B),u=null}}function NJ(){if(!u)return;let Z=u.dlg;Z.addEventListener("click",async(Q)=>{let G=D1();if(Q.target&&Q.target.matches("#stmb-configure-regex")){Q.preventDefault();try{await MJ()}catch(J){console.warn("STMemoryBooks: showRegexSelectionPopup failed",J)}return}}),Z.addEventListener("change",async(Q)=>{let G=D1();if(Q.target.matches("#stmb-use-regex")){G.moduleSettings.useRegex=Q.target.checked,s();let J=Z.querySelector("#stmb-configure-regex");if(J)J.style.display=Q.target.checked?"":"none";return}if(Q.target.matches("#stmb-regex-outgoing")){try{let J=Array.from(Q.target.selectedOptions||[]).map((W)=>W.value);G.moduleSettings.selectedRegexOutgoing=J,s()}catch(J){console.warn("STMemoryBooks: failed to save selectedRegexOutgoing",J)}return}if(Q.target.matches("#stmb-regex-incoming")){try{let J=Array.from(Q.target.selectedOptions||[]).map((W)=>W.value);G.moduleSettings.selectedRegexIncoming=J,s()}catch(J){console.warn("STMemoryBooks: failed to save selectedRegexIncoming",J)}return}if(Q.target.matches("#stmb-import-file")){try{Q5(Q,G,e1)}catch(J){console.error(`${F1}: Error in import profiles:`,J),toastr.error(U("Failed to import profiles","STMemoryBooks_FailedToImportProfiles"),"STMemoryBooks")}return}if(Q.target.matches("#stmb-allow-scene-overlap")){G.moduleSettings.allowSceneOverlap=Q.target.checked,s();return}if(Q.target.matches("#stmb-unhide-before-memory")){G.moduleSettings.unhideBeforeMemory=Q.target.checked,s();return}if(Q.target.matches("#stmb-manual-mode-enabled")){let J=Q.target.checked;if(J){G.moduleSettings.autoCreateLorebook=!1;let W=document.querySelector("#stmb-auto-create-lorebook");if(W)W.checked=!1}if(J){let W=f0?.[y8],q=g()||{};if(!q.manualLorebook){if(W){let Y=`
+                            <h4 data-i18n="STMemoryBooks_ManualLorebookSetupTitle">Manual Lorebook Setup</h4>
+                            <div class="world_entry_form_control">
+                                <p data-i18n="STMemoryBooks_ManualLorebookSetupDesc1" data-i18n-params='{"name": "${W}"}'>You have a chat-bound lorebook "<strong>${W}</strong>".</p>
+                                <p data-i18n="STMemoryBooks_ManualLorebookSetupDesc2">Would you like to use it for manual mode or select a different one?</p>
+                            </div>
+                        `;if(await new J1(Y,a.TEXT,"",{okButton:U("Use Chat-bound","STMemoryBooks_UseChatBound"),cancelButton:U("Select Different","STMemoryBooks_SelectDifferent")}).show()===p.AFFIRMATIVE)q.manualLorebook=W,Q1(),toastr.success(x`Manual lorebook set to "${W}"`,"STMemoryBooks");else if(!await A0(W)){Q.target.checked=!1;return}}else if(toastr.info(U("Please select a lorebook for manual mode","STMemoryBooks_PleaseSelectLorebookForManualMode"),"STMemoryBooks"),!await A0()){Q.target.checked=!1;return}}}G.moduleSettings.manualModeEnabled=Q.target.checked,s(),Q7(),_6();return}if(Q.target.matches("#stmb-auto-hide-mode")){G.moduleSettings.autoHideMode=Q.target.value,delete G.moduleSettings.autoHideAllMessages,delete G.moduleSettings.autoHideLastMemory,s();return}if(Q.target.matches("#stmb-profile-select")){let J=j1($1(Q.target),0,profiles.length-1);if(J>=0&&J<G.profiles.length){let W=G.profiles[J],q=Z.querySelector("#stmb-summary-api"),Y=Z.querySelector("#stmb-summary-model"),z=Z.querySelector("#stmb-summary-temp"),V=Z.querySelector("#stmb-summary-title"),X=Z.querySelector("#stmb-summary-prompt");if(W.useDynamicSTSettings||W?.connection?.api==="current_st"){let j=l(),F=Z1();if(q)q.textContent=j.completionSource||"openai";if(Y)Y.textContent=F.model||U("Not Set","STMemoryBooks_NotSet");if(z)z.textContent=Number(F.temperature??0.7)}else{if(q)q.textContent=W.connection?.api||"openai";if(Y)Y.textContent=W.connection?.model||U("Not Set","STMemoryBooks_NotSet");if(z)z.textContent=W.connection?.temperature!==void 0?W.connection.temperature:"0.7"}if(V)V.textContent=W.titleFormat||G.titleFormat;if(X)X.textContent=await z7(W)}return}if(Q.target.matches("#stmb-title-format-select")){let J=Z.querySelector("#stmb-custom-title-format"),W=Z.querySelector("#stmb-summary-title");if(Q.target.value==="custom")J.classList.remove("displayNone"),J.focus();else if(J.classList.add("displayNone"),G.titleFormat=Q.target.value,s(),W)W.textContent=Q.target.value;return}if(Q.target.matches("#stmb-default-memory-count")){let J=j1($1(Q.target,G.moduleSettings.defaultMemoryCount??0),0,7);G.moduleSettings.defaultMemoryCount=J;return}if(Q.target.matches("#stmb-auto-summary-enabled")){G.moduleSettings.autoSummaryEnabled=Q.target.checked,s();return}if(Q.target.matches("#stmb-auto-create-lorebook")){if(Q.target.checked){G.moduleSettings.manualModeEnabled=!1;let W=document.querySelector("#stmb-manual-mode-enabled");if(W)W.checked=!1}G.moduleSettings.autoCreateLorebook=Q.target.checked,s(),Q7(),_6();return}if(Q.target.matches("#stmb-auto-summary-interval")){let J=parseInt(Q.target.value);if(!isNaN(J)&&J>=10&&J<=200)G.moduleSettings.autoSummaryInterval=J,s();return}if(Q.target.matches("#stmb-auto-summary-buffer")){let J=$1(Q.target);G.moduleSettings.autoSummaryBuffer=j1(J??0,0,50),s();return}}),Z.addEventListener("input",cG.debounce((Q)=>{let G=D1();if(Q.target.matches("#stmb-custom-title-format")){let J=Q.target.value.trim();if(J&&J.includes("000")){G.titleFormat=J,s();let W=Z.querySelector("#stmb-summary-title");if(W)W.textContent=J}return}if(Q.target.matches("#stmb-lorebook-name-template")){let J=Q.target.value.trim();if(J)G.moduleSettings.lorebookNameTemplate=J,s();return}if(Q.target.matches("#stmb-token-warning-threshold")){let J=parseInt(Q.target.value);if(!isNaN(J)&&J>=1000&&J<=1e5)G.moduleSettings.tokenWarningThreshold=J,s();return}if(Q.target.matches("#stmb-unhidden-entries-count")){let J=parseInt(Q.target.value);if(!isNaN(J)&&J>=0&&J<=50)G.moduleSettings.unhiddenEntriesCount=J,s();return}},1000))}function DJ(Z){try{let Q=Z.dlg,G=D1(),J=Q.querySelector("#stmb-always-use-default")?.checked??G.moduleSettings.alwaysUseDefault,W=Q.querySelector("#stmb-show-memory-previews")?.checked??G.moduleSettings.showMemoryPreviews,q=Q.querySelector("#stmb-show-notifications")?.checked??G.moduleSettings.showNotifications,Y=Q.querySelector("#stmb-unhide-before-memory")?.checked??G.moduleSettings.unhideBeforeMemory,z=Q.querySelector("#stmb-refresh-editor")?.checked??G.moduleSettings.refreshEditor,V=Q.querySelector("#stmb-allow-scene-overlap")?.checked??G.moduleSettings.allowSceneOverlap,X=Q.querySelector("#stmb-auto-hide-mode")?.value??D6(G.moduleSettings),j=$1(Q.querySelector("#stmb-token-warning-threshold"),G.moduleSettings.tokenWarningThreshold??50000),F=Number(Q.querySelector("#stmb-default-memory-count").value),K=$1(Q.querySelector("#stmb-unhidden-entries-count"),G.moduleSettings.unhiddenEntriesCount??0),H=Q.querySelector("#stmb-manual-mode-enabled")?.checked??G.moduleSettings.manualModeEnabled,B=Q.querySelector("#stmb-auto-summary-enabled")?.checked??G.moduleSettings.autoSummaryEnabled,A=$1(Q.querySelector("#stmb-auto-summary-interval"),G.moduleSettings.autoSummaryInterval??50),O=j1($1(Q.querySelector("#stmb-auto-summary-buffer"),G.moduleSettings.autoSummaryBuffer??0),0,50),T=Q.querySelector("#stmb-auto-create-lorebook")?.checked??G.moduleSettings.autoCreateLorebook;if(J!==G.moduleSettings.alwaysUseDefault||W!==G.moduleSettings.showMemoryPreviews||q!==G.moduleSettings.showNotifications||Y!==G.moduleSettings.unhideBeforeMemory||z!==G.moduleSettings.refreshEditor||j!==G.moduleSettings.tokenWarningThreshold||F!==G.moduleSettings.defaultMemoryCount||H!==G.moduleSettings.manualModeEnabled||V!==G.moduleSettings.allowSceneOverlap||X!==D6(G.moduleSettings)||K!==G.moduleSettings.unhiddenEntriesCount||B!==G.moduleSettings.autoSummaryEnabled||A!==G.moduleSettings.autoSummaryInterval||O!==G.moduleSettings.autoSummaryBuffer||T!==G.moduleSettings.autoCreateLorebook)G.moduleSettings.alwaysUseDefault=J,G.moduleSettings.showMemoryPreviews=W,G.moduleSettings.showNotifications=q,G.moduleSettings.unhideBeforeMemory=Y,G.moduleSettings.refreshEditor=z,G.moduleSettings.tokenWarningThreshold=j,G.moduleSettings.defaultMemoryCount=F,G.moduleSettings.manualModeEnabled=H,G.moduleSettings.allowSceneOverlap=V,G.moduleSettings.autoHideMode=X,delete G.moduleSettings.autoHideAllMessages,delete G.moduleSettings.autoHideLastMemory,G.moduleSettings.unhiddenEntriesCount=K,G.moduleSettings.autoSummaryEnabled=B,G.moduleSettings.autoSummaryInterval=A,G.moduleSettings.autoSummaryBuffer=O,G.moduleSettings.autoCreateLorebook=T,s()}catch(Q){console.error("STMemoryBooks: Failed to save settings:",Q),toastr.warning(U("Failed to save settings. Please try again.","STMemoryBooks_FailedToSaveSettings"),"STMemoryBooks")}u=null}async function e1(){if(!u||!u.dlg.hasAttribute("open"))return;try{let Z=D1(),Q=await R8(),G=Z.profiles[Z.defaultProfile],J=g(),W=Z.moduleSettings.manualModeEnabled,q=f0?.[y8]||null,Y=J?.manualLorebook||null,z={hasScene:!!Q,sceneData:Q,highestMemoryProcessed:J?.highestMemoryProcessed,alwaysUseDefault:Z.moduleSettings.alwaysUseDefault,showMemoryPreviews:Z.moduleSettings.showMemoryPreviews,showNotifications:Z.moduleSettings.showNotifications,unhideBeforeMemory:Z.moduleSettings.unhideBeforeMemory||!1,refreshEditor:Z.moduleSettings.refreshEditor,allowSceneOverlap:Z.moduleSettings.allowSceneOverlap,manualModeEnabled:Z.moduleSettings.manualModeEnabled,lorebookMode:W?"Manual":"Automatic (Chat-bound)",currentLorebookName:W?Y:q,manualLorebookName:Y,chatBoundLorebookName:q,availableLorebooks:N6??[],autoHideMode:D6(Z.moduleSettings),unhiddenEntriesCount:Z.moduleSettings.unhiddenEntriesCount??0,tokenWarningThreshold:Z.moduleSettings.tokenWarningThreshold??50000,defaultMemoryCount:Z.moduleSettings.defaultMemoryCount??0,autoSummaryEnabled:Z.moduleSettings.autoSummaryEnabled??!1,autoSummaryInterval:Z.moduleSettings.autoSummaryInterval??50,autoSummaryBuffer:Z.moduleSettings.autoSummaryBuffer??0,autoCreateLorebook:Z.moduleSettings.autoCreateLorebook??!1,lorebookNameTemplate:Z.moduleSettings.lorebookNameTemplate||"LTM - {{char}} - {{chat}}",profiles:Z.profiles.map((F,K)=>({...F,name:F?.connection?.api==="current_st"?U("Current SillyTavern Settings","STMemoryBooks_Profile_CurrentST"):F.name,isDefault:K===Z.defaultProfile})),titleFormat:Z.titleFormat,titleFormats:W0().map((F)=>({value:F,isSelected:F===Z.titleFormat})),showCustomInput:!W0().includes(Z.titleFormat),selectedProfile:{...G,connection:G.useDynamicSTSettings||G?.connection?.api==="current_st"?(()=>{let F=l(),K=Z1();return{api:F.completionSource||"openai",model:K.model||"Not Set",temperature:K.temperature??0.7}})():{api:G.connection?.api||"openai",model:G.connection?.model||"gpt-4.1",temperature:G.connection?.temperature??0.7},titleFormat:G.titleFormat||Z.titleFormat,effectivePrompt:G.prompt&&G.prompt.trim()?G.prompt:G.preset?await Q0(G.preset):u1()}},V=F8.sanitize($Z(z));u.content.innerHTML=V;let X=u.content.querySelector("#stmb-profile-select");if(X)X.value=Z.defaultProfile,X.dispatchEvent(new Event("change"));let j=["wide_dialogue_popup","large_dialogue_popup","vertical_scrolling_dialogue_popup"];u.dlg.classList.add(...j),u.content.style.overflowY="auto",_6()}catch(Z){console.error("STMemoryBooks: Error refreshing popup content:",Z)}}function K7(){let Z=document.querySelectorAll("#chat .mes[mesid]");if(Z.length>0){let Q=0;Z.forEach((G)=>{if(!G.querySelector(".mes_stmb_start"))d8(G),Q++}),m8()}}function _J(){let Z=y0.fromProps({name:"creatememory",callback:eG,helpString:U("Create memory from marked scene","STMemoryBooks_Slash_CreateMemory_Help")}),Q=y0.fromProps({name:"scenememory",callback:ZJ,helpString:U("Set scene range and create memory (e.g., /scenememory 10-15)","STMemoryBooks_Slash_SceneMemory_Help"),unnamedArgumentList:[R6.fromProps({description:U("Message range (X-Y format)","STMemoryBooks_Slash_SceneMemory_ArgRangeDesc"),typeList:[O6.STRING],isRequired:!0})]}),G=y0.fromProps({name:"nextmemory",callback:QJ,helpString:U("Create memory from end of last memory to current message","STMemoryBooks_Slash_NextMemory_Help")}),J=y0.fromProps({name:"sideprompt",callback:GJ,helpString:U('Run side prompt. Usage: /sideprompt "Name" [X-Y]',"STMemoryBooks_Slash_SidePrompt_Help"),unnamedArgumentList:[R6.fromProps({description:U("Template name (quote if contains spaces), optionally followed by X-Y range","STMemoryBooks_Slash_SidePrompt_ArgDesc"),typeList:[O6.STRING],isRequired:!0,enumProvider:EZ})]}),W=y0.fromProps({name:"sideprompt-on",callback:JJ,helpString:U('Enable a Side Prompt by name or all. Usage: /sideprompt-on "Name" | all',"STMemoryBooks_Slash_SidePromptOn_Help"),unnamedArgumentList:[R6.fromProps({description:U('Template name (quote if contains spaces) or "all"',"STMemoryBooks_Slash_SidePromptOn_ArgDesc"),typeList:[O6.STRING],isRequired:!0,enumProvider:()=>[new bZ("all"),...EZ()]})]}),q=y0.fromProps({name:"sideprompt-off",callback:$J,helpString:U('Disable a Side Prompt by name or all. Usage: /sideprompt-off "Name" | all',"STMemoryBooks_Slash_SidePromptOff_Help"),unnamedArgumentList:[R6.fromProps({description:U('Template name (quote if contains spaces) or "all"',"STMemoryBooks_Slash_SidePromptOff_ArgDesc"),typeList:[O6.STRING],isRequired:!0,enumProvider:()=>[new bZ("all"),...EZ()]})]}),Y=y0.fromProps({name:"stmb-highest",callback:lG,helpString:U("Return the highest message index for processed memories in this chat. Usage: /stmb-highest","STMemoryBooks_Slash_Highest_Help"),returns:"Highest memory processed message index as a string."});b0.addCommandObject(Z),b0.addCommandObject(Q),b0.addCommandObject(G),b0.addCommandObject(J),b0.addCommandObject(W),b0.addCommandObject(q),b0.addCommandObject(Y)}function wJ(){let Z=$(`
+        <div id="stmb-menu-item-container" class="extension_container interactable" tabindex="0">
+            <div id="stmb-menu-item" class="list-group-item flex-container flexGap5 interactable" tabindex="0">
+                <div class="fa-fw fa-solid fa-book extensionsMenuExtensionButton"></div>
+                <span data-i18n="STMemoryBooks_MenuItem">Memory Books</span>
+            </div>
+        </div>
+        `),Q=$("#extensionsMenu");if(Q.length>0)Q.append(Z),K8(Z[0]);else console.warn("STMemoryBooks: Extensions menu not found - retrying initialization")}function IJ(){$(document).on("click",s1.menuItem,TJ),t1.on(K0.CHAT_CHANGED,rG),t1.on(K0.MESSAGE_DELETED,(Q)=>{let G=D1();nZ(Q,G)}),t1.on(K0.MESSAGE_RECEIVED,aG),t1.on(K0.GROUP_WRAPPER_FINISHED,tG),t1.on(K0.GENERATION_STARTED,(Q,G,J)=>{Z7=J||!1;try{if(j8)toastr.clear(j8)}catch(W){}j8=null,T6=null});let Z=Object.values(s1).filter((Q)=>Q.includes("model_")||Q.includes("temp_")).join(", ");t1.on(K0.GENERATE_AFTER_DATA,(Q)=>{if(Z7)return;if(y1&&A6){let G=A6.effectiveConnection||A6.connection||{},W={openai:"openai",claude:"claude",openrouter:"openrouter",ai21:"ai21",makersuite:"makersuite",google:"makersuite",vertexai:"vertexai",mistralai:"mistralai",custom:"custom",cohere:"cohere",perplexity:"perplexity",groq:"groq",nanogpt:"nanogpt",deepseek:"deepseek",electronhub:"electronhub",aimlapi:"aimlapi",xai:"xai",pollinations:"pollinations",moonshot:"moonshot",fireworks:"fireworks",cometapi:"cometapi",azure_openai:"azure_openai",zai:"zai",siliconflow:"siliconflow"}[G.api]||"openai";if(Q.chat_completion_source=W,Q.include_reasoning=!1,G.model)Q.model=G.model;if(typeof G.temperature==="number")Q.temperature=G.temperature}}),window.addEventListener("beforeunload",sG)}function LJ(Z){try{let Q=(F)=>E(String(F||"")),G=Z?.code?Q(Z.code):"",J=Q(Z?.message||"Unknown error"),W=typeof Z?.rawResponse==="string"?Z.rawResponse:"",q=typeof Z?.providerBody==="string"?Z.providerBody:"",Y=1e5,z=W&&W.length>1e5?W.slice(0,1e5)+`
+…(truncated)…`:W,V="";if(V+=`<h3>${Q(U("Review Failed AI Response","STMemoryBooks_ReviewFailedAI_Title"))}</h3>`,V+='<div class="world_entry_form_control">',V+=`<div><strong>${Q(U("Error","STMemoryBooks_ReviewFailedAI_ErrorLabel"))}:</strong> ${J}</div>`,G)V+=`<div><strong>${Q(U("Code","STMemoryBooks_ReviewFailedAI_CodeLabel"))}:</strong> ${G}</div>`;if(V+="</div>",W)V+='<div class="world_entry_form_control">',V+=`<h4>${Q(U("Raw AI Response","STMemoryBooks_ReviewFailedAI_RawLabel"))}</h4>`,V+=`<pre class="text_pole" style="white-space: pre-wrap; max-height: 300px; overflow:auto;"><code>${E(z)}</code></pre>`,V+=`<div class="buttons_block gap10px"><button id="stmb-copy-raw" class="menu_button">${Q(U("Copy Raw","STMemoryBooks_ReviewFailedAI_CopyRaw"))}</button></div>`,V+="</div>";else V+=`<div class="world_entry_form_control opacity70p">${Q(U("No raw response was captured.","STMemoryBooks_ReviewFailedAI_NoRaw"))}</div>`;if(q)V+='<div class="world_entry_form_control">',V+=`<h4>${Q(U("Provider Error Body","STMemoryBooks_ReviewFailedAI_ProviderBody"))}</h4>`,V+=`<pre class="text_pole" style="white-space: pre-wrap; max-height: 200px; overflow:auto;"><code>${E(q)}</code></pre>`,V+=`<div class="buttons_block gap10px"><button id="stmb-copy-provider" class="menu_button">${Q(U("Copy Provider Body","STMemoryBooks_ReviewFailedAI_CopyProvider"))}</button></div>`,V+="</div>";let X=new J1(F8.sanitize(V),a.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:!1,cancelButton:U("Close","STMemoryBooks_Close")}),j=X.dlg;j.querySelector("#stmb-copy-raw")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(W),toastr.success(U("Copied raw response","STMemoryBooks_CopiedRaw"),"STMemoryBooks")}catch{toastr.error(U("Copy failed","STMemoryBooks_CopyFailed"),"STMemoryBooks")}}),j.querySelector("#stmb-copy-provider")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(q),toastr.success(U("Copied provider body","STMemoryBooks_CopiedProvider"),"STMemoryBooks")}catch{toastr.error(U("Copy failed","STMemoryBooks_CopyFailed"),"STMemoryBooks")}}),X.show()}catch(Q){console.error("STMemoryBooks: Failed to show failed AI response popup:",Q)}}async function W7(){if(e5)return;e5=!0,console.log("STMemoryBooks: Initializing");try{let W=iG?.()||"en";try{let q=await t5(W);if(q)SZ(W,q)}catch(q){console.warn("STMemoryBooks: Failed to load JSON locale bundle:",q)}if(E0&&typeof E0==="object"){if(E0[W])SZ(W,E0[W]);if(W!=="en"&&E0.en)SZ(W,Object.fromEntries(Object.entries(E0.en).filter(([q])=>!0)))}}catch(W){console.warn("STMemoryBooks: Failed to merge plugin locales:",W)}let Z=0,Q=20;while(Z<Q){if($(s1.extensionsMenu).length>0&&t1&&typeof J1<"u")break;await new Promise((W)=>setTimeout(W,500)),Z++}wJ();try{K8()}catch(W){}let G=D1(),J=JZ(G);if(!J.valid){if(console.warn("STMemoryBooks: Profile validation issues found:",J.issues),J.fixes.length>0)s()}c8(),V7();try{nG()}catch(W){console.error("STMemoryBooks: Failed to initialize chat observer:",W),toastr.error(U("STMemoryBooks: Failed to initialize chat monitoring. Please refresh the page.","STMemoryBooks_FailedToInitializeChatMonitoring"),"STMemoryBooks");return}IJ(),await fZ(),_J();try{K7(),console.log("STMemoryBooks: Processed existing messages during initialization")}catch(W){console.error("STMemoryBooks: Error processing existing messages during init:",W)}pG.registerHelper("eq",function(W,q){return W===q}),console.log("STMemoryBooks: Extension loaded successfully")}function CJ(){let Z=[];try{(Y7({allowedOnly:!1})||[]).forEach((G,J)=>{let W=`idx:${J}`,q=`${G?.scriptName||"Untitled"}${G?.disabled?" (disabled)":""}`;Z.push({key:W,label:q})})}catch(Q){console.warn("STMemoryBooks: buildFlatRegexOptions failed",Q)}return Z}async function MJ(){let Z=D1(),Q=CJ(),G=Array.isArray(Z.moduleSettings.selectedRegexOutgoing)?Z.moduleSettings.selectedRegexOutgoing:[],J=Array.isArray(Z.moduleSettings.selectedRegexIncoming)?Z.moduleSettings.selectedRegexIncoming:[],W="";W+='<h3 data-i18n="STMemoryBooks_RegexSelection_Title">\uD83D\uDCD0 Regex selection</h3>',W+='<div class="world_entry_form_control"><small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small></div>',W+='<div class="world_entry_form_control">',W+='<h4 data-i18n="STMemoryBooks_RegexSelection_Outgoing">Run regex before sending to AI</h4>',W+='<select id="stmb-regex-outgoing" multiple style="width:100%">';for(let z of Q){let V=G.includes(z.key)?" selected":"";W+=`<option value="${E(z.key)}"${V}>${E(z.label)}</option>`}W+="</select>",W+="</div>",W+='<div class="world_entry_form_control">',W+='<h4 data-i18n="STMemoryBooks_RegexSelection_Incoming">Run regex before adding to lorebook (before previews)</h4>',W+='<select id="stmb-regex-incoming" multiple style="width:100%">';for(let z of Q){let V=J.includes(z.key)?" selected":"";W+=`<option value="${E(z.key)}"${V}>${E(z.label)}</option>`}W+="</select>",W+="</div>";let q=new J1(W,a.TEXT,"",{wide:!0,large:!0,allowVerticalScrolling:!0,okButton:U("Save","STMemoryBooks_Save"),cancelButton:U("Close","STMemoryBooks_Close")});try{K8(q.dlg)}catch(z){}if(setTimeout(()=>{try{if(window.jQuery&&typeof window.jQuery.fn.select2==="function"){let z=window.jQuery(q.dlg);window.jQuery("#stmb-regex-outgoing").select2({width:"100%",placeholder:U("Select outgoing regex…","STMemoryBooks_RegexSelect_PlaceholderOutgoing"),closeOnSelect:!1,dropdownParent:z}),window.jQuery("#stmb-regex-incoming").select2({width:"100%",placeholder:U("Select incoming regex…","STMemoryBooks_RegexSelect_PlaceholderIncoming"),closeOnSelect:!1,dropdownParent:z})}}catch(z){console.warn("STMemoryBooks: Select2 initialization failed (using native selects)",z)}},0),await q.show()===p.AFFIRMATIVE)try{let z=Array.from(q.dlg?.querySelector("#stmb-regex-outgoing")?.selectedOptions||[]).map((X)=>X.value),V=Array.from(q.dlg?.querySelector("#stmb-regex-incoming")?.selectedOptions||[]).map((X)=>X.value);Z.moduleSettings.selectedRegexOutgoing=z,Z.moduleSettings.selectedRegexIncoming=V,s(),toastr.success(U("Regex selections saved","STMemoryBooks_RegexSelectionsSaved"),"STMemoryBooks")}catch(z){console.warn("STMemoryBooks: Failed to save regex selections",z),toastr.error(U("Failed to save regex selections","STMemoryBooks_FailedToSaveRegexSelections"),"STMemoryBooks")}}$(document).ready(()=>{if(t1&&K0.APP_READY)t1.on(K0.APP_READY,W7);setTimeout(W7,2000)});export{kZ as validateLorebook,o4 as isMemoryProcessing,A6 as currentProfile};
+
+//# debugId=C3468BE57AE8CD0F64756E2164756E21
