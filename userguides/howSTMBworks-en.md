@@ -1,4 +1,4 @@
-# How SillyTavern Memory Books (STMB) Work — Programmer‑Lite Guide
+# How SillyTavern Memory Books (STMB) Works — Programmer‑Lite Guide
 
 This guide explains how STMB works in clear, programmer‑lite terms for users who don’t write SillyTavern code but want to understand how prompts are built.
 
