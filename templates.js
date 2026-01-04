@@ -270,6 +270,12 @@ export const settingsTemplate = Handlebars.compile(`
         <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-extra-function-buttons">
             <!-- extra function buttons will be dynamically inserted here -->
         </div>
+
+        <hr>
+        <h4 data-i18n="STMemoryBooks_promptManagerButtons">Prompt Manager Buttons:</h4>
+        <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-prompt-manager-buttons">
+            <!-- prompt manager buttons will be dynamically inserted here -->
+        </div>
 `);
 
 /**

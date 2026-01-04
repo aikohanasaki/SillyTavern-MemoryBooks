@@ -218,6 +218,7 @@ export const localeData_en = {
     'STMemoryBooks_ViewPrompt': 'View Prompt',
     'STMemoryBooks_ProfileActions': 'Profile Actions:',
     'STMemoryBooks_extraFunctionButtons': 'Import/Export Profiles:',
+    'STMemoryBooks_promptManagerButtons': 'Prompt Manager Buttons:',
 
     // Confirmation Popup
     'STMemoryBooks_CreateMemory': 'Create Memory',
