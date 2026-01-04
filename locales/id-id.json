@@ -91,6 +91,7 @@
     "STMemoryBooks_ProfileActions": "Tindakan Profil:",
     "STMemoryBooks_extraFunctionButtons": "Impor/Ekspor Profil:",
     "STMemoryBooks_promptManagerButtons": "Tombol Manajer Prompt:",
+    "STMemoryBooks_PromptManagerButtonsHint": "Ingin menyesuaikan? Gunakan tombol di bawah untuk menyesuaikan setiap jenis prompt.",
     "STMemoryBooks_CreateMemory": "Buat Memori",
     "STMemoryBooks_ScenePreview": "Pratinjau Adegan:",
     "STMemoryBooks_UsingProfile": "Menggunakan Profil",

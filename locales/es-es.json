@@ -92,6 +92,7 @@
     "STMemoryBooks_ProfileActions": "Acciones del Perfil:",
     "STMemoryBooks_extraFunctionButtons": "Importar/Exportar Perfiles:",
     "STMemoryBooks_promptManagerButtons": "Botones del administrador de avisos:",
+    "STMemoryBooks_PromptManagerButtonsHint": "¿Quieres ajustar cosas? Usa los botones de abajo para personalizar cada tipo de prompt.",
     "STMemoryBooks_CreateMemory": "Crear Memoria",
     "STMemoryBooks_ScenePreview": "Vista Previa de la Escena:",
     "STMemoryBooks_UsingProfile": "Usando Perfil",

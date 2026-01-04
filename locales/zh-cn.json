@@ -91,6 +91,7 @@
   "STMemoryBooks_ProfileActions": "配置文件操作:",
   "STMemoryBooks_extraFunctionButtons": "导入/导出配置文件:",
   "STMemoryBooks_promptManagerButtons": "提示管理器按钮:",
+  "STMemoryBooks_PromptManagerButtonsHint": "想要调整一些内容吗？使用下面的按钮自定义每种提示类型。",
   "STMemoryBooks_CreateMemory": "创建记忆",
   "STMemoryBooks_ScenePreview": "场景预览:",
   "STMemoryBooks_UsingProfile": "使用配置文件",
