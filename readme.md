@@ -236,14 +236,14 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 
 #### **Access:** From the Memory Books settings, click “🎡 Side Prompt Manager”.
 #### **Features:**
-    - View all side prompts.
-    - Create new or duplicate prompts to experiment with different prompt styles.
-    - Edit or delete any preset (including built-ins).
-    - Export and import presets as JSON files for backup or sharing.
-    - Run them manually or automatically with memory creation.
+- View all side prompts.
+- Create new or duplicate prompts to experiment with different prompt styles.
+- Edit or delete any preset (including built-ins).
+- Export and import presets as JSON files for backup or sharing.
+- Run them manually or automatically with memory creation.
 #### **Usage Tips:**
-    - When creating a new prompt, you can copy from built-ins for best compatibility.
-    - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use
+- When creating a new prompt, you can copy from built-ins for best compatibility.
+- Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use
 
 ---
 
