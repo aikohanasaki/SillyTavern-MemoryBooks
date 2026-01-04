@@ -4,7 +4,7 @@
 
 Need bot to remember things, but the chat is too long for context? Want to automatically track important plot points without manually taking notes? ST Memory Books does exactly that - it watches your chats and creates smart summaries so you never lose track of your story again.
 
-(Looking for some behind-the-scenes technical detail? Maybe you want [How STMB Works](userguides\howSTMBworks-en.md) instead.)
+(Looking for some behind-the-scenes technical detail? Maybe you want [How STMB Works](userguides/howSTMBworks-en.md) instead.)
 
 ---
 
