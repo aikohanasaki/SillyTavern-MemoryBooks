@@ -252,7 +252,7 @@ async function generateKeywordsForArc(summary, conn) {
     api: conn.api,
     endpoint: conn.endpoint,
     apiKey: conn.apiKey,
-    extra: {},
+    extra,
   });
   try {
     console.debug(
@@ -276,7 +276,7 @@ async function generateKeywordsForArc(summary, conn) {
       api: conn.api,
       endpoint: conn.endpoint,
       apiKey: conn.apiKey,
-      extra: {},
+      extra,
     });
     kw = parseKeywordsResponse(retry.text);
   }
@@ -591,7 +591,7 @@ export async function runArcAnalysisSequential(
       api: conn.api,
       endpoint: conn.endpoint,
       apiKey: conn.apiKey,
-      extra: {},
+      extra,
     });
 
     // Parse response
@@ -608,7 +608,7 @@ export async function runArcAnalysisSequential(
         api: conn.api,
         endpoint: conn.endpoint,
         apiKey: conn.apiKey,
-        extra: {},
+        extra,
       });
       parsed = parseArcJsonResponse(retry.text);
     }

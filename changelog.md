@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.14.1 (January 3, 2026)
+- **Bugfix:** Fix not passing max_tokens for arc requests.
+
 ## v4.14.0 (January 2, 2026)
 - **Enhancement:** Arcs now in international beta (localized into all STMB languages).
 
