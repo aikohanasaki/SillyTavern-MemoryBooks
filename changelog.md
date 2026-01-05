@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v4.14.3 (January 4, 2026)
+- **Bugfix:** Replace || with ?? where necessary
+- **Tweak:** Remove unused imports
+
 ## v4.14.2 (January 4, 2026)
 - **Bugfix:** Fix popup buttons not wrapping.
 - **Tweaks:** 

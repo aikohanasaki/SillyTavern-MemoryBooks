@@ -6,16 +6,11 @@ import {
   saveSettingsDebounced,
   characters,
   this_chid,
-  name1,
-  name2,
-  saveMetadata,
-  getCurrentChatId,
   settings as st_settings,
 } from "../../../../script.js";
 import { Popup, POPUP_TYPE, POPUP_RESULT } from "../../../popup.js";
 import {
   extension_settings,
-  saveMetadataDebounced,
 } from "../../../extensions.js";
 import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
@@ -29,7 +24,6 @@ import {
   METADATA_KEY,
   world_names,
   loadWorldInfo,
-  createNewWorldInfo,
   saveWorldInfo,
   reloadEditor,
 } from "../../../world-info.js";
@@ -48,9 +42,8 @@ import {
   identifyMemoryEntries,
   getRangeFromMemoryEntry,
 } from "./addlore.js";
-import { generateLorebookName, autoCreateLorebook } from "./autocreate.js";
+import { autoCreateLorebook } from "./autocreate.js";
 import {
-  checkAutoSummaryTrigger,
   handleAutoSummaryMessageReceived,
   handleAutoSummaryGroupFinished,
   clearAutoSummaryState,
@@ -65,7 +58,6 @@ import {
 } from "./profileManager.js";
 import {
   getSceneMarkers,
-  setSceneMarker,
   setSceneRange,
   clearScene,
   updateAllButtonStates,
@@ -85,7 +77,6 @@ import {
   showMemoryPreviewPopup,
 } from "./confirmationPopup.js";
 import {
-  getEffectivePrompt,
   getDefaultPrompt,
   deepClone,
   getUIModelSettings,
@@ -97,7 +88,6 @@ import {
   readIntInput,
   clampInt,
 } from "./utils.js";
-import { editGroup } from "../../../group-chats.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
   MEMORY_GENERATION,
@@ -124,7 +114,6 @@ import {
 import { localeData, loadLocaleJson } from "./locales.js";
 import { getRegexScripts } from "../../../extensions/regex/engine.js";
 import "../../../../lib/select2.min.js";
-import { profile } from "console";
 
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
