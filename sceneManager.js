@@ -1,8 +1,6 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
-import { getCurrentMemoryBooksContext } from './utils.js';
-import { groups, editGroup } from '../../../group-chats.js';
 import { SCENE_MANAGEMENT } from './constants.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
@@ -178,7 +176,7 @@ function calculateAffectedRange(oldStart, oldEnd, newStart, newEnd) {
  * Returns a Promise that resolves immediately after state is committed to cache
  * (The debounced save to disk happens asynchronously in the background)
  */
-export function setSceneMarker(messageId, type) {
+function setSceneMarker(messageId, type) {
     const markers = getSceneMarkers();
 
     // Store previous state for optimization

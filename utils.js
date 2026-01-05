@@ -251,7 +251,12 @@ export function getCurrentMemoryBooksContext() {
             
             // Get temperature using the same method as ModelTempLocks
             const apiSelectors = getApiSelectors();
-            const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() ?? 0.7);
+            const rawTemp =
+                $(apiSelectors.temp).val() ??
+                $(apiSelectors.tempCounter).val();
+            const currentTemp = Number.isFinite(parseFloat(rawTemp))
+            ? parseFloat(rawTemp)
+            : 0.7;
             
             // Get model using the same method as ModelTempLocks
             let currentModel = $(apiSelectors.model).val() || '';

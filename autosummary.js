@@ -125,7 +125,7 @@ async function validateLorebookForAutoSummary() {
  * Check if auto-summary should trigger based on current message count and settings
  * @returns {Promise<void>}
  */
-export async function checkAutoSummaryTrigger() {
+async function checkAutoSummaryTrigger() {
     try {
         const settings = extension_settings.STMemoryBooks;
         if (!settings?.moduleSettings?.autoSummaryEnabled) {

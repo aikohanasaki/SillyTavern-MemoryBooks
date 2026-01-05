@@ -3,9 +3,6 @@ import { getContext } from '../../../extensions.js';
 import { estimateTokens } from './utils.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
-const MODULE_NAME = 'STMemoryBooks-ChatCompile';
-const CHARS_PER_TOKEN = 4; // Rough estimation for token counting
-
 /**
  * Compile chat messages between scene markers into structured format
  * @param {Object} sceneRequest - Scene compilation request
