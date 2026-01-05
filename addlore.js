@@ -161,7 +161,8 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         const autoHideMode = getAutoHideMode(settings.moduleSettings);
 
         if (autoHideMode !== 'none') {
-            const unhiddenCount = settings.moduleSettings?.unhiddenEntriesCount || 0;
+            const unhiddenCount = settings.moduleSettings.unhiddenEntriesCount ?? 2;
+
 
             if (autoHideMode === 'all') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
@@ -930,11 +931,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
             entry.selective = !!defaults.selective;
             if (typeof defaults.order === 'number') entry.order = defaults.order;
             if (typeof defaults.position === 'number') entry.position = defaults.position;
-
-            entry.key = entry.key || [];
-            entry.keysecondary = entry.keysecondary || [];
             entry.disable = false;
-
             created = true;
         }
 

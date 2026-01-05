@@ -770,7 +770,7 @@ function resolveConnection(profileOrConnection) {
       temperature:
         typeof c.temperature === "number"
           ? c.temperature
-          : getUIModelSettings().temperature || 0.2,
+          : getUIModelSettings().temperature ?? 0.2,
       endpoint: c.endpoint,
       apiKey: c.apiKey,
     };
@@ -781,7 +781,7 @@ function resolveConnection(profileOrConnection) {
   return {
     api: normalizeCompletionSource(apiInfo.completionSource || "openai"),
     model: ui.model || "",
-    temperature: ui.temperature || 0.2,
+    temperature: ui.temperature ?? 0.2,
   };
 }
 

@@ -195,7 +195,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <small class="opacity50p" data-i18n="STMemoryBooks_UnhiddenCountDesc">Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)</small>
                 <input type="number" id="stmb-unhidden-entries-count" class="text_pole"
                     value="{{unhiddenEntriesCount}}" min="0" max="50" step="1"
-                    data-i18n="[placeholder]STMemoryBooks_DefaultUnhidden" placeholder="0">
+                    data-i18n="[placeholder]STMemoryBooks_DefaultUnhidden" placeholder="2">
             </label>
         </div>
         

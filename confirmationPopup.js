@@ -44,10 +44,10 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
       translate('Current SillyTavern temperature', 'STMemoryBooks_Label_CurrentSTTemperature') : (selectedProfile.connection?.temperature !== undefined ?
         selectedProfile.connection.temperature : translate('Current SillyTavern temperature', 'STMemoryBooks_Label_CurrentSTTemperature')),
     currentModel: currentModelSettings?.model || translate('Unknown', 'common.unknown'),
-    currentTemperature: currentModelSettings?.temperature || 0.7,
+    currentTemperature: currentModelSettings?.temperature ?? 0.7,
     currentApi: currentApiInfo?.api || translate('Unknown', 'common.unknown'),
-    tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
-    showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000),
+    tokenThreshold: settings.moduleSettings.tokenWarningThreshold ?? 30000,
+    showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold ?? 30000),
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
       name: (profile?.connection?.api === 'current_st') ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
@@ -84,7 +84,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
           effectivePrompt: effectivePrompt
         },
         advancedOptions: {
-          memoryCount: settings.moduleSettings.defaultMemoryCount || 0,
+          memoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
           overrideSettings: false
         }
       };
@@ -128,15 +128,15 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
       isDefault: index === settings.defaultProfile
     })),
     effectivePrompt: effectivePrompt,
-    defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
+    defaultMemoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
     profileModel: profileModel,
     profileTemperature: profileTemperature,
     currentModel: currentModelSettings?.model || translate('Unknown', 'common.unknown'),
-    currentTemperature: currentModelSettings?.temperature || 0.7,
+    currentTemperature: currentModelSettings?.temperature ?? 0.7,
     currentApi: currentApiInfo?.api || translate('Unknown', 'common.unknown'),
     suggestedProfileName: tr('STMemoryBooks_ModifiedProfileName', '{{name}} - Modified', { name: selectedProfile.name }),
-    tokenThreshold: settings.moduleSettings.tokenWarningThreshold || 30000,
-    showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold || 30000)
+    tokenThreshold: settings.moduleSettings.tokenWarningThreshold ?? 30000,
+    showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold ?? 30000)
   };
 
   const content = DOMPurify.sanitize(advancedOptionsTemplate(templateData));
@@ -181,9 +181,9 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
  */
 async function handleAdvancedConfirmation(popup, settings) {
   const popupElement = popup.dlg;
-  const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || settings.defaultProfile);
+  const selectedProfileIndex = Number(popupElement.querySelector('#stmb-profile-select-advanced').value);
   const customPrompt = popupElement.querySelector('#stmb-effective-prompt-advanced')?.value;
-  const memoryCount = parseInt(popupElement.querySelector('#stmb-context-memories-advanced')?.value || 0);
+  const memoryCount = Number(popupElement.querySelector('#stmb-context-memories-advanced').value);
   const overrideSettings = popupElement.querySelector('#stmb-override-settings-advanced')?.checked || false;
 
   // Check if settings should be saved as new profile (when button text indicates it)
@@ -352,13 +352,13 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
   const summaryCountSelect = popupElement.querySelector('#stmb-context-memories-advanced');
   const totalTokensDisplay = popupElement.querySelector('#stmb-total-tokens-display');
   const tokenWarning = popupElement.querySelector('#stmb-token-warning-advanced');
-  const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
+  const tokenThreshold = settings.moduleSettings.tokenWarningThreshold ?? 50000;
 
   if (summaryCountSelect && totalTokensDisplay) {
     let cachedMemories = {}; // Cache fetched memories
 
     const updateTokenEstimate = async () => {
-      const memoryCount = parseInt(summaryCountSelect.value) || 0;
+      const memoryCount = Number(summaryCountSelect.value);
 
       if (memoryCount === 0) {
         totalTokensDisplay.textContent = tr('STMemoryBooks_Label_TotalTokens', 'Total tokens: {{count}}', { count: sceneData.estimatedTokens });

@@ -1,14 +1,12 @@
 import { extension_settings } from '../../../extensions.js';
-import { chat, chat_metadata, saveMetadata, getCurrentChatId, name1, name2 } from '../../../../script.js';
+import { chat, chat_metadata } from '../../../../script.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
-import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, getEffectiveLorebookName } from './utils.js';
+import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, clampInt } from './utils.js';
 import { autoCreateLorebook } from './autocreate.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
-
-const MODULE_NAME = 'STMemoryBooks-AutoSummary';
 
 /**
  * i18n helper: translate with Mustache-style {{var}} interpolation
@@ -90,7 +88,9 @@ async function validateLorebookForAutoSummary() {
             } else {
                 // User wants to postpone
                 const postponeSelect = popup.dlg.querySelector('#stmb-postpone-messages');
-                const postponeMessages = parseInt(postponeSelect.value) || 20;
+                const parsed = parseInt(postponeSelect.value, 10);
+                const postponeMessages = Number.isFinite(parsed) ? parsed : 10;
+
                 const currentMessageCount = chat.length;
 
                 // Set postpone flag
@@ -137,7 +137,7 @@ export async function checkAutoSummaryTrigger() {
         const currentLastMessage = currentMessageCount - 1;
         const requiredInterval = settings.moduleSettings.autoSummaryInterval;
         const rawBuf = settings?.moduleSettings?.autoSummaryBuffer;
-        const buffer = Math.min(Math.max(parseInt(rawBuf) || 0, 0), 50);
+        const buffer = clampInt(parseInt(rawBuf) || 0, 0, 50);
         const requiredTotal = requiredInterval + buffer;
         const highestProcessed = stmbData.highestMemoryProcessed ?? null;
 

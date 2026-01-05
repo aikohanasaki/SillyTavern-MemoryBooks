@@ -117,7 +117,7 @@ function migrateV1toV2(v1) {
         // Map types to triggers
         const type = String(p.type || '').toLowerCase();
         if (type === 'tracker') {
-            const intervalVisibleMessages = Math.max(1, Number(p.settings?.intervalVisibleMessages || 50));
+            const intervalVisibleMessages = Math.max(1, Number(p.settings?.intervalVisibleMessages ?? 50));
             next.triggers.onInterval = { visibleMessages: intervalVisibleMessages };
             // trackers don't need after-memory by default
         } else if (type === 'plotpoints') {
@@ -277,7 +277,7 @@ function getBuiltinTemplates() {
  */
 function createBaseDoc() {
     return {
-        version: Math.max(2, SCHEMA.CURRENT_VERSION || 2),
+        version: Math.max(2, SCHEMA.CURRENT_VERSION ?? 2),
         prompts: getBuiltinTemplates(),
     };
 }
@@ -485,7 +485,7 @@ export async function upsertTemplate(input) {
 
     // Normalize triggers for safety
     if (next.triggers.onInterval) {
-        const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages || 50));
+        const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages ?? 50));
         next.triggers.onInterval = { visibleMessages: vis };
     }
     if (next.triggers.onAfterMemory) {
@@ -574,7 +574,7 @@ export async function importFromJSON(jsonString) {
     // Load existing and merge additively
     const existing = await loadSidePrompts();
     const merged = {
-        version: Math.max(2, Number(existing.version || 2), Number(incoming.version || 2)),
+        version: Math.max(2, Number(existing.version ?? 2), Number(incoming.version ?? 2)),
         prompts: { ...existing.prompts },
     };
 
@@ -617,7 +617,7 @@ export async function importFromJSON(jsonString) {
 
         // Normalize triggers similar to upsert safety
         if (next.triggers.onInterval) {
-            const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages || 50));
+            const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages ?? 50));
             next.triggers.onInterval = { visibleMessages: vis };
         }
         if (next.triggers.onAfterMemory) {

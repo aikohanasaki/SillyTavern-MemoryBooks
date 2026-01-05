@@ -94,6 +94,8 @@ import {
   getCurrentMemoryBooksContext,
   getEffectiveLorebookName,
   showLorebookSelectionPopup,
+  readIntInput,
+  clampInt,
 } from "./utils.js";
 import { editGroup } from "../../../group-chats.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
@@ -122,6 +124,7 @@ import {
 import { localeData, loadLocaleJson } from "./locales.js";
 import { getRegexScripts } from "../../../extensions/regex/engine.js";
 import "../../../../lib/select2.min.js";
+import { profile } from "console";
 
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
@@ -193,7 +196,7 @@ const defaultSettings = {
     showNotifications: true,
     unhideBeforeMemory: false,
     refreshEditor: true,
-    tokenWarningThreshold: 30000,
+    tokenWarningThreshold: 50000,
     defaultMemoryCount: 0,
     autoClearSceneAfterMemory: false,
     manualModeEnabled: false,
@@ -858,7 +861,7 @@ function initializeSettings() {
     extension_settings.STMemoryBooks || deepClone(defaultSettings);
 
   // Migration logic for versions 3-4: Add dynamic profile and clean up titleFormat
-  const currentVersion = extension_settings.STMemoryBooks.migrationVersion || 1;
+  const currentVersion = extension_settings.STMemoryBooks.migrationVersion ?? 1;
   if (currentVersion < 4) {
     // Check if dynamic profile already exists (in case of partial migration)
     const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(
@@ -980,11 +983,13 @@ function validateSettings(settings) {
     settings.moduleSettings.tokenWarningThreshold = 30000;
   }
 
+  settings.moduleSettings.defaultMemoryCount = clampInt(settings.moduleSettings.defaultMemoryCount ?? 0, 0, 7);
+
   if (
-    settings.moduleSettings.defaultMemoryCount === undefined ||
-    settings.moduleSettings.defaultMemoryCount < 0
+    settings.moduleSettings.unhiddenEntriesCount === undefined ||
+    settings.moduleSettings.unhiddenEntriesCount === null
   ) {
-    settings.moduleSettings.defaultMemoryCount = 0;
+    settings.moduleSettings.unhiddenEntriesCount = 2;
   }
 
   // Validate auto-summary settings
@@ -997,15 +1002,8 @@ function validateSettings(settings) {
   ) {
     settings.moduleSettings.autoSummaryInterval = 100;
   }
-  if (
-    settings.moduleSettings.autoSummaryBuffer === undefined ||
-    settings.moduleSettings.autoSummaryBuffer < 0
-  ) {
-    settings.moduleSettings.autoSummaryBuffer = 0;
-  }
-  if (settings.moduleSettings.autoSummaryBuffer > 50) {
-    settings.moduleSettings.autoSummaryBuffer = 50;
-  }
+
+  settings.moduleSettings.autoSummaryBuffer = clampInt(settings.moduleSettings.autoSummaryBuffer ?? 0, 0, 50);
 
   // Validate auto-create lorebook setting - always defaults to false
   if (settings.moduleSettings.autoCreateLorebook === undefined) {
@@ -1114,10 +1112,8 @@ async function showAndGetMemorySettings(
   selectedProfileIndex = null,
 ) {
   const settings = initializeSettings();
-  const tokenThreshold = settings.moduleSettings.tokenWarningThreshold || 30000;
-  const shouldShowConfirmation =
-    !settings.moduleSettings.alwaysUseDefault ||
-    sceneData.estimatedTokens > tokenThreshold;
+  const tokenThreshold = settings.moduleSettings.tokenWarningThreshold ?? 30000;
+  const shouldShowConfirmation = !settings.moduleSettings.alwaysUseDefault || sceneData.estimatedTokens > tokenThreshold;
 
   let confirmationResult = null;
 
@@ -1151,7 +1147,7 @@ async function showAndGetMemorySettings(
         effectivePrompt: await getEffectivePromptAsync(selectedProfile),
       },
       advancedOptions: {
-        memoryCount: settings.moduleSettings.defaultMemoryCount || 0,
+        memoryCount: clampInt(settings.moduleSettings.defaultMemoryCount ?? 0, 0, 7),
         overrideSettings: false,
       },
     };
@@ -1171,7 +1167,7 @@ async function showAndGetMemorySettings(
     profileSettings.effectiveConnection = {
       api: currentApiInfo.completionSource || "openai",
       model: currentSettings.model || "",
-      temperature: currentSettings.temperature || 0.7,
+      temperature: currentSettings.temperature ?? 0.7,
     };
 
     if (profileSettings.useDynamicSTSettings) {
@@ -1193,7 +1189,7 @@ async function showAndGetMemorySettings(
 
   return {
     profileSettings,
-    summaryCount: advancedOptions.memoryCount || 0,
+    summaryCount: advancedOptions.memoryCount ?? 0,
     tokenThreshold,
     settings,
   };
@@ -1862,7 +1858,7 @@ function updateLorebookStatusDisplay() {
     // Update automatic mode info text
     const infoText = automaticInfo.querySelector("small");
     if (infoText) {
-      const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
+      const chatBoundLorebook = chat_metadata?.[METADATA_KEY] ?? null;
       infoText.innerHTML = chatBoundLorebook
         ? __st_t_tag`Using chat-bound lorebook "<strong>${chatBoundLorebook}</strong>"`
         : translate(
@@ -2026,7 +2022,7 @@ function populateInlineButtons() {
         );
         if (!profileSelect) return;
 
-        const selectedIndex = parseInt(profileSelect.value);
+        const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile ?? 0), 0, settings.profiles.length - 1);
         if (selectedIndex === settings.defaultProfile) {
           return;
         }
@@ -2057,7 +2053,7 @@ function populateInlineButtons() {
           );
           if (!profileSelect) return;
 
-          const selectedIndex = parseInt(profileSelect.value);
+          const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile ?? 0), 0, settings.profiles.length - 1);
           const selectedProfile = settings.profiles[selectedIndex];
 
           // Migrate legacy dynamic flag to provider-based current_st and allow editing of non-connection fields
@@ -2109,7 +2105,7 @@ function populateInlineButtons() {
           );
           if (!profileSelect) return;
 
-          const selectedIndex = parseInt(profileSelect.value);
+          const selectedIndex = readIntInput(profileSelect, settings.defaultProfile ?? 0);
           await deleteProfile(settings, selectedIndex, refreshPopupContent);
         } catch (error) {
           console.error(`${MODULE_NAME}: Error in delete profile:`, error);
@@ -2546,14 +2542,13 @@ function setupPromptManagerEventHandlers(popup) {
     }
 
     // Determine selected profile index from the main settings popup if available
-    let selectedIndex = settings.defaultProfile || 0;
+    let selectedIndex = settings.defaultProfile ?? 0;
     if (currentPopupInstance?.dlg) {
       const profileSelect = currentPopupInstance.dlg.querySelector(
         "#stmb-profile-select",
       );
       if (profileSelect) {
-        const parsed = parseInt(profileSelect.value);
-        if (!isNaN(parsed)) selectedIndex = parsed;
+        selectedIndex = readIntInput(profileSelect, settings.defaultProfile ?? 0);
       }
     }
 
@@ -3436,8 +3431,7 @@ async function showArcConsolidationPopup() {
 
     // Defaults from settings
     const settings = initializeSettings();
-    const tokenThreshold =
-      settings?.moduleSettings?.tokenWarningThreshold || 30000;
+    const tokenThreshold = settings?.moduleSettings?.tokenWarningThreshold ?? 30000;
 
     // Build popup content
     let content = "";
@@ -3622,19 +3616,19 @@ async function showArcConsolidationPopup() {
       presetKey,
       maxItemsPerPass: Math.max(
         1,
-        parseInt(dlg.querySelector("#stmb-arc-maxpass")?.value) || 12,
+        readIntInput(dlg.querySelector("#stmb-arc-maxpass"), 12),
       ),
       maxPasses: Math.max(
         1,
-        parseInt(dlg.querySelector("#stmb-arc-maxpasses")?.value) || 10,
+        readIntInput(dlg.querySelector("#stmb-arc-maxpasses"), 10),
       ),
       minAssigned: Math.max(
         1,
-        parseInt(dlg.querySelector("#stmb-arc-minassigned")?.value) || 2,
+        readIntInput(dlg.querySelector("#stmb-arc-minassigned"), 2),
       ),
       tokenTarget: Math.max(
         1000,
-        parseInt(dlg.querySelector("#stmb-arc-token")?.value) || tokenThreshold,
+        readIntInput(dlg.querySelector("#stmb-arc-token"), tokenThreshold),
       ),
     };
     const disableOriginals = !!dlg.querySelector("#stmb-arc-disable-originals")
@@ -3751,8 +3745,8 @@ async function showSettingsPopup() {
 
   // Get current lorebook information
   const isManualMode = settings.moduleSettings.manualModeEnabled;
-  const chatBoundLorebook = chat_metadata?.[METADATA_KEY] || null;
-  const manualLorebook = sceneMarkers?.manualLorebook || null;
+  const chatBoundLorebook = chat_metadata?.[METADATA_KEY] ?? null;
+  const manualLorebook = sceneMarkers?.manualLorebook ?? null;
 
   const templateData = {
     hasScene: !!sceneData,
@@ -3771,16 +3765,16 @@ async function showSettingsPopup() {
     currentLorebookName: isManualMode ? manualLorebook : chatBoundLorebook,
     manualLorebookName: manualLorebook,
     chatBoundLorebookName: chatBoundLorebook,
-    availableLorebooks: world_names || [],
+    availableLorebooks: world_names ?? [],
     autoHideMode: getAutoHideMode(settings.moduleSettings),
-    unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 2,
+    unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount ?? 2,
     tokenWarningThreshold:
-      settings.moduleSettings.tokenWarningThreshold || 50000,
-    defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
-    autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
-    autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
-    autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer || 2,
-    autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
+      settings.moduleSettings.tokenWarningThreshold ?? 50000,
+    defaultMemoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
+    autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
+    autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
+    autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
+    autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
     lorebookNameTemplate:
       settings.moduleSettings.lorebookNameTemplate ||
       "LTM - {{char}} - {{chat}}",
@@ -3817,7 +3811,7 @@ async function showSettingsPopup() {
               return {
                 api: currentApiInfo.completionSource || "openai",
                 model: currentSettings.model || "Not Set",
-                temperature: currentSettings.temperature || 0.7,
+                temperature: currentSettings.temperature ?? 0.7,
               };
             })()
           : {
@@ -4126,7 +4120,7 @@ function setupSettingsEventListeners() {
     }
 
     if (e.target.matches("#stmb-profile-select")) {
-      const newIndex = parseInt(e.target.value);
+      const newIndex = clampInt(readIntInput(e.target), 0, profiles.length - 1);
       if (newIndex >= 0 && newIndex < settings.profiles.length) {
         const selectedProfile = settings.profiles[newIndex];
         const summaryApi = popupElement.querySelector("#stmb-summary-api");
@@ -4153,7 +4147,7 @@ function setupSettingsEventListeners() {
               currentSettings.model ||
               translate("Not Set", "STMemoryBooks_NotSet");
           if (summaryTemp)
-            summaryTemp.textContent = currentSettings.temperature || "0.7";
+            summaryTemp.textContent = Number(currentSettings.temperature ?? 0.7);
         } else {
           // For regular profiles, show stored settings
           if (summaryApi)
@@ -4203,11 +4197,8 @@ function setupSettingsEventListeners() {
     }
 
     if (e.target.matches("#stmb-default-memory-count")) {
-      const value = parseInt(e.target.value);
-      if (!isNaN(value) && value >= 0 && value <= 20) {
-        settings.moduleSettings.defaultMemoryCount = value;
-        saveSettingsDebounced();
-      }
+      const value = clampInt(readIntInput(e.target, settings.moduleSettings.defaultMemoryCount ?? 0), 0, 7);
+      settings.moduleSettings.defaultMemoryCount = value;
       return;
     }
 
@@ -4248,9 +4239,8 @@ function setupSettingsEventListeners() {
     }
 
     if (e.target.matches("#stmb-auto-summary-buffer")) {
-      const value = parseInt(e.target.value);
-      const clamped = Math.min(Math.max(isNaN(value) ? 0 : value, 0), 50);
-      settings.moduleSettings.autoSummaryBuffer = clamped;
+      const value = readIntInput(e.target);
+      settings.moduleSettings.autoSummaryBuffer = clampInt(value ?? 0, 0, 50);
       saveSettingsDebounced();
       return;
     }
@@ -4341,28 +4331,19 @@ function handleSettingsPopupClose(popup) {
       getAutoHideMode(settings.moduleSettings);
 
     // Save token warning threshold
-    const tokenWarningThresholdInput = popupElement.querySelector(
-      "#stmb-token-warning-threshold",
+    const tokenWarningThreshold = readIntInput(
+      popupElement.querySelector("#stmb-token-warning-threshold"),
+      settings.moduleSettings.tokenWarningThreshold ?? 50000
     );
-    const tokenWarningThreshold = tokenWarningThresholdInput
-      ? parseInt(tokenWarningThresholdInput.value) || 30000
-      : settings.moduleSettings.tokenWarningThreshold || 30000;
 
     // Save default memory count
-    const defaultMemoryCountInput = popupElement.querySelector(
-      "#stmb-default-memory-count",
-    );
-    const defaultMemoryCount = defaultMemoryCountInput
-      ? parseInt(defaultMemoryCountInput.value) || 0
-      : settings.moduleSettings.defaultMemoryCount || 0;
+    const defaultMemoryCount = Number(popupElement.querySelector("#stmb-default-memory-count").value);
 
     // Save unhidden entries count
-    const unhiddenEntriesCountInput = popupElement.querySelector(
-      "#stmb-unhidden-entries-count",
+    const unhiddenEntriesCount = readIntInput(
+      popupElement.querySelector("#stmb-unhidden-entries-count"),
+      settings.moduleSettings.unhiddenEntriesCount ?? 0
     );
-    const unhiddenEntriesCount = unhiddenEntriesCountInput
-      ? parseInt(unhiddenEntriesCountInput.value) || 0
-      : settings.moduleSettings.unhiddenEntriesCount || 0;
 
     const manualModeEnabled =
       popupElement.querySelector("#stmb-manual-mode-enabled")?.checked ??
@@ -4372,22 +4353,12 @@ function handleSettingsPopupClose(popup) {
     const autoSummaryEnabled =
       popupElement.querySelector("#stmb-auto-summary-enabled")?.checked ??
       settings.moduleSettings.autoSummaryEnabled;
-    const autoSummaryIntervalInput = popupElement.querySelector(
-      "#stmb-auto-summary-interval",
+    const autoSummaryInterval = readIntInput(
+      popupElement.querySelector("#stmb-auto-summary-interval"),
+      settings.moduleSettings.autoSummaryInterval ?? 50
     );
-    const autoSummaryInterval = autoSummaryIntervalInput
-      ? parseInt(autoSummaryIntervalInput.value) || 50
-      : settings.moduleSettings.autoSummaryInterval || 50;
 
-    const autoSummaryBufferInput = popupElement.querySelector(
-      "#stmb-auto-summary-buffer",
-    );
-    const autoSummaryBuffer = autoSummaryBufferInput
-      ? Math.min(Math.max(parseInt(autoSummaryBufferInput.value) || 0, 0), 50)
-      : Math.min(
-          Math.max(settings.moduleSettings.autoSummaryBuffer || 0, 0),
-          50,
-        );
+    const autoSummaryBuffer = clampInt(readIntInput(popupElement.querySelector("#stmb-auto-summary-buffer"),settings.moduleSettings.autoSummaryBuffer ?? 0),0,50);
 
     // Save auto-create lorebook setting
     const autoCreateLorebook =
@@ -4481,16 +4452,16 @@ async function refreshPopupContent() {
       currentLorebookName: isManualMode ? manualLorebook : chatBoundLorebook,
       manualLorebookName: manualLorebook,
       chatBoundLorebookName: chatBoundLorebook,
-      availableLorebooks: world_names || [],
+      availableLorebooks: world_names ?? [],
       autoHideMode: getAutoHideMode(settings.moduleSettings),
-      unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount || 0,
+      unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount ?? 0,
       tokenWarningThreshold:
-        settings.moduleSettings.tokenWarningThreshold || 30000,
-      defaultMemoryCount: settings.moduleSettings.defaultMemoryCount || 0,
-      autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled || false,
-      autoSummaryInterval: settings.moduleSettings.autoSummaryInterval || 50,
-      autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer || 0,
-      autoCreateLorebook: settings.moduleSettings.autoCreateLorebook || false,
+        settings.moduleSettings.tokenWarningThreshold ?? 50000,
+      defaultMemoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
+      autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
+      autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
+      autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 0,
+      autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
       lorebookNameTemplate:
         settings.moduleSettings.lorebookNameTemplate ||
         "LTM - {{char}} - {{chat}}",
@@ -4522,16 +4493,13 @@ async function refreshPopupContent() {
                 return {
                   api: currentApiInfo.completionSource || "openai",
                   model: currentSettings.model || "Not Set",
-                  temperature: currentSettings.temperature || 0.7,
+                  temperature: currentSettings.temperature ?? 0.7,
                 };
               })()
             : {
                 api: selectedProfile.connection?.api || "openai",
                 model: selectedProfile.connection?.model || "gpt-4.1",
-                temperature:
-                  selectedProfile.connection?.temperature !== undefined
-                    ? selectedProfile.connection.temperature
-                    : 0.7,
+                temperature: selectedProfile.connection?.temperature ?? 0.7,
               },
         titleFormat: selectedProfile.titleFormat || settings.titleFormat,
         effectivePrompt:
