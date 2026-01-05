@@ -4,7 +4,7 @@ import { getRegexedString, regex_placement } from '../../../extensions/regex/eng
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt } from './utils.js';
 import { requestCompletion } from './stmemory.js';
 import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
@@ -339,7 +339,7 @@ export async function evaluateTrackers() {
 
             // Count visible messages since last checkpoint
             const visibleSince = countVisibleMessagesSince(lastMsgId, currentLast);
-            const threshold = Math.max(1, Number(tpl?.triggers?.onInterval?.visibleMessages || 50));
+            const threshold = Math.max(1, Number(tpl?.triggers?.onInterval?.visibleMessages ?? 50));
             if (visibleSince < threshold) {
                 continue;
             }
@@ -360,7 +360,7 @@ export async function evaluateTrackers() {
             // Build prompt with prior content and optional previous memories
             const prior = existing?.content || '';
             let prevSummaries = [];
-            const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+            const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount ?? 0);
             const pmCount = Math.max(0, Math.min(7, pmCountRaw));
             if (pmCount > 0) {
                 try {
@@ -477,8 +477,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
         const showNotifications = settings?.moduleSettings?.showNotifications !== false;
         const results = [];
 
-        const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-        const maxConcurrent = clamp(Number(settings?.moduleSettings?.sidePromptsMaxConcurrent ?? 2), 1, 5);
+        const maxConcurrent = clampInt(Number(settings?.moduleSettings?.sidePromptsMaxConcurrent ?? 2),1,5);
 
         // Partition into waves of size maxConcurrent
         const waves = [];
@@ -497,7 +496,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
                     const prior = existing?.content || '';
 
                     let prevSummaries = [];
-                    const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
+                    const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount ?? 0);
                     const pmCount = Math.max(0, Math.min(7, pmCountRaw));
                     if (pmCount > 0) {
                         try {
@@ -734,8 +733,8 @@ export async function runSidePrompt(args) {
             || getEntryByTitle(lore.data, `${tpl.name} (STMB Tracker)`);
         const prior = existing?.content || '';
         let prevSummaries = [];
-const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount || 0);
-const pmCount = Math.max(0, Math.min(7, pmCountRaw));
+        const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount ?? 0);
+        const pmCount = Math.max(0, Math.min(7, pmCountRaw));
         if (pmCount > 0) {
             try {
                 const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);

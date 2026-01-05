@@ -8,7 +8,6 @@ import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
 import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from './constants.js';
 import { translate } from '../../../i18n.js';
 
-
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
 
@@ -24,6 +23,16 @@ function pick$(...selectors) {
 // Returns '#group_' if group UI controls are present, otherwise '#'
 function groupPrefix() {
     return document.querySelector('#group_chat_completion_source') ? '#group_' : '#';
+}
+
+export function readIntInput(inputEl, fallback) {
+  if (!inputEl) return fallback;
+  const parsed = parseInt(inputEl.value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+export function clampInt(n, min, max) {
+  return Math.min(Math.max(n, min), max);
 }
 
 // Centralized DOM selectors - single source of truth
@@ -242,7 +251,7 @@ export function getCurrentMemoryBooksContext() {
             
             // Get temperature using the same method as ModelTempLocks
             const apiSelectors = getApiSelectors();
-            const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() || 0.7);
+            const currentTemp = parseFloat($(apiSelectors.temp).val() || $(apiSelectors.tempCounter).val() ?? 0.7);
             
             // Get model using the same method as ModelTempLocks
             let currentModel = $(apiSelectors.model).val() || '';

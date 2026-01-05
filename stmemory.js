@@ -114,6 +114,7 @@ export async function sendRawCompletionRequest({
         Number(extra.max_tokens) || 0,
         Number(oai_settings.max_response) || 0
     );
+
     const desiredInt = Math.floor(desiredFromSources) || 0;
 
     // Set tokens based on explicit inputs; handle special-case for gpt-5 (any model id containing gpt-5)
@@ -130,7 +131,7 @@ export async function sendRawCompletionRequest({
 
     // Optional: mirror to providers that use a different field if present
     if (extra.max_output_tokens != null) {
-        const mo = Math.floor(extra.max_output_tokens) || 0;
+        const mo = Math.floor(extra.max_output_tokens) ?? 0;
         if (Number.isFinite(extra.max_tokens) && extra.max_tokens > 0) {
             extra.max_output_tokens = Math.min(mo, extra.max_tokens);
         } else {
@@ -810,7 +811,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
         validateInputs(compiledScene, profile);
         const promptString = await buildPrompt(compiledScene, profile);
         const tokenEstimate = await estimateTokenUsage(promptString);        
-        const tokenWarningThreshold = options.tokenWarningThreshold || 30000;
+        const tokenWarningThreshold = options.tokenWarningThreshold ?? 30000;
         if (tokenEstimate.total > tokenWarningThreshold) {
             throw new TokenWarningError(
                 'Token warning threshold exceeded.',
