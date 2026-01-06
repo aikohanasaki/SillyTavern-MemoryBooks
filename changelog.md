@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.14.4 (January 6, 2026)
+- Add missing translations for arcs
+
 ## v4.14.3 (January 4, 2026)
 - **Bugfix:** Replace || with ?? where necessary
 - **Tweak:** Remove unused imports
