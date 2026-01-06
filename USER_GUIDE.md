@@ -354,7 +354,6 @@ Don't worry - you don't need to configure everything! Here are the settings that
 
 - **More detailed info:** [readme.md](readme.md)
 - **Latest updates:** [changelog.md](changelog.md)
-- **Convert old lorebooks:** [lorebookconverter.html](lorebookconverter.html)
 - **Community support:** Join the SillyTavern community on Discord! (Look for the 📕ST Memory Books thread or DM @tokyoapple for direct help.)
 - **Bugs/features:** Found a bug or have a great idea? Open a GitHub issue in this repository.
 
