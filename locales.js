@@ -36,6 +36,18 @@ export async function loadLocaleJson(lang) {
         'es': 'es-es',
         'es-es': 'es-es',
 
+        // German -> de-de
+        'de': 'de-de',
+        'de_de': 'de-de',
+        'de-DE': 'de-de',
+        'de-de': 'de-de',
+
+        // French -> fr-fr
+        'fr': 'fr-fr',
+        'fr_fr': 'fr-fr',
+        'fr-FR': 'fr-fr',
+        'fr-fr': 'fr-fr',
+
         // Korean -> ko-kr
         'ko': 'ko-kr',
         'ko_kr': 'ko-kr',
@@ -71,6 +83,8 @@ export async function loadLocaleJson(lang) {
         'ja-jp': './locales/ja-jp.json',
         'ru-ru': './locales/ru-ru.json',
         'es-es': './locales/es-es.json',
+        'de-de': './locales/de-de.json',
+        'fr-fr': './locales/fr-fr.json',
         'ko-kr': './locales/ko-kr.json',
         'ms-my': './locales/ms-my.json',
         'id-id': './locales/id-id.json',
