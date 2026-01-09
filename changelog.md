@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.15.0 (January 9, 2026)
+- Add `/stmb-highest` to output highest memory processed.
+
 ## v4.14.4 (January 6, 2026)
 - Add missing translations for arcs
 
