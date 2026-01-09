@@ -46,6 +46,13 @@ export function saveMetadataForCurrentContext() {
     saveMetadataDebounced();
 }
 
+// Helper to get highest memory processed
+export function getHighestMemoryProcessed() {
+  const markers = getSceneMarkers();
+  const v = markers?.highestMemoryProcessed;
+  return Number.isFinite(v) ? v : null;
+}
+
 /**
  * Update button states only for affected messages (instead of all messages)
  * @param {number|null} oldStart - Previous start marker

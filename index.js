@@ -69,6 +69,7 @@ import {
   updateSceneStateCache,
   getCurrentSceneState,
   saveMetadataForCurrentContext,
+  getHighestMemoryProcessed
 } from "./sceneManager.js";
 import { settingsTemplate } from "./templates.js";
 import {
@@ -137,6 +138,12 @@ async function getEffectivePromptAsync(profile) {
   }
   return getDefaultPrompt();
 }
+
+async function handleHighestMemoryProcessedCommand() {
+  // Return string so it works well as a value in STscript/closures
+  return String(getHighestMemoryProcessed());
+}
+
 /**
  * Check if memory is currently being processed
  * @returns {boolean} True if memory creation is in progress
@@ -4659,12 +4666,23 @@ function registerSlashCommands() {
     ],
   });
 
+  const highestMemCmd = SlashCommand.fromProps({
+    name: "stmb-highest",
+    callback: handleHighestMemoryProcessedCommand,
+    helpString: translate(
+      "Return the highest message index for processed memories in this chat. Usage: /stmb-highest",
+      "STMemoryBooks_Slash_Highest_Help",
+    ),
+    returns: "Highest memory processed message index as a string.",
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
   SlashCommandParser.addCommandObject(sidePromptCmd);
   SlashCommandParser.addCommandObject(sidePromptOnCmd);
   SlashCommandParser.addCommandObject(sidePromptOffCmd);
+  SlashCommandParser.addCommandObject(highestMemCmd);
 }
 
 /**
