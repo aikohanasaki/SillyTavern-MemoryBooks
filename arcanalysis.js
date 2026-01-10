@@ -65,6 +65,35 @@ function extractFencedBlocks(s) {
   return out;
 }
 
+function unwrapJsConcatenatedStringDump(raw) {
+  let s = String(raw || "").trim();
+
+  // Quick detection: looks like "'...\n' +\n '...'"
+  if (!/'\s*\+\s*'/.test(s) && !/\\n'\s*\+/.test(s)) return null;
+
+  // Drop "content:" prefix if present
+  s = s.replace(/^\s*content\s*:\s*/, "");
+
+  // Collect all single-quoted chunks: '...'
+  const re = /'((?:\\.|[^'\\])*)'/g;
+  const chunks = [];
+  let m;
+  while ((m = re.exec(s)) !== null) chunks.push(m[1]);
+
+  if (!chunks.length) return null;
+
+  // Re-join and unescape common sequences
+  let joined = chunks.join("");
+  joined = joined
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\");
+
+  return joined.trim() || null;
+}
+
 function extractBalancedJson(s) {
   const start = s.search(/[\{\[]/);
   if (start === -1) return null;
@@ -377,6 +406,8 @@ export function parseArcJsonResponse(text) {
   const normalized = normalizeText(
     text.trim().replace(/<think>[\s\S]*?<\/think>/gi, ""),
   );
+  const unwrapped = unwrapJsConcatenatedStringDump(normalized);
+  if (unwrapped) candidates.push(unwrapped);
   const candidates = [];
   const fenced = extractFencedBlocks(normalized);
   if (fenced.length) candidates.push(...fenced);
