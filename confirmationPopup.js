@@ -6,6 +6,7 @@ import { translate } from '../../../i18n.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
 import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
+import { playMessageSound } from '../../../power-user.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
 
@@ -26,6 +27,18 @@ const STMB_POPUP_RESULTS = {
   EDIT: POPUP_RESULT.CUSTOM3,
   RETRY: POPUP_RESULT.CUSTOM4
 };
+
+/**
+ * Plays the messagePopupSound in a safe manner, not blocking anything else if the playback fails
+ */
+function safePlayMessageSound() {
+  try {
+    // Play notification sound when popup appears
+    playMessageSound();
+  } catch (error) {
+    console.error("playMessageSound failed", error);
+  }
+}
 
 /**
  * Show simplified confirmation popup for memory creation
@@ -57,6 +70,8 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
   };
 
   const content = DOMPurify.sanitize(simpleConfirmationTemplate(templateData));
+
+  safePlayMessageSound();
 
   try {
     const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
@@ -140,6 +155,9 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
   };
 
   const content = DOMPurify.sanitize(advancedOptionsTemplate(templateData));
+
+  // Play notification sound when popup appears
+  safePlayMessageSound();
 
   try {
     const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
@@ -615,6 +633,9 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
     };
 
     const content = DOMPurify.sanitize(memoryPreviewTemplate(templateData));
+
+    // Play notification sound when popup appears
+    safePlayMessageSound();
 
     const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
       okButton: translate('Edit & Save', 'STMemoryBooks_EditAndSave'),
