@@ -543,7 +543,7 @@ export async function runArcAnalysisSequential(
       briefs: batch, // use the current batch
       previousArcSummary, // existing summary string
       previousArcOrder: null, // numeric order of the previous arc, or null
-      promptText: null,
+      promptText: promptText,
     });
     let tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
     const origLen = batch.length;
@@ -555,7 +555,7 @@ export async function runArcAnalysisSequential(
         briefs: batch,
         previousArcSummary,
         previousArcOrder: previousArcOrderValue,
-        promptText: null,
+        promptText: promptText,
       });
       tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
     }
