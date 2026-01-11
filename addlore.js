@@ -154,7 +154,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         }
         
         if (refreshEditor) {
-            reloadEditor(lorebookValidation.name);
+            try {
+                reloadEditor(lorebookValidation.name);
+            } catch (e) {
+                console.warn(i18n('addlore.warn.refreshEditorFailed', `${MODULE_NAME}: reloadEditor failed:`), e);
+            }
         }
         
         // Execute auto-hide commands if enabled
@@ -162,7 +166,6 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
 
         if (autoHideMode !== 'none') {
             const unhiddenCount = settings.moduleSettings.unhiddenEntriesCount ?? 2;
-
 
             if (autoHideMode === 'all') {
                 const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
@@ -177,11 +180,19 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
 
                     if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
+                        try {
+                            await executeHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
+                        } catch (e) {
+                            console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
+                        }
                     } else {
                         const hideEndIndex = sceneEnd - unhiddenCount;
                         if (hideEndIndex >= 0) {
-                            await executeHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
+                            try {
+                                await executeHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
+                            } catch (e) {
+                                console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
+                            }
                         }
                         // Auto-hide silently skipped if not enough messages
                     }
@@ -201,11 +212,19 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     if (unhiddenCount >= sceneSize) {
                         // No hiding needed - want to keep more messages than scene contains
                     } else if (unhiddenCount === 0) {
-                        await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
+                        try {
+                            await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
+                        } catch (e) {
+                            console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
+                        }
                     } else {
                         const hideEnd = sceneEnd - unhiddenCount;
                         if (hideEnd >= sceneStart) {
-                            await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
+                            try {
+                                await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
+                            } catch (e) {
+                                console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
+                            }
                         }
                         // Auto-hide silently skipped if not enough scene messages
                     }

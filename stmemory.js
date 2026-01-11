@@ -569,39 +569,49 @@ export function parseAIJsonResponse(aiResponse) {
 
     const uniq = uniqStrings(candidates);
 
+    const validateParsed = (obj) => {
+        if (!obj || typeof obj !== 'object') {
+            return makeAIError('EMPTY_OR_INVALID', 'AI response is empty or invalid', false);
+        }
+        if (!obj.content && !obj.summary && !obj.memory_content) {
+            return makeAIError('MISSING_FIELDS_CONTENT', 'AI response missing content field', false);
+        }
+        if (!obj.title) {
+            return makeAIError('MISSING_FIELDS_TITLE', 'AI response missing title field', false);
+        }
+        if (!Array.isArray(obj.keywords)) {
+            return makeAIError('INVALID_KEYWORDS', 'AI response missing or invalid keywords array.', false);
+        }
+        return null;
+    };
+
     // Attempt parse with light repair when needed
+    let lastFieldError = null;
     for (const cand of uniq) {
         // Direct parse
         try {
             const parsedDirect = JSON.parse(cand);
-            // Validate required fields
-            if (!parsedDirect.content && !parsedDirect.summary && !parsedDirect.memory_content) {
-                throw makeAIError('MISSING_FIELDS_CONTENT', 'AI response missing content field', false);
+            const fieldErr = validateParsed(parsedDirect);
+            if (fieldErr) {
+                lastFieldError = fieldErr;
+            } else {
+                return parsedDirect;
             }
-            if (!parsedDirect.title) {
-                throw makeAIError('MISSING_FIELDS_TITLE', 'AI response missing title field', false);
-            }
-            if (!Array.isArray(parsedDirect.keywords)) {
-                throw makeAIError('INVALID_KEYWORDS', 'AI response missing or invalid keywords array.', false);
-            }
-            return parsedDirect;
-        } catch (_) {
-            try {
-              const parsedRepaired = dirtyJson.parse(cand);
-                // Validate required fields
-                if (!parsedRepaired.content && !parsedRepaired.summary && !parsedRepaired.memory_content) {
-                    throw makeAIError('MISSING_FIELDS_CONTENT', 'AI response missing content field', false);
-                }
-                if (!parsedRepaired.title) {
-                    throw makeAIError('MISSING_FIELDS_TITLE', 'AI response missing title field', false);
-                }
-                if (!Array.isArray(parsedRepaired.keywords)) {
-                    throw makeAIError('INVALID_KEYWORDS', 'AI response missing or invalid keywords array.', false);
-                }
+        } catch {
+            // ignore and try repair parse below
+        }
+
+        // Repair parse (dirty-json)
+        try {
+            const parsedRepaired = dirtyJson.parse(cand);
+            const fieldErr = validateParsed(parsedRepaired);
+            if (fieldErr) {
+                lastFieldError = fieldErr;
+            } else {
                 return parsedRepaired;
-            } catch {
-                // continue trying other candidates
             }
+        } catch {
+            // continue trying other candidates
         }
     }
 
@@ -623,6 +633,12 @@ export function parseAIJsonResponse(aiResponse) {
         const err = makeAIError('INCOMPLETE_SENTENCE', 'AI response JSON appears incomplete (text ends mid-sentence). Try increasing Max Response Length.', false);
         err.rawResponse = normalized;
         throw err;
+    }
+
+    // If we parsed something but it was missing required fields, surface that error
+    if (lastFieldError) {
+        lastFieldError.rawResponse = normalized;
+        throw lastFieldError;
     }
 
     // Fallback
@@ -694,13 +710,13 @@ async function generateMemoryWithAI(promptString, profile) {
         const finishReason = aiFull?.choices?.[0]?.finish_reason || aiFull?.finish_reason || aiFull?.stop_reason;
         const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
         if (fr.includes('length') || fr.includes('max')) {
-            const err = makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', true);
+            const err = makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', false);
             try { err.rawResponse = aiResponseText || ''; } catch {}
             try { err.providerResponse = aiFull || null; } catch {}
             throw err;
         }
         if (aiFull?.truncated === true) {
-            const err = makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', true);
+            const err = makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', false);
             try { err.rawResponse = aiResponseText || ''; } catch {}
             try { err.providerResponse = aiFull || null; } catch {}
             throw err;

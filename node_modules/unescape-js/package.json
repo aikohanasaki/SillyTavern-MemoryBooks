@@ -1,0 +1,42 @@
+{
+  "name": "unescape-js",
+  "version": "1.1.4",
+  "description": "Unescape JavaScript special characters",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "babel src -d dist",
+    "pretest": "npm run build",
+    "test": "ava test/index.js",
+    "prepublishOnly": "npm test",
+    "coverage": "nyc --reporter=text-lcov npm test",
+    "precoverage-coveralls": "nyc npm test",
+    "coverage-coveralls": "nyc report --reporter=text-lcov | coveralls"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamakulov/unescape-js.git"
+  },
+  "keywords": [
+    "unescape",
+    "escape sequences",
+    "special characters"
+  ],
+  "author": "Ivan Akulov <mail@iamakulov.com> (http://iamakulov.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/iamakulov/unescape-js/issues"
+  },
+  "homepage": "https://github.com/iamakulov/unescape-js#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.7.0",
+    "@babel/core": "^7.7.2",
+    "@babel/preset-env": "^7.7.1",
+    "ava": "^2.4.0",
+    "babel-plugin-add-module-exports": "^1.0.2",
+    "coveralls": "^3.0.2",
+    "nyc": "^14.1.1"
+  },
+  "dependencies": {
+    "string.fromcodepoint": "^0.2.1"
+  }
+}
