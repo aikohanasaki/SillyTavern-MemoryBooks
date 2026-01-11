@@ -35,7 +35,7 @@ import {
   validateCompiledScene,
   getSceneStats,
 } from "./chatcompile.js";
-import { createMemory } from "./stmemory.js";
+import { createMemory, parseAIJsonResponse } from "./stmemory.js";
 import {
   addMemoryToLorebook,
   getDefaultTitleFormats,
@@ -102,7 +102,11 @@ import {
 } from "./sidePrompts.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { listTemplates } from "./sidePromptsManager.js";
-import { runArcAnalysisSequential, commitArcs } from "./arcanalysis.js";
+import {
+  runArcAnalysisSequential,
+  commitArcs,
+  parseArcJsonResponse,
+} from "./arcanalysis.js";
 import * as ArcPrompts from "./arcAnalysisPromptManager.js";
 import { summaryPromptsTableTemplate } from "./templatesSummaryPrompts.js";
 import {
@@ -217,11 +221,16 @@ const defaultSettings = {
 // Current state variables
 let currentPopupInstance = null;
 let isProcessingMemory = false;
+let isProcessingArc = false;
 let currentProfile = null;
 let isDryRun = false;
 /* Ephemeral failure state for AI errors */
 let lastFailedAIError = null;
 let lastFailureToast = null;
+let lastFailedAIContext = null;
+let lastFailedArcError = null;
+let lastArcFailureToast = null;
+let lastFailedArcContext = null;
 
 /* Settings cache for restoration */
 let cachedSettings = null;
@@ -1242,6 +1251,9 @@ async function executeMemoryGeneration(
   const { profileSettings, summaryCount, tokenThreshold, settings } =
     effectiveSettings;
   currentProfile = profileSettings;
+  let compiledScene = null;
+  let memoryFetchResult = null;
+  let sceneStats = null;
 
   // Optional global conversion of recursion flags on existing STMB entries
   try {
@@ -1339,7 +1351,7 @@ async function executeMemoryGeneration(
       sceneData.sceneStart,
       sceneData.sceneEnd,
     );
-    const compiledScene = compileScene(sceneRequest);
+    compiledScene = compileScene(sceneRequest);
 
     // Validate compiled scene
     const validation = validateCompiledScene(compiledScene);
@@ -1351,7 +1363,7 @@ async function executeMemoryGeneration(
 
     // Fetch previous memories if requested
     let previousMemories = [];
-    let memoryFetchResult = {
+    memoryFetchResult = {
       summaries: [],
       actualCount: 0,
       requestedCount: 0,
@@ -1404,8 +1416,8 @@ async function executeMemoryGeneration(
 
     // Add context and get stats (no intermediate toast)
     compiledScene.previousSummariesContext = previousMemories;
-    const stats = getSceneStats(compiledScene);
-    const actualTokens = stats.estimatedTokens;
+    sceneStats = getSceneStats(compiledScene);
+    const actualTokens = sceneStats.estimatedTokens;
 
     // Generate memory silently
     const memoryResult = await createMemory(compiledScene, profileSettings, {
@@ -1556,6 +1568,7 @@ async function executeMemoryGeneration(
     toastr.clear();
     lastFailureToast = null;
     lastFailedAIError = null;
+    lastFailedAIContext = null;
     const retryMsg =
       retryCount > 0 ? ` (succeeded on attempt ${retryCount + 1})` : "";
     toastr.success(
@@ -1611,6 +1624,21 @@ async function executeMemoryGeneration(
         toastr.clear(lastFailureToast);
       } catch (e) {}
       lastFailedAIError = error;
+      lastFailedAIContext = {
+        sceneData,
+        compiledScene,
+        profileSettings,
+        lorebookValidation,
+        memoryFetchResult,
+        sceneStats,
+        settings,
+        summaryCount,
+        tokenThreshold,
+        sceneRange:
+          compiledScene?.metadata?.sceneStart !== undefined
+            ? `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`
+            : `${sceneData.sceneStart}-${sceneData.sceneEnd}`,
+      };
       lastFailureToast = toastr.error(
         __st_t_tag`AI failed to generate valid memory${codeTag}: ${error.message}${retryMsg}`,
         "STMemoryBooks",
@@ -3649,10 +3677,39 @@ async function showArcConsolidationPopup() {
     try {
       analysis = await runArcAnalysisSequential(selectedEntries, options, null);
     } catch (e) {
-      toastr.error(
-        __st_t_tag`Arc analysis failed: ${e.message}`,
-        "STMemoryBooks",
-      );
+      try {
+        toastr.clear(lastArcFailureToast);
+      } catch (e2) {}
+      lastFailedArcError = e;
+      lastFailedArcContext = {
+        lorebookName,
+        lorebookData,
+        selectedEntries,
+        options,
+        disableOriginals,
+      };
+
+      if (e?.name === "ArcAIResponseError") {
+        lastArcFailureToast = toastr.error(
+          __st_t_tag`Arc analysis failed (invalid JSON): ${e.message}`,
+          "STMemoryBooks",
+          {
+            timeOut: 0,
+            extendedTimeOut: 0,
+            closeButton: true,
+            tapToDismiss: false,
+            onclick: () => {
+              try {
+                showFailedArcResponsePopup(lastFailedArcError);
+              } catch (e3) {
+                console.error(e3);
+              }
+            },
+          },
+        );
+      } else {
+        toastr.error(__st_t_tag`Arc analysis failed: ${e.message}`, "STMemoryBooks");
+      }
       return;
     }
     const { arcCandidates, leftovers } = analysis || {
@@ -3686,6 +3743,12 @@ async function showArcConsolidationPopup() {
         msg += " (all selected memories were consumed into a single arc)";
       }
       toastr.success(__st_t_tag`${msg}`, "STMemoryBooks");
+      lastFailedArcError = null;
+      lastFailedArcContext = null;
+      try {
+        toastr.clear(lastArcFailureToast);
+      } catch (e) {}
+      lastArcFailureToast = null;
     } catch (e) {
       toastr.error(
         __st_t_tag`Failed to commit arcs: ${e.message}`,
@@ -4741,6 +4804,7 @@ function setupEventListeners() {
     }
     lastFailureToast = null;
     lastFailedAIError = null;
+    lastFailedAIContext = null;
   });
 
   // Model settings change handlers
@@ -4806,6 +4870,481 @@ function setupEventListeners() {
 /**
  * Show a popup with details for a failed AI response, including raw response and provider body if available.
  */
+async function applyManualFixedJson(correctedRaw) {
+  if (isProcessingMemory) {
+    toastr.warning(
+      translate(
+        "Memory generation is already in progress.",
+        "STMemoryBooks_ManualFix_InProgress",
+      ),
+      "STMemoryBooks",
+    );
+    return;
+  }
+
+  try {
+    // Set processing flag IMMEDIATELY after validation to prevent race conditions.
+    // NOTE: placing the assignment *inside* the try ensures the matching `finally` clears the flag
+    // even if an error/exception occurs before the try body completes. The trade-off is a very
+    // small window between the initial guard and this assignment where a race could occur.
+    isProcessingMemory = true;
+    const context = lastFailedAIContext; 
+    if (
+      !context?.compiledScene ||
+      !context?.profileSettings ||
+      !context?.lorebookValidation?.valid
+    ) {
+      toastr.error(
+        translate(
+          "Missing failure context; cannot apply corrected JSON.",
+          "STMemoryBooks_ManualFix_NoContext",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+    if (
+      !context?.sceneData ||
+      context.sceneData.sceneEnd === undefined ||
+      context.sceneData.sceneStart === undefined
+    ) {
+      toastr.error(
+        translate(
+          "Missing scene range; cannot apply corrected JSON.",
+          "STMemoryBooks_ManualFix_NoSceneRange",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+  const trimmedRaw = String(correctedRaw || "").trim();
+  if (!trimmedRaw) {
+    toastr.error(
+      translate(
+        "Corrected JSON is empty.",
+        "STMemoryBooks_ManualFix_EmptyJson",
+      ),
+      "STMemoryBooks",
+    );
+    return;
+  }
+
+  let jsonResult;
+  try {
+    jsonResult = parseAIJsonResponse(trimmedRaw);
+  } catch (error) {
+    const msg = error?.message || "Failed to parse corrected JSON.";
+    const code = error?.code ? ` [${error.code}]` : "";
+    toastr.error(
+      __st_t_tag`Corrected JSON is still invalid${code}: ${msg}`,
+      "STMemoryBooks",
+    );
+    return;
+  }
+
+  if (!jsonResult.content && !jsonResult.summary && !jsonResult.memory_content) {
+    toastr.error(
+      translate(
+        "Corrected JSON is missing content.",
+        "STMemoryBooks_ManualFix_MissingContent",
+      ),
+      "STMemoryBooks",
+    );
+    return;
+  }
+  if (!jsonResult.title) {
+    toastr.error(
+      translate(
+        "Corrected JSON is missing title.",
+        "STMemoryBooks_ManualFix_MissingTitle",
+      ),
+      "STMemoryBooks",
+    );
+    return;
+  }
+  if (!Array.isArray(jsonResult.keywords)) {
+    toastr.error(
+      translate(
+        "Corrected JSON is missing keywords array.",
+        "STMemoryBooks_ManualFix_MissingKeywords",
+      ),
+      "STMemoryBooks",
+    );
+    return;
+  }
+
+  const compiledScene = context.compiledScene;
+  const profile = context.profileSettings;
+  const cleanContent = (
+    jsonResult.content ||
+    jsonResult.summary ||
+    jsonResult.memory_content ||
+    ""
+  ).trim();
+  const cleanTitle = (jsonResult.title || "Memory").trim();
+  const cleanKeywords = Array.isArray(jsonResult.keywords) ? jsonResult.keywords.filter((k) => k && typeof k === "string" && k.trim() !== "") : [];
+  const resolvedSceneStats = context.sceneStats || null;
+  const sceneRange =
+    context.sceneRange ||
+    `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`;
+  const memoryResult = {
+    content: cleanContent,
+    extractedTitle: cleanTitle,
+    metadata: {
+      sceneRange,
+      messageCount: compiledScene.metadata?.messageCount,
+      characterName: compiledScene.metadata?.characterName,
+      userName: compiledScene.metadata?.userName,
+      chatId: compiledScene.metadata?.chatId,
+      createdAt: new Date().toISOString(),
+      profileUsed: profile.name,
+      presetUsed: profile.preset || "custom",
+      tokenUsage: resolvedSceneStats
+        ? { estimatedTokens: resolvedSceneStats.estimatedTokens }
+        : undefined,
+      generationMethod: "manual-json-repair",
+      version: "2.0",
+    },
+    suggestedKeys: cleanKeywords,
+    titleFormat:
+      profile.useDynamicSTSettings || profile?.connection?.api === "current_st"
+        ? extension_settings.STMemoryBooks?.titleFormat || "[000] - {{title}}"
+        : profile.titleFormat || "[000] - {{title}}",
+    lorebookSettings: {
+      constVectMode: profile.constVectMode,
+      position: profile.position,
+      orderMode: profile.orderMode,
+      orderValue: profile.orderValue,
+      preventRecursion: profile.preventRecursion,
+      delayUntilRecursion: profile.delayUntilRecursion,
+      outletName:
+        Number(profile.position) === 7 ? profile.outletName || "" : undefined,
+    },
+    lorebook: {
+      content: cleanContent,
+      comment: `Auto-generated memory from messages ${sceneRange}. Profile: ${profile.name}.`,
+      key: cleanKeywords || [],
+      keysecondary: [],
+      selective: true,
+      constant: false,
+      order: 100,
+      position: "before_char",
+      disable: false,
+      addMemo: true,
+      excludeRecursion: false,
+      delayUntilRecursion: true,
+      probability: 100,
+      useProbability: false,
+    },
+  };
+
+  const addResult = await addMemoryToLorebook(
+    memoryResult,
+    context.lorebookValidation,
+  );
+
+  if (!addResult.success) {
+    throw new Error(addResult.error || "Failed to add memory to lorebook");
+  }
+
+  try {
+    const connDbg = profile.effectiveConnection || profile.connection || {};
+    console.debug("STMemoryBooks: Passing profile to runAfterMemory", {
+      api: connDbg.api,
+      model: connDbg.model,
+      temperature: connDbg.temperature,
+    });
+    await runAfterMemory(compiledScene, profile);
+  } catch (e) {
+    console.warn("STMemoryBooks: runAfterMemory failed:", e);
+  }
+
+  try {
+    const stmbData = getSceneMarkers() || {};
+    stmbData.highestMemoryProcessed = context.sceneData.sceneEnd;
+    saveMetadataForCurrentContext();
+  } catch (e) {
+    console.warn(
+      "STMemoryBooks: Failed to update highestMemoryProcessed baseline:",
+      e,
+    );
+  }
+
+  clearAutoSummaryState();
+
+  const contextMsg =
+    context.memoryFetchResult?.actualCount > 0
+      ? ` (with ${context.memoryFetchResult.actualCount} context ${context.memoryFetchResult.actualCount === 1 ? "memory" : "memories"})`
+      : "";
+
+  toastr.clear();
+  lastFailureToast = null;
+  lastFailedAIError = null;
+  lastFailedAIContext = null;
+  toastr.success(
+    __st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}!`,
+    "STMemoryBooks",
+  );
+  
+  } catch (error) {
+    console.error("STMemoryBooks: Manual JSON repair failed:", error);
+    toastr.error(
+      __st_t_tag`Failed to create memory from corrected JSON: ${error.message}`,
+      "STMemoryBooks",
+    );
+  } finally {
+    // ALWAYS reset the flag, no matter how we exit.
+    // This clears the `isProcessingMemory` flag set inside the try block above.
+    isProcessingMemory = false;
+  }
+}
+
+async function applyManualFixedArcJson(correctedRaw) {
+  if (isProcessingArc) {
+    toastr.warning(
+      translate(
+        "Arc consolidation is already in progress.",
+        "STMemoryBooks_ArcManualFix_InProgress",
+      ),
+      "STMemoryBooks",
+    );
+    return;
+  }
+
+  try {
+    isProcessingArc = true;
+    const context = lastFailedArcContext;
+    if (
+      !context?.lorebookName ||
+      !context?.lorebookData ||
+      !Array.isArray(context?.selectedEntries) ||
+      !context?.options
+    ) {
+      toastr.error(
+        translate(
+          "Missing failure context; cannot apply corrected Arc JSON.",
+          "STMemoryBooks_ArcManualFix_NoContext",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    const trimmedRaw = String(correctedRaw || "").trim();
+    if (!trimmedRaw) {
+      toastr.error(
+        translate(
+          "Corrected JSON is empty.",
+          "STMemoryBooks_ArcManualFix_EmptyJson",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = parseArcJsonResponse(trimmedRaw);
+    } catch (error) {
+      const msg = error?.message || "Failed to parse corrected Arc JSON.";
+      const code = error?.code ? ` [${error.code}]` : "";
+      toastr.error(
+        __st_t_tag`Corrected Arc JSON is still invalid${code}: ${msg}`,
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    const arcs = Array.isArray(parsed?.arcs) ? parsed.arcs : [];
+    if (arcs.length === 0) {
+      toastr.error(
+        translate(
+          "Corrected JSON is missing arcs.",
+          "STMemoryBooks_ArcManualFix_MissingArcs",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    const hasAnyMemberIds = arcs.some(
+      (a) => Array.isArray(a?.member_ids) && a.member_ids.length > 0,
+    );
+    if (arcs.length > 1 && !hasAnyMemberIds) {
+      toastr.error(
+        translate(
+          "Multiple arcs require member_ids to avoid ambiguous assignment. Add member_ids or reduce to one arc.",
+          "STMemoryBooks_ArcManualFix_MultiArcNeedsMemberIds",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    const selectedEntries = context.selectedEntries;
+    const selectedUids = selectedEntries
+      .map((e) => String(e?.uid))
+      .filter(Boolean);
+
+    const idResolver = new Map();
+    selectedUids.forEach((uid, idx) => {
+      idResolver.set(uid, uid);
+      const seq = String(idx + 1).padStart(3, "0");
+      idResolver.set(seq, uid);
+      idResolver.set(String(idx + 1), uid);
+    });
+    const resolveId = (raw) => idResolver.get(String(raw).trim());
+
+    const unassignedIds = new Set();
+    const unassigned = Array.isArray(parsed?.unassigned_memories)
+      ? parsed.unassigned_memories
+      : [];
+    unassigned.forEach((u) => {
+      const rid = resolveId(u?.id);
+      if (rid) unassignedIds.add(rid);
+    });
+    const assignedIds = selectedUids.filter((id) => !unassignedIds.has(id));
+
+    const arcCandidates = arcs.map((a) => {
+      const title = String(a?.title || "").trim();
+      const summary = String(a?.summary || "").trim();
+      let keywords = Array.isArray(a?.keywords) ? a.keywords : [];
+      keywords = keywords
+        .filter((k) => typeof k === "string" && k.trim())
+        .map((k) => k.trim());
+
+      let memberIds = null;
+      if (Array.isArray(a?.member_ids)) {
+        memberIds = a.member_ids
+          .map(resolveId)
+          .filter((id) => id !== undefined);
+      }
+      if (!memberIds || memberIds.length === 0) {
+        memberIds = assignedIds;
+      }
+      memberIds = Array.from(new Set(memberIds)).filter(Boolean);
+
+      return { title, summary, keywords, memberIds };
+    });
+
+    const res = await commitArcs({
+      lorebookName: context.lorebookName,
+      lorebookData: context.lorebookData,
+      arcCandidates,
+      disableOriginals: !!context.disableOriginals,
+    });
+
+    const created = Array.isArray(res?.results)
+      ? res.results.length
+      : arcCandidates.length;
+    toastr.success(
+      __st_t_tag`Created ${created} arc${created === 1 ? "" : "s"} from corrected JSON.`,
+      "STMemoryBooks",
+    );
+
+    lastFailedArcError = null;
+    lastFailedArcContext = null;
+    try {
+      toastr.clear(lastArcFailureToast);
+    } catch (e) {}
+    lastArcFailureToast = null;
+  } catch (e) {
+    console.error("STMemoryBooks: applyManualFixedArcJson failed:", e);
+    toastr.error(
+      __st_t_tag`Failed to apply corrected Arc JSON: ${e.message}`,
+      "STMemoryBooks",
+    );
+  } finally {
+    isProcessingArc = false;
+  }
+}
+
+function showFailedArcResponsePopup(error) {
+  try {
+    const esc = (s) => escapeHtml(String(s ?? ""));
+    const message = esc(
+      error?.message ||
+        translate("Unknown error", "STMemoryBooks_UnknownError"),
+    );
+    const code = esc(error?.code || "");
+    const rawPrimary = String(error?.retryRawText || error?.rawText || "").trim();
+    const rawOriginal = String(error?.rawText || "").trim();
+    const canManualFix =
+      !!lastFailedArcContext?.lorebookName && !!lastFailedArcContext?.lorebookData;
+
+    let content = "";
+    content += `<h3>${esc(translate("Review Failed Arc Response", "STMemoryBooks_ReviewFailedArc_Title"))}</h3>`;
+    content += `<div><strong>${esc(translate("Error", "STMemoryBooks_ReviewFailedArc_ErrorLabel"))}:</strong> ${message}</div>`;
+    if (code) {
+      content += `<div><strong>${esc(translate("Code", "STMemoryBooks_ReviewFailedArc_CodeLabel"))}:</strong> ${code}</div>`;
+    }
+
+    if (rawPrimary) {
+      content += `<div class="world_entry_form_control">`;
+      content += `<h4>${esc(translate("Raw AI Response", "STMemoryBooks_ReviewFailedArc_RawLabel"))}</h4>`;
+      content += `<textarea id="stmb-arc-corrected-raw" class="text_pole" style="width: 100%; min-height: 220px; max-height: 360px; white-space: pre; overflow:auto;">${escapeHtml(rawPrimary)}</textarea>`;
+      content += `<div class="buttons_block gap10px">`;
+      content += `<button id="stmb-arc-copy-raw" class="menu_button">${esc(translate("Copy Raw", "STMemoryBooks_ReviewFailedArc_CopyRaw"))}</button>`;
+      content += `<button id="stmb-arc-apply-corrected-raw" class="menu_button" ${canManualFix ? "" : "disabled"}>${esc(translate("Create Arcs from corrected JSON", "STMemoryBooks_ReviewFailedArc_CreateArcs"))}</button>`;
+      content += `</div>`;
+      if (!canManualFix) {
+        content += `<div class="opacity70p">${esc(translate("Unable to apply corrected JSON because the original consolidation context is missing.", "STMemoryBooks_ReviewFailedArc_NoContext"))}</div>`;
+      }
+      if (rawOriginal && rawOriginal !== rawPrimary) {
+        content += `<details class="world_entry_form_control"><summary class="opacity70p">${esc(translate("Show original (pre-retry) response", "STMemoryBooks_ReviewFailedArc_ShowOriginal"))}</summary>`;
+        content += `<textarea class="text_pole" style="width: 100%; min-height: 160px; max-height: 260px; white-space: pre; overflow:auto;">${escapeHtml(rawOriginal)}</textarea>`;
+        content += `</details>`;
+      }
+      content += `</div>`;
+    } else {
+      content += `<div class="world_entry_form_control opacity70p">${esc(translate("No raw response was captured.", "STMemoryBooks_ReviewFailedArc_NoRaw"))}</div>`;
+    }
+
+    const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, "", {
+      wide: true,
+      large: true,
+      allowVerticalScrolling: true,
+      okButton: false,
+      cancelButton: translate("Close", "STMemoryBooks_Close"),
+    });
+
+    const dlg = popup.dlg;
+    dlg
+      .querySelector("#stmb-arc-copy-raw")
+      ?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(rawPrimary || rawOriginal);
+          toastr.success(
+            translate("Copied raw response", "STMemoryBooks_CopiedRaw"),
+            "STMemoryBooks",
+          );
+        } catch (e) {
+          toastr.error(
+            translate("Copy failed", "STMemoryBooks_CopyFailed"),
+            "STMemoryBooks",
+          );
+        }
+      });
+    dlg
+      .querySelector("#stmb-arc-apply-corrected-raw")
+      ?.addEventListener("click", async () => {
+        const corrected =
+          dlg.querySelector("#stmb-arc-corrected-raw")?.value ??
+          rawPrimary ??
+          rawOriginal;
+        void applyManualFixedArcJson(corrected);
+      });
+
+    void popup.show();
+  } catch (e) {
+    console.error("STMemoryBooks: Failed to show failed Arc response popup:", e);
+  }
+}
+
+/**
+ * Show a popup with details for a failed AI response, including raw response and provider body if available.
+ */
 function showFailedAIResponsePopup(error) {
   try {
     const esc = (s) => escapeHtml(String(s || ""));
@@ -4814,12 +5353,10 @@ function showFailedAIResponsePopup(error) {
     const raw = typeof error?.rawResponse === "string" ? error.rawResponse : "";
     const providerBody =
       typeof error?.providerBody === "string" ? error.providerBody : "";
-    const MAX_PREVIEW = 100000;
-    const rawPreview =
-      raw && raw.length > MAX_PREVIEW
-        ? raw.slice(0, MAX_PREVIEW) + "\n…(truncated)…"
-        : raw;
-
+    const canManualFix =
+      !!raw &&
+      !!lastFailedAIContext?.compiledScene &&
+      !!lastFailedAIContext?.lorebookValidation?.valid;
     let content = "";
     content += `<h3>${esc(translate("Review Failed AI Response", "STMemoryBooks_ReviewFailedAI_Title"))}</h3>`;
     content += `<div class="world_entry_form_control">`;
@@ -4831,8 +5368,14 @@ function showFailedAIResponsePopup(error) {
     if (raw) {
       content += `<div class="world_entry_form_control">`;
       content += `<h4>${esc(translate("Raw AI Response", "STMemoryBooks_ReviewFailedAI_RawLabel"))}</h4>`;
-      content += `<pre class="text_pole" style="white-space: pre-wrap; max-height: 300px; overflow:auto;"><code>${escapeHtml(rawPreview)}</code></pre>`;
-      content += `<div class="buttons_block gap10px"><button id="stmb-copy-raw" class="menu_button">${esc(translate("Copy Raw", "STMemoryBooks_ReviewFailedAI_CopyRaw"))}</button></div>`;
+      content += `<textarea id="stmb-corrected-raw" class="text_pole" style="width: 100%; min-height: 220px; max-height: 360px; white-space: pre; overflow:auto;">${escapeHtml(raw)}</textarea>`;
+      content += `<div class="buttons_block gap10px">`;
+      content += `<button id="stmb-copy-raw" class="menu_button">${esc(translate("Copy Raw", "STMemoryBooks_ReviewFailedAI_CopyRaw"))}</button>`;
+      content += `<button id="stmb-apply-corrected-raw" class="menu_button" ${canManualFix ? "" : "disabled"}>${esc(translate("Create Memory from corrected JSON", "STMemoryBooks_ReviewFailedAI_CreateMemory"))}</button>`;
+      content += `</div>`;
+      if (!canManualFix) {
+        content += `<div class="opacity70p">${esc(translate("Unable to apply corrected JSON because the original generation context is missing.", "STMemoryBooks_ReviewFailedAI_NoContext"))}</div>`;
+      }
       content += `</div>`;
     } else {
       content += `<div class="world_entry_form_control opacity70p">${esc(translate("No raw response was captured.", "STMemoryBooks_ReviewFailedAI_NoRaw"))}</div>`;
@@ -4854,7 +5397,7 @@ function showFailedAIResponsePopup(error) {
       cancelButton: translate("Close", "STMemoryBooks_Close"),
     });
 
-    // Attach copy handlers before showing the popup so they are active immediately
+    // Attach handlers before showing the popup so they are active immediately
     const dlg = popup.dlg;
     dlg.querySelector("#stmb-copy-raw")?.addEventListener("click", async () => {
       try {
@@ -4863,13 +5406,20 @@ function showFailedAIResponsePopup(error) {
           translate("Copied raw response", "STMemoryBooks_CopiedRaw"),
           "STMemoryBooks",
         );
-      } catch {
+      } catch (e) {
         toastr.error(
           translate("Copy failed", "STMemoryBooks_CopyFailed"),
           "STMemoryBooks",
         );
       }
     });
+    dlg
+      .querySelector("#stmb-apply-corrected-raw")
+      ?.addEventListener("click", async () => {
+        const correctedRaw =
+          dlg.querySelector("#stmb-corrected-raw")?.value ?? raw;
+        void applyManualFixedJson(correctedRaw);
+      });
     dlg
       .querySelector("#stmb-copy-provider")
       ?.addEventListener("click", async () => {
@@ -4879,7 +5429,7 @@ function showFailedAIResponsePopup(error) {
             translate("Copied provider body", "STMemoryBooks_CopiedProvider"),
             "STMemoryBooks",
           );
-        } catch {
+        } catch (e) {
           toastr.error(
             translate("Copy failed", "STMemoryBooks_CopyFailed"),
             "STMemoryBooks",

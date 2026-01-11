@@ -406,9 +406,9 @@ export function parseArcJsonResponse(text) {
   const normalized = normalizeText(
     text.trim().replace(/<think>[\s\S]*?<\/think>/gi, ""),
   );
+  const candidates = [];
   const unwrapped = unwrapJsConcatenatedStringDump(normalized);
   if (unwrapped) candidates.push(unwrapped);
-  const candidates = [];
   const fenced = extractFencedBlocks(normalized);
   if (fenced.length) candidates.push(...fenced);
   candidates.push(normalized);
@@ -642,7 +642,20 @@ export async function runArcAnalysisSequential(
         apiKey: conn.apiKey,
         extra,
       });
-      parsed = parseArcJsonResponse(retry.text);
+      try {
+        parsed = parseArcJsonResponse(retry.text);
+      } catch (e2) {
+        const err = new Error(
+          String(e2?.message || e?.message || "Model did not return valid arc JSON"),
+        );
+        err.name = "ArcAIResponseError";
+        err.code = "ARC_INVALID_JSON";
+        err.rawText = text;
+        err.retryRawText = retry?.text;
+        err.prompt = prompt;
+        err.repairPrompt = repairPrompt;
+        throw err;
+      }
     }
 
     // Build ID resolver to handle both UIDs and sequential indices (e.g. "001", "1")
