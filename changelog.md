@@ -2,6 +2,16 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.0 (January 10, 2026)
+- **Enhancements**: 
+  - Add raw JSON response viewer so bad JSON can be corrected manually.
+- **Contributor PRs**:
+  - bundle with BUN, add dirtyJSON parser
+  - German/French localization tweaks
+  - fix custom arc prompt recognition
+  - JSON response control char strip
+  - edit popup buttons
+
 ## v4.15.0 (January 9, 2026)
 - Add `/stmb-highest` to output highest memory processed.
 
