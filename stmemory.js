@@ -4,6 +4,7 @@ import { oai_settings } from '../../../openai.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
+import dirtyJson from 'dirty-json';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -459,61 +460,6 @@ function extractBalancedJson(s) {
     return null; // unbalanced
 }
 
-function stripJsonComments(s) {
-    // Remove // and /* */ outside strings
-    let out = '';
-    let inStr = false, esc = false, inLine = false, inBlock = false, modified = false;
-    for (let i = 0; i < s.length; i++) {
-        const ch = s[i], next = s[i + 1];
-        if (inStr) {
-            out = ch;
-            if (esc) esc = false;
-            else if (ch === '\\') esc = true;
-            else if (ch === '"') inStr = false;
-            continue;
-        }
-        if (inLine) {
-            modified = true;
-            if (ch === '\n') { inLine = false; out = ch; }
-            continue;
-        }
-        if (inBlock) {
-            modified = true;
-            if (ch === '*' && next === '/') { inBlock = false; i; }
-            continue;
-        }
-        if (ch === '"') { inStr = true; out = ch; continue; }
-        if (ch === '/' && next === '/') { inLine = true; i; continue; }
-        if (ch === '/' && next === '*') { inBlock = true; i; continue; }
-        out = ch;
-    }
-    return { text: out, modified };
-}
-
-function stripTrailingCommas(s) {
-    // Remove commas right before } or ] outside strings
-    let out = '';
-    let inStr = false, esc = false, modified = false;
-    for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (inStr) {
-            out += ch;
-            if (esc) esc = false;
-            else if (ch === '\\') esc = true;
-            else if (ch === '"') inStr = false;
-            continue;
-        }
-        if (ch === '"') { inStr = true; out += ch; continue; }
-        if (ch === ',') {
-            let j = i + 1;
-            while (j < s.length && /\s/.test(s[j])) j++;
-            if (s[j] === '}' || s[j] === ']') { modified = true; continue; }
-        }
-        out += ch;
-    }
-    return { text: out, modified };
-}
-
 function hasAnyJsonDelimiter(s) {
     return /[\{\[]/.test(s);
 }
@@ -640,15 +586,8 @@ export function parseAIJsonResponse(aiResponse) {
             }
             return parsedDirect;
         } catch (_) {
-            // Try repair: comments and trailing commas (do not invent structure)
-            let repaired = cand;
-            const noComments = stripJsonComments(repaired);
-            if (noComments.modified) repaired = noComments.text;
-            const noTrailing = stripTrailingCommas(repaired);
-            if (noTrailing.modified) repaired = noTrailing.text;
-
             try {
-                const parsedRepaired = JSON.parse(repaired);
+              const parsedRepaired = dirtyJson.parse(cand);
                 // Validate required fields
                 if (!parsedRepaired.content && !parsedRepaired.summary && !parsedRepaired.memory_content) {
                     throw makeAIError('MISSING_FIELDS_CONTENT', 'AI response missing content field', false);
