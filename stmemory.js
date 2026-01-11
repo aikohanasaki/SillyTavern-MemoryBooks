@@ -131,7 +131,9 @@ export async function sendRawCompletionRequest({
 
     // Optional: mirror to providers that use a different field if present
     if (extra.max_output_tokens != null) {
-        const mo = Math.floor(extra.max_output_tokens) ?? 0;
+        // Coerce and validate the incoming value to a finite number before flooring to avoid NaN propagation
+        const moRaw = Number.parseFloat(extra.max_output_tokens);
+        const mo = Number.isFinite(moRaw) ? Math.floor(moRaw) : 0;
         if (Number.isFinite(extra.max_tokens) && extra.max_tokens > 0) {
             extra.max_output_tokens = Math.min(mo, extra.max_tokens);
         } else {
@@ -308,8 +310,9 @@ async function waitForCharacterData(config = {}, legacyCheckIntervalMs = null) {
             return false;
         }
 
-        attemptCount;
+        let currentInterval = initialIntervalMs;
         
+        // Import context detection to check if we're in a group chat        
         if (context.isGroupChat) {
             // Group chat - check if group data is available
             if (groups && context.groupId) {
@@ -379,22 +382,22 @@ function extractFromClaudeStructuredFormat(aiResponse) {
 
 function likelyUnbalanced(raw) {
     try {
-        let braces = 0, brackets = 0, inString = false, escape = false;
-        for (let i = 0; i < raw.length; i) {
+        let braces = 0, brackets = 0, inString = false, isEscaping = false;
+        for (let i = 0; i < raw.length; i++) {
             const ch = raw[i];
             if (inString) {
-                if (escape) {
-                    escape = false;
+                if (isEscaping) {
+                    isEscaping = false;
                 } else if (ch === '\\') {
-                    escape = true;
+                    isEscaping = true;
                 } else if (ch === '"') {
                     inString = false;
                 }
             } else {
                 if (ch === '"') { inString = true; }
-                else if (ch === '{') braces;
+                else if (ch === '{') braces++;
                 else if (ch === '}') braces--;
-                else if (ch === '[') brackets;
+                else if (ch === '[') brackets++;
                 else if (ch === ']') brackets--;
             }
             if (braces < 0 || brackets < 0) return true;
