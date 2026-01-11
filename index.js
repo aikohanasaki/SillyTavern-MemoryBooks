@@ -1408,16 +1408,14 @@ async function executeMemoryGeneration(
           ? `Creating memory with ${memoryFetchResult.actualCount} context memories...`
           : "Creating memory...";
     }
-    toastr.info(
-      translate(workingToastMessage, "STMemoryBooks_WorkingToast"),
-      "STMemoryBooks",
-      { timeOut: 0 },
-    );
+    toastr.info(__st_t_tag`${workingToastMessage}`, "STMemoryBooks", {
+      timeOut: 0,
+    });
 
     // Add context and get stats (no intermediate toast)
     compiledScene.previousSummariesContext = previousMemories;
-    sceneStats = getSceneStats(compiledScene);
-    const actualTokens = sceneStats.estimatedTokens;
+    sceneStats = await getSceneStats(compiledScene);
+    const actualTokens = sceneStats?.estimatedTokens;
 
     // Generate memory silently
     const memoryResult = await createMemory(compiledScene, profileSettings, {
