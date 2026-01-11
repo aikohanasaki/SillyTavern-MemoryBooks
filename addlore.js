@@ -62,6 +62,20 @@ async function executeHideCommand(hideCommand, context = '') {
 }
 
 /**
+ * Safely execute a hide command and log a warning on failure
+ * @private
+ * @param {string} hideCommand - Hide command to execute
+ * @param {string} context - Optional context description
+ */
+async function safeExecuteHideCommand(hideCommand, context = '') {
+    try {
+        await executeHideCommand(hideCommand, context);
+    } catch (e) {
+        console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
+    }
+}
+
+/**
  * Helper function to convert old boolean auto-hide settings to new dropdown format
  */
 function getAutoHideMode(moduleSettings = {}) {
@@ -155,7 +169,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         
         if (refreshEditor) {
             try {
-                reloadEditor(lorebookValidation.name);
+                await Promise.resolve(reloadEditor(lorebookValidation.name));
             } catch (e) {
                 console.warn(i18n('addlore.warn.refreshEditorFailed', `${MODULE_NAME}: reloadEditor failed:`), e);
             }
@@ -180,19 +194,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     const { start: sceneStart, end: sceneEnd } = sceneData;
 
                     if (unhiddenCount === 0) {
-                        try {
-                            await executeHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
-                        } catch (e) {
-                            console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
-                        }
+                        await safeExecuteHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
                     } else {
                         const hideEndIndex = sceneEnd - unhiddenCount;
                         if (hideEndIndex >= 0) {
-                            try {
-                                await executeHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
-                            } catch (e) {
-                                console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
-                            }
+                            await safeExecuteHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
                         }
                         // Auto-hide silently skipped if not enough messages
                     }
@@ -212,19 +218,11 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
                     if (unhiddenCount >= sceneSize) {
                         // No hiding needed - want to keep more messages than scene contains
                     } else if (unhiddenCount === 0) {
-                        try {
-                            await executeHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
-                        } catch (e) {
-                            console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
-                        }
+                        await safeExecuteHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
                     } else {
                         const hideEnd = sceneEnd - unhiddenCount;
                         if (hideEnd >= sceneStart) {
-                            try {
-                                await executeHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
-                            } catch (e) {
-                                console.warn(i18n('addlore.warn.autohideFailed', `${MODULE_NAME}: Auto-hide failed:`), e);
-                            }
+                            await safeExecuteHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
                         }
                         // Auto-hide silently skipped if not enough scene messages
                     }
