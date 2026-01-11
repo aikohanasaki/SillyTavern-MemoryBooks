@@ -24,7 +24,7 @@
 
 ## v4.14.2 (January 4, 2026)
 - **Bugfix:** Fix popup buttons not wrapping.
-- **Tweaks:** 
+- **Tweaks:**
   - Prompt Manager buttons broken out into their own section.
   - Renamed "Side Prompts" to "Trackers & Side Prompts"
 
@@ -43,12 +43,10 @@
 ## v4.13.5 (December 17, 2025)
 - Readme translations updated
 - GPT-5 models now use `max_completion_tokens`
-
-## v4.13.5 (December 17, 2025)
 - German and French translations added (I'm sorry it took so long)
 
 ## v4.13.4 (December 15, 2025)
-- **Tweaka:** 
+- **Tweaks:** 
   - Readme changes for FAQ
   - Made various default settings changes (no effect on existing users, should affect new installs only)
 
