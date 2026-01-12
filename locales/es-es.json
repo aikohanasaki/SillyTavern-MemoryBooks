@@ -626,6 +626,7 @@
     "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ Reconstruir plantillas integradas",
     "STMemoryBooks_RecreateBuiltinsTitle": "Reconstruir plantillas integradas",
     "STMemoryBooks_RecreateBuiltinsWarning": "Esto eliminará las anulaciones para todos los preajustes incorporados (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Cualquier personalización de estos incorporados se perderá. Después de esto, los incorporados seguirán la configuración regional actual de la aplicación.",
+    "STMemoryBooks_RecreateArcBuiltinsWarning": "Esto eliminará las anulaciones para todos los preajustes incorporados (multi-arc, single, tiny). Cualquier personalización de estos incorporados se perderá. Después de esto, los incorporados seguirán la configuración regional actual de la aplicación.",
     "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "Esto no afecta a sus otros preajustes personalizados.",
     "STMemoryBooks_RecreateBuiltinsOverwrite": "Sobrescribir",
     "STMemoryBooks_RegexSelection_Title": "📐 Selección de expresiones regulares",

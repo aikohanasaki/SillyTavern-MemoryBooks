@@ -632,6 +632,7 @@
   "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ Cipta Semula Prom Terbina Dalam",
   "STMemoryBooks_RecreateBuiltinsTitle": "Cipta Semula Prom Terbina Dalam",
   "STMemoryBooks_RecreateBuiltinsWarning": "Ini akan mengalih keluar penggantian untuk semua pratetap terbina dalam (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Sebarang penyesuaian pada pratetap ini akan hilang. Selepas ini, pratetap terbina dalam akan mengikut tempatan aplikasi semasa.",
+  "STMemoryBooks_RecreateArcBuiltinsWarning": "Ini akan mengalih keluar penggantian untuk semua pratetap terbina dalam (multi-arc, single, tiny). Sebarang penyesuaian pada pratetap ini akan hilang. Selepas ini, pratetap terbina dalam akan mengikut tempatan aplikasi semasa.",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "Ini tidak menjejaskan pratetap tersuai anda yang lain.",
   "STMemoryBooks_RecreateBuiltinsOverwrite": "Tulis Ganti",
   "STMemoryBooks_RegexSelection_Title": "📐 Pemilihan Ungkapan Biasa (Regex)",

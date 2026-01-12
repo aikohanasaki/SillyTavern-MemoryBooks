@@ -626,6 +626,7 @@
   "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ 重建內建提示",
   "STMemoryBooks_RecreateBuiltinsTitle": "重建內建提示",
   "STMemoryBooks_RecreateBuiltinsWarning": "這將刪除所有內建預設（summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive）的覆寫。對這些內建預設的任何自訂都將遺失。此後，內建預設將遵循目前的應用程式區域設定。",
+  "STMemoryBooks_RecreateArcBuiltinsWarning": "這將刪除所有內建預設（multi-arc, single, tiny）的覆寫。對這些內建預設的任何自訂都將遺失。此後，內建預設將遵循目前的應用程式區域設定。",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "這不會影響您的其他自訂預設。",
   "STMemoryBooks_RecreateBuiltinsOverwrite": "覆寫",
   "STMemoryBooks_RegexSelection_Title": "📐 正則表達式選擇",

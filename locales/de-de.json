@@ -626,6 +626,7 @@
     "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ Integrierte Prompts wiederherstellen",
     "STMemoryBooks_RecreateBuiltinsTitle": "Integrierte Prompts wiederherstellen",
     "STMemoryBooks_RecreateBuiltinsWarning": "Dies entfernt alle Änderungen an den integrierten Vorlagen. Eigene Anpassungen gehen verloren. Die Vorlagen folgen danach wieder der aktuellen App-Sprache.",
+    "STMemoryBooks_RecreateArcBuiltinsWarning": "Dies entfernt alle Änderungen an den integrierten Vorlagen. Eigene Anpassungen gehen verloren. Die Vorlagen folgen danach wieder der aktuellen App-Sprache.",
     "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "Eigene benutzerdefinierte Vorlagen sind nicht betroffen.",
     "STMemoryBooks_RecreateBuiltinsOverwrite": "Überschreiben",
     "STMemoryBooks_RegexSelection_Title": "📐 Regex-Auswahl",

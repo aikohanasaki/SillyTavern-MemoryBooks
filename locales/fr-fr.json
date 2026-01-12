@@ -631,6 +631,7 @@
     "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ Recréer les Prompts intégrés",
     "STMemoryBooks_RecreateBuiltinsTitle": "Recréer les Prompts",
     "STMemoryBooks_RecreateBuiltinsWarning": "Efface les personnalisations des intégrés. Suivra la langue actuelle. Irréversible.",
+    "STMemoryBooks_RecreateArcBuiltinsWarning": "Efface les personnalisations des intégrés. Suivra la langue actuelle. Irréversible.",
     "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "N'affecte pas vos préréglages perso.",
     "STMemoryBooks_RecreateBuiltinsOverwrite": "Écraser",
     "STMemoryBooks_RegexSelection_Title": "📐 Sélection Regex",
