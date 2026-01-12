@@ -626,6 +626,7 @@
   "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ 組み込みプロンプトを再作成",
   "STMemoryBooks_RecreateBuiltinsTitle": "組み込みプロンプトを再作成",
   "STMemoryBooks_RecreateBuiltinsWarning": "これにより、すべての組み込みプリセット（summary、summarize、synopsis、sumup、minimal、northgate、aelemar、comprehensive）の上書きが削除されます。これらの組み込みプリセットへのカスタマイズはすべて失われます。この後、組み込みプリセットは現在のアプリのロケールに従います。",
+  "STMemoryBooks_RecreateArcBuiltinsWarning": "これにより、すべての組み込みプリセット（multi-arc, single, tiny）の上書きが削除されます。これらの組み込みプリセットへのカスタマイズはすべて失われます。この後、組み込みプリセットは現在のアプリのロケールに従います。",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "これは他のカスタムプリセットには影響しません。",
   "STMemoryBooks_RecreateBuiltinsOverwrite": "上書き",
   "STMemoryBooks_RegexSelection_Title": "📐 正規表現の選択",

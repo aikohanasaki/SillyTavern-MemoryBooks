@@ -3103,8 +3103,8 @@ function setupArcPromptManagerEventHandlers(popup) {
                 <div class="info-block warning">
                     ${escapeHtml(
                       translate(
-                        "This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.",
-                        "STMemoryBooks_RecreateBuiltinsWarning",
+                        "This will remove overrides for all built‑in presets (multi-arc, single, tiny). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.",
+                        "STMemoryBooks_RecreateArcBuiltinsWarning",
                       ),
                     )}
                 </div>

@@ -626,6 +626,7 @@
   "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ 내장 프롬프트 재성성",
   "STMemoryBooks_RecreateBuiltinsTitle": "내장 프롬프트 재성성",
   "STMemoryBooks_RecreateBuiltinsWarning": "이렇게 하면 모든 내장 사전 설정(summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive)에 대한 재정의가 제거됩니다. 이러한 내장 기능에 대한 모든 사용자 지정은 손실됩니다. 이 후 내장 기능은 현재 앱 로케일을 따릅니다.",
+  "STMemoryBooks_RecreateArcBuiltinsWarning": "이렇게 하면 모든 내장 사전 설정(multi-arc, single, tiny)에 대한 재정의가 제거됩니다. 이러한 내장 기능에 대한 모든 사용자 지정은 손실됩니다. 이 후 내장 기능은 현재 앱 로케일을 따릅니다.",
   "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "이것은 다른 사용자 지정 사전 설정에 영향을 미치지 않습니다.",
   "STMemoryBooks_RecreateBuiltinsOverwrite": "덮어쓰기",
   "STMemoryBooks_RegexSelection_Title": "📐 정규식 선택",

@@ -626,6 +626,7 @@
     "STMemoryBooks_PromptManager_RecreateBuiltins": "♻️ Buat Ulang Prompt Bawaan",
     "STMemoryBooks_RecreateBuiltinsTitle": "Buat Ulang Prompt Bawaan",
     "STMemoryBooks_RecreateBuiltinsWarning": "Ini akan menghapus penggantian untuk semua preset bawaan (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Setiap penyesuaian pada preset bawaan ini akan hilang. Setelah ini, preset bawaan akan mengikuti lokal aplikasi saat ini.",
+    "STMemoryBooks_RecreateArcBuiltinsWarning": "Ini akan menghapus penggantian untuk semua preset bawaan (multi-arc, single, tiny). Setiap penyesuaian pada preset bawaan ini akan hilang. Setelah ini, preset bawaan akan mengikuti lokal aplikasi saat ini.",
     "STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom": "Ini tidak memengaruhi preset kustom Anda yang lain.",
     "STMemoryBooks_RecreateBuiltinsOverwrite": "Timpa",
     "STMemoryBooks_RegexSelection_Title": "📐 Pemilihan Ekspresi Reguler",
