@@ -152,12 +152,21 @@ export async function sendRawCompletionRequest({
     };
 
     // Handle full-manual configuration with direct endpoint calls
-    if (api === 'full-manual' && endpoint && apiKey) {
-        url = endpoint;
+    // Note: apiKey is optional (common for local OpenAI-compatible endpoints).
+    if (api === 'full-manual') {
+        const endpointUrl = String(endpoint || '').trim();
+        if (!endpointUrl) {
+            throw new InvalidProfileError('Full Manual Configuration requires an API Endpoint URL.');
+        }
+
+        url = endpointUrl;
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
         };
+        const key = apiKey != null ? String(apiKey).trim() : '';
+        if (key) {
+            headers['Authorization'] = `Bearer ${key}`;
+        }
         // For direct endpoint calls, use standard OpenAI-compatible format
         body = {
             model,

@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.2 (January 12, 2026)
+- Fix arc URL fallback to ST if there is no specific URL/key pair.
+
 ## v4.16.1 (January 11, 2026)
 - Fix warning message for arc built in recreation
 - Fix template name recreation
