@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.1 (January 11, 2026)
+- Fix warning message for arc built in recreation
+- fix template name recreate
+
 ## v4.16.0 (January 10, 2026)
 - **Enhancements**: 
   - Add raw JSON response viewer so bad JSON can be corrected manually.
