@@ -8,8 +8,8 @@ const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
 
  // Preferred translation keys for built-in arc presets
  const BUILTIN_DISPLAY_NAMES = {
-   arc_default: 'STMemoryBooks_ArcDefaultDisplayName',
-   arc_alternate: 'STMemoryBooks_ArcAlternateDisplayName',
+   arc_default: 'Multi-Arc Analysis',
+   arc_alternate: 'Single Arc',
  };
 
 /**
