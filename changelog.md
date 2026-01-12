@@ -4,8 +4,8 @@
 
 ## v4.16.1 (January 11, 2026)
 - Fix warning message for arc built in recreation
-- fix template name recreate
-- force raw presentation after arc
+- Fix template name recreation
+- Force raw response viewer after arc analysis failures
 
 ## v4.16.0 (January 10, 2026)
 - **Enhancements**: 
