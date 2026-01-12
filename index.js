@@ -3716,13 +3716,51 @@ async function showArcConsolidationPopup() {
     };
 
     if (!arcCandidates || arcCandidates.length === 0) {
-      toastr.warning(
-        translate(
-          "No arcs were produced. Try different settings or selection.",
-          "STMemoryBooks_NoArcsProduced",
+      // Even if parsing "succeeded", the model may have returned unusable structure
+      // (e.g. empty arcs, missing title/summary, or salvageable-but-messy output).
+      const syntheticError = {
+        name: "ArcAIResponseError",
+        code: "ARC_NO_USABLE_ARCS",
+        message: translate(
+          "No usable arcs were produced from the model response.",
+          "STMemoryBooks_ArcAnalysis_NoUsableArcs",
         ),
+        rawText: analysis?.rawText || "",
+        retryRawText: analysis?.retryRawText || "",
+      };
+      lastFailedArcError = syntheticError;
+      lastFailedArcContext = {
+        lorebookName,
+        lorebookData,
+        selectedEntries,
+        options,
+        disableOriginals,
+      };
+      try {
+        toastr.clear(lastArcFailureToast);
+      } catch (e2) {}
+      lastArcFailureToast = toastr.warning(
+        __st_t_tag`Arc analysis produced no usable arcs. Review the raw response to fix/extract an arc.`,
         "STMemoryBooks",
+        {
+          timeOut: 0,
+          extendedTimeOut: 0,
+          closeButton: true,
+          tapToDismiss: false,
+          onclick: () => {
+            try {
+              showFailedArcResponsePopup(lastFailedArcError);
+            } catch (e3) {
+              console.error(e3);
+            }
+          },
+        },
       );
+      try {
+        showFailedArcResponsePopup(lastFailedArcError);
+      } catch (e2) {
+        console.error(e2);
+      }
       return;
     }
 
@@ -5271,6 +5309,82 @@ function showFailedArcResponsePopup(error) {
     const canManualFix =
       !!lastFailedArcContext?.lorebookName && !!lastFailedArcContext?.lorebookData;
 
+    const splitKeywords = (s) =>
+      String(s || "")
+        .split(/[\n,]+/g)
+        .map((x) => String(x || "").trim())
+        .map((x) => x.replace(/^["']|["']$/g, ""))
+        .map((x) => x.replace(/^\d+\.\s*/, ""))
+        .map((x) => x.replace(/^[\-\*\u2022]\s*/, ""))
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .slice(0, 30);
+
+    const extractArcFieldsFromText = (raw) => {
+      const text = String(raw || "");
+
+      // Best case: it's actually (repairable) arc JSON already.
+      try {
+        const parsed = parseArcJsonResponse(text);
+        const a0 = Array.isArray(parsed?.arcs) ? parsed.arcs[0] : null;
+        if (a0) {
+          return {
+            title: String(a0.title || "").trim(),
+            summary: String(a0.summary || "").trim(),
+            keywords: Array.isArray(a0.keywords) ? a0.keywords : [],
+          };
+        }
+      } catch {}
+
+      // Heuristics for messy responses
+      let title = "";
+      let summary = "";
+      let keywords = [];
+
+      const titleLine =
+        text.match(/(?:^|\n)\s*(?:title|arc\s*title)\s*[:\-]\s*(.+)\s*$/im) ||
+        text.match(/(?:^|\n)\s*#{1,6}\s*(.+)\s*$/m);
+      if (titleLine) {
+        title = String(titleLine[1] || "")
+          .trim()
+          .replace(/^["']|["']$/g, "");
+      }
+
+      const summaryMatch = text.match(
+        /(?:^|\n)\s*(?:summary|arc\s*summary|content)\s*[:\-]\s*([\s\S]*?)(?=\n\s*(?:keywords?|tags?)\s*[:\-]|\n\s*$)/im,
+      );
+      if (summaryMatch) {
+        summary = String(summaryMatch[1] || "").trim();
+      } else if (title) {
+        // Fallback: first non-empty paragraph after the title line
+        const afterTitle = text.split(title).slice(1).join(title);
+        const paras = afterTitle
+          .split(/\n\s*\n/g)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        if (paras.length) summary = paras[0];
+      }
+
+      const keywordSection = text.match(
+        /(?:^|\n)\s*(?:keywords?|tags?)\s*[:\-]\s*([\s\S]*)$/im,
+      );
+      if (keywordSection) {
+        keywords = splitKeywords(keywordSection[1]);
+      } else {
+        // Fallback: collect bullet-ish lines if any
+        const bulletish = text
+          .split(/\r?\n/)
+          .filter((l) => /^\s*(?:[\-\*\u2022]|\d+\.)\s+/.test(l))
+          .slice(0, 60)
+          .join("\n");
+        if (bulletish) keywords = splitKeywords(bulletish);
+      }
+
+      return { title, summary, keywords };
+    };
+
+    const prefill = rawPrimary ? extractArcFieldsFromText(rawPrimary) : null;
+
     let content = "";
     content += `<h3>${esc(translate("Review Failed Arc Response", "STMemoryBooks_ReviewFailedArc_Title"))}</h3>`;
     content += `<div><strong>${esc(translate("Error", "STMemoryBooks_ReviewFailedArc_ErrorLabel"))}:</strong> ${message}</div>`;
@@ -5284,8 +5398,19 @@ function showFailedArcResponsePopup(error) {
       content += `<textarea id="stmb-arc-corrected-raw" class="text_pole" style="width: 100%; min-height: 220px; max-height: 360px; white-space: pre; overflow:auto;">${escapeHtml(rawPrimary)}</textarea>`;
       content += `<div class="buttons_block gap10px">`;
       content += `<button id="stmb-arc-copy-raw" class="menu_button">${esc(translate("Copy Raw", "STMemoryBooks_ReviewFailedArc_CopyRaw"))}</button>`;
+      content += `<button id="stmb-arc-extract-fields" class="menu_button">${esc(translate("Extract Title/Summary/Keywords", "STMemoryBooks_ReviewFailedArc_ExtractFields"))}</button>`;
+      content += `<button id="stmb-arc-fill-json" class="menu_button">${esc(translate("Fill JSON from fields", "STMemoryBooks_ReviewFailedArc_FillJson"))}</button>`;
       content += `<button id="stmb-arc-apply-corrected-raw" class="menu_button" ${canManualFix ? "" : "disabled"}>${esc(translate("Create Arcs from corrected JSON", "STMemoryBooks_ReviewFailedArc_CreateArcs"))}</button>`;
       content += `</div>`;
+
+      content += `<div class="world_entry_form_control">`;
+      content += `<h4>${esc(translate("Extractable Fields", "STMemoryBooks_ReviewFailedArc_FieldsTitle"))}</h4>`;
+      content += `<div class="opacity70p">${esc(translate("Use Extract to populate fields from the raw response, then Fill JSON to generate a valid Arc JSON object.", "STMemoryBooks_ReviewFailedArc_FieldsDesc"))}</div>`;
+      content += `<div class="world_entry_form_control"><label>${esc(translate("Title", "STMemoryBooks_Title"))}</label><input id="stmb-arc-field-title" class="text_pole" style="width:100%" value="${escapeHtml(String(prefill?.title || ""))}"></div>`;
+      content += `<div class="world_entry_form_control"><label>${esc(translate("Summary", "STMemoryBooks_Summary"))}</label><textarea id="stmb-arc-field-summary" class="text_pole" style="width:100%; min-height: 110px; white-space: pre-wrap;">${escapeHtml(String(prefill?.summary || ""))}</textarea></div>`;
+      content += `<div class="world_entry_form_control"><label>${esc(translate("Keywords (one per line or comma-separated)", "STMemoryBooks_Keywords"))}</label><textarea id="stmb-arc-field-keywords" class="text_pole" style="width:100%; min-height: 90px; white-space: pre-wrap;">${escapeHtml(Array.isArray(prefill?.keywords) ? prefill.keywords.join("\n") : "")}</textarea></div>`;
+      content += `</div>`;
+
       if (!canManualFix) {
         content += `<div class="opacity70p">${esc(translate("Unable to apply corrected JSON because the original consolidation context is missing.", "STMemoryBooks_ReviewFailedArc_NoContext"))}</div>`;
       }
@@ -5320,6 +5445,89 @@ function showFailedArcResponsePopup(error) {
         } catch (e) {
           toastr.error(
             translate("Copy failed", "STMemoryBooks_CopyFailed"),
+            "STMemoryBooks",
+          );
+        }
+      });
+    dlg
+      .querySelector("#stmb-arc-extract-fields")
+      ?.addEventListener("click", async () => {
+        try {
+          const rawNow =
+            dlg.querySelector("#stmb-arc-corrected-raw")?.value ??
+            rawPrimary ??
+            rawOriginal;
+          const extracted = extractArcFieldsFromText(rawNow);
+          const titleEl = dlg.querySelector("#stmb-arc-field-title");
+          const summaryEl = dlg.querySelector("#stmb-arc-field-summary");
+          const kwEl = dlg.querySelector("#stmb-arc-field-keywords");
+          if (titleEl) titleEl.value = extracted?.title || "";
+          if (summaryEl) summaryEl.value = extracted?.summary || "";
+          if (kwEl)
+            kwEl.value = Array.isArray(extracted?.keywords)
+              ? extracted.keywords.join("\n")
+              : "";
+          toastr.success(
+            translate(
+              "Extracted fields from response",
+              "STMemoryBooks_ReviewFailedArc_ExtractedFieldsToast",
+            ),
+            "STMemoryBooks",
+          );
+        } catch (e) {
+          toastr.error(
+            translate(
+              "Failed to extract fields",
+              "STMemoryBooks_ReviewFailedArc_ExtractFieldsFailed",
+            ),
+            "STMemoryBooks",
+          );
+        }
+      });
+    dlg
+      .querySelector("#stmb-arc-fill-json")
+      ?.addEventListener("click", async () => {
+        try {
+          const title = String(
+            dlg.querySelector("#stmb-arc-field-title")?.value || "",
+          ).trim();
+          const summary = String(
+            dlg.querySelector("#stmb-arc-field-summary")?.value || "",
+          ).trim();
+          const kwRaw = dlg.querySelector("#stmb-arc-field-keywords")?.value || "";
+          const keywords = splitKeywords(kwRaw);
+
+          if (!title || !summary) {
+            toastr.warning(
+              translate(
+                "Title and Summary are required to build an arc.",
+                "STMemoryBooks_ReviewFailedArc_TitleSummaryRequired",
+              ),
+              "STMemoryBooks",
+            );
+            return;
+          }
+
+          const obj = {
+            arcs: [{ title, summary, keywords }],
+            unassigned_memories: [],
+          };
+          const json = JSON.stringify(obj, null, 2);
+          const rawEl = dlg.querySelector("#stmb-arc-corrected-raw");
+          if (rawEl) rawEl.value = json;
+          toastr.success(
+            translate(
+              "Filled JSON from fields",
+              "STMemoryBooks_ReviewFailedArc_FilledJsonToast",
+            ),
+            "STMemoryBooks",
+          );
+        } catch (e) {
+          toastr.error(
+            translate(
+              "Failed to build JSON",
+              "STMemoryBooks_ReviewFailedArc_FillJsonFailed",
+            ),
             "STMemoryBooks",
           );
         }

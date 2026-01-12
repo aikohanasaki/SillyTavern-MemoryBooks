@@ -5,6 +5,7 @@
 ## v4.16.1 (January 11, 2026)
 - Fix warning message for arc built in recreation
 - fix template name recreate
+- force raw presentation after arc
 
 ## v4.16.0 (January 10, 2026)
 - **Enhancements**: 

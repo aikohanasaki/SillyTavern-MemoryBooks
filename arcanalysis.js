@@ -516,6 +516,9 @@ export async function runArcAnalysisSequential(
   const allBriefs = buildBriefsFromEntries(rawEntries);
   const remainingMap = new Map(allBriefs.map((b) => [b.id, b]));
   const acceptedArcs = [];
+  // Keep the latest raw model output for UX/debug (used when no usable arcs are produced).
+  let lastRawText = "";
+  let lastRetryRawText = "";
 
   // Resolve prompt text
   let promptText = null;
@@ -625,6 +628,8 @@ export async function runArcAnalysisSequential(
       apiKey: conn.apiKey,
       extra,
     });
+    lastRawText = text;
+    lastRetryRawText = "";
 
     // Parse response
     let parsed;
@@ -642,6 +647,7 @@ export async function runArcAnalysisSequential(
         apiKey: conn.apiKey,
         extra,
       });
+      lastRetryRawText = retry?.text || "";
       try {
         parsed = parseArcJsonResponse(retry.text);
       } catch (e2) {
@@ -787,7 +793,12 @@ export async function runArcAnalysisSequential(
   }
 
   const leftovers = Array.from(remainingMap.values()).map((b) => b.id);
-  return { arcCandidates: acceptedArcs, leftovers };
+  return {
+    arcCandidates: acceptedArcs,
+    leftovers,
+    rawText: lastRawText,
+    retryRawText: lastRetryRawText,
+  };
 }
 
 function resolveConnection(profileOrConnection) {
