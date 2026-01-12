@@ -628,7 +628,7 @@ export async function runArcAnalysisSequential(
       apiKey: conn.apiKey,
       extra,
     });
-    lastRawText = text;
+    lastRawText = String(text ?? "");
     lastRetryRawText = "";
 
     // Parse response
@@ -647,7 +647,7 @@ export async function runArcAnalysisSequential(
         apiKey: conn.apiKey,
         extra,
       });
-      lastRetryRawText = retry?.text || "";
+      lastRetryRawText = String(retry?.text ?? "");
       try {
         parsed = parseArcJsonResponse(retry.text);
       } catch (e2) {
@@ -656,8 +656,8 @@ export async function runArcAnalysisSequential(
         );
         err.name = "ArcAIResponseError";
         err.code = "ARC_INVALID_JSON";
-        err.rawText = text;
-        err.retryRawText = retry?.text;
+        err.rawText = String(text ?? "");
+        err.retryRawText = String(retry?.text ?? "");
         err.prompt = prompt;
         err.repairPrompt = repairPrompt;
         throw err;
@@ -796,8 +796,8 @@ export async function runArcAnalysisSequential(
   return {
     arcCandidates: acceptedArcs,
     leftovers,
-    rawText: lastRawText,
-    retryRawText: lastRetryRawText,
+    rawText: String(lastRawText ?? ""),
+    retryRawText: String(lastRetryRawText ?? ""),
   };
 }
 
