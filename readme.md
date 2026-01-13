@@ -11,7 +11,7 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 Start here: 
 * ⚠️‼️Please read [prerequisites](#-prerequisites) for installation notes (especially if you run Text Completion API)
-* 📽️ [Quickstart Video](https://youtu.be/mG2eRH_EhHs)
+* 📽️ [Quickstart Video](https://youtu.be/mG2eRH_EhHs) - English only (sorry, that's the language I am most fluent in)
 * ❓ [Frequently Asked Questions](#FAQ)
 * 🛠️ [Troubleshooting](#Troubleshooting)
 
