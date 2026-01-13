@@ -1333,19 +1333,6 @@ async function executeMemoryGeneration(
   const maxRetries = MEMORY_GENERATION.MAX_RETRIES;
 
   try {
-    // Optionally unhide hidden messages before compiling scene
-    if (settings?.moduleSettings?.unhideBeforeMemory) {
-      try {
-        await executeSlashCommands(
-          `/unhide ${sceneData.sceneStart}-${sceneData.sceneEnd}`,
-        );
-      } catch (e) {
-        console.warn(
-          "STMemoryBooks: /unhide command failed or unavailable:",
-          e,
-        );
-      }
-    }
     // Create and compile scene first
     const sceneRequest = createSceneRequest(
       sceneData.sceneStart,
@@ -1712,6 +1699,20 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
 
   try {
     const settings = initializeSettings();
+
+    // Optionally unhide hidden messages before any scene compilation/token estimation.
+    // getSceneData() compiles a scene for token estimation and can fail with "No visible messages"
+    // when the selected range is hidden.
+    if (settings?.moduleSettings?.unhideBeforeMemory) {
+      const markers = getSceneMarkers() || {};
+      if (markers.sceneStart !== null && markers.sceneEnd !== null) {
+        try {
+          await executeSlashCommands(`/unhide ${markers.sceneStart}-${markers.sceneEnd}`);
+        } catch (e) {
+          console.warn("STMemoryBooks: /unhide command failed or unavailable:", e);
+        }
+      }
+    }
 
     // All the validation and processing logic
     const sceneData = await getSceneData();

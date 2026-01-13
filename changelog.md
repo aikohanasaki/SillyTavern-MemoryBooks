@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.3 (January 13, 2026)
+- FINALLY fixed /unhide not working (always check the sequence of events, Aiko...)
+
 ## v4.16.2 (January 12, 2026)
 - Fix arc URL fallback to ST if there is no specific URL/key pair.
 
