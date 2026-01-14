@@ -980,6 +980,11 @@ export function createProfileObject(data = {}) {
         delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : true,
     };
 
+    // Preserve builtin marker for the STMB-required "Current SillyTavern Settings" profile.
+    if (data.isBuiltinCurrentST) {
+        profile.isBuiltinCurrentST = true;
+    }
+
     // Set titleFormat if explicitly provided, or if it's not a dynamic profile
     if (data.titleFormat || !data.isDynamicProfile) {
         profile.titleFormat = data.titleFormat || '[000] - {{title}}';

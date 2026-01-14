@@ -2,16 +2,14 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.4 (January 13, 2026)
+- Fixed "Current SillyTavern Settings" profile naming bug.
 ## v4.16.3 (January 13, 2026)
 - FINALLY fixed /unhide not working (always check the sequence of events, Aiko...)
-
-## v4.16.2 (January 12, 2026)
-- Fix arc URL fallback to ST if there is no specific URL/key pair.
-
 ## v4.16.1 (January 11, 2026)
 - Fix warning message for arc built in recreation
-- Fix template name recreation
-- Force raw response viewer after arc analysis failures
+- fix template name recreate
+- Force raw response presentation after arc analysis
 
 ## v4.16.0 (January 10, 2026)
 - **Enhancements**: 

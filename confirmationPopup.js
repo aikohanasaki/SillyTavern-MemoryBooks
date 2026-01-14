@@ -49,7 +49,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
   const effectivePrompt = await getEffectivePrompt(selectedProfile);
   const templateData = {
     ...sceneData,
-    profileName: (selectedProfile?.connection?.api === 'current_st') ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : selectedProfile.name,
+    profileName: (selectedProfile?.isBuiltinCurrentST) ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : selectedProfile.name,
     effectivePrompt: effectivePrompt,
     profileModel: (selectedProfile.useDynamicSTSettings || (selectedProfile?.connection?.api === 'current_st')) ?
       translate('Current SillyTavern model', 'STMemoryBooks_Label_CurrentSTModel') : (selectedProfile.connection?.model || translate('Current SillyTavern model', 'STMemoryBooks_Label_CurrentSTModel')),
@@ -63,7 +63,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
     showWarning: sceneData.estimatedTokens > (settings.moduleSettings.tokenWarningThreshold ?? 30000),
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
-      name: (profile?.connection?.api === 'current_st') ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
+      name: (profile?.isBuiltinCurrentST) ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
       isDefault: index === settings.defaultProfile,
       isSelected: index === profileIndex
     }))
@@ -139,7 +139,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     availableMemories: availableMemories,
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
-      name: (profile?.connection?.api === 'current_st') ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
+      name: (profile?.isBuiltinCurrentST) ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
       isDefault: index === settings.defaultProfile
     })),
     effectivePrompt: effectivePrompt,
@@ -627,7 +627,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
       sceneEnd: sceneData.sceneEnd,
       messageCount: sceneData.messageCount,
       titleReadonly: !!options.lockTitle,
-      profileName: (profileSettings?.connection?.api === 'current_st')
+      profileName: (profileSettings?.isBuiltinCurrentST)
         ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST')
         : (profileSettings.name || translate('Unknown Profile', 'STMemoryBooks_UnknownProfile'))
     };
