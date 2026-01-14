@@ -869,11 +869,16 @@ function initializeSettings() {
   const currentVersion = extension_settings.STMemoryBooks.migrationVersion ?? 1;
   if (currentVersion < 4) {
     // Check if dynamic profile already exists (in case of partial migration)
-    const hasDynamicProfile = extension_settings.STMemoryBooks.profiles?.some(
-      (p) => p.useDynamicSTSettings || p?.connection?.api === "current_st",
-    );
+    const hasBuiltinCurrentSTProfile =
+      extension_settings.STMemoryBooks.profiles?.some(
+        (p) =>
+          p?.isBuiltinCurrentST ||
+          p?.useDynamicSTSettings ||
+          (p?.connection?.api === "current_st" &&
+            p?.name === "Current SillyTavern Settings"),
+      );
 
-    if (!hasDynamicProfile) {
+    if (!hasBuiltinCurrentSTProfile) {
       // Add dynamic profile for existing installations
       if (!extension_settings.STMemoryBooks.profiles) {
         extension_settings.STMemoryBooks.profiles = [];
@@ -882,6 +887,7 @@ function initializeSettings() {
       // Insert dynamic profile at the beginning of the array
       const dynamicProfile = {
         name: "Current SillyTavern Settings",
+        isBuiltinCurrentST: true,
         connection: {
           api: "current_st",
         },
@@ -928,6 +934,7 @@ function initializeSettings() {
   ) {
     const dynamicProfile = {
       name: "Current SillyTavern Settings",
+      isBuiltinCurrentST: true,
       connection: {
         api: "current_st",
       },
@@ -2052,13 +2059,12 @@ function populateInlineButtons() {
 
         settings.defaultProfile = selectedIndex;
         saveSettingsDebounced();
-        const displayName =
-          settings.profiles[selectedIndex]?.connection?.api === "current_st"
-            ? translate(
-                "Current SillyTavern Settings",
-                "STMemoryBooks_Profile_CurrentST",
-              )
-            : settings.profiles[selectedIndex].name;
+        const displayName = settings.profiles[selectedIndex]?.isBuiltinCurrentST
+          ? translate(
+              "Current SillyTavern Settings",
+              "STMemoryBooks_Profile_CurrentST",
+            )
+          : settings.profiles[selectedIndex].name;
         toastr.success(
           __st_t_tag`"${displayName}" is now the default profile.`,
           "STMemoryBooks",
@@ -3877,7 +3883,7 @@ async function showSettingsPopup() {
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
       name:
-        profile?.connection?.api === "current_st"
+        profile?.isBuiltinCurrentST
           ? translate(
               "Current SillyTavern Settings",
               "STMemoryBooks_Profile_CurrentST",
@@ -4564,7 +4570,7 @@ async function refreshPopupContent() {
       profiles: settings.profiles.map((profile, index) => ({
         ...profile,
         name:
-          profile?.connection?.api === "current_st"
+          profile?.isBuiltinCurrentST
             ? translate(
                 "Current SillyTavern Settings",
                 "STMemoryBooks_Profile_CurrentST",

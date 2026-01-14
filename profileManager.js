@@ -12,6 +12,7 @@ import * as SummaryPromptManager from './summaryPromptManager.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
+const BUILTIN_CURRENT_ST_NAME = 'Current SillyTavern Settings';
 
 /**
  * Profile edit template
@@ -21,7 +22,7 @@ const profileEditTemplate = Handlebars.compile(`
     <div class="world_entry_form_control marginTop5">
         <label for="stmb-profile-name">
             <h4 data-i18n="STMemoryBooks_ProfileName">Profile Name:</h4>
-            <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ProfileNamePlaceholder" placeholder="Profile name">
+            <input type="text" id="stmb-profile-name" value="{{name}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ProfileNamePlaceholder" placeholder="Profile name" {{#if isNameLocked}}disabled title="Name locked for this profile"{{/if}}>
         </label>
     </div>
 
@@ -213,15 +214,19 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
         const connection = profile.connection || { temperature: 0.7 };
         const profileTitleFormat = profile.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
+        const isBuiltinCurrentST = !!profile.isBuiltinCurrentST;
         const templateData = {
-            name: profile.name,
+            name: isBuiltinCurrentST
+                ? translate(BUILTIN_CURRENT_ST_NAME, 'STMemoryBooks_Profile_CurrentST')
+                : profile.name,
             connection: connection,
             api: 'openai',
             prompt: profile.prompt || '',
             preset: profile.preset || '',
             currentApi: apiInfo.api || 'Unknown',
             presetOptions: presetOptions,
-            isProviderLocked: profile.name === 'Current SillyTavern Settings',
+            isNameLocked: isBuiltinCurrentST,
+            isProviderLocked: isBuiltinCurrentST,
             // Pass title format data to the template
             titleFormat: profileTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
@@ -255,6 +260,14 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
 
         if (result === POPUP_RESULT.AFFIRMATIVE) {
             const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name);
+
+            // Enforce builtin profile invariants even if UI is bypassed.
+            if (profile?.isBuiltinCurrentST) {
+                updatedProfile.isBuiltinCurrentST = true;
+                updatedProfile.name = BUILTIN_CURRENT_ST_NAME;
+                updatedProfile.connection = updatedProfile.connection || {};
+                updatedProfile.connection.api = 'current_st';
+            }
 
             if (!validateProfile(updatedProfile)) {
                 toastr.error(translate('Invalid profile data', 'STMemoryBooks_InvalidProfileData'), 'STMemoryBooks');
@@ -303,7 +316,8 @@ export async function newProfile(settings, refreshCallback) {
             preset: '',
             currentApi: apiInfo.api || 'Unknown',
             presetOptions: presetOptions,
-            isProviderLocked: defaultName === 'Current SillyTavern Settings',
+            isNameLocked: false,
+            isProviderLocked: false,
             // Pass title format data to the template
             titleFormat: currentTitleFormat,
             titleFormats: allTitleFormats.map(format => ({
@@ -373,7 +387,7 @@ export async function deleteProfile(settings, profileIndex, refreshCallback) {
     const profile = settings.profiles[profileIndex];
 
     // Prevent deletion of the required default profile
-    if (profile?.name === 'Current SillyTavern Settings') {
+    if (profile?.isBuiltinCurrentST) {
         toastr.error(translate('Cannot delete the "Current SillyTavern Settings" profile - it is required for the extension to work', 'STMemoryBooks_CannotDeleteDefaultProfile'), 'STMemoryBooks');
         return;
     }
@@ -807,9 +821,10 @@ export function validateAndFixProfiles(settings) {
     if (settings.profiles.length === 0) {
         // Create default profile using provider-based "Current SillyTavern Settings"
         const dynamicProfile = createProfileObject({
-            name: 'Current SillyTavern Settings',
+            name: BUILTIN_CURRENT_ST_NAME,
             api: 'current_st',
-            preset: 'summary'
+            preset: 'summary',
+            isBuiltinCurrentST: true,
         });
 
         settings.profiles.push(dynamicProfile);
@@ -821,11 +836,61 @@ export function validateAndFixProfiles(settings) {
         if (p && p.useDynamicSTSettings) {
             p.connection = p.connection || {};
             p.connection.api = 'current_st';
+            p.isBuiltinCurrentST = true;
             delete p.useDynamicSTSettings;
             fixes.push(`Migrated legacy dynamic profile "${p.name}" to provider-based current_st`);
         }
         return p;
     });
+
+    // Ensure exactly one builtin "Current SillyTavern Settings" profile exists.
+    try {
+        const builtinIndices = [];
+        for (let i = 0; i < settings.profiles.length; i++) {
+            if (settings.profiles[i]?.isBuiltinCurrentST) builtinIndices.push(i);
+        }
+
+        if (builtinIndices.length === 0) {
+            // Prefer the legacy default (name + provider) if it exists, otherwise pick a reasonable current_st candidate.
+            let candidateIndex = settings.profiles.findIndex(
+                (p) => p?.connection?.api === 'current_st' && p?.name === BUILTIN_CURRENT_ST_NAME,
+            );
+            if (candidateIndex < 0) {
+                candidateIndex = settings.profiles.findIndex(
+                    (p) => p?.connection?.api === 'current_st' && (p?.preset === 'summary'),
+                );
+            }
+            if (candidateIndex < 0) {
+                candidateIndex = settings.profiles.findIndex((p) => p?.connection?.api === 'current_st');
+            }
+
+            if (candidateIndex >= 0) {
+                settings.profiles[candidateIndex].isBuiltinCurrentST = true;
+                fixes.push(`Marked existing profile "${settings.profiles[candidateIndex].name}" as builtin Current ST profile`);
+            } else {
+                // No current_st profiles exist; add the required builtin profile.
+                const dynamicProfile = createProfileObject({
+                    name: BUILTIN_CURRENT_ST_NAME,
+                    api: 'current_st',
+                    preset: 'summary',
+                    isBuiltinCurrentST: true,
+                });
+                settings.profiles.unshift(dynamicProfile);
+                if (typeof settings.defaultProfile === 'number') {
+                    settings.defaultProfile += 1;
+                }
+                fixes.push('Added missing builtin Current ST profile.');
+            }
+        } else if (builtinIndices.length > 1) {
+            // Keep the first builtin profile and clear the rest to avoid locking multiple profiles.
+            for (let j = 1; j < builtinIndices.length; j++) {
+                delete settings.profiles[builtinIndices[j]].isBuiltinCurrentST;
+            }
+            fixes.push('Fixed multiple builtin Current ST profiles (kept first, cleared others).');
+        }
+    } catch (e) {
+        console.warn(`${MODULE_NAME}: Failed to enforce builtin Current ST profile invariants`, e);
+    }
 
     settings.profiles.forEach((profile, index) => {
         if (!validateProfile(profile)) {
@@ -838,6 +903,13 @@ export function validateAndFixProfiles(settings) {
                 profile.connection = {};
                 fixes.push(`Fixed missing connection for profile ${index}`);
             }
+        }
+
+        // Enforce builtin profile invariants.
+        if (profile?.isBuiltinCurrentST) {
+            profile.name = BUILTIN_CURRENT_ST_NAME;
+            profile.connection = profile.connection || {};
+            profile.connection.api = 'current_st';
         }
 
         // For each profile, we check if the new settings exist. If not, we add the defaults.
