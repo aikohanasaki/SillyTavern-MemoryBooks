@@ -1,4 +1,10 @@
 {
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts",
+    "install-hooks": "bun bin/install-hooks.js",
+    "postinstall": "bun bin/postinstall.js"
+  },
   "dependencies": {
     "dirty-json": "^0.9.2"
   }
