@@ -1,0 +1,39 @@
+#!/bin/sh
+# Pre-commit hook that runs the build process and adds build artifacts
+# to the commit. Fails the commit if the build is unsuccessful.
+
+echo "Building..."
+
+# Run the build command
+bun run build
+
+# Capture the exit code
+BUILD_EXIT_CODE=$?
+
+# Check if build was successful
+if [ $BUILD_EXIT_CODE -ne 0 ]; then
+    echo "❌ Build failed! Commit aborted."
+    exit 1
+fi
+
+echo "✅ Build successful!"
+
+# Add the build output files to the commit
+echo "Adding build artifacts to commit..."
+MISSING_ARTIFACTS=0
+for file in index.build.js style.build.css; do
+    if [ -f "$file" ]; then
+        git add -- "$file"
+    else
+        echo "⚠️  Warning: Expected build artifact '$file' not found"
+        MISSING_ARTIFACTS=1
+    fi
+done
+
+if [ $MISSING_ARTIFACTS -ne 0 ]; then
+    echo "❌ Some build artifacts are missing! Commit aborted."
+    exit 1
+fi
+
+echo "✅ Pre-commit hook completed successfully"
+exit 0
