@@ -3488,7 +3488,7 @@ async function showArcConsolidationPopup() {
 
     // Disable originals toggle
     content += '<div class="world_entry_form_control" class="flex-container"><div class="flex flexFlowRow alignItemsBaseline">';
-    content += `<label class="checkbox_label"><input id="stmb-arc-disable-originals" type="checkbox"/> ${escapeHtml(translate("Disable originals after creating arcs", "STMemoryBooks_ConsolidateArcs_DisableOriginals"))}</label>`;
+    content += `<label class="checkbox_label"><input id="stmb-arc-disable-originals" type="checkbox"/> ${escapeHtml(translate("Disable original memories after creating arcs", "STMemoryBooks_ConsolidateArcs_DisableOriginals"))}</label>`;
     content += "</div></div>";
 
     // Entries checklist
