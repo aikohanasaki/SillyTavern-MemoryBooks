@@ -2,10 +2,18 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.5 (January 13, 2026)
+- **Tweak:** Correct alignment for arc memory hide-originals checkbox.
+
 ## v4.16.4 (January 13, 2026)
 - Fixed "Current SillyTavern Settings" profile naming bug.
+
 ## v4.16.3 (January 13, 2026)
 - FINALLY fixed /unhide not working (always check the sequence of events, Aiko...)
+
+## v4.16.2 (January 12, 2026)
+- Fix arc undefined URL in Full Manual configuration
+
 ## v4.16.1 (January 11, 2026)
 - Fix warning message for arc built in recreation
 - fix template name recreate
