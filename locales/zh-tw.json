@@ -240,6 +240,7 @@
   "STMemoryBooks_APIProvider": "API/提供者:",
   "STMemoryBooks_CustomAPI": "自訂 API",
   "STMemoryBooks_FullManualConfig": "完全手動設定",
+  "STMemoryBooks_APIProfileConfigHint": "💡 設定檔設定提示：STMB 會自動從您​​的 ST 設定讀取 API 資訊和金鑰。首先，請使用「測試訊息」在 ST 中配置並測試您的連線。然後從上面的下拉式選單中選擇它，即可使用這些設定產生記憶。只有當您需要兩個不同的 OpenAI 相容自訂設定時才使用「完全手動設定」；否則，只需在 ST 中建立兩個連線設定檔——一個用於角色扮演，一個用於記憶簿。",
   "STMemoryBooks_TemperatureRange": "溫度 (0.0 - 2.0):",
   "STMemoryBooks_TemperaturePlaceholder": "不要留空！如果不確定，請填寫 0.8。",
   "STMemoryBooks_APIEndpointURL": "API 端點 URL:",

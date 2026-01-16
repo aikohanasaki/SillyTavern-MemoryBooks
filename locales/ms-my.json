@@ -245,6 +245,7 @@
   "STMemoryBooks_APIProvider": "API/Penyedia:",
   "STMemoryBooks_CustomAPI": "API Tersuai",
   "STMemoryBooks_FullManualConfig": "Konfigurasi Manual Penuh",
+  "STMemoryBooks_APIProfileConfigHint": "💡 Petunjuk Persediaan Profil: STMB membaca maklumat dan kunci API secara automatik daripada konfigurasi ST anda. Mula-mula, konfigurasikan dan uji sambungan anda dalam ST menggunakan Mesej Ujian. Kemudian pilihnya daripada menu lungsur di atas untuk menggunakan tetapan tersebut bagi penjanaan memori. Hanya gunakan Konfigurasi Manual Penuh jika anda memerlukan dua persediaan Serasi OpenAI Tersuai yang berbeza; jika tidak, cuma cipta dua profil sambungan dalam ST—satu untuk lakon peranan dan satu untuk Buku Memori.",
   "STMemoryBooks_TemperatureRange": "Suhu (0.0 - 2.0):",
   "STMemoryBooks_TemperaturePlaceholder": "JANGAN BIARKAN KOSONG! Jika tidak pasti letakkan 0.8.",
   "STMemoryBooks_APIEndpointURL": "URL Titik Akhir API:",

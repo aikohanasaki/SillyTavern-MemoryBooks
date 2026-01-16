@@ -244,6 +244,7 @@
     "STMemoryBooks_APIProvider": "API/Provider:",
     "STMemoryBooks_CustomAPI": "Benutzerdefinierte API",
     "STMemoryBooks_FullManualConfig": "Vollständige manuelle Konfiguration",
+    "STMemoryBooks_APIProfileConfigHint": "💡 Hinweis zur Profilkonfiguration: STMB liest API-Informationen und Schlüssel automatisch aus Ihrer ST-Konfiguration. Konfigurieren und testen Sie Ihre Verbindung zunächst in ST mithilfe der Testnachrichtenfunktion. Wählen Sie die Verbindung anschließend im obigen Dropdown-Menü aus, um diese Einstellungen für die Speichergenerierung zu verwenden. Verwenden Sie die vollständige manuelle Konfiguration nur, wenn Sie zwei verschiedene, benutzerdefinierte OpenAI-kompatible Konfigurationen benötigen; erstellen Sie andernfalls einfach zwei Verbindungsprofile in ST – eines für Rollenspiele und eines für Speicherbücher.",
     "STMemoryBooks_TemperatureRange": "Temperatur (0.0 - 2.0):",
     "STMemoryBooks_TemperaturePlaceholder": "NICHT LEER LASSEN! Im Zweifel 0.8.",
     "STMemoryBooks_APIEndpointURL": "API-Endpunkt URL:",

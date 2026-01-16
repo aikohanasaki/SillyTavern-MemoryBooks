@@ -244,6 +244,7 @@
   "STMemoryBooks_APIProvider": "API/プロバイダー:",
   "STMemoryBooks_CustomAPI": "カスタムAPI",
   "STMemoryBooks_FullManualConfig": "完全手動設定",
+  "STMemoryBooks_APIProfileConfigHint": "💡 プロファイル設定のヒント：STMBはSTの設定ファイルからAPI情報とキーを自動的に読み取ります。まず、STで接続設定を行い、「テストメッセージ」機能を使って接続を確認してください。その後、上記のドロップダウンメニューからその設定を選択すると、メモリ生成にその設定が使用されます。2つの異なるカスタムOpenAI互換設定が必要な場合にのみ、「完全手動設定」を使用してください。それ以外の場合は、STで2つの接続プロファイルを作成するだけで十分です。1つはロールプレイ用、もう1つはメモリーブック用です。",
   "STMemoryBooks_TemperatureRange": "温度 (0.0 - 2.0):",
   "STMemoryBooks_TemperaturePlaceholder": "空白にしないでください！不明な場合は0.8を入力してください。",
   "STMemoryBooks_APIEndpointURL": "APIエンドポイントURL:",
