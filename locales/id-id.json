@@ -243,6 +243,7 @@
     "STMemoryBooks_APIProvider": "API/Penyedia:",
     "STMemoryBooks_CustomAPI": "API Kustom",
     "STMemoryBooks_FullManualConfig": "Konfigurasi Manual Penuh",
+    "STMemoryBooks_APIProfileConfigHint": "💡 Petunjuk Pengaturan Profil: STMB secara otomatis membaca informasi dan kunci API dari konfigurasi ST Anda. Pertama, konfigurasikan dan uji koneksi Anda di ST menggunakan Pesan Uji. Kemudian pilih dari menu drop-down di atas untuk menggunakan pengaturan tersebut untuk pembuatan memori. Hanya gunakan Konfigurasi Manual Lengkap jika Anda membutuhkan dua pengaturan yang berbeda yang kompatibel dengan OpenAI; jika tidak, cukup buat dua profil koneksi di ST—satu untuk roleplay dan satu untuk Buku Memori.",
     "STMemoryBooks_TemperatureRange": "Suhu (0.0 - 2.0):",
     "STMemoryBooks_TemperaturePlaceholder": "JANGAN BIARKAN KOSONG! Jika tidak yakin, isi 0.8.",
     "STMemoryBooks_APIEndpointURL": "URL Titik Akhir API:",

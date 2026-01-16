@@ -66,9 +66,10 @@ const profileEditTemplate = Handlebars.compile(`
             </select>
         </label>
 
-        <div class="info-block warning marginBot10 {{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}" data-i18n="STMemoryBooks_FullManualConfig">
-            ⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option.
+        <div class="info-block hint marginBot10">
+            <small data-i18n="STMemoryBooks_APIProfileConfigHint">💡 Profile Setup Hint: STMB automatically reads API info and keys from your ST config. First, configure and test your connection in ST using Test Message. Then select it from the dropdown above to use those settings for memory generation. Only use Full Manual Configuration if you need two different Custom OpenAI-Compatible setups; otherwise, just create two connection profiles in ST—one for roleplay and one for Memory Books.</small>
         </div>
+
         <label for="stmb-profile-model">
             <h4 data-i18n="STMemoryBooks_Model">Model:</h4>
             <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ModelPlaceholder" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
@@ -89,6 +90,10 @@ const profileEditTemplate = Handlebars.compile(`
                 <h4 data-i18n="STMemoryBooks_APIKey">API Key:</h4>
                 <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIKeyPlaceholder" placeholder="Enter your API key">
             </label>
+
+            <div class="info-block hint warning marginBot10" data-i18n="STMemoryBooks_FullManualConfig">
+                ⚠️ EXCEPTIONAL setup - Full Manual Configuration should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option.
+            </div>
         </div>
     </div>
 
