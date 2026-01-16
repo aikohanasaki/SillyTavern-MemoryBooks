@@ -66,10 +66,9 @@ const profileEditTemplate = Handlebars.compile(`
             </select>
         </label>
 
-        <div class="info-block warning marginBot10" data-i18n="STMemoryBooks_FullManualConfig" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
+        <div class="info-block warning marginBot10 {{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}" data-i18n="STMemoryBooks_FullManualConfig">
             ⚠️ EXCEPTIONAL setup - This should ONLY be used when you need a separate API connection to a different endpoint. Most users should NOT need this option.
         </div>
-
         <label for="stmb-profile-model">
             <h4 data-i18n="STMemoryBooks_Model">Model:</h4>
             <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ModelPlaceholder" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
