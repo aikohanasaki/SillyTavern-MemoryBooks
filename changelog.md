@@ -3,7 +3,10 @@
 **← [Back to README](readme.md)**
 
 ## v4.16.5 (January 13, 2026)
-- **Tweak:** Correct alignment for arc memory hide-originals checkbox.
+- **Tweaks:** 
+  - Correct alignment for arc memory hide-originals checkbox.
+  - Rearrange connection profile settings dropdown.
+  - Make Full Manual settings warning more prominent.
 
 ## v4.16.4 (January 13, 2026)
 - Fixed "Current SillyTavern Settings" profile naming bug.
