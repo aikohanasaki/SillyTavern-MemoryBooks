@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.6 (January 16, 2026)
+- Fixed `max_tokens` not passing to Anthropic during sideprompts.
+
 ## v4.16.5 (January 13, 2026)
 - **Tweaks:** 
   - Correct alignment for arc memory hide-originals checkbox.
