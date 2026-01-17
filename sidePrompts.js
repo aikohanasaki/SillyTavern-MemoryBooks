@@ -10,6 +10,7 @@ import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
+import { oai_settings } from '../../../openai.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -142,6 +143,13 @@ async function runLLM(prompt, overrides = null) {
         console.debug(`${MODULE_NAME}: runLLM using UI settings api=${api} model=${model} temp=${temperature}`);
     }
 
+    const extra = (overrides && typeof overrides.extra === 'object' && overrides.extra)
+        ? { ...overrides.extra }
+        : {};
+    if (oai_settings?.openai_max_tokens && extra.max_tokens == null && extra.max_completion_tokens == null) {
+        extra.max_tokens = oai_settings.openai_max_tokens;
+    }
+
     const { text } = await requestCompletion({
         api,
         model,
@@ -149,7 +157,7 @@ async function runLLM(prompt, overrides = null) {
         temperature,
         endpoint,
         apiKey,
-        extra: {},
+        extra,
     });
     
     // Apply regex transformations to the raw response (honor global Use Regex toggle)
@@ -164,15 +172,18 @@ async function runLLM(prompt, overrides = null) {
  *   - If default is dynamic "Current SillyTavern Settings", mirror current UI settings.
  *   - Else use the stored connection of that profile.
  * Fallback to UI settings only if settings are missing/invalid.
+ * @returns {{api: string, model: string, temperature: number, endpoint?: string|null, apiKey?: string|null, extra?: Record<string,any>|undefined}} The resolved connection object.
  */
 function resolveSidePromptConnection(profile = null, options = {}) {
     try {
         // Highest priority: explicit profile object (e.g., memory generation profile)
         if (profile && (profile.effectiveConnection || profile.connection)) {
+            const rawConn = profile.effectiveConnection || profile.connection || {};
             const conn = resolveEffectiveConnectionFromProfile(profile);
             const { api, model, temperature, endpoint, apiKey } = conn;
+            const extra = rawConn && typeof rawConn.extra === 'object' && rawConn.extra ? rawConn.extra : undefined;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey };
+            return { api, model, temperature, endpoint, apiKey, extra };
         }
 
         const settings = extension_settings?.STMemoryBooks;
@@ -199,8 +210,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
                 const endpoint = conn.endpoint || null;
                 const apiKey = conn.apiKey || null;
+                const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature, endpoint, apiKey };
+                return { api, model, temperature, endpoint, apiKey, extra };
             }
         }
 
@@ -235,8 +247,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
             const endpoint = conn.endpoint || null;
             const apiKey = conn.apiKey || null;
+            const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey };
+            return { api, model, temperature, endpoint, apiKey, extra };
         }
     } catch (err) {
         // Ultimate fallback: UI
