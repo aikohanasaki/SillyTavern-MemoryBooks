@@ -802,6 +802,23 @@ export async function runArcAnalysisSequential(
 }
 
 function resolveConnection(profileOrConnection) {
+  // If no profile/connection provided, fall back to extension settings default profile.
+  // (Arc analysis is typically invoked without an explicit profile from the UI flow.)
+  if (!profileOrConnection) {
+    try {
+      const settings = extension_settings?.STMemoryBooks;
+      const profiles = settings?.profiles;
+      if (Array.isArray(profiles) && profiles.length > 0) {
+        const rawIndex = settings?.defaultProfile;
+        const idx =
+          Number.isInteger(rawIndex) && rawIndex >= 0 && rawIndex < profiles.length
+            ? rawIndex
+            : 0;
+        profileOrConnection = profiles[idx] || null;
+      }
+    } catch {}
+  }
+
   // If a direct connection-like object provided
   if (
     profileOrConnection &&
@@ -817,15 +834,22 @@ function resolveConnection(profileOrConnection) {
   ) {
     const c =
       profileOrConnection.effectiveConnection || profileOrConnection.connection;
+    const apiIsCurrentST = String(c?.api || "").toLowerCase() === "current_st";
+    const apiInfo = apiIsCurrentST ? getCurrentApiInfo() : null;
+    const ui = apiIsCurrentST ? getUIModelSettings() : null;
     return {
       api: normalizeCompletionSource(
-        c.api || getCurrentApiInfo().completionSource || "openai",
+        apiIsCurrentST
+          ? apiInfo?.completionSource || "openai"
+          : c.api || getCurrentApiInfo().completionSource || "openai",
       ),
-      model: c.model || getUIModelSettings().model || "",
+      model: apiIsCurrentST ? ui?.model || "" : c.model || getUIModelSettings().model || "",
       temperature:
-        typeof c.temperature === "number"
-          ? c.temperature
-          : getUIModelSettings().temperature ?? 0.2,
+        apiIsCurrentST
+          ? (ui?.temperature ?? 0.2)
+          : typeof c.temperature === "number"
+            ? c.temperature
+            : getUIModelSettings().temperature ?? 0.2,
       endpoint: c.endpoint,
       apiKey: c.apiKey,
     };

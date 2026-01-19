@@ -992,11 +992,10 @@ function validateSettings(settings) {
     !settings.moduleSettings.tokenWarningThreshold ||
     settings.moduleSettings.tokenWarningThreshold < 1000
   ) {
-    settings.moduleSettings.tokenWarningThreshold = 30000;
+    settings.moduleSettings.tokenWarningThreshold = 50000;
   }
 
   settings.moduleSettings.defaultMemoryCount = clampInt(settings.moduleSettings.defaultMemoryCount ?? 0, 0, 7);
-
   if (
     settings.moduleSettings.unhiddenEntriesCount === undefined ||
     settings.moduleSettings.unhiddenEntriesCount === null
