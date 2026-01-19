@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.16.7 (January 18, 2026)
+- Fixed arc analysis profile information not being fetched from STMB settings.
+
 ## v4.16.6 (January 16, 2026)
 - Fixed `max_tokens` not passing to Anthropic during sideprompts.
 
