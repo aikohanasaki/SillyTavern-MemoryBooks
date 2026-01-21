@@ -211,9 +211,7 @@ This makes the trigger behavior understandable without technical terms.
 * **Side Prompts Manager**: Create, edit, duplicate, and organize trackers
 * **Enable / Disable**: Turn trackers on or off at any time
 * **Import / Export**: Share templates or back them up
-* **Status View**: See which trackers are active in the current chat
-
-“Status View” is clearer than “Live Preview” for ESL readers.
+* **Status View**: See which trackers are active in the current chat and when they run
 
 ### 💡 **Template Examples**
 
@@ -303,12 +301,12 @@ Don't worry - you don't need to configure everything! Here are the settings that
 ### 🏷️ **Memory Titles**
 - Customize how your memories are named
 - Use `{{title}}` for AI-generated titles, `{{scene}}` for message numbers
-- Example: `"Chapter {{title}} ({{scene}})"` becomes `"Chapter The Great Escape (Scene 45-67)"`
+- Example: `"Chapter [000] {{title}} ({{scene}})"` becomes `"Chapter 001 The Great Escape (Scene 45-67)"`
 
-### 📚 **Memory Collections** (Lorebooks)
-- **Auto mode**: Uses your chat's default memory collection (easiest)
-- **Manual mode**: Pick a specific collection for each chat (for organization)
-- **Auto-create**: Makes new collections automatically (good for new characters)
+### 📚 **Memory Books** (Lorebooks)
+- **Auto mode**: Uses your chat's default memory lorebook (easiest)
+- **Manual mode**: Pick a specific lorebook for each chat (for organization)
+- **Auto-create**: Makes new lorebooks automatically (good for new characters)
 
 ---
 
@@ -316,31 +314,35 @@ Don't worry - you don't need to configure everything! Here are the settings that
 
 ### "I don't see the Memory Books option!"
 - Check that the extension is installed and enabled
-- Look for the magic wand (�) icon next to your chat input
+- Look for the magic wand (🪄) icon next to your chat input
 - Try refreshing the page
 
 ### "The arrow buttons (► ◄) aren't showing up!"
 - Wait 3-5 seconds after loading a chat - they need time to appear
 - If still missing, refresh the page
 - Make sure ST Memory Books is enabled in extensions
+- Ensure you are running the latest version of SillyTavern
 
 ### "Auto Summary isn't working!"
-- Double-check that "Auto-Summary" is enabled in Memory Books settings
-- Has the message interval been reached? Auto-summary waits for enough new messages
-- If you postponed auto-summary, it might be waiting until a certain message count
+- Double-check that "Auto-Summary" is enabled in Memory Books settings.
+- Make sure you have primed the chat by creating one memory manually!
+- Has the message interval been reached? Auto-summary waits for enough new messages.
+- If you postponed auto-summary, it might be waiting until a certain message count.
 - Auto-summary only processes new messages since the *last* memory. If you deleted old memories, it doesn't go back.
 
 ### "I get errors about missing lorebooks!"
 - Go to Memory Books settings
-- Either bind a lorebook to your chat (Automatic Mode) or enable "Auto-create lorebook if none exists"
+- Either bind a lorebook to your chat (Automatic Mode or Manual Mode) or enable "Auto-create lorebook if none exists"
 
 ### "Sometimes it fails for no reason!"
-- Make sure that your Max Response Length (in SillyTavern presets) are set at a large enough number. Aiko recommends at least 2000 tokens (Aiko runs 4000.)
+- Make sure that your Max Response Length (in SillyTavern's Chat Completion Presets) are set at a large enough number. Aiko recommends a minimum of 2000 tokens (Aiko runs 4000.)
+- Again... this is _Chat Completion_. You will need to make the change while ST's connection says "Chat Completion" (you can switch back after you're done).
 - The error messages are more detailed now, but if you are still having problems please contact Aiko on Github or Discord.
 
 ### "My custom prompts aren't working right!"
 - Check the "Summary Prompt Manager" in Memory Books settings
 - Ensure your prompt instructs the AI to respond in **JSON format** (e.g., `{ "title": "...", "content": "..." }`)
+- The JSON format has to have these three objects: `title`, `content`, and `keywords`.
 
 ---
 
