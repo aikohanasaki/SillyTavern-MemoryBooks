@@ -330,9 +330,12 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
             : (isReverse ? `computed order (from memory #${orderNumber})` : 'memory number');
 
         let finalOrder = rawOrder;
-        if (Number.isFinite(rawOrderNum) && (rawOrderNum < ORDER_MIN || rawOrderNum > ORDER_MAX)) {
+        if (!Number.isFinite(rawOrderNum)) {
+            // Fallback for invalid values (NaN, undefined, etc.)
+            finalOrder = isManual ? 100 : orderNumber;
+        } else if (rawOrderNum < ORDER_MIN || rawOrderNum > ORDER_MAX) {
             const clampedNum = Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
-            finalOrder = typeof rawOrder === 'string' ? String(clampedNum) : clampedNum;
+            finalOrder = clampedNum;
 
             if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
                 toastr.info(
