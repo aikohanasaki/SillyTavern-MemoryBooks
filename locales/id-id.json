@@ -674,5 +674,8 @@
     "STMemoryBooks_SetHighest_Cleared": "Pesan terakhir yang diproses telah dihapus (tidak ada memori yang diproses).",
     "STMemoryBooks_SetHighest_OutOfRange": "ID pesan di luar jangkauan. Rentang yang valid: 0-{{max}}",
     "STMemoryBooks_SetHighest_Clamped": "Pesan tertinggi adalah {{max}}, jadi pesan terakhir yang diproses telah diatur ke {{max}}.",
-    "STMemoryBooks_SetHighest_SetTo": "Pesan terakhir yang diproses diatur secara manual ke #{{value}}."
+    "STMemoryBooks_SetHighest_SetTo": "Pesan terakhir yang diproses diatur secara manual ke #{{value}}.",
+    "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
+    "STMemoryBooks_ReverseOrder": "Reverse",
+    "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }

@@ -674,5 +674,8 @@
   "STMemoryBooks_SetHighest_Cleared": "마지막으로 처리된 메시지가 초기화되었습니다(처리된 메모리 없음).",
   "STMemoryBooks_SetHighest_OutOfRange": "메시지 ID가 범위를 벗어났습니다. 유효 범위: 0-{{max}}",
   "STMemoryBooks_SetHighest_Clamped": "가장 높은 메시지 ID는 {{max}}이므로 마지막으로 처리된 메시지는 {{max}}으로 설정되었습니다.",
-  "STMemoryBooks_SetHighest_SetTo": "마지막으로 처리된 메시지가 수동으로 #{{value}}로 설정되었습니다."
+  "STMemoryBooks_SetHighest_SetTo": "마지막으로 처리된 메시지가 수동으로 #{{value}}로 설정되었습니다.",
+  "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
+  "STMemoryBooks_ReverseOrder": "Reverse",
+  "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }

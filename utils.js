@@ -954,6 +954,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {number} [data.position=0] - The lorebook entry position.
  * @param {string} [data.orderMode='auto'] - The ordering mode.
  * @param {number} [data.orderValue=100] - The manual order value.
+ * @param {number} [data.reverseStart=9999] - Reverse ordering start (100-9999).
  * @param {boolean} [data.preventRecursion=true] - The prevent recursion flag.
  * @param {boolean} [data.delayUntilRecursion=true] - The delay until recursion flag.
  * @returns {Object} A structured and validated profile object.
@@ -976,6 +977,13 @@ export function createProfileObject(data = {}) {
         position: data.position !== undefined ? Number(data.position) : 0,
         orderMode: data.orderMode || 'auto',
         orderValue: data.orderValue !== undefined ? Number(data.orderValue) : 100,
+        reverseStart: (() => {
+            const rawInput = data.reverseStart;
+            if (rawInput === '' || rawInput === null || rawInput === undefined) return 9999;
+            const parsed = Number(rawInput);
+            const n = Number.isFinite(parsed) ? Math.trunc(parsed) : 9999;
+            return clampInt(n, 100, 9999);
+        })(),
         preventRecursion: data.preventRecursion !== undefined ? data.preventRecursion : true,
         delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : true,
     };

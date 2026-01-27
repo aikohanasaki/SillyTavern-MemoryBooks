@@ -146,6 +146,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             position: 0,
             orderMode: 'auto',
             orderValue: 100,
+            reverseStart: 9999,
             preventRecursion: false,
             delayUntilRecursion: true
         };
@@ -305,10 +306,47 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     }
 
     // 3. Insertion Order
-    if (lorebookSettings.orderMode === 'manual') {
-        entry.order = lorebookSettings.orderValue;
-    } else { // 'auto'
-        entry.order = orderNumber;
+    {
+        const ORDER_MIN = 0;
+        const ORDER_MAX = 9999;
+
+        const mode = lorebookSettings.orderMode;
+        const isManual = mode === 'manual';
+        const isReverse = mode === 'reverse';
+
+        const reverseStartRaw = lorebookSettings.reverseStart;
+        const reverseStartNum = Number(reverseStartRaw);
+        const reverseStart = Number.isFinite(reverseStartNum)
+            ? Math.min(9999, Math.max(100, Math.trunc(reverseStartNum)))
+            : 9999;
+
+        const rawOrder = isManual
+            ? lorebookSettings.orderValue
+            : (isReverse ? (reverseStart - (Number(orderNumber) - 1)) : orderNumber);
+
+        const rawOrderNum = Number(rawOrder);
+        const sourceLabel = isManual
+            ? 'manual order value'
+            : (isReverse ? `computed order (from memory #${orderNumber})` : 'memory number');
+
+        let finalOrder = rawOrder;
+        if (Number.isFinite(rawOrderNum) && (rawOrderNum < ORDER_MIN || rawOrderNum > ORDER_MAX)) {
+            const clampedNum = Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
+            finalOrder = typeof rawOrder === 'string' ? String(clampedNum) : clampedNum;
+
+            if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
+                toastr.info(
+                    i18n(
+                        'addlore.toast.orderClamped',
+                        'Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.',
+                        { source: sourceLabel, requested: rawOrderNum, clamped: clampedNum }
+                    ),
+                    i18n('addlore.toast.title', 'STMemoryBooks')
+                );
+            }
+        }
+
+        entry.order = finalOrder;
     }
 
     // 4. Recursion Settings

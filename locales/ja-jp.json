@@ -460,7 +460,7 @@
   "STMemoryBooks_ConverterDescription": "このツールは、`stmemorybooks: true`を追加してエントリをフラグ付けします。エントリは、タイトル形式に一致し、`\"vectorized\": false`に設定されておらず、`\"position\"`が`0`に設定されている場合にのみ変換されます。",
   "STMemoryBooks_ConverterSampleTitleLabel": "サンプルタイトル形式（オプション）",
   "STMemoryBooks_ConverterSampleTitlePlaceholder": "例: 01 - 私の最初のメモリ",
-  "STMemoryBooks_ConverterSampleTitleDescription": "ツールは最初の番号を見つけてパターンを作成します。空白の場合、デフォルトで"01 - title"のようなタイトルに一致します。",
+  "STMemoryBooks_ConverterSampleTitleDescription": "ツールは最初の番号を見つけてパターンを作成します。空白の場合、デフォルトで\"01 - title\"のようなタイトルに一致します。",
   "STMemoryBooks_ConverterFileUploadLabel": "クリックまたはドラッグしてロアブックファイルをアップロード",
   "STMemoryBooks_ConverterIncludeVectorizedLabel": "🔵エントリを含める",
   "STMemoryBooks_ConverterIncludeVectorizedDescription": "有効にすると、`vectorized: false`のエントリもメモリとして含まれます。",
@@ -674,5 +674,8 @@
   "STMemoryBooks_SetHighest_Cleared":"最後に処理されたメッセージがクリアされました（メモリは処理されていません）。",
   "STMemoryBooks_SetHighest_OutOfRange":"メッセージIDが範囲外です。有効な範囲：0～{{max}}",
   "STMemoryBooks_SetHighest_Clamped":"最新のメッセージは{{max}}なので、最後に処理されたメッセージは{{max}}に設定されました。",
-  "STMemoryBooks_SetHighest_SetTo":"最後に手動で処理されたメッセージは#{{value}}に設定されました。"
+  "STMemoryBooks_SetHighest_SetTo":"最後に手動で処理されたメッセージは#{{value}}に設定されました。",
+  "addlore.toast.orderClamped":"Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
+  "STMemoryBooks_ReverseOrder":"Reverse",
+  "STMemoryBooks_ReverseStartPlaceholder":"Start (100-9999)"
 }
