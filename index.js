@@ -148,6 +148,90 @@ async function handleHighestMemoryProcessedCommand() {
   return String(getHighestMemoryProcessed());
 }
 
+async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
+  const raw = String(unnamedArgs || "").trim();
+
+  if (!raw) {
+    toastr.error(
+      translate(
+        "Missing argument. Use: /stmb-set-highest <N|none>",
+        "STMemoryBooks_SetHighest_MissingArg",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  const stmbData = getSceneMarkers() || {};
+  const lastIndex = chat.length - 1;
+
+  if (raw.toLowerCase() === "none") {
+    delete stmbData.highestMemoryProcessed;
+    delete stmbData.highestMemoryProcessedManuallySet;
+    saveMetadataForCurrentContext();
+    await refreshPopupContent();
+    toastr.success(
+      translate(
+        "Last processed message cleared (no memories processed).",
+        "STMemoryBooks_SetHighest_Cleared",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  const parsed = parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || Number.isNaN(parsed)) {
+    toastr.error(
+      translate(
+        "Invalid argument. Use: /stmb-set-highest <N|none>",
+        "STMemoryBooks_SetHighest_InvalidArg",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  if (lastIndex < 0) {
+    toastr.error(
+      translate(
+        "There are no messages in this chat yet.",
+        "STMemoryBooks_SetHighest_NoMessages",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  if (parsed < 0) {
+    toastr.error(
+      __st_t_tag`Message IDs out of range. Valid range: 0-${lastIndex}`,
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  const clamped = clampInt(parsed, 0, lastIndex);
+  if (clamped !== parsed) {
+    toastr.info(
+      __st_t_tag`Highest message is ${lastIndex}, so last message processed has been set to ${lastIndex}.`,
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+  }
+
+  stmbData.highestMemoryProcessed = clamped;
+  stmbData.highestMemoryProcessedManuallySet = true;
+  saveMetadataForCurrentContext();
+  await refreshPopupContent();
+
+  toastr.success(
+    __st_t_tag`Last processed message manually set to #${clamped}.`,
+    translate("STMemoryBooks", "index.toast.title"),
+  );
+
+  return "";
+}
+
 /**
  * Check if memory is currently being processed
  * @returns {boolean} True if memory creation is in progress
@@ -1538,6 +1622,7 @@ async function executeMemoryGeneration(
     try {
       const stmbData = getSceneMarkers() || {};
       stmbData.highestMemoryProcessed = sceneData.sceneEnd;
+      delete stmbData.highestMemoryProcessedManuallySet;
       saveMetadataForCurrentContext();
     } catch (e) {
       console.warn(
@@ -3853,6 +3938,9 @@ async function showSettingsPopup() {
     hasScene: !!sceneData,
     sceneData: sceneData,
     highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
+    hasHighestMemoryProcessed: Number.isFinite(sceneMarkers?.highestMemoryProcessed),
+    highestMemoryProcessedManuallySet:
+      !!sceneMarkers?.highestMemoryProcessedManuallySet,
     alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
     showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
@@ -4540,6 +4628,11 @@ async function refreshPopupContent() {
       hasScene: !!sceneData,
       sceneData: sceneData,
       highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
+      hasHighestMemoryProcessed: Number.isFinite(
+        sceneMarkers?.highestMemoryProcessed,
+      ),
+      highestMemoryProcessedManuallySet:
+        !!sceneMarkers?.highestMemoryProcessedManuallySet,
       alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
       showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
       showNotifications: settings.moduleSettings.showNotifications,
@@ -4781,6 +4874,25 @@ function registerSlashCommands() {
     returns: "Highest memory processed message index as a string.",
   });
 
+  const setHighestMemCmd = SlashCommand.fromProps({
+    name: "stmb-set-highest",
+    callback: handleSetHighestMemoryProcessedCommand,
+    helpString: translate(
+      "Manually set the highest processed message index for this chat. Usage: /stmb-set-highest <N|none>",
+      "STMemoryBooks_Slash_SetHighest_Help",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          'Message index (0-based) or "none" to reset',
+          "STMemoryBooks_Slash_SetHighest_ArgDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: true,
+      }),
+    ],
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -4788,6 +4900,7 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(sidePromptOnCmd);
   SlashCommandParser.addCommandObject(sidePromptOffCmd);
   SlashCommandParser.addCommandObject(highestMemCmd);
+  SlashCommandParser.addCommandObject(setHighestMemCmd);
 }
 
 /**
@@ -5105,6 +5218,7 @@ async function applyManualFixedJson(correctedRaw) {
   try {
     const stmbData = getSceneMarkers() || {};
     stmbData.highestMemoryProcessed = context.sceneData.sceneEnd;
+    delete stmbData.highestMemoryProcessedManuallySet;
     saveMetadataForCurrentContext();
   } catch (e) {
     console.warn(
