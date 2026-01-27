@@ -674,5 +674,8 @@
     "STMemoryBooks_SetHighest_Cleared" : "Dernier message traité effacé (aucune mémoire traitée).",
     "STMemoryBooks_SetHighest_OutOfRange" : "ID de message hors de portée. Plage valide : 0-{{max}}",
     "STMemoryBooks_SetHighest_Clamped" : "Le message le plus récent est {{max}}, le dernier message traité a donc été défini sur {{max}}.",
-    "STMemoryBooks_SetHighest_SetTo" : "Dernier message traité défini manuellement sur #{{value}}."
+    "STMemoryBooks_SetHighest_SetTo" : "Dernier message traité défini manuellement sur #{{value}}.",
+    "addlore.toast.orderClamped" : "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
+    "STMemoryBooks_ReverseOrder" : "Reverse",
+    "STMemoryBooks_ReverseStartPlaceholder" : "Start (100-9999)"
 }

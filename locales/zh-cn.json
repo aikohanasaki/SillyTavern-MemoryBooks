@@ -674,5 +674,8 @@
   "STMemoryBooks_SetHighest_Cleared": "已清除最后处理的消息（未处理任何记忆）。",
   "STMemoryBooks_SetHighest_OutOfRange": "消息 ID 超出范围。有效范围：0-{{max}}",
   "STMemoryBooks_SetHighest_Clamped": "最高消息为 {{max}}，因此已将最后处理的消息设置为 {{max}}。",
-  "STMemoryBooks_SetHighest_SetTo": "最后处理的消息已手动设置为 #{{value}}。"
+  "STMemoryBooks_SetHighest_SetTo": "最后处理的消息已手动设置为 #{{value}}。",
+  "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
+  "STMemoryBooks_ReverseOrder": "Reverse",
+  "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }

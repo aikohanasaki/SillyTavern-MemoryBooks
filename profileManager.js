@@ -5,7 +5,9 @@ import {
     validateProfile,
     generateSafeProfileName,
     getCurrentApiInfo,
-    createProfileObject
+    createProfileObject,
+    clampInt,
+    readIntInput
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
 import * as SummaryPromptManager from './summaryPromptManager.js';
@@ -13,6 +15,7 @@ import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 const BUILTIN_CURRENT_ST_NAME = 'Current SillyTavern Settings';
+const DEFAULT_REVERSE_START = 9999;
 
 /**
  * Profile edit template
@@ -179,7 +182,8 @@ const profileEditTemplate = Handlebars.compile(`
         <h4 data-i18n="STMemoryBooks_InsertionOrder">Insertion Order:</h4>
         <div class="buttons_block justifyCenter gap10px">
             <label class="checkbox_label"><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> <span data-i18n="STMemoryBooks_AutoOrder">Auto (uses memory #)</span></label>
-            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ManualOrder">Manual</span> <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#if (eq orderMode 'auto')}}displayNone{{/if}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="reverse" {{#if (eq orderMode 'reverse')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ReverseOrder">Reverse</span> <input type="number" id="stmb-profile-reverse-start" value="{{reverseStart}}" class="text_pole {{#unless (eq orderMode 'reverse')}}displayNone{{/unless}} width100px" min="100" max="9999" step="1" style="margin-left: auto;" data-i18n="[placeholder]STMemoryBooks_ReverseStartPlaceholder" placeholder="Start (100-9999)"></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ManualOrder">Manual</span> <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#unless (eq orderMode 'manual')}}displayNone{{/unless}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
         </div>
     </div>
 
@@ -246,6 +250,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             position: profile.position,
             orderMode: profile.orderMode,
             orderValue: profile.orderValue,
+            reverseStart: Number.isFinite(profile.reverseStart) ? profile.reverseStart : DEFAULT_REVERSE_START,
             preventRecursion: profile.preventRecursion,
             delayUntilRecursion: profile.delayUntilRecursion,
             outletName: profile.outletName || '',
@@ -337,6 +342,7 @@ export async function newProfile(settings, refreshCallback) {
             position: 0,
             orderMode: 'auto',
             orderValue: 100,
+            reverseStart: DEFAULT_REVERSE_START,
             preventRecursion: false,
             delayUntilRecursion: true,
             outletName: ''
@@ -712,16 +718,34 @@ function setupProfileEditEventHandlers(popupInstance, settings) {
         }
     });
 
+    function syncOrderModeInputs(mode) {
+        const orderValueInput = popupElement.querySelector('#stmb-profile-order-value');
+        const reverseStartInput = popupElement.querySelector('#stmb-profile-reverse-start');
+
+        if (orderValueInput) orderValueInput.classList.toggle('displayNone', mode !== 'manual');
+        if (reverseStartInput) reverseStartInput.classList.toggle('displayNone', mode !== 'reverse');
+    }
+
     popupElement.querySelectorAll('input[name="order-mode"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            const orderValueInput = popupElement.querySelector('#stmb-profile-order-value');
-            if (e.target.value === 'manual') {
-                orderValueInput.classList.remove('displayNone');
-            } else {
-                orderValueInput.classList.add('displayNone');
-            }
+            syncOrderModeInputs(e.target.value);
         });
     });
+
+    // Initial sync on open
+    syncOrderModeInputs(popupElement.querySelector('input[name="order-mode"]:checked')?.value);
+
+    // Sanitize reverse start input: integer clamp 100-9999
+    const reverseStartInput = popupElement.querySelector('#stmb-profile-reverse-start');
+    if (reverseStartInput) {
+        reverseStartInput.addEventListener('input', () => {
+            reverseStartInput.value = String(reverseStartInput.value ?? '').replace(/[^\d]/g, '');
+        });
+        reverseStartInput.addEventListener('blur', () => {
+            const n = readIntInput(reverseStartInput, DEFAULT_REVERSE_START);
+            reverseStartInput.value = String(clampInt(Math.trunc(n), 100, 9999));
+        });
+    }
 
     // Toggle outlet name visibility based on position
     const positionSelect = popupElement.querySelector('#stmb-profile-position');
@@ -790,6 +814,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
         position: popupElement.querySelector('#stmb-profile-position')?.value,
         orderMode: popupElement.querySelector('input[name="order-mode"]:checked')?.value,
         orderValue: popupElement.querySelector('#stmb-profile-order-value')?.value,
+        reverseStart: popupElement.querySelector('#stmb-profile-reverse-start')?.value,
         preventRecursion: popupElement.querySelector('#stmb-profile-prevent-recursion')?.checked,
         delayUntilRecursion: popupElement.querySelector('#stmb-profile-delay-recursion')?.checked,
     };
