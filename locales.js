@@ -136,6 +136,9 @@ export const localeData_en = {
     'STMemoryBooks_SetHighest_InvalidArg': 'Invalid argument. Use: /stmb-set-highest <N|none>',
     'STMemoryBooks_SetHighest_NoMessages': 'There are no messages in this chat yet.',
     'STMemoryBooks_SetHighest_Cleared': 'Last processed message cleared (no memories processed).',
+    'STMemoryBooks_SetHighest_OutOfRange': 'Message IDs out of range. Valid range: 0-{{max}}',
+    'STMemoryBooks_SetHighest_Clamped': 'Highest message is {{max}}, so last message processed has been set to {{max}}.',
+    'STMemoryBooks_SetHighest_SetTo': 'Last processed message manually set to #{{value}}.',
 
     // Preferences Section
     'STMemoryBooks_Preferences': 'Preferences:',

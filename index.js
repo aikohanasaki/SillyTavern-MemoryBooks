@@ -205,7 +205,11 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
 
   if (parsed < 0) {
     toastr.error(
-      __st_t_tag`Message IDs out of range. Valid range: 0-${lastIndex}`,
+      translate(
+        "Message IDs out of range. Valid range: 0-{{max}}",
+        "STMemoryBooks_SetHighest_OutOfRange",
+        { max: lastIndex },
+      ),
       translate("STMemoryBooks", "index.toast.title"),
     );
     return "";
@@ -214,7 +218,11 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
   const clamped = clampInt(parsed, 0, lastIndex);
   if (clamped !== parsed) {
     toastr.info(
-      __st_t_tag`Highest message is ${lastIndex}, so last message processed has been set to ${lastIndex}.`,
+      translate(
+        "Highest message is {{max}}, so last message processed has been set to {{max}}.",
+        "STMemoryBooks_SetHighest_Clamped",
+        { max: lastIndex },
+      ),
       translate("STMemoryBooks", "index.toast.title"),
     );
   }
@@ -225,7 +233,11 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
   await refreshPopupContent();
 
   toastr.success(
-    __st_t_tag`Last processed message manually set to #${clamped}.`,
+    translate(
+      "Last processed message manually set to #{{value}}.",
+      "STMemoryBooks_SetHighest_SetTo",
+      { value: clamped },
+    ),
     translate("STMemoryBooks", "index.toast.title"),
   );
 
