@@ -182,8 +182,10 @@ const profileEditTemplate = Handlebars.compile(`
         <h4 data-i18n="STMemoryBooks_InsertionOrder">Insertion Order:</h4>
         <div class="buttons_block justifyCenter gap10px">
             <label class="checkbox_label"><input type="radio" name="order-mode" value="auto" {{#if (eq orderMode 'auto')}}checked{{/if}}> <span data-i18n="STMemoryBooks_AutoOrder">Auto (uses memory #)</span></label>
-            <label class="checkbox_label"><input type="radio" name="order-mode" value="reverse" {{#if (eq orderMode 'reverse')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ReverseOrder">Reverse (only use with Outlets)</span> <input type="number" id="stmb-profile-reverse-start" value="{{reverseStart}}" class="text_pole {{#unless (eq orderMode 'reverse')}}displayNone{{/unless}} width100px" min="100" max="9999" step="1" style="margin-left: auto;" data-i18n="[placeholder]STMemoryBooks_ReverseStartPlaceholder" placeholder="Start (100-9999)"></label>
-            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ManualOrder">Manual</span> <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#unless (eq orderMode 'manual')}}displayNone{{/unless}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="reverse" {{#if (eq orderMode 'reverse')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ReverseOrder">Reverse (only use with Outlets)</span> 
+                <input type="number" id="stmb-profile-reverse-start" value="{{reverseStart}}" class="text_pole {{#unless (eq orderMode 'reverse')}}displayNone{{/unless}} width100px" min="100" max="9999" step="1" style="margin-left: auto;"></label>
+            <label class="checkbox_label"><input type="radio" name="order-mode" value="manual" {{#if (eq orderMode 'manual')}}checked{{/if}}> <span data-i18n="STMemoryBooks_ManualOrder">Manual</span> 
+                <input type="number" id="stmb-profile-order-value" value="{{orderValue}}" class="text_pole {{#unless (eq orderMode 'manual')}}displayNone{{/unless}} width100px" min="1" max="9999" step="1" style="margin-left: auto;"></label>
         </div>
     </div>
 
