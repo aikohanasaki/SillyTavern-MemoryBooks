@@ -676,6 +676,6 @@
   "STMemoryBooks_SetHighest_Clamped":"最新のメッセージは{{max}}なので、最後に処理されたメッセージは{{max}}に設定されました。",
   "STMemoryBooks_SetHighest_SetTo":"最後に手動で処理されたメッセージは#{{value}}に設定されました。",
   "addlore.toast.orderClamped":"Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-  "STMemoryBooks_ReverseOrder":"Reverse",
+  "STMemoryBooks_ReverseOrder":"Reverse (only use with Outlets)",
   "STMemoryBooks_ReverseStartPlaceholder":"Start (100-9999)"
 }
