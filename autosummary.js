@@ -139,7 +139,11 @@ async function checkAutoSummaryTrigger() {
         const rawBuf = settings?.moduleSettings?.autoSummaryBuffer;
         const buffer = clampInt(parseInt(rawBuf) || 0, 0, 50);
         const requiredTotal = requiredInterval + buffer;
-        const highestProcessed = stmbData.highestMemoryProcessed ?? null;
+        const rawHighestProcessed = stmbData.highestMemoryProcessed;
+        const hasHighestProcessed =
+            typeof rawHighestProcessed === 'number' && Number.isFinite(rawHighestProcessed);
+        // Treat "no baseline" as -1 (none processed yet) so the next range starts at 0.
+        const highestProcessed = hasHighestProcessed ? rawHighestProcessed : -1;
 
         // Check if memory creation is in progress
         if (isMemoryProcessing()) {
@@ -149,13 +153,11 @@ async function checkAutoSummaryTrigger() {
 
         // Calculate messages since last memory
         let messagesSinceLastMemory;
-        if (highestProcessed === null) {
-            // No previous memories processed - count from beginning
-            messagesSinceLastMemory = currentMessageCount;
+        // Count messages since the last processed memory. With highestProcessed = -1, this becomes currentMessageCount.
+        messagesSinceLastMemory = currentLastMessage - highestProcessed;
+        if (!hasHighestProcessed) {
             console.log(i18n('autosummary.log.noPrevious', 'STMemoryBooks: No previous memories found - counting from start'));
         } else {
-            // Count messages since the last processed memory
-            messagesSinceLastMemory = currentLastMessage - highestProcessed;
             console.log(i18n('autosummary.log.sinceLast', 'STMemoryBooks: Messages since last memory ({{highestProcessed}}): {{count}}', { highestProcessed, count: messagesSinceLastMemory }));
         }
 
@@ -190,15 +192,9 @@ async function checkAutoSummaryTrigger() {
         let sceneStart, sceneEnd;
         const sceneEndCandidate = currentLastMessage - buffer;
         const safeEnd = Math.max(0, sceneEndCandidate);
-        if (highestProcessed === null) {
-            // First memory - include everything from start
-            sceneStart = 0;
-            sceneEnd = safeEnd;
-        } else {
-            // Start from the message after the last processed memory
-            sceneStart = highestProcessed + 1;
-            sceneEnd = safeEnd;
-        }
+        // Start from the message after the last processed memory (or 0 if none processed yet).
+        sceneStart = highestProcessed + 1;
+        sceneEnd = safeEnd;
         // Defensive: ensure valid range
         if (sceneStart > sceneEnd) {
             return;
