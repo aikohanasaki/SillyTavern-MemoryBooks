@@ -675,7 +675,6 @@
     "STMemoryBooks_SetHighest_OutOfRange": "IDs de mensaje fuera de rango. Rango válido: 0-{{max}}",
     "STMemoryBooks_SetHighest_Clamped": "El mensaje más reciente es {{max}}, por lo que el último mensaje procesado se ha establecido en {{max}}.",
     "STMemoryBooks_SetHighest_SetTo": "Último mensaje procesado establecido manualmente en #{{value}}.",
-    "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-    "STMemoryBooks_ReverseOrder": "Reverse (only use with Outlets)",
-    "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
+    "addlore.toast.orderClamped": "El rango de entrada está limitado a 0-9999. El valor actual de {{source}} es {{requested}}; se ha ajustado a {{clamped}}.",
+    "STMemoryBooks_ReverseOrder": "Orden inverso (solo para usar con puntos de venta)"
 }

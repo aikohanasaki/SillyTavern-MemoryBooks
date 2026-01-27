@@ -453,7 +453,6 @@ export const localeData_en = {
     'STMemoryBooks_AutoOrder': 'Auto (uses memory #)',
     'STMemoryBooks_ReverseOrder': 'Reverse (only use with Outlets)',
     'STMemoryBooks_ManualOrder': 'Manual',
-    'STMemoryBooks_ReverseStartPlaceholder': 'Start (100-9999)',
     'STMemoryBooks_RecursionSettings': 'Recursion Settings:',
     'STMemoryBooks_PreventRecursion': 'Prevent Recursion',
     'STMemoryBooks_DelayUntilRecursion': 'Delay Until Recursion',

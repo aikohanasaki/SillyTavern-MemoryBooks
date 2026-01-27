@@ -675,7 +675,6 @@
   "STMemoryBooks_SetHighest_OutOfRange":"メッセージIDが範囲外です。有効な範囲：0～{{max}}",
   "STMemoryBooks_SetHighest_Clamped":"最新のメッセージは{{max}}なので、最後に処理されたメッセージは{{max}}に設定されました。",
   "STMemoryBooks_SetHighest_SetTo":"最後に手動で処理されたメッセージは#{{value}}に設定されました。",
-  "addlore.toast.orderClamped":"Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-  "STMemoryBooks_ReverseOrder":"Reverse (only use with Outlets)",
-  "STMemoryBooks_ReverseStartPlaceholder":"Start (100-9999)"
+  "addlore.toast.orderClamped":"入力範囲は0～9999に制限されています。現在の{{source}}は{{requested}}ですが、{{clamped}}に制限されました。",
+  "STMemoryBooks_ReverseOrder":"逆順（アウトレットでのみ使用）"
 }
