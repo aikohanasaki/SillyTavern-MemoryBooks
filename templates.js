@@ -26,7 +26,10 @@ export const settingsTemplate = Handlebars.compile(`
 
         {{#if hasHighestMemoryProcessed}}
         <div id="stmb-memory-status" class="info-block">
-            <span>📊 <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: {{#if highestMemoryProcessedManuallySet}}<span data-i18n="STMemoryBooks_LastProcessedManuallySet">last processed message manually set to</span> #{{highestMemoryProcessed}}.{{else}}<span data-i18n="STMemoryBooks_ProcessedUpTo">Processed up to message</span> #{{highestMemoryProcessed}}{{/if}}</span>
+            <span>📊 <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: 
+                {{#if highestMemoryProcessedManuallySet}}<span data-i18n="STMemoryBooks_LastProcessedManuallySet">last processed message manually set to</span> #{{highestMemoryProcessed}}.
+                {{else}}<span data-i18n="STMemoryBooks_ProcessedUpTo">Processed up to message</span> #{{highestMemoryProcessed}}.
+            {{/if}}</span>
         </div>
         {{else}}
         <div id="stmb-memory-status" class="info-block">
