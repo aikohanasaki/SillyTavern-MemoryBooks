@@ -874,6 +874,7 @@ function updateHighestMemoryProcessed(memoryResult) {
 
         // Always update highestMemoryProcessed to the end of the memory we just created
         sceneMarkers.highestMemoryProcessed = endMessage;
+        delete sceneMarkers.highestMemoryProcessedManuallySet;
 
         // Save the metadata (works for both group chats and single-character chats)
         saveMetadataForCurrentContext();

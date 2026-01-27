@@ -124,9 +124,18 @@ export const localeData_en = {
     // Memory Status
     'STMemoryBooks_MemoryStatus': 'Memory Status',
     'STMemoryBooks_ProcessedUpTo': 'Processed up to message',
+    'STMemoryBooks_LastProcessedManuallySet': 'last processed message manually set to',
     'STMemoryBooks_NoMemoriesProcessed': 'No memories have been processed for this chat yet',
     'STMemoryBooks_SinceVersion': '(since updating to version 3.6.2 or higher.)',
     'STMemoryBooks_AutoSummaryNote': 'Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.',
+    
+    // /stmb-set-highest command
+    'STMemoryBooks_Slash_SetHighest_Help': 'Manually set the highest processed message index for this chat. Usage: /stmb-set-highest <N|none>',
+    'STMemoryBooks_Slash_SetHighest_ArgDesc': 'Message index (0-based) or "none" to reset',
+    'STMemoryBooks_SetHighest_MissingArg': 'Missing argument. Use: /stmb-set-highest <N|none>',
+    'STMemoryBooks_SetHighest_InvalidArg': 'Invalid argument. Use: /stmb-set-highest <N|none>',
+    'STMemoryBooks_SetHighest_NoMessages': 'There are no messages in this chat yet.',
+    'STMemoryBooks_SetHighest_Cleared': 'Last processed message cleared (no memories processed).',
 
     // Preferences Section
     'STMemoryBooks_Preferences': 'Preferences:',
@@ -162,6 +171,7 @@ export const localeData_en = {
     // Auto-Summary
     'STMemoryBooks_AutoSummaryEnabled': 'Auto-create memory summaries',
     'STMemoryBooks_AutoSummaryDesc': 'Automatically run /nextmemory after a specified number of messages.',
+    'STMemoryBooks_AutoSummaryWarnTooltip': 'Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest <N|none> to control the baseline.',
     'STMemoryBooks_AutoSummaryInterval': 'Auto-Summary Interval:',
     'STMemoryBooks_AutoSummaryIntervalDesc': 'Number of messages after which to automatically create a memory summary.',
     'STMemoryBooks_AutoSummaryBuffer': 'Auto-Summary Buffer:',

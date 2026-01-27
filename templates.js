@@ -24,9 +24,9 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
         {{/if}}
 
-        {{#if highestMemoryProcessed}}
+        {{#if hasHighestMemoryProcessed}}
         <div id="stmb-memory-status" class="info-block">
-            <span>📊 <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: <span data-i18n="STMemoryBooks_ProcessedUpTo">Processed up to message</span> #{{highestMemoryProcessed}}</span>
+            <span>📊 <span data-i18n="STMemoryBooks_MemoryStatus">Memory Status</span>: {{#if highestMemoryProcessedManuallySet}}<span data-i18n="STMemoryBooks_LastProcessedManuallySet">last processed message manually set to</span> #{{highestMemoryProcessed}}.{{else}}<span data-i18n="STMemoryBooks_ProcessedUpTo">Processed up to message</span> #{{highestMemoryProcessed}}{{/if}}</span>
         </div>
         {{else}}
         <div id="stmb-memory-status" class="info-block">
@@ -138,7 +138,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
             </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc">Automatically run /nextmemory after a specified number of messages.</small>            
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc;[title]STMemoryBooks_AutoSummaryWarnTooltip" title="Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest &lt;N|none&gt; to control the baseline.">Automatically run /nextmemory after a specified number of messages.</small>
         </div>
 
         <div class="world_entry_form_control">
