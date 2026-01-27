@@ -676,6 +676,6 @@
   "STMemoryBooks_SetHighest_Clamped": "最高消息为 {{max}}，因此已将最后处理的消息设置为 {{max}}。",
   "STMemoryBooks_SetHighest_SetTo": "最后处理的消息已手动设置为 #{{value}}。",
   "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-  "STMemoryBooks_ReverseOrder": "Reverse",
+  "STMemoryBooks_ReverseOrder": "Reverse (only use with Outlets)",
   "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }

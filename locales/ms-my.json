@@ -677,6 +677,6 @@
   "STMemoryBooks_SetHighest_Clamped": "Mesej tertinggi ialah {{max}}, jadi mesej terakhir yang diproses telah ditetapkan kepada {{max}}.",
   "STMemoryBooks_SetHighest_SetTo": "Mesej terakhir diproses secara manual ditetapkan kepada #{{value}}.",
   "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-  "STMemoryBooks_ReverseOrder": "Reverse",
+  "STMemoryBooks_ReverseOrder": "Reverse (only use with Outlets)",
   "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }

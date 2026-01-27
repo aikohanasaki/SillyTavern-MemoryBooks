@@ -676,6 +676,6 @@
     "STMemoryBooks_SetHighest_Clamped": "Самое последнее сообщение имеет индекс {{max}}, поэтому последнее обработанное сообщение установлено на {{max}}.",
     "STMemoryBooks_SetHighest_SetTo": "Последнее обработанное сообщение вручную установлено на #{{value}}.",
     "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-    "STMemoryBooks_ReverseOrder": "Reverse",
+    "STMemoryBooks_ReverseOrder": "Reverse (only use with Outlets)",
     "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }    

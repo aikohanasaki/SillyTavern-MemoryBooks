@@ -676,6 +676,6 @@
   "STMemoryBooks_SetHighest_Clamped": "最高訊息 ID 為 {{max}}，因此已將最後處理的訊息 ID 設定為 {{max}}。",
   "STMemoryBooks_SetHighest_SetTo": "已手動將最後處理的訊息 ID 設為 #{{value}}。",
   "addlore.toast.orderClamped": "Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.",
-  "STMemoryBooks_ReverseOrder": "Reverse",
+  "STMemoryBooks_ReverseOrder": "Reverse (only use with Outlets)",
   "STMemoryBooks_ReverseStartPlaceholder": "Start (100-9999)"
 }
