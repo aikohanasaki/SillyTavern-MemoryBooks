@@ -675,6 +675,6 @@
   "STMemoryBooks_SetHighest_OutOfRange": "訊息 ID 超出範圍。有效範圍：0-{{max}}",
   "STMemoryBooks_SetHighest_Clamped": "最高訊息 ID 為 {{max}}，因此已將最後處理的訊息 ID 設定為 {{max}}。",
   "STMemoryBooks_SetHighest_SetTo": "已手動將最後處理的訊息 ID 設為 #{{value}}。",
-  "addlore.toast.orderClamped": "訂單範圍限制為 0–9999。目前 {{source}} 為 {{requested}}；限制為 {{clamped}}。",
+  "addlore.toast.orderClamped": "順序值範圍限制為 0–9999。目前 {{source}} 為 {{requested}}；已限制為 {{clamped}}。",
   "STMemoryBooks_ReverseOrder": "逆序（僅與 Outlets 一起使用）"
 }

@@ -4,6 +4,7 @@
 
 ## v4.17.0 (January 27, 2026)
 - Add ability to manually set highest processed message for chats with `/stmb-set-highest x`.
+- Add reverse sort for Outlets.
 
 ## v4.16.7 (January 18, 2026)
 - Fixed arc analysis profile information not being fetched from STMB settings.

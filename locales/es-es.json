@@ -676,5 +676,5 @@
     "STMemoryBooks_SetHighest_Clamped": "El mensaje más reciente es {{max}}, por lo que el último mensaje procesado se ha establecido en {{max}}.",
     "STMemoryBooks_SetHighest_SetTo": "Último mensaje procesado establecido manualmente en #{{value}}.",
     "addlore.toast.orderClamped": "El rango de entrada está limitado a 0-9999. El valor actual de {{source}} es {{requested}}; se ha ajustado a {{clamped}}.",
-    "STMemoryBooks_ReverseOrder": "Orden inverso (solo para usar con puntos de venta)"
+    "STMemoryBooks_ReverseOrder": "Orden inverso (solo para usar con salidas)"
 }
