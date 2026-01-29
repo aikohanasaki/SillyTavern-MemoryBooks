@@ -75,7 +75,7 @@
     "STMemoryBooks_UnhiddenCount": "Mensajes a dejar visibles:",
     "STMemoryBooks_UnhiddenCountDesc": "Número de mensajes recientes a dejar visibles al ocultar automáticamente (0 = ocultar todo hasta el final de la escena)",
     "STMemoryBooks_TokenWarning": "Umbral de Advertencia de Tokens:",
-    "STMemoryBooks_TokenWarningDesc": "Mostrar diálogo de confirmación cuando los tokens estimados excedan este umbral. Predeterminado: 30,000",
+    "STMemoryBooks_TokenWarningDesc": "Mostrar un cuadro de diálogo de confirmación cuando el número estimado de tokens de entrada supere este umbral. Predeterminado: 30,000",
     "STMemoryBooks_TitleFormat": "Formato del Título de la Memoria:",
     "STMemoryBooks_CustomTitleFormat": "Formato de Título Personalizado...",
     "STMemoryBooks_EnterCustomFormat": "Introducir formato personalizado",

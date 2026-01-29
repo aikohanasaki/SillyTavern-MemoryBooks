@@ -75,7 +75,7 @@
   "STMemoryBooks_UnhiddenCount": "非表示にしないメッセージ数:",
   "STMemoryBooks_UnhiddenCountDesc": "自動非表示時に表示したままにする最近のメッセージ数（0 = シーン終了まですべて非表示）",
   "STMemoryBooks_TokenWarning": "トークン警告しきい値:",
-  "STMemoryBooks_TokenWarningDesc": "推定トークンがこのしきい値を超えた場合に確認ダイアログを表示します。デフォルト: 30,000",
+  "STMemoryBooks_TokenWarningDesc": "推定される入力トークン数がこのしきい値を超えた場合に、確認ダイアログを表示します。デフォルト: 30,000",
   "STMemoryBooks_TitleFormat": "メモリタイトル形式:",
   "STMemoryBooks_CustomTitleFormat": "カスタムタイトル形式...",
   "STMemoryBooks_EnterCustomFormat": "カスタム形式を入力",

@@ -74,7 +74,7 @@
   "STMemoryBooks_UnhiddenCount": "숨기지 않을 메시지 수:",
   "STMemoryBooks_UnhiddenCountDesc": "자동으로 숨길 때 표시할 최근 메시지 수 (0 = 장면 끝까지 모두 숨기기)",
   "STMemoryBooks_TokenWarning": "토큰 경고 임계값:",
-  "STMemoryBooks_TokenWarningDesc": "예상 토큰이 이 임계값을 초과할 때 확인 대화 상자를 표시합니다. 기본값: 30,000",
+  "STMemoryBooks_TokenWarningDesc": "예상 입력 토큰 수가 이 임계값을 초과할 경우 확인 대화 상자를 표시합니다. 기본값: 30,000",
   "STMemoryBooks_TitleFormat": "메모리 제목 형식:",
   "STMemoryBooks_CustomTitleFormat": "사용자 지정 제목 형식...",
   "STMemoryBooks_EnterCustomFormat": "사용자 지정 형식 입력",

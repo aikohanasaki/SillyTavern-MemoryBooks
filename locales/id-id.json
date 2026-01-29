@@ -74,7 +74,7 @@
     "STMemoryBooks_UnhiddenCount": "Pesan untuk dibiarkan tidak tersembunyi:",
     "STMemoryBooks_UnhiddenCountDesc": "Jumlah pesan terbaru untuk dibiarkan terlihat saat menyembunyikan secara otomatis (0 = sembunyikan semua hingga akhir adegan)",
     "STMemoryBooks_TokenWarning": "Ambang Peringatan Token:",
-    "STMemoryBooks_TokenWarningDesc": "Tampilkan dialog konfirmasi saat perkiraan token melebihi jumlah ambang batas. Default: 30.000",
+    "STMemoryBooks_TokenWarningDesc": "Tampilkan dialog konfirmasi saat perkiraan token input melebihi jumlah ambang batas. Default: 30.000",
     "STMemoryBooks_TitleFormat": "Format Judul Memori:",
     "STMemoryBooks_CustomTitleFormat": "Format Judul Kustom...",
     "STMemoryBooks_EnterCustomFormat": "Masukkan format kustom",
