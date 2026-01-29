@@ -292,6 +292,7 @@ const defaultSettings = {
     showNotifications: true,
     unhideBeforeMemory: false,
     refreshEditor: true,
+    maxTokens: 0,
     tokenWarningThreshold: 50000,
     defaultMemoryCount: 0,
     autoClearSceneAfterMemory: false,
@@ -1082,6 +1083,14 @@ function validateSettings(settings) {
 
   if (!settings.moduleSettings) {
     settings.moduleSettings = deepClone(defaultSettings.moduleSettings);
+  }
+
+  // Validate maxTokens (0 = no override; use current ST settings)
+  if (settings.moduleSettings.maxTokens === undefined || settings.moduleSettings.maxTokens === null) {
+    settings.moduleSettings.maxTokens = 0;
+  } else {
+    const mt = Number.parseInt(settings.moduleSettings.maxTokens, 10);
+    settings.moduleSettings.maxTokens = Number.isFinite(mt) && mt > 0 ? mt : 0;
   }
 
   if (
@@ -3960,6 +3969,10 @@ async function showSettingsPopup() {
     refreshEditor: settings.moduleSettings.refreshEditor,
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
     manualModeEnabled: settings.moduleSettings.manualModeEnabled,
+    maxTokens:
+      (settings.moduleSettings.maxTokens ?? 0) > 0
+        ? settings.moduleSettings.maxTokens
+        : "",
 
     // Lorebook status information
     lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",
@@ -4445,6 +4458,13 @@ function setupSettingsEventListeners() {
       saveSettingsDebounced();
       return;
     }
+
+    if (e.target.matches("#stmb-max-tokens")) {
+      const value = readIntInput(e.target, 0);
+      settings.moduleSettings.maxTokens = Number.isFinite(value) && value > 0 ? value : 0;
+      saveSettingsDebounced();
+      return;
+    }
   });
 
   // Handle input events using delegation with debouncing
@@ -4561,6 +4581,13 @@ function handleSettingsPopupClose(popup) {
 
     const autoSummaryBuffer = clampInt(readIntInput(popupElement.querySelector("#stmb-auto-summary-buffer"),settings.moduleSettings.autoSummaryBuffer ?? 0),0,50);
 
+    // Save max tokens override (blank => 0)
+    const maxTokens = readIntInput(
+      popupElement.querySelector("#stmb-max-tokens"),
+      0,
+    );
+    const maxTokensNormalized = Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 0;
+
     // Save auto-create lorebook setting
     const autoCreateLorebook =
       popupElement.querySelector("#stmb-auto-create-lorebook")?.checked ??
@@ -4581,6 +4608,7 @@ function handleSettingsPopupClose(popup) {
       autoSummaryEnabled !== settings.moduleSettings.autoSummaryEnabled ||
       autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval ||
       autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer ||
+      maxTokensNormalized !== (settings.moduleSettings.maxTokens ?? 0) ||
       autoCreateLorebook !== settings.moduleSettings.autoCreateLorebook;
 
     if (hasChanges) {
@@ -4601,6 +4629,7 @@ function handleSettingsPopupClose(popup) {
       settings.moduleSettings.autoSummaryEnabled = autoSummaryEnabled;
       settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
       settings.moduleSettings.autoSummaryBuffer = autoSummaryBuffer;
+      settings.moduleSettings.maxTokens = maxTokensNormalized;
       settings.moduleSettings.autoCreateLorebook = autoCreateLorebook;
       saveSettingsDebounced();
     }
@@ -4652,6 +4681,10 @@ async function refreshPopupContent() {
       refreshEditor: settings.moduleSettings.refreshEditor,
       allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
       manualModeEnabled: settings.moduleSettings.manualModeEnabled,
+      maxTokens:
+        (settings.moduleSettings.maxTokens ?? 0) > 0
+          ? settings.moduleSettings.maxTokens
+          : "",
 
       // Lorebook status information
       lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",

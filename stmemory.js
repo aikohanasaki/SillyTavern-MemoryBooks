@@ -109,11 +109,20 @@ export async function sendRawCompletionRequest({
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
 
-    // Compute desired max tokens from explicit sources only (no minimum enforced)
-    const desiredFromSources = Math.max(
-        Number(extra.max_tokens) || 0,
-        Number(oai_settings.max_response) || 0
-    );
+    // Compute desired max tokens:
+    // - STMB override wins if set (>0)
+    // - otherwise use the largest explicit value from request extra / ST UI max_response
+    //   (no minimum enforced)
+    const stmbOverrideRaw = extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens;
+    const stmbOverride = Number.parseInt(stmbOverrideRaw, 10);
+    const desiredFromSources = (Number.isFinite(stmbOverride) && stmbOverride > 0)
+        ? stmbOverride
+        : Math.max(
+            Number(extra.max_tokens) || 0,
+            Number(extra.max_completion_tokens) || 0,
+            Number(extra.max_output_tokens) || 0,
+            Number(oai_settings.max_response) || 0
+        );
 
     const desiredInt = Math.floor(desiredFromSources) || 0;
 
@@ -134,8 +143,8 @@ export async function sendRawCompletionRequest({
         // Coerce and validate the incoming value to a finite number before flooring to avoid NaN propagation
         const moRaw = Number.parseFloat(extra.max_output_tokens);
         const mo = Number.isFinite(moRaw) ? Math.floor(moRaw) : 0;
-        if (Number.isFinite(extra.max_tokens) && extra.max_tokens > 0) {
-            extra.max_output_tokens = Math.min(mo, extra.max_tokens);
+        if (Number.isFinite(desiredInt) && desiredInt > 0) {
+            extra.max_output_tokens = Math.min(mo, desiredInt);
         } else {
             extra.max_output_tokens = mo;
         }
@@ -704,7 +713,11 @@ async function generateMemoryWithAI(promptString, profile) {
         // Note: ST base uses 'makersuite' as the canonical provider key for this source.
         const apiType = normalizeCompletionSource(conn.api || getCurrentApiInfo().api);
         const extra = {};
-        if (oai_settings.openai_max_tokens) {
+        const stmbMaxTokensRaw = extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens;
+        const stmbMaxTokens = Number.parseInt(stmbMaxTokensRaw, 10);
+        if (Number.isFinite(stmbMaxTokens) && stmbMaxTokens > 0) {
+            extra.max_tokens = stmbMaxTokens;
+        } else if (oai_settings.openai_max_tokens) {
             extra.max_tokens = oai_settings.openai_max_tokens;
         }
 

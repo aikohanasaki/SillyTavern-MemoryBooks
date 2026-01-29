@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.18.0 (January 29, 2026)
+- Add max tokens to main settings popup, serving as an override for chat completion tokens.
+
 ## v4.17.0 (January 27, 2026)
 - Add ability to manually set highest processed message for chats with `/stmb-set-highest x`.
 - Add reverse sort for Outlets.

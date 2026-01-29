@@ -170,6 +170,8 @@ export const localeData_en = {
     'STMemoryBooks_AllowSceneOverlap': 'Allow scene overlap',
     'STMemoryBooks_AllowSceneOverlapDesc': 'Check this box to skip checking for overlapping memories/scenes.',
     'STMemoryBooks_RefreshEditor': 'Refresh lorebook editor after adding memories',
+    'STMemoryBooks_MaxTokens': 'Max Tokens:',
+    'STMemoryBooks_MaxTokensDesc': 'Maximum number of tokens to use for memory summaries.',
 
     // Auto-Summary
     'STMemoryBooks_AutoSummaryEnabled': 'Auto-create memory summaries',
@@ -179,7 +181,6 @@ export const localeData_en = {
     'STMemoryBooks_AutoSummaryIntervalDesc': 'Number of messages after which to automatically create a memory summary.',
     'STMemoryBooks_AutoSummaryBuffer': 'Auto-Summary Buffer:',
     'STMemoryBooks_AutoSummaryBufferDesc': 'Delay auto-summary by X messages (belated generation). Default 2, max 50.',
-    'STMemoryBooks_DefaultInterval': '50',
 
     // Auto-Summary Popup and Messages
     'STMemoryBooks_AutoSummaryReadyTitle': 'Auto-Summary Ready',
@@ -221,12 +222,10 @@ export const localeData_en = {
     // Unhidden Count
     'STMemoryBooks_UnhiddenCount': 'Messages to leave unhidden:',
     'STMemoryBooks_UnhiddenCountDesc': 'Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)',
-    'STMemoryBooks_DefaultUnhidden': '0',
 
     // Token Warning
     'STMemoryBooks_TokenWarning': 'Token Warning Threshold:',
     'STMemoryBooks_TokenWarningDesc': 'Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000',
-    'STMemoryBooks_DefaultTokenWarning': '30000',
 
     // Title Format
     'STMemoryBooks_TitleFormat': 'Memory Title Format:',
