@@ -308,6 +308,10 @@ const defaultSettings = {
     useRegex: false,
     selectedRegexOutgoing: [],
     selectedRegexIncoming: [],
+    // Arc creation ordering (applies to newly created arcs)
+    arcOrderMode: "auto",
+    arcOrderValue: 100,
+    arcReverseStart: 9999,
   },
   titleFormat: "[000] - {{title}}",
   profiles: [], // Will be populated dynamically with current ST settings
@@ -1134,6 +1138,41 @@ function validateSettings(settings) {
   // Validate lorebook name template
   if (!settings.moduleSettings.lorebookNameTemplate) {
     settings.moduleSettings.lorebookNameTemplate = "LTM - {{char}} - {{chat}}";
+  }
+
+  // Validate arc ordering settings (for newly created arcs)
+  if (
+    settings.moduleSettings.arcOrderMode === undefined ||
+    settings.moduleSettings.arcOrderMode === null
+  ) {
+    settings.moduleSettings.arcOrderMode = "auto";
+  }
+  const aom = String(settings.moduleSettings.arcOrderMode || "").toLowerCase();
+  settings.moduleSettings.arcOrderMode =
+    aom === "manual" || aom === "reverse" ? aom : "auto";
+
+  if (
+    settings.moduleSettings.arcOrderValue === undefined ||
+    settings.moduleSettings.arcOrderValue === null
+  ) {
+    settings.moduleSettings.arcOrderValue = 100;
+  } else {
+    const ov = Number(settings.moduleSettings.arcOrderValue);
+    settings.moduleSettings.arcOrderValue = Number.isFinite(ov)
+      ? clampInt(Math.trunc(ov), 0, 9999)
+      : 100;
+  }
+
+  if (
+    settings.moduleSettings.arcReverseStart === undefined ||
+    settings.moduleSettings.arcReverseStart === null
+  ) {
+    settings.moduleSettings.arcReverseStart = 9999;
+  } else {
+    const rs = Number(settings.moduleSettings.arcReverseStart);
+    settings.moduleSettings.arcReverseStart = Number.isFinite(rs)
+      ? clampInt(Math.trunc(rs), 100, 9999)
+      : 9999;
   }
 
   // Ensure mutual exclusion: both cannot be true at the same time
@@ -3566,6 +3605,13 @@ async function showArcConsolidationPopup() {
     // Defaults from settings
     const settings = initializeSettings();
     const tokenThreshold = settings?.moduleSettings?.tokenWarningThreshold ?? 30000;
+    const arcOrderMode = String(settings?.moduleSettings?.arcOrderMode || "auto");
+    const arcOrderValue = Number.isFinite(Number(settings?.moduleSettings?.arcOrderValue))
+      ? Math.trunc(Number(settings.moduleSettings.arcOrderValue))
+      : 100;
+    const arcReverseStart = Number.isFinite(Number(settings?.moduleSettings?.arcReverseStart))
+      ? Math.trunc(Number(settings.moduleSettings.arcReverseStart))
+      : 9999;
 
     // Build popup content
     let content = "";
@@ -3589,6 +3635,27 @@ async function showArcConsolidationPopup() {
     content += `<label>${escapeHtml(translate("Number of automatic arc attempts", "STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`;
     content += `<label>${escapeHtml(translate("Minimum number of memories in each arc", "STMemoryBooks_Arc_MinAssigned"))} <input id="stmb-arc-minassigned" type="number" min="1" max="12" value="2" class="text_pole" style="width:110px"/></label>`;
     content += `<label>${escapeHtml(translate("Token Budget", "STMemoryBooks_Arc_TokenBudget"))} <input id="stmb-arc-token" type="number" min="1000" max="100000" value="${tokenThreshold}" class="text_pole" style="width:120px"/></label>`;
+    content += "</div>";
+
+    // Arc ordering (applies to newly created arcs)
+    content += '<div class="world_entry_form_control">';
+    content += `<div><strong>${escapeHtml(translate("Arc entry order", "STMemoryBooks_Arc_Order_Label"))}</strong></div>`;
+    content += `<small class="opacity70p">${escapeHtml(translate("Controls the lorebook 'order' for newly created arcs only.", "STMemoryBooks_Arc_Order_Help"))}</small>`;
+    content += '<div style="display:flex; flex-direction:column; gap:6px; margin-top:6px">';
+    content += `<label class="checkbox_label"><input type="radio" name="stmb-arc-order-mode" value="auto"${
+      arcOrderMode === "auto" ? " checked" : ""
+    }> <span>${escapeHtml(translate("Auto (uses arc #)", "STMemoryBooks_Arc_AutoOrder"))}</span></label>`;
+    content += `<label class="checkbox_label"><input type="radio" name="stmb-arc-order-mode" value="reverse"${
+      arcOrderMode === "reverse" ? " checked" : ""
+    }> <span>${escapeHtml(translate("Reverse (only use with Outlets)", "STMemoryBooks_ReverseOrder"))}</span> <input type="number" id="stmb-arc-reverse-start" value="${escapeHtml(String(arcReverseStart))}" class="text_pole ${
+      arcOrderMode === "reverse" ? "" : "displayNone"
+    } width100px" min="100" max="9999" step="1" style="margin-left: auto;"></label>`;
+    content += `<label class="checkbox_label"><input type="radio" name="stmb-arc-order-mode" value="manual"${
+      arcOrderMode === "manual" ? " checked" : ""
+    }> <span>${escapeHtml(translate("Manual", "STMemoryBooks_ManualOrder"))}</span> <input type="number" id="stmb-arc-order-value" value="${escapeHtml(String(arcOrderValue))}" class="text_pole ${
+      arcOrderMode === "manual" ? "" : "displayNone"
+    } width100px" min="0" max="9999" step="1" style="margin-left: auto;"></label>`;
+    content += "</div>";
     content += "</div>";
 
     // Disable originals toggle
@@ -3643,6 +3710,23 @@ async function showArcConsolidationPopup() {
           .querySelectorAll(".stmb-arc-item")
           .forEach((cb) => (cb.checked = false));
       });
+
+    // Arc order mode visibility
+    const syncArcOrderVisibility = () => {
+      const mode =
+        dlg.querySelector('input[name="stmb-arc-order-mode"]:checked')?.value ||
+        "auto";
+      dlg
+        .querySelector("#stmb-arc-reverse-start")
+        ?.classList.toggle("displayNone", mode !== "reverse");
+      dlg
+        .querySelector("#stmb-arc-order-value")
+        ?.classList.toggle("displayNone", mode !== "manual");
+    };
+    dlg
+      .querySelectorAll('input[name="stmb-arc-order-mode"]')
+      .forEach((el) => el.addEventListener("change", syncArcOrderVisibility));
+    syncArcOrderVisibility();
 
     // Rebuild Arc prompts from built-ins with backup and refresh preset list
     dlg
@@ -3768,6 +3852,33 @@ async function showArcConsolidationPopup() {
     const disableOriginals = !!dlg.querySelector("#stmb-arc-disable-originals")
       ?.checked;
 
+    // Persist arc order preferences (applies to newly created arcs)
+    const chosenArcOrderMode = String(
+      dlg.querySelector('input[name="stmb-arc-order-mode"]:checked')?.value ||
+        "auto",
+    ).toLowerCase();
+    const chosenArcOrderValue = clampInt(
+      readIntInput(dlg.querySelector("#stmb-arc-order-value"), arcOrderValue),
+      0,
+      9999,
+    );
+    const chosenArcReverseStart = clampInt(
+      readIntInput(dlg.querySelector("#stmb-arc-reverse-start"), arcReverseStart),
+      100,
+      9999,
+    );
+    const normalizedArcOrderMode =
+      chosenArcOrderMode === "manual" || chosenArcOrderMode === "reverse"
+        ? chosenArcOrderMode
+        : "auto";
+    extension_settings.STMemoryBooks.moduleSettings.arcOrderMode =
+      normalizedArcOrderMode;
+    extension_settings.STMemoryBooks.moduleSettings.arcOrderValue =
+      chosenArcOrderValue;
+    extension_settings.STMemoryBooks.moduleSettings.arcReverseStart =
+      chosenArcReverseStart;
+    saveSettingsDebounced();
+
     const entryMap = new Map(candidates.map((e) => [String(e.uid), e]));
     const selectedEntries = selected
       .map((id) => entryMap.get(String(id)))
@@ -3797,6 +3908,9 @@ async function showArcConsolidationPopup() {
         selectedEntries,
         options,
         disableOriginals,
+        arcOrderMode: normalizedArcOrderMode,
+        arcOrderValue: chosenArcOrderValue,
+        arcReverseStart: chosenArcReverseStart,
       };
 
       if (e?.name === "ArcAIResponseError") {
@@ -3847,6 +3961,9 @@ async function showArcConsolidationPopup() {
         selectedEntries,
         options,
         disableOriginals,
+        arcOrderMode: normalizedArcOrderMode,
+        arcOrderValue: chosenArcOrderValue,
+        arcReverseStart: chosenArcReverseStart,
       };
       try {
         toastr.clear(lastArcFailureToast);
@@ -3878,10 +3995,13 @@ async function showArcConsolidationPopup() {
 
     try {
       const res2 = await commitArcs({
-        lorebookName,
-        lorebookData,
-        arcCandidates,
-        disableOriginals,
+         lorebookName,
+         lorebookData,
+         arcCandidates,
+         disableOriginals,
+         orderMode: normalizedArcOrderMode,
+         orderValue: chosenArcOrderValue,
+         reverseStart: chosenArcReverseStart,
       });
       const created = Array.isArray(res2?.results)
         ? res2.results.length
@@ -5429,11 +5549,43 @@ async function applyManualFixedArcJson(correctedRaw) {
       return { title, summary, keywords, memberIds };
     });
 
+    const arcOrderFallback = initializeSettings();
+    const fallbackMode = String(
+      arcOrderFallback?.moduleSettings?.arcOrderMode || "auto",
+    ).toLowerCase();
+    const fallbackOrderMode =
+      fallbackMode === "manual" || fallbackMode === "reverse"
+        ? fallbackMode
+        : "auto";
+    const fallbackOrderValue = clampInt(
+      Number.isFinite(Number(arcOrderFallback?.moduleSettings?.arcOrderValue))
+        ? Math.trunc(Number(arcOrderFallback.moduleSettings.arcOrderValue))
+        : 100,
+      0,
+      9999,
+    );
+    const fallbackReverseStart = clampInt(
+      Number.isFinite(Number(arcOrderFallback?.moduleSettings?.arcReverseStart))
+        ? Math.trunc(Number(arcOrderFallback.moduleSettings.arcReverseStart))
+        : 9999,
+      100,
+      9999,
+    );
+
     const res = await commitArcs({
       lorebookName: context.lorebookName,
       lorebookData: context.lorebookData,
       arcCandidates,
       disableOriginals: !!context.disableOriginals,
+      orderMode: context.arcOrderMode || fallbackOrderMode,
+      orderValue:
+        context.arcOrderValue !== undefined && context.arcOrderValue !== null
+          ? clampInt(Number(context.arcOrderValue), 0, 9999)
+          : fallbackOrderValue,
+      reverseStart:
+        context.arcReverseStart !== undefined && context.arcReverseStart !== null
+          ? clampInt(Number(context.arcReverseStart), 100, 9999)
+          : fallbackReverseStart,
     });
 
     const created = Array.isArray(res?.results)
