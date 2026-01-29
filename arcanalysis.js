@@ -926,11 +926,51 @@ function formatArcTitle(format, baseTitle, seq) {
  * arcCandidates: array of { title, summary, keywords, memberIds }
  * If disableOriginals=true, mark original entries disable=true and set disabledByArcId.
  */
+function computeArcEntryOrder({
+  orderMode,
+  orderValue,
+  reverseStart,
+  orderNumber,
+}) {
+  const ORDER_MIN = 0;
+  const ORDER_MAX = 9999;
+
+  const modeRaw = String(orderMode || "auto").toLowerCase();
+  const mode = modeRaw === "manual" || modeRaw === "reverse" ? modeRaw : "auto";
+
+  const orderNumberNum = Number(orderNumber);
+  const safeOrderNumber = Number.isFinite(orderNumberNum)
+    ? Math.trunc(orderNumberNum)
+    : 1;
+
+  const reverseStartNum = Number(reverseStart);
+  const reverseStartClamped = Number.isFinite(reverseStartNum)
+    ? Math.min(9999, Math.max(100, Math.trunc(reverseStartNum)))
+    : 9999;
+
+  const rawOrder =
+    mode === "manual"
+      ? orderValue
+      : mode === "reverse"
+        ? reverseStartClamped - (safeOrderNumber - 1)
+        : safeOrderNumber;
+
+  const rawOrderNum = Number(rawOrder);
+  if (!Number.isFinite(rawOrderNum)) {
+    return mode === "manual" ? 100 : safeOrderNumber;
+  }
+
+  return Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
+}
+
 export async function commitArcs({
   lorebookName,
   lorebookData,
   arcCandidates,
   disableOriginals = false,
+  orderMode = "auto",
+  orderValue = 100,
+  reverseStart = 9999,
 }) {
   if (!lorebookName || !lorebookData) {
     throw new Error(translate("Missing lorebookName or lorebookData", "STMemoryBooks_ArcAnalysis_MissingLorebookData"));
@@ -952,7 +992,8 @@ export async function commitArcs({
     );
   } catch {}
   for (const arc of arcCandidates) {
-    const title = formatArcTitle(arcTitleFormat, arc.title, nextArcNumber++);
+    const arcNumber = nextArcNumber++;
+    const title = formatArcTitle(arcTitleFormat, arc.title, arcNumber);
     const content = arc.summary;
 
     // Auto-generate keywords if missing using the arc summary
@@ -972,10 +1013,16 @@ export async function commitArcs({
       }
     }
 
+    const order = computeArcEntryOrder({
+      orderMode,
+      orderValue,
+      reverseStart,
+      orderNumber: arcNumber,
+    });
     const defaults = {
       vectorized: true,
       selective: true,
-      order: 100,
+      order,
       position: 0,
     };
     const entryOverrides = {
