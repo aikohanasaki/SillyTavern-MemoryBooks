@@ -75,7 +75,7 @@
     "STMemoryBooks_UnhiddenCount": "Sichtbare Nachrichten beibehalten:",
     "STMemoryBooks_UnhiddenCountDesc": "Anzahl der neuesten Nachrichten, die beim automatischen Verstecken sichtbar bleiben sollen (0 = alle bis Szenenende verstecken).",
     "STMemoryBooks_TokenWarning": "Token-Warnschwelle:",
-    "STMemoryBooks_TokenWarningDesc": "Bestätigungsdialog anzeigen, wenn geschätzte Token diese Schwelle überschreiten. Standard: 30.000",
+    "STMemoryBooks_TokenWarningDesc": "Ein Bestätigungsdialog wird angezeigt, wenn die geschätzte Anzahl der Eingabe-Tokens diesen Schwellenwert überschreitet. Standard: 30.000",
     "STMemoryBooks_TitleFormat": "Format des Erinnerungstitels:",
     "STMemoryBooks_CustomTitleFormat": "Benutzerdefiniertes Titelformat...",
     "STMemoryBooks_EnterCustomFormat": "Benutzerdefiniertes Format eingeben",

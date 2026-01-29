@@ -225,7 +225,7 @@ export const localeData_en = {
 
     // Token Warning
     'STMemoryBooks_TokenWarning': 'Token Warning Threshold:',
-    'STMemoryBooks_TokenWarningDesc': 'Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000',
+    'STMemoryBooks_TokenWarningDesc': 'Show confirmation dialog when estimated input tokens exceed this threshold. Default: 30,000',
 
     // Title Format
     'STMemoryBooks_TitleFormat': 'Memory Title Format:',

@@ -75,7 +75,7 @@
   "STMemoryBooks_UnhiddenCount": "Mesej untuk dibiarkan tidak tersembunyi:",
   "STMemoryBooks_UnhiddenCountDesc": "Bilangan mesej terbaharu untuk dibiarkan kelihatan apabila menyembunyikan secara automatik (0 = sembunyikan semua sehingga akhir babak)",
   "STMemoryBooks_TokenWarning": "Ambang Amaran Token:",
-  "STMemoryBooks_TokenWarningDesc": "Tunjukkan dialog pengesahan apabila anggaran token melebihi ambang ini. Lalai: 30,000",
+  "STMemoryBooks_TokenWarningDesc": "Tunjukkan dialog pengesahan apabila token input anggaran melebihi ambang ini. Lalai: 30,000",
   "STMemoryBooks_TitleFormat": "Format Tajuk Memori:",
   "STMemoryBooks_CustomTitleFormat": "Format Tajuk Tersuai...",
   "STMemoryBooks_EnterCustomFormat": "Masukkan format tersuai",

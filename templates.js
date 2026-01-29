@@ -215,7 +215,7 @@ export const settingsTemplate = Handlebars.compile(`
         <div class="world_entry_form_control">
             <label for="stmb-token-warning-threshold">
                 <h4 data-i18n="STMemoryBooks_TokenWarning">Token Warning Threshold:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_TokenWarningDesc">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
+                <small class="opacity50p" data-i18n="STMemoryBooks_TokenWarningDesc">Show confirmation dialog when estimated input tokens exceed this threshold. Default: 30,000</small>
                 <input type="number" id="stmb-token-warning-threshold" class="text_pole"
                     value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
                     placeholder="30000">
