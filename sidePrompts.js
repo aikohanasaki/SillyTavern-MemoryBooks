@@ -146,8 +146,14 @@ async function runLLM(prompt, overrides = null) {
     const extra = (overrides && typeof overrides.extra === 'object' && overrides.extra)
         ? { ...overrides.extra }
         : {};
-    if (oai_settings?.openai_max_tokens && extra.max_tokens == null && extra.max_completion_tokens == null) {
-        extra.max_tokens = oai_settings.openai_max_tokens;
+    const stmbMaxTokensRaw = extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens;
+    const stmbMaxTokens = Number.parseInt(stmbMaxTokensRaw, 10);
+    if (extra.max_tokens == null && extra.max_completion_tokens == null) {
+        if (Number.isFinite(stmbMaxTokens) && stmbMaxTokens > 0) {
+            extra.max_tokens = stmbMaxTokens;
+        } else if (oai_settings?.openai_max_tokens) {
+            extra.max_tokens = oai_settings.openai_max_tokens;
+        }
     }
 
     const { text } = await requestCompletion({

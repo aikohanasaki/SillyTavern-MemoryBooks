@@ -137,6 +137,16 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
 
         <div class="world_entry_form_control">
+            <label for="stmb-max-tokens">
+                <h4 data-i18n="STMemoryBooks_MaxTokens">Max Tokens:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_MaxTokensDesc">Maximum number of tokens to use for memory summaries.</small>
+                <input type="number" id="stmb-max-tokens" class="text_pole"
+                    value="{{maxTokens}}" min="0" step="1"
+                    placeholder="4000">
+            </label>
+        </div>
+
+        <div class="world_entry_form_control">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
@@ -150,7 +160,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryIntervalDesc">Number of messages after which to automatically create a memory summary.</small>
                 <input type="number" id="stmb-auto-summary-interval" class="text_pole"
                     value="{{autoSummaryInterval}}" min="10" max="200" step="1"
-                    data-i18n="[placeholder]STMemoryBooks_DefaultInterval" placeholder="50">
+                    placeholder="50">
             </label>
         </div>
 
@@ -198,7 +208,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <small class="opacity50p" data-i18n="STMemoryBooks_UnhiddenCountDesc">Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)</small>
                 <input type="number" id="stmb-unhidden-entries-count" class="text_pole"
                     value="{{unhiddenEntriesCount}}" min="0" max="50" step="1"
-                    data-i18n="[placeholder]STMemoryBooks_DefaultUnhidden" placeholder="2">
+                    placeholder="2">
             </label>
         </div>
         
@@ -208,7 +218,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <small class="opacity50p" data-i18n="STMemoryBooks_TokenWarningDesc">Show confirmation dialog when estimated tokens exceed this threshold. Default: 30,000</small>
                 <input type="number" id="stmb-token-warning-threshold" class="text_pole"
                     value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
-                    data-i18n="[placeholder]STMemoryBooks_DefaultTokenWarning" placeholder="30000">
+                    placeholder="30000">
             </label>
         </div>
 
