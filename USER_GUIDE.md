@@ -196,6 +196,8 @@ They run alongside memory creation and can update the same notes over time. Thin
 4. Enable the templates you want (you can customize them later)
 5. Your memories will now include this tracking automatically
 
+[Scribe showing step by step process to enable automatic side prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
+
 ### ⚙️ **How Side Prompts Work**
 
 * **Background Trackers**: They run quietly and update information over time
