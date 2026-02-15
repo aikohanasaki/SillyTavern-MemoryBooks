@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v4.18.1 (February 15, 2026)
+- add max_tokens exception for Claude Opus 4.6
+- fix /creatememory not doing /unhide correctly
+
 ## v4.18.0 (January 29, 2026)
 - Add max tokens to main settings popup, serving as an override for chat completion tokens.
 - Add order settings to arcs.
