@@ -558,8 +558,11 @@ async function handleGroupWrapperFinished() {
  * Slash command handlers
  */
 async function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
-  const sceneData = await getSceneData();
-  if (!sceneData) {
+  // Don't call getSceneData() here because it compiles the scene and will
+  // return null for fully-hidden selections (which prevents /unhideBeforeMemory
+  // from running inside initiateMemoryCreation).
+  const markers = getSceneMarkers() || {};
+  if (markers.sceneStart == null || markers.sceneEnd == null) {
     console.error(
       translate(
         "STMemoryBooks: No scene markers set for createMemory command",
@@ -4177,7 +4180,11 @@ async function showSettingsPopup() {
     result: null,
     classes: ["menu_button"],
     action: async () => {
-      if (!sceneData) {
+      // Don't gate on `sceneData` captured when the popup opened:
+      // if the selected range is fully hidden, getSceneData() returns null and
+      // we'd block the click before initiateMemoryCreation() can run /unhide.
+      const markers = getSceneMarkers() || {};
+      if (markers.sceneStart == null || markers.sceneEnd == null) {
         toastr.error(
           translate(
             "No scene selected. Make sure both start and end points are set.",

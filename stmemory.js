@@ -108,10 +108,11 @@ export async function sendRawCompletionRequest({
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
+    const modelId = (typeof model === 'string' ? model.toLowerCase() : '');
 
     // Compute desired max tokens:
     // - STMB override wins if set (>0)
-    // - otherwise use the largest explicit value from request extra / ST UI max_response
+    // - otherwise use the largest explicit value from request extra / ST UI max_tokens
     //   (no minimum enforced)
     const stmbOverrideRaw = extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens;
     const stmbOverride = Number.parseInt(stmbOverrideRaw, 10);
@@ -121,20 +122,24 @@ export async function sendRawCompletionRequest({
             Number(extra.max_tokens) || 0,
             Number(extra.max_completion_tokens) || 0,
             Number(extra.max_output_tokens) || 0,
-            Number(oai_settings.max_response) || 0
+            Number(extra.max_new_tokens) || 0,
+            Number(oai_settings?.openai_max_tokens) || 0,
+            // Kept for backward compatibility if a fork uses a different name
+            Number(oai_settings?.max_response) || 0
         );
 
     const desiredInt = Math.floor(desiredFromSources) || 0;
 
     // Set tokens based on explicit inputs; handle special-case for gpt-5 (any model id containing gpt-5)
     if (Number.isFinite(desiredInt) && desiredInt > 0) {
-        const modelId = (typeof model === 'string' ? model.toLowerCase() : '');
         if (modelId.includes('gpt-5')) {
             extra.max_completion_tokens = desiredInt;
             // Ensure we don't send max_tokens for this provider
             delete extra.max_tokens;
         } else {
             extra.max_tokens = desiredInt;
+            // Avoid accidentally sending both OpenAI-style token fields.
+            delete extra.max_completion_tokens;
         }
     }
 
