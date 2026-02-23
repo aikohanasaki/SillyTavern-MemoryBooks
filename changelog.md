@@ -2,6 +2,12 @@
 
 **← [Back to README](readme.md)**
 
+## v4.18.2 (February 23, 2026)
+- change minimum memories per arc default to 10
+- change "disable arced memories" to default to "true" (can still uncheck)
+- change maximum arc token budget available to 150000 (defaults did not change)
+- change maximum memories per pass to 100 (defaults did not change)
+
 ## v4.18.1 (February 15, 2026)
 - add max_tokens exception for Claude Opus 4.6
 - fix /creatememory not doing /unhide correctly
