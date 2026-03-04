@@ -3622,25 +3622,31 @@ async function importArcPrompts(event, popup) {
  */
 async function showArcConsolidationPopup() {
   try {
-    // Do not auto-create a lorebook for this path; allow UI to render
-    const lorebookValidation = await validateLorebook(true);
+    // Load ALL effective lorebooks; allow UI to render even if none assigned
+    const allLorebookNames = await getEffectiveLorebookNames();
+    const validLorebookPairs = []; // [{ name, data }]
+    for (const lbName of allLorebookNames) {
+      if (world_names?.includes(lbName)) {
+        try {
+          const lbData = await loadWorldInfo(lbName);
+          if (lbData) validLorebookPairs.push({ name: lbName, data: lbData });
+        } catch {}
+      }
+    }
 
-    // If no lorebook is assigned, show a toast but still render the popup
-    let lorebookName = lorebookValidation?.name || null;
-    let lorebookData = lorebookValidation?.data || { entries: {} };
+    // Primary lorebook (new arc entries are committed here)
+    let lorebookName = validLorebookPairs[0]?.name || null;
+    let lorebookData = validLorebookPairs[0]?.data || { entries: {} };
 
-    if (!lorebookValidation?.valid || !lorebookName) {
+    if (validLorebookPairs.length === 0) {
       toastr.info(
         "No memory lorebook currently assigned, no memories found.",
         "SillyTavern Memory Books",
       );
-      // Keep rendering the popup with empty data so the UI can render
-      lorebookName = null;
-      lorebookData = { entries: {} };
     }
 
-    // Use the possibly-empty lorebookData to build the UI
-    const allEntries = Object.values(lorebookData.entries || {});
+    // Merge entries from ALL lorebooks so all memories appear as candidates
+    const allEntries = validLorebookPairs.flatMap(({ data }) => Object.values(data.entries || {}));
     const parseOrder = (t) => {
       if (typeof t !== "string") return 0;
       const m1 = t.match(/\[(\d+)\]/);
@@ -3723,6 +3729,20 @@ async function showArcConsolidationPopup() {
     content += '<div class="world_entry_form_control" class="flex-container"><div class="flex flexFlowRow alignItemsBaseline">';
     content += `<label class="checkbox_label"><input id="stmb-arc-disable-originals" type="checkbox" checked /> ${escapeHtml(translate("Disable original memories after creating arcs", "STMemoryBooks_ConsolidateArcs_DisableOriginals"))}</label>`;
     content += "</div></div>";
+
+    // Target lorebook selector (only shown when multiple are attached)
+    if (validLorebookPairs.length > 1) {
+      content += '<div class="world_entry_form_control">';
+      content += `<div><strong>${escapeHtml(translate("Write arcs to:", "STMemoryBooks_Arc_WriteArcsTo"))}</strong></div>`;
+      content += `<small class="opacity70p">${escapeHtml(translate("Select which lorebook(s) should receive the new arc entries.", "STMemoryBooks_Arc_WriteArcsToDesc"))}</small>`;
+      content += '<div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">';
+      for (const { name } of validLorebookPairs) {
+        const safe = escapeHtml(name);
+        content += `<label class="checkbox_label"><input type="checkbox" class="stmb-arc-target" value="${safe}" checked /> <span>${safe}</span></label>`;
+      }
+      content += '</div>';
+      content += '</div>';
+    }
 
     // Entries checklist
     content += `<div class="world_entry_form_control"><div class="flex-container flexGap10 marginBot5">`;
@@ -3887,6 +3907,19 @@ async function showArcConsolidationPopup() {
       );
       return;
     }
+
+    // Determine target lorebooks for writing arcs
+    const targetLorebookNames = validLorebookPairs.length > 1
+      ? Array.from(dlg.querySelectorAll('.stmb-arc-target:checked')).map(cb => cb.value)
+      : [lorebookName];
+    if (targetLorebookNames.length === 0) {
+      toastr.error(
+        translate("Select at least one lorebook to write arcs to.", "STMemoryBooks_Arc_SelectTargetLorebook"),
+        "STMemoryBooks",
+      );
+      return;
+    }
+    const targetLorebookPairs = validLorebookPairs.filter(({ name }) => targetLorebookNames.includes(name));
 
     const presetKey = String(
       dlg.querySelector("#stmb-arc-preset")?.value || "arc_default",
@@ -4055,19 +4088,46 @@ async function showArcConsolidationPopup() {
     }
 
     try {
-      const res2 = await commitArcs({
-         lorebookName,
-         lorebookData,
-         arcCandidates,
-         disableOriginals,
-         orderMode: normalizedArcOrderMode,
-         orderValue: chosenArcOrderValue,
-         reverseStart: chosenArcReverseStart,
-      });
-      const created = Array.isArray(res2?.results)
-        ? res2.results.length
-        : arcCandidates.length;
-      let msg = `Created ${created} arc${created === 1 ? "" : "s"}${leftovers?.length ? `, ${leftovers.length} leftover` : ""}.`;
+      // Commit arcs to every selected target lorebook
+      let totalCreated = 0;
+      for (const { name: tName, data: tData } of targetLorebookPairs) {
+        const res2 = await commitArcs({
+          lorebookName: tName,
+          lorebookData: tData,
+          arcCandidates,
+          disableOriginals,
+          orderMode: normalizedArcOrderMode,
+          orderValue: chosenArcOrderValue,
+          reverseStart: chosenArcReverseStart,
+        });
+        totalCreated += Array.isArray(res2?.results) ? res2.results.length : arcCandidates.length;
+      }
+      // Disable originals in lorebooks that were NOT written to (but still have source entries)
+      if (disableOriginals && validLorebookPairs.length > 0) {
+        const allMemberIds = new Set(arcCandidates.flatMap(a => (a.memberIds || []).map(String)));
+        const targetNameSet = new Set(targetLorebookNames);
+        for (const { name: secName, data: secData } of validLorebookPairs) {
+          if (targetNameSet.has(secName)) continue; // already handled by commitArcs
+          let secChanged = false;
+          for (const e of Object.values(secData.entries || {})) {
+            if (allMemberIds.has(String(e.uid)) && !e.disable) {
+              e.disable = true;
+              secChanged = true;
+            }
+          }
+          if (secChanged) {
+            try {
+              await saveWorldInfo(secName, secData);
+            } catch (err) {
+              console.warn(`STMemoryBooks: Failed to save disabled entries in ${secName}:`, err);
+            }
+          }
+        }
+      }
+      const created = Math.round(totalCreated / Math.max(1, targetLorebookPairs.length));
+      const targetCount = targetLorebookPairs.length;
+      let msg = `Created ${created} arc${created === 1 ? "" : "s"}${leftovers?.length ? `, ${leftovers.length} leftover` : ""}`;
+      msg += targetCount > 1 ? ` (written to ${targetCount} lorebooks).` : ".";
       if (created === 1 && (!leftovers || leftovers.length === 0)) {
         msg += " (all selected memories were consumed into a single arc)";
       }
@@ -4134,7 +4194,8 @@ async function showSettingsPopup() {
   // Get current lorebook information
   const isManualMode = settings.moduleSettings.manualModeEnabled;
   const chatBoundLorebook = chat_metadata?.[METADATA_KEY] ?? null;
-  const manualLorebook = sceneMarkers?.manualLorebook ?? null;
+  const _manualLorebookNames_display = resolveManualLorebookNames(sceneMarkers || {});
+  const manualLorebook = _manualLorebookNames_display.length > 0 ? _manualLorebookNames_display.join(', ') : null;
 
   const templateData = {
     hasScene: !!sceneData,
