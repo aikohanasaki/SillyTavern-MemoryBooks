@@ -4102,33 +4102,37 @@ async function showArcConsolidationPopup() {
         });
         totalCreated += Array.isArray(res2?.results) ? res2.results.length : arcCandidates.length;
       }
-      // Disable originals in lorebooks that were NOT written to (but still have source entries)
+      // Disable arc members across all lorebooks.
+      // commitArcs handles the target lorebooks; here we cover non-target lorebooks
+      // (which may contain source entries whose UIDs are in arc memberIds).
       if (disableOriginals && validLorebookPairs.length > 0) {
         const allMemberIds = new Set(arcCandidates.flatMap(a => (a.memberIds || []).map(String)));
         const targetNameSet = new Set(targetLorebookNames);
-        for (const { name: secName, data: secData } of validLorebookPairs) {
-          if (targetNameSet.has(secName)) continue; // already handled by commitArcs
-          let secChanged = false;
-          for (const e of Object.values(secData.entries || {})) {
+        for (const { name: lbName, data: lbData } of validLorebookPairs) {
+          if (targetNameSet.has(lbName)) continue; // already handled by commitArcs
+          let changed = false;
+          for (const e of Object.values(lbData.entries || {})) {
             if (allMemberIds.has(String(e.uid)) && !e.disable) {
               e.disable = true;
-              secChanged = true;
+              changed = true;
             }
           }
-          if (secChanged) {
+          if (changed) {
             try {
-              await saveWorldInfo(secName, secData);
+              await saveWorldInfo(lbName, lbData);
             } catch (err) {
-              console.warn(`STMemoryBooks: Failed to save disabled entries in ${secName}:`, err);
+              console.warn(`STMemoryBooks: Failed to save disabled entries in ${lbName}:`, err);
             }
           }
         }
       }
       const created = Math.round(totalCreated / Math.max(1, targetLorebookPairs.length));
       const targetCount = targetLorebookPairs.length;
-      let msg = `Created ${created} arc${created === 1 ? "" : "s"}${leftovers?.length ? `, ${leftovers.length} leftover` : ""}`;
+      const leftoverCount = leftovers?.length ?? 0;
+      let msg = `Created ${created} arc${created === 1 ? "" : "s"}`;
+      if (leftoverCount > 0) msg += `, ${leftoverCount} leftover${leftoverCount === 1 ? "" : "s"} (not assigned to any arc)`;
       msg += targetCount > 1 ? ` (written to ${targetCount} lorebooks).` : ".";
-      if (created === 1 && (!leftovers || leftovers.length === 0)) {
+      if (created === 1 && leftoverCount === 0) {
         msg += " (all selected memories were consumed into a single arc)";
       }
       toastr.success(__st_t_tag`${msg}`, "STMemoryBooks");
