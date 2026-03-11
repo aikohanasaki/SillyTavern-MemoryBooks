@@ -5,20 +5,11 @@ import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTempl
 import { translate } from '../../../i18n.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
+import { tr } from './i18nHelpers.js';
 import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
 import { playMessageSound } from '../../../power-user.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
-
-// Helper: keyed translation with Mustache-style interpolation using ST translate()
-function tr(key, fallback, params) {
-  const localized = translate(fallback, key);
-  if (!params) return localized;
-  return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
-    const v = params[p1];
-    return v !== undefined && v !== null ? String(v) : '';
-  });
-}
 
 // Define semantic mappings for custom popup results using SillyTavern's provided constants
 const STMB_POPUP_RESULTS = {
@@ -27,6 +18,25 @@ const STMB_POPUP_RESULTS = {
   EDIT: POPUP_RESULT.CUSTOM3,
   RETRY: POPUP_RESULT.CUSTOM4
 };
+
+const activeMemoryPreviewPopups = new Set();
+
+export function closeActiveMemoryPreviewPopups() {
+  for (const popup of Array.from(activeMemoryPreviewPopups)) {
+    try {
+      if (typeof popup?.completeCancelled === 'function') {
+        popup.completeCancelled();
+        continue;
+      }
+    } catch {}
+
+    try {
+      if (popup?.dlg?.open && typeof popup.dlg.close === 'function') {
+        popup.dlg.close();
+      }
+    } catch {}
+  }
+}
 
 /**
  * Plays the messagePopupSound in a safe manner, not blocking anything else if the playback fails
@@ -89,7 +99,9 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
       ]
     });
 
+    activeMemoryPreviewPopups.add(popup);
     const result = await popup.show();
+    activeMemoryPreviewPopups.delete(popup);
 
     if (result === POPUP_RESULT.AFFIRMATIVE) {
       return {
@@ -582,6 +594,7 @@ export async function confirmSaveNewProfile(profileName) {
  * @returns {Promise<Object>} Result object with action and optional edited memory data
  */
 export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSettings, options = {}) {
+  let popup = null;
   try {
     // Input validation
     if (!memoryResult || typeof memoryResult !== 'object') {
@@ -637,7 +650,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
     // Play notification sound when popup appears
     safePlayMessageSound();
 
-    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+    popup = new Popup(content, POPUP_TYPE.TEXT, '', {
       okButton: translate('Edit & Save', 'STMemoryBooks_EditAndSave'),
       cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
       allowVerticalScrolling: true,
@@ -652,6 +665,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
       ]
     });
 
+    activeMemoryPreviewPopups.add(popup);
     const result = await popup.show();
 
     switch (result) {
@@ -740,5 +754,9 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
     return {
       action: 'cancel'
     };
+  } finally {
+    if (popup) {
+      activeMemoryPreviewPopups.delete(popup);
+    }
   }
 }

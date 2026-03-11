@@ -3,6 +3,10 @@ import {
   getCurrentApiInfo,
   getUIModelSettings,
   normalizeCompletionSource,
+  createStmbInFlightTask,
+  isStmbStopError,
+  getStmbStopEpoch,
+  throwIfStmbStopped,
 } from "./utils.js";
 import { sendRawCompletionRequest } from "./stmemory.js";
 import { getDefaultArcPrompt } from "./templatesArcPrompts.js";
@@ -271,7 +275,9 @@ function parseKeywordsResponse(text) {
   return sanitizeKeywordArray(items);
 }
 
-async function generateKeywordsForArc(summary, conn) {
+async function generateKeywordsForArc(summary, conn, options = {}) {
+  const runEpoch = options?.runEpoch ?? null;
+  const signal = options?.signal ?? null;
   const base = String(summary || "").trim();
   const prompt = `${KEYWORD_PROMPT}\n\n=== ARC SUMMARY ===\n${base}\n=== END SUMMARY ===`;
   const { text } = await sendRawCompletionRequest({
@@ -282,7 +288,9 @@ async function generateKeywordsForArc(summary, conn) {
     endpoint: conn.endpoint,
     apiKey: conn.apiKey,
     extra,
+    signal,
   });
+  if (runEpoch !== null) throwIfStmbStopped(runEpoch);
   try {
     console.debug(
       "STMB ArcAnalysis: keyword gen response length=%d",
@@ -306,7 +314,9 @@ async function generateKeywordsForArc(summary, conn) {
       endpoint: conn.endpoint,
       apiKey: conn.apiKey,
       extra,
+      signal,
     });
+    if (runEpoch !== null) throwIfStmbStopped(runEpoch);
     kw = parseKeywordsResponse(retry.text);
   }
   if (kw.length > 30) kw = kw.slice(0, 30);
@@ -477,6 +487,9 @@ export async function runArcAnalysisSequential(
   options = {},
   profileOrConnection = null,
 ) {
+  const parentTask = createStmbInFlightTask("ArcAnalysis:sequential");
+  const runEpoch = parentTask.epoch;
+  try {
   const {
     presetKey = "arc_default",
     maxItemsPerPass = 12,
@@ -538,6 +551,7 @@ export async function runArcAnalysisSequential(
   let carryBriefs = [];
 
   while (remainingMap.size > 0 && pass < maxPassesLocal) {
+    throwIfStmbStopped(runEpoch);
     pass++;
     // Reset the effective budget each pass; we'll only raise it for a single-item batch in this pass if needed
     effectiveTokenTarget = baseTokenTarget;
@@ -619,15 +633,26 @@ export async function runArcAnalysisSequential(
     }
 
     // Send request
-    const { text } = await sendRawCompletionRequest({
-      model: conn.model,
-      prompt,
-      temperature: conn.temperature ?? 0.2,
-      api: conn.api,
-      endpoint: conn.endpoint,
-      apiKey: conn.apiKey,
-      extra,
-    });
+    let text;
+    {
+      const task = createStmbInFlightTask(`ArcAnalysis:pass:${pass}`);
+      try {
+        const res = await sendRawCompletionRequest({
+          model: conn.model,
+          prompt,
+          temperature: conn.temperature ?? 0.2,
+          api: conn.api,
+          endpoint: conn.endpoint,
+          apiKey: conn.apiKey,
+          extra,
+          signal: task.signal,
+        });
+        task.throwIfStopped();
+        text = res.text;
+      } finally {
+        task.finish();
+      }
+    }
     lastRawText = String(text ?? "");
     lastRetryRawText = "";
 
@@ -638,15 +663,25 @@ export async function runArcAnalysisSequential(
     } catch (e) {
       // Single retry with a minimal "return JSON only" reminder
       const repairPrompt = `${prompt}\n\nReturn ONLY the JSON object, nothing else. Ensure arrays and commas are valid.`;
-      const retry = await sendRawCompletionRequest({
-        model: conn.model,
-        prompt: repairPrompt,
-        temperature: conn.temperature ?? 0.2,
-        api: conn.api,
-        endpoint: conn.endpoint,
-        apiKey: conn.apiKey,
-        extra,
-      });
+      const retry = await (async () => {
+        const task = createStmbInFlightTask(`ArcAnalysis:pass:${pass}:retry`);
+        try {
+          const res = await sendRawCompletionRequest({
+            model: conn.model,
+            prompt: repairPrompt,
+            temperature: conn.temperature ?? 0.2,
+            api: conn.api,
+            endpoint: conn.endpoint,
+            apiKey: conn.apiKey,
+            extra,
+            signal: task.signal,
+          });
+          task.throwIfStopped();
+          return res;
+        } finally {
+          task.finish();
+        }
+      })();
       lastRetryRawText = String(retry?.text ?? "");
       try {
         parsed = parseArcJsonResponse(retry.text);
@@ -799,6 +834,9 @@ export async function runArcAnalysisSequential(
     rawText: String(lastRawText ?? ""),
     retryRawText: String(lastRetryRawText ?? ""),
   };
+  } finally {
+    parentTask.finish();
+  }
 }
 
 function resolveConnection(profileOrConnection) {
@@ -972,109 +1010,126 @@ export async function commitArcs({
   orderValue = 100,
   reverseStart = 9999,
 }) {
-  if (!lorebookName || !lorebookData) {
-    throw new Error(translate("Missing lorebookName or lorebookData", "STMemoryBooks_ArcAnalysis_MissingLorebookData"));
-  }
-  const results = [];
-
-  // Arc title format: allow user customization similar to memory titles, minimal wiring.
-  // Users can set extension_settings.STMemoryBooks.arcTitleFormat (e.g., "[ARC 000] - {{title}}").
-  const arcTitleFormat =
-    extension_settings?.STMemoryBooks?.arcTitleFormat ||
-    "[ARC 000] - {{title}}";
-  let nextArcNumber = getNextArcNumber(lorebookData);
-
+  const parentTask = createStmbInFlightTask("ArcAnalysis:commit");
+  const runEpoch = parentTask.epoch;
   try {
-    console.info(
-      "STMB ArcAnalysis: committing %d arc(s): %o",
-      arcCandidates.length,
-      arcCandidates.map((a) => a.title),
-    );
-  } catch {}
-  for (const arc of arcCandidates) {
-    const arcNumber = nextArcNumber++;
-    const title = formatArcTitle(arcTitleFormat, arc.title, arcNumber);
-    const content = arc.summary;
+    if (!lorebookName || !lorebookData) {
+      throw new Error(translate("Missing lorebookName or lorebookData", "STMemoryBooks_ArcAnalysis_MissingLorebookData"));
+    }
+    const results = [];
 
-    // Auto-generate keywords if missing using the arc summary
-    let keywords = Array.isArray(arc.keywords) ? arc.keywords : [];
-    if (keywords.length === 0) {
-      try {
-        const conn = resolveConnection(null);
-        keywords = await generateKeywordsForArc(content, conn);
-      } catch (e) {
+    // Arc title format: allow user customization similar to memory titles, minimal wiring.
+    // Users can set extension_settings.STMemoryBooks.arcTitleFormat (e.g., "[ARC 000] - {{title}}").
+    const arcTitleFormat =
+      extension_settings?.STMemoryBooks?.arcTitleFormat ||
+      "[ARC 000] - {{title}}";
+    let nextArcNumber = getNextArcNumber(lorebookData);
+
+    try {
+      console.info(
+        "STMB ArcAnalysis: committing %d arc(s): %o",
+        arcCandidates.length,
+        arcCandidates.map((a) => a.title),
+      );
+    } catch {}
+    for (const arc of arcCandidates) {
+      throwIfStmbStopped(runEpoch);
+      const arcNumber = nextArcNumber++;
+      const title = formatArcTitle(arcTitleFormat, arc.title, arcNumber);
+      const content = arc.summary;
+
+      // Auto-generate keywords if missing using the arc summary
+      let keywords = Array.isArray(arc.keywords) ? arc.keywords : [];
+      if (keywords.length === 0) {
         try {
-          console.warn(
-            'STMB ArcAnalysis: keyword generation failed for "%s": %s',
-            title,
-            String(e?.message || e),
-          );
-        } catch {}
-      }
-    }
-
-    const order = computeArcEntryOrder({
-      orderMode,
-      orderValue,
-      reverseStart,
-      orderNumber: arcNumber,
-    });
-    const defaults = {
-      vectorized: true,
-      selective: true,
-      order,
-      position: 0,
-    };
-    const entryOverrides = {
-      stmemorybooks: true,
-      stmbArc: true,
-      type: "arc",
-      key: Array.isArray(keywords) ? keywords : [],
-      // Keep consistent fields present in lorebook entries:
-      disable: false,
-    };
-    const res = await upsertLorebookEntriesBatch(
-      lorebookName,
-      lorebookData,
-      [
-        {
-          title,
-          content,
-          defaults,
-          entryOverrides,
-        },
-      ],
-      { refreshEditor: false },
-    );
-    const created = res && res[0];
-    const arcEntryId = created ? created.uid : null;
-    if (!arcEntryId) {
-      throw new Error(translate("Arc upsert returned no entry (commitArcs failed)", "STMemoryBooks_ArcAnalysis_UpsertFailed"));
-    }
-
-    // If requested, disable originals by ID match (memberIds refer to entry.uid string)
-    if (disableOriginals && arcEntryId) {
-      const idSet = new Set(arc.memberIds.map(String));
-      const entries = Object.values(lorebookData.entries || {});
-      for (const e of entries) {
-        if (idSet.has(String(e.uid))) {
-          e.disable = true;
-          e.disabledByArcId = arcEntryId;
+          const conn = resolveConnection(null);
+          const task = createStmbInFlightTask(`ArcAnalysis:keywords:${arcNumber}`);
+          try {
+            keywords = await generateKeywordsForArc(content, conn, { runEpoch, signal: task.signal });
+            task.throwIfStopped();
+          } finally {
+            task.finish();
+          }
+        } catch (e) {
+          if (isStmbStopError(e)) throw e;
+          try {
+            console.warn(
+              'STMB ArcAnalysis: keyword generation failed for "%s": %s',
+              title,
+              String(e?.message || e),
+            );
+          } catch {}
         }
       }
-    }
-    results.push({ arcEntryId, title });
-  }
 
-  // Single save + refresh
-  await upsertLorebookEntriesBatch(lorebookName, lorebookData, [], {
-    refreshEditor: true,
-  });
-  try {
-    console.info(
-      "STMB ArcAnalysis: committed arc IDs: %o",
-      results.map((r) => r.arcEntryId),
-    );
-  } catch {}
-  return { results };
+      const order = computeArcEntryOrder({
+        orderMode,
+        orderValue,
+        reverseStart,
+        orderNumber: arcNumber,
+      });
+      const defaults = {
+        vectorized: true,
+        selective: true,
+        order,
+        position: 0,
+      };
+      const entryOverrides = {
+        stmemorybooks: true,
+        stmbArc: true,
+        type: "arc",
+        key: Array.isArray(keywords) ? keywords : [],
+        // Keep consistent fields present in lorebook entries:
+        disable: false,
+      };
+      throwIfStmbStopped(runEpoch);
+      const res = await upsertLorebookEntriesBatch(
+        lorebookName,
+        lorebookData,
+        [
+          {
+            title,
+            content,
+            defaults,
+            entryOverrides,
+          },
+        ],
+        { refreshEditor: false },
+      );
+      const created = res && res[0];
+      const arcEntryId = created ? created.uid : null;
+      if (!arcEntryId) {
+        throw new Error(translate("Arc upsert returned no entry (commitArcs failed)", "STMemoryBooks_ArcAnalysis_UpsertFailed"));
+      }
+
+      // If requested, disable originals by ID match (memberIds refer to entry.uid string)
+      if (disableOriginals && arcEntryId) {
+        throwIfStmbStopped(runEpoch);
+        const idSet = new Set(arc.memberIds.map(String));
+        const entries = Object.values(lorebookData.entries || {});
+        for (const e of entries) {
+          if (idSet.has(String(e.uid))) {
+            e.disable = true;
+            e.disabledByArcId = arcEntryId;
+          }
+        }
+      }
+      results.push({ arcEntryId, title });
+    }
+
+    // Single save + refresh
+    throwIfStmbStopped(runEpoch);
+    await upsertLorebookEntriesBatch(lorebookName, lorebookData, [], {
+      refreshEditor: true,
+    });
+    try {
+      console.info(
+        "STMB ArcAnalysis: committed arc IDs: %o",
+        results.map((r) => r.arcEntryId),
+      );
+    } catch {}
+    return { results };
+  } finally {
+    parentTask.finish();
+  }
 }

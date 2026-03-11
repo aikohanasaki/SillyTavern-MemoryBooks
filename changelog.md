@@ -2,6 +2,14 @@
 
 **← [Back to README](readme.md)**
 
+## v4.18.3 (March 10, 2026)
+Enhancements:
+- Add `/stmb-stop` to stop all STMB generations (includes side prompts in flight)
+- Add "ignore budget" checkbox to side prompt entry settings
+Tweaks: 
+- Consolidated translation helper functions
+- uniform checkbox level in side prompt popups
+
 ## v4.18.2 (February 23, 2026)
 - change minimum memories per arc default to 10
 - change "disable arced memories" to default to "true" (can still uncheck)

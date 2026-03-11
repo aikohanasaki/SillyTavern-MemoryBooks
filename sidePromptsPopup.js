@@ -15,16 +15,7 @@ import {
 } from './sidePromptsManager.js';
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 import { translate, applyLocale } from '../../../i18n.js';
-
-/** Helper: keyed translation with Mustache-style interpolation using ST translate() */
-function tr(key, fallback, params) {
-    const localized = translate(fallback, key);
-    if (!params) return localized;
-    return localized.replace(/{{\s*(\w+)\s*}}/g, (m, p1) => {
-        const v = params[p1];
-        return v !== undefined && v !== null ? String(v) : '';
-    });
-}
+import { tr } from './i18nHelpers.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -152,6 +143,7 @@ async function openEditTemplate(parentPopup, key) {
         const lbOrderValue = Number.isFinite(lb.orderValue) ? Number(lb.orderValue) : 100;
         const lbPrevent = lb.preventRecursion !== false;
         const lbDelay = !!lb.delayUntilRecursion;
+        const lbIgnoreBudget = !!lb.ignoreBudget;
 
         const content = `
             <h3>${escapeHtml(translate('Edit Side Prompt', 'STMemoryBooks_EditSidePrompt'))}</h3>
@@ -253,13 +245,17 @@ async function openEditTemplate(parentPopup, key) {
                     </div>
                 </div>
                 <div class="world_entry_form_control" style="margin-top: 8px;">
-                    <label class="checkbox_label">
+                    <label class="checkbox_label" style="margin-left: 12px;">
                         <input type="checkbox" id="stmb-sp-edit-lb-prevent" ${lbPrevent ? 'checked' : ''}>
                         <span>${escapeHtml(translate('Prevent Recursion', 'STMemoryBooks_PreventRecursion'))}</span>
                     </label>
                     <label class="checkbox_label" style="margin-left: 12px;">
                         <input type="checkbox" id="stmb-sp-edit-lb-delay" ${lbDelay ? 'checked' : ''}>
                         <span>${escapeHtml(translate('Delay Until Recursion', 'STMemoryBooks_DelayUntilRecursion'))}</span>
+                    </label>
+                    <label class="checkbox_label" style="margin-left: 12px;">
+                        <input type="checkbox" id="stmb-sp-edit-lb-ignore-budget" ${lbIgnoreBudget ? 'checked' : ''}>
+                        <span>${escapeHtml(translate('Ignore Budget', 'STMemoryBooks_IgnoreBudget'))}</span>
                     </label>
                 </div>
             </div>
@@ -376,6 +372,7 @@ async function openEditTemplate(parentPopup, key) {
             const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-edit-lb-order-value')?.value ?? '100', 10);
             const lbPrevent2 = !!dlg.querySelector('#stmb-sp-edit-lb-prevent')?.checked;
             const lbDelay2 = !!dlg.querySelector('#stmb-sp-edit-lb-delay')?.checked;
+            const lbIgnoreBudget2 = !!dlg.querySelector('#stmb-sp-edit-lb-ignore-budget')?.checked;
             const outletNameVal = lbPosRaw === 7 ? (dlg.querySelector('#stmb-sp-edit-lb-outlet-name')?.value?.trim() || '') : '';
 
             const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-edit-prev-mem-count')?.value ?? '0', 10);
@@ -388,6 +385,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
                 orderValue: Number.isFinite(lbOrderValRaw) ? lbOrderValRaw : 100,
                 preventRecursion: lbPrevent2,
                 delayUntilRecursion: lbDelay2,
+                ignoreBudget: lbIgnoreBudget2,
                 ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
             };
 
@@ -529,6 +527,10 @@ async function openNewTemplate(parentPopup) {
                     <input type="checkbox" id="stmb-sp-new-lb-delay">
                     <span>${escapeHtml(translate('Delay Until Recursion', 'STMemoryBooks_DelayUntilRecursion'))}</span>
                 </label>
+                <label class="checkbox_label" style="margin-left: 12px;">
+                    <input type="checkbox" id="stmb-sp-new-lb-ignore-budget">
+                    <span>${escapeHtml(translate('ignore budget', 'STMemoryBooks_IgnoreBudget'))}</span>
+                </label>
             </div>
         </div>
 
@@ -653,6 +655,7 @@ async function openNewTemplate(parentPopup) {
         const lbOrderValRaw = parseInt(dlg.querySelector('#stmb-sp-new-lb-order-value')?.value ?? '100', 10);
         const lbPrevent2 = !!dlg.querySelector('#stmb-sp-new-lb-prevent')?.checked;
         const lbDelay2 = !!dlg.querySelector('#stmb-sp-new-lb-delay')?.checked;
+        const lbIgnoreBudget2 = !!dlg.querySelector('#stmb-sp-new-lb-ignore-budget')?.checked;
         const outletNameVal = lbPosRaw === 7 ? (dlg.querySelector('#stmb-sp-new-lb-outlet-name')?.value?.trim() || '') : '';
 
         const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-new-prev-mem-count')?.value ?? '0', 10);
@@ -665,6 +668,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
             orderValue: Number.isFinite(lbOrderValRaw) ? lbOrderValRaw : 100,
             preventRecursion: lbPrevent2,
             delayUntilRecursion: lbDelay2,
+            ignoreBudget: lbIgnoreBudget2,
             ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
         };
 
