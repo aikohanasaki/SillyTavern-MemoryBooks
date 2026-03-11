@@ -6,7 +6,9 @@
 Enhancements:
 - Add `/stmb-stop` to stop all STMB generations (includes side prompts in flight)
 - Add "ignore budget" checkbox to side prompt entry settings
-- Bugfix: #{{value}} in `/stmb-set-highest` toast fixed.
+
+Bugfix: #{{value}} in `/stmb-set-highest` toast fixed.
+
 Tweaks: 
 - Consolidated translation helper functions.
 - Made checkboxes aligned in side prompt popup.
