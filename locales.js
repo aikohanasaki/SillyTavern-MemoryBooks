@@ -139,6 +139,9 @@ export const localeData_en = {
     'STMemoryBooks_SetHighest_OutOfRange': 'Message IDs out of range. Valid range: 0-{{max}}',
     'STMemoryBooks_SetHighest_Clamped': 'Highest message is {{max}}, so last message processed has been set to {{max}}.',
     'STMemoryBooks_SetHighest_SetTo': 'Last processed message manually set to #{{value}}.',
+    'STMemoryBooks_Slash_Stop_Help': 'Stop all in-flight STMB generation everywhere. Usage: /stmb-stop',
+    'STMemoryBooks_Stop_Stopped': 'STMB generation manually stopped by user.',
+    'STMemoryBooks_Stop_None': 'STMB stop issued, but no generation is in progress.',
 
     // Preferences Section
     'STMemoryBooks_Preferences': 'Preferences:',
@@ -455,6 +458,7 @@ export const localeData_en = {
     'STMemoryBooks_RecursionSettings': 'Recursion Settings:',
     'STMemoryBooks_PreventRecursion': 'Prevent Recursion',
     'STMemoryBooks_DelayUntilRecursion': 'Delay Until Recursion',
+    'STMemoryBooks_IgnoreBudget': 'Ignore Budget',
     'STMemoryBooks_RefreshPresets': '🔄 Refresh Presets',
     'STMemoryBooks_Button_CreateMemory': 'Create Memory',
     'STMemoryBooks_Button_AdvancedOptions': 'Advanced Options...',
