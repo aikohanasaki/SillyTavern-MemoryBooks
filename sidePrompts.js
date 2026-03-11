@@ -4,7 +4,7 @@ import { getRegexedString, regex_placement } from '../../../extensions/regex/eng
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { requestCompletion } from './stmemory.js';
 import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
@@ -123,7 +123,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  * - By default uses current ST UI settings
  * - If overrides are provided, uses the given api/model/temperature
  */
-async function runLLM(prompt, overrides = null) {
+async function runLLM(prompt, overrides = null, options = {}) {
     // Determine connection
     let api, model, temperature, endpoint, apiKey;
 
@@ -164,6 +164,7 @@ async function runLLM(prompt, overrides = null) {
         endpoint,
         apiKey,
         extra,
+        signal: options?.signal || null,
     });
     
     // Apply regex transformations to the raw response (honor global Use Regex toggle)
@@ -291,6 +292,7 @@ function getEffectiveLorebookSettingsForTemplate(tpl) {
         orderValue: toNumberOr(lb.orderValue, 100),
         preventRecursion: lb.preventRecursion !== false,
         delayUntilRecursion: !!lb.delayUntilRecursion,
+        ignoreBudget: !!lb.ignoreBudget,
         outletName: String(lb.outletName || ''),
     };
 }
@@ -310,6 +312,7 @@ function makeUpsertParamsFromLorebook(lbs) {
         vectorized: lbs.constVectMode === 'link',
         preventRecursion: !!lbs.preventRecursion,
         delayUntilRecursion: !!lbs.delayUntilRecursion,
+        ignoreBudget: !!lbs.ignoreBudget,
     };
     if (lbs.orderMode === 'manual') {
         entryOverrides.order = toNumberOr(lbs.orderValue, 100);
@@ -324,7 +327,10 @@ function makeUpsertParamsFromLorebook(lbs) {
  * Evaluate tracker prompts and fire if thresholds are met
  */
 export async function evaluateTrackers() {
+    const parentTask = createStmbInFlightTask('SidePrompts:onInterval');
+    const evalEpoch = parentTask.epoch;
     try {
+        throwIfStmbStopped(evalEpoch);
         const enabledInterval = await listByTrigger('onInterval');
         if (!enabledInterval || enabledInterval.length === 0) return;
 
@@ -391,6 +397,7 @@ export async function evaluateTrackers() {
 
             // Call LLM
             let resultText = '';
+            const runEpoch = getStmbStopEpoch();
             try {
             const idx = Number(tpl?.settings?.overrideProfileIndex);
             const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
@@ -405,12 +412,21 @@ export async function evaluateTrackers() {
                 api: overrides.api,
                 model: overrides.model,
             });
-            resultText = await runLLM(finalPrompt, overrides);
+            const task = createStmbInFlightTask(`SidePrompt:onInterval:${tpl?.key || tpl?.name || 'unknown'}`);
+            try {
+                resultText = await runLLM(finalPrompt, overrides, { signal: task.signal });
+                task.throwIfStopped();
+            } finally {
+                task.finish();
+            }
             } catch (err) {
+                if (isStmbStopError(err)) return;
                 console.error(`${MODULE_NAME}: Interval sideprompt LLM failed:`, err);
                 toastr.error(__st_t_tag`SidePrompt "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
                 continue;
             }
+
+            throwIfStmbStopped(runEpoch);
 
             // Preview gating if enabled
             try {
@@ -444,6 +460,7 @@ export async function evaluateTrackers() {
 
             // Upsert entry and update metadata checkpoint (generic + legacy for one-way compat)
             try {
+                throwIfStmbStopped(runEpoch);
                 const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
             const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
             const endId = compiled?.metadata?.sceneEnd ?? currentLast;
@@ -472,7 +489,10 @@ export async function evaluateTrackers() {
             }
         }
     } catch (outer) {
+        if (isStmbStopError(outer)) return;
         // No lorebook or other fatal issues
+    } finally {
+        parentTask.finish();
     }
 }
 
@@ -481,6 +501,8 @@ export async function evaluateTrackers() {
  * @param {Object} compiledScene
  */
 export async function runAfterMemory(compiledScene, profile = null) {
+    const parentTask = createStmbInFlightTask('SidePrompts:onAfterMemory');
+    const runEpoch = parentTask.epoch;
     try {
         const lore = await requireLorebookStrict();
         const enabledAfter = await listByTrigger('onAfterMemory');
@@ -505,8 +527,10 @@ export async function runAfterMemory(compiledScene, profile = null) {
         }
 
         for (const wave of waves) {
+            throwIfStmbStopped(runEpoch);
             // Run LLMs concurrently for this wave (scene-only prompts)
             const llmPromises = wave.map(async (tpl) => {
+                const task = createStmbInFlightTask(`SidePrompt:onAfterMemory:${tpl?.key || tpl?.name || 'unknown'}`);
                 try {
                     const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
                     const existing = getEntryByTitle(lore.data, unifiedTitle)
@@ -534,15 +558,21 @@ export async function runAfterMemory(compiledScene, profile = null) {
                         api: conn.api,
                         model: conn.model,
                     });
-                    const text = await runLLM(finalPrompt, conn);
+                    const text = await runLLM(finalPrompt, conn, { signal: task.signal });
+                    task.throwIfStopped();
                     return { ok: true, tpl, text };
                 } catch (e) {
-                    console.error(`${MODULE_NAME}: Wave LLM failed for "${tpl.name}":`, e);
-                    return { ok: false, tpl, error: e };
+                    if (!isStmbStopError(e)) {
+                        console.error(`${MODULE_NAME}: Wave LLM failed for "${tpl.name}":`, e);
+                    }
+                    return { ok: false, tpl, error: e, cancelled: isStmbStopError(e) };
+                } finally {
+                    task.finish();
                 }
             });
 
             const llmResults = await Promise.all(llmPromises.map(p => p.then(r => ({ ...r, _completedAt: performance.now() }))));
+            throwIfStmbStopped(runEpoch);
 
             // Present previews in order of receipt
             llmResults.sort((a, b) => a._completedAt - b._completedAt);
@@ -552,6 +582,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
             const succeededNames = [];
             for (const r of llmResults) {
                 if (!r.ok) {
+                    if (r.cancelled) continue;
                     results.push({ name: r.tpl?.name || 'unknown', ok: false, error: r.error });
                     continue;
                 }
@@ -560,6 +591,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
                 let approved = true;
 
                 try {
+                    throwIfStmbStopped(runEpoch);
                     const settings = extension_settings?.STMemoryBooks;
                     if (settings?.moduleSettings?.showMemoryPreviews) {
                         const memoryResult = {
@@ -584,10 +616,12 @@ export async function runAfterMemory(compiledScene, profile = null) {
                         }
                     }
                 } catch (previewErr) {
+                    if (isStmbStopError(previewErr)) return;
                     console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
                 }
 
                 if (approved) {
+                    throwIfStmbStopped(runEpoch);
                     const tpl = r.tpl;
                     const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
                     const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
@@ -609,6 +643,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
 
             if (items.length > 0) {
                 try {
+                    throwIfStmbStopped(runEpoch);
                     // Re-load latest lore to include any user edits during LLM phase
                     const fresh = await loadWorldInfo(lore.name);
                     // Batch save this wave; refresh editor per directive if enabled globally
@@ -629,6 +664,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
                         });
                     }
                 } catch (saveErr) {
+                    if (isStmbStopError(saveErr)) return;
                     console.error(`${MODULE_NAME}: Wave save failed:`, saveErr);
                     toastr.error(translate('Failed to save SidePrompt updates for this wave', 'STMemoryBooks_Toast_FailedToSaveWave'), 'STMemoryBooks');
                     // Mark these as failed since they were not persisted
@@ -658,7 +694,10 @@ export async function runAfterMemory(compiledScene, profile = null) {
             }
         }
     } catch (outer) {
+        if (isStmbStopError(outer)) return;
         // No lorebook => do nothing
+    } finally {
+        parentTask.finish();
     }
 }
 
@@ -669,6 +708,8 @@ export async function runAfterMemory(compiledScene, profile = null) {
  * Usage: /sideprompt "Name" [X-Y]
  */
 export async function runSidePrompt(args) {
+    const parentTask = createStmbInFlightTask('SidePrompts:manual');
+    const runEpoch = parentTask.epoch;
     try {
         const lore = await requireLorebookStrict();
 
@@ -776,10 +817,18 @@ export async function runSidePrompt(args) {
                 api: overrides.api,
                 model: overrides.model,
             });
-            resultText = await runLLM(finalPrompt, overrides);
+            const task = createStmbInFlightTask(`SidePrompt:manual:${tpl?.key || tpl?.name || 'unknown'}`);
+            try {
+                resultText = await runLLM(finalPrompt, overrides, { signal: task.signal });
+                task.throwIfStopped();
+            } finally {
+                task.finish();
+            }
+            throwIfStmbStopped(runEpoch);
 
             // Preview gating if enabled
             try {
+                throwIfStmbStopped(runEpoch);
                 const settings = extension_settings?.STMemoryBooks;
                 if (settings?.moduleSettings?.showMemoryPreviews) {
                     const memoryResult = {
@@ -810,6 +859,7 @@ export async function runSidePrompt(args) {
             } catch (previewErr) {
                 console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
             }
+            throwIfStmbStopped(runEpoch);
             const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
             const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
             const endId = compiled?.metadata?.sceneEnd ?? currentLast;
@@ -832,6 +882,7 @@ export async function runSidePrompt(args) {
                 contentChars: resultText.length,
             });
             } catch (err) {
+                if (isStmbStopError(err)) return '';
                 console.error(`${MODULE_NAME}: /sideprompt failed:`, err);
                 toastr.error(__st_t_tag`SidePrompt "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
                 return '';
@@ -840,7 +891,10 @@ export async function runSidePrompt(args) {
         toastr.success(__st_t_tag`SidePrompt "${tpl.name}" updated.`, 'STMemoryBooks');
         return '';
     } catch (outer) {
+        if (isStmbStopError(outer)) return '';
         return '';
+    } finally {
+        parentTask.finish();
     }
 }
 

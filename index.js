@@ -76,6 +76,7 @@ import {
   showConfirmationPopup,
   fetchPreviousSummaries,
   showMemoryPreviewPopup,
+  closeActiveMemoryPreviewPopups,
 } from "./confirmationPopup.js";
 import {
   getDefaultPrompt,
@@ -88,6 +89,11 @@ import {
   showLorebookSelectionPopup,
   readIntInput,
   clampInt,
+  createStmbInFlightTask,
+  stmbStopAllInFlight,
+  getStmbInFlightCount,
+  isStmbStopError,
+  throwIfStmbStopped,
 } from "./utils.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
@@ -117,6 +123,7 @@ import {
   getCurrentLocale,
 } from "../../../i18n.js";
 import { localeData, loadLocaleJson } from "./locales.js";
+import { tr } from "./i18nHelpers.js";
 import { getRegexScripts } from "../../../extensions/regex/engine.js";
 import "../../../../lib/select2.min.js";
 
@@ -205,9 +212,9 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
 
   if (parsed < 0) {
     toastr.error(
-      translate(
-        "Message IDs out of range. Valid range: 0-{{max}}",
+      tr(
         "STMemoryBooks_SetHighest_OutOfRange",
+        "Message IDs out of range. Valid range: 0-{{max}}",
         { max: lastIndex },
       ),
       translate("STMemoryBooks", "index.toast.title"),
@@ -218,9 +225,9 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
   const clamped = clampInt(parsed, 0, lastIndex);
   if (clamped !== parsed) {
     toastr.info(
-      translate(
-        "Highest message is {{max}}, so last message processed has been set to {{max}}.",
+      tr(
         "STMemoryBooks_SetHighest_Clamped",
+        "Highest message is {{max}}, so last message processed has been set to {{max}}.",
         { max: lastIndex },
       ),
       translate("STMemoryBooks", "index.toast.title"),
@@ -233,9 +240,9 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
   await refreshPopupContent();
 
   toastr.success(
-    translate(
-      "Last processed message manually set to #{{value}}.",
+    tr(
       "STMemoryBooks_SetHighest_SetTo",
+      "Last processed message manually set to #{{value}}.",
       { value: clamped },
     ),
     translate("STMemoryBooks", "index.toast.title"),
@@ -758,6 +765,46 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
       translate("STMemoryBooks", "index.toast.title"),
     );
   }
+  return "";
+}
+
+/**
+ * Slash: /stmb-stop
+ * Panic button: stop all in-flight STMB generation everywhere.
+ */
+async function handleStmbStopCommand(namedArgs, unnamedArgs) {
+  const before = getStmbInFlightCount();
+  const { stoppedCount } = stmbStopAllInFlight();
+
+  // Force-reset local "busy" flags so STMB returns to idle immediately.
+  isProcessingMemory = false;
+  isProcessingArc = false;
+
+  const msg =
+    stoppedCount > 0 || before > 0
+      ? translate(
+          "STMB generation manually stopped by user.",
+          "STMemoryBooks_Stop_Stopped",
+        )
+      : translate(
+          "STMB stop issued, but no generation is in progress.",
+          "STMemoryBooks_Stop_None",
+        );
+
+  if (stoppedCount > 0 || before > 0) {
+    try {
+      toastr.clear();
+    } catch (e) {
+      /* noop */
+    }
+    try {
+      closeActiveMemoryPreviewPopups();
+    } catch (e) {
+      /* noop */
+    }
+  }
+  toastr.info(msg, "STMemoryBooks");
+  console.log(`STMemoryBooks: ${msg}`);
   return "";
 }
 
@@ -1395,12 +1442,39 @@ function isRetryableError(error) {
 /**
  * Execute the core memory generation process - now with retry logic and BULLETPROOF settings restoration
  */
+function sleepWithAbort(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(resolve, ms);
+
+    if (!signal) return;
+    if (signal.aborted) {
+      clearTimeout(timeoutId);
+      const err = new Error("Cancelled");
+      err.name = "AbortError";
+      reject(err);
+      return;
+    }
+
+    const onAbort = () => {
+      clearTimeout(timeoutId);
+      const err = new Error("Cancelled");
+      err.name = "AbortError";
+      reject(err);
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 async function executeMemoryGeneration(
   sceneData,
   lorebookValidation,
   effectiveSettings,
   retryCount = 0,
+  stmbTask = null,
 ) {
+  const ownsTask = !stmbTask;
+  if (!stmbTask) stmbTask = createStmbInFlightTask("MemoryGeneration");
+  const runEpoch = stmbTask.epoch;
   const { profileSettings, summaryCount, tokenThreshold, settings } =
     effectiveSettings;
   currentProfile = profileSettings;
@@ -1486,6 +1560,7 @@ async function executeMemoryGeneration(
   const maxRetries = MEMORY_GENERATION.MAX_RETRIES;
 
   try {
+    throwIfStmbStopped(runEpoch);
     // Create and compile scene first
     const sceneRequest = createSceneRequest(
       sceneData.sceneStart,
@@ -1560,7 +1635,10 @@ async function executeMemoryGeneration(
     // Generate memory silently
     const memoryResult = await createMemory(compiledScene, profileSettings, {
       tokenWarningThreshold: tokenThreshold,
+      signal: stmbTask.signal,
     });
+    stmbTask.throwIfStopped();
+    throwIfStmbStopped(runEpoch);
 
     // Check if memory previews are enabled and handle accordingly
     let finalMemoryResult = memoryResult;
@@ -1574,6 +1652,7 @@ async function executeMemoryGeneration(
         sceneData,
         profileSettings,
       );
+      throwIfStmbStopped(runEpoch);
 
       if (previewResult.action === "cancel") {
         // User cancelled, abort the process
@@ -1655,6 +1734,8 @@ async function executeMemoryGeneration(
       }
     }
 
+    throwIfStmbStopped(runEpoch);
+
     // Add to lorebook silently
     const addResult = await addMemoryToLorebook(
       finalMemoryResult,
@@ -1680,6 +1761,7 @@ async function executeMemoryGeneration(
     } catch (e) {
       console.warn("STMemoryBooks: runAfterMemory failed:", e);
     }
+    throwIfStmbStopped(runEpoch);
 
     // Update auto-summary baseline so the next trigger starts after this scene
     try {
@@ -1715,6 +1797,9 @@ async function executeMemoryGeneration(
       "STMemoryBooks",
     );
   } catch (error) {
+    if (isStmbStopError(error)) {
+      return;
+    }
     console.error("STMemoryBooks: Error creating memory:", error);
 
     // Determine if we should retry
@@ -1731,9 +1816,12 @@ async function executeMemoryGeneration(
       );
 
       // Wait before retrying
-      await new Promise((resolve) =>
-        setTimeout(resolve, MEMORY_GENERATION.RETRY_DELAY_MS),
-      );
+      try {
+        await sleepWithAbort(MEMORY_GENERATION.RETRY_DELAY_MS, stmbTask.signal);
+      } catch (e) {
+        if (isStmbStopError(e)) return;
+        throw e;
+      }
 
       // Recursive retry
       return await executeMemoryGeneration(
@@ -1741,6 +1829,7 @@ async function executeMemoryGeneration(
         lorebookValidation,
         effectiveSettings,
         retryCount + 1,
+        stmbTask,
       );
     }
 
@@ -1808,6 +1897,10 @@ async function executeMemoryGeneration(
         __st_t_tag`Failed to create memory: ${error.message}${retryMsg}`,
         "STMemoryBooks",
       );
+    }
+  } finally {
+    if (ownsTask) {
+      stmbTask.finish();
     }
   }
 }
@@ -2977,7 +3070,7 @@ async function deletePreset(popup, presetKey) {
   const displayName = await SummaryPromptManager.getDisplayName(presetKey);
 
   const confirmPopup = new Popup(
-    `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${escapeHtml(translate('Are you sure you want to delete "{{name}}"?', "STMemoryBooks_DeletePresetConfirm", { name: displayName }))}</p>`,
+    `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${escapeHtml(tr("STMemoryBooks_DeletePresetConfirm", 'Are you sure you want to delete "{{name}}"?', { name: displayName }))}</p>`,
     POPUP_TYPE.CONFIRM,
     "",
     {
@@ -3465,7 +3558,7 @@ async function duplicateArcPreset(popup, presetKey) {
 async function deleteArcPreset(popup, presetKey) {
   const displayName = await ArcPrompts.getDisplayName(presetKey);
   const confirmPopup = new Popup(
-    `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${escapeHtml(translate('Are you sure you want to delete "{{name}}"?', "STMemoryBooks_DeletePresetConfirm", { name: displayName }))}</p>`,
+    `<h3 data-i18n="STMemoryBooks_DeletePresetTitle">Delete Preset</h3><p>${escapeHtml(tr("STMemoryBooks_DeletePresetConfirm", 'Are you sure you want to delete "{{name}}"?', { name: displayName }))}</p>`,
     POPUP_TYPE.CONFIRM,
     "",
     {
@@ -3901,6 +3994,9 @@ async function showArcConsolidationPopup() {
     try {
       analysis = await runArcAnalysisSequential(selectedEntries, options, null);
     } catch (e) {
+      if (isStmbStopError(e)) {
+        return;
+      }
       try {
         toastr.clear(lastArcFailureToast);
       } catch (e2) {}
@@ -4021,6 +4117,9 @@ async function showArcConsolidationPopup() {
       } catch (e) {}
       lastArcFailureToast = null;
     } catch (e) {
+      if (isStmbStopError(e)) {
+        return;
+      }
       toastr.error(
         __st_t_tag`Failed to commit arcs: ${e.message}`,
         "STMemoryBooks",
@@ -5065,6 +5164,15 @@ function registerSlashCommands() {
     ],
   });
 
+  const stmbStopCmd = SlashCommand.fromProps({
+    name: "stmb-stop",
+    callback: handleStmbStopCommand,
+    helpString: translate(
+      "Stop all in-flight STMB generation everywhere. Usage: /stmb-stop",
+      "STMemoryBooks_Slash_Stop_Help",
+    ),
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -5073,6 +5181,7 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(sidePromptOffCmd);
   SlashCommandParser.addCommandObject(highestMemCmd);
   SlashCommandParser.addCommandObject(setHighestMemCmd);
+  SlashCommandParser.addCommandObject(stmbStopCmd);
 }
 
 /**
@@ -5209,6 +5318,8 @@ async function applyManualFixedJson(correctedRaw) {
     return;
   }
 
+  const stmbTask = createStmbInFlightTask("MemoryManualRepair");
+  const runEpoch = stmbTask.epoch;
   try {
     // Set processing flag IMMEDIATELY after validation to prevent race conditions.
     // NOTE: placing the assignment *inside* the try ensures the matching `finally` clears the flag
@@ -5230,6 +5341,7 @@ async function applyManualFixedJson(correctedRaw) {
       );
       return;
     }
+    throwIfStmbStopped(runEpoch);
     if (
       !context?.sceneData ||
       context.sceneData.sceneEnd === undefined ||
@@ -5245,183 +5357,192 @@ async function applyManualFixedJson(correctedRaw) {
       return;
     }
 
-  const trimmedRaw = String(correctedRaw || "").trim();
-  if (!trimmedRaw) {
-    toastr.error(
-      translate(
-        "Corrected JSON is empty.",
-        "STMemoryBooks_ManualFix_EmptyJson",
-      ),
-      "STMemoryBooks",
-    );
-    return;
-  }
+    const trimmedRaw = String(correctedRaw || "").trim();
+    if (!trimmedRaw) {
+      toastr.error(
+        translate(
+          "Corrected JSON is empty.",
+          "STMemoryBooks_ManualFix_EmptyJson",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
 
-  let jsonResult;
-  try {
-    jsonResult = parseAIJsonResponse(trimmedRaw);
-  } catch (error) {
-    const msg = error?.message || "Failed to parse corrected JSON.";
-    const code = error?.code ? ` [${error.code}]` : "";
-    toastr.error(
-      __st_t_tag`Corrected JSON is still invalid${code}: ${msg}`,
-      "STMemoryBooks",
-    );
-    return;
-  }
+    let jsonResult;
+    try {
+      jsonResult = parseAIJsonResponse(trimmedRaw);
+    } catch (error) {
+      const msg = error?.message || "Failed to parse corrected JSON.";
+      const code = error?.code ? ` [${error.code}]` : "";
+      toastr.error(
+        __st_t_tag`Corrected JSON is still invalid${code}: ${msg}`,
+        "STMemoryBooks",
+      );
+      return;
+    }
 
-  if (!jsonResult.content && !jsonResult.summary && !jsonResult.memory_content) {
-    toastr.error(
-      translate(
-        "Corrected JSON is missing content.",
-        "STMemoryBooks_ManualFix_MissingContent",
-      ),
-      "STMemoryBooks",
-    );
-    return;
-  }
-  if (!jsonResult.title) {
-    toastr.error(
-      translate(
-        "Corrected JSON is missing title.",
-        "STMemoryBooks_ManualFix_MissingTitle",
-      ),
-      "STMemoryBooks",
-    );
-    return;
-  }
-  if (!Array.isArray(jsonResult.keywords)) {
-    toastr.error(
-      translate(
-        "Corrected JSON is missing keywords array.",
-        "STMemoryBooks_ManualFix_MissingKeywords",
-      ),
-      "STMemoryBooks",
-    );
-    return;
-  }
+    if (!jsonResult.content && !jsonResult.summary && !jsonResult.memory_content) {
+      toastr.error(
+        translate(
+          "Corrected JSON is missing content.",
+          "STMemoryBooks_ManualFix_MissingContent",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+    if (!jsonResult.title) {
+      toastr.error(
+        translate(
+          "Corrected JSON is missing title.",
+          "STMemoryBooks_ManualFix_MissingTitle",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
+    if (!Array.isArray(jsonResult.keywords)) {
+      toastr.error(
+        translate(
+          "Corrected JSON is missing keywords array.",
+          "STMemoryBooks_ManualFix_MissingKeywords",
+        ),
+        "STMemoryBooks",
+      );
+      return;
+    }
 
-  const compiledScene = context.compiledScene;
-  const profile = context.profileSettings;
-  const cleanContent = (
-    jsonResult.content ||
-    jsonResult.summary ||
-    jsonResult.memory_content ||
-    ""
-  ).trim();
-  const cleanTitle = (jsonResult.title || "Memory").trim();
-  const cleanKeywords = Array.isArray(jsonResult.keywords) ? jsonResult.keywords.filter((k) => k && typeof k === "string" && k.trim() !== "") : [];
-  const resolvedSceneStats = context.sceneStats || null;
-  const sceneRange =
-    context.sceneRange ||
-    `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`;
-  const memoryResult = {
-    content: cleanContent,
-    extractedTitle: cleanTitle,
-    metadata: {
-      sceneRange,
-      messageCount: compiledScene.metadata?.messageCount,
-      characterName: compiledScene.metadata?.characterName,
-      userName: compiledScene.metadata?.userName,
-      chatId: compiledScene.metadata?.chatId,
-      createdAt: new Date().toISOString(),
-      profileUsed: profile.name,
-      presetUsed: profile.preset || "custom",
-      tokenUsage: resolvedSceneStats
-        ? { estimatedTokens: resolvedSceneStats.estimatedTokens }
-        : undefined,
-      generationMethod: "manual-json-repair",
-      version: "2.0",
-    },
-    suggestedKeys: cleanKeywords,
-    titleFormat:
-      profile.useDynamicSTSettings || profile?.connection?.api === "current_st"
-        ? extension_settings.STMemoryBooks?.titleFormat || "[000] - {{title}}"
-        : profile.titleFormat || "[000] - {{title}}",
-    lorebookSettings: {
-      constVectMode: profile.constVectMode,
-      position: profile.position,
-      orderMode: profile.orderMode,
-      orderValue: profile.orderValue,
-      preventRecursion: profile.preventRecursion,
-      delayUntilRecursion: profile.delayUntilRecursion,
-      outletName:
-        Number(profile.position) === 7 ? profile.outletName || "" : undefined,
-    },
-    lorebook: {
+    const compiledScene = context.compiledScene;
+    const profile = context.profileSettings;
+    const cleanContent = (
+      jsonResult.content ||
+      jsonResult.summary ||
+      jsonResult.memory_content ||
+      ""
+    ).trim();
+    const cleanTitle = (jsonResult.title || "Memory").trim();
+    const cleanKeywords = Array.isArray(jsonResult.keywords)
+      ? jsonResult.keywords.filter((k) => k && typeof k === "string" && k.trim() !== "")
+      : [];
+    const resolvedSceneStats = context.sceneStats || null;
+    const sceneRange =
+      context.sceneRange ||
+      `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`;
+    const memoryResult = {
       content: cleanContent,
-      comment: `Auto-generated memory from messages ${sceneRange}. Profile: ${profile.name}.`,
-      key: cleanKeywords || [],
-      keysecondary: [],
-      selective: true,
-      constant: false,
-      order: 100,
-      position: "before_char",
-      disable: false,
-      addMemo: true,
-      excludeRecursion: false,
-      delayUntilRecursion: true,
-      probability: 100,
-      useProbability: false,
-    },
-  };
+      extractedTitle: cleanTitle,
+      metadata: {
+        sceneRange,
+        messageCount: compiledScene.metadata?.messageCount,
+        characterName: compiledScene.metadata?.characterName,
+        userName: compiledScene.metadata?.userName,
+        chatId: compiledScene.metadata?.chatId,
+        createdAt: new Date().toISOString(),
+        profileUsed: profile.name,
+        presetUsed: profile.preset || "custom",
+        tokenUsage: resolvedSceneStats
+          ? { estimatedTokens: resolvedSceneStats.estimatedTokens }
+          : undefined,
+        generationMethod: "manual-json-repair",
+        version: "2.0",
+      },
+      suggestedKeys: cleanKeywords,
+      titleFormat:
+        profile.useDynamicSTSettings || profile?.connection?.api === "current_st"
+          ? extension_settings.STMemoryBooks?.titleFormat || "[000] - {{title}}"
+          : profile.titleFormat || "[000] - {{title}}",
+      lorebookSettings: {
+        constVectMode: profile.constVectMode,
+        position: profile.position,
+        orderMode: profile.orderMode,
+        orderValue: profile.orderValue,
+        preventRecursion: profile.preventRecursion,
+        delayUntilRecursion: profile.delayUntilRecursion,
+        outletName:
+          Number(profile.position) === 7 ? profile.outletName || "" : undefined,
+      },
+      lorebook: {
+        content: cleanContent,
+        comment: `Auto-generated memory from messages ${sceneRange}. Profile: ${profile.name}.`,
+        key: cleanKeywords || [],
+        keysecondary: [],
+        selective: true,
+        constant: false,
+        order: 100,
+        position: "before_char",
+        disable: false,
+        addMemo: true,
+        excludeRecursion: false,
+        delayUntilRecursion: true,
+        probability: 100,
+        useProbability: false,
+      },
+    };
 
-  const addResult = await addMemoryToLorebook(
-    memoryResult,
-    context.lorebookValidation,
-  );
-
-  if (!addResult.success) {
-    throw new Error(addResult.error || "Failed to add memory to lorebook");
-  }
-
-  try {
-    const connDbg = profile.effectiveConnection || profile.connection || {};
-    console.debug("STMemoryBooks: Passing profile to runAfterMemory", {
-      api: connDbg.api,
-      model: connDbg.model,
-      temperature: connDbg.temperature,
-    });
-    await runAfterMemory(compiledScene, profile);
-  } catch (e) {
-    console.warn("STMemoryBooks: runAfterMemory failed:", e);
-  }
-
-  try {
-    const stmbData = getSceneMarkers() || {};
-    stmbData.highestMemoryProcessed = context.sceneData.sceneEnd;
-    delete stmbData.highestMemoryProcessedManuallySet;
-    saveMetadataForCurrentContext();
-  } catch (e) {
-    console.warn(
-      "STMemoryBooks: Failed to update highestMemoryProcessed baseline:",
-      e,
+    throwIfStmbStopped(runEpoch);
+    const addResult = await addMemoryToLorebook(
+      memoryResult,
+      context.lorebookValidation,
     );
-  }
+    throwIfStmbStopped(runEpoch);
 
-  clearAutoSummaryState();
+    if (!addResult.success) {
+      throw new Error(addResult.error || "Failed to add memory to lorebook");
+    }
 
-  const contextMsg =
-    context.memoryFetchResult?.actualCount > 0
-      ? ` (with ${context.memoryFetchResult.actualCount} context ${context.memoryFetchResult.actualCount === 1 ? "memory" : "memories"})`
-      : "";
+    try {
+      const connDbg = profile.effectiveConnection || profile.connection || {};
+      console.debug("STMemoryBooks: Passing profile to runAfterMemory", {
+        api: connDbg.api,
+        model: connDbg.model,
+        temperature: connDbg.temperature,
+      });
+      await runAfterMemory(compiledScene, profile);
+    } catch (e) {
+      console.warn("STMemoryBooks: runAfterMemory failed:", e);
+    }
+    throwIfStmbStopped(runEpoch);
 
-  toastr.clear();
-  lastFailureToast = null;
-  lastFailedAIError = null;
-  lastFailedAIContext = null;
-  toastr.success(
-    __st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}!`,
-    "STMemoryBooks",
-  );
+    try {
+      const stmbData = getSceneMarkers() || {};
+      stmbData.highestMemoryProcessed = context.sceneData.sceneEnd;
+      delete stmbData.highestMemoryProcessedManuallySet;
+      saveMetadataForCurrentContext();
+    } catch (e) {
+      console.warn(
+        "STMemoryBooks: Failed to update highestMemoryProcessed baseline:",
+        e,
+      );
+    }
+
+    clearAutoSummaryState();
+
+    const contextMsg =
+      context.memoryFetchResult?.actualCount > 0
+        ? ` (with ${context.memoryFetchResult.actualCount} context ${context.memoryFetchResult.actualCount === 1 ? "memory" : "memories"})`
+        : "";
+
+    toastr.clear();
+    lastFailureToast = null;
+    lastFailedAIError = null;
+    lastFailedAIContext = null;
+    toastr.success(
+      __st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}!`,
+      "STMemoryBooks",
+    );
   
   } catch (error) {
+    if (isStmbStopError(error)) {
+      return;
+    }
     console.error("STMemoryBooks: Manual JSON repair failed:", error);
     toastr.error(
       __st_t_tag`Failed to create memory from corrected JSON: ${error.message}`,
       "STMemoryBooks",
     );
   } finally {
+    stmbTask.finish();
     // ALWAYS reset the flag, no matter how we exit.
     // This clears the `isProcessingMemory` flag set inside the try block above.
     isProcessingMemory = false;
@@ -5610,6 +5731,9 @@ async function applyManualFixedArcJson(correctedRaw) {
     } catch (e) {}
     lastArcFailureToast = null;
   } catch (e) {
+    if (isStmbStopError(e)) {
+      return;
+    }
     console.error("STMemoryBooks: applyManualFixedArcJson failed:", e);
     toastr.error(
       __st_t_tag`Failed to apply corrected Arc JSON: ${e.message}`,

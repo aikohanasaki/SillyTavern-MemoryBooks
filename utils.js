@@ -1036,3 +1036,91 @@ export function createProfileObject(data = {}) {
 
     return profile;
 }
+
+export class StmbCancelledError extends Error {
+    constructor(message = 'STMB generation stopped') {
+        super(message);
+        this.name = 'StmbCancelledError';
+    }
+}
+
+let stmbStopEpoch = 0;
+let stmbInFlightNextId = 1;
+const stmbInFlight = new Map(); // id -> { id, label, controller, epoch, startedAt }
+
+export function getStmbStopEpoch() {
+    return stmbStopEpoch;
+}
+
+export function getStmbInFlightCount() {
+    return stmbInFlight.size;
+}
+
+export function isStmbStopError(err) {
+    if (!err) return false;
+    if (err instanceof StmbCancelledError) return true;
+    const name = String(err.name || '');
+    if (name === 'AbortError') return true;
+    // Some code paths throw a plain Error('Cancelled') or similar.
+    const msg = String(err.message || '');
+    return msg === 'Cancelled' || msg === 'Canceled' || msg.includes('aborted');
+}
+
+export function throwIfStmbStopped(epoch) {
+    if (epoch !== stmbStopEpoch) {
+        throw new StmbCancelledError();
+    }
+}
+
+/**
+ * Register an in-flight STMB task and return a guard object with an AbortSignal.
+ * - Call `finish()` in a finally block.
+ * - Call `throwIfStopped()` before applying any results.
+ */
+export function createStmbInFlightTask(label = 'STMB') {
+    const id = stmbInFlightNextId++;
+    const epoch = stmbStopEpoch;
+    const controller = new AbortController();
+    const entry = { id, label: String(label || 'STMB'), controller, epoch, startedAt: Date.now() };
+    stmbInFlight.set(id, entry);
+
+    const finish = () => {
+        stmbInFlight.delete(id);
+    };
+
+    const throwIfStopped = () => {
+        if (controller.signal.aborted || epoch !== stmbStopEpoch) {
+            throw new StmbCancelledError();
+        }
+    };
+
+    return {
+        id,
+        label: entry.label,
+        epoch,
+        signal: controller.signal,
+        abort: (reason = 'stmb-stop') => {
+            try {
+                controller.abort(reason);
+            } catch { /* noop */ }
+        },
+        throwIfStopped,
+        finish,
+    };
+}
+
+/**
+ * Panic-stop: abort all tracked in-flight STMB tasks and advance the stop epoch.
+ * Returns how many tasks were in-flight at the moment of stopping.
+ */
+export function stmbStopAllInFlight(reason = 'stmb-stop') {
+    stmbStopEpoch++;
+    const entries = Array.from(stmbInFlight.values());
+    stmbInFlight.clear();
+    for (const e of entries) {
+        try {
+            e.controller.abort(reason);
+        } catch { /* noop */ }
+    }
+    return { stoppedCount: entries.length, epoch: stmbStopEpoch };
+}

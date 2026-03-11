@@ -161,7 +161,8 @@ function getBuiltinTemplates() {
                 orderMode: "manual",
                 orderValue: 25,
                 preventRecursion: true,
-                delayUntilRecursion: false
+                delayUntilRecursion: false,
+                ignoreBudget: false
                 }
             },
             triggers: {
@@ -192,7 +193,8 @@ function getBuiltinTemplates() {
                 orderMode: "manual",
                 orderValue: 25,
                 preventRecursion: true,
-                delayUntilRecursion: false
+                delayUntilRecursion: false,
+                ignoreBudget: false
                 }
             },
             triggers: {
@@ -223,7 +225,8 @@ function getBuiltinTemplates() {
                 orderMode: "manual",
                 orderValue: 15,
                 preventRecursion: true,
-                delayUntilRecursion: false
+                delayUntilRecursion: false,
+                ignoreBudget: false
                 }
             },
             triggers: {
@@ -254,7 +257,8 @@ function getBuiltinTemplates() {
                 orderMode: "manual",
                 orderValue: 30,
                 preventRecursion: true,
-                delayUntilRecursion: false
+                delayUntilRecursion: false,
+                ignoreBudget: false
                 }
             },
             triggers: {

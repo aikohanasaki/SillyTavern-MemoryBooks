@@ -1,4 +1,4 @@
-import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { oai_settings } from '../../../openai.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
@@ -105,6 +105,7 @@ export async function sendRawCompletionRequest({
     endpoint = null,
     apiKey = null,
     extra = {},
+    signal = null,
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
@@ -205,6 +206,7 @@ export async function sendRawCompletionRequest({
         method: 'POST',
         headers: headers,
         body: JSON.stringify(body),
+        signal: signal || undefined,
     });
 
     if (!res.ok) {
@@ -259,6 +261,7 @@ export async function requestCompletion({
     endpoint = null,
     apiKey = null,
     extra = {},
+    signal = null,
 }) {
     // Delegate all provider-specific shaping to sendRawCompletionRequest which already
     // handles: full-manual, custom (custom_model_id  oai_settings.custom_url), and normal providers.
@@ -270,6 +273,7 @@ export async function requestCompletion({
         endpoint,
         apiKey,
         extra,
+        signal,
     });
 }
 
@@ -707,9 +711,13 @@ export function parseAIJsonResponse(aiResponse) {
  * @returns {Promise<Object>} The structured memory result from JSON parsing
  * @throws {AIResponseError} If the AI generation fails or doesn't return valid JSON
  */
-async function generateMemoryWithAI(promptString, profile) {
-    const characterDataReady = await waitForCharacterData();
+async function generateMemoryWithAI(promptString, profile, options = {}) {
+    const signal = options?.signal || null;
+    const characterDataReady = await waitForCharacterData({ signal });
     if (!characterDataReady) {
+        if (signal?.aborted) {
+            throw new StmbCancelledError();
+        }
         throw new AIResponseError(
             'Character data is not available. This may indicate that SillyTavern is still loading. Please wait a moment and try again.'
         );
@@ -737,7 +745,8 @@ async function generateMemoryWithAI(promptString, profile) {
             api: apiType,
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
-            extra: extra
+            extra: extra,
+            signal,
         });
 
         // Detect provider-reported truncation before attempting to parse
@@ -765,6 +774,7 @@ async function generateMemoryWithAI(promptString, profile) {
             profile: profile
         };
     } catch (error) {
+        if (isStmbStopError(error)) throw error;
         if (error instanceof AIResponseError) throw error;
         const e = new AIResponseError(`Memory generation failed: ${error.message || error}`);
         try {
@@ -807,7 +817,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
             );
         }
         
-        const response = await generateMemoryWithAI(promptString, profile);
+        const response = await generateMemoryWithAI(promptString, profile, { signal: options?.signal || null });
         const processedMemory = processJsonResult(response, compiledScene);
 
         const memoryResult = {
@@ -861,6 +871,9 @@ export async function createMemory(compiledScene, profile, options = {}) {
         return memoryResult;
         
     } catch (error) {
+        if (isStmbStopError(error)) {
+            throw error;
+        }
         if (error instanceof TokenWarningError || error instanceof AIResponseError || error instanceof InvalidProfileError) {
             throw error;
         }
