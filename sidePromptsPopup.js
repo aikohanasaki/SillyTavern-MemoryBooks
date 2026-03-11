@@ -529,7 +529,7 @@ async function openNewTemplate(parentPopup) {
                 </label>
                 <label class="checkbox_label" style="margin-left: 12px;">
                     <input type="checkbox" id="stmb-sp-new-lb-ignore-budget">
-                    <span>${escapeHtml(translate('ignore budget', 'STMemoryBooks_IgnoreBudget'))}</span>
+                    <span>${escapeHtml(translate('Ignore Budget', 'STMemoryBooks_IgnoreBudget'))}</span>
                 </label>
             </div>
         </div>
