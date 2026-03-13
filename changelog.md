@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.18.4 (March 13, 2026)
+- fix side prompts treating regeneration as cancel.
+
 ## v4.18.3 (March 10, 2026)
 Enhancements:
 - Add `/stmb-stop` to stop all STMB generations (includes side prompts in flight)
