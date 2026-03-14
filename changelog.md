@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v4.18.5 (March 13, 2026)
+- change "delay until recursion" to default to "false".
+
 ## v4.18.4 (March 13, 2026)
 - fix side prompts treating regeneration as cancel.
 
