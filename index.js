@@ -1048,7 +1048,7 @@ function initializeSettings() {
         orderMode: "auto",
         orderValue: 100,
         preventRecursion: false,
-        delayUntilRecursion: true,
+        delayUntilRecursion: false,
       };
 
       extension_settings.STMemoryBooks.profiles.unshift(dynamicProfile);
@@ -1095,7 +1095,7 @@ function initializeSettings() {
       orderMode: "auto",
       orderValue: 100,
       preventRecursion: false,
-      delayUntilRecursion: true,
+      delayUntilRecursion: false,
     };
 
     extension_settings.STMemoryBooks.profiles = [dynamicProfile];
