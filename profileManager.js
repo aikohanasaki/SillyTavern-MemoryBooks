@@ -346,7 +346,7 @@ export async function newProfile(settings, refreshCallback) {
             orderValue: 100,
             reverseStart: DEFAULT_REVERSE_START,
             preventRecursion: false,
-            delayUntilRecursion: true,
+            delayUntilRecursion: false,
             outletName: ''
         };
 
@@ -966,7 +966,7 @@ export function validateAndFixProfiles(settings) {
             fixes.push(`Added default 'preventRecursion' to profile "${profile.name}"`);
         }
         if (profile.delayUntilRecursion === undefined) {
-            profile.delayUntilRecursion = true;
+            profile.delayUntilRecursion = false;
             fixes.push(`Added default 'delayUntilRecursion' to profile "${profile.name}"`);
         }
         // Ensure all existing profiles have a title format
