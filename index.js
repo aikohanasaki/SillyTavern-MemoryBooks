@@ -4841,7 +4841,8 @@ function persistMainPopupSettings(popupElement) {
     getAutoHideMode(settings.moduleSettings);
   const lorebookNameTemplate =
     popupElement.querySelector("#stmb-lorebook-name-template")?.value?.trim() ??
-    (settings.moduleSettings.lorebookNameTemplate || "");  const tokenWarningThreshold = readIntInput(
+    (settings.moduleSettings.lorebookNameTemplate || "");
+  const tokenWarningThreshold = readIntInput(
     popupElement.querySelector("#stmb-token-warning-threshold"),
     settings.moduleSettings.tokenWarningThreshold ?? 50000,
   );
@@ -4973,6 +4974,7 @@ function persistMainPopupSettings(popupElement) {
   const customTitleFormat = popupElement
     .querySelector("#stmb-custom-title-format")
     ?.value?.trim();
+  let nextTitleFormat = settings.titleFormat;
   if (titleFormatSelect?.value === "custom") {
     if (customTitleFormat && customTitleFormat.includes("000")) {
       nextTitleFormat = customTitleFormat;
