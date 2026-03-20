@@ -2,7 +2,7 @@
 
 **← [Back to README](readme.md)**
 
-## v5.2.0 (March 20, 2026)
+## v5.2.1 (March 20, 2026)
 - Reorganized main settings popup for clarity.
 - Added some tooltips for clarity.
 - Made Max Tokens default to 4000 unless other values are entered. 

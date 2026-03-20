@@ -14,7 +14,7 @@
     "STMemoryBooks_Preferences": "Preferensi:",
     "STMemoryBooks_AlwaysUseDefault": "Selalu gunakan profil default (tanpa konfirmasi)",
     "STMemoryBooks_ShowMemoryPreviews": "Tampilkan pratinjau memori",
-    "STMemoryBooks_ShowMemoryPreviewsTooltip": "Menampilkan pratinjau untuk memori dan side prompt yang dikembalikan oleh AI.",
+    "STMemoryBooks_ShowMemoryPreviewsTooltip": "Menampilkan pratinjau untuk memori dan Prompt Sampingan yang dikembalikan oleh AI.",
     "STMemoryBooks_ShowNotifications": "Tampilkan notifikasi",
     "STMemoryBooks_UnhideBeforeMemory": "Tampilkan kembali pesan tersembunyi untuk pembuatan memori (menjalankan /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "Aktifkan Mode Buku Latar Manual",
