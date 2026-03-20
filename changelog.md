@@ -3,6 +3,11 @@
 **← [Back to README](readme.md)**
 
 ## v5.2.0 (March 20, 2026)
+- Reorganized main settings popup for clarity.
+- Added some tooltips for clarity.
+- Made Max Tokens default to 4000 unless other values are entered. 
+
+## v5.2.0 (March 20, 2026)
 - Add keyword field for side prompts.
 
 ## v5.1.0 (March 20, 2026)
