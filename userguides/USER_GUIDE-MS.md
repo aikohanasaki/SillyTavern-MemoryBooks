@@ -118,7 +118,8 @@ Anggaplah ST Memory Books sebagai **pustakawan AI peribadi** anda untuk perbuala
 - `/scenememory 10-25` - Cipta memori dari mesej 10 hingga 25
 - `/creatememory` - Buat memori dari babak yang ditandakan sekarang
 - `/nextmemory` - Ringkaskan semua perkara sejak memori terakhir
-- `/sideprompt "Relationship Tracker"` - Jalankan penjejak tersuai
+- `/sideprompt "Relationship Tracker" {{macro}}="value"` - Jalankan penjejak tersuai
+- Selepas Side Prompt dipilih, autolengkap perintah akan mencadangkan makro runtime yang masih diperlukan.
 
 **Apa yang anda dapat:**
 - Penciptaan memori sepantas kilat
@@ -180,7 +181,8 @@ Ringkasan Arka membolehkan anda menggabungkan beberapa memori lama menjadi satu 
 ## 🎨 Penjejak, Prom Sampingan, & Templat (Ciri Termaju)
 
 **Prom Sampingan** (Side Prompts) adalah penjejak latar belakang yang membantu mengekalkan maklumat cerita yang sedang berjalan.
-Mereka berjalan seiring dengan penciptaan memori dan boleh mengemas kini nota yang sama dari semasa ke semasa. Anggaplah mereka sebagai **pembantu yang memerhati cerita anda dan memastikan butiran tertentu sentiasa dikemas kini**.
+Mereka mencipta entri Side Prompt yang berasingan dalam lorebook dan berjalan seiring dengan penciptaan memori. Anggaplah mereka sebagai **pembantu yang memerhati cerita anda dan memastikan butiran tertentu sentiasa dikemas kini**.
+Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan dalam `Prompt` dan `Response Format`. Makro bukan standard `{{...}}` menjadi input wajib untuk dijalankan secara manual.
 
 ### 🚀 **Mula Pantas dengan Templat**
 
@@ -194,7 +196,7 @@ Mereka berjalan seiring dengan penciptaan memori dan boleh mengemas kini nota ya
    * **Mood & Atmosphere** – Menjejak nada emosi
    * **World Building Notes** – Menjejak butiran latar tempat dan lore
 4. Aktifkan templat yang anda mahu (anda boleh mengubah suainya kemudian)
-5. Memori anda kini akan menyertakan penjejakan ini secara automatik
+5. Jika templat mengandungi makro runtime tersuai, ia tidak akan berjalan secara automatik dan mesti dimulakan secara manual dengan `/sideprompt`.
 
 ### ⚙️ **Bagaimana Prom Sampingan Berfungsi**
 
@@ -202,7 +204,9 @@ Mereka berjalan seiring dengan penciptaan memori dan boleh mengemas kini nota ya
 * **Tidak Mengganggu**: Mereka tidak mengubah tetapan AI utama atau prom watak anda
 * **Kawalan Setiap Sembang**: Sembang yang berbeza boleh menggunakan penjejak yang berbeza
 * **Berasaskan Templat**: Gunakan templat terbina dalam atau cipta sendiri
-* **Automatik atau Manual**: Sesetengah berjalan secara automatik, yang lain boleh dijalankan melalui perintah
+* **Automatik atau Manual**: Templat standard boleh berjalan secara automatik; templat dengan makro runtime tersuai hanya boleh dijalankan secara manual.
+* **Sokongan Makro**: `Prompt` dan `Response Format` mengembangkan makro ST standard seperti `{{user}}` dan `{{char}}`.
+* **Pemeriksaan Keselamatan**: Jika templat mengandungi makro runtime tersuai, STMB membuang `onInterval` dan `onAfterMemory` semasa simpan/import dan memaparkan amaran.
 
 Ini menjadikan tingkah laku pencetus mudah difahami tanpa istilah teknikal.
 
@@ -233,8 +237,9 @@ Contoh idea prom:
 2. Klik **Create New**
 3. Tulis arahan ringkas dan jelas
    *(contoh: "Sentiasa catat bagaimana keadaan cuaca dalam setiap babak")*
-4. Simpan dan aktifkannya
-5. Penjejak kini akan mengemas kini maklumat ini dari semasa ke semasa
+4. Tambahkan jika perlu makro ST standard atau makro runtime dalam format `{{macro}}="value"`.
+5. Simpan dan aktifkannya
+6. Penjejak kini akan mengemas kini maklumat ini dari semasa ke semasa jika pencetus automatik kekal diaktifkan
 
 ### 💬 **Tip Pro**
 

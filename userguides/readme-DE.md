@@ -250,7 +250,7 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 
 ### 🎡 Tracker & Neben-Prompts (Side Prompts)
 
-Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihrem Erinnerungs-Lorebook. Side Prompts ermöglichen es Ihnen, **laufende Zustände** zu verfolgen, nicht nur vergangene Ereignisse. Zum Beispiel:
+Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Prompt-Einträge in Ihrem Erinnerungs-Lorebook. Side Prompts ermöglichen es Ihnen, **laufende Zustände** zu verfolgen, nicht nur vergangene Ereignisse. Zum Beispiel:
 
 * 💰 Inventar & Ressourcen ("Welche Gegenstände hat der Benutzer?")
 * ❤️ Beziehungsstatus ("Was fühlt X für Y?")
@@ -267,7 +267,9 @@ Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihr
 - Neue Prompts erstellen oder duplizieren, um mit verschiedenen Prompt-Stilen zu experimentieren.
 - Jedes Preset bearbeiten oder löschen (einschließlich der integrierten).
 - Exportieren und Importieren von Presets als JSON-Dateien für Backup oder Teilen.
-- Manuell oder automatisch mit der Erinnerungserstellung ausführen.
+- Manuell oder automatisch ausführen, je nach Vorlage.
+- Standard-ST-Makros wie `{{user}}` und `{{char}}` in `Prompt` und `Response Format` verwenden.
+- Eigene Laufzeit-Makros wie `{{npc name}}` verwenden, die beim Ausführen von `/sideprompt` übergeben werden.
 
 ```
 
@@ -275,7 +277,10 @@ Side Prompts können wie Tracker verwendet werden und erstellen Einträge in Ihr
 
 ```
 - Wenn Sie einen neuen Prompt erstellen, können Sie von den integrierten kopieren, um beste Kompatibilität zu gewährleisten.
-- Zusätzliche Side Prompts Vorlagenbibliothek [JSON-Datei](resources/SidePromptTemplateLibrary.json) - einfach importieren und verwenden.
+- Zusätzliche Side-Prompt-Vorlagenbibliothek [JSON-Datei](resources/SidePromptTemplateLibrary.json) - einfach importieren und verwenden.
+- Manuelle Syntax: `/sideprompt "Name" {{macro}}="value" [X-Y]`.
+- Nachdem Sie einen Side Prompt in der Befehls-Autovervollständigung ausgewählt haben, schlägt STMB die noch benötigten Laufzeit-Makros vor.
+- Side Prompts mit eigenen Laufzeit-Makros sind nur manuell nutzbar. STMB entfernt bei solchen Vorlagen `On Interval` und `On After Memory` beim Speichern/Importieren und zeigt eine Warnung an.
 
 ```
 

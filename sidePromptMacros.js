@@ -69,7 +69,7 @@ export function hasTemplateRuntimeMacros(templateLike) {
 }
 
 export function formatQuotedSidePromptName(name) {
-    return `"${String(name || '').replace(/"/g, '\\"')}"`;
+    return `"${String(name || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
 export function parseSidePromptCommandInput(input, options = {}) {

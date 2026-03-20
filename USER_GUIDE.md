@@ -2,7 +2,7 @@
 
 **Turn your endless chat conversations into organized, searchable memories!** 
 
-Need bot to remember things, but the chat is too long for context? Want to automatically track important plot points without manually taking notes? ST Memory Books does exactly that - it watches your chats and creates smart summaries so you never lose track of your story again.
+Need the bot to remember things, but the chat is too long for context? Want to automatically track important plot points without manually taking notes? ST Memory Books does exactly that - it watches your chats and creates smart summaries so you never lose track of your story again.
 
 (Looking for some behind-the-scenes technical detail? Maybe you want [How STMB Works](userguides/howSTMBworks-en.md) instead.)
 
@@ -118,7 +118,7 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - `/scenememory 10-25` - Create memory from messages 10 to 25
 - `/creatememory` - Make memory from currently marked scene
 - `/nextmemory` - Summarize everything since the last memory
-- `/sideprompt "Relationship Tracker"` - Run custom tracker
+- `/sideprompt "Relationship Tracker" {{macro}}="value"` - Run a side prompt, optionally supplying required runtime macros
 
 **What you get:**
 - Lightning-fast memory creation
@@ -180,7 +180,7 @@ An Arc Summary lets you combine several older memories into one shorter summary.
 ## 🎨 Trackers, Side Prompts, & Templates (Advanced Feature)
 
 **Side Prompts** are background trackers that help maintain ongoing story information.
-They run alongside memory creation and can update the same notes over time. Think of them as **helpers that watch your story and keep certain details up to date**.
+They run alongside memory creation and update separate side-prompt lorebook entries over time. Think of them as **helpers that watch your story and keep certain details up to date**.
 
 ### 🚀 **Quick Start with Templates**
 
@@ -194,7 +194,7 @@ They run alongside memory creation and can update the same notes over time. Thin
    * **Mood & Atmosphere** – Tracks emotional tone
    * **World Building Notes** – Tracks setting details and lore
 4. Enable the templates you want (you can customize them later)
-5. Your memories will now include this tracking automatically
+5. If the template uses automatic triggers, STMB will keep that side-prompt entry updated alongside memory creation
 
 [Scribe showing step by step process to enable automatic side prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
 
@@ -204,7 +204,9 @@ They run alongside memory creation and can update the same notes over time. Thin
 * **Non-Intrusive**: They do not change your main AI settings or character prompts
 * **Per-Chat Control**: Different chats can use different trackers
 * **Template-Based**: Use built-in templates or create your own
-* **Automatic or Manual**: Some run automatically, others can be run by command
+* **Automatic or Manual**: Standard templates can run automatically; templates with custom runtime macros are manual-only
+* **Macro Support**: `Prompt` and `Response Format` expand standard ST macros like `{{user}}` and `{{char}}`
+* **Runtime Macros**: Non-standard `{{...}}` tokens become required command inputs such as `{{npc name}}="Jane Doe"`
 
 This makes the trigger behavior understandable without technical terms.
 
@@ -214,6 +216,7 @@ This makes the trigger behavior understandable without technical terms.
 * **Enable / Disable**: Turn trackers on or off at any time
 * **Import / Export**: Share templates or back them up
 * **Status View**: See which trackers are active in the current chat and when they run
+* **Safety Checks**: If a template contains custom runtime macros, STMB strips automatic triggers on save/import and shows a warning toast
 
 ### 💡 **Template Examples**
 
@@ -231,15 +234,35 @@ Example prompt ideas:
 
 1. Open Side Prompts Manager
 2. Click **Create New**
-3. Write a short, clear instructionCiao
+3. Write a short, clear instruction
    *(example: “Always note what the weather is like in each scene”)*
-4. Save and enable it
-5. The tracker will now update this information over time
+4. Optionally add standard ST macros like `{{user}}` or `{{char}}`
+5. If you add custom runtime macros like `{{location name}}`, run it manually with `/sideprompt "Name" {{location name}}="value"`
+6. Save and enable it
+7. The tracker will now update this information over time if it uses automatic triggers; otherwise run it manually when needed
 
 ### 💬 **Pro Tip**
 
 Side Prompts work best when they are **small and focused**.
 Instead of “track everything,” try “track romantic tension between the main characters.”
+
+### ⌨️ **Manual /sideprompt Syntax**
+
+Use:
+`/sideprompt "Name" {{macro}}="value" [X-Y]`
+
+Examples:
+- `/sideprompt "Status" 10-20`
+- `/sideprompt "NPC Directory" {{npc name}}="Jane Doe" 40-50`
+- `/sideprompt "Location Notes" {{place name}}="Black Harbor" 100-120`
+
+Notes:
+
+- The side prompt name must be quoted.
+- Runtime macro values must be quoted.
+- Slash-command autocomplete will suggest required runtime macros after you choose the side prompt.
+- If a template contains custom runtime macros, STMB keeps it manual-only and strips automatic triggers.
+- Message IDs are still required.
 
 ---
 

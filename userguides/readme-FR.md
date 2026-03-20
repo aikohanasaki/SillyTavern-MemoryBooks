@@ -242,7 +242,7 @@ Tous les prompts et préréglages (presets) **doivent** instruire l'IA de ne ren
 
 ### 🎡 Suivis & Prompts Secondaires (Side Prompts)
 
-Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et créeront des entrées dans votre lorebook de mémoire. Les Prompts Secondaires vous permettent de suivre **l'état en cours**, pas seulement les événements passés. Par exemple :
+Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et créeront des entrées Side Prompt séparées dans votre lorebook de mémoire. Les Prompts Secondaires vous permettent de suivre **l'état en cours**, pas seulement les événements passés. Par exemple :
 
 * 💰 Inventaire & Ressources ("Quels objets l'utilisateur possède-t-il ?")
 * ❤️ Statut Relationnel ("Que ressent X pour Y ?")
@@ -259,7 +259,9 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 - Créer de nouveaux prompts ou dupliquer pour expérimenter avec différents styles.
 - Éditer ou supprimer n'importe quel préréglage (y compris ceux intégrés).
 - Exporter et importer des préréglages en fichiers JSON pour sauvegarde ou partage.
-- Les exécuter manuellement ou automatiquement avec la création de mémoire.
+- Les exécuter manuellement ou automatiquement, selon le modèle.
+- Utiliser les macros ST standard comme `{{user}}` et `{{char}}` dans `Prompt` et `Response Format`.
+- Utiliser des macros d'exécution personnalisées comme `{{npc name}}`, fournies lors de l'exécution de `/sideprompt`.
 
 ```
 
@@ -268,6 +270,9 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 ```
 - Lors de la création d'un nouveau prompt, vous pouvez copier ceux intégrés pour une meilleure compatibilité.
 - Bibliothèque de Modèles de Prompts Secondaires supplémentaire [fichier JSON](resources/SidePromptTemplateLibrary.json) - importez simplement pour utiliser.
+- Syntaxe manuelle : `/sideprompt "Nom" {{macro}}="value" [X-Y]`.
+- Après avoir choisi un side prompt dans l'autocomplétion de commande, STMB suggère les macros d'exécution manquantes.
+- Les side prompts avec des macros d'exécution personnalisées sont réservés au mode manuel. STMB supprime `On Interval` et `On After Memory` de ces modèles lors de l'enregistrement/de l'import et affiche un avertissement.
 
 ```
 

@@ -31,6 +31,46 @@ function safeSlug(str) {
         .substring(0, 50) || 'sideprompt';
 }
 
+function normalizeTemplateTriggers(next) {
+    next.triggers = next.triggers && typeof next.triggers === 'object'
+        ? { ...next.triggers }
+        : { commands: ['sideprompt'] };
+
+    if (next.triggers.onInterval) {
+        const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages ?? 50));
+        next.triggers.onInterval = { visibleMessages: vis };
+    }
+    if (next.triggers.onAfterMemory) {
+        next.triggers.onAfterMemory = { enabled: !!next.triggers.onAfterMemory.enabled };
+    }
+    if ('commands' in next.triggers) {
+        if (Array.isArray(next.triggers.commands)) {
+            next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
+        } else {
+            next.triggers.commands = [];
+        }
+    } else {
+        next.triggers.commands = ['sideprompt'];
+    }
+
+    const strippedAutoTriggers = [];
+    if (hasTemplateRuntimeMacros(next)) {
+        if (next.triggers.onInterval) {
+            delete next.triggers.onInterval;
+            strippedAutoTriggers.push('onInterval');
+        }
+        if (next.triggers.onAfterMemory) {
+            delete next.triggers.onAfterMemory;
+            strippedAutoTriggers.push('onAfterMemory');
+        }
+        if (!next.triggers.commands.some(c => String(c).toLowerCase() === 'sideprompt')) {
+            next.triggers.commands.push('sideprompt');
+        }
+    }
+
+    return { strippedAutoTriggers };
+}
+
 /**
  * Validate V2 document structure (triggers-based)
  */
@@ -488,26 +528,7 @@ export async function upsertTemplate(input) {
         updatedAt: ts,
     };
 
-    // Normalize triggers for safety
-    if (next.triggers.onInterval) {
-        const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages ?? 50));
-        next.triggers.onInterval = { visibleMessages: vis };
-    }
-    if (next.triggers.onAfterMemory) {
-        next.triggers.onAfterMemory = { enabled: !!next.triggers.onAfterMemory.enabled };
-    }
-    if ('commands' in next.triggers) {
-        if (Array.isArray(next.triggers.commands)) {
-            next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
-            // If the user cleared it intentionally, keep it empty to mean “no manual command”
-        } else {
-            // Explicitly provided but not an array => treat as disabled
-            next.triggers.commands = [];
-        }
-    } else {
-        // commands not provided at all (legacy/programmatic): default to manual for back-compat
-        next.triggers.commands = ['sideprompt'];
-    }
+    normalizeTemplateTriggers(next);
 
     data.prompts[key] = next;
     await saveDoc(data);
@@ -599,6 +620,7 @@ export async function importFromJSON(jsonString) {
 
     let added = 0;
     let renamed = 0;
+    const strippedDetails = [];
 
     for (const [key, p] of Object.entries(incoming.prompts || {})) {
         // If an entry with the same key already exists, do not overwrite; add with a new unique key
@@ -620,22 +642,12 @@ export async function importFromJSON(jsonString) {
             updatedAt: ts,
         };
 
-        // Normalize triggers similar to upsert safety
-        if (next.triggers.onInterval) {
-            const vis = Math.max(1, Number(next.triggers.onInterval.visibleMessages ?? 50));
-            next.triggers.onInterval = { visibleMessages: vis };
-        }
-        if (next.triggers.onAfterMemory) {
-            next.triggers.onAfterMemory = { enabled: !!next.triggers.onAfterMemory.enabled };
-        }
-        if ('commands' in next.triggers) {
-            if (Array.isArray(next.triggers.commands)) {
-                next.triggers.commands = next.triggers.commands.filter(x => typeof x === 'string' && x.trim());
-            } else {
-                next.triggers.commands = [];
-            }
-        } else {
-            next.triggers.commands = ['sideprompt'];
+        const { strippedAutoTriggers } = normalizeTemplateTriggers(next);
+        if (strippedAutoTriggers.length > 0) {
+            strippedDetails.push({
+                name: next.name,
+                triggers: strippedAutoTriggers,
+            });
         }
 
         merged.prompts[finalKey] = next;
@@ -643,7 +655,7 @@ export async function importFromJSON(jsonString) {
     }
 
     await saveDoc(merged);
-    return { added, renamed };
+    return { added, renamed, strippedDetails };
 }
 
 /**

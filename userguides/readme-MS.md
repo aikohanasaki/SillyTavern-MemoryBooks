@@ -242,7 +242,7 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 ### 🎡 Penjejak & Prom Sampingan
 
-Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam lorebook memori anda. Prom Sampingan membolehkan anda menjejak **keadaan semasa**, bukan hanya peristiwa lalu. Contohnya:
+Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side prompt yang berasingan dalam lorebook memori anda. Prom Sampingan membolehkan anda menjejak **keadaan semasa**, bukan hanya peristiwa lalu. Contohnya:
 
 * 💰 Inventori & Sumber ("Apa item yang pengguna miliki?")
 * ❤️ Status Hubungan ("Apa perasaan X terhadap Y?")
@@ -259,7 +259,9 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam lo
 - Cipta prom baharu atau pendua untuk bereksperimen dengan gaya prom berbeza.
 - Edit atau padam mana-mana pratetap (termasuk terbina dalam).
 - Eksport dan import pratetap sebagai fail JSON untuk sandaran atau perkongsian.
-- Jalankan secara manual atau automatik dengan penciptaan memori.
+- Jalankan secara manual atau automatik, bergantung pada templat.
+- Gunakan makro ST standard seperti `{{user}}` dan `{{char}}` dalam `Prompt` dan `Response Format`.
+- Gunakan makro runtime tersuai seperti `{{npc name}}`, yang dibekalkan apabila anda menjalankan `/sideprompt`.
 
 ```
 
@@ -267,7 +269,10 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri dalam lo
 
 ```
 - Apabila mencipta prom baharu, anda boleh menyalin dari terbina dalam untuk keserasian terbaik.
-- Pustaka Templat Prom Sampingan Tambahan [fail JSON](resources/SidePromptTemplateLibrary.json) - hanya import untuk guna
+- Pustaka Templat Prom Sampingan Tambahan [fail JSON](resources/SidePromptTemplateLibrary.json) - hanya import untuk guna.
+- Sintaks manual: `/sideprompt "Nama" {{macro}}="value" [X-Y]`.
+- Selepas memilih side prompt dalam autolengkap arahan, STMB akan mencadangkan makro runtime yang masih diperlukan.
+- Side prompt dengan makro runtime tersuai hanya boleh dijalankan secara manual. STMB membuang `On Interval` dan `On After Memory` daripada templat tersebut semasa simpan/import dan memaparkan amaran.
 
 ```
 

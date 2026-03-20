@@ -47,29 +47,73 @@ function getMacroValidationToastOptions() {
     };
 }
 
+function getRuntimeMacroStrippedToastOptions() {
+    return {
+        timeOut: 0,
+        extendedTimeOut: 0,
+        tapToDismiss: true,
+        closeButton: true,
+    };
+}
+
 function validateRuntimeMacroTriggerConfig({ name, prompt, responseFormat, intervalOn, afterOn }) {
     const runtimeMacros = collectTemplateRuntimeMacros({ prompt, responseFormat });
     if (runtimeMacros.length === 0) {
-        return { ok: true, runtimeMacros };
+        return { ok: true, runtimeMacros, strippedAutoTriggers: [] };
     }
 
-    const blockedTriggers = [];
-    if (intervalOn) blockedTriggers.push(translate('Run on visible message interval', 'STMemoryBooks_RunOnVisibleMessageInterval'));
-    if (afterOn) blockedTriggers.push(translate('Run automatically after memory', 'STMemoryBooks_RunAutomaticallyAfterMemory'));
+    const strippedAutoTriggers = [];
+    if (intervalOn) strippedAutoTriggers.push(translate('Run on visible message interval', 'STMemoryBooks_RunOnVisibleMessageInterval'));
+    if (afterOn) strippedAutoTriggers.push(translate('Run automatically after memory', 'STMemoryBooks_RunAutomaticallyAfterMemory'));
 
-    if (blockedTriggers.length === 0) {
-        return { ok: true, runtimeMacros };
+    if (strippedAutoTriggers.length === 0) {
+        return { ok: true, runtimeMacros, strippedAutoTriggers };
     }
 
     const displayName = String(name || translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt'));
     const usage = `/sideprompt "${displayName}" ${runtimeMacros.map(token => `${token}="value"`).join(' ')}`;
-    const macroLead = runtimeMacros.join(', ');
-    const grammar = runtimeMacros.length === 1
-        ? translate('is not a standard ST macro. This side prompt must be run manually with the command', 'STMemoryBooks_RuntimeMacroManualOnlyPrefix')
-        : translate('are not standard ST macros. This side prompt must be run manually with the command', 'STMemoryBooks_RuntimeMacroManualOnlyPrefixPlural');
-    const message = `${macroLead} ${grammar} ${usage}. ${translate('Please uncheck', 'STMemoryBooks_RuntimeMacroPleaseUncheck')} ${blockedTriggers.join(', ')}.`;
+    const message = tr(
+        'STMemoryBooks_RuntimeMacroTriggersStripped',
+        'Stripped {{triggers}} from "{{name}}" because it contains custom runtime macros: {{macros}}. Run it manually with {{usage}}.',
+        {
+            triggers: strippedAutoTriggers.join(', '),
+            name: displayName,
+            macros: runtimeMacros.join(', '),
+            usage,
+        },
+    );
     toastr.warning(message, translate('STMemoryBooks', 'index.toast.title'), getMacroValidationToastOptions());
-    return { ok: false, runtimeMacros };
+    return { ok: true, runtimeMacros, strippedAutoTriggers };
+}
+
+function formatStrippedTriggerLabel(triggerKey) {
+    if (triggerKey === 'onInterval') {
+        return translate('Run on visible message interval', 'STMemoryBooks_RunOnVisibleMessageInterval');
+    }
+    if (triggerKey === 'onAfterMemory') {
+        return translate('Run automatically after memory', 'STMemoryBooks_RunAutomaticallyAfterMemory');
+    }
+    return triggerKey;
+}
+
+function showRuntimeMacroImportNormalizationToast(strippedDetails) {
+    if (!Array.isArray(strippedDetails) || strippedDetails.length === 0) {
+        return;
+    }
+
+    const details = strippedDetails
+        .map(({ name, triggers }) => {
+            const triggerLabels = Array.isArray(triggers) ? triggers.map(formatStrippedTriggerLabel).join(', ') : '';
+            return `"${String(name || translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt'))}" (${triggerLabels})`;
+        })
+        .join('; ');
+
+    const message = tr(
+        'STMemoryBooks_RuntimeMacroImportStripped',
+        'Stripped automatic triggers from imported side prompts because they contain custom runtime macros: {{details}}.',
+        { details },
+    );
+    toastr.warning(message, translate('STMemoryBooks', 'index.toast.title'), getRuntimeMacroStrippedToastOptions());
 }
 
 /**
@@ -386,17 +430,15 @@ async function openEditTemplate(parentPopup, key) {
                 intervalOn,
                 afterOn,
             });
-            if (!validation.ok) {
-                return;
-            }
             const forceManual = validation.runtimeMacros.length > 0;
+            const allowAutoTriggers = validation.runtimeMacros.length === 0;
 
-            if (intervalOn) {
+            if (intervalOn && allowAutoTriggers) {
                 const intervalRaw = parseInt(dlg.querySelector('#stmb-sp-edit-interval')?.value ?? '50', 10);
                 const vis = Math.max(1, isNaN(intervalRaw) ? 50 : intervalRaw);
                 triggers.onInterval = { visibleMessages: vis };
             }
-            if (afterOn) {
+            if (afterOn && allowAutoTriggers) {
                 triggers.onAfterMemory = { enabled: true };
             }
             if (manualOn || forceManual) {
@@ -685,17 +727,15 @@ async function openNewTemplate(parentPopup) {
             intervalOn,
             afterOn,
         });
-        if (!validation.ok) {
-            return;
-        }
         const forceManual = validation.runtimeMacros.length > 0;
+        const allowAutoTriggers = validation.runtimeMacros.length === 0;
 
-        if (intervalOn) {
+        if (intervalOn && allowAutoTriggers) {
             const intervalRaw = parseInt(dlg.querySelector('#stmb-sp-new-interval')?.value ?? '50', 10);
             const vis = Math.max(1, isNaN(intervalRaw) ? 50 : intervalRaw);
             triggers.onInterval = { visibleMessages: vis };
         }
-        if (afterOn) {
+        if (afterOn && allowAutoTriggers) {
             triggers.onAfterMemory = { enabled: true };
         }
         if (manualOn || forceManual) {
@@ -779,9 +819,10 @@ async function importTemplates(event, parentPopup) {
         const text = await file.text();
         const res = await importSidePromptsJSON(text);
         if (res && typeof res === 'object') {
-            const { added = 0, renamed = 0 } = res;
+            const { added = 0, renamed = 0, strippedDetails = [] } = res;
             const detail = renamed > 0 ? tr('STMemoryBooks_ImportedSidePromptsRenamedDetail', ' ({{count}} renamed due to key conflicts)', { count: renamed }) : '';
             toastr.success(tr('STMemoryBooks_ImportedSidePromptsDetail', 'Imported side prompts: {{added}} added{{detail}}', { added, detail }), translate('STMemoryBooks', 'index.toast.title'));
+            showRuntimeMacroImportNormalizationToast(strippedDetails);
         } else {
             toastr.success(translate('Imported side prompts', 'STMemoryBooks_ImportedSidePrompts'), translate('STMemoryBooks', 'index.toast.title'));
         }

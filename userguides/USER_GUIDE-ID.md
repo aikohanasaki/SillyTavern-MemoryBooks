@@ -136,7 +136,8 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 * `/scenememory 10-25` - Buat memori dari pesan 10 hingga 25.
 * `/creatememory` - Buat memori dari adegan yang saat ini ditandai.
 * `/nextmemory` - Ringkas semuanya sejak memori terakhir.
-* `/sideprompt "Relationship Tracker"` - Jalankan pelacak kustom.
+* `/sideprompt "Relationship Tracker" {{macro}}="value"` - Jalankan pelacak kustom.
+* Setelah Side Prompt dipilih, pelengkapan otomatis perintah akan menyarankan makro runtime yang masih diperlukan.
 
 **Apa yang Anda dapatkan:**
 
@@ -200,7 +201,8 @@ tetapi hasilnya mungkin kurang mendetail.
 ## 🎨 Pelacak, Side Prompts, & Templat (Fitur Lanjutan)
 
 **Side Prompts** adalah pelacak latar belakang yang membantu memelihara informasi cerita yang sedang berlangsung.
-Mereka berjalan bersamaan dengan pembuatan memori dan dapat memperbarui catatan yang sama dari waktu ke waktu. Anggap saja sebagai **asisten yang mengawasi cerita Anda dan menjaga detail tertentu tetap mutakhir**.
+Mereka mencipta entri Side Prompt yang berasingan di lorebook dan berjalan bersamaan dengan pembuatan memori. Anggap saja sebagai **asisten yang mengawasi cerita Anda dan menjaga detail tertentu tetap mutakhir**.
+Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan `Response Format`. Makro bukan standard `{{...}}` menjadi input wajib untuk dijalankan secara manual.
 
 ### 🚀 **Mulai Cepat dengan Templat**
 
@@ -215,7 +217,7 @@ Mereka berjalan bersamaan dengan pembuatan memori dan dapat memperbarui catatan 
 
 
 4. Aktifkan templat yang Anda inginkan (Anda dapat menyesuaikannya nanti).
-5. Memori Anda sekarang akan menyertakan pelacakan ini secara otomatis.
+5. Jika templat mengandungi makro runtime tersuai, ia tidak akan berjalan secara automatik dan mesti dimulakan secara manual dengan `/sideprompt`.
 
 ### ⚙️ **Cara Kerja Side Prompts**
 
@@ -223,7 +225,9 @@ Mereka berjalan bersamaan dengan pembuatan memori dan dapat memperbarui catatan 
 * **Tidak Mengganggu**: Mereka tidak mengubah pengaturan AI utama atau prompt karakter Anda.
 * **Kontrol Per-Obrolan**: Obrolan yang berbeda dapat menggunakan pelacak yang berbeda.
 * **Berbasis Templat**: Gunakan templat bawaan atau buat sendiri.
-* **Otomatis atau Manual**: Beberapa berjalan secara otomatis, yang lain dapat dijalankan dengan perintah.
+* **Otomatis atau Manual**: Templat standard boleh berjalan secara automatik; templat dengan makro runtime tersuai hanya boleh dijalankan secara manual.
+* **Sokongan Makro**: `Prompt` dan `Response Format` mengembangkan makro ST standard seperti `{{user}}` dan `{{char}}`.
+* **Pemeriksaan Keselamatan**: Jika templat mengandungi makro runtime tersuai, STMB membuang `onInterval` dan `onAfterMemory` semasa simpan/import dan memaparkan amaran.
 
 Ini membuat perilaku pemicu dapat dimengerti tanpa istilah teknis.
 
@@ -254,8 +258,9 @@ Ide prompt contoh:
 2. Klik **Create New**.
 3. Tulis instruksi yang singkat dan jelas
 *(contoh: "Selalu catat bagaimana cuaca di setiap adegan")*
-4. Simpan dan aktifkan.
-5. Pelacak sekarang akan memperbarui informasi ini dari waktu ke waktu.
+4. Tambahkan jika perlu makro ST standard atau makro runtime dalam format `{{macro}}="value"`.
+5. Simpan dan aktifkan.
+6. Pelacak sekarang akan memperbarui informasi ini dari waktu ke waktu jika pencetus automatik kekal diaktifkan.
 
 ### 💬 **Tips Pro**
 

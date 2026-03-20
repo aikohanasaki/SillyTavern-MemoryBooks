@@ -110,7 +110,7 @@ Best model behavior
 
 ## Side Prompts (How‑To)
 
-Side Prompts are auxiliary, template‑driven generators that write structured notes back into your lorebook (e.g., trackers, reports, cast lists). They are separate from the “memory generation” path and can run automatically or on demand.
+Side Prompts are auxiliary, template‑driven generators that write structured notes back into your lorebook (e.g., trackers, reports, cast lists). They are separate from the “memory generation” path and can run automatically or on demand, depending on the template.
 
 What they’re good for
 - Plot/state trackers (e.g., “Plotpoints”)
@@ -132,12 +132,13 @@ Create or enable a Side Prompt
 2) Create a new template or enable a built‑in.
 3) Configure:
    - Name: Display title (the saved lorebook entry will be titled “Name (STMB SidePrompt)”).
-   - Prompt: Instruction text the model will follow.
-   - Response Format: Optional guidance block appended to the prompt (not a schema, just directions).
+   - Prompt: Instruction text the model will follow. Standard ST macros like `{{user}}` and `{{char}}` are expanded here.
+   - Response Format: Optional guidance block appended to the prompt (not a schema, just directions). Standard ST macros are expanded here too.
    - Triggers:
      • On After Memory — run after each successful memory generation for the current scene.  
      • On Interval — run when a threshold of visible user/assistant messages since last run is met (visibleMessages).  
      • Manual command — allow running with /sideprompt.
+   - Runtime macros: Any non-standard `{{...}}` token in Prompt or Response Format becomes a required runtime macro for manual runs, for example `{{npc name}}`.
    - Optional context: previousMemoriesCount (0–7) to include recent memories as read‑only context.
    - Model/profile: optionally override the model/profile (overrideProfileEnabled + overrideProfileIndex). Otherwise it uses the STMB default profile (which can mirror current ST UI settings if configured).
    - Lorebook injection settings:
@@ -147,16 +148,22 @@ Create or enable a Side Prompt
      • preventRecursion/delayUntilRecursion: boolean flags
 
 Manual run with /sideprompt
-- Syntax: /sideprompt "Name" [X‑Y]
+- Syntax: /sideprompt "Name" {{macro}}="value" [X‑Y]
   - Examples:
     • /sideprompt "Status"  
-    • /sideprompt Cast 100‑120
+    • /sideprompt "NPC Directory" {{npc name}}="Jane Doe"
+    • /sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120
 - If you omit a range, STMB compiles messages since the last checkpoint (capped to a recent window).
 - Manual run requires the template to allow the sideprompt command (enable “Allow manual run via /sideprompt” in the template settings). If disabled, the command will be rejected.
+- The side prompt name must be quoted.
+- Runtime macro values must be quoted.
+- Runtime macro keys are the literal `{{...}}` tokens from the template.
+- Slash-command autocomplete first suggests quoted side prompt names, then any remaining required runtime macros for the selected template.
 
 Automatic runs
 - After Memory: All enabled templates with the onAfterMemory trigger run using the already‑compiled scene. STMB batches runs with a small concurrency limit and can show per‑template success/failure toasts.
 - Interval trackers: Enabled templates with onInterval run once the number of visible (non‑system) messages since the last run meets visibleMessages. STMB stores checkpoints per template (e.g., STMB_sp_<key>_lastMsgId) and debounces runs (~10s). Scene compilation is capped to a recent window for safety.
+- Important caveat: Templates with custom runtime macros are manual-only. STMB strips `onInterval` and `onAfterMemory` from those templates on save/import and warns you with a toast.
 
 Previews and saving
 - If “show memory previews” is enabled in STMB settings, a preview popup appears. You can accept, edit, retry, or cancel. Accepted content is written to your bound lorebook under “Name (STMB SidePrompt)”.
@@ -164,7 +171,7 @@ Previews and saving
 
 Import/export and built‑in reset
 - Export: Save your Side Prompts document as JSON.
-- Import: Additively merges entries; duplicates are safely renamed (no overwrites).
+- Import: Additively merges entries; duplicates are safely renamed (no overwrites). If an imported template contains custom runtime macros, STMB strips automatic triggers and shows a warning toast.
 - Recreate Built‑ins: Reset the built‑in templates to the current‑locale defaults (user‑created templates are untouched).
 
 ## Side Prompts vs Memory Path: Key Differences

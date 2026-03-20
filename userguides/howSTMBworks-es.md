@@ -132,8 +132,9 @@ Crear o habilitar un Prompt Lateral
 2) Crea una nueva plantilla o habilita una incorporada.
 3) Configura:
    - Nombre: Título de visualización (la entrada del lorebook guardada se titulará "Nombre (STMB SidePrompt)").
-   - Prompt: Texto de instrucción que seguirá el modelo.
-   - Formato de Respuesta: Bloque de guía opcional añadido al prompt (no es un esquema, solo indicaciones).
+   - Prompt: Texto de instrucción que seguirá el modelo. Aquí se expanden las macros estándar de ST.
+   - Formato de Respuesta: Bloque de guía opcional añadido al prompt (no es un esquema, solo indicaciones). También expande las macros estándar de ST.
+   - Macros de tiempo de ejecución: Los tokens `{{...}}` que no sean estándar se convierten en entradas obligatorias para `/sideprompt`, por ejemplo `{{npc name}}="Jane Doe"`.
    - Disparadores:
      • Después de la Memoria — se ejecuta después de cada generación de memoria exitosa para la escena actual.
      • Por Intervalo — se ejecuta cuando se alcanza un umbral de mensajes visibles de usuario/asistente desde la última ejecución (visibleMessages).
@@ -147,24 +148,29 @@ Crear o habilitar un Prompt Lateral
      • preventRecursion/delayUntilRecursion: banderas booleanas.
 
 Ejecución manual con /sideprompt
-- Sintaxis: /sideprompt "Nombre" [X‑Y]
+- Sintaxis: /sideprompt "Nombre" {{macro}}="value" [X‑Y]
   - Ejemplos:
     • /sideprompt "Estado"
-    • /sideprompt Elenco 100‑120
+    • /sideprompt "NPC Directory" {{npc name}}="Jane Doe"
+    • /sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120
 - Si omites un rango, STMB compila los mensajes desde el último punto de control (limitado a una ventana reciente).
 - La ejecución manual requiere que la plantilla permita el comando sideprompt (habilita "Permitir ejecución manual a través de /sideprompt" en la configuración de la plantilla). Si está deshabilitado, el comando será rechazado.
+- El nombre de la plantilla debe ir entre comillas, y los valores de las macros también deben ir entre comillas.
+- Después de elegir una plantilla en el autocompletado del comando, STMB sugiere las macros obligatorias que aún falten para esa plantilla.
 
 Ejecuciones automáticas
 - Después de la Memoria: Todas las plantillas habilitadas con el disparador onAfterMemory se ejecutan utilizando la escena ya compilada. STMB agrupa las ejecuciones con un pequeño límite de concurrencia y puede mostrar notificaciones de éxito/fallo por plantilla.
 - Rastreadores por intervalo: Las plantillas habilitadas con onInterval se ejecutan una vez que el número de mensajes visibles (no del sistema) desde la última ejecución alcanza visibleMessages. STMB almacena puntos de control por plantilla (por ejemplo, STMB_sp_<key>_lastMsgId) y retrasa las ejecuciones (~10s). La compilación de la escena está limitada a una ventana reciente por seguridad.
+- Las plantillas con macros de tiempo de ejecución personalizadas solo pueden ejecutarse de forma manual. STMB elimina `onInterval` y `onAfterMemory` de esas plantillas al guardar/importar y muestra una advertencia.
 
 Vistas previas y guardado
 - Si "mostrar vistas previas de la memoria" está habilitado en la configuración de STMB, aparece una ventana emergente de vista previa. Puedes aceptar, editar, reintentar o cancelar. El contenido aceptado se escribe en tu lorebook vinculado bajo "Nombre (STMB SidePrompt)".
 - Los Prompts Laterales requieren que un lorebook de memoria esté vinculado al chat (o seleccionado en Modo Manual). Si no hay ninguno vinculado, STMB mostrará una notificación y omitirá la ejecución.
+- Si una plantilla contiene macros de tiempo de ejecución personalizadas, STMB elimina los disparadores automáticos al guardar/importar y muestra una advertencia.
 
 Importar/exportar y restablecer incorporados
 - Exportar: Guarda tu documento de Prompts Laterales como JSON.
-- Importar: Fusiona las entradas de forma aditiva; los duplicados se renombran de forma segura (sin sobrescrituras).
+- Importar: Fusiona las entradas de forma aditiva; los duplicados se renombran de forma segura (sin sobrescrituras). Si una plantilla importada contiene macros de tiempo de ejecución personalizadas, STMB elimina automáticamente `onInterval` y `onAfterMemory` y muestra una advertencia.
 - Recrear Incorporados: Restablece las plantillas incorporadas a los valores predeterminados del idioma actual (las plantillas creadas por el usuario no se modifican).
 
 ## Prompts Laterales vs. Ruta de Memoria: Diferencias Clave

@@ -125,15 +125,16 @@ Templat bawaan (dikirim oleh STMB)
 - Menilai — mencatat apa yang telah dipelajari {{char}} tentang {{user}}
 
 Tempat mengelola
-- Buka Manajer Prompt Sampingan (di dalam STMB) untuk melihat, membuat, mengimpor/mengekspor, mengaktifkan, atau mengonfigurasi templat.
+- Buka Manajer Prompt Sampingan (di dalam STMB) untuk melihat, membuat, mengimpor/mengekspor, mengaktifkan, atau mengonfigurasi templat. Makro ST standar seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan `Format Respons`; makro `{{...}}` non-standar dianggap sebagai input waktu jalan.
 
 Buat atau aktifkan Prompt Sampingan
 1) Buka Manajer Prompt Sampingan.
 2) Buat templat baru atau aktifkan yang sudah ada.
 3) Konfigurasikan:
    - Nama: Judul tampilan (entri buku lore yang disimpan akan diberi judul "Nama (STMB SidePrompt)").
-   - Prompt: Teks instruksi yang akan diikuti model.
-   - Format Respons: Blok panduan opsional yang ditambahkan ke prompt (bukan skema, hanya arahan).
+   - Prompt: Teks instruksi yang akan diikuti model. Makro ST standar dikembangkan di sini.
+   - Format Respons: Blok panduan opsional yang ditambahkan ke prompt (bukan skema, hanya arahan). Makro ST standar juga dikembangkan di sini.
+   - Makro waktu jalan: Token non-standar `{{...}}` menjadi input wajib untuk `/sideprompt`, misalnya `{{npc name}}="Jane Doe"`.
    - Pemicu:
      • Setelah Memori — berjalan setelah setiap pembuatan memori yang berhasil untuk adegan saat ini.
      • Pada Interval — berjalan ketika ambang batas pesan pengguna/asisten yang terlihat sejak proses terakhir terpenuhi (visibleMessages).
@@ -147,24 +148,29 @@ Buat atau aktifkan Prompt Sampingan
      • preventRecursion/delayUntilRecursion: flag boolean
 
 Jalankan manual dengan /sideprompt
-- Sintaks: /sideprompt "Nama" [X‑Y]
+- Sintaks: /sideprompt "Nama" {{macro}}="value" [X‑Y]
   - Contoh:
     • /sideprompt "Status"
-    • /sideprompt Pemeran 100‑120
+    • /sideprompt "NPC Directory" {{npc name}}="Jane Doe"
+    • /sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120
 - Jika Anda menghilangkan rentang, STMB mengkompilasi pesan sejak pos pemeriksaan terakhir (dibatasi pada jendela terbaru).
 - Proses manual mengharuskan templat untuk mengizinkan perintah sideprompt (aktifkan "Izinkan proses manual melalui /sideprompt" di pengaturan templat). Jika dinonaktifkan, perintah akan ditolak.
+ - Nama templat harus berada di dalam tanda kutip, dan nilai makro juga harus dikutip.
+ - Setelah Anda memilih side prompt di autocomplete perintah, STMB menyarankan makro wajib yang belum diisi untuk templat tersebut.
 
 Proses otomatis
 - Setelah Memori: Semua templat yang diaktifkan dengan pemicu onAfterMemory berjalan menggunakan adegan yang sudah dikompilasi. STMB memproses proses secara batch dengan batas konkurensi kecil dan dapat menampilkan toast keberhasilan/kegagalan per templat.
 - Pelacak interval: Templat yang diaktifkan dengan onInterval berjalan setelah jumlah pesan yang terlihat (non-sistem) sejak proses terakhir memenuhi visibleMessages. STMB menyimpan pos pemeriksaan per templat (mis., STMB_sp_<key>_lastMsgId) dan melakukan debounce proses (~10 detik). Kompilasi adegan dibatasi pada jendela terbaru untuk keamanan.
+ - Templat dengan makro waktu jalan khusus hanya dapat dijalankan secara manual. STMB menghapus `onInterval` dan `onAfterMemory` dari templat seperti itu saat disimpan/diimpor dan menampilkan peringatan.
 
 Pratinjau dan penyimpanan
 - Jika "tampilkan pratinjau memori" diaktifkan di pengaturan STMB, popup pratinjau akan muncul. Anda dapat menerima, mengedit, mencoba lagi, atau membatalkan. Konten yang diterima ditulis ke buku lore terikat Anda di bawah "Nama (STMB SidePrompt)".
 - Prompt Sampingan memerlukan buku lore memori untuk diikat ke obrolan (atau dipilih dalam Mode Manual). Jika tidak ada yang terikat, STMB akan menampilkan pemberitahuan dan melewati proses.
+ - Jika templat berisi makro waktu jalan khusus, STMB menghapus pemicu otomatis saat menyimpan/mengimpor dan menampilkan peringatan.
 
 Impor/ekspor dan reset bawaan
 - Ekspor: Simpan dokumen Prompt Sampingan Anda sebagai JSON.
-- Impor: Menggabungkan entri secara aditif; duplikat diganti namanya dengan aman (tidak ada penimpaan).
+- Impor: Menggabungkan entri secara aditif; duplikat diganti namanya dengan aman (tidak ada penimpaan). Jika templat yang diimpor memiliki makro waktu jalan khusus, STMB otomatis menghapus `onInterval` dan `onAfterMemory` dan menampilkan peringatan.
 - Buat Ulang Bawaan: Mengatur ulang templat bawaan ke default lokal saat ini (templat buatan pengguna tidak tersentuh).
 
 ## Prompt Sampingan vs Jalur Memori: Perbedaan Utama
@@ -175,15 +181,15 @@ Impor/ekspor dan reset bawaan
 
 - Kapan mereka berjalan
   - Jalur Memori: Berjalan hanya saat Anda menekan Hasilkan Memori (atau melalui alur kerjanya).
-  - Prompt Sampingan: Dapat berjalan Setelah Memori, pada ambang Interval, atau secara manual dengan /sideprompt.
+  - Prompt Sampingan: Dapat berjalan Setelah Memori, pada ambang Interval, atau secara manual dengan /sideprompt. Templat dengan makro waktu jalan khusus hanya dapat dijalankan secara manual.
 
 - Bentuk prompt
   - Jalur Memori: Menggunakan preset "Manajer Prompt Ringkasan" khusus dengan kontrak JSON yang ketat; STMB memvalidasi/memperbaiki JSON.
-  - Prompt Sampingan: Menggunakan teks instruksi templat + entri sebelumnya opsional + memori sebelumnya opsional + teks adegan yang dikompilasi; tidak ada skema JSON yang diperlukan (Format Respons opsional hanya panduan).
+  - Prompt Sampingan: Menggunakan teks instruksi templat + entri sebelumnya opsional + memori sebelumnya opsional + teks adegan yang dikompilasi; tidak ada skema JSON yang diperlukan (Format Respons opsional hanya panduan). Makro ST standar dikembangkan di Prompt dan Format Respons.
 
 - Output dan penyimpanan
   - Jalur Memori: Satu objek JSON: { title, content, keywords } → disimpan sebagai entri memori yang digunakan untuk pengambilan.
-  - Prompt Sampingan: Konten teks biasa → disimpan sebagai entri buku lore berjudul "Nama (STMB SidePrompt)" (nama lawas dikenali untuk pembaruan). Kata kunci tidak diperlukan.
+  - Prompt Sampingan: Konten teks biasa → disimpan sebagai entri buku lore berjudul "Nama (STMB SidePrompt)" (nama lawas dikenali untuk pembaruan). Kata kunci tidak diperlukan. Token non-standar `{{...}}` adalah input wajib untuk perintah manual.
 
 - Penyertaan ke dalam prompt obrolan
   - Jalur Memori: Entri dipilih melalui tag/kata kunci, prioritas, cakupan, dan anggaran token.
