@@ -4419,6 +4419,30 @@ function setupSettingsEventListeners() {
   popupElement.addEventListener("change", async (e) => {
     const settings = initializeSettings();
 
+    if (e.target.matches("#stmb-always-use-default")) {
+      settings.moduleSettings.alwaysUseDefault = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-show-memory-previews")) {
+      settings.moduleSettings.showMemoryPreviews = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-show-notifications")) {
+      settings.moduleSettings.showNotifications = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-refresh-editor")) {
+      settings.moduleSettings.refreshEditor = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
     // Use regex gate
     if (e.target.matches("#stmb-use-regex")) {
       settings.moduleSettings.useRegex = e.target.checked;
@@ -4665,6 +4689,7 @@ function setupSettingsEventListeners() {
     if (e.target.matches("#stmb-default-memory-count")) {
       const value = clampInt(readIntInput(e.target, settings.moduleSettings.defaultMemoryCount ?? 0), 0, 7);
       settings.moduleSettings.defaultMemoryCount = value;
+      saveSettingsDebounced();
       return;
     }
 
@@ -4717,59 +4742,258 @@ function setupSettingsEventListeners() {
       saveSettingsDebounced();
       return;
     }
+
+    if (e.target.matches("#stmb-lorebook-name-template")) {
+      settings.moduleSettings.lorebookNameTemplate = e.target.value.trim();
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-token-warning-threshold")) {
+      const value = parseInt(e.target.value);
+      if (!isNaN(value) && value >= 1000 && value <= 100000) {
+        settings.moduleSettings.tokenWarningThreshold = value;
+        saveSettingsDebounced();
+      }
+      return;
+    }
+
+    if (e.target.matches("#stmb-unhidden-entries-count")) {
+      const value = parseInt(e.target.value);
+      if (!isNaN(value) && value >= 0 && value <= 50) {
+        settings.moduleSettings.unhiddenEntriesCount = value;
+        saveSettingsDebounced();
+      }
+      return;
+    }
+
+    if (e.target.matches("#stmb-custom-title-format")) {
+      const value = e.target.value.trim();
+      if (value && value.includes("000")) {
+        settings.titleFormat = value;
+        saveSettingsDebounced();
+
+        const summaryTitle = popupElement.querySelector("#stmb-summary-title");
+        if (summaryTitle) {
+          summaryTitle.textContent = value;
+        }
+      }
+    }
   });
 
-  // Handle input events using delegation with debouncing
-  popupElement.addEventListener(
-    "input",
-    lodash.debounce((e) => {
-      const settings = initializeSettings();
+  popupElement.addEventListener("input", (e) => {
+    if (!e.target.matches("#stmb-custom-title-format")) {
+      return;
+    }
 
-      if (e.target.matches("#stmb-custom-title-format")) {
-        const value = e.target.value.trim();
-        if (value && value.includes("000")) {
-          settings.titleFormat = value;
-          saveSettingsDebounced();
+    const value = e.target.value.trim();
+    if (!value || !value.includes("000")) {
+      return;
+    }
 
-          // Update the preview
-          const summaryTitle = popupElement.querySelector(
-            "#stmb-summary-title",
-          );
-          if (summaryTitle) {
-            summaryTitle.textContent = value;
-          }
-        }
-        return;
-      }
+    const summaryTitle = popupElement.querySelector("#stmb-summary-title");
+    if (summaryTitle) {
+      summaryTitle.textContent = value;
+    }
+  });
+}
 
-      if (e.target.matches("#stmb-lorebook-name-template")) {
-        const value = e.target.value.trim();
-        if (value) {
-          settings.moduleSettings.lorebookNameTemplate = value;
-          saveSettingsDebounced();
-        }
-        return;
-      }
+/**
+ * Persist all main popup settings currently present in the DOM.
+ */
+function persistMainPopupSettings(popupElement) {
+  if (!popupElement) {
+    return false;
+  }
 
-      if (e.target.matches("#stmb-token-warning-threshold")) {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 1000 && value <= 100000) {
-          settings.moduleSettings.tokenWarningThreshold = value;
-          saveSettingsDebounced();
-        }
-        return;
-      }
+  const settings = initializeSettings();
+  let hasChanges = false;
 
-      if (e.target.matches("#stmb-unhidden-entries-count")) {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value) && value >= 0 && value <= 50) {
-          settings.moduleSettings.unhiddenEntriesCount = value;
-          saveSettingsDebounced();
-        }
-        return;
-      }
-    }, 1000),
+  const alwaysUseDefault =
+    popupElement.querySelector("#stmb-always-use-default")?.checked ??
+    settings.moduleSettings.alwaysUseDefault;
+  const showMemoryPreviews =
+    popupElement.querySelector("#stmb-show-memory-previews")?.checked ??
+    settings.moduleSettings.showMemoryPreviews;
+  const showNotifications =
+    popupElement.querySelector("#stmb-show-notifications")?.checked ??
+    settings.moduleSettings.showNotifications;
+  const unhideBeforeMemory =
+    popupElement.querySelector("#stmb-unhide-before-memory")?.checked ??
+    settings.moduleSettings.unhideBeforeMemory;
+  const refreshEditor =
+    popupElement.querySelector("#stmb-refresh-editor")?.checked ??
+    settings.moduleSettings.refreshEditor;
+  const allowSceneOverlap =
+    popupElement.querySelector("#stmb-allow-scene-overlap")?.checked ??
+    settings.moduleSettings.allowSceneOverlap;
+  const manualModeEnabled =
+    popupElement.querySelector("#stmb-manual-mode-enabled")?.checked ??
+    settings.moduleSettings.manualModeEnabled;
+  const autoSummaryEnabled =
+    popupElement.querySelector("#stmb-auto-summary-enabled")?.checked ??
+    settings.moduleSettings.autoSummaryEnabled;
+  const autoCreateLorebook =
+    popupElement.querySelector("#stmb-auto-create-lorebook")?.checked ??
+    settings.moduleSettings.autoCreateLorebook;
+  const autoHideMode =
+    popupElement.querySelector("#stmb-auto-hide-mode")?.value ??
+    getAutoHideMode(settings.moduleSettings);
+  const lorebookNameTemplate =
+    popupElement.querySelector("#stmb-lorebook-name-template")?.value.trim() ??
+    (settings.moduleSettings.lorebookNameTemplate || "");
+  const tokenWarningThreshold = readIntInput(
+    popupElement.querySelector("#stmb-token-warning-threshold"),
+    settings.moduleSettings.tokenWarningThreshold ?? 50000,
   );
+  const defaultMemoryCount = clampInt(
+    readIntInput(
+      popupElement.querySelector("#stmb-default-memory-count"),
+      settings.moduleSettings.defaultMemoryCount ?? 0,
+    ),
+    0,
+    7,
+  );
+  const unhiddenEntriesCount = readIntInput(
+    popupElement.querySelector("#stmb-unhidden-entries-count"),
+    settings.moduleSettings.unhiddenEntriesCount ?? 0,
+  );
+  const autoSummaryInterval = readIntInput(
+    popupElement.querySelector("#stmb-auto-summary-interval"),
+    settings.moduleSettings.autoSummaryInterval ?? 50,
+  );
+  const autoSummaryBuffer = clampInt(
+    readIntInput(
+      popupElement.querySelector("#stmb-auto-summary-buffer"),
+      settings.moduleSettings.autoSummaryBuffer ?? 0,
+    ),
+    0,
+    50,
+  );
+  const maxTokens = readIntInput(
+    popupElement.querySelector("#stmb-max-tokens"),
+    0,
+  );
+  const maxTokensNormalized =
+    Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 0;
+
+  if (alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault) {
+    settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
+    hasChanges = true;
+  }
+
+  if (showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews) {
+    settings.moduleSettings.showMemoryPreviews = showMemoryPreviews;
+    hasChanges = true;
+  }
+
+  if (showNotifications !== settings.moduleSettings.showNotifications) {
+    settings.moduleSettings.showNotifications = showNotifications;
+    hasChanges = true;
+  }
+
+  if (unhideBeforeMemory !== settings.moduleSettings.unhideBeforeMemory) {
+    settings.moduleSettings.unhideBeforeMemory = unhideBeforeMemory;
+    hasChanges = true;
+  }
+
+  if (refreshEditor !== settings.moduleSettings.refreshEditor) {
+    settings.moduleSettings.refreshEditor = refreshEditor;
+    hasChanges = true;
+  }
+
+  if (allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap) {
+    settings.moduleSettings.allowSceneOverlap = allowSceneOverlap;
+    hasChanges = true;
+  }
+
+  if (manualModeEnabled !== settings.moduleSettings.manualModeEnabled) {
+    settings.moduleSettings.manualModeEnabled = manualModeEnabled;
+    hasChanges = true;
+  }
+
+  if (autoSummaryEnabled !== settings.moduleSettings.autoSummaryEnabled) {
+    settings.moduleSettings.autoSummaryEnabled = autoSummaryEnabled;
+    hasChanges = true;
+  }
+
+  if (autoCreateLorebook !== settings.moduleSettings.autoCreateLorebook) {
+    settings.moduleSettings.autoCreateLorebook = autoCreateLorebook;
+    hasChanges = true;
+  }
+
+  if (
+    autoHideMode !== getAutoHideMode(settings.moduleSettings) ||
+    "autoHideAllMessages" in settings.moduleSettings ||
+    "autoHideLastMemory" in settings.moduleSettings
+  ) {
+    settings.moduleSettings.autoHideMode = autoHideMode;
+    delete settings.moduleSettings.autoHideAllMessages;
+    delete settings.moduleSettings.autoHideLastMemory;
+    hasChanges = true;
+  }
+
+  if (
+    lorebookNameTemplate !== (settings.moduleSettings.lorebookNameTemplate || "")
+  ) {
+    settings.moduleSettings.lorebookNameTemplate = lorebookNameTemplate;
+    hasChanges = true;
+  }
+
+  if (tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold) {
+    settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
+    hasChanges = true;
+  }
+
+  if (defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount) {
+    settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
+    hasChanges = true;
+  }
+
+  if (unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount) {
+    settings.moduleSettings.unhiddenEntriesCount = unhiddenEntriesCount;
+    hasChanges = true;
+  }
+
+  if (autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval) {
+    settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
+    hasChanges = true;
+  }
+
+  if (autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer) {
+    settings.moduleSettings.autoSummaryBuffer = autoSummaryBuffer;
+    hasChanges = true;
+  }
+
+  if (maxTokensNormalized !== (settings.moduleSettings.maxTokens ?? 0)) {
+    settings.moduleSettings.maxTokens = maxTokensNormalized;
+    hasChanges = true;
+  }
+
+  const titleFormatSelect = popupElement.querySelector("#stmb-title-format-select");
+  const customTitleFormat = popupElement
+    .querySelector("#stmb-custom-title-format")
+    ?.value.trim();
+  let nextTitleFormat = settings.titleFormat;
+
+  if (titleFormatSelect?.value === "custom") {
+    if (customTitleFormat && customTitleFormat.includes("000")) {
+      nextTitleFormat = customTitleFormat;
+    }
+  } else if (titleFormatSelect?.value) {
+    nextTitleFormat = titleFormatSelect.value;
+  }
+
+  if (nextTitleFormat !== settings.titleFormat) {
+    settings.titleFormat = nextTitleFormat;
+    hasChanges = true;
+  }
+
+  if (hasChanges) {
+    saveSettingsDebounced();
+  }
+
+  return hasChanges;
 }
 
 /**
@@ -4777,114 +5001,7 @@ function setupSettingsEventListeners() {
  */
 function handleSettingsPopupClose(popup) {
   try {
-    const popupElement = popup.dlg;
-    const settings = initializeSettings();
-
-    // Save checkbox states
-    const alwaysUseDefault =
-      popupElement.querySelector("#stmb-always-use-default")?.checked ??
-      settings.moduleSettings.alwaysUseDefault;
-    const showMemoryPreviews =
-      popupElement.querySelector("#stmb-show-memory-previews")?.checked ??
-      settings.moduleSettings.showMemoryPreviews;
-    const showNotifications =
-      popupElement.querySelector("#stmb-show-notifications")?.checked ??
-      settings.moduleSettings.showNotifications;
-    const unhideBeforeMemory =
-      popupElement.querySelector("#stmb-unhide-before-memory")?.checked ??
-      settings.moduleSettings.unhideBeforeMemory;
-    const refreshEditor =
-      popupElement.querySelector("#stmb-refresh-editor")?.checked ??
-      settings.moduleSettings.refreshEditor;
-    const allowSceneOverlap =
-      popupElement.querySelector("#stmb-allow-scene-overlap")?.checked ??
-      settings.moduleSettings.allowSceneOverlap;
-    const autoHideMode =
-      popupElement.querySelector("#stmb-auto-hide-mode")?.value ??
-      getAutoHideMode(settings.moduleSettings);
-
-    // Save token warning threshold
-    const tokenWarningThreshold = readIntInput(
-      popupElement.querySelector("#stmb-token-warning-threshold"),
-      settings.moduleSettings.tokenWarningThreshold ?? 50000
-    );
-
-    // Save default memory count
-    const defaultMemoryCount = Number(popupElement.querySelector("#stmb-default-memory-count").value);
-
-    // Save unhidden entries count
-    const unhiddenEntriesCount = readIntInput(
-      popupElement.querySelector("#stmb-unhidden-entries-count"),
-      settings.moduleSettings.unhiddenEntriesCount ?? 0
-    );
-
-    const manualModeEnabled =
-      popupElement.querySelector("#stmb-manual-mode-enabled")?.checked ??
-      settings.moduleSettings.manualModeEnabled;
-
-    // Save auto-summary settings
-    const autoSummaryEnabled =
-      popupElement.querySelector("#stmb-auto-summary-enabled")?.checked ??
-      settings.moduleSettings.autoSummaryEnabled;
-    const autoSummaryInterval = readIntInput(
-      popupElement.querySelector("#stmb-auto-summary-interval"),
-      settings.moduleSettings.autoSummaryInterval ?? 50
-    );
-
-    const autoSummaryBuffer = clampInt(readIntInput(popupElement.querySelector("#stmb-auto-summary-buffer"),settings.moduleSettings.autoSummaryBuffer ?? 0),0,50);
-
-    // Save max tokens override (blank => 0)
-    const maxTokens = readIntInput(
-      popupElement.querySelector("#stmb-max-tokens"),
-      0,
-    );
-    const maxTokensNormalized = Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 0;
-
-    // Save auto-create lorebook setting
-    const autoCreateLorebook =
-      popupElement.querySelector("#stmb-auto-create-lorebook")?.checked ??
-      settings.moduleSettings.autoCreateLorebook;
-
-    const hasChanges =
-      alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault ||
-      showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews ||
-      showNotifications !== settings.moduleSettings.showNotifications ||
-      unhideBeforeMemory !== settings.moduleSettings.unhideBeforeMemory ||
-      refreshEditor !== settings.moduleSettings.refreshEditor ||
-      tokenWarningThreshold !== settings.moduleSettings.tokenWarningThreshold ||
-      defaultMemoryCount !== settings.moduleSettings.defaultMemoryCount ||
-      manualModeEnabled !== settings.moduleSettings.manualModeEnabled ||
-      allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap ||
-      autoHideMode !== getAutoHideMode(settings.moduleSettings) ||
-      unhiddenEntriesCount !== settings.moduleSettings.unhiddenEntriesCount ||
-      autoSummaryEnabled !== settings.moduleSettings.autoSummaryEnabled ||
-      autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval ||
-      autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer ||
-      maxTokensNormalized !== (settings.moduleSettings.maxTokens ?? 0) ||
-      autoCreateLorebook !== settings.moduleSettings.autoCreateLorebook;
-
-    if (hasChanges) {
-      settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
-      settings.moduleSettings.showMemoryPreviews = showMemoryPreviews;
-      settings.moduleSettings.showNotifications = showNotifications;
-      settings.moduleSettings.unhideBeforeMemory = unhideBeforeMemory;
-      settings.moduleSettings.refreshEditor = refreshEditor;
-      settings.moduleSettings.tokenWarningThreshold = tokenWarningThreshold;
-      settings.moduleSettings.defaultMemoryCount = defaultMemoryCount;
-      settings.moduleSettings.manualModeEnabled = manualModeEnabled;
-      settings.moduleSettings.allowSceneOverlap = allowSceneOverlap;
-      settings.moduleSettings.autoHideMode = autoHideMode;
-      // Clear old boolean settings for clean migration
-      delete settings.moduleSettings.autoHideAllMessages;
-      delete settings.moduleSettings.autoHideLastMemory;
-      settings.moduleSettings.unhiddenEntriesCount = unhiddenEntriesCount;
-      settings.moduleSettings.autoSummaryEnabled = autoSummaryEnabled;
-      settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
-      settings.moduleSettings.autoSummaryBuffer = autoSummaryBuffer;
-      settings.moduleSettings.maxTokens = maxTokensNormalized;
-      settings.moduleSettings.autoCreateLorebook = autoCreateLorebook;
-      saveSettingsDebounced();
-    }
+    persistMainPopupSettings(popup.dlg);
   } catch (error) {
     console.error("STMemoryBooks: Failed to save settings:", error);
     toastr.warning(
@@ -4907,6 +5024,7 @@ async function refreshPopupContent() {
   }
 
   try {
+    persistMainPopupSettings(currentPopupInstance.dlg);
     const settings = initializeSettings();
     const sceneData = await getSceneData();
     const selectedProfile = settings.profiles[settings.defaultProfile];
