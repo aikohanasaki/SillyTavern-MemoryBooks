@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v5.1.0 (March 20, 2026)
+- Improve save behavior on settings popup.
+- Add title override for side prompts.
+
 ## v5.0.0 (March 19, 2026)
 - **Breaking Change:** `/sideprompt` now requires a quoted side prompt name and uses the new syntax `/sideprompt "Name" {{macro}}="value" [X-Y]`.
 - **New:** Side prompts now expand standard SillyTavern macros in both the main prompt and response format.

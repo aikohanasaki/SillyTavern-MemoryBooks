@@ -56,8 +56,16 @@ function getRuntimeMacroStrippedToastOptions() {
     };
 }
 
-function validateRuntimeMacroTriggerConfig({ name, prompt, responseFormat, intervalOn, afterOn }) {
-    const runtimeMacros = collectTemplateRuntimeMacros({ prompt, responseFormat });
+function validateRuntimeMacroTriggerConfig({ name, prompt, responseFormat, titleOverride, intervalOn, afterOn }) {
+    const runtimeMacros = collectTemplateRuntimeMacros({
+        prompt,
+        responseFormat,
+        settings: {
+            lorebook: {
+                entryTitleOverride: String(titleOverride || ''),
+            },
+        },
+    });
     if (runtimeMacros.length === 0) {
         return { ok: true, runtimeMacros, strippedAutoTriggers: [] };
     }
@@ -223,6 +231,7 @@ async function openEditTemplate(parentPopup, key) {
         const lbPrevent = lb.preventRecursion !== false;
         const lbDelay = !!lb.delayUntilRecursion;
         const lbIgnoreBudget = !!lb.ignoreBudget;
+        const lbEntryTitleOverride = String(lb.entryTitleOverride || '');
 
         const content = `
             <h3>${escapeHtml(translate('Edit Side Prompt', 'STMemoryBooks_EditSidePrompt'))}</h3>
@@ -278,6 +287,11 @@ async function openEditTemplate(parentPopup, key) {
             </div>
             <div class="world_entry_form_control">
                 <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
+                <label for="stmb-sp-edit-lb-entry-title-override">
+                    <h4 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Title Override', 'STMemoryBooks_LorebookEntryTitleOverride'))}</h4>
+                    <input type="text" id="stmb-sp-edit-lb-entry-title-override" class="text_pole" value="${escapeHtml(lbEntryTitleOverride)}" placeholder="${escapeHtml(translate('Optional title template (e.g., NPC {{npcname}})', 'STMemoryBooks_LorebookEntryTitleOverridePlaceholder'))}">
+                </label>
+                <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
                 <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                     <label>
                         <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h4>
@@ -405,6 +419,7 @@ async function openEditTemplate(parentPopup, key) {
             const newName = dlg.querySelector('#stmb-sp-edit-name')?.value.trim() || '';
             const newPrompt = dlg.querySelector('#stmb-sp-edit-prompt')?.value.trim() || '';
             const newResponseFormat = dlg.querySelector('#stmb-sp-edit-response-format')?.value.trim() || '';
+            const lorebookEntryTitleOverride = dlg.querySelector('#stmb-sp-edit-lb-entry-title-override')?.value.trim() || '';
             const newEnabled = !!dlg.querySelector('#stmb-sp-edit-enabled')?.checked;
 
             if (!newPrompt) {
@@ -427,6 +442,7 @@ async function openEditTemplate(parentPopup, key) {
                 name: effectiveName,
                 prompt: newPrompt,
                 responseFormat: newResponseFormat,
+                titleOverride: lorebookEntryTitleOverride,
                 intervalOn,
                 afterOn,
             });
@@ -478,6 +494,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
                 delayUntilRecursion: lbDelay2,
                 ignoreBudget: lbIgnoreBudget2,
                 ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
+                ...(lorebookEntryTitleOverride ? { entryTitleOverride: lorebookEntryTitleOverride } : {}),
             };
 
             await upsertTemplate({
@@ -564,6 +581,11 @@ async function openNewTemplate(parentPopup) {
         </div>
         <div class="world_entry_form_control">
             <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
+            <label for="stmb-sp-new-lb-entry-title-override">
+                <h4 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Title Override', 'STMemoryBooks_LorebookEntryTitleOverride'))}</h4>
+                <input type="text" id="stmb-sp-new-lb-entry-title-override" class="text_pole" placeholder="${escapeHtml(translate('Optional title template (e.g., NPC {{npcname}})', 'STMemoryBooks_LorebookEntryTitleOverridePlaceholder'))}">
+            </label>
+            <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
             <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                 <label>
                     <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h4>
@@ -703,6 +725,7 @@ async function openNewTemplate(parentPopup) {
         const enabled = !!dlg.querySelector('#stmb-sp-new-enabled')?.checked;
         const prompt = dlg.querySelector('#stmb-sp-new-prompt')?.value.trim() || '';
         const responseFormat = dlg.querySelector('#stmb-sp-new-response-format')?.value.trim() || '';
+        const lorebookEntryTitleOverride = dlg.querySelector('#stmb-sp-new-lb-entry-title-override')?.value.trim() || '';
 
         if (!prompt) {
             toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), translate('STMemoryBooks', 'index.toast.title'));
@@ -724,6 +747,7 @@ async function openNewTemplate(parentPopup) {
             name: effectiveName,
             prompt,
             responseFormat,
+            titleOverride: lorebookEntryTitleOverride,
             intervalOn,
             afterOn,
         });
@@ -773,6 +797,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
             delayUntilRecursion: lbDelay2,
             ignoreBudget: lbIgnoreBudget2,
             ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
+            ...(lorebookEntryTitleOverride ? { entryTitleOverride: lorebookEntryTitleOverride } : {}),
         };
 
         try {

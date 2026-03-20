@@ -324,19 +324,39 @@ function makeUpsertParamsFromLorebook(lbs) {
     return { defaults, entryOverrides };
 }
 
-function getUnifiedSidePromptTitle(tpl) {
-    return `${tpl.name} (STMB SidePrompt)`;
+function getSidePromptTitleSuffix() {
+    return ' (STMB SidePrompt)';
 }
 
-function getSidePromptLookupTitles(tpl, fallbackKinds = []) {
-    const titles = [getUnifiedSidePromptTitle(tpl)];
-    for (const kind of fallbackKinds) {
-        if (kind === 'plotpoints') {
-            titles.push(`${tpl.name} (STMB Plotpoints)`);
-        } else if (kind === 'scoreboard') {
-            titles.push(`${tpl.name} (STMB Scoreboard)`);
-        } else if (kind === 'tracker') {
-            titles.push(`${tpl.name} (STMB Tracker)`);
+function getResolvedSidePromptTitleBase(tpl, runtimeMacros = {}) {
+    const overrideRaw = String(tpl?.settings?.lorebook?.entryTitleOverride || '').trim();
+    const fallbackBase = String(tpl?.name || '').trim() || 'Side Prompt';
+    if (!overrideRaw) {
+        return fallbackBase;
+    }
+
+    const resolved = applySidePromptMacros(overrideRaw, runtimeMacros).trim();
+    return resolved || fallbackBase;
+}
+
+function getUnifiedSidePromptTitle(tpl, runtimeMacros = {}) {
+    const baseTitle = getResolvedSidePromptTitleBase(tpl, runtimeMacros);
+    const suffix = getSidePromptTitleSuffix();
+    return baseTitle.endsWith(suffix) ? baseTitle : `${baseTitle}${suffix}`;
+}
+
+function getSidePromptLookupTitles(tpl, runtimeMacros = {}, fallbackKinds = []) {
+    const titles = [getUnifiedSidePromptTitle(tpl, runtimeMacros)];
+    const hasTitleOverride = !!String(tpl?.settings?.lorebook?.entryTitleOverride || '').trim();
+    if (!hasTitleOverride) {
+        for (const kind of fallbackKinds) {
+            if (kind === 'plotpoints') {
+                titles.push(`${tpl.name} (STMB Plotpoints)`);
+            } else if (kind === 'scoreboard') {
+                titles.push(`${tpl.name} (STMB Scoreboard)`);
+            } else if (kind === 'tracker') {
+                titles.push(`${tpl.name} (STMB Tracker)`);
+            }
         }
     }
     return titles;
@@ -351,8 +371,8 @@ function findFirstLoreEntryByTitle(loreData, titles = []) {
 }
 
 async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverrides = null, fallbackKinds = [], runtimeMacros = {} }) {
-    const unifiedTitle = getUnifiedSidePromptTitle(tpl);
-    const existing = findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, fallbackKinds));
+    const unifiedTitle = getUnifiedSidePromptTitle(tpl, runtimeMacros);
+    const existing = findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, runtimeMacros, fallbackKinds));
     const prior = existing?.content || '';
 
     let prevSummaries = [];
