@@ -2,6 +2,14 @@
 
 **← [Back to README](readme.md)**
 
+## v5.0.0 (March 19, 2026)
+- **Breaking Change:** `/sideprompt` now requires a quoted side prompt name and uses the new syntax `/sideprompt "Name" {{macro}}="value" [X-Y]`.
+- **New:** Side prompts now expand standard SillyTavern macros in both the main prompt and response format.
+- **New:** Custom non-standard `{{macro}}` placeholders are now recognized as required runtime macros for manual `/sideprompt` runs.
+- **Improved:** `/sideprompt` autocomplete now suggests required runtime macros after a side prompt is selected.
+- **Validation:** Side prompts containing custom runtime macros are now manual-run-only and cannot be configured with automatic interval or after-memory triggers.
+- **UX:** Saving a side prompt with invalid automatic triggers now shows a sticky warning toast listing all exact custom macros that require manual invocation.
+
 ## v4.18.5 (March 13, 2026)
 - change "delay until recursion" to default to "false".
 
