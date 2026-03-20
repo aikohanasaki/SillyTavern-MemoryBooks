@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v5.2.0 (March 20, 2026)
+- Add keyword field for side prompts.
+
 ## v5.1.0 (March 20, 2026)
 - Improve save behavior on settings popup.
 - Add title override for side prompts.
