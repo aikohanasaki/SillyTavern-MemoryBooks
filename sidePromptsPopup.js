@@ -287,14 +287,16 @@ async function openEditTemplate(parentPopup, key) {
             </div>
             <div class="world_entry_form_control">
                 <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
+                <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
                 <label for="stmb-sp-edit-lb-entry-title-override">
-                    <h4 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Title Override', 'STMemoryBooks_LorebookEntryTitleOverride'))}</h4>
+                    <h5 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Title Override', 'STMemoryBooks_LorebookEntryTitleOverride'))}</h5>
                     <input type="text" id="stmb-sp-edit-lb-entry-title-override" class="text_pole" value="${escapeHtml(lbEntryTitleOverride)}" placeholder="${escapeHtml(translate('Optional title template (e.g., NPC {{npcname}})', 'STMemoryBooks_LorebookEntryTitleOverridePlaceholder'))}">
                 </label>
-                <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
+            </div>
+            <div class="world_entry_form_control">
                 <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                     <label>
-                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h4>
+                        <h5 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h5>
                         <select id="stmb-sp-edit-lb-mode" class="text_pole">
                             <option value="link" ${lbMode === 'link' ? 'selected' : ''}>${escapeHtml(translate('🔗 Vectorized (Default)', 'STMemoryBooks_Vectorized'))}</option>
                             <option value="green" ${lbMode === 'green' ? 'selected' : ''}>${escapeHtml(translate('🟢 Normal', 'STMemoryBooks_Normal'))}</option>
@@ -302,7 +304,7 @@ async function openEditTemplate(parentPopup, key) {
                         </select>
                     </label>
                     <label>
-                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Insertion Position:', 'STMemoryBooks_InsertionPosition'))}</h4>
+                        <h5 style="margin: 12px 0 4px 0;">${escapeHtml(translate('Insertion Position:', 'STMemoryBooks_InsertionPosition'))}</h5>
                         <select id="stmb-sp-edit-lb-position" class="text_pole">
                             <option value="0" ${lbPosition === 0 ? 'selected' : ''}>${escapeHtml(translate('↑Char', 'STMemoryBooks_CharUp'))}</option>
                             <option value="1" ${lbPosition === 1 ? 'selected' : ''}>${escapeHtml(translate('↓Char', 'STMemoryBooks_CharDown'))}</option>
@@ -314,39 +316,41 @@ async function openEditTemplate(parentPopup, key) {
                         </select>
                         <div id="stmb-sp-edit-lb-outlet-name-container" style="display:${lbPosition === 7 ? 'block' : 'none'}; margin-top: 8px;">
                             <label>
-                                <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Outlet Name:', 'STMemoryBooks_OutletName'))}</h4>
+                                <h5 style="margin: 0 0 4px 0;">${escapeHtml(translate('Outlet Name:', 'STMemoryBooks_OutletName'))}</h5>
                                 <input type="text" id="stmb-sp-edit-lb-outlet-name" class="text_pole" placeholder="${escapeHtml(translate('Outlet name', 'STMemoryBooks_OutletNamePlaceholder'))}" value="${escapeHtml(lb.outletName || '')}">
                             </label>
                         </div>
                     </label>
                 </div>
                 <div class="world_entry_form_control" style="margin-top: 8px;">
-                    <h4>${escapeHtml(translate('Insertion Order:', 'STMemoryBooks_InsertionOrder'))}</h4>
+                    <h5>${escapeHtml(translate('Insertion Order:', 'STMemoryBooks_InsertionOrder'))}</h5>
                     <label class="radio_label">
                         <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-auto" value="auto" ${lbOrderManual ? '' : 'checked'}>
                         <span>${escapeHtml(translate('Auto (uses memory #)', 'STMemoryBooks_AutoOrder'))}</span>
                     </label>
-                    <label class="radio_label" style="margin-left: 12px;">
+                    <label class="radio_label"">
                         <input type="radio" name="stmb-sp-edit-lb-order-mode" id="stmb-sp-edit-lb-order-manual" value="manual" ${lbOrderManual ? 'checked' : ''}>
                         <span>${escapeHtml(translate('Manual', 'STMemoryBooks_ManualOrder'))}</span>
                     </label>
-                    <div id="stmb-sp-edit-lb-order-value-container" style="display:${lbOrderManual ? 'block' : 'none'}; margin-left:28px;">
+                </div>
+                <div class="world_entry_form_control" style="margin-top: 8px;">
+                    <div id="stmb-sp-edit-lb-order-value-container" style="display:${lbOrderManual ? 'block' : 'none'}; margin-top: 8px;">
                         <label>
-                            <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Order Value:', 'STMemoryBooks_OrderValue'))}</h4>
+                            <h5>${escapeHtml(translate('Order Value:', 'STMemoryBooks_OrderValue'))}</h5>
                             <input type="number" id="stmb-sp-edit-lb-order-value" class="text_pole" step="1" value="${lbOrderValue}">
                         </label>
                     </div>
                 </div>
                 <div class="world_entry_form_control" style="margin-top: 8px;">
-                    <label class="checkbox_label" style="margin-left: 12px;">
+                    <label class="checkbox_label">
                         <input type="checkbox" id="stmb-sp-edit-lb-prevent" ${lbPrevent ? 'checked' : ''}>
                         <span>${escapeHtml(translate('Prevent Recursion', 'STMemoryBooks_PreventRecursion'))}</span>
                     </label>
-                    <label class="checkbox_label" style="margin-left: 12px;">
+                    <label class="checkbox_label"">
                         <input type="checkbox" id="stmb-sp-edit-lb-delay" ${lbDelay ? 'checked' : ''}>
                         <span>${escapeHtml(translate('Delay Until Recursion', 'STMemoryBooks_DelayUntilRecursion'))}</span>
                     </label>
-                    <label class="checkbox_label" style="margin-left: 12px;">
+                    <label class="checkbox_label">
                         <input type="checkbox" id="stmb-sp-edit-lb-ignore-budget" ${lbIgnoreBudget ? 'checked' : ''}>
                         <span>${escapeHtml(translate('Ignore Budget', 'STMemoryBooks_IgnoreBudget'))}</span>
                     </label>
@@ -355,14 +359,14 @@ async function openEditTemplate(parentPopup, key) {
 
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-prev-mem-count">
-                    <h4>${escapeHtml(translate('Previous memories for context:', 'STMemoryBooks_PreviousMemoriesForContext'))}</h4>
-<input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${prevMemCount}">
+                    <h5>${escapeHtml(translate('Previous memories for context:', 'STMemoryBooks_PreviousMemoriesForContext'))}</h5>
+                    <input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${prevMemCount}">
                 </label>
                 <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
             </div>
 
             <div class="world_entry_form_control">
-                <h4>${escapeHtml(translate('Overrides:', 'STMemoryBooks_Overrides'))}</h4>
+                <h5>${escapeHtml(translate('Overrides:', 'STMemoryBooks_Overrides'))}</h5>
                 ${overrideHtml}
             </div>
         `;
@@ -620,13 +624,13 @@ async function openNewTemplate(parentPopup) {
                     <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-auto" value="auto" checked>
                     <span>${escapeHtml(translate('Auto (uses memory #)', 'STMemoryBooks_AutoOrder'))}</span>
                 </label>
-                <label class="radio_label" style="margin-left: 12px;">
+                <label class="radio_label">
                     <input type="radio" name="stmb-sp-new-lb-order-mode" id="stmb-sp-new-lb-order-manual" value="manual">
                     <span>${escapeHtml(translate('Manual', 'STMemoryBooks_ManualOrder'))}</span>
                 </label>
-                <div id="stmb-sp-new-lb-order-value-container" style="display:none; margin-left:28px;">
+                <div id="stmb-sp-new-lb-order-value-container" style="display:none; margin-top: 8px;">
                     <label>
-                        <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Order Value:', 'STMemoryBooks_OrderValue'))}</h4>
+                        <h4>${escapeHtml(translate('Order Value:', 'STMemoryBooks_OrderValue'))}</h4>
                         <input type="number" id="stmb-sp-new-lb-order-value" class="text_pole" step="1" value="100">
                     </label>
                 </div>
@@ -636,11 +640,11 @@ async function openNewTemplate(parentPopup) {
                     <input type="checkbox" id="stmb-sp-new-lb-prevent" checked>
                     <span>${escapeHtml(translate('Prevent Recursion', 'STMemoryBooks_PreventRecursion'))}</span>
                 </label>
-                <label class="checkbox_label" style="margin-left: 12px;">
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-new-lb-delay">
                     <span>${escapeHtml(translate('Delay Until Recursion', 'STMemoryBooks_DelayUntilRecursion'))}</span>
                 </label>
-                <label class="checkbox_label" style="margin-left: 12px;">
+                <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-new-lb-ignore-budget">
                     <span>${escapeHtml(translate('Ignore Budget', 'STMemoryBooks_IgnoreBudget'))}</span>
                 </label>
