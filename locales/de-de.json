@@ -32,7 +32,7 @@
     "STMemoryBooks_UsingChatBound": "Verwende chat-gebundenes Lorebook",
     "STMemoryBooks_NoChatBound": "Kein chat-gebundenes Lorebook. Erinnerungen erfordern eine Lorebook-Auswahl.",
     "STMemoryBooks_AllowSceneOverlap": "Szenen-Überlappung zulassen",
-    "STMemoryBooks_AllowSceneOverlapTooltip": "Standardmäßig vermeidet STMB Überschneidungen der Nachrichten-IDs zwischen Erinnerungen. Aktivieren Sie dieses Kontrollkästchen, um diese Prüfung zu überspringen.",
+    "STMemoryBooks_AllowSceneOverlapTooltip": "Standardmäßig vermeidet STMB Überschneidungen der Nachrichten-IDs zwischen Erinnerungen. Aktiviere dieses Kontrollkästchen, um diese Prüfung zu überspringen.",
     "STMemoryBooks_AllowSceneOverlapDesc": "Aktivieren, um die Prüfung auf überlappende Erinnerungen/Szenen zu überspringen.",
     "STMemoryBooks_RefreshEditor": "Lorebook-Editor nach dem Hinzufügen von Erinnerungen aktualisieren",
     "STMemoryBooks_MaxTokens": "Max. Antwort-Tokens:",
