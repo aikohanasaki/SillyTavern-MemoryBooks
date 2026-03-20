@@ -4840,9 +4840,8 @@ function persistMainPopupSettings(popupElement) {
     popupElement.querySelector("#stmb-auto-hide-mode")?.value ??
     getAutoHideMode(settings.moduleSettings);
   const lorebookNameTemplate =
-    popupElement.querySelector("#stmb-lorebook-name-template")?.value.trim() ??
-    (settings.moduleSettings.lorebookNameTemplate || "");
-  const tokenWarningThreshold = readIntInput(
+    popupElement.querySelector("#stmb-lorebook-name-template")?.value?.trim() ??
+    (settings.moduleSettings.lorebookNameTemplate || "");  const tokenWarningThreshold = readIntInput(
     popupElement.querySelector("#stmb-token-warning-threshold"),
     settings.moduleSettings.tokenWarningThreshold ?? 50000,
   );
@@ -4973,9 +4972,7 @@ function persistMainPopupSettings(popupElement) {
   const titleFormatSelect = popupElement.querySelector("#stmb-title-format-select");
   const customTitleFormat = popupElement
     .querySelector("#stmb-custom-title-format")
-    ?.value.trim();
-  let nextTitleFormat = settings.titleFormat;
-
+    ?.value?.trim();
   if (titleFormatSelect?.value === "custom") {
     if (customTitleFormat && customTitleFormat.includes("000")) {
       nextTitleFormat = customTitleFormat;

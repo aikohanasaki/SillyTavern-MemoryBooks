@@ -59,9 +59,13 @@ export function applySidePromptMacros(text, runtimeMacros = {}) {
 export function collectTemplateRuntimeMacros(templateLike, runtimeMacros = {}) {
     const prompt = typeof templateLike === 'string' ? templateLike : String(templateLike?.prompt || '');
     const responseFormat = typeof templateLike === 'string' ? '' : String(templateLike?.responseFormat || '');
+    const titleOverride = typeof templateLike === 'string'
+        ? ''
+        : String(templateLike?.settings?.lorebook?.entryTitleOverride || '');
     const unresolvedPrompt = extractMacroTokens(applySidePromptMacros(prompt, runtimeMacros));
     const unresolvedFormat = extractMacroTokens(applySidePromptMacros(responseFormat, runtimeMacros));
-    return uniqueExact([...unresolvedPrompt, ...unresolvedFormat]);
+    const unresolvedTitleOverride = extractMacroTokens(applySidePromptMacros(titleOverride, runtimeMacros));
+    return uniqueExact([...unresolvedPrompt, ...unresolvedFormat, ...unresolvedTitleOverride]);
 }
 
 export function hasTemplateRuntimeMacros(templateLike) {
