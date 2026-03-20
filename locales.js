@@ -147,6 +147,7 @@ export const localeData_en = {
     'STMemoryBooks_Preferences': 'Preferences:',
     'STMemoryBooks_AlwaysUseDefault': 'Always use default profile (no confirmation prompt)',
     'STMemoryBooks_ShowMemoryPreviews': 'Show memory previews',
+    'STMemoryBooks_ShowMemoryPreviewsTooltip': 'Shows previews for memories and side prompts returned from the AI.',
     'STMemoryBooks_ShowNotifications': 'Show notifications',
     'STMemoryBooks_UnhideBeforeMemory': 'Unhide hidden messages for memory generation (runs /unhide X-Y)',
 
@@ -171,10 +172,11 @@ export const localeData_en = {
 
     // Scene Options
     'STMemoryBooks_AllowSceneOverlap': 'Allow scene overlap',
+    'STMemoryBooks_AllowSceneOverlapTooltip': 'By default, STMB avoids message ID overlap between memories. Select this box to skip that check.',
     'STMemoryBooks_AllowSceneOverlapDesc': 'Check this box to skip checking for overlapping memories/scenes.',
     'STMemoryBooks_RefreshEditor': 'Refresh lorebook editor after adding memories',
-    'STMemoryBooks_MaxTokens': 'Max Tokens:',
-    'STMemoryBooks_MaxTokensDesc': 'Maximum number of tokens to use for memory summaries.',
+    'STMemoryBooks_MaxTokens': 'Max Response Tokens:',
+    'STMemoryBooks_MaxTokensDesc': 'Maximum number of tokens to use for memory summaries. Enter \'0\' to default to Chat Completion preset settings.',
 
     // Auto-Summary
     'STMemoryBooks_AutoSummaryEnabled': 'Auto-create memory summaries',
@@ -228,7 +230,7 @@ export const localeData_en = {
 
     // Token Warning
     'STMemoryBooks_TokenWarning': 'Token Warning Threshold:',
-    'STMemoryBooks_TokenWarningDesc': 'Show confirmation dialog when estimated input tokens exceed this threshold. Default: 30,000',
+    'STMemoryBooks_TokenWarningDesc': 'Show confirmation dialog when estimated total tokens to be sent to the AI exceed this threshold. Default: 30,000',
 
     // Title Format
     'STMemoryBooks_TitleFormat': 'Memory Title Format:',

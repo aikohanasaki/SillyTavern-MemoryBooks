@@ -298,6 +298,8 @@ const SUPPORTED_COMPLETION_SOURCES = [
   "siliconflow",
 ];
 
+const DEFAULT_MAX_TOKENS = 4000;
+
 const defaultSettings = {
   moduleSettings: {
     alwaysUseDefault: true,
@@ -305,7 +307,7 @@ const defaultSettings = {
     showNotifications: true,
     unhideBeforeMemory: false,
     refreshEditor: true,
-    maxTokens: 0,
+    maxTokens: DEFAULT_MAX_TOKENS,
     tokenWarningThreshold: 50000,
     defaultMemoryCount: 0,
     autoClearSceneAfterMemory: false,
@@ -1165,12 +1167,13 @@ function validateSettings(settings) {
     settings.moduleSettings = deepClone(defaultSettings.moduleSettings);
   }
 
-  // Validate maxTokens (0 = no override; use current ST settings)
+  // Validate maxTokens and fall back to the app default when unset or invalid.
   if (settings.moduleSettings.maxTokens === undefined || settings.moduleSettings.maxTokens === null) {
-    settings.moduleSettings.maxTokens = 0;
+    settings.moduleSettings.maxTokens = DEFAULT_MAX_TOKENS;
   } else {
     const mt = Number.parseInt(settings.moduleSettings.maxTokens, 10);
-    settings.moduleSettings.maxTokens = Number.isFinite(mt) && mt > 0 ? mt : 0;
+    settings.moduleSettings.maxTokens =
+      Number.isFinite(mt) && mt > 0 ? mt : DEFAULT_MAX_TOKENS;
   }
 
   if (
@@ -4218,9 +4221,9 @@ async function showSettingsPopup() {
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
     manualModeEnabled: settings.moduleSettings.manualModeEnabled,
     maxTokens:
-      (settings.moduleSettings.maxTokens ?? 0) > 0
+      (settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS) > 0
         ? settings.moduleSettings.maxTokens
-        : "",
+        : DEFAULT_MAX_TOKENS,
 
     // Lorebook status information
     lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",
@@ -4737,8 +4740,9 @@ function setupSettingsEventListeners() {
     }
 
     if (e.target.matches("#stmb-max-tokens")) {
-      const value = readIntInput(e.target, 0);
-      settings.moduleSettings.maxTokens = Number.isFinite(value) && value > 0 ? value : 0;
+      const value = readIntInput(e.target, DEFAULT_MAX_TOKENS);
+      settings.moduleSettings.maxTokens =
+        Number.isFinite(value) && value > 0 ? value : DEFAULT_MAX_TOKENS;
       saveSettingsDebounced();
       return;
     }
@@ -4872,10 +4876,10 @@ function persistMainPopupSettings(popupElement) {
   );
   const maxTokens = readIntInput(
     popupElement.querySelector("#stmb-max-tokens"),
-    0,
+    DEFAULT_MAX_TOKENS,
   );
   const maxTokensNormalized =
-    Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 0;
+    Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS;
 
   if (alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault) {
     settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -4965,7 +4969,10 @@ function persistMainPopupSettings(popupElement) {
     hasChanges = true;
   }
 
-  if (maxTokensNormalized !== (settings.moduleSettings.maxTokens ?? 0)) {
+  if (
+    maxTokensNormalized !==
+    (settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS)
+  ) {
     settings.moduleSettings.maxTokens = maxTokensNormalized;
     hasChanges = true;
   }
@@ -5051,9 +5058,9 @@ async function refreshPopupContent() {
       allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
       manualModeEnabled: settings.moduleSettings.manualModeEnabled,
       maxTokens:
-        (settings.moduleSettings.maxTokens ?? 0) > 0
+        (settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS) > 0
           ? settings.moduleSettings.maxTokens
-          : "",
+          : DEFAULT_MAX_TOKENS,
 
       // Lorebook status information
       lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",
