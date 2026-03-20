@@ -147,7 +147,7 @@ function validateKeywordsMacroConfig({ prompt, responseFormat, keywordsTemplate 
     toastr.error(
         tr(
             'STMemoryBooks_SidePromptKeywordsInvalidMacros',
-            'Lorebook Entry Keywords may only use macros already present in Prompt or Response Format: {{macros}}.',
+            'Lorebook Entry Keywords may only use ST standard macros or macros already defined in Prompt or Response Format: {{macros}}.',
             { macros: disallowedMacros.join(', ') },
         ),
         translate('STMemoryBooks', 'index.toast.title'),
