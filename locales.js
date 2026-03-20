@@ -404,8 +404,8 @@ export const localeData_en = {
     'STMemoryBooks_SelectDifferent': 'Select Different',
 
     // Slash Commands
-    'STMemoryBooks_SidePromptGuide': 'SidePrompt guide: Type a template name after the space to see suggestions. Usage: /sideprompt "Name" [X-Y]. Quote names with spaces.',
-    'STMemoryBooks_MultipleMatches': 'Multiple matches: {{top}}{{more}}. Refine the name or use quotes. Usage: /sideprompt "Name" [X-Y]',
+    'STMemoryBooks_SidePromptGuide': 'SidePrompt guide: Choose a quoted template name, then fill any prompted macros. Usage: /sideprompt "Name" {{macro}}="value" [X-Y].',
+    'STMemoryBooks_MultipleMatches': 'Multiple matches: {{top}}{{more}}. Refine the name. Usage: /sideprompt "Name" {{macro}}="value" [X-Y]',
 
     // Prompt Manager
     'STMemoryBooks_ClearCustomPromptTitle': 'Clear Custom Prompt?',
@@ -496,7 +496,7 @@ export const localeData_en = {
     'STMemoryBooks_Toast_FailedToSaveWave': 'Failed to save SidePrompt updates for this wave',
     'STMemoryBooks_Toast_SidePromptsSucceeded': 'Side Prompts after memory: {{okCount}} succeeded. {{succeeded}}',
     'STMemoryBooks_Toast_SidePromptsPartiallyFailed': 'Side Prompts after memory: {{okCount}} succeeded, {{failCount}} failed. {{failed}}',
-    'STMemoryBooks_Toast_SidePromptNameNotProvided': 'SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]',
+    'STMemoryBooks_Toast_SidePromptNameNotProvided': 'SidePrompt name not provided. Usage: /sideprompt "Name" {{macro}}="value" [X-Y]',
 
     // Scene Manager
     'STMemoryBooks_Toast_SceneClearedStart': 'Scene cleared due to start marker deletion',
@@ -628,7 +628,10 @@ export const localeData_en = {
     'STMemoryBooks_Toast_InvalidRangeFormat': 'Invalid range format. Use X-Y',
     'STMemoryBooks_Toast_InvalidMessageRange': 'Invalid message range for /sideprompt',
     'STMemoryBooks_Toast_FailedToCompileRange': 'Failed to compile the specified range',
-    'STMemoryBooks_Toast_SidePromptRangeTip': 'Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.',
+    'STMemoryBooks_Toast_SidePromptRangeTip': 'Tip: You can run a specific range with /sideprompt "Name" {{macro}}="value" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.',
+    'STMemoryBooks_RuntimeMacroManualOnlyPrefix': 'is not a standard ST macro. This side prompt must be run manually with the command',
+    'STMemoryBooks_RuntimeMacroManualOnlyPrefixPlural': 'are not standard ST macros. This side prompt must be run manually with the command',
+    'STMemoryBooks_RuntimeMacroPleaseUncheck': 'Please uncheck',
     'STMemoryBooks_Toast_FailedToCompileMessages': 'Failed to compile messages for /sideprompt',
 	'STMemoryBooks_Plotpoints': 'Plotpoints',
     'STMemoryBooks_PlotpointsPrompt': "Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating.",
@@ -1100,8 +1103,8 @@ Rules:
     'STMemoryBooks_Slash_SceneMemory_Help': 'Set scene range and create memory (e.g., /scenememory 10-15)',
     'STMemoryBooks_Slash_SceneMemory_ArgRangeDesc': 'Message range (X-Y format)',
     'STMemoryBooks_Slash_NextMemory_Help': 'Create memory from end of last memory to current message',
-    'STMemoryBooks_Slash_SidePrompt_Help': 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" [X-Y]',
-    'STMemoryBooks_Slash_SidePrompt_ArgDesc': 'Template name (quote if contains spaces), optionally followed by X-Y range',
+    'STMemoryBooks_Slash_SidePrompt_Help': 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" {{macro}}="value" [X-Y]',
+    'STMemoryBooks_Slash_SidePrompt_ArgDesc': 'Quoted template name, then any required {{macro}}="value" assignments, optionally followed by X-Y range',
     'STMemoryBooks_Slash_SidePromptOn_Help': 'Enable a Side Prompt by name or all. Usage: /sideprompt-on "Name" | all',
     'STMemoryBooks_Slash_SidePromptOn_ArgDesc': 'Template name (quote if contains spaces) or "all"',
     'STMemoryBooks_Slash_SidePromptOff_Help': 'Disable a Side Prompt by name or all. Usage: /sideprompt-off "Name" | all',

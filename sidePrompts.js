@@ -11,6 +11,7 @@ import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { oai_settings } from '../../../openai.js';
+import { applySidePromptMacros, collectTemplateRuntimeMacros, parseSidePromptCommandInput } from './sidePromptMacros.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -83,9 +84,9 @@ function compileRange(start, end) {
 /**
  * Build a plain prompt by combining template prompt + prior content + compiled scene text
  */
-function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat, previousSummaries = []) {
+function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat, previousSummaries = [], runtimeMacros = {}) {
     const parts = [];
-    parts.push(String(templatePrompt || ''));
+    parts.push(applySidePromptMacros(templatePrompt, runtimeMacros));
     if (priorContent && String(priorContent).trim()) {
         parts.push('\n=== PRIOR ENTRY ===\n');
         parts.push(String(priorContent));
@@ -109,7 +110,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
     parts.push(sceneText);
     if (responseFormat && String(responseFormat).trim()) {
         parts.push('\n=== RESPONSE FORMAT ===\n');
-        parts.push(String(responseFormat).trim());
+        parts.push(applySidePromptMacros(responseFormat, runtimeMacros).trim());
     }
     const finalPrompt = parts.join('');
 
@@ -349,7 +350,7 @@ function findFirstLoreEntryByTitle(loreData, titles = []) {
     return null;
 }
 
-async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverrides = null, fallbackKinds = [] }) {
+async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverrides = null, fallbackKinds = [], runtimeMacros = {} }) {
     const unifiedTitle = getUnifiedSidePromptTitle(tpl);
     const existing = findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, fallbackKinds));
     const prior = existing?.content || '';
@@ -364,7 +365,7 @@ async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverr
         } catch {}
     }
 
-    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat, prevSummaries);
+    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat, prevSummaries, runtimeMacros);
     const idx = Number(tpl?.settings?.overrideProfileIndex);
     const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
     const conn = useOverride
@@ -810,7 +811,7 @@ export async function runAfterMemory(compiledScene, profile = null) {
 
 /**
  * Unified manual side prompt runner
- * Usage: /sideprompt "Name" [X-Y]
+ * Usage: /sideprompt "Name" {{macro}}="value" [X-Y]
  */
 export async function runSidePrompt(args) {
     const parentTask = createStmbInFlightTask('SidePrompts:manual');
@@ -818,11 +819,12 @@ export async function runSidePrompt(args) {
     try {
         const lore = await requireLorebookStrict();
 
-        const { name, range } = parseNameAndRange(args);
-        if (!name) {
-            toastr.error(translate('SidePrompt name not provided. Usage: /sideprompt "Name" [X-Y]', 'STMemoryBooks_Toast_SidePromptNameNotProvided'), 'STMemoryBooks');
+        const parsed = parseSidePromptCommandInput(args);
+        if (parsed.error || !parsed.name) {
+            toastr.error(translate('SidePrompt name not provided. Usage: /sideprompt "Name" {{macro}}="value" [X-Y]', 'STMemoryBooks_Toast_SidePromptNameNotProvided'), 'STMemoryBooks');
             return '';
         }
+        const { name, range, runtimeMacros } = parsed;
 
         const tpl = await findTemplateByName(name);
         if (!tpl) {
@@ -833,6 +835,17 @@ export async function runSidePrompt(args) {
         const manualEnabled = Array.isArray(tpl?.triggers?.commands) && tpl.triggers.commands.some(c => String(c).toLowerCase() === 'sideprompt');
         if (!manualEnabled) {
             toastr.error(translate('Manual run is disabled for this template. Enable "Allow manual run via /sideprompt" in the template settings.', 'STMemoryBooks_Toast_ManualRunDisabled'), 'STMemoryBooks');
+            return '';
+        }
+
+        const requiredRuntimeMacros = collectTemplateRuntimeMacros(tpl);
+        const missingRuntimeMacros = requiredRuntimeMacros.filter(token => !Object.hasOwn(runtimeMacros, token));
+        if (missingRuntimeMacros.length > 0) {
+            const usageMacros = requiredRuntimeMacros.map(token => `${token}="value"`).join(' ');
+            toastr.error(
+                __st_t_tag`SidePrompt "${tpl.name}" requires: ${missingRuntimeMacros.join(', ')}. Usage: /sideprompt "${tpl.name}" ${usageMacros} [X-Y]`,
+                'STMemoryBooks',
+            );
             return '';
         }
 
@@ -865,7 +878,7 @@ export async function runSidePrompt(args) {
         } else {
             // Since-last behavior with cap
             if (!hasShownSidePromptRangeTip) {
-                toastr.info(translate('Tip: You can run a specific range with /sideprompt "Name" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.', 'STMemoryBooks_Toast_SidePromptRangeTip'), 'STMemoryBooks');
+                toastr.info(translate('Tip: You can run a specific range with /sideprompt "Name" {{macro}}="value" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.', 'STMemoryBooks_Toast_SidePromptRangeTip'), 'STMemoryBooks');
                 hasShownSidePromptRangeTip = true;
             }
             const existingForLast = findFirstLoreEntryByTitle(lore.data, getSidePromptLookupTitles(tpl, ['scoreboard', 'plotpoints', 'tracker']));
@@ -894,6 +907,7 @@ export async function runSidePrompt(args) {
             compiledScene: compiled,
             defaultOverrides,
             fallbackKinds: ['scoreboard', 'plotpoints', 'tracker'],
+            runtimeMacros,
         });
 
         // Call LLM
@@ -972,43 +986,4 @@ export async function runSidePrompt(args) {
     } finally {
         parentTask.finish();
     }
-}
-
-/**
- * Parse sideprompt args: "Name" [X-Y] or Name [X-Y]
- */
-function parseNameAndRange(input) {
-    const s = String(input || '').trim();
-    if (!s) return { name: '', range: null };
-
-    let name = '';
-    let rest = '';
-
-    const mQuoteD = s.match(/^"([^"]+)"\s*(.*)$/);
-    const mQuoteS = !mQuoteD && s.match(/^'([^']+)'\s*(.*)$/);
-    if (mQuoteD) {
-        name = mQuoteD[1];
-        rest = mQuoteD[2] || '';
-    } else if (mQuoteS) {
-        name = mQuoteS[1];
-        rest = mQuoteS[2] || '';
-    } else {
-        // If a range appears at the end, strip it from name
-        const mRange = s.match(/(\d+)\s*[-–—]\s*(\d+)\s*$/);
-        if (mRange) {
-            name = s.slice(0, mRange.index).trim();
-            rest = s.slice(mRange.index);
-        } else {
-            name = s;
-            rest = '';
-        }
-    }
-
-    let range = null;
-    if (rest) {
-        const r = rest.match(/(\d+)\s*[-–—]\s*(\d+)/);
-        if (r) range = `${r[1]}-${r[2]}`;
-    }
-
-    return { name, range };
 }

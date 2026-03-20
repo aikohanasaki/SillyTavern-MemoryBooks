@@ -1,6 +1,7 @@
 import { getRequestHeaders } from '../../../../script.js';
 import { FILE_NAMES, SCHEMA } from './constants.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
+import { hasTemplateRuntimeMacros } from './sidePromptMacros.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePromptsManager';
 const SIDE_PROMPTS_FILE = FILE_NAMES.SIDE_PROMPTS_FILE;
@@ -711,10 +712,10 @@ export async function listByTrigger(kind) {
     const all = await listTemplates();
 
     if (kind === 'onInterval') {
-        return all.filter(p => p.enabled && p.triggers?.onInterval && Number(p.triggers.onInterval.visibleMessages) >= 1);
+        return all.filter(p => p.enabled && p.triggers?.onInterval && Number(p.triggers.onInterval.visibleMessages) >= 1 && !hasTemplateRuntimeMacros(p));
     }
     if (kind === 'onAfterMemory') {
-        return all.filter(p => p.enabled && p.triggers?.onAfterMemory?.enabled);
+        return all.filter(p => p.enabled && p.triggers?.onAfterMemory?.enabled && !hasTemplateRuntimeMacros(p));
     }
     if (kind && kind.startsWith('command:')) {
         const cmd = kind.slice('command:'.length).trim();

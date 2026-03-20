@@ -125,6 +125,12 @@ import {
 import { localeData, loadLocaleJson } from "./locales.js";
 import { tr } from "./i18nHelpers.js";
 import { getRegexScripts } from "../../../extensions/regex/engine.js";
+import {
+  buildSidePromptMacroSuggestion,
+  collectTemplateRuntimeMacros,
+  formatQuotedSidePromptName,
+  parseSidePromptCommandInput,
+} from "./sidePromptMacros.js";
 import "../../../../lib/select2.min.js";
 
 /**
@@ -817,46 +823,14 @@ async function handleSidePromptCommand(namedArgs, unnamedArgs) {
   if (!raw) {
     toastr.info(
       translate(
-        'SidePrompt guide: Type a template name after the space to see suggestions. Usage: /sideprompt "Name" [X-Y]. Quote names with spaces.',
+        'SidePrompt guide: Choose a quoted template name, then fill any prompted macros. Usage: /sideprompt "Name" {{macro}}="value" [X-Y].',
         "STMemoryBooks_SidePromptGuide",
       ),
       translate("STMemoryBooks", "index.toast.title"),
     );
     return "";
   }
-
-  // If user typed partial name without range and it doesn't exactly match,
-  // try a quick best effort: if multiple results, show picker filtered; else run directly.
-  const parts =
-    raw.match(/^["']([^"']+)["']\s*(.*)$/) ||
-    raw.match(/^(.+?)(\s+\d+\s*[-–—]\s*\d+)?$/);
-  const namePart = parts ? (parts[1] || raw).trim() : raw;
-
-  try {
-    // Load and filter
-    const templates = await listTemplates();
-    const candidates = templates.filter((t) =>
-      t.name.toLowerCase().includes(namePart.toLowerCase()),
-    );
-    if (candidates.length > 1) {
-      const top = candidates
-        .slice(0, 5)
-        .map((t) => t.name)
-        .join(", ");
-      const more =
-        candidates.length > 5 ? `, +${candidates.length - 5} more` : "";
-      toastr.info(
-        __st_t_tag`Multiple matches: ${top}${more}. Refine the name or use quotes. Usage: /sideprompt "Name" [X-Y]`,
-        translate("STMemoryBooks", "index.toast.title"),
-      );
-      return "";
-    }
-    // Fall back to direct run (runSidePrompt will resolve fuzzy or error toast)
-    return runSidePrompt(raw);
-  } catch {
-    // Fallback to direct run
-    return runSidePrompt(raw);
-  }
+  return runSidePrompt(raw);
 }
 
 /**
@@ -948,7 +922,7 @@ async function handleSidePromptOffCommand(namedArgs, unnamedArgs) {
 }
 
 /**
- * Side Prompt names cache for autocomplete
+ * Side Prompt cache for autocomplete
  */
 let sidePromptNameCache = [];
 async function refreshSidePromptCache() {
@@ -964,7 +938,10 @@ async function refreshSidePromptCache() {
           cmds.some((c) => String(c).toLowerCase() === "sideprompt")
         );
       })
-      .map((t) => t.name);
+      .map((t) => ({
+        name: t.name,
+        runtimeMacros: collectTemplateRuntimeMacros(t),
+      }));
   } catch (e) {
     console.warn(
       translate(
@@ -983,9 +960,58 @@ try {
   /* noop */
 }
 
-// Synchronous enum provider for slash command suggestions (mirrors extension-enum pattern)
-const sidePromptTemplateEnumProvider = () =>
-  sidePromptNameCache.map((n) => new SlashCommandEnumValue(n));
+function findCachedSidePromptByName(name) {
+  const target = String(name || "").toLowerCase();
+  return sidePromptNameCache.find((entry) => entry.name.toLowerCase() === target) || null;
+}
+
+function buildSidePromptNameSuggestions(rawInput) {
+  const input = String(rawInput || "").trimStart();
+  const filter = input.startsWith('"') || input.startsWith("'")
+    ? input.slice(1).toLowerCase()
+    : input.toLowerCase();
+  return sidePromptNameCache.map((entry) =>
+    new SlashCommandEnumValue(
+      formatQuotedSidePromptName(entry.name),
+      entry.runtimeMacros.length
+        ? `Required macros: ${entry.runtimeMacros.join(", ")}`
+        : "No required runtime macros",
+      "name",
+      "📝",
+      () => !filter || entry.name.toLowerCase().includes(filter),
+    ),
+  );
+}
+
+function buildSidePromptMacroSuggestions(rawInput, draft, entry) {
+  const provided = new Set(Object.keys(draft.runtimeMacros || {}));
+  const remaining = (entry?.runtimeMacros || []).filter((token) => !provided.has(token));
+  return remaining.map((token) =>
+    new SlashCommandEnumValue(
+      `${token}=""`,
+      `Required macro for "${entry.name}"`,
+      "macro",
+      "{}",
+      () => true,
+      () => buildSidePromptMacroSuggestion(rawInput, draft, token),
+      true,
+    ),
+  );
+}
+
+// Synchronous enum provider for slash command suggestions
+const sidePromptTemplateEnumProvider = (executor) => {
+  const rawInput = String(executor?.unnamedArgumentList?.[0]?.value || "");
+  const draft = parseSidePromptCommandInput(rawInput, { allowIncomplete: true });
+  if (draft.nameClosed) {
+    const entry = findCachedSidePromptByName(draft.name);
+    if (entry) {
+      const macroSuggestions = buildSidePromptMacroSuggestions(rawInput, draft, entry);
+      return macroSuggestions;
+    }
+  }
+  return buildSidePromptNameSuggestions(rawInput);
+};
 
 /**
  * Helper: build triggers badges for prompt picker
@@ -5071,14 +5097,15 @@ function registerSlashCommands() {
   const sidePromptCmd = SlashCommand.fromProps({
     name: "sideprompt",
     callback: handleSidePromptCommand,
+    rawQuotes: true,
     helpString: translate(
-      'Run side prompt. Usage: /sideprompt "Name" [X-Y]',
+      'Run side prompt. Usage: /sideprompt "Name" {{macro}}="value" [X-Y]',
       "STMemoryBooks_Slash_SidePrompt_Help",
     ),
     unnamedArgumentList: [
       SlashCommandArgument.fromProps({
         description: translate(
-          "Template name (quote if contains spaces), optionally followed by X-Y range",
+          'Quoted template name, then any required {{macro}}="value" assignments, optionally followed by X-Y range',
           "STMemoryBooks_Slash_SidePrompt_ArgDesc",
         ),
         typeList: [ARGUMENT_TYPE.STRING],

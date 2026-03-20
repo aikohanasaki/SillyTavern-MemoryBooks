@@ -16,6 +16,7 @@ import {
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 import { translate, applyLocale } from '../../../i18n.js';
 import { tr } from './i18nHelpers.js';
+import { collectTemplateRuntimeMacros } from './sidePromptMacros.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -35,6 +36,40 @@ function getTriggersSummary(tpl) {
         badges.push(translate('Manual', 'STMemoryBooks_Manual'));
     }
     return badges;
+}
+
+function getMacroValidationToastOptions() {
+    return {
+        timeOut: 0,
+        extendedTimeOut: 0,
+        tapToDismiss: true,
+        closeButton: true,
+    };
+}
+
+function validateRuntimeMacroTriggerConfig({ name, prompt, responseFormat, intervalOn, afterOn }) {
+    const runtimeMacros = collectTemplateRuntimeMacros({ prompt, responseFormat });
+    if (runtimeMacros.length === 0) {
+        return { ok: true, runtimeMacros };
+    }
+
+    const blockedTriggers = [];
+    if (intervalOn) blockedTriggers.push(translate('Run on visible message interval', 'STMemoryBooks_RunOnVisibleMessageInterval'));
+    if (afterOn) blockedTriggers.push(translate('Run automatically after memory', 'STMemoryBooks_RunAutomaticallyAfterMemory'));
+
+    if (blockedTriggers.length === 0) {
+        return { ok: true, runtimeMacros };
+    }
+
+    const displayName = String(name || translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt'));
+    const usage = `/sideprompt "${displayName}" ${runtimeMacros.map(token => `${token}="value"`).join(' ')}`;
+    const macroLead = runtimeMacros.join(', ');
+    const grammar = runtimeMacros.length === 1
+        ? translate('is not a standard ST macro. This side prompt must be run manually with the command', 'STMemoryBooks_RuntimeMacroManualOnlyPrefix')
+        : translate('are not standard ST macros. This side prompt must be run manually with the command', 'STMemoryBooks_RuntimeMacroManualOnlyPrefixPlural');
+    const message = `${macroLead} ${grammar} ${usage}. ${translate('Please uncheck', 'STMemoryBooks_RuntimeMacroPleaseUncheck')} ${blockedTriggers.join(', ')}.`;
+    toastr.warning(message, translate('STMemoryBooks', 'index.toast.title'), getMacroValidationToastOptions());
+    return { ok: false, runtimeMacros };
 }
 
 /**
@@ -336,11 +371,25 @@ async function openEditTemplate(parentPopup, key) {
                 toastr.info(translate('Name was empty. Keeping previous name.', 'STMemoryBooks_NameEmptyKeepPrevious'), translate('STMemoryBooks', 'index.toast.title'));
             }
 
+            const effectiveName = newName || tpl.name;
+
             // Triggers
             const triggers = {};
             const intervalOn = !!dlg.querySelector('#stmb-sp-edit-trg-interval')?.checked;
             const afterOn = !!dlg.querySelector('#stmb-sp-edit-trg-aftermem')?.checked;
             const manualOn = !!dlg.querySelector('#stmb-sp-edit-trg-manual')?.checked;
+
+            const validation = validateRuntimeMacroTriggerConfig({
+                name: effectiveName,
+                prompt: newPrompt,
+                responseFormat: newResponseFormat,
+                intervalOn,
+                afterOn,
+            });
+            if (!validation.ok) {
+                return;
+            }
+            const forceManual = validation.runtimeMacros.length > 0;
 
             if (intervalOn) {
                 const intervalRaw = parseInt(dlg.querySelector('#stmb-sp-edit-interval')?.value ?? '50', 10);
@@ -350,7 +399,7 @@ async function openEditTemplate(parentPopup, key) {
             if (afterOn) {
                 triggers.onAfterMemory = { enabled: true };
             }
-            if (manualOn) {
+            if (manualOn || forceManual) {
                 triggers.commands = ['sideprompt'];
             }
 
@@ -621,11 +670,25 @@ async function openNewTemplate(parentPopup) {
             toastr.info(tr('STMemoryBooks_SidePrompts_NoNameProvidedUsingUntitled', 'No name provided. Using "{{name}}".', { name: translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt') }), translate('STMemoryBooks', 'index.toast.title'));
         }
 
+        const effectiveName = name || translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt');
+
         // Build triggers
         const triggers = {};
         const intervalOn = !!dlg.querySelector('#stmb-sp-new-trg-interval')?.checked;
         const afterOn = !!dlg.querySelector('#stmb-sp-new-trg-aftermem')?.checked;
         const manualOn = !!dlg.querySelector('#stmb-sp-new-trg-manual')?.checked;
+
+        const validation = validateRuntimeMacroTriggerConfig({
+            name: effectiveName,
+            prompt,
+            responseFormat,
+            intervalOn,
+            afterOn,
+        });
+        if (!validation.ok) {
+            return;
+        }
+        const forceManual = validation.runtimeMacros.length > 0;
 
         if (intervalOn) {
             const intervalRaw = parseInt(dlg.querySelector('#stmb-sp-new-interval')?.value ?? '50', 10);
@@ -635,7 +698,7 @@ async function openNewTemplate(parentPopup) {
         if (afterOn) {
             triggers.onAfterMemory = { enabled: true };
         }
-        if (manualOn) {
+        if (manualOn || forceManual) {
             triggers.commands = ['sideprompt'];
         }
 
