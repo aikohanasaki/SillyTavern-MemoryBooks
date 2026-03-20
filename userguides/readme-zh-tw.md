@@ -242,7 +242,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🎡 追蹤器與側邊提示詞 (Side Prompts)
 
-側邊提示詞可以像追蹤器一樣使用，並會在你的記憶世界書中創建條目。側邊提示詞允許你追蹤 **當前狀態**，而不僅僅是過去的事件。例如：
+側邊提示詞可以像追蹤器一樣使用，並會在你的記憶世界書中創建獨立的 side prompt 條目。側邊提示詞允許你追蹤 **當前狀態**，而不僅僅是過去的事件。例如：
 
 * 💰 庫存與資源 ("使用者擁有什麼物品？")
 * ❤️ 關係狀態 ("X 對 Y 的感覺如何？")
@@ -259,7 +259,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - 創建新的或複製提示詞以嘗試不同的提示詞風格。
 - 編輯或刪除任何預設組 (包括內建的)。
 - 將預設組匯出或匯入為 JSON 檔案以進行備份或分享。
-- 手動執行，或隨記憶創建自動執行。
+- 依照模板，手動或自動執行。
+- 在 `Prompt` 和 `Response Format` 中使用 `{{user}}`、`{{char}}` 之類的標準 ST 巨集。
+- 使用像 `{{npc name}}` 這樣的自訂執行階段巨集，它們會在執行 `/sideprompt` 時傳入。
 
 ```
 
@@ -268,6 +270,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 ```
 - 創建新提示詞時，你可以複製內建的以獲得最佳相容性。
 - 額外的側邊提示詞範本庫 [JSON 檔案](resources/SidePromptTemplateLibrary.json) - 匯入即可使用。
+- 手動語法：`/sideprompt "名稱" {{macro}}="value" [X-Y]`。
+- 在命令自動完成中選擇 side prompt 後，STMB 會提示仍缺少的執行階段巨集。
+- 含有自訂執行階段巨集的 side prompt 只能手動執行。STMB 會在儲存/匯入時移除這類模板的 `On Interval` 和 `On After Memory`，並顯示警告。
 
 ```
 

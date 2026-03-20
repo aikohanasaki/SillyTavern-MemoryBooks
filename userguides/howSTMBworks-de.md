@@ -131,7 +131,7 @@ Bestes Modell-Verhalten
 
 ## Side Prompts (Anleitung)
 
-Side Prompts sind zusätzliche, vorlagengesteuerte Generatoren, die strukturierte Notizen zurück in dein Lorebook schreiben (z. B. Tracker, Berichte, Besetzungslisten). Sie sind getrennt vom "Memory-Generierung"-Pfad und können automatisch oder auf Abruf laufen.
+Side Prompts sind zusätzliche, vorlagengesteuerte Generatoren, die strukturierte Notizen zurück in dein Lorebook schreiben (z. B. Tracker, Berichte, Besetzungslisten). Sie sind getrennt vom "Memory-Generierung"-Pfad, erzeugen eigene Side-Prompt-Lorebook-Einträge und können je nach Vorlage automatisch oder auf Abruf laufen. Vorlagen mit benutzerdefinierten Laufzeit-Makros sind nur für den manuellen Aufruf geeignet.
 
 Wofür sie gut sind
 
@@ -149,7 +149,7 @@ Eingebaute Vorlagen (von STMB mitgeliefert)
 
 Wo verwalten
 
-* Öffne den "Side Prompts Manager" (innerhalb von STMB), um Vorlagen anzusehen, zu erstellen, zu importieren/exportieren, zu aktivieren oder zu konfigurieren.
+* Öffne den "Side Prompts Manager" (innerhalb von STMB), um Vorlagen anzusehen, zu erstellen, zu importieren/exportieren, zu aktivieren oder zu konfigurieren. Standard-ST-Makros wie `{{user}}` und `{{char}}` werden in `Prompt` und `Response Format` erweitert; benutzerdefinierte `{{...}}`-Makros werden als Laufzeit-Eingaben behandelt.
 
 Einen Side Prompt erstellen oder aktivieren
 
@@ -157,8 +157,9 @@ Einen Side Prompt erstellen oder aktivieren
 2. Erstelle eine neue Vorlage oder aktiviere eine eingebaute.
 3. Konfigurieren:
 * Name: Anzeigename (der gespeicherte Lorebook-Eintrag wird "Name (STMB SidePrompt)" betitelt).
-* Prompt: Anweisungstext, dem das Modell folgen wird.
-* Response Format: Optionaler Anleitungsblock, der an den Prompt angehängt wird (kein Schema, nur Anweisungen).
+* Prompt: Anweisungstext, dem das Modell folgen wird. Standard-ST-Makros werden hier erweitert.
+* Response Format: Optionaler Anleitungsblock, der an den Prompt angehängt wird (kein Schema, nur Anweisungen). Auch hier werden Standard-ST-Makros erweitert.
+* Laufzeit-Makros: Nicht-Standard-`{{...}}`-Tokens werden zu Pflicht-Eingaben für den manuellen `/sideprompt`-Aufruf, z. B. `{{npc name}}="Jane Doe"`.
 * Trigger (Auslöser):
 • On After Memory – läuft nach jeder erfolgreichen Memory-Generierung für die aktuelle Szene.
 • On Interval – läuft, wenn eine Schwelle sichtbarer Benutzer-/Assistenten-Nachrichten seit dem letzten Lauf erreicht ist (`visibleMessages`).
@@ -175,29 +176,34 @@ Einen Side Prompt erstellen oder aktivieren
 
 Manueller Lauf mit /sideprompt
 
-* Syntax: `/sideprompt "Name" [X‑Y]`
+* Syntax: `/sideprompt "Name" {{macro}}="value" [X‑Y]`
 * Beispiele:
 • `/sideprompt "Status"`
-• `/sideprompt Cast 100‑120`
+• `/sideprompt "NPC Directory" {{npc name}}="Jane Doe"`
+• `/sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120`
 
 
 * Wenn du einen Bereich weglässt, kompiliert STMB Nachrichten seit dem letzten Checkpoint (begrenzt auf ein aktuelles Fenster).
 * Manueller Lauf erfordert, dass die Vorlage den Sideprompt-Befehl erlaubt (aktiviere "Allow manual run via /sideprompt" in den Vorlageneinstellungen). Wenn deaktiviert, wird der Befehl abgewiesen.
+* Der Vorlagenname muss in Anführungszeichen stehen, und Laufzeit-Makrowerte müssen ebenfalls in Anführungszeichen stehen.
+* Nachdem du eine Vorlage im Slash-Command ausgewählt hast, schlägt STMB die noch fehlenden Pflicht-Makros für diese Vorlage vor.
 
 Automatische Läufe
 
 * After Memory (Nach Memory): Alle aktivierten Vorlagen mit dem `onAfterMemory`-Trigger laufen unter Verwendung der bereits kompilierten Szene. STMB verarbeitet Läufe stapelweise mit einem kleinen Limit für Gleichzeitigkeit und kann Erfolgs-/Fehlermeldungen pro Vorlage anzeigen.
 * Intervall-Tracker: Aktivierte Vorlagen mit `onInterval` laufen, sobald die Anzahl der sichtbaren (Nicht-System-)Nachrichten seit dem letzten Lauf `visibleMessages` erreicht. STMB speichert Checkpoints pro Vorlage (z. B. `STMB_sp_<key>_lastMsgId`) und entprellt Läufe (~10s). Die Szenen-Zusammenstellung ist zur Sicherheit auf ein aktuelles Fenster begrenzt.
+* Vorlagen mit benutzerdefinierten Laufzeit-Makros sind nur manuell nutzbar. STMB entfernt `onInterval` und `onAfterMemory` bei solchen Vorlagen beim Speichern/Importieren und zeigt eine Warnung an.
 
 Vorschau und Speichern
 
 * Wenn "show memory previews" in den STMB-Einstellungen aktiviert ist, erscheint ein Vorschau-Popup. Du kannst akzeptieren, bearbeiten, wiederholen oder abbrechen. Akzeptierter Inhalt wird in dein gebundenes Lorebook unter "Name (STMB SidePrompt)" geschrieben.
 * Side Prompts erfordern ein an den Chat gebundenes Memory-Lorebook (oder Auswahl im manuellen Modus). Wenn keines gebunden ist, zeigt STMB eine Benachrichtigung und überspringt den Lauf.
+* Wenn eine Vorlage benutzerdefinierte Laufzeit-Makros enthält, werden automatische Trigger beim Speichern/Importieren entfernt und STMB zeigt dazu einen Hinweis an.
 
 Import/Export und Zurücksetzen der Eingebauten
 
 * Export: Speichere dein Side Prompts-Dokument als JSON.
-* Import: Fügt Einträge additiv hinzu; Duplikate werden sicher umbenannt (kein Überschreiben).
+* Import: Fügt Einträge additiv hinzu; Duplikate werden sicher umbenannt (kein Überschreiben). Enthält eine importierte Vorlage benutzerdefinierte Laufzeit-Makros, entfernt STMB automatisch `onInterval` und `onAfterMemory` und zeigt eine Warnung an.
 * Recreate Built‑ins: Setzt die eingebauten Vorlagen auf die Standards der aktuellen Spracheinstellung zurück (benutzererstellte Vorlagen bleiben unberührt).
 
 ## Side Prompts vs. Memory Path: Hauptunterschiede
@@ -209,17 +215,17 @@ Import/Export und Zurücksetzen der Eingebauten
 
 * Wann sie laufen
 * Memory Path: Läuft nur, wenn du "Generate Memory" drückst (oder über dessen Workflow).
-* Side Prompts: Kann "After Memory" (nach Memory), bei Intervall-Schwellenwerten oder manuell mit `/sideprompt` laufen.
+* Side Prompts: Kann "After Memory" (nach Memory), bei Intervall-Schwellenwerten oder manuell mit `/sideprompt` laufen. Vorlagen mit benutzerdefinierten Laufzeit-Makros sind nur manuell nutzbar.
 
 
 * Prompt-Form
 * Memory Path: Verwendet ein dediziertes "Summary Prompt Manager"-Preset mit einem strengen JSON-Vertrag; STMB validiert/repariert JSON.
-* Side Prompts: Verwendet den Anweisungstext der Vorlage + optionalen vorherigen Eintrag + optionale vorherige Memories + kompilierten Szenentext; kein JSON-Schema erforderlich (optionales Response Format dient nur als Anleitung).
+* Side Prompts: Verwendet den Anweisungstext der Vorlage + optionalen vorherigen Eintrag + optionale vorherige Memories + kompilierten Szenentext; kein JSON-Schema erforderlich (optionales Response Format dient nur als Anleitung). Standard-ST-Makros werden in Prompt und Response Format erweitert.
 
 
 * Ausgabe und Speicherung
 * Memory Path: Ein JSON-Objekt: `{ title, content, keywords }` → gespeichert als Memory-Eintrag, der für den Abruf genutzt wird.
-* Side Prompts: Reintext-Inhalt → gespeichert als Lorebook-Eintrag mit dem Titel "Name (STMB SidePrompt)" (Legacy-Namen werden für Updates erkannt). Keywords sind nicht erforderlich.
+* Side Prompts: Reintext-Inhalt → gespeichert als Lorebook-Eintrag mit dem Titel "Name (STMB SidePrompt)" (Legacy-Namen werden für Updates erkannt). Keywords sind nicht erforderlich. Nicht-Standard-`{{...}}`-Tokens sind Pflicht-Eingaben für den manuellen Aufruf.
 
 
 * Einbindung in den Chat-Prompt

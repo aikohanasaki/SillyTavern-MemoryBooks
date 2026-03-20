@@ -136,7 +136,8 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 * `/scenememory 10-25` - Erstelle Erinnerung aus den Nachrichten 10 bis 25
 * `/creatememory` - Erstelle Erinnerung aus der aktuell markierten Szene
 * `/nextmemory` - Fasse alles seit der letzten Erinnerung zusammen
-* `/sideprompt "Relationship Tracker"` - Führe einen benutzerdefinierten Tracker aus
+* `/sideprompt "Relationship Tracker" {{macro}}="value"` - Führe einen benutzerdefinierten Tracker aus
+* Wenn du einen Side Prompt auswählst, schlägt die Slash-Command-Autovervollständigung die restlichen benötigten Laufzeitmakros vor.
 
 **Was du bekommst:**
 
@@ -200,7 +201,8 @@ aber die Ergebnisse sind möglicherweise weniger detailliert.
 ## 🎨 Tracker, Side Prompts & Vorlagen (Fortgeschrittene Funktion)
 
 **Side Prompts** sind Hintergrund-Tracker, die helfen, laufende Story-Informationen aufrechtzuerhalten.
-Sie laufen parallel zur Speichererstellung und können dieselben Notizen im Laufe der Zeit aktualisieren. Betrachte sie als **Helfer, die deine Geschichte beobachten und bestimmte Details auf dem neuesten Stand halten**.
+Sie schreiben separate Side-Prompt-Lorebook-Einträge und laufen parallel zur Speichererstellung. Betrachte sie als **Helfer, die deine Geschichte beobachten und bestimmte Details auf dem neuesten Stand halten**.
+Standard-ST-Makros wie `{{user}}` und `{{char}}` werden in `Prompt` und `Response Format` erweitert. Nicht standardmäßige `{{...}}`-Makros werden zu Pflichtangaben für den manuellen Aufruf.
 
 ### 🚀 **Schnellstart mit Vorlagen**
 
@@ -215,7 +217,7 @@ Sie laufen parallel zur Speichererstellung und können dieselben Notizen im Lauf
 
 
 4. Aktiviere die gewünschten Vorlagen (du kannst sie später anpassen)
-5. Deine Erinnerungen enthalten nun automatisch dieses Tracking
+5. Wenn die Vorlage benutzerdefinierte Laufzeitmakros enthält, wird sie nicht automatisch ausgeführt und muss manuell mit `/sideprompt` gestartet werden
 
 ### ⚙️ **Wie Side Prompts funktionieren**
 
@@ -223,7 +225,9 @@ Sie laufen parallel zur Speichererstellung und können dieselben Notizen im Lauf
 * **Nicht störend**: Sie ändern nicht deine Haupt-KI-Einstellungen oder Charakter-Prompts
 * **Pro-Chat-Kontrolle**: Verschiedene Chats können unterschiedliche Tracker verwenden
 * **Vorlagenbasiert**: Verwende eingebaute Vorlagen oder erstelle deine eigenen
-* **Automatisch oder Manuell**: Einige laufen automatisch, andere können per Befehl ausgeführt werden
+* **Automatisch oder Manuell**: Standardvorlagen können automatisch laufen; Vorlagen mit benutzerdefinierten Laufzeitmakros sind nur manuell nutzbar
+* **Makro-Unterstützung**: `Prompt` und `Response Format` erweitern standardmäßige ST-Makros wie `{{user}}` und `{{char}}`
+* **Sicherheitsprüfung**: Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, entfernt STMB beim Speichern/Importieren `onInterval` und `onAfterMemory` und zeigt eine Warnung an
 
 Dies macht das Auslöseverhalten ohne Fachbegriffe verständlich.
 
@@ -251,9 +255,10 @@ Beispielhafte Prompt-Ideen:
 1. Öffne den Side Prompts Manager
 2. Klicke auf **Create New** (Neu erstellen)
 3. Schreibe eine kurze, klare Anweisung
-*(Beispiel: „Notiere immer, wie das Wetter in jeder Szene ist“)*
-4. Speichere und aktiviere sie
-5. Der Tracker wird diese Informationen nun im Laufe der Zeit aktualisieren
+   *(Beispiel: „Notiere immer, wie das Wetter in jeder Szene ist“)*
+4. Füge bei Bedarf Standard-ST-Makros oder Laufzeitmakros im Format `{{macro}}="value"` hinzu
+5. Speichere und aktiviere sie
+6. Der Tracker wird diese Informationen nun im Laufe der Zeit aktualisieren, wenn automatische Trigger aktiv bleiben
 
 ### 💬 **Pro-Tipp**
 

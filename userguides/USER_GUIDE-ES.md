@@ -136,7 +136,8 @@ Piense en ST Memory Books como su **bibliotecario personal de IA** para conversa
 * `/scenememory 10-25` - Crear memoria de los mensajes 10 al 25.
 * `/creatememory` - Crear memoria de la escena marcada actualmente.
 * `/nextmemory` - Resumir todo desde la última memoria.
-* `/sideprompt "Relationship Tracker"` - Ejecutar rastreador personalizado.
+* `/sideprompt "Relationship Tracker" {{macro}}="value"` - Ejecutar rastreador personalizado.
+* Cuando eliges un Side Prompt, el autocompletado del comando sugiere las macros de tiempo de ejecución restantes.
 
 **Lo que obtiene:**
 
@@ -200,7 +201,8 @@ pero los resultados pueden ser menos detallados.
 ## 🎨 Rastreadores, Prompts Secundarios y Plantillas (Función Avanzada)
 
 Los **Prompts Secundarios** (Side Prompts) son rastreadores en segundo plano que ayudan a mantener la información de la historia en curso.
-Se ejecutan junto con la creación de memoria y pueden actualizar las mismas notas a lo largo del tiempo. Piense en ellos como **ayudantes que observan su historia y mantienen ciertos detalles actualizados**.
+Crean entradas separadas de Side Prompt en el lorebook y se ejecutan junto con la creación de memoria. Piense en ellos como **ayudantes que observan su historia y mantienen ciertos detalles actualizados**.
+Las macros estándar de ST como `{{user}}` y `{{char}}` se expanden en `Prompt` y `Response Format`. Las macros no estándar `{{...}}` se convierten en entradas obligatorias para la ejecución manual.
 
 ### 🚀 **Inicio Rápido con Plantillas**
 
@@ -215,7 +217,7 @@ Se ejecutan junto con la creación de memoria y pueden actualizar las mismas not
 
 
 4. Habilite las plantillas que desee (puede personalizarlas más tarde).
-5. Sus recuerdos ahora incluirán este seguimiento automáticamente.
+5. Si la plantilla contiene macros de tiempo de ejecución personalizadas, no se ejecutará automáticamente y deberá iniciarse manualmente con `/sideprompt`.
 
 ### ⚙️ **Cómo Funcionan los Prompts Secundarios**
 
@@ -223,7 +225,9 @@ Se ejecutan junto con la creación de memoria y pueden actualizar las mismas not
 * **No Intrusivos**: No cambian la configuración principal de su IA ni los prompts de los personajes.
 * **Control por Chat**: Diferentes chats pueden usar diferentes rastreadores.
 * **Basado en Plantillas**: Use plantillas integradas o cree las suyas propias.
-* **Automático o Manual**: Algunos se ejecutan automáticamente, otros se pueden ejecutar por comando.
+* **Automático o Manual**: Las plantillas estándar pueden ejecutarse automáticamente; las plantillas con macros de tiempo de ejecución personalizadas son solo manuales.
+* **Compatibilidad con macros**: `Prompt` y `Response Format` expanden macros estándar de ST como `{{user}}` y `{{char}}`.
+* **Controles de seguridad**: Si una plantilla contiene macros de tiempo de ejecución personalizadas, STMB elimina `onInterval` y `onAfterMemory` al guardar/importar y muestra una advertencia.
 
 Esto hace que el comportamiento del disparador sea comprensible sin términos técnicos.
 
@@ -251,9 +255,10 @@ Ideas de ejemplo para prompts:
 1. Abra el Administrador de Prompts Secundarios (Side Prompts Manager).
 2. Haga clic en **Create New**.
 3. Escriba una instrucción corta y clara.
-*(ejemplo: "Siempre anota cómo es el clima en cada escena")*.
-4. Guárdelo y habilítelo.
-5. El rastreador ahora actualizará esta información con el tiempo.
+   *(ejemplo: "Siempre anota cómo es el clima en cada escena")*.
+4. Añada si hace falta macros estándar de ST o macros de tiempo de ejecución en el formato `{{macro}}="value"`.
+5. Guárdelo y habilítelo.
+6. El rastreador ahora actualizará esta información con el tiempo si se mantienen los activadores automáticos.
 
 ### 💬 **Consejo Pro**
 

@@ -118,7 +118,7 @@ Considérez ST Memory Books comme votre **bibliothécaire IA personnel** pour le
 - `/scenememory 10-25` - Créer un souvenir à partir des messages 10 à 25.
 - `/creatememory` - Créer un souvenir à partir de la scène actuellement marquée.
 - `/nextmemory` - Résumer tout ce qui s'est passé depuis le dernier souvenir.
-- `/sideprompt "Relationship Tracker"` - Lancer un traceur personnalisé.
+- `/sideprompt "Relationship Tracker" {{macro}}="value"` - Lancer un traceur personnalisé.
 
 **Ce que vous obtenez :**
 - Création de mémoire ultra-rapide.
@@ -179,7 +179,8 @@ Un Résumé d'Arc vous permet de combiner plusieurs anciens souvenirs en un seul
 ## 🎨 Traceurs, Prompts Secondaires & Modèles (Fonctionnalité Avancée)
 
 Les **Side Prompts** (Prompts Secondaires) sont des traceurs d'arrière-plan qui aident à maintenir les informations de l'histoire en cours.
-Ils s'exécutent parallèlement à la création de mémoire et peuvent mettre à jour les mêmes notes au fil du temps. Considérez-les comme des **assistants qui surveillent votre histoire et maintiennent certains détails à jour**.
+Ils créent des entrées Side Prompt séparées dans le lorebook et s'exécutent parallèlement à la création de mémoire. Considérez-les comme des **assistants qui surveillent votre histoire et maintiennent certains détails à jour**.
+Les macros ST standard comme `{{user}}` et `{{char}}` sont développées dans `Prompt` et `Response Format`. Les macros non standard `{{...}}` deviennent des entrées obligatoires pour l'exécution manuelle.
 
 ### 🚀 **Démarrage Rapide avec les Modèles**
 
@@ -193,7 +194,7 @@ Ils s'exécutent parallèlement à la création de mémoire et peuvent mettre à
    * **Mood & Atmosphere** – Suit le ton émotionnel.
    * **World Building Notes** – Suit les détails du cadre et le lore.
 4. Activez les modèles que vous souhaitez (vous pouvez les personnaliser plus tard).
-5. Vos souvenirs incluront désormais ce suivi automatiquement.
+5. Si le modèle contient des macros d'exécution personnalisées, il ne s'exécutera pas automatiquement et devra être lancé manuellement avec `/sideprompt`.
 
 ### ⚙️ **Comment fonctionnent les Prompts Secondaires**
 
@@ -201,7 +202,9 @@ Ils s'exécutent parallèlement à la création de mémoire et peuvent mettre à
 * **Non-intrusifs** : Ils ne modifient pas vos paramètres principaux d'IA ou les prompts de personnage.
 * **Contrôle par chat** : Différents chats peuvent utiliser différents traceurs.
 * **Basé sur des modèles** : Utilisez des modèles intégrés ou créez les vôtres.
-* **Automatique ou Manuel** : Certains s'exécutent automatiquement, d'autres peuvent être lancés par commande.
+* **Automatique ou Manuel** : Les modèles standards peuvent s'exécuter automatiquement ; ceux qui contiennent des macros d'exécution personnalisées sont réservés au mode manuel.
+* **Prise en charge des macros** : `Prompt` et `Response Format` développent les macros ST standard comme `{{user}}` et `{{char}}`.
+* **Contrôles de sécurité** : Si un modèle contient des macros d'exécution personnalisées, STMB supprime `onInterval` et `onAfterMemory` lors de la sauvegarde/import et affiche un avertissement.
 
 Cela rend le comportement de déclenchement compréhensible sans termes techniques.
 
@@ -232,8 +235,9 @@ Exemples d'idées de prompts :
 2. Cliquez sur **Create New**.
 3. Écrivez une instruction courte et claire.
    *(exemple : "Toujours noter quel temps il fait dans chaque scène")*
-4. Sauvegardez et activez-le.
-5. Le traceur mettra désormais à jour cette information au fil du temps.
+4. Ajoutez si nécessaire des macros ST standard ou des macros d'exécution au format `{{macro}}="value"`.
+5. Sauvegardez et activez-le.
+6. Le traceur mettra désormais à jour cette information au fil du temps si les déclencheurs automatiques restent activés.
 
 ### 💬 **Conseil Pro**
 

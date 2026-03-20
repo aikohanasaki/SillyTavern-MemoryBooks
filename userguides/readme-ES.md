@@ -242,7 +242,7 @@ Todos los prompts y presets **deben** instruir a la IA para que devuelva solo JS
 
 ### 🎡 Rastreadores y Side Prompts (Prompts Secundarios)
 
-Los Side Prompts pueden usarse como rastreadores y crearán entradas en tu lorebook de memoria. Los Side Prompts te permiten rastrear el **estado continuo**, no solo eventos pasados. Por ejemplo:
+Los Side Prompts pueden usarse como rastreadores y crearán entradas separadas de side prompt en tu lorebook de memoria. Los Side Prompts te permiten rastrear el **estado continuo**, no solo eventos pasados. Por ejemplo:
 
 * 💰 Inventario y Recursos ("¿Qué artículos tiene el usuario?")
 * ❤️ Estado de la Relación ("¿Cómo se siente X acerca de Y?")
@@ -259,7 +259,9 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas en tu loreb
 - Crear prompts nuevos o duplicar para experimentar con diferentes estilos.
 - Editar o eliminar cualquier preset (incluidos los integrados).
 - Exportar e importar presets como archivos JSON para copia de seguridad o compartir.
-- Ejecutarlos manualmente o automáticamente con la creación de recuerdos.
+- Ejecutarlos manualmente o automáticamente, según la plantilla.
+- Usar macros estándar de ST como `{{user}}` y `{{char}}` en `Prompt` y `Response Format`.
+- Usar macros de tiempo de ejecución personalizadas como `{{npc name}}`, que se pasan al ejecutar `/sideprompt`.
 
 ```
 
@@ -268,6 +270,9 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas en tu loreb
 ```
 - Al crear un nuevo prompt, puedes copiar de los integrados para una mejor compatibilidad.
 - Biblioteca adicional de Plantillas de Side Prompts [archivo JSON](resources/SidePromptTemplateLibrary.json) - simplemente importa para usar.
+- Sintaxis manual: `/sideprompt "Nombre" {{macro}}="value" [X-Y]`.
+- Después de elegir un side prompt en el autocompletado, STMB sugerirá las macros de tiempo de ejecución que falten.
+- Los side prompts con macros de tiempo de ejecución personalizadas son solo manuales. STMB elimina `On Interval` y `On After Memory` de esas plantillas al guardar/importar y muestra una advertencia.
 
 ```
 

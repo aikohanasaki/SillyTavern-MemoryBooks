@@ -125,15 +125,16 @@ Templat terbina dalam (dihantar oleh STMB)
 - Nilai — mencatat perkara yang telah dipelajari oleh {{char}} tentang {{user}}
 
 Tempat untuk mengurus
-- Buka Pengurus Gesaan Sampingan (dalam STMB) untuk melihat, mencipta, mengimport/mengeksport, mendayakan atau mengkonfigurasi templat.
+- Buka Pengurus Gesaan Sampingan (dalam STMB) untuk melihat, mencipta, mengimport/mengeksport, mendayakan atau mengkonfigurasi templat. Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan dalam `Prompt` dan `Format Respons`; makro `{{...}}` bukan standard dianggap sebagai input masa jalan.
 
 Cipta atau dayakan Gesaan Sampingan
 1) Buka Pengurus Gesaan Sampingan.
 2) Cipta templat baharu atau dayakan templat terbina dalam.
 3) Konfigurasikan:
    - Nama: Tajuk paparan (entri buku lore yang disimpan akan bertajuk "Nama (Gesaan Sampingan STMB)").
-   - Gesaan: Teks arahan yang akan diikuti oleh model.
-   - Format Respons: Blok panduan pilihan yang dilampirkan pada gesaan (bukan skema, hanya arahan).
+   - Gesaan: Teks arahan yang akan diikuti oleh model. Makro ST standard dikembangkan di sini.
+   - Format Respons: Blok panduan pilihan yang dilampirkan pada gesaan (bukan skema, hanya arahan). Makro ST standard juga dikembangkan di sini.
+   - Makro masa jalan: Token bukan standard `{{...}}` menjadi input wajib untuk `/sideprompt`, contohnya `{{npc name}}="Jane Doe"`.
    - Pencetus:
      • Selepas Memori — jalankan selepas setiap penjanaan memori yang berjaya untuk adegan semasa.
      • Pada Selang Masa — jalankan apabila ambang mesej pengguna/pembantu yang boleh dilihat sejak larian terakhir dipenuhi (visibleMessages).
@@ -147,24 +148,29 @@ Cipta atau dayakan Gesaan Sampingan
      • preventRecursion/delayUntilRecursion: bendera boolean
 
 Larian manual dengan /sideprompt
-- Sintaks: /sideprompt "Nama" [X‑Y]
+- Sintaks: /sideprompt "Nama" {{macro}}="value" [X‑Y]
   - Contoh:
     • /sideprompt "Status"
-    • /sideprompt Hantar 100‑120
+    • /sideprompt "NPC Directory" {{npc name}}="Jane Doe"
+    • /sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120
 - Jika anda meninggalkan julat, STMB menyusun mesej sejak pusat pemeriksaan terakhir (terhad kepada tetingkap terbaharu).
 - Larian manual memerlukan templat untuk membenarkan perintah sideprompt (dayakan "Benarkan larian manual melalui /sideprompt" dalam tetapan templat). Jika dilumpuhkan, perintah itu akan ditolak.
+- Nama templat mesti berada dalam tanda petik, dan nilai makro juga mesti dipetik.
+- Selepas anda memilih side prompt dalam autolengkap perintah, STMB mencadangkan makro wajib yang masih belum diisi untuk templat itu.
 
 Larian automatik
 - Selepas Memori: Semua templat yang didayakan dengan pencetus onAfterMemory berjalan menggunakan adegan yang telah disusun. STMB menjalankan larian secara berkelompok dengan had serentak yang kecil dan boleh menunjukkan roti bakar kejayaan/kegagalan setiap templat.
 - Penjejak selang masa: Templat yang didayakan dengan onInterval berjalan sebaik sahaja bilangan mesej yang boleh dilihat (bukan sistem) sejak larian terakhir memenuhi visibleMessages. STMB menyimpan pusat pemeriksaan setiap templat (cth., STMB_sp_<key>_lastMsgId) dan menyahlecit larian (~10s). Penyusunan adegan dihadkan kepada tetingkap terbaharu untuk keselamatan.
+- Templat dengan makro masa jalan tersuai hanya boleh dijalankan secara manual. STMB mengalih keluar `onInterval` dan `onAfterMemory` daripada templat sedemikian semasa simpan/import dan memaparkan amaran.
 
 Pratonton dan simpanan
 - Jika "tunjukkan pratonton memori" didayakan dalam tetapan STMB, tetingkap timbul pratonton akan muncul. Anda boleh menerima, mengedit, mencuba semula atau membatalkan. Kandungan yang diterima ditulis ke buku lore terikat anda di bawah "Nama (Gesaan Sampingan STMB)".
 - Gesaan Sampingan memerlukan buku lore memori untuk diikat pada sembang (atau dipilih dalam Mod Manual). Jika tiada yang terikat, STMB akan menunjukkan pemberitahuan dan melangkau larian.
+- Jika templat mempunyai makro masa jalan tersuai, STMB mengalih keluar pencetus automatik semasa simpan/import dan memaparkan amaran.
 
 Import/eksport dan tetapan semula terbina dalam
 - Eksport: Simpan dokumen Gesaan Sampingan anda sebagai JSON.
-- Import: Menggabungkan entri secara tambahan; pendua dinamakan semula dengan selamat (tiada tulis ganti).
+- Import: Menggabungkan entri secara tambahan; pendua dinamakan semula dengan selamat (tiada tulis ganti). Jika templat yang diimport mempunyai makro masa jalan tersuai, STMB secara automatik mengalih keluar `onInterval` dan `onAfterMemory` dan memaparkan amaran.
 - Cipta Semula Terbina Dalam: Tetapkan semula templat terbina dalam kepada lalai tempatan semasa (templat ciptaan pengguna tidak disentuh).
 
 ## Gesaan Sampingan lwn Laluan Memori: Perbezaan Utama
@@ -175,15 +181,15 @@ Import/eksport dan tetapan semula terbina dalam
 
 - Bila ia berjalan
   - Laluan Memori: Berjalan hanya apabila anda menekan Jana Memori (atau melalui aliran kerjanya).
-  - Gesaan Sampingan: Boleh berjalan Selepas Memori, pada ambang Selang Masa, atau secara manual dengan /sideprompt.
+  - Gesaan Sampingan: Boleh berjalan Selepas Memori, pada ambang Selang Masa, atau secara manual dengan /sideprompt. Templat dengan makro masa jalan tersuai hanya boleh dijalankan secara manual.
 
 - Bentuk gesaan
   - Laluan Memori: Menggunakan pratetap "Pengurus Gesaan Ringkasan" yang berdedikasi dengan kontrak JSON yang ketat; STMB mengesahkan/membaiki JSON.
-  - Gesaan Sampingan: Menggunakan teks arahan templat + entri terdahulu pilihan + memori sebelumnya pilihan + teks adegan yang disusun; tiada skema JSON diperlukan (Format Respons pilihan adalah panduan sahaja).
+  - Gesaan Sampingan: Menggunakan teks arahan templat + entri terdahulu pilihan + memori sebelumnya pilihan + teks adegan yang disusun; tiada skema JSON diperlukan (Format Respons pilihan adalah panduan sahaja). Makro ST standard dikembangkan dalam Prompt dan Format Respons.
 
 - Output dan storan
   - Laluan Memori: Satu objek JSON: { title, content, keywords } → disimpan sebagai entri memori yang digunakan untuk pengambilan.
-  - Gesaan Sampingan: Kandungan teks biasa → disimpan sebagai entri buku lore bertajuk "Nama (Gesaan Sampingan STMB)" (nama lama diiktiraf untuk kemas kini). Kata kunci tidak diperlukan.
+  - Gesaan Sampingan: Kandungan teks biasa → disimpan sebagai entri buku lore bertajuk "Nama (Gesaan Sampingan STMB)" (nama lama diiktiraf untuk kemas kini). Kata kunci tidak diperlukan. Token bukan standard `{{...}}` ialah input wajib untuk perintah manual.
 
 - Kemasukan ke dalam gesaan sembang
   - Laluan Memori: Entri dipilih melalui teg/kata kunci, keutamaan, skop dan belanjawan token.

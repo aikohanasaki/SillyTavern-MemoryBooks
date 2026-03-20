@@ -142,7 +142,7 @@ Modèles intégrés (fournis par STMB)
 
 Où gérer
 
-* Ouvrez le Gestionnaire de Side Prompts (dans STMB) pour voir, créer, importer/exporter, activer ou configurer les modèles.
+* Ouvrez le Gestionnaire de Side Prompts (dans STMB) pour voir, créer, importer/exporter, activer ou configurer les modèles. Les macros ST standard comme `{{user}}` et `{{char}}` sont développées dans `Prompt` et `Response Format` ; les macros `{{...}}` non standard sont traitées comme des entrées d'exécution.
 
 Créer ou activer un Side Prompt
 
@@ -150,8 +150,9 @@ Créer ou activer un Side Prompt
 2. Créez un nouveau modèle ou activez-en un intégré.
 3. Configurez :
 * Name : Titre d'affichage (l'entrée sauvegardée dans le lorebook sera titrée "Nom (STMB SidePrompt)").
-* Prompt : Texte d'instruction que le modèle suivra.
-* Response Format : Bloc de conseils optionnel ajouté au prompt (pas un schéma, juste des directives).
+* Prompt : Texte d'instruction que le modèle suivra. Les macros ST standard y sont développées.
+* Response Format : Bloc de conseils optionnel ajouté au prompt (pas un schéma, juste des directives). Les macros ST standard y sont aussi développées.
+* Runtime macros : Les tokens non standard `{{...}}` deviennent des entrées obligatoires pour `/sideprompt`, par exemple `{{npc name}}="Jane Doe"`.
 * Triggers (Déclencheurs) :
 • On After Memory — s'exécute après chaque génération de mémoire réussie pour la scène actuelle.
 • On Interval — s'exécute lorsqu'un seuil de messages visibles utilisateur/assistant depuis la dernière exécution est atteint (`visibleMessages`).
@@ -168,29 +169,34 @@ Créer ou activer un Side Prompt
 
 Exécution manuelle avec /sideprompt
 
-* Syntaxe : `/sideprompt "Nom" [X‑Y]`
+* Syntaxe : `/sideprompt "Nom" {{macro}}="value" [X‑Y]`
 * Exemples :
 • `/sideprompt "Status"`
-• `/sideprompt Cast 100‑120`
+• `/sideprompt "NPC Directory" {{npc name}}="Jane Doe"`
+• `/sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120`
 
 
 * Si vous omettez une plage, STMB compile les messages depuis le dernier point de contrôle (plafonné à une fenêtre récente).
 * L'exécution manuelle nécessite que le modèle autorise la commande sideprompt (activez "Allow manual run via /sideprompt" dans les paramètres du modèle). Si désactivé, la commande sera rejetée.
+* Le nom du side prompt doit être entre guillemets, et les valeurs des macros aussi.
+* Une fois le side prompt choisi dans l'autocomplétion, STMB suggère les macros obligatoires restantes pour ce modèle.
 
 Exécutions automatiques
 
 * Après Mémoire (After Memory) : Tous les modèles activés avec le déclencheur `onAfterMemory` s'exécutent en utilisant la scène déjà compilée. STMB traite les exécutions par lots avec une petite limite de concurrence et peut afficher des notifications de succès/échec par modèle.
 * Suivis par intervalle : Les modèles activés avec `onInterval` s'exécutent une fois que le nombre de messages visibles (non système) depuis la dernière exécution atteint `visibleMessages`. STMB stocke des points de contrôle par modèle (ex. `STMB_sp_<key>_lastMsgId`) et temporise les exécutions (~10s). La compilation de la scène est plafonnée à une fenêtre récente pour la sécurité.
+* Les modèles avec des macros d'exécution personnalisées sont réservés au manuel. STMB supprime `onInterval` et `onAfterMemory` lors de la sauvegarde/importation et affiche un avertissement.
 
 Aperçus et sauvegarde
 
 * Si "show memory previews" est activé dans les paramètres STMB, une fenêtre d'aperçu apparaît. Vous pouvez accepter, éditer, réessayer ou annuler. Le contenu accepté est écrit dans votre lorebook lié sous "Nom (STMB SidePrompt)".
 * Les Side Prompts nécessitent qu'un lorebook de mémoire soit lié au chat (ou sélectionné en Mode Manuel). Si aucun n'est lié, STMB affichera une notification et ignorera l'exécution.
+* Si un modèle contient des macros d'exécution personnalisées, STMB supprime les déclencheurs automatiques lors de la sauvegarde/importation et affiche un avertissement.
 
 Import/export et réinitialisation intégrée
 
 * Exporter : Sauvegardez votre document Side Prompts en JSON.
-* Importer : Fusionne les entrées de manière additive ; les doublons sont renommés en toute sécurité (pas d'écrasement).
+* Importer : Fusionne les entrées de manière additive ; les doublons sont renommés en toute sécurité (pas d'écrasement). Si un modèle importé contient des macros d'exécution personnalisées, STMB supprime automatiquement `onInterval` et `onAfterMemory` et affiche un avertissement.
 * Recréer les intégrés (Recreate Built‑ins) : Réinitialise les modèles intégrés aux valeurs par défaut de la locale actuelle (les modèles créés par l'utilisateur ne sont pas touchés).
 
 ## Side Prompts vs Chemin de Mémoire : Différences Clés
@@ -202,17 +208,17 @@ Import/export et réinitialisation intégrée
 
 * Quand ils s'exécutent
 * Chemin de Mémoire : S'exécute uniquement lorsque vous appuyez sur Générer la Mémoire (ou via son flux de travail).
-* Side Prompts : Peuvent s'exécuter Après Mémoire, sur des seuils d'Intervalle, ou manuellement avec `/sideprompt`.
+* Side Prompts : Peuvent s'exécuter Après Mémoire, sur des seuils d'Intervalle, ou manuellement avec `/sideprompt`. Les modèles avec macros d'exécution personnalisées ne peuvent être exécutés que manuellement.
 
 
 * Forme du prompt
 * Chemin de Mémoire : Utilise un préréglage dédié du "Summary Prompt Manager" avec un contrat JSON strict ; STMB valide/répare le JSON.
-* Side Prompts : Utilise le texte d'instruction du modèle + entrée précédente optionnelle + mémoires précédentes optionnelles + texte de la scène compilée ; aucun schéma JSON requis (le Response Format optionnel est seulement indicatif).
+* Side Prompts : Utilise le texte d'instruction du modèle + entrée précédente optionnelle + mémoires précédentes optionnelles + texte de la scène compilée ; aucun schéma JSON requis (le Response Format optionnel est seulement indicatif). Les macros ST standard sont développées dans Prompt et Response Format.
 
 
 * Sortie et stockage
 * Chemin de Mémoire : Un objet JSON : `{ title, content, keywords }` → stocké comme une entrée de mémoire utilisée pour la récupération.
-* Side Prompts : Contenu en texte brut → stocké comme une entrée de lorebook titrée "Nom (STMB SidePrompt)" (les anciens noms sont reconnus pour les mises à jour). Les mots-clés ne sont pas requis.
+* Side Prompts : Contenu en texte brut → stocké comme une entrée de lorebook titrée "Nom (STMB SidePrompt)" (les anciens noms sont reconnus pour les mises à jour). Les mots-clés ne sont pas requis. Les tokens non standard `{{...}}` sont des entrées obligatoires pour la commande manuelle.
 
 
 * Inclusion dans le prompt du chat

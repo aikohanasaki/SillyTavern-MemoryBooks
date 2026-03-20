@@ -242,7 +242,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🎡 追踪器 & 侧边提示词 (Side Prompts)
 
-侧边提示词可以像追踪器一样使用，并会在您的记忆世界书中创建条目。侧边提示词允许您追踪 **当前状态**，而不仅仅是过去的事件。例如：
+侧边提示词可以像追踪器一样使用，并会在您的记忆世界书中创建单独的 side prompt 条目。侧边提示词允许您追踪 **当前状态**，而不仅仅是过去的事件。例如：
 
 * 💰 物品与资源 ("用户拥有什么物品？")
 * ❤️ 关系状态 ("X 对 Y 感觉如何？")
@@ -259,7 +259,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - 创建新提示词或复制提示词以尝试不同的提示词风格。
 - 编辑或删除任何预设（包括内置预设）。
 - 将预设导出和导入为 JSON 文件以进行备份或共享。
-- 手动运行它们，或随记忆创建自动运行。
+- 根据模板，手动或自动运行。
+- 在 `Prompt` 和 `Response Format` 中使用 `{{user}}`、`{{char}}` 之类的标准 ST 宏。
+- 使用像 `{{npc name}}` 这样的自定义运行时宏，它们会在运行 `/sideprompt` 时传入。
 
 ```
 
@@ -267,7 +269,10 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ```
 - 创建新提示词时，您可以从内置提示词复制以获得最佳兼容性。
-- 额外的侧边提示词模板库 [JSON 文件](resources/SidePromptTemplateLibrary.json) - 导入即可使用
+- 额外的侧边提示词模板库 [JSON 文件](resources/SidePromptTemplateLibrary.json) - 导入即可使用。
+- 手动语法：`/sideprompt "名称" {{macro}}="value" [X-Y]`。
+- 在命令自动补全中选择 side prompt 后，STMB 会提示还缺少的运行时宏。
+- 带有自定义运行时宏的 side prompt 只能手动运行。STMB 会在保存/导入时移除这类模板的 `On Interval` 和 `On After Memory`，并显示警告。
 
 ```
 

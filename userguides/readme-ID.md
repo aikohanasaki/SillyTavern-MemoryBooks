@@ -242,7 +242,7 @@ Semua prompt dan preset **harus** menginstruksikan AI untuk hanya mengembalikan 
 
 ### 🎡 Pelacak & Prompt Sampingan (Side Prompts)
 
-Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di lorebook memori Anda. Prompt Sampingan memungkinkan Anda melacak **keadaan yang sedang berlangsung**, bukan hanya peristiwa masa lalu. Contohnya:
+Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri side prompt terpisah di lorebook memori Anda. Prompt Sampingan memungkinkan Anda melacak **keadaan yang sedang berlangsung**, bukan hanya peristiwa masa lalu. Contohnya:
 
 * 💰 Inventaris & Sumber Daya ("Barang apa yang dimiliki pengguna?")
 * ❤️ Status Hubungan ("Bagaimana perasaan X tentang Y?")
@@ -259,7 +259,9 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di loreb
 - Buat prompt baru atau duplikat untuk bereksperimen dengan gaya prompt yang berbeda.
 - Edit atau hapus preset apa pun (termasuk bawaan).
 - Ekspor dan impor preset sebagai file JSON untuk cadangan atau berbagi.
-- Jalankan secara manual atau otomatis dengan pembuatan memori.
+- Jalankan secara manual atau otomatis, tergantung templatenya.
+- Gunakan makro ST standar seperti `{{user}}` dan `{{char}}` di `Prompt` dan `Response Format`.
+- Gunakan makro runtime kustom seperti `{{npc name}}`, yang dipasok saat Anda menjalankan `/sideprompt`.
 
 ```
 
@@ -268,6 +270,9 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri di loreb
 ```
 - Saat membuat prompt baru, Anda dapat menyalin dari bawaan untuk kompatibilitas terbaik.
 - Pustaka Templat Prompt Sampingan Tambahan [file JSON](resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan.
+- Sintaks manual: `/sideprompt "Nama" {{macro}}="value" [X-Y]`.
+- Setelah memilih side prompt di autocomplete perintah, STMB akan menyarankan makro runtime yang masih diperlukan.
+- Side prompt dengan makro runtime kustom hanya untuk manual. STMB menghapus `On Interval` dan `On After Memory` dari template tersebut saat menyimpan/mengimpor dan menampilkan peringatan.
 
 ```
 

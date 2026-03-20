@@ -229,7 +229,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 
 ### 🎡 Trackers & Side Prompts
 
-Side Prompts can be used like trackers and will create entries in your memory lorebook. Side Prompts allow you to track **ongoing state**, not just past events. For example: 
+Side Prompts can be used like trackers and create separate side-prompt entries in your memory lorebook. Side Prompts allow you to track **ongoing state**, not just past events. For example:
 - 💰 Inventory & Resources ("What items does the user have?")
 - ❤️ Relationship Status ("How does X feel about Y?")
 - 📊 Character Stats ("Current health, skills, reputation")
@@ -242,9 +242,14 @@ Side Prompts can be used like trackers and will create entries in your memory lo
 - Create new or duplicate prompts to experiment with different prompt styles.
 - Edit or delete any preset (including built-ins).
 - Export and import presets as JSON files for backup or sharing.
-- Run them manually or automatically with memory creation.
+- Run them manually or automatically, depending on the template.
+- Use standard SillyTavern macros like `{{user}}` and `{{char}}` in side prompt `Prompt` and `Response Format`.
+- Use custom runtime macros like `{{npc name}}`, which are supplied when you run `/sideprompt`.
 #### **Usage Tips:**
 - When creating a new prompt, you can copy from built-ins for best compatibility.
+- Manual syntax is `/sideprompt "Name" {{macro}}="value" [X-Y]`.
+- Once you choose a side prompt in slash-command autocomplete, STMB will suggest any required runtime macros for that template.
+- Side prompts with custom runtime macros are manual-only. STMB strips `On Interval` and `On After Memory` from those templates on save/import and warns you with a toast.
 - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use
 
 ---
