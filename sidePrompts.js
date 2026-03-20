@@ -11,7 +11,7 @@ import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { oai_settings } from '../../../openai.js';
-import { applySidePromptMacros, collectTemplateRuntimeMacros, parseSidePromptCommandInput } from './sidePromptMacros.js';
+import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens, parseSidePromptCommandInput } from './sidePromptMacros.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -301,7 +301,30 @@ function getEffectiveLorebookSettingsForTemplate(tpl) {
 /**
  * Build defaults (for create-time) and entryOverrides (for create+update) for upsert calls
  */
-function makeUpsertParamsFromLorebook(lbs) {
+function resolveLorebookEntryKeywords(lbs, runtimeMacros = {}) {
+    const rawTemplate = String(lbs?.entryKeywords || '').trim();
+    if (!rawTemplate) {
+        return [];
+    }
+
+    const resolved = applySidePromptMacros(rawTemplate, runtimeMacros);
+    const keywords = [];
+    const seen = new Set();
+
+    for (const part of resolved.split(/[\n,]+/)) {
+        const token = String(part || '').trim();
+        if (!token) continue;
+        if (extractMacroTokens(token).length > 0) continue;
+        const normalized = token.toLowerCase();
+        if (seen.has(normalized)) continue;
+        seen.add(normalized);
+        keywords.push(token);
+    }
+
+    return keywords;
+}
+
+function makeUpsertParamsFromLorebook(lbs, runtimeMacros = {}) {
     const defaults = {
         vectorized: lbs.constVectMode === 'link',
         selective: true,
@@ -320,6 +343,10 @@ function makeUpsertParamsFromLorebook(lbs) {
     }
     if (Number(lbs.position) === 7 && lbs.outletName) {
         entryOverrides.outletName = String(lbs.outletName);
+    }
+    const keywords = resolveLorebookEntryKeywords(lbs, runtimeMacros);
+    if (keywords.length > 0) {
+        entryOverrides.key = keywords;
     }
     return { defaults, entryOverrides };
 }
@@ -611,7 +638,7 @@ export async function evaluateTrackers() {
             try {
                 throwIfStmbStopped(runEpoch);
                 const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
-            const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
+            const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runtimeMacros);
             const endId = compiled?.metadata?.sceneEnd ?? currentLast;
             await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
                     defaults,

@@ -16,7 +16,7 @@ import {
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 import { translate, applyLocale } from '../../../i18n.js';
 import { tr } from './i18nHelpers.js';
-import { collectTemplateRuntimeMacros } from './sidePromptMacros.js';
+import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -122,6 +122,37 @@ function showRuntimeMacroImportNormalizationToast(strippedDetails) {
         { details },
     );
     toastr.warning(message, translate('STMemoryBooks', 'index.toast.title'), getRuntimeMacroStrippedToastOptions());
+}
+
+function isStandardKeywordMacro(token) {
+    const unresolved = extractMacroTokens(applySidePromptMacros(String(token || '')));
+    return !unresolved.includes(token);
+}
+
+function validateKeywordsMacroConfig({ prompt, responseFormat, keywordsTemplate }) {
+    const normalizedKeywords = String(keywordsTemplate || '').trim();
+    if (!normalizedKeywords) {
+        return { ok: true };
+    }
+
+    const allowedMacros = new Set([
+        ...extractMacroTokens(prompt),
+        ...extractMacroTokens(responseFormat),
+    ]);
+    const disallowedMacros = extractMacroTokens(normalizedKeywords).filter(token => !allowedMacros.has(token) && !isStandardKeywordMacro(token));
+    if (disallowedMacros.length === 0) {
+        return { ok: true };
+    }
+
+    toastr.error(
+        tr(
+            'STMemoryBooks_SidePromptKeywordsInvalidMacros',
+            'Lorebook Entry Keywords may only use macros already present in Prompt or Response Format: {{macros}}.',
+            { macros: disallowedMacros.join(', ') },
+        ),
+        translate('STMemoryBooks', 'index.toast.title'),
+    );
+    return { ok: false, disallowedMacros };
 }
 
 /**
@@ -232,6 +263,7 @@ async function openEditTemplate(parentPopup, key) {
         const lbDelay = !!lb.delayUntilRecursion;
         const lbIgnoreBudget = !!lb.ignoreBudget;
         const lbEntryTitleOverride = String(lb.entryTitleOverride || '');
+        const lbEntryKeywords = String(lb.entryKeywords || '');
 
         const content = `
             <h3>${escapeHtml(translate('Edit Side Prompt', 'STMemoryBooks_EditSidePrompt'))}</h3>
@@ -292,6 +324,11 @@ async function openEditTemplate(parentPopup, key) {
                     <h5 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Title Override', 'STMemoryBooks_LorebookEntryTitleOverride'))}</h5>
                     <input type="text" id="stmb-sp-edit-lb-entry-title-override" class="text_pole" value="${escapeHtml(lbEntryTitleOverride)}" placeholder="${escapeHtml(translate('Optional title template (e.g., NPC {{npcname}})', 'STMemoryBooks_LorebookEntryTitleOverridePlaceholder'))}">
                 </label>
+                <label for="stmb-sp-edit-lb-entry-keywords">
+                    <h5 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Keywords', 'STMemoryBooks_LorebookEntryKeywords'))}</h5>
+                    <input type="text" id="stmb-sp-edit-lb-entry-keywords" class="text_pole" value="${escapeHtml(lbEntryKeywords)}" placeholder="${escapeHtml(translate('Optional comma-separated keywords', 'STMemoryBooks_LorebookEntryKeywordsPlaceholder'))}" title="${escapeHtml(translate('You can only use ST standard macros or macros already defined in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsTooltip'))}">
+                </label>
+                <small class="opacity70p">${escapeHtml(translate('Optional. If filled in, these keywords are applied to the upserted lorebook entry. You may only use macros already present in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsHelp'))}</small>
             </div>
             <div class="world_entry_form_control">
                 <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
@@ -424,6 +461,7 @@ async function openEditTemplate(parentPopup, key) {
             const newPrompt = dlg.querySelector('#stmb-sp-edit-prompt')?.value.trim() || '';
             const newResponseFormat = dlg.querySelector('#stmb-sp-edit-response-format')?.value.trim() || '';
             const lorebookEntryTitleOverride = dlg.querySelector('#stmb-sp-edit-lb-entry-title-override')?.value.trim() || '';
+            const lorebookEntryKeywords = dlg.querySelector('#stmb-sp-edit-lb-entry-keywords')?.value.trim() || '';
             const newEnabled = !!dlg.querySelector('#stmb-sp-edit-enabled')?.checked;
 
             if (!newPrompt) {
@@ -432,6 +470,9 @@ async function openEditTemplate(parentPopup, key) {
             }
             if (!newName) {
                 toastr.info(translate('Name was empty. Keeping previous name.', 'STMemoryBooks_NameEmptyKeepPrevious'), translate('STMemoryBooks', 'index.toast.title'));
+            }
+            if (!validateKeywordsMacroConfig({ prompt: newPrompt, responseFormat: newResponseFormat, keywordsTemplate: lorebookEntryKeywords }).ok) {
+                return;
             }
 
             const effectiveName = newName || tpl.name;
@@ -499,6 +540,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
                 ignoreBudget: lbIgnoreBudget2,
                 ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
                 ...(lorebookEntryTitleOverride ? { entryTitleOverride: lorebookEntryTitleOverride } : {}),
+                ...(lorebookEntryKeywords ? { entryKeywords: lorebookEntryKeywords } : {}),
             };
 
             await upsertTemplate({
@@ -590,6 +632,11 @@ async function openNewTemplate(parentPopup) {
                 <input type="text" id="stmb-sp-new-lb-entry-title-override" class="text_pole" placeholder="${escapeHtml(translate('Optional title template (e.g., NPC {{npcname}})', 'STMemoryBooks_LorebookEntryTitleOverridePlaceholder'))}">
             </label>
             <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
+            <label for="stmb-sp-new-lb-entry-keywords">
+                <h4 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Keywords', 'STMemoryBooks_LorebookEntryKeywords'))}</h4>
+                <input type="text" id="stmb-sp-new-lb-entry-keywords" class="text_pole" placeholder="${escapeHtml(translate('Optional comma-separated keywords', 'STMemoryBooks_LorebookEntryKeywordsPlaceholder'))}" title="${escapeHtml(translate('You can only use ST standard macros or macros already defined in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsTooltip'))}">
+            </label>
+            <small class="opacity70p">${escapeHtml(translate('Optional. If filled in, these keywords are applied to the upserted lorebook entry. You may only use macros already present in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsHelp'))}</small>
             <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                 <label>
                     <h4 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h4>
@@ -730,6 +777,7 @@ async function openNewTemplate(parentPopup) {
         const prompt = dlg.querySelector('#stmb-sp-new-prompt')?.value.trim() || '';
         const responseFormat = dlg.querySelector('#stmb-sp-new-response-format')?.value.trim() || '';
         const lorebookEntryTitleOverride = dlg.querySelector('#stmb-sp-new-lb-entry-title-override')?.value.trim() || '';
+        const lorebookEntryKeywords = dlg.querySelector('#stmb-sp-new-lb-entry-keywords')?.value.trim() || '';
 
         if (!prompt) {
             toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), translate('STMemoryBooks', 'index.toast.title'));
@@ -737,6 +785,9 @@ async function openNewTemplate(parentPopup) {
         }
         if (!name) {
             toastr.info(tr('STMemoryBooks_SidePrompts_NoNameProvidedUsingUntitled', 'No name provided. Using "{{name}}".', { name: translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt') }), translate('STMemoryBooks', 'index.toast.title'));
+        }
+        if (!validateKeywordsMacroConfig({ prompt, responseFormat, keywordsTemplate: lorebookEntryKeywords }).ok) {
+            return;
         }
 
         const effectiveName = name || translate('Untitled Side Prompt', 'STMemoryBooks_UntitledSidePrompt');
@@ -802,6 +853,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
             ignoreBudget: lbIgnoreBudget2,
             ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
             ...(lorebookEntryTitleOverride ? { entryTitleOverride: lorebookEntryTitleOverride } : {}),
+            ...(lorebookEntryKeywords ? { entryKeywords: lorebookEntryKeywords } : {}),
         };
 
         try {
