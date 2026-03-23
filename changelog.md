@@ -4,6 +4,8 @@
 
 ## v5.2.2 (March 22, 2026)
 - Fix lorebookconverter.html to read conversion titles better.
+- Fix side prompts to throw error on blank response instead of overwriting with a blank entry.
+- Fix side prompts to use `/unhide` command as well so they can be run on hidden ranges.
 
 ## v5.2.1 (March 20, 2026)
 - Reorganized main settings popup for clarity.
