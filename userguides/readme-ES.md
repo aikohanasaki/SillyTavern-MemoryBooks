@@ -26,8 +26,8 @@ Otros enlaces:
 
 Para una organización avanzada de la memoria y una integración más profunda en la historia, recomendamos encarecidamente usar STMB junto con [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). ¡Consulta la guía para conocer las mejores prácticas, instrucciones de configuración y consejos!
 
-> Nota: Soporta varios idiomas: consulta la carpeta [`/locales`](locales) para ver la lista. El Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](userguides).
-> El convertidor de lorebooks y la biblioteca de plantillas de side prompts están en la carpeta [`/resources`](resources).
+> Nota: Soporta varios idiomas: consulta la carpeta [`/locales`](../locales) para ver la lista. El Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](./).
+> El convertidor de lorebooks y la biblioteca de plantillas de side prompts están en la carpeta [`/resources`](../resources).
 
 ---
 
@@ -247,7 +247,7 @@ Todos los prompts y presets **deben** instruir a la IA para que devuelva solo JS
 * **Actualización del Editor:** Opcionalmente actualiza el editor del lorebook automáticamente después de agregar un recuerdo.
 
 > **¡Los recuerdos existentes deben ser convertidos!**
-> Usa el [Convertidor de Lorebook](https://www.google.com/search?q=/resources/lorebookconverter.html) para agregar la bandera `stmemorybooks` y los campos requeridos.
+> Usa el [Convertidor de Lorebook](../resources/lorebookconverter.html) para agregar la bandera `stmemorybooks` y los campos requeridos.
 
 ---
 
@@ -457,6 +457,6 @@ No. Si no hay otra world info o lorebooks, seleccionar 'Delay until recursion' p
 * **Permitido en títulos:** Todos los caracteres Unicode imprimibles están permitidos, incluyendo letras acentuadas, emojis, CJK y símbolos.
 * **Bloqueado:** Solo los caracteres de control Unicode (U+0000–U+001F, U+007F–U+009F) están bloqueados; estos se eliminan automáticamente.
 
-## Consulta [Detalles de la Política de Caracteres](https://www.google.com/search?q=charset.md) para ejemplos y notas de migración.
+## Consulta [Detalles de la Política de Caracteres](../charset.md) para ejemplos y notas de migración.
 
 *Desarrollado con amor usando VS Code/Cline, pruebas extensivas y comentarios de la comunidad.* 🤖💕
