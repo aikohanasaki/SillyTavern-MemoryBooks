@@ -389,7 +389,7 @@
     "STMemoryBooks_FailedToImportPrompts": "Import der Prompts fehlgeschlagen.",
     "STMemoryBooks_CreateMemoryButton": "Erinnerung erstellen",
     "STMemoryBooks_ConsolidateArcsButton": "Erinnerungen zusammenfassen",
-  "STMemoryBooks_ConsolidateArcs_Title": "Erinnerungen zusammenfassen",
+    "STMemoryBooks_ConsolidateArcs_Title": "Erinnerungen zusammenfassen",
     "STMemoryBooks_SummaryTier_Label": "Zusammenfassungsebene",
     "STMemoryBooks_NoSceneSelectedMakeSure": "Keine Szene ausgewählt. Stelle sicher, dass Start- und Endpunkt gesetzt sind.",
     "STMemoryBooks_ClearSceneButton": "Szene leeren",
