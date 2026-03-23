@@ -52,7 +52,7 @@
     "STMemoryBooks_AutoConsolidationTierPlaceholder": "Seleccionar capas…",
     "STMemoryBooks_AutoConsolidationPrompt_Title": "Consolidación disponible",
     "STMemoryBooks_AutoConsolidationPrompt_Body": "Ahora tienes {{count}} {{sourcePlural}} válidos. Eso cumple el mínimo de {{min}} necesario para crear una {{targetLabel}}.",
-    "STMemoryBooks_AutoConsolidationPrompt_Question": "¿Abrir Consolidate Memories ahora?",
+    "STMemoryBooks_AutoConsolidationPrompt_Question": "¿Abrir Consolidar Memorias ahora?",
     "STMemoryBooks_OpenConsolidation": "Abrir consolidación",
     "STMemoryBooks_Later": "Más tarde",
     "STMemoryBooks_AutoSummaryReadyTitle": "Auto-Resumen Listo",
