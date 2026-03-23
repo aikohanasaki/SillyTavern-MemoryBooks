@@ -91,6 +91,15 @@
 
 
 /* --- SCENE PREVIEW STYLING --- */
+.stmb-section-title {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 15px 0 6px;
+    padding: 3px 8px;
+    background-color: var(--SmartThemeChatTintColor);
+}
+
 .stmb-box {
     border: var(--SmartThemeBorderColor) 1px solid;
     border-radius: 6px;

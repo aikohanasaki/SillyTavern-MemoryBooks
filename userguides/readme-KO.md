@@ -1,11 +1,11 @@
 # 📕 Memory Books (SillyTavern 확장 기능)
 
-자동화되고 구조적이며 신뢰할 수 있는 기억(Memory) 생성을 위한 차세대 SillyTavern 확장 기능입니다. 채팅 내의 장면(Scene)을 표시하고, AI를 통해 JSON 기반 요약을 생성하여 로어북(Lorebook)에 "[vectorized](https://www.google.com/search?q=%23vectorized)" 항목으로 저장합니다. 그룹 채팅, 고급 프로필 관리, 그리고 완벽한 API/모델 처리를 지원합니다.
+자동화되고 구조적이며 신뢰할 수 있는 기억(Memory) 생성을 위한 차세대 SillyTavern 확장 기능입니다. 채팅 내의 장면(Scene)을 표시하고, AI를 통해 JSON 기반 요약을 생성하여 로어북(Lorebook)에 저장합니다. 그룹 채팅, 고급 프로필 관리, 사이드 프롬프트/트래커, 그리고 다단계 메모리 통합을 지원합니다.
 
 ### ❓ 용어 설명
 
 * Scene (장면) → Memory (기억)
-* Many Scenes (여러 장면) → Arc Summary (아크 요약)
+* Many Memories (여러 기억) → Summary / Consolidation (요약 / 통합)
 * Always-On (상시 작동) → Side Prompt (Tracker/사이드 프롬프트)
 
 ## ❗ 필독사항!
@@ -13,12 +13,12 @@
 여기서부터 시작하세요:
 
 * ⚠️‼️ 설치 관련 주의사항은 [사전 요구 사항](https://www.google.com/search?q=%23-prerequisites)을 읽어주세요. (특히 텍스트 완성(Text Completion) API를 사용하는 경우)
-* ❓ [자주 묻는 질문 (FAQ)](https://www.google.com/search?q=%23FAQ)
-* 🛠️ [문제 해결 (Troubleshooting)](https://www.google.com/search?q=%23Troubleshooting)
+* ❓ [자주 묻는 질문 (FAQ)](#FAQ)
+* 🛠️ [문제 해결 (Troubleshooting)](#Troubleshooting)
 
 기타 링크:
 
-* 📘 [사용자 가이드 (영문)](https://www.google.com/search?q=USER_GUIDE.md)
+* 📘 [사용자 가이드 (한국어)](USER_GUIDE-KO.md)
 * 📋 [버전 기록 & 변경 로그](changelog.md)
 * 💡 [📕 Memory Books와 📚 Lorebook Ordering 함께 사용하기](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -167,9 +167,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 🧭 아크 요약 (Arc Summaries) *(베타)*
+### 🌈 요약 통합 (Summary Consolidation)
 
-아크 요약은 여러 장면에 걸쳐 **시간이 지남에 따라 무엇이 변했는지**를 포착합니다.
+요약 통합은 여러 기억이나 요약에 걸쳐 **시간이 지남에 따라 무엇이 변했는지**를 포착합니다.
 
 사건을 요약하는 대신 다음 사항에 중점을 둡니다:
 
@@ -178,24 +178,30 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * 감정의 궤적 및 서사적 방향
 * 안정적으로 유지되어야 하는 지속적인 상태 변화
 
-아크 요약은 장기 실행 채팅에서 캐릭터 붕괴(drift)와 서사 상실을 방지하기 위해 설계된 **상위 수준, 낮은 빈도의 기억**입니다.
+요약 통합은 장기 실행 채팅에서 캐릭터 붕괴(drift)와 서사 상실을 방지하기 위해 설계된 **상위 수준, 낮은 빈도의 기억**입니다.
 
-> 💡 아크 요약을 장면 로그가 아닌 *시즌 요약*으로 생각하세요.
+> 💡 요약 통합을 장면 로그가 아닌 *시즌 요약*으로 생각하세요.
 
-#### 아크 요약 사용 시기
+#### 요약 통합 사용 시기
 
 * 주요 관계 변화 후
 * 스토리 챕터나 아크가 끝날 때
 * 동기, 신뢰, 권력 역학 관계가 바뀔 때
 * 스토리의 새로운 국면을 시작하기 전
 
+#### 작동 방식
+
+* 요약 통합은 직접 채팅 본문이 아니라 기존 STMB 기억/요약에서 생성됩니다.
+* **Consolidate Memories** 도구에서 대상 요약 단계와 원본 항목을 선택할 수 있습니다.
+* 선택한 요약 단계가 각 단계의 저장된 최소 수에 도달하면, STMB가 필요 시 yes/later 확인을 표시합니다.
+* 필요하면 통합 후 원본 항목을 비활성화할 수 있습니다.
+* AI 요약 실패는 UI에서 검토 및 수정한 뒤 다시 시도할 수 있습니다.
+
 #### 베타 참고 사항
 
-* 아크 요약은 프롬프트에 민감하며 의도적으로 보수적입니다.
+* 요약 통합은 프롬프트에 민감하며 의도적으로 보수적입니다.
 * 로어북에 커밋하기 전에 검토하는 것을 권장합니다.
 * 우선순위가 낮거나 메타 스타일의 로어북 항목과 함께 사용하는 것이 가장 좋습니다.
-
-아크 요약은 원본 채팅이 아닌 **기존 장면 기억들로부터** 생성됩니다.
 
 이로 인해 얻는 이점:
 
@@ -228,6 +234,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 3. **Synopsis:** 포괄적이고 구조화된 마크다운.
 4. **Sum Up:** 타임라인이 포함된 간결한 비트 요약.
 5. **Minimal:** 1-2 문장 요약.
+6. **Northgate:** 창작용 문학적 요약 스타일.
+7. **Aelemar:** 플롯 포인트와 캐릭터 기억에 집중합니다.
+8. **Comprehensive:** 키워드 추출이 개선된 synopsis 스타일 요약.
 
 ### **사용자 지정 프롬프트**
 
@@ -288,13 +297,13 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🧠 고급 사용자 지정을 위한 Regex(정규표현식) 통합
 
-* **텍스트 처리에 대한 완전한 제어**: Memory Books는 이제 SillyTavern의 **Regex** 확장 기능과 통합되어 두 가지 주요 단계에서 강력한 텍스트 변환을 적용할 수 있습니다:
-1. **프롬프트 생성 (Prompt Generation)**: **User Input** 배치를 대상으로 하는 정규식 스크립트를 작성하여 AI에 전송되는 프롬프트를 자동으로 수정합니다.
-2. **응답 파싱 (Response Parsing)**: **AI Output** 배치를 대상으로 하여, AI의 원시 응답이 저장되기 전에 정리, 재포맷 또는 표준화합니다.
+* **텍스트 처리에 대한 완전한 제어**: Memory Books는 SillyTavern의 **Regex** 확장 기능과 통합되어, 보내기 전과 파싱 전의 두 단계에서 텍스트 변환을 적용할 수 있습니다.
+1. **프롬프트 생성 (Prompt Generation)**: **User Input**을 대상으로 하는 스크립트를 사용해 AI에 보내는 프롬프트를 자동으로 수정합니다.
+2. **응답 파싱 (Response Parsing)**: **AI Output**을 대상으로 하는 스크립트를 사용해 저장 전에 응답을 정리, 재포맷 또는 표준화합니다.
 
 
-* **다중 선택 지원**: 이제 여러 정규식 스크립트를 다중 선택할 수 있습니다. 활성화된 모든 스크립트는 각 단계(프롬프트 생성 및 응답 파싱)에서 순차적으로 적용되어 고급스럽고 유연한 변환이 가능합니다.
-* **작동 방식**: 통합은 매끄럽게 이루어집니다. Regex 확장 기능에서 원하는 스크립트를 생성하고 활성화(다중 선택)하기만 하면, Memory Books가 기억 및 사이드 프롬프트 생성 중에 자동으로 적용합니다.
+* **다중 선택 지원**: STMB 안의 선택 팝업에서 여러 스크립트를 고를 수 있습니다.
+* **작동 방식**: STMB가 선택한 스크립트를 관리하며 보내기 전과 파싱 전에 순차적으로 적용합니다. Regex 확장 기능에서 비활성화되어 있어도, STMB에서 선택한 스크립트는 실행됩니다.
 
 ---
 
@@ -324,13 +333,19 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Token Warning Threshold (토큰 경고 임계값):** 큰 장면에 대한 경고 수준 설정 (기본값: 30,000).
 * **Default Previous Memories (기본 이전 기억 수):** 문맥(Context)으로 포함할 이전 기억의 수 (0-7).
 * **Auto-create memory summaries (기억 요약 자동 생성):** 간격에 따라 기억 생성을 자동으로 활성화합니다.
-* **Auto-Summary Interval (자동 요약 간격):** 기억 요약을 자동 생성할 메시지 수 (10-200, 기본값: 100).
+* **Auto-Summary Interval (자동 요약 간격):** 기억 요약을 자동 생성할 메시지 수.
+* **Auto-Summary Buffer:** 자동 요약을 지정 메시지 수만큼 지연합니다.
+* **Prompt for consolidation when a tier is ready:** 선택한 요약 단계가 충분한 원본 항목 수에 도달하면 yes/later 확인을 표시합니다.
+* **Auto-Consolidation Tiers:** 확인 프롬프트를 트리거할 요약 단계를 선택합니다. 현재 Arc부터 Series까지 지원합니다.
+* **Unhide hidden messages before memory generation:** `/unhide X-Y`를 실행한 뒤 메모리를 생성할 수 있습니다.
+* **Auto-hide messages after adding memory:** 처리된 모든 메시지 또는 최근 메모리 범위만 숨길 수 있습니다.
+* **Use regex (advanced):** STMB의 regex 선택 팝업을 활성화합니다(송신/응답 처리용).
 * **Memory Title Format (기억 제목 서식):** 선택하거나 사용자 지정합니다 (아래 참조).
 
 ### **프로필 필드**
 
 * **Name:** 표시 이름.
-* **API/Provider:** openai, claude, custom 등.
+* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual 등.
 * **Model:** 모델명 (예: gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** 사용자 지정 또는 내장.

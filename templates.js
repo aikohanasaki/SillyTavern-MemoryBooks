@@ -39,7 +39,7 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
         {{/if}}
 
-        <h3 data-i18n="STMemoryBooks_Preferences">Preferences:</h3>
+        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Preferences">Preferences:</h3>
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
@@ -104,36 +104,22 @@ export const settingsTemplate = Handlebars.compile(`
 
         <hr class="marginTop10 marginBot10">
 
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}} {{#if autoCreateLorebook}}disabled{{/if}}>
-                <span data-i18n="STMemoryBooks_EnableManualMode">Enable Manual Lorebook Mode</span>
-            </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_ManualModeDesc">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
+        <div class="world_entry_form_control" class="flex-container">
+            <div class="flex flexFlowRow alignItemsBaseline">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
+                    <span data-i18n="STMemoryBooks_UseRegexAdvanced">Use regex (advanced)</span>
+                </label>
+            </div>
+            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}" data-i18n="STMemoryBooks_ConfigureRegex">
+                    📐 Configure regex…
+                </button>
+            </div>
+            <small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
         </div>
 
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-auto-create-lorebook" {{#if autoCreateLorebook}}checked{{/if}} {{#if manualModeEnabled}}disabled{{/if}}>
-                <span data-i18n="STMemoryBooks_AutoCreateLorebook">Auto-create lorebook if none exists</span>
-            </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AutoCreateLorebookDesc">When enabled, automatically creates and binds a lorebook to the chat if none exists.</small>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-lorebook-name-template">
-                <h4 data-i18n="STMemoryBooks_LorebookNameTemplate">Lorebook Name Template:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_LorebookNameTemplateDesc">Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.</small>
-                <input type="text" id="stmb-lorebook-name-template" class="text_pole"
-                    value="{{lorebookNameTemplate}}" data-i18n="[placeholder]STMemoryBooks_LorebookNameTemplatePlaceholder"
-                    placeholder="LTM - {{char}} - {{chat}}"
-                    {{#unless autoCreateLorebook}}disabled{{/unless}}>
-            </label>
-        </div>
-
-        <hr class="marginTop10 marginBot10">
-
-        <h3 data-i18n="STMemoryBooks_CurrentLorebookConfig">Current Lorebook Configuration</h3>
+        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_CurrentLorebookConfig">Current Lorebook Configuration</h3>
 
         <div class="info-block">
             <small class="opacity50p" data-i18n="STMemoryBooks_Mode">Mode:</small>
@@ -165,14 +151,34 @@ export const settingsTemplate = Handlebars.compile(`
             </div>
         </div>
 
-        <hr class="marginTop10 marginBot10">
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-manual-mode-enabled" {{#if manualModeEnabled}}checked{{/if}} {{#if autoCreateLorebook}}disabled{{/if}}>
+                <span data-i18n="STMemoryBooks_EnableManualMode">Enable Manual Lorebook Mode</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_ManualModeDesc">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
+        </div>
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
-                <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
+                <input type="checkbox" id="stmb-auto-create-lorebook" {{#if autoCreateLorebook}}checked{{/if}} {{#if manualModeEnabled}}disabled{{/if}}>
+                <span data-i18n="STMemoryBooks_AutoCreateLorebook">Auto-create lorebook if none exists</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoCreateLorebookDesc">When enabled, automatically creates and binds a lorebook to the chat if none exists.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-lorebook-name-template">
+                <h4 data-i18n="STMemoryBooks_LorebookNameTemplate">Lorebook Name Template:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_LorebookNameTemplateDesc">Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.</small>
+                <input type="text" id="stmb-lorebook-name-template" class="text_pole"
+                    value="{{lorebookNameTemplate}}" data-i18n="[placeholder]STMemoryBooks_LorebookNameTemplatePlaceholder"
+                    placeholder="LTM - {{char}} - {{chat}}"
+                    {{#unless autoCreateLorebook}}disabled{{/unless}}>
             </label>
         </div>
+
+        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_TokenSaving">Token Saving (Hide/Unhide Messages)</h3>
 
         <div class="world_entry_form_control">
             <label for="stmb-auto-hide-mode">
@@ -196,7 +202,14 @@ export const settingsTemplate = Handlebars.compile(`
             </label>
         </div>
         
-        <hr class="marginTop10 marginBot10">
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
+            </label>
+        </div>
+
+        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoMemory">Automatic Memories</h3>
 
         <div class="world_entry_form_control">
             <label class="checkbox_label">
@@ -226,6 +239,29 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
 
         <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-auto-consolidation-prompt-enabled" {{#if autoConsolidationPromptEnabled}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_AutoConsolidationEnabled">Prompt for consolidation when a tier is ready</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoConsolidationDesc">Shows a yes/no prompt when any selected summary tier has enough eligible source entries. Uses each tier's saved minimum.</small>
+        </div>
+
+        <div class="world_entry_form_control">
+            <label for="stmb-auto-consolidation-target-tier">
+                <h4 data-i18n="STMemoryBooks_AutoConsolidationTier">Auto-Consolidation Tiers:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_AutoConsolidationTierDesc">Choose which summary tiers should trigger the confirmation prompt.</small>
+            </label>
+        </div>
+
+        <select id="stmb-auto-consolidation-target-tier" class="text_pole" multiple size="6">
+            {{#each autoConsolidationTierOptions}}
+            <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+        </select>
+
+        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Profiles">Memory Profiles:</h3>
+
+            <div class="world_entry_form_control">
             <h4 data-i18n="STMemoryBooks_TitleFormat">Memory Title Format:</h4>
             <select id="stmb-title-format-select" class="text_pole">
                 {{#each titleFormats}}
@@ -238,23 +274,7 @@ export const settingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], [000] for auto-numbering. Available: \{{title}}, \{{scene}}, &#123;&#123;char}}, &#123;&#123;user}}, \{{messages}}, \{{profile}}, &#123;&#123;date}}, &#123;&#123;time}}</small>
         </div>
 
-        <div class="world_entry_form_control" class="flex-container">
-            <div class="flex flexFlowRow alignItemsBaseline">
-                <label class="checkbox_label">
-                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
-                    <span data-i18n="STMemoryBooks_UseRegexAdvanced">Use regex (advanced)</span>
-                </label>
-            </div>
-            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
-                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}" data-i18n="STMemoryBooks_ConfigureRegex">
-                    📐 Configure regex…
-                </button>
-            </div>
-            <small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
-        </div>
-
         <div class="world_entry_form_control">
-            <h4 data-i18n="STMemoryBooks_Profiles">Memory Profiles:</h4>
             <select id="stmb-profile-select" class="text_pole">
                 {{#each profiles}}
                 <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
@@ -276,19 +296,20 @@ export const settingsTemplate = Handlebars.compile(`
             </details>
         </div>
 
-        <h4 data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
+        <h4 class="stmb-section-title" data-i18n="STMemoryBooks_ProfileActions">Profile Actions:</h4>
         <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-profile-buttons">
             <!-- Profile buttons will be dynamically inserted here -->
         </div>
 
-        <h4 data-i18n="STMemoryBooks_extraFunctionButtons">Extra Function Buttons:</h4>
+        <h4 class="stmb-section-title" data-i18n="STMemoryBooks_extraFunctionButtons">Extra Function Buttons:</h4>
         <input type="file" id="stmb-import-file" accept=".json" class="displayNone">
         <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-extra-function-buttons">
             <!-- extra function buttons will be dynamically inserted here -->
         </div>
 
+        <h4 class="stmb-section-title" data-i18n="STMemoryBooks_promptManagerButtons">Prompt Managers</h4>
+
         <div class="info-block">
-            <h4 data-i18n="STMemoryBooks_promptManagerButtons">Prompt Managers</h4>
             <small class="opacity50p" data-i18n="STMemoryBooks_PromptManagerButtonsHint">Want to tweak things? Use the buttons below to customize each prompt type.</small>
             <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-prompt-manager-buttons">
                 <!-- prompt manager buttons will be dynamically inserted here -->

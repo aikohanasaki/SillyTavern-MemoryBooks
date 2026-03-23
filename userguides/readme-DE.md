@@ -1,24 +1,25 @@
 # 📕 Memory Books (Eine SillyTavern-Erweiterung)
 
-Eine SillyTavern-Erweiterung der nächsten Generation für automatische, strukturierte und zuverlässige Erstellung von Erinnerungen. Markiere Szenen im Chat, generiere JSON-basierte Zusammenfassungen mit KI und speichere sie als „[vektorisierte](https://www.google.com/search?q=%23vektorisiert)“ Einträge in deinen Lorebooks. Unterstützt Gruppenchats, erweiterte Profilverwaltung und bietet eine robuste API-/Modell-Handhabung.
+Eine SillyTavern-Erweiterung der nächsten Generation für automatische, strukturierte und zuverlässige Erstellung von Erinnerungen. Markiere Szenen im Chat, generiere JSON-basierte Zusammenfassungen mit KI und speichere sie als Einträge in deinen Lorebooks. Unterstützt Gruppenchats, erweiterte Profilverwaltung, Side Prompts/Tracker und mehrstufige Zusammenfassungen.
 
 ### ❓ Vokabular
 
 * Scene (Szene) → Memory (Erinnerung)
-* Many Scenes (Viele Szenen) → Arc Summary (Handlungsbogen-Zusammenfassung)
+* Many Memories (Viele Erinnerungen) → Summary / Consolidation (Zusammenfassung / Konsolidierung)
 * Always-On → Side Prompt (Tracker)
 
 ## ❗ Bitte zuerst lesen!
 
 Starten Sie hier:
 
-* ⚠️‼️ Bitte lesen Sie die [Voraussetzungen](https://www.google.com/search?q=%23-voraussetzungen) für Installationshinweise (besonders wenn Sie eine Text Completion API verwenden).
-* ❓ [Häufig gestellte Fragen (FAQ)](https://www.google.com/search?q=%23faq)
-* 🛠️ [Fehlerbehebung (Troubleshooting)](https://www.google.com/search?q=%23fehlerbehebung-troubleshooting)
+* ⚠️‼️ Bitte lesen Sie die [Voraussetzungen](#voraussetzungen) für Installationshinweise (besonders wenn Sie eine Text Completion API verwenden).
+* ❓ [Häufig gestellte Fragen (FAQ)](#faq-häufig-gestellte-fragen)
+* 🛠️ [Fehlerbehebung (Troubleshooting)](#fehlerbehebung-troubleshooting)
 
 Weitere Links:
 
-* 📘 [Benutzerhandbuch (EN)](https://www.google.com/search?q=USER_GUIDE.md)
+* 📘 [Benutzerhandbuch (DE)](USER_GUIDE-DE.md)
+* 💡 [Wie STMB funktioniert (DE)](howSTMBworks-de.md)
 * 📋 [Versionsverlauf & Changelog](changelog.md)
 * 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -150,9 +151,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-## 🧩 Erinnerungstypen: Szenen vs. Arcs
+## 🧩 Erinnerungstypen: Szenen vs. Zusammenfassungen
 
-📕 Memory Books unterstützt **zwei Ebenen narrativer Erinnerung**, jede für unterschiedliche Arten von Kontinuität entworfen.
+📕 Memory Books unterstützt **Szenen-Erinnerungen** und **mehrstufige Zusammenfassungen**, jeweils für unterschiedliche Arten von Kontinuität.
 
 ### 🎬 Szenen-Erinnerungen (Standard)
 
@@ -167,40 +168,47 @@ Dies ist der Standard- und am häufigsten verwendete Erinnerungstyp.
 
 ---
 
-### 🧭 Arc-Zusammenfassungen (Handlungsbögen) *(Beta)*
+### 🌈 Zusammenfassungen
 
-Arc-Zusammenfassungen erfassen, **was sich im Laufe der Zeit verändert hat**, über mehrere Szenen hinweg.
+Zusammenfassungen erfassen, **was sich im Laufe der Zeit verändert hat**, und bauen auf vorhandenen STMB-Erinnerungen auf.
 
-Anstatt Ereignisse zusammenzufassen, konzentrieren sich Arc-Zusammenfassungen auf:
+Statt einzelne Szenen zusammenzufassen, konzentrieren sich Zusammenfassungen auf:
 
 * Charakterentwicklung und Beziehungsverschiebungen
 * Langfristige Ziele, Spannungen und Auflösungen
 * Emotionale Entwicklung und narrative Richtung
 * Dauerhafte Zustandsänderungen, die stabil bleiben sollten
 
-Arc-Zusammenfassungen sind **Erinnerungen auf höherer Ebene mit niedrigerer Frequenz**, die verhindern sollen, dass Charaktere abdriften und der narrative Faden in lang laufenden Chats verloren geht.
+Die erste Konsolidierungsstufe ist **Arc**, erstellt aus Szenen-Erinnerungen. Höhere Stufen sind ebenfalls für längere Geschichten verfügbar:
 
-> 💡 Denken Sie bei Arc-Zusammenfassungen an *Staffel-Rückblicke*, nicht an Szenen-Protokolle.
+* Arc
+* Chapter
+* Book
+* Legend
+* Series
+* Epic
 
-#### Wann man Arc-Zusammenfassungen verwendet
+> 💡 Denken Sie bei diesen Zusammenfassungen an *Rückblicke*, nicht an Szenen-Protokolle.
+
+#### Wann man konsolidierte Zusammenfassungen verwendet
 
 * Nach einer großen Verschiebung in einer Beziehung
-* Am Ende eines Story-Kapitels oder Handlungsbogens (Arc)
+* Am Ende eines Story-Kapitels oder Handlungsbogens
 * Wenn sich Motivationen, Vertrauen oder Machtdynamiken ändern
 * Bevor eine neue Phase der Geschichte beginnt
 
-#### Beta-Hinweise
+#### Wie es funktioniert
 
-* Arc-Zusammenfassungen sind prompt-sensitiv und bewusst konservativ gestaltet.
-* Es wird empfohlen, sie vor dem Speichern im Lorebook zu überprüfen.
-* Am besten gepaart mit Lorebook-Einträgen niedrigerer Priorität oder im Meta-Stil.
-
-Arc-Zusammenfassungen werden **aus bestehenden Szenen-Erinnerungen** generiert, nicht direkt aus dem rohen Chat.
+* Zusammenfassungen werden aus bestehenden STMB-Erinnerungen generiert, nicht direkt aus rohem Chat
+* Das Werkzeug **Consolidate Memories** lässt Sie eine Zielstufe wählen und Quell-Einträge auswählen
+* STMB kann optional ausgewählte Stufen überwachen und bei Erreichen des gespeicherten Minimums eine Ja/Später-Bestätigung anzeigen
+* STMB kann Quell-Einträge nach der Konsolidierung deaktivieren, wenn die höhere Zusammenfassung übernehmen soll
+* Fehlgeschlagene KI-Antworten können vor dem erneuten Speichern in der UI geprüft und korrigiert werden
 
 Das bietet Ihnen:
 
 * reduzierten Token-Verbrauch
-* Die KI hat ein besseres Verständnis für den narrativen Fluss
+* bessere narrative Kontinuität über längere Chats hinweg
 
 ---
 
@@ -228,6 +236,9 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 3. **Synopsis:** Umfassendes, strukturiertes Markdown.
 4. **Sum Up:** Prägnante Beat-Zusammenfassung mit Zeitlinie.
 5. **Minimal:** 1-2 Sätze Zusammenfassung.
+6. **Northgate:** Literarischer Zusammenfassungsstil für kreatives Schreiben.
+7. **Aelemar:** Fokus auf Handlungspunkte und Charaktererinnerungen.
+8. **Comprehensive:** Synopsis-artige Zusammenfassung mit verbesserter Schlüsselwortextraktion.
 
 ### **Benutzerdefinierte Prompts**
 
@@ -293,8 +304,9 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 2. **Antwort-Parsing**: Bereinigen, neu formatieren oder standardisieren Sie die rohe Antwort der KI, bevor sie gespeichert wird, indem Sie auf die Platzierung **AI Output** abzielen.
 
 
-* **Multi-Select-Unterstützung**: Sie können jetzt mehrere Regex-Skripte auswählen. Alle aktivierten Skripte werden nacheinander in jeder Phase (Prompt-Generierung und Antwort-Parsing) angewendet, was fortgeschrittene und flexible Transformationen ermöglicht.
-* **Wie es funktioniert**: Die Integration ist nahtlos. Erstellen und aktivieren (Mehrfachauswahl) Sie einfach Ihre gewünschten Skripte in der Regex-Erweiterung, und Memory Books wendet sie automatisch während der Erstellung von Erinnerungen und Side Prompts an.
+* **Multi-Select-Unterstützung**: Sie können mehrere Regex-Skripte auswählen.
+* **Wie es funktioniert**: Schalten Sie in STMB `Use regex (advanced)` ein, klicken Sie auf `📐 Configure regex…` und wählen Sie, welche Skripte STMB vor dem Senden an die KI und vor dem Parsen/Speichern der Antwort ausführen soll.
+* **Wichtig**: Die Auswahl wird von STMB gesteuert. Die dort ausgewählten Skripte laufen **auch dann**, wenn sie in der Regex-Erweiterung selbst deaktiviert sind.
 
 ---
 
@@ -324,13 +336,19 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 * **Token Warning Threshold:** Warnstufe für große Szenen festlegen (Standard: 30.000).
 * **Default Previous Memories:** Anzahl der vorherigen Erinnerungen, die als Kontext einbezogen werden sollen (0-7).
 * **Auto-create memory summaries:** Automatische Erinnerungserstellung in Intervallen aktivieren.
-* **Auto-Summary Interval:** Anzahl der Nachrichten, nach denen automatisch eine Erinnerungszusammenfassung erstellt wird (10-200, Standard: 100).
+* **Auto-Summary Interval:** Anzahl der Nachrichten, nach denen automatisch eine Erinnerungszusammenfassung erstellt wird.
+* **Auto-Summary Buffer:** Verzögert die automatische Zusammenfassung um eine konfigurierbare Anzahl von Nachrichten.
+* **Prompt for consolidation when a tier is ready:** Zeigt eine Ja/Später-Bestätigung, wenn eine ausgewählte Zusammenfassungsstufe genug geeignete Quell-Einträge hat.
+* **Auto-Consolidation Tiers:** Wählen Sie eine oder mehrere Zusammenfassungsstufen aus, die die Bestätigung auslösen sollen. Derzeit Arc bis Series.
+* **Unhide hidden messages before memory generation:** Kann vor der Erinnerungserstellung `/unhide X-Y` ausführen.
+* **Auto-hide messages after adding memory:** Kann alle verarbeiteten Nachrichten oder nur den letzten Bereich ausblenden.
+* **Use regex (advanced):** Aktiviert die STMB-Auswahl für Regex-Skripte bei Outgoing/Incoming-Verarbeitung.
 * **Memory Title Format:** Wählen oder anpassen (siehe unten).
 
 ### **Profil-Felder**
 
 * **Name:** Anzeigename.
-* **API/Provider:** openai, claude, custom, etc.
+* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual und andere unterstützte Provider.
 * **Model:** Modellname (z.B. gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Benutzerdefiniert oder eingebaut.
@@ -387,6 +405,10 @@ Passen Sie die Titel Ihrer Lorebook-Einträge mit einem leistungsstarken Vorlage
 
 Die Einstellungen befinden sich im Erweiterungsmenü (der Zauberstab 🪄 links neben Ihrem Eingabefeld). Suchen Sie nach "Memory Books".
 
+### Warum sieht die KI meine Einträge nicht?
+
+Prüfen Sie zuerst, ob die Einträge überhaupt gesendet werden. Ich nutze dafür gern [WorldInfo-Info](https://github.com/aikohanasaki/SillyTavern-WorldInfoInfo). Wenn die Einträge gesendet werden und die KI sie trotzdem ignoriert, müssen Sie sie wahrscheinlich OOC deutlicher darauf hinweisen.
+
 ### Muss ich Vektoren verwenden?
 
 Der 🔗 Eintrag in World Info heißt in der ST-Benutzeroberfläche "vectorized". Deshalb verwende ich das Wort vektorisiert. Wenn Sie die Vektoren-Erweiterung nicht verwenden (ich tue es nicht), funktioniert es über Schlüsselwörter (Keywords). Dies ist alles automatisiert, sodass Sie nicht darüber nachdenken müssen, welche Schlüsselwörter Sie verwenden sollen.
@@ -411,6 +433,9 @@ Nein. Wenn es keine anderen World Info-Einträge oder Lorebooks gibt, kann die A
 
 * **Keine Szene ausgewählt:**
 * Markieren Sie sowohl Start- (►) als auch Endpunkte (◄).
+
+* **Verknüpftes Lorebook fehlt oder wurde gelöscht:**
+* Binden Sie einfach ein neues Lorebook an, auch ein leeres.
 
 
 * **Szene überschneidet sich mit bestehender Erinnerung:**

@@ -1,10 +1,10 @@
 # 📕 Memory Books (Sambungan SillyTavern)
 
-Sambungan SillyTavern generasi seterusnya untuk penciptaan memori yang automatik, berstruktur, dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpannya sebagai entri "[bervektor](#vectorized)" (vectorized) di dalam lorebook anda. Menyokong sembang kumpulan, pengurusan profil lanjutan, dan pengendalian API/model yang kukuh.
+Sambungan SillyTavern generasi seterusnya untuk penciptaan memori yang automatik, berstruktur, dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpannya sebagai entri lorebook. Menyokong sembang kumpulan, pengurusan profil lanjutan, prom sampingan/penjejak, dan konsolidasi memori berbilang tahap.
 
 ### ❓ Kosa Kata
 - Scene (Babak) → Memori
-- Many Scenes (Banyak Babak) → Ringkasan Arka (Arc Summary)
+- Many Scenes (Banyak Babak) → Ringkasan / Konsolidasi
 - Always-On (Sentiasa Hidup) → Prom Sampingan / Penjejak (Side Prompt)
 
 ## ❗ Baca Saya Dahulu!
@@ -15,8 +15,9 @@ Mula di sini:
 * 🛠️ [Penyelesaian Masalah](#Troubleshooting)
 
 Pautan lain:
-* 📘 [Panduan Pengguna (EN)](USER_GUIDE.md)
+* 📘 [Panduan Pengguna (MS)](USER_GUIDE-MS.md)
 * 📋 [Sejarah Versi & Log Perubahan](changelog.md)
+* 🧠 [Bagaimana STMB Berfungsi (MS)](howSTMBworks-ms.md)
 * 💡 [Menggunakan 📕 Memory Books dengan 📚 Penyusunan Lorebook](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
@@ -159,40 +160,47 @@ Ini adalah jenis memori standard dan paling biasa digunakan.
 
 ---
 
-### 🧭 Ringkasan Arka (Arc Summaries) *(Beta)*
+### 🌈 Ringkasan Konsolidasi
 
-Ringkasan Arka menangkap **apa yang berubah dari masa ke masa** merentasi pelbagai babak.
+Ringkasan konsolidasi menangkap **apa yang berubah dari masa ke masa** merentasi pelbagai memori atau ringkasan.
 
-Daripada meringkaskan peristiwa, ringkasan arka memfokuskan kepada:
+Daripada meringkaskan satu babak, ringkasan konsolidasi memfokuskan kepada:
 
 * Pembangunan watak dan perubahan hubungan
 * Matlamat jangka panjang, ketegangan, dan resolusi
 * Trajektori emosi dan arah naratif
 * Perubahan keadaan kekal yang harus kekal stabil
 
-Ringkasan Arka adalah **memori peringkat lebih tinggi, berfrekuensi rendah** yang direka untuk mencegah watak daripada menyimpang dan kehilangan naratif dalam sembang jangka panjang.
+Tahap konsolidasi pertama ialah **Arc**, yang dibina daripada memori babak. Tahap yang lebih tinggi juga disokong untuk cerita yang lebih panjang:
 
-> 💡 Fikirkan ringkasan arka sebagai *rekap musim*, bukan log babak.
+* Arc
+* Chapter
+* Book
+* Legend
+* Series
 
-#### Bila perlu guna Ringkasan Arka
+STMB boleh memaparkan prompt pengesahan ya/tidak apabila tahap yang dipilih sudah mencapai jumlah minimum entri sumber yang layak.
+
+> 💡 Fikirkan ini sebagai *rekap*, bukan log babak.
+
+#### Bila perlu guna Ringkasan Konsolidasi
 
 * Selepas perubahan hubungan yang besar
 * Di akhir bab atau arka cerita
 * Apabila motivasi, kepercayaan, atau dinamik kuasa berubah
 * Sebelum memulakan fasa baharu cerita
 
-#### Nota Beta
+#### Cara ia berfungsi
 
-* Ringkasan Arka sensitif terhadap prom dan sengaja bersifat konservatif
-* Disyorkan untuk menyemak sebelum melakukan (commit) ke lorebook
-* Paling baik dipadankan dengan entri lorebook berprioriti rendah atau gaya meta
-
-Ringkasan Arka dijana **daripada memori babak sedia ada**, bukan terus daripada sembang mentah.
+* Ringkasan konsolidasi dijana **daripada memori/ringkasan STMB yang sedia ada**, bukan terus daripada sembang mentah
+* Butang **Consolidate Memories** membolehkan anda memilih tahap sasaran dan memilih entri sumber
+* STMB boleh menyahaktifkan entri sumber selepas konsolidasi jika anda mahu ringkasan tahap lebih tinggi mengambil alih
+* Respons ringkasan AI yang gagal boleh disemak dan diperbetulkan daripada UI sebelum cuba simpan semula
 
 Ini memberikan anda:
 
-* pengurangan penggunaan token
-* AI mempunyai pemahaman yang lebih baik tentang aliran naratif
+* penggunaan token yang lebih rendah
+* kesinambungan naratif yang lebih baik dalam sembang panjang
 
 ---
 
@@ -285,8 +293,9 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 2. **Penghuraian Respons**: Bersihkan, format semula, atau piawaikan respons mentah AI sebelum ia disimpan dengan menyasarkan penempatan **AI Output**.
 
 
-* **Sokongan Pelbagai Pilihan**: Anda kini boleh memilih pelbagai skrip regex (multi-select). Semua skrip yang diaktifkan akan digunakan secara berurutan pada setiap peringkat (Penjanaan Prom dan Penghuraian Respons), membolehkan transformasi yang maju dan fleksibel.
-* **Cara Ia Berfungsi**: Integrasinya lancar. Hanya cipta dan aktifkan (pilih pelbagai) skrip yang anda inginkan dalam sambungan Regex, dan Memory Books akan menggunakannya secara automatik semasa penciptaan memori dan prom sampingan.
+* **Sokongan Pelbagai Pilihan**: Anda boleh memilih beberapa skrip regex untuk pemprosesan keluar dan masuk.
+* **Cara Ia Berfungsi**: Hidupkan `Use regex (advanced)` dalam STMB, klik `📐 Configure regex…`, kemudian pilih skrip mana yang patut dijalankan STMB sebelum dihantar ke AI dan sebelum respons diparsing/disimpan.
+* **Penting**: Skrip yang dipilih dalam STMB tetap akan dijalankan walaupun ia sedang dinyahdayakan dalam sambungan Regex itu sendiri.
 
 ---
 
@@ -313,16 +322,23 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 * **Show memory previews:** Dayakan pop timbul pratonton untuk menyemak dan mengedit memori sebelum menambah ke lorebook.
 * **Show Notifications:** Togol mesej pemberitahuan (toast).
 * **Refresh Editor:** Muat semula editor lorebook secara automatik selepas penciptaan memori.
-* **Token Warning Threshold:** Tetapkan tahap amaran untuk babak besar (lalai: 30,000).
+* **Max Response Tokens:** Tetapkan panjang penjanaan maksimum untuk ringkasan memori.
+* **Token Warning Threshold:** Tetapkan tahap amaran untuk babak besar.
 * **Default Previous Memories:** Bilangan memori terdahulu untuk dimasukkan sebagai konteks (0-7).
 * **Auto-create memory summaries:** Dayakan penciptaan memori automatik pada selang masa tertentu.
-* **Auto-Summary Interval:** Bilangan mesej selepas mana ringkasan memori dicipta secara automatik (10-200, lalai: 100).
+* **Auto-Summary Interval:** Bilangan mesej selepas mana ringkasan memori dicipta secara automatik.
+* **Auto-Summary Buffer:** Tangguhkan auto-summary dengan bilangan mesej yang boleh dikonfigurasikan.
+* **Prompt for consolidation when a tier is ready:** Tunjukkan prompt ya/tidak apabila tier ringkasan yang dipilih sudah mempunyai cukup entri sumber yang layak untuk dikonsolidasikan.
+* **Auto-Consolidation Tiers:** Pilih satu atau beberapa tier ringkasan yang akan mencetuskan prompt tersebut. Kini menyokong Arc hingga Series.
+* **Unhide hidden messages before memory generation:** Boleh menjalankan `/unhide X-Y` sebelum mencipta memori.
+* **Auto-hide messages after adding memory:** Pilihan untuk menyembunyikan semua mesej yang diproses atau hanya julat memori terakhir.
+* **Use regex (advanced):** Mendayakan popup pemilihan regex STMB untuk pemprosesan keluar/masuk.
 * **Memory Title Format:** Pilih atau sesuaikan (lihat di bawah).
 
 ### **Medan Profil**
 
 * **Name:** Nama paparan.
-* **API/Provider:** openai, claude, custom, dll.
+* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual, dan penyedia lain yang disokong.
 * **Model:** Nama model (cth., gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Tersuai atau terbina dalam.

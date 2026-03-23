@@ -1,10 +1,10 @@
 # 📕 Memory Books (Une extension pour SillyTavern)
 
-Une extension de nouvelle génération pour SillyTavern permettant la création automatique, structurée et fiable de mémoires. Marquez des scènes dans le chat, générez des résumés basés sur JSON avec l'IA et stockez-les en tant qu'entrées "[vectorisées](#vectorized)" dans vos lorebooks. Prend en charge les discussions de groupe, la gestion avancée des profils et une gestion robuste des API/modèles.
+Une extension de nouvelle génération pour SillyTavern permettant la création automatique, structurée et fiable de mémoires. Marquez des scènes dans le chat, générez des résumés basés sur JSON avec l'IA et stockez-les en tant qu'entrées dans vos lorebooks. Prend en charge les discussions de groupe, la gestion avancée des profils, les side prompts/trackers et les résumés multi-niveaux.
 
 ### ❓ Vocabulaire
 - Scène → Mémoire
-- Plusieurs Scènes → Résumé d'Arc
+- Plusieurs Mémoires → Résumé / Consolidation
 - Toujours actif (Always-On) → Prompt Secondaire (Suivi/Tracker)
 
 ## ❗ Lisez-moi d'abord !
@@ -15,7 +15,8 @@ Commencez ici :
 * 🛠️ [Dépannage](#Troubleshooting)
 
 Autres liens :
-* 📘 [Guide Utilisateur (EN)](USER_GUIDE.md)
+* 📘 [Guide Utilisateur (FR)](USER_GUIDE-FR.md)
+* 💡 [Comment STMB fonctionne (FR)](howSTMBworks-fr.md)
 * 📋 [Historique des versions & Changelog](changelog.md)
 * 💡 [Utiliser 📕 Memory Books avec 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -159,40 +160,47 @@ C'est le type de mémoire standard et le plus couramment utilisé.
 
 ---
 
-### 🧭 Résumés d'Arc *(Bêta)*
+### 🌈 Résumés
 
-Les résumés d'arc capturent **ce qui a changé au fil du temps** à travers plusieurs scènes.
+Les résumés capturent **ce qui a changé au fil du temps** et s'appuient sur des mémoires STMB existantes.
 
-Au lieu de résumer les événements, les résumés d'arc se concentrent sur :
+Au lieu de résumer une seule scène, les résumés se concentrent sur :
 
-* Le développement du personnage et les changements relationnels.
-* Les objectifs à long terme, les tensions et les résolutions.
-* La trajectoire émotionnelle et la direction narrative.
-* Les changements d'état persistants qui doivent rester stables.
+* Le développement du personnage et les changements relationnels
+* Les objectifs à long terme, les tensions et les résolutions
+* La trajectoire émotionnelle et la direction narrative
+* Les changements d'état persistants qui doivent rester stables
 
-Les résumés d'arc sont des **mémoires de plus haut niveau et de fréquence plus basse** conçues pour empêcher la dérive du personnage et la perte narrative dans les longs chats.
+La première couche de consolidation est **Arc**, construite à partir de mémoires de scène. Des couches supérieures existent aussi pour les histoires plus longues :
 
-> 💡 Pensez aux résumés d'arc comme à des *récapitulatifs de saison*, pas des journaux de scène.
+* Arc
+* Chapter
+* Book
+* Legend
+* Series
+* Epic
 
-#### Quand utiliser les Résumés d'Arc
+> 💡 Pensez à ces résumés comme à des *récapitulatifs*, pas des journaux de scène.
 
-* Après un changement relationnel majeur.
-* À la fin d'un chapitre d'histoire ou d'un arc.
-* Lorsque les motivations, la confiance ou la dynamique de pouvoir changent.
-* Avant de commencer une nouvelle phase de l'histoire.
+#### Quand utiliser des résumés consolidés
 
-#### Notes Bêta
+* Après un changement relationnel majeur
+* À la fin d'un chapitre d'histoire ou d'un arc
+* Lorsque les motivations, la confiance ou la dynamique de pouvoir changent
+* Avant de commencer une nouvelle phase de l'histoire
 
-* Les résumés d'arc sont sensibles au prompt et intentionnellement conservateurs.
-* Il est recommandé de vérifier avant de valider dans le lorebook.
-* Mieux vaut les coupler avec des entrées de lorebook de moindre priorité ou de style "meta".
+#### Comment ça marche
 
-Les résumés d'arc sont générés **à partir de mémoires de scènes existantes**, et non directement à partir du chat brut.
+* Les résumés sont générés à partir de mémoires STMB existantes, et non directement à partir du chat brut
+* L'outil **Consolidate Memories** vous permet de choisir une couche cible et de sélectionner les entrées source
+* STMB peut surveiller des couches sélectionnées et afficher une confirmation Oui/Plus tard lorsqu'elles atteignent leur minimum enregistré
+* STMB peut désactiver les entrées source après consolidation si vous voulez que le résumé supérieur prenne le relais
+* Les réponses IA échouées peuvent être relues et corrigées dans l'interface avant une nouvelle tentative de sauvegarde
 
 Cela vous offre :
 
-* une réduction de l'utilisation de tokens.
-* une meilleure compréhension du flux narratif par l'IA.
+* moins d'utilisation de tokens
+* une meilleure continuité narrative sur les longs chats
 
 ---
 
@@ -220,6 +228,9 @@ Tous les prompts et préréglages (presets) **doivent** instruire l'IA de ne ren
 3. **Synopsis :** Markdown complet et structuré.
 4. **Sum Up :** Résumé concis des temps forts avec chronologie.
 5. **Minimal :** Résumé en 1-2 phrases.
+6. **Northgate :** Style de résumé littéraire conçu pour l'écriture créative.
+7. **Aelemar :** Se concentre sur les points de l'intrigue et les souvenirs des personnages.
+8. **Comprehensive :** Résumé de type synopsis avec extraction de mots-clés améliorée.
 
 ### **Prompts Personnalisés**
 
@@ -285,8 +296,9 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 2. **Analyse de la Réponse** : Nettoyez, reformatez ou standardisez la réponse brute de l'IA avant qu'elle ne soit sauvegardée en ciblant l'emplacement **AI Output**.
 
 
-* **Support Multi-Sélection** : Vous pouvez maintenant sélectionner plusieurs scripts regex. Tous les scripts activés seront appliqués en séquence à chaque étape (Génération du Prompt et Analyse de la Réponse), permettant des transformations avancées et flexibles.
-* **Comment ça marche** : L'intégration est transparente. Créez et activez simplement (multi-sélection) vos scripts désirés dans l'extension Regex, et Memory Books les appliquera automatiquement lors de la création de mémoires et de prompts secondaires.
+* **Support Multi-Sélection** : Vous pouvez sélectionner plusieurs scripts regex.
+* **Comment ça marche** : Activez `Use regex (advanced)` dans STMB, cliquez sur `📐 Configure regex…` puis choisissez quels scripts STMB doit exécuter avant l'envoi à l'IA et avant l'analyse/l'enregistrement de la réponse.
+* **Important** : La sélection est contrôlée par STMB. Les scripts choisis là s'exécutent **même s'ils sont désactivés** dans l'extension Regex.
 
 ---
 
@@ -316,13 +328,19 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 * **Token Warning Threshold (Seuil d'avertissement de tokens) :** Définir le niveau d'avertissement pour les grandes scènes (défaut : 30 000).
 * **Default Previous Memories (Mémoires précédentes par défaut) :** Nombre de mémoires antérieures à inclure comme contexte (0-7).
 * **Auto-create memory summaries (Création auto de résumés de mémoire) :** Activer la création automatique de mémoire à intervalles.
-* **Auto-Summary Interval (Intervalle de résumé auto) :** Nombre de messages après lequel créer automatiquement un résumé de mémoire (10-200, défaut : 100).
+* **Auto-Summary Interval (Intervalle de résumé auto) :** Nombre de messages après lequel créer automatiquement un résumé de mémoire.
+* **Auto-Summary Buffer (Tampon de résumé auto) :** Retarde l'auto-résumé d'un nombre configurable de messages.
+* **Prompt for consolidation when a tier is ready :** Affiche une confirmation Oui/Plus tard lorsqu'une couche sélectionnée a assez d'entrées source éligibles.
+* **Auto-Consolidation Tiers :** Choisissez une ou plusieurs couches de résumé qui doivent déclencher la confirmation lorsqu'elles sont prêtes. Actuellement Arc à Series.
+* **Unhide hidden messages before memory generation :** Peut exécuter `/unhide X-Y` avant de créer une mémoire.
+* **Auto-hide messages after adding memory :** Peut masquer tous les messages traités ou seulement la dernière plage.
+* **Use regex (advanced) :** Active le sélecteur de scripts Regex de STMB pour le traitement sortie/entrée.
 * **Memory Title Format (Format du titre de mémoire) :** Choisir ou personnaliser (voir ci-dessous).
 
 ### **Champs du Profil**
 
 * **Name :** Nom d'affichage.
-* **API/Provider :** openai, claude, custom, etc.
+* **API/Provider :** `Current SillyTavern Settings`, openai, claude, custom, full manual et autres fournisseurs pris en charge.
 * **Model :** Nom du modèle (ex: gpt-4, claude-3-opus).
 * **Temperature :** 0.0–2.0.
 * **Prompt or Preset :** Personnalisé ou intégré.
@@ -379,6 +397,10 @@ Personnalisez les titres de vos entrées de lorebook en utilisant un système de
 
 Les paramètres se trouvent dans le menu Extensions (la baguette magique 🪄 à gauche de votre boîte de saisie). Cherchez "Memory Books".
 
+### Pourquoi l'IA ne voit-elle pas mes entrées ?
+
+Vérifiez d'abord que les entrées sont bien envoyées. J'utilise [WorldInfo-Info](https://github.com/aikohanasaki/SillyTavern-WorldInfoInfo) pour ça. Si elles sont bien envoyées mais que l'IA les ignore quand même, il faut probablement le lui rappeler plus clairement en OOC.
+
 ### Dois-je exécuter les vecteurs ?
 
 L'entrée 🔗 dans les infos du monde est nommée "vectorized" dans l'interface de ST. C'est pourquoi j'utilise le mot vectorisé. Si vous n'utilisez pas l'extension de vecteurs (je ne l'utilise pas), cela fonctionne via des mots-clés. Tout cela est automatisé pour que vous n'ayez pas à penser aux mots-clés à utiliser.
@@ -403,6 +425,9 @@ Non. S'il n'y a pas d'autres infos du monde ou lorebooks, sélectionner 'Delay u
 
 * **Aucune scène sélectionnée :**
 * Marquez les points de début (►) et de fin (◄).
+
+* **Le lorebook lié a disparu ou a été supprimé :**
+* Reliez simplement un nouveau lorebook, même vide.
 
 
 * **La scène chevauche une mémoire existante :**

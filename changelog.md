@@ -2,11 +2,17 @@
 
 **← [Back to README](readme.md)**
 
+## v6.1.0 (March 23, 2026)
+- Improve auto-consolidation settings with multi-select target tiers.
+- Reorganized main settings popup for readability.
+- Update README, User Guide, and localized README copies to reflect the current consolidation, regex, and settings behavior.
+
 ## v6.0.0 (March 23, 2026)
 - **Breaking Change:** Arc consolidation has been refactored into a summary-tier system.
 - `Consolidate Memories into Arcs` is now `Consolidate Memories`, with tiered generation for Arc, Chapter, Book, Legend, Series, and Epic.
 - Legacy arc metadata will be migrated to the new summary schema on first use per lorebook.
 - Arc analysis prompts and locale strings were updated for the new summary-tier flow.
+- Added an optional auto-consolidation readiness prompt that can open the consolidation popup when any selected tier reaches its minimum source count.
 
 ## v5.2.2 (March 22, 2026)
 - Fix lorebookconverter.html to read conversion titles better.

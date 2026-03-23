@@ -1,10 +1,10 @@
 # 📕 Memory Books (Ekstensi SillyTavern)
 
-Ekstensi SillyTavern generasi berikutnya untuk pembuatan memori otomatis, terstruktur, dan andal. Tandai adegan dalam obrolan, buat ringkasan berbasis JSON dengan AI, dan simpan sebagai entri "[ter-vektorisasi](#vectorized)" di lorebook Anda. Mendukung obrolan grup, manajemen profil tingkat lanjut, dan penanganan API/model yang sangat handal.
+Ekstensi SillyTavern generasi berikutnya untuk pembuatan memori otomatis, terstruktur, dan andal. Tandai adegan dalam obrolan, buat ringkasan berbasis JSON dengan AI, dan simpan sebagai entri lorebook. Mendukung obrolan grup, manajemen profil tingkat lanjut, prompt sampingan/penjejak, dan konsolidasi memori bertingkat.
 
 ### ❓ Kosakata
 - Scene (Adegan) → Memori
-- Many Scenes (Banyak Adegan) → Ringkasan Alur (Arc Summary)
+- Many Scenes (Banyak Adegan) → Ringkasan / Konsolidasi
 - Always-On (Selalu Aktif) → Prompt Sampingan (Pelacak)
 
 ## ❗ Baca Ini Dulu!
@@ -15,8 +15,9 @@ Mulai di sini:
 * 🛠️ [Pemecahan Masalah](#Troubleshooting)
 
 Tautan lain:
-* 📘 [Panduan Pengguna (EN)](USER_GUIDE.md)
+* 📘 [Panduan Pengguna (ID)](USER_GUIDE-ID.md)
 * 📋 [Riwayat Versi & Log Perubahan](changelog.md)
+* 🧠 [Cara Kerja STMB (ID)](howSTMBworks-id.md)
 * 💡 [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
@@ -159,40 +160,47 @@ Ini adalah jenis memori standar dan yang paling umum digunakan.
 
 ---
 
-### 🧭 Ringkasan Alur / Arc Summaries *(Beta)*
+### 🌈 Ringkasan Konsolidasi
 
-Ringkasan alur menangkap **apa yang berubah seiring waktu** di berbagai adegan.
+Ringkasan konsolidasi menangkap **apa yang berubah seiring waktu** di berbagai memori atau ringkasan.
 
-Daripada meringkas peristiwa, ringkasan alur berfokus pada:
+Daripada meringkas satu adegan, ringkasan konsolidasi berfokus pada:
 
 * Pengembangan karakter dan perubahan hubungan
 * Tujuan jangka panjang, ketegangan, dan resolusi
 * Lintasan emosional dan arah narasi
 * Perubahan keadaan persisten yang harus tetap stabil
 
-Ringkasan alur adalah **memori tingkat tinggi dengan frekuensi rendah** yang dirancang untuk mencegah penyimpangan karakter dan kehilangan narasi dalam obrolan yang berjalan lama.
+Tier konsolidasi pertama adalah **Arc**, yang dibangun dari memori adegan. Tier yang lebih tinggi juga didukung untuk cerita yang lebih panjang:
 
-> 💡 Anggap ringkasan alur sebagai *rekap musim*, bukan log adegan.
+* Arc
+* Chapter
+* Book
+* Legend
+* Series
 
-#### Kapan menggunakan Ringkasan Alur
+STMB dapat menampilkan prompt konfirmasi ya/tidak saat tier yang dipilih sudah mencapai jumlah minimum entri sumber yang memenuhi syarat.
+
+> 💡 Anggap ini sebagai *rekap*, bukan log adegan.
+
+#### Kapan menggunakan Ringkasan Konsolidasi
 
 * Setelah perubahan hubungan besar
 * Di akhir bab cerita atau alur
 * Ketika motivasi, kepercayaan, atau dinamika kekuasaan berubah
 * Sebelum memulai fase baru cerita
 
-#### Catatan Beta
+#### Cara kerjanya
 
-* Ringkasan alur sensitif terhadap prompt dan sengaja dibuat konservatif
-* Disarankan untuk meninjau sebelum memasukkan ke lorebook
-* Paling baik dipasangkan dengan entri lorebook prioritas rendah atau gaya meta
-
-Ringkasan alur dibuat **dari memori adegan yang ada**, bukan langsung dari obrolan mentah.
+* Ringkasan konsolidasi dibuat **dari memori/ringkasan STMB yang sudah ada**, bukan langsung dari obrolan mentah
+* Tombol **Consolidate Memories** memungkinkan Anda memilih tier tujuan dan memilih entri sumber
+* STMB dapat menonaktifkan entri sumber setelah konsolidasi jika Anda ingin ringkasan tingkat lebih tinggi mengambil alih
+* Respons ringkasan AI yang gagal dapat ditinjau dan diperbaiki dari UI sebelum mencoba menyimpan lagi
 
 Ini memberi Anda:
 
-* pengurangan penggunaan token
-* AI memiliki pemahaman yang lebih baik tentang aliran narasi
+* penggunaan token yang lebih rendah
+* kontinuitas naratif yang lebih baik dalam obrolan panjang
 
 ---
 
@@ -285,8 +293,9 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri side pro
 2. **Parsing Respons**: Membersihkan, memformat ulang, atau menstandarkan respons mentah AI sebelum disimpan dengan menargetkan penempatan **AI Output**.
 
 
-* **Dukungan Multi-Pilih**: Anda sekarang dapat memilih banyak skrip regex (multi-select). Semua skrip yang diaktifkan akan diterapkan secara berurutan pada setiap tahap (Pembuatan Prompt dan Parsing Respons), memungkinkan transformasi yang canggih dan fleksibel.
-* **Cara Kerjanya**: Integrasinya mulus. Cukup buat dan aktifkan (multi-pilih) skrip yang Anda inginkan di ekstensi Regex, dan Memory Books akan menerapkannya secara otomatis selama pembuatan memori dan prompt sampingan.
+* **Dukungan Multi-Pilih**: Anda dapat memilih beberapa skrip regex untuk pemrosesan keluar dan masuk.
+* **Cara Kerjanya**: Aktifkan `Use regex (advanced)` di STMB, klik `📐 Configure regex…`, lalu pilih skrip mana yang harus dijalankan STMB sebelum dikirim ke AI dan sebelum respons diparsing/disimpan.
+* **Penting**: Skrip yang dipilih di STMB tetap akan dijalankan meskipun saat ini dinonaktifkan di ekstensi Regex itu sendiri.
 
 ---
 
@@ -313,16 +322,23 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri side pro
 * **Show memory previews:** Aktifkan popup pratinjau untuk meninjau dan mengedit memori sebelum ditambahkan ke lorebook.
 * **Show Notifications:** Beralih pesan toast (notifikasi).
 * **Refresh Editor:** Segarkan editor lorebook secara otomatis setelah pembuatan memori.
-* **Token Warning Threshold:** Tetapkan tingkat peringatan untuk adegan besar (default: 30.000).
+* **Max Response Tokens:** Tetapkan panjang generasi maksimum untuk ringkasan memori.
+* **Token Warning Threshold:** Tetapkan tingkat peringatan untuk adegan besar.
 * **Default Previous Memories:** Jumlah memori sebelumnya yang disertakan sebagai konteks (0-7).
 * **Auto-create memory summaries:** Aktifkan pembuatan memori otomatis pada interval tertentu.
-* **Auto-Summary Interval:** Jumlah pesan yang memicu pembuatan ringkasan memori secara otomatis (10-200, default: 100).
+* **Auto-Summary Interval:** Jumlah pesan yang memicu pembuatan ringkasan memori secara otomatis.
+* **Auto-Summary Buffer:** Menunda auto-summary dengan jumlah pesan yang dapat dikonfigurasi.
+* **Prompt for consolidation when a tier is ready:** Menampilkan prompt ya/tidak saat tier ringkasan yang dipilih sudah punya cukup entri sumber untuk dikonsolidasikan.
+* **Auto-Consolidation Tiers:** Pilih satu atau beberapa tier ringkasan yang akan memicu prompt tersebut. Saat ini mendukung Arc sampai Series.
+* **Unhide hidden messages before memory generation:** Dapat menjalankan `/unhide X-Y` sebelum membuat memori.
+* **Auto-hide messages after adding memory:** Opsional menyembunyikan semua pesan yang diproses atau hanya rentang memori terakhir.
+* **Use regex (advanced):** Mengaktifkan popup pemilihan regex STMB untuk pemrosesan keluar/masuk.
 * **Memory Title Format:** Pilih atau kustomisasi (lihat di bawah).
 
 ### **Bidang Profil**
 
 * **Name:** Nama tampilan.
-* **API/Provider:** openai, claude, custom, dll.
+* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual, dan provider lain yang didukung.
 * **Model:** Nama model (mis., gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Kustom atau bawaan.

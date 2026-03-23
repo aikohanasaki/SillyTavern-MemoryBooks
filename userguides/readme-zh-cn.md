@@ -1,10 +1,10 @@
 # 📕 Memory Books (SillyTavern 扩展)
 
-这是下一代 SillyTavern（酒馆）扩展，用于自动、结构化且可靠地创建记忆。在聊天中标记场景，利用 AI 生成基于 JSON 的总结，并将它们作为“[向量化](#vectorized)”条目存储在您的世界书（Lorebook）中。支持群聊、高级配置文件管理以及极其稳定的 API/模型处理。
+这是下一代 SillyTavern（酒馆）扩展，用于自动、结构化且可靠地创建记忆。在聊天中标记场景，利用 AI 生成基于 JSON 的总结，并将它们存储在您的世界书（Lorebook）中。支持群聊、高级配置文件管理、侧边提示词/追踪器，以及多层级记忆整合。
 
 ### ❓ 词汇表
 - Scene (场景) → Memory (记忆)
-- Many Scenes (多个场景) → Arc Summary (篇章总结)
+- Many Memories (多个记忆) → Summary / Consolidation (总结 / 整合)
 - Always-On (常驻) → Side Prompt / Tracker (侧边提示词/追踪器)
 
 ## ❗ 请先阅读！
@@ -15,7 +15,7 @@
 * 🛠️ [故障排除](#故障排除)
 
 其他链接：
-* 📘 [用户指南 (英文)](USER_GUIDE.md)
+* 📘 [用户指南 (简体中文)](USER_GUIDE-zh-cn.md)
 * 📋 [版本历史 & 更新日志](changelog.md)
 * 💡 [配合 📚 Lorebook Ordering 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -159,9 +159,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 🧭 篇章总结 *(Beta)*
+### 🌈 总结整合 (Summary Consolidation)
 
-篇章总结捕捉跨越多个场景 **随时间发生的变化**。
+总结整合捕捉跨越多个记忆或总结 **随时间发生的变化**。
 
 与总结事件不同，篇章总结侧重于：
 
@@ -170,24 +170,30 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * 情感轨迹和叙事方向
 * 应保持稳定的持久状态变化
 
-篇章总结是 **更高级别、频率更低** 的记忆，旨在防止长期聊天中的角色漂移和叙事丢失。
+总结整合是 **更高级别、频率更低** 的记忆，旨在防止长期聊天中的角色漂移和叙事丢失。
 
-> 💡 将篇章总结视为 *剧季回顾*，而不是场景日志。
+> 💡 将总结整合视为 *剧季回顾*，而不是场景日志。
 
-#### 何时使用篇章总结
+#### 何时使用总结整合
 
 * 在发生重大关系转变后
 * 在故事章节或篇章结束时
 * 当动机、信任或权力动态发生变化时
 * 在开始故事的新阶段之前
 
-#### Beta 说明
+#### 工作方式
+
+* 总结整合不是直接从原始聊天生成，而是从现有的 STMB 记忆/总结生成。
+* **Consolidate Memories** 工具可让您选择目标总结层级和源条目。
+* 当所选层级达到其保存的最小有效源条目数时，STMB 会在需要时显示 yes/later 确认。
+* 如有需要，可以在整合后禁用源条目。
+* AI 总结失败可以在 UI 中查看和修正后重新提交。
+
+#### 旧 Beta 说明
 
 * 篇章总结对提示词敏感，且设计上较为保守
 * 建议在提交到世界书之前进行审查
 * 最好与低优先级或元数据风格的世界书条目搭配使用
-
-篇章总结是 **从现有的场景记忆** 生成的，而不是直接从原始聊天记录生成的。
 
 这为您提供了：
 
@@ -220,6 +226,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 3. **Synopsis:** 全面、结构化的 markdown。
 4. **Sum Up:** 带有时间线的简明节拍总结。
 5. **Minimal:** 1-2 句话的总结。
+6. **Northgate:** 面向创作的文学风格总结。
+7. **Aelemar:** 侧重剧情点和角色记忆。
+8. **Comprehensive:** 更适合提取关键词的 synopsis 风格总结。
 
 ### **自定义提示词**
 
@@ -280,13 +289,13 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🧠 Regex (正则表达式) 集成实现高级自定义
 
-* **完全控制文本处理**: Memory Books 现在与 SillyTavern 的 **Regex** 扩展集成，允许您在两个关键阶段应用强大的文本转换：
-1. **提示词生成**: 通过创建针对 **用户输入 (User Input)** 位置的正则脚本，自动修改发送给 AI 的提示词。
-2. **响应解析**: 通过针对 **AI 输出 (AI Output)** 位置，在保存 AI 的原始响应之前对其进行清理、重新格式化或标准化。
+* **完全控制文本处理**: Memory Books 现在与 SillyTavern 的 **Regex** 扩展集成，允许您在发送前和解析前两个关键阶段应用文本转换。
+1. **提示词生成**: 使用针对 **用户输入 (User Input)** 的脚本，自动修改发送给 AI 的提示词。
+2. **响应解析**: 使用针对 **AI 输出 (AI Output)** 的脚本，在保存前清理、重新格式化或标准化原始响应。
 
 
-* **支持多选**: 您现在可以多选正则脚本。所有启用的脚本将在每个阶段（提示词生成和响应解析）按顺序应用，允许进行高级且灵活的转换。
-* **工作原理**: 集成是无缝的。只需在 Regex 扩展中创建并启用（多选）您想要的脚本，Memory Books 将在记忆和侧边提示词创建期间自动应用它们。
+* **支持多选**: 您可以在 STMB 的选择弹窗中多选脚本。
+* **工作原理**: STMB 会管理您选中的脚本，并在发送前和解析前按顺序应用。即使 Regex 扩展中这些脚本已被禁用，只要在 STMB 中选中，它们仍会运行。
 
 ---
 
@@ -316,13 +325,19 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Token Warning Threshold (Token 警告阈值):** 设置大场景的警告级别（默认：30,000）。
 * **Default Previous Memories (默认前序记忆):** 作为上下文包含的先前记忆数量 (0-7)。
 * **Auto-create memory summaries (自动创建记忆总结):** 按间隔启用自动记忆创建。
-* **Auto-Summary Interval (自动总结间隔):** 自动创建记忆总结的消息数量间隔 (10-200, 默认: 100)。
+* **Auto-Summary Interval (自动总结间隔):** 自动创建记忆总结的消息数量间隔。
+* **Auto-Summary Buffer:** 可按消息数延迟自动总结。
+* **Prompt for consolidation when a tier is ready:** 当所选总结层级达到足够的有效源条目时显示 yes/later 确认。
+* **Auto-Consolidation Tiers:** 选择哪些总结层级应在满足条件时触发确认提示。当前支持 Arc 到 Series。
+* **Unhide hidden messages before memory generation:** 可以在创建记忆前运行 `/unhide X-Y`。
+* **Auto-hide messages after adding memory:** 可选择隐藏所有已处理消息，或仅隐藏最近的记忆范围。
+* **Use regex (advanced):** 启用 STMB 的 regex 选择弹窗（发送/解析处理）。
 * **Memory Title Format (记忆标题格式):** 选择或自定义（见下文）。
 
 ### **配置文件字段**
 
 * **Name:** 显示名称。
-* **API/Provider:** openai, claude, custom 等。
+* **API/Provider:** `Current SillyTavern Settings`、openai、claude、custom、full manual 等。
 * **Model:** 模型名称 (例如 gpt-4, claude-3-opus)。
 * **Temperature:** 0.0–2.0。
 * **Prompt or Preset:** 自定义或内置。
