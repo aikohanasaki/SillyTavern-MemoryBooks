@@ -2,6 +2,7 @@ import { chat, chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
 import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
+import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
@@ -75,9 +76,17 @@ function countVisibleMessagesSince(exclusiveStart, inclusiveEnd) {
 }
 
 /**
- * Compile a scene safely for [start, end], skipping system messages (handled by compileScene)
+ * Compile a scene safely for [start, end], optionally unhiding the range first
+ * when the global unhide-before-memory setting is enabled.
  */
-function compileRange(start, end) {
+async function compileRange(start, end) {
+    if (extension_settings?.STMemoryBooks?.moduleSettings?.unhideBeforeMemory) {
+        try {
+            await executeSlashCommands(`/unhide ${start}-${end}`);
+        } catch (err) {
+            console.warn(`${MODULE_NAME}: /unhide command failed or unavailable:`, err);
+        }
+    }
     const req = createSceneRequest(start, end);
     return compileScene(req);
 }
@@ -573,7 +582,7 @@ export async function evaluateTrackers() {
 
             let compiled = null;
             try {
-                compiled = compileRange(boundedStart, currentLast);
+                compiled = await compileRange(boundedStart, currentLast);
             } catch (err) {
                 console.warn(`${MODULE_NAME}: Interval compile failed:`, err);
                 continue;
@@ -950,7 +959,7 @@ export async function runSidePrompt(args) {
                 return '';
             }
             try {
-                compiled = compileRange(start, end);
+                compiled = await compileRange(start, end);
             } catch (err) {
                 toastr.error(translate('Failed to compile the specified range', 'STMemoryBooks_Toast_FailedToCompileRange'), 'STMemoryBooks');
                 return '';
@@ -974,7 +983,7 @@ export async function runSidePrompt(args) {
             const boundedStart = Math.max(start, currentLast - cap + 1);
 
             try {
-                compiled = compileRange(boundedStart, currentLast);
+                compiled = await compileRange(boundedStart, currentLast);
             } catch (err) {
                 toastr.error(translate('Failed to compile messages for /sideprompt', 'STMemoryBooks_Toast_FailedToCompileMessages'), 'STMemoryBooks');
                 return '';
