@@ -146,13 +146,13 @@
 
         <header class="header">
             <h1 data-i18n="STMemoryBooks_ConverterHeader">Lorebook Converter</h1>
-            <p data-i18n="STMemoryBooks_ConverterDescription">This tool flags entries by adding <code>stmemorybooks: true</code>. An entry is converted only if it matches the title format, is <strong>not</strong> set to <code>"vectorized": false</code>, and has its <code>"position"</code> set to <code>0</code>.</p>
+            <p data-i18n="STMemoryBooks_ConverterDescription">This tool flags entries by adding <code>stmemorybooks: true</code>. An entry is converted only if its title matches the generated regex pattern.</p>
         </header>
 
         <div class="input-group">
             <label for="sampleTitleInput" data-i18n="STMemoryBooks_ConverterSampleTitleLabel">Sample Title Format (Optional)</label>
             <input type="text" id="sampleTitleInput" data-i18n="[placeholder]STMemoryBooks_ConverterSampleTitlePlaceholder" placeholder="e.g., 01 - My First Memory">
-            <small data-i18n="STMemoryBooks_ConverterSampleTitleDescription">The tool will find the first number and use it to create a pattern. If blank, it defaults to matching titles like "01 - title".</small>
+            <small data-i18n="STMemoryBooks_ConverterSampleTitleDescription">Enter an example title format and the tool will build a regex from its structure. For example, "001 - The Beginning" becomes a three-digit number, hyphen, and title pattern. If blank, it defaults to matching titles like "01 - title".</small>
             <div id="regexDisplay"></div>
         </div>
 
@@ -160,14 +160,6 @@
             <input type="file" id="jsonUpload" accept=".json">
             <span class="file-upload-label" data-i18n="STMemoryBooks_ConverterFileUploadLabel">Click or Drag to Upload Lorebook File</span>
             <span id="fileName"></span>
-        </div>
-        
-        <div class="input-group">
-            <label for="vectorizedToggle">
-                <input type="checkbox" id="vectorizedToggle" checked>
-                <span data-i18n="STMemoryBooks_ConverterIncludeVectorizedLabel">Include 🔵 entries</span>
-            </label>
-            <small data-i18n="STMemoryBooks_ConverterIncludeVectorizedDescription">If enabled, entries with <code>vectorized: false</code> will also be included as memories.</small>
         </div>
 
         <button id="convertBtn" class="btn" data-i18n="STMemoryBooks_ConverterConvertButton">Convert File</button>
@@ -187,7 +179,6 @@
             const downloadLink = document.getElementById('downloadLink');
             const sampleTitleInput = document.getElementById('sampleTitleInput');
             const regexDisplay = document.getElementById('regexDisplay');
-            const vectorizedToggle = document.getElementById('vectorizedToggle');
 
             let uploadedFile = null;
 
@@ -235,20 +226,38 @@
             }
 
             const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const createLiteralPattern = (str) => escapeRegex(str).replace(/\s+/g, '\\s*');
 
             function createRegexFromSample(sample) {
-                const numberMatch = sample.match(/\d+/);
+                const trimmedSample = sample.trim();
+                const numberMatch = trimmedSample.match(/\d+/);
+
                 if (!numberMatch) {
-                    return new RegExp(`^${escapeRegex(sample)}`);
+                    return new RegExp(`^${createLiteralPattern(trimmedSample)}$`);
                 }
                 
                 const numberIndex = numberMatch.index;
                 const numberLength = numberMatch[0].length;
+                const numberPattern = numberLength === 1 ? '\\d+' : `\\d{${numberLength}}`;
+                const prefix = trimmedSample.substring(0, numberIndex);
+                const suffix = trimmedSample.substring(numberIndex + numberLength);
+                const separatorMatch = suffix.match(/^[^A-Za-z0-9]*/);
+                const separator = separatorMatch ? separatorMatch[0] : '';
+                const hasTrailingTitle = suffix.substring(separator.length).trim().length > 0;
 
-                const prefix = sample.substring(0, numberIndex);
-                const suffix = sample.substring(numberIndex + numberLength);
+                let pattern = `^${createLiteralPattern(prefix)}${numberPattern}`;
 
-                const pattern = `^${escapeRegex(prefix)}(\\d+)${escapeRegex(suffix)}`;
+                if (separator) {
+                    pattern += createLiteralPattern(separator);
+                }
+
+                if (hasTrailingTitle) {
+                    pattern += '.+';
+                } else if (suffix.trim()) {
+                    pattern += createLiteralPattern(suffix);
+                }
+
+                pattern += '$';
                 return new RegExp(pattern);
             }
 
@@ -272,15 +281,11 @@
                 const entries = Object.values(data.entries);
                 const totalEntries = entries.length;
 
-                // NEW: read toggle value
-                const skipVectorizedCheck = vectorizedToggle.checked;
-
                 entries.forEach(entry => {
-                    const titleMatches = entry.comment && isMemoryRegex.test(entry.comment);
-                    const isVectorized = skipVectorizedCheck ? true : (entry.vectorized !== false);
-                    const isPositionZero = entry.position === 0;
+                    const entryTitle = typeof entry.comment === 'string' ? entry.comment.trim() : '';
+                    const titleMatches = entryTitle && isMemoryRegex.test(entryTitle);
 
-                    if (titleMatches && isVectorized && isPositionZero) {
+                    if (titleMatches) {
                         entry.stmemorybooks = true;
                         memoriesConverted++;
                     }
