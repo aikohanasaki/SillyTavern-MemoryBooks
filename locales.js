@@ -508,6 +508,7 @@ export const localeData_en = {
     'STMemoryBooks_Toast_SidePromptsSucceeded': 'Side Prompts after memory: {{okCount}} succeeded. {{succeeded}}',
     'STMemoryBooks_Toast_SidePromptsPartiallyFailed': 'Side Prompts after memory: {{okCount}} succeeded, {{failCount}} failed. {{failed}}',
     'STMemoryBooks_Toast_SidePromptNameNotProvided': 'SidePrompt name not provided. Usage: /sideprompt "Name" {{macro}}="value" [X-Y]',
+    'STMemoryBooks_Toast_SidePromptBlankNotSaved': 'SidePrompt "{{name}}" returned blank content. No changes were saved.',
 
     // Scene Manager
     'STMemoryBooks_Toast_SceneClearedStart': 'Scene cleared due to start marker deletion',
