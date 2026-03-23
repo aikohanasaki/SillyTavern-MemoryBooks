@@ -6,10 +6,10 @@ import { getBuiltInArcPrompts, getDefaultArcPrompt } from './templatesArcPrompts
 const MODULE_NAME = 'STMemoryBooks-ArcAnalysisPromptManager';
 const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
 
- // Preferred translation keys for built-in arc presets
+ // Preferred translation keys for built-in consolidation presets
  const BUILTIN_DISPLAY_NAMES = {
-   arc_default: 'Multi-Arc Analysis',
-   arc_alternate: 'Single Arc',
+   arc_default: 'Multi-Consolidation Analysis',
+   arc_alternate: 'Single Consolidation Analysis',
  };
 
 /**
@@ -57,7 +57,7 @@ function generateDisplayNameFromContent(prompt) {
       .trim();
     return toTitleCase(cleaned.substring(0, 50));
   }
-  return 'Arc Prompt';
+  return 'Consolidation Prompt';
 }
 
 /**
@@ -174,11 +174,11 @@ async function saveOverrides(doc) {
     }),
   });
   if (!response.ok) {
-    const msg = translate("Failed to save arc prompts", "STMemoryBooks_ArcPromptManager_SaveFailed");
+    const msg = translate("Failed to save consolidation prompts", "STMemoryBooks_ArcPromptManager_SaveFailed");
     throw new Error(`${msg}: ${response.statusText}`);
   }
   cachedOverrides = doc;
-  console.log(`${MODULE_NAME}: Arc prompts saved`);
+  console.log(`${MODULE_NAME}: Consolidation prompts saved`);
 }
 
 /**
@@ -258,7 +258,7 @@ export async function getDisplayName(key, settings = null) {
   if (data.overrides[key] && data.overrides[key].displayName) {
     return data.overrides[key].displayName;
   }
-  return BUILTIN_DISPLAY_NAMES[key] || toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || 'Arc Prompt';
+  return BUILTIN_DISPLAY_NAMES[key] || toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || 'Consolidation Prompt';
 }
 
 /**
@@ -354,7 +354,7 @@ export async function exportToJSON() {
 export async function importFromJSON(jsonString) {
   const obj = JSON.parse(jsonString);
   if (!validatePromptsFile(obj)) {
-    throw new Error('Invalid arc prompts file structure.');
+    throw new Error('Invalid consolidation prompts file structure.');
   }
   await saveOverrides(obj);
 }
@@ -442,7 +442,7 @@ export async function rebuildFromBuiltIns(options = {}) {
   await saveOverrides(doc);
   cachedOverrides = doc;
 
-  // Notify listeners that arc presets changed
+  // Notify listeners that consolidation presets changed
   try {
     window.dispatchEvent(new CustomEvent('stmb-arc-presets-updated'));
   } catch {

@@ -594,7 +594,9 @@ export const localeData_en = {
     'STMemoryBooks_PromptsImportedSuccessfully': 'Prompts imported successfully',
     'STMemoryBooks_FailedToImportPrompts': 'Failed to import prompts.',
     'STMemoryBooks_CreateMemoryButton': 'Create Memory',
-    'STMemoryBooks_ConsolidateArcsButton': 'Consolidate Memories into Arcs',
+    'STMemoryBooks_ConsolidateArcsButton': 'Consolidate Memories',
+    'STMemoryBooks_ConsolidateArcs_Title': 'Consolidate Memories',
+    'STMemoryBooks_SummaryTier_Label': 'Summary Tier',
     'STMemoryBooks_NoSceneSelectedMakeSure': 'No scene selected. Make sure both start and end points are set.',
     'STMemoryBooks_ClearSceneButton': 'Clear Scene',
     'STMemoryBooks_FailedToImportProfiles': 'Failed to import profiles',
@@ -763,291 +765,130 @@ export const localeData_en = {
     'common.unknown': 'Unknown',
     
     // Arcs
-    'STMemoryBooks_ArcPromptManager': 'Arc Prompt Manager',
+    'STMemoryBooks_ArcPromptManager': 'Consolidation Prompt Manager',
     'STMemoryBooks_Arc_RebuildBuiltins': 'Rebuild from built-ins',
-    'STMemoryBooks_Arc_MaxPerPass': 'Maximum number of memories to process in each pass',
-    'STMemoryBooks_Arc_MaxPasses': 'Number of automatic arc attempts',
-    'STMemoryBooks_Arc_MinAssigned': 'Minimum number of memories in each arc',
+    'STMemoryBooks_Arc_MaxPerPass': 'Maximum number of {{stmbchildtier}} entries to process in each pass',
+    'STMemoryBooks_Arc_MaxPasses': 'Number of automatic summary attempts',
+    'STMemoryBooks_Arc_MinAssigned': 'Minimum number of source entries in each summary',
     'STMemoryBooks_Arc_TokenBudget': 'Token Budget',
-    'STMemoryBooks_Arc_Order_Label': 'Arc entry order',
-    'STMemoryBooks_Arc_Order_Help': "Controls the lorebook 'order' for newly created arcs only.",
-    'STMemoryBooks_Arc_AutoOrder': 'Auto (uses arc #)',
-    'STMemoryBooks_Arc_RebuildTitle': 'Rebuild Arc Prompts from Built-ins',
-    'STMemoryBooks_Arc_RebuildWarning': 'This will overwrite your saved Arc prompt presets with the built-ins. A timestamped backup will be created.',
+    'STMemoryBooks_Arc_Order_Label': 'Summary entry order',
+    'STMemoryBooks_Arc_Order_Help': "Controls the lorebook 'order' for newly created summaries only.",
+    'STMemoryBooks_Arc_AutoOrder': 'Auto (uses summary #)',
+    'STMemoryBooks_Arc_RebuildTitle': 'Rebuild Consolidation Prompts from Built-ins',
+    'STMemoryBooks_Arc_RebuildWarning': 'This will overwrite your saved Consolidation prompt presets with the built-ins. A timestamped backup will be created.',
     'STMemoryBooks_Arc_RebuildNote': 'After rebuild, the preset list will refresh automatically.',
-    'STMemoryBooks_ConsolidateArcs_DisableOriginals': 'Disable originals after creating arcs',
-    'STMemoryBooks_ConsolidateArcs_Tip': 'Tip: uncheck memories that should not be included.',
+    'STMemoryBooks_ConsolidateArcs_DisableOriginals': 'Disable selected source entries after creating summaries',
+    'STMemoryBooks_ConsolidateArcs_Tip': 'Tip: uncheck entries that should not be included.',
     'STMemoryBooks_ArcAnalysis_EmptyResponse': 'Empty AI response',
     'STMemoryBooks_ArcAnalysis_InvalidJSON': 'Model did not return valid arc JSON',
     'STMemoryBooks_ArcAnalysis_MissingLorebookData': 'Missing lorebookName or lorebookData',
+    'STMemoryBooks_ArcAnalysis_NoUsableArcs': 'No usable summaries were produced from the model response.',
     'STMemoryBooks_ArcAnalysis_UpsertFailed': 'Arc upsert returned no entry (commitArcs failed)',
-    'STMemoryBooks_ArcPromptManager_SaveFailed': 'Failed to save arc prompts',
+    'STMemoryBooks_ArcPromptManager_SaveFailed': 'Failed to save consolidation prompts',
+    'STMemoryBooks_ReviewFailedArc_Title': 'Review Failed Summary Response',
+    'STMemoryBooks_ReviewFailedArc_CreateArcs': 'Create summaries from corrected JSON',
+    'STMemoryBooks_ReviewFailedArc_FieldsDesc': 'Use Extract to populate fields from the raw response, then Fill JSON to generate valid summary JSON.',
+    'STMemoryBooks_ReviewFailedArc_TitleSummaryRequired': 'Title and Summary are required to build a summary.',
 
-    // Arc Prompts
-    // Default Arc Prompt
-    'STMemoryBooks_ArcPrompt_Default':`You are an expert narrative analyst and memory-engine assistant.
-Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, identify self-contained story arcs, and output each arc as a single memory entry in JSON.
+    // Summary Prompts
+    'STMemoryBooks_SummaryPrompt_Default': `You are an expert narrative analyst and memory-engine assistant.
+Your task is to combine multiple {{stmbchildtier}} entries into one or more coherent {{stmbtier}} summaries.
 
-Each arc must be token-efficient, plot-accurate, and compatible with long-running RP memory systems such as STMB.
-
-You will receive input in this exact format:
-- An optional PREVIOUS ARC block, which is canon and must not be rewritten.
-- A MEMORIES block containing entries formatted as:
-  [ID] | ORDER
-  Full text of the memory (may span multiple paragraphs)
-
-Strict output format (JSON only; no markdown, no prose outside JSON):
-{
-  "arcs": [
-    {
-      "title": "Short descriptive arc title (3–6 words)",
-      "summary": "Structured arc summary as a single string (see Summary Content Structure below).",
-      "keywords": ["keyword1", "keyword2", "..."],
-      "member_ids": ["<ID from MEMORIES>", "..."]  // optional: IDs of memories that belong to this arc
-    }
-  ],
-  "unassigned_memories": [
-    { "id": "memory-id", "reason": "Brief explanation of why this memory does not fit the produced arcs." }
-  ]
-}
-
-Arc count rule:
-- Do not force a number of arcs. Produce the smallest coherent number of arcs based on content (often 1–3, possibly 1 if all memories form one arc).
-- Respect chronology using ORDER (ascending).
-- If some memories do not fit the produced arcs, place them in unassigned_memories with a short reason.
-
-Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
-
-PROCESS
-
-STEP 1 — UNIFIED STORY (internal only)
-- Combine ALL memories into a single chronological retelling.
-- Ignore OOC/meta content.
-- Preserve plot-relevant events, character choices, emotional shifts, decisions, consequences, conflicts, promises, boundary negotiations.
-- Exclude flavor-only content unless it affects future behavior.
-- Normalize to past-tense, third-person.
-- Focus on cause → intention → reaction → consequence chains.
-- Do NOT output this unified story.
-
-STEP 2 — IDENTIFY STORY ARCS
-- From the unified story, extract arcs that begin when a meaningful shift occurs in:
-  relationship dynamics; emotional vulnerability; intimacy or distance; conflict/reconciliation; routine/ritual changes; boundaries/negotiations; logistical shifts (travel, location, communication); any event with lasting consequences.
-- Ensure each arc is self-contained and represents a significant movement.
-
-STEP 3 — ARC OBJECTS (fill arcs[] in JSON)
-For each arc, fill fields as follows:
-
-title:
-- 3–6 words, descriptive of the arc’s core.
-
-summary:
-- The entire “Summary Content Structure” below must appear inside this single string (use headings and bullets as plain text).
-- Keep total length 5–15% of the combined text for the arc’s memories.
-- Do not include OOC/meta or filler.
-
-Summary Content Structure (must be followed inside summary string):
-
-# [Arc Title]
-Time period: What timeframe the arc covers (e.g. "March 3–10, 2024", "Week of July 15, 2023")
-
-Arc Premise: One sentence describing what this arc is about.
-
-## Major Beats
-- 3–7 bullets capturing the major plot movements of this arc
-- Focus on cause → effect logic
-- Include only plot-affecting events
-
-## Character Dynamics
-- 1–2 paragraphs describing how the characters’ emotions, motives, boundaries, or relationship changed
-- Include subtext, tension shifts, power exchange changes, new trust/vulnerabilities, or new conflicts
-- Include silent implications if relevant
-
-## Key Exchanges
-- Up to 8 short, exact quotes
-- Only include dialogue that materially shifted tone, emotion, or relationship dynamics
-
-## Outcome & Continuity
-- 4–8 bullets capturing:
-  - decisions
-  - promises
-  - new emotional states
-  - new routines/rituals
-  - injuries or physical changes
-  - foreshadowed future events
-  - unresolved threads
-  - permanent consequences
-
-STEP 4 — KEYWORDS
-- Provide 15–30 standalone retrieval keywords in keywords[] per arc.
-
-MUST:
-- Concrete nouns, physical objects, places, proper nouns, distinctive actions, or memorable scene elements
-- Each keyword = ONE concept only
-- Each keyword must be retrievable if mentioned ALONE
-- Use ONLY nouns or noun-phrases
-
-MUST NOT:
-- No narrative/summary keywords (“start of affair”, “argument resolved”)
-- No emotional/abstract words (intimacy, vulnerability, trust, jealousy, dominance, submission, aftercare, connection, longing, etc.)
-- No multi-fact keywords (“Denver airport Lyft ride and call”)
-- No themes or vibes
-
-Examples of valid keywords:
-- Four Seasons bar
-- Macallan 25
-- private elevator
-- Aston Martin
-- CPAP machine
-- Gramercy Tavern
-- yuzu soda
-- satellite map
-- Life360 app
-- marble desk
-- “pack for forever”
-- “dick-measuring contest”
-
-Classification of non-fitting memories:
-- If a memory obviously belongs to a later arc, is unrelated, flavor-only with no continuity impact, duplicates, or conflicts with PREVIOUS ARC chronology, put it in unassigned_memories with a short reason.
-
-JSON-only:
-- Return only the JSON object described above.
-- No markdown fences, no commentary, no system prompts, no extra text.`,
-
-    // Alternate Arc Prompt
-    'STMemoryBooks_ArcPrompt_Alternate':`You are an expert narrative analyst and memory-engine assistant.
-Your task is to take multiple scene summaries (of varying detail and formatting), normalize them, reconstruct the full chronology, and output a single memory arc entry in JSON. The arc must be token-efficient and plot-accurate.
-
-You will receive input in this exact format:
-- An optional PREVIOUS ARC block, which is canon and must not be rewritten.
-- A MEMORIES block containing entries formatted as:
-  [ID] | ORDER
-  Full text of the memory (may span multiple paragraphs)
-
-Strict output format (JSON only; no markdown, no prose outside JSON):
-{
-  "arcs": [
-    {
-      "title": "Short descriptive arc title (3–6 words)",
-      "summary": "Structured arc summary as a single string (see Summary Content Structure below).",
-      "keywords": ["keyword1", "keyword2", "..."],
-      "member_ids": ["<ID from MEMORIES>", "..."]  // optional: IDs of memories that belong to this arc
-    }
-  ],
-  "unassigned_memories": [
-    { "id": "memory-id", "reason": "Brief explanation of why this memory does not fit the produced arcs." }
-  ]
-}
-
-Notes:
-- Respect chronology using ORDER (ascending).
-- If some memories do not fit the arc, place them in unassigned_memories with a short reason.
-
-Do not repeat text from PREVIOUS ARC. Treat it as canon; continue consequences only if relevant in the new memories.
-
-PROCESS
-
-STEP 1 — UNIFIED STORY (internal only)
-- Combine ALL memories into a single chronological retelling.
-- Ignore OOC/meta content.
-- Preserve plot-relevant events, character choices, emotional shifts, decisions, consequences, conflicts, promises, boundary negotiations.
-- Exclude flavor-only content unless it affects future behavior.
-- Normalize to past-tense, third-person.
-- Focus on cause → intention → reaction → consequence chains.
-- Do NOT output this unified story.
-
-STEP 2 — IDENTIFY STORY ARCS
-- From the unified story, identify a self-contained arc that represents a significant narrative movement.
-
-STEP 3 — ARC OBJECTS (fill arcs[] in JSON)
-For the story arc, fill fields as follows:
-
-title:
-- 3–6 words, descriptive of the arc’s core.
-
-summary:
-- The entire "Summary Content Structure" below must appear inside this single string (use headings and bullets as plain text).
-- Keep total length 5–15% of the combined text for the arc’s memories.
-- Do not include OOC/meta or filler.
-
-Summary Content Structure (must be followed inside summary string):
-
-# [Arc Title]
-Time period: What timeframe the arc covers (e.g. "March 3–10, 2024", "Week of July 15, 2023")
-
-Arc Premise: One sentence describing what this arc is about.
-
-## Major Beats
-- 3–7 bullets capturing the major plot movements of this arc
-- Focus on cause → effect logic
-- Include only plot-affecting events
-
-## Character Dynamics
-- 1–2 paragraphs describing how the characters’ emotions, motives, boundaries, or relationship changed
-- Include subtext, tension shifts, power exchange changes, new trust/vulnerabilities, or new conflicts
-- Include silent implications if relevant
-
-## Key Exchanges
-- Up to 8 short, exact quotes
-- Only include dialogue that materially shifted tone, emotion, or relationship dynamics
-
-## Outcome & Continuity
-- 4–8 bullets capturing:
-  - decisions
-  - promises
-  - new emotional states
-  - new routines/rituals
-  - injuries or physical changes
-  - foreshadowed future events
-  - unresolved threads
-  - permanent consequences
-
-STEP 4 — KEYWORDS
-- Provide 15–30 standalone retrieval keywords in keywords[] per arc.
-
-MUST:
-- Concrete nouns, physical objects, places, proper nouns, distinctive actions, or memorable scene elements
-- Each keyword = ONE concept only
-- Each keyword must be retrievable if mentioned ALONE
-- Use ONLY nouns or noun-phrases
-
-MUST NOT:
-- No narrative/summary keywords (“start of affair”, “argument resolved”)
-- No emotional/abstract words (intimacy, vulnerability, trust, jealousy, dominance, submission, aftercare, connection, longing, etc.)
-- No multi-fact keywords (“Denver airport Lyft ride and call”)
-- No themes or vibes
-
-Examples of valid keywords:
-- Four Seasons bar
-- Macallan 25
-- private elevator
-- Aston Martin
-- CPAP machine
-- Gramercy Tavern
-- yuzu soda
-- satellite map
-- Life360 app
-- marble desk
-- “pack for forever”
-- “dick-measuring contest”
-
-Classification of non-fitting memories:
-- If a memory obviously belongs to a later arc, is unrelated, flavor-only with no continuity impact, duplicates, or conflicts with PREVIOUS ARC chronology, put it in unassigned_memories with a short reason.
-
-JSON-only:
-- Return only the JSON object described above.
-- No markdown fences, no commentary, no system prompts, no extra text.`,
-
-    // Tiny Arc Prompt
-    'STMemoryBooks_ArcPrompt_Tiny': `You specialize in compressing many small memories into compact, coherent story arcs. Combine the memories below — and the previous arc if provided — into a single arc that captures the main narrative through-lines.
+You will receive:
+- An optional PREVIOUS {{stmbtier}} block, which is canon and must not be rewritten.
+- A block of {{stmbchildtier}} entries in chronological order.
 
 Return JSON only:
-{ "arcs": [ { "title": "...", "summary": "...", "keywords": ["..."], "member_ids": ["<ID>", "..."] } ], "unassigned_memories": [ { "id": "...", "reason": "..." } ] }
+{
+  "summaries": [
+    {
+      "title": "Short descriptive {{stmbtier}} title (3-6 words)",
+      "summary": "Structured {{stmbtier}} summary as a single string.",
+      "keywords": ["keyword1", "keyword2"],
+      "member_ids": ["<ID>", "..."]
+    }
+  ],
+  "unassigned_items": [
+    { "id": "item-id", "reason": "Why this item does not fit the produced summaries." }
+  ]
+}
 
 Rules:
-- 5–15% length compression
-- Focus on plot, emotional progression, decisions, conflicts, continuity
-- Identify non-fitting items in unassigned_memories with a brief reason
-- No quotes, no OOC, no commentary outside JSON`,
+- Respect chronology.
+- Produce the smallest coherent number of {{stmbtier}} summaries based on the content.
+- If an item does not fit, place it in unassigned_items with a short reason.
+- Do not repeat the PREVIOUS {{stmbtier}} text verbatim.
+
+Each summary must:
+- Be token-efficient and plot-accurate.
+- Preserve important changes, decisions, conflicts, consequences, and continuity.
+- Ignore OOC and flavor-only detail unless it affects future continuity.
+- Use the structure below inside the summary string:
+
+# [{{stmbtier}} Title]
+Time period: ...
+
+{{stmbtier}} Premise: One sentence describing what this {{stmbtier}} is about.
+
+## Major Beats
+- 3-7 bullets focused on plot-changing events
+
+## Character Dynamics
+- 1-2 short paragraphs on relationship, emotional, or motive changes
+
+## Key Exchanges
+- Up to 8 short exact quotes only if materially important
+
+## Outcome & Continuity
+- 4-8 bullets covering decisions, promises, unresolved threads, permanent consequences, and foreshadowed next steps
+
+Keywords must be concrete nouns, objects, places, proper nouns, or distinctive actions.
+Do not use abstract emotions, themes, or plot-summary phrases.
+
+Return only the JSON object. No markdown fences. No commentary.`,
+
+    'STMemoryBooks_SummaryPrompt_Alternate': `You are an expert narrative analyst and memory-engine assistant.
+Your task is to combine multiple {{stmbchildtier}} entries into a single coherent {{stmbtier}} summary.
+
+Return JSON only:
+{
+  "summaries": [
+    {
+      "title": "Short descriptive {{stmbtier}} title",
+      "summary": "Structured {{stmbtier}} summary",
+      "keywords": ["keyword1", "keyword2"],
+      "member_ids": ["<ID>", "..."]
+    }
+  ],
+  "unassigned_items": [
+    { "id": "item-id", "reason": "Why this item does not fit." }
+  ]
+}
+
+Requirements:
+- Respect chronology.
+- Keep the summary compact but preserve major plot and continuity.
+- Ignore OOC and flavor-only detail unless it affects future events.
+- Use member_ids whenever possible.
+- Return only valid JSON.`,
+
+    'STMemoryBooks_SummaryPrompt_Tiny': `You specialize in compressing many small {{stmbchildtier}} entries into compact, coherent {{stmbtier}} summaries.
+
+Return JSON only:
+{
+  "summaries": [
+    { "title": "...", "summary": "...", "keywords": ["..."], "member_ids": ["<ID>", "..."] }
+  ],
+  "unassigned_items": [
+    { "id": "...", "reason": "..." }
+  ]
+}
+
+Rules:
+- Focus on plot, emotional progression, decisions, conflicts, and continuity.
+- Keep compression aggressive but accurate.
+- Identify non-fitting items in unassigned_items.
+- No commentary outside JSON.`,
 
     // Chat Compile
     'chatcompile.errors.sceneMarkersRequired': 'Scene markers are required for compilation',
@@ -1381,3 +1222,4 @@ export const localeData = {
     // 'es-es': localeData_es,
     // etc.
 };
+

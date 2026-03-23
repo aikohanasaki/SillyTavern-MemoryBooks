@@ -14,6 +14,13 @@ import * as ArcPrompts from "./arcAnalysisPromptManager.js";
 import { upsertLorebookEntriesBatch } from "./addlore.js";
 import { extension_settings } from "../../../extensions.js";
 import { translate } from '../../../i18n.js';
+import {
+  getDefaultSummaryTitleFormat,
+  getSourceTierForTarget,
+  getSummaryTierLabel,
+  getSummaryTypeKey,
+  isSummaryEntry,
+} from "./summaryTiers.js";
 
 /**
  * Arc Analysis pipeline (stateless wrt model; stateful in controller).
@@ -27,7 +34,7 @@ import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = "STMemoryBooks-ArcAnalysis";
 
-const KEYWORD_PROMPT = `Based on this narrative arc summary, generate 15–30 standalone topical keywords that function as retrieval tags, not micro-summaries.
+const KEYWORD_PROMPT = `Based on this {{stmbtier}} summary, generate 15–30 standalone topical keywords that function as retrieval tags, not micro-summaries.
 Keywords must be:
 - Concrete and scene-specific (locations, objects, proper nouns, unique actions, repeated motifs).
 - One concept per keyword — do NOT combine multiple ideas into one keyword.
@@ -212,6 +219,28 @@ function stripTrailingCommas(s) {
   return out;
 }
 
+export function resolveSummaryPromptPlaceholders(
+  promptText,
+  { targetTier = 1, childTier = null, parentTier = null } = {},
+) {
+  const resolvedChildTier =
+    childTier === null || childTier === undefined
+      ? getSourceTierForTarget(targetTier)
+      : childTier;
+  const resolvedParentTier =
+    parentTier === null || parentTier === undefined ? targetTier + 1 : parentTier;
+  return String(promptText || "")
+    .replace(/\{\{\s*stmbtier\s*\}\}/gi, getSummaryTierLabel(targetTier))
+    .replace(
+      /\{\{\s*stmbchildtier\s*\}\}/gi,
+      getSummaryTierLabel(resolvedChildTier),
+    )
+    .replace(
+      /\{\{\s*stmbparenttier\s*\}\}/gi,
+      getSummaryTierLabel(resolvedParentTier),
+    );
+}
+
 /**
  * Keyword generation helpers
  */
@@ -275,11 +304,18 @@ function parseKeywordsResponse(text) {
   return sanitizeKeywordArray(items);
 }
 
-async function generateKeywordsForArc(summary, conn, options = {}) {
+export async function generateKeywordsForSummary(summary, conn, options = {}) {
   const runEpoch = options?.runEpoch ?? null;
   const signal = options?.signal ?? null;
+  const extra = options?.extra ?? {};
+  const targetTier = Number.isFinite(Number(options?.targetTier))
+    ? Math.trunc(Number(options.targetTier))
+    : 1;
   const base = String(summary || "").trim();
-  const prompt = `${KEYWORD_PROMPT}\n\n=== ARC SUMMARY ===\n${base}\n=== END SUMMARY ===`;
+  const keywordPrompt = resolveSummaryPromptPlaceholders(KEYWORD_PROMPT, {
+    targetTier,
+  });
+  const prompt = `${keywordPrompt}\n\n=== ${getSummaryTierLabel(targetTier).toUpperCase()} SUMMARY ===\n${base}\n=== END SUMMARY ===`;
   const { text } = await sendRawCompletionRequest({
     model: conn.model,
     prompt,
@@ -323,6 +359,10 @@ async function generateKeywordsForArc(summary, conn, options = {}) {
   return kw;
 }
 
+async function generateKeywordsForArc(summary, conn, options = {}) {
+  return generateKeywordsForSummary(summary, conn, { ...options, targetTier: 1 });
+}
+
 /**
  * Build briefs from lorebook memory entries (or pre-filtered selection).
  * Entry is expected to be a lorebook entry object with fields:
@@ -361,44 +401,67 @@ function extractNumberFromTitle(title) {
  * Build a single-string prompt for the model.
  * Includes previous arc summary if provided, then lists briefs.
  */
+export function buildSummaryAnalysisPrompt({
+  briefs,
+  previousSummary = null,
+  previousOrder = null,
+  promptText = null,
+  targetTier = 1,
+}) {
+  const header = resolveSummaryPromptPlaceholders(
+    promptText || getDefaultArcPrompt(),
+    { targetTier },
+  );
+  const targetLabel = getSummaryTierLabel(targetTier).toUpperCase();
+  const childTierLabel = getSummaryTierLabel(getSourceTierForTarget(targetTier));
+  const childLabel = childTierLabel.toUpperCase();
+  const childPlural =
+    /y$/i.test(childTierLabel) ? `${childTierLabel.slice(0, -1)}ies` : `${childTierLabel}s`;
+  const childPluralLabel = childPlural.toUpperCase();
+  const lines = [];
+  if (previousSummary) {
+    lines.push(
+      `=== PREVIOUS ${targetLabel} (CANON — DO NOT REWRITE, DO NOT INCLUDE IN YOUR NEW SUMMARY) ===`,
+    );
+    if (typeof previousOrder !== "undefined" && previousOrder !== null) {
+      lines.push(`${getSummaryTierLabel(targetTier)} ${previousOrder}`);
+    }
+    lines.push(previousSummary.trim());
+    lines.push(`=== END PREVIOUS ${targetLabel} ===`);
+    lines.push("");
+  }
+
+  lines.push(`=== ${childPluralLabel} ===`);
+  briefs.forEach((b, idx) => {
+    const memNo = String(idx + 1).padStart(3, "0"); // 001, 002, ...
+    const title = (b.title || "").toString().trim();
+    const content = (b.content || "").toString().trim();
+
+    lines.push(`=== ${childTierLabel} ${memNo} ===`);
+    lines.push(`Title: ${title}`);
+    lines.push(`Contents: ${content}`);
+    lines.push(`=== end ${childTierLabel} ${memNo} ===`);
+    lines.push("");
+  });
+  lines.push(`=== END ${childPluralLabel} ===`);
+  lines.push("");
+
+  return `${header}\n\n${lines.join("\n")}`;
+}
+
 export function buildArcAnalysisPrompt({
   briefs,
   previousArcSummary = null,
   previousArcOrder = null,
   promptText = null,
 }) {
-  const header = promptText || getDefaultArcPrompt();
-  const lines = [];
-  if (previousArcSummary) {
-    lines.push(
-      "=== PREVIOUS ARC (CANON — DO NOT REWRITE, DO NOT INCLUDE IN YOUR NEW SUMMARY) ===",
-    );
-    if (typeof previousArcOrder !== "undefined" && previousArcOrder !== null) {
-      lines.push(`Arc ${previousArcOrder}`);
-    }
-    lines.push(previousArcSummary.trim());
-    lines.push("=== END PREVIOUS ARC ===");
-    lines.push("");
-  }
-
-  // New: memory-by-memory blocks with titles
-  lines.push("=== MEMORIES ===");
-  briefs.forEach((b, idx) => {
-    const memNo = String(idx + 1).padStart(3, "0"); // 001, 002, ...
-    const title = (b.title || "").toString().trim();
-    const content = (b.content || "").toString().trim();
-
-    lines.push(`=== Memory ${memNo} ===`);
-    lines.push(`Title: ${title}`);
-    lines.push(`Contents: ${content}`);
-    lines.push(`=== end Memory ${memNo} ===`);
-    lines.push("");
+  return buildSummaryAnalysisPrompt({
+    briefs,
+    previousSummary: previousArcSummary,
+    previousOrder: previousArcOrder,
+    promptText,
+    targetTier: 1,
   });
-  lines.push("=== END MEMORIES ===");
-  lines.push("");
-
-  // The header already states JSON-only requirements and schema.
-  return `${header}\n\n${lines.join("\n")}`;
 }
 
 /**
@@ -409,7 +472,7 @@ export function buildArcAnalysisPrompt({
  *   "unassigned_memories": [ { "id": string, "reason": string } ]
  * }
  */
-export function parseArcJsonResponse(text) {
+export function parseSummaryJsonResponse(text) {
   if (!text || typeof text !== "string") {
     throw new Error(translate("Empty AI response", "STMemoryBooks_ArcAnalysis_EmptyResponse"));
   }
@@ -432,17 +495,23 @@ export function parseArcJsonResponse(text) {
       s = stripJsonComments(s);
       s = stripTrailingCommas(s);
       const obj = JSON.parse(s);
-      // Validate shape
       if (!obj || typeof obj !== "object") continue;
-      if (!("arcs" in obj) || !("unassigned_memories" in obj)) continue;
+      const hasSummaries = "summaries" in obj || "arcs" in obj;
+      const hasUnassigned =
+        "unassigned_items" in obj || "unassigned_memories" in obj;
+      if (!hasSummaries || !hasUnassigned) continue;
+      const summaries = Array.isArray(obj.summaries)
+        ? obj.summaries
+        : Array.isArray(obj.arcs)
+          ? obj.arcs
+          : [];
+      const unassigned = Array.isArray(obj.unassigned_items)
+        ? obj.unassigned_items
+        : Array.isArray(obj.unassigned_memories)
+          ? obj.unassigned_memories
+          : [];
 
-      const arcs = Array.isArray(obj.arcs) ? obj.arcs : [];
-      const unassigned = Array.isArray(obj.unassigned_memories)
-        ? obj.unassigned_memories
-        : [];
-
-      // Relaxed: accept arcs with missing/non-array keywords. We only require title + summary here.
-      const validArcs = arcs.filter(
+      const validSummaries = summaries.filter(
         (a) =>
           a &&
           typeof a.title === "string" &&
@@ -460,14 +529,22 @@ export function parseArcJsonResponse(text) {
       );
 
       return {
-        arcs: validArcs,
-        unassigned_memories: validUnassigned,
+        summaries: validSummaries,
+        unassigned_items: validUnassigned,
       };
     } catch {
       // try next candidate
     }
   }
   throw new Error(translate("Model did not return valid arc JSON", "STMemoryBooks_ArcAnalysis_InvalidJSON"));
+}
+
+export function parseArcJsonResponse(text) {
+  const parsed = parseSummaryJsonResponse(text);
+  return {
+    arcs: parsed.summaries,
+    unassigned_memories: parsed.unassigned_items,
+  };
 }
 
 /**
@@ -482,7 +559,7 @@ export function parseArcJsonResponse(text) {
  * }
  * profileOrConnection: profile object with effectiveConnection, or a direct connection object { api, model, temperature, endpoint?, apiKey? }
  */
-export async function runArcAnalysisSequential(
+export async function runSummaryAnalysisSequential(
   selectedEntries,
   options = {},
   profileOrConnection = null,
@@ -496,6 +573,7 @@ export async function runArcAnalysisSequential(
     maxPasses = 10,
     minAssigned = 2,
     tokenTarget,
+    targetTier = 1,
   } = options;
   const extra = options?.extra ?? {};
 
@@ -528,7 +606,7 @@ export async function runArcAnalysisSequential(
     .filter(Boolean);
   const allBriefs = buildBriefsFromEntries(rawEntries);
   const remainingMap = new Map(allBriefs.map((b) => [b.id, b]));
-  const acceptedArcs = [];
+  const acceptedSummaries = [];
   // Keep the latest raw model output for UX/debug (used when no usable arcs are produced).
   let lastRawText = "";
   let lastRetryRawText = "";
@@ -545,8 +623,8 @@ export async function runArcAnalysisSequential(
   // Resolve connection
   const conn = resolveConnection(profileOrConnection);
 
-  let previousArcSummary = null;
-  let previousArcOrderValue = null;
+  let previousSummary = null;
+  let previousOrderValue = null;
   let pass = 0;
   let carryBriefs = [];
 
@@ -587,11 +665,12 @@ export async function runArcAnalysisSequential(
     } catch {}
 
     // Token budgeting (simple heuristic): shrink batch if needed; raise budget for single large items
-    let prompt = buildArcAnalysisPrompt({
+    let prompt = buildSummaryAnalysisPrompt({
       briefs: batch, // use the current batch
-      previousArcSummary, // existing summary string
-      previousArcOrder: previousArcOrderValue, // numeric order of the previous arc, or null
+      previousSummary,
+      previousOrder: previousOrderValue,
       promptText: promptText,
+      targetTier,
     });
     let tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
     const origLen = batch.length;
@@ -599,11 +678,12 @@ export async function runArcAnalysisSequential(
     while (tokenEst.total > effectiveTokenTarget && batch.length > 1) {
       batch.pop();
       trimmed = true;
-      prompt = buildArcAnalysisPrompt({
+      prompt = buildSummaryAnalysisPrompt({
         briefs: batch,
-        previousArcSummary,
-        previousArcOrder: previousArcOrderValue,
+        previousSummary,
+        previousOrder: previousOrderValue,
         promptText: promptText,
+        targetTier,
       });      
     tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
     }
@@ -659,7 +739,7 @@ export async function runArcAnalysisSequential(
     // Parse response
     let parsed;
     try {
-      parsed = parseArcJsonResponse(text);
+      parsed = parseSummaryJsonResponse(text);
     } catch (e) {
       // Single retry with a minimal "return JSON only" reminder
       const repairPrompt = `${prompt}\n\nReturn ONLY the JSON object, nothing else. Ensure arrays and commas are valid.`;
@@ -684,7 +764,7 @@ export async function runArcAnalysisSequential(
       })();
       lastRetryRawText = String(retry?.text ?? "");
       try {
-        parsed = parseArcJsonResponse(retry.text);
+        parsed = parseSummaryJsonResponse(retry.text);
       } catch (e2) {
         const err = new Error(
           String(e2?.message || e?.message || "Model did not return valid arc JSON"),
@@ -713,8 +793,8 @@ export async function runArcAnalysisSequential(
 
     // Compute assigned set = batch - unassigned ids
     const unassignedIds = new Set();
-    if (Array.isArray(parsed.unassigned_memories)) {
-      parsed.unassigned_memories.forEach((u) => {
+    if (Array.isArray(parsed.unassigned_items)) {
+      parsed.unassigned_items.forEach((u) => {
         const rid = resolveId(u.id);
         if (rid) unassignedIds.add(rid);
       });
@@ -725,9 +805,9 @@ export async function runArcAnalysisSequential(
     // Parse/assignment debug
     try {
       console.debug(
-        "STMB ArcAnalysis: pass %d arcs=%d unassigned=%d assigned=%d",
+        "STMB ArcAnalysis: pass %d summaries=%d unassigned=%d assigned=%d",
         pass,
-        Array.isArray(parsed.arcs) ? parsed.arcs.length : 0,
+        Array.isArray(parsed.summaries) ? parsed.summaries.length : 0,
         unassignedIds.size,
         assigned.length,
       );
@@ -741,11 +821,10 @@ export async function runArcAnalysisSequential(
     // Accept multiple arcs per pass (if model returns more than one).
     // If arcs[].member_ids is present, use it to map memories to arcs.
     // Otherwise, fall back to assigning the whole 'assigned' set to each arc.
-    const arcs = Array.isArray(parsed.arcs) ? parsed.arcs : [];
+    const summaries = Array.isArray(parsed.summaries) ? parsed.summaries : [];
     const consumedIdSet = new Set();
-    let acceptedInPass = 0;
-    for (let i = 0; i < arcs.length; i++) {
-      const aobj = arcs[i];
+    for (let i = 0; i < summaries.length; i++) {
+      const aobj = summaries[i];
       if (
         !aobj ||
         typeof aobj.title !== "string" ||
@@ -769,7 +848,7 @@ export async function runArcAnalysisSequential(
       }
       if (memberIds.length === 0) continue;
 
-      acceptedArcs.push({
+      acceptedSummaries.push({
         order: pass * 10 + i, // stable ordering when multiple arcs in a pass
         title: aobj.title,
         summary: aobj.summary,
@@ -778,27 +857,22 @@ export async function runArcAnalysisSequential(
       });
 
       memberIds.forEach((id) => consumedIdSet.add(String(id)));
-      acceptedInPass++;
-      // Carry forward the last accepted summary as the "previous arc" canon
-      previousArcSummary = aobj.summary;
+      previousSummary = aobj.summary;
     }
 
-    // Update previousArcOrderValue for next pass (only if we accepted any arcs this pass)
-    if (acceptedArcs.length > 0) {
-      previousArcOrderValue = acceptedArcs[acceptedArcs.length - 1].order;
+    if (acceptedSummaries.length > 0) {
+      previousOrderValue = acceptedSummaries[acceptedSummaries.length - 1].order;
     } else {
-      previousArcOrderValue = null;
+      previousOrderValue = null;
     }
 
     // Remove consumed from remaining
     if (consumedIdSet.size > 0) {
       for (const id of consumedIdSet) remainingMap.delete(String(id));
       // If everything is consumed into a single arc, note and stop naturally
-      if (remainingMap.size === 0 && acceptedArcs.length === 1) {
+      if (remainingMap.size === 0 && acceptedSummaries.length === 1) {
         try {
-          console.info(
-            "STMB ArcAnalysis: all memories were consumed into a single arc.",
-          );
+          console.info("STMB ArcAnalysis: all items were consumed into a single summary.");
         } catch {}
       }
     } else {
@@ -829,7 +903,7 @@ export async function runArcAnalysisSequential(
 
   const leftovers = Array.from(remainingMap.values()).map((b) => b.id);
   return {
-    arcCandidates: acceptedArcs,
+    summaryCandidates: acceptedSummaries,
     leftovers,
     rawText: String(lastRawText ?? ""),
     retryRawText: String(lastRetryRawText ?? ""),
@@ -837,6 +911,22 @@ export async function runArcAnalysisSequential(
   } finally {
     parentTask.finish();
   }
+}
+
+export async function runArcAnalysisSequential(
+  selectedEntries,
+  options = {},
+  profileOrConnection = null,
+) {
+  const result = await runSummaryAnalysisSequential(
+    selectedEntries,
+    { ...options, targetTier: 1 },
+    profileOrConnection,
+  );
+  return {
+    ...result,
+    arcCandidates: result.summaryCandidates,
+  };
 }
 
 function resolveConnection(profileOrConnection) {
@@ -902,50 +992,39 @@ function resolveConnection(profileOrConnection) {
   };
 }
 
-/**
- * Extract ARC sequence number from an ARC entry title.
- * Supports "[ARC 001] ..." and "[ARC [001]] ..." formats.
- */
-function extractArcSequenceFromTitle(title) {
+function extractSummarySequenceFromTitle(title) {
   if (!title || typeof title !== "string") return null;
-  // Match [ARC 001] (single bracket)
-  let m = title.match(/\[ARC\s+(\d+)\]/i);
-  if (m) return parseInt(m[1], 10);
-  // Match [ARC [001]] (nested bracket)
-  m = title.match(/\[ARC\s+\[(\d+)\]\]/i);
-  if (m) return parseInt(m[1], 10);
+  const nested = title.match(/\[[^\]]*?\[(\d+)\][^\]]*?\]/);
+  if (nested) return parseInt(nested[1], 10);
+  const direct = title.match(/\[[^\]]*?(\d+)[^\]]*?\]/);
+  if (direct) return parseInt(direct[1], 10);
+  const leading = title.match(/^(\d+)[\s-]/);
+  if (leading) return parseInt(leading[1], 10);
   return null;
 }
 
-/**
- * Compute next ARC number by scanning existing ARC entries (stmbArc === true)
- */
-function getNextArcNumber(lorebookData) {
+export function getNextSummaryNumber(lorebookData, targetTier = 1) {
   const entries = Object.values(lorebookData?.entries || {});
   let maxNum = 0;
   for (const e of entries) {
-    if (e && e.stmbArc === true && typeof e.comment === "string") {
-      const n = extractArcSequenceFromTitle(e.comment);
-      if (typeof n === "number" && n > maxNum) maxNum = n;
-    }
+    if (!e || typeof e.comment !== "string") continue;
+    if (!isSummaryEntry(e)) continue;
+    if (Number(e.stmbSummaryTier) !== Number(targetTier)) continue;
+    const n = extractSummarySequenceFromTitle(e.comment);
+    if (typeof n === "number" && n > maxNum) maxNum = n;
   }
   return maxNum + 1;
 }
 
-/**
- * Format ARC title using a customizable format.
- * - Replaces the first bracketed zero-run like "[ARC 000]" by padding the sequence number to the same digit length.
- * - Replaces "{{title}}" with the base title.
- * Fallback: "[ARC XXX] Base Title" with 3 digits if no zero-run bracket found.
- */
-function formatArcTitle(format, baseTitle, seq) {
+export function formatSummaryTitle(targetTier, format, baseTitle, seq) {
   const safeTitle = String(baseTitle || "").trim();
-  let t = String(format || "").trim() || "[ARC 000] - {{title}}";
+  let t =
+    String(format || "").trim() ||
+    getDefaultSummaryTitleFormat(targetTier) ||
+    "[ARC 000] - {{title}}";
 
-  // Replace title placeholder
   t = t.replace(/\{\{\s*title\s*\}\}/g, safeTitle);
 
-  // Replace first bracket with zero-run inside, preserving any surrounding text within the bracket
   const m = t.match(/\[([^\]]*?)(0{2,})([^\]]*?)\]/);
   if (m) {
     const digits = m[2].length;
@@ -954,16 +1033,11 @@ function formatArcTitle(format, baseTitle, seq) {
     return t.replace(m[0], replaced);
   }
 
-  // Fallback to classic "[ARC 001] Title"
-  const fallback = `[ARC ${String(seq).padStart(3, "0")}] ${safeTitle}`;
+  const typeKey = String(getSummaryTypeKey(targetTier) || "tier").toUpperCase();
+  const fallback = `[${typeKey} ${String(seq).padStart(3, "0")}] ${safeTitle}`;
   return fallback;
 }
 
-/**
- * Commit accepted arcs into the lorebook.
- * arcCandidates: array of { title, summary, keywords, memberIds }
- * If disableOriginals=true, mark original entries disable=true and set disabledByArcId.
- */
 function computeArcEntryOrder({
   orderMode,
   orderValue,
@@ -1001,10 +1075,11 @@ function computeArcEntryOrder({
   return Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
 }
 
-export async function commitArcs({
+export async function commitSummaryEntries({
   lorebookName,
   lorebookData,
-  arcCandidates,
+  summaryCandidates,
+  targetTier = 1,
   disableOriginals = false,
   orderMode = "auto",
   orderValue = 100,
@@ -1018,34 +1093,44 @@ export async function commitArcs({
     }
     const results = [];
 
-    // Arc title format: allow user customization similar to memory titles, minimal wiring.
-    // Users can set extension_settings.STMemoryBooks.arcTitleFormat (e.g., "[ARC 000] - {{title}}").
-    const arcTitleFormat =
-      extension_settings?.STMemoryBooks?.arcTitleFormat ||
-      "[ARC 000] - {{title}}";
-    let nextArcNumber = getNextArcNumber(lorebookData);
+    const titleFormat =
+      Number(targetTier) === 1
+        ? extension_settings?.STMemoryBooks?.arcTitleFormat ||
+          getDefaultSummaryTitleFormat(targetTier)
+        : getDefaultSummaryTitleFormat(targetTier);
+    let nextSummaryNumber = getNextSummaryNumber(lorebookData, targetTier);
+    const tierLabel = getSummaryTierLabel(targetTier).toLowerCase();
 
     try {
       console.info(
-        "STMB ArcAnalysis: committing %d arc(s): %o",
-        arcCandidates.length,
-        arcCandidates.map((a) => a.title),
+        "STMB ArcAnalysis: committing %d %s summary(ies): %o",
+        summaryCandidates.length,
+        tierLabel,
+        summaryCandidates.map((a) => a.title),
       );
     } catch {}
-    for (const arc of arcCandidates) {
+    for (const summary of summaryCandidates) {
       throwIfStmbStopped(runEpoch);
-      const arcNumber = nextArcNumber++;
-      const title = formatArcTitle(arcTitleFormat, arc.title, arcNumber);
-      const content = arc.summary;
+      const summaryNumber = nextSummaryNumber++;
+      const title = formatSummaryTitle(
+        targetTier,
+        titleFormat,
+        summary.title,
+        summaryNumber,
+      );
+      const content = summary.summary;
 
-      // Auto-generate keywords if missing using the arc summary
-      let keywords = Array.isArray(arc.keywords) ? arc.keywords : [];
+      let keywords = Array.isArray(summary.keywords) ? summary.keywords : [];
       if (keywords.length === 0) {
         try {
           const conn = resolveConnection(null);
-          const task = createStmbInFlightTask(`ArcAnalysis:keywords:${arcNumber}`);
+          const task = createStmbInFlightTask(`ArcAnalysis:keywords:${summaryNumber}`);
           try {
-            keywords = await generateKeywordsForArc(content, conn, { runEpoch, signal: task.signal });
+            keywords = await generateKeywordsForSummary(content, conn, {
+              runEpoch,
+              signal: task.signal,
+              targetTier,
+            });
             task.throwIfStopped();
           } finally {
             task.finish();
@@ -1066,7 +1151,7 @@ export async function commitArcs({
         orderMode,
         orderValue,
         reverseStart,
-        orderNumber: arcNumber,
+        orderNumber: summaryNumber,
       });
       const defaults = {
         vectorized: true,
@@ -1076,10 +1161,10 @@ export async function commitArcs({
       };
       const entryOverrides = {
         stmemorybooks: true,
-        stmbArc: true,
-        type: "arc",
+        stmbSummary: true,
+        stmbSummaryTier: Number(targetTier),
+        type: getSummaryTypeKey(targetTier),
         key: Array.isArray(keywords) ? keywords : [],
-        // Keep consistent fields present in lorebook entries:
         disable: false,
       };
       throwIfStmbStopped(runEpoch);
@@ -1097,39 +1182,67 @@ export async function commitArcs({
         { refreshEditor: false },
       );
       const created = res && res[0];
-      const arcEntryId = created ? created.uid : null;
-      if (!arcEntryId) {
+      const summaryEntryId = created ? created.uid : null;
+      if (!summaryEntryId) {
         throw new Error(translate("Arc upsert returned no entry (commitArcs failed)", "STMemoryBooks_ArcAnalysis_UpsertFailed"));
       }
 
-      // If requested, disable originals by ID match (memberIds refer to entry.uid string)
-      if (disableOriginals && arcEntryId) {
+      if (disableOriginals && summaryEntryId) {
         throwIfStmbStopped(runEpoch);
-        const idSet = new Set(arc.memberIds.map(String));
+        const idSet = new Set((summary.memberIds || []).map(String));
         const entries = Object.values(lorebookData.entries || {});
         for (const e of entries) {
           if (idSet.has(String(e.uid))) {
             e.disable = true;
-            e.disabledByArcId = arcEntryId;
+            e.disabledBySummaryId = summaryEntryId;
           }
         }
       }
-      results.push({ arcEntryId, title });
+      results.push({ summaryEntryId, title, targetTier: Number(targetTier) });
     }
 
-    // Single save + refresh
     throwIfStmbStopped(runEpoch);
     await upsertLorebookEntriesBatch(lorebookName, lorebookData, [], {
       refreshEditor: true,
     });
     try {
       console.info(
-        "STMB ArcAnalysis: committed arc IDs: %o",
-        results.map((r) => r.arcEntryId),
+        "STMB ArcAnalysis: committed summary IDs: %o",
+        results.map((r) => r.summaryEntryId),
       );
     } catch {}
     return { results };
   } finally {
     parentTask.finish();
   }
+}
+
+export async function commitArcs({
+  lorebookName,
+  lorebookData,
+  arcCandidates,
+  disableOriginals = false,
+  orderMode = "auto",
+  orderValue = 100,
+  reverseStart = 9999,
+}) {
+  const result = await commitSummaryEntries({
+    lorebookName,
+    lorebookData,
+    summaryCandidates: arcCandidates,
+    targetTier: 1,
+    disableOriginals,
+    orderMode,
+    orderValue,
+    reverseStart,
+  });
+  return {
+    ...result,
+    results: Array.isArray(result?.results)
+      ? result.results.map((item) => ({
+          arcEntryId: item.summaryEntryId,
+          title: item.title,
+        }))
+      : [],
+  };
 }
