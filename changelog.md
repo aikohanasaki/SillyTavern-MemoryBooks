@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v5.2.2 (March 22, 2026)
+- Fix lorebookconverter.html to read conversion titles better.
+
 ## v5.2.1 (March 20, 2026)
 - Reorganized main settings popup for clarity.
 - Added some tooltips for clarity.

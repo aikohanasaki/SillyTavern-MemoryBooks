@@ -6250,7 +6250,7 @@ function showFailedAIResponsePopup(error) {
 }
 
 /**
- * Initialize the extension with BULLETPROOF settings management
+ * Initialize the extension
  */
 async function init() {
   if (hasBeenInitialized) return;
