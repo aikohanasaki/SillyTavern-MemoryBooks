@@ -6,6 +6,7 @@
 - Fix lorebookconverter.html to read conversion titles better.
 - Fix side prompts to throw error on blank response instead of overwriting with a blank entry.
 - Fix side prompts to use `/unhide` command as well so they can be run on hidden ranges.
+- Fix manual side prompts to re-hide messages that were originally hidden after a temporary `/unhide`.
 
 ## v5.2.1 (March 20, 2026)
 - Reorganized main settings popup for clarity.
