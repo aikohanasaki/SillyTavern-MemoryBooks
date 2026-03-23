@@ -76,19 +76,68 @@ function countVisibleMessagesSince(exclusiveStart, inclusiveEnd) {
 }
 
 /**
+ * Capture contiguous hidden ranges so a temporary /unhide can be restored.
+ */
+function collectHiddenRanges(start, end) {
+    const ranges = [];
+    let rangeStart = null;
+
+    for (let i = start; i <= end && i < chat.length; i++) {
+        const isHidden = !!chat[i]?.is_system;
+        if (isHidden) {
+            if (rangeStart === null) rangeStart = i;
+            continue;
+        }
+        if (rangeStart !== null) {
+            ranges.push({ start: rangeStart, end: i - 1 });
+            rangeStart = null;
+        }
+    }
+
+    if (rangeStart !== null) {
+        ranges.push({ start: rangeStart, end: end });
+    }
+
+    return ranges;
+}
+
+/**
+ * Restore previously hidden ranges after a temporary /unhide.
+ */
+async function restoreHiddenRanges(hiddenRanges) {
+    for (const range of hiddenRanges) {
+        try {
+            await executeSlashCommands(`/hide ${range.start}-${range.end}`);
+        } catch (err) {
+            console.warn(`${MODULE_NAME}: /hide command failed while restoring hidden range ${range.start}-${range.end}:`, err);
+        }
+    }
+}
+
+/**
  * Compile a scene safely for [start, end], optionally unhiding the range first
  * when the global unhide-before-memory setting is enabled.
  */
 async function compileRange(start, end) {
-    if (extension_settings?.STMemoryBooks?.moduleSettings?.unhideBeforeMemory) {
+    const shouldTemporarilyUnhide = !!extension_settings?.STMemoryBooks?.moduleSettings?.unhideBeforeMemory;
+    const hiddenRanges = shouldTemporarilyUnhide ? collectHiddenRanges(start, end) : [];
+
+    if (shouldTemporarilyUnhide && hiddenRanges.length > 0) {
         try {
             await executeSlashCommands(`/unhide ${start}-${end}`);
         } catch (err) {
             console.warn(`${MODULE_NAME}: /unhide command failed or unavailable:`, err);
         }
     }
-    const req = createSceneRequest(start, end);
-    return compileScene(req);
+
+    try {
+        const req = createSceneRequest(start, end);
+        return compileScene(req);
+    } finally {
+        if (hiddenRanges.length > 0) {
+            await restoreHiddenRanges(hiddenRanges);
+        }
+    }
 }
 
 /**
