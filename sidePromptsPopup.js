@@ -303,6 +303,15 @@ async function openEditTemplate(parentPopup, key) {
                     <span>${escapeHtml(translate('Allow manual run via /sideprompt', 'STMemoryBooks_AllowManualRunViaSideprompt'))}</span>
                 </label>
             </div>
+
+            <div class="world_entry_form_control">
+                <label for="stmb-sp-edit-prev-mem-count">
+                    <h5>${escapeHtml(translate('Previous memories for context:', 'STMemoryBooks_PreviousMemoriesForContext'))}</h5>
+                    <input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${prevMemCount}">
+                </label>
+                <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
+            </div>
+
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-prompt">
                     <h4>${escapeHtml(translate('Prompt:', 'STMemoryBooks_PromptTitle'))}</h4>
@@ -318,28 +327,32 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
             <div class="world_entry_form_control">
-                <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
-                <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
+                <h4 class="stmb-section-title">${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}</h4>
                 <label for="stmb-sp-edit-lb-entry-title-override">
                     <h5 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Title Override', 'STMemoryBooks_LorebookEntryTitleOverride'))}</h5>
+                    <small class="opacity70p">${escapeHtml(translate('Optional. Standard ST macros and required runtime macros are resolved here, and STMB still appends (STMB SidePrompt).', 'STMemoryBooks_LorebookEntryTitleOverrideHelp'))}</small>
                     <input type="text" id="stmb-sp-edit-lb-entry-title-override" class="text_pole" value="${escapeHtml(lbEntryTitleOverride)}" placeholder="${escapeHtml(translate('Optional title template (e.g., NPC {{npcname}})', 'STMemoryBooks_LorebookEntryTitleOverridePlaceholder'))}">
                 </label>
                 <label for="stmb-sp-edit-lb-entry-keywords">
                     <h5 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Lorebook Entry Keywords', 'STMemoryBooks_LorebookEntryKeywords'))}</h5>
+                    <small class="opacity70p">${escapeHtml(translate('Optional. If filled in, these keywords are applied to the upserted lorebook entry. You may only use macros already present in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsHelp'))}</small>
                     <input type="text" id="stmb-sp-edit-lb-entry-keywords" class="text_pole" value="${escapeHtml(lbEntryKeywords)}" placeholder="${escapeHtml(translate('Optional comma-separated keywords', 'STMemoryBooks_LorebookEntryKeywordsPlaceholder'))}" title="${escapeHtml(translate('You can only use ST standard macros or macros already defined in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsTooltip'))}">
                 </label>
-                <small class="opacity70p">${escapeHtml(translate('Optional. If filled in, these keywords are applied to the upserted lorebook entry. You may only use macros already present in Prompt or Response Format.', 'STMemoryBooks_LorebookEntryKeywordsHelp'))}</small>
             </div>
             <div class="world_entry_form_control">
                 <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                     <label>
-                        <h5 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}:</h5>
+                        <h5 style="margin: 0 0 4px 0;">${escapeHtml(translate('Activation Mode', 'STMemoryBooks_ActivationMode'))}</h5>
                         <select id="stmb-sp-edit-lb-mode" class="text_pole">
                             <option value="link" ${lbMode === 'link' ? 'selected' : ''}>${escapeHtml(translate('🔗 Vectorized (Default)', 'STMemoryBooks_Vectorized'))}</option>
                             <option value="green" ${lbMode === 'green' ? 'selected' : ''}>${escapeHtml(translate('🟢 Normal', 'STMemoryBooks_Normal'))}</option>
                             <option value="blue" ${lbMode === 'blue' ? 'selected' : ''}>${escapeHtml(translate('🔵 Constant', 'STMemoryBooks_Constant'))}</option>
                         </select>
                     </label>
+                </div>
+            </div>
+            <div class="world_entry_form_control">
+                <div class="flex-container" style="gap:12px; flex-wrap: wrap;">
                     <label>
                         <h5 style="margin: 12px 0 4px 0;">${escapeHtml(translate('Insertion Position:', 'STMemoryBooks_InsertionPosition'))}</h5>
                         <select id="stmb-sp-edit-lb-position" class="text_pole">
@@ -392,14 +405,6 @@ async function openEditTemplate(parentPopup, key) {
                         <span>${escapeHtml(translate('Ignore Budget', 'STMemoryBooks_IgnoreBudget'))}</span>
                     </label>
                 </div>
-            </div>
-
-            <div class="world_entry_form_control">
-                <label for="stmb-sp-edit-prev-mem-count">
-                    <h5>${escapeHtml(translate('Previous memories for context:', 'STMemoryBooks_PreviousMemoriesForContext'))}</h5>
-                    <input type="number" id="stmb-sp-edit-prev-mem-count" class="text_pole" min="0" max="7" step="1" value="${prevMemCount}">
-                </label>
-                <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
             </div>
 
             <div class="world_entry_form_control">

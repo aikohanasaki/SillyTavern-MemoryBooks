@@ -1,10 +1,10 @@
 # 📕 Memory Books (SillyTavern 擴充功能)
 
-這是 SillyTavern 的次世代擴充功能，用於自動、結構化且可靠的記憶創建。在聊天中標記場景，使用 AI 生成基於 JSON 的總結，並將其作為「[向量化](#vectorized)」條目儲存在你的世界書（Lorebooks）中。支援群組聊天、進階設定檔管理以及穩定的 API/模型處理。
+這是 SillyTavern 的次世代擴充功能，用於自動、結構化且可靠的記憶創建。在聊天中標記場景，使用 AI 生成基於 JSON 的總結，並將其儲存在你的世界書（Lorebooks）中。支援群組聊天、進階設定檔管理、側邊提示詞/追蹤器，以及多層級記憶整合。
 
 ### ❓ 詞彙表
 - Scene (場景) → Memory (記憶)
-- Many Scenes (多個場景) → Arc Summary (篇章總結)
+- Many Memories (多個記憶) → Summary / Consolidation (總結 / 整合)
 - Always-On (常駐) → Side Prompt (Tracker) (側邊提示詞/追蹤器)
 
 ## ❗ 請先閱讀！
@@ -15,7 +15,7 @@
 * 🛠️ [疑難排解 (Troubleshooting)](#Troubleshooting)
 
 其他連結：
-* 📘 [使用者指南 (英文)](USER_GUIDE.md)
+* 📘 [使用者指南 (繁體中文)](USER_GUIDE-zh-tw.md)
 * 📋 [版本歷史與更新日誌](changelog.md)
 * 💡 [配合 📚 世界書排序 (STLO) 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -159,35 +159,41 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 🧭 篇章總結 (Arc Summaries) *(Beta 測試中)*
+### 🌈 總結整合 (Summary Consolidation)
 
-篇章總結捕捉跨越多個場景後 **隨時間發生了什麼變化**。
+總結整合捕捉跨越多個記憶或總結後 **隨時間發生了什麼變化**。
 
-與總結事件不同，篇章總結專注於：
+與總結事件不同，總結整合專注於：
 
 * 角色發展和關係轉變
 * 長期目標、緊張局勢和解決方案
 * 情感軌跡和敘事方向
 * 應該保持穩定的持久狀態變化
 
-篇章總結是 **更高層次、較低頻率的記憶**，旨在防止長期聊天中的角色漂移和敘事遺失。
+總結整合是 **更高層次、較低頻率的記憶**，旨在防止長期聊天中的角色漂移和敘事遺失。
 
-> 💡 把篇章總結想成是 *季度回顧*，而不是場景日誌。
+> 💡 把總結整合想成是 *季度回顧*，而不是場景日誌。
 
-#### 何時使用篇章總結
+#### 何時使用總結整合
 
 * 在重大的關係轉變之後
 * 在故事章節或篇章結束時
 * 當動機、信任或權力動態改變時
 * 在開始故事的新階段之前
 
-#### Beta 測試說明
+#### 運作方式
 
-* 篇章總結對提示詞 (prompt) 敏感且特意設計得較為保守
+* 總結整合不是直接從原始聊天生成，而是從現有的 STMB 記憶/總結生成。
+* **Consolidate Memories** 工具可讓你選擇目標總結階層與來源條目。
+* 當所選階層達到其儲存的最小有效來源數量時，STMB 會在需要時顯示 yes/later 確認。
+* 如有需要，可以在整合後停用來源條目。
+* AI 總結失敗可以在 UI 中檢視並修正後重新提交。
+
+#### 舊 Beta 測試說明
+
+* 總結整合對提示詞 (prompt) 敏感且特意設計得較為保守
 * 建議在提交到世界書之前進行審閱
 * 最好搭配較低優先順序或 meta 風格的世界書條目使用
-
-篇章總結是 **從現有的場景記憶** 生成的，而不是直接從原始聊天記錄生成。
 
 這帶給你：
 
@@ -220,6 +226,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 3. **Synopsis:** 全面、結構化的 Markdown。
 4. **Sum Up:** 帶有時間線的簡明節點總結。
 5. **Minimal:** 1-2 句話的總結。
+6. **Northgate:** 面向創作的文學風格總結。
+7. **Aelemar:** 著重情節重點與角色記憶。
+8. **Comprehensive:** 更適合關鍵字抽取的 synopsis 風格總結。
 
 ### **自訂提示詞**
 
@@ -280,13 +289,13 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🧠 Regex (正規表達式) 整合與進階自訂
 
-* **完全控制文字處理**: Memory Books 現在與 SillyTavern 的 **Regex** 擴充功能整合，允許你在兩個關鍵階段應用強大的文字轉換：
-1. **提示詞生成 (Prompt Generation)**: 透過建立針對 **User Input (使用者輸入)** 位置的 regex 腳本，自動修改發送給 AI 的提示詞。
-2. **回應解析 (Response Parsing)**: 透過針對 **AI Output (AI 輸出)** 位置，在儲存之前清理、重新格式化或標準化 AI 的原始回應。
+* **完全控制文字處理**: Memory Books 現在與 SillyTavern 的 **Regex** 擴充功能整合，允許你在送出前和解析前兩個關鍵階段應用文字轉換。
+1. **提示詞生成 (Prompt Generation)**: 使用針對 **User Input (使用者輸入)** 的腳本，自動修改發送給 AI 的提示詞。
+2. **回應解析 (Response Parsing)**: 使用針對 **AI Output (AI 輸出)** 的腳本，在儲存前清理、重新格式化或標準化 AI 的原始回應。
 
 
-* **支援多重選擇**: 你現在可以多選 regex 腳本。所有啟用的腳本將在每個階段（提示詞生成和回應解析）依序應用，允許進階且靈活的轉換。
-* **如何運作**: 整合是無縫的。只需在 Regex 擴充功能中建立並啟用（多選）你想要的腳本，Memory Books 就會在記憶和側邊提示詞創建期間自動應用它們。
+* **支援多重選擇**: 你可以在 STMB 的選擇彈窗中多選腳本。
+* **如何運作**: STMB 會管理你選中的腳本，並在送出前和解析前依序套用。即使 Regex 擴充功能中這些腳本已被停用，只要在 STMB 中選中，它們仍會執行。
 
 ---
 
@@ -316,13 +325,19 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Token Warning Threshold (Token 警告閾值):** 設定大型場景的警告級別（預設：30,000）。
 * **Default Previous Memories (預設前序記憶):** 作為上下文包含的先前記憶數量 (0-7)。
 * **Auto-create memory summaries (自動創建記憶總結):** 啟用間隔自動創建記憶。
-* **Auto-Summary Interval (自動總結間隔):** 自動創建記憶總結的訊息間隔數（10-200，預設：100）。
+* **Auto-Summary Interval (自動總結間隔):** 自動創建記憶總結的訊息間隔數。
+* **Auto-Summary Buffer:** 可延後指定訊息數才自動總結。
+* **Prompt for consolidation when a tier is ready:** 當所選總結階層達到足夠的有效來源數量時顯示 yes/later 確認。
+* **Auto-Consolidation Tiers:** 選擇哪些總結階層應在達標時觸發確認提示。目前支援 Arc 到 Series。
+* **Unhide hidden messages before memory generation:** 可在建立記憶前執行 `/unhide X-Y`。
+* **Auto-hide messages after adding memory:** 可選擇隱藏所有已處理訊息，或只隱藏最近的記憶範圍。
+* **Use regex (advanced):** 啟用 STMB 的 regex 選擇彈出視窗（送出/解析處理）。
 * **Memory Title Format (記憶標題格式):** 選擇或自訂（見下文）。
 
 ### **設定檔欄位 (Profile Fields)**
 
 * **Name (名稱):** 顯示名稱。
-* **API/Provider (API/提供者):** openai, claude, custom 等。
+* **API/Provider (API/提供者):** `Current SillyTavern Settings`、openai、claude、custom、full manual 等。
 * **Model (模型):** 模型名稱 (例如：gpt-4, claude-3-opus)。
 * **Temperature (溫度):** 0.0–2.0。
 * **Prompt or Preset (提示詞或預設組):** 自訂或內建。

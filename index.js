@@ -327,6 +327,8 @@ const defaultSettings = {
     autoSummaryEnabled: false,
     autoSummaryInterval: 50,
     autoSummaryBuffer: 2,
+    autoConsolidationPromptEnabled: false,
+    autoConsolidationTargetTiers: [1],
     autoCreateLorebook: false,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     useRegex: false,
@@ -1223,6 +1225,15 @@ function validateSettings(settings) {
   }
 
   settings.moduleSettings.autoSummaryBuffer = clampInt(settings.moduleSettings.autoSummaryBuffer ?? 0, 0, 50);
+  if (settings.moduleSettings.autoConsolidationPromptEnabled === undefined) {
+    settings.moduleSettings.autoConsolidationPromptEnabled = false;
+  }
+  settings.moduleSettings.autoConsolidationTargetTiers =
+    normalizeAutoConsolidationTargetTiers(
+      settings.moduleSettings.autoConsolidationTargetTiers ??
+        settings.moduleSettings.autoConsolidationTargetTier,
+      { fallback: [1] },
+    );
 
   // Validate auto-create lorebook setting - always defaults to false
   if (settings.moduleSettings.autoCreateLorebook === undefined) {
@@ -1867,6 +1878,7 @@ async function executeMemoryGeneration(
       __st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`,
       "STMemoryBooks",
     );
+    await maybePromptAutoConsolidation(1, lorebookValidation);
   } catch (error) {
     if (isStmbStopError(error)) {
       return;
@@ -3738,10 +3750,162 @@ function pluralizeSummaryLabel(label) {
   return `${raw}s`;
 }
 
+function normalizeAutoConsolidationTargetTiers(value, options = {}) {
+  const fallback = Array.isArray(options?.fallback)
+    ? options.fallback
+    : [1];
+
+  if (value === undefined || value === null) {
+    return [...fallback];
+  }
+
+  const isExplicitCollection =
+    Array.isArray(value) || typeof value === "string";
+  const rawValues = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[,\s]+/g)
+      : [value];
+  const normalized = Array.from(
+    new Set(
+      rawValues
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item))
+        .map((item) => clampInt(Math.trunc(item), 1, 5))
+        .filter((item) => item >= 1 && item <= 5),
+    ),
+  ).sort((a, b) => a - b);
+  if (normalized.length) {
+    return normalized;
+  }
+  return isExplicitCollection ? [] : [...fallback];
+}
+
+function getSummaryTierOptions() {
+  return STMB_SUMMARY_TIERS.filter((cfg) => cfg.tier >= 1 && cfg.tier <= 6).map(
+    (cfg) => ({
+      value: cfg.tier,
+      label: `${cfg.tier} - ${cfg.label}`,
+    }),
+  );
+}
+
+function getAutoConsolidationTierOptions() {
+  return getSummaryTierOptions().filter((option) => Number(option.value) <= 5);
+}
+
+async function maybePromptAutoConsolidation(targetTier, lorebookValidation = null) {
+  try {
+    const settings = initializeSettings();
+    if (!settings?.moduleSettings?.autoConsolidationPromptEnabled) {
+      return;
+    }
+
+    const normalizedTargetTier = clampInt(Number(targetTier), 1, 6);
+    const configuredTargetTiers = normalizeAutoConsolidationTargetTiers(
+      settings.moduleSettings.autoConsolidationTargetTiers ??
+        settings.moduleSettings.autoConsolidationTargetTier,
+    );
+    if (!configuredTargetTiers.includes(normalizedTargetTier)) {
+      return;
+    }
+
+    const sourceTier = getSourceTierForTarget(normalizedTargetTier);
+    const lorebookState =
+      lorebookValidation && lorebookValidation.valid
+        ? lorebookValidation
+        : await validateLorebook(true);
+    if (!lorebookState?.valid || !lorebookState?.data) {
+      return;
+    }
+
+    const lorebookData = lorebookState.data;
+    if (migrateLorebookSummarySchema(lorebookData)) {
+      await saveWorldInfo(lorebookState.name, lorebookData, true);
+    }
+
+    const requiredMin = clampInt(
+      Number(
+        settings.moduleSettings.summaryTierMinimums?.[normalizedTargetTier] ??
+          getDefaultSummaryMinChildren(normalizedTargetTier),
+      ),
+      1,
+      50,
+    );
+    const eligibleCount = Object.values(lorebookData.entries || {}).filter((entry) =>
+      isEligibleSummarySourceEntry(entry, sourceTier),
+    ).length;
+    if (eligibleCount < requiredMin) {
+      return;
+    }
+
+    const stmbData = getSceneMarkers() || {};
+    const promptKey = `${normalizedTargetTier}:${eligibleCount}`;
+    if (stmbData.autoConsolidationLastPromptKey === promptKey) {
+      return;
+    }
+    stmbData.autoConsolidationLastPromptKey = promptKey;
+    saveMetadataForCurrentContext();
+
+    const sourceLabel = getSummaryTierLabel(sourceTier).toLowerCase();
+    const sourcePlural = pluralizeSummaryLabel(sourceLabel).toLowerCase();
+    const targetLabel = getSummaryTierLabel(normalizedTargetTier).toLowerCase();
+    const content = `
+      <h3>${escapeHtml(translate("Consolidation Available", "STMemoryBooks_AutoConsolidationPrompt_Title"))}</h3>
+      <p>${escapeHtml(
+        tr(
+          "STMemoryBooks_AutoConsolidationPrompt_Body",
+          "You now have {{count}} eligible {{sourcePlural}}. That meets the minimum of {{min}} needed to create a {{targetLabel}}.",
+          {
+            count: eligibleCount,
+            sourcePlural,
+            min: requiredMin,
+            targetLabel,
+          },
+        ),
+      )}</p>
+      <p class="opacity70p">${escapeHtml(
+        translate(
+          "Open Consolidate Memories now?",
+          "STMemoryBooks_AutoConsolidationPrompt_Question",
+        ),
+      )}</p>
+    `;
+
+    const popup = new Popup(content, POPUP_TYPE.CONFIRM, "", {
+      okButton: translate(
+        "Open Consolidation",
+        "STMemoryBooks_OpenConsolidation",
+      ),
+      cancelButton: translate("Later", "STMemoryBooks_Later"),
+    });
+    const result = await popup.show();
+    if (result === POPUP_RESULT.AFFIRMATIVE) {
+      await showSummaryConsolidationPopup({
+        initialTargetTier: normalizedTargetTier,
+      });
+    }
+  } catch (error) {
+    console.error("STMemoryBooks: Auto-consolidation prompt check failed:", error);
+  }
+}
+
+function clearAutoConsolidationPromptState(targetTier) {
+  const stmbData = getSceneMarkers() || {};
+  const prefix = `${clampInt(Number(targetTier), 1, 6)}:`;
+  if (
+    typeof stmbData.autoConsolidationLastPromptKey === "string" &&
+    stmbData.autoConsolidationLastPromptKey.startsWith(prefix)
+  ) {
+    delete stmbData.autoConsolidationLastPromptKey;
+    saveMetadataForCurrentContext();
+  }
+}
+
 /**
  * Show summary consolidation popup
  */
-async function showSummaryConsolidationPopup() {
+async function showSummaryConsolidationPopup(popupOptions = {}) {
   try {
     // Do not auto-create a lorebook for this path; allow UI to render
     const lorebookValidation = await validateLorebook(true);
@@ -3793,7 +3957,12 @@ async function showSummaryConsolidationPopup() {
     const arcReverseStart = Number.isFinite(Number(settings?.moduleSettings?.summaryReverseStart))
       ? Math.trunc(Number(settings.moduleSettings.summaryReverseStart))
       : 9999;
-    const tierOptions = STMB_SUMMARY_TIERS.filter((cfg) => cfg.tier >= 1 && cfg.tier <= 6);
+    const tierOptions = getSummaryTierOptions();
+    const initialTargetTier = clampInt(
+      Number(popupOptions?.initialTargetTier ?? 1),
+      1,
+      6,
+    );
 
     let content = "";
     content += `<h3>${escapeHtml(translate("Consolidate Memories", "STMemoryBooks_ConsolidateArcs_Title"))}</h3>`;
@@ -3802,8 +3971,8 @@ async function showSummaryConsolidationPopup() {
     content += `<label><strong>${escapeHtml(translate("Summary Tier", "STMemoryBooks_SummaryTier_Label"))}:</strong> `;
     content += '<select id="stmb-summary-tier" class="text_pole">';
     for (const cfg of tierOptions) {
-      const selected = cfg.tier === 1 ? " selected" : "";
-      content += `<option value="${cfg.tier}"${selected}>${escapeHtml(`${cfg.tier} - ${cfg.label}`)}</option>`;
+      const selected = Number(cfg.value) === initialTargetTier ? " selected" : "";
+      content += `<option value="${cfg.value}"${selected}>${escapeHtml(cfg.label)}</option>`;
     }
     content += "</select></label></div>";
 
@@ -3936,12 +4105,11 @@ async function showSummaryConsolidationPopup() {
         for (const e of candidates) {
           const title = e.comment || "(untitled)";
           const uid = String(e.uid);
-          const ord = parseOrder(title);
           const row = document.createElement("label");
           row.className = "flex-container flexGap10";
           row.style.alignItems = "center";
           row.style.margin = "2px 0";
-          row.innerHTML = `<input type="checkbox" class="stmb-arc-item" value="${escapeHtml(uid)}" checked /> <span class="opacity70p">[${String(ord).padStart(3, "0")}]</span> <span>${escapeHtml(title)}</span>`;
+          row.innerHTML = `<input type="checkbox" class="stmb-arc-item" value="${escapeHtml(uid)}" checked /> <span>${escapeHtml(title)}</span>`;
           listEl.appendChild(row);
         }
       }
@@ -4319,6 +4487,14 @@ async function showSummaryConsolidationPopup() {
         toastr.clear(lastArcFailureToast);
       } catch (e) {}
       lastArcFailureToast = null;
+      clearAutoConsolidationPromptState(targetTier);
+      if (targetTier < 6) {
+        await maybePromptAutoConsolidation(targetTier + 1, {
+          valid: true,
+          name: lorebookName,
+          data: lorebookData,
+        });
+      }
     } catch (e) {
       if (isStmbStopError(e)) {
         return;
@@ -4339,6 +4515,41 @@ async function showSummaryConsolidationPopup() {
 
 async function showArcConsolidationPopup() {
   return showSummaryConsolidationPopup();
+}
+
+function initializeSettingsPopupSelect2() {
+  if (!currentPopupInstance?.dlg) return;
+
+  setTimeout(() => {
+    try {
+      if (!window.jQuery || typeof window.jQuery.fn.select2 !== "function") {
+        return;
+      }
+
+      const $select = window.jQuery("#stmb-auto-consolidation-target-tier");
+      if (!$select.length) return;
+
+      if ($select.hasClass("select2-hidden-accessible")) {
+        $select.select2("destroy");
+      }
+
+      $select.select2({
+        width: "100%",
+        placeholder: translate(
+          "Select tiers…",
+          "STMemoryBooks_AutoConsolidationTierPlaceholder",
+        ),
+        closeOnSelect: false,
+        allowClear: true,
+        dropdownParent: window.jQuery(currentPopupInstance.dlg),
+      });
+    } catch (error) {
+      console.warn(
+        "STMemoryBooks: Settings Select2 initialization failed (using native select)",
+        error,
+      );
+    }
+  }, 0);
 }
 
 /**
@@ -4417,10 +4628,24 @@ async function showSettingsPopup() {
     autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
     autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
+    autoConsolidationPromptEnabled:
+      settings.moduleSettings.autoConsolidationPromptEnabled ?? false,
+    autoConsolidationTargetTiers: normalizeAutoConsolidationTargetTiers(
+      settings.moduleSettings.autoConsolidationTargetTiers ??
+        settings.moduleSettings.autoConsolidationTargetTier,
+    ),
     autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
     lorebookNameTemplate:
       settings.moduleSettings.lorebookNameTemplate ||
       "LTM - {{char}} - {{chat}}",
+    autoConsolidationTierOptions: getAutoConsolidationTierOptions().map((option) => ({
+      ...option,
+      isSelected:
+        normalizeAutoConsolidationTargetTiers(
+          settings.moduleSettings.autoConsolidationTargetTiers ??
+            settings.moduleSettings.autoConsolidationTargetTier,
+        ).includes(Number(option.value)),
+    })),
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
       name:
@@ -4563,6 +4788,7 @@ async function showSettingsPopup() {
     );
     setupSettingsEventListeners();
     populateInlineButtons();
+    initializeSettingsPopupSelect2();
     await currentPopupInstance.show();
   } catch (error) {
     console.error("STMemoryBooks: Error showing settings popup:", error);
@@ -4917,6 +5143,22 @@ function setupSettingsEventListeners() {
       return;
     }
 
+    if (e.target.matches("#stmb-auto-consolidation-prompt-enabled")) {
+      settings.moduleSettings.autoConsolidationPromptEnabled = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-auto-consolidation-target-tier")) {
+      const value = normalizeAutoConsolidationTargetTiers(
+        Array.from(e.target.selectedOptions || []).map((option) => option.value),
+        { fallback: [] },
+      );
+      settings.moduleSettings.autoConsolidationTargetTiers = value;
+      saveSettingsDebounced();
+      return;
+    }
+
     if (e.target.matches("#stmb-max-tokens")) {
       const value = readIntInput(e.target, DEFAULT_MAX_TOKENS);
       settings.moduleSettings.maxTokens =
@@ -5052,6 +5294,16 @@ function persistMainPopupSettings(popupElement) {
     0,
     50,
   );
+  const autoConsolidationPromptEnabled =
+    popupElement.querySelector("#stmb-auto-consolidation-prompt-enabled")
+      ?.checked ?? settings.moduleSettings.autoConsolidationPromptEnabled;
+  const autoConsolidationTargetTiers = normalizeAutoConsolidationTargetTiers(
+    Array.from(
+      popupElement.querySelector("#stmb-auto-consolidation-target-tier")
+        ?.selectedOptions ?? [],
+    ).map((option) => option.value),
+    { fallback: [] },
+  );
   const maxTokens = readIntInput(
     popupElement.querySelector("#stmb-max-tokens"),
     DEFAULT_MAX_TOKENS,
@@ -5144,6 +5396,29 @@ function persistMainPopupSettings(popupElement) {
 
   if (autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer) {
     settings.moduleSettings.autoSummaryBuffer = autoSummaryBuffer;
+    hasChanges = true;
+  }
+
+  if (
+    autoConsolidationPromptEnabled !==
+    settings.moduleSettings.autoConsolidationPromptEnabled
+  ) {
+    settings.moduleSettings.autoConsolidationPromptEnabled =
+      autoConsolidationPromptEnabled;
+    hasChanges = true;
+  }
+
+  if (
+    JSON.stringify(autoConsolidationTargetTiers) !==
+    JSON.stringify(
+      normalizeAutoConsolidationTargetTiers(
+        settings.moduleSettings.autoConsolidationTargetTiers ??
+          settings.moduleSettings.autoConsolidationTargetTier,
+      ),
+    )
+  ) {
+    settings.moduleSettings.autoConsolidationTargetTiers =
+      autoConsolidationTargetTiers;
     hasChanges = true;
   }
 
@@ -5254,10 +5529,24 @@ async function refreshPopupContent() {
       autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
       autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
       autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 0,
+      autoConsolidationPromptEnabled:
+        settings.moduleSettings.autoConsolidationPromptEnabled ?? false,
+      autoConsolidationTargetTiers: normalizeAutoConsolidationTargetTiers(
+        settings.moduleSettings.autoConsolidationTargetTiers ??
+          settings.moduleSettings.autoConsolidationTargetTier,
+      ),
       autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
       lorebookNameTemplate:
         settings.moduleSettings.lorebookNameTemplate ||
         "LTM - {{char}} - {{chat}}",
+      autoConsolidationTierOptions: getAutoConsolidationTierOptions().map((option) => ({
+        ...option,
+        isSelected:
+          normalizeAutoConsolidationTargetTiers(
+            settings.moduleSettings.autoConsolidationTargetTiers ??
+              settings.moduleSettings.autoConsolidationTargetTier,
+          ).includes(Number(option.value)),
+      })),
       profiles: settings.profiles.map((profile, index) => ({
         ...profile,
         name:
@@ -5329,6 +5618,7 @@ async function refreshPopupContent() {
 
     // Repopulate profile buttons after content refresh
     populateInlineButtons();
+    initializeSettingsPopupSelect2();
   } catch (error) {
     console.error("STMemoryBooks: Error refreshing popup content:", error);
   }
@@ -6066,6 +6356,14 @@ async function applyManualFixedSummaryJson(correctedRaw) {
       toastr.clear(lastArcFailureToast);
     } catch (e) {}
     lastArcFailureToast = null;
+    clearAutoConsolidationPromptState(targetTier);
+    if (targetTier < 6) {
+      await maybePromptAutoConsolidation(targetTier + 1, {
+        valid: true,
+        name: context.lorebookName,
+        data: context.lorebookData,
+      });
+    }
   } catch (e) {
     if (isStmbStopError(e)) {
       return;

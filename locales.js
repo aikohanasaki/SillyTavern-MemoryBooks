@@ -186,6 +186,16 @@ export const localeData_en = {
     'STMemoryBooks_AutoSummaryIntervalDesc': 'Number of messages after which to automatically create a memory summary.',
     'STMemoryBooks_AutoSummaryBuffer': 'Auto-Summary Buffer:',
     'STMemoryBooks_AutoSummaryBufferDesc': 'Delay auto-summary by X messages (belated generation). Default 2, max 50.',
+    'STMemoryBooks_AutoConsolidationEnabled': 'Prompt for consolidation when a tier is ready',
+    'STMemoryBooks_AutoConsolidationDesc': 'Shows a yes/no prompt when any selected summary tier has enough eligible source entries. Uses each tier\'s saved minimum.',
+    'STMemoryBooks_AutoConsolidationTier': 'Auto-Consolidation Tiers:',
+    'STMemoryBooks_AutoConsolidationTierDesc': 'Choose which summary tiers should trigger the confirmation prompt.',
+    'STMemoryBooks_AutoConsolidationTierPlaceholder': 'Select tiers…',
+    'STMemoryBooks_AutoConsolidationPrompt_Title': 'Consolidation Available',
+    'STMemoryBooks_AutoConsolidationPrompt_Body': 'You now have {{count}} eligible {{sourcePlural}}. That meets the minimum of {{min}} needed to create a {{targetLabel}}.',
+    'STMemoryBooks_AutoConsolidationPrompt_Question': 'Open Consolidate Memories now?',
+    'STMemoryBooks_OpenConsolidation': 'Open Consolidation',
+    'STMemoryBooks_Later': 'Later',
 
     // Auto-Summary Popup and Messages
     'STMemoryBooks_AutoSummaryReadyTitle': 'Auto-Summary Ready',
@@ -227,6 +237,10 @@ export const localeData_en = {
     // Unhidden Count
     'STMemoryBooks_UnhiddenCount': 'Messages to leave unhidden:',
     'STMemoryBooks_UnhiddenCountDesc': 'Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)',
+    'STMemoryBooks_TokenSaving': 'Token Saving (Hide/Unhide Messages)',
+
+    // Automatic Memories
+    'STMemoryBooks_AutoMemory': 'Automatic Memories',
 
     // Token Warning
     'STMemoryBooks_TokenWarning': 'Token Warning Threshold:',

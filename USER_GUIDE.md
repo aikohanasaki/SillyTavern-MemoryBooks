@@ -6,6 +6,20 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 
 (Looking for some behind-the-scenes technical detail? Maybe you want [How STMB Works](userguides/howSTMBworks-en.md) instead.)
 
+## 📑 Table of Contents
+
+- [Quick Start](#-quick-start-5-minutes-to-your-first-memory)
+- [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
+- [Choose Your Style](#-choose-your-style)
+- [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
+- [Summary Consolidation](#-summary-consolidation)
+- [Trackers, Side Prompts, & Templates](#-trackers-side-prompts--templates-advanced-feature)
+- [Settings That Matter First](#-settings-that-matter-first)
+- [Troubleshooting](#-troubleshooting-when-things-dont-work)
+- [What ST Memory Books Doesn't Do](#-what-st-memory-books-doesnt-do)
+- [Getting Help & More Info](#-getting-help--more-info)
+- [Power Up with Lorebook Ordering (STLO)](#-power-up-with-lorebook-ordering-stlo)
+
 ---
 
 ## 🚀 Quick Start (5 Minutes to Your First Memory!)
@@ -18,15 +32,17 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - You'll see the ST Memory Books control panel
 
 ### Step 2: Turn On Auto-Magic
-- In the control panel, find **"Auto-Summary"** 
+- In the control panel, find **"Auto-create memory summaries"**
 - Turn it ON
-- Set it to create memories every **20-30 messages** (good starting point)
+- Set **Auto-Summary Interval** to **20-30 messages** (good starting point).
+- Leave **Auto-Summary Buffer** low at first (`0-2` is a good beginner range)
+- Create one manual memory first so the chat is primed
 - That's it! 🎉
 
 ### Step 3: Chat Normally
 - Keep chatting as usual
 - After 20-30 new messages, ST Memory Books will automatically:
-  - Pick the best scene boundaries
+  - Use the new messages since the last processed checkpoint
   - Ask your AI to write a summary
   - Save it to your memory collection
   - Show you a notification when done
@@ -75,9 +91,10 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 **Perfect if you want:** Hands-off automation that just works
 
 **How it works:**
-1. Turn on "Auto-Summary" in settings
-2. Choose how often to create memories (every 20-50 messages works well)
-3. Keep chatting normally - memories happen automatically!
+1. Turn on `Auto-create memory summaries`
+2. Set `Auto-Summary Interval` to a range that fits your chat speed
+3. Optionally set a small `Auto-Summary Buffer` if you want belated generation
+4. Keep chatting normally after priming the chat with one manual memory
 
 **What you get:** 
 - No manual work required
@@ -105,7 +122,7 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - Perfect for capturing specific moments
 - Great for complex scenes that need careful boundaries
 
-**Pro tip:** The arrow buttons appear a few seconds after loading a chat. If you don't see them, wait a moment or refresh the page.
+**Pro tip:** The arrow buttons appear within a few seconds after loading a chat. If you don't see them, wait a moment or refresh the page.
 
 </details>
 
@@ -118,7 +135,9 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - `/scenememory 10-25` - Create memory from messages 10 to 25
 - `/creatememory` - Make memory from currently marked scene
 - `/nextmemory` - Summarize everything since the last memory
-- `/sideprompt "Relationship Tracker" {{macro}}="value"` - Run a side prompt, optionally supplying required runtime macros
+- `/sideprompt "Relationship Tracker" {{macro}}="value" [X-Y]` - Run a side prompt, optionally supplying required runtime macros and an optional message range
+- `/sideprompt-on "Name"` or `/sideprompt-off "Name"` - Toggle a side prompt manually
+- `/stmb-set-highest <N|none>` - Adjust the auto-summary baseline for the current chat
 
 **What you get:**
 - Lightning-fast memory creation
@@ -129,58 +148,93 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 ---
 
-## 🌈 Arc Summaries
+## 🙈 Token Saving: Hide / Unhide Messages
 
-Arc Summaries are created manually. Nothing is summarized or removed unless you choose to do it.
+One of the easiest ways to reduce clutter and save tokens in long chats is to hide messages after you have already turned them into memories.
 
-### Q: What are Arc Summaries?
+### What does “hide” mean?
 
-**A:** Arc Summaries help keep long stories manageable. Over time, you may collect many old memory entries. Some of them describe the same part of the story.
-An Arc Summary lets you combine several older memories into one shorter summary.
+Hiding messages does **not** delete them. It only hides them from the AI. Your chat messages are still there, and your memories still remain in the lorebook, so the important information is not lost; it's just not sent directly to the AI.
 
-### Q: What happens when I make an Arc Summary?
+### Why would I use this?
 
-**A:** When you create an Arc Summary:
+Hide/unhide is helpful when:
+- your chat has become very long
+- you already made memories for those messages
 
-* The selected memories are combined into one new entry
-* The new summary replaces those older memories
-  *(older memories can be hidden automatically — not deleted)*
-* The story is still remembered, but with fewer tokens
+### Auto-hide after memory creation
 
-### Q: Why make Arc Summaries?
+STMB can automatically hide messages after a memory is created. You can choose:
 
-**A:** Arc Summaries are useful when:
+- **Do not auto-hide**: leaves everything visible (you can hide messages manually with `/hide x-y`)
+- **Auto-hide all messages up to the last memory**: hides everything already covered by memory creation
+- **Auto-hide only messages in the last memory**: hides just the most recent processed range
 
-* Your memory list is getting very long
-* Older memories are no longer needed in full detail
-* You want to reduce token usage in long chats
+You can also choose how many recent messages stay visible with **Messages to leave unhidden**.
 
-### Q: How do I make an Arc Summary?
+### Unhide before memory generation
 
-**A:** To create an Arc Summary:
+The setting **Unhide hidden messages for memory generation** tells STMB to temporarily run `/unhide X-Y` for the selected range before generating the memory. Use this if you tend to re-do memories. 
 
-1. Click **🌈 Consolidate Memories into Arcs** at the bottom of the main STMB popup.
-2. Choose an arc type:
+### Good beginner setup
 
-   * **Multi-Arc**
-     The AI looks for natural breaks and creates multiple arcs.
-     You can set a minimum number of memories per arc.
-     *Works best with strong models (GPT, Gemini, Sonnet). Local models may struggle.*
-   * **Single Arc**
-     The AI combines all selected memories into one arc.
-     Previous arcs are included to help keep the story consistent.
-   * **Tiny**
-     A faster, simpler option that may work better with local models,
-     but results may be less detailed.
-3. Select the memories you want to include.
-4. Click **Run** and wait for the arc analysis to finish.
+Aiko's settings:
+- use **Auto-hide messages up to the last memory**
+- leave **2 messages unhidden**
+- turn on **Unhide hidden messages for memory generation**
+
+---
+
+## 🌈 Summary Consolidation
+
+Summary Consolidation helps keep long stories manageable by compressing older STMB memories into higher-level recap entries.
+
+### Q: What is Summary Consolidation?
+
+**A:** Instead of only creating scene-level memories forever, STMB can combine existing memories or summaries into a more compact recap. The first tier is **Arc**, and higher recap tiers are also available for longer stories:
+
+- Arc
+- Chapter
+- Book
+- Legend
+- Series
+- Epic
+
+### Q: Why use it?
+
+**A:** Consolidation is useful when:
+
+- Your memory list is getting long
+- Older entries no longer need full scene-by-scene detail
+- You want to reduce token usage without losing continuity
+- You want cleaner, higher-level narrative recaps
+
+### Q: Does it run automatically?
+
+**A:** No. Consolidation still requires confirmation.
+
+- You can always open **Consolidate Memories** manually from the main popup
+- You can also enable **Prompt for consolidation when a tier is ready**
+- When a selected target tier reaches its saved minimum eligible count, STMB shows a **yes/later** confirmation
+- Choosing **Yes** opens the consolidation popup with that tier selected; it does not silently run by itself
+
+### Q: How do I use it?
+
+**A:** To create a consolidated summary:
+
+1. Click **Consolidate Memories** in the main STMB popup
+2. Choose the target summary tier
+3. Pick the source entries you want included
+4. Optionally disable the source entries after the new summary is created
+5. Click **Run**
+
+For previews of these entries, enable "show previews" in your preferences.
 
 ---
 
 ## 🎨 Trackers, Side Prompts, & Templates (Advanced Feature)
 
-**Side Prompts** are background trackers that help maintain ongoing story information.
-They run alongside memory creation and update separate side-prompt lorebook entries over time. Think of them as **helpers that watch your story and keep certain details up to date**.
+**Side Prompts** are background trackers that help maintain ongoing story information. They run alongside memory creation and update separate side-prompt lorebook entries over time. Think of them as **helpers that watch your story and keep certain details up to date**.
 
 ### 🚀 **Quick Start with Templates**
 
@@ -205,10 +259,10 @@ They run alongside memory creation and update separate side-prompt lorebook entr
 * **Per-Chat Control**: Different chats can use different trackers
 * **Template-Based**: Use built-in templates or create your own
 * **Automatic or Manual**: Standard templates can run automatically; templates with custom runtime macros are manual-only
-* **Macro Support**: `Prompt` and `Response Format` expand standard ST macros like `{{user}}` and `{{char}}`
+* **Macro Support**: `Prompt`, `Response Format`, `Title`, and keyword fields can expand standard ST macros like `{{user}}` and `{{char}}`
 * **Runtime Macros**: Non-standard `{{...}}` tokens become required command inputs such as `{{npc name}}="Jane Doe"`
-
-This makes the trigger behavior understandable without technical terms.
+* **Plain Text Allowed**: Side prompts do not have to return JSON
+* **Overwrite Behavior**: Side prompts update their own tracked entry over time instead of creating a new sequential memory every run
 
 ### 🛠️ **Managing Side Prompts**
 
@@ -262,112 +316,76 @@ Notes:
 - Runtime macro values must be quoted.
 - Slash-command autocomplete will suggest required runtime macros after you choose the side prompt.
 - If a template contains custom runtime macros, STMB keeps it manual-only and strips automatic triggers.
-- Message IDs are still required.
+- `X-Y` is optional. If you omit it, STMB uses messages since the last time that side prompt was updated.
+- If you run side prompts manually and separately, remember to turn on `unhide before generation`!
 
 ---
 
 ### 🧠 Advanced Text Control with the Regex Extension
 
-**Want ultimate control over the text that gets sent to and received from the AI?** ST Memory Books now seamlessly integrates with the official **Regex** extension, allowing you to automatically transform text using custom rules.
+**Want ultimate control over the text STMB sends to and receives from the AI?** STMB can run selected Regex scripts before generation and before saving.
 
-**Multi-Select Support:** You can now multi-select regex scripts in the Regex extension. All enabled scripts will be applied in order at each stage (Prompt and Response), allowing for powerful and flexible transformations.
+This is useful when you want to:
+- Clean repetitive junk out of AI responses
+- Normalize names or terminology before generation
+- Reformat text before STMB parses or previews it
 
-This is an advanced feature perfect for users who want to:
-- Automatically clean up repetitive phrases or artifacts from an AI's response.
-- Reformat parts of the chat transcript before the AI sees it.
-- Standardize terminology or character mannerisms on the fly.
+#### **How It Works Now**
 
-#### **How It Works: Two Simple Hooks**
+1. Create any scripts you want in SillyTavern's **Regex** extension
+2. In STMB, turn on **Use regex (advanced)**
+3. Click **📐 Configure regex…**
+4. Choose which scripts STMB should run:
+   - before sending text to the AI
+   - before adding the response to the lorebook
 
-The integration works by applying your enabled regex scripts at two critical points. You control which scripts run by setting their **Placement** in the Regex extension's editor:
+#### **Important Behavior**
 
-1.  **Modifying the Prompt (Outgoing Text)**
-    *   **Placement to use**: `User Input`
-    *   **What it does**: Intercepts the fully assembled prompt (including chat history, system instructions, etc.) right before it's sent to the AI for memory or side prompt generation.
-    *   **Example Use Case**: You could create a script to automatically replace all instances of a character's nickname with their full name, ensuring the AI has the proper context.
+- Regex selection for STMB is controlled inside **STMB**, not by the script's enabled/disabled state in the Regex extension
+- A script selected in STMB can still run even if it is disabled in the Regex extension itself
+- STMB supports multi-select for both outgoing and incoming processing
 
-2.  **Modifying the Response (Incoming Text)**
-    *   **Placement to use**: `AI Output`
-    *   **What it does**: Intercepts the raw text response from the AI *before* it gets parsed or saved as a memory.
-    *   **Example Use Case**: If your AI model often includes repetitive phrases like *"As a large language model..."* in its summaries, you can create a regex script to automatically remove this phrase from every memory it generates.
+#### **Quick Example**
 
-#### **Quick Start Example: Cleaning AI Responses**
+If your model keeps adding `(OOC: I hope this summary is helpful!)`, you can:
 
-Let's say your AI model consistently adds `(OOC: I hope this summary is helpful!)` to its memory generations. Here’s how to automatically remove it:
+1. Create a Regex script that removes that text
+2. Turn on **Use regex (advanced)** in STMB
+3. Open **📐 Configure regex…**
+4. Add that script to the **incoming** selection
 
-1.  **Go to the Regex Extension**: Open the main SillyTavern extensions menu and go to **Regex**.
-2.  **Create a New Script**: Click "Open Regex Editor" to create a new regex script.
-3.  **Configure the Script**:
-    *   **Script Name**: `Clean OOC Notes`
-    *   **Find Regex**: `/\\(OOC:.*?\\)/g` (This finds the text "(OOC: ...)" and everything inside it).
-    *   **Replace String**: Leave this blank to delete the matched text.
-    *   **Affects (Placement)**: Uncheck all boxes except for **AI Output**. This is the most important step!
-    *   **Enable the Script**: Make sure the script is not disabled.
-4.  **Save and You're Done!**
-
-Now, every time ST Memory Books gets a response from the AI, this script will run automatically, cleaning the unwanted text before the memory is saved to your lorebook.
+Now STMB will clean the response before previewing or saving it.
 
 ---
 
-## ⚙️ Settings That Actually Matter
+## ⚙️ Settings That Matter First
 
-Don't worry - you don't need to configure everything! Here are the settings that make the biggest difference:
+This guide is not the full settings reference. For the complete setting-by-setting list, use [readme.md](readme.md).
 
-### 🎛️ **Auto-Summary Frequency**
-- **20-30 messages**: Great for detailed, slower chats
-- **40-60 messages**: Perfect for faster, action-packed conversations  
-- **80+ messages**: For very fast group chats or casual conversations
-
-### 📝 **Memory Previews** 
-- Turn this ON to review memories before they're saved
-- You can edit, approve, or regenerate if the AI missed something important
-- Recommended for important storylines
-
-### 🏷️ **Memory Titles**
-- Customize how your memories are named
-- Use `{{title}}` for AI-generated titles, `{{scene}}` for message numbers
-- Example: `"Chapter [000] {{title}} ({{scene}})"` becomes `"Chapter 001 The Great Escape (Scene 45-67)"`
-
-### 📚 **Memory Books** (Lorebooks)
-- **Auto mode**: Uses your chat's default memory lorebook (easiest)
-- **Manual mode**: Pick a specific lorebook for each chat (for organization)
-- **Auto-create**: Makes new lorebooks automatically (good for new characters)
+The controls most users should learn first are:
+- **Current SillyTavern Settings**: uses your active ST connection directly without creating a custom provider profile
+- **Create your own STMB Profile**: lets you customize STMB eg. use a different/cheaper model for memories vs roleplay
+- **Auto-hide/unhide memories**: the token savings that you make memories for!
+- **Manual Lorebook Mode** and **Auto-create lorebook if none exists**: control where memories are stored
+- **Show memory previews**: lets you review or edit AI output before saving
+- **Auto-create memory summaries**: turns automatic memory generation on
+- **Auto-Summary Interval** and **Auto-Summary Buffer**: control when automatic memory generation runs
+- **Side Prompts**: enables trackers
 
 ---
 
 ## 🔧 Troubleshooting (When Things Don't Work)
 
-### "I don't see the Memory Books option!"
-- Check that the extension is installed and enabled
-- Look for the magic wand (🪄) icon next to your chat input
-- Try refreshing the page
+This guide is not the full troubleshooting matrix. For the detailed list, use [readme.md](readme.md).
 
-### "The arrow buttons (► ◄) aren't showing up!"
-- Wait 3-5 seconds after loading a chat - they need time to appear
-- If still missing, refresh the page
-- Make sure ST Memory Books is enabled in extensions
-- Ensure you are running the latest version of SillyTavern
+The fastest first checks are:
 
-### "Auto Summary isn't working!"
-- Double-check that "Auto-Summary" is enabled in Memory Books settings.
-- Make sure you have primed the chat by creating one memory manually!
-- Has the message interval been reached? Auto-summary waits for enough new messages.
-- If you postponed auto-summary, it might be waiting until a certain message count.
-- Auto-summary only processes new messages since the *last* memory. If you deleted old memories, it doesn't go back.
-
-### "I get errors about missing lorebooks!"
-- Go to Memory Books settings
-- Either bind a lorebook to your chat (Automatic Mode or Manual Mode) or enable "Auto-create lorebook if none exists"
-
-### "Sometimes it fails for no reason!"
-- Make sure that your Max Response Length (in SillyTavern's Chat Completion Presets) are set at a large enough number. Aiko recommends a minimum of 2000 tokens (Aiko runs 4000.)
-- Again... this is _Chat Completion_. You will need to make the change while ST's connection says "Chat Completion" (you can switch back after you're done).
-- The error messages are more detailed now, but if you are still having problems please contact Aiko on Github or Discord.
-
-### "My custom prompts aren't working right!"
-- Check the "Summary Prompt Manager" in Memory Books settings
-- Ensure your prompt instructs the AI to respond in **JSON format** (e.g., `{ "title": "...", "content": "..." }`)
-- The JSON format has to have these three objects: `title`, `content`, and `keywords`.
+- Make sure STMB is enabled and the **Memory Books** menu item appears under the extensions wand
+- If auto-summary is not firing, verify that you created one manual memory first and that your interval/buffer settings are reasonable
+- If memories cannot be saved, make sure a lorebook is bound to the chat or that **Auto-create lorebook if none exists** is enabled
+- If memories aren't triggering, make sure "delay until recursion" is disabled.
+- If regex behavior seems wrong, check the selections inside **📐 Configure regex…** rather than only checking the Regex extension
+- If consolidation is not prompting, confirm that **Prompt for consolidation when a tier is ready** is enabled and that the target tier is included in **Auto-Consolidation Tiers**
 
 ---
 
@@ -388,4 +406,4 @@ Don't worry - you don't need to configure everything! Here are the settings that
 
 ### 📚 Power Up with Lorebook Ordering (STLO)
 
-For advanced memory organization and deeper story integration, we highly recommend using STMB together with [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). See the guide for best practices, setup instructions, and tips!
+For advanced memory organization and deeper story integration, use STMB together with [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). See the guide for best practices, setup instructions, and tips!
