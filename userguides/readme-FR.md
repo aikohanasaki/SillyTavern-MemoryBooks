@@ -26,8 +26,8 @@ Autres liens :
 
 Pour une organisation avancée de la mémoire et une intégration plus profonde dans l'histoire, nous recommandons vivement d'utiliser STMB avec [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). Consultez le guide pour les meilleures pratiques, les instructions de configuration et des astuces !
 
-> Note : Prend en charge plusieurs langues : voir le dossier [`/locales`](locales) pour la liste. Les fichiers Readme et Guides Utilisateurs internationaux/localisés se trouvent dans le dossier [`/userguides`](userguides).
-> Le convertisseur de lorebook et la bibliothèque de modèles de prompts secondaires se trouvent dans le dossier [`/resources`](resources).
+> Note : Prend en charge plusieurs langues : voir le dossier [`/locales`](../locales) pour la liste. Les fichiers Readme et Guides Utilisateurs internationaux/localisés se trouvent dans le dossier [`/userguides`](./).
+> Le convertisseur de lorebook et la bibliothèque de modèles de prompts secondaires se trouvent dans le dossier [`/resources`](../resources).
 
 ---
 
@@ -247,7 +247,7 @@ Tous les prompts et préréglages (presets) **doivent** instruire l'IA de ne ren
 * **Rafraîchissement de l'Éditeur :** Rafraîchit optionnellement l'éditeur de lorebook après l'ajout d'une mémoire.
 
 > **Les mémoires existantes doivent être converties !**
-> Utilisez le [Lorebook Converter](https://www.google.com/search?q=/resources/lorebookconverter.html) pour ajouter le drapeau `stmemorybooks` et les champs requis.
+> Utilisez le [Lorebook Converter](../resources/lorebookconverter.html) pour ajouter le drapeau `stmemorybooks` et les champs requis.
 
 ---
 
@@ -459,6 +459,6 @@ Non. S'il n'y a pas d'autres infos du monde ou lorebooks, sélectionner 'Delay u
 * **Autorisés dans les titres :** Tous les caractères Unicode imprimables sont autorisés, y compris les lettres accentuées, les émojis, le CJK et les symboles.
 * **Bloqués :** Seuls les caractères de contrôle Unicode (U+0000–U+001F, U+007F–U+009F) sont bloqués ; ils sont supprimés automatiquement.
 
-## Voir [Détails de la Politique de Caractères](https://www.google.com/search?q=charset.md) pour des exemples et des notes de migration.
+## Voir [Détails de la Politique de Caractères](../charset.md) pour des exemples et des notes de migration.
 
 *Développé avec amour en utilisant VS Code/Cline, des tests approfondis et les retours de la communauté.* 🤖💕

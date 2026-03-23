@@ -4,7 +4,20 @@
 
 Perlukan bot untuk mengingat perkara penting, tetapi sejarah sembang terlalu panjang untuk konteks? Mahu menjejaki titik plot penting secara automatik tanpa perlu mencatat nota secara manual? ST Memory Books melakukan semua itu - ia memantau sembang anda dan mencipta ringkasan pintar supaya anda tidak akan kehilangan jejak cerita anda lagi.
 
-(Mencari perincian teknikal di sebalik tabir? Mungkin anda mahukan [Bagaimana STMB Berfungsi](userguides\howSTMBworks-en.md).)
+(Mencari perincian teknikal di sebalik tabir? Mungkin anda mahukan [Bagaimana STMB Berfungsi](howSTMBworks-ms.md).)
+
+## 📑 Kandungan
+
+- [Mula Pantas](#-mula-pantas-5-minit-untuk-memori-pertama-anda)
+- [Apa Sebenarnya Yang ST Memory Books Lakukan](#-apa-sebenarnya-st-memory-books-lakukan)
+- [Pilih Gaya Anda](#-pilih-gaya-anda)
+- [Ringkasan Konsolidasi](#-ringkasan-konsolidasi)
+- [Penjejak, Prom Sampingan, & Templat](#-penjejak-prom-sampingan--templat-ciri-termaju)
+- [Kawalan Teks Termaju dengan Sambungan Regex](#-kawalan-teks-termaju-dengan-sambungan-regex)
+- [Tetapan Yang Benar-benar Penting](#-tetapan-yang-benar-benar-penting)
+- [Penyelesaian Masalah](#-penyelesaian-masalah-apabila-perkara-tidak-menjadi)
+- [Apa Yang ST Memory Books Tidak Lakukan](#-apa-yang-st-memory-books-tidak-lakukan)
+- [Dapatkan Bantuan & Info Lanjut](#-dapatkan-bantuan--info-lanjut)
 
 ---
 
@@ -18,15 +31,17 @@ Perlukan bot untuk mengingat perkara penting, tetapi sejarah sembang terlalu pan
 - Anda akan melihat panel kawalan ST Memory Books
 
 ### Langkah 2: Hidupkan Auto-Magic
-- Di panel kawalan, cari **"Auto-Summary"** (Ringkasan Automatik)
+- Di panel kawalan, cari **"Auto-create memory summaries"**
 - Hidupkannya (Turn ON)
-- Tetapkan untuk mencipta memori setiap **20-30 mesej** (titik permulaan yang baik)
+- Tetapkan **Auto-Summary Interval** untuk mencipta memori setiap **20-30 mesej** (titik permulaan yang baik)
+- Biarkan **Auto-Summary Buffer** rendah pada awalnya (`0-2` ialah julat pemula yang baik)
+- Cipta satu memori manual dahulu supaya sembang diprime
 - Itu sahaja! 🎉
 
 ### Langkah 3: Sembang Seperti Biasa
 - Teruskan bersembang seperti biasa
 - Selepas 20-30 mesej baharu, ST Memory Books akan secara automatik:
-  - Memilih sempadan babak (scene) yang terbaik
+  - Menggunakan mesej baharu sejak checkpoint terakhir
   - Meminta AI anda menulis ringkasan
   - Menyimpannya ke koleksi memori anda
   - Menunjukkan pemberitahuan apabila selesai
@@ -118,8 +133,9 @@ Anggaplah ST Memory Books sebagai **pustakawan AI peribadi** anda untuk perbuala
 - `/scenememory 10-25` - Cipta memori dari mesej 10 hingga 25
 - `/creatememory` - Buat memori dari babak yang ditandakan sekarang
 - `/nextmemory` - Ringkaskan semua perkara sejak memori terakhir
-- `/sideprompt "Relationship Tracker" {{macro}}="value"` - Jalankan penjejak tersuai
-- Selepas Side Prompt dipilih, autolengkap perintah akan mencadangkan makro runtime yang masih diperlukan.
+- `/sideprompt "Relationship Tracker" {{macro}}="value" [X-Y]` - Jalankan side prompt dengan makro runtime pilihan dan julat mesej pilihan
+- `/sideprompt-on "Name"` atau `/sideprompt-off "Name"` - Hidupkan atau matikan side prompt secara manual
+- `/stmb-set-highest <N|none>` - Laraskan baseline auto-summary untuk sembang semasa
 
 **Apa yang anda dapat:**
 - Penciptaan memori sepantas kilat

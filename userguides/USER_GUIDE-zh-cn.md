@@ -4,367 +4,220 @@
 
 需要机器人记住事情，但聊天记录太长超出了上下文限制？想要自动追踪重要的剧情点，而不需要手动做笔记？ST Memory Books 正是为此而生——它会监控你的聊天记录并创建智能总结，让你不再迷失在故事中。
 
-（想了解幕后的技术细节？你可能需要阅读 [STMB 工作原理](userguides\howSTMBworks-en.md)。）
+（想了解幕后技术细节？你可能需要阅读 [STMB 工作原理](howSTMBworks-zh-cn.md)。）
+
+---
+
+## 📑 目录
+
+- [快速入门](#-快速入门5分钟创建你的第一个记忆)
+- [ST Memory Books 到底能做什么](#-st-memory-books-到底能做什么)
+- [选择你的风格](#-选择你的风格)
+- [节省 token](#-节省-token-隐藏--显示)
+- [总结整合](#-总结整合)
+- [Side Prompts 与模板](#-side-prompts-与模板)
+- [Regex](#-regex)
+- [重要设置](#-重要设置)
+- [疑难解答](#-疑难解答)
+- [更多信息](#-更多信息)
 
 ---
 
 ## 🚀 快速入门（5分钟创建你的第一个记忆！）
 
-**刚接触 ST Memory Books？** 只需点击几下，即可设置你的第一个自动记忆功能：
-
-### 第一步：找到扩展
-- 在聊天输入框旁边寻找魔杖图标 (🪄)
-- 点击它，然后点击 **"Memory Books"**
-- 你将看到 ST Memory Books 的控制面板
-
-### 第二步：开启“自动魔法”
-- 在控制面板中，找到 **"Auto-Summary" (自动总结)**
-- 将其开启 (ON)
-- 设置为每 **20-30 条消息** 创建一次记忆（这是个不错的起步设置）
-- 搞定！🎉
-
-### 第三步：正常聊天
-- 像往常一样继续聊天
-- 在 20-30 条新消息后，ST Memory Books 将自动：
-  - 选择最佳的场景边界
-  - 要求你的 AI 撰写总结
-  - 将其保存到你的记忆集合中
-  - 完成后向你发送通知
-
-**恭喜！** 你现在拥有了自动化的记忆管理。再也不会忘记几章前发生的事情了！
+1. 打开扩展菜单里的 `Memory Books`。
+2. 开启 `Auto-create memory summaries`。
+3. 将 `Auto-Summary Interval` 设为大约 `20-30`。
+4. 一开始让 `Auto-Summary Buffer` 保持很低，比如 `0-2`。
+5. 先手动创建一条记忆，作为“primed” 基础。
 
 ---
 
 ## 💡 ST Memory Books 到底能做什么
 
-把 ST Memory Books 想象成你聊天对话的 **个人 AI 图书管理员**：
+### 自动总结
 
-### 🤖 **自动总结 (Automatic Summaries)**
-*“我不想操心，让它自己动就好”*
-- 在后台监控你的聊天
-- 每隔 X 条消息自动创建记忆
-- 非常适合长篇角色扮演、创意写作或持续进行的故事
+STMB 会在后台监控聊天，并按设定的间隔自动创建记忆。
 
-### ✋ **手动创建记忆 (Manual Memory Creation)**
-*“我想要控制保存的内容”*
-- 使用简单的箭头按钮 (► ◄) 标记重要场景
-- 为特殊时刻按需创建记忆
-- 非常适合捕捉关键剧情点或角色发展
+### 手动创建记忆
 
-### 📊 **辅助提示词 & 智能追踪 (Side Prompts & Smart Trackers)**
-*“我想追踪关系、剧情线索或属性统计”*
-- 可复用的提示词片段，增强记忆生成
-- 包含现成追踪器的模板库
-- 自定义 AI 提示词，追踪任何你想要的内容
-- 自动更新计分板、关系状态、剧情摘要
-- 示例：“谁喜欢谁？”、“当前任务状态”、“角色情绪追踪器”
+你可以用箭头 (► ◄) 标记重要场景，然后只为那一段创建记忆。
 
-### 📚 **记忆集合 (Memory Collections)**
-*所有记忆的栖息地*
-- 自动整理且可搜索
-- 与 SillyTavern 内置的世界书 (Lorebook) 系统配合使用
-- 你的 AI 可以在新的对话中参考过去的记忆
+### Side Prompts
+
+Side Prompts 就像追踪器，可用于关系、任务、心情或世界状态。
 
 ---
 
 ## 🎯 选择你的风格
 
-<details>
-<summary><strong>🔄 “设后即忘” (推荐新手)</strong></summary>
+### 设定后即忘
 
-**适合人群：** 想要无需干预、自动运行的自动化体验
+1. 开启 `Auto-create memory summaries`。
+2. 调整 `Auto-Summary Interval`。
+3. 需要的话再加一点 `Auto-Summary Buffer`。
 
-**如何操作：**
-1. 在设置中开启 "Auto-Summary" (自动总结)
-2. 选择创建记忆的频率（每 20-50 条消息效果较好）
-3. 正常聊天——记忆会自动生成！
+### 手动控制
 
-**你将获得：**
-- 无需手动操作
-- 持续的记忆创建
-- 绝不错过重要的故事节拍
-- 适用于单人及群组聊天
+1. 用箭头标记场景开始和结束。
+2. 打开 Memory Books。
+3. 点击 `Create Memory`。
 
-**专业提示：** 从 30 条消息开始，然后根据你的聊天风格进行调整。快速聊天可能需要 50+，而慢速详细的聊天可能更适合 20。
+### Slash 命令
 
-</details>
-
-<details>
-<summary><strong>✋ “手动控制” (选择性记忆)</strong></summary>
-
-**适合人群：** 想要精确决定哪些内容成为记忆
-
-**如何操作：**
-1. 在聊天消息上寻找小箭头按钮 (► ◄)
-2. 在重要场景的第一条消息上点击 ►
-3. 在该场景的最后一条消息上点击 ◄
-4. 打开 Memory Books (🪄) 并点击 "Create Memory" (创建记忆)
-
-**你将获得：**
-- 对记忆内容的完全控制
-- 完美捕捉特定时刻
-- 适合需要仔细划分边界的复杂场景
-
-**专业提示：** 箭头按钮会在加载聊天几秒后出现。如果你没看到它们，请稍等片刻或刷新页面。
-
-</details>
-
-<details>
-<summary><strong>⚡ “高级用户” (斜杠命令)</strong></summary>
-
-**适合人群：** 喜欢键盘快捷键和高级功能的用户
-
-**核心命令：**
-- `/scenememory 10-25` - 从第 10 到 25 条消息创建记忆
-- `/creatememory` - 从当前标记的场景创建记忆
-- `/nextmemory` - 总结自上次记忆以来的所有内容
-- `/sideprompt "Relationship Tracker" {{macro}}="value"` - 运行自定义追踪器
-* 选择 Side Prompt 后，斜杠命令的自动补全会提示剩余必填的运行时宏。
-
-**你将获得：**
-- 闪电般的记忆创建速度
-- 批量操作
-- 与自定义工作流集成
-
-</details>
+* `/creatememory` - 从标记场景创建记忆
+* `/scenememory X-Y` - 根据消息范围创建记忆
+* `/nextmemory` - 从上次记忆之后的消息开始
+* `/sideprompt "Name" {{macro}}="value" [X-Y]` - 运行 Side Prompt
+* `/sideprompt-on "Name"` 或 `/sideprompt-off "Name"` - 手动开启或关闭 Side Prompt
+* `/stmb-set-highest <N|none>` - 调整自动总结基线
 
 ---
 
-## 🌈 篇章总结 (Arc Summaries)
+## 🙈 节省 token：隐藏 / 显示
 
-篇章总结是手动创建的。除非你选择操作，否则不会有任何内容被总结或移除。
+隐藏消息不会删除它们，只是不会再直接送给 AI。
 
-### 问：什么是篇章总结？
+### 什么时候有用
 
-**答：** 篇章总结有助于管理长篇故事。随着时间的推移，你可能会收集到许多旧的记忆条目。其中一些可能描述了故事的同一部分。
-篇章总结允许你将几个较旧的记忆合并为一个更短的总结。
+* 聊天记录已经很长
+* 这些消息已经做成记忆
+* 你想让聊天更干净
 
-### 问：制作篇章总结时会发生什么？
+### 自动隐藏
 
-**答：** 当你创建篇章总结时：
+* `Do not auto-hide` - 不自动隐藏
+* `Auto-hide all messages up to the last memory` - 隐藏已经被记忆覆盖的内容
+* `Auto-hide only messages in the last memory` - 只隐藏最后一段处理过的内容
 
-* 选定的记忆将合并为一个新条目
-* 新的总结将替换那些旧记忆
-  *（旧记忆可以自动隐藏——而不是被删除）*
-* 故事仍然被记住，但占用的 Token 更少
+### 生成前重新显示
 
-### 问：为什么要制作篇章总结？
+`Unhide hidden messages for memory generation` 会在生成前临时执行 `/unhide X-Y`。
 
-**答：** 在以下情况下很有用：
+### 建议设置
 
-* 你的记忆列表变得非常长
-* 不再需要旧记忆的全部细节
-* 你想在长对话中减少 Token 使用量
-
-### 问：如何制作篇章总结？
-
-**答：** 创建篇章总结的步骤：
-
-1. 点击 STMB 主弹出窗口底部的 **🌈 Consolidate Memories into Arcs (将记忆合并为篇章)**。
-2. 选择一种篇章类型：
-
-   * **Multi-Arc (多重篇章)**
-     AI 会寻找自然的断点并创建多个篇章。
-     你可以设置每个篇章的最少记忆数量。
-     *最适合强大的模型（GPT, Gemini, Sonnet）。本地模型可能会比较吃力。*
-   * **Single Arc (单一篇章)**
-     AI 将所有选定的记忆合并为一个篇章。
-     之前的篇章也会被包含在内，以保持故事的一致性。
-   * **Tiny (微型)**
-     一个更快、更简单的选项，可能更适合本地模型，
-     但结果可能不够详细。
-3. 选择你想要包含的记忆。
-4. 点击 **Run (运行)** 并等待篇章分析完成。
+* `Auto-hide only messages in the last memory`
+* 保留 `2` 条消息可见
+* 打开 `Unhide hidden messages for memory generation`
 
 ---
 
-## 🎨 追踪器、辅助提示词与模板 (高级功能)
+## 🌈 总结整合
 
-**Side Prompts (辅助提示词)** 是后台追踪器，有助于维护正在进行的故事信息。
-它们会在 lorebook 中创建独立的 Side Prompt 条目，并与记忆生成并行运行。把它们想象成 **观察你的故事并保持某些细节最新** 的助手。
-标准 ST 宏（如 `{{user}}` 和 `{{char}}`）会在 `Prompt` 和 `Response Format` 中展开。非标准 `{{...}}` 宏会变成手动运行所需的输入。
+总结整合可以把较旧的 STMB 记忆压缩成更高层级的摘要，帮助长篇故事保持可控。
 
-### 🚀 **使用模板快速入门**
+### 它是什么？
 
-1. 打开 Memory Books 设置
-2. 点击 **Side Prompts**
-3. 浏览 **模板库 (template library)** 并选择适合你故事的模板：
+STMB 可以把现有记忆或总结整合成更紧凑的记录。第一层是 `Arc`，后面还有 `Chapter`、`Book`、`Legend`、`Series` 和 `Epic`。
 
-   * **Character Development Tracker** – 追踪性格变化和成长
-   * **Relationship Dynamics** – 追踪角色之间的关系
-   * **Plot Thread Tracker** – 追踪正在进行的剧情线
-   * **Mood & Atmosphere** – 追踪情感基调
-   * **World Building Notes** – 追踪设定细节和背景传说
-4. 启用你想要的模板（稍后可以自定义）
-5. 如果模板包含自定义运行时宏，它不会自动运行，必须使用 `/sideprompt` 手动运行。
+### 什么时候用？
 
-### ⚙️ **辅助提示词如何工作**
+* 记忆列表太长
+* 旧记忆不再需要逐场景细节
+* 想减少 token 又不想丢失连贯性
 
-* **后台追踪器**：它们静默运行并随时间更新信息
-* **非侵入式**：它们不会改变你的主要 AI 设置或角色提示词
-* **逐个聊天控制**：不同的聊天可以使用不同的追踪器
-* **基于模板**：使用内置模板或创建你自己的模板
-* **自动或手动**：标准模板可以自动运行；包含自定义运行时宏的模板只能手动运行。
-* **宏支持**：`Prompt` 和 `Response Format` 会展开标准 ST 宏，例如 `{{user}}` 和 `{{char}}`。
-* **安全检查**：如果模板包含自定义运行时宏，STMB 会在保存/导入时移除 `onInterval` 和 `onAfterMemory`，并显示警告。
+### 会自动运行吗？
 
-这使得触发行为易于理解，无需专业术语。
+不会。整合仍然需要确认。
 
-### 🛠️ **管理辅助提示词**
+* 可以手动打开 `Consolidate Memories`
+* 到达最小值时，STMB 也可以提示你确认
+* 选择 `Yes` 只会打开窗口，不会静默执行
 
-* **Side Prompts Manager (管理器)**：创建、编辑、复制和整理追踪器
-* **Enable / Disable (启用/禁用)**：随时开启或关闭追踪器
-* **Import / Export (导入/导出)**：分享模板或备份它们
-* **Status View (状态视图)**：查看当前聊天中哪些追踪器处于活动状态
+### 什么会被整合？
 
-对于非英语母语者，“Status View”比“Live Preview”更清晰易懂。
+* 普通 STMB 记忆
+* 更高层级的总结
+* Side Prompts 不会并入 Arc/Chapter
 
-### 💡 **模板示例**
+### 如何使用？
 
-* 辅助提示词模板库 (导入此 JSON):
-  [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
+1. 点击 `Consolidate Memories`
+2. 选择目标层级
+3. 选择来源条目
+4. 决定是否停用来源
+5. 点击 `Run`
 
-提示词创意示例：
-
-* “追踪重要的对话和角色互动”
-* “保持当前任务状态为最新”
-* “当新的世界观细节出现时进行记录”
-* “追踪角色 A 和角色 B 之间的关系”
-
-### 🔧 **创建自定义辅助提示词**
-
-1. 打开 Side Prompts Manager
-2. 点击 **Create New (新建)**
-3. 写下一条简短、清晰的指令
-   *（例如：“总是记录每个场景的天气状况”）*
-4. 如有需要，添加标准 ST 宏或运行时宏，格式为 `{{macro}}="value"`。
-5. 保存并启用它
-6. 只有在启用了自动触发器时，追踪器才会随时间更新此信息
-
-### 💬 **专业提示**
-
-当辅助提示词 **小巧且专注** 时效果最好。
-尝试“追踪主角之间的浪漫张力”，而不是“追踪所有事情”。
+如果 AI 返回了不好的结果，可以先检查再重新保存。
 
 ---
 
-### 🧠 使用 Regex 扩展进行高级文本控制
+## 🎨 Side Prompts 与模板
 
-**想要对发送给 AI 和从 AI 接收的文本拥有终极控制权？** ST Memory Books 现在与官方 **Regex (正则表达式)** 扩展无缝集成，允许你使用自定义规则自动转换文本。
+Side Prompts 是后台追踪器，会在 lorebook 中创建独立条目并与记忆并行运行。
 
-**支持多选：** 你现在可以在 Regex 扩展中多选 regex 脚本。所有启用的脚本将在每个阶段（提示和响应）按顺序应用，从而实现强大而灵活的转换。
+### 工作方式
 
-这是一个高级功能，非常适合想要做以下事情的用户：
-- 自动清理 AI 响应中的重复短语或伪影。
-- 在 AI 看到聊天记录之前重新格式化部分内容。
-- 动态标准化术语或角色习惯用语。
+* `Prompt`、`Response Format` 和 `Title` 支持标准 ST 宏
+* 自定义 `{{...}}` 宏会变成手动运行所需的输入
+* Side Prompts 可以返回纯文本，不一定要 JSON
+* Side Prompts 会更新同一条条目，而不是每次都新建一条记录
 
-#### **如何工作：两个简单的钩子**
+### 重点
 
-集成的原理是在两个关键点应用你启用的 regex 脚本。你可以通过在 Regex 扩展编辑器中设置它们的 **Placement (位置)** 来控制哪些脚本运行：
+如果模板含有自定义 runtime 宏，它就会变成只能手动运行。
 
-1.  **修改提示 (User Input / 发送出的文本)**
-    * **使用的位置 (Placement)**: `User Input`
-    * **作用**：在将完整组装好的提示词（包括聊天历史、系统指令等）发送给 AI 进行记忆或辅助提示生成 *之前* 拦截它。
-    * **用例示例**：你可以创建一个脚本，自动将所有出现的角色昵称替换为其全名，确保 AI 拥有正确的上下文。
+### `/sideprompt`
 
-2.  **修改响应 (AI Output / 接收到的文本)**
-    * **使用的位置 (Placement)**: `AI Output`
-    * **作用**：在 AI 的原始文本响应被解析或保存为记忆 *之前* 拦截它。
-    * **用例示例**：如果你的 AI 模型经常在总结中包含像 *“作为大型语言模型...”* 这样的重复短语，你可以创建一个 regex 脚本从它生成的每个记忆中自动删除此短语。
-
-#### **快速入门示例：清理 AI 响应**
-
-假设你的 AI 模型总是在其记忆生成中添加 `(OOC: I hope this summary is helpful!)`。以下是如何自动将其删除：
-
-1.  **转到 Regex 扩展**：打开主 SillyTavern 扩展菜单并进入 **Regex**。
-2.  **创建新脚本**：点击 "Open Regex Editor" 创建一个新的 regex 脚本。
-3.  **配置脚本**：
-    * **Script Name (脚本名称)**: `Clean OOC Notes`
-    * **Find Regex (查找正则)**: `/\\(OOC:.*?\\)/g` (这将查找文本 "(OOC: ...)" 及其内部的所有内容)。
-    * **Replace String (替换字符串)**: 将此留空以删除匹配的文本。
-    * **Affects (Placement / 作用位置)**: 取消勾选除 **AI Output** 之外的所有框。这是最重要的一步！
-    * **Enable the Script (启用脚本)**: 确保脚本未被禁用。
-4.  **保存，搞定！**
-
-现在，每当 ST Memory Books 从 AI 收到响应时，此脚本将自动运行，在记忆保存到你的世界书之前清理不需要的文本。
+* `X-Y` 是可选的
+* 如果不提供范围，STMB 会使用该 Side Prompt 上次更新之后的消息
 
 ---
 
-## ⚙️ 真正重要的设置
+## 🧠 Regex
 
-别担心——你不需要配置所有东西！以下是影响最大的设置：
+STMB 可以在送给 AI 之前，以及保存结果之前，执行你选定的 Regex 脚本。
 
-### 🎛️ **Auto-Summary Frequency (自动总结频率)**
-- **20-30 条消息**：适合详细、慢节奏的聊天
-- **40-60 条消息**：适合较快、动作密集的对话
-- **80+ 条消息**：适合非常快速的群聊或休闲对话
+### 用途
 
-### 📝 **Memory Previews (记忆预览)**
-- 开启此项以在保存前审查记忆
-- 如果 AI 遗漏了重要内容，你可以编辑、批准或重新生成
-- 推荐用于重要的故事线
+* 清理重复语句
+* 统一名称或术语
+* 在 STMB 解析前调整文本
 
-### 🏷️ **Memory Titles (记忆标题)**
-- 自定义记忆的命名方式
-- 使用 `{{title}}` 代表 AI 生成的标题，`{{scene}}` 代表消息编号
-- 示例：`"Chapter {{title}} ({{scene}})"` 变为 `"Chapter 大逃亡 (Scene 45-67)"`
+### 怎么用
 
-### 📚 **Memory Collections (记忆集合 / 世界书)**
-- **Auto mode (自动模式)**：使用聊天的默认记忆集合（最简单）
-- **Manual mode (手动模式)**：为每个聊天选择特定的集合（用于整理）
-- **Auto-create (自动创建)**：自动制作新集合（适合新角色）
+1. 在 SillyTavern 的 `Regex` 扩展里创建脚本。
+2. 在 STMB 里开启 `Use regex (advanced)`。
+3. 点击 `📐 Configure regex…`。
+4. 选择要在送出前和保存前执行的脚本。
 
----
+### 重要
 
-## 🔧 疑难解答（当出现问题时）
-
-### "我没看到 Memory Books 选项！"
-- 检查扩展是否已安装并启用
-- 寻找聊天输入框旁边的魔杖 (🪄) 图标
-- 尝试刷新页面
-
-### "箭头按钮 (► ◄) 没有显示！"
-- 加载聊天后等待 3-5 秒——它们需要时间出现
-- 如果仍然缺失，请刷新页面
-- 确保 ST Memory Books 已在扩展中启用
-
-### "自动总结不工作！"
-- 仔细检查 Memory Books 设置中是否启用了 "Auto-Summary"
-- 是否达到了消息间隔？自动总结需要等待足够的新消息
-- 如果你推迟了自动总结，它可能在等待达到特定的消息计数
-- 自动总结仅处理自 *上一次* 记忆以来的新消息。如果你删除了旧记忆，它不会回头重新处理。
-
-### "我收到关于缺少世界书 (lorebooks) 的错误！"
-- 转到 Memory Books 设置
-- 将世界书绑定到你的聊天（自动模式），或启用 "Auto-create lorebook if none exists" (如果不存在则自动创建世界书)
-
-### "有时它无缘无故失败！"
-- 确保你的 Max Response Length（最大响应长度，在 SillyTavern 预设中）设置得足够大。Aiko 建议至少 2000 tokens（Aiko 自己用 4000）。
-- 现在的错误消息更详细了，但如果仍然遇到问题，请在 Github 或 Discord 上联系 Aiko。
-
-### "我的自定义提示词工作不正常！"
-- 检查 Memory Books 设置中的 "Summary Prompt Manager"
-- 确保你的提示词指示 AI 以 **JSON 格式** 响应（例如：`{ "title": "...", "content": "..." }`）
+* STMB 的 Regex 选择是由 STMB 自己控制的
+* 即使脚本在 Regex 里被关闭，只要在 STMB 里选中，它仍可能运行
+* STMB 支持入站和出站处理的多选
 
 ---
 
-## 🚫 ST Memory Books 不做什么
+## ⚙️ 重要设置
 
-- **不是通用的世界书编辑器：** 本指南专注于 STMB 创建的条目。对于一般的世界书编辑，请使用 SillyTavern 内置的世界书编辑器。
+这不是完整设置表。完整列表请看 [readme.md](readme.md)。
 
----
-
-## 💡 获取帮助与更多信息
-
-- **更详细的信息：** [readme.md](readme.md)
-- **最新更新：** [changelog.md](changelog.md)
-- **转换旧的世界书：** [lorebookconverter.html](lorebookconverter.html)
-- **社区支持：** 加入 Discord 上的 SillyTavern 社区！（寻找 📕ST Memory Books 频道或直接私信 @tokyoapple 获取帮助。）
-- **Bug/功能建议：** 发现了 Bug 或有很棒的想法？在本仓库中提交 GitHub issue。
+* `Auto-create memory summaries` - 开启自动创建记忆
+* `Auto-Summary Interval` 和 `Auto-Summary Buffer` - 控制自动创建时机
+* `Show memory previews` - 允许在保存前检查或修改 AI 输出
+* `Prompt for consolidation when a tier is ready` 和 `Auto-Consolidation Tiers` - 提示你进行整合，而不是静默执行
+* `Manual Lorebook Mode` 和 `Auto-create lorebook if none exists` - 控制记忆保存位置
+* `Use regex (advanced)` - 打开由 STMB 管理的 Regex 选择
+* `Current SillyTavern Settings` - 直接使用当前 ST 连接
 
 ---
 
-### 📚 结合 Lorebook Ordering (STLO) 提升战力
+## 🔧 疑难解答
 
-为了实现高级记忆组织和更深层次的故事整合，我们强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。请参阅指南了解最佳实践、设置说明和技巧！
+这不是完整故障排查表。完整列表请看 [readme.md](readme.md)。
+
+* 确认 STMB 已启用，且 `Memory Books` 出现在扩展菜单里
+* 如果自动总结没触发，先确认你已经手动创建过一条记忆，并检查 interval/buffer
+* 如果记忆无法保存，确认已经绑定 lorebook，或启用 `Auto-create lorebook if none exists`
+* 如果 Regex 行为不对，检查 `📐 Configure regex…`
+* 如果整合没有出现，检查 `Prompt for consolidation when a tier is ready` 和 `Auto-Consolidation Tiers`
+
+---
+
+## 🔗 更多信息
+
+* [readme.md](readme.md)
+* [changelog.md](changelog.md)
+* [STMB 工作原理](howSTMBworks-zh-cn.md)
+* STLO guide: [STMB and STLO - English](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)

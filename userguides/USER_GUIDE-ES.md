@@ -4,9 +4,22 @@
 
 ¿Necesita que el bot recuerde cosas, pero el chat es demasiado largo para el contexto? ¿Quiere rastrear automáticamente puntos importantes de la trama sin tomar notas manualmente? ST Memory Books hace exactamente eso: observa sus chats y crea resúmenes inteligentes para que nunca vuelva a perder el hilo de su historia.
 
-(¿Busca detalles técnicos tras bastidores? Tal vez prefiera leer [Cómo funciona STMB](https://www.google.com/search?q=userguides%5ChowSTMBworks-en.md) en su lugar).
+(¿Busca detalles técnicos tras bastidores? Tal vez prefiera leer [Cómo funciona STMB](howSTMBworks-es.md) en su lugar).
 
 ---
+
+## 📑 Tabla de Contenidos
+
+- [Inicio Rápido](#-inicio-rpido-5-minutos-para-su-primera-memoria)
+- [Lo que hace ST Memory Books](#-lo-que-st-memory-books-realmente-hace)
+- [Elija su estilo](#-elija-su-estilo)
+- [Ahorro de tokens](#-ahorro-de-tokens-ocultar--mostrar)
+- [Consolidación de resúmenes](#-consolidacin-de-resmenes)
+- [Prompts secundarios y rastreadores](#-prompts-secundarios-y-rastreadores-inteligentes)
+- [Ajustes importantes](#-configuraciones-que-realmente-importan)
+- [Solución de problemas](#-solucin-de-problemas-cuando-las-cosas-no-funcionan)
+- [Lo que no hace](#-lo-que-st-memory-books-no-hace)
+- [Ayuda e información](#-obtener-ayuda-y-ms-infos)
 
 ## 🚀 Inicio Rápido (¡5 Minutos para su Primera Memoria!)
 
@@ -20,16 +33,18 @@
 
 ### Paso 2: Active la Auto-Magia
 
-* En el panel de control, busque **"Auto-Summary"** (Auto-Resumen).
+* En el panel de control, busque **"Auto-create memory summaries"**.
 * Enciéndalo (ON).
-* Configúrelo para crear recuerdos cada **20-30 mensajes** (un buen punto de partida).
+* Configure **Auto-Summary Interval** en **20-30 mensajes** (un buen punto de partida).
+* Mantenga **Auto-Summary Buffer** bajo al principio (`0-2` suele ir bien).
+* Cree primero una memoria manual para dejar el chat primado.
 * ¡Eso es todo! 🎉
 
 ### Paso 3: Chatee Normalmente
 
 * Siga chateando como de costumbre.
 * Después de 20-30 mensajes nuevos, ST Memory Books automáticamente:
-* Elegirá los mejores límites de la escena.
+* Usará los mensajes nuevos desde el último punto procesado.
 * Le pedirá a su IA que escriba un resumen.
 * Lo guardará en su colección de memoria.
 * Le mostrará una notificación cuando termine.
@@ -136,8 +151,9 @@ Piense en ST Memory Books como su **bibliotecario personal de IA** para conversa
 * `/scenememory 10-25` - Crear memoria de los mensajes 10 al 25.
 * `/creatememory` - Crear memoria de la escena marcada actualmente.
 * `/nextmemory` - Resumir todo desde la última memoria.
-* `/sideprompt "Relationship Tracker" {{macro}}="value"` - Ejecutar rastreador personalizado.
-* Cuando eliges un Side Prompt, el autocompletado del comando sugiere las macros de tiempo de ejecución restantes.
+* `/sideprompt "Relationship Tracker" {{macro}}="value" [X-Y]` - Ejecutar rastreador personalizado, con rango opcional.
+* `/sideprompt-on "Name"` o `/sideprompt-off "Name"` - Activar o desactivar un Side Prompt manualmente.
+* `/stmb-set-highest <N|none>` - Ajustar la base de auto-summary para el chat actual.
 
 **Lo que obtiene:**
 
@@ -149,52 +165,77 @@ Piense en ST Memory Books como su **bibliotecario personal de IA** para conversa
 
 ---
 
-## 🌈 Resúmenes de Arco (Arc Summaries)
+## 🙈 Ahorro de tokens: ocultar / mostrar
 
-Los Resúmenes de Arco se crean manualmente. Nada se resume o elimina a menos que usted elija hacerlo.
+Una de las maneras más simples de reducir el desorden y ahorrar tokens en chats largos es ocultar mensajes después de convertirlos en memoria.
 
-### P: ¿Qué son los Resúmenes de Arco?
+### ¿Qué significa “ocultar”?
 
-**R:** Los Resúmenes de Arco ayudan a mantener manejables las historias largas. Con el tiempo, puede recopilar muchas entradas de memoria antiguas. Algunas de ellas describen la misma parte de la historia.
-Un Resumen de Arco le permite combinar varios recuerdos más antiguos en un resumen más corto.
+Ocultar no borra nada. Los mensajes siguen en el chat y los recuerdos siguen en el lorebook; solo dejan de enviarse directamente a la IA.
 
-### P: ¿Qué sucede cuando hago un Resumen de Arco?
+### ¿Cuándo sirve?
 
-**R:** Cuando crea un Resumen de Arco:
+* Su chat ya es muy largo
+* Ya convirtió esos mensajes en memoria
+* Quiere limpiar la vista del chat
 
-* Los recuerdos seleccionados se combinan en una nueva entrada.
-* El nuevo resumen reemplaza esos recuerdos más antiguos.
-*(los recuerdos más antiguos pueden ocultarse automáticamente, no eliminarse)*.
-* La historia aún se recuerda, pero con menos tokens.
+### Auto-hide después de crear memoria
 
-### P: ¿Por qué hacer Resúmenes de Arco?
+STMB puede ocultar automáticamente mensajes después de crear una memoria:
 
-**R:** Los Resúmenes de Arco son útiles cuando:
+* **Do not auto-hide**: no oculta nada automáticamente
+* **Auto-hide all messages up to the last memory**: oculta todo lo ya cubierto
+* **Auto-hide only messages in the last memory**: oculta solo el último rango procesado
 
-* Su lista de memoria se está volviendo muy larga.
-* Los recuerdos más antiguos ya no son necesarios con todo detalle.
-* Desea reducir el uso de tokens en chats largos.
+También puede definir cuántos mensajes recientes permanecen visibles con **Messages to leave unhidden**.
 
-### P: ¿Cómo hago un Resumen de Arco?
+### Mostrar antes de generar memoria
 
-**R:** Para crear un Resumen de Arco:
+**Unhide hidden messages for memory generation** hace que STMB ejecute temporalmente `/unhide X-Y` antes de generar la memoria.
 
-1. Haga clic en **🌈 Consolidate Memories into Arcs** en la parte inferior de la ventana emergente principal de STMB.
-2. Elija un tipo de arco:
-* **Multi-Arc**
-La IA busca pausas naturales y crea múltiples arcos.
-Puede establecer un número mínimo de recuerdos por arco.
-*Funciona mejor con modelos fuertes (GPT, Gemini, Sonnet). Los modelos locales pueden tener dificultades.*
-* **Single Arc**
-La IA combina todos los recuerdos seleccionados en un solo arco.
-Se incluyen arcos anteriores para ayudar a mantener la historia consistente.
-* **Tiny**
-Una opción más rápida y simple que puede funcionar mejor con modelos locales,
-pero los resultados pueden ser menos detallados.
+### Ajuste inicial recomendable
 
+* **Auto-hide only messages in the last memory**
+* dejar **2** mensajes visibles
+* activar **Unhide hidden messages for memory generation**
 
-3. Seleccione los recuerdos que desea incluir.
-4. Haga clic en **Run** y espere a que termine el análisis del arco.
+## 🌈 Consolidación de resúmenes
+
+La consolidación combina recuerdos antiguos de STMB en resúmenes de nivel superior.
+
+### ¿Qué es?
+
+STMB puede combinar recuerdos o resúmenes existentes en un resumen más compacto. El primer nivel es **Arc** y también existen **Chapter**, **Book**, **Legend**, **Series** y **Epic**.
+
+### ¿Cuándo usarlo?
+
+* Su lista de recuerdos ya es muy larga
+* Los recuerdos antiguos ya no necesitan detalle escena por escena
+* Quiere ahorrar tokens sin perder continuidad
+
+### ¿Se ejecuta sola?
+
+No. La consolidación sigue necesitando confirmación.
+
+* Puede abrir **Consolidate Memories** manualmente
+* Opcionalmente STMB puede avisarle cuando un nivel llegue a su mínimo
+* Elegir **Yes** solo abre el popup de consolidación, no la ejecuta en silencio
+
+### ¿Qué se consolida?
+
+* Los recuerdos normales de STMB sí se consolidan
+* Los resúmenes de nivel superior también se pueden volver a consolidar
+* Los Side Prompts son rastreadores y no se mezclan en Arc/Chapter
+
+### ¿Cómo se usa?
+
+1. Haga clic en **Consolidate Memories**
+2. Elija el nivel destino
+3. Seleccione las entradas fuente
+4. Decida si quiere desactivar las fuentes tras crear el resumen
+5. Pulse **Run**
+
+Si la IA devuelve una mala respuesta de consolidación, puede revisarla y corregirla antes de volver a confirmar.
 
 ---
 

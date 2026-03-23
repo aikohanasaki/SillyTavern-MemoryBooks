@@ -29,8 +29,8 @@ Weitere Links:
 
 Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integration in die Geschichte empfehlen wir dringend, STMB zusammen mit [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) zu verwenden. Schauen Sie in die Anleitung für Best Practices, Einrichtungsanweisungen und Tipps!
 
-> Hinweis: Unterstützt verschiedene Sprachen: siehe Ordner [`/locales`](https://www.google.com/search?q=locales) für eine Liste. Internationale/lokalisierte Readmes und Benutzerhandbücher finden Sie im Ordner [`/userguides`](https://www.google.com/search?q=userguides).
-> Lorebook-Konverter und die Vorlagenbibliothek für Side Prompts befinden sich im Ordner [`/resources`](https://www.google.com/search?q=resources).
+> Hinweis: Unterstützt verschiedene Sprachen: siehe Ordner [`/locales`](../locales) für eine Liste. Internationale/lokalisierte Readmes und Benutzerhandbücher finden Sie im Ordner [`/userguides`](./).
+> Lorebook-Konverter und die Vorlagenbibliothek für Side Prompts befinden sich im Ordner [`/resources`](../resources).
 
 ---
 
@@ -255,7 +255,7 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 * **Editor-Aktualisierung:** Aktualisiert optional den Lorebook-Editor nach dem Hinzufügen einer Erinnerung.
 
 > **Bestehende Erinnerungen müssen konvertiert werden!**
-> Verwenden Sie den [Lorebook Converter](https://www.google.com/search?q=/resources/lorebookconverter.html), um das `stmemorybooks` Flag und erforderliche Felder hinzuzufügen.
+> Verwenden Sie den [Lorebook Converter](../resources/lorebookconverter.html), um das `stmemorybooks` Flag und erforderliche Felder hinzuzufügen.
 
 ---
 
@@ -467,6 +467,6 @@ Nein. Wenn es keine anderen World Info-Einträge oder Lorebooks gibt, kann die A
 * **In Titeln erlaubt:** Alle druckbaren Unicode-Zeichen sind erlaubt, einschließlich akzentuierter Buchstaben, Emojis, CJK und Symbolen.
 * **Blockiert:** Nur Unicode-Steuerzeichen (U+0000–U+001F, U+007F–U+009F) werden blockiert; diese werden automatisch entfernt.
 
-## Siehe [Details zur Zeichen-Richtlinie](https://www.google.com/search?q=charset.md) für Beispiele und Migrationshinweise.
+## Siehe [Details zur Zeichen-Richtlinie](../charset.md) für Beispiele und Migrationshinweise.
 
 *Entwickelt mit Liebe unter Verwendung von VS Code/Cline, umfangreichen Tests und Community-Feedback.* 🤖💕

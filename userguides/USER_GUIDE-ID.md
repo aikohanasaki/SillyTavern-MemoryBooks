@@ -4,7 +4,20 @@
 
 Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk konteks? Ingin melacak poin plot penting secara otomatis tanpa mencatat secara manual? ST Memory Books melakukan hal itu—ekstensi ini memantau obrolan Anda dan membuat ringkasan cerdas sehingga Anda tidak akan pernah kehilangan jejak cerita Anda lagi.
 
-(Mencari detail teknis di balik layar? Mungkin Anda menginginkan [Cara Kerja STMB](https://www.google.com/search?q=userguides%5ChowSTMBworks-en.md).)
+(Mencari detail teknis di balik layar? Mungkin Anda menginginkan [Cara Kerja STMB](howSTMBworks-id.md).)
+
+## 📑 Daftar Isi
+
+- [Mulai Cepat](#-mulai-cepat-5-menit-menuju-memori-pertama-anda)
+- [Apa yang Sebenarnya Dilakukan ST Memory Books](#-apa-yang-sebenarnya-dilakukan-st-memory-books)
+- [Pilih Gaya Anda](#-pilih-gaya-anda)
+- [Ringkasan Konsolidasi](#-ringkasan-konsolidasi)
+- [Pelacak, Side Prompts, & Templat](#-pelacak-side-prompts--templat-fitur-lanjutan)
+- [Kontrol Teks Lanjutan dengan Ekstensi Regex](#-kontrol-teks-lanjutan-dengan-ekstensi-regex)
+- [Pengaturan yang Benar-benar Penting](#-pengaturan-yang-benar-benar-penting)
+- [Pemecahan Masalah](#-pemecahan-masalah-saat-ada-masalah)
+- [Apa yang Tidak Dilakukan ST Memory Books](#-apa-yang-tidak-dilakukan-st-memory-books)
+- [Mendapatkan Bantuan & Info Lanjut](#-mendapatkan-bantuan--info-lanjut)
 
 ---
 
@@ -20,16 +33,18 @@ Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk ko
 
 ### Langkah 2: Aktifkan "Auto-Magic"
 
-* Di panel kontrol, cari **"Auto-Summary"**.
+* Di panel kontrol, cari **"Auto-create memory summaries"**.
 * Ubah menjadi **ON** (Hidup).
-* Atur untuk membuat memori setiap **20-30 pesan** (titik awal yang baik).
+* Atur **Auto-Summary Interval** ke **20-30 pesan** (titik awal yang baik).
+* Biarkan **Auto-Summary Buffer** rendah pada awalnya (`0-2` adalah rentang pemula yang bagus).
+* Buat satu memori manual terlebih dahulu agar chat diprime.
 * Selesai! 🎉
 
 ### Langkah 3: Mengobrol Seperti Biasa
 
 * Terus mengobrol seperti biasa.
 * Setelah 20-30 pesan baru, ST Memory Books akan secara otomatis:
-* Memilih batas adegan terbaik.
+  - Menggunakan pesan baru sejak checkpoint terakhir.
 * Meminta AI Anda untuk menulis ringkasan.
 * Menyimpannya ke koleksi memori Anda.
 * Menampilkan notifikasi saat selesai.
@@ -136,8 +151,9 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 * `/scenememory 10-25` - Buat memori dari pesan 10 hingga 25.
 * `/creatememory` - Buat memori dari adegan yang saat ini ditandai.
 * `/nextmemory` - Ringkas semuanya sejak memori terakhir.
-* `/sideprompt "Relationship Tracker" {{macro}}="value"` - Jalankan pelacak kustom.
-* Setelah Side Prompt dipilih, pelengkapan otomatis perintah akan menyarankan makro runtime yang masih diperlukan.
+* `/sideprompt "Relationship Tracker" {{macro}}="value" [X-Y]` - Jalankan side prompt, dengan makro runtime opsional dan rentang pesan opsional.
+* `/sideprompt-on "Name"` atau `/sideprompt-off "Name"` - Mengaktifkan atau menonaktifkan side prompt secara manual.
+* `/stmb-set-highest <N|none>` - Menyesuaikan baseline auto-summary untuk chat saat ini.
 
 **Apa yang Anda dapatkan:**
 
@@ -149,52 +165,90 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 
 ---
 
-## 🌈 Arc Summaries (Ringkasan Arc)
+## 🌈 Ringkasan Konsolidasi
 
-Arc Summaries dibuat secara manual. Tidak ada yang diringkas atau dihapus kecuali Anda memilih untuk melakukannya.
+Ringkasan konsolidasi membantu menjaga cerita panjang tetap terkelola dengan memadatkan memori STMB yang lama menjadi ringkasan tingkat lebih tinggi.
 
-### T: Apa itu Arc Summaries?
+### T: Apa itu Ringkasan Konsolidasi?
 
-**J:** Arc Summaries membantu menjaga cerita panjang tetap terkelola. Seiring waktu, Anda mungkin mengumpulkan banyak entri memori lama. Beberapa di antaranya menggambarkan bagian cerita yang sama.
-Arc Summary memungkinkan Anda menggabungkan beberapa memori lama menjadi satu ringkasan yang lebih pendek.
+**J:** Alih-alih hanya membuat memori tingkat adegan terus-menerus, STMB dapat menggabungkan memori atau ringkasan yang sudah ada menjadi rekap yang lebih ringkas. Tier pertama adalah **Arc**, dan tier rekap yang lebih tinggi juga tersedia untuk cerita yang lebih panjang:
 
-### T: Apa yang terjadi saat saya membuat Arc Summary?
+* Arc
+* Chapter
+* Book
+* Legend
+* Series
 
-**J:** Saat Anda membuat Arc Summary:
+### T: Mengapa menggunakannya?
 
-* Memori yang dipilih digabungkan menjadi satu entri baru.
-* Ringkasan baru menggantikan memori lama tersebut
-*(memori lama dapat disembunyikan secara otomatis — tidak dihapus).*
-* Cerita masih diingat, tetapi dengan penggunaan token yang lebih sedikit.
+**J:** Konsolidasi berguna ketika:
 
-### T: Mengapa membuat Arc Summaries?
+* Daftar memori Anda menjadi panjang
+* Entri lama tidak lagi memerlukan detail adegan demi adegan
+* Anda ingin mengurangi penggunaan token tanpa kehilangan kesinambungan
+* Anda ingin rekap naratif yang lebih bersih dan lebih tinggi tingkatnya
 
-**J:** Arc Summaries berguna ketika:
+### T: Apakah ini berjalan otomatis?
 
-* Daftar memori Anda menjadi sangat panjang.
-* Memori lama tidak lagi diperlukan dalam detail penuh.
-* Anda ingin mengurangi penggunaan token dalam obrolan panjang.
+**J:** Tidak. Konsolidasi tetap memerlukan konfirmasi.
 
-### T: Bagaimana cara membuat Arc Summary?
+* Anda selalu bisa membuka **Consolidate Memories** secara manual dari popup utama
+* Anda juga bisa mengaktifkan **Prompt for consolidation when a tier is ready**
+* Saat tier target yang dipilih mencapai minimum entri sumber yang memenuhi syarat, STMB menampilkan konfirmasi **yes/later**
+* Memilih **Yes** membuka popup konsolidasi dengan tier itu sudah dipilih; ini tidak berjalan sendiri secara diam-diam
 
-**J:** Untuk membuat Arc Summary:
+### T: Bagaimana cara menggunakannya?
 
-1. Klik **🌈 Consolidate Memories into Arcs** di bagian bawah popup utama STMB.
-2. Pilih tipe arc:
-* **Multi-Arc**
-AI mencari jeda alami dan membuat beberapa arc.
-Anda dapat mengatur jumlah minimum memori per arc.
-*Bekerja paling baik dengan model yang kuat (GPT, Gemini, Sonnet). Model lokal mungkin kesulitan.*
-* **Single Arc**
-AI menggabungkan semua memori yang dipilih menjadi satu arc.
-Arc sebelumnya disertakan untuk membantu menjaga konsistensi cerita.
-* **Tiny**
-Opsi yang lebih cepat dan sederhana yang mungkin bekerja lebih baik dengan model lokal,
-tetapi hasilnya mungkin kurang mendetail.
+**J:** Untuk membuat ringkasan konsolidasi:
 
+1. Klik **Consolidate Memories** di popup utama STMB
+2. Pilih tier ringkasan tujuan
+3. Pilih entri sumber yang ingin disertakan
+4. Opsional, nonaktifkan entri sumber setelah ringkasan baru dibuat
+5. Klik **Run**
 
-3. Pilih memori yang ingin Anda sertakan.
-4. Klik **Run** dan tunggu analisis arc selesai.
+Jika AI memberikan respons konsolidasi yang buruk, STMB dapat menampilkan alur perbaikan/tinjau sebelum Anda mencoba menyimpan lagi.
+
+### Apa yang dikonsolidasi, dan apa yang tidak?
+
+Konsolidasi bekerja pada **memori STMB dan ringkasan STMB**.
+
+Artinya:
+
+* memori biasa dapat dikonsolidasi menjadi ringkasan tingkat lebih tinggi
+* ringkasan tingkat lebih tinggi kemudian dapat dikonsolidasi lagi menjadi rekap yang lebih besar
+
+Side prompt berbeda.
+
+**Side prompt adalah entri pelacak**, bukan entri ringkasan memori. Side prompt dimaksudkan untuk menjaga informasi berkelanjutan tetap mutakhir, seperti:
+
+* status hubungan
+* tujuan saat ini
+* papan skor
+* keadaan dunia
+* pelacak alur cerita
+
+Dengan kata lain:
+
+* **Memori** = "apa yang terjadi di adegan ini?"
+* **Side Prompt** = "apa keadaan saat ini dari hal ini?"
+* **Konsolidasi** = "ringkas banyak memori menjadi rekap yang lebih besar"
+
+### Mengapa ini penting?
+
+Ini penting karena pengguna kadang mengira entri pelacak akan ikut naik ke ringkasan Arc atau Chapter.
+
+Itu **tidak** terjadi.
+
+Jika Anda ingin sesuatu menjadi bagian dari Konsolidasi, item itu harus ada sebagai entri memori/ringkasan STMB biasa, bukan hanya sebagai side prompt.
+
+### Aturan praktis
+
+Gunakan:
+
+* **Memori** untuk rekap adegan
+* **Side Prompt** untuk pelacak yang terus berjalan
+* **Konsolidasi** untuk memadatkan memori lama menjadi rekap yang lebih besar
 
 ---
 
