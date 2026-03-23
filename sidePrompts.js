@@ -12,6 +12,7 @@ import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPo
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { oai_settings } from '../../../openai.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens, parseSidePromptCommandInput } from './sidePromptMacros.js';
+import { tr } from './i18nHelpers.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -434,6 +435,26 @@ async function runSidePromptAttempt({ taskLabel, finalPrompt, conn, runEpoch }) 
     }
 }
 
+function ensureSidePromptTextNotBlank(text, tpl, trigger) {
+    if (String(text ?? '').trim()) return true;
+
+    const name = String(tpl?.name || 'Unknown');
+    console.error(`${MODULE_NAME}: SidePrompt returned blank content; skipping save`, {
+        trigger,
+        name,
+        key: tpl?.key || null,
+    });
+    toastr.error(
+        tr(
+            'STMemoryBooks_Toast_SidePromptBlankNotSaved',
+            'SidePrompt "{{name}}" returned blank content. No changes were saved.',
+            { name },
+        ),
+        'STMemoryBooks',
+    );
+    return false;
+}
+
 function buildSidePromptPreviewSceneData(compiledScene) {
     return {
         sceneStart: compiledScene?.metadata?.sceneStart ?? 0,
@@ -603,6 +624,7 @@ export async function evaluateTrackers() {
             }
 
             throwIfStmbStopped(runEpoch);
+            if (!ensureSidePromptTextNotBlank(resultText, tpl, 'onInterval')) continue;
 
             // Preview gating if enabled
             try {
@@ -633,6 +655,8 @@ export async function evaluateTrackers() {
             } catch (previewErr) {
                 console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
             }
+
+            if (!ensureSidePromptTextNotBlank(resultText, tpl, 'onInterval')) continue;
 
             // Upsert entry and update metadata checkpoint (generic + legacy for one-way compat)
             try {
@@ -755,6 +779,11 @@ export async function runAfterMemory(compiledScene, profile = null) {
                 let textToSave = r.text;
                 let approved = true;
 
+                if (!ensureSidePromptTextNotBlank(textToSave, r.tpl, 'onAfterMemory')) {
+                    results.push({ name: r.tpl.name, ok: false, error: new Error('Blank side prompt response') });
+                    continue;
+                }
+
                 try {
                     throwIfStmbStopped(runEpoch);
                     const previewResult = await resolveSidePromptPreview({
@@ -775,6 +804,10 @@ export async function runAfterMemory(compiledScene, profile = null) {
                 }
 
                 if (approved) {
+                    if (!ensureSidePromptTextNotBlank(textToSave, r.tpl, 'onAfterMemory')) {
+                        results.push({ name: r.tpl.name, ok: false, error: new Error('Blank side prompt response') });
+                        continue;
+                    }
                     throwIfStmbStopped(runEpoch);
                     const tpl = r.tpl;
                     const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
@@ -975,6 +1008,7 @@ export async function runSidePrompt(args) {
                 runEpoch,
             });
             throwIfStmbStopped(runEpoch);
+            if (!ensureSidePromptTextNotBlank(resultText, tpl, 'manual')) return '';
 
             // Preview gating if enabled
             try {
@@ -997,6 +1031,7 @@ export async function runSidePrompt(args) {
                 console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
             }
             throwIfStmbStopped(runEpoch);
+            if (!ensureSidePromptTextNotBlank(resultText, tpl, 'manual')) return '';
             const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
             const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
             const endId = compiled?.metadata?.sceneEnd ?? currentLast;
