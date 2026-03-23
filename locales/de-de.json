@@ -52,7 +52,7 @@
     "STMemoryBooks_AutoConsolidationTierPlaceholder": "Stufen auswählen…",
     "STMemoryBooks_AutoConsolidationPrompt_Title": "Konsolidierung verfügbar",
     "STMemoryBooks_AutoConsolidationPrompt_Body": "Du hast jetzt {{count}} passende {{sourcePlural}}. Das erfüllt das Minimum von {{min}}, das benötigt wird, um eine {{targetLabel}} zu erstellen.",
-    "STMemoryBooks_AutoConsolidationPrompt_Question": "Consolidate Memories jetzt öffnen?",
+    "STMemoryBooks_AutoConsolidationPrompt_Question": "Konsolidierung der Erinnerungen jetzt öffnen?",
     "STMemoryBooks_OpenConsolidation": "Konsolidierung öffnen",
     "STMemoryBooks_Later": "Später",
     "STMemoryBooks_AutoSummaryReadyTitle": "Automatische Zusammenfassung bereit",

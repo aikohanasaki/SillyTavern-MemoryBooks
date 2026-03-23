@@ -52,7 +52,7 @@
     "STMemoryBooks_AutoConsolidationTierPlaceholder": "Sélectionner des niveaux…",
     "STMemoryBooks_AutoConsolidationPrompt_Title": "Consolidation disponible",
     "STMemoryBooks_AutoConsolidationPrompt_Body": "Vous avez maintenant {{count}} {{sourcePlural}} éligibles. Cela atteint le minimum de {{min}} nécessaire pour créer une {{targetLabel}}.",
-    "STMemoryBooks_AutoConsolidationPrompt_Question": "Ouvrir Consolidate Memories maintenant ?",
+    "STMemoryBooks_AutoConsolidationPrompt_Question": "Ouvrir la consolidation des mémoires maintenant ?",
     "STMemoryBooks_OpenConsolidation": "Ouvrir la consolidation",
     "STMemoryBooks_Later": "Plus tard",
     "STMemoryBooks_AutoSummaryReadyTitle": "Auto-Résumé Prêt",

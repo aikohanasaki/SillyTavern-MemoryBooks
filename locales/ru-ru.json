@@ -52,7 +52,7 @@
   "STMemoryBooks_AutoConsolidationTierPlaceholder": "Выберите уровни…",
   "STMemoryBooks_AutoConsolidationPrompt_Title": "Консолидация доступна",
   "STMemoryBooks_AutoConsolidationPrompt_Body": "Теперь у вас есть {{count}} подходящих {{sourcePlural}}. Это соответствует минимуму {{min}}, необходимому, чтобы создать {{targetLabel}}.",
-  "STMemoryBooks_AutoConsolidationPrompt_Question": "Открыть Consolidate Memories сейчас?",
+  "STMemoryBooks_AutoConsolidationPrompt_Question": "Открыть консолидацию памятей сейчас?",
   "STMemoryBooks_OpenConsolidation": "Открыть консолидацию",
   "STMemoryBooks_Later": "Позже",
   "STMemoryBooks_AutoSummaryReadyTitle": "Авто-Сводка готова",
