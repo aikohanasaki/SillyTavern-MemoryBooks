@@ -6,7 +6,7 @@
     "js": "index.build.js",
     "css": "style.build.css",
     "author": "aikohanasaki",
-    "version": "6.0.0",
+    "version": "6.1.0",
     "license": "AGPL-3.0",
     "homePage": "https://github.com/aikohanasaki/SillyTavern-MemoryBooks",
     "auto_update": true,
