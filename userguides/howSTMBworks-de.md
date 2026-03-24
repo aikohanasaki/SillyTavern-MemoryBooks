@@ -1,257 +1,363 @@
-# Wie SillyTavern Memory Books (STMB) funktionieren – Ein "Programmer-Lite" Leitfaden
+# Wie SillyTavern Memory Books (STMB) funktionieren
 
-Dieser Leitfaden erklärt die Funktionsweise von STMB in klaren, verständlichen Begriffen für Benutzer, die keinen SillyTavern-Code schreiben, aber verstehen wollen, wie Prompts aufgebaut werden.
+Dies ist eine allgemeine Erklärung dazu, wie STMB arbeitet. Der Text ist nicht dazu gedacht, den Code zu erklären. Stattdessen geht es darum, welche Informationen STMB zusammenstellt, in welcher Reihenfolge sie gesendet werden und was das Modell zurückgeben soll.
 
-## Was STMB an die KI sendet (Memory-Generierung)
+Nutze dieses Dokument, wenn du Prompts für STMB schreiben oder überarbeiten willst.
 
-Wenn du "Generate Memory" (Memory generieren) ausführst, sendet STMB einen zweiteiligen Prompt:
+## Die 3 wichtigsten Prompt-Abläufe in STMB
 
-A) System-Anweisungen (aus einem Preset wie "summary", "synopsis", usw.)
+STMB hat drei Hauptabläufe:
 
-* Ein kurzer Anweisungsblock, der:
-* Das Modell anweist, die Szene zu analysieren.
-* Es anweist, NUR JSON zurückzugeben.
-* Die erforderlichen JSON-Felder definiert.
+1. Erstellung von Erinnerungen
+2. Side-Prompts
+3. Konsolidierung
 
+Sie hängen zusammen, erwarten aber nicht dieselbe Art von Ausgabe.
 
-* Makros wie {{user}} und {{char}} werden durch die Namen deines Chats ersetzt.
-* Dies ist NICHT dein normales Chat-Preset! Diese Prompts sind eigenständig und können im 🧩Summary Prompt Manager verwaltet werden.
+- Die Erstellung von Erinnerungen erwartet striktes JSON.
+- Side-Prompts erwarten normalerweise sauberen Klartext und können Markdown oder andere Lorebook-Formate verwenden. JSON sollte in Side-Prompts nicht benutzt werden.
+- Die Konsolidierung erwartet ebenfalls striktes JSON, aber in einem anderen Schema als Erinnerungen.
 
-B) Die Szene, formatiert für die Analyse
+## I. Erstellung von Erinnerungen
 
-* STMB formatiert deine letzten Nachrichten wie ein Drehbuch:
-* Optionaler Kontextblock früherer Memories (klar gekennzeichnet als DO NOT SUMMARIZE / NICHT ZUSAMMENFASSEN).
-* Das aktuelle Szenen-Transkript, eine Zeile pro Nachricht:
-Alice: …
-Bob: …
+Wenn du eine Erinnerung erstellst, sendet STMB in der Regel einen zusammengesetzten Prompt mit diesen Teilen in genau dieser Reihenfolge:
 
+1. Der ausgewählte Erinnerungs-Prompt oder Voreinstellungstext
+   - Das ist der Anweisungsblock aus dem Zusammenfassungs-Prompt-Manager.
+   - Er sagt dem Modell, welche Art von Zusammenfassung geschrieben werden soll und welche JSON-Form erwartet wird.
+   - Makros wie `{{user}}` und `{{char}}` werden vor dem Senden aufgelöst.
 
+2. Optionaler Kontext aus früheren Erinnerungen
+   - Wenn der Lauf so konfiguriert wurde, dass frühere Erinnerungen einbezogen werden, werden sie als Nur-Lese-Kontext eingefügt.
+   - Sie sind klar als Kontext markiert und nicht als das Material, das noch einmal zusammengefasst werden soll.
 
-Grundgerüst der Prompt-Struktur
+3. Das aktuelle Szenentranskript
+   - Der ausgewählte Chat-Bereich wird zeilenweise als `Sprecher: Nachricht` formatiert.
+   - Das ist die eigentliche Szene, die das Modell in eine Erinnerung umwandeln soll.
+
+Sehr grob sieht das so aus:
 
 ```text
-— System-Anweisungen (aus deinem gewählten Preset) —
-Analysiere die folgende Chat-Szene und gib eine Erinnerung (Memory) als JSON zurück.
+[Anweisungen aus Erinnerungs-Prompt oder Voreinstellung]
 
-Du musst mit NUR gültigem JSON in exakt diesem Format antworten:
-{
-  "title": "Kurzer Szenentitel (1-3 Wörter)",
-  "content": "…",
-  "keywords": ["…","…"]
-}
+=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+[null oder mehr frühere Erinnerungen]
+=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
 
-…(Preset-Anleitung geht weiter; Makros wie {{user}} und {{char}} bereits ersetzt)…
-
-— Szenen-Daten —
-=== VORHERIGER SZENEN-KONTEXT (NICHT ZUSAMMENFASSEN) ===
-Kontext 1 - [Titel]:
-[Text der vorherigen Memory]
-Schlüsselwörter: alpha, beta, …
-…(null oder mehr vorherige Memories)…
-=== ENDE VORHERIGER SZENEN-KONTEXT - FASSE NUR DIE SZENE UNTEN ZUSAMMEN ===
-
-=== SZENEN-TRANSKRIPT ===
-{{user}}: …
-{{char}}: …
-… (jede Nachricht in einer eigenen Zeile)
-=== ENDE SZENE ===
-
+=== SCENE TRANSCRIPT ===
+Alice: ...
+Bob: ...
+=== END SCENE ===
 ```
 
-Anmerkungen
+### Was das Modell zurückgeben soll
 
-* Token-Sicherheit: STMB schätzt den Token-Verbrauch und warnt dich, wenn ein Grenzwert überschritten wird.
-* Wenn du ausgehende Regex in den Einstellungen aktiviert hast, wendet STMB deine ausgewählten Regex-Skripte auf den Prompt-Text an, direkt bevor er gesendet wird.
-
-## Was die KI zurückgeben muss (JSON-Vertrag)
-
-Die KI muss ein einzelnes JSON-Objekt mit diesen Feldern zurückgeben:
-
-* title: string (kurz)
-* content: string (der Text der Zusammenfassung/Memory)
-* keywords: array von strings (10–30 spezifische Begriffe, von Presets empfohlen)
-
-Strenge und Kompatibilität
-
-* Gib NUR das JSON-Objekt zurück – keine Prosa, keine Erklärungen.
-* Die Schlüssel (Keys) müssen exakt lauten: "title", "content", "keywords".
-* STMB toleriert "summary" oder "memory_content" für content, aber "content" ist die beste Praxis.
-
-
-* keywords muss ein Array von Strings sein (kein kommagetrennter String).
-
-Minimales Beispiel (gültig)
+Erwartet wird ein JSON-Objekt:
 
 ```json
 {
-  "title": "Stilles Geständnis",
-  "content": "Später Abend, Alice gibt zu, dass der Hack persönlich war. Bob hinterfragt die Ethik; sie einigen sich auf Grenzen und planen einen vorsichtigen nächsten Schritt.",
-  "keywords": ["Alice", "Bob", "Geständnis", "Grenzen", "Hack", "Ethik", "Abend", "nächste Schritte"]
+  "title": "Short scene title",
+  "content": "The actual memory text",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
 }
-
 ```
 
-Längeres Beispiel (gültig)
+Best Practice:
+
+- Gib nur das JSON-Objekt zurück.
+- Verwende genau die Schlüssel `title`, `content` und `keywords`.
+- `keywords` muss ein echtes JSON-Array aus Strings sein.
+- Halte den Titel kurz und gut lesbar.
+- Halte die Keywords konkret und gut für den Abruf: Orte, Objekte, Eigennamen, markante Handlungen, Kennungen.
+
+STMB kann leicht unordentliche Ausgaben manchmal noch retten, aber Prompts sollten sich nicht darauf verlassen.
+
+### Was einen guten Erinnerungs-Prompt ausmacht
+
+Gute Erinnerungs-Prompts machen vier Dinge klar:
+
+1. Sie sagen dem Modell, welche Art von Erinnerung geschrieben werden soll
+   - Detailliertes Szenenprotokoll
+   - Kompakte Synopsis
+   - Minimale Zusammenfassung
+   - Literarische Erinnerung in Erzählform
+
+2. Sie sagen dem Modell, worauf es ankommt
+   - Story-Beats
+   - Entscheidungen
+   - Veränderungen bei Figuren
+   - Enthüllungen
+   - Ergebnisse
+   - kontinuitätsrelevante Details
+
+3. Sie sagen dem Modell, was ignoriert werden soll
+   - meistens OOC
+   - Filler
+   - reine Ausschmückung, wenn die Erinnerung straffer sein soll
+
+4. Sie sagen dem Modell exakt, welches JSON zurückgegeben werden soll
+
+### Was einen schwachen Erinnerungs-Prompt ausmacht
+
+Schwache Prompts scheitern meistens an einer dieser Stellen:
+
+- Sie beschreiben den Schreibstil, aber nicht die JSON-Form.
+- Sie fordern "hilfreiche Analyse" oder "Gedanken" statt eines fertigen Erinnerungsobjekts.
+- Sie fordern abstrakte Keywords statt konkreter Begriffe für den späteren Abruf.
+- Sie trennen früheren Kontext und aktuelle Szene nicht sauber voneinander.
+- Sie verlangen zu viele Ausgabeformate gleichzeitig.
+
+### Praktische Hinweise für Erinnerungs-Prompts
+
+- Formuliere klar, ob die Zusammenfassung erschöpfend oder token-effizient sein soll.
+- Wenn du Markdown innerhalb von `content` willst, sage das direkt.
+- Wenn du kurze Erinnerungen willst, begrenze den Inhalt, nicht das JSON-Schema.
+- Wenn dir guter Abruf wichtig ist, investiere Prompt-Platz eher in die Qualität der Keywords als nur in den Stil der Zusammenfassung.
+- Behandle frühere Erinnerungen als Kontinuitäts-Kontext, nicht als Material, das neu geschrieben werden soll.
+
+## II. Side-Prompts
+
+Side-Prompts sind KEINE Erinnerungen. Sie sind Tracker- oder Update-Prompts, die meist einen eigenen Lorebook-Eintrag schreiben oder überschreiben. Das ist ein ganz anderes Konzept als eine Erinnerung, und genau das sollte man beim Schreiben der Prompts immer im Kopf behalten.
+
+Wenn ein Side-Prompt läuft, stellt STMB normalerweise diese Teile in dieser Reihenfolge zusammen:
+
+1. Der eigentliche Anweisungstext des Side-Prompts
+   - Das ist der konkrete Arbeitsauftrag für diesen Tracker.
+   - ST-Standardmakros wie `{{user}}` und `{{char}}` werden aufgelöst.
+   - Benutzerdefinierte Laufzeitmakros können bei manuellen Aufrufen ebenfalls eingefügt werden.
+
+2. Optional ein vorheriger Eintrag
+   - Wenn für diesen Side-Prompt bereits Inhalt gespeichert ist, kann STMB die aktuelle Fassung zuerst einfügen.
+   - So kann das Modell einen bestehenden Tracker aktualisieren, statt jedes Mal komplett neu zu beginnen.
+
+3. Optionaler Kontext aus früheren Erinnerungen
+   - Wenn die Vorlage frühere Erinnerungen anfordert, fügt STMB sie als Nur-Lese-Kontext ein.
+
+4. Der kompilierte Szenentext
+   - Das ist das aktuelle Szenenmaterial, auf das der Tracker reagieren soll.
+
+5. Optionale Hinweise zum Antwortformat
+   - Das ist kein erzwungenes Parser-Schema.
+   - Es sind einfach zusätzliche Anweisungen für das Format, das du haben willst.
+
+Sehr grob sieht das so aus:
+
+```text
+[Anweisungen des Side-Prompts]
+
+=== PRIOR ENTRY ===
+[bestehender Tracker-Text, falls vorhanden]
+
+=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+[optionale frühere Erinnerungen]
+=== END PREVIOUS SCENE CONTEXT ===
+
+=== SCENE TEXT ===
+[kompilierter Szenentext]
+
+=== RESPONSE FORMAT ===
+[optionale Hinweise zum Format]
+```
+
+### Was das Modell zurückgeben soll
+
+STMB erwartet hier Klartext, der direkt gespeichert werden kann.
+
+Genau das ist der entscheidende Unterschied zu Erinnerungen:
+
+- Side-Prompts wollen kein JSON.
+- STMB speichert den zurückgegebenen Text normalerweise unverändert.
+- Wenn du in einem Side-Prompt JSON verlangst, ist dieses JSON nur Text, solange dein eigener Workflow nichts anderes daraus macht.
+
+Das bedeutet: Side-Prompt-Prompts sollten auf nutzbare Endausgabe zielen, nicht auf parserfreundliches Erinnerungs-JSON.
+
+### Was einen guten Side-Prompt ausmacht
+
+Gute Side-Prompts sind eng gefasst, stabil und gut aktualisierbar.
+
+Beispiele:
+
+- Eine Figurenliste in Reihenfolge der Wichtigkeit pflegen
+- Den aktuellen Beziehungsstatus festhalten
+- Offene Handlungsstränge verfolgen
+- Festhalten, was `{{char}}` aktuell über `{{user}}` glaubt
+
+Gute Formulierungen für Side-Prompts machen meistens Folgendes:
+
+1. Sie definieren die Aufgabe klar
+   - "Pflege eine Figurenliste"
+   - "Aktualisiere das aktuelle Beziehungsblatt"
+   - "Halte einen Bericht zu offenen Handlungssträngen"
+
+2. Sie sagen, ob aktualisiert, ersetzt oder angehängt werden soll
+   - Das ist wichtig, weil ein vorheriger Eintrag Teil des Kontexts sein kann.
+
+3. Sie definieren den Aufbau der Ausgabe
+   - Überschriften
+   - Listenstruktur
+   - Abschnitte
+   - Reihenfolge
+
+4. Sie sagen, was nicht hinein soll
+   - Spekulationen
+   - Duplikate
+   - veraltete Informationen
+   - Erklärungen über die Aufgabe selbst
+
+### Was einen schwachen Side-Prompt ausmacht
+
+- Er ist zu breit: "Verfolge einfach alles."
+- Er sagt nie, ob der alte Eintrag überarbeitet oder komplett neu geschrieben werden soll.
+- Er fordert Erklärungen oder Chain-of-Thought statt fertigem Tracker-Text.
+- Er lässt das Format so vage, dass der Tracker mit der Zeit auseinanderdriftet.
+
+### Praktische Hinweise für Side-Prompts
+
+- Schreibe Side-Prompts wie Wartungsanweisungen, nicht wie Zusammenfassungs-Prompts.
+- Gehe davon aus, dass das Modell zuerst den aktuellen Tracker und danach die neue Szene sieht.
+- Halte jeden Tracker auf genau eine Aufgabe fokussiert.
+- Nutze das Antwortformat-Feld, um Aufbau, Abschnittsnamen und Reihenfolge zu steuern.
+
+## III. Konsolidierung
+
+Die Konsolidierung fasst niedrigere Ebenen zu höheren Zusammenfassungen zusammen.
+
+Beispiele:
+
+- Erinnerungen zu Arc-Zusammenfassungen
+- Arc-Zusammenfassungen zu Kapitel-Zusammenfassungen
+- Kapitel-Zusammenfassungen zu Buch-Zusammenfassungen
+
+Wenn die Konsolidierung läuft, stellt STMB normalerweise diese Teile in dieser Reihenfolge zusammen:
+
+1. Der ausgewählte Konsolidierungs-Prompt oder Voreinstellungstext
+   - Er erklärt, wie die Quell-Einträge verdichtet werden sollen.
+   - Er definiert zugleich das JSON-Schema, das das Modell zurückgeben soll.
+
+2. Optional eine frühere Zusammenfassung der höheren Ebene
+   - Wenn eine frühere Zusammenfassung dieser Ebene weitergeführt wird, wird sie zuerst als kanonischer Kontext eingefügt.
+   - Der Prompt sagt dem Modell ausdrücklich, dass dieser Teil nicht umgeschrieben werden soll.
+
+3. Die ausgewählten Einträge der niedrigeren Ebene in chronologischer Reihenfolge
+   - Jeder Quell-Eintrag wird mit Kennung, Titel und Inhalt eingefügt.
+   - Das ist das Material, das das Modell gruppieren, verdichten und in höhere Zusammenfassungen umwandeln soll.
+
+Sehr grob sieht das so aus:
+
+```text
+[Anweisungen aus Konsolidierungs-Prompt oder Voreinstellung]
+
+=== PREVIOUS ARC/CHAPTER/BOOK (CANON - DO NOT REWRITE) ===
+[optionale frühere Zusammenfassung der höheren Ebene]
+=== END PREVIOUS ... ===
+
+=== MEMORIES / ARCS / CHAPTERS ===
+=== memory 001 ===
+Title: ...
+Contents: ...
+=== end memory 001 ===
+
+=== memory 002 ===
+Title: ...
+Contents: ...
+=== end memory 002 ===
+...
+=== END ... ===
+```
+
+### Was das Modell zurückgeben soll
+
+STMB erwartet hier ein JSON-Objekt in dieser Form:
 
 ```json
 {
-  "title": "Waffenstillstand auf dem Dach",
-  "content": "Zeitlinie: Nacht nach dem Vorfall auf dem Markt. Handlungspunkte: Alice offenbart, dass sie den Sender platziert hat. Bob ist frustriert, hört aber zu; sie gehen den Hinweis durch und identifizieren das Lagerhaus. Schlüsselinteraktionen: Alice entschuldigt sich ohne Ausreden; Bob stellt Bedingungen für die Fortsetzung. Nennenswerte Details: Kaputtes Funkgerät, Lagerhaus-Label \"K-17\", entfernte Sirenen. Ergebnis: Sie schließen einen vorläufigen Waffenstillstand und vereinbaren, K-17 im Morgengrauen auszukundschaften.",
-  "keywords": ["Alice", "Bob", "Waffenstillstand", "Lagerhaus K-17", "Entschuldigung", "Bedingungen", "Sirenen", "Erkundungsplan", "Nacht", "Markt-Vorfall"]
+  "summaries": [
+    {
+      "title": "Short higher-tier title",
+      "summary": "The consolidated recap text",
+      "keywords": ["keyword1", "keyword2"],
+      "member_ids": ["001", "002"]
+    }
+  ],
+  "unassigned_items": [
+    {
+      "id": "003",
+      "reason": "Why this item was left out"
+    }
+  ]
 }
-
 ```
 
-### Wenn das Modell sich falsch verhält
+Die wichtige Idee dahinter:
 
-STMB versucht, leicht fehlerhafte Ausgaben zu retten:
+- Die Konsolidierung kann eine oder mehrere Zusammenfassungen zurückgeben.
+- `member_ids` sagt STMB, welche Quell-Einträge zu welcher Zusammenfassung gehören.
+- `unassigned_items` ist die Art, wie das Modell sagt: "Dieser Eintrag passt nicht in die Zusammenfassung, die ich gerade erstellt habe."
 
-* Akzeptiert JSON innerhalb von Code-Blöcken (Fences) und extrahiert den Block.
-* Entfernt Kommentare und nachgestellte Kommas vor dem Parsen.
-* Erkennt abgeschnittenes/unbalanciertes JSON und gibt klare Fehler aus, z. B.:
-* NO_JSON_BLOCK – Modell antwortete mit Prosa statt JSON
-* UNBALANCED / INCOMPLETE_SENTENCE – wahrscheinlich abgeschnitten
-* MISSING_FIELDS_TITLE / MISSING_FIELDS_CONTENT / INVALID_KEYWORDS – Schema-Probleme
+### Was einen guten Konsolidierungs-Prompt ausmacht
 
+Gute Konsolidierungs-Prompts machen drei Dinge gut:
 
+1. Sie definieren das Ziel der Verdichtung
+   - ein einzelner Arc
+   - ein oder mehrere Arcs
+   - kompakte, aber vollständige Zusammenfassung
+   - stark verdichtete Zusammenfassung
 
-Bestes Modell-Verhalten
+2. Sie definieren die Logik der Auswahl
+   - Chronologie bewahren
+   - Kontinuität bewahren
+   - zusammengehörige Einträge zusammenfassen
+   - nicht passende Einträge als nicht zugeordnet markieren
 
-* Ein einzelnes JSON-Objekt mit den erforderlichen Feldern ausgeben.
-* Keinen umgebenden Text oder Markdown-Fences hinzufügen.
-* "title" kurz halten; "keywords" spezifisch und abruffreundlich gestalten.
-* Dem Preset gehorchen (z. B. [OOC]-Inhalte ignorieren).
+3. Sie definieren die JSON-Struktur sehr klar
 
-### Fortgeschritten: Ausführungspfad (Optional)
+Die besten Konsolidierungs-Prompts sagen dem Modell zusätzlich, was erhalten bleiben soll:
 
-* Prompt-Zusammenstellung: `buildPrompt(profile, scene)` kombiniert den Anweisungstext des gewählten Presets mit dem Szenen-Transkript und dem optionalen Block vorheriger Memories.
-* Senden: `sendRawCompletionRequest()` übermittelt den Text an deinen gewählten Provider/Modell.
-* Parsen: `parseAIJsonResponse()` extrahiert und validiert title/content/keywords, mit leichter Reparatur falls nötig.
-* Ergebnis: STMB speichert die strukturierte Memory, wendet dein Titelformat an und bereitet vorgeschlagene Lorebook-Schlüssel (Keys) vor.
+- wichtige Story-Beats
+- Wendepunkte
+- Versprechen
+- Konsequenzen
+- offene Fäden
+- Veränderungen in Beziehungen
+- Zitate oder Kennungen, die für die Kontinuität wichtig sind
 
-## Side Prompts (Anleitung)
+### Was einen schwachen Konsolidierungs-Prompt ausmacht
 
-Side Prompts sind zusätzliche, vorlagengesteuerte Generatoren, die strukturierte Notizen zurück in dein Lorebook schreiben (z. B. Tracker, Berichte, Besetzungslisten). Sie sind getrennt vom "Memory-Generierung"-Pfad, erzeugen eigene Side-Prompt-Lorebook-Einträge und können je nach Vorlage automatisch oder auf Abruf laufen. Vorlagen mit benutzerdefinierten Laufzeit-Makros sind nur für den manuellen Aufruf geeignet.
+- Er fordert eine Zusammenfassung, erklärt aber nicht, wie Quell-Einträge gruppiert werden sollen.
+- Er sagt nicht, was mit Ausreißern oder unpassenden Einträgen passieren soll.
+- Er fordert `member_ids` nicht ein.
+- Er verlangt freien Fließtext statt des JSON-Objekts für die Konsolidierung.
+- Er legt zu viel Gewicht auf Stil und zu wenig auf Auswahl- und Gruppierungslogik.
 
-Wofür sie gut sind
+### Praktische Hinweise für Konsolidierungs-Prompts
 
-* Handlungs-/Status-Tracker (z. B. "Plotpoints")
-* Status-/Beziehungs-Dashboards (z. B. "Status")
-* Besetzungslisten / NPC Who’s Who (z. B. "Cast of Characters")
-* POV-Notizen oder Einschätzungen (z. B. "Assess")
+- Sage dem Modell klar, ob du eine einzige kohärente Zusammenfassung willst oder die kleinste sinnvolle Anzahl von Zusammenfassungen.
+- Verlange Chronologie.
+- Verlange eine explizite Behandlung von Resten und Ausreißern.
+- Halte auch hier die Keywords konkret, weil höhere Zusammenfassungen trotzdem noch für den Abruf nützlich sein sollen.
 
-Eingebaute Vorlagen (von STMB mitgeliefert)
+## Die eigentliche Regel für Prompt-Schreiben
 
-* Plotpoints – verfolgt Handlungsstränge und Hooks
-* Status – fasst Beziehungs-/Affinitätsinformationen zusammen
-* Cast of Characters – hält eine NPC-Liste in der Reihenfolge ihrer Wichtigkeit für die Handlung
-* Assess – notiert, was {{char}} über {{user}} gelernt hat
+Wenn du für STMB schreibst, denke nicht nur: "Was soll die KI sagen?"
 
-Wo verwalten
+Denk stattdessen:
 
-* Öffne den "Side Prompts Manager" (innerhalb von STMB), um Vorlagen anzusehen, zu erstellen, zu importieren/exportieren, zu aktivieren oder zu konfigurieren. Standard-ST-Makros wie `{{user}}` und `{{char}}` werden in `Prompt` und `Response Format` erweitert; benutzerdefinierte `{{...}}`-Makros werden als Laufzeit-Eingaben behandelt.
+1. Welchen Kontext setzt STMB vor die eigentliche Szene?
+2. Was ist die wirkliche Einheit des Materials, das analysiert wird?
+3. Erwartet dieser Ablauf striktes JSON oder fertigen Klartext?
+4. Welche Informationen sollen für den späteren Abruf erhalten bleiben?
+5. Was soll das Modell ignorieren, verdichten, bewahren oder weitertragen?
 
-Einen Side Prompt erstellen oder aktivieren
+Wenn dein Prompt diese fünf Fragen klar beantwortet, funktioniert er mit STMB meistens gut.
 
-1. Öffne den Side Prompts Manager.
-2. Erstelle eine neue Vorlage oder aktiviere eine eingebaute.
-3. Konfigurieren:
-* Name: Anzeigename (der gespeicherte Lorebook-Eintrag wird "Name (STMB SidePrompt)" betitelt).
-* Prompt: Anweisungstext, dem das Modell folgen wird. Standard-ST-Makros werden hier erweitert.
-* Response Format: Optionaler Anleitungsblock, der an den Prompt angehängt wird (kein Schema, nur Anweisungen). Auch hier werden Standard-ST-Makros erweitert.
-* Laufzeit-Makros: Nicht-Standard-`{{...}}`-Tokens werden zu Pflicht-Eingaben für den manuellen `/sideprompt`-Aufruf, z. B. `{{npc name}}="Jane Doe"`.
-* Trigger (Auslöser):
-• On After Memory – läuft nach jeder erfolgreichen Memory-Generierung für die aktuelle Szene.
-• On Interval – läuft, wenn eine Schwelle sichtbarer Benutzer-/Assistenten-Nachrichten seit dem letzten Lauf erreicht ist (`visibleMessages`).
-• Manual command – erlaubt das Ausführen mit `/sideprompt`.
-* Optionaler Kontext: `previousMemoriesCount` (0–7), um aktuelle Memories als Nur-Lese-Kontext einzubeziehen.
-* Model/profile: Optional das Modell/Profil überschreiben (`overrideProfileEnabled` + `overrideProfileIndex`). Andernfalls wird das STMB-Standardprofil verwendet (das die aktuellen ST-UI-Einstellungen spiegeln kann, falls konfiguriert).
-* Lorebook-Injektions-Einstellungen:
-• constVectMode: link (vektorisiert, Standard), green (normal), blue (konstant/constant)
-• position: Einfügestrategie
-• orderMode/orderValue: manuelle Sortierung bei Bedarf
-• preventRecursion/delayUntilRecursion: boolesche Flags (Ja/Nein)
+## FAQ-Notizen
 
+- "Kann ich sehen, was tatsächlich an die KI gesendet wurde?"
+  Ja. Schau in dein Terminal oder Log, wenn du den zusammengesetzten Prompt ansehen willst.
 
+- "Erzwingt STMB gute Ausgabe, selbst wenn mein Prompt schwach ist?"
+  Nicht wirklich. STMB kann fehlerhaftes JSON manchmal retten, aber es kann keinen vagen Prompt reparieren, der von Anfang an das Falsche verlangt hat.
 
-Manueller Lauf mit /sideprompt
-
-* Syntax: `/sideprompt "Name" {{macro}}="value" [X‑Y]`
-* Beispiele:
-• `/sideprompt "Status"`
-• `/sideprompt "NPC Directory" {{npc name}}="Jane Doe"`
-• `/sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120`
-
-
-* Wenn du einen Bereich weglässt, kompiliert STMB Nachrichten seit dem letzten Checkpoint (begrenzt auf ein aktuelles Fenster).
-* Manueller Lauf erfordert, dass die Vorlage den Sideprompt-Befehl erlaubt (aktiviere "Allow manual run via /sideprompt" in den Vorlageneinstellungen). Wenn deaktiviert, wird der Befehl abgewiesen.
-* Der Vorlagenname muss in Anführungszeichen stehen, und Laufzeit-Makrowerte müssen ebenfalls in Anführungszeichen stehen.
-* Nachdem du eine Vorlage im Slash-Command ausgewählt hast, schlägt STMB die noch fehlenden Pflicht-Makros für diese Vorlage vor.
-
-Automatische Läufe
-
-* After Memory (Nach Memory): Alle aktivierten Vorlagen mit dem `onAfterMemory`-Trigger laufen unter Verwendung der bereits kompilierten Szene. STMB verarbeitet Läufe stapelweise mit einem kleinen Limit für Gleichzeitigkeit und kann Erfolgs-/Fehlermeldungen pro Vorlage anzeigen.
-* Intervall-Tracker: Aktivierte Vorlagen mit `onInterval` laufen, sobald die Anzahl der sichtbaren (Nicht-System-)Nachrichten seit dem letzten Lauf `visibleMessages` erreicht. STMB speichert Checkpoints pro Vorlage (z. B. `STMB_sp_<key>_lastMsgId`) und entprellt Läufe (~10s). Die Szenen-Zusammenstellung ist zur Sicherheit auf ein aktuelles Fenster begrenzt.
-* Vorlagen mit benutzerdefinierten Laufzeit-Makros sind nur manuell nutzbar. STMB entfernt `onInterval` und `onAfterMemory` bei solchen Vorlagen beim Speichern/Importieren und zeigt eine Warnung an.
-
-Vorschau und Speichern
-
-* Wenn "show memory previews" in den STMB-Einstellungen aktiviert ist, erscheint ein Vorschau-Popup. Du kannst akzeptieren, bearbeiten, wiederholen oder abbrechen. Akzeptierter Inhalt wird in dein gebundenes Lorebook unter "Name (STMB SidePrompt)" geschrieben.
-* Side Prompts erfordern ein an den Chat gebundenes Memory-Lorebook (oder Auswahl im manuellen Modus). Wenn keines gebunden ist, zeigt STMB eine Benachrichtigung und überspringt den Lauf.
-* Wenn eine Vorlage benutzerdefinierte Laufzeit-Makros enthält, werden automatische Trigger beim Speichern/Importieren entfernt und STMB zeigt dazu einen Hinweis an.
-
-Import/Export und Zurücksetzen der Eingebauten
-
-* Export: Speichere dein Side Prompts-Dokument als JSON.
-* Import: Fügt Einträge additiv hinzu; Duplikate werden sicher umbenannt (kein Überschreiben). Enthält eine importierte Vorlage benutzerdefinierte Laufzeit-Makros, entfernt STMB automatisch `onInterval` und `onAfterMemory` und zeigt eine Warnung an.
-* Recreate Built‑ins: Setzt die eingebauten Vorlagen auf die Standards der aktuellen Spracheinstellung zurück (benutzererstellte Vorlagen bleiben unberührt).
-
-## Side Prompts vs. Memory Path: Hauptunterschiede
-
-* Zweck
-* Memory Path: Erzeugt kanonische Szenen-Memories als striktes JSON (title, content, keywords) für den Abruf (Retrieval).
-* Side Prompts: Erzeugt zusätzliche Berichte/Tracker als Freitext, der in deinem Lorebook gespeichert wird.
-
-
-* Wann sie laufen
-* Memory Path: Läuft nur, wenn du "Generate Memory" drückst (oder über dessen Workflow).
-* Side Prompts: Kann "After Memory" (nach Memory), bei Intervall-Schwellenwerten oder manuell mit `/sideprompt` laufen. Vorlagen mit benutzerdefinierten Laufzeit-Makros sind nur manuell nutzbar.
-
-
-* Prompt-Form
-* Memory Path: Verwendet ein dediziertes "Summary Prompt Manager"-Preset mit einem strengen JSON-Vertrag; STMB validiert/repariert JSON.
-* Side Prompts: Verwendet den Anweisungstext der Vorlage + optionalen vorherigen Eintrag + optionale vorherige Memories + kompilierten Szenentext; kein JSON-Schema erforderlich (optionales Response Format dient nur als Anleitung). Standard-ST-Makros werden in Prompt und Response Format erweitert.
-
-
-* Ausgabe und Speicherung
-* Memory Path: Ein JSON-Objekt: `{ title, content, keywords }` → gespeichert als Memory-Eintrag, der für den Abruf genutzt wird.
-* Side Prompts: Reintext-Inhalt → gespeichert als Lorebook-Eintrag mit dem Titel "Name (STMB SidePrompt)" (Legacy-Namen werden für Updates erkannt). Keywords sind nicht erforderlich. Nicht-Standard-`{{...}}`-Tokens sind Pflicht-Eingaben für den manuellen Aufruf.
-
-
-* Einbindung in den Chat-Prompt
-* Memory Path: Einträge werden über Tags/Keywords, Prioritäten, Scopes und Token-Budgets ausgewählt.
-* Side Prompts: Einbindung wird durch die Lorebook-Injektions-Einstellungen jeder Vorlage gesteuert (konstant vs. vektorisiert, Position, Reihenfolge).
-
-
-* Modell-/Profil-Auswahl
-* Memory Path: Verwendet Memory-Profile, die im STMB Summary Prompt Manager definiert sind.
-* Side Prompts: Verwendet das STMB-Standardprofil (welches die aktuelle ST-UI spiegeln kann), sofern keine vorlagenspezifische Überschreibung aktiviert ist.
-
-
-* Gleichzeitigkeit und Batching
-* Memory Path: Einzellauf pro Generierung.
-* Side Prompts: "After-Memory"-Läufe werden stapelweise mit begrenzter Gleichzeitigkeit ausgeführt; Ergebnisse können in Wellen vorgeprüft und gespeichert werden.
-
-
-* Token-/Größenkontrollen
-* Memory Path: STMB schätzt den Token-Verbrauch und erzwingt einen JSON-Vertrag.
-* Side Prompts: Kompiliert ein begrenztes Szenenfenster und fügt optional einige aktuelle Memories hinzu; keine strikte JSON-Durchsetzung.
-
-
-
-## FAQ-Stil Notizen
-
-* "Wird das ändern, wie ich Nachrichten schreibe?"
-Nicht wirklich. Du kuratierst hauptsächlich Einträge und lässt STMB die richtigen automatisch einbinden.
-* "Kann ich sehen, was tatsächlich an die KI gesendet wurde?"
-Ja – schau in dein Terminal, um zu inspizieren, was injiziert wurde.
+- "Worauf sollte ich beim Überarbeiten von Prompts zuerst optimieren?"
+  Optimiere zuerst das Ausgabeformat. Danach, welche Details erhalten bleiben sollen. Der Stil kommt erst danach.
