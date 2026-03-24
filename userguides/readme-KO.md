@@ -20,7 +20,7 @@
 
 * 📘 [사용자 가이드 (한국어)](USER_GUIDE-KO.md)
 * 💡 [STMB 작동 원리(한국어)](howSTMBworks-ko.md)
-* 📋 [버전 기록 & 변경 로그](changelog.md)
+* 📋 [버전 기록 & 변경 로그](../changelog.md)
 * 💡 [📕 Memory Books와 📚 Lorebook Ordering 함께 사용하기](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
@@ -36,21 +36,44 @@
 
 ## 📑 목차
 
-- 사전 요구 사항
-- 시작하기
-- 기억 유형: 장면 vs 요약
-- 기억 생성
-- 로어북 통합
-- 슬래시 명령어
-- 그룹 채팅 지원
-- 작동 모드
-- 트래커와 사이드 프롬프트
-- Regex 연동
-- 프로필 관리
-- 설정 및 구성
-- FAQ
-- 문제 해결
-- Lorebook Ordering (STLO)으로 기능 강화하기
+- [사전 요구 사항](#사전-요구-사항-prerequisites)
+  - [📕 ST Memory Books 사용을 위한 KoboldCpp 팁](#st-memory-books-사용을-위한-koboldcpp-팁)
+  - [📕 ST Memory Books 사용을 위한 Llama.cpp 팁](#st-memory-books-사용을-위한-llamacpp-팁)
+- [권장 글로벌 월드 인포/로어북 활성화 설정](#권장-글로벌-월드-인포-로어북-활성화-설정)
+- [시작하기](#시작하기)
+  - [1. 설치 및 로드](#1-설치-및-로드)
+  - [2. 장면(Scene) 표시](#2-장면-scene-표시)
+  - [3. 기억(Memory) 생성](#3-기억-memory-생성)
+- [기억 유형: 장면 vs 요약](#기억-유형-장면-vs-요약)
+  - [장면 기억 (Scene Memories) - 기본값](#장면-기억-scene-memories-기본값)
+  - [요약 통합 (Summary Consolidation)](#요약-통합-summary-consolidation)
+- [기억 생성](#기억-생성)
+  - [JSON 전용 출력](#json-전용-출력)
+  - [내장 프리셋 (Built-in Presets)](#내장-프리셋-built-in-presets)
+  - [사용자 지정 프롬프트](#사용자-지정-프롬프트)
+- [로어북 통합](#로어북-통합)
+- [슬래시 명령어 단축키](#슬래시-명령어-단축키)
+- [그룹 채팅 지원](#그룹-채팅-지원)
+- [작동 모드](#작동-모드)
+  - [자동 모드 (기본값)](#자동-모드-기본값)
+  - [로어북 자동 생성 모드 (Auto-Create Lorebook Mode)](#로어북-자동-생성-모드)
+  - [수동 로어북 모드](#수동-로어북-모드)
+- [트래커 & 사이드 프롬프트 (Side Prompts)](#트래커--사이드-프롬프트-side-prompts)
+- [Regex(정규표현식) 연동](#고급-사용자-지정을-위한-regex정규표현식-통합)
+- [프로필 관리](#프로필-관리)
+- [설정 및 구성](#설정-및-구성)
+  - [글로벌 설정](#글로벌-설정)
+  - [프로필 필드](#프로필-필드)
+- [제목 서식 (Title Formatting)](#제목-서식-title-formatting)
+- [문맥 기억 (Context Memories)](#문맥-기억-context-memories)
+- [시각적 피드백 & 접근성](#시각적-피드백--접근성)
+- [FAQ](#faq)
+  - [확장 기능 메뉴에서 Memory Books를 찾을 수 없습니다!](#확장-기능-메뉴에서-memory-books를-찾을-수-없습니다)
+  - [벡터(Vectors)를 실행해야 하나요?](#벡터vectors를-실행해야-하나요)
+  - [기억을 위한 별도의 로어북을 만들어야 하나요, 아니면 다른 용도로 사용 중인 로어북을 같이 써도 되나요?](#기억을-위한-별도의-로어북을-만들어야-하나요-아니면-다른-용도로-사용-중인-로어북을-같이-써도-되나요)
+- [문제 해결 (Troubleshooting)](#문제-해결-troubleshooting)
+- [Lorebook Ordering (STLO)으로 기능 강화하기](#lorebook-ordering-stlo으로-기능-강화하기)
+- [문자 정책 (Character Policy) (v4.5.1+)](#문자-정책-character-policy-v451)
 
 ## 📋 사전 요구 사항 (Prerequisites)
 

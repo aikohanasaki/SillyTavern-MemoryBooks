@@ -20,7 +20,7 @@ Weitere Links:
 
 * 📘 [Benutzerhandbuch (DE)](USER_GUIDE-DE.md)
 * 💡 [Wie STMB funktioniert (DE)](howSTMBworks-de.md)
-* 📋 [Versionsverlauf & Changelog](changelog.md)
+* 📋 [Versionsverlauf & Changelog](../changelog.md)
 * 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
@@ -36,21 +36,47 @@ Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integr
 
 ## 📑 Inhaltsverzeichnis
 
-- Voraussetzungen
-- Erste Schritte
-- Erinnerungstypen: Szenen vs. Zusammenfassungen
-- Memory Generation
-- Lorebook-Integration
-- Slash-Befehle
-- Gruppenchat-Unterstützung
-- Betriebsmodi
-- Tracker & Neben-Prompts
-- Regex-Integration
-- Profilverwaltung
-- Einstellungen & Konfiguration
-- FAQ
-- Fehlerbehebung
-- Power-Up mit Lorebook Ordering (STLO)
+- [Voraussetzungen](#voraussetzungen)
+  - [KoboldCpp-Tipps zur Verwendung von 📕 ST Memory Books](#koboldcpp-tipps-zur-verwendung-von-st-memory-books)
+  - [Llama.cpp-Tipps zur Verwendung von 📕 ST Memory Books](#llamacpp-tipps-zur-verwendung-von-st-memory-books)
+- [Empfohlene Einstellungen für Globales World Info/Lorebook](#empfohlene-einstellungen-fuer-globales-world-info-lorebook)
+- [Erste Schritte](#erste-schritte)
+  - [1. Installieren & Laden](#1-installieren--laden)
+  - [2. Eine Szene markieren](#2-eine-szene-markieren)
+  - [3. Eine Erinnerung erstellen](#3-eine-erinnerung-erstellen)
+- [Erinnerungstypen: Szenen vs. Zusammenfassungen](#erinnerungstypen-szenen-vs-zusammenfassungen)
+  - [Szenen-Erinnerungen (Standard)](#szenen-erinnerungen-standard)
+  - [Zusammenfassungen](#zusammenfassungen)
+- [Erinnerungs-Generierung](#erinnerungs-generierung)
+  - [Nur JSON-Ausgabe](#nur-json-ausgabe)
+  - [Integrierte Vorlagen (Presets)](#integrierte-vorlagen-presets)
+  - [Benutzerdefinierte Prompts](#benutzerdefinierte-prompts)
+- [Lorebook-Integration](#lorebook-integration)
+- [Slash-Befehle](#slash-befehl-kurzbefehle)
+- [Gruppenchat-Unterstützung](#gruppenchat-unterstutzung)
+- [Betriebsmodi](#betriebsmodi)
+  - [Automatischer Modus (Standard)](#automatischer-modus-standard)
+  - [Lorebook automatisch erstellen Modus](#lorebook-automatisch-erstellen-modus)
+  - [Manueller Lorebook-Modus](#manueller-lorebook-modus)
+- [Tracker & Neben-Prompts](#tracker--neben-prompts-side-prompts)
+- [Regex-Integration für fortgeschrittene Anpassung](#regex-integration-fur-fortgeschrittene-anpassung)
+- [Profilverwaltung](#profilverwaltung)
+- [Einstellungen & Konfiguration](#einstellungen--konfiguration)
+  - [Globale Einstellungen](#globale-einstellungen)
+  - [Profil-Felder](#profil-felder)
+- [Titel-Formatierung](#titel-formatierung)
+- [Kontext-Erinnerungen](#kontext-erinnerungen)
+- [Visuelles Feedback & Barrierefreiheit](#visuelles-feedback--barrierefreiheit)
+- [FAQ (Häufig gestellte Fragen)](#faq-haufig-gestellte-fragen)
+  - [Ich kann Memory Books nicht im Erweiterungsmenü finden!](#ich-kann-memory-books-nicht-im-erweiterungsmenu-finden)
+  - [Warum sieht die KI meine Einträge nicht?](#warum-sieht-die-ki-meine-eintrage-nicht)
+  - [Muss ich Vektoren verwenden?](#muss-ich-vektoren-verwenden)
+- [Fehlerbehebung (Troubleshooting)](#fehlerbehebung-troubleshooting)
+- [Mehr Power mit Lorebook Ordering (STLO)](#mehr-power-mit-lorebook-ordering-stlo)
+- [Zeichen-Richtlinie (v4.5.1+)](#zeichen-richtlinie-v451)
+- [Für Entwickler](#fur-entwickler)
+  - [Erstellen der Erweiterung](#erstellen-der-erweiterung)
+  - [Git Hooks](#git-hooks)
 
 ## 📋 Voraussetzungen
 
