@@ -303,7 +303,7 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 
 ---
 
-### 🎡 Tracker & Neben-Prompts (Side Prompts)
+### 🎡 Tracker & Neben-Prompts
 
 Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Prompt-Einträge in Ihrem Erinnerungs-Lorebook. Side Prompts ermöglichen es Ihnen, **laufende Zustände** zu verfolgen, nicht nur vergangene Ereignisse. Zum Beispiel:
 
@@ -373,10 +373,10 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 * **Lorebook automatisch erstellen, falls keines existiert:** ⭐ *Neu in v4.2.0* - Automatisch Lorebooks unter Verwendung Ihrer Namensvorlage erstellen und binden.
 * **Lorebook Name Template:** ⭐ *Neu in v4.2.0* - Anpassen der automatisch erstellten Lorebook-Namen mit {{char}}, {{user}}, {{chat}} Platzhaltern.
 * **Allow Scene Overlap:** Überlappende Erinnerungsbereiche zulassen oder verhindern.
-* **Always Use Default Profile:** Bestätigungs-Popups überspringen.
-* **Show memory previews:** Vorschau-Popup aktivieren, um Erinnerungen zu überprüfen und zu bearbeiten, bevor sie zum Lorebook hinzugefügt werden.
-* **Show Notifications:** Toast-Nachrichten umschalten.
-* **Refresh Editor:** Lorebook-Editor nach Erinnerungserstellung automatisch aktualisieren.
+* **Bestätigungs-Popups überspringen:** Bestätigungs-Popups überspringen.
+* **Vorschau der Erinnerungen anzeigen:** Vorschau-Popup aktivieren, um Erinnerungen zu überprüfen und zu bearbeiten, bevor sie zum Lorebook hinzugefügt werden.
+* **Benachrichtigungen anzeigen:** Toast-Nachrichten umschalten.
+* **Lorebook-Editor nach dem Hinzufügen von Erinnerungen aktualisieren:** Lorebook-Editor nach Erinnerungserstellung automatisch aktualisieren.
 * **Token Warning Threshold:** Warnstufe für große Szenen festlegen (Standard: 30.000).
 * **Default Previous Memories:** Anzahl der vorherigen Erinnerungen, die als Kontext einbezogen werden sollen (0-7).
 * **Automatische Erinnerungs-Zusammenfassungen erstellen:** Automatische Erinnerungserstellung in Intervallen aktivieren.
@@ -385,9 +385,9 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 * **Bei erreichter Ebene zur Konsolidierung auffordern:** Zeigt eine Ja/Später-Bestätigung, wenn eine ausgewählte Zusammenfassungsstufe genug geeignete Quell-Einträge hat.
 * **Auto-Konsolidierungsstufen:** Wählen Sie eine oder mehrere Zusammenfassungsstufen aus, die die Bestätigung auslösen sollen. Derzeit Arc bis Series.
 * **Unhide hidden messages before memory generation:** Kann vor der Erinnerungserstellung `/unhide X-Y` ausführen.
-* **Auto-hide messages after adding memory:** Kann alle verarbeiteten Nachrichten oder nur den letzten Bereich ausblenden.
+* **Nachrichten nach Erstellung automatisch verstecken:** Kann alle verarbeiteten Nachrichten oder nur den letzten Bereich ausblenden.
 * **Regex verwenden (fortgeschritten):** Aktiviert die STMB-Auswahl für Regex-Skripte bei Outgoing/Incoming-Verarbeitung.
-* **Memory Title Format:** Wählen oder anpassen (siehe unten).
+* **Format des Erinnerungstitels:** Wählen oder anpassen (siehe unten).
 
 ### **Profil-Felder**
 
@@ -461,9 +461,9 @@ Der 🔗 Eintrag in World Info heißt in der ST-Benutzeroberfläche "vectorized"
 
 Ich empfehle, dass Ihr Erinnerungs-Lorebook ein separates Buch ist. Dies macht es einfacher, Erinnerungen zu organisieren (im Vergleich zu anderen Einträgen). Zum Beispiel, um es zu einem Gruppenchat hinzuzufügen, es in einem anderen Chat zu verwenden oder ein individuelles Lorebook-Budget festzulegen (mit STLO).
 
-### Sollte ich 'Delay until recursion' verwenden, wenn Memory Books das einzige Lorebook ist?
+### Sollte ich 'Verzögern bis Rekursion' verwenden, wenn Memory Books das einzige Lorebook ist?
 
-Nein. Wenn es keine anderen World Info-Einträge oder Lorebooks gibt, kann die Auswahl von 'Delay until recursion' verhindern, dass die erste Schleife ausgelöst wird, wodurch nichts aktiviert wird. Wenn Memory Books das einzige Lorebook ist, deaktivieren Sie entweder 'Delay until recursion' oder stellen Sie sicher, dass mindestens eine zusätzliche World Info / ein zusätzliches Lorebook konfiguriert ist.
+Nein. Wenn es keine anderen World Info-Einträge oder Lorebooks gibt, kann die Auswahl von 'Verzögern bis Rekursion' verhindern, dass die erste Schleife ausgelöst wird, wodurch nichts aktiviert wird. Wenn Memory Books das einzige Lorebook ist, deaktivieren Sie entweder 'Verzögern bis Rekursion' oder stellen Sie sicher, dass mindestens eine zusätzliche World Info / ein zusätzliches Lorebook konfiguriert ist.
 
 ---
 

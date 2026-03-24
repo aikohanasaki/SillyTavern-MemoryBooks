@@ -13,7 +13,7 @@ Vous voulez que le bot se souvienne de ce qui s'est passé, mais votre chat est 
 - [Choisir votre style](#-choisir-votre-style)
 - [Économie de tokens : masquer / afficher](#-économie-de-tokens--masquer--afficher)
 - [Consolidation des résumés](#-consolidation-des-résumés)
-- [Trackers, Side Prompts et modèles](#-trackers-side-prompts-et-modèles-fonction-avancée)
+- [Trackers, prompts secondaires et modèles](#-trackers-prompts-secondaires-et-modèles-fonction-avancée)
 - [Les réglages à apprendre en premier](#-les-réglages-à-apprendre-en-premier)
 - [Dépannage](#-dépannage-quand-les-choses-ne-fonctionnent-pas)
 - [Ce que ST Memory Books ne fait pas](#-ce-que-st-memory-books-ne-fait-pas)
@@ -71,7 +71,7 @@ Pensez à ST Memory Books comme à votre **bibliothécaire IA personnel** pour l
 - Créez une mémoire à la demande pour un moment important
 - Très pratique pour les tournants de scénario, scènes clés et évolutions de personnages
 
-### 📊 **Side Prompts et trackers intelligents**
+### 📊 **Prompts secondaires et trackers intelligents**
 *"Je veux suivre les relations, les arcs, les stats ou l'état du monde."*
 
 - Fragments de prompts réutilisables qui complètent la mémoire
@@ -120,7 +120,7 @@ Pensez à ST Memory Books comme à votre **bibliothécaire IA personnel** pour l
 1. Repérez les flèches (► ◄) sur les messages
 2. Cliquez sur ► au début de la scène importante
 3. Cliquez sur ◄ à la fin de cette scène
-4. Ouvrez Memory Books puis cliquez sur `Create Memory`
+4. Ouvrez Memory Books puis cliquez sur `Créer une mémoire`
 
 **Ce que vous y gagnez :**
 - Un contrôle total sur le contenu sauvegardé
@@ -221,7 +221,7 @@ La consolidation permet de garder les longues histoires lisibles et gérables en
 
 **R :** Non. La consolidation demande toujours une confirmation.
 
-- Vous pouvez ouvrir **Consolidate Memories** manuellement depuis la fenêtre principale
+- Vous pouvez ouvrir **Consolider les mémoires** manuellement depuis la fenêtre principale
 - Vous pouvez aussi activer **Demander une consolidation lorsqu'un niveau est prêt**
 - Quand un niveau cible sélectionné atteint son minimum requis, STMB affiche une confirmation **yes/later**
 - Choisir **Yes** ouvre simplement la fenêtre de consolidation avec ce niveau déjà sélectionné ; cela ne lance pas la consolidation en silence
@@ -230,7 +230,7 @@ La consolidation permet de garder les longues histoires lisibles et gérables en
 
 **R :** Pour créer un résumé consolidé :
 
-1. Cliquez sur **Consolidate Memories** dans la fenêtre principale de STMB
+1. Cliquez sur **Consolider les mémoires** dans la fenêtre principale de STMB
 2. Choisissez le niveau de résumé cible
 3. Sélectionnez les entrées source à inclure
 4. Décidez si vous voulez désactiver les entrées source après création
@@ -247,9 +247,9 @@ Cela signifie :
 - les mémoires normales peuvent être consolidées dans des résumés de niveau supérieur
 - les résumés de niveau supérieur peuvent eux-mêmes être consolidés plus tard
 
-Les Side Prompts sont différents.
+Les prompts secondaires sont différents.
 
-**Les Side Prompts sont des entrées de suivi**, pas des entrées de type mémoire/résumé. Ils servent à maintenir à jour un état continu, par exemple :
+**Les prompts secondaires sont des entrées de suivi**, pas des entrées de type mémoire/résumé. Ils servent à maintenir à jour un état continu, par exemple :
 
 - le statut d'une relation
 - les objectifs actuels
@@ -260,7 +260,7 @@ Les Side Prompts sont différents.
 En clair :
 
 - **Mémoires** = « que s'est-il passé dans cette scène ? »
-- **Side Prompts** = « quel est l'état actuel de cette chose ? »
+- **Prompts secondaires** = « quel est l'état actuel de cette chose ? »
 - **Consolidation** = « résumer plusieurs mémoires en un récapitulatif plus large »
 
 ### Pourquoi est-ce important ?
@@ -276,19 +276,19 @@ Si vous voulez qu'un élément fasse partie de la consolidation, il doit exister
 Utilisez :
 
 - **les mémoires** pour résumer une scène
-- **les Side Prompts** pour les suivis continus
+- **les prompts secondaires** pour les suivis continus
 - **la consolidation** pour réduire plusieurs mémoires en récapitulatifs plus larges
 
 ---
 
-## 🎨 Trackers, Side Prompts et modèles (fonction avancée)
+## 🎨 Trackers, prompts secondaires et modèles (fonction avancée)
 
-Les **Side Prompts** sont des trackers en arrière-plan. Ils tournent à côté de la création de mémoire et mettent à jour des entrées séparées dans votre lorebook. Pensez-y comme à de petits assistants qui surveillent un aspect précis de votre histoire.
+Les **prompts secondaires** sont des trackers en arrière-plan. Ils tournent à côté de la création de mémoire et mettent à jour des entrées séparées dans votre lorebook. Pensez-y comme à de petits assistants qui surveillent un aspect précis de votre histoire.
 
 ### 🚀 **Démarrage rapide avec des modèles**
 
 1. Ouvrez les réglages de Memory Books
-2. Cliquez sur **Side Prompts**
+2. Cliquez sur **Prompts secondaires**
 3. Parcourez la bibliothèque de modèles et choisissez ceux qui conviennent à votre histoire :
    - **Character Development Tracker** - suit l'évolution d'un personnage
    - **Relationship Dynamics** - suit les relations entre personnages
@@ -298,9 +298,9 @@ Les **Side Prompts** sont des trackers en arrière-plan. Ils tournent à côté 
 4. Activez les modèles qui vous intéressent
 5. Si le modèle utilise des déclencheurs automatiques, STMB mettra cette entrée à jour en même temps que les mémoires
 
-[Guide Scribe pas à pas pour activer les Side Prompts automatiques](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
+[Guide Scribe pas à pas pour activer les prompts secondaires automatiques](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
 
-### ⚙️ **Comment fonctionnent les Side Prompts**
+### ⚙️ **Comment fonctionnent les prompts secondaires**
 
 - **Trackers de fond** : ils tournent discrètement et mettent à jour une information au fil du temps
 - **Non intrusifs** : ils ne modifient pas vos prompts principaux ni votre fiche personnage
@@ -309,12 +309,12 @@ Les **Side Prompts** sont des trackers en arrière-plan. Ils tournent à côté 
 - **Automatiques ou manuels** : les modèles standard peuvent tourner automatiquement ; ceux avec macros runtime personnalisées sont manuels uniquement
 - **Support des macros** : `Prompt`, `Response Format`, `Title` et les champs de mots-clés peuvent utiliser les macros ST standard comme `{{user}}` et `{{char}}`
 - **Macros runtime** : les `{{...}}` non standard deviennent des arguments obligatoires, par exemple `{{npc name}}="Jane Doe"`
-- **Texte brut autorisé** : les Side Prompts n'ont pas besoin de renvoyer du JSON
+- **Texte brut autorisé** : les prompts secondaires n'ont pas besoin de renvoyer du JSON
 - **Comportement d'écrasement** : un Side Prompt met à jour sa propre entrée au fil du temps au lieu de créer une nouvelle mémoire séquentielle à chaque exécution
 
-### 🛠️ **Gérer les Side Prompts**
+### 🛠️ **Gérer les prompts secondaires**
 
-- **Side Prompts Manager** : créer, modifier, dupliquer et organiser les trackers
+- **Gestionnaire de prompts secondaires** : créer, modifier, dupliquer et organiser les trackers
 - **Activer / désactiver** : les allumer ou les couper à tout moment
 - **Importer / exporter** : partager des modèles ou faire des sauvegardes
 - **Vue d'état** : voir quels trackers sont actifs dans le chat actuel et quand ils se déclenchent
@@ -332,10 +332,10 @@ Exemples d'idées :
 - « noter les nouveaux éléments de worldbuilding quand ils apparaissent »
 - « suivre la relation entre le personnage A et le personnage B »
 
-### 🔧 **Créer vos propres Side Prompts**
+### 🔧 **Créer vos propres prompts secondaires**
 
-1. Ouvrez le Side Prompts Manager
-2. Cliquez sur **Create New**
+1. Ouvrez le gestionnaire de prompts secondaires
+2. Cliquez sur **Créer nouveau**
 3. Écrivez une instruction claire et courte
 4. Ajoutez si besoin des macros ST standard comme `{{user}}` ou `{{char}}`
 5. Si vous ajoutez des macros runtime personnalisées comme `{{location name}}`, lancez le modèle manuellement avec `/sideprompt "Name" {{location name}}="value"`
@@ -344,7 +344,7 @@ Exemples d'idées :
 
 ### 💬 **Conseil pratique**
 
-Les Side Prompts fonctionnent mieux quand ils sont **petits et ciblés**.
+Les prompts secondaires fonctionnent mieux quand ils sont **petits et ciblés**.
 
 Au lieu de « suivre tout », préférez quelque chose comme « suivre la tension romantique entre les personnages principaux ».
 
@@ -415,7 +415,7 @@ Les contrôles que la plupart des utilisateurs devraient comprendre en premier :
 
 - **Créer des résumés de mémoire automatiques** : active la création automatique de mémoires
 - **Intervalle d'Auto-Résumé** et **Tampon d'Auto-Résumé** : contrôlent quand l'auto-summary se déclenche
-- **Show memory previews** : permet de relire ou modifier la réponse IA avant sauvegarde
+- **Afficher les aperçus de mémoire** : permet de relire ou modifier la réponse IA avant sauvegarde
 - **Demander une consolidation lorsqu'un niveau est prêt** et **Niveaux d'auto-consolidation** : signalent les opportunités de consolidation sans rien lancer silencieusement
 - **Activer le Mode Manuel du Lorebook** et **Créer le lorebook s'il n'existe pas** : contrôlent l'endroit où les mémoires sont enregistrées
 - **Utiliser regex (avancé)** : ouvre la sélection Regex gérée par STMB pour l'aller et le retour

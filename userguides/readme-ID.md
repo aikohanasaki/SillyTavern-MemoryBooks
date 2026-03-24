@@ -59,7 +59,7 @@ Tautan lain:
 - [FAQ](#faq)
   - [Haruskah saya membuat lorebook terpisah untuk memori, atau boleh memakai lorebook yang sama untuk hal lain?](#haruskah-saya-membuat-lorebook-terpisah-untuk-memori-atau-boleh-memakai-lorebook-yang-sama-untuk-hal-lain)
   - [Apakah saya perlu menjalankan vektor?](#apakah-saya-perlu-menjalankan-vektor)
-  - [Haruskah saya memakai 'Delay until recursion' jika Memory Books satu-satunya lorebook?](#haruskah-saya-memakai-delay-until-recursion-jika-memory-books-satu-satunya-lorebook)
+  - [Haruskah saya memakai 'Tunda Hingga Rekursi' jika Memory Books satu-satunya lorebook?](#haruskah-saya-memakai-tunda-hingga-rekursi-jika-memory-books-satu-satunya-lorebook)
   - [Mengapa AI tidak melihat entri saya?](#mengapa-ai-tidak-melihat-entri-saya)
 - [Pemecahan Masalah](#pemecahan-masalah)
 - [Tingkatkan Kemampuan dengan Lorebook Ordering (STLO)](#-tingkatkan-kemampuan-dengan-lorebook-ordering-stlo)
@@ -108,7 +108,7 @@ llama-server -m <path-model> -c <context-size> --port 8080
 - **Scan Depth:** semakin tinggi semakin baik (saya memakai 8)
 - **Max Recursion Steps:** 2 (rekomendasi umum, bukan keharusan)
 - **Context %:** 80% (berdasarkan jendela konteks 100.000 token) - dengan asumsi Anda tidak memiliki riwayat chat atau bot yang sangat berat.
-- Jika lorebook memori adalah satu-satunya lorebook Anda, pastikan `Delay until recursion` dinonaktifkan di profil STMB, atau memori tidak akan terpanggil!
+- Jika lorebook memori adalah satu-satunya lorebook Anda, pastikan `Tunda Hingga Rekursi` dinonaktifkan di profil STMB, atau memori tidak akan terpanggil!
 
 ---
 
@@ -177,7 +177,7 @@ Tier konsolidasi pertama adalah **Arc**, yang dibangun dari memori adegan. Tier 
 
 #### Cara kerjanya
 - Ringkasan konsolidasi dibuat dari **memori/ringkasan STMB yang sudah ada**, bukan langsung dari chat mentah
-- Alat **Consolidate Memories** memungkinkan Anda memilih tier tujuan dan memilih entri sumber
+- Alat **Gabungkan Ingatan** memungkinkan Anda memilih tier tujuan dan memilih entri sumber
 - STMB dapat memantau tier ringkasan tertentu dan menampilkan konfirmasi ya/lain waktu ketika tier itu sudah mencapai jumlah minimum entri yang memenuhi syarat
 - STMB dapat menonaktifkan entri sumber setelah konsolidasi jika Anda ingin ringkasan tingkat lebih tinggi mengambil alih
 - Respons ringkasan AI yang gagal dapat ditinjau dan diperbaiki dari UI sebelum mencoba simpan ulang
@@ -326,7 +326,7 @@ Side Prompt dapat dipakai seperti tracker dan membuat entri side prompt terpisah
 - **Impor/Ekspor:** Bagikan profil sebagai JSON.
 - **Pembuatan Profil:** Gunakan popup opsi lanjutan untuk menyimpan profil baru.
 - **Override Per Profil:** Sementara ganti API/model/temp untuk pembuatan memori, lalu kembalikan pengaturan asli Anda.
-- **Provider/Profil Bawaan:** STMB menyertakan opsi wajib `Current SillyTavern Settings` yang memakai koneksi/pengaturan SillyTavern aktif Anda langsung.
+- **Provider/Profil Bawaan:** STMB menyertakan opsi wajib `Pengaturan SillyTavern Saat Ini` yang memakai koneksi/pengaturan SillyTavern aktif Anda langsung.
 
 ---
 
@@ -341,28 +341,28 @@ Side Prompt dapat dipakai seperti tracker dan membuat entri side prompt terpisah
 - **Buat lorebook secara otomatis jika belum ada:** ⭐ *Baru di v4.2.0* - Secara otomatis membuat dan mengikat lorebook memakai template penamaan Anda.
 - **Lorebook Name Template:** ⭐ *Baru di v4.2.0* - Kustomisasi nama lorebook yang dibuat otomatis dengan placeholder `{{char}}`, `{{user}}`, `{{chat}}`.
 - **Allow Scene Overlap:** Izinkan atau cegah rentang memori yang saling tumpang tindih.
-- **Always Use Default Profile:** Lewati popup konfirmasi.
-- **Show memory previews:** Aktifkan popup pratinjau untuk meninjau dan mengedit memori sebelum ditambahkan ke lorebook.
-- **Show Notifications:** Aktifkan/nonaktifkan pesan toast.
-- **Refresh Editor:** Segarkan editor lorebook secara otomatis setelah pembuatan memori.
+- **Lewati popup konfirmasi:** Lewati popup konfirmasi.
+- **Tampilkan pratinjau memori:** Aktifkan popup pratinjau untuk meninjau dan mengedit memori sebelum ditambahkan ke lorebook.
+- **Aktifkan/nonaktifkan pesan toast:** Aktifkan/nonaktifkan pesan toast.
+- **Segarkan editor lorebook secara otomatis setelah pembuatan memori:** Segarkan editor lorebook secara otomatis setelah pembuatan memori.
 - **Max Response Tokens:** Atur panjang generasi maksimum untuk ringkasan memori.
 - **Token Warning Threshold:** Atur level peringatan untuk adegan besar.
 - **Default Previous Memories:** Jumlah memori sebelumnya yang disertakan sebagai konteks (0-7).
-- **Auto-create memory summaries:** Aktifkan pembuatan memori otomatis pada interval tertentu.
-- **Auto-Summary Interval:** Jumlah pesan setelah mana ringkasan memori dibuat otomatis.
-- **Auto-Summary Buffer:** Menunda auto-summary dengan jumlah pesan yang dapat dikonfigurasi.
-- **Prompt for consolidation when a tier is ready:** Menampilkan prompt ya/tidak saat tier ringkasan yang dipilih punya cukup entri sumber yang memenuhi syarat untuk dikonsolidasi.
-- **Auto-Consolidation Tiers:** Pilih satu atau beberapa tier ringkasan yang harus memicu prompt saat siap. Saat ini mendukung Arc sampai Series.
+- **Buat ringkasan memori secara otomatis:** Aktifkan pembuatan memori otomatis pada interval tertentu.
+- **Interval Ringkasan Otomatis:** Jumlah pesan setelah mana ringkasan memori dibuat otomatis.
+- **Penyangga Ringkasan Otomatis:** Menunda auto-summary dengan jumlah pesan yang dapat dikonfigurasi.
+- **Tampilkan prompt konsolidasi saat tier siap:** Menampilkan prompt ya/tidak saat tier ringkasan yang dipilih punya cukup entri sumber yang memenuhi syarat untuk dikonsolidasi.
+- **Tier Konsolidasi Otomatis:** Pilih satu atau beberapa tier ringkasan yang harus memicu prompt saat siap. Saat ini mendukung Arc sampai Series.
 - **Unhide hidden messages before memory generation:** Dapat menjalankan `/unhide X-Y` sebelum membuat memori.
-- **Auto-hide messages after adding memory:** Opsional menyembunyikan semua pesan yang diproses atau hanya rentang memori terbaru.
-- **Use regex (advanced):** Mengaktifkan popup pemilihan regex STMB untuk pemrosesan keluar/masuk.
-- **Memory Title Format:** Pilih atau kustomisasi (lihat di bawah).
+- **Sembunyikan pesan secara otomatis setelah menambahkan memori:** Opsional menyembunyikan semua pesan yang diproses atau hanya rentang memori terbaru.
+- **Gunakan ekspresi reguler (lanjutan):** Mengaktifkan popup pemilihan regex STMB untuk pemrosesan keluar/masuk.
+- **Format Judul Memori:** Pilih atau kustomisasi (lihat di bawah).
 
 ![Konfigurasi profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Bidang Profil**
 - **Name:** Nama tampilan.
-- **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual, dan provider lain yang didukung.
+- **API/Provider:** `Pengaturan SillyTavern Saat Ini`, openai, claude, custom, full manual, dan provider lain yang didukung.
 - **Model:** Nama model (misalnya, gpt-4, claude-3-opus).
 - **Temperature:** 0.0-2.0.
 - **Prompt or Preset:** Kustom atau bawaan.
@@ -423,9 +423,9 @@ Saya menyarankan lorebook memori Anda menjadi buku terpisah. Ini memudahkan peng
 
 Anda bisa, tetapi itu tidak wajib. Jika Anda tidak memakai ekstensi vektor (saya juga tidak), STMB bekerja lewat keyword. Semuanya otomatis, jadi Anda tidak perlu memikirkan keyword apa yang harus dipakai.
 
-### Haruskah saya memakai 'Delay until recursion' jika Memory Books satu-satunya lorebook?
+### Haruskah saya memakai 'Tunda Hingga Rekursi' jika Memory Books satu-satunya lorebook?
 
-Tidak. Jika tidak ada world info atau lorebook lain, memilih 'Delay until recursion' bisa mencegah loop pertama terpanggil, sehingga tidak ada yang aktif. Jika Memory Books adalah satu-satunya lorebook, nonaktifkan 'Delay until recursion' atau pastikan setidaknya satu world info/lorebook tambahan dikonfigurasi.
+Tidak. Jika tidak ada world info atau lorebook lain, memilih 'Tunda Hingga Rekursi' bisa mencegah loop pertama terpanggil, sehingga tidak ada yang aktif. Jika Memory Books adalah satu-satunya lorebook, nonaktifkan 'Tunda Hingga Rekursi' atau pastikan setidaknya satu world info/lorebook tambahan dikonfigurasi.
 
 ### Mengapa AI tidak melihat entri saya?
 

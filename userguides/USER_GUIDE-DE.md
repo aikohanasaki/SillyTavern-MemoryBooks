@@ -15,7 +15,7 @@ Brauchst du einen Bot, der sich an Dinge erinnert, aber der Chat ist zu lang fü
 - [Wähle deinen Stil](#-whle-deinen-stil)
 - [Token sparen](#-token-sparen-ausblenden--einblenden)
 - [Zusammenfassungs-Konsolidierung](#-zusammenfassungs-konsolidierung)
-- [Tracker, Side Prompts & Vorlagen](#-tracker-side-prompts--vorlagen-fortgeschrittene-funktion)
+- [Tracker, Neben-Prompts & Vorlagen](#-tracker-neben-prompts--vorlagen-fortgeschrittene-funktion)
 - [Wichtige Einstellungen](#-einstellungen-die-wirklich-wichtig-sind)
 - [Fehlerbehebung](#-fehlerbehebung-wenn-dinge-nicht-funktionieren)
 - [Was ST Memory Books nicht tut](#-was-st-memory-books-nicht-tut)
@@ -75,7 +75,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 * Erstelle Erinnerungen auf Abruf für besondere Momente
 * Großartig, um wichtige Handlungspunkte oder Charakterentwicklungen festzuhalten
 
-### 📊 **Side Prompts & Intelligente Tracker**
+### 📊 **Neben-Prompts & Intelligente Tracker**
 
 *"Ich möchte Beziehungen, Handlungsstränge oder Statistiken verfolgen"*
 
@@ -130,7 +130,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 1. Suche nach kleinen Pfeiltasten (► ◄) an deinen Chat-Nachrichten
 2. Klicke ► bei der ersten Nachricht einer wichtigen Szene
 3. Klicke ◄ bei der letzten Nachricht dieser Szene
-4. Öffne Memory Books (🪄) und klicke auf "Create Memory" (Erinnerung erstellen)
+4. Öffne Memory Books (🪄) und klicke auf "Erinnerung erstellen"
 
 **Was du bekommst:**
 
@@ -196,23 +196,24 @@ Mit **Sichtbare Nachrichten beibehalten** bestimmst du, wie viele aktuelle Nachr
 
 ### Gute Start-Einstellung
 
-* **Nur Nachrichten in der letzten Erinnerung verstecken**
+* **Alle Nachrichten bis zur letzten Erinnerung verstecken**
 * **2** Nachrichten sichtbar lassen
 * **Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** aktivieren
 
 ## 🌈 Zusammenfassungs-Konsolidierung
 
-Zusammenfassungs-Konsolidierung fasst ältere STMB-Erinnerungen zu höheren Zusammenfassungen zusammen.
+Zusammenfassungs-Konsolidierung hilft, lange Geschichten übersichtlich zu halten, indem ältere STMB-Erinnerungen zu höherstufigen Zusammenfassungen verdichtet werden.
 
 ### Was ist das?
 
-STMB kann bestehende Erinnerungen oder Zusammenfassungen zu einer kompakteren Zusammenfassung verbinden. Die erste Stufe ist **Arc**; weitere Stufen sind **Chapter**, **Book**, **Legend**, **Series** und **Epic**.
+STMB kann bestehende Erinnerungen oder Zusammenfassungen zu einer kompakteren Rückschau verbinden. Die erste Stufe ist **Arc**; weitere Stufen sind **Chapter**, **Book**, **Legend**, **Series** und **Epic**.
 
 ### Wann ist das nützlich?
 
 * Deine Erinnerungsliste wird sehr lang
 * Alte Einträge brauchen kein vollständiges Szenen-Detail mehr
-* Du willst Token sparen, ohne den Kontext zu verlieren
+* Du willst Token sparen, ohne die Kontinuität zu verlieren
+* Du willst sauberere, höherstufige narrative Rückblicke
 
 ### Läuft das automatisch?
 
@@ -220,48 +221,41 @@ Nein. Die Konsolidierung braucht weiterhin eine Bestätigung.
 
 * Du kannst **Erinnerungen zusammenfassen** jederzeit manuell öffnen
 * Optional kann STMB bei einer erreichten Mindestanzahl eine Ja/Später-Bestätigung anzeigen
-* „Ja“ öffnet nur das Konsolidierungs-Popup, es startet nicht still im Hintergrund
-
-### Was wird konsolidiert?
-
-* Normale STMB-Erinnerungen können konsolidiert werden
-* Höhere Zusammenfassungen können später wieder konsolidiert werden
-* Side Prompts sind Tracker-Einträge und werden **nicht** in Arc/Chapter-Zusammenfassungen eingerollt
+* Wenn eine ausgewählte Zielstufe ihr gespeichertes Minimum an geeigneten Quellen erreicht, erscheint diese Bestätigung
+* „Ja“ öffnet nur das Konsolidierungs-Popup mit der bereits ausgewählten Stufe; es startet nicht still im Hintergrund
 
 ### Wie benutzt man es?
 
 1. Klicke im Haupt-Popup auf **Erinnerungen zusammenfassen**
 2. Wähle die Zielstufe
-3. Wähle die Quell-Einträge
+3. Wähle die Quell-Einträge aus, die enthalten sein sollen
 4. Entscheide, ob die Quellen nach der Konsolidierung deaktiviert werden sollen
 5. Klicke auf **Run**
+
+Für eine Vorschau dieser Einträge aktiviere in den Einstellungen die Vorschau der Erinnerungen.
 
 Wenn die KI eine schlechte Konsolidierungs-Antwort liefert, kannst du die Antwort prüfen und korrigieren, bevor du den Commit wiederholst.
 
 ---
 
-## 🎨 Tracker, Side Prompts & Vorlagen (Fortgeschrittene Funktion)
+## 🎨 Tracker, Neben-Prompts & Vorlagen (Fortgeschrittene Funktion)
 
-**Side Prompts** sind Hintergrund-Tracker, die helfen, laufende Story-Informationen aufrechtzuerhalten.
-Sie schreiben separate Side-Prompt-Lorebook-Einträge und laufen parallel zur Speichererstellung. Betrachte sie als **Helfer, die deine Geschichte beobachten und bestimmte Details auf dem neuesten Stand halten**.
-Standard-ST-Makros wie `{{user}}` und `{{char}}` werden in `Prompt`, `Response Format`, `Title` und Keyword-Feldern erweitert. Nicht standardmäßige `{{...}}`-Makros werden zu Pflichtangaben für den manuellen Aufruf.
+**Neben-Prompts** sind Hintergrund-Tracker, die helfen, laufende Story-Informationen aufrechtzuerhalten. Sie laufen parallel zur Speichererstellung und aktualisieren eigene Neben-Prompt-Lorebook-Einträge über die Zeit. Betrachte sie als **Helfer, die deine Geschichte beobachten und bestimmte Details aktuell halten**.
 
 ### 🚀 **Schnellstart mit Vorlagen**
 
 1. Öffne die Einstellungen von Memory Books
-2. Klicke auf **Side Prompts**
+2. Klicke auf **Neben-Prompts**
 3. Durchsuche die **Vorlagenbibliothek** und wähle aus, was zu deiner Geschichte passt:
-* **Character Development Tracker** – Verfolgt Persönlichkeitsveränderungen und Wachstum
-* **Relationship Dynamics** – Verfolgt Beziehungen zwischen Charakteren
-* **Plot Thread Tracker** – Verfolgt laufende Handlungsstränge
-* **Mood & Atmosphere** – Verfolgt den emotionalen Ton
-* **World Building Notes** – Verfolgt Details zum Schauplatz und zur Lore
-
-
+   * **Character Development Tracker** – Verfolgt Persönlichkeitsveränderungen und Wachstum
+   * **Relationship Dynamics** – Verfolgt Beziehungen zwischen Charakteren
+   * **Plot Thread Tracker** – Verfolgt laufende Handlungsstränge
+   * **Mood & Atmosphere** – Verfolgt den emotionalen Ton
+   * **World Building Notes** – Verfolgt Details zum Schauplatz und zur Lore
 4. Aktiviere die gewünschten Vorlagen (du kannst sie später anpassen)
 5. Wenn die Vorlage benutzerdefinierte Laufzeitmakros enthält, wird sie nicht automatisch ausgeführt und muss manuell mit `/sideprompt` gestartet werden
 
-### ⚙️ **Wie Side Prompts funktionieren**
+### ⚙️ **Wie Neben-Prompts funktionieren**
 
 * **Hintergrund-Tracker**: Sie laufen leise und aktualisieren Informationen im Laufe der Zeit
 * **Nicht störend**: Sie ändern nicht deine Haupt-KI-Einstellungen oder Charakter-Prompts
@@ -269,17 +263,18 @@ Standard-ST-Makros wie `{{user}}` und `{{char}}` werden in `Prompt`, `Response F
 * **Vorlagenbasiert**: Verwende eingebaute Vorlagen oder erstelle deine eigenen
 * **Automatisch oder Manuell**: Standardvorlagen können automatisch laufen; Vorlagen mit benutzerdefinierten Laufzeitmakros sind nur manuell nutzbar
 * **Makro-Unterstützung**: `Prompt`, `Response Format`, `Title` und Keyword-Felder erweitern standardmäßige ST-Makros wie `{{user}}` und `{{char}}`
-* **Sicherheitsprüfung**: Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, entfernt STMB beim Speichern/Importieren `onInterval` und `onAfterMemory` und zeigt eine Warnung an
-* **Optionaler Bereich**: `/sideprompt` kann auch ohne `X-Y` laufen; dann verwendet STMB die Nachrichten seit dem letzten Checkpoint dieses Side Prompts
+* **Laufzeitmakros**: Nicht standardmäßige `{{...}}`-Platzhalter werden zu Pflichtangaben wie `{{npc name}}="Jane Doe"`
+* **Klartext erlaubt**: Neben-Prompts müssen kein JSON zurückgeben
+* **Überschreiben statt Anhängen**: Neben-Prompts aktualisieren ihren eigenen verfolgten Eintrag, statt bei jedem Lauf eine neue Erinnerung anzulegen
+* **Sicherheitsprüfung**: Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, entfernt STMB beim Speichern/Importieren automatische Trigger und zeigt eine Warnung an
+* **Optionaler Bereich**: `/sideprompt` kann auch ohne `X-Y` laufen; dann verwendet STMB die Nachrichten seit dem letzten Checkpoint dieses Neben-Prompts
 
-Dies macht das Auslöseverhalten ohne Fachbegriffe verständlich.
+### 🛠️ **Neben-Prompts verwalten**
 
-### 🛠️ **Side Prompts verwalten**
-
-* **Side Prompts Manager**: Erstelle, bearbeite, dupliziere und organisiere Tracker
+* **Neben-Prompts-Manager**: Erstelle, bearbeite, dupliziere und organisiere Tracker
 * **Aktivieren / Deaktivieren**: Schalte Tracker jederzeit ein oder aus
 * **Import / Export**: Teile Vorlagen oder erstelle Backups
-* **Statusansicht**: Sieh, welche Tracker im aktuellen Chat aktiv sind
+* **Statusansicht**: Sieh, welche Tracker im aktuellen Chat aktiv sind und wann sie laufen
 
 ### 💡 **Beispiele für Vorlagen**
 
@@ -293,20 +288,39 @@ Beispielhafte Prompt-Ideen:
 * „Notiere neue World-Building-Details, wenn sie erscheinen“
 * „Verfolge die Beziehung zwischen Charakter A und Charakter B“
 
-### 🔧 **Erstellen eigener Side Prompts**
+### 🔧 **Erstellen eigener Neben-Prompts**
 
-1. Öffne den Side Prompts Manager
-2. Klicke auf **Create New** (Neu erstellen)
+1. Öffne den Neben-Prompts-Manager
+2. Klicke auf **Neu erstellen**
 3. Schreibe eine kurze, klare Anweisung
    *(Beispiel: „Notiere immer, wie das Wetter in jeder Szene ist“)*
-4. Füge bei Bedarf Standard-ST-Makros oder Laufzeitmakros im Format `{{macro}}="value"` hinzu
-5. Speichere und aktiviere sie
-6. Der Tracker wird diese Informationen nun im Laufe der Zeit aktualisieren, wenn automatische Trigger aktiv bleiben
+4. Füge bei Bedarf Standard-ST-Makros wie `{{user}}` oder `{{char}}` hinzu
+5. Wenn du benutzerdefinierte Laufzeitmakros wie `{{location name}}` hinzufügst, starte sie manuell mit `/sideprompt "Name" {{location name}}="value"`
+6. Speichere und aktiviere sie
+7. Der Tracker aktualisiert diese Informationen dann im Laufe der Zeit, wenn automatische Trigger aktiv bleiben; andernfalls starte ihn bei Bedarf manuell
 
 ### 💬 **Pro-Tipp**
 
-Side Prompts funktionieren am besten, wenn sie **klein und fokussiert** sind.
-Statt „verfolge alles“, versuche „verfolge die romantische Spannung zwischen den Hauptcharakteren“.
+Neben-Prompts funktionieren am besten, wenn sie **klein und fokussiert** sind. Statt „verfolge alles“ versuche „verfolge die romantische Spannung zwischen den Hauptcharakteren“.
+
+### ⌨️ **Manuelle /sideprompt-Syntax**
+
+Verwende:
+`/sideprompt "Name" {{macro}}="value" [X-Y]`
+
+Beispiele:
+- `/sideprompt "Status" 10-20`
+- `/sideprompt "NPC-Verzeichnis" {{npc name}}="Jane Doe" 40-50`
+- `/sideprompt "Ortsnotizen" {{place name}}="Black Harbor" 100-120`
+
+Hinweise:
+
+- Der Name des Neben-Prompts muss in Anführungszeichen stehen.
+- Laufzeitmakro-Werte müssen ebenfalls in Anführungszeichen stehen.
+- Die Slash-Befehl-Autovervollständigung schlägt erforderliche Laufzeitmakros vor, nachdem du den Side Prompt ausgewählt hast.
+- Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, bleibt STMB dabei im manuellen Modus und entfernt automatische Trigger.
+- `X-Y` ist optional. Wenn du es weglässt, verwendet STMB die Nachrichten seit dem letzten Zeitpunkt, an dem dieser Side Prompt aktualisiert wurde.
+- Wenn du Neben-Prompts manuell und getrennt ausführst, denke daran, **Versteckte Nachrichten vor der Erstellung einblenden** zu aktivieren.
 
 ---
 
@@ -327,11 +341,14 @@ Für die vollständige Referenz siehe [readme.md](readme.md).
 
 Wichtige Basiskontrollen:
 
-* **Aktuelle SillyTavern Einstellungen** verwendet deine aktuelle ST-Verbindung direkt
+* **Aktuelle SillyTavern Einstellungen** verwendet deine aktive ST-Verbindung direkt
+* **Eigenes STMB-Profil anlegen** ermöglicht dir, STMB anzupassen, zum Beispiel ein anderes/günstigeres Modell für Erinnerungen als für Rollenspiel zu verwenden
 * **Automatische Erinnerungs-Zusammenfassungen erstellen** schaltet automatische Erinnerungen ein
 * **Intervall für automatische Zusammenfassung** und **Puffer für automatische Zusammenfassung** steuern den Zeitpunkt
-* **Auto-hide/unhide memories** hilft beim Tokensparen
+* **Ausblenden / Einblenden von Nachrichten** hilft beim Tokensparen
 * **Manuellen Lorebook-Modus aktivieren** und **Lorebook automatisch erstellen, falls keines existiert** bestimmen, wohin Erinnerungen geschrieben werden
+* **Erinnerungsvorschauen anzeigen** lässt dich KI-Ausgaben vor dem Speichern prüfen oder bearbeiten
+* **Neben-Prompts** aktiviert Tracker
 * **Bei erreichter Ebene zur Konsolidierung auffordern** zeigt Konsolidierung nur als Bestätigung
 
 ---
@@ -343,10 +360,11 @@ Für die vollständige Liste siehe [readme.md](readme.md).
 Schnelle Checks:
 
 * STMB muss aktiviert sein und der Eintrag **Memory Books** muss im Erweiterungsmenü erscheinen
-* Wenn Auto-Summary nicht läuft, brauchst du zuerst eine manuelle Erinnerung als Startpunkt
-* Wenn keine Erinnerungen gespeichert werden, muss ein Lorebook gebunden sein oder Auto-create aktiviert sein
+* Wenn Auto-Summary nicht läuft, brauchst du zuerst eine manuelle Erinnerung als Startpunkt und deine Intervall-/Pufferwerte sollten sinnvoll sein
+* Wenn keine Erinnerungen gespeichert werden, muss ein Lorebook gebunden sein oder **Lorebook automatisch erstellen, falls keines existiert** aktiviert sein
+* Wenn Erinnerungen nicht ausgelöst werden, muss **Delay until recursion** deaktiviert sein
 * Wenn Regex seltsam wirkt, prüfe die Auswahl in **📐 Regex konfigurieren…**
-* Wenn Konsolidierung nicht erscheint, prüfe die Zielstufe und die Option für die Konsolidierungs-Bestätigung
+* Wenn Konsolidierung nicht erscheint, prüfe, ob **Bei erreichter Ebene zur Konsolidierung auffordern** aktiviert ist und ob die Zielstufe in **Auto-Konsolidierungsstufen** enthalten ist
 
 ---
 

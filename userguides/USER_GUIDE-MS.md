@@ -115,7 +115,7 @@ Anggaplah ST Memory Books sebagai **pustakawan AI peribadi** anda untuk perbuala
 1. Cari butang anak panah kecil (► ◄) pada mesej sembang anda
 2. Klik ► pada mesej pertama babak penting
 3. Klik ◄ pada mesej terakhir babak tersebut
-4. Buka Memory Books (🪄) dan klik "Create Memory"
+4. Buka Memory Books (🪄) dan klik "Cipta Memori"
 
 **Apa yang anda dapat:**
 - Kawalan penuh ke atas kandungan memori
@@ -255,14 +255,14 @@ Ringkasnya:
 
 ## 🎨 Penjejak, Prom Sampingan, & Templat (Ciri Termaju)
 
-**Prom Sampingan** (Side Prompts) adalah penjejak latar belakang yang membantu mengekalkan maklumat cerita yang sedang berjalan.
+**Prom Sampingan** adalah penjejak latar belakang yang membantu mengekalkan maklumat cerita yang sedang berjalan.
 Mereka mencipta entri Side Prompt yang berasingan dalam lorebook dan berjalan seiring dengan penciptaan memori. Anggaplah mereka sebagai **pembantu yang memerhati cerita anda dan memastikan butiran tertentu sentiasa dikemas kini**.
 Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan dalam `Prompt` dan `Response Format`. Makro bukan standard `{{...}}` menjadi input wajib untuk dijalankan secara manual.
 
 ### 🚀 **Mula Pantas dengan Templat**
 
 1. Buka tetapan Memory Books
-2. Klik **Side Prompts**
+2. Klik **Prom Sampingan**
 3. Layari **pustaka templat** dan pilih apa yang sesuai dengan cerita anda:
 
    * **Character Development Tracker** – Menjejak perubahan personaliti dan pertumbuhan
@@ -287,7 +287,7 @@ Ini menjadikan tingkah laku pencetus mudah difahami tanpa istilah teknikal.
 
 ### 🛠️ **Mengurus Prom Sampingan**
 
-* **Side Prompts Manager**: Cipta, sunting, duplikasi, dan susun penjejak
+* **Pengurus Prom Sampingan**: Cipta, sunting, duplikasi, dan susun penjejak
 * **Enable / Disable**: Hidupkan atau matikan penjejak pada bila-bila masa
 * **Import / Export**: Kongsi templat atau buat sandaran
 * **Status View**: Lihat penjejak mana yang aktif dalam sembang semasa
@@ -308,8 +308,8 @@ Contoh idea prom:
 
 ### 🔧 **Mencipta Prom Sampingan Tersuai**
 
-1. Buka Pengurus Prom Sampingan (Side Prompts Manager)
-2. Klik **Create New**
+1. Buka Pengurus Prom Sampingan
+2. Klik **Cipta Baru**
 3. Tulis arahan ringkas dan jelas
    *(contoh: "Sentiasa catat bagaimana keadaan cuaca dalam setiap babak")*
 4. Tambahkan jika perlu makro ST standard atau makro runtime dalam format `{{macro}}="value"`.
