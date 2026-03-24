@@ -1,216 +1,363 @@
-# Cara Kerja Buku Memori SillyTavern (STMB) — Panduan Ringan untuk Pemrogram
+# Cara Kerja SillyTavern Memory Books (STMB)
 
-Panduan ini menjelaskan cara kerja STMB dalam istilah yang jelas dan ringan bagi pengguna yang tidak menulis kode SillyTavern tetapi ingin memahami bagaimana prompt dibuat.
+Ini adalah penjelasan tingkat tinggi tentang cara kerja STMB. Dokumen ini tidak dimaksudkan untuk menjelaskan kodenya. Sebaliknya, dokumen ini menjelaskan informasi apa yang STMB rangkai, dalam urutan apa informasi itu dikirim, dan seperti apa hasil yang diharapkan dari model.
 
-## Apa yang STMB Kirim ke AI (Pembuatan Memori)
+Gunakan dokumen ini untuk membantu Anda menulis atau mengedit prompt untuk STMB.
 
-Saat Anda menjalankan "Hasilkan Memori," STMB mengirimkan prompt dua bagian:
+## 3 Alur Prompt Utama di STMB
 
-A) Instruksi Sistem (dari preset seperti "ringkasan," "sinopsis," dll.)
-- Blok instruksi singkat yang:
-  - Memberi tahu model untuk menganalisis adegan
-  - Menginstruksikannya untuk mengembalikan HANYA JSON
-  - Mendefinisikan bidang JSON yang diperlukan
-- Makro seperti {{user}} dan {{char}} diganti dengan nama obrolan Anda.
-- Ini BUKAN preset Anda! Prompt ini berdiri sendiri dan dapat dikelola dari 🧩Manajer Prompt Ringkasan.
+STMB memiliki tiga alur utama:
 
-B) Adegan, diformat untuk analisis
-- STMB memformat pesan terbaru Anda seperti skrip:
-  - Blok konteks opsional dari memori sebelumnya (ditandai dengan jelas JANGAN RINGKAS).
-  - Transkrip adegan saat ini, satu baris per pesan:
-    Alice: …
-    Bob: …
+1. Pembuatan memori
+2. Prompt sampingan
+3. Konsolidasi
 
-Kerangka bentuk prompt
+Ketiganya saling terkait, tetapi tidak mengharapkan jenis keluaran yang sama.
+
+- Pembuatan memori mengharapkan JSON yang ketat.
+- Prompt sampingan biasanya mengharapkan teks biasa yang rapi (boleh memakai Markdown atau format entri lorebook lain, JANGAN gunakan JSON di prompt sampingan).
+- Konsolidasi mengharapkan JSON yang ketat juga, tetapi dengan skema yang berbeda dari memori.
+
+## I. Pembuatan Memori
+
+Saat Anda membuat memori, STMB mengirim satu prompt rakitan yang biasanya berisi bagian-bagian ini dalam urutan berikut:
+
+1. Teks prompt memori atau teks preset yang dipilih
+   - Ini adalah blok instruksi dari Manajer Prompt Ringkasan.
+   - Bagian ini memberi tahu model jenis ringkasan apa yang harus ditulis dan bentuk JSON apa yang harus dikembalikan.
+   - Makro seperti `{{user}}` dan `{{char}}` diselesaikan sebelum dikirim.
+
+2. Konteks opsional dari memori sebelumnya
+   - Jika proses dijalankan dengan pengaturan untuk menyertakan memori sebelumnya, memori-memori itu dimasukkan sebagai konteks baca-saja.
+   - Konteks itu ditandai dengan jelas sebagai konteks, bukan sebagai hal yang harus diringkas lagi.
+
+3. Transkrip adegan saat ini
+   - Rentang chat yang dipilih diformat baris demi baris sebagai `Speaker: message`.
+   - Inilah adegan sebenarnya yang harus diubah model menjadi memori.
+
+Bentuk kasarnya seperti ini:
+
+```text
+[instruksi prompt / preset memori]
+
+=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+[nol atau lebih memori sebelumnya]
+=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+
+=== SCENE TRANSCRIPT ===
+Alice: ...
+Bob: ...
+=== END SCENE ===
 ```
-— Instruksi Sistem (dari preset yang Anda pilih) —
-Analisis adegan obrolan berikut dan kembalikan memori sebagai JSON.
 
-Anda harus merespons HANYA dengan JSON yang valid dalam format yang tepat ini:
-{
-  "title": "Judul adegan singkat (1-3 kata)",
-  "content": "…",
-  "keywords": ["…","…"]
-}
+### Apa yang Harus Dikembalikan Model
 
-…(panduan preset berlanjut; makro seperti {{user}} dan {{char}} sudah diganti)…
+Yang diharapkan adalah satu objek JSON:
 
-— Data Adegan —
-=== KONTEKS ADEGAN SEBELUMNYA (JANGAN RINGKAS) ===
-Konteks 1 - [Judul]:
-[Teks memori sebelumnya]
-Kata kunci: alfa, beta, …
-…(nol atau lebih memori sebelumnya)…
-=== AKHIR KONTEKS ADEGAN SEBELUMNYA - RINGKAS HANYA ADEGAN DI BAWAH INI ===
-
-=== TRANSKRIP ADEGAN ===
-{{user}}: …
-{{char}}: …
-… (setiap pesan di barisnya sendiri)
-=== AKHIR ADEGAN ===
-```
-
-Catatan
-- Keamanan token: STMB memperkirakan penggunaan token dan memperingatkan jika Anda melebihi ambang batas.
-- Jika Anda mengaktifkan regex keluar di Pengaturan, STMB menerapkan skrip regex yang Anda pilih ke teks prompt tepat sebelum mengirim.
-
-## Apa yang Harus Dikembalikan AI (Kontrak JSON)
-
-AI harus mengembalikan satu objek JSON dengan bidang-bidang ini:
-- title: string (pendek)
-- content: string (teks ringkasan/memori)
-- keywords: array string (10–30 istilah spesifik yang direkomendasikan oleh preset)
-
-Keketatan dan kompatibilitas
-- Kembalikan HANYA objek JSON — tanpa prosa, tanpa penjelasan.
-- Kunci harus persis: "title", "content", "keywords".
-  - STMB mentolerir "summary" atau "memory_content" untuk konten, tetapi "content" adalah praktik terbaik.
-- keywords harus berupa array string (bukan string yang dipisahkan koma).
-
-Contoh minimal (valid)
 ```json
 {
-  "title": "Pengakuan Diam-diam",
-  "content": "Larut malam, Alice mengakui peretasan itu bersifat pribadi. Bob menantang etika; mereka menyetujui batasan dan merencanakan langkah selanjutnya dengan hati-hati.",
-  "keywords": ["Alice", "Bob", "pengakuan", "batasan", "peretasan", "etika", "malam", "langkah selanjutnya"]
+  "title": "Short scene title",
+  "content": "The actual memory text",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 ```
 
-Contoh lebih panjang (valid)
+Praktik terbaik:
+
+- Kembalikan hanya objek JSON itu saja.
+- Gunakan kunci yang persis sama: `title`, `content`, dan `keywords`.
+- Pastikan `keywords` benar-benar berupa array JSON berisi string.
+- Jaga agar judul tetap pendek dan mudah dibaca.
+- Buat kata kunci konkret dan mudah dipakai untuk pengambilan ulang: tempat, objek, nama khusus, tindakan khas, dan pengenal.
+
+STMB kadang bisa menyelamatkan keluaran yang sedikit berantakan, tetapi prompt tidak seharusnya bergantung pada itu.
+
+### Apa yang Membuat Prompt Memori Menjadi Baik
+
+Prompt memori yang baik menjelaskan empat hal dengan jelas:
+
+1. Memberi tahu model jenis memori apa yang harus ditulis
+   - Catatan adegan yang rinci
+   - Sinopsis yang ringkas
+   - Rekap minimal
+   - Memori naratif bergaya sastra
+
+2. Memberi tahu model apa yang penting
+   - alur cerita utama
+   - keputusan
+   - perubahan karakter
+   - pengungkapan
+   - hasil
+   - detail yang penting untuk kontinuitas
+
+3. Memberi tahu model apa yang harus diabaikan
+   - biasanya OOC
+   - filler
+   - obrolan yang hanya bersifat suasana, jika Anda ingin memori yang lebih padat
+
+4. Memberi tahu model secara tepat JSON apa yang harus dikembalikan
+
+### Apa yang Membuat Prompt Memori Menjadi Lemah
+
+Prompt yang lemah biasanya gagal dengan salah satu cara berikut:
+
+- Menjelaskan gaya penulisan, tetapi tidak menjelaskan bentuk JSON.
+- Meminta "analisis yang membantu" atau "pikiran" alih-alih objek memori final.
+- Mendorong kata kunci yang abstrak alih-alih istilah konkret untuk pengambilan ulang.
+- Tidak membedakan konteks sebelumnya dengan adegan saat ini.
+- Meminta terlalu banyak format keluaran sekaligus.
+
+### Saran Praktis untuk Menulis Prompt Memori
+
+- Jelaskan dengan tegas apakah ringkasan harus sangat lengkap atau hemat token.
+- Jika Anda ingin Markdown di dalam `content`, katakan secara langsung.
+- Jika Anda ingin memori yang pendek, batasi isi teksnya, bukan skema JSON-nya.
+- Jika Anda ingin pengambilan ulang yang kuat, gunakan ruang prompt untuk kualitas kata kunci, bukan hanya gaya ringkasannya.
+- Perlakukan memori sebelumnya sebagai konteks kontinuitas, bukan sebagai bahan yang harus ditulis ulang.
+
+## II. Prompt Sampingan
+
+Prompt sampingan BUKAN memori. Prompt sampingan adalah prompt pelacak atau prompt pembaruan yang biasanya menulis atau menimpa entri lorebook terpisah. Ini konsep yang sangat berbeda dari memori, dan hal itu sangat penting untuk diingat.
+
+Saat prompt sampingan berjalan, STMB biasanya merangkai bagian-bagian ini dalam urutan berikut:
+
+1. Teks instruksi utama prompt sampingan
+   - Inilah prompt tugas sebenarnya untuk pelacak tersebut.
+   - Makro standar ST seperti `{{user}}` dan `{{char}}` diselesaikan.
+   - Makro runtime kustom juga bisa dimasukkan untuk proses manual.
+
+2. Entri sebelumnya yang bersifat opsional
+   - Jika prompt sampingan itu sudah memiliki isi tersimpan, STMB bisa memasukkan versi saat ini terlebih dahulu.
+   - Ini membuat model dapat memperbarui pelacak yang sudah ada, alih-alih menulis ulang dari nol setiap saat.
+
+3. Konteks opsional dari memori sebelumnya
+   - Jika templat meminta memori sebelumnya, STMB memasukkannya sebagai konteks baca-saja.
+
+4. Teks adegan yang sudah dikompilasi
+   - Inilah materi adegan saat ini yang harus ditanggapi oleh pelacak.
+
+5. Panduan format respons yang opsional
+   - Ini tidak dipaksakan sebagai skema parser.
+   - Ini hanya instruksi tambahan tentang format keluaran yang Anda inginkan.
+
+Bentuk kasarnya seperti ini:
+
+```text
+[instruksi prompt sampingan]
+
+=== PRIOR ENTRY ===
+[teks pelacak saat ini, jika ada]
+
+=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+[memori sebelumnya yang opsional]
+=== END PREVIOUS SCENE CONTEXT ===
+
+=== SCENE TEXT ===
+[teks adegan yang sudah dikompilasi]
+
+=== RESPONSE FORMAT ===
+[panduan format yang opsional]
+```
+
+### Apa yang Harus Dikembalikan Model
+
+STMB mengharapkan teks biasa yang siap disimpan.
+
+Inilah perbedaan utamanya dibanding memori:
+
+- Prompt sampingan tidak menginginkan JSON.
+- STMB biasanya menyimpan teks yang dikembalikan apa adanya.
+- Jika Anda meminta JSON di dalam prompt sampingan, JSON itu hanya akan menjadi teks kecuali alur kerja Anda sendiri memang bergantung padanya.
+
+Artinya, prompt sampingan harus diarahkan untuk menghasilkan keluaran akhir yang langsung berguna, bukan JSON yang ramah parser memori.
+
+### Apa yang Membuat Prompt Sampingan Menjadi Baik
+
+Prompt sampingan yang baik bersifat sempit, stabil, dan mudah diperbarui.
+
+Contoh:
+
+- Menjaga daftar karakter berdasarkan urutan kepentingan
+- Melacak status hubungan saat ini
+- Melacak alur plot yang belum selesai
+- Melacak apa yang saat ini diyakini `{{char}}` tentang `{{user}}`
+
+Perumusan prompt sampingan yang baik biasanya melakukan hal-hal ini:
+
+1. Menentukan tugas dengan jelas
+   - "Pertahankan pelacak pemeran"
+   - "Perbarui lembar hubungan saat ini"
+   - "Pertahankan laporan alur yang belum selesai"
+
+2. Menjelaskan apakah hasil harus memperbarui, mengganti, atau menambahkan
+   - Ini penting karena teks entri sebelumnya bisa ikut dimasukkan.
+
+3. Menentukan tata letak keluarannya
+   - heading
+   - struktur butir
+   - bagian
+   - aturan urutan
+
+4. Menjelaskan apa yang tidak boleh dimasukkan
+   - spekulasi
+   - item duplikat
+   - informasi usang
+   - narasi tentang tugas itu sendiri
+
+### Apa yang Membuat Prompt Sampingan Menjadi Lemah
+
+- Terlalu luas: "lacak semuanya".
+- Tidak pernah menjelaskan apakah entri lama harus direvisi atau ditulis ulang.
+- Meminta chain-of-thought atau penjelasan alih-alih teks pelacak final.
+- Membiarkan format terlalu kabur, sehingga pelacak berubah-ubah seiring waktu.
+
+### Saran Praktis untuk Menulis Prompt Sampingan
+
+- Tulis prompt sampingan seperti instruksi pemeliharaan, bukan prompt ringkasan.
+- Anggap model mungkin melihat pelacak saat ini terlebih dahulu, lalu adegan yang baru.
+- Pastikan setiap pelacak fokus pada satu tugas saja.
+- Gunakan bidang Format Respons untuk mengatur tata letak, nama bagian, dan urutan.
+
+## III. Konsolidasi
+
+Konsolidasi menggabungkan entri tingkat bawah menjadi ringkasan tingkat yang lebih tinggi.
+
+Contoh:
+
+- memori menjadi ringkasan Arc
+- ringkasan Arc menjadi ringkasan Chapter
+- ringkasan Chapter menjadi ringkasan Book
+
+Saat konsolidasi berjalan, STMB biasanya merangkai bagian-bagian ini dalam urutan berikut:
+
+1. Teks prompt konsolidasi atau preset yang dipilih
+   - Bagian ini menjelaskan bagaimana model harus memadatkan entri sumber.
+   - Bagian ini juga mendefinisikan skema JSON yang harus dikembalikan model.
+
+2. Ringkasan tingkat lebih tinggi sebelumnya yang bersifat opsional
+   - Jika ringkasan sebelumnya pada tier itu sedang dibawa maju, ringkasan itu dimasukkan terlebih dahulu sebagai konteks kanonis.
+   - Prompt memberi tahu model agar tidak menulis ulang bagian itu.
+
+3. Entri tingkat bawah yang dipilih dalam urutan kronologis
+   - Setiap item sumber disertakan dengan pengenal, judul, dan isi.
+   - Inilah materi yang seharusnya dikelompokkan, dipadatkan, dan diubah model menjadi ringkasan tingkat lebih tinggi.
+
+Bentuk kasarnya seperti ini:
+
+```text
+[instruksi prompt / preset konsolidasi]
+
+=== PREVIOUS ARC/CHAPTER/BOOK (CANON - DO NOT REWRITE) ===
+[ringkasan tingkat lebih tinggi sebelumnya yang opsional]
+=== END PREVIOUS ... ===
+
+=== MEMORIES / ARCS / CHAPTERS ===
+=== memory 001 ===
+Title: ...
+Contents: ...
+=== end memory 001 ===
+
+=== memory 002 ===
+Title: ...
+Contents: ...
+=== end memory 002 ===
+...
+=== END ... ===
+```
+
+### Apa yang Harus Dikembalikan Model
+
+STMB mengharapkan objek JSON dengan bentuk seperti ini:
+
 ```json
 {
-  "title": "Gencatan Senjata di Atap",
-  "content": "Garis Waktu: Malam setelah insiden pasar. Alur Cerita: Alice mengungkapkan bahwa dia yang menanam pelacak. Bob frustrasi tetapi mendengarkan; mereka memutar ulang petunjuk dan mengidentifikasi gudang. Interaksi Kunci: Alice meminta maaf tanpa alasan; Bob menetapkan syarat untuk melanjutkan. Detail Penting: Radio rusak, label gudang \"K‑17\", sirene jauh. Hasil: Mereka membentuk gencatan senjata sementara dan setuju untuk mengintai K‑17 saat fajar.",
-  "keywords": ["Alice", "Bob", "gencatan senjata", "gudang K-17", "permintaan maaf", "syarat", "sirene", "rencana pengintaian", "malam", "insiden pasar"]
+  "summaries": [
+    {
+      "title": "Short higher-tier title",
+      "summary": "The consolidated recap text",
+      "keywords": ["keyword1", "keyword2"],
+      "member_ids": ["001", "002"]
+    }
+  ],
+  "unassigned_items": [
+    {
+      "id": "003",
+      "reason": "Why this item was left out"
+    }
+  ]
 }
 ```
 
-### Jika Model Berperilaku Buruk
+Gagasan pentingnya:
 
-STMB mencoba menyelamatkan output yang sedikit salah format:
-- Menerima JSON di dalam pagar kode dan mengekstrak bloknya.
-- Menghapus komentar dan koma di akhir sebelum parsing.
-- Mendeteksi JSON yang terpotong/tidak seimbang dan memberikan kesalahan yang jelas, mis.:
-  - NO_JSON_BLOCK — model merespons dengan prosa, bukan JSON
-  - UNBALANCED / INCOMPLETE_SENTENCE — kemungkinan terpotong
-  - MISSING_FIELDS_TITLE / MISSING_FIELDS_CONTENT / INVALID_KEYWORDS — masalah skema
+- Konsolidasi bisa mengembalikan satu ringkasan atau beberapa ringkasan.
+- `member_ids` memberi tahu STMB entri sumber mana yang termasuk ke setiap ringkasan yang dikembalikan.
+- `unassigned_items` adalah cara model mengatakan "entri ini tidak cocok dengan ringkasan yang baru saja saya buat".
 
-Perilaku model terbaik
-- Mengeluarkan satu objek JSON dengan bidang yang diperlukan.
-- Jangan menambahkan teks di sekitarnya atau pagar Markdown.
-- Jaga agar "title" tetap pendek; buat "keywords" spesifik dan ramah pengambilan.
-- Patuhi preset (mis., abaikan konten [OOC]).
+### Apa yang Membuat Prompt Konsolidasi Menjadi Baik
 
-### Lanjutan: Jalur Eksekusi (Opsional)
+Prompt konsolidasi yang baik melakukan tiga hal dengan baik:
 
-- Perakitan prompt: buildPrompt(profile, scene) menggabungkan teks instruksi preset yang dipilih dengan transkrip adegan dan blok memori sebelumnya yang opsional.
-- Kirim: sendRawCompletionRequest() mengirimkan teks ke penyedia/model yang Anda pilih.
-- Urai: parseAIJsonResponse() mengekstrak dan memvalidasi judul/konten/kata kunci, dengan perbaikan ringan jika diperlukan.
-- Hasil: STMB menyimpan memori terstruktur, menerapkan format judul Anda, dan menyiapkan kunci buku lore yang disarankan.
+1. Menentukan target pemadatannya
+   - satu arc
+   - satu atau beberapa arc
+   - rekap yang padat tetapi lengkap
+   - rekap yang dipadatkan secara agresif
 
-## Prompt Sampingan (Cara Kerja)
+2. Menentukan logika pemilihannya
+   - menjaga kronologi
+   - menjaga kontinuitas
+   - menggabungkan item yang saling terkait
+   - membiarkan item yang tidak terkait tetap tidak ditugaskan
 
-Prompt Sampingan adalah generator tambahan yang digerakkan oleh templat yang menulis catatan terstruktur kembali ke buku lore Anda (mis., pelacak, laporan, daftar pemeran). Mereka terpisah dari jalur "pembuatan memori" dan dapat berjalan secara otomatis atau sesuai permintaan.
+3. Menentukan struktur JSON dengan sangat jelas
 
-Kegunaannya
-- Pelacak plot/status (mis., "Plotpoints")
-- Dasbor status/hubungan (mis., "Status")
-- Daftar pemeran / siapa siapa NPC (mis., "Pemeran Karakter")
-- Catatan POV atau penilaian (mis., "Menilai")
+Prompt konsolidasi yang terbaik juga memberi tahu model apa yang harus dipertahankan:
 
-Templat bawaan (dikirim oleh STMB)
-- Plotpoints — melacak alur cerita dan kaitan
-- Status — merangkum informasi hubungan/afinitas
-- Pemeran Karakter — menyimpan daftar NPC dalam urutan kepentingan plot
-- Menilai — mencatat apa yang telah dipelajari {{char}} tentang {{user}}
+- alur utama yang besar
+- titik balik
+- janji
+- konsekuensi
+- alur yang belum selesai
+- perubahan hubungan
+- kutipan atau pengenal yang kritis untuk kontinuitas
 
-Tempat mengelola
-- Buka Manajer Prompt Sampingan (di dalam STMB) untuk melihat, membuat, mengimpor/mengekspor, mengaktifkan, atau mengonfigurasi templat. Makro ST standar seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan `Format Respons`; makro `{{...}}` non-standar dianggap sebagai input waktu jalan.
+### Apa yang Membuat Prompt Konsolidasi Menjadi Lemah
 
-Buat atau aktifkan Prompt Sampingan
-1) Buka Manajer Prompt Sampingan.
-2) Buat templat baru atau aktifkan yang sudah ada.
-3) Konfigurasikan:
-   - Nama: Judul tampilan (entri buku lore yang disimpan akan diberi judul "Nama (STMB SidePrompt)").
-   - Prompt: Teks instruksi yang akan diikuti model. Makro ST standar dikembangkan di sini.
-   - Format Respons: Blok panduan opsional yang ditambahkan ke prompt (bukan skema, hanya arahan). Makro ST standar juga dikembangkan di sini.
-   - Makro waktu jalan: Token non-standar `{{...}}` menjadi input wajib untuk `/sideprompt`, misalnya `{{npc name}}="Jane Doe"`.
-   - Pemicu:
-     • Setelah Memori — berjalan setelah setiap pembuatan memori yang berhasil untuk adegan saat ini.
-     • Pada Interval — berjalan ketika ambang batas pesan pengguna/asisten yang terlihat sejak proses terakhir terpenuhi (visibleMessages).
-     • Perintah manual — izinkan berjalan dengan /sideprompt.
-   - Konteks opsional: previousMemoriesCount (0–7) untuk menyertakan memori terbaru sebagai konteks hanya-baca.
-   - Model/profil: secara opsional menimpa model/profil (overrideProfileEnabled + overrideProfileIndex). Jika tidak, ia menggunakan profil default STMB (yang dapat mencerminkan pengaturan UI ST saat ini jika dikonfigurasi).
-   - Pengaturan injeksi buku lore:
-     • constVectMode: tautan (vektorisasi, default), hijau (normal), biru (konstan)
-     • posisi: strategi penyisipan
-     • orderMode/orderValue: pengurutan manual bila diperlukan
-     • preventRecursion/delayUntilRecursion: flag boolean
+- Meminta rekap, tetapi tidak pernah menjelaskan cara mengelompokkan entri sumber.
+- Tidak memberi tahu model apa yang harus dilakukan terhadap item yang tidak cocok.
+- Tidak mewajibkan `member_ids`.
+- Meminta prosa bebas alih-alih objek JSON konsolidasi.
+- Terlalu fokus pada gaya dan terlalu kurang dalam mendefinisikan logika seleksi serta pengelompokan.
 
-Jalankan manual dengan /sideprompt
-- Sintaks: /sideprompt "Nama" {{macro}}="value" [X‑Y]
-  - Contoh:
-    • /sideprompt "Status"
-    • /sideprompt "NPC Directory" {{npc name}}="Jane Doe"
-    • /sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120
-- Jika Anda menghilangkan rentang, STMB mengkompilasi pesan sejak pos pemeriksaan terakhir (dibatasi pada jendela terbaru).
-- Proses manual mengharuskan templat untuk mengizinkan perintah sideprompt (aktifkan "Izinkan proses manual melalui /sideprompt" di pengaturan templat). Jika dinonaktifkan, perintah akan ditolak.
- - Nama templat harus berada di dalam tanda kutip, dan nilai makro juga harus dikutip.
- - Setelah Anda memilih side prompt di autocomplete perintah, STMB menyarankan makro wajib yang belum diisi untuk templat tersebut.
+### Saran Praktis untuk Menulis Prompt Konsolidasi
 
-Proses otomatis
-- Setelah Memori: Semua templat yang diaktifkan dengan pemicu onAfterMemory berjalan menggunakan adegan yang sudah dikompilasi. STMB memproses proses secara batch dengan batas konkurensi kecil dan dapat menampilkan toast keberhasilan/kegagalan per templat.
-- Pelacak interval: Templat yang diaktifkan dengan onInterval berjalan setelah jumlah pesan yang terlihat (non-sistem) sejak proses terakhir memenuhi visibleMessages. STMB menyimpan pos pemeriksaan per templat (mis., STMB_sp_<key>_lastMsgId) dan melakukan debounce proses (~10 detik). Kompilasi adegan dibatasi pada jendela terbaru untuk keamanan.
- - Templat dengan makro waktu jalan khusus hanya dapat dijalankan secara manual. STMB menghapus `onInterval` dan `onAfterMemory` dari templat seperti itu saat disimpan/diimpor dan menampilkan peringatan.
+- Beri tahu model apakah Anda menginginkan satu rekap yang kohesif atau jumlah rekap kohesif yang sekecil mungkin.
+- Wajibkan kronologi.
+- Wajibkan penanganan yang eksplisit terhadap sisa item.
+- Jaga kata kunci tetap konkret di sini juga; ringkasan tingkat lebih tinggi tetap membutuhkan nilai untuk pengambilan ulang.
 
-Pratinjau dan penyimpanan
-- Jika "tampilkan pratinjau memori" diaktifkan di pengaturan STMB, popup pratinjau akan muncul. Anda dapat menerima, mengedit, mencoba lagi, atau membatalkan. Konten yang diterima ditulis ke buku lore terikat Anda di bawah "Nama (STMB SidePrompt)".
-- Prompt Sampingan memerlukan buku lore memori untuk diikat ke obrolan (atau dipilih dalam Mode Manual). Jika tidak ada yang terikat, STMB akan menampilkan pemberitahuan dan melewati proses.
- - Jika templat berisi makro waktu jalan khusus, STMB menghapus pemicu otomatis saat menyimpan/mengimpor dan menampilkan peringatan.
+## Aturan Sebenarnya dalam Menulis Prompt
 
-Impor/ekspor dan reset bawaan
-- Ekspor: Simpan dokumen Prompt Sampingan Anda sebagai JSON.
-- Impor: Menggabungkan entri secara aditif; duplikat diganti namanya dengan aman (tidak ada penimpaan). Jika templat yang diimpor memiliki makro waktu jalan khusus, STMB otomatis menghapus `onInterval` dan `onAfterMemory` dan menampilkan peringatan.
-- Buat Ulang Bawaan: Mengatur ulang templat bawaan ke default lokal saat ini (templat buatan pengguna tidak tersentuh).
+Saat menulis untuk STMB, jangan hanya berpikir, "Apa yang saya ingin AI katakan?"
 
-## Prompt Sampingan vs Jalur Memori: Perbedaan Utama
+Pikirkan:
 
-- Tujuan
-  - Jalur Memori: Menghasilkan memori adegan kanonik sebagai JSON ketat (judul, konten, kata kunci) untuk pengambilan.
-  - Prompt Sampingan: Menghasilkan laporan/pelacak tambahan sebagai teks bentuk bebas yang disimpan ke dalam buku lore Anda.
+1. Konteks apa yang akan ditempatkan STMB sebelum adegan?
+2. Apa unit materi sebenarnya yang sedang dianalisis?
+3. Apakah alur ini mengharapkan JSON yang ketat atau teks biasa final?
+4. Informasi apa yang harus tetap bertahan untuk pengambilan ulang nanti?
+5. Apa yang harus diabaikan, dipadatkan, dipertahankan, atau dibawa maju oleh model?
 
-- Kapan mereka berjalan
-  - Jalur Memori: Berjalan hanya saat Anda menekan Hasilkan Memori (atau melalui alur kerjanya).
-  - Prompt Sampingan: Dapat berjalan Setelah Memori, pada ambang Interval, atau secara manual dengan /sideprompt. Templat dengan makro waktu jalan khusus hanya dapat dijalankan secara manual.
+Jika prompt Anda menjawab lima pertanyaan itu dengan jelas, biasanya prompt itu akan bekerja dengan baik bersama STMB.
 
-- Bentuk prompt
-  - Jalur Memori: Menggunakan preset "Manajer Prompt Ringkasan" khusus dengan kontrak JSON yang ketat; STMB memvalidasi/memperbaiki JSON.
-  - Prompt Sampingan: Menggunakan teks instruksi templat + entri sebelumnya opsional + memori sebelumnya opsional + teks adegan yang dikompilasi; tidak ada skema JSON yang diperlukan (Format Respons opsional hanya panduan). Makro ST standar dikembangkan di Prompt dan Format Respons.
+## Catatan Bergaya FAQ
 
-- Output dan penyimpanan
-  - Jalur Memori: Satu objek JSON: { title, content, keywords } → disimpan sebagai entri memori yang digunakan untuk pengambilan.
-  - Prompt Sampingan: Konten teks biasa → disimpan sebagai entri buku lore berjudul "Nama (STMB SidePrompt)" (nama lawas dikenali untuk pembaruan). Kata kunci tidak diperlukan. Token non-standar `{{...}}` adalah input wajib untuk perintah manual.
+- "Apakah saya bisa melihat apa yang benar-benar dikirim ke AI?"
+  Ya. Periksa keluaran terminal atau log Anda jika ingin memeriksa prompt rakitan yang dikirim.
 
-- Penyertaan ke dalam prompt obrolan
-  - Jalur Memori: Entri dipilih melalui tag/kata kunci, prioritas, cakupan, dan anggaran token.
-  - Prompt Sampingan: Penyertaan diatur oleh pengaturan injeksi buku lore setiap templat (konstan vs vektorisasi, posisi, urutan).
+- "Apakah STMB memaksa hasil menjadi bagus meskipun prompt saya lemah?"
+  Tidak juga. STMB kadang bisa menyelamatkan JSON yang rusak, tetapi STMB tidak bisa memperbaiki prompt yang samar dan sejak awal meminta hal yang salah.
 
-- Pemilihan model/profil
-  - Jalur Memori: Menggunakan profil memori yang ditentukan di Manajer Prompt Ringkasan STMB.
-  - Prompt Sampingan: Menggunakan profil default STMB (yang mungkin mencerminkan UI ST saat ini) kecuali penimpaan tingkat templat diaktifkan.
-
-- Konkurensi dan batching
-  - Jalur Memori: Proses tunggal per generasi.
-  - Prompt Sampingan: Proses Setelah Memori di-batch dengan konkurensi terbatas; hasilnya dapat dipratinjau dan disimpan secara bertahap.
-
-- Kontrol token/ukuran
-  - Jalur Memori: STMB memperkirakan penggunaan token dan memberlakukan kontrak JSON.
-  - Prompt Sampingan: Mengkompilasi jendela adegan terbatas dan secara opsional menambahkan beberapa memori terbaru; tidak ada penegakan JSON yang ketat.
-
-## Catatan Gaya Tanya Jawab
-
-- "Apakah ini akan mengubah cara saya menulis pesan?"
-  Tidak banyak. Anda terutama mengkurasi entri dan membiarkan STMB menyertakan yang benar secara otomatis.
-
-- "Bisakah saya melihat apa yang sebenarnya dikirim ke AI?"
-  Ya—periksa Terminal Anda untuk memeriksa apa yang disuntikkan.
+- "Apa yang sebaiknya saya optimalkan lebih dulu saat menulis ulang prompt?"
+  Optimalkan dulu format keluarannya. Setelah itu, optimalkan detail apa saja yang harus dipertahankan. Gaya datang belakangan.
