@@ -17,7 +17,7 @@ Commencez ici :
 Autres liens :
 * 📘 [Guide Utilisateur (FR)](USER_GUIDE-FR.md)
 * 💡 [Comment STMB fonctionne (FR)](howSTMBworks-fr.md)
-* 📋 [Historique des versions & Changelog](changelog.md)
+* 📋 [Historique des versions & Changelog](../changelog.md)
 * 💡 [Utiliser 📕 Memory Books avec 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
@@ -33,21 +33,44 @@ Pour une organisation avancée de la mémoire et une intégration plus profonde 
 
 ## 📑 Table des matières
 
-- Prérequis
-- Pour commencer
-- Types de mémoire : scènes vs résumés
-- Génération de mémoire
-- Intégration au lorebook
-- Commandes slash
-- Support des discussions de groupe
-- Modes de fonctionnement
-- Trackers et prompts secondaires
-- Intégration Regex
-- Gestion des profils
-- Paramètres et configuration
-- FAQ
-- Dépannage
-- Power-Up avec Lorebook Ordering (STLO)
+- [Prérequis](#prerequis)
+  - [Conseils KoboldCpp pour utiliser 📕 ST Memory Books](#conseils-koboldcpp-pour-utiliser-st-memory-books)
+  - [Conseils Llama.cpp pour utiliser 📕 ST Memory Books](#conseils-llamacpp-pour-utiliser-st-memory-books)
+- [Paramètres recommandés pour l'activation globale des Infos Monde/Lorebook](#parametres-recommandes-pour-lactivation-globale-des-infos-mondelorebook)
+- [Pour commencer](#pour-commencer)
+  - [1. Installer & Charger](#1-installer--charger)
+  - [2. Marquer une scène](#2-marquer-une-scene)
+  - [3. Créer une mémoire](#3-creer-une-memoire)
+- [Types de mémoire : scènes vs résumés](#types-de-memoire-scenes-vs-resumes)
+  - [Mémoires de scène (Défaut)](#memoires-de-scene-defaut)
+  - [Résumés](#resumes)
+- [Génération de mémoire](#generation-de-memoire)
+  - [Sortie JSON uniquement](#sortie-json-uniquement)
+  - [Préréglages intégrés (Presets)](#prereglages-integres-presets)
+  - [Prompts personnalisés](#prompts-personnalises)
+- [Intégration au lorebook](#integration-lorebook)
+- [Commandes slash](#raccourcis-commandes-slash)
+- [Support des discussions de groupe](#support-des-discussions-de-groupe)
+- [Modes de fonctionnement](#modes-de-fonctionnement)
+  - [Mode automatique (Par défaut)](#mode-automatique-par-defaut)
+  - [Mode création auto de lorebook](#mode-creation-auto-de-lorebook)
+  - [Mode lorebook manuel](#mode-lorebook-manuel)
+- [Trackers et prompts secondaires](#suivis--prompts-secondaires-side-prompts)
+- [Intégration Regex](#intégration-regex)
+- [Gestion des profils](#gestion-des-profils)
+- [Paramètres et configuration](#parametres-et-configuration)
+  - [Paramètres globaux](#parametres-globaux)
+  - [Champs du profil](#champs-du-profil)
+- [Formatage des titres](#formatage-des-titres)
+- [Mémoires contextuelles](#memoires-contextuelles)
+- [Retour visuel & accessibilité](#retour-visuel--accessibilite)
+- [FAQ](#faq)
+  - [Je ne trouve pas Memory Books dans le menu Extensions !](#je-ne-trouve-pas-memory-books-dans-le-menu-extensions)
+  - [Pourquoi l'IA ne voit-elle pas mes entrées ?](#pourquoi-lia-ne-voit-elle-pas-mes-entrees)
+  - [Dois-je exécuter les vecteurs ?](#dois-je-executer-les-vecteurs)
+- [Dépannage](#depannage)
+- [Power-Up avec Lorebook Ordering (STLO)](#power-up-avec-lorebook-ordering-stlo)
+- [Politique de Caractères (v4.5.1+)](#politique-de-caracteres-v451)
 
 ## 📋 Prérequis
 

@@ -17,7 +17,7 @@
 其他連結：
 * 📘 [使用者指南 (繁體中文)](USER_GUIDE-zh-tw.md)
 * 💡 [STMB 運作原理 (繁體中文)](howSTMBworks-zh-tw.md)
-* 📋 [版本歷史與更新日誌](changelog.md)
+* 📋 [版本歷史與更新日誌](../changelog.md)
 * 💡 [配合 📚 世界書排序 (STLO) 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
 ---
@@ -33,21 +33,44 @@
 
 ## 📑 目錄
 
-- 前置需求
-- 快速開始
-- 記憶類型：場景 vs 總結
-- 記憶生成
-- 世界書整合
-- 斜線命令
-- 群組聊天支援
-- 運作模式
-- 追蹤器與側邊提示詞
-- Regex 整合
-- 設定檔管理
-- 設定與配置
-- FAQ
-- 疑難排解
-- 透過世界書排序 (STLO) 增強功能
+- [前置需求](#前置需求)
+  - [📕 ST Memory Books 的 KoboldCpp 使用提示](#st-memory-books-的-koboldcpp-使用提示)
+  - [📕 ST Memory Books 的 Llama.cpp 使用提示](#st-memory-books-的-llamacpp-使用提示)
+- [推薦的全域世界設定/世界書 (Lorebook) 觸發設定](#推薦的全域世界設定世界書-lorebook-觸發設定)
+- [快速開始](#快速開始)
+  - [1. 安裝與載入](#1-安裝與載入)
+  - [2. 標記場景](#2-標記場景)
+  - [3. 創建記憶](#3-創建記憶)
+- [記憶類型：場景 vs 總結](#記憶類型-場景-vs-總結)
+  - [場景記憶 (預設)](#場景記憶-預設)
+  - [總結整合 (Summary Consolidation)](#總結整合-summary-consolidation)
+- [記憶生成](#記憶生成)
+  - [僅限 JSON 輸出](#僅限-json-輸出)
+  - [內建預設組](#內建預設組)
+  - [自訂提示詞](#自訂提示詞)
+- [世界書整合](#世界書整合)
+- [斜線命令](#斜線指令快捷鍵)
+- [群組聊天支援](#群組聊天支援)
+- [運作模式](#運作模式)
+  - [自動模式 (預設)](#自動模式-預設)
+  - [自動創建世界書模式](#自動創建世界書模式)
+  - [手動世界書模式](#手動世界書模式)
+- [追蹤器與側邊提示詞](#追蹤器與側邊提示詞)
+- [Regex 整合](#regex-正規表達式-整合與進階自訂)
+- [設定檔管理](#設定檔管理)
+- [設定與組態](#設定與組態)
+  - [全域設定 (Global Settings)](#全域設定-global-settings)
+  - [設定檔欄位 (Profile Fields)](#設定檔欄位-profile-fields)
+- [標題格式化](#標題格式化)
+- [上下文記憶 (Context Memories)](#上下文記憶-context-memories)
+- [視覺回饋與無障礙設計](#視覺回饋與無障礙設計)
+- [FAQ (常見問題)](#faq-常見問題)
+  - [我在 Extensions (擴充功能) 選單中找不到 Memory Books！](#我在-extensions-擴充功能-選單中找不到-memory-books)
+  - [我需要運作 Vectors (向量) 嗎？](#我需要運作-vectors-向量-嗎)
+  - [我應該為記憶製作一個單獨的世界書，還是可以使用我已經用於其他事情的同一本世界書？](#我應該為記憶製作一個單獨的世界書還是可以使用我已經用於其他事情的同一本世界書)
+- [Troubleshooting (疑難排解)](#troubleshooting-疑難排解)
+- [透過世界書排序 (STLO) 增強功能](#透過世界書排序-stlo-增強功能)
+- [字元政策 (v4.5.1+)](#字元政策-v451)
 
 ## 📋 前置需求
 
