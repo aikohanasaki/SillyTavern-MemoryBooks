@@ -1,217 +1,364 @@
-# How SillyTavern Memory Books (STMB) Works — Programmer‑Lite Guide
+# How SillyTavern Memory Books (STMB) Works
 
-This guide explains how STMB works in clear, programmer‑lite terms for users who don’t write SillyTavern code but want to understand how prompts are built.
+This is a high-level explanation of how STMB works. It is not meant to explain the code! Instead, this document explains what information STMB assembles, what order it is sent in, and what the model is expected to return.
 
-## What STMB Sends to the AI (Memory Generation)
+Use this document to help you write or edit prompts for STMB.
 
-When you run “Generate Memory,” STMB sends a two‑part prompt:
+## The 3 Main STMB Prompt Flows
 
-A) System Instructions (from a preset like “summary,” “synopsis,” etc.)
-- A short instruction block that:
-  - Tells the model to analyze the scene
-  - Instructs it to return ONLY JSON
-  - Defines the required JSON fields
-- Macros like {{user}} and {{char}} are substituted with your chat’s names.
-- This is NOT your preset! These prompts are standalone and can be managed from the 🧩Summary Prompt Manager. 
+STMB has three main workflows:
 
-B) The Scene, formatted for analysis
-- STMB formats your recent messages like a script:
-  - Optional context block of previous memories (clearly marked DO NOT SUMMARIZE).
-  - The current scene transcript, one line per message:
-    Alice: …
-    Bob: …
+1. Memory generation
+2. Side prompts
+3. Consolidation
 
-Skeleton of the prompt shape
-```
-— System Instructions (from your selected preset) —
-Analyze the following chat scene and return a memory as JSON.
+They are related, but they do not expect the same kind of output.
 
-You must respond with ONLY valid JSON in this exact format:
-{
-  "title": "Short scene title (1-3 words)",
-  "content": "…",
-  "keywords": ["…","…"]
-}
+- Memory generation expects strict JSON.
+- Side prompts usually expect clean plain text (can use Markdown or other lorebook entry formats, DO NOT USE JSON in side prompts).
+- Consolidation expects strict JSON but in a different schema than memories.
 
-…(preset guidance continues; macros like {{user}} and {{char}} already substituted)…
+## I. Memory Generation
 
-— Scene Data —
+When you create a memory, STMB sends one assembled prompt that usually contains these parts in this order:
+
+1. The selected memory prompt or preset text
+   - This is the instruction block from the Summary Prompt Manager.
+   - It tells the model what kind of summary to write and what JSON shape to return.
+   - Macros like `{{user}}` and `{{char}}` are resolved before send.
+
+2. Optional previous-memory context
+   - If the run was configured to include previous memories, they are inserted as read-only context.
+   - They are clearly marked as context and not the thing to summarize again.
+
+3. The current scene transcript
+   - The selected chat range is formatted line by line as `Speaker: message`.
+   - This is the actual scene the model is supposed to turn into a memory.
+
+Very rough shape:
+
+```text
+[memory prompt / preset instructions]
+
 === PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
-Context 1 - [Title]:
-[Previous memory text]
-Keywords: alpha, beta, …
-…(zero or more previous memories)…
+[zero or more earlier memories]
 === END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
-{{user}}: …
-{{char}}: …
-… (each message on its own line)
+Alice: ...
+Bob: ...
 === END SCENE ===
 ```
 
-Notes
-- Token safety: STMB estimates token usage and warns if you exceed a threshold.
-- If you enabled outgoing regex in Settings, STMB applies your selected regex scripts to the prompt text right before sending.
+### What the model should return
 
-## What the AI Must Return (JSON Contract)
+We expect one JSON object:
 
-The AI must return a single JSON object with these fields:
-- title: string (short)
-- content: string (the summary/memory text)
-- keywords: array of strings (10–30 specific terms recommended by presets)
-
-Strictness and compatibility
-- Return ONLY the JSON object — no prose, no explanations.
-- Keys should be exactly: "title", "content", "keywords".
-  - STMB tolerates "summary" or "memory_content" for content, but "content" is best practice.
-- keywords must be an array of strings (not a comma‑separated string).
-
-Minimal example (valid)
 ```json
 {
-  "title": "Quiet Confession",
-  "content": "Late evening, Alice admits the hack was personal. Bob challenges the ethics; they agree on boundaries and plan a careful next step.",
-  "keywords": ["Alice", "Bob", "confession", "boundaries", "hack", "ethics", "evening", "next steps"]
+  "title": "Short scene title",
+  "content": "The actual memory text",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 ```
 
-Longer example (valid)
+Best practice:
+
+- Return only the JSON object.
+- Use the exact keys `title`, `content`, and `keywords`.
+- Make `keywords` a real JSON array of strings.
+- Keep the title short and readable.
+- Make keywords concrete and retrieval-friendly: places, objects, proper nouns, distinctive actions, identifiers.
+
+STMB can sometimes rescue slightly messy output, but prompts should not rely on that.
+
+### What makes a good memory prompt
+
+Good memory prompts do four things clearly:
+
+1. Tell the model what kind of memory to write
+   - Detailed scene log
+   - Compact synopsis
+   - Minimal recap
+   - Literary narrative memory
+
+2. Tell the model what matters
+   - story beats
+   - decisions
+   - character changes
+   - reveals
+   - outcomes
+   - continuity-relevant details
+
+3. Tell the model what to ignore
+   - usually OOC
+   - filler
+   - flavor-only chatter, if you want a tighter memory
+
+4. Tell the model exactly what JSON to return
+
+### What makes a weak memory prompt
+
+Weak prompts usually fail in one of these ways:
+
+- They describe the writing style, but not the JSON shape.
+- They ask for "helpful analysis" or "thoughts" instead of a final memory object.
+- They encourage abstract keywords instead of concrete retrieval terms.
+- They do not distinguish between prior context and the current scene.
+- They ask for too many output formats at once.
+
+### Practical prompt-writing advice for memories
+
+- Be explicit about whether the summary should be exhaustive or token-efficient.
+- If you want markdown inside `content`, say so plainly.
+- If you want short memories, constrain the body, not the JSON schema.
+- If you want strong retrieval, spend prompt space on keyword quality, not just summary style.
+- Treat previous memories as continuity context, not source material to rewrite.
+
+## II. Side Prompts
+
+Side prompts are NOT memories. They are tracker/update prompts that usually write or overwrite a separate lorebook entry. This is a very different concept from a memory and is extremely important to keep in mind. 
+
+When a side prompt runs, STMB usually assembles these parts in this order:
+
+1. The side prompt's main instruction text
+   - This is the actual task prompt for that tracker.
+   - ST standard macros like `{{user}}` and `{{char}}` are resolved.
+   - Custom runtime macros can also be inserted for manual runs.
+
+2. Optional prior entry
+   - If that side prompt already has saved content, STMB can include the current version first.
+   - This lets the model update an existing tracker instead of writing from scratch every time.
+
+3. Optional previous-memory context
+   - If the template asks for previous memories, STMB inserts them as read-only context.
+
+4. The compiled scene text
+   - This is the current scene material the tracker should react to.
+
+5. Optional response-format guidance
+   - This is not enforced as a parser schema.
+   - It is just additional instruction about the output format you want.
+
+Very rough shape:
+
+```text
+[side prompt instructions]
+
+=== PRIOR ENTRY ===
+[existing tracker text, if any]
+
+=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+[optional previous memories]
+=== END PREVIOUS SCENE CONTEXT ===
+
+=== SCENE TEXT ===
+[compiled scene text]
+
+=== RESPONSE FORMAT ===
+[optional format guidance]
+```
+
+### What the model should return
+
+STMB expects plain text that is ready to save.
+
+This is the key difference from memories:
+
+- Side prompts do not want JSON.
+- STMB normally saves the returned text as-is.
+- If you ask for JSON in a side prompt, that JSON is just text unless your own workflow depends on it.
+
+That means side prompt prompts should aim for usable final output, not parser-friendly memory JSON.
+
+### What makes a good side prompt
+
+Good side prompts are narrow, stable, and update-friendly.
+
+Examples:
+
+- Keep a cast list in importance order.
+- Track current relationship state.
+- Track unresolved plot threads.
+- Track what `{{char}}` currently believes about `{{user}}`.
+
+The best side prompt wording usually does this:
+
+1. Defines the job clearly
+   - "Maintain a cast tracker"
+   - "Update the current relationship sheet"
+   - "Keep an unresolved threads report"
+
+2. Says whether to update, replace, or append
+   - This matters because prior entry text may be included.
+
+3. Defines the output layout
+   - headings
+   - bullet structure
+   - sections
+   - ordering rules
+
+4. Says what not to include
+   - speculation
+   - duplicate items
+   - stale information
+   - narration about the task itself
+
+### What makes a weak side prompt
+
+- It is too broad: "track everything."
+- It never says whether the old entry should be revised or rewritten.
+- It asks for chain-of-thought or explanations instead of final tracker text.
+- It leaves formatting vague, so the tracker drifts over time.
+
+### Practical prompt-writing advice for side prompts
+
+- Write side prompts like maintenance instructions, not summary prompts.
+- Assume the model may see the current tracker first, then the new scene.
+- Keep each tracker focused on one job.
+- Use the Response Format field to control layout, section names, and ordering.
+
+## III. Consolidation
+
+Consolidation combines lower-level entries into higher-level summaries.
+
+Examples:
+
+- memories into Arc summaries
+- Arc summaries into Chapter summaries
+- Chapter summaries into Book summaries
+
+When consolidation runs, STMB usually assembles these parts in this order:
+
+1. The selected consolidation prompt or preset text
+   - This explains how the model should compress the source entries.
+   - It also defines the JSON schema the model should return.
+
+2. Optional previous higher-tier summary
+   - If a previous summary in that tier is being carried forward, it is included first as canon context.
+   - The prompt tells the model not to rewrite it.
+
+3. The selected lower-tier entries in chronological order
+   - Each source item is included with an identifier, title, and contents.
+   - This is the material the model is supposed to group, compress, and turn into higher-tier summaries.
+
+Very rough shape:
+
+```text
+[consolidation prompt / preset instructions]
+
+=== PREVIOUS ARC/CHAPTER/BOOK (CANON - DO NOT REWRITE) ===
+[optional previous higher-tier summary]
+=== END PREVIOUS ... ===
+
+=== MEMORIES / ARCS / CHAPTERS ===
+=== memory 001 ===
+Title: ...
+Contents: ...
+=== end memory 001 ===
+
+=== memory 002 ===
+Title: ...
+Contents: ...
+=== end memory 002 ===
+...
+=== END ... ===
+```
+
+### What the model should return
+
+STMB expects a JSON object shaped like this:
+
 ```json
 {
-  "title": "Rooftop Truce",
-  "content": "Timeline: Night after the market incident. Story Beats: Alice reveals she planted the tracer. Bob is frustrated but listens; they replay the lead and identify the warehouse. Key Interactions: Alice apologizes without excuses; Bob sets conditions for continuing. Notable Details: Broken radio, warehouse label \"K‑17\", distant sirens. Outcome: They form a provisional truce and agree to scout K‑17 at dawn.",
-  "keywords": ["Alice", "Bob", "truce", "warehouse K-17", "apology", "conditions", "sirens", "scouting plan", "night", "market incident"]
+  "summaries": [
+    {
+      "title": "Short higher-tier title",
+      "summary": "The consolidated recap text",
+      "keywords": ["keyword1", "keyword2"],
+      "member_ids": ["001", "002"]
+    }
+  ],
+  "unassigned_items": [
+    {
+      "id": "003",
+      "reason": "Why this item was left out"
+    }
+  ]
 }
 ```
 
-### If the Model Misbehaves
+Important idea:
 
-STMB tries to rescue slightly malformed outputs:
-- Accepts JSON inside code fences and extracts the block.
-- Removes comments and trailing commas before parsing.
-- Detects truncated/unbalanced JSON and raises clear errors, e.g.:
-  - NO_JSON_BLOCK — model responded with prose instead of JSON
-  - UNBALANCED / INCOMPLETE_SENTENCE — likely truncated
-  - MISSING_FIELDS_TITLE / MISSING_FIELDS_CONTENT / INVALID_KEYWORDS — schema issues
+- Consolidation may return one summary or several.
+- `member_ids` tells STMB which source entries belong to which returned summary.
+- `unassigned_items` is how the model says "this entry does not fit the summary I just made."
 
-Best model behavior
-- Emit a single JSON object with the required fields.
-- Do not add surrounding text or Markdown fences.
-- Keep “title” short; make “keywords” specific and retrieval‑friendly.
-- Obey the preset (e.g., ignore [OOC] content).
+### What makes a good consolidation prompt
 
-### Advanced: Execution Path (Optional)
+Good consolidation prompts do three things well:
 
-- Prompt assembly: buildPrompt(profile, scene) combines the selected preset’s instruction text with the scene transcript and optional previous‑memories block.
-- Send: sendRawCompletionRequest() submits the text to your selected provider/model.
-- Parse: parseAIJsonResponse() extracts and validates title/content/keywords, with light repair if needed.
-- Result: STMB stores the structured memory, applies your title format, and prepares suggested lorebook keys.
+1. They define the compression target
+   - one arc
+   - one or more arcs
+   - compact but complete recap
+   - aggressively compressed recap
 
-## Side Prompts (How‑To)
+2. They define the selection logic
+   - preserve chronology
+   - keep continuity
+   - merge related items
+   - leave unrelated items unassigned
 
-Side Prompts are auxiliary, template‑driven generators that write structured notes back into your lorebook (e.g., trackers, reports, cast lists). They are separate from the “memory generation” path and can run automatically or on demand, depending on the template.
+3. They define the JSON structure very clearly
 
-What they’re good for
-- Plot/state trackers (e.g., “Plotpoints”)
-- Status/relationship dashboards (e.g., “Status”)
-- Cast lists / NPC who’s who (e.g., “Cast of Characters”)
-- POV notes or assessments (e.g., “Assess”)
+The best consolidation prompts also tell the model what to preserve:
 
-Built‑in templates (shipped by STMB)
-- Plotpoints — tracks story threads and hooks
-- Status — summarizes relationship/affinity information
-- Cast of Characters — keeps an NPC list in order of plot importance
-- Assess — notes what {{char}} has learned about {{user}}
+- major beats
+- turning points
+- promises
+- consequences
+- unresolved threads
+- relationship changes
+- continuity-critical quotes or identifiers
 
-Where to manage
-- Open the Side Prompts Manager (within STMB) to view, create, import/export, enable, or configure templates.
+### What makes a weak consolidation prompt
 
-Create or enable a Side Prompt
-1) Open Side Prompts Manager.
-2) Create a new template or enable a built‑in.
-3) Configure:
-   - Name: Display title (the saved lorebook entry will be titled “Name (STMB SidePrompt)”).
-   - Prompt: Instruction text the model will follow. Standard ST macros like `{{user}}` and `{{char}}` are expanded here.
-   - Response Format: Optional guidance block appended to the prompt (not a schema, just directions). Standard ST macros are expanded here too.
-   - Triggers:
-     • On After Memory — run after each successful memory generation for the current scene.  
-     • On Interval — run when a threshold of visible user/assistant messages since last run is met (visibleMessages).  
-     • Manual command — allow running with /sideprompt.
-   - Runtime macros: Any non-standard `{{...}}` token in Prompt or Response Format becomes a required runtime macro for manual runs, for example `{{npc name}}`.
-   - Optional context: previousMemoriesCount (0–7) to include recent memories as read‑only context.
-   - Model/profile: optionally override the model/profile (overrideProfileEnabled + overrideProfileIndex). Otherwise it uses the STMB default profile (which can mirror current ST UI settings if configured).
-   - Lorebook injection settings:
-     • constVectMode: link (vectorized, default), green (normal), blue (constant)  
-     • position: insertion strategy
-     • orderMode/orderValue: manual ordering when needed  
-     • preventRecursion/delayUntilRecursion: boolean flags
+- It asks for a recap, but never explains how to group source entries.
+- It does not tell the model what to do with outliers.
+- It does not require `member_ids`.
+- It asks for freeform prose instead of the consolidation JSON object.
+- It over-focuses on style and under-specifies selection and grouping.
 
-Manual run with /sideprompt
-- Syntax: /sideprompt "Name" {{macro}}="value" [X‑Y]
-  - Examples:
-    • /sideprompt "Status"  
-    • /sideprompt "NPC Directory" {{npc name}}="Jane Doe"
-    • /sideprompt "Location Notes" {{place name}}="Black Harbor" 100‑120
-- If you omit a range, STMB compiles messages since the last checkpoint (capped to a recent window).
-- Manual run requires the template to allow the sideprompt command (enable “Allow manual run via /sideprompt” in the template settings). If disabled, the command will be rejected.
-- The side prompt name must be quoted.
-- Runtime macro values must be quoted.
-- Runtime macro keys are the literal `{{...}}` tokens from the template.
-- Slash-command autocomplete first suggests quoted side prompt names, then any remaining required runtime macros for the selected template.
+### Practical prompt-writing advice for consolidation
 
-Automatic runs
-- After Memory: All enabled templates with the onAfterMemory trigger run using the already‑compiled scene. STMB batches runs with a small concurrency limit and can show per‑template success/failure toasts.
-- Interval trackers: Enabled templates with onInterval run once the number of visible (non‑system) messages since the last run meets visibleMessages. STMB stores checkpoints per template (e.g., STMB_sp_<key>_lastMsgId) and debounces runs (~10s). Scene compilation is capped to a recent window for safety.
-- Important caveat: Templates with custom runtime macros are manual-only. STMB strips `onInterval` and `onAfterMemory` from those templates on save/import and warns you with a toast.
+- Tell the model whether you want one coherent recap or the smallest coherent number of recaps.
+- Require chronology.
+- Require explicit handling of leftovers.
+- Keep keywords concrete here too; higher-tier summaries still need retrieval value.
 
-Previews and saving
-- If “show memory previews” is enabled in STMB settings, a preview popup appears. You can accept, edit, retry, or cancel. Accepted content is written to your bound lorebook under “Name (STMB SidePrompt)”.
-- Side Prompts require a memory lorebook to be bound to the chat (or selected in Manual Mode). If none is bound, STMB will show a notification and skip the run.
+## The Real Prompt-Writing Rule
 
-Import/export and built‑in reset
-- Export: Save your Side Prompts document as JSON.
-- Import: Additively merges entries; duplicates are safely renamed (no overwrites). If an imported template contains custom runtime macros, STMB strips automatic triggers and shows a warning toast.
-- Recreate Built‑ins: Reset the built‑in templates to the current‑locale defaults (user‑created templates are untouched).
+When writing for STMB, do not just think, "What do I want the AI to say?"
 
-## Side Prompts vs Memory Path: Key Differences
+Think:
 
-- Purpose
-  - Memory Path: Produces canonical scene memories as strict JSON (title, content, keywords) for retrieval.  
-  - Side Prompts: Produces auxiliary reports/trackers as free‑form text saved into your lorebook.
+1. What context will STMB place before the scene?
+2. What is the actual unit of material being analyzed?
+3. Is this path expecting strict JSON or final plain text?
+4. What information should survive into retrieval later?
+5. What should the model ignore, compress, preserve, or carry forward?
 
-- When they run
-  - Memory Path: Runs only when you press Generate Memory (or via its workflow).  
-  - Side Prompts: Can run After Memory, on Interval thresholds, or manually with /sideprompt.
+If your prompt answers those five questions clearly, it will usually work well with STMB.
 
-- Prompt shape
-  - Memory Path: Uses a dedicated “Summary Prompt Manager” preset with a strict JSON contract; STMB validates/repairs JSON.  
-  - Side Prompts: Uses the template’s instruction text + optional prior entry + optional previous memories + compiled scene text; no JSON schema required (optional Response Format is guidance only).
+## FAQ-Style Notes
 
-- Output and storage
-  - Memory Path: One JSON object: { title, content, keywords } → stored as a memory entry used for retrieval.  
-  - Side Prompts: Plain text content → stored as a lorebook entry titled “Name (STMB SidePrompt)” (legacy names are recognized for updates). Keywords are not required.
+- "Can I see what was actually sent to the AI?"
+  Yes. Check your terminal/log output if you want to inspect the assembled prompt.
 
-- Inclusion into the chat prompt
-  - Memory Path: Entries are selected via tags/keywords, priorities, scopes, and token budgets.  
-  - Side Prompts: Inclusion is governed by each template’s lorebook injection settings (constant vs vectorized, position, order).
+- "Does STMB force good output if my prompt is weak?"
+  Not really. STMB can sometimes rescue malformed JSON, but it cannot fix a vague prompt that asked for the wrong thing.
 
-- Model/profile selection
-  - Memory Path: Uses memory profiles defined in STMB’s Summary Prompt Manager.  
-  - Side Prompts: Uses the STMB default profile (which may mirror current ST UI) unless a template‑level override is enabled.
+- "What should I optimize first when rewriting prompts?"
+  First optimize the return format. Then optimize what details to preserve. Style comes after that.
 
-- Concurrency and batching
-  - Memory Path: Single run per generation.  
-  - Side Prompts: After‑Memory runs are batched with limited concurrency; results can be previewed and saved in waves.
-
-- Token/size controls
-  - Memory Path: STMB estimates token usage and enforces a JSON contract.  
-  - Side Prompts: Compiles a bounded scene window and optionally adds a few recent memories; no strict JSON enforcement.
-
-## FAQ‑Style Notes
-
-- “Will this change how I write messages?”  
-  Not much. You mainly curate entries and let STMB auto‑include the right ones.
-
-- “Can I see what was actually sent to the AI?”  
-  Yes—check your Terminal to inspect what was injected.
