@@ -130,7 +130,7 @@ Piense en ST Memory Books como su **bibliotecario personal de IA** para conversa
 1. Busque los pequeños botones de flecha (► ◄) en sus mensajes de chat.
 2. Haga clic en ► en el primer mensaje de una escena importante.
 3. Haga clic en ◄ en el último mensaje de esa escena.
-4. Abra Memory Books (🪄) y haga clic en "Create Memory" (Crear Memoria).
+4. Abra Memory Books (🪄) y haga clic en "Crear Memoria".
 
 **Lo que obtiene:**
 
@@ -198,11 +198,11 @@ También puede definir cuántos mensajes recientes permanecen visibles con **Men
 
 * **Ocultar automáticamente solo los mensajes de la última memoria**
 * dejar **2** mensajes visibles
-* activar **Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)**
+* activar **Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)** si suele rehacer memorias o necesita volver a ver rangos concretos antes de generar
 
 ## 🌈 Consolidación de resúmenes
 
-La consolidación combina recuerdos antiguos de STMB en resúmenes de nivel superior.
+La consolidación ayuda a mantener las historias largas manejables al comprimir memorias antiguas de STMB en entradas de resumen de nivel superior.
 
 ### ¿Qué es?
 
@@ -213,20 +213,23 @@ STMB puede combinar recuerdos o resúmenes existentes en un resumen más compact
 * Su lista de recuerdos ya es muy larga
 * Los recuerdos antiguos ya no necesitan detalle escena por escena
 * Quiere ahorrar tokens sin perder continuidad
+* Quiere resúmenes narrativos más limpios y de nivel superior
 
 ### ¿Se ejecuta sola?
 
 No. La consolidación sigue necesitando confirmación.
 
-* Puede abrir **Consolidar las memorias** manualmente
-* Opcionalmente STMB puede avisarle cuando un nivel llegue a su mínimo
-* Elegir **Yes** solo abre el popup de consolidación, no la ejecuta en silencio
+* Puede abrir **Consolidar las memorias** manualmente desde el popup principal
+* También puede activar **Avisar para consolidar cuando una capa esté lista**
+* Cuando un nivel de destino seleccionado alcanza su mínimo guardado, STMB muestra una confirmación de **sí / luego**
+* Elegir **Yes** solo abre el popup de consolidación con esa capa ya seleccionada; no la ejecuta en silencio
+* Esto no sustituye a la consolidación manual, solo la vuelve más fácil de descubrir cuando ya hay suficientes entradas
 
 ### ¿Qué se consolida?
 
 * Los recuerdos normales de STMB sí se consolidan
 * Los resúmenes de nivel superior también se pueden volver a consolidar
-* Los Side Prompts son rastreadores y no se mezclan en Arc/Chapter
+* Los Prompts Secundarios son rastreadores y no se mezclan en Arc/Chapter
 
 ### ¿Cómo se usa?
 
@@ -237,19 +240,20 @@ No. La consolidación sigue necesitando confirmación.
 5. Pulse **Run**
 
 Si la IA devuelve una mala respuesta de consolidación, puede revisarla y corregirla antes de volver a confirmar.
+Si no aparece el aviso automático, compruebe que la opción de confirmación esté activada y que el nivel objetivo esté incluido en **Niveles de Auto-Consolidación**.
 
 ---
 
 ## 🎨 Rastreadores, Prompts Secundarios y Plantillas (Función Avanzada)
 
-Los **Prompts Secundarios** (Side Prompts) son rastreadores en segundo plano que ayudan a mantener la información de la historia en curso.
+Los **Prompts Secundarios** son rastreadores en segundo plano que ayudan a mantener la información de la historia en curso.
 Crean entradas separadas de Side Prompt en el lorebook y se ejecutan junto con la creación de memoria. Piense en ellos como **ayudantes que observan su historia y mantienen ciertos detalles actualizados**.
-Las macros estándar de ST como `{{user}}` y `{{char}}` se expanden en `Prompt` y `Response Format`. Las macros no estándar `{{...}}` se convierten en entradas obligatorias para la ejecución manual.
+Las macros estándar de ST como `{{user}}` y `{{char}}` se expanden en `Prompt`, `Response Format`, `Title` y otros campos de texto. Las macros no estándar `{{...}}` se convierten en entradas obligatorias cuando ejecuta el prompt manualmente.
 
 ### 🚀 **Inicio Rápido con Plantillas**
 
 1. Abra la configuración de Memory Books.
-2. Haga clic en **Side Prompts**.
+2. Haga clic en **Prompts Secundarios**.
 3. Navegue por la **biblioteca de plantillas** y elija lo que se ajuste a su historia:
 * **Character Development Tracker** – Rastrea cambios de personalidad y crecimiento.
 * **Relationship Dynamics** – Rastrea las relaciones entre personajes.
@@ -263,22 +267,25 @@ Las macros estándar de ST como `{{user}}` y `{{char}}` se expanden en `Prompt` 
 
 ### ⚙️ **Cómo Funcionan los Prompts Secundarios**
 
-* **Rastreadores en Segundo Plano**: Se ejecutan silenciosamente y actualizan la información con el tiempo.
-* **No Intrusivos**: No cambian la configuración principal de su IA ni los prompts de los personajes.
-* **Control por Chat**: Diferentes chats pueden usar diferentes rastreadores.
-* **Basado en Plantillas**: Use plantillas integradas o cree las suyas propias.
-* **Automático o Manual**: Las plantillas estándar pueden ejecutarse automáticamente; las plantillas con macros de tiempo de ejecución personalizadas son solo manuales.
-* **Compatibilidad con macros**: `Prompt` y `Response Format` expanden macros estándar de ST como `{{user}}` y `{{char}}`.
-* **Controles de seguridad**: Si una plantilla contiene macros de tiempo de ejecución personalizadas, STMB elimina `onInterval` y `onAfterMemory` al guardar/importar y muestra una advertencia.
+* **Rastreadores en segundo plano**: se ejecutan silenciosamente y actualizan la información con el tiempo.
+* **No intrusivos**: no cambian la configuración principal de su IA ni los prompts de los personajes.
+* **Control por chat**: diferentes chats pueden usar rastreadores distintos.
+* **Basados en plantillas**: use plantillas integradas o cree las suyas propias.
+* **Automáticos o manuales**: las plantillas normales pueden ejecutarse automáticamente; las plantillas con macros de tiempo de ejecución personalizadas son solo manuales.
+* **Compatibilidad con macros**: `Prompt`, `Response Format` y `Title` expanden macros estándar de ST como `{{user}}` y `{{char}}`.
+* **Macros de tiempo de ejecución**: los tokens no estándar `{{...}}` se convierten en entradas obligatorias como `{{npc name}}="Jane Doe"`.
+* **Texto plano permitido**: un Side Prompt no tiene que devolver JSON.
+* **Comportamiento de sobrescritura**: el Side Prompt actualiza su propia entrada rastreada con el tiempo en lugar de crear una memoria nueva cada vez.
 
 Esto hace que el comportamiento del disparador sea comprensible sin términos técnicos.
 
 ### 🛠️ **Gestión de Prompts Secundarios**
 
-* **Side Prompts Manager**: Cree, edite, duplique y organice rastreadores.
-* **Enable / Disable**: Encienda o apague los rastreadores en cualquier momento.
-* **Import / Export**: Comparta plantillas o haga copias de seguridad.
-* **Status View**: Vea qué rastreadores están activos en el chat actual.
+* **Administrador de Prompts Secundarios**: cree, edite, duplique y organice rastreadores.
+* **Enable / Disable**: encienda o apague los rastreadores en cualquier momento.
+* **Import / Export**: comparta plantillas o haga copias de seguridad.
+* **Status View**: vea qué rastreadores están activos en el chat actual.
+* **Controles de seguridad**: si una plantilla contiene macros de tiempo de ejecución personalizadas, STMB elimina `onInterval` y `onAfterMemory` al guardar/importar y muestra una advertencia.
 
 ### 💡 **Ejemplos de Plantillas**
 
@@ -294,8 +301,8 @@ Ideas de ejemplo para prompts:
 
 ### 🔧 **Creación de Prompts Secundarios Personalizados**
 
-1. Abra el Administrador de Prompts Secundarios (Side Prompts Manager).
-2. Haga clic en **Create New**.
+1. Abra el Administrador de Prompts Secundarios.
+2. Haga clic en **Crear Nuevo**.
 3. Escriba una instrucción corta y clara.
    *(ejemplo: "Siempre anota cómo es el clima en cada escena")*.
 4. Añada si hace falta macros estándar de ST o macros de tiempo de ejecución en el formato `{{macro}}="value"`.
@@ -306,6 +313,24 @@ Ideas de ejemplo para prompts:
 
 Los Prompts Secundarios funcionan mejor cuando son **pequeños y enfocados**.
 En lugar de "rastrear todo", intente "rastrear la tensión romántica entre los personajes principales".
+
+### ⌨️ **Sintaxis manual /sideprompt**
+
+Use:
+`/sideprompt "Name" {{macro}}="value" [X-Y]`
+
+Ejemplos:
+* `/sideprompt "Status" 10-20`
+* `/sideprompt "NPC Directory" {{npc name}}="Jane Doe" 40-50`
+* `/sideprompt "Location Notes" {{place name}}="Black Harbor" 100-120`
+
+Notas:
+* El nombre del Side Prompt debe ir entre comillas.
+* Los valores de las macros de tiempo de ejecución deben ir entre comillas.
+* El autocompletado de comandos slash sugerirá las macros obligatorias después de elegir el Side Prompt.
+* Si una plantilla contiene macros de tiempo de ejecución personalizadas, STMB la mantiene como manual y elimina los activadores automáticos.
+* `X-Y` es opcional. Si lo omite, STMB usa los mensajes desde la última vez que se actualizó ese Side Prompt.
+* Si ejecuta Prompts Secundarios manualmente y por separado, recuerde activar **Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)**.
 
 ---
 
@@ -327,10 +352,13 @@ Para la referencia completa, consulte [readme.md](readme.md).
 Controles básicos importantes:
 
 * **Ajustes Actuales de SillyTavern** usa directamente su conexión actual de ST
+* **Crear su propio perfil STMB** le permite separar la configuración de memoria de la configuración de rol
+* **Mostrar vistas previas de memoria** le permite revisar o editar la salida de la IA antes de guardar
 * **Crear resúmenes de memoria automáticamente** activa los recuerdos automáticos
 * **Intervalo de Auto-Resumen** y **Búfer de Auto-Resumen** controlan cuándo se ejecutan
-* **Auto-hide/unhide memories** ayuda a ahorrar tokens
+* **Ocultar / mostrar mensajes** ayuda a ahorrar tokens
 * **Activar Modo Manual de Lorebook** y **Crear automáticamente un lorebook si no existe** controlan dónde se guardan los recuerdos
+* **Rastreadores y Prompts secundarios** habilita los rastreadores
 * **Avisar para consolidar cuando una capa esté lista** solo muestra la confirmación de consolidación
 
 ---
@@ -342,10 +370,12 @@ Para la lista completa, consulte [readme.md](readme.md).
 Comprobaciones rápidas:
 
 * Asegúrese de que STMB esté activado y que **Memory Books** aparezca en el menú de extensiones
+* Si no se activan los recuerdos, confirme que **delay until recursion** esté desactivado
 * Si el auto-summary no se ejecuta, confirme que creó primero una memoria manual y que el intervalo/buffer son razonables
 * Si los recuerdos no se guardan, asegúrese de que haya un lorebook vinculado al chat o de que **Crear automáticamente un lorebook si no existe** esté activado
 * Si el comportamiento de Regex parece incorrecto, revise la selección dentro de **📐 Configurar expresiones regulares…**
-* Si la consolidación no aparece, revise el nivel objetivo y la opción de confirmación de consolidación
+* Si la consolidación no aparece, confirme que **Avisar para consolidar cuando una capa esté lista** esté activado y que el nivel objetivo esté incluido en **Capas de auto-consolidación**
+* Si la confirmación sí aparece, recuerde que **Yes** solo abre el popup de consolidación; no ejecuta la consolidación por sí sola
 
 ---
 

@@ -13,7 +13,7 @@
 - [选择你的风格](#-选择你的风格)
 - [节省 token：隐藏 / 显示消息](#-节省-token隐藏--显示消息)
 - [总结整合](#-总结整合)
-- [追踪器、Side Prompts 与模板](#-追踪器side-prompts-与模板高级功能)
+- [追踪器、侧边提示词与模板](#-追踪器侧边提示词与模板高级功能)
 - [先看这些重要设置](#-先看这些重要设置)
 - [疑难解答](#-疑难解答当事情不工作时)
 - [ST Memory Books 不做什么](#-st-memory-books-不做什么)
@@ -67,7 +67,7 @@
 - 需要时按需创建记忆，记录特殊时刻
 - 适合捕捉关键剧情点或角色变化
 
-### 📊 **Side Prompts 与智能追踪器**
+### 📊 **侧边提示词与智能追踪器**
 *“我想追踪关系、剧情线或数值”*
 - 可复用的提示片段，用来增强记忆生成
 - 带有现成追踪器的模板库
@@ -115,7 +115,7 @@
 1. 在聊天消息上找到小箭头按钮（► ◄）
 2. 在重要场景的第一条消息上点击 ►
 3. 在该场景最后一条消息上点击 ◄
-4. 打开 Memory Books（🪄）并点击 **“Create Memory”**
+4. 打开 Memory Books（🪄）并点击 **“创建记忆”**
 
 **你会得到：**
 - 对记忆内容的完全控制
@@ -170,18 +170,18 @@ STMB 可以在记忆创建后自动隐藏消息。你可以选择：
 - **自动隐藏到最后一条记忆为止的所有消息**：隐藏已经被记忆覆盖的内容
 - **只自动隐藏最后一条记忆中的消息**：只隐藏最近处理过的范围
 
-你还可以通过 **Messages to leave unhidden** 控制保留多少最近消息可见。
+你还可以通过 **保留未隐藏的消息数量** 控制保留多少最近消息可见。
 
 ### 生成记忆前重新显示
 
-**Unhide hidden messages for memory generation** 会在生成记忆前，临时对所选范围执行 `/unhide X-Y`。如果你经常重做记忆，这个很有用。
+**生成记忆前取消隐藏的消息 (运行 /unhide X-Y)** 会在生成记忆前，临时对所选范围执行 `/unhide X-Y`。如果你经常重做记忆，这个很有用。
 
 ### 新手推荐设置
 
 Aiko 的设置：
-- 使用 **Auto-hide messages up to the last memory**
+- 使用 **自动隐藏所有消息直到最后一个记忆**
 - 保留 **2** 条消息不隐藏
-- 打开 **Unhide hidden messages for memory generation**
+- 打开 **生成记忆前取消隐藏的消息 (运行 /unhide X-Y)**
 
 ---
 
@@ -213,8 +213,8 @@ Aiko 的设置：
 
 **答：** 不会。总结整合仍然需要你确认。
 
-- 你可以随时从主面板手动打开 **Consolidate Memories**
-- 你也可以启用 **Prompt for consolidation when a tier is ready**
+- 你可以随时从主面板手动打开 **整合记忆**
+- 你也可以启用 **当某个层级准备好时提示合并**
 - 当某个目标层级达到其已保存的最小合格数量时，STMB 会显示一个 **yes/later** 确认框
 - 选择 **Yes** 只会打开已选中该层级的整合面板，不会悄悄自动执行
 
@@ -222,7 +222,7 @@ Aiko 的设置：
 
 **答：** 创建整合摘要的步骤是：
 
-1. 在 STMB 主面板中点击 **Consolidate Memories**
+1. 在 STMB 主面板中点击 **整合记忆**
 2. 选择目标摘要层级
 3. 选择想纳入的来源条目
 4. 视需要决定是否在新摘要创建后停用来源条目
@@ -232,14 +232,14 @@ Aiko 的设置：
 
 ---
 
-## 🎨 追踪器、Side Prompts 与模板（高级功能）
+## 🎨 追踪器、侧边提示词与模板（高级功能）
 
-**Side Prompts** 是后台追踪器，能帮你维持持续变化的故事信息。它们会在记忆创建之外运行，并随着时间更新独立的 side prompt lorebook 条目。你可以把它们理解成 **一边看着故事、一边帮你把关键细节保持最新的助手**。
+**侧边提示词** 是后台追踪器，能帮你维持持续变化的故事信息。它们会在记忆创建之外运行，并随着时间更新独立的侧边提示词故事书条目。你可以把它们理解成 **一边看着故事、一边帮你把关键细节保持最新的助手**。
 
 ### 🚀 **用模板快速开始**
 
 1. 打开 Memory Books 设置
-2. 点击 **Side Prompts**
+2. 点击 **侧边提示词**
 3. 浏览 **template library**，选择适合你故事的模板：
 
    * **Character Development Tracker** - 追踪人格变化和成长
@@ -250,9 +250,9 @@ Aiko 的设置：
 4. 启用你想要的模板（之后还可以继续自定义）
 5. 如果模板使用自动触发，STMB 会在记忆创建时一并更新这个 side-prompt 条目
 
-[Scribe 逐步演示如何启用 Memory Books 的 Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
+[Scribe 逐步演示如何启用 Memory Books 的侧边提示词](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
 
-### ⚙️ **Side Prompt 的工作方式**
+### ⚙️ **侧边提示词的工作方式**
 
 * **后台追踪器**：它们静静运行，并随时间更新信息
 * **不侵入**：不会改动你的主 AI 设置或角色提示词
@@ -261,12 +261,12 @@ Aiko 的设置：
 * **自动或手动**：标准模板可以自动运行；带自定义运行时宏的模板只能手动运行
 * **宏支持**：`Prompt`、`Response Format`、`Title` 和关键词字段可以展开标准 ST 宏，例如 `{{user}}` 和 `{{char}}`
 * **运行时宏**：非标准的 `{{...}}` token 会变成命令输入，例如 `{{npc name}}="Jane Doe"`
-* **允许纯文本**：Side Prompt 不一定要返回 JSON
-* **覆盖行为**：Side Prompt 会持续更新自己的追踪条目，而不是每次都新建一条顺序记忆
+* **允许纯文本**：侧边提示词不一定要返回 JSON
+* **覆盖行为**：侧边提示词会持续更新自己的追踪条目，而不是每次都新建一条顺序记忆
 
-### 🛠️ **管理 Side Prompts**
+### 🛠️ **管理侧边提示词**
 
-* **Side Prompts Manager**：创建、编辑、复制和整理追踪器
+* **侧边提示词管理器**：创建、编辑、复制和整理追踪器
 * **启用 / 禁用**：随时开关追踪器
 * **导入 / 导出**：共享模板或备份
 * **状态视图**：查看当前聊天里哪些追踪器在运行，以及它们何时触发
@@ -284,10 +284,10 @@ Aiko 的设置：
 * “记录出现时的新世界观细节”
 * “追踪角色 A 和角色 B 之间的关系”
 
-### 🔧 **创建自定义 Side Prompts**
+### 🔧 **创建自定义侧边提示词**
 
-1. 打开 Side Prompts Manager
-2. 点击 **Create New**
+1. 打开侧边提示词管理器
+2. 点击 **新建**
 3. 写一条简短、明确的指令
    （例如：“始终记录每个场景里的天气情况”）
 4. 可以选填标准 ST 宏，比如 `{{user}}` 或 `{{char}}`
@@ -297,7 +297,7 @@ Aiko 的设置：
 
 ### 💬 **小技巧**
 
-Side Prompt 最适合做成 **小而聚焦** 的内容。
+侧边提示词 最适合做成 **小而聚焦** 的内容。
 与其写“追踪一切”，不如写“追踪主角之间的恋爱张力”。
 
 ### ⌨️ **手动 /sideprompt 语法**
@@ -312,12 +312,12 @@ Side Prompt 最适合做成 **小而聚焦** 的内容。
 
 注意：
 
-- side prompt 名称必须加引号
+- 侧边提示词名称必须加引号
 - 运行时宏的值也必须加引号
-- 选完 side prompt 后，Slash 命令自动补全会提示所需的运行时宏
+- 选完侧边提示词后，Slash 命令自动补全会提示所需的运行时宏
 - 如果模板包含自定义运行时宏，STMB 会把它保留为仅手动运行，并移除自动触发
 - `X-Y` 是可选的。如果你不写范围，STMB 会使用自上次该 side prompt 更新以来的消息
-- 如果你是手动并分开运行 side prompt，别忘了打开 **Unhide before generation**
+- 如果你是手动并分开运行侧边提示词，别忘了打开 **生成前取消隐藏**
 
 ---
 
@@ -333,8 +333,8 @@ Side Prompt 最适合做成 **小而聚焦** 的内容。
 #### **现在它是怎么工作的**
 
 1. 在 SillyTavern 的 **Regex** 扩展里创建你想要的脚本
-2. 在 STMB 里开启 **Use regex (advanced)**
-3. 点击 **📐 Configure regex…**
+2. 在 STMB 里开启 **使用正则表达式（高级）**
+3. 点击 **📐 配置正则表达式…**
 4. 选择 STMB 应该运行哪些脚本：
    - 在把文本发送给 AI 之前
    - 在把响应加入 lorebook 之前
@@ -350,8 +350,8 @@ Side Prompt 最适合做成 **小而聚焦** 的内容。
 如果你的模型总是在摘要后面加 `(OOC: I hope this summary is helpful!)`，你可以：
 
 1. 创建一个删除这段文字的 Regex 脚本
-2. 在 STMB 里打开 **Use regex (advanced)**
-3. 打开 **📐 Configure regex…**
+2. 在 STMB 里打开 **使用正则表达式（高级）**
+3. 打开 **📐 配置正则表达式…**
 4. 把那个脚本加入 **incoming** 选择
 
 这样 STMB 就会在预览或保存前清理响应内容。
@@ -363,15 +363,15 @@ Side Prompt 最适合做成 **小而聚焦** 的内容。
 这不是完整的设置参考。完整的逐项说明请看 [readme-zh-cn.md](readme-zh-cn.md)。
 
 多数用户最先应该了解这些控制项：
-- **Current SillyTavern Settings**：直接使用你当前的 ST 连接，不必新建自定义提供者配置
-- **Create your own STMB Profile**：让你自定义 STMB，例如为记忆和角色扮演使用不同或更便宜的模型
+- **当前 SillyTavern 设置**：直接使用你当前的 ST 连接，不必新建自定义提供者配置
+- **创建你自己的 STMB 配置文件**：让你自定义 STMB，例如为记忆和角色扮演使用不同或更便宜的模型
 - **Auto-hide/unhide memories**：你真正省 token 的地方，因为它能在记忆保存后隐藏消息
 - **Manual Lorebook Mode** 和 **Auto-create lorebook if none exists**：控制记忆存到哪里
-- **Show memory previews**：让你在保存前检查或编辑 AI 输出
-- **Auto-create memory summaries**：开启自动记忆生成
-- **Auto-Summary Interval** 和 **Auto-Summary Buffer**：控制自动记忆生成何时运行
-- **Side Prompts**：启用追踪器
-- **Prompt for consolidation when a tier is ready** 与 **Auto-Consolidation Tiers**：在满足条件时提示你进行整合，而不是静默执行
+- **显示记忆预览**：让你在保存前检查或编辑 AI 输出
+- **自动创建记忆摘要**：开启自动记忆生成
+- **自动摘要间隔** 和 **自动摘要缓冲区**：控制自动记忆生成何时运行
+- **侧边提示词**：启用追踪器
+- **当某个层级准备好时提示合并** 与 **自动合并层级**：在满足条件时提示你进行整合，而不是静默执行
 
 ---
 
@@ -385,8 +385,8 @@ Side Prompt 最适合做成 **小而聚焦** 的内容。
 - 如果自动摘要没有触发，先确认你已经手动创建过一条记忆，并检查 interval / buffer 是否合理
 - 如果记忆无法保存，请确认聊天已经绑定 lorebook，或启用了 **Auto-create lorebook if none exists**
 - 如果记忆没有触发，确认 `delay until recursion` 已关闭
-- 如果 regex 行为看起来不对，请检查 **📐 Configure regex…** 里的选择，而不只是看 Regex 扩展本身
-- 如果整合没有弹出，请确认 **Prompt for consolidation when a tier is ready** 已启用，并且目标层级包含在 **Auto-Consolidation Tiers** 中
+- 如果 regex 行为看起来不对，请检查 **📐 配置正则表达式…** 里的选择，而不只是看 Regex 扩展本身
+- 如果整合没有弹出，请确认 **当某个层级准备好时提示合并** 已启用，并且目标层级包含在 **自动合并层级** 中
 
 ---
 

@@ -63,7 +63,7 @@ Pautan lain:
 - [Soalan Lazim](#soalan-lazim)
   - [Patutkah saya menggunakan lorebook berasingan untuk memori?](#patutkah-saya-menggunakan-lorebook-berasingan-untuk-memori)
   - [Adakah saya perlu menjalankan vektor?](#adakah-saya-perlu-menjalankan-vektor)
-  - [Patutkah saya menggunakan 'Delay until recursion' jika Memory Books ialah satu-satunya lorebook?](#patutkah-saya-menggunakan-delay-until-recursion-jika-memory-books-ialah-satu-satunya-lorebook)
+  - [Patutkah saya menggunakan 'Tangguhkan Sehingga Rekursi' jika Memory Books ialah satu-satunya lorebook?](#patutkah-saya-menggunakan-tangguhkan-sehingga-rekursi-jika-memory-books-ialah-satu-satunya-lorebook)
   - [Mengapa AI tidak nampak entri saya?](#mengapa-ai-tidak-nampak-entri-saya)
 - [Penyelesaian Masalah](#penyelesaian-masalah)
 - [Tingkatkan Kuasa dengan Penyusunan Lorebook (STLO)](#tingkatkan-kuasa-dengan-penyusunan-lorebook-stlo)
@@ -122,7 +122,7 @@ llama-server -m <laluan-model> -c <saiz-konteks> --port 8080
 - **Scan Depth:** lebih tinggi lebih baik
 - **Max Recursion Steps:** 2
 - **Context %:** 80% berdasarkan tetingkap konteks 100,000 token
-- Jika lorebook memori ialah satu-satunya lorebook, pastikan `Delay until recursion` dimatikan dalam profil STMB atau memori mungkin tidak mencetus
+- Jika lorebook memori ialah satu-satunya lorebook, pastikan `Tangguhkan Sehingga Rekursi` dimatikan dalam profil STMB atau memori mungkin tidak mencetus
 
 ---
 
@@ -494,9 +494,9 @@ Saya syorkan lorebook memori anda menjadi buku yang berasingan. Ini memudahkan p
 Boleh, tetapi ia tidak wajib. Jika anda tidak menggunakan sambungan vektor, ia masih berfungsi melalui kata kunci. Semuanya diautomasikan supaya anda tidak perlu memikirkan kata kunci apa yang perlu digunakan.
 
 <a id="patutkah-saya-menggunakan-delay-until-recursion-jika-memory-books-ialah-satu-satunya-lorebook"></a>
-### Patutkah saya menggunakan 'Delay until recursion' jika Memory Books ialah satu-satunya lorebook?
+### Patutkah saya menggunakan 'Tangguhkan Sehingga Rekursi' jika Memory Books ialah satu-satunya lorebook?
 
-Tidak. Jika tiada info dunia atau lorebook lain, memilih `Delay until recursion` boleh menghalang gelung pertama daripada mencetus, menyebabkan tiada apa yang diaktifkan. Jika Memory Books ialah satu-satunya lorebook, sama ada matikan `Delay until recursion` atau pastikan sekurang-kurangnya satu lagi info dunia/lorebook dikonfigurasikan.
+Tidak. Jika tiada info dunia atau lorebook lain, memilih `Tangguhkan Sehingga Rekursi` boleh menghalang gelung pertama daripada mencetus, menyebabkan tiada apa yang diaktifkan. Jika Memory Books ialah satu-satunya lorebook, sama ada matikan `Tangguhkan Sehingga Rekursi` atau pastikan sekurang-kurangnya satu lagi info dunia/lorebook dikonfigurasikan.
 
 <a id="mengapa-ai-tidak-nampak-entri-saya"></a>
 ### Mengapa AI tidak nampak entri saya?

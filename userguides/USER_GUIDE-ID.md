@@ -13,7 +13,7 @@ Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk ko
 - [Pilih Gaya Anda](#-pilih-gaya-anda)
 - [Penghematan token](#-penghematan-token-sembunyikan--tampilkan-pesan)
 - [Ringkasan Konsolidasi](#-ringkasan-konsolidasi)
-- [Pelacak, Side Prompts, & Templat](#-pelacak-side-prompts--templat-fitur-lanjutan)
+- [Pelacak, Prompt Sampingan, & Templat](#-pelacak-prompt-sampingan--templat-fitur-lanjutan)
 - [Kontrol Teks Lanjutan dengan Ekstensi Regex](#-kontrol-teks-lanjutan-dengan-ekstensi-regex)
 - [Pengaturan yang Benar-benar Penting](#-pengaturan-yang-benar-benar-penting)
 - [Pemecahan Masalah](#-pemecahan-masalah-saat-ada-masalah)
@@ -76,7 +76,7 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 * Buat memori sesuai permintaan untuk momen-momen spesial.
 * Bagus untuk menangkap poin plot utama atau perkembangan karakter.
 
-### 📊 **Side Prompts & Pelacak Cerdas**
+### 📊 **Prompt Sampingan & Pelacak Cerdas**
 
 *"Saya ingin melacak hubungan, alur plot, atau statistik"*
 
@@ -131,7 +131,7 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 1. Cari tombol panah kecil (► ◄) pada pesan obrolan Anda.
 2. Klik ► pada pesan pertama dari adegan penting.
 3. Klik ◄ pada pesan terakhir dari adegan itu.
-4. Buka Memory Books (🪄) dan klik "Create Memory".
+4. Buka Memory Books (🪄) dan klik "Buat Memori".
 
 **Apa yang Anda dapatkan:**
 
@@ -288,16 +288,16 @@ Gunakan:
 
 ---
 
-## 🎨 Pelacak, Side Prompts, & Templat (Fitur Lanjutan)
+## 🎨 Pelacak, Prompt Sampingan, & Templat (Fitur Lanjutan)
 
-**Side Prompts** adalah pelacak latar belakang yang membantu memelihara informasi cerita yang sedang berlangsung.
+**Prompt Sampingan** adalah pelacak latar belakang yang membantu memelihara informasi cerita yang sedang berlangsung.
 Mereka mencipta entri Side Prompt yang berasingan di lorebook dan berjalan bersamaan dengan pembuatan memori. Anggap saja sebagai **asisten yang mengawasi cerita Anda dan menjaga detail tertentu tetap mutakhir**.
 Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan `Response Format`. Makro bukan standard `{{...}}` menjadi input wajib untuk dijalankan secara manual.
 
 ### 🚀 **Mulai Cepat dengan Templat**
 
 1. Buka pengaturan Memory Books.
-2. Klik **Side Prompts**.
+2. Klik **Prompt Sampingan**.
 3. Jelajahi **pustaka templat** dan pilih yang sesuai dengan cerita Anda:
 * **Character Development Tracker** – Melacak perubahan kepribadian dan pertumbuhan.
 * **Relationship Dynamics** – Melacak hubungan antar karakter.
@@ -309,7 +309,7 @@ Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan
 4. Aktifkan templat yang Anda inginkan (Anda dapat menyesuaikannya nanti).
 5. Jika templat mengandungi makro runtime tersuai, ia tidak akan berjalan secara automatik dan mesti dimulakan secara manual dengan `/sideprompt`.
 
-### ⚙️ **Cara Kerja Side Prompts**
+### ⚙️ **Cara Kerja Prompt Sampingan**
 
 * **Pelacak Latar Belakang**: Mereka berjalan dengan tenang dan memperbarui informasi dari waktu ke waktu.
 * **Tidak Mengganggu**: Mereka tidak mengubah pengaturan AI utama atau prompt karakter Anda.
@@ -321,9 +321,9 @@ Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan
 
 Ini membuat perilaku pemicu dapat dimengerti tanpa istilah teknis.
 
-### 🛠️ **Mengelola Side Prompts**
+### 🛠️ **Mengelola Prompt Sampingan**
 
-* **Side Prompts Manager**: Buat, edit, duplikasi, dan atur pelacak.
+* **Pengelola Prompt Sampingan**: Buat, edit, duplikasi, dan atur pelacak.
 * **Enable / Disable**: Aktifkan atau nonaktifkan pelacak kapan saja.
 * **Import / Export**: Bagikan templat atau cadangkan.
 * **Status View**: Lihat pelacak mana yang aktif dalam obrolan saat ini.
@@ -342,10 +342,10 @@ Ide prompt contoh:
 * "Catat detail pembangunan dunia (world-building) baru saat muncul"
 * "Lacak hubungan antara Karakter A dan Karakter B"
 
-### 🔧 **Membuat Side Prompts Kustom**
+### 🔧 **Membuat Prompt Sampingan Kustom**
 
-1. Buka Side Prompts Manager.
-2. Klik **Create New**.
+1. Buka Pengelola Prompt Sampingan.
+2. Klik **Buat Baru**.
 3. Tulis instruksi yang singkat dan jelas
 *(contoh: "Selalu catat bagaimana cuaca di setiap adegan")*
 4. Tambahkan jika perlu makro ST standard atau makro runtime dalam format `{{macro}}="value"`.
@@ -354,7 +354,7 @@ Ide prompt contoh:
 
 ### 💬 **Tips Pro**
 
-Side Prompts bekerja paling baik jika **kecil dan terfokus**.
+Prompt Sampingan bekerja paling baik jika **kecil dan terfokus**.
 Daripada "lacak segalanya," cobalah "lacak ketegangan romantis antara karakter utama."
 
 ---

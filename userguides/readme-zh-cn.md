@@ -291,7 +291,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 🎡 追踪器 & 侧边提示词 (Side Prompts)
+### 🎡 追踪器 & 侧边提示词
 
 侧边提示词可以像追踪器一样使用，并会在您的记忆世界书中创建单独的 side prompt 条目。侧边提示词允许您追踪 **当前状态**，而不仅仅是过去的事件。例如：
 
@@ -360,10 +360,10 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **自动创建故事书 (如果不存在):** ⭐ *v4.2.0 新增* - 使用您的命名模板自动创建并绑定世界书。
 * **Lorebook Name Template (世界书命名模板):** ⭐ *v4.2.0 新增* - 使用 {{char}}, {{user}}, {{chat}} 占位符自定义自动创建的世界书名称。
 * **Allow Scene Overlap (允许场景重叠):** 允许或阻止重叠的记忆范围。
-* **Always Use Default Profile (始终使用默认配置文件):** 跳过确认弹窗。
-* **Show memory previews (显示记忆预览):** 启用预览弹窗，以便在添加到世界书之前查看和编辑记忆。
-* **Show Notifications (显示通知):** 切换 Toast 消息提示。
-* **Refresh Editor (刷新编辑器):** 创建记忆后自动刷新世界书编辑器。
+* **始终使用默认配置文件:** 跳过确认弹窗。
+* **显示记忆预览:** 启用预览弹窗，以便在添加到世界书之前查看和编辑记忆。
+* **显示通知:** 切换 Toast 消息提示。
+* **刷新编辑器:** 创建记忆后自动刷新世界书编辑器。
 * **Token Warning Threshold (Token 警告阈值):** 设置大场景的警告级别（默认：30,000）。
 * **Default Previous Memories (默认前序记忆):** 作为上下文包含的先前记忆数量 (0-7)。
 * **自动创建记忆摘要:** 按间隔启用自动记忆创建。
@@ -372,9 +372,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **当某个层级准备好时提示合并:** 当所选总结层级达到足够的有效源条目时显示 yes/later 确认。
 * **自动合并层级：** 选择哪些总结层级应在满足条件时触发确认提示。当前支持 Arc 到 Series。
 * **Unhide hidden messages before memory generation:** 可以在创建记忆前运行 `/unhide X-Y`。
-* **Auto-hide messages after adding memory:** 可选择隐藏所有已处理消息，或仅隐藏最近的记忆范围。
+* **添加记忆后自动隐藏消息:** 可选择隐藏所有已处理消息，或仅隐藏最近的记忆范围。
 * **使用正则表达式（高级）:** 启用 STMB 的 regex 选择弹窗（发送/解析处理）。
-* **Memory Title Format (记忆标题格式):** 选择或自定义（见下文）。
+* **记忆标题格式:** 选择或自定义（见下文）。
 
 ### **配置文件字段**
 
@@ -444,9 +444,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 我建议您的记忆世界书应该是一本单独的书。这使得组织记忆（相对于其他条目）更容易。例如，将其添加到群聊，在另一个聊天中使用它，或者设置单独的世界书预算（使用 STLO）。
 
-### 如果 Memory Books 是唯一的世界书，我应该使用 'Delay until recursion' (延迟直到递归) 吗？
+### 如果 Memory Books 是唯一的世界书，我应该使用 '延迟直到递归' 吗？
 
-不。如果没有其他世界信息或世界书，选择 'Delay until recursion' 可能会阻止第一次循环触发，导致没有任何内容被激活。如果 Memory Books 是唯一的世界书，请禁用 'Delay until recursion' 或确保至少配置了一个额外的世界信息/世界书。
+不。如果没有其他世界信息或世界书，选择 '延迟直到递归' 可能会阻止第一次循环触发，导致没有任何内容被激活。如果 Memory Books 是唯一的世界书，请禁用 '延迟直到递归' 或确保至少配置了一个额外的世界信息/世界书。
 
 ---
 

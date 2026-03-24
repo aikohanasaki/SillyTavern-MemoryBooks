@@ -291,7 +291,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 🎡 追蹤器與側邊提示詞 (Side Prompts)
+### 🎡 追蹤器與側邊提示詞
 
 側邊提示詞可以像追蹤器一樣使用，並會在你的記憶世界書中創建獨立的 side prompt 條目。側邊提示詞允許你追蹤 **當前狀態**，而不僅僅是過去的事件。例如：
 
@@ -360,10 +360,10 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **自動建立故事書 (如果不存在):** ⭐ *v4.2.0 新功能* - 使用你的命名範本自動創建並綁定世界書。
 * **Lorebook Name Template (世界書命名範本):** ⭐ *v4.2.0 新功能* - 使用 {{char}}, {{user}}, {{chat}} 佔位符自訂自動創建的世界書名稱。
 * **Allow Scene Overlap (允許場景重疊):** 允許或防止記憶範圍重疊。
-* **Always Use Default Profile (始終使用預設設定檔):** 跳過確認彈出視窗。
-* **Show memory previews (顯示記憶預覽):** 啟用預覽彈出視窗，在添加到世界書之前審閱和編輯記憶。
-* **Show Notifications (顯示通知):** 切換 Toast 訊息通知。
-* **Refresh Editor (重新整理編輯器):** 記憶創建後自動重新整理世界書編輯器。
+* **始終使用預設設定檔:** 跳過確認彈出視窗。
+* **顯示記憶預覽:** 啟用預覽彈出視窗，在添加到世界書之前審閱和編輯記憶。
+* **顯示通知:** 切換 Toast 訊息通知。
+* **重新整理編輯器:** 記憶創建後自動重新整理世界書編輯器。
 * **Token Warning Threshold (Token 警告閾值):** 設定大型場景的警告級別（預設：30,000）。
 * **Default Previous Memories (預設前序記憶):** 作為上下文包含的先前記憶數量 (0-7)。
 * **自動建立記憶摘要:** 啟用間隔自動創建記憶。
@@ -372,9 +372,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **當某個層級準備好時提示合併:** 當所選總結階層達到足夠的有效來源數量時顯示 yes/later 確認。
 * **自動合併層級：** 選擇哪些總結階層應在達標時觸發確認提示。目前支援 Arc 到 Series。
 * **Unhide hidden messages before memory generation:** 可在建立記憶前執行 `/unhide X-Y`。
-* **Auto-hide messages after adding memory:** 可選擇隱藏所有已處理訊息，或只隱藏最近的記憶範圍。
+* **新增記憶後自動隱藏訊息:** 可選擇隱藏所有已處理訊息，或只隱藏最近的記憶範圍。
 * **使用正則表達式（進階）:** 啟用 STMB 的 regex 選擇彈出視窗（送出/解析處理）。
-* **Memory Title Format (記憶標題格式):** 選擇或自訂（見下文）。
+* **記憶標題格式:** 選擇或自訂（見下文）。
 
 ### **設定檔欄位 (Profile Fields)**
 
@@ -444,9 +444,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 我建議將你的記憶世界書設為一本單獨的書。這使得組織記憶（相對於其他條目）更容易。例如，將其添加到群組聊天，在另一個聊天中使用它，或設定單獨的世界書預算（使用 STLO）。
 
-### 如果 Memory Books 是唯一的世界書，我應該使用 'Delay until recursion' (延遲直到遞歸) 嗎？
+### 如果 Memory Books 是唯一的世界書，我應該使用 '延遲直到遞迴' 嗎？
 
-不。如果沒有其他世界資訊或世界書，選擇 'Delay until recursion' 可能會阻止第一個迴圈觸發，導致沒有任何東西被啟動。如果 Memory Books 是唯一的世界書，請停用 'Delay until recursion' 或確保至少配置了一個額外的世界資訊/世界書。
+不。如果沒有其他世界資訊或世界書，選擇 '延遲直到遞迴' 可能會阻止第一個迴圈觸發，導致沒有任何東西被啟動。如果 Memory Books 是唯一的世界書，請停用 '延遲直到遞迴' 或確保至少配置了一個額外的世界資訊/世界書。
 
 ---
 

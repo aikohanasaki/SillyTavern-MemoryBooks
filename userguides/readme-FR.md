@@ -292,7 +292,7 @@ Tous les prompts et préréglages (presets) **doivent** instruire l'IA de ne ren
 
 ---
 
-### 🎡 Suivis & Prompts Secondaires (Side Prompts)
+### 🎡 Suivis & Prompts Secondaires
 
 Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et créeront des entrées Side Prompt séparées dans votre lorebook de mémoire. Les Prompts Secondaires vous permettent de suivre **l'état en cours**, pas seulement les événements passés. Par exemple :
 
@@ -362,10 +362,10 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 * **Créer le lorebook s'il n'existe pas :** ⭐ *Nouveau dans la v4.2.0* - Crée et lie automatiquement les lorebooks en utilisant votre modèle de nommage.
 * **Lorebook Name Template (Modèle de nom de Lorebook) :** ⭐ *Nouveau dans la v4.2.0* - Personnalisez les noms de lorebooks auto-créés avec les espaces réservés {{char}}, {{user}}, {{chat}}.
 * **Allow Scene Overlap (Autoriser chevauchement de scène) :** Permettre ou empêcher les plages de mémoire qui se chevauchent.
-* **Always Use Default Profile (Toujours utiliser le profil par défaut) :** Sauter les popups de confirmation.
-* **Show memory previews (Montrer les aperçus de mémoire) :** Activer la popup d'aperçu pour réviser et éditer les mémoires avant l'ajout au lorebook.
-* **Show Notifications (Montrer les notifications) :** Basculer les messages toast.
-* **Refresh Editor (Rafraîchir l'éditeur) :** Rafraîchissement auto de l'éditeur de lorebook après création de mémoire.
+* **Sauter les popups de confirmation :** Sauter les popups de confirmation.
+* **Afficher les aperçus de mémoire :** Activer la popup d'aperçu pour réviser et éditer les mémoires avant l'ajout au lorebook.
+* **Afficher les notifications :** Basculer les messages toast.
+* **Rafraîchir l'éditeur de lorebook après création de mémoire :** Rafraîchissement auto de l'éditeur de lorebook après création de mémoire.
 * **Token Warning Threshold (Seuil d'avertissement de tokens) :** Définir le niveau d'avertissement pour les grandes scènes (défaut : 30 000).
 * **Default Previous Memories (Mémoires précédentes par défaut) :** Nombre de mémoires antérieures à inclure comme contexte (0-7).
 * **Créer des résumés de mémoire automatiques :** Activer la création automatique de mémoire à intervalles.
@@ -374,9 +374,9 @@ Les Prompts Secondaires peuvent être utilisés comme des traceurs (trackers) et
 * **Demander une consolidation lorsqu'un niveau est prêt :** Affiche une confirmation Oui/Plus tard lorsqu'une couche sélectionnée a assez d'entrées source éligibles.
 * **Niveaux d'auto-consolidation :** Choisissez une ou plusieurs couches de résumé qui doivent déclencher la confirmation lorsqu'elles sont prêtes. Actuellement Arc à Series.
 * **Unhide hidden messages before memory generation :** Peut exécuter `/unhide X-Y` avant de créer une mémoire.
-* **Auto-hide messages after adding memory :** Peut masquer tous les messages traités ou seulement la dernière plage.
+* **Masquer les messages après l'ajout :** Peut masquer tous les messages traités ou seulement la dernière plage.
 * **Utiliser regex (avancé) :** Active le sélecteur de scripts Regex de STMB pour le traitement sortie/entrée.
-* **Memory Title Format (Format du titre de mémoire) :** Choisir ou personnaliser (voir ci-dessous).
+* **Format du titre de mémoire :** Choisir ou personnaliser (voir ci-dessous).
 
 ### **Champs du Profil**
 
@@ -450,9 +450,9 @@ L'entrée 🔗 dans les infos du monde est nommée "vectorized" dans l'interface
 
 Je recommande que votre lorebook de mémoire soit un livre séparé. Cela rend plus facile l'organisation des mémoires (par rapport aux autres entrées). Par exemple, l'ajouter à un chat de groupe, l'utiliser dans un autre chat, ou définir un budget de lorebook individuel (en utilisant STLO).
 
-### Dois-je utiliser 'Delay until recursion' si Memory Books est le seul lorebook ?
+### Dois-je utiliser 'Retarder jusqu'à la récursion' si Memory Books est le seul lorebook ?
 
-Non. S'il n'y a pas d'autres infos du monde ou lorebooks, sélectionner 'Delay until recursion' (Retarder jusqu'à la récursion) peut empêcher la première boucle de se déclencher, faisant que rien ne s'active. Si Memory Books est le seul lorebook, désactivez 'Delay until recursion' ou assurez-vous qu'au moins une autre info monde/lorebook est configurée.
+Non. S'il n'y a pas d'autres infos du monde ou lorebooks, sélectionner 'Retarder jusqu'à la récursion' peut empêcher la première boucle de se déclencher, faisant que rien ne s'active. Si Memory Books est le seul lorebook, désactivez 'Retarder jusqu'à la récursion' ou assurez-vous qu'au moins une autre info monde/lorebook est configurée.
 
 ---
 
