@@ -115,6 +115,7 @@ import {
 } from "./arcanalysis.js";
 import * as ArcPrompts from "./arcAnalysisPromptManager.js";
 import {
+  MIN_SUMMARY_CHILDREN,
   STMB_SUMMARY_TIERS,
   getDefaultSummaryMinChildren,
   getEntrySummaryTier,
@@ -122,6 +123,7 @@ import {
   getSummaryTierLabel,
   isEligibleSummarySourceEntry,
   migrateLorebookSummarySchema,
+  normalizeSummaryMinChildren,
 } from "./summaryTiers.js";
 import { summaryPromptsTableTemplate } from "./templatesSummaryPrompts.js";
 import {
@@ -1297,12 +1299,9 @@ function validateSettings(settings) {
   for (const cfg of STMB_SUMMARY_TIERS) {
     if (cfg.tier <= 0 || cfg.tier > 6) continue;
     const fallback = defaultsByTier[cfg.tier] ?? getDefaultSummaryMinChildren(cfg.tier);
-    normalizedMinimums[cfg.tier] = clampInt(
-      Number.isFinite(Number(existingMinimums[cfg.tier]))
-        ? Math.trunc(Number(existingMinimums[cfg.tier]))
-        : fallback,
-      1,
-      50,
+    normalizedMinimums[cfg.tier] = normalizeSummaryMinChildren(
+      existingMinimums[cfg.tier],
+      fallback,
     );
   }
   settings.moduleSettings.summaryTierMinimums = normalizedMinimums;
@@ -3824,13 +3823,9 @@ async function maybePromptAutoConsolidation(targetTier, lorebookValidation = nul
       await saveWorldInfo(lorebookState.name, lorebookData, true);
     }
 
-    const requiredMin = clampInt(
-      Number(
-        settings.moduleSettings.summaryTierMinimums?.[normalizedTargetTier] ??
-          getDefaultSummaryMinChildren(normalizedTargetTier),
-      ),
-      1,
-      50,
+    const requiredMin = normalizeSummaryMinChildren(
+      settings.moduleSettings.summaryTierMinimums?.[normalizedTargetTier],
+      getDefaultSummaryMinChildren(normalizedTargetTier),
     );
     const eligibleCount = Object.values(lorebookData.entries || {}).filter((entry) =>
       isEligibleSummarySourceEntry(entry, sourceTier),
@@ -3989,16 +3984,17 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     content += `</select></label> <button id="stmb-arc-rebuild-builtins" class="menu_button whitespacenowrap">${escapeHtml(translate("Rebuild from built-ins", "STMemoryBooks_Arc_RebuildBuiltins"))}</button></div>`;
 
     // Options row
-    content += '<div class="flex-container flexGap10">';
+    content += '<div class="flex-container">';
     content += `<label><span id="stmb-summary-maxpass-label">${escapeHtml(tr("STMemoryBooks_Arc_MaxPerPass", "Maximum number of {{stmbchildtier}} entries to process in each pass", { stmbchildtier: "memory" }))}</span> <input id="stmb-arc-maxpass" type="number" min="1" max="100" value="15" class="text_pole" style="width:80px"/></label>`;
-    content += `<label>${escapeHtml(translate("Number of automatic summary attempts", "STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`;
-    content += `<label><span id="stmb-summary-minassigned-label">${escapeHtml(translate("Minimum number of source entries in each summary", "STMemoryBooks_Arc_MinAssigned"))}</span> <input id="stmb-arc-minassigned" type="number" min="1" max="50" value="5" class="text_pole" style="width:110px"/></label>`;
     content += `<label>${escapeHtml(translate("Token Budget", "STMemoryBooks_Arc_TokenBudget"))} <input id="stmb-arc-token" type="number" min="1000" max="150000" value="${tokenThreshold}" class="text_pole" style="width:120px"/></label>`;
+    content += `<label>${escapeHtml(translate("Number of automatic summary attempts", "STMemoryBooks_Arc_MaxPasses"))} <input id="stmb-arc-maxpasses" type="number" min="1" max="50" value="10" class="text_pole" style="width:100px"/></label>`;
+    content += `<label><span id="stmb-summary-minassigned-label">${escapeHtml(tr("STMemoryBooks_Arc_MinAssigned", "Saved minimum eligible {{stmbchildtier}} needed before {{stmbtier}} is ready", { stmbchildtier: "memories", stmbtier: "arc" }))}</span> <input id="stmb-arc-minassigned" type="number" min="${MIN_SUMMARY_CHILDREN}" step="1" value="${getDefaultSummaryMinChildren(initialTargetTier)}" class="text_pole" style="width:110px"/></label>`;
+    content += `<small id="stmb-summary-minassigned-note" class="opacity70p">${escapeHtml(translate("Also used for auto-consolidation readiness for this tier.", "STMemoryBooks_Arc_MinAssignedNote"))}</small>`;
     content += "</div>";
 
     // Arc ordering (applies to newly created arcs)
     content += '<div class="world_entry_form_control">';
-    content += `<div><strong>${escapeHtml(translate("Summary entry order", "STMemoryBooks_Arc_Order_Label"))}</strong></div>`;
+    content += `<div><h4 class="stmb-section-title">${escapeHtml(translate("Summary entry order", "STMemoryBooks_Arc_Order_Label"))}</h4></div>`;
     content += `<small class="opacity70p">${escapeHtml(translate("Controls the lorebook 'order' for newly created summaries only.", "STMemoryBooks_Arc_Order_Help"))}</small>`;
     content += '<div style="display:flex; flex-direction:column; gap:6px; margin-top:6px">';
     content += `<label class="checkbox_label"><input type="radio" name="stmb-arc-order-mode" value="auto"${
@@ -4054,6 +4050,26 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           isEligibleSummarySourceEntry(entry, getSourceTierForTarget(targetTier)),
         ),
       );
+    const getSavedSummaryTierMinimum = (targetTier) =>
+      settings.moduleSettings.summaryTierMinimums?.[targetTier] ??
+      getDefaultSummaryMinChildren(targetTier);
+    const persistCurrentTierMinimum = () => {
+      const targetTier = getCurrentTargetTier();
+      const minInput = dlg.querySelector("#stmb-arc-minassigned");
+      const requiredMin = normalizeSummaryMinChildren(
+        readIntInput(minInput, getSavedSummaryTierMinimum(targetTier)),
+        getSavedSummaryTierMinimum(targetTier),
+      );
+      if (minInput) {
+        minInput.value = String(requiredMin);
+      }
+      settings.moduleSettings.summaryTierMinimums[targetTier] = requiredMin;
+      extension_settings.STMemoryBooks.moduleSettings.summaryTierMinimums[
+        targetTier
+      ] = requiredMin;
+      saveSettingsDebounced();
+      return requiredMin;
+    };
     const renderTierState = () => {
       const targetTier = getCurrentTargetTier();
       const sourceTier = getSourceTierForTarget(targetTier);
@@ -4061,13 +4077,9 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       const sourcePlural = pluralizeSummaryLabel(sourceLabel);
       const targetLabel = getSummaryTierLabel(targetTier);
       const candidates = getCandidatesForTier(targetTier);
-      const requiredMin = clampInt(
-        Number(
-          settings.moduleSettings.summaryTierMinimums?.[targetTier] ??
-            getDefaultSummaryMinChildren(targetTier),
-        ),
-        1,
-        50,
+      const requiredMin = normalizeSummaryMinChildren(
+        getSavedSummaryTierMinimum(targetTier),
+        getDefaultSummaryMinChildren(targetTier),
       );
 
       const minLabel = dlg.querySelector("#stmb-summary-minassigned-label");
@@ -4080,11 +4092,19 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         );
       }
       if (minLabel) {
-        minLabel.textContent = `Minimum number of ${sourcePlural.toLowerCase()} in each ${targetLabel.toLowerCase()}`;
+        minLabel.textContent = tr(
+          "STMemoryBooks_Arc_MinAssigned",
+          "Saved minimum eligible {{stmbchildtier}} needed before {{stmbtier}} is ready",
+          {
+            stmbchildtier: sourcePlural.toLowerCase(),
+            stmbtier: targetLabel.toLowerCase(),
+          },
+        );
       }
       const minInput = dlg.querySelector("#stmb-arc-minassigned");
       if (minInput) {
         minInput.value = String(requiredMin);
+        minInput.min = String(MIN_SUMMARY_CHILDREN);
       }
       const locked = candidates.length < requiredMin;
       const statusEl = dlg.querySelector("#stmb-summary-lock-status");
@@ -4125,6 +4145,23 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     dlg
       .querySelector("#stmb-summary-tier")
       ?.addEventListener("change", renderTierState);
+    dlg
+      .querySelector("#stmb-arc-minassigned")
+      ?.addEventListener("input", () => {
+        persistCurrentTierMinimum();
+        const listEl = dlg.querySelector("#stmb-arc-list");
+        const selectedById = new Set(
+          Array.from(dlg.querySelectorAll(".stmb-arc-item"))
+            .filter((cb) => cb.checked)
+            .map((cb) => String(cb.value)),
+        );
+        renderTierState();
+        if (listEl) {
+          dlg.querySelectorAll(".stmb-arc-item").forEach((cb) => {
+            cb.checked = selectedById.has(String(cb.value));
+          });
+        }
+      });
     dlg
       .querySelector("#stmb-arc-select-all")
       ?.addEventListener("click", (e) => {
@@ -4245,14 +4282,14 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     const targetLabel = getSummaryTierLabel(targetTier);
     const sourcePlural = pluralizeSummaryLabel(sourceLabel);
     const candidates = getCandidatesForTier(targetTier);
-    const requiredMin = clampInt(
+    const requiredMin = normalizeSummaryMinChildren(
       readIntInput(
         dlg.querySelector("#stmb-arc-minassigned"),
         settings.moduleSettings.summaryTierMinimums?.[targetTier] ??
           getDefaultSummaryMinChildren(targetTier),
       ),
-      1,
-      50,
+      settings.moduleSettings.summaryTierMinimums?.[targetTier] ??
+        getDefaultSummaryMinChildren(targetTier),
     );
 
     if (candidates.length < requiredMin) {

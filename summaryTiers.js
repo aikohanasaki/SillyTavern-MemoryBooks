@@ -1,3 +1,4 @@
+export const MIN_SUMMARY_CHILDREN = 1;
 const DEFAULT_MIN_CHILDREN = 5;
 
 export const STMB_SUMMARY_TIERS = [
@@ -49,6 +50,20 @@ export function getDefaultSummaryTitleFormat(tier) {
 
 export function getDefaultSummaryMinChildren(tier) {
   return normalizeTier(tier) <= 0 ? 0 : DEFAULT_MIN_CHILDREN;
+}
+
+export function normalizeSummaryMinChildren(value, fallback = DEFAULT_MIN_CHILDREN) {
+  const parsedValue = Number(value);
+  if (Number.isFinite(parsedValue)) {
+    return Math.max(MIN_SUMMARY_CHILDREN, Math.trunc(parsedValue));
+  }
+
+  const parsedFallback = Number(fallback);
+  if (Number.isFinite(parsedFallback)) {
+    return Math.max(MIN_SUMMARY_CHILDREN, Math.trunc(parsedFallback));
+  }
+
+  return DEFAULT_MIN_CHILDREN;
 }
 
 export function isSummaryEntry(entry) {
