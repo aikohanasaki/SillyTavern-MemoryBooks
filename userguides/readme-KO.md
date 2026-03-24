@@ -12,13 +12,14 @@
 
 여기서부터 시작하세요:
 
-* ⚠️‼️ 설치 관련 주의사항은 [사전 요구 사항](https://www.google.com/search?q=%23-prerequisites)을 읽어주세요. (특히 텍스트 완성(Text Completion) API를 사용하는 경우)
+* ⚠️‼️ 설치 관련 주의사항은 [사전 요구 사항](#-사전-요구-사항-prerequisites)을 읽어주세요. (특히 텍스트 완성(Text Completion) API를 사용하는 경우)
 * ❓ [자주 묻는 질문 (FAQ)](#FAQ)
 * 🛠️ [문제 해결 (Troubleshooting)](#Troubleshooting)
 
 기타 링크:
 
 * 📘 [사용자 가이드 (한국어)](USER_GUIDE-KO.md)
+* 💡 [STMB 작동 원리(한국어)](howSTMBworks-ko.md)
 * 📋 [버전 기록 & 변경 로그](changelog.md)
 * 💡 [📕 Memory Books와 📚 Lorebook Ordering 함께 사용하기](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -28,10 +29,28 @@
 
 고급 기억 정리와 더 깊이 있는 스토리 통합을 위해, STMB를 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)와 함께 사용하는 것을 강력히 권장합니다. 모범 사례, 설정 방법, 팁 등은 가이드를 참조하세요!
 
-> 참고: 다양한 언어를 지원합니다. 목록은 [`/locales`](https://www.google.com/search?q=locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](https://www.google.com/search?q=userguides) 폴더에서 찾을 수 있습니다.
-> 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](https://www.google.com/search?q=resources) 폴더에 있습니다.
+> 참고: 다양한 언어를 지원합니다. 목록은 [`/locales`](../locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](./) 폴더에서 찾을 수 있습니다.
+> 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](../resources) 폴더에 있습니다.
 
 ---
+
+## 📑 목차
+
+- 사전 요구 사항
+- 시작하기
+- 기억 유형: 장면 vs 요약
+- 기억 생성
+- 로어북 통합
+- 슬래시 명령어
+- 그룹 채팅 지원
+- 작동 모드
+- 트래커와 사이드 프롬프트
+- Regex 연동
+- 프로필 관리
+- 설정 및 구성
+- FAQ
+- 문제 해결
+- Lorebook Ordering (STLO)으로 기능 강화하기
 
 ## 📋 사전 요구 사항 (Prerequisites)
 
@@ -127,7 +146,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **작동 방식:** 로어북이 존재하지 않을 경우, 사용자 지정 명명 템플릿을 사용하여 새 로어북을 자동으로 생성하고 바인딩합니다.
 * **추천 대상:** 신규 사용자 및 빠른 설정. 원클릭 로어북 생성에 완벽합니다.
 * **사용법:**
-1. 확장 기능 설정에서 "Auto-create lorebook if none exists(로어북 없으면 자동 생성)"를 활성화합니다.
+1. 확장 기능 설정에서 "로어북이 없으면 자동 생성"을 활성화합니다.
 2. 명명 템플릿을 구성합니다 (기본값: "LTM - {{char}} - {{chat}}").
 3. 바인딩된 로어북 없이 기억을 생성하면 자동으로 생성되어 바인딩됩니다.
 
@@ -136,12 +155,12 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **스마트 넘버링:** 중복된 이름이 존재할 경우 자동으로 번호(2, 3, 4...)를 추가합니다.
 * **참고:** 수동 로어북 모드와 동시에 사용할 수 없습니다.
 
-### **수동 로어북 모드 (Manual Lorebook Mode)**
+### **수동 로어북 모드**
 
 * **작동 방식:** 기본 채팅 바인딩 로어북을 무시하고, 채팅별로 기억을 저장할 다른 로어북을 선택할 수 있습니다.
 * **추천 대상:** 기억을 특정 별도 로어북으로 지정하고 싶은 고급 사용자.
 * **사용법:**
-1. 확장 기능 설정에서 "Enable Manual Lorebook Mode(수동 로어북 모드 활성화)"를 활성화합니다.
+1. 확장 기능 설정에서 "수동 로어북 모드 활성화"를 활성화합니다.
 2. 채팅에서 처음 기억을 생성할 때 로어북을 선택하라는 메시지가 표시됩니다.
 3. 이 선택은 해당 채팅에 대해 저장되며, 지우거나 자동 모드로 전환할 때까지 유지됩니다.
 
@@ -150,7 +169,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-## 🧩 기억 유형: 장면(Scene) vs 아크(Arc)
+## 🧩 기억 유형: 장면(Scene) vs 요약(Summary)
 
 📕 Memory Books는 서로 다른 연속성을 위해 설계된 **두 가지 수준의 서사 기억**을 지원합니다.
 
@@ -192,7 +211,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 #### 작동 방식
 
 * 요약 통합은 직접 채팅 본문이 아니라 기존 STMB 기억/요약에서 생성됩니다.
-* **Consolidate Memories** 도구에서 대상 요약 단계와 원본 항목을 선택할 수 있습니다.
+* **기억 통합하기** 도구에서 대상 요약 단계와 원본 항목을 선택할 수 있습니다.
 * 선택한 요약 단계가 각 단계의 저장된 최소 수에 도달하면, STMB가 필요 시 yes/later 확인을 표시합니다.
 * 필요하면 통합 후 원본 항목을 비활성화할 수 있습니다.
 * AI 요약 실패는 UI에서 검토 및 수정한 뒤 다시 시도할 수 있습니다.
@@ -253,7 +272,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **에디터 새로고침:** 기억 추가 후 로어북 에디터를 자동으로 새로 고침하는 옵션.
 
 > **기존 기억은 변환해야 합니다!**
-> [Lorebook Converter(로어북 변환기)](https://www.google.com/search?q=/resources/lorebookconverter.html)를 사용하여 `stmemorybooks` 플래그와 필수 필드를 추가하세요.
+> [Lorebook Converter(로어북 변환기)](../resources/lorebookconverter.html)를 사용하여 `stmemorybooks` 플래그와 필수 필드를 추가하세요.
 
 ---
 
@@ -286,7 +305,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ```
 - 새 프롬프트를 만들 때 내장 프롬프트를 복사하면 호환성이 가장 좋습니다.
-- 추가 사이드 프롬프트 템플릿 라이브러리 [JSON 파일](resources/SidePromptTemplateLibrary.json) - 가져와서 바로 사용 가능
+- 추가 사이드 프롬프트 템플릿 라이브러리 [JSON 파일](../resources/SidePromptTemplateLibrary.json) - 가져와서 바로 사용 가능
 - 수동 구문: `/sideprompt "이름" {{macro}}="value" [X-Y]`.
 - 명령 자동완성에서 side prompt를 고르면 STMB가 필요한 런타임 매크로를 제안합니다.
 - 사용자 지정 런타임 매크로가 있는 side prompt는 수동 전용입니다. STMB는 저장/가져오기 시 해당 템플릿의 `On Interval`과 `On After Memory`를 제거하고 경고를 표시합니다.
@@ -322,8 +341,8 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 [Youtube 짧은 영상 개요](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode (수동 로어북 모드):** 채팅별로 로어북을 선택하려면 활성화하세요.
-* **Auto-create lorebook if none exists (로어북 없으면 자동 생성):** ⭐ *v4.2.0 신규* - 명명 템플릿을 사용하여 로어북을 자동 생성 및 바인딩합니다.
+* **수동 로어북 모드 활성화:** 채팅별로 로어북을 선택하려면 활성화하세요.
+* **로어북이 없으면 자동 생성:** ⭐ *v4.2.0 신규* - 명명 템플릿을 사용하여 로어북을 자동 생성 및 바인딩합니다.
 * **Lorebook Name Template (로어북 이름 템플릿):** ⭐ *v4.2.0 신규* - {{char}}, {{user}}, {{chat}} 플레이스홀더로 자동 생성되는 로어북 이름을 사용자 지정합니다.
 * **Allow Scene Overlap (장면 중복 허용):** 중복되는 기억 범위를 허용하거나 방지합니다.
 * **Always Use Default Profile (항상 기본 프로필 사용):** 확인 팝업을 건너뜁니다.
@@ -332,20 +351,20 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Refresh Editor (에디터 새로고침):** 기억 생성 후 로어북 에디터를 자동 새로고침합니다.
 * **Token Warning Threshold (토큰 경고 임계값):** 큰 장면에 대한 경고 수준 설정 (기본값: 30,000).
 * **Default Previous Memories (기본 이전 기억 수):** 문맥(Context)으로 포함할 이전 기억의 수 (0-7).
-* **Auto-create memory summaries (기억 요약 자동 생성):** 간격에 따라 기억 생성을 자동으로 활성화합니다.
-* **Auto-Summary Interval (자동 요약 간격):** 기억 요약을 자동 생성할 메시지 수.
-* **Auto-Summary Buffer:** 자동 요약을 지정 메시지 수만큼 지연합니다.
-* **Prompt for consolidation when a tier is ready:** 선택한 요약 단계가 충분한 원본 항목 수에 도달하면 yes/later 확인을 표시합니다.
-* **Auto-Consolidation Tiers:** 확인 프롬프트를 트리거할 요약 단계를 선택합니다. 현재 Arc부터 Series까지 지원합니다.
+* **메모리 요약 자동 생성:** 간격에 따라 기억 생성을 자동으로 활성화합니다.
+* **자동 요약 간격:** 기억 요약을 자동 생성할 메시지 수.
+* **자동 요약 버퍼:** 자동 요약을 지정 메시지 수만큼 지연합니다.
+* **티어가 준비되면 통합을 묻기:** 선택한 요약 단계가 충분한 원본 항목 수에 도달하면 yes/later 확인을 표시합니다.
+* **자동 통합 티어:** 확인 프롬프트를 트리거할 요약 단계를 선택합니다. 현재 Arc부터 Series까지 지원합니다.
 * **Unhide hidden messages before memory generation:** `/unhide X-Y`를 실행한 뒤 메모리를 생성할 수 있습니다.
 * **Auto-hide messages after adding memory:** 처리된 모든 메시지 또는 최근 메모리 범위만 숨길 수 있습니다.
-* **Use regex (advanced):** STMB의 regex 선택 팝업을 활성화합니다(송신/응답 처리용).
+* **정규식 사용(고급):** STMB의 regex 선택 팝업을 활성화합니다(송신/응답 처리용).
 * **Memory Title Format (기억 제목 서식):** 선택하거나 사용자 지정합니다 (아래 참조).
 
 ### **프로필 필드**
 
 * **Name:** 표시 이름.
-* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual 등.
+* **API/Provider:** `현재 SillyTavern 설정`, openai, claude, custom, full manual 등.
 * **Model:** 모델명 (예: gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** 사용자 지정 또는 내장.
@@ -421,7 +440,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **사용 가능하거나 선택된 로어북이 없음:**
 * 수동 모드(Manual Mode)에서는 메시지가 뜰 때 로어북을 선택하세요.
 * 자동 모드(Automatic Mode)에서는 채팅에 로어북을 바인딩하세요.
-* 또는 "Auto-create lorebook if none exists(로어북 없으면 자동 생성)"를 활성화하여 자동 생성하세요.
+* 또는 "로어북이 없으면 자동 생성"을 활성화하여 자동 생성하세요.
 
 
 * **선택된 장면이 없음:**
@@ -457,6 +476,6 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **제목에 허용됨:** 악센트 문자, 이모지, 한중일(CJK) 문자 및 기호를 포함한 모든 출력 가능한 유니코드 문자가 허용됩니다.
 * **차단됨:** 유니코드 제어 문자(U+0000–U+001F, U+007F–U+009F)만 차단되며, 이는 자동으로 제거됩니다.
 
-## 예시 및 마이그레이션 참고 사항은 [문자 정책 세부 정보](https://www.google.com/search?q=charset.md)를 참조하세요.
+## 예시 및 마이그레이션 참고 사항은 [문자 정책 세부 정보](../charset.md)를 참조하세요.
 
 *VS Code/Cline, 광범위한 테스트, 그리고 커뮤니티 피드백을 통해 사랑으로 개발되었습니다.* 🤖💕

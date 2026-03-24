@@ -120,7 +120,7 @@ llama-server -m <laluan-model> -c <saiz-konteks> --port 8080
 * **Cara ia berfungsi:** Mencipta dan mengikat lorebook baharu secara automatik apabila tiada lorebook wujud, menggunakan templat penamaan tersuai anda.
 * **Terbaik untuk:** Pengguna baharu dan persediaan pantas. Sempurna untuk penciptaan lorebook satu klik.
 * **Cara guna:**
-1. Dayakan "Auto-create lorebook if none exists" dalam tetapan sambungan.
+1. Dayakan "Cipta buku legenda secara automatik jika tiada" dalam tetapan sambungan.
 2. Konfigurasikan templat penamaan anda (lalai: "LTM - {{char}} - {{chat}}").
 3. Apabila anda mencipta memori tanpa lorebook yang terikat, satu akan dicipta dan diikat secara automatik.
 
@@ -134,7 +134,7 @@ llama-server -m <laluan-model> -c <saiz-konteks> --port 8080
 * **Cara ia berfungsi:** Membenarkan anda memilih lorebook yang berbeza untuk memori berdasarkan setiap sembang, mengabaikan lorebook utama yang terikat pada sembang.
 * **Terbaik untuk:** Pengguna lanjutan yang ingin mengarahkan memori ke lorebook tertentu yang berasingan.
 * **Cara guna:**
-1. Dayakan "Enable Manual Lorebook Mode" dalam tetapan sambungan.
+1. Dayakan "Dayakan Mod Buku Legenda Manual" dalam tetapan sambungan.
 2. Kali pertama anda mencipta memori dalam sembang, anda akan diminta untuk memilih lorebook.
 3. Pilihan ini disimpan untuk sembang khusus tersebut sehingga anda mengosongkannya atau bertukar kembali ke Mod Automatik.
 
@@ -193,7 +193,7 @@ STMB boleh memaparkan prompt pengesahan ya/tidak apabila tahap yang dipilih suda
 #### Cara ia berfungsi
 
 * Ringkasan konsolidasi dijana **daripada memori/ringkasan STMB yang sedia ada**, bukan terus daripada sembang mentah
-* Butang **Consolidate Memories** membolehkan anda memilih tahap sasaran dan memilih entri sumber
+* Butang **Gabungkan Ingatan** membolehkan anda memilih tahap sasaran dan memilih entri sumber
 * STMB boleh menyahaktifkan entri sumber selepas konsolidasi jika anda mahu ringkasan tahap lebih tinggi mengambil alih
 * Respons ringkasan AI yang gagal boleh disemak dan diperbetulkan daripada UI sebelum cuba simpan semula
 
@@ -294,7 +294,7 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 
 
 * **Sokongan Pelbagai Pilihan**: Anda boleh memilih beberapa skrip regex untuk pemprosesan keluar dan masuk.
-* **Cara Ia Berfungsi**: Hidupkan `Use regex (advanced)` dalam STMB, klik `📐 Configure regex…`, kemudian pilih skrip mana yang patut dijalankan STMB sebelum dihantar ke AI dan sebelum respons diparsing/disimpan.
+* **Cara Ia Berfungsi**: Hidupkan `Gunakan regex (lanjutan)` dalam STMB, klik `📐 Konfigurasi regex…`, kemudian pilih skrip mana yang patut dijalankan STMB sebelum dihantar ke AI dan sebelum respons diparsing/disimpan.
 * **Penting**: Skrip yang dipilih dalam STMB tetap akan dijalankan walaupun ia sedang dinyahdayakan dalam sambungan Regex itu sendiri.
 
 ---
@@ -314,8 +314,8 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 
 [Gambaran keseluruhan video pendek di Youtube](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode:** Dayakan untuk memilih lorebook bagi setiap sembang.
-* **Auto-create lorebook if none exists:** ⭐ *Baharu dalam v4.2.0* - Cipta dan ikat lorebook secara automatik menggunakan templat penamaan anda.
+* **Dayakan Mod Buku Legenda Manual:** Dayakan untuk memilih lorebook bagi setiap sembang.
+* **Cipta buku legenda secara automatik jika tiada:** ⭐ *Baharu dalam v4.2.0* - Cipta dan ikat lorebook secara automatik menggunakan templat penamaan anda.
 * **Lorebook Name Template:** ⭐ *Baharu dalam v4.2.0* - Sesuaikan nama lorebook ciptaan automatik dengan pemegang tempat {{char}}, {{user}}, {{chat}}.
 * **Allow Scene Overlap:** Benarkan atau halang julat memori yang bertindih.
 * **Always Use Default Profile:** Langkau pop timbul pengesahan.
@@ -325,20 +325,20 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 * **Max Response Tokens:** Tetapkan panjang penjanaan maksimum untuk ringkasan memori.
 * **Token Warning Threshold:** Tetapkan tahap amaran untuk babak besar.
 * **Default Previous Memories:** Bilangan memori terdahulu untuk dimasukkan sebagai konteks (0-7).
-* **Auto-create memory summaries:** Dayakan penciptaan memori automatik pada selang masa tertentu.
-* **Auto-Summary Interval:** Bilangan mesej selepas mana ringkasan memori dicipta secara automatik.
-* **Auto-Summary Buffer:** Tangguhkan auto-summary dengan bilangan mesej yang boleh dikonfigurasikan.
-* **Prompt for consolidation when a tier is ready:** Tunjukkan prompt ya/tidak apabila tier ringkasan yang dipilih sudah mempunyai cukup entri sumber yang layak untuk dikonsolidasikan.
-* **Auto-Consolidation Tiers:** Pilih satu atau beberapa tier ringkasan yang akan mencetuskan prompt tersebut. Kini menyokong Arc hingga Series.
+* **Cipta ringkasan memori secara automatik:** Dayakan penciptaan memori automatik pada selang masa tertentu.
+* **Selang Ringkasan Auto:** Bilangan mesej selepas mana ringkasan memori dicipta secara automatik.
+* **Penimbal Ringkasan Auto:** Tangguhkan auto-summary dengan bilangan mesej yang boleh dikonfigurasikan.
+* **Paparkan prompt konsolidasi apabila tier sedia:** Tunjukkan prompt ya/tidak apabila tier ringkasan yang dipilih sudah mempunyai cukup entri sumber yang layak untuk dikonsolidasikan.
+* **Tier Konsolidasi Automatik:** Pilih satu atau beberapa tier ringkasan yang akan mencetuskan prompt tersebut. Kini menyokong Arc hingga Series.
 * **Unhide hidden messages before memory generation:** Boleh menjalankan `/unhide X-Y` sebelum mencipta memori.
 * **Auto-hide messages after adding memory:** Pilihan untuk menyembunyikan semua mesej yang diproses atau hanya julat memori terakhir.
-* **Use regex (advanced):** Mendayakan popup pemilihan regex STMB untuk pemprosesan keluar/masuk.
+* **Gunakan regex (lanjutan):** Mendayakan popup pemilihan regex STMB untuk pemprosesan keluar/masuk.
 * **Memory Title Format:** Pilih atau sesuaikan (lihat di bawah).
 
 ### **Medan Profil**
 
 * **Name:** Nama paparan.
-* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual, dan penyedia lain yang disokong.
+* **API/Provider:** `Tetapan SillyTavern Semasa`, openai, claude, custom, full manual, dan penyedia lain yang disokong.
 * **Model:** Nama model (cth., gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Tersuai atau terbina dalam.
@@ -414,7 +414,7 @@ Tidak. Jika tiada info dunia atau lorebook lain, memilih 'Delay until recursion'
 * **Tiada lorebook tersedia atau dipilih:**
 * Dalam Mod Manual, pilih lorebook apabila diminta.
 * Dalam Mod Automatik, ikat lorebook ke sembang anda.
-* Atau dayakan "Auto-create lorebook if none exists" untuk penciptaan automatik.
+* Atau dayakan "Cipta buku legenda secara automatik jika tiada" untuk penciptaan automatik.
 
 
 * **Tiada babak dipilih:**

@@ -26,9 +26,9 @@ Vous avez besoin que le bot se souvienne de certaines choses, mais la discussion
 ## 🚀 Démarrage Rapide (Votre premier souvenir en 5 minutes !)
 
 1. Ouvrez Memory Books dans le menu des extensions.
-2. Activez **Auto-create memory summaries**.
-3. Réglez **Auto-Summary Interval** autour de `20-30`.
-4. Gardez **Auto-Summary Buffer** faible au début, par exemple `0-2`.
+2. Activez **Créer des résumés de mémoire automatiques**.
+3. Réglez **Intervalle d'Auto-Résumé** autour de `20-30`.
+4. Gardez **Tampon d'Auto-Résumé** faible au début, par exemple `0-2`.
 5. Créez d'abord une mémoire manuelle pour « amorcer » le chat.
 
 ---
@@ -53,9 +53,9 @@ Les Side Prompts agissent comme des traceurs pour les relations, les quêtes, l'
 
 ### « Régler et oublier »
 
-1. Activez `Auto-create memory summaries`.
-2. Choisissez `Auto-Summary Interval`.
-3. Si besoin, ajoutez un petit `Auto-Summary Buffer`.
+1. Activez `Créer des résumés de mémoire automatiques`.
+2. Choisissez `Intervalle d'Auto-Résumé`.
+3. Si besoin, ajoutez un petit `Tampon d'Auto-Résumé`.
 
 ### Contrôle manuel
 
@@ -86,19 +86,19 @@ Masquer les messages ne les supprime pas. Ils restent dans le chat et dans le lo
 
 ### Masquage automatique
 
-* `Do not auto-hide` - rien ne se masque automatiquement
-* `Auto-hide all messages up to the last memory` - masque tout ce qui est déjà couvert
-* `Auto-hide only messages in the last memory` - masque seulement la dernière plage traitée
+* `Ne pas masquer automatiquement` - rien ne se masque automatiquement
+* `Masquer automatiquement tous les messages jusqu'à la dernière mémoire` - masque tout ce qui est déjà couvert
+* `Masquer automatiquement uniquement les messages de la dernière mémoire` - masque seulement la dernière plage traitée
 
 ### Affichage avant génération
 
-`Unhide hidden messages for memory generation` exécute temporairement `/unhide X-Y` avant la création de la mémoire.
+`Afficher les messages cachés pour la génération (exécute /unhide X-Y)` exécute temporairement `/unhide X-Y` avant la création de la mémoire.
 
 ### Réglage de départ
 
-* `Auto-hide only messages in the last memory`
+* `Masquer automatiquement uniquement les messages de la dernière mémoire`
 * laisser `2` messages visibles
-* activer `Unhide hidden messages for memory generation`
+* activer `Afficher les messages cachés pour la génération (exécute /unhide X-Y)`
 
 ---
 
@@ -120,7 +120,7 @@ STMB peut combiner des souvenirs ou des résumés existants en une entrée plus 
 
 Non. La consolidation nécessite toujours une confirmation.
 
-* vous pouvez ouvrir `Consolidate Memories` manuellement
+* vous pouvez ouvrir `Consolider les mémoires` manuellement
 * STMB peut afficher une confirmation quand un niveau atteint son minimum
 * choisir `Yes` ouvre seulement la fenêtre de consolidation
 
@@ -132,7 +132,7 @@ Non. La consolidation nécessite toujours une confirmation.
 
 ### Comment l'utiliser ?
 
-1. Cliquez sur `Consolidate Memories`
+1. Cliquez sur `Consolider les mémoires`
 2. Choisissez le niveau cible
 3. Sélectionnez les entrées source
 4. Décidez si vous voulez désactiver les sources après création
@@ -177,8 +177,8 @@ STMB peut exécuter des scripts Regex sélectionnés avant l'envoi à l'IA et av
 ### Comment ça marche
 
 1. Créez vos scripts dans l'extension `Regex`.
-2. Activez `Use regex (advanced)` dans STMB.
-3. Cliquez sur `📐 Configure regex…`.
+2. Activez `Utiliser regex (avancé)` dans STMB.
+3. Cliquez sur `📐 Configurer regex…`.
 4. Choisissez les scripts à exécuter avant l'envoi et avant l'enregistrement.
 
 ### Important
@@ -193,13 +193,13 @@ STMB peut exécuter des scripts Regex sélectionnés avant l'envoi à l'IA et av
 
 Ce n'est pas la documentation complète des réglages. Pour la liste détaillée, utilisez [readme.md](readme.md).
 
-* `Auto-create memory summaries` - active la création automatique de mémoires
-* `Auto-Summary Interval` et `Auto-Summary Buffer` - contrôlent le moment de création
+* `Créer des résumés de mémoire automatiques` - active la création automatique de mémoires
+* `Intervalle d'Auto-Résumé` et `Tampon d'Auto-Résumé` - contrôlent le moment de création
 * `Show memory previews` - permet de vérifier/modifier la réponse IA avant sauvegarde
-* `Prompt for consolidation when a tier is ready` et `Auto-Consolidation Tiers` - signalent les opportunités de consolidation
-* `Manual Lorebook Mode` et `Auto-create lorebook if none exists` - contrôlent où les souvenirs sont enregistrés
-* `Use regex (advanced)` - ouvre la sélection Regex gérée par STMB
-* `Current SillyTavern Settings` - utilise directement votre connexion ST active
+* `Demander une consolidation lorsqu'un niveau est prêt` et `Niveaux d'auto-consolidation` - signalent les opportunités de consolidation
+* `Activer le Mode Manuel du Lorebook` et `Créer le lorebook s'il n'existe pas` - contrôlent où les souvenirs sont enregistrés
+* `Utiliser regex (avancé)` - ouvre la sélection Regex gérée par STMB
+* `Paramètres SillyTavern Actuels` - utilise directement votre connexion ST active
 
 ---
 
@@ -209,9 +209,9 @@ Ce n'est pas la matrice complète de dépannage. Pour la liste détaillée, util
 
 * Vérifiez que STMB est activé et que l'entrée `Memory Books` apparaît dans le menu des extensions
 * Si l'auto-summary ne se déclenche pas, créez d'abord une mémoire manuelle et vérifiez interval/buffer
-* Si une mémoire ne peut pas être enregistrée, assurez-vous qu'un lorebook est lié ou que `Auto-create lorebook if none exists` est activé
-* Si Regex se comporte bizarrement, vérifiez la sélection dans `📐 Configure regex…`
-* Si la consolidation ne se propose pas, vérifiez `Prompt for consolidation when a tier is ready` et `Auto-Consolidation Tiers`
+* Si une mémoire ne peut pas être enregistrée, assurez-vous qu'un lorebook est lié ou que `Créer le lorebook s'il n'existe pas` est activé
+* Si Regex se comporte bizarrement, vérifiez la sélection dans `📐 Configurer regex…`
+* Si la consolidation ne se propose pas, vérifiez `Demander une consolidation lorsqu'un niveau est prêt` et `Niveaux d'auto-consolidation`
 
 ---
 

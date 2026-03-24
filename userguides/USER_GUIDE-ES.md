@@ -33,10 +33,10 @@
 
 ### Paso 2: Active la Auto-Magia
 
-* En el panel de control, busque **"Auto-create memory summaries"**.
+* En el panel de control, busque **"Crear resúmenes de memoria automáticamente"**.
 * Enciéndalo (ON).
-* Configure **Auto-Summary Interval** en **20-30 mensajes** (un buen punto de partida).
-* Mantenga **Auto-Summary Buffer** bajo al principio (`0-2` suele ir bien).
+* Configure **Intervalo de Auto-Resumen** en **20-30 mensajes** (un buen punto de partida).
+* Mantenga **Búfer de Auto-Resumen** bajo al principio (`0-2` suele ir bien).
 * Cree primero una memoria manual para dejar el chat primado.
 * ¡Eso es todo! 🎉
 
@@ -104,9 +104,10 @@ Piense en ST Memory Books como su **bibliotecario personal de IA** para conversa
 
 **Cómo funciona:**
 
-1. Active "Auto-Summary" en la configuración.
-2. Elija con qué frecuencia crear recuerdos (cada 20-50 mensajes funciona bien).
-3. Siga chateando normalmente - ¡los recuerdos ocurren automáticamente!
+1. Active `Crear resúmenes de memoria automáticamente`.
+2. Ajuste `Intervalo de Auto-Resumen` según la velocidad de su chat.
+3. Opcionalmente use un `Búfer de Auto-Resumen` pequeño si desea generación tardía.
+4. Siga chateando normalmente después de crear una primera memoria manual.
 
 **Lo que obtiene:**
 
@@ -183,21 +184,21 @@ Ocultar no borra nada. Los mensajes siguen en el chat y los recuerdos siguen en 
 
 STMB puede ocultar automáticamente mensajes después de crear una memoria:
 
-* **Do not auto-hide**: no oculta nada automáticamente
-* **Auto-hide all messages up to the last memory**: oculta todo lo ya cubierto
-* **Auto-hide only messages in the last memory**: oculta solo el último rango procesado
+* **No ocultar automáticamente**: no oculta nada automáticamente
+* **Ocultar automáticamente todos los mensajes hasta la última memoria**: oculta todo lo ya cubierto
+* **Ocultar automáticamente solo los mensajes de la última memoria**: oculta solo el último rango procesado
 
-También puede definir cuántos mensajes recientes permanecen visibles con **Messages to leave unhidden**.
+También puede definir cuántos mensajes recientes permanecen visibles con **Mensajes a dejar visibles**.
 
 ### Mostrar antes de generar memoria
 
-**Unhide hidden messages for memory generation** hace que STMB ejecute temporalmente `/unhide X-Y` antes de generar la memoria.
+**Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)** hace que STMB ejecute temporalmente `/unhide X-Y` antes de generar la memoria.
 
 ### Ajuste inicial recomendable
 
-* **Auto-hide only messages in the last memory**
+* **Ocultar automáticamente solo los mensajes de la última memoria**
 * dejar **2** mensajes visibles
-* activar **Unhide hidden messages for memory generation**
+* activar **Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)**
 
 ## 🌈 Consolidación de resúmenes
 
@@ -217,7 +218,7 @@ STMB puede combinar recuerdos o resúmenes existentes en un resumen más compact
 
 No. La consolidación sigue necesitando confirmación.
 
-* Puede abrir **Consolidate Memories** manualmente
+* Puede abrir **Consolidar las memorias** manualmente
 * Opcionalmente STMB puede avisarle cuando un nivel llegue a su mínimo
 * Elegir **Yes** solo abre el popup de consolidación, no la ejecuta en silencio
 
@@ -229,7 +230,7 @@ No. La consolidación sigue necesitando confirmación.
 
 ### ¿Cómo se usa?
 
-1. Haga clic en **Consolidate Memories**
+1. Haga clic en **Consolidar las memorias**
 2. Elija el nivel destino
 3. Seleccione las entradas fuente
 4. Decida si quiere desactivar las fuentes tras crear el resumen
@@ -282,7 +283,7 @@ Esto hace que el comportamiento del disparador sea comprensible sin términos t�
 ### 💡 **Ejemplos de Plantillas**
 
 * Biblioteca de Plantillas de Prompts Secundarios (importe este JSON):
-[SidePromptTemplateLibrary.json](https://www.google.com/search?q=/resources/SidePromptTemplateLibrary.json)
+[SidePromptTemplateLibrary.json](../resources/SidePromptTemplateLibrary.json)
 
 Ideas de ejemplo para prompts:
 
@@ -310,118 +311,41 @@ En lugar de "rastrear todo", intente "rastrear la tensión romántica entre los 
 
 ### 🧠 Control Avanzado de Texto con la Extensión Regex
 
-**¿Desea un control total sobre el texto que se envía y se recibe de la IA?** ST Memory Books ahora se integra perfectamente con la extensión oficial **Regex**, permitiéndole transformar automáticamente el texto utilizando reglas personalizadas.
+ST Memory Books puede ejecutar scripts Regex seleccionados antes de generar y antes de guardar.
 
-**Soporte de Selección Múltiple:** Ahora puede seleccionar múltiples scripts de regex en la extensión Regex. Todos los scripts habilitados se aplicarán en orden en cada etapa (Prompt y Respuesta), permitiendo transformaciones poderosas y flexibles.
-
-Esta es una función avanzada perfecta para usuarios que desean:
-
-* Limpiar automáticamente frases repetitivas o artefactos de la respuesta de una IA.
-* Reformatear partes de la transcripción del chat antes de que la IA lo vea.
-* Estandarizar terminología o modismos de personajes sobre la marcha.
-
-#### **Cómo Funciona: Dos Ganchos Simples**
-
-La integración funciona aplicando sus scripts de regex habilitados en dos puntos críticos. Usted controla qué scripts se ejecutan configurando su **Placement** (Ubicación) en el editor de la extensión Regex:
-
-1. **Modificando el Prompt (Texto Saliente)**
-* **Ubicación a usar**: `User Input`
-* **Qué hace**: Intercepta el prompt completamente ensamblado (incluyendo historial de chat, instrucciones del sistema, etc.) justo antes de que se envíe a la IA para la generación de memoria o prompt secundario.
-* **Caso de Uso de Ejemplo**: Podría crear un script para reemplazar automáticamente todas las instancias del apodo de un personaje con su nombre completo, asegurando que la IA tenga el contexto adecuado.
-
-
-2. **Modificando la Respuesta (Texto Entrante)**
-* **Ubicación a usar**: `AI Output`
-* **Qué hace**: Intercepta la respuesta de texto sin procesar de la IA *antes* de que se analice o guarde como una memoria.
-* **Caso de Uso de Ejemplo**: Si su modelo de IA a menudo incluye frases repetitivas como *"Como un modelo de lenguaje grande..."* en sus resúmenes, puede crear un script de regex para eliminar automáticamente esta frase de cada memoria que genere.
-
-
-
-#### **Ejemplo de Inicio Rápido: Limpieza de Respuestas de IA**
-
-Digamos que su modelo de IA agrega consistentemente `(OOC: ¡Espero que este resumen sea útil!)` a sus generaciones de memoria. Aquí le mostramos cómo eliminarlo automáticamente:
-
-1. **Vaya a la Extensión Regex**: Abra el menú principal de extensiones de SillyTavern y vaya a **Regex**.
-2. **Cree un Nuevo Script**: Haga clic en "Open Regex Editor" para crear un nuevo script de regex.
-3. **Configure el Script**:
-* **Nombre del Script**: `Limpiar Notas OOC`
-* **Find Regex**: `/\\(OOC:.*?\\)/g` (Esto encuentra el texto "(OOC: ...)" y todo lo que contiene).
-* **Replace String**: Deje esto en blanco para eliminar el texto coincidente.
-* **Affects (Placement)**: Desmarque todas las casillas excepto **AI Output**. ¡Este es el paso más importante!
-* **Habilite el Script**: Asegúrese de que el script no esté deshabilitado.
-
-
-4. **¡Guarde y Listo!**
-
-Ahora, cada vez que ST Memory Books obtenga una respuesta de la IA, este script se ejecutará automáticamente, limpiando el texto no deseado antes de que la memoria se guarde en su lorebook.
+* Active en STMB **Usar expresiones regulares (avanzado)**
+* Haga clic en **📐 Configurar expresiones regulares…**
+* Elija por separado qué scripts deben ejecutarse antes de enviar texto a la IA y antes de guardar
+* La selección hecha dentro de STMB cuenta incluso si ese script está desactivado en la extensión Regex
 
 ---
 
 ## ⚙️ Configuraciones que Realmente Importan
 
-No se preocupe, ¡no necesita configurar todo! Aquí están las configuraciones que marcan la mayor diferencia:
+Para la referencia completa, consulte [readme.md](readme.md).
 
-### 🎛️ **Frecuencia de Auto-Resumen**
+Controles básicos importantes:
 
-* **20-30 mensajes**: Genial para chats detallados y más lentos.
-* **40-60 mensajes**: Perfecto para conversaciones más rápidas y llenas de acción.
-* **80+ mensajes**: Para chats grupales muy rápidos o conversaciones casuales.
-
-### 📝 **Vistas Previas de Memoria**
-
-* Active esto para revisar los recuerdos antes de que se guarden.
-* Puede editar, aprobar o regenerar si la IA omitió algo importante.
-* Recomendado para historias importantes.
-
-### 🏷️ **Títulos de Memoria**
-
-* Personalice cómo se nombran sus recuerdos.
-* Use `{{title}}` para títulos generados por IA, `{{scene}}` para números de mensajes.
-* Ejemplo: `"Capítulo {{title}} ({{scene}})"` se convierte en `"Capítulo El Gran Escape (Escena 45-67)"`.
-
-### 📚 **Colecciones de Memoria** (Lorebooks)
-
-* **Modo Auto**: Utiliza la colección de memoria predeterminada de su chat (lo más fácil).
-* **Modo Manual**: Elija una colección específica para cada chat (para organización).
-* **Auto-create**: Crea nuevas colecciones automáticamente (bueno para nuevos personajes).
+* **Ajustes Actuales de SillyTavern** usa directamente su conexión actual de ST
+* **Crear resúmenes de memoria automáticamente** activa los recuerdos automáticos
+* **Intervalo de Auto-Resumen** y **Búfer de Auto-Resumen** controlan cuándo se ejecutan
+* **Auto-hide/unhide memories** ayuda a ahorrar tokens
+* **Activar Modo Manual de Lorebook** y **Crear automáticamente un lorebook si no existe** controlan dónde se guardan los recuerdos
+* **Avisar para consolidar cuando una capa esté lista** solo muestra la confirmación de consolidación
 
 ---
 
 ## 🔧 Solución de Problemas (Cuando las Cosas No Funcionan)
 
-### "¡No veo la opción de Memory Books!"
+Para la lista completa, consulte [readme.md](readme.md).
 
-* Compruebe que la extensión esté instalada y habilitada.
-* Busque el icono de la varita mágica (🪄) junto a su entrada de chat.
-* Intente actualizar la página.
+Comprobaciones rápidas:
 
-### "¡Los botones de flecha (► ◄) no aparecen!"
-
-* Espere 3-5 segundos después de cargar un chat: necesitan tiempo para aparecer.
-* Si aún faltan, actualice la página.
-* Asegúrese de que ST Memory Books esté habilitado en las extensiones.
-
-### "¡El Auto Summary no funciona!"
-
-* Verifique dos veces que "Auto-Summary" esté habilitado en la configuración de Memory Books.
-* ¿Se ha alcanzado el intervalo de mensajes? El resumen automático espera suficientes mensajes nuevos.
-* Si pospuso el resumen automático, podría estar esperando hasta un cierto recuento de mensajes.
-* El resumen automático solo procesa mensajes nuevos desde la *última* memoria. Si eliminó recuerdos antiguos, no vuelve atrás.
-
-### "¡Recibo errores sobre lorebooks faltantes!"
-
-* Vaya a la configuración de Memory Books.
-* Vincule un lorebook a su chat (Modo Automático) o habilite "Auto-create lorebook if none exists".
-
-### "¡A veces falla sin razón!"
-
-* Asegúrese de que su Longitud Máxima de Respuesta (Max Response Length en los ajustes preestablecidos de SillyTavern) esté establecida en un número lo suficientemente grande. Aiko recomienda al menos 2000 tokens (Aiko usa 4000).
-* Los mensajes de error son más detallados ahora, pero si todavía tiene problemas, comuníquese con Aiko en Github o Discord.
-
-### "¡Mis prompts personalizados no funcionan bien!"
-
-* Verifique el "Summary Prompt Manager" en la configuración de Memory Books.
-* Asegúrese de que su prompt le indique a la IA que responda en **formato JSON** (por ejemplo, `{ "title": "...", "content": "..." }`).
+* Asegúrese de que STMB esté activado y que **Memory Books** aparezca en el menú de extensiones
+* Si el auto-summary no se ejecuta, confirme que creó primero una memoria manual y que el intervalo/buffer son razonables
+* Si los recuerdos no se guardan, asegúrese de que haya un lorebook vinculado al chat o de que **Crear automáticamente un lorebook si no existe** esté activado
+* Si el comportamiento de Regex parece incorrecto, revise la selección dentro de **📐 Configurar expresiones regulares…**
+* Si la consolidación no aparece, revise el nivel objetivo y la opción de confirmación de consolidación
 
 ---
 
@@ -435,7 +359,7 @@ No se preocupe, ¡no necesita configurar todo! Aquí están las configuraciones 
 
 * **Información más detallada:** [readme.md](readme.md)
 * **Últimas actualizaciones:** [changelog.md](changelog.md)
-* **Convertir lorebooks antiguos:** [lorebookconverter.html](https://www.google.com/search?q=lorebookconverter.html)
+* **Convertir lorebooks antiguos:** [lorebookconverter.html](../resources/lorebookconverter.html)
 * **Soporte de la comunidad:** ¡Únase a la comunidad de SillyTavern en Discord! (Busque el hilo 📕ST Memory Books o envíe un DM a @tokyoapple para ayuda directa).
 * **Errores/características:** ¿Encontró un error o tiene una gran idea? Abra un problema (issue) en GitHub en este repositorio.
 

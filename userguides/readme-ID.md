@@ -120,7 +120,7 @@ llama-server -m <path-model> -c <ukuran-konteks> --port 8080
 * **Cara kerjanya:** Secara otomatis membuat dan mengikat lorebook baru jika tidak ada, menggunakan templat penamaan kustom Anda.
 * **Terbaik untuk:** Pengguna baru dan pengaturan cepat. Sempurna untuk pembuatan lorebook sekali klik.
 * **Cara menggunakan:**
-1. Aktifkan "Auto-create lorebook if none exists" di pengaturan ekstensi.
+1. Aktifkan "Buat buku latar secara otomatis jika tidak ada" di pengaturan ekstensi.
 2. Konfigurasikan templat penamaan Anda (default: "LTM - {{char}} - {{chat}}").
 3. Saat Anda membuat memori tanpa lorebook yang terikat, satu akan dibuat dan diikat secara otomatis.
 
@@ -134,7 +134,7 @@ llama-server -m <path-model> -c <ukuran-konteks> --port 8080
 * **Cara kerjanya:** Memungkinkan Anda memilih lorebook yang berbeda untuk memori per obrolan, mengabaikan lorebook utama yang terikat pada obrolan.
 * **Terbaik untuk:** Pengguna tingkat lanjut yang ingin mengarahkan memori ke lorebook tertentu yang terpisah.
 * **Cara menggunakan:**
-1. Aktifkan "Enable Manual Lorebook Mode" di pengaturan ekstensi.
+1. Aktifkan "Aktifkan Mode Buku Latar Manual" di pengaturan ekstensi.
 2. Saat pertama kali Anda membuat memori dalam obrolan, Anda akan diminta untuk memilih lorebook.
 3. Pilihan ini disimpan untuk obrolan khusus tersebut hingga Anda menghapusnya atau beralih kembali ke Mode Otomatis.
 
@@ -193,7 +193,7 @@ STMB dapat menampilkan prompt konfirmasi ya/tidak saat tier yang dipilih sudah m
 #### Cara kerjanya
 
 * Ringkasan konsolidasi dibuat **dari memori/ringkasan STMB yang sudah ada**, bukan langsung dari obrolan mentah
-* Tombol **Consolidate Memories** memungkinkan Anda memilih tier tujuan dan memilih entri sumber
+* Tombol **Gabungkan Ingatan** memungkinkan Anda memilih tier tujuan dan memilih entri sumber
 * STMB dapat menonaktifkan entri sumber setelah konsolidasi jika Anda ingin ringkasan tingkat lebih tinggi mengambil alih
 * Respons ringkasan AI yang gagal dapat ditinjau dan diperbaiki dari UI sebelum mencoba menyimpan lagi
 
@@ -294,7 +294,7 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri side pro
 
 
 * **Dukungan Multi-Pilih**: Anda dapat memilih beberapa skrip regex untuk pemrosesan keluar dan masuk.
-* **Cara Kerjanya**: Aktifkan `Use regex (advanced)` di STMB, klik `📐 Configure regex…`, lalu pilih skrip mana yang harus dijalankan STMB sebelum dikirim ke AI dan sebelum respons diparsing/disimpan.
+* **Cara Kerjanya**: Aktifkan `Gunakan ekspresi reguler (lanjutan)` di STMB, klik `📐 Konfigurasi ekspresi reguler…`, lalu pilih skrip mana yang harus dijalankan STMB sebelum dikirim ke AI dan sebelum respons diparsing/disimpan.
 * **Penting**: Skrip yang dipilih di STMB tetap akan dijalankan meskipun saat ini dinonaktifkan di ekstensi Regex itu sendiri.
 
 ---
@@ -314,8 +314,8 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri side pro
 
 [Video singkat gambaran umum di Youtube](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode:** Aktifkan untuk memilih lorebook per obrolan.
-* **Auto-create lorebook if none exists:** ⭐ *Baru di v4.2.0* - Secara otomatis membuat dan mengikat lorebook menggunakan templat penamaan Anda.
+* **Aktifkan Mode Buku Latar Manual:** Aktifkan untuk memilih lorebook per obrolan.
+* **Buat buku latar secara otomatis jika tidak ada:** ⭐ *Baru di v4.2.0* - Secara otomatis membuat dan mengikat lorebook menggunakan templat penamaan Anda.
 * **Lorebook Name Template:** ⭐ *Baru di v4.2.0* - Kustomisasi nama lorebook yang dibuat otomatis dengan placeholder {{char}}, {{user}}, {{chat}}.
 * **Allow Scene Overlap:** Izinkan atau cegah rentang memori yang tumpang tindih.
 * **Always Use Default Profile:** Lewati popup konfirmasi.
@@ -325,20 +325,20 @@ Prompt Sampingan dapat digunakan seperti pelacak dan akan membuat entri side pro
 * **Max Response Tokens:** Tetapkan panjang generasi maksimum untuk ringkasan memori.
 * **Token Warning Threshold:** Tetapkan tingkat peringatan untuk adegan besar.
 * **Default Previous Memories:** Jumlah memori sebelumnya yang disertakan sebagai konteks (0-7).
-* **Auto-create memory summaries:** Aktifkan pembuatan memori otomatis pada interval tertentu.
-* **Auto-Summary Interval:** Jumlah pesan yang memicu pembuatan ringkasan memori secara otomatis.
-* **Auto-Summary Buffer:** Menunda auto-summary dengan jumlah pesan yang dapat dikonfigurasi.
-* **Prompt for consolidation when a tier is ready:** Menampilkan prompt ya/tidak saat tier ringkasan yang dipilih sudah punya cukup entri sumber untuk dikonsolidasikan.
-* **Auto-Consolidation Tiers:** Pilih satu atau beberapa tier ringkasan yang akan memicu prompt tersebut. Saat ini mendukung Arc sampai Series.
+* **Buat ringkasan memori secara otomatis:** Aktifkan pembuatan memori otomatis pada interval tertentu.
+* **Interval Ringkasan Otomatis:** Jumlah pesan yang memicu pembuatan ringkasan memori secara otomatis.
+* **Penyangga Ringkasan Otomatis:** Menunda auto-summary dengan jumlah pesan yang dapat dikonfigurasi.
+* **Tampilkan prompt konsolidasi saat tier siap:** Menampilkan prompt ya/tidak saat tier ringkasan yang dipilih sudah punya cukup entri sumber untuk dikonsolidasikan.
+* **Tier Konsolidasi Otomatis:** Pilih satu atau beberapa tier ringkasan yang akan memicu prompt tersebut. Saat ini mendukung Arc sampai Series.
 * **Unhide hidden messages before memory generation:** Dapat menjalankan `/unhide X-Y` sebelum membuat memori.
 * **Auto-hide messages after adding memory:** Opsional menyembunyikan semua pesan yang diproses atau hanya rentang memori terakhir.
-* **Use regex (advanced):** Mengaktifkan popup pemilihan regex STMB untuk pemrosesan keluar/masuk.
+* **Gunakan ekspresi reguler (lanjutan):** Mengaktifkan popup pemilihan regex STMB untuk pemrosesan keluar/masuk.
 * **Memory Title Format:** Pilih atau kustomisasi (lihat di bawah).
 
 ### **Bidang Profil**
 
 * **Name:** Nama tampilan.
-* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual, dan provider lain yang didukung.
+* **API/Provider:** `Pengaturan SillyTavern Saat Ini`, openai, claude, custom, full manual, dan provider lain yang didukung.
 * **Model:** Nama model (mis., gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Kustom atau bawaan.
@@ -414,7 +414,7 @@ Tidak. Jika tidak ada world info atau lorebook lain, memilih 'Delay until recurs
 * **Tidak ada lorebook yang tersedia atau dipilih:**
 * Dalam Mode Manual, pilih lorebook saat diminta.
 * Dalam Mode Otomatis, ikat lorebook ke obrolan Anda.
-* Atau aktifkan "Auto-create lorebook if none exists" untuk pembuatan otomatis.
+* Atau aktifkan "Buat buku latar secara otomatis jika tidak ada" untuk pembuatan otomatis.
 
 
 * **Tidak ada adegan yang dipilih:**

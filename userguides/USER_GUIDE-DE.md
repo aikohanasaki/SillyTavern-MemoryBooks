@@ -33,10 +33,10 @@ Brauchst du einen Bot, der sich an Dinge erinnert, aber der Chat ist zu lang fü
 
 ### Schritt 2: Schalte die Auto-Magie ein
 
-* Finde im Kontrollfeld **"Auto-create memory summaries"**
+* Finde im Kontrollfeld **"Automatische Erinnerungs-Zusammenfassungen erstellen"**
 * Schalte es EIN (ON)
-* Stelle **Auto-Summary Interval** auf **20-30 Nachrichten** ein (guter Startpunkt)
-* Halte **Auto-Summary Buffer** am Anfang niedrig (`0-2` ist meist gut)
+* Stelle **Intervall für automatische Zusammenfassung** auf **20-30 Nachrichten** ein (guter Startpunkt)
+* Halte **Puffer für automatische Zusammenfassung** am Anfang niedrig (`0-2` ist meist gut)
 * Erstelle zuerst eine manuelle Erinnerung, damit der Chat geprimt ist
 * Das war's! 🎉
 
@@ -104,9 +104,10 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 
 **Wie es funktioniert:**
 
-1. Schalte "Auto-Summary" in den Einstellungen ein
-2. Wähle, wie oft Erinnerungen erstellt werden sollen (alle 20-50 Nachrichten funktioniert gut)
-3. Chatte ganz normal weiter – Erinnerungen passieren automatisch!
+1. Schalte `Automatische Erinnerungs-Zusammenfassungen erstellen` ein
+2. Stelle `Intervall für automatische Zusammenfassung` passend zu deinem Chattempo ein
+3. Optional: setze einen kleinen `Puffer für automatische Zusammenfassung`, wenn du verspätete Erstellung willst
+4. Chatte nach einer ersten manuellen Erinnerung ganz normal weiter
 
 **Was du bekommst:**
 
@@ -183,21 +184,21 @@ Ausblenden löscht **nichts**. Die Nachrichten bleiben im Chat und die Erinnerun
 
 STMB kann Nachrichten nach dem Erstellen einer Erinnerung automatisch ausblenden:
 
-* **Do not auto-hide**: nichts wird automatisch ausgeblendet
-* **Auto-hide all messages up to the last memory**: alles bis zur letzten Erinnerung wird ausgeblendet
-* **Auto-hide only messages in the last memory**: nur der zuletzt verarbeitete Bereich wird ausgeblendet
+* **Nicht automatisch verstecken**: nichts wird automatisch ausgeblendet
+* **Alle Nachrichten bis zur letzten Erinnerung verstecken**: alles bis zur letzten Erinnerung wird ausgeblendet
+* **Nur Nachrichten in der letzten Erinnerung verstecken**: nur der zuletzt verarbeitete Bereich wird ausgeblendet
 
-Mit **Messages to leave unhidden** bestimmst du, wie viele aktuelle Nachrichten sichtbar bleiben.
+Mit **Sichtbare Nachrichten beibehalten** bestimmst du, wie viele aktuelle Nachrichten sichtbar bleiben.
 
 ### Vor der Erinnerungserstellung einblenden
 
-**Unhide hidden messages for memory generation** lässt STMB vor dem Erzeugen einer Erinnerung kurz `/unhide X-Y` ausführen. Das ist nützlich, wenn du Erinnerungen mit ausgeblendeten Nachrichten neu erstellen möchtest.
+**Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** lässt STMB vor dem Erzeugen einer Erinnerung kurz `/unhide X-Y` ausführen. Das ist nützlich, wenn du Erinnerungen mit ausgeblendeten Nachrichten neu erstellen möchtest.
 
 ### Gute Start-Einstellung
 
-* **Auto-hide only messages in the last memory**
+* **Nur Nachrichten in der letzten Erinnerung verstecken**
 * **2** Nachrichten sichtbar lassen
-* **Unhide hidden messages for memory generation** aktivieren
+* **Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** aktivieren
 
 ## 🌈 Zusammenfassungs-Konsolidierung
 
@@ -217,7 +218,7 @@ STMB kann bestehende Erinnerungen oder Zusammenfassungen zu einer kompakteren Zu
 
 Nein. Die Konsolidierung braucht weiterhin eine Bestätigung.
 
-* Du kannst **Consolidate Memories** jederzeit manuell öffnen
+* Du kannst **Erinnerungen zusammenfassen** jederzeit manuell öffnen
 * Optional kann STMB bei einer erreichten Mindestanzahl eine Ja/Später-Bestätigung anzeigen
 * „Ja“ öffnet nur das Konsolidierungs-Popup, es startet nicht still im Hintergrund
 
@@ -229,7 +230,7 @@ Nein. Die Konsolidierung braucht weiterhin eine Bestätigung.
 
 ### Wie benutzt man es?
 
-1. Klicke im Haupt-Popup auf **Consolidate Memories**
+1. Klicke im Haupt-Popup auf **Erinnerungen zusammenfassen**
 2. Wähle die Zielstufe
 3. Wähle die Quell-Einträge
 4. Entscheide, ob die Quellen nach der Konsolidierung deaktiviert werden sollen
@@ -283,7 +284,7 @@ Dies macht das Auslöseverhalten ohne Fachbegriffe verständlich.
 ### 💡 **Beispiele für Vorlagen**
 
 * Side Prompt Vorlagenbibliothek (importiere dieses JSON):
-[SidePromptTemplateLibrary.json](https://www.google.com/search?q=/resources/SidePromptTemplateLibrary.json)
+[SidePromptTemplateLibrary.json](../resources/SidePromptTemplateLibrary.json)
 
 Beispielhafte Prompt-Ideen:
 
@@ -313,8 +314,8 @@ Statt „verfolge alles“, versuche „verfolge die romantische Spannung zwisch
 
 ST Memory Books kann ausgewählte Regex-Skripte vor der Generierung und vor dem Speichern ausführen.
 
-* Aktiviere in STMB **Use regex (advanced)**
-* Klicke auf **📐 Configure regex…**
+* Aktiviere in STMB **Regex verwenden (fortgeschritten)**
+* Klicke auf **📐 Regex konfigurieren…**
 * Wähle getrennt, welche Skripte vor dem Senden an die KI und vor dem Speichern laufen sollen
 * Die Auswahl in STMB zählt auch dann, wenn ein Skript in der Regex-Erweiterung selbst deaktiviert ist
 
@@ -326,12 +327,12 @@ Für die vollständige Referenz siehe [readme.md](readme.md).
 
 Wichtige Basiskontrollen:
 
-* **Current SillyTavern Settings** verwendet deine aktuelle ST-Verbindung direkt
-* **Auto-create memory summaries** schaltet automatische Erinnerungen ein
-* **Auto-Summary Interval** und **Auto-Summary Buffer** steuern den Zeitpunkt
+* **Aktuelle SillyTavern Einstellungen** verwendet deine aktuelle ST-Verbindung direkt
+* **Automatische Erinnerungs-Zusammenfassungen erstellen** schaltet automatische Erinnerungen ein
+* **Intervall für automatische Zusammenfassung** und **Puffer für automatische Zusammenfassung** steuern den Zeitpunkt
 * **Auto-hide/unhide memories** hilft beim Tokensparen
-* **Manual Lorebook Mode** und **Auto-create lorebook if none exists** bestimmen, wohin Erinnerungen geschrieben werden
-* **Prompt for consolidation when a tier is ready** zeigt Konsolidierung nur als Bestätigung
+* **Manuellen Lorebook-Modus aktivieren** und **Lorebook automatisch erstellen, falls keines existiert** bestimmen, wohin Erinnerungen geschrieben werden
+* **Bei erreichter Ebene zur Konsolidierung auffordern** zeigt Konsolidierung nur als Bestätigung
 
 ---
 
@@ -344,13 +345,8 @@ Schnelle Checks:
 * STMB muss aktiviert sein und der Eintrag **Memory Books** muss im Erweiterungsmenü erscheinen
 * Wenn Auto-Summary nicht läuft, brauchst du zuerst eine manuelle Erinnerung als Startpunkt
 * Wenn keine Erinnerungen gespeichert werden, muss ein Lorebook gebunden sein oder Auto-create aktiviert sein
-* Wenn Regex seltsam wirkt, prüfe die Auswahl in **📐 Configure regex…**
+* Wenn Regex seltsam wirkt, prüfe die Auswahl in **📐 Regex konfigurieren…**
 * Wenn Konsolidierung nicht erscheint, prüfe die Zielstufe und die Option für die Konsolidierungs-Bestätigung
-
-### "Meine benutzerdefinierten Prompts funktionieren nicht richtig!"
-
-* Überprüfe den "Summary Prompt Manager" in den Memory Books Einstellungen
-* Stelle sicher, dass dein Prompt die KI anweist, im **JSON-Format** zu antworten (z.B. `{ "title": "...", "content": "..." }`)
 
 ---
 
@@ -364,7 +360,7 @@ Schnelle Checks:
 
 * **Detailliertere Infos:** [readme.md](readme.md)
 * **Neueste Updates:** [changelog.md](changelog.md)
-* **Alte Lorebooks konvertieren:** [lorebookconverter.html](https://www.google.com/search?q=lorebookconverter.html)
+* **Alte Lorebooks konvertieren:** [lorebookconverter.html](../resources/lorebookconverter.html)
 * **Community-Support:** Tritt der SillyTavern-Community auf Discord bei! (Suche nach dem 📕ST Memory Books Thread oder schreibe @tokyoapple eine DM für direkte Hilfe.)
 * **Bugs/Features:** Einen Fehler gefunden oder eine tolle Idee? Eröffne ein GitHub-Issue in diesem Repository.
 
