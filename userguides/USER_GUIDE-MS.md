@@ -11,6 +11,7 @@ Perlukan bot untuk mengingat perkara penting, tetapi sejarah sembang terlalu pan
 - [Mula Pantas](#-mula-pantas-5-minit-untuk-memori-pertama-anda)
 - [Apa Sebenarnya Yang ST Memory Books Lakukan](#-apa-sebenarnya-st-memory-books-lakukan)
 - [Pilih Gaya Anda](#-pilih-gaya-anda)
+- [Penjimatan token](#-penjimatan-token-sembunyikan--tunjukkan-mesej)
 - [Ringkasan Konsolidasi](#-ringkasan-konsolidasi)
 - [Penjejak, Prom Sampingan, & Templat](#-penjejak-prom-sampingan--templat-ciri-termaju)
 - [Kawalan Teks Termaju dengan Sambungan Regex](#-kawalan-teks-termaju-dengan-sambungan-regex)
@@ -31,10 +32,10 @@ Perlukan bot untuk mengingat perkara penting, tetapi sejarah sembang terlalu pan
 - Anda akan melihat panel kawalan ST Memory Books
 
 ### Langkah 2: Hidupkan Auto-Magic
-- Di panel kawalan, cari **"Auto-create memory summaries"**
+- Di panel kawalan, cari **"Cipta ringkasan memori secara automatik"**
 - Hidupkannya (Turn ON)
-- Tetapkan **Auto-Summary Interval** untuk mencipta memori setiap **20-30 mesej** (titik permulaan yang baik)
-- Biarkan **Auto-Summary Buffer** rendah pada awalnya (`0-2` ialah julat pemula yang baik)
+- Tetapkan **Selang Ringkasan Auto** untuk mencipta memori setiap **20-30 mesej** (titik permulaan yang baik)
+- Biarkan **Penimbal Ringkasan Auto** rendah pada awalnya (`0-2` ialah julat pemula yang baik)
 - Cipta satu memori manual dahulu supaya sembang diprime
 - Itu sahaja! 🎉
 
@@ -90,9 +91,10 @@ Anggaplah ST Memory Books sebagai **pustakawan AI peribadi** anda untuk perbuala
 **Sesuai jika anda mahu:** Automasi tanpa tangan yang terus berfungsi
 
 **Cara ia berfungsi:**
-1. Hidupkan "Auto-Summary" dalam tetapan
-2. Pilih kekerapan untuk mencipta memori (setiap 20-50 mesej berfungsi dengan baik)
-3. Teruskan bersembang seperti biasa - memori berlaku secara automatik!
+1. Hidupkan `Cipta ringkasan memori secara automatik`
+2. Tetapkan `Selang Ringkasan Auto` mengikut kelajuan sembang anda
+3. Secara pilihan, gunakan `Penimbal Ringkasan Auto` kecil jika anda mahu penjanaan tertunda
+4. Teruskan bersembang seperti biasa selepas mencipta satu memori manual pertama
 
 **Apa yang anda dapat:**
 - Tiada kerja manual diperlukan
@@ -146,51 +148,108 @@ Anggaplah ST Memory Books sebagai **pustakawan AI peribadi** anda untuk perbuala
 
 ---
 
-## 🌈 Ringkasan Arka (Arc Summaries)
+## 🙈 Penjimatan token: sembunyikan / tunjukkan mesej
 
-Ringkasan Arka dicipta secara manual. Tiada apa yang diringkaskan atau dibuang melainkan anda memilih untuk melakukannya.
+Salah satu cara paling mudah untuk mengurangkan kekusutan dan menjimatkan token dalam sembang panjang ialah menyembunyikan mesej selepas anda menukarkannya kepada memori.
 
-### S: Apakah itu Ringkasan Arka?
+### Apa maksud “sembunyikan”?
 
-**J:** Ringkasan Arka membantu memastikan cerita panjang mudah diurus. Lama-kelamaan, anda mungkin mengumpul banyak entri memori lama. Sebahagian daripadanya menerangkan bahagian cerita yang sama.
-Ringkasan Arka membolehkan anda menggabungkan beberapa memori lama menjadi satu ringkasan yang lebih pendek.
+Menyembunyikan mesej **tidak** memadam apa-apa. Mesej masih ada dalam sembang dan memori masih kekal dalam lorebook; mesej itu cuma tidak lagi dihantar terus kepada AI.
 
-### S: Apa yang berlaku apabila saya membuat Ringkasan Arka?
+### Bilakah ini berguna?
 
-**J:** Apabila anda mencipta Ringkasan Arka:
+* sembang anda sudah menjadi sangat panjang
+* anda sudah membuat memori untuk mesej tersebut
+* anda mahu paparan sembang lebih kemas
 
-* Memori yang dipilih digabungkan menjadi satu entri baharu
-* Ringkasan baharu menggantikan memori lama tersebut
-  *(memori lama boleh disembunyikan secara automatik — tidak dipadam)*
-* Cerita masih diingati, tetapi dengan penggunaan token yang lebih sedikit
+### Auto-hide selepas penciptaan memori
 
-### S: Mengapa perlu membuat Ringkasan Arka?
+STMB boleh menyembunyikan mesej secara automatik selepas memori dicipta:
 
-**J:** Ringkasan Arka berguna apabila:
+* **Jangan sembunyikan secara automatik**: tidak menyembunyikan apa-apa secara automatik
+* **Sembunyikan semua mesej secara automatik sehingga memori terakhir**: menyembunyikan semua mesej yang sudah diliputi
+* **Sembunyikan hanya mesej dalam memori terakhir secara automatik**: menyembunyikan hanya julat terakhir yang diproses
 
-* Senarai memori anda menjadi sangat panjang
-* Memori lama tidak lagi diperlukan secara terperinci
-* Anda mahu mengurangkan penggunaan token dalam sembang panjang
+Anda juga boleh menetapkan berapa banyak mesej terbaharu yang kekal kelihatan dengan **Mesej untuk dibiarkan tidak tersembunyi**.
 
-### S: Bagaimana cara membuat Ringkasan Arka?
+### Tunjukkan semula sebelum penjanaan memori
 
-**J:** Untuk mencipta Ringkasan Arka:
+**Nyahsembunyikan mesej tersembunyi untuk penjanaan memori (menjalankan /unhide X-Y)** membuatkan STMB menjalankan `/unhide X-Y` secara sementara sebelum menjana memori.
 
-1. Klik **🌈 Consolidate Memories into Arcs** di bahagian bawah popup utama STMB.
-2. Pilih jenis arka:
+### Tetapan permulaan yang disyorkan
 
-   * **Multi-Arc**
-     AI mencari rehat semula jadi dan mencipta beberapa arka.
-     Anda boleh menetapkan bilangan minimum memori setiap arka.
-     *Berfungsi paling baik dengan model yang kuat (GPT, Gemini, Sonnet). Model tempatan mungkin bergelut.*
-   * **Single Arc**
-     AI menggabungkan semua memori yang dipilih menjadi satu arka.
-     Arka sebelumnya disertakan untuk membantu mengekalkan konsistensi cerita.
-   * **Tiny**
-     Pilihan yang lebih pantas dan ringkas yang mungkin berfungsi lebih baik dengan model tempatan,
-     tetapi hasilnya mungkin kurang terperinci.
-3. Pilih memori yang anda mahu sertakan.
-4. Klik **Run** dan tunggu analisis arka selesai.
+* **Sembunyikan hanya mesej dalam memori terakhir secara automatik**
+* biarkan **2** mesej kekal kelihatan
+* hidupkan **Nyahsembunyikan mesej tersembunyi untuk penjanaan memori (menjalankan /unhide X-Y)**
+
+## 🌈 Ringkasan Konsolidasi
+
+Ringkasan konsolidasi membantu memastikan cerita panjang kekal mudah diurus dengan memampatkan memori STMB lama menjadi ringkasan peringkat lebih tinggi.
+
+### S: Apakah itu Ringkasan Konsolidasi?
+
+**J:** Daripada hanya mencipta memori peringkat babak selama-lamanya, STMB boleh menggabungkan memori atau ringkasan sedia ada menjadi rekap yang lebih padat. Peringkat pertama ialah **Arc**, dan peringkat rekap lebih tinggi juga tersedia untuk cerita yang lebih panjang:
+
+* Arc
+* Chapter
+* Book
+* Legend
+* Series
+
+### S: Mengapa menggunakannya?
+
+**J:** Konsolidasi berguna apabila:
+
+* senarai memori anda semakin panjang
+* entri lama tidak lagi memerlukan butiran babak demi babak
+* anda mahu mengurangkan penggunaan token tanpa kehilangan kesinambungan
+* anda mahu rekap naratif yang lebih bersih dan lebih tinggi arasnya
+
+### S: Adakah ia berjalan secara automatik?
+
+**J:** Tidak. Konsolidasi masih memerlukan pengesahan.
+
+* Anda sentiasa boleh membuka **Gabungkan Ingatan** secara manual dari popup utama
+* Anda juga boleh menghidupkan **Paparkan prompt konsolidasi apabila tier sedia**
+* Apabila peringkat sasaran terpilih mencapai minimum entri sumber yang layak, STMB akan memaparkan pengesahan **yes/later**
+* Memilih **Yes** hanya membuka popup konsolidasi dengan peringkat itu sudah dipilih; ia tidak berjalan sendiri secara senyap
+
+### S: Bagaimana cara menggunakannya?
+
+**J:** Untuk mencipta ringkasan konsolidasi:
+
+1. Klik **Gabungkan Ingatan** dalam popup utama STMB
+2. Pilih peringkat ringkasan sasaran
+3. Pilih entri sumber yang mahu disertakan
+4. Secara pilihan, nyahaktifkan entri sumber selepas ringkasan baharu dicipta
+5. Klik **Run**
+
+Jika AI memberikan respons konsolidasi yang lemah, STMB boleh memaparkan aliran semak/baiki sebelum anda cuba menyimpan semula.
+
+### Apa yang dikonsolidasikan, dan apa yang tidak?
+
+Konsolidasi berfungsi pada **memori STMB dan ringkasan STMB**.
+
+Ini bermaksud:
+
+* memori biasa boleh dikonsolidasikan menjadi ringkasan peringkat lebih tinggi
+* ringkasan peringkat lebih tinggi boleh dikonsolidasikan semula menjadi rekap yang lebih besar
+
+Prom sampingan adalah berbeza.
+
+**Prom sampingan ialah entri penjejak**, bukan entri ringkasan memori. Ia bertujuan memastikan maklumat berterusan sentiasa dikemas kini, seperti:
+
+* status hubungan
+* matlamat semasa
+* papan skor
+* keadaan dunia
+* penjejak plot
+
+Ringkasnya:
+
+* **Memori** = "apa yang berlaku dalam babak ini?"
+* **Prom Sampingan** = "apakah keadaan semasa bagi perkara ini?"
+* **Konsolidasi** = "ringkaskan banyak memori menjadi rekap yang lebih besar"
 
 ---
 
@@ -238,7 +297,7 @@ Ini menjadikan tingkah laku pencetus mudah difahami tanpa istilah teknikal.
 ### 💡 **Contoh Templat**
 
 * Pustaka Templat Prom Sampingan (import JSON ini):
-  [SidePromptTemplateLibrary.json](/resources/SidePromptTemplateLibrary.json)
+  [SidePromptTemplateLibrary.json](../resources/SidePromptTemplateLibrary.json)
 
 Contoh idea prom:
 
@@ -266,102 +325,41 @@ Daripada "jejak segalanya," cuba "jejak ketegangan romantik antara watak utama."
 
 ### 🧠 Kawalan Teks Termaju dengan Sambungan Regex
 
-**Mahu kawalan mutlak ke atas teks yang dihantar kepada dan diterima daripada AI?** ST Memory Books kini berintegrasi dengan lancar bersama sambungan rasmi **Regex**, membolehkan anda mengubah teks secara automatik menggunakan peraturan tersuai.
+ST Memory Books boleh menjalankan skrip Regex terpilih sebelum penjanaan dan sebelum penyimpanan.
 
-**Sokongan Pilih-Banyak:** Anda kini boleh memilih banyak skrip regex dalam sambungan Regex. Semua skrip yang diaktifkan akan digunakan mengikut urutan pada setiap peringkat (Prom dan Respons), membolehkan transformasi yang berkuasa dan fleksibel.
-
-Ini adalah ciri termaju yang sesuai untuk pengguna yang mahu:
-- Membersihkan frasa berulang atau artifak daripada respons AI secara automatik.
-- Memformat semula bahagian transkrip sembang sebelum AI melihatnya.
-- Menyeragamkan terminologi atau gaya bahasa watak secara langsung.
-
-#### **Cara Ia Berfungsi: Dua Cangkuk Mudah**
-
-Integrasi ini berfungsi dengan menerapkan skrip regex yang diaktifkan pada dua titik kritikal. Anda mengawal skrip mana yang berjalan dengan menetapkan **Placement** (Penempatan) dalam editor sambungan Regex:
-
-1.  **Mengubah Prom (Teks Keluar)**
-    * **Penempatan untuk digunakan**: `User Input`
-    * **Apa yang ia lakukan**: Memintas prom yang telah disusun sepenuhnya (termasuk sejarah sembang, arahan sistem, dll.) tepat sebelum ia dihantar ke AI untuk memori atau penjanaan prom sampingan.
-    * **Contoh Kegunaan**: Anda boleh mencipta skrip untuk menggantikan semua kejadian nama panggilan watak dengan nama penuh mereka secara automatik, memastikan AI mempunyai konteks yang betul.
-
-2.  **Mengubah Respons (Teks Masuk)**
-    * **Penempatan untuk digunakan**: `AI Output`
-    * **Apa yang ia lakukan**: Memintas respons teks mentah daripada AI *sebelum* ia diproses atau disimpan sebagai memori.
-    * **Contoh Kegunaan**: Jika model AI anda sering menyertakan frasa berulang seperti *"As a large language model..."* dalam ringkasannya, anda boleh mencipta skrip regex untuk membuang frasa ini secara automatik daripada setiap memori yang dijananya.
-
-#### **Contoh Mula Pantas: Membersihkan Respons AI**
-
-Katakan model AI anda secara konsisten menambah `(OOC: I hope this summary is helpful!)` pada penjanaan memorinya. Berikut adalah cara untuk membuangnya secara automatik:
-
-1.  **Pergi ke Sambungan Regex**: Buka menu sambungan utama SillyTavern dan pergi ke **Regex**.
-2.  **Cipta Skrip Baharu**: Klik "Open Regex Editor" untuk mencipta skrip regex baharu.
-3.  **Konfigurasi Skrip**:
-    * **Script Name**: `Clean OOC Notes`
-    * **Find Regex**: `/\\(OOC:.*?\\)/g` (Ini mencari teks "(OOC: ...)" dan semua di dalamnya).
-    * **Replace String**: Biarkan ini kosong untuk memadam teks yang dipadankan.
-    * **Affects (Placement)**: Nyahtanda semua kotak kecuali **AI Output**. Ini adalah langkah paling penting!
-    * **Enable the Script**: Pastikan skrip tidak dilumpuhkan.
-4.  **Simpan dan Selesai!**
-
-Sekarang, setiap kali ST Memory Books mendapat respons daripada AI, skrip ini akan berjalan secara automatik, membersihkan teks yang tidak diingini sebelum memori disimpan ke *lorebook* anda.
+* Hidupkan **Gunakan regex (lanjutan)** dalam STMB
+* Klik **📐 Konfigurasi regex…**
+* Pilih secara berasingan skrip yang perlu berjalan sebelum menghantar teks kepada AI dan sebelum menyimpan
+* Pilihan dalam STMB tetap berkuat kuasa walaupun skrip itu dimatikan dalam sambungan Regex
 
 ---
 
 ## ⚙️ Tetapan Yang Sebenarnya Penting
 
-Jangan risau - anda tidak perlu mengkonfigurasi semuanya! Berikut adalah tetapan yang membuat perbezaan terbesar:
+Untuk rujukan penuh, lihat [readme.md](readme.md).
 
-### 🎛️ **Kekerapan Auto-Summary**
-- **20-30 mesej**: Bagus untuk sembang terperinci dan perlahan
-- **40-60 mesej**: Sesuai untuk perbualan pantas dan penuh aksi
-- **80+ mesej**: Untuk sembang kumpulan yang sangat pantas atau perbualan santai
+Kawalan asas yang paling penting:
 
-### 📝 **Pratonton Memori (Memory Previews)**
-- Hidupkan ini (ON) untuk menyemak memori sebelum ia disimpan
-- Anda boleh menyunting, meluluskan, atau menjana semula jika AI terlepas sesuatu yang penting
-- Disyorkan untuk jalan cerita penting
-
-### 🏷️ **Tajuk Memori (Memory Titles)**
-- Sesuaikan bagaimana memori anda dinamakan
-- Gunakan `{{title}}` untuk tajuk janaan AI, `{{scene}}` untuk nombor mesej
-- Contoh: `"Bab {{title}} ({{scene}})"` menjadi `"Bab Pelarian Agung (Babak 45-67)"`
-
-### 📚 **Koleksi Memori** (Lorebooks)
-- **Mod Auto**: Menggunakan koleksi memori lalai sembang anda (paling mudah)
-- **Mod Manual**: Pilih koleksi tertentu untuk setiap sembang (untuk organisasi)
-- **Auto-create**: Membuat koleksi baharu secara automatik (bagus untuk watak baharu)
+* **Tetapan SillyTavern Semasa** menggunakan sambungan ST aktif anda secara langsung
+* **Cipta ringkasan memori secara automatik** menghidupkan penciptaan memori automatik
+* **Selang Ringkasan Auto** dan **Penimbal Ringkasan Auto** mengawal bila proses automatik berjalan
+* **Auto-hide/unhide memories** membantu penjimatan token
+* **Dayakan Mod Buku Legenda Manual** dan **Cipta buku legenda secara automatik jika tiada** menentukan tempat memori disimpan
+* **Paparkan prompt konsolidasi apabila tier sedia** hanya memaparkan pengesahan konsolidasi
 
 ---
 
 ## 🔧 Penyelesaian Masalah (Apabila Perkara Tidak Menjadi)
 
-### "Saya tidak nampak pilihan Memory Books!"
-- Semak bahawa sambungan telah dipasang dan diaktifkan
-- Cari ikon tongkat ajaib (🪄) di sebelah input sembang anda
-- Cuba muat semula halaman (refresh)
+Untuk senarai penuh, lihat [readme.md](readme.md).
 
-### "Butang anak panah (► ◄) tidak muncul!"
-- Tunggu 3-5 saat selepas memuatkan sembang - ia memerlukan masa untuk muncul
-- Jika masih hilang, muat semula halaman
-- Pastikan ST Memory Books diaktifkan dalam sambungan
+Semakan pantas:
 
-### "Auto Summary tidak berfungsi!"
-- Semak dua kali bahawa "Auto-Summary" diaktifkan dalam tetapan Memory Books
-- Adakah selang mesej telah dicapai? Auto-summary menunggu mesej baharu yang mencukupi
-- Jika anda menangguhkan auto-summary, ia mungkin menunggu sehingga jumlah mesej tertentu
-- Auto-summary hanya memproses mesej baharu sejak memori *terakhir*. Jika anda memadam memori lama, ia tidak akan mengundur ke belakang.
-
-### "Saya mendapat ralat mengenai lorebook yang hilang!"
-- Pergi ke tetapan Memory Books
-- Sama ada ikat *lorebook* ke sembang anda (Mod Automatik) atau aktifkan "Auto-create lorebook if none exists"
-
-### "Kadang-kadang ia gagal tanpa sebab!"
-- Pastikan Panjang Respons Maksimum (Max Response Length) anda (dalam pratetap SillyTavern) ditetapkan pada nombor yang cukup besar. Aiko mengesyorkan sekurang-kurangnya 2000 token (Aiko menggunakan 4000.)
-- Mesej ralat kini lebih terperinci, tetapi jika anda masih mengalami masalah sila hubungi Aiko di Github atau Discord.
-
-### "Prom tersuai saya tidak berfungsi dengan betul!"
-- Semak "Summary Prompt Manager" dalam tetapan Memory Books
-- Pastikan prom anda mengarahkan AI untuk bertindak balas dalam **format JSON** (contoh, `{ "title": "...", "content": "..." }`)
+* Pastikan STMB diaktifkan dan menu **Memory Books** muncul dalam menu sambungan
+* Jika auto-summary tidak berjalan, pastikan anda mencipta satu memori manual terlebih dahulu dan tetapan interval/buffer munasabah
+* Jika memori tidak boleh disimpan, pastikan lorebook diikat pada sembang atau **Cipta buku legenda secara automatik jika tiada** dihidupkan
+* Jika tingkah laku Regex kelihatan salah, semak pilihan dalam **📐 Konfigurasi regex…**
+* Jika konsolidasi tidak muncul, semak peringkat sasaran dan pilihan pengesahan konsolidasi
 
 ---
 
@@ -375,7 +373,7 @@ Jangan risau - anda tidak perlu mengkonfigurasi semuanya! Berikut adalah tetapan
 
 - **Info lebih terperinci:** [readme.md](readme.md)
 - **Kemas kini terkini:** [changelog.md](changelog.md)
-- **Tukar lorebook lama:** [lorebookconverter.html](lorebookconverter.html)
+- **Tukar lorebook lama:** [lorebookconverter.html](../resources/lorebookconverter.html)
 - **Sokongan komuniti:** Sertai komuniti SillyTavern di Discord! (Cari thread 📕ST Memory Books atau DM @tokyoapple untuk bantuan terus.)
 - **Pepijat/ciri:** Menui pepijat atau ada idea hebat? Buka isu GitHub di repositori ini.
 

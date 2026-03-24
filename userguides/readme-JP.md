@@ -16,6 +16,7 @@
 
 その他のリンク：
 * 📘 [ユーザーガイド (日本語)](USER_GUIDE-JP.md)
+* 💡 [STMB の仕組み (日本語)](howSTMBworks-ja.md)
 * 📋 [バージョン履歴 & 更新ログ](changelog.md)
 * 💡 [📕 Memory Books と 📚 Lorebook Ordering の併用について](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -29,6 +30,24 @@
 > ロアブックコンバーターとサイドプロンプトテンプレートライブラリは [`/resources`](resources) フォルダにあります。
 
 ---
+
+## 📑 目次
+
+- 必須要件
+- はじめに
+- メモリの種類: シーン vs 要約
+- メモリ生成
+- ロアブック統合
+- スラッシュコマンド
+- グループチャット対応
+- 動作モード
+- トラッカーとサイドプロンプト
+- Regex 連携
+- プロファイル管理
+- 設定と構成
+- FAQ
+- トラブルシューティング
+- Lorebook Ordering (STLO) でパワーアップ
 
 ## 📋 必須要件 (Prerequisites)
 
@@ -119,7 +138,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **動作:** ロアブックが存在しない場合、カスタム命名テンプレートを使用して新しいロアブックを自動的に作成し、バインドします。
 * **推奨:** 新規ユーザーや素早いセットアップに。ワンクリックでのロアブック作成に最適です。
 * **使用法:**
-1. 拡張機能の設定で「Auto-create lorebook if none exists (存在しない場合はロアブックを自動作成)」を有効にします。
+1. 拡張機能の設定で「ロアブックが存在しない場合に自動作成」を有効にします。
 2. 命名テンプレートを設定します (デフォルト: "LTM - {{char}} - {{chat}}")。
 3. バインドされたロアブックがない状態でメモリを作成すると、自動的に作成されバインドされます。
 
@@ -128,12 +147,12 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **スマートナンバリング:** 重複する名前が存在する場合、自動的に番号 (2, 3, 4...) を追加します。
 * **注:** 手動ロアブックモードとは同時に使用できません。
 
-### **手動ロアブックモード (Manual Lorebook Mode)**
+### **手動ロアブックモード**
 
 * **動作:** メインのチャットバインドロアブックを無視して、チャットごとにメモリ用の別のロアブックを選択できます。
 * **推奨:** メモリを特定の別のロアブックに保存したい上級ユーザー向け。
 * **使用法:**
-1. 拡張機能の設定で「Enable Manual Lorebook Mode (手動ロアブックモードを有効にする)」を有効にします。
+1. 拡張機能の設定で「手動ロアブックモードを有効にする」を有効にします。
 2. チャットで初めてメモリを作成するときに、ロアブックを選択するように求められます。
 3. この選択は、クリアするか自動モードに戻すまで、その特定のチャットに対して保存されます。
 
@@ -142,7 +161,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-## 🧩 メモリの種類: シーン vs アーク
+## 🧩 メモリの種類: シーン vs 要約
 
 📕 Memory Books は、異なる種類の連続性のために設計された **2 つのレベルの物語メモリ** をサポートしています。
 
@@ -184,7 +203,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 #### 仕組み
 
 * 要約統合は、直接のチャット本文ではなく、既存の STMB メモリ/要約から生成されます。
-* **Consolidate Memories** ツールでは、対象の要約階層と元のエントリを選択できます。
+* **記憶を統合** ツールでは、対象の要約階層と元のエントリを選択できます。
 * 選択した要約階層が、それぞれの保存済み最小数に達すると、STMB は必要に応じて yes/later 確認を表示します。
 * 必要に応じて、統合後に元のエントリを無効化できます。
 * AI 要約の失敗は、UI で確認・修正してから再試行できます。
@@ -245,7 +264,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **エディタの更新:** メモリを追加した後、オプションでロアブックエディタを自動更新します。
 
 > **既存のメモリは変換が必要です！**
-> [ロアブックコンバーター (Lorebook Converter)](https://www.google.com/search?q=/resources/lorebookconverter.html) を使用して、`stmemorybooks` フラグと必須フィールドを追加してください。
+> [ロアブックコンバーター (Lorebook Converter)](../resources/lorebookconverter.html) を使用して、`stmemorybooks` フラグと必須フィールドを追加してください。
 
 ---
 
@@ -278,7 +297,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ```
 - 新しいプロンプトを作成する場合、互換性を高めるために組み込みからコピーできます。
-- 追加のサイドプロンプトテンプレートライブラリ [JSON ファイル](resources/SidePromptTemplateLibrary.json) - インポートするだけで使用できます。
+- 追加のサイドプロンプトテンプレートライブラリ [JSON ファイル](../resources/SidePromptTemplateLibrary.json) - インポートするだけで使用できます。
 - 手動構文: `/sideprompt "名前" {{macro}}="value" [X-Y]`.
 - コマンドのオートコンプリートで side prompt を選ぶと、STMB は不足しているランタイムマクロを提案します。
 - カスタムランタイムマクロを含む side prompt は手動専用です。STMB は保存/インポート時にそのテンプレートから `On Interval` と `On After Memory` を削除し、警告を表示します。
@@ -314,8 +333,8 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 [Youtube での短い概要ビデオ](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode (手動ロアブックモード):** チャットごとにロアブックを選択できるように有効にします。
-* **Auto-create lorebook if none exists (存在しない場合はロアブックを自動作成):** ⭐ *v4.2.0 の新機能* - 命名テンプレートを使用してロアブックを自動的に作成およびバインドします。
+* **手動ロアブックモードを有効にする:** チャットごとにロアブックを選択できるように有効にします。
+* **ロアブックが存在しない場合に自動作成:** ⭐ *v4.2.0 の新機能* - 命名テンプレートを使用してロアブックを自動的に作成およびバインドします。
 * **Lorebook Name Template (ロアブック名テンプレート):** ⭐ *v4.2.0 の新機能* - {{char}}, {{user}}, {{chat}} プレースホルダーを使用して自動作成されるロアブック名をカスタマイズします。
 * **Allow Scene Overlap (シーンの重複を許可):** 重複するメモリ範囲を許可または防止します。
 * **Always Use Default Profile (常にデフォルトプロファイルを使用):** 確認ポップアップをスキップします。
@@ -324,20 +343,20 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Refresh Editor (エディタを更新):** メモリ作成後にロアブックエディタを自動更新します。
 * **Token Warning Threshold (トークン警告しきい値):** 大きなシーンの警告レベルを設定します (デフォルト: 30,000)。
 * **Default Previous Memories (デフォルトの過去メモリ):** コンテキストとして含める以前のメモリの数 (0-7)。
-* **Auto-create memory summaries (メモリ要約の自動作成):** 間隔を置いて自動メモリ作成を有効にします。
-* **Auto-Summary Interval (自動要約間隔):** メモリ要約を自動作成するまでのメッセージ数。
-* **Auto-Summary Buffer:** 自動要約を指定メッセージ数だけ遅らせます。
-* **Prompt for consolidation when a tier is ready:** 選択した要約階層が十分な元エントリ数に達すると yes/later の確認を表示します。
-* **Auto-Consolidation Tiers:** 確認プロンプトの対象にする要約階層を選びます。現在は Arc から Series まで対応しています。
+* **メモリサマリーを自動作成:** 間隔を置いて自動メモリ作成を有効にします。
+* **自動サマリー間隔:** メモリ要約を自動作成するまでのメッセージ数。
+* **自動要約バッファ:** 自動要約を指定メッセージ数だけ遅らせます。
+* **ティアが準備できたら統合を促す:** 選択した要約階層が十分な元エントリ数に達すると yes/later の確認を表示します。
+* **自動統合ティア:** 確認プロンプトの対象にする要約階層を選びます。現在は Arc から Series まで対応しています。
 * **Unhide hidden messages before memory generation:** `/unhide X-Y` を実行してからメモリを作成できます。
 * **Auto-hide messages after adding memory:** 処理済みメッセージ全体または直近のメモリ範囲のみを非表示にできます。
-* **Use regex (advanced):** STMB の regex 選択ポップアップを有効にします（送信用/解析用）。
+* **正規表現を使用（上級）:** STMB の regex 選択ポップアップを有効にします（送信用/解析用）。
 * **Memory Title Format (メモリタイトル形式):** 選択またはカスタマイズします (下記参照)。
 
 ### **プロファイル フィールド**
 
 * **Name:** 表示名。
-* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual など。
+* **API/Provider:** `現在のSillyTavern設定`, openai, claude, custom, full manual など。
 * **Model:** モデル名 (例: gpt-4, claude-3-opus)。
 * **Temperature:** 0.0–2.0。
 * **Prompt or Preset:** カスタムまたは組み込み。
@@ -413,7 +432,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **ロアブックが利用できないか、選択されていない:**
 * 手動モードの場合、プロンプトが表示されたらロアブックを選択してください。
 * 自動モードの場合、ロアブックをチャットにバインドしてください。
-* または、「Auto-create lorebook if none exists (存在しない場合はロアブックを自動作成)」を有効にして自動作成します。
+* または、「ロアブックが存在しない場合に自動作成」を有効にして自動作成します。
 
 
 * **シーンが選択されていない:**
@@ -449,6 +468,6 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **タイトルで許可:** すべての印刷可能な Unicode 文字が許可されています。これには、アクセント付き文字、絵文字、CJK (中日韓)、記号が含まれます。
 * **ブロック:** Unicode 制御文字 (U+0000–U+001F, U+007F–U+009F) のみがブロックされ、これらは自動的に削除されます。
 
-## 例と移行に関する注意点については、[文字ポリシーの詳細 (Character Policy Details)](https://www.google.com/search?q=charset.md) を参照してください。
+## 例と移行に関する注意点については、[文字ポリシーの詳細 (Character Policy Details)](../charset.md) を参照してください。
 
 *VS Code/Cline、広範なテスト、そしてコミュニティからのフィードバックにより、愛を込めて開発されました。* 🤖💕

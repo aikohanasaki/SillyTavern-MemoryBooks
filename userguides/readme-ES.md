@@ -31,6 +31,24 @@ Para una organización avanzada de la memoria y una integración más profunda e
 
 ---
 
+## 📑 Tabla de Contenidos
+
+- Prerrequisitos
+- Comenzando
+- Tipos de memoria: escenas vs resúmenes
+- Generación de memorias
+- Integración con lorebooks
+- Comandos de barra
+- Soporte para chats grupales
+- Modos de funcionamiento
+- Rastreadores y side prompts
+- Integración Regex
+- Gestión de perfiles
+- Configuración
+- FAQ
+- Solución de problemas
+- Potencia con Lorebook Ordering (STLO)
+
 ## 📋 Prerrequisitos
 
 - **SillyTavern:** 1.14.0+ (se recomienda la última versión)
@@ -120,7 +138,7 @@ llama-server -m <ruta-del-modelo> -c <tamaño-contexto> --port 8080
 * **Cómo funciona:** Crea y vincula automáticamente un nuevo lorebook cuando no existe ninguno, utilizando tu plantilla de nombres personalizada.
 * **Mejor para:** Nuevos usuarios y configuración rápida. Perfecto para la creación de lorebooks con un solo clic.
 * **Para usar:**
-1. Habilita "Auto-create lorebook if none exists" en la configuración de la extensión.
+1. Habilita "Crear automáticamente un lorebook si no existe" en la configuración de la extensión.
 2. Configura tu plantilla de nombres (predeterminado: "LTM - {{char}} - {{chat}}").
 3. Cuando creas un recuerdo sin un lorebook vinculado, se crea y vincula uno automáticamente.
 
@@ -134,7 +152,7 @@ llama-server -m <ruta-del-modelo> -c <tamaño-contexto> --port 8080
 * **Cómo funciona:** Te permite seleccionar un lorebook diferente para los recuerdos por cada chat, ignorando el lorebook principal vinculado al chat.
 * **Mejor para:** Usuarios avanzados que desean dirigir los recuerdos a un lorebook específico y separado.
 * **Para usar:**
-1. Habilita "Enable Manual Lorebook Mode" en la configuración de la extensión.
+1. Habilita "Activar Modo Manual de Lorebook" en la configuración de la extensión.
 2. La primera vez que crees un recuerdo en un chat, se te pedirá que elijas un lorebook.
 3. Esta elección se guarda para ese chat específico hasta que la borres o cambies de nuevo al Modo Automático.
 
@@ -192,7 +210,7 @@ La primera capa de consolidación es **Arc**, construida a partir de recuerdos d
 #### Cómo funciona
 
 * Los resúmenes se generan a partir de recuerdos STMB existentes, no directamente del chat en bruto
-* La herramienta **Consolidate Memories** permite elegir una capa destino y seleccionar las entradas fuente
+* La herramienta **Consolidar las memorias** permite elegir una capa destino y seleccionar las entradas fuente
 * STMB puede vigilar capas seleccionadas y mostrar una confirmación Sí/Más tarde cuando se alcanza el mínimo guardado
 * STMB puede desactivar las entradas fuente después de consolidar si quieres que el resumen superior tome el relevo
 * Las respuestas de IA fallidas pueden revisarse y corregirse en la interfaz antes de reintentar guardar
@@ -280,7 +298,7 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas separadas d
 
 ```
 - Al crear un nuevo prompt, puedes copiar de los integrados para una mejor compatibilidad.
-- Biblioteca adicional de Plantillas de Side Prompts [archivo JSON](resources/SidePromptTemplateLibrary.json) - simplemente importa para usar.
+- Biblioteca adicional de Plantillas de Side Prompts [archivo JSON](../resources/SidePromptTemplateLibrary.json) - simplemente importa para usar.
 - Sintaxis manual: `/sideprompt "Nombre" {{macro}}="value" [X-Y]`.
 - Después de elegir un side prompt en el autocompletado, STMB sugerirá las macros de tiempo de ejecución que falten.
 - Los side prompts con macros de tiempo de ejecución personalizadas son solo manuales. STMB elimina `On Interval` y `On After Memory` de esas plantillas al guardar/importar y muestra una advertencia.
@@ -297,7 +315,7 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas separadas d
 
 
 * **Soporte de Selección Múltiple**: Puedes seleccionar varios scripts regex.
-* **Cómo Funciona**: Activa `Use regex (advanced)` en STMB, pulsa `📐 Configure regex…` y elige qué scripts debe ejecutar STMB antes de enviar a la IA y antes de analizar/guardar la respuesta.
+* **Cómo Funciona**: Activa `Usar expresiones regulares (avanzado)` en STMB, pulsa `📐 Configurar expresiones regulares…` y elige qué scripts debe ejecutar STMB antes de enviar a la IA y antes de analizar/guardar la respuesta.
 * **Importante**: La selección la controla STMB. Los scripts elegidos allí se ejecutan **aunque estén desactivados** en la extensión Regex.
 
 ---
@@ -317,8 +335,8 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas separadas d
 
 [Breve descripción en video en Youtube](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode:** Habilita para seleccionar lorebooks por chat.
-* **Auto-create lorebook if none exists:** ⭐ *Nuevo en v4.2.0* - Crea y vincula automáticamente lorebooks usando tu plantilla de nombres.
+* **Activar Modo Manual de Lorebook:** Habilita para seleccionar lorebooks por chat.
+* **Crear automáticamente un lorebook si no existe:** ⭐ *Nuevo en v4.2.0* - Crea y vincula automáticamente lorebooks usando tu plantilla de nombres.
 * **Lorebook Name Template:** ⭐ *Nuevo en v4.2.0* - Personaliza los nombres de lorebooks auto-creados con marcadores {{char}}, {{user}}, {{chat}}.
 * **Allow Scene Overlap:** Permite o previene rangos de memoria superpuestos.
 * **Always Use Default Profile:** Omite las ventanas emergentes de confirmación.
@@ -327,20 +345,20 @@ Los Side Prompts pueden usarse como rastreadores y crearán entradas separadas d
 * **Refresh Editor:** Actualiza automáticamente el editor de lorebook después de la creación de un recuerdo.
 * **Token Warning Threshold:** Establece el nivel de advertencia para escenas grandes (predeterminado: 30,000).
 * **Default Previous Memories:** Número de recuerdos anteriores para incluir como contexto (0-7).
-* **Auto-create memory summaries:** Habilita la creación automática de recuerdos a intervalos.
-* **Auto-Summary Interval:** Número de mensajes después de los cuales crear automáticamente un resumen de memoria.
-* **Auto-Summary Buffer:** Retrasa la auto-síntesis una cantidad configurable de mensajes.
-* **Prompt for consolidation when a tier is ready:** Muestra una confirmación Sí/Más tarde cuando una capa seleccionada tiene suficientes entradas fuente aptas para consolidar.
-* **Auto-Consolidation Tiers:** Elige una o más capas de resumen que deben activar la confirmación cuando estén listas. Actualmente Arc a Series.
+* **Crear resúmenes de memoria automáticamente:** Habilita la creación automática de recuerdos a intervalos.
+* **Intervalo de Auto-Resumen:** Número de mensajes después de los cuales crear automáticamente un resumen de memoria.
+* **Búfer de Auto-Resumen:** Retrasa la auto-síntesis una cantidad configurable de mensajes.
+* **Avisar para consolidar cuando una capa esté lista:** Muestra una confirmación Sí/Más tarde cuando una capa seleccionada tiene suficientes entradas fuente aptas para consolidar.
+* **Capas de auto-consolidación:** Elige una o más capas de resumen que deben activar la confirmación cuando estén listas. Actualmente Arc a Series.
 * **Unhide hidden messages before memory generation:** Puede ejecutar `/unhide X-Y` antes de crear un recuerdo.
 * **Auto-hide messages after adding memory:** Puede ocultar todos los mensajes procesados o solo el último rango.
-* **Use regex (advanced):** Habilita el selector de scripts regex de STMB para el procesamiento de salida/entrada.
+* **Usar expresiones regulares (avanzado):** Habilita el selector de scripts regex de STMB para el procesamiento de salida/entrada.
 * **Memory Title Format:** Elige o personaliza (ver abajo).
 
 ### **Campos del Perfil**
 
 * **Name:** Nombre para mostrar.
-* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual y otros proveedores compatibles.
+* **API/Provider:** `Ajustes Actuales de SillyTavern`, openai, claude, custom, full manual y otros proveedores compatibles.
 * **Model:** Nombre del modelo (por ejemplo, gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Personalizado o integrado.
@@ -420,7 +438,7 @@ No. Si no hay otra world info o lorebooks, seleccionar 'Delay until recursion' p
 * **No hay lorebook disponible o seleccionado:**
 * En Modo Manual, selecciona un lorebook cuando se te solicite.
 * En Modo Automático, vincula un lorebook a tu chat.
-* O habilita "Auto-create lorebook if none exists" para la creación automática.
+* O habilita "Crear automáticamente un lorebook si no existe" para la creación automática.
 
 
 * **Ninguna escena seleccionada:**

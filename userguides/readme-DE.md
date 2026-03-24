@@ -34,6 +34,24 @@ Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integr
 
 ---
 
+## 📑 Inhaltsverzeichnis
+
+- Voraussetzungen
+- Erste Schritte
+- Erinnerungstypen: Szenen vs. Zusammenfassungen
+- Memory Generation
+- Lorebook-Integration
+- Slash-Befehle
+- Gruppenchat-Unterstützung
+- Betriebsmodi
+- Tracker & Neben-Prompts
+- Regex-Integration
+- Profilverwaltung
+- Einstellungen & Konfiguration
+- FAQ
+- Fehlerbehebung
+- Power-Up mit Lorebook Ordering (STLO)
+
 ## 📋 Voraussetzungen
 
 * **SillyTavern:** 1.14.0+ (aktuellste Version empfohlen)
@@ -128,7 +146,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Wie es funktioniert:** Erstellt und bindet automatisch ein neues Lorebook, wenn keines existiert, unter Verwendung Ihrer benutzerdefinierten Namensvorlage.
 * **Am besten für:** Neue Benutzer und schnelle Einrichtung. Perfekt für die Lorebook-Erstellung mit einem Klick.
 * **Verwendung:**
-1. Aktivieren Sie "Auto-create lorebook if none exists" in den Einstellungen der Erweiterung.
+1. Aktivieren Sie "Lorebook automatisch erstellen, falls keines existiert" in den Einstellungen der Erweiterung.
 2. Konfigurieren Sie Ihre Namensvorlage (Standard: "LTM - {{char}} - {{chat}}").
 3. Wenn Sie eine Erinnerung ohne gebundenes Lorebook erstellen, wird automatisch eines erstellt und gebunden.
 
@@ -142,7 +160,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Wie es funktioniert:** Ermöglicht Ihnen die Auswahl eines anderen Lorebooks für Erinnerungen auf Chat-Basis, wobei das an den Hauptchat gebundene Lorebook ignoriert wird.
 * **Am besten für:** Fortgeschrittene Benutzer, die Erinnerungen in ein spezifisches, separates Lorebook leiten möchten.
 * **Verwendung:**
-1. Aktivieren Sie "Enable Manual Lorebook Mode" in den Einstellungen der Erweiterung.
+1. Aktivieren Sie "Manuellen Lorebook-Modus aktivieren" in den Einstellungen der Erweiterung.
 2. Wenn Sie das erste Mal eine Erinnerung in einem Chat erstellen, werden Sie aufgefordert, ein Lorebook auszuwählen.
 3. Diese Wahl wird für diesen spezifischen Chat gespeichert, bis Sie sie löschen oder zum automatischen Modus zurückkehren.
 
@@ -200,7 +218,7 @@ Die erste Konsolidierungsstufe ist **Arc**, erstellt aus Szenen-Erinnerungen. H�
 #### Wie es funktioniert
 
 * Zusammenfassungen werden aus bestehenden STMB-Erinnerungen generiert, nicht direkt aus rohem Chat
-* Das Werkzeug **Consolidate Memories** lässt Sie eine Zielstufe wählen und Quell-Einträge auswählen
+* Das Werkzeug **Erinnerungen zusammenfassen** lässt Sie eine Zielstufe wählen und Quell-Einträge auswählen
 * STMB kann optional ausgewählte Stufen überwachen und bei Erreichen des gespeicherten Minimums eine Ja/Später-Bestätigung anzeigen
 * STMB kann Quell-Einträge nach der Konsolidierung deaktivieren, wenn die höhere Zusammenfassung übernehmen soll
 * Fehlgeschlagene KI-Antworten können vor dem erneuten Speichern in der UI geprüft und korrigiert werden
@@ -288,7 +306,7 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 
 ```
 - Wenn Sie einen neuen Prompt erstellen, können Sie von den integrierten kopieren, um beste Kompatibilität zu gewährleisten.
-- Zusätzliche Side-Prompt-Vorlagenbibliothek [JSON-Datei](resources/SidePromptTemplateLibrary.json) - einfach importieren und verwenden.
+- Zusätzliche Side-Prompt-Vorlagenbibliothek [JSON-Datei](../resources/SidePromptTemplateLibrary.json) - einfach importieren und verwenden.
 - Manuelle Syntax: `/sideprompt "Name" {{macro}}="value" [X-Y]`.
 - Nachdem Sie einen Side Prompt in der Befehls-Autovervollständigung ausgewählt haben, schlägt STMB die noch benötigten Laufzeit-Makros vor.
 - Side Prompts mit eigenen Laufzeit-Makros sind nur manuell nutzbar. STMB entfernt bei solchen Vorlagen `On Interval` und `On After Memory` beim Speichern/Importieren und zeigt eine Warnung an.
@@ -305,7 +323,7 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 
 
 * **Multi-Select-Unterstützung**: Sie können mehrere Regex-Skripte auswählen.
-* **Wie es funktioniert**: Schalten Sie in STMB `Use regex (advanced)` ein, klicken Sie auf `📐 Configure regex…` und wählen Sie, welche Skripte STMB vor dem Senden an die KI und vor dem Parsen/Speichern der Antwort ausführen soll.
+* **Wie es funktioniert**: Schalten Sie in STMB `Regex verwenden (fortgeschritten)` ein, klicken Sie auf `📐 Regex konfigurieren…` und wählen Sie, welche Skripte STMB vor dem Senden an die KI und vor dem Parsen/Speichern der Antwort ausführen soll.
 * **Wichtig**: Die Auswahl wird von STMB gesteuert. Die dort ausgewählten Skripte laufen **auch dann**, wenn sie in der Regex-Erweiterung selbst deaktiviert sind.
 
 ---
@@ -325,8 +343,8 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 
 [Kurzer Videoüberblick auf Youtube](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode:** Aktivieren, um Lorebooks pro Chat auszuwählen.
-* **Auto-create lorebook if none exists:** ⭐ *Neu in v4.2.0* - Automatisch Lorebooks unter Verwendung Ihrer Namensvorlage erstellen und binden.
+* **Manuellen Lorebook-Modus aktivieren:** Aktivieren, um Lorebooks pro Chat auszuwählen.
+* **Lorebook automatisch erstellen, falls keines existiert:** ⭐ *Neu in v4.2.0* - Automatisch Lorebooks unter Verwendung Ihrer Namensvorlage erstellen und binden.
 * **Lorebook Name Template:** ⭐ *Neu in v4.2.0* - Anpassen der automatisch erstellten Lorebook-Namen mit {{char}}, {{user}}, {{chat}} Platzhaltern.
 * **Allow Scene Overlap:** Überlappende Erinnerungsbereiche zulassen oder verhindern.
 * **Always Use Default Profile:** Bestätigungs-Popups überspringen.
@@ -335,20 +353,20 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 * **Refresh Editor:** Lorebook-Editor nach Erinnerungserstellung automatisch aktualisieren.
 * **Token Warning Threshold:** Warnstufe für große Szenen festlegen (Standard: 30.000).
 * **Default Previous Memories:** Anzahl der vorherigen Erinnerungen, die als Kontext einbezogen werden sollen (0-7).
-* **Auto-create memory summaries:** Automatische Erinnerungserstellung in Intervallen aktivieren.
-* **Auto-Summary Interval:** Anzahl der Nachrichten, nach denen automatisch eine Erinnerungszusammenfassung erstellt wird.
-* **Auto-Summary Buffer:** Verzögert die automatische Zusammenfassung um eine konfigurierbare Anzahl von Nachrichten.
-* **Prompt for consolidation when a tier is ready:** Zeigt eine Ja/Später-Bestätigung, wenn eine ausgewählte Zusammenfassungsstufe genug geeignete Quell-Einträge hat.
-* **Auto-Consolidation Tiers:** Wählen Sie eine oder mehrere Zusammenfassungsstufen aus, die die Bestätigung auslösen sollen. Derzeit Arc bis Series.
+* **Automatische Erinnerungs-Zusammenfassungen erstellen:** Automatische Erinnerungserstellung in Intervallen aktivieren.
+* **Intervall für automatische Zusammenfassung:** Anzahl der Nachrichten, nach denen automatisch eine Erinnerungszusammenfassung erstellt wird.
+* **Puffer für automatische Zusammenfassung:** Verzögert die automatische Zusammenfassung um eine konfigurierbare Anzahl von Nachrichten.
+* **Bei erreichter Ebene zur Konsolidierung auffordern:** Zeigt eine Ja/Später-Bestätigung, wenn eine ausgewählte Zusammenfassungsstufe genug geeignete Quell-Einträge hat.
+* **Auto-Konsolidierungsstufen:** Wählen Sie eine oder mehrere Zusammenfassungsstufen aus, die die Bestätigung auslösen sollen. Derzeit Arc bis Series.
 * **Unhide hidden messages before memory generation:** Kann vor der Erinnerungserstellung `/unhide X-Y` ausführen.
 * **Auto-hide messages after adding memory:** Kann alle verarbeiteten Nachrichten oder nur den letzten Bereich ausblenden.
-* **Use regex (advanced):** Aktiviert die STMB-Auswahl für Regex-Skripte bei Outgoing/Incoming-Verarbeitung.
+* **Regex verwenden (fortgeschritten):** Aktiviert die STMB-Auswahl für Regex-Skripte bei Outgoing/Incoming-Verarbeitung.
 * **Memory Title Format:** Wählen oder anpassen (siehe unten).
 
 ### **Profil-Felder**
 
 * **Name:** Anzeigename.
-* **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual und andere unterstützte Provider.
+* **API/Provider:** `Aktuelle SillyTavern Einstellungen`, openai, claude, custom, full manual und andere unterstützte Provider.
 * **Model:** Modellname (z.B. gpt-4, claude-3-opus).
 * **Temperature:** 0.0–2.0.
 * **Prompt or Preset:** Benutzerdefiniert oder eingebaut.
@@ -428,7 +446,7 @@ Nein. Wenn es keine anderen World Info-Einträge oder Lorebooks gibt, kann die A
 * **Kein Lorebook verfügbar oder ausgewählt:**
 * Wählen Sie im manuellen Modus ein Lorebook aus, wenn Sie dazu aufgefordert werden.
 * Binden Sie im automatischen Modus ein Lorebook an Ihren Chat.
-* Oder aktivieren Sie "Auto-create lorebook if none exists" für die automatische Erstellung.
+* Oder aktivieren Sie "Lorebook automatisch erstellen, falls keines existiert" für die automatische Erstellung.
 
 
 * **Keine Szene ausgewählt:**

@@ -16,6 +16,7 @@
 
 其他連結：
 * 📘 [使用者指南 (繁體中文)](USER_GUIDE-zh-tw.md)
+* 💡 [STMB 運作原理 (繁體中文)](howSTMBworks-zh-tw.md)
 * 📋 [版本歷史與更新日誌](changelog.md)
 * 💡 [配合 📚 世界書排序 (STLO) 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
@@ -25,10 +26,28 @@
 
 為了實現進階的記憶組織和更深層的故事整合，我們強烈建議將 STMB 與 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。請參閱指南以了解最佳實踐、設定說明和提示！
 
-> 注意：支援多種語言：請參閱 [`/locales`](locales) 資料夾查看列表。國際化/在地化的 Readme 和使用者指南可以在 [`/userguides`](userguides) 資料夾中找到。
-> 世界書轉換器和側邊提示詞範本庫位於 [`/resources`](resources) 資料夾中。
+> 注意：支援多種語言：請參閱 [`/locales`](../locales) 資料夾查看列表。國際化/在地化的 Readme 和使用者指南可以在 [`/userguides`](./) 資料夾中找到。
+> 世界書轉換器和側邊提示詞範本庫位於 [`/resources`](../resources) 資料夾中。
 
 ---
+
+## 📑 目錄
+
+- 前置需求
+- 快速開始
+- 記憶類型：場景 vs 總結
+- 記憶生成
+- 世界書整合
+- 斜線命令
+- 群組聊天支援
+- 運作模式
+- 追蹤器與側邊提示詞
+- Regex 整合
+- 設定檔管理
+- 設定與配置
+- FAQ
+- 疑難排解
+- 透過世界書排序 (STLO) 增強功能
 
 ## 📋 前置需求
 
@@ -119,7 +138,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **如何運作:** 當沒有世界書存在時，自動使用你的自訂命名範本創建並綁定一本新的世界書。
 * **適用於:** 新使用者和快速設定。完美的一鍵式世界書創建。
 * **使用方法:**
-1. 在擴充功能設定中啟用 "Auto-create lorebook if none exists" (若無則自動創建世界書)。
+1. 在擴充功能設定中啟用 "自動建立故事書 (如果不存在)"。
 2. 設定你的命名範本 (預設: "LTM - {{char}} - {{chat}}")。
 3. 當你在沒有綁定世界書的情況下創建記憶時，系統會自動創建並綁定一本。
 
@@ -133,7 +152,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **如何運作:** 允許你為每個聊天單獨選擇用於儲存記憶的世界書，忽略主要綁定的聊天世界書。
 * **適用於:** 想要將記憶導向特定、獨立世界書的進階使用者。
 * **使用方法:**
-1. 在擴充功能設定中啟用 "Enable Manual Lorebook Mode" (啟用手動世界書模式)。
+1. 在擴充功能設定中啟用 "啟用手動故事書模式"。
 2. 第一次在聊天中創建記憶時，系統會提示你選擇一本世界書。
 3. 該選擇將針對該特定聊天儲存，直到你清除它或切換回自動模式。
 
@@ -142,7 +161,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-## 🧩 記憶類型：場景 (Scenes) vs 篇章 (Arcs)
+## 🧩 記憶類型：場景 (Scenes) vs 總結 (Summaries)
 
 📕 Memory Books 支援 **兩個層級的敘事記憶**，各自為不同類型的連續性而設計。
 
@@ -184,7 +203,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 #### 運作方式
 
 * 總結整合不是直接從原始聊天生成，而是從現有的 STMB 記憶/總結生成。
-* **Consolidate Memories** 工具可讓你選擇目標總結階層與來源條目。
+* **整合記憶** 工具可讓你選擇目標總結階層與來源條目。
 * 當所選階層達到其儲存的最小有效來源數量時，STMB 會在需要時顯示 yes/later 確認。
 * 如有需要，可以在整合後停用來源條目。
 * AI 總結失敗可以在 UI 中檢視並修正後重新提交。
@@ -245,7 +264,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **編輯器重新整理:** 選擇性地在添加記憶後自動重新整理世界書編輯器。
 
 > **現有的記憶必須轉換！**
-> 使用 [Lorebook Converter (世界書轉換器)](https://www.google.com/search?q=/resources/lorebookconverter.html) 添加 `stmemorybooks` 標籤和所需欄位。
+> 使用 [Lorebook Converter (世界書轉換器)](../resources/lorebookconverter.html) 添加 `stmemorybooks` 標籤和所需欄位。
 
 ---
 
@@ -278,7 +297,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ```
 - 創建新提示詞時，你可以複製內建的以獲得最佳相容性。
-- 額外的側邊提示詞範本庫 [JSON 檔案](resources/SidePromptTemplateLibrary.json) - 匯入即可使用。
+- 額外的側邊提示詞範本庫 [JSON 檔案](../resources/SidePromptTemplateLibrary.json) - 匯入即可使用。
 - 手動語法：`/sideprompt "名稱" {{macro}}="value" [X-Y]`。
 - 在命令自動完成中選擇 side prompt 後，STMB 會提示仍缺少的執行階段巨集。
 - 含有自訂執行階段巨集的 side prompt 只能手動執行。STMB 會在儲存/匯入時移除這類模板的 `On Interval` 和 `On After Memory`，並顯示警告。
@@ -314,8 +333,8 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 [Youtube 上的簡短影片概覽](https://youtu.be/mG2eRH_EhHs)
 
-* **Manual Lorebook Mode (手動世界書模式):** 啟用以每個聊天單獨選擇世界書。
-* **Auto-create lorebook if none exists (若無則自動創建世界書):** ⭐ *v4.2.0 新功能* - 使用你的命名範本自動創建並綁定世界書。
+* **啟用手動故事書模式:** 啟用以每個聊天單獨選擇世界書。
+* **自動建立故事書 (如果不存在):** ⭐ *v4.2.0 新功能* - 使用你的命名範本自動創建並綁定世界書。
 * **Lorebook Name Template (世界書命名範本):** ⭐ *v4.2.0 新功能* - 使用 {{char}}, {{user}}, {{chat}} 佔位符自訂自動創建的世界書名稱。
 * **Allow Scene Overlap (允許場景重疊):** 允許或防止記憶範圍重疊。
 * **Always Use Default Profile (始終使用預設設定檔):** 跳過確認彈出視窗。
@@ -324,20 +343,20 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **Refresh Editor (重新整理編輯器):** 記憶創建後自動重新整理世界書編輯器。
 * **Token Warning Threshold (Token 警告閾值):** 設定大型場景的警告級別（預設：30,000）。
 * **Default Previous Memories (預設前序記憶):** 作為上下文包含的先前記憶數量 (0-7)。
-* **Auto-create memory summaries (自動創建記憶總結):** 啟用間隔自動創建記憶。
-* **Auto-Summary Interval (自動總結間隔):** 自動創建記憶總結的訊息間隔數。
-* **Auto-Summary Buffer:** 可延後指定訊息數才自動總結。
-* **Prompt for consolidation when a tier is ready:** 當所選總結階層達到足夠的有效來源數量時顯示 yes/later 確認。
-* **Auto-Consolidation Tiers:** 選擇哪些總結階層應在達標時觸發確認提示。目前支援 Arc 到 Series。
+* **自動建立記憶摘要:** 啟用間隔自動創建記憶。
+* **自動摘要間隔:** 自動創建記憶總結的訊息間隔數。
+* **自動摘要緩衝區：** 可延後指定訊息數才自動總結。
+* **當某個層級準備好時提示合併:** 當所選總結階層達到足夠的有效來源數量時顯示 yes/later 確認。
+* **自動合併層級：** 選擇哪些總結階層應在達標時觸發確認提示。目前支援 Arc 到 Series。
 * **Unhide hidden messages before memory generation:** 可在建立記憶前執行 `/unhide X-Y`。
 * **Auto-hide messages after adding memory:** 可選擇隱藏所有已處理訊息，或只隱藏最近的記憶範圍。
-* **Use regex (advanced):** 啟用 STMB 的 regex 選擇彈出視窗（送出/解析處理）。
+* **使用正則表達式（進階）:** 啟用 STMB 的 regex 選擇彈出視窗（送出/解析處理）。
 * **Memory Title Format (記憶標題格式):** 選擇或自訂（見下文）。
 
 ### **設定檔欄位 (Profile Fields)**
 
 * **Name (名稱):** 顯示名稱。
-* **API/Provider (API/提供者):** `Current SillyTavern Settings`、openai、claude、custom、full manual 等。
+* **API/Provider (API/提供者):** `目前 SillyTavern 設定`、openai、claude、custom、full manual 等。
 * **Model (模型):** 模型名稱 (例如：gpt-4, claude-3-opus)。
 * **Temperature (溫度):** 0.0–2.0。
 * **Prompt or Preset (提示詞或預設組):** 自訂或內建。
@@ -413,7 +432,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **沒有可用或選定的世界書:**
 * 在 Manual Mode (手動模式) 下，出現提示時選擇一本世界書。
 * 在 Automatic Mode (自動模式) 下，將一本世界書綁定到你的聊天。
-* 或者啟用 "Auto-create lorebook if none exists" (若無則自動創建世界書) 進行自動創建。
+* 或者啟用 "自動建立故事書 (如果不存在)" 進行自動創建。
 
 
 * **未選擇場景:**
@@ -449,6 +468,6 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **標題中允許:** 允許所有可列印的 Unicode 字元，包括重音字母、表情符號、中日韓文字和符號。
 * **封鎖:** 僅封鎖 Unicode 控制字元 (U+0000–U+001F, U+007F–U+009F)；這些字元會被自動移除。
 
-## 請參閱 [字元政策詳情](https://www.google.com/search?q=charset.md) 以獲取範例和遷移說明。
+## 請參閱 [字元政策詳情](../charset.md) 以獲取範例和遷移說明。
 
 *使用 VS Code/Cline 開發，經過廣泛測試和社群回饋，充滿愛心製作。* 🤖💕
