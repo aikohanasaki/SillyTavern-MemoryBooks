@@ -21,13 +21,7 @@ Weitere Links:
 * 📘 [Benutzerhandbuch (DE)](USER_GUIDE-DE.md)
 * 💡 [Wie STMB funktioniert (DE)](howSTMBworks-de.md)
 * 📋 [Versionsverlauf & Changelog](../changelog.md)
-* 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 Mehr Power mit Lorebook Ordering (STLO)
-
-Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integration in die Geschichte empfehlen wir dringend, STMB zusammen mit [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) zu verwenden. Schauen Sie in die Anleitung für Best Practices, Einrichtungsanweisungen und Tipps!
+* 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20German.md)
 
 > Hinweis: Unterstützt verschiedene Sprachen: siehe Ordner [`/locales`](../locales) für eine Liste. Internationale/lokalisierte Readmes und Benutzerhandbücher finden Sie im Ordner [`/userguides`](./).
 > Lorebook-Konverter und die Vorlagenbibliothek für Side Prompts befinden sich im Ordner [`/resources`](../resources).
@@ -72,6 +66,7 @@ Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integr
   - [Muss ich Vektoren verwenden?](#muss-ich-vektoren-verwenden)
   - [Sollte ich ein separates Lorebook für Erinnerungen erstellen, oder kann ich dasselbe Lorebook verwenden, das ich bereits für andere Dinge nutze?](#sollte-ich-ein-separates-lorebook-für-erinnerungen-erstellen-oder-kann-ich-dasselbe-lorebook-verwenden-das-ich-bereits-für-andere-dinge-nutze)
   - [Sollte ich 'Verzögern bis Rekursion' verwenden, wenn Memory Books das einzige Lorebook ist?](#sollte-ich-verzögern-bis-rekursion-verwenden-wenn-memory-books-das-einzige-lorebook-ist)
+- [📚 Mehr Power mit Lorebook Ordering (STLO)](#-mehr-power-mit-lorebook-ordering-stlo)
 - [📝 Zeichen-Richtlinie (v4.5.1+)](#-zeichen-richtlinie-v451)
 - [Siehe Details zur Zeichen-Richtlinie für Beispiele und Migrationshinweise.](#siehe-details-zur-zeichen-richtlinie-für-beispiele-und-migrationshinweise)
 
@@ -499,7 +494,11 @@ Nein. Wenn es keine anderen World Info-Einträge oder Lorebooks gibt, kann die A
 * **Charakterdaten nicht verfügbar:**
 * Warten Sie, bis der Chat/die Gruppe vollständig geladen ist.
 
+---
 
+## 📚 Mehr Power mit Lorebook Ordering (STLO)
+
+Für eine fortgeschrittene Organisation von Erinnerungen und eine tiefere Integration in die Geschichte empfehlen wir dringend, STMB zusammen mit [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20German.md) zu verwenden. Schauen Sie in die Anleitung für Best Practices, Einrichtungsanweisungen und Tipps!
 
 ---
 

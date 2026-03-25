@@ -62,7 +62,7 @@
   - [我需要运行 Vectors (向量) 吗？](#我需要运行-vectors-向量-吗)
   - [我应该为记忆制作一个单独的世界书，还是可以使用我已经用于其他事情的同一个世界书？](#我应该为记忆制作一个单独的世界书还是可以使用我已经用于其他事情的同一个世界书)
   - [如果 Memory Books 是唯一的世界书，我应该使用 '延迟直到递归' 吗？](#如果-memory-books-是唯一的世界书我应该使用-延迟直到递归-吗)
-  - [📚 配合 Lorebook Ordering (STLO) 提升体验](#-配合-lorebook-ordering-stlo-提升体验)
+- [📚 配合 Lorebook Ordering (STLO) 提升体验](#-配合-lorebook-ordering-stlo-提升体验)
 - [📝 字符策略 (v4.5.1+)](#-字符策略-v451)
 - [请参阅 字符策略详情 以获取示例和迁移说明。](#请参阅-字符策略详情-以获取示例和迁移说明)
 
@@ -478,9 +478,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 📚 配合 Lorebook Ordering (STLO) 提升体验
+## 📚 配合 Lorebook Ordering (STLO) 提升体验
 
-为了实现高级的记忆组织和更深层次的故事整合，我们强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。请参阅指南以获取最佳实践、设置说明和技巧！
+为了实现高级的记忆组织和更深层次的故事整合，我们强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md) 一起使用。请参阅指南以获取最佳实践、设置说明和技巧！
 
 ---
 

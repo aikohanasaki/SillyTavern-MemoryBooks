@@ -18,13 +18,7 @@ Autres liens :
 * 📘 [Guide Utilisateur (FR)](USER_GUIDE-FR.md)
 * 💡 [Comment STMB fonctionne (FR)](howSTMBworks-fr.md)
 * 📋 [Historique des versions & Changelog](../changelog.md)
-* 💡 [Utiliser 📕 Memory Books avec 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 Augmentez la puissance avec Lorebook Ordering (STLO)
-
-Pour une organisation avancée de la mémoire et une intégration plus profonde dans l'histoire, nous recommandons vivement d'utiliser STMB avec [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). Consultez le guide pour les meilleures pratiques, les instructions de configuration et des astuces !
+* 💡 [Utiliser 📕 Memory Books avec 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20French.md)
 
 > Note : Prend en charge plusieurs langues : voir le dossier [`/locales`](../locales) pour la liste. Les fichiers Readme et Guides Utilisateurs internationaux/localisés se trouvent dans le dossier [`/userguides`](./).
 > Le convertisseur de lorebook et la bibliothèque de modèles de prompts secondaires se trouvent dans le dossier [`/resources`](../resources).
@@ -69,6 +63,7 @@ Pour une organisation avancée de la mémoire et une intégration plus profonde 
   - [Dois-je exécuter les vecteurs ?](#dois-je-exécuter-les-vecteurs-)
   - [Dois-je faire un lorebook séparé pour les mémoires, ou puis-je utiliser le même lorebook que j'utilise déjà pour d'autres choses ?](#dois-je-faire-un-lorebook-séparé-pour-les-mémoires-ou-puis-je-utiliser-le-même-lorebook-que-jutilise-déjà-pour-dautres-choses-)
   - [Dois-je utiliser 'Retarder jusqu'à la récursion' si Memory Books est le seul lorebook ?](#dois-je-utiliser-retarder-jusquà-la-récursion-si-memory-books-est-le-seul-lorebook-)
+- [📚 Augmentez la puissance avec Lorebook Ordering (STLO)](#-augmentez-la-puissance-avec-lorebook-ordering-stlo)
 - [📝 Politique de Caractères (v4.5.1+)](#-politique-de-caractères-v451)
 - [Voir Détails de la Politique de Caractères pour des exemples et des notes de migration.](#voir-détails-de-la-politique-de-caractères-pour-des-exemples-et-des-notes-de-migration)
 
@@ -491,7 +486,11 @@ Non. S'il n'y a pas d'autres infos du monde ou lorebooks, sélectionner 'Retarde
 * **Données du personnage non disponibles :**
 * Attendez que le chat/groupe soit entièrement chargé.
 
+---
 
+## 📚 Augmentez la puissance avec Lorebook Ordering (STLO)
+
+Pour une organisation avancée de la mémoire et une intégration plus profonde dans l'histoire, nous recommandons vivement d'utiliser STMB avec [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20French.md). Consultez le guide pour les meilleures pratiques, les instructions de configuration et des astuces !
 
 ---
 
