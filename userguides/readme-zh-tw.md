@@ -10,21 +10,15 @@
 ## ❗ 請先閱讀！
 
 從這裡開始：
-* ⚠️‼️請閱讀 [前置需求](#-prerequisites) 以獲取安裝注意事項（特別是如果你使用 Text Completion API）。
-* ❓ [常見問題 (FAQ)](#FAQ)
-* 🛠️ [疑難排解 (Troubleshooting)](#Troubleshooting)
+* ⚠️‼️請閱讀 [前置需求](#-前置需求) 以獲取安裝注意事項（特別是如果你使用 Text Completion API）。
+* ❓ [常見問題 (FAQ)](#faq-常見問題)
+* 🛠️ [疑難排解 (Troubleshooting)](#troubleshooting-疑難排解)
 
 其他連結：
 * 📘 [使用者指南 (繁體中文)](USER_GUIDE-zh-tw.md)
 * 💡 [STMB 運作原理 (繁體中文)](howSTMBworks-zh-tw.md)
 * 📋 [版本歷史與更新日誌](../changelog.md)
-* 💡 [配合 📚 世界書排序 (STLO) 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 透過世界書排序 (STLO) 增強功能
-
-為了實現進階的記憶組織和更深層的故事整合，我們強烈建議將 STMB 與 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。請參閱指南以了解最佳實踐、設定說明和提示！
+* 💡 [配合 📚 世界書排序 (STLO) 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md)
 
 > 注意：支援多種語言：請參閱 [`/locales`](../locales) 資料夾查看列表。國際化/在地化的 Readme 和使用者指南可以在 [`/userguides`](./) 資料夾中找到。
 > 世界書轉換器和側邊提示詞範本庫位於 [`/resources`](../resources) 資料夾中。
@@ -482,7 +476,11 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **角色資料無法使用:**
 * 等待聊天/群組完全載入。
 
+---
 
+### 📚 透過世界書排序 (STLO) 增強功能
+
+為了實現進階的記憶組織和更深層的故事整合，我們強烈建議將 STMB 與 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。請參閱指南以了解最佳實踐、設定說明和提示！
 
 ---
 
