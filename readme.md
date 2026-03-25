@@ -472,7 +472,7 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
 
 ---
 
-### 📚 Power Up with Lorebook Ordering (STLO)
+## 📚 Power Up with Lorebook Ordering (STLO)
 
 For advanced memory organization and deeper story integration, use STMB together with [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). See the guide for best practices, setup instructions, and tips!
 
