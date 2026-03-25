@@ -18,13 +18,7 @@
 * 📘 [ユーザーガイド (日本語)](USER_GUIDE-JP.md)
 * 💡 [STMB の仕組み (日本語)](howSTMBworks-ja.md)
 * 📋 [バージョン履歴 & 更新ログ](../changelog.md)
-* 💡 [📕 Memory Books と 📚 Lorebook Ordering の併用について](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 Lorebook Ordering (STLO) でパワーアップ
-
-高度な記憶の整理とより深いストーリー統合のために、STMB を [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) と併用することを強くお勧めします。ベストプラクティス、セットアップ手順、ヒントについてはガイドをご覧ください！
+* 💡 [📕 Memory Books と 📚 Lorebook Ordering の併用について](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md)
 
 > 注意：様々な言語をサポートしています。リストについては [`/locales`](../locales) フォルダを参照してください。国際化/ローカライズされた Readme とユーザーガイドは [`/userguides`](./) フォルダにあります。
 > ロアブックコンバーターとサイドプロンプトテンプレートライブラリは [`/resources`](../resources) フォルダにあります。
@@ -68,6 +62,7 @@
   - [ベクトル (Vectors) を実行する必要がありますか？](#ベクトル-vectors-を実行する必要がありますか)
   - [メモリ用に別のロアブックを作成すべきですか？それとも他の用途ですでに使用しているものと同じロアブックを使用できますか？](#メモリ用に別のロアブックを作成すべきですかそれとも他の用途ですでに使用しているものと同じロアブックを使用できますか)
   - [Memory Books が唯一のロアブックである場合、「再帰までの遅延」を使用すべきですか？](#memory-books-が唯一のロアブックである場合再帰までの遅延を使用すべきですか)
+- [📚 Lorebook Ordering (STLO) でパワーアップ](#-lorebook-ordering-stlo-でパワーアップ)
 - [📝 文字ポリシー (v4.5.1+)](#-文字ポリシー-v451)
 - [例と移行に関する注意点については、文字ポリシーの詳細 (Character Policy Details) を参照してください。](#例と移行に関する注意点については文字ポリシーの詳細-character-policy-details-を参照してください)
 
@@ -481,7 +476,11 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **キャラクターデータが利用できない:**
 * チャット/グループが完全に読み込まれるのを待ってください。
 
+---
 
+## 📚 Lorebook Ordering (STLO) でパワーアップ
+
+高度な記憶の整理とより深いストーリー統合のために、STMB を [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Japanese.md) と併用することを強くお勧めします。ベストプラクティス、セットアップ手順、ヒントについてはガイドをご覧ください！
 
 ---
 

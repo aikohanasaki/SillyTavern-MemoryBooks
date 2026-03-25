@@ -21,13 +21,7 @@
 * 📘 [사용자 가이드 (한국어)](USER_GUIDE-KO.md)
 * 💡 [STMB 작동 원리(한국어)](howSTMBworks-ko.md)
 * 📋 [버전 기록 & 변경 로그](../changelog.md)
-* 💡 [📕 Memory Books와 📚 Lorebook Ordering 함께 사용하기](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 Lorebook Ordering (STLO)으로 파워업하기
-
-고급 기억 정리와 더 깊이 있는 스토리 통합을 위해, STMB를 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)와 함께 사용하는 것을 강력히 권장합니다. 모범 사례, 설정 방법, 팁 등은 가이드를 참조하세요!
+* 💡 [📕 Memory Books와 📚 Lorebook Ordering 함께 사용하기](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)
 
 > 참고: 다양한 언어를 지원합니다. 목록은 [`/locales`](../locales) 폴더를 참조하세요. 국제/현지화된 Readme 및 사용자 가이드는 [`/userguides`](./) 폴더에서 찾을 수 있습니다.
 > 로어북 변환기 및 사이드 프롬프트 템플릿 라이브러리는 [`/resources`](../resources) 폴더에 있습니다.
@@ -71,6 +65,7 @@
   - [벡터(Vectors)를 실행해야 하나요?](#벡터vectors를-실행해야-하나요)
   - [기억을 위한 별도의 로어북을 만들어야 하나요, 아니면 다른 용도로 사용 중인 로어북을 같이 써도 되나요?](#기억을-위한-별도의-로어북을-만들어야-하나요-아니면-다른-용도로-사용-중인-로어북을-같이-써도-되나요)
   - [Memory Books가 유일한 로어북인 경우 '재귀까지 지연'을 사용해야 하나요?](#memory-books가-유일한-로어북인-경우-재귀까지-지연을-사용해야-하나요)
+- [📚 Lorebook Ordering (STLO)으로 파워업하기](#-lorebook-ordering-stlo으로-파워업하기)
 - [📝 문자 정책 (Character Policy) (v4.5.1+)](#-문자-정책-character-policy-v451)
 - [예시 및 마이그레이션 참고 사항은 문자 정책 세부 정보를 참조하세요.](#예시-및-마이그레이션-참고-사항은-문자-정책-세부-정보를-참조하세요)
 
@@ -489,7 +484,11 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **캐릭터 데이터를 사용할 수 없음:**
 * 채팅/그룹이 완전히 로드될 때까지 기다리세요.
 
+---
 
+## 📚 Lorebook Ordering (STLO)으로 파워업하기
+
+고급 기억 정리와 더 깊이 있는 스토리 통합을 위해, STMB를 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Korean.md)와 함께 사용하는 것을 강력히 권장합니다. 모범 사례, 설정 방법, 팁 등은 가이드를 참조하세요!
 
 ---
 

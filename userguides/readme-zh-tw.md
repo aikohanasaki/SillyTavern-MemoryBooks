@@ -62,7 +62,7 @@
   - [我需要運作 Vectors (向量) 嗎？](#我需要運作-vectors-向量-嗎)
   - [我應該為記憶製作一個單獨的世界書，還是可以使用我已經用於其他事情的同一本世界書？](#我應該為記憶製作一個單獨的世界書還是可以使用我已經用於其他事情的同一本世界書)
   - [如果 Memory Books 是唯一的世界書，我應該使用 '延遲直到遞迴' 嗎？](#如果-memory-books-是唯一的世界書我應該使用-延遲直到遞迴-嗎)
-  - [📚 透過世界書排序 (STLO) 增強功能](#-透過世界書排序-stlo-增強功能)
+- [📚 透過世界書排序 (STLO) 增強功能](#-透過世界書排序-stlo-增強功能)
 - [📝 字元政策 (v4.5.1+)](#-字元政策-v451)
 - [請參閱 字元政策詳情 以獲取範例和遷移說明。](#請參閱-字元政策詳情-以獲取範例和遷移說明)
 
@@ -478,9 +478,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ---
 
-### 📚 透過世界書排序 (STLO) 增強功能
+## 📚 透過世界書排序 (STLO) 增強功能
 
-為了實現進階的記憶組織和更深層的故事整合，我們強烈建議將 STMB 與 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。請參閱指南以了解最佳實踐、設定說明和提示！
+為了實現進階的記憶組織和更深層的故事整合，我們強烈建議將 STMB 與 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Traditional%20Chinese.md) 一起使用。請參閱指南以了解最佳實踐、設定說明和提示！
 
 ---
 

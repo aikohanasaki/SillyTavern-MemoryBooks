@@ -19,7 +19,7 @@ Pautan lain:
 * 📘 [Panduan Pengguna (MS)](USER_GUIDE-MS.md)
 * 📋 [Sejarah Versi & Log Perubahan](../changelog.md)
 * 🧠 [Bagaimana STMB Berfungsi (MS)](howSTMBworks-ms.md)
-* 💡 [Menggunakan 📕 Memory Books dengan 📚 Penyusunan Lorebook](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+* 💡 [Menggunakan 📕 Memory Books dengan 📚 Penyusunan Lorebook](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md)
 
 > Nota: Menyokong pelbagai bahasa. Lihat folder [`/locales`](../locales) untuk senarai. Readme dan Panduan Pengguna yang diterjemahkan boleh didapati dalam folder [`/userguides`](./).
 > Penukar lorebook dan pustaka templat prom sampingan berada dalam folder [`/resources`](../resources).
@@ -61,7 +61,7 @@ Pautan lain:
   - [Adakah saya perlu menjalankan vektor?](#adakah-saya-perlu-menjalankan-vektor)
   - [Patutkah saya menggunakan 'Tangguhkan Sehingga Rekursi' jika Memory Books ialah satu-satunya lorebook?](#patutkah-saya-menggunakan-tangguhkan-sehingga-rekursi-jika-memory-books-ialah-satu-satunya-lorebook)
   - [Mengapa AI tidak nampak entri saya?](#mengapa-ai-tidak-nampak-entri-saya)
-  - [📚 Tingkatkan Kuasa dengan Penyusunan Lorebook (STLO)](#-tingkatkan-kuasa-dengan-penyusunan-lorebook-stlo)
+- [📚 Tingkatkan Kuasa dengan Penyusunan Lorebook (STLO)](#-tingkatkan-kuasa-dengan-penyusunan-lorebook-stlo)
 - [📝 Polisi Karakter (v4.5.1+)](#-polisi-karakter-v451)
 - [👨‍💻 Untuk Pembangun](#-untuk-pembangun)
   - [Membina Sambungan](#membina-sambungan)
@@ -76,7 +76,6 @@ Pautan lain:
 
 **NOTA:** Jika anda menggunakan Text Completion, anda mesti mempunyai pratetap chat completion.
 
-<a id="tip-koboldcpp-untuk-menggunakan--st-memory-books"></a>
 ### Tip KoboldCpp untuk menggunakan 📕 ST Memory Books
 
 Sediakan ini dalam ST terlebih dahulu. Anda boleh kembali ke Text Completion selepas STMB berfungsi.
@@ -89,7 +88,6 @@ Sediakan ini dalam ST terlebih dahulu. Anda boleh kembali ke Text Completion sel
 - Muat turun dan import mana-mana pratetap chat completion supaya anda mempunyai pratetap chat completion
 - Tetapkan panjang respons maksimum pada pratetap chat completion kepada sekurang-kurangnya 2048; 4096 disyorkan
 
-<a id="tip-llamacpp-untuk-menggunakan--st-memory-books"></a>
 ### Tip Llama.cpp untuk menggunakan 📕 ST Memory Books
 
 Sama seperti Kobold, sediakan ini sebagai _Chat Completion API_ dalam ST. Anda boleh kembali ke Chat Completion selepas anda mengesahkan STMB berfungsi.
@@ -107,7 +105,6 @@ Untuk memulakan Llama.cpp, saya syorkan meletakkan sesuatu seperti berikut dalam
 llama-server -m <laluan-model> -c <saiz-konteks> --port 8080
 ```
 
-<a id="tetapan-pengaktifan-info-dunialorebook-global-disyorkan"></a>
 ## 💡 Tetapan Pengaktifan Info Dunia/Lorebook Global Disyorkan
 
 - **Match Whole Words:** biarkan tidak ditanda (`false`)
@@ -118,10 +115,8 @@ llama-server -m <laluan-model> -c <saiz-konteks> --port 8080
 
 ---
 
-<a id="mula-pantas"></a>
 ## 🚀 Mula Pantas
 
-<a id="1-pasang--muat"></a>
 ### 1. **Pasang & Muat**
 
 - Muat SillyTavern dan pilih watak atau sembang kumpulan.
@@ -129,7 +124,6 @@ llama-server -m <laluan-model> -c <saiz-konteks> --port 8080
 
 ![Tunggu butang ini](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
-<a id="2-tandakan-babak"></a>
 ### 2. **Tandakan Babak**
 
 - Klik ► pada mesej pertama babak anda.
@@ -139,7 +133,6 @@ Butang yang ditekan akan kelihatan seperti contoh di bawah. Warna anda mungkin b
 
 ![Maklum balas visual pemilihan babak](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
-<a id="3-cipta-memori"></a>
 ### 3. **Cipta Memori**
 
 - Buka menu Extensions (ikon tongkat sihir 🪄) dan klik "Memory Books", atau gunakan perintah `/creatememory`.
@@ -148,12 +141,10 @@ Butang yang ditekan akan kelihatan seperti contoh di bawah. Warna anda mungkin b
 
 ---
 
-<a id="jenis-memori-babak-vs-ringkasan"></a>
 ## 🧩 Jenis Memori: Babak vs Ringkasan
 
 📕 Memory Books menyokong **memori babak** dan **konsolidasi ringkasan berbilang tahap**, masing-masing untuk kesinambungan yang berbeza.
 
-<a id="memori-babak-lalai"></a>
 ### 🎬 Memori Babak (Lalai)
 
 Memori babak menangkap **apa yang berlaku** dalam julat mesej tertentu.
@@ -165,7 +156,6 @@ Memori babak menangkap **apa yang berlaku** dalam julat mesej tertentu.
 
 Ini ialah jenis memori standard yang paling biasa digunakan.
 
-<a id="konsolidasi-ringkasan"></a>
 ### 🌈 Konsolidasi Ringkasan
 
 Konsolidasi ringkasan menangkap **apa yang berubah dari masa ke masa** merentasi beberapa memori atau ringkasan.
@@ -188,7 +178,6 @@ Tahap konsolidasi pertama ialah **Arc**, dibina daripada memori babak. Tahap yan
 
 > 💡 Anggap ini sebagai *rekap*, bukan log babak.
 
-<a id="bila-perlu-guna-ringkasan-konsolidasi"></a>
 #### Bila perlu guna Ringkasan Konsolidasi
 
 - Selepas perubahan hubungan yang besar
@@ -196,7 +185,6 @@ Tahap konsolidasi pertama ialah **Arc**, dibina daripada memori babak. Tahap yan
 - Apabila motivasi, kepercayaan, atau dinamik kuasa berubah
 - Sebelum memulakan fasa baharu cerita
 
-<a id="cara-ia-berfungsi"></a>
 #### Cara ia berfungsi
 
 - Ringkasan konsolidasi dijana daripada memori/ringkasan STMB yang sedia ada, bukan terus daripada sembang mentah
@@ -212,10 +200,8 @@ Ini memberikan anda:
 
 ---
 
-<a id="penjanaan-memori"></a>
 ## 📝 Penjanaan Memori
 
-<a id="output-json-sahaja"></a>
 ### **Output JSON Sahaja**
 
 Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON yang sah, contohnya:
@@ -230,7 +216,6 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 **Tiada teks lain dibenarkan dalam respons.**
 
-<a id="pratetap-terbina-dalam"></a>
 ### **Pratetap Terbina Dalam**
 
 1. **Summary:** Ringkasan terperinci beat demi beat.
@@ -242,14 +227,12 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 7. **Aelemar:** Fokus pada titik plot dan memori watak.
 8. **Comprehensive:** Gaya sinopsis dengan pengekstrakan kata kunci yang dipertingkatkan.
 
-<a id="prom-tersuai"></a>
 ### **Prom Tersuai**
 
 - Cipta prom anda sendiri, tetapi **mesti** memulangkan JSON yang sah seperti di atas.
 
 ---
 
-<a id="integrasi-lorebook"></a>
 ## 📚 Integrasi Lorebook
 
 - **Penciptaan Entri Automatik:** Memori baharu disimpan sebagai entri bersama semua metadata.
@@ -263,7 +246,6 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 ---
 
-<a id="pintasan-perintah-slash"></a>
 ## 🆕 Pintasan Perintah Slash
 
 - `/creatememory` - Cipta memori daripada babak yang ditandakan.
@@ -276,7 +258,6 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 - `/stmb-set-highest <N|none>` - Tetapkan secara manual message id tertinggi yang telah diproses untuk sembang ini.
 - `/stmb-stop` - Hentikan semua penjanaan STMB yang sedang berjalan di mana-mana (henti kecemasan).
 
-<a id="sokongan-sembang-kumpulan"></a>
 ## 👥 Sokongan Sembang Kumpulan
 
 - Semua ciri berfungsi dengan sembang kumpulan.
@@ -285,10 +266,8 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 ---
 
-<a id="mod-operasi"></a>
 ## 🧭 Mod Operasi
 
-<a id="mod-automatik-lalai"></a>
 ### **Mod Automatik (Lalai)**
 
 - **Cara ia berfungsi:** Menggunakan lorebook yang terikat pada sembang semasa anda secara automatik.
@@ -297,7 +276,6 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 ![Contoh pengikatan lorebook sembang](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
-<a id="mod-cipta-lorebook-automatik"></a>
 ### **Mod Cipta Lorebook Automatik**
 
 - **Cara ia berfungsi:** Mencipta dan mengikat lorebook baharu secara automatik apabila tiada lorebook wujud, menggunakan templat penamaan tersuai anda.
@@ -310,7 +288,6 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 - **Penomboran pintar:** Menambah nombor secara automatik (2, 3, 4...) jika nama pendua wujud.
 - **Nota:** Tidak boleh digunakan serentak dengan Mod Lorebook Manual.
 
-<a id="mod-lorebook-manual"></a>
 ### **Mod Lorebook Manual**
 
 - **Cara ia berfungsi:** Membolehkan anda memilih lorebook yang berbeza untuk memori bagi setiap sembang, mengabaikan lorebook utama yang terikat pada sembang.
@@ -323,7 +300,6 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 ---
 
-<a id="penjejak--prom-sampingan"></a>
 ### 🎡 Penjejak & Prom Sampingan
 
 Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side prompt yang berasingan dalam lorebook memori anda. Prom Sampingan membolehkan anda menjejak **keadaan semasa**, bukan hanya peristiwa lalu. Contohnya:
@@ -334,11 +310,9 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 - 🎯 Kemajuan Misi ("Apa matlamat yang aktif?")
 - 🌍 Keadaan Dunia ("Apa yang berubah dalam latar?")
 
-<a id="akses"></a>
 #### **Akses**
 Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 
-<a id="ciri-ciri"></a>
 #### **Ciri-ciri**
 
 - Lihat semua prom sampingan.
@@ -349,7 +323,6 @@ Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 - Gunakan makro/placeholder SillyTavern standard seperti `{{user}}` dan `{{char}}` dalam medan `Prompt`, `Response Format`, `Title`, dan `{{keyword}}` bagi side prompt.
 - Gunakan makro tersuai seperti `{{npc name}}` yang anda bekalkan apabila menjalankan `/sideprompt`.
 
-<a id="tip-penggunaan"></a>
 #### **Tip Penggunaan**
 
 - Apabila mencipta prom baharu, anda boleh menyalin daripada terbina dalam untuk keserasian terbaik.
@@ -360,7 +333,6 @@ Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 - Side prompt dengan makro runtime tersuai (bukan ST default) adalah manual sahaja. STMB mematikan `On Interval` dan `On After Memory` daripada templat itu semasa simpan/import dan memaparkan amaran apabila itu berlaku.
 - Pustaka templat Side Prompts tambahan terdapat dalam [fail JSON](resources/SidePromptTemplateLibrary.json). Hanya import untuk digunakan.
 
-<a id="integrasi-regex-untuk-penyesuaian-lanjutan"></a>
 ### 🧠 Integrasi Regex untuk Penyesuaian Lanjutan
 
 - **Kawalan penuh terhadap pemprosesan teks:** Memory Books kini berintegrasi dengan sambungan **Regex** SillyTavern, membolehkan anda menggunakan transformasi teks yang berkuasa pada dua peringkat utama:
@@ -372,7 +344,6 @@ Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 
 ---
 
-<a id="pengurusan-profil"></a>
 ## 👤 Pengurusan Profil
 
 - **Profil:** Setiap profil termasuk API, model, suhu, prom/pratetap, format tajuk, dan tetapan lorebook.
@@ -383,12 +354,10 @@ Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 
 ---
 
-<a id="tetapan--konfigurasi"></a>
 ## ⚙️ Tetapan & Konfigurasi
 
 ![Panel tetapan utama](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
 
-<a id="tetapan-global"></a>
 ### **Tetapan Global**
 
 [Gambaran keseluruhan video pendek di Youtube](https://youtu.be/mG2eRH_EhHs)
@@ -416,7 +385,6 @@ Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 
 ![Konfigurasi profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
-<a id="medan-profil"></a>
 ### **Medan Profil**
 
 - **Nama:** Nama paparan.
@@ -432,7 +400,6 @@ Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
 
 ---
 
-<a id="pemformatan-tajuk"></a>
 ## 🏷️ Pemformatan Tajuk
 
 Sesuaikan tajuk entri lorebook anda menggunakan sistem templat yang berkuasa.
@@ -450,7 +417,6 @@ Sesuaikan tajuk entri lorebook anda menggunakan sistem templat yang berkuasa.
 
 ---
 
-<a id="memori-konteks"></a>
 ## 🧵 Memori Konteks
 
 - **Sertakan sehingga 7 memori terdahulu** sebagai konteks untuk kesinambungan yang lebih baik.
@@ -461,7 +427,6 @@ Sesuaikan tajuk entri lorebook anda menggunakan sistem templat yang berkuasa.
 
 ---
 
-<a id="maklum-balas-visual--kebolehcapaian"></a>
 ## 🎨 Maklum Balas Visual & Kebolehcapaian
 
 - **Keadaan Butang:** tidak aktif, aktif, pemilihan sah, dalam babak, memproses.
@@ -472,25 +437,20 @@ Sesuaikan tajuk entri lorebook anda menggunakan sistem templat yang berkuasa.
 
 ---
 
-<a id="soalan-lazim"></a>
 # Soalan Lazim
 
-<a id="patutkah-saya-menggunakan-lorebook-berasingan-untuk-memori"></a>
 ### Patutkah saya menggunakan lorebook berasingan untuk memori?
 
 Saya syorkan lorebook memori anda menjadi buku yang berasingan. Ini memudahkan pengurusan memori berbanding entri lain. Contohnya, ia lebih mudah untuk dipasang pada sembang kumpulan, digunakan dalam sembang lain, atau diberi bajet lorebook individu menggunakan STLO.
 
-<a id="adakah-saya-perlu-menjalankan-vektor"></a>
 ### Adakah saya perlu menjalankan vektor?
 
 Boleh, tetapi ia tidak wajib. Jika anda tidak menggunakan sambungan vektor, ia masih berfungsi melalui kata kunci. Semuanya diautomasikan supaya anda tidak perlu memikirkan kata kunci apa yang perlu digunakan.
 
-<a id="patutkah-saya-menggunakan-delay-until-recursion-jika-memory-books-ialah-satu-satunya-lorebook"></a>
 ### Patutkah saya menggunakan 'Tangguhkan Sehingga Rekursi' jika Memory Books ialah satu-satunya lorebook?
 
 Tidak. Jika tiada info dunia atau lorebook lain, memilih `Tangguhkan Sehingga Rekursi` boleh menghalang gelung pertama daripada mencetus, menyebabkan tiada apa yang diaktifkan. Jika Memory Books ialah satu-satunya lorebook, sama ada matikan `Tangguhkan Sehingga Rekursi` atau pastikan sekurang-kurangnya satu lagi info dunia/lorebook dikonfigurasikan.
 
-<a id="mengapa-ai-tidak-nampak-entri-saya"></a>
 ### Mengapa AI tidak nampak entri saya?
 
 Pertama, pastikan entri itu benar-benar dihantar. Saya suka menggunakan [WorldInfo-Info](https://github.com/aikohanasaki/SillyTavern-WorldInfoInfo) untuk itu.
@@ -499,7 +459,6 @@ Jika entri memang dicetuskan dan dihantar ke AI, kemungkinan anda perlu menegur 
 
 ---
 
-<a id="penyelesaian-masalah"></a>
 # Penyelesaian Masalah
 
 - **Saya tidak dapat mencari Memory Books dalam menu Extensions!**
@@ -538,14 +497,12 @@ Jika entri memang dicetuskan dan dihantar ke AI, kemungkinan anda perlu menegur 
 
 ---
 
-<a id="tingkatkan-kuasa-dengan-penyusunan-lorebook-stlo"></a>
-### 📚 Tingkatkan Kuasa dengan Penyusunan Lorebook (STLO)
+## 📚 Tingkatkan Kuasa dengan Penyusunan Lorebook (STLO)
 
-Untuk organisasi memori lanjutan dan integrasi cerita yang lebih mendalam, gunakan STMB bersama [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). Lihat panduan untuk amalan terbaik, arahan persediaan, dan tip.
+Untuk organisasi memori lanjutan dan integrasi cerita yang lebih mendalam, gunakan STMB bersama [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Malay.md). Lihat panduan untuk amalan terbaik, arahan persediaan, dan tip.
 
 ---
 
-<a id="polisi-karakter-v451"></a>
 ## 📝 Polisi Karakter (v4.5.1+)
 
 - **Dibenarkan dalam tajuk:** Semua aksara Unicode yang boleh dicetak dibenarkan, termasuk huruf beraksen, emoji, CJK, dan simbol.
@@ -555,10 +512,8 @@ Lihat [Butiran Polisi Karakter](charset.md) untuk contoh dan nota migrasi.
 
 ---
 
-<a id="untuk-pembangun"></a>
 ## 👨‍💻 Untuk Pembangun
 
-<a id="membina-sambungan"></a>
 ### Membina Sambungan
 
 Sambungan ini menggunakan Bun untuk binaan. Proses binaan akan meminimumkan dan menggabungkan fail sumber.
@@ -568,7 +523,6 @@ Sambungan ini menggunakan Bun untuk binaan. Proses binaan akan meminimumkan dan 
 bun run build
 ```
 
-<a id="git-hooks"></a>
 ### Git Hooks
 
 Projek ini menyertakan pre-commit hook yang secara automatik membina sambungan dan memasukkan artifak binaan ke dalam commit anda. Ini memastikan fail binaan sentiasa sepadan dengan kod sumber.

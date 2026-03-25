@@ -19,7 +19,7 @@ Tautan lain:
 * 📘 [Panduan Pengguna (ID)](USER_GUIDE-ID.md)
 * 🧠 [Cara Kerja STMB (ID)](howSTMBworks-id.md)
 * 📋 [Riwayat Versi & Log Perubahan](../changelog.md)
-* 💡 [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
+* 💡 [Menggunakan 📕 Memory Books dengan 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Indonesian.md)
 
 > Catatan: Mendukung berbagai bahasa. Lihat folder [`../locales`](../locales) untuk daftarnya. README dan Panduan Pengguna yang dilokalkan ada di folder `userguides`. Konverter lorebook dan pustaka template side prompt ada di folder [`../resources`](../resources).
 
@@ -60,7 +60,7 @@ Tautan lain:
   - [Apakah saya perlu menjalankan vektor?](#apakah-saya-perlu-menjalankan-vektor)
   - [Haruskah saya memakai 'Tunda Hingga Rekursi' jika Memory Books satu-satunya lorebook?](#haruskah-saya-memakai-tunda-hingga-rekursi-jika-memory-books-satu-satunya-lorebook)
   - [Mengapa AI tidak melihat entri saya?](#mengapa-ai-tidak-melihat-entri-saya)
-  - [📚 Tingkatkan Kemampuan dengan Lorebook Ordering (STLO)](#-tingkatkan-kemampuan-dengan-lorebook-ordering-stlo)
+- [📚 Tingkatkan Kemampuan dengan Lorebook Ordering (STLO)](#-tingkatkan-kemampuan-dengan-lorebook-ordering-stlo)
 - [📝 Kebijakan Karakter (v4.5.1+)](#-kebijakan-karakter-v451)
 - [👨‍💻 Untuk Pengembang](#-untuk-pengembang)
   - [Membangun Ekstensi](#membangun-ekstensi)
@@ -468,9 +468,9 @@ Jika entri sudah terpicu dan memang dikirim ke AI, mungkin Anda perlu menegur AI
 
 ---
 
-### 📚 Tingkatkan Kemampuan dengan Lorebook Ordering (STLO)
+## 📚 Tingkatkan Kemampuan dengan Lorebook Ordering (STLO)
 
-Untuk organisasi memori tingkat lanjut dan integrasi cerita yang lebih dalam, gunakan STMB bersama [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). Lihat panduan untuk praktik terbaik, instruksi penyiapan, dan tips!
+Untuk organisasi memori tingkat lanjut dan integrasi cerita yang lebih dalam, gunakan STMB bersama [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Indonesian.md). Lihat panduan untuk praktik terbaik, instruksi penyiapan, dan tips!
 
 ---
 

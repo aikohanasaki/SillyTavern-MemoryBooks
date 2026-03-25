@@ -18,13 +18,7 @@ Otros enlaces:
 * 📘 [Guía de Usuario (ES)](USER_GUIDE-ES.md)
 * 💡 [Cómo funciona STMB (ES)](howSTMBworks-es.md)
 * 📋 [Historial de Versiones y Registro de Cambios](../changelog.md)
-* 💡 [Usando 📕 Memory Books con 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 Potencia tu experiencia con Lorebook Ordering (STLO)
-
-Para una organización avanzada de la memoria y una integración más profunda en la historia, recomendamos encarecidamente usar STMB junto con [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md). ¡Consulta la guía para conocer las mejores prácticas, instrucciones de configuración y consejos!
+* 💡 [Usando 📕 Memory Books con 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md)
 
 > Nota: Soporta varios idiomas: consulta la carpeta [`/locales`](../locales) para ver la lista. El Readme y las Guías de Usuario internacionales/localizadas se pueden encontrar en la carpeta [`/userguides`](./).
 > El convertidor de lorebooks y la biblioteca de plantillas de side prompts están en la carpeta [`/resources`](../resources).
@@ -69,6 +63,7 @@ Para una organización avanzada de la memoria y una integración más profunda e
   - [¿Necesito ejecutar vectores?](#necesito-ejecutar-vectores)
   - [¿Debo hacer un lorebook separado para los recuerdos, o puedo usar el mismo lorebook que ya estoy usando para otras cosas?](#debo-hacer-un-lorebook-separado-para-los-recuerdos-o-puedo-usar-el-mismo-lorebook-que-ya-estoy-usando-para-otras-cosas)
   - [¿Debo usar 'Retrasar Hasta la Recursión' si Memory Books es el único lorebook?](#debo-usar-retrasar-hasta-la-recursión-si-memory-books-es-el-único-lorebook)
+- [📚 Potencia tu experiencia con Lorebook Ordering (STLO)](#-potencia-tu-experiencia-con-lorebook-ordering-stlo)
 - [📝 Política de Caracteres (v4.5.1+)](#-política-de-caracteres-v451)
 - [Consulta Detalles de la Política de Caracteres para ejemplos y notas de migración.](#consulta-detalles-de-la-política-de-caracteres-para-ejemplos-y-notas-de-migración)
 
@@ -490,6 +485,12 @@ No. Si no hay otra world info o lorebooks, seleccionar 'Retrasar Hasta la Recurs
 
 * **Datos del personaje no disponibles:**
 * Espera a que el chat/grupo cargue completamente.
+
+---
+
+## 📚 Potencia tu experiencia con Lorebook Ordering (STLO)
+
+Para una organización avanzada de la memoria y una integración más profunda en la historia, recomendamos encarecidamente usar STMB junto con [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Spanish.md). ¡Consulta la guía para conocer las mejores prácticas, instrucciones de configuración y consejos!
 
 ---
 
