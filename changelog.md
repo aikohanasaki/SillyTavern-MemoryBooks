@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.1.1 (March 25, 2026)
+- Bugfix: fixed sideprompt interval run save path.
+
 ## v6.1.0 (March 23, 2026)
 - Improve auto-consolidation settings with multi-select target tiers.
 - Reorganized main settings popup for readability.
