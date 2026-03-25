@@ -10,21 +10,15 @@
 ## ❗ 请先阅读！
 
 从这里开始：
-* ⚠️‼️请阅读 [前置条件](#-前置条件) 以获取安装注意事项（特别是如果您运行文本补全 API）。
-* ❓ [常见问题 (FAQ)](#FAQ)
+* ⚠️‼️请阅读 [前置条件](#-前置条件-prerequisites) 以获取安装注意事项（特别是如果您运行文本补全 API）。
+* ❓ [常见问题 (FAQ)](#faq-常见问题)
 * 🛠️ [故障排除](#故障排除)
 
 其他链接：
 * 📘 [用户指南 (简体中文)](USER_GUIDE-zh-cn.md)
 * 💡 [STMB 工作原理 (简体中文)](howSTMBworks-zh-cn.md)
 * 📋 [版本历史 & 更新日志](../changelog.md)
-* 💡 [配合 📚 Lorebook Ordering 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
-
----
-
-### 📚 配合 Lorebook Ordering (STLO) 提升体验
-
-为了实现高级的记忆组织和更深层次的故事整合，我们强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。请参阅指南以获取最佳实践、设置说明和技巧！
+* 💡 [配合 📚 Lorebook Ordering 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md)
 
 > 注意：支持多种语言：请参阅 [`/locales`](../locales) 文件夹查看列表。国际化/本地化的自述文件和用户指南可以在 [`/userguides`](./) 文件夹中找到。
 > 世界书转换器和侧边提示词模板库位于 [`/resources`](../resources) 文件夹中。
@@ -33,44 +27,44 @@
 
 ## 📑 目录
 
-- [前置条件](#前置条件-prerequisites)
-  - [📕 ST Memory Books 的 KoboldCpp 使用技巧](#st-memory-books-的-koboldcpp-使用技巧)
-  - [📕 ST Memory Books 的 Llama.cpp 使用技巧](#st-memory-books-的-llamacpp-使用技巧)
-- [推荐的全局世界信息/世界书激活设置](#推荐的全局世界信息世界书激活设置)
-- [开始使用](#快速开始)
+- [📋 前置条件 (Prerequisites)](#-前置条件-prerequisites)
+  - [📕 ST Memory Books 的 KoboldCpp 使用技巧](#-st-memory-books-的-koboldcpp-使用技巧)
+  - [📕 ST Memory Books 的 Llama.cpp 使用技巧](#-st-memory-books-的-llamacpp-使用技巧)
+- [💡 推荐的全局世界信息/世界书激活设置](#-推荐的全局世界信息世界书激活设置)
+- [🚀 快速开始](#-快速开始)
   - [1. 安装 & 加载](#1-安装--加载)
   - [2. 标记场景](#2-标记场景)
   - [3. 创建记忆](#3-创建记忆)
-- [记忆类型：场景 vs 总结](#记忆类型-场景-vs-总结)
-  - [场景记忆 (默认)](#场景记忆-默认)
-  - [总结整合 (Summary Consolidation)](#总结整合-summary-consolidation)
-- [记忆生成](#记忆生成)
+- [🆕 斜杠命令快捷方式](#-斜杠命令快捷方式)
+- [👥 群聊支持](#-群聊支持)
+- [🧭 操作模式](#-操作模式)
+  - [自动模式 (默认)](#自动模式-默认)
+  - [自动创建世界书模式 ⭐ *v4.2.0 新增*](#自动创建世界书模式--v420-新增)
+  - [手动世界书模式](#手动世界书模式)
+- [🧩 记忆类型：场景 (Scenes) vs 总结 (Summaries)](#-记忆类型场景-scenes-vs-总结-summaries)
+  - [🎬 场景记忆 (默认)](#-场景记忆-默认)
+  - [🌈 总结整合 (Summary Consolidation)](#-总结整合-summary-consolidation)
+- [📝 记忆生成](#-记忆生成)
   - [仅限 JSON 输出](#仅限-json-输出)
   - [内置预设](#内置预设)
   - [自定义提示词](#自定义提示词)
-- [世界书集成](#世界书集成)
-- [斜杠命令](#斜杠命令快捷方式)
-- [群聊支持](#群聊支持)
-- [运行模式](#运行模式)
-  - [自动模式 (默认)](#自动模式-默认)
-  - [自动创建世界书模式](#自动创建世界书模式)
-  - [手动世界书模式](#手动世界书模式)
-- [追踪器与侧边提示词](#追踪器与侧边提示词)
-- [Regex 集成](#regex-正则表达式-集成实现高级自定义)
-- [配置文件管理](#配置文件管理)
-- [设置与配置](#设置与配置)
+- [📚 世界书集成](#-世界书集成)
+  - [🎡 追踪器 & 侧边提示词](#-追踪器--侧边提示词)
+  - [🧠 Regex (正则表达式) 集成实现高级自定义](#-regex-正则表达式-集成实现高级自定义)
+- [👤 配置文件管理 (Profile Management)](#-配置文件管理-profile-management)
+- [⚙️ 设置与配置](#-设置与配置)
   - [全局设置](#全局设置)
   - [配置文件字段](#配置文件字段)
-- [标题格式化](#标题格式化)
-- [上下文记忆](#上下文记忆)
-- [视觉反馈与辅助功能](#视觉反馈与辅助功能)
-- [FAQ (常见问题)](#faq-常见问题)
+- [🏷️ 标题格式化](#-标题格式化)
+- [🧵 上下文记忆](#-上下文记忆)
+- [🎨 视觉反馈与辅助功能](#-视觉反馈与辅助功能)
   - [我在扩展菜单里找不到 Memory Books！](#我在扩展菜单里找不到-memory-books)
   - [我需要运行 Vectors (向量) 吗？](#我需要运行-vectors-向量-吗)
   - [我应该为记忆制作一个单独的世界书，还是可以使用我已经用于其他事情的同一个世界书？](#我应该为记忆制作一个单独的世界书还是可以使用我已经用于其他事情的同一个世界书)
-- [故障排除 (Troubleshooting)](#故障排除-troubleshooting)
-- [配合 Lorebook Ordering (STLO) 提升体验](#配合-lorebook-ordering-stlo-提升体验)
-- [字符策略 (v4.5.1+)](#字符策略-v451)
+  - [如果 Memory Books 是唯一的世界书，我应该使用 '延迟直到递归' 吗？](#如果-memory-books-是唯一的世界书我应该使用-延迟直到递归-吗)
+  - [📚 配合 Lorebook Ordering (STLO) 提升体验](#-配合-lorebook-ordering-stlo-提升体验)
+- [📝 字符策略 (v4.5.1+)](#-字符策略-v451)
+- [请参阅 字符策略详情 以获取示例和迁移说明。](#请参阅-字符策略详情-以获取示例和迁移说明)
 
 ## 📋 前置条件 (Prerequisites)
 
@@ -482,7 +476,11 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * **角色数据不可用:**
 * 等待聊天/群组完全加载。
 
+---
 
+### 📚 配合 Lorebook Ordering (STLO) 提升体验
+
+为了实现高级的记忆组织和更深层次的故事整合，我们强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md) 一起使用。请参阅指南以获取最佳实践、设置说明和技巧！
 
 ---
 
