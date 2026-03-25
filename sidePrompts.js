@@ -591,16 +591,14 @@ export async function evaluateTrackers() {
 
         // Ensure lorebook exists up-front
         const lore = await requireLorebookStrict();
+        const defaultOverrides = resolveSidePromptConnection(null);
 
         const currentLast = chat.length - 1;
         if (currentLast < 0) return;
 
         for (const tpl of enabledInterval) {
-            const unifiedTitle = `${tpl.name} (STMB SidePrompt)`;
-            const legacyTitle = `${tpl.name} (STMB Tracker)`;
-
-            // Read existing entry to get last checkpoint (generic first, then legacy)
-            const existing = getEntryByTitle(lore.data, unifiedTitle) || getEntryByTitle(lore.data, legacyTitle);
+            const lookupTitles = getSidePromptLookupTitles(tpl, {}, ['tracker']);
+            const existing = findFirstLoreEntryByTitle(lore.data, lookupTitles);
             const lastMsgId = Number(
                 (existing && existing[`STMB_sp_${tpl.key}_lastMsgId`]) ??
                 (existing && existing.STMB_tracker_lastMsgId) ??
@@ -637,43 +635,34 @@ export async function evaluateTrackers() {
                 continue;
             }
 
-            // Build prompt with prior content and optional previous memories
-            const prior = existing?.content || '';
-            let prevSummaries = [];
-            const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount ?? 0);
-            const pmCount = Math.max(0, Math.min(7, pmCountRaw));
-            if (pmCount > 0) {
-                try {
-                    const res = await fetchPreviousSummaries(pmCount, extension_settings, chat_metadata);
-                    prevSummaries = res?.summaries || [];
-                } catch {}
-            }
-            const finalPrompt = buildPrompt(tpl.prompt, prior, compiled, tpl.responseFormat, prevSummaries);
+            const prepared = await prepareSidePromptRun({
+                tpl,
+                loreData: lore.data,
+                compiledScene: compiled,
+                defaultOverrides,
+                fallbackKinds: ['tracker'],
+            });
 
             // Call LLM
             let resultText = '';
             const runEpoch = getStmbStopEpoch();
             try {
-            const idx = Number(tpl?.settings?.overrideProfileIndex);
-            const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
-            const overrides = useOverride ? resolveSidePromptConnection(null, { overrideProfileIndex: idx }) : resolveSidePromptConnection(null);
-            console.log(`${MODULE_NAME}: SidePrompt attempt`, {
-                trigger: 'onInterval',
-                name: tpl.name,
-                key: tpl.key,
-                range: `${boundedStart}-${currentLast}`,
-                visibleSince,
-                threshold,
-                api: overrides.api,
-                model: overrides.model,
-            });
-            const task = createStmbInFlightTask(`SidePrompt:onInterval:${tpl?.key || tpl?.name || 'unknown'}`);
-            try {
-                resultText = await runLLM(finalPrompt, overrides, { signal: task.signal });
-                task.throwIfStopped();
-            } finally {
-                task.finish();
-            }
+                console.log(`${MODULE_NAME}: SidePrompt attempt`, {
+                    trigger: 'onInterval',
+                    name: tpl.name,
+                    key: tpl.key,
+                    range: `${boundedStart}-${currentLast}`,
+                    visibleSince,
+                    threshold,
+                    api: prepared.conn.api,
+                    model: prepared.conn.model,
+                });
+                resultText = await runSidePromptAttempt({
+                    taskLabel: `SidePrompt:onInterval:${tpl?.key || tpl?.name || 'unknown'}`,
+                    finalPrompt: prepared.finalPrompt,
+                    conn: prepared.conn,
+                    runEpoch,
+                });
             } catch (err) {
                 if (isStmbStopError(err)) return;
                 console.error(`${MODULE_NAME}: Interval sideprompt LLM failed:`, err);
@@ -689,7 +678,7 @@ export async function evaluateTrackers() {
                 const settings = extension_settings?.STMemoryBooks;
                 if (settings?.moduleSettings?.showMemoryPreviews) {
                     const memoryResult = {
-                        extractedTitle: unifiedTitle,
+                        extractedTitle: prepared.unifiedTitle,
                         content: resultText,
                         suggestedKeys: [],
                     };
@@ -720,15 +709,15 @@ export async function evaluateTrackers() {
             try {
                 throwIfStmbStopped(runEpoch);
                 const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
-            const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runtimeMacros);
-            const endId = compiled?.metadata?.sceneEnd ?? currentLast;
-            await upsertLorebookEntryByTitle(lore.name, lore.data, unifiedTitle, resultText, {
+                const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
+                const endId = compiled?.metadata?.sceneEnd ?? currentLast;
+                await upsertLorebookEntryByTitle(lore.name, lore.data, prepared.unifiedTitle, resultText, {
                     defaults,
                     entryOverrides,
                     metadataUpdates: {
-                        [`STMB_sp_${tpl.key}_lastMsgId`]: currentLast,
+                        [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                         [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
-                        STMB_tracker_lastMsgId: currentLast,
+                        STMB_tracker_lastMsgId: endId,
                         STMB_tracker_lastRunAt: new Date().toISOString(),
                     },
                     refreshEditor: extension_settings?.STMemoryBooks?.moduleSettings?.refreshEditor !== false,
