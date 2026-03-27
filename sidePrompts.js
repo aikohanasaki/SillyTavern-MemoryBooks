@@ -1,9 +1,8 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
-import { METADATA_KEY, world_names, loadWorldInfo } from '../../../world-info.js';
+import { loadWorldInfo } from '../../../world-info.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
-import { getSceneMarkers } from './sceneManager.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { requestCompletion } from './stmemory.js';
@@ -14,6 +13,7 @@ import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { oai_settings } from '../../../openai.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens, parseSidePromptCommandInput } from './sidePromptMacros.js';
 import { tr } from './i18nHelpers.js';
+import { validateLorebookRequirement } from './lorebookValidation.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -29,36 +29,22 @@ function enqueuePreview(task) {
 }
 
 /**
- * Strict lorebook requirement: no auto-create, no selection popup.
- * Throws with a user-facing toast if unavailable.
+ * Shared lorebook requirement for side prompt execution.
  * @returns {Promise<{ name: string, data: any }>}
  */
 async function requireLorebookStrict() {
-    const settings = extension_settings.STMemoryBooks;
-    let lorebookName = null;
+    const validation = await validateLorebookRequirement({
+        createContext: 'side-prompt',
+    });
 
-    // Manual mode uses per-chat manual selection in scene markers
-    if (settings?.moduleSettings?.manualModeEnabled) {
-        const stmbData = getSceneMarkers() || {};
-        lorebookName = stmbData.manualLorebook ?? null;
-    } else {
-        // Chat-bound lorebook
-        lorebookName = chat_metadata?.[METADATA_KEY] || null;
+    if (!validation?.valid || !validation?.data || !validation?.name) {
+        if (!validation?.handled && validation?.error) {
+            toastr.error(validation.error, 'STMemoryBooks');
+        }
+        throw new Error(validation?.error || translate('No valid lorebook available.', 'STMemoryBooks_Error_NoValidLorebookAvailable'));
     }
 
-    if (!lorebookName || !world_names || !world_names.includes(lorebookName)) {
-        toastr.error(translate('No memory lorebook is assigned. Open Memory Books settings and select or bind a lorebook.', 'STMemoryBooks_Toast_NoMemoryLorebookAssigned'), 'STMemoryBooks');
-        throw new Error(translate('No memory lorebook assigned', 'STMemoryBooks_Error_NoMemoryLorebookAssigned'));
-    }
-
-    try {
-        const lorebookData = await loadWorldInfo(lorebookName);
-        if (!lorebookData) throw new Error(translate('Failed to load lorebook', 'STMemoryBooks_Error_FailedToLoadLorebook'));
-        return { name: lorebookName, data: lorebookData };
-    } catch (err) {
-        toastr.error(translate('Failed to load the selected lorebook.', 'STMemoryBooks_Toast_FailedToLoadLorebook'), 'STMemoryBooks');
-        throw err;
-    }
+    return { name: validation.name, data: validation.data };
 }
 
 /**

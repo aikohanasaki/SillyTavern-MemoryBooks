@@ -316,6 +316,10 @@ export function getCurrentMemoryBooksContext() {
 export async function getEffectiveLorebookName() {
     const settings = extension_settings.STMemoryBooks;
     
+    // This helper keeps its legacy behavior on purpose. Passive read paths still
+    // use it to resolve a best-effort lorebook without invoking the shared
+    // interactive recovery flow, which is reserved for write/generation paths.
+    
     // If manual mode is OFF, use the default chat-bound lorebook
     if (!settings.moduleSettings.manualModeEnabled) {
         return chat_metadata?.[METADATA_KEY] || null;

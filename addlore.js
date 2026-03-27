@@ -827,6 +827,9 @@ export function getRangeFromMemoryEntry(entry) {
 export async function getLorebookStats() {
     try {
         const context = await getContext();
+        // Intentionally do not use the shared interactive lorebook validator here.
+        // Stats are read-only; callers should receive a simple invalid result
+        // instead of being forced through lorebook recovery UI.
         const lorebookName = context.chatMetadata[METADATA_KEY];
         
         if (!lorebookName) {

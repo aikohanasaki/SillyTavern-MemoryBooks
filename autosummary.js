@@ -1,12 +1,12 @@
 import { extension_settings } from '../../../extensions.js';
 import { chat, chat_metadata } from '../../../../script.js';
-import { METADATA_KEY, world_names } from '../../../world-info.js';
+import { METADATA_KEY } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
 import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, clampInt } from './utils.js';
-import { autoCreateLorebook } from './autocreate.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
+import { validateLorebookRequirement } from './lorebookValidation.js';
 
 /**
  * i18n helper: translate with Mustache-style {{var}} interpolation
@@ -26,30 +26,13 @@ function i18n(key, fallback, params) {
  * Validates lorebook for auto-summary with user-friendly prompts
  */
 async function validateLorebookForAutoSummary() {
-    // First, try to get a lorebook without showing popups
     const settings = extension_settings.STMemoryBooks;
-    let lorebookName;
+    const manualMode = !!settings?.moduleSettings?.manualModeEnabled;
 
-    if (!settings.moduleSettings.manualModeEnabled) {
-        // Automatic mode - use chat-bound lorebook
-        lorebookName = chat_metadata?.[METADATA_KEY] || null;
-
-        // Check if auto-create is enabled and no lorebook exists
-        if (!lorebookName && settings?.moduleSettings?.autoCreateLorebook) {
-            // Auto-create lorebook using template
-            const template = settings.moduleSettings.lorebookNameTemplate || i18n('STMemoryBooks_LorebookNameTemplatePlaceholder', 'LTM - {{char}} - {{chat}}');
-            const result = await autoCreateLorebook(template, 'auto-summary');
-
-            if (result.success) {
-                lorebookName = result.name;
-            } else {
-                return { valid: false, error: result.error };
-            }
-        }
-    } else {
+    if (manualMode) {
         // Manual mode - check if a lorebook is already selected
         const stmbData = getSceneMarkers() || {};
-        lorebookName = stmbData.manualLorebook ?? null;
+        let lorebookName = stmbData.manualLorebook ?? null;
 
         // If no lorebook is selected, ask user what to do
         if (!lorebookName) {
@@ -101,24 +84,21 @@ async function validateLorebookForAutoSummary() {
                 return { valid: false, error: i18n('STMemoryBooks_Info_AutoSummaryPostponed', 'Auto-summary postponed for {{count}} messages.', { count: postponeMessages }) };
             }
         }
+
+        return await validateLorebookRequirement({
+            createContext: 'auto-summary',
+            manualMode: true,
+            lorebookName,
+            retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, retry memory generation.'),
+        });
     }
 
-    // At this point we should have a lorebook name - validate it
-    if (!lorebookName) {
-        return { valid: false, error: i18n('STMemoryBooks_Error_NoLorebookForAutoSummary', 'No lorebook available for auto-summary.') };
-    }
-
-    if (!world_names || !world_names.includes(lorebookName)) {
-        return { valid: false, error: i18n('STMemoryBooks_Error_SelectedLorebookNotFound', 'Selected lorebook "{{name}}" not found.', { name: lorebookName }) };
-    }
-
-    try {
-        const { loadWorldInfo } = await import('../../../world-info.js');
-        const lorebookData = await loadWorldInfo(lorebookName);
-        return { valid: !!lorebookData, data: lorebookData, name: lorebookName };
-    } catch (error) {
-        return { valid: false, error: i18n('STMemoryBooks_Error_FailedToLoadSelectedLorebook', 'Failed to load the selected lorebook.') };
-    }
+    return await validateLorebookRequirement({
+        createContext: 'auto-summary',
+        manualMode: false,
+        lorebookName: chat_metadata?.[METADATA_KEY] || null,
+        retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, retry memory generation.'),
+    });
 }
 
 /**
