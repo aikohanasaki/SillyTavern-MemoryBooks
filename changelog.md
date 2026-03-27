@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.2.1 (March 27, 2026)
+- if the chat-bound or manual lorebook was deleted or unbound and you try to make memories, STMB will prompt you for a lorebook instead of just erroring.
+
 ## v6.1.1 (March 25, 2026)
 - Bugfix: fixed sideprompt interval run save path.
 

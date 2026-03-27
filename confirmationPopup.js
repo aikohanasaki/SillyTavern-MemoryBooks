@@ -486,6 +486,9 @@ export async function fetchPreviousSummaries(count, settings, chat_metadata) {
   }
 
   try {
+    // Intentionally do not use the shared interactive lorebook validator here.
+    // This is a passive preview helper, so missing lorebooks should degrade to
+    // empty results instead of launching recovery UI.
     const lorebookName = await getEffectiveLorebookName();
     if (!lorebookName) {
       return { summaries: [], actualCount: 0, requestedCount: count };
@@ -549,6 +552,9 @@ export async function calculateTokensWithContext(sceneData, memories) {
  */
 async function getAvailableMemoriesCount(settings, chat_metadata) {
   try {
+    // Intentionally do not use the shared interactive lorebook validator here.
+    // This is a passive count helper, so missing lorebooks should read as 0
+    // instead of interrupting the user with recovery prompts.
     const lorebookName = await getEffectiveLorebookName();
     if (!lorebookName) {
       return 0;

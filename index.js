@@ -135,6 +135,7 @@ import {
 } from "../../../i18n.js";
 import { localeData, loadLocaleJson } from "./locales.js";
 import { tr } from "./i18nHelpers.js";
+import { validateLorebookRequirement } from "./lorebookValidation.js";
 import { getRegexScripts } from "../../../extensions/regex/engine.js";
 import {
   buildSidePromptMacroSuggestion,
@@ -734,13 +735,15 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
     // initiateMemoryCreation will validate again before running
     const lorebookValidation = await validateLorebook();
     if (!lorebookValidation.valid) {
-      toastr.error(
-        translate(
-          "No lorebook available: " + lorebookValidation.error,
-          "STMemoryBooks_NoLorebookAvailable",
-        ),
-        translate("STMemoryBooks", "index.toast.title"),
-      );
+      if (!lorebookValidation.handled) {
+        toastr.error(
+          translate(
+            "No lorebook available: " + lorebookValidation.error,
+            "STMemoryBooks_NoLorebookAvailable",
+          ),
+          translate("STMemoryBooks", "index.toast.title"),
+        );
+      }
       return "";
     }
 
@@ -1345,48 +1348,10 @@ function validateSettings(settings) {
  * Validate lorebook and return status with data
  */
 export async function validateLorebook(skipAutoCreate = false) {
-  const settings = extension_settings.STMemoryBooks;
-  let lorebookName = await getEffectiveLorebookName();
-
-  // Only auto-create if not skipping
-  if (!skipAutoCreate) {
-    // Check if auto-create is enabled and we're not in manual mode
-    if (
-      !lorebookName &&
-      settings?.moduleSettings?.autoCreateLorebook &&
-      !settings?.moduleSettings?.manualModeEnabled
-    ) {
-      // Auto-create lorebook using template
-      const template =
-        settings.moduleSettings.lorebookNameTemplate ||
-        "LTM - {{char}} - {{chat}}";
-      const result = await autoCreateLorebook(template, "chat");
-
-      if (result.success) {
-        lorebookName = result.name;
-      } else {
-        return { valid: false, error: result.error };
-      }
-    }
-  }
-
-  if (!lorebookName) {
-    return { valid: false, error: "No lorebook available or selected." };
-  }
-
-  if (!world_names || !world_names.includes(lorebookName)) {
-    return {
-      valid: false,
-      error: `Selected lorebook "${lorebookName}" not found.`,
-    };
-  }
-
-  try {
-    const lorebookData = await loadWorldInfo(lorebookName);
-    return { valid: !!lorebookData, data: lorebookData, name: lorebookName };
-  } catch (error) {
-    return { valid: false, error: "Failed to load the selected lorebook." };
-  }
+  return validateLorebookRequirement({
+    skipAutoCreate,
+    createContext: "chat",
+  });
 }
 
 /**
@@ -2057,17 +2022,19 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
 
     const lorebookValidation = await validateLorebook();
     if (!lorebookValidation.valid) {
-      console.error(
-        "STMemoryBooks: Lorebook validation failed:",
-        lorebookValidation.error,
-      );
-      toastr.error(
-        translate(
+      if (!lorebookValidation.handled) {
+        console.error(
+          "STMemoryBooks: Lorebook validation failed:",
           lorebookValidation.error,
-          "STMemoryBooks_LorebookValidationError",
-        ),
-        "STMemoryBooks",
-      );
+        );
+        toastr.error(
+          translate(
+            lorebookValidation.error,
+            "STMemoryBooks_LorebookValidationError",
+          ),
+          "STMemoryBooks",
+        );
+      }
       isProcessingMemory = false;
       return;
     }
@@ -3904,6 +3871,10 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
   try {
     // Do not auto-create a lorebook for this path; allow UI to render
     const lorebookValidation = await validateLorebook(true);
+
+    if (lorebookValidation?.handled) {
+      return;
+    }
 
     // If no lorebook is assigned, show a toast but still render the popup
     let lorebookName = lorebookValidation?.name || null;
