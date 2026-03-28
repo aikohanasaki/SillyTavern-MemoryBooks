@@ -991,14 +991,14 @@ You must respond with ONLY valid JSON in this exact format:
 }
 
 For the content field, create a detailed beat-by-beat summary in narrative prose. First, note the dates/time. Then capture this scene accurately without losing ANY important information EXCEPT FOR [OOC] conversation/interaction. All [OOC] conversation/interaction is not useful for summaries.
-This summary will go in a vectorized database, so include:
+This summary will go in lorebook entry, so include:
 - All important story beats/events that happened
 - Key interaction highlights and character developments
 - Notable details, memorable quotes, and revelations
 - Outcome and anything else important for future interactions between {{user}} and {{char}}
 Capture ALL nuance without repeating verbatim. Make it comprehensive yet digestible.
 
-For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords for keyword retrieval via word-matching in chat context. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
 
@@ -1018,7 +1018,7 @@ For the content field, create a detailed bullet-point summary using markdown wit
 - **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.
 - **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.
 
-For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this conversation again if something is mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a keyworded database find this conversation again if something is mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Ensure you capture ALL important information - comprehensive detail is more important than brevity.
 
@@ -1047,7 +1047,7 @@ For the content field, create a long and detailed beat-by-beat summary using mar
 
 Include EVERYTHING important for future interactions between {{user}} and {{char}}. Capture all nuance without regurgitating verbatim.
 
-For the keywords field, provide 15-30 specific, descriptive, relevant keywords for vectorized database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords for keyworded database retrieval. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
 
@@ -1064,7 +1064,7 @@ For the content field, write a comprehensive beat summary that captures this sce
 # Scene Summary - Day X - [Title]
 First note the dates/time covered by the scene. Then narrate ALL important story beats/events that happened, key interaction highlights, notable details, memorable quotes, character developments, and outcome. Ensure no important information is lost. [OOC] conversation/interaction is not useful for summaries and should be ignored and excluded.
 
-For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a vectorized database find this summary again if mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
+For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a keyworded database find this summary again if mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no other text.`,
 
@@ -1107,7 +1107,7 @@ You must respond with ONLY valid JSON in this exact format:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 
-For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a vectorized database, so include:
+For the content field, create a beat-by-beat summary in narrative prose. Capture all key plot points that advance the story and character memories that leave a lasting impression, ensuring nothing essential is omitted. This summary will go in a keyworded database, so include:
 
 - Story beats, events, actions and consequences, turning points, and outcomes
 - Key character interactions, character developments, significant dialogue, revelations, emotional impact, and relationships
