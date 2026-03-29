@@ -11,7 +11,11 @@ import {
 import { sendRawCompletionRequest } from "./stmemory.js";
 import { getDefaultArcPrompt } from "./templatesArcPrompts.js";
 import * as ArcPrompts from "./arcAnalysisPromptManager.js";
-import { upsertLorebookEntriesBatch } from "./addlore.js";
+import {
+  applyLorebookEntrySettings,
+  normalizeLorebookEntrySettings,
+  upsertLorebookEntriesBatch,
+} from "./addlore.js";
 import { extension_settings } from "../../../extensions.js";
 import { translate } from '../../../i18n.js';
 import {
@@ -1038,49 +1042,13 @@ export function formatSummaryTitle(targetTier, format, baseTitle, seq) {
   return fallback;
 }
 
-function computeArcEntryOrder({
-  orderMode,
-  orderValue,
-  reverseStart,
-  orderNumber,
-}) {
-  const ORDER_MIN = 0;
-  const ORDER_MAX = 9999;
-
-  const modeRaw = String(orderMode || "auto").toLowerCase();
-  const mode = modeRaw === "manual" || modeRaw === "reverse" ? modeRaw : "auto";
-
-  const orderNumberNum = Number(orderNumber);
-  const safeOrderNumber = Number.isFinite(orderNumberNum)
-    ? Math.trunc(orderNumberNum)
-    : 1;
-
-  const reverseStartNum = Number(reverseStart);
-  const reverseStartClamped = Number.isFinite(reverseStartNum)
-    ? Math.min(9999, Math.max(100, Math.trunc(reverseStartNum)))
-    : 9999;
-
-  const rawOrder =
-    mode === "manual"
-      ? orderValue
-      : mode === "reverse"
-        ? reverseStartClamped - (safeOrderNumber - 1)
-        : safeOrderNumber;
-
-  const rawOrderNum = Number(rawOrder);
-  if (!Number.isFinite(rawOrderNum)) {
-    return mode === "manual" ? 100 : safeOrderNumber;
-  }
-
-  return Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
-}
-
 export async function commitSummaryEntries({
   lorebookName,
   lorebookData,
   summaryCandidates,
   targetTier = 1,
   disableOriginals = false,
+  summaryEntrySettings = null,
   orderMode = "auto",
   orderValue = 100,
   reverseStart = 9999,
@@ -1098,6 +1066,20 @@ export async function commitSummaryEntries({
         ? extension_settings?.STMemoryBooks?.arcTitleFormat ||
           getDefaultSummaryTitleFormat(targetTier)
         : getDefaultSummaryTitleFormat(targetTier);
+    const resolvedSummaryEntrySettings = normalizeLorebookEntrySettings(
+      summaryEntrySettings ||
+        extension_settings?.STMemoryBooks?.moduleSettings?.summaryEntrySettings ||
+        {
+          orderMode,
+          orderValue,
+          reverseStart,
+        },
+      {
+        orderMode,
+        orderValue,
+        reverseStart,
+      },
+    );
     let nextSummaryNumber = getNextSummaryNumber(lorebookData, targetTier);
     const tierLabel = getSummaryTierLabel(targetTier).toLowerCase();
 
@@ -1147,19 +1129,14 @@ export async function commitSummaryEntries({
         }
       }
 
-      const order = computeArcEntryOrder({
-        orderMode,
-        orderValue,
-        reverseStart,
+      const summaryEntry = {};
+      applyLorebookEntrySettings(summaryEntry, resolvedSummaryEntrySettings, {
         orderNumber: summaryNumber,
+        orderNumberLabel: getSummaryTierLabel(targetTier).toLowerCase(),
       });
-      const defaults = {
-        vectorized: true,
-        selective: true,
-        order,
-        position: 0,
-      };
+      const defaults = {};
       const entryOverrides = {
+        ...summaryEntry,
         stmemorybooks: true,
         stmbSummary: true,
         stmbSummaryTier: Number(targetTier),

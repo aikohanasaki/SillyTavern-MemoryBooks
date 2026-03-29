@@ -262,7 +262,7 @@
   "STMemoryBooks_APIKey": "API 密钥:",
   "STMemoryBooks_APIKeyPlaceholder": "输入您的 API 密钥",
   "STMemoryBooks_LorebookEntrySettings": "故事书条目设置",
-  "STMemoryBooks_LorebookEntrySettingsDesc": "这些设置控制生成的记忆如何保存到故事书中。",
+  "STMemoryBooks_LorebookEntrySettingsDesc": "这些设置控制生成的记忆如何保存到故事书中。",`r`n  "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "这些设置控制生成的记忆如何保存到故事书中。",
   "STMemoryBooks_LorebookEntryTitleOverride": "故事书条目标题覆盖",
   "STMemoryBooks_LorebookEntryTitleOverridePlaceholder": "可选标题模板（例如：NPC {{npcname}}）",
   "STMemoryBooks_LorebookEntryTitleOverrideHelp": "可选。此处会解析标准 ST 宏和所需的运行时宏，且 STMB 仍会在末尾附加 (STMB SidePrompt)。",
@@ -274,12 +274,12 @@
   "STMemoryBooks_OutletName": "Outlet 名称",
   "STMemoryBooks_OutletNamePlaceholder": "例如，ENDING",
   "STMemoryBooks_ActivationMode": "激活模式:",
-  "STMemoryBooks_ActivationModeDesc": "🔗 推荐为记忆使用矢量化。",
+  "STMemoryBooks_ActivationModeDesc": "🔗 推荐为记忆使用矢量化。",`r`n  "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 推荐为记忆使用矢量化。",
   "STMemoryBooks_Vectorized": "🔗 矢量化 (默认)",
   "STMemoryBooks_Constant": "🔵 常量",
   "STMemoryBooks_Normal": "🟢 普通",
   "STMemoryBooks_InsertionPosition": "插入位置:",
-  "STMemoryBooks_InsertionPositionDesc": "↑Char 推荐。Aiko 建议记忆永远不要低于 ↑AN。",
+  "STMemoryBooks_InsertionPositionDesc": "↑Char 推荐。Aiko 建议记忆永远不要低于 ↑AN。",`r`n  "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char 推荐。Aiko 建议记忆永远不要低于 ↑AN。",
   "STMemoryBooks_CharUp": "角色定义之前（↑Char）",
   "STMemoryBooks_CharDown": "角色定义之后（↓Char）",
   "STMemoryBooks_ANUp": "作者注释之前（↑AN）",
@@ -718,4 +718,5 @@
   "STMemoryBooks_SummaryPrompt_Alternate": "你是一位专业的叙事分析师与记忆引擎助手。将多个{{stmbchildtier}}条目合并为一个连贯的{{stmbtier}}摘要。\n\n仅返回 JSON：\n{\n  \"summaries\": [\n    {\n      \"title\": \"简短的描述性{{stmbtier}}标题\",\n      \"summary\": \"{{stmbtier}}的结构化摘要\",\n      \"keywords\": [\"keyword1\", \"keyword2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"该条目为何不适合。\" }\n  ]\n}\n\n要求：\n- 尊重时间顺序。\n- 保持摘要简洁，同时保留主要剧情和连续性。\n- 除非影响未来事件，否则忽略 OOC 和氛围细节。\n- 尽可能使用 member_ids。\n- 仅返回有效 JSON。",
   "STMemoryBooks_SummaryPrompt_Tiny": "你擅长将许多小的{{stmbchildtier}}条目压缩成紧凑且连贯的{{stmbtier}}摘要。\n\n仅返回 JSON：\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\n规则：\n- 聚焦剧情、情绪推进、决定、冲突和连续性。\n- 非常清晰地梳理因果关系，使剧情和连续性易于理解。\n- 压缩可以很强，但要保持准确。\n- 将不匹配的项目放入 unassigned_items。\n- 不要 JSON 之外的评论。"
 }
+
 

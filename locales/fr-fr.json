@@ -266,16 +266,16 @@
     "STMemoryBooks_APIKey": "Clé API :",
     "STMemoryBooks_APIKeyPlaceholder": "Entrez votre clé API",
     "STMemoryBooks_LorebookEntrySettings": "Réglages de l'Entrée du Lorebook",
-    "STMemoryBooks_LorebookEntrySettingsDesc": "Contrôle comment la mémoire est sauvegardée.",
+    "STMemoryBooks_LorebookEntrySettingsDesc": "Contrôle comment la mémoire est sauvegardée.",`r`n    "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "Contrôle comment la mémoire est sauvegardée.",
     "STMemoryBooks_OutletName": "Nom de l'Outlet",
     "STMemoryBooks_OutletNamePlaceholder": "ex: ENDING",
     "STMemoryBooks_ActivationMode": "Mode d'Activation :",
-    "STMemoryBooks_ActivationModeDesc": "🔗 Vectorisé recommandé.",
+    "STMemoryBooks_ActivationModeDesc": "🔗 Vectorisé recommandé.",`r`n    "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 Vectorisé recommandé.",
     "STMemoryBooks_Vectorized": "🔗 Vectorisé (Défaut)",
     "STMemoryBooks_Constant": "🔵 Constant",
     "STMemoryBooks_Normal": "🟢 Normal",
     "STMemoryBooks_InsertionPosition": "Position d'Insertion :",
-    "STMemoryBooks_InsertionPositionDesc": "↑Char recommandé. Ne descendez pas sous ↑AN.",
+    "STMemoryBooks_InsertionPositionDesc": "↑Char recommandé. Ne descendez pas sous ↑AN.",`r`n    "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char recommandé. Ne descendez pas sous ↑AN.",
     "STMemoryBooks_CharUp": "↑Char",
     "STMemoryBooks_CharDown": "↓Char",
     "STMemoryBooks_ANUp": "↑AN",
@@ -723,5 +723,6 @@
     "STMemoryBooks_SetHighest_SetTo" : "Dernier message traité défini manuellement sur #{{value}}.",
     "addlore.toast.orderClamped" : "La plage de numéros de commande est limitée à 0-9999. La valeur actuelle de {{source}} est {{requested}} ; elle a été ramenée à {{clamped}}.",
     "STMemoryBooks_ReverseOrder" : "Ordre inverse (à utiliser uniquement avec les Outlets)"}
+
 
 

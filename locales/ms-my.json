@@ -266,7 +266,7 @@
   "STMemoryBooks_APIKey": "Kunci API:",
   "STMemoryBooks_APIKeyPlaceholder": "Masukkan kunci API anda",
   "STMemoryBooks_LorebookEntrySettings": "Tetapan Entri Buku Legenda",
-  "STMemoryBooks_LorebookEntrySettingsDesc": "Tetapan ini mengawal cara memori yang dijana disimpan ke dalam buku legenda.",
+  "STMemoryBooks_LorebookEntrySettingsDesc": "Tetapan ini mengawal cara memori yang dijana disimpan ke dalam buku legenda.",`r`n  "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "Tetapan ini mengawal cara memori yang dijana disimpan ke dalam buku legenda.",
   "STMemoryBooks_LorebookEntryTitleOverride": "Penggantian Tajuk Entri Buku Legenda",
   "STMemoryBooks_LorebookEntryTitleOverridePlaceholder": "Templat tajuk pilihan (cth., NPC {{npcname}})",
   "STMemoryBooks_LorebookEntryTitleOverrideHelp": "Pilihan. Makro ST standard dan makro runtime yang diperlukan akan diselesaikan di sini, dan STMB masih menambah (STMB SidePrompt).",
@@ -278,12 +278,12 @@
   "STMemoryBooks_OutletName": "Nama Outlet",
   "STMemoryBooks_OutletNamePlaceholder": "cth., ENDING",
   "STMemoryBooks_ActivationMode": "Mod Pengaktifan:",
-  "STMemoryBooks_ActivationModeDesc": "🔗 Vektorisasi disyorkan untuk memori.",
+  "STMemoryBooks_ActivationModeDesc": "🔗 Vektorisasi disyorkan untuk memori.",`r`n  "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 Vektorisasi disyorkan untuk memori.",
   "STMemoryBooks_Vectorized": "🔗 Vektorisasi (Lalai)",
   "STMemoryBooks_Constant": "🔵 Malar",
   "STMemoryBooks_Normal": "🟢 Normal",
   "STMemoryBooks_InsertionPosition": "Kedudukan Sisipan:",
-  "STMemoryBooks_InsertionPositionDesc": "↑Char disyorkan. Aiko mengesyorkan memori tidak pernah lebih rendah daripada ↑AN.",
+  "STMemoryBooks_InsertionPositionDesc": "↑Char disyorkan. Aiko mengesyorkan memori tidak pernah lebih rendah daripada ↑AN.",`r`n  "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char disyorkan. Aiko mengesyorkan memori tidak pernah lebih rendah daripada ↑AN.",
   "STMemoryBooks_CharUp": "↑Char",
   "STMemoryBooks_CharDown": "↓Char",
   "STMemoryBooks_ANUp": "↑AN",
@@ -718,4 +718,5 @@
   "STMemoryBooks_SummaryPrompt_Alternate": "Anda ialah penganalisis naratif pakar dan pembantu enjin memori.\nGabungkan beberapa entri {{stmbchildtier}} menjadi satu ringkasan {{stmbtier}} yang koheren.\n\nKembalikan JSON sahaja:\n{\n  \"summaries\": [\n    {\n      \"title\": \"Tajuk {{stmbtier}} yang pendek dan deskriptif\",\n      \"summary\": \"Ringkasan {{stmbtier}} berstruktur\",\n      \"keywords\": [\"kata kunci1\", \"kata kunci2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"Mengapa item ini tidak sesuai.\" }\n  ]\n}\n\nPeraturan:\n- Hormati kronologi.\n- Kekalkan plot utama dan kesinambungan sambil menjadikannya padat.\n- Abaikan OOC dan butiran hiasan melainkan ia mempengaruhi peristiwa masa depan.\n- Gunakan member_ids jika boleh.\n- Hanya JSON yang sah.",
   "STMemoryBooks_SummaryPrompt_Tiny": "Anda pakar dalam memadatkan banyak entri {{stmbchildtier}} menjadi ringkasan {{stmbtier}} yang padat dan koheren.\n\nKembalikan JSON sahaja:\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\nPeraturan:\n- Fokus pada plot, perkembangan emosi, keputusan, konflik, dan kesinambungan.\n- Jejaki sebab dan akibat dengan sangat jelas supaya plot dan kesinambungan mudah difahami.\n- Pemadatan mesti agresif tetapi tepat.\n- Kenal pasti item yang tidak sesuai di unassigned_items.\n- Tiada ulasan di luar JSON."
 }
+
 

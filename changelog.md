@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.3.0 (March 29, 2026)
+- Consolidated summaries can now save their own lorebook entry settings, including insertion and recursion controls, with dedicated localization keys.
+
 ## v6.2.1 (March 27, 2026)
 - Changed wording in prompts from "vectorized database" to "keyworded database".
 

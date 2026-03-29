@@ -94,6 +94,188 @@ const DEFAULT_TITLE_FORMATS = [
     '[000] - {{title}}' // i18n('addlore.titleFormats.8', '[000] - {{title}}')
 ];
 
+const VALID_LOREBOOK_POSITIONS = new Set([0, 1, 2, 3, 5, 6, 7]);
+
+export const DEFAULT_LOREBOOK_ENTRY_SETTINGS = Object.freeze({
+    constVectMode: 'link',
+    position: 0,
+    outletName: '',
+    orderMode: 'auto',
+    orderValue: 100,
+    reverseStart: 9999,
+    preventRecursion: false,
+    delayUntilRecursion: false,
+});
+
+function clampLorebookOrderValue(value, fallback = 100) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return fallback;
+    }
+    return Math.min(9999, Math.max(0, Math.trunc(num)));
+}
+
+function clampLorebookReverseStart(value, fallback = 9999) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return fallback;
+    }
+    return Math.min(9999, Math.max(100, Math.trunc(num)));
+}
+
+function normalizeLorebookPosition(value, fallback = 0) {
+    const num = Number(value);
+    const pos = Number.isFinite(num) ? Math.trunc(num) : fallback;
+    return VALID_LOREBOOK_POSITIONS.has(pos) ? pos : fallback;
+}
+
+function computeLorebookEntryOrder(lorebookSettings, orderNumber, options = {}) {
+    const ORDER_MIN = 0;
+    const ORDER_MAX = 9999;
+    const modeRaw = String(lorebookSettings?.orderMode || 'auto').toLowerCase();
+    const mode = modeRaw === 'manual' || modeRaw === 'reverse' ? modeRaw : 'auto';
+    const safeOrderNumber = Number.isFinite(Number(orderNumber))
+        ? Math.max(1, Math.trunc(Number(orderNumber)))
+        : 1;
+    const reverseStart = clampLorebookReverseStart(lorebookSettings?.reverseStart, 9999);
+
+    const rawOrder = mode === 'manual'
+        ? lorebookSettings?.orderValue
+        : mode === 'reverse'
+            ? reverseStart - (safeOrderNumber - 1)
+            : safeOrderNumber;
+
+    const rawOrderNum = Number(rawOrder);
+    const sourceLabel = mode === 'manual'
+        ? 'manual order value'
+        : mode === 'reverse'
+            ? `computed order (from ${options.orderNumberLabel || 'entry'} #${safeOrderNumber})`
+            : (options.orderNumberLabel || 'entry number');
+
+    let finalOrder = rawOrder;
+    if (!Number.isFinite(rawOrderNum)) {
+        finalOrder = mode === 'manual' ? 100 : safeOrderNumber;
+    } else if (rawOrderNum < ORDER_MIN || rawOrderNum > ORDER_MAX) {
+        const clampedNum = Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
+        finalOrder = clampedNum;
+
+        if (options.showOrderClampNotification && extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
+            toastr.info(
+                i18n(
+                    'addlore.toast.orderClamped',
+                    'Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.',
+                    { source: sourceLabel, requested: rawOrderNum, clamped: clampedNum }
+                ),
+                i18n('addlore.toast.title', 'STMemoryBooks')
+            );
+        }
+    }
+
+    return Number.isFinite(Number(finalOrder))
+        ? Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(Number(finalOrder))))
+        : (mode === 'manual' ? 100 : safeOrderNumber);
+}
+
+export function normalizeLorebookEntrySettings(settings = {}, defaults = DEFAULT_LOREBOOK_ENTRY_SETTINGS) {
+    const base = {
+        ...DEFAULT_LOREBOOK_ENTRY_SETTINGS,
+        ...(defaults || {}),
+    };
+
+    const modeRaw = String(
+        settings?.constVectMode !== undefined ? settings.constVectMode : base.constVectMode,
+    ).toLowerCase();
+    const constVectMode =
+        modeRaw === 'blue' || modeRaw === 'green' || modeRaw === 'link'
+            ? modeRaw
+            : 'link';
+
+    const orderModeRaw = String(
+        settings?.orderMode !== undefined ? settings.orderMode : base.orderMode,
+    ).toLowerCase();
+    const orderMode =
+        orderModeRaw === 'manual' || orderModeRaw === 'reverse'
+            ? orderModeRaw
+            : 'auto';
+
+    const fallbackOrderValue = clampLorebookOrderValue(base.orderValue, 100);
+    const fallbackReverseStart = clampLorebookReverseStart(base.reverseStart, 9999);
+
+    return {
+        constVectMode,
+        position: normalizeLorebookPosition(settings?.position, normalizeLorebookPosition(base.position, 0)),
+        outletName: String(settings?.outletName !== undefined ? settings.outletName : base.outletName || '').trim(),
+        orderMode,
+        orderValue: clampLorebookOrderValue(settings?.orderValue, fallbackOrderValue),
+        reverseStart: clampLorebookReverseStart(settings?.reverseStart, fallbackReverseStart),
+        preventRecursion: settings?.preventRecursion !== undefined ? !!settings.preventRecursion : !!base.preventRecursion,
+        delayUntilRecursion: settings?.delayUntilRecursion !== undefined ? !!settings.delayUntilRecursion : !!base.delayUntilRecursion,
+    };
+}
+
+export function applyLorebookEntrySettings(entry, lorebookSettings = {}, options = {}) {
+    const normalized = normalizeLorebookEntrySettings(lorebookSettings);
+    const orderNumber = Number.isFinite(Number(options.orderNumber))
+        ? Math.max(1, Math.trunc(Number(options.orderNumber)))
+        : 1;
+
+    switch (normalized.constVectMode) {
+        case 'blue':
+            entry.constant = true;
+            entry.vectorized = false;
+            break;
+        case 'green':
+            entry.constant = false;
+            entry.vectorized = false;
+            break;
+        case 'link':
+        default:
+            entry.constant = false;
+            entry.vectorized = true;
+            break;
+    }
+
+    entry.position = normalized.position;
+    if (normalized.position === 7 && normalized.outletName) {
+        entry.outletName = normalized.outletName;
+    } else {
+        delete entry.outletName;
+    }
+
+    entry.order = computeLorebookEntryOrder(normalized, orderNumber, {
+        showOrderClampNotification: !!options.showOrderClampNotification,
+        orderNumberLabel: options.orderNumberLabel || 'entry',
+    });
+    entry.preventRecursion = normalized.preventRecursion;
+    entry.delayUntilRecursion = normalized.delayUntilRecursion;
+
+    entry.keysecondary = [];
+    entry.selective = true;
+    entry.selectiveLogic = 0;
+    entry.addMemo = true;
+    entry.disable = false;
+    entry.excludeRecursion = false;
+    entry.probability = 100;
+    entry.useProbability = true;
+    entry.depth = 4;
+    entry.group = "";
+    entry.groupOverride = false;
+    entry.groupWeight = 100;
+    entry.scanDepth = null;
+    entry.caseSensitive = null;
+    entry.matchWholeWords = null;
+    entry.useGroupScoring = null;
+    entry.automationId = "";
+    entry.role = null;
+    entry.sticky = 0;
+    entry.cooldown = 0;
+    entry.delay = 0;
+    entry.displayIndex = orderNumber;
+    entry.stmemorybooks = true;
+
+    return { orderNumber, lorebookSettings: normalized };
+}
+
 /**
  * Adds a generated memory to the chat's bound lorebook.
  * This is the main entry point called from index.js after memory generation.
@@ -263,110 +445,11 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     
     // Extract order number from title for auto-numbering
     const orderNumber = extractNumberFromTitle(entryTitle) || 1;
-    
-    // 1. Constant / Vectorized Mode
-    switch (lorebookSettings.constVectMode) {
-        case 'blue': // Constant
-            entry.constant = true;
-            entry.vectorized = false;
-            break;
-        case 'green': // Normal
-            entry.constant = false;
-            entry.vectorized = false;
-            break;
-        case 'link': // Vectorized (Default)
-        default:
-            entry.constant = false;
-            entry.vectorized = true;
-            break;
-    }
-    
-    // 2. Insertion Position
-    entry.position = lorebookSettings.position;
-
-    // 2a. Outlet Name for Outlet position (7)
-    if (Number(lorebookSettings.position) === 7) {
-        const outName = String(lorebookSettings.outletName || '').trim();
-        if (outName) {
-            entry.outletName = outName;
-        }
-    }
-
-    // 3. Insertion Order
-    {
-        const ORDER_MIN = 0;
-        const ORDER_MAX = 9999;
-
-        const mode = lorebookSettings.orderMode;
-        const isManual = mode === 'manual';
-        const isReverse = mode === 'reverse';
-
-        const reverseStartRaw = lorebookSettings.reverseStart;
-        const reverseStartNum = Number(reverseStartRaw);
-        const reverseStart = Number.isFinite(reverseStartNum)
-            ? Math.min(9999, Math.max(100, Math.trunc(reverseStartNum)))
-            : 9999;
-
-        const rawOrder = isManual
-            ? lorebookSettings.orderValue
-            : (isReverse ? (reverseStart - (Number(orderNumber) - 1)) : orderNumber);
-
-        const rawOrderNum = Number(rawOrder);
-        const sourceLabel = isManual
-            ? 'manual order value'
-            : (isReverse ? `computed order (from memory #${orderNumber})` : 'memory number');
-
-        let finalOrder = rawOrder;
-        if (!Number.isFinite(rawOrderNum)) {
-            // Fallback for invalid values (NaN, undefined, etc.)
-            finalOrder = isManual ? 100 : orderNumber;
-        } else if (rawOrderNum < ORDER_MIN || rawOrderNum > ORDER_MAX) {
-            const clampedNum = Math.min(ORDER_MAX, Math.max(ORDER_MIN, Math.trunc(rawOrderNum)));
-            finalOrder = clampedNum;
-
-            if (extension_settings.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
-                toastr.info(
-                    i18n(
-                        'addlore.toast.orderClamped',
-                        'Order range is limited to 0–9999. Current {{source}} is {{requested}}; clamped to {{clamped}}.',
-                        { source: sourceLabel, requested: rawOrderNum, clamped: clampedNum }
-                    ),
-                    i18n('addlore.toast.title', 'STMemoryBooks')
-                );
-            }
-        }
-
-        entry.order = finalOrder;
-    }
-
-    // 4. Recursion Settings
-    entry.preventRecursion = lorebookSettings.preventRecursion;
-    entry.delayUntilRecursion = lorebookSettings.delayUntilRecursion;
-
-    // Set other properties to match the tested lorebook structure
-    entry.keysecondary = [];
-    entry.selective = true;
-    entry.selectiveLogic = 0;
-    entry.addMemo = true;
-    entry.disable = false;
-    entry.excludeRecursion = false;
-    entry.probability = 100;
-    entry.useProbability = true;
-    entry.depth = 4;
-    entry.group = "";
-    entry.groupOverride = false;
-    entry.groupWeight = 100;
-    entry.scanDepth = null;
-    entry.caseSensitive = null;
-    entry.matchWholeWords = null;
-    entry.useGroupScoring = null;
-    entry.automationId = "";
-    entry.role = null;
-    entry.sticky = 0;
-    entry.cooldown = 0;
-    entry.delay = 0;
-    entry.displayIndex = orderNumber; // Use order number for display index
-    entry.stmemorybooks = true; // Explicitly mark as STMemoryBooks memory entry
+    applyLorebookEntrySettings(entry, lorebookSettings, {
+        orderNumber,
+        orderNumberLabel: 'memory',
+        showOrderClampNotification: true,
+    });
     if (memoryResult.metadata?.sceneRange) { // Set metadata for scene range if available
         const rangeParts = memoryResult.metadata.sceneRange.split('-');
         if (rangeParts.length === 2) {

@@ -266,16 +266,16 @@
   "STMemoryBooks_APIKey": "APIキー:",
   "STMemoryBooks_APIKeyPlaceholder": "APIキーを入力",
   "STMemoryBooks_LorebookEntrySettings": "ロアブックエントリ設定",
-  "STMemoryBooks_LorebookEntrySettingsDesc": "これらの設定は、生成されたメモリがロアブックに保存される方法を制御します。",
+  "STMemoryBooks_LorebookEntrySettingsDesc": "これらの設定は、生成されたメモリがロアブックに保存される方法を制御します。",`r`n  "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "これらの設定は、生成されたメモリがロアブックに保存される方法を制御します。",
   "STMemoryBooks_OutletName": "Outlet名",
   "STMemoryBooks_OutletNamePlaceholder": "例: ENDING",
   "STMemoryBooks_ActivationMode": "アクティベーションモード:",
-  "STMemoryBooks_ActivationModeDesc": "🔗 メモリにはベクトル化を推奨します。",
+  "STMemoryBooks_ActivationModeDesc": "🔗 メモリにはベクトル化を推奨します。",`r`n  "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 メモリにはベクトル化を推奨します。",
   "STMemoryBooks_Vectorized": "🔗 ベクトル化（デフォルト）",
   "STMemoryBooks_Constant": "🔵 定数",
   "STMemoryBooks_Normal": "🟢 通常",
   "STMemoryBooks_InsertionPosition": "挿入位置:",
-  "STMemoryBooks_InsertionPositionDesc": "↑Charを推奨します。Aikoはメモリが↑ANより低くならないことを推奨します。",
+  "STMemoryBooks_InsertionPositionDesc": "↑Charを推奨します。Aikoはメモリが↑ANより低くならないことを推奨します。",`r`n  "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Charを推奨します。Aikoはメモリが↑ANより低くならないことを推奨します。",
   "STMemoryBooks_CharUp": "↑Char",
   "STMemoryBooks_CharDown": "↓Char",
   "STMemoryBooks_ANUp": "↑AN",
@@ -718,4 +718,5 @@
   "STMemoryBooks_SummaryPrompt_Alternate": "あなたは熟練した物語分析官であり、メモリエンジンのアシスタントです。複数の{{stmbchildtier}}項目を、1つの一貫した{{stmbtier}}要約にまとめてください。\n\nJSONのみを返してください:\n{\n  \"summaries\": [\n    {\n      \"title\": \"短い説明的な{{stmbtier}}タイトル\",\n      \"summary\": \"{{stmbtier}}の構造化要約\",\n      \"keywords\": [\"keyword1\", \"keyword2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"この項目が合わない理由。\" }\n  ]\n}\n\n要件:\n- 時系列を尊重する。\n- 要約は簡潔に保ちつつ、主要な筋と継続性を保持する。\n- OOC や雰囲気だけの描写は、未来の出来事に影響しない限り無視する。\n- 可能な限り member_ids を使う。\n- 有効な JSON のみを返す。",
   "STMemoryBooks_SummaryPrompt_Tiny": "あなたは多くの小さな{{stmbchildtier}}項目を、簡潔で一貫した{{stmbtier}}要約に圧縮するのが得意です。\n\nJSONのみを返してください:\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\nルール:\n- 物語、感情の流れ、決定、衝突、継続性に焦点を当てる。\n- 因果関係を非常に明確にたどり、プロットと継続性が理解しやすくなるようにすること。\n- 圧縮は強めでも正確さを保つ。\n- 合わない項目は unassigned_items に入れる。\n- JSON以外のコメントは不要。"
 }
+
 
