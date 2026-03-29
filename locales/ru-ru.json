@@ -266,7 +266,7 @@
   "STMemoryBooks_APIKey": "Ключ API:",
   "STMemoryBooks_APIKeyPlaceholder": "Введите ваш ключ API",
   "STMemoryBooks_LorebookEntrySettings": "Настройки записи в Лорбук",
-  "STMemoryBooks_LorebookEntrySettingsDesc": "Эти настройки контролируют, как сгенерированная память сохраняется в лорбук.",
+  "STMemoryBooks_LorebookEntrySettingsDesc": "Эти настройки контролируют, как сгенерированная память сохраняется в лорбук.",`r`n  "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "Эти настройки контролируют, как сгенерированная память сохраняется в лорбук.",
   "STMemoryBooks_LorebookEntryTitleOverride": "Переопределение заголовка записи в лорбуке",
   "STMemoryBooks_LorebookEntryTitleOverridePlaceholder": "Необязательный шаблон заголовка (например, NPC {{npcname}})",
   "STMemoryBooks_LorebookEntryTitleOverrideHelp": "Необязательно. Стандартные ST-макросы и необходимые runtime-макросы здесь подставляются, и STMB по-прежнему добавляет (STMB SidePrompt).",
@@ -278,12 +278,12 @@
   "STMemoryBooks_OutletName": "Имя выхода",
   "STMemoryBooks_OutletNamePlaceholder": "например, КОНЕЦ",
   "STMemoryBooks_ActivationMode": "Режим активации:",
-  "STMemoryBooks_ActivationModeDesc": "🔗 Векторизованный рекомендуется для памятей.",
+  "STMemoryBooks_ActivationModeDesc": "🔗 Векторизованный рекомендуется для памятей.",`r`n  "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 Векторизованный рекомендуется для памятей.",
   "STMemoryBooks_Vectorized": "🔗 Векторизованный (По умолчанию)",
   "STMemoryBooks_Constant": "🔵 Постоянный",
   "STMemoryBooks_Normal": "🟢 Обычный",
   "STMemoryBooks_InsertionPosition": "Позиция вставки:",
-  "STMemoryBooks_InsertionPositionDesc": "↑Char рекомендуется. Aiko рекомендует, чтобы памяти никогда не опускались ниже ↑AN.",
+  "STMemoryBooks_InsertionPositionDesc": "↑Char рекомендуется. Aiko рекомендует, чтобы памяти никогда не опускались ниже ↑AN.",`r`n  "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char рекомендуется. Aiko рекомендует, чтобы памяти никогда не опускались ниже ↑AN.",
   "STMemoryBooks_CharUp": "↑Char",
   "STMemoryBooks_CharDown": "↓Char",
   "STMemoryBooks_ANUp": "↑AN",
@@ -718,4 +718,5 @@
   "STMemoryBooks_SummaryPrompt_Alternate": "Ты — эксперт по нарративному анализу и ассистент движка памяти. Объедини несколько записей {{stmbchildtier}} в одну связную сводку {{stmbtier}}.\n\nВерни только JSON:\n{\n  \"summaries\": [\n    {\n      \"title\": \"Короткое описательное название {{stmbtier}}\",\n      \"summary\": \"Структурированная сводка {{stmbtier}}\",\n      \"keywords\": [\"keyword1\", \"keyword2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"Почему этот элемент не подходит.\" }\n  ]\n}\n\nТребования:\n- Соблюдай хронологию.\n- Держи сводку компактной, но сохрани основные сюжетные линии и непрерывность.\n- Игнорируй OOC и атмосферные детали, если они не влияют на будущие события.\n- По возможности используй member_ids.\n- Возвращай только корректный JSON.",
   "STMemoryBooks_SummaryPrompt_Tiny": "Ты специализируешься на сжатии многих маленьких записей {{stmbchildtier}} в компактные и связные сводки {{stmbtier}}.\n\nВерни только JSON:\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\nПравила:\n- Сосредоточься на сюжете, эмоциональной динамике, решениях, конфликтах и непрерывности.\n- Очень чётко прослеживай причинно-следственные связи, чтобы сюжет и непрерывность были понятны.\n- Сжимай сильно, но сохраняй точность.\n- Неподходящие элементы помещай в unassigned_items.\n- Никаких комментариев вне JSON."
 }
+
 

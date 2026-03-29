@@ -265,16 +265,16 @@
   "STMemoryBooks_APIKey": "Kunci API:",
   "STMemoryBooks_APIKeyPlaceholder": "Masukkan kunci API Anda",
   "STMemoryBooks_LorebookEntrySettings": "Pengaturan Entri Buku Latar",
-  "STMemoryBooks_LorebookEntrySettingsDesc": "Pengaturan ini mengontrol bagaimana memori yang dihasilkan disimpan ke dalam buku latar.",
+  "STMemoryBooks_LorebookEntrySettingsDesc": "Pengaturan ini mengontrol bagaimana memori yang dihasilkan disimpan ke dalam buku latar.",`r`n  "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "Pengaturan ini mengontrol bagaimana memori yang dihasilkan disimpan ke dalam buku latar.",
   "STMemoryBooks_OutletName": "Nama Outlet",
   "STMemoryBooks_OutletNamePlaceholder": "mis., ENDING",
   "STMemoryBooks_ActivationMode": "Mode Aktivasi:",
-  "STMemoryBooks_ActivationModeDesc": "🔗 Vektorisasi direkomendasikan untuk memori.",
+  "STMemoryBooks_ActivationModeDesc": "🔗 Vektorisasi direkomendasikan untuk memori.",`r`n  "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 Vektorisasi direkomendasikan untuk memori.",
   "STMemoryBooks_Vectorized": "🔗 Vektorisasi (Default)",
   "STMemoryBooks_Constant": "🔵 Konstan",
   "STMemoryBooks_Normal": "🟢 Normal",
   "STMemoryBooks_InsertionPosition": "Posisi Penyisipan:",
-  "STMemoryBooks_InsertionPositionDesc": "↑Char direkomendasikan. Aiko merekomendasikan memori tidak pernah lebih rendah dari ↑AN.",
+  "STMemoryBooks_InsertionPositionDesc": "↑Char direkomendasikan. Aiko merekomendasikan memori tidak pernah lebih rendah dari ↑AN.",`r`n  "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char direkomendasikan. Aiko merekomendasikan memori tidak pernah lebih rendah dari ↑AN.",
   "STMemoryBooks_CharUp": "↑Char",
   "STMemoryBooks_CharDown": "↓Char",
   "STMemoryBooks_ANUp": "↑AN",
@@ -718,4 +718,5 @@
   "STMemoryBooks_SummaryPrompt_Alternate": "Anda adalah analis naratif ahli dan asisten mesin memori.\nGabungkan beberapa entri {{stmbchildtier}} menjadi satu ringkasan {{stmbtier}} yang koheren.\n\nKembalikan JSON saja:\n{\n  \"summaries\": [\n    {\n      \"title\": \"Judul {{stmbtier}} singkat dan deskriptif\",\n      \"summary\": \"Ringkasan {{stmbtier}} terstruktur\",\n      \"keywords\": [\"kata kunci1\", \"kata kunci2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"Mengapa item ini tidak cocok.\" }\n  ]\n}\n\nAturan:\n- Hormati kronologi.\n- Jaga ringkasan tetap padat tetapi tetap memuat plot utama dan kesinambungan.\n- Abaikan OOC dan detail hiasan kecuali memengaruhi kejadian masa depan.\n- Gunakan member_ids bila memungkinkan.\n- Hanya JSON valid.",
   "STMemoryBooks_SummaryPrompt_Tiny": "Anda ahli memadatkan banyak entri {{stmbchildtier}} menjadi ringkasan {{stmbtier}} yang ringkas dan koheren.\n\nKembalikan JSON saja:\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\nAturan:\n- Fokus pada plot, perkembangan emosi, keputusan, konflik, dan kesinambungan.\n- Jelaskan hubungan sebab-akibat dengan sangat jelas agar plot dan kesinambungan mudah dipahami.\n- Lakukan kompresi agresif tetapi akurat.\n- Identifikasi item yang tidak cocok di unassigned_items.\n- Tanpa komentar di luar JSON."
 }
+
 

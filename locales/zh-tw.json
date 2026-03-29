@@ -262,7 +262,7 @@
   "STMemoryBooks_APIKey": "API 金鑰:",
   "STMemoryBooks_APIKeyPlaceholder": "輸入您的 API 金鑰",
   "STMemoryBooks_LorebookEntrySettings": "故事書條目設定",
-  "STMemoryBooks_LorebookEntrySettingsDesc": "這些設定控制產生的記憶如何儲存到故事書中。",
+  "STMemoryBooks_LorebookEntrySettingsDesc": "這些設定控制產生的記憶如何儲存到故事書中。",`r`n  "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "這些設定控制產生的記憶如何儲存到故事書中。",
   "STMemoryBooks_LorebookEntryTitleOverride": "故事書條目標題覆寫",
   "STMemoryBooks_LorebookEntryTitleOverridePlaceholder": "可選標題範本（例如：NPC {{npcname}}）",
   "STMemoryBooks_LorebookEntryTitleOverrideHelp": "可選。此處會解析標準 ST 巨集與所需的執行階段巨集，且 STMB 仍會在末尾附加 (STMB SidePrompt)。",
@@ -274,12 +274,12 @@
   "STMemoryBooks_OutletName": "Outlet 名稱",
   "STMemoryBooks_OutletNamePlaceholder": "例如，ENDING",
   "STMemoryBooks_ActivationMode": "啟用模式:",
-  "STMemoryBooks_ActivationModeDesc": "🔗 推薦為記憶使用向量化。",
+  "STMemoryBooks_ActivationModeDesc": "🔗 推薦為記憶使用向量化。",`r`n  "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 推薦為記憶使用向量化。",
   "STMemoryBooks_Vectorized": "🔗 向量化 (預設)",
   "STMemoryBooks_Constant": "🔵 常數",
   "STMemoryBooks_Normal": "🟢 普通",
   "STMemoryBooks_InsertionPosition": "插入位置:",
-  "STMemoryBooks_InsertionPositionDesc": "↑Char 推薦。Aiko 建議記憶永遠不要低於 ↑AN。",
+  "STMemoryBooks_InsertionPositionDesc": "↑Char 推薦。Aiko 建議記憶永遠不要低於 ↑AN。",`r`n  "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char 推薦。Aiko 建議記憶永遠不要低於 ↑AN。",
   "STMemoryBooks_CharUp": "角色定義之前（↑Char）",
   "STMemoryBooks_CharDown": "角色定義之後（↓Char）",
   "STMemoryBooks_ANUp": "作者註釋之前（↑AN）",
@@ -718,4 +718,5 @@
   "STMemoryBooks_SummaryPrompt_Alternate": "你是一位專業的敘事分析師與記憶引擎助手。將多個{{stmbchildtier}}項目合併為一個連貫的{{stmbtier}}摘要。\n\n僅返回 JSON：\n{\n  \"summaries\": [\n    {\n      \"title\": \"簡短的描述性{{stmbtier}}標題\",\n      \"summary\": \"{{stmbtier}}的結構化摘要\",\n      \"keywords\": [\"keyword1\", \"keyword2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"此條目為何不適合。\" }\n  ]\n}\n\n要求：\n- 尊重時間順序。\n- 保持摘要簡潔，同時保留主要劇情和連續性。\n- 除非影響未來事件，否則忽略 OOC 和氣氛細節。\n- 盡可能使用 member_ids。\n- 僅返回有效 JSON。",
   "STMemoryBooks_SummaryPrompt_Tiny": "你擅長將許多小的{{stmbchildtier}}項目壓縮成緊湊且連貫的{{stmbtier}}摘要。\n\n僅返回 JSON：\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\n規則：\n- 聚焦劇情、情緒推進、決定、衝突和連續性。\n- 非常清楚地梳理因果關係，使劇情與連續性能夠容易理解。\n- 壓縮可以很強，但要保持準確。\n- 將不相符的項目放入 unassigned_items。\n- 不要 JSON 之外的註解。"
 }
+
 

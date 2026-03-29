@@ -265,16 +265,16 @@
     "STMemoryBooks_APIKey": "API-Key:",
     "STMemoryBooks_APIKeyPlaceholder": "Gib deinen API-Key ein",
     "STMemoryBooks_LorebookEntrySettings": "Lorebook-Eintrag Einstellungen",
-    "STMemoryBooks_LorebookEntrySettingsDesc": "Steuert, wie die generierte Erinnerung im Lorebook gespeichert wird.",
+    "STMemoryBooks_LorebookEntrySettingsDesc": "Steuert, wie die generierte Erinnerung im Lorebook gespeichert wird.",`r`n    "STMemoryBooks_ConsolidateArcs_LorebookEntrySettingsDesc": "Steuert, wie die generierte Erinnerung im Lorebook gespeichert wird.",
     "STMemoryBooks_OutletName": "Outlet Name",
     "STMemoryBooks_OutletNamePlaceholder": "z.B. ENDING",
     "STMemoryBooks_ActivationMode": "Aktivierungsmodus:",
-    "STMemoryBooks_ActivationModeDesc": "🔗 Vektorisiert wird für Erinnerungen empfohlen.",
+    "STMemoryBooks_ActivationModeDesc": "🔗 Vektorisiert wird für Erinnerungen empfohlen.",`r`n    "STMemoryBooks_ConsolidateArcs_ActivationModeDesc": "🔗 Vektorisiert wird für Erinnerungen empfohlen.",
     "STMemoryBooks_Vectorized": "🔗 Vektorisiert (Standard)",
     "STMemoryBooks_Constant": "🔵 Konstant",
     "STMemoryBooks_Normal": "🟢 Normal",
     "STMemoryBooks_InsertionPosition": "Einfügeposition:",
-    "STMemoryBooks_InsertionPositionDesc": "↑Char wird empfohlen. Erinnerungen sollten nie tiefer als ↑AN liegen.",
+    "STMemoryBooks_InsertionPositionDesc": "↑Char wird empfohlen. Erinnerungen sollten nie tiefer als ↑AN liegen.",`r`n    "STMemoryBooks_ConsolidateArcs_InsertionPositionDesc": "↑Char wird empfohlen. Erinnerungen sollten nie tiefer als ↑AN liegen.",
     "STMemoryBooks_CharUp": "↑Char",
     "STMemoryBooks_CharDown": "↓Char",
     "STMemoryBooks_ANUp": "↑AN",
@@ -723,5 +723,6 @@
     "addlore.toast.orderClamped": "Der Eingabebereich ist auf 0–9999 begrenzt. Der aktuelle Wert {{source}} ist {{requested}}; er wurde auf {{clamped}} begrenzt.",
     "STMemoryBooks_ReverseOrder": "Umgekehrte Reihenfolge (nur in Verbindung mit Ausgängen verwenden)"
 }
+
 
 
