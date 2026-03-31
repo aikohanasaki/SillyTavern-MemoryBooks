@@ -959,22 +959,23 @@ async function handleSidePromptOffCommand(namedArgs, unnamedArgs) {
  * Side Prompt cache for autocomplete
  */
 let sidePromptNameCache = [];
+
+function isManualSidePromptEnabled(template) {
+  const cmds = template?.triggers?.commands;
+  return (
+    Array.isArray(cmds) &&
+    cmds.some((c) => String(c).toLowerCase() === "sideprompt")
+  );
+}
+
 async function refreshSidePromptCache() {
   try {
     const tpls = await listTemplates();
     sidePromptNameCache = (tpls || [])
-      .filter((t) => {
-        const cmds = t?.triggers?.commands;
-        // Back-compat: if commands is missing, treat as manual-enabled for suggestions
-        if (!("commands" in (t?.triggers || {}))) return true;
-        return (
-          Array.isArray(cmds) &&
-          cmds.some((c) => String(c).toLowerCase() === "sideprompt")
-        );
-      })
       .map((t) => ({
         name: t.name,
         runtimeMacros: collectTemplateRuntimeMacros(t),
+        manualEnabled: isManualSidePromptEnabled(t),
       }));
   } catch (e) {
     console.warn(
@@ -994,17 +995,21 @@ try {
   /* noop */
 }
 
-function findCachedSidePromptByName(name) {
+function findCachedSidePromptByName(name, entries = sidePromptNameCache) {
   const target = String(name || "").toLowerCase();
-  return sidePromptNameCache.find((entry) => entry.name.toLowerCase() === target) || null;
+  return entries.find((entry) => entry.name.toLowerCase() === target) || null;
 }
 
-function buildSidePromptNameSuggestions(rawInput) {
+function buildSidePromptNameSuggestions(rawInput, options = {}) {
+  const { manualOnly = false } = options;
   const input = String(rawInput || "").trimStart();
   const filter = input.startsWith('"') || input.startsWith("'")
     ? input.slice(1).toLowerCase()
     : input.toLowerCase();
-  return sidePromptNameCache.map((entry) =>
+  const entries = manualOnly
+    ? sidePromptNameCache.filter((entry) => entry.manualEnabled)
+    : sidePromptNameCache;
+  return entries.map((entry) =>
     new SlashCommandEnumValue(
       formatQuotedSidePromptName(entry.name),
       entry.runtimeMacros.length
@@ -1034,18 +1039,28 @@ function buildSidePromptMacroSuggestions(rawInput, draft, entry) {
 }
 
 // Synchronous enum provider for slash command suggestions
-const sidePromptTemplateEnumProvider = (executor) => {
+const sidePromptTemplateEnumProvider = (executor, options = {}) => {
+  const { manualOnly = false } = options;
   const rawInput = String(executor?.unnamedArgumentList?.[0]?.value || "");
   const draft = parseSidePromptCommandInput(rawInput, { allowIncomplete: true });
+  const entries = manualOnly
+    ? sidePromptNameCache.filter((entry) => entry.manualEnabled)
+    : sidePromptNameCache;
   if (draft.nameClosed) {
-    const entry = findCachedSidePromptByName(draft.name);
+    const entry = findCachedSidePromptByName(draft.name, entries);
     if (entry) {
       const macroSuggestions = buildSidePromptMacroSuggestions(rawInput, draft, entry);
       return macroSuggestions;
     }
   }
-  return buildSidePromptNameSuggestions(rawInput);
+  return buildSidePromptNameSuggestions(rawInput, { manualOnly });
 };
+
+const manualSidePromptTemplateEnumProvider = (executor) =>
+  sidePromptTemplateEnumProvider(executor, { manualOnly: true });
+
+const allSidePromptTemplateEnumProvider = (executor) =>
+  sidePromptTemplateEnumProvider(executor, { manualOnly: false });
 
 /**
  * Helper: build triggers badges for prompt picker
@@ -5899,7 +5914,7 @@ function registerSlashCommands() {
         ),
         typeList: [ARGUMENT_TYPE.STRING],
         isRequired: true,
-        enumProvider: sidePromptTemplateEnumProvider,
+        enumProvider: manualSidePromptTemplateEnumProvider,
       }),
     ],
   });
@@ -5922,7 +5937,7 @@ function registerSlashCommands() {
         isRequired: true,
         enumProvider: () => [
           new SlashCommandEnumValue("all"),
-          ...sidePromptTemplateEnumProvider(),
+          ...allSidePromptTemplateEnumProvider(),
         ],
       }),
     ],
@@ -5945,7 +5960,7 @@ function registerSlashCommands() {
         isRequired: true,
         enumProvider: () => [
           new SlashCommandEnumValue("all"),
-          ...sidePromptTemplateEnumProvider(),
+          ...allSidePromptTemplateEnumProvider(),
         ],
       }),
     ],
