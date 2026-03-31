@@ -32,7 +32,8 @@ function safeSlug(str) {
 }
 
 function normalizeTemplateTriggers(next) {
-    next.triggers = next.triggers && typeof next.triggers === 'object'
+    const hadExplicitTriggers = next.triggers && typeof next.triggers === 'object';
+    next.triggers = hadExplicitTriggers
         ? { ...next.triggers }
         : { commands: ['sideprompt'] };
 
@@ -49,7 +50,7 @@ function normalizeTemplateTriggers(next) {
         } else {
             next.triggers.commands = [];
         }
-    } else {
+    } else if (!hadExplicitTriggers) {
         next.triggers.commands = ['sideprompt'];
     }
 
