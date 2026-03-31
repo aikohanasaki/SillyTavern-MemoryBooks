@@ -1,11 +1,10 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
-import { getRegexedString, regex_placement } from '../../../extensions/regex/engine.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
-import { requestCompletion } from './stmemory.js';
+import { applySelectedRegex, requestCompletion } from './stmemory.js';
 import { listByTrigger, findTemplateByName } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
@@ -159,9 +158,18 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
     }
     const finalPrompt = parts.join('');
 
-    // Apply regex transformations (honor global Use Regex toggle)
-    const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
-    return useRegex ? getRegexedString(finalPrompt, regex_placement.USER_INPUT, { isPrompt: true }) : finalPrompt;
+    // Apply the same explicit outgoing regex selection flow used by memories.
+    try {
+        const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
+        const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexOutgoing;
+        if (useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            return applySelectedRegex(finalPrompt, selectedKeys);
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: sideprompt outgoing regex application failed', e);
+    }
+
+    return finalPrompt;
 }
 
 /**
@@ -213,9 +221,18 @@ async function runLLM(prompt, overrides = null, options = {}) {
         signal: options?.signal || null,
     });
     
-    // Apply regex transformations to the raw response (honor global Use Regex toggle)
-    const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
-    return useRegex ? getRegexedString(text || '', regex_placement.AI_OUTPUT) : (text || '');
+    // Apply the same explicit incoming regex selection flow used by memories.
+    try {
+        const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
+        const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexIncoming;
+        if (useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            return applySelectedRegex(text || '', selectedKeys);
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: sideprompt incoming regex application failed', e);
+    }
+
+    return text || '';
 }
 
 /**
