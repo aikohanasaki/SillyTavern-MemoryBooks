@@ -29,7 +29,7 @@ function cloneScriptEnabled(script) {
  * Uses getRegexScripts({ allowedOnly: false }) as the single source of truth.
  * Bypasses engine gating; relies on explicit user selection.
  */
-function applySelectedRegex(inputText, selectedKeys) {
+export function applySelectedRegex(inputText, selectedKeys) {
     if (typeof inputText !== 'string') return '';
     if (!Array.isArray(selectedKeys) || selectedKeys.length === 0) return inputText;
 
