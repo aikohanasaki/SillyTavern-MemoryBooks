@@ -4,6 +4,8 @@
 
 ## v6.3.1 (March 31, 2026)
 - `/sideprompt` autocomplete now only suggests side prompts with manual run enabled.
+- Bugfix: sideprompt manual enable setting bug fixed
+- Bugfix: sideprompt regex path fixed
 
 ## v6.3.0 (March 29, 2026)
 - Consolidated summaries can now save their own lorebook entry settings, including insertion and recursion controls, with dedicated localization keys.
