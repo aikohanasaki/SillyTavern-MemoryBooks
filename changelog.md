@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.3.2 (April 6, 2026)
+- Bugfix: Custom title formats save properly on edit.
+
 ## v6.3.1 (March 31, 2026)
 - `/sideprompt` autocomplete now only suggests side prompts with manual run enabled.
 - Bugfix: sideprompt manual enable setting bug fixed

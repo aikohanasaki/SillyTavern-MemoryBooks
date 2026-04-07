@@ -132,7 +132,7 @@ const profileEditTemplate = Handlebars.compile(`
             {{#each titleFormats}}
             <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
             {{/each}}
-            <option value="custom" data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
+            <option value="custom" {{#if isCustomTitleFormat}}selected{{/if}} data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
         </select>
         <input type="text" id="stmb-profile-custom-title-format" class="text_pole marginTop5 {{#unless showCustomTitleInput}}displayNone{{/unless}}"
             data-i18n="[placeholder]STMemoryBooks_EnterCustomFormat" placeholder="Enter custom format" value="{{titleFormat}}">
@@ -228,6 +228,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
         const connection = profile.connection || { temperature: 0.7 };
         const profileTitleFormat = profile.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
+        const isCustomTitleFormat = !allTitleFormats.includes(profileTitleFormat);
         const isBuiltinCurrentST = !!profile.isBuiltinCurrentST;
         const templateData = {
             name: isBuiltinCurrentST
@@ -247,7 +248,8 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
                 value: format,
                 isSelected: format === profileTitleFormat
             })),
-            showCustomTitleInput: !allTitleFormats.includes(profileTitleFormat),
+            isCustomTitleFormat,
+            showCustomTitleInput: isCustomTitleFormat,
             constVectMode: profile.constVectMode,
             position: profile.position,
             orderMode: profile.orderMode,
@@ -315,6 +317,7 @@ export async function newProfile(settings, refreshCallback) {
         // Logic to handle title format for the template
         const currentTitleFormat = settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
+        const isCustomTitleFormat = !allTitleFormats.includes(currentTitleFormat);
         await SummaryPromptManager.firstRunInitIfMissing(settings);
         const presetList = await SummaryPromptManager.listPresets();
         const presetOptions = presetList.map(p => ({
@@ -339,7 +342,8 @@ export async function newProfile(settings, refreshCallback) {
                 value: format,
                 isSelected: format === currentTitleFormat
             })),
-            showCustomTitleInput: !allTitleFormats.includes(currentTitleFormat),
+            isCustomTitleFormat,
+            showCustomTitleInput: isCustomTitleFormat,
             constVectMode: 'link',
             position: 0,
             orderMode: 'auto',
