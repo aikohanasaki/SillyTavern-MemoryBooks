@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.3.3 (April 8, 2026)
+- Bugfix: Sideprompt interval runs now use message range correctly.
+
 ## v6.3.2 (April 6, 2026)
 - Bugfix: Custom title formats save properly on edit.
 
