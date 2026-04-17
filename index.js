@@ -1215,12 +1215,13 @@ function validateSettings(settings) {
   }
 
   // Validate maxTokens and fall back to the app default when unset or invalid.
+  // A value of 0 is intentional: it means "inherit SillyTavern's Chat Completion setting".
   if (settings.moduleSettings.maxTokens === undefined || settings.moduleSettings.maxTokens === null) {
     settings.moduleSettings.maxTokens = DEFAULT_MAX_TOKENS;
   } else {
     const mt = Number.parseInt(settings.moduleSettings.maxTokens, 10);
     settings.moduleSettings.maxTokens =
-      Number.isFinite(mt) && mt > 0 ? mt : DEFAULT_MAX_TOKENS;
+      Number.isFinite(mt) && mt >= 0 ? mt : DEFAULT_MAX_TOKENS;
   }
 
   if (
@@ -4822,9 +4823,7 @@ async function showSettingsPopup() {
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
     manualModeEnabled: settings.moduleSettings.manualModeEnabled,
     maxTokens:
-      (settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS) > 0
-        ? settings.moduleSettings.maxTokens
-        : DEFAULT_MAX_TOKENS,
+      settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS,
 
     // Lorebook status information
     lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",
@@ -5374,7 +5373,7 @@ function setupSettingsEventListeners() {
     if (e.target.matches("#stmb-max-tokens")) {
       const value = readIntInput(e.target, DEFAULT_MAX_TOKENS);
       settings.moduleSettings.maxTokens =
-        Number.isFinite(value) && value > 0 ? value : DEFAULT_MAX_TOKENS;
+        Number.isFinite(value) && value >= 0 ? value : DEFAULT_MAX_TOKENS;
       saveSettingsDebounced();
       return;
     }
@@ -5521,7 +5520,7 @@ function persistMainPopupSettings(popupElement) {
     DEFAULT_MAX_TOKENS,
   );
   const maxTokensNormalized =
-    Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS;
+    Number.isFinite(maxTokens) && maxTokens >= 0 ? maxTokens : DEFAULT_MAX_TOKENS;
 
   if (alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault) {
     settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
@@ -5723,9 +5722,7 @@ async function refreshPopupContent() {
       allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
       manualModeEnabled: settings.moduleSettings.manualModeEnabled,
       maxTokens:
-        (settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS) > 0
-          ? settings.moduleSettings.maxTokens
-          : DEFAULT_MAX_TOKENS,
+        settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS,
 
       // Lorebook status information
       lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",
