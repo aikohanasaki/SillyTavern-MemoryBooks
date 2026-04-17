@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.3.4 (April 17, 2026)
+- Bugfix: Max tokens ignored 0. Now fixed.
+
 ## v6.3.3 (April 8, 2026)
 - Bugfix: Sideprompt interval runs now use message range correctly.
 
