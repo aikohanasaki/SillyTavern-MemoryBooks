@@ -4,7 +4,8 @@ import {
     loadWorldInfo,
     createWorldInfoEntry,
     saveWorldInfo,
-    reloadEditor
+    reloadEditor,
+    newWorldInfoEntryTemplate,
 } from '../../../world-info.js';
 import { extension_settings } from '../../../extensions.js';
 import { moment } from '../../../../lib.js';
@@ -105,6 +106,71 @@ export const DEFAULT_LOREBOOK_ENTRY_SETTINGS = Object.freeze({
     reverseStart: 9999,
     preventRecursion: false,
     delayUntilRecursion: false,
+    ignoreBudget: false,
+});
+
+const CONTROLLED_WORLD_INFO_DEFAULT_FIELDS = [
+    'keysecondary',
+    'selective',
+    'selectiveLogic',
+    'addMemo',
+    'disable',
+    'ignoreBudget',
+    'excludeRecursion',
+    'matchPersonaDescription',
+    'matchCharacterDescription',
+    'matchCharacterPersonality',
+    'matchCharacterDepthPrompt',
+    'matchScenario',
+    'matchCreatorNotes',
+    'probability',
+    'useProbability',
+    'depth',
+    'group',
+    'groupOverride',
+    'groupWeight',
+    'scanDepth',
+    'caseSensitive',
+    'matchWholeWords',
+    'useGroupScoring',
+    'automationId',
+    'role',
+    'sticky',
+    'cooldown',
+    'delay',
+    'triggers',
+];
+
+const FALLBACK_WORLD_INFO_ENTRY_DEFAULTS = Object.freeze({
+    keysecondary: [],
+    selective: true,
+    selectiveLogic: 0,
+    addMemo: false,
+    disable: false,
+    ignoreBudget: false,
+    excludeRecursion: false,
+    matchPersonaDescription: false,
+    matchCharacterDescription: false,
+    matchCharacterPersonality: false,
+    matchCharacterDepthPrompt: false,
+    matchScenario: false,
+    matchCreatorNotes: false,
+    probability: 100,
+    useProbability: true,
+    depth: 4,
+    group: '',
+    groupOverride: false,
+    groupWeight: 100,
+    scanDepth: null,
+    caseSensitive: null,
+    matchWholeWords: null,
+    useGroupScoring: null,
+    automationId: '',
+    role: 0,
+    sticky: null,
+    cooldown: null,
+    delay: null,
+    triggers: [],
 });
 
 function clampLorebookOrderValue(value, fallback = 100) {
@@ -127,6 +193,44 @@ function normalizeLorebookPosition(value, fallback = 0) {
     const num = Number(value);
     const pos = Number.isFinite(num) ? Math.trunc(num) : fallback;
     return VALID_LOREBOOK_POSITIONS.has(pos) ? pos : fallback;
+}
+
+function normalizeDelayUntilRecursion(value, fallback = false) {
+    if (value === undefined) {
+        return fallback;
+    }
+
+    if (value === true || value === false) {
+        return value;
+    }
+
+    const num = Number(value);
+    if (Number.isFinite(num) && num > 0) {
+        return Math.trunc(num);
+    }
+
+    return false;
+}
+
+function cloneWorldInfoDefaultValue(value) {
+    if (Array.isArray(value)) {
+        return [...value];
+    }
+
+    if (value && typeof value === 'object') {
+        return { ...value };
+    }
+
+    return value;
+}
+
+function getWorldInfoDefaultValue(field) {
+    const template = newWorldInfoEntryTemplate || {};
+    const value = Object.hasOwn(template, field)
+        ? template[field]
+        : FALLBACK_WORLD_INFO_ENTRY_DEFAULTS[field];
+
+    return cloneWorldInfoDefaultValue(value);
 }
 
 function computeLorebookEntryOrder(lorebookSettings, orderNumber, options = {}) {
@@ -209,7 +313,8 @@ export function normalizeLorebookEntrySettings(settings = {}, defaults = DEFAULT
         orderValue: clampLorebookOrderValue(settings?.orderValue, fallbackOrderValue),
         reverseStart: clampLorebookReverseStart(settings?.reverseStart, fallbackReverseStart),
         preventRecursion: settings?.preventRecursion !== undefined ? !!settings.preventRecursion : !!base.preventRecursion,
-        delayUntilRecursion: settings?.delayUntilRecursion !== undefined ? !!settings.delayUntilRecursion : !!base.delayUntilRecursion,
+        delayUntilRecursion: normalizeDelayUntilRecursion(settings?.delayUntilRecursion, normalizeDelayUntilRecursion(base.delayUntilRecursion)),
+        ignoreBudget: settings?.ignoreBudget !== undefined ? !!settings.ignoreBudget : !!base.ignoreBudget,
     };
 }
 
@@ -249,27 +354,12 @@ export function applyLorebookEntrySettings(entry, lorebookSettings = {}, options
     entry.preventRecursion = normalized.preventRecursion;
     entry.delayUntilRecursion = normalized.delayUntilRecursion;
 
-    entry.keysecondary = [];
-    entry.selective = true;
-    entry.selectiveLogic = 0;
+    for (const field of CONTROLLED_WORLD_INFO_DEFAULT_FIELDS) {
+        entry[field] = getWorldInfoDefaultValue(field);
+    }
+
     entry.addMemo = true;
-    entry.disable = false;
-    entry.excludeRecursion = false;
-    entry.probability = 100;
-    entry.useProbability = true;
-    entry.depth = 4;
-    entry.group = "";
-    entry.groupOverride = false;
-    entry.groupWeight = 100;
-    entry.scanDepth = null;
-    entry.caseSensitive = null;
-    entry.matchWholeWords = null;
-    entry.useGroupScoring = null;
-    entry.automationId = "";
-    entry.role = null;
-    entry.sticky = 0;
-    entry.cooldown = 0;
-    entry.delay = 0;
+    entry.ignoreBudget = normalized.ignoreBudget;
     entry.displayIndex = orderNumber;
     entry.stmemorybooks = true;
 
@@ -1093,7 +1183,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
     await saveWorldInfo(lorebookName, lorebookData, true);
 
     if (refreshEditor) {
-        reloadEditor(lorebookName);
+        await Promise.resolve(reloadEditor(lorebookName));
     }
 
     return results;
@@ -1169,7 +1259,7 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
 
     await saveWorldInfo(lorebookName, lorebookData, true);
     if (refreshEditor) {
-        reloadEditor(lorebookName);
+        await Promise.resolve(reloadEditor(lorebookName));
     }
 
     return { uid: entry.uid, created };
