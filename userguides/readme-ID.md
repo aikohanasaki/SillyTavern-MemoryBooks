@@ -241,7 +241,7 @@ Semua prompt dan preset **harus** menginstruksikan AI agar hanya mengembalikan J
 ## 👥 Dukungan Obrolan Grup
 
 - Semua fitur bekerja dengan obrolan grup.
-- Penanda adegan, pembuatan memori, dan integrasi lorebook disimpan di metadata grup.
+- Penanda adegan, pembuatan memori, dan integrasi lorebook disimpan di metadata chat aktif.
 - Tidak perlu pengaturan khusus - cukup pilih obrolan grup dan gunakan seperti biasa.
 
 ---

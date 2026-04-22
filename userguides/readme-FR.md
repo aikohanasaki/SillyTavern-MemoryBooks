@@ -138,7 +138,7 @@ llama-server -m <chemin-du-modele> -c <taille-contexte> --port 8080
 ## 👥 Support des Discussions de Groupe
 
 * Toutes les fonctionnalités fonctionnent avec les discussions de groupe.
-* Les marqueurs de scène, la création de mémoire et l'intégration au lorebook sont stockés dans les métadonnées du groupe.
+* Les marqueurs de scène, la création de mémoire et l'intégration au lorebook sont stockés dans les métadonnées du chat actif.
 * Aucune configuration spéciale requise — sélectionnez simplement un groupe et utilisez comme d'habitude.
 
 ---

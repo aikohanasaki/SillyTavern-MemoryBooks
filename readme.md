@@ -244,7 +244,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 ## 👥 Group Chat Support
 
 - All features work with group chats.
-- Scene markers, memory creation, and lorebook integration are stored in group metadata.
+- Scene markers, memory creation, and lorebook integration are stored in the active chat metadata.
 - No special setup required—just select a group chat and use as normal.
 
 ---

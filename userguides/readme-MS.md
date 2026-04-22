@@ -261,7 +261,7 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 ## 👥 Sokongan Sembang Kumpulan
 
 - Semua ciri berfungsi dengan sembang kumpulan.
-- Penanda babak, penciptaan memori, dan integrasi lorebook disimpan dalam metadata kumpulan.
+- Penanda babak, penciptaan memori, dan integrasi lorebook disimpan dalam metadata sembang aktif.
 - Tiada persediaan khas diperlukan. Pilih sahaja sembang kumpulan dan gunakannya seperti biasa.
 
 ---
