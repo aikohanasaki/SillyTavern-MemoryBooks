@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v6.3.5 (April 22, 2026)
+- Updated WI saving to match 1.17.0 defaults.
+- Updated group chat metadata wording to match SillyTavern's current chat-file metadata format.
+
 ## v6.3.4 (April 17, 2026)
 - Bugfix: Max tokens ignored 0. Now fixed.
 
@@ -596,7 +600,7 @@ Tweaks:
   - Per-profile API, model, temperature, prompt/preset settings
   - Profile-specific title formats and lorebook settings
 - **Enhanced DOM Handling:** Fixed various DOM-related issues for group chats
-- **Metadata Improvements:** Better handling of chat and group metadata
+- **Metadata Improvements:** Better handling of chat metadata for single and group chats
 
 ## v3.2.x Series (2025)
 - **Title Formatting System:** Comprehensive title customization
@@ -609,7 +613,7 @@ Tweaks:
 ## v3.1.x Series (2025)
 - **Group Chat Support:** Full implementation of group chat functionality
   - Scene markers, memory creation, and lorebook integration for groups
-  - Group metadata storage and management
+  - Chat metadata storage and management for group chats
   - Specialized group chat DOM handling
 - **Scene Memory Command:** Added `/scenememory x-y` command for creating memories from specific message ranges
 - **Token Estimation:** Enhanced token counting for better memory size management

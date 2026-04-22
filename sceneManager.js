@@ -14,7 +14,7 @@ let currentSceneState = {
 
 /**
  * GROUP CHAT SUPPORT: Get current scene markers from appropriate metadata location
- * Handles both group chats (group.chat_metadata) and single character chats (chat_metadata)
+ * Handles both group chats and single character chats through SillyTavern's active chat metadata.
  */
 export function getSceneMarkers() {
     // Use SillyTavern's proper context API for both group chats and single chats
@@ -38,11 +38,11 @@ export function getSceneMarkers() {
 
 /**
  * GROUP CHAT SUPPORT: Save metadata for current context (group or single character)
- * Handles both group metadata saving and regular chat metadata saving
+ * Handles both group chat and single character chat metadata saving.
  */
 export function saveMetadataForCurrentContext() {
     // Both group chats and single chats use chat_metadata as the authoritative source
-    // SillyTavern's group system automatically persists chat_metadata to group.past_metadata
+    // SillyTavern persists it to the current chat file's metadata header.
     saveMetadataDebounced();
 }
 
