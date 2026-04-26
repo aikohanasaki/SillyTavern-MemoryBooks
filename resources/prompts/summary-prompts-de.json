@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "defaultPrompt": "Analysiere die Szene und gib eine Erinnerung als JSON zurück.\n\nFormat:\n{\n  \"title\": \"Kurzer Titel\",\n  \"content\": \"Prägnante Erinnerung mit Fokus auf Plot, Entwicklung und Interaktionen\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nGib NUR das JSON zurück.",
+  "overrides": {
+    "summary": {
+      "displayName": "Summary - Detaillierte Schritt-für-Schritt Zusammenfassungen",
+      "prompt": "Du bist ein talentierter Zusammenfasser, der darauf spezialisiert ist, Szenen aus Geschichten umfassend zu erfassen. Analysiere die folgende Rollenspielszenen und gib eine detaillierte Erinnerung als JSON zurück.\n\nDu MUSST ausschließlich mit validem JSON in diesem exakten Format antworten:\n{\n  \"title\": \"Kurzer Szenentitel (1-3 Wörter)\",\n  \"content\": \"Detaillierte Schritt-für-Schritt-Zusammenfassung in erzählender Prosa...\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nErstelle für das Inhaltsfeld eine detaillierte Zusammenfassung. Notiere zuerst Datum/Zeit. Erfasse dann die Szene präzise, ohne wichtige Informationen zu verlieren, AUSSER [OOC] Konversationen. Alle [OOC] Interaktionen sind für Zusammenfassungen nicht nützlich.\nDa diese Zusammenfassung in einen Lorebook-Eintrag geht, füge Folgendes hinzu:\n- Alle wichtigen Handlungsereignisse\n- Highlights der Interaktionen und Charakterentwicklungen\n- Besondere Details, denkwürdige Zitate und Enthüllungen\n- Ergebnis und alles Wichtige für zukünftige Interaktionen zwischen {{user}} und {{char}}\nErfasse alle Nuancen, ohne den Text wortwörtlich zu wiederholen. Mache es umfassend, aber gut lesbar.\n\nGib für das Schlüsselwörter-Feld 15-30 spezifische, beschreibende und relevante Keywords für die Schlüsselwortsuche per Wortabgleich im Chat-Kontext an. Keywords müssen konkret und szenenspezifisch sein (Orte, Objekte, Eigennamen, einzigartige Aktionen). Nutze keine abstrakten Themen (z.B. \"Traurigkeit\", \"Liebe\") oder Charakternamen.\n\nGib NUR das JSON zurück, keinen anderen Text.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "summarize": {
+      "displayName": "Summarize - Stichpunkt-Format",
+      "prompt": "Analysiere die folgende Rollenspielszenen und gib eine strukturierte Zusammenfassung als JSON zurück.\n\nDu MUSST ausschließlich mit validem JSON in diesem exakten Format antworten:\n{\n  \"title\": \"Kurzer Szenentitel (1-3 Wörter)\",\n  \"content\": \"Detaillierte Zusammenfassung mit Markdown-Überschriften...\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nErstelle für das Inhaltsfeld eine detaillierte Zusammenfassung in Stichpunkten (ignoriere OOC-Inhalte):\n- **Zeitlinie**: Tag/Zeitraum, den diese Szene abdeckt.\n- **Handlung**: Liste alle wichtigen Ereignisse und Entwicklungen auf.\n- **Wichtige Interaktionen**: Beschreibe Interaktionen, Dialog-Highlights und Beziehungsentwicklungen.\n- **Besondere Details**: Erwähne Objekte, Orte oder Enthüllungen, die künftig relevant sein könnten.\n- **Ergebnis**: Fasse das Resultat oder den Zustand am Ende der Szene zusammen.\n\nGib für das Schlüsselwörter-Feld 15-30 spezifische Keywords an, die einer schlüsselwortbasierten Datenbank helfen würden, diese Unterhaltung bei Erwähnung wiederzufinden. Keywords müssen konkret und szenenspezifisch sein. Vermeide abstrakte Themen oder Charakternamen.\n\nStelle sicher, dass ALLE wichtigen Informationen erfasst werden - Detailreichtum ist wichtiger als Kürze.\n\nGib NUR das JSON zurück, keinen anderen Text.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "synopsis": {
+      "displayName": "Synopsis - Lang und umfassend mit Überschriften",
+      "prompt": "Analysiere die folgende Rollenspielszenen und gib eine umfassende Synopsis als JSON zurück.\n\nDu MUSST ausschließlich mit validem JSON in diesem exakten Format antworten:\n{\n  \"title\": \"Kurzer Szenentitel (1-3 Wörter)\",\n  \"content\": \"Lange detaillierte Synopsis mit Markdown-Struktur...\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nErstelle für das Inhaltsfeld eine lange, detaillierte Zusammenfassung Schritt für Schritt. Erfasse die Szene präzise, ohne Informationen zu verlieren. [OOC] Inhalte ignorieren. Struktur:\n# [Szenentitel]\n**Zeitlinie**: (Tag/Zeit)\n## Handlung\n- (Alle wichtigen Plot-Ereignisse)\n## Wichtige Interaktionen\n- (Signifikante Charakter-Interaktionen und Dialoge)\n## Besondere Details\n- (Zitate, Enthüllungen, Objekte)\n## Ergebnis\n- (Resultate und Endzustand)\n\nInkludiere ALLES, was für künftige Interaktionen zwischen {{user}} und {{char}} wichtig ist.\n\nSchlüsselwörter: 15-30 spezifische Begriffe für die schlüsselwortbasierte Datenbankabfrage. Keine abstrakten Themen oder Charakternamen.\n\nGib NUR das JSON zurück, keinen anderen Text.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "sumup": {
+      "displayName": "Sum Up - Prägnante Story-Beats in Prosa",
+      "prompt": "Analysiere die folgende Rollenspielszenen und gib eine Beat-Zusammenfassung als JSON zurück.\n\nDu MUSST ausschließlich mit validem JSON in diesem exakten Format antworten:\n{\n  \"title\": \"Kurzer Szenentitel (1-3 Wörter)\",\n  \"content\": \"Umfassende Beat-Zusammenfassung...\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nFormat für Inhalt:\n# Szenenzusammenfassung - Tag X - [Titel]\nNotiere Zeitdaten. Erzähle dann ALLE wichtigen Ereignisse, Interaktions-Highlights, Details, Zitate und Entwicklungen. Keine Infos verlieren. OOC-Inhalte ignorieren.\n\nSchlüsselwörter: 15-30 spezifische Begriffe, die einer schlüsselwortbasierten Datenbank helfen würden, diese Zusammenfassung bei Erwähnung wiederzufinden. Konkret und szenenspezifisch.\n\nGib NUR das JSON zurück, keinen anderen Text.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "minimal": {
+      "displayName": "Minimal - Kurze 1-2 Sätze Zusammenfassung",
+      "prompt": "Analysiere die folgende Rollenspielszenen und gib einen minimalen Speichereintrag als JSON zurück.\n\nDu MUSST ausschließlich mit validem JSON in diesem exakten Format antworten:\n{\n  \"title\": \"Kurzer Szenentitel (1-3 Wörter)\",\n  \"content\": \"Kurze 2-5 Sätze Zusammenfassung...\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nInhalt: Biete eine sehr kurze Zusammenfassung (2-5 Sätze) des Geschehens. OOC ignorieren.\n\nKeywords: 15-30 hochrelevante Begriffe für die Suche. Fokus auf wichtige Termini. Konkret bleiben.\n\nGib NUR das JSON zurück, keinen anderen Text.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "northgate": {
+      "displayName": "Northgate - Für kreatives Schreiben optimiert (von Northgate)",
+      "prompt": "Du bist ein Archivist für eine Langzeiterzählung. Analysiere die Szene und extrahiere alle Informationen in ein JSON-Objekt.\n\nFormat:\n{\n\"title\": \"Prägnanter Titel (3-5 Wörter)\",\n\"content\": \"Detaillierte, literarische Zusammenfassung in der dritten Person, Vergangenheitsform. Erfasse Aktionen, Emotionen, Entwicklungen und Dialoge. Fokus auf 'Showing' durch konkrete Details.\",\n\"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nKeywords: 15-30 Begriffe. Konkret, keine Abstraktionen oder Namen.\n\nGib NUR das JSON zurück.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "aelemar": {
+      "displayName": "Aelemar - Fokus auf Plot und Charaktererinnerungen (von Aelemar)",
+      "prompt": "Du bist ein akribischer Archivist. Analysiere die Szene und extrahiere eine detaillierte Zusammenfassung als JSON.\n\nFormat:\n{\n  \"title\": \"Prägnanter Titel (3-5 Wörter)\",\n  \"content\": \"Detaillierte Zusammenfassung der Plot-Punkte und Erinnerungen...\",\n  \"keywords\": [\"Keyword1\", \"Keyword2\", \"Keyword3\"]\n}\n\nInhalt: Erzählende Prosa, mindestens 300 Wörter. Diese Zusammenfassung geht in eine schlüsselwortbasierte Datenbank, also füge Folgendes hinzu:\n\n- Plot-Punkte, Ereignisse, Handlungen und Konsequenzen, Wendepunkte und Ergebnisse\n- Wichtige Charakterinteraktionen, Charakterentwicklungen, bedeutende Dialoge, Enthüllungen, emotionale Wirkung und Beziehungen\n- Ergebnisse und alles Weitere, was für zukünftige Interaktionen zwischen dem Nutzer und der Welt wichtig ist\nDie Zusammenfassung muss als eigenständiges Dokument funktionieren.\n\nSchlüsselwörter: 15-30 Begriffe. Konkret.\n\nGib NUR das JSON zurück.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "comprehensive": {
+      "displayName": "Comprehensive - Synopsis mit verbesserter Keyword-Extraktion",
+      "prompt": "Analysiere die folgende Rollenspielszenen (ggf. im Kontext bisheriger Zusammenfassungen) und gib eine umfassende Synopsis als JSON zurück.\n\nStruktur für Inhalt: Vergangenheit, dritte Person, kein OOC. Nutze konkrete Nomen. Fokus auf Kausalketten (Ursache → Absicht → Reaktion → Konsequenz).\n\n# [Titel]\n**Zeitlinie**\n## Handlung (Major actions & logic)\n## Charakter-Dynamik (Motive, Emotionen, Spannungen)\n## Wichtige Dialoge (Max. 8 Zitate)\n## Ergebnis & Kontinuität (Entscheidungen, Auswirkungen)\n\nKeywords: 15-30 eigenständige Begriffe (Orte, Objekte, Aktionen). KEINE abstrakten oder emotionalen Begriffe (Vertrauen, Eifersucht, etc.). KEINE Namen.\n\nGib NUR das JSON zurück.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

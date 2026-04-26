@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "Titik Plot",
+      "enabled": false,
+      "prompt": "Analisis adegan yang menyertainya untuk alur cerita, busur cerita, dan gerakan naratif lainnya. Adegan sebelumnya ada untuk memberikan konteks. Hasilkan laporan alur cerita. Jika laporan sudah ada dalam konteks, perbarui alih-alih membuatnya kembali.",
+      "responseFormat": "=== Titik Plot ===\n(per [titik dalam cerita saat analisis ini dilakukan])\n\n[Busur Plot Menyeluruh]\n(ringkasan 2-3 kalimat dari superobjektif atau plot utama)\n\n[Judul Alur #1]\n- Ringkasan: (1 kalimat)\n- Status: (aktif / ditunda)\n- Taruhan: (bagaimana resolusi akan memengaruhi cerita yang sedang berlangsung)\n- Terakhir Diketahui: (lokasi atau waktu)\n- Karakter Kunci: ...\n\n\n[Judul Alur #2]\n- Ringkasan: (1 kalimat)\n- Status: (aktif / ditunda)\n- Taruhan: (bagaimana resolusi akan memengaruhi cerita yang sedang berlangsung)\n- Terakhir Diketahui: (lokasi atau waktu)\n- Karakter Kunci: ...\n\n...\n\n-- Kait Plot --\n- (kait plot baru atau potensial)\n\n-- Dinamika Karakter --\n- status hubungan {{user}}/{{char}} saat ini dengan NPC\n\n===Akhir Titik Plot===\n",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "Status",
+      "enabled": false,
+      "prompt": "Analisis semua konteks (adegan sebelumnya, memori, pengetahuan, sejarah, interaksi) untuk menghasilkan analisis terperinci tentang {{user}} dan {{char}} (termasuk perintah !lovefactor dan !lustfactor yang disingkat). Catatan: Jika ada laporan !status yang sudah ada sebelumnya, perbarui, jangan mengulanginya.",
+      "responseFormat": "Ikuti format umum ini:\n\n## Judul atau Ringkasan Cerdas\n\n### AFINITAS (0-100, memiliki beberapa hubungan dengan !lovefactor dan !lustfactor)\n- Skor dengan bukti\n- Perubahan terbaru \n- Kutipan pendukung\n- Hal lain yang mungkin menggambarkan afinitas saat ini\n\n### LOVEFACTOR dan LUSTFACTOR\n(laporan !lovefactor dan !lustfactor ada di sini)\n\n### STATUS HUBUNGAN (negatif = musuh, 0 = orang asing, 100 = pasangan hidup)\n- Kepercayaan/batas/komunikasi\n- Peristiwa penting\n- Masalah\n- Poin relevan lainnya\n\n### TUJUAN\n- Tujuan jangka pendek/panjang\n- Kemajuan/hambatan\n- Area pertumbuhan\n- Poin relevan lainnya\n\n### ANALISIS\n- Psikologi/POV\n- Perkembangan/pemicu\n- Saran cerita\n- Poin relevan lainnya\n\n### PENUTUP\n- Ringkasan OOC (1 paragraf)",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "Pemeran Karakter",
+      "enabled": false,
+      "prompt": "Anda adalah seorang reporter terampil dengan mata yang tajam untuk menilai pentingnya NPC bagi plot. \nLangkah 1: Tinjau adegan dan tambahkan atau perbarui NPC yang terkait dengan plot ke laporan NPC WHO'S WHO. Harap dicatat bahwa {{char}} dan {{user}} adalah karakter utama dan TIDAK perlu dimasukkan dalam laporan ini.\nLangkah 2: Daftar ini harus dijaga agar sesuai dengan urutan kepentingannya bagi plot, jadi mungkin perlu diurutkan ulang.\nLangkah 3: Jika respons Anda akan lebih dari 2000 token, hapus NPC dengan dampak paling kecil pada plot.",
+      "responseFormat": "===SIAPA SIAPA NPC===\n(Sesuai urutan kepentingan bagi plot)\n\nOrang 1: deskripsi 1-2 kalimat\nOrang 2: deskripsi 1-2 kalimat\n===AKHIR SIAPA SIAPA NPC===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "Menilai",
+      "enabled": false,
+      "prompt": "Nilai interaksi antara {{char}} dan {{user}} hingga saat ini. Daftarkan semua informasi yang telah dipelajari {{char}} tentang {{user}} dalam blok kode melalui pengamatan, pertanyaan, atau penarikan kesimpulan dari interaksi (mirip dengan \"catatan untuk diri sendiri\" mental). Jika sudah ada daftar, perbarui. Usahakan agar efisien token dan ringkas, berfokus pada hal-hal penting.",
+      "responseFormat": "Gunakan format ini: \n=== Hal-hal yang telah dipelajari {{char}} tentang {{user}} ===\n(daftar terperinci, dalam POV/nada suara {{char}})\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

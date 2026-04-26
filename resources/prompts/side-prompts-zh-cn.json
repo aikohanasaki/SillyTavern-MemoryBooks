@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "情节要点",
+      "enabled": false,
+      "prompt": "分析附带的场景，寻找情节线索、故事弧线和其他叙事动态。之前的场景是为了提供上下文。生成一个故事线索报告。如果上下文中已存在报告，请更新它而不是重新创建。",
+      "responseFormat": "=== 情节要点 ===\n(截至[故事中进行此分析的时间点])\n\n[总体情节弧线]\n(2-3句话总结超级目标或主要情节)\n\n[线索 #1 标题]\n- 摘要: (1句话)\n- 状态: (进行中 / 搁置)\n- 利害关系: (解决方案将如何影响正在进行的故事)\n- 最后已知: (地点或时间)\n- 关键角色: ...\n\n\n[线索 #2 标题]\n- 摘要: (1句话)\n- 状态: (进行中 / 搁置)\n- 利害关系: (解决方案将如何影响正在进行的故事)\n- 最后已知: (地点或时间)\n- 关键角色: ...\n\n...\n\n-- 情节钩子 --\n- (新的或潜在的情节钩子)\n\n-- 角色动态 --\n- {{user}}/{{char}}与NPC关系的当前状态\n\n===情节要点结束===\n",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "状态",
+      "enabled": false,
+      "prompt": "分析所有上下文（之前的场景、记忆、传说、历史、互动），生成对 {{user}} 和 {{char}} 的详细分析（包括缩写的 !lovefactor 和 !lustfactor 命令）。注意：如果已存在 !status 报告，请更新它，不要重复。",
+      "responseFormat": "请遵循以下通用格式：\n\n## 诙谐的标题或摘要\n\n### 亲和力 (0-100, 与!lovefactor和!lustfactor有一定关系)\n- 带有证据的分数\n- 最近的变化\n- 支持性引语\n- 其他任何可能说明当前亲和力的事情\n\n### LOVEFACTOR和LUSTFACTOR\n(!lovefactor和!lustfactor报告在此处)\n\n### 关系状态 (负数 = 敌人, 0 = 陌生人, 100 = 生活伴侣)\n- 信任/界限/沟通\n- 关键事件\n- 问题\n- 任何其他相关要点\n\n### 目标\n- 短期/长期目标\n- 进展/障碍\n- 成长领域\n- 任何其他相关要点\n\n### 分析\n- 心理学/视角\n- 发展/触发因素\n- 故事建议\n- 任何其他相关要点\n\n### 总结\n- OOC摘要 (1段)",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "角色阵容",
+      "enabled": false,
+      "prompt": "你是一位技艺高超的记者，对判断 NPC 对情节的重要性有敏锐的眼光。\n第一步：回顾场景，将与情节相关的 NPC 添加或更新到 NPC WHO'S WHO 报告中。请注意，{{char}} 和 {{user}} 是主要角色，不需要包含在本报告中。\n第二步：此列表应按对情节的重要性排序，因此可能需要重新排序。\n第三步：如果您的响应将超过 2000 个 tokens，请删除对情节影响最小的 NPC。",
+      "responseFormat": "===NPC名单===\n(按情节重要性顺序排列)\n\n人物1: 1-2句话描述\n人物2: 1-2句话描述\n===NPC名单结束===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "评估",
+      "enabled": false,
+      "prompt": "评估 {{char}} 和 {{user}} 迄今为止的互动。通过观察、提问或从互动中得出结论，将 {{char}} 学到的关于 {{user}} 的所有信息列在一个代码块中（类似于心理上的“自我提醒”）。如果已经有列表，请更新它。尽量保持 token 高效和紧凑，专注于重要的事情。",
+      "responseFormat": "使用此格式: \n=== {{char}}学到的关于{{user}}的事情 ===\n(详细列表, 以{{char}}的视角/口吻)\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

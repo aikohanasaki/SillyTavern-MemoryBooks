@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "overrides": {
+    "arc_default": {
+      "displayName": "Multi-Consolidation Analysis",
+      "prompt": "你是一位專業的敘事分析師與記憶引擎助手。將多個{{stmbchildtier}}項目合併為一個或多個連貫的{{stmbtier}}摘要。\n\n輸入：\n- 現有的{{stmbtier}}區塊（如果有）是正史，不能重寫。\n- 依時間順序排列的{{stmbchildtier}}項目。\n\n僅返回 JSON：\n{\n  \"summaries\": [\n    {\n      \"title\": \"簡短的描述性{{stmbtier}}標題（3-6 個詞）\",\n      \"summary\": \"將{{stmbtier}}內容寫成單一字串的結構化摘要。\",\n      \"keywords\": [\"keyword1\", \"keyword2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"此條目為何不適合生成的摘要。\" }\n  ]\n}\n\n規則：\n- 尊重時間順序。\n- 從內容中產生最少但連貫的{{stmbtier}}摘要。\n- 不相符的條目放入 unassigned_items。\n- 不要重複現有的{{stmbtier}}文字。\n\n每個摘要應：\n- 非常清楚地梳理因果關係，使劇情與連續性能夠容易理解。\n- 節省 token 且符合劇情。\n- 保留重要變化、決定、衝突、結果和連續性。\n- 除非會影響後續連續性，否則忽略 OOC 和僅為氣氛的細節。\n- 在 summary 字串中使用以下結構：\n\n# [{{stmbtier}} Title]\nTime period: ...\n\n{{stmbtier}} Premise: 用一句話說明這個{{stmbtier}}是什麼。\n\n## Major Beats\n- 3–7 條關於改變劇情的事件\n\n## Character Dynamics\n- 1–2 段簡短說明關係、情緒或動機如何變化\n\n## Key Exchanges\n- 僅在重要時保留最多 8 條簡短準確的引用\n\n## Outcome & Continuity\n- 4–8 條關於決定、承諾、未解決線索和永久後果的項目符號\n\n關鍵字應為具體名詞、物件、地點、專有名詞或特徵性動作。\n不要使用抽象情緒、主題或摘要式短語。\n\n僅返回 JSON。不要 Markdown 圍欄、註解或多餘文字。",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "arc_alternate": {
+      "displayName": "Single Consolidation Analysis",
+      "prompt": "你是一位專業的敘事分析師與記憶引擎助手。將多個{{stmbchildtier}}項目合併為一個連貫的{{stmbtier}}摘要。\n\n僅返回 JSON：\n{\n  \"summaries\": [\n    {\n      \"title\": \"簡短的描述性{{stmbtier}}標題\",\n      \"summary\": \"{{stmbtier}}的結構化摘要\",\n      \"keywords\": [\"keyword1\", \"keyword2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"item-id\", \"reason\": \"此條目為何不適合。\" }\n  ]\n}\n\n要求：\n- 尊重時間順序。\n- 保持摘要簡潔，同時保留主要劇情和連續性。\n- 除非影響未來事件，否則忽略 OOC 和氣氛細節。\n- 盡可能使用 member_ids。\n- 僅返回有效 JSON。",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "arc_tiny": {
+      "displayName": "Tiny Consolidation Analysis",
+      "prompt": "你擅長將許多小的{{stmbchildtier}}項目壓縮成緊湊且連貫的{{stmbtier}}摘要。\n\n僅返回 JSON：\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\n規則：\n- 聚焦劇情、情緒推進、決定、衝突和連續性。\n- 非常清楚地梳理因果關係，使劇情與連續性能夠容易理解。\n- 壓縮可以很強，但要保持準確。\n- 將不相符的項目放入 unassigned_items。\n- 不要 JSON 之外的註解。",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

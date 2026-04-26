@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "defaultPrompt": "Analysez le chat et renvoyez une mémoire en JSON.\n\nFormat :\n{\n  \"title\": \"Titre court\",\n  \"content\": \"Mémoire concise sur l'intrigue et le développement\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nRenvoyez UNIQUEMENT le JSON.",
+  "overrides": {
+    "summary": {
+      "displayName": "Résumé - Détails narratifs étape par étape",
+      "prompt": "Vous êtes un talentueux synthétiseur capable de capturer des scènes de manière exhaustive. Analysez la scène de jeu de rôle suivante et renvoyez une mémoire détaillée en JSON.\n\nVous devez répondre UNIQUEMENT par un JSON valide dans ce format exact :\n{\n  \"title\": \"Titre court (1-3 mots)\",\n  \"content\": \"Résumé détaillé étape par étape en prose narrative...\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nPour le contenu, créez un résumé narratif. Notez d'abord les dates/heures. Capturez la scène avec précision sans perdre d'informations importantes SAUF les interactions [OOC]. Les discussions [OOC] ne sont pas utiles.\nCe résumé ira dans une entrée de lorebook, donc incluez :\n- Tous les événements majeurs\n- Les points forts des interactions et développements de personnages\n- Détails notables, citations marquantes et révélations\n- Résultat et tout élément crucial pour le futur entre {{user}} et {{char}}\nCapturez toute la nuance sans répéter mot pour mot. Soyez complet mais digeste.\n\nPour les mots-clés, fournissez 15 à 30 termes descriptifs et spécifiques pour la recherche par mots-clés via correspondance de mots dans le contexte du chat. Pas de thèmes abstraits (ex: \"tristesse\", \"amour\") ni de noms de personnages.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "summarize": {
+      "displayName": "Résumer - Format liste à puces",
+      "prompt": "Analysez la scène suivante et renvoyez un résumé structuré en JSON.\n\nRépondez UNIQUEMENT par un JSON valide au format :\n{\n  \"title\": \"Titre court (1-3 mots)\",\n  \"content\": \"Résumé détaillé avec en-têtes markdown...\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nPour le contenu, utilisez des listes à puces avec ces en-têtes (ignorez le OOC) :\n- **Chronologie** : Jour/heure couverts.\n- **Points forts** : Événements majeurs de l'intrigue.\n- **Interactions clés** : Dialogues et évolutions relationnelles.\n- **Détails notables** : Objets, lieux ou révélations.\n- **Résultat** : État final de la scène.\n\nMots-clés : 15-30 termes concrets pour qu'une base de données à mots-clés retrouve cette conversation si elle est mentionnée.\n\nL'exhaustivité est plus importante que la brièveté.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "synopsis": {
+      "displayName": "Synopsis - Long et complet avec en-têtes",
+      "prompt": "Analysez la scène suivante et renvoyez un synopsis complet en JSON.\n\nRépondez UNIQUEMENT par un JSON valide :\n{\n  \"title\": \"Titre court (1-3 mots)\",\n  \"content\": \"Synopsis long et détaillé structuré...\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nContenu : Résumé narratif détaillé étape par étape (ignorez le [OOC]).\nStructure :\n# [Titre]\n**Chronologie** : (jour/heure)\n## Événements\n## Interactions\n## Détails\n## Résultat\n\nCapturez tout ce qui est important pour {{user}} et {{char}} sans répétition verbatim.\n\nMots-clés : 15-30 termes spécifiques pour la recherche par mots-clés.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "sumup": {
+      "displayName": "Sum Up - Points narratifs concis",
+      "prompt": "Analysez la scène et renvoyez un résumé des points clés en JSON.\n\nRépondez UNIQUEMENT par un JSON valide :\n{\n  \"title\": \"Titre court\",\n  \"content\": \"Résumé complet des étapes...\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nFormat du contenu :\n# Résumé de scène - Jour X - [Titre]\nNotez le temps couvert. Narrez TOUS les événements, interactions, citations et développements. Pas de perte d'info. Ignorez le OOC.\n\nMots-clés : 15-30 termes concrets pour qu'une base de données à mots-clés retrouve ce résumé si mentionné.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "minimal": {
+      "displayName": "Minimal - Résumé bref en 1-2 phrases",
+      "prompt": "Analysez la scène et renvoyez une entrée minimale en JSON.\n\nFormat :\n{\n  \"title\": \"Titre court\",\n  \"content\": \"Résumé bref de 2-5 phrases...\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nContenu : 2-5 phrases max. Pas de OOC.\n\nMots-clés : 15-30 termes hautement pertinents pour la recherche.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "northgate": {
+      "displayName": "Northgate - Pour l'écriture créative (par Northgate)",
+      "prompt": "Vous êtes un archiviste. Analysez la scène et extrayez les infos en JSON.\n\nFormat :\n{\n\"title\": \"Titre concis (3-5 mots)\",\n\"content\": \"Résumé littéraire détaillé à la 3ème personne (passé). Montrez l'action via des détails concrets.\",\n\"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nContenu : Style narratif cohérent, pas juste une liste.\n\nMots-clés : 15-30 termes concrets.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "aelemar": {
+      "displayName": "Aelemar - Focus sur l'intrigue et les souvenirs (par Aelemar)",
+      "prompt": "Archiviste méticuleux, analysez la scène et extrayez un résumé détaillé en JSON.\n\nFormat :\n{\n  \"title\": \"Titre concis (3-5 mots)\",\n  \"content\": \"Résumé détaillé des points d'intrigue et souvenirs...\",\n  \"keywords\": [\"mot-clé1\", \"mot-clé2\", \"mot-clé3\"]\n}\n\nContenu : Prose narrative complète, au moins 300 mots. Ce résumé ira dans une base de données à mots-clés, donc incluez :\n\n- Points de l'intrigue, événements, actions et conséquences, points de bascule et résultats\n- Interactions clés des personnages, développements des personnages, dialogues significatifs, révélations, impact émotionnel et relations\n- Résultats et tout autre élément important pour les interactions futures entre l'utilisateur et le monde\nDoit servir d'archive autonome même sans le texte original.\n\nMots-clés : 15-30 termes descriptifs.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "comprehensive": {
+      "displayName": "Exhaustif - Synopsis et extraction de mots-clés améliorée",
+      "prompt": "Analysez la scène (selon contexte existant) et renvoyez un synopsis complet en JSON.\n\nContenu : Résumé étape par étape remplaçant la lecture complète. Écrit au passé, 3ème personne, sans OOC. Focus sur les chaînes cause → intention → réaction → conséquence.\n\nStructure :\n# [Titre]\n**Chronologie**\n## Intrigue (Actions majeures)\n## Dynamique (Motifs, émotions)\n## Échanges (Citations clés, max 8)\n## Sortie (Conséquences futures)\n\nMots-clés : 15-30 termes autonomes. Pas de thèmes abstraits (amour, jalousie, etc.). Pas de noms propres {{char}}/{{user}}.\n\nRenvoyez UNIQUEMENT le JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "Handlungsstränge",
+      "enabled": false,
+      "prompt": "Analysiere die Szene auf Handlungsstränge, Story-Arcs und narrative Entwicklungen. Generiere einen Bericht über die Story-Threads oder aktualisiere einen bestehenden.",
+      "responseFormat": "=== Handlungsstränge ===\n(Stand: [Zeitpunkt der Analyse])\n\n[Haupt-Plot]\n(2-3 Sätze Zusammenfassung)\n\n[Thread #1 Titel]\n- Zusammenfassung: (1 Satz)\n- Status: (aktiv / pausiert)\n- Bedeutung: (Auswirkung auf die Story)\n- Letzter Stand: ...\n- Charaktere: ...\n\n-- Plot-Hooks --\n- (neue oder potenzielle Hooks)\n\n-- Charakter-Dynamik --\n- aktueller Status der NPC-Beziehungen von {{user}}/{{char}}\n\n===Ende Handlungsstränge===\n",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "Status",
+      "enabled": false,
+      "prompt": "Analysiere den Kontext (vorherige Szenen, Erinnerungen, Lore, Historie), um eine detaillierte Analyse von {{user}} und {{char}} zu erstellen (einschließlich !lovefactor und !lustfactor). Vorhandene Berichte aktualisieren.",
+      "responseFormat": "Folge diesem Format:\n\n## Schlagzeile / Zusammenfassung\n\n### AFFINITÄT (0-100)\n- Score mit Belegen\n- Letzte Änderungen\n- Zitate\n\n### LOVEFACTOR und LUSTFACTOR\n(!lovefactor und !lustfactor Berichte hier einfügen)\n\n### BEZIEHUNGSSTATUS\n- Vertrauen/Grenzen/Kommunikation\n- Schlüsselereignisse\n\n### ZIELE\n- Kurz-/langfristig\n- Fortschritt\n\n### ANALYSE\n- Psychologie/Sichtweise\n- Entwicklung\n\n### ABSCHLUSS\n- OOC Zusammenfassung (1 Absatz)",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "Besetzungsliste",
+      "enabled": false,
+      "prompt": "Analysiere die Szene auf NPCs und deren Bedeutung für den Plot. Erstelle oder aktualisiere die \"NPC WHO'S WHO\" Liste. {{char}} und {{user}} werden nicht aufgeführt.",
+      "responseFormat": "=== NPC WHO'S WHO ===\n(Nach Wichtigkeit für den Plot geordnet)\n\nPerson 1: 1-2 Sätze Beschreibung\nPerson 2: 1-2 Sätze Beschreibung\n=== ENDE NPC WHO'S WHO ===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "Einschätzung",
+      "enabled": false,
+      "prompt": "Bewerte die bisherige Interaktion. Liste in einem Codeblock auf, was {{char}} über {{user}} gelernt hat (Beobachtungen, Schlussfolgerungen). Kompakt und token-effizient halten.",
+      "responseFormat": "Format nutzen: \n=== Was {{char}} über {{user}} gelernt hat ===\n(detaillierte Liste aus der Sicht von {{char}})\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}
