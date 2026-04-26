@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "プロットポイント",
+      "enabled": false,
+      "prompt": "添付のシーンを分析して、プロットのスレッド、ストーリーアーク、その他の物語の動きを分析します。以前のシーンはコンテキストを提供するためにあります。ストーリーのスレッドレポートを生成します。コンテキストにレポートがすでに存在する場合は、再作成する代わりに更新します。",
+      "responseFormat": "=== プロットポイント ===\n（この分析が行われた時点の物語の状況）\n\n【包括的なプロットアーク】\n（超目標または主要プロットの2〜3文の要約）\n\n【スレッド#1のタイトル】\n- 要約：（1文）\n- 状況：（アクティブ／保留中）\n- 賭け金：（解決が進行中の物語にどう影響するか）\n- 最終確認：（場所または時間）\n- 主要キャラクター：...\n\n\n【スレッド#2のタイトル】\n- 要約：（1文）\n- 状況：（アクティブ／保留中）\n- 賭け金：（解決が進行中の物語にどう影響するか）\n- 最終確認：（場所または時間）\n- 主要キャラクター：...\n\n...\n\n-- プロットフック --\n- （新規または潜在的なプロットフック）\n\n-- キャラクターダイナミクス --\n- {{user}}／{{char}}とNPCの関係の現状\n\n===プロットポイント終了===\n",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "ステータス",
+      "enabled": false,
+      "prompt": "すべてのコンテキスト（以前のシーン、メモリ、伝承、履歴、相互作用）を分析して、{{user}}と{{char}}の詳細な分析を生成します（省略された!lovefactorおよび!lustfactorコマンドを含む）。注: 既存の!statusレポートがある場合は、それを更新し、再 regurgitate しないでください。",
+      "responseFormat": "この一般的な形式に従ってください：\n\n##気の利いた見出しまたは要約\n\n### 親和性（0-100、!lovefactorと!lustfactorと何らかの関係がある）\n- 証拠付きのスコア\n- 最近の変更\n- 支持する引用\n- 現在の親和性を示す可能性のあるその他の事項\n\n### LOVEFACTORとLUSTFACTOR\n（!lovefactorと!lustfactorのレポートはここに）\n\n### 関係状況（負=敵、0=他人、100=生涯のパートナー）\n- 信頼／境界／コミュニケーション\n- 主要な出来事\n- 問題点\n- その他の関連事項\n\n### 目標\n- 短期／長期の目標\n- 進捗／障害\n- 成長分野\n- その他の関連事項\n\n### 分析\n- 心理学／視点\n- 発達／トリガー\n- 物語の提案\n- その他の関連事項\n\n### まとめ\n- OOC要約（1段落）",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "登場人物",
+      "enabled": false,
+      "prompt": "あなたは、NPCのプロットへの重要性を判断する明確な目を持つ熟練したレポーターです。\nステップ1: シーンを確認し、プロット関連のNPCをNPC WHO'S WHOレポートに追加または更新してください。{{char}}と{{user}}は主要なキャラクターであり、このレポートに含める必要はありません。\nステップ2: このリストはプロットへの重要性の順に維持される必要があるため、並べ替える必要がある場合があります。\nステップ3: 応答が2000トークンを超える場合は、プロットへの影響が最も少ないNPCを削除してください。",
+      "responseFormat": "===NPC一覧===\n（プロットへの重要度順）\n\n人物1：1〜2文の説明\n人物2：1〜2文の説明\n===NPC一覧終了===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "評価",
+      "enabled": false,
+      "prompt": "これまでの{{char}}と{{user}}の相互作用を評価します。{{char}}が観察、質問、または相互作用からの結論の導出（精神的な\"自分へのメモ\"に似ています）を通じて{{user}}について学んだすべての情報をコードブロックにリストします。すでにリストがある場合は、それを更新してください。トークン効率が高く、コンパクトで、重要なことに焦点を当てるようにしてください。",
+      "responseFormat": "この形式を使用してください：\n=== {{char}}が{{user}}について学んだこと ===\n（{{char}}の視点／口調での詳細なリスト）\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

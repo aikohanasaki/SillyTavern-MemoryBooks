@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "overrides": {
+    "arc_default": {
+      "displayName": "Multi-Consolidation Analysis",
+      "prompt": "Du bist ein Experte für narrative Analyse und ein Assistent für Speicher-Engines.\nDeine Aufgabe ist es, mehrere {{stmbchildtier}}-Einträge zu einer oder mehreren kohärenten {{stmbtier}}-Zusammenfassungen zu verbinden.\n\nDu erhältst:\n- Einen optionalen PREVIOUS {{stmbtier}}-Block, der Kanon ist und nicht umgeschrieben werden darf.\n- Einen Block mit {{stmbchildtier}}-Einträgen in chronologischer Reihenfolge.\n\nGib nur JSON zurück:\n{\n  \"summaries\": [\n    {\n      \"title\": \"Kurzer beschreibender {{stmbtier}}-Titel (3-6 Wörter)\",\n      \"summary\": \"Strukturierte {{stmbtier}}-Zusammenfassung als einzelner Text.\",\n      \"keywords\": [\"Stichwort1\", \"Stichwort2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"element-id\", \"reason\": \"Warum dieses Element nicht passt.\" }\n  ]\n}\n\nRegeln:\n- Beachte die Chronologie.\n- Erzeuge die kleinstmögliche kohärente Anzahl von {{stmbtier}}-Zusammenfassungen.\n- Wenn ein Element nicht passt, lege es mit kurzer Begründung in unassigned_items ab.\n- Wiederhole den Text des PREVIOUS {{stmbtier}} nicht wörtlich.\n- Verfolge Ursache und Wirkung sehr klar, damit Handlung und Kontinuität verständlich bleiben.\n- Token-effizient und handlungsgenau.\n\nNutze diese Struktur in summary:\n# [{{stmbtier}}-Titel]\nZeitspanne: ...\n\n{{stmbtier}}-Prämisse: Ein Satz, der beschreibt, worum es in dieser {{stmbtier}}-Zusammenfassung geht.\n\n## Hauptpunkte\n- 3-7 Punkte zu den plotrelevanten Entwicklungen\n\n## Charakterdynamik\n- 1-2 kurze Absätze zu Beziehungs-, Emotions- oder Motivänderungen\n\n## Schlüsselmomente\n- Bis zu 8 kurze, exakte Zitate, nur wenn sie wichtig sind\n\n## Ergebnis & Kontinuität\n- 4-8 Punkte zu Entscheidungen, Versprechen, offenen Fäden und dauerhaften Folgen\n\nSchlüsselwörter müssen konkrete Substantive, Gegenstände, Orte, Eigennamen oder markante Handlungen sein.\nVermeide abstrakte Emotionen, Themen oder reine Zusammenfassungsphrasen.\n\nGib nur JSON zurück.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "arc_alternate": {
+      "displayName": "Single Consolidation Analysis",
+      "prompt": "Du bist ein Experte für narrative Analyse und ein Assistent für Speicher-Engines.\nDeine Aufgabe ist es, mehrere {{stmbchildtier}}-Einträge zu einer einzigen kohärenten {{stmbtier}}-Zusammenfassung zu verbinden.\n\nGib nur JSON zurück:\n{\n  \"summaries\": [\n    {\n      \"title\": \"Kurzer beschreibender {{stmbtier}}-Titel\",\n      \"summary\": \"Strukturierte {{stmbtier}}-Zusammenfassung\",\n      \"keywords\": [\"Stichwort1\", \"Stichwort2\"],\n      \"member_ids\": [\"<ID>\", \"...\"]\n    }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"element-id\", \"reason\": \"Warum dieses Element nicht passt.\" }\n  ]\n}\n\nAnforderungen:\n- Beachte die Chronologie.\n- Halte die Zusammenfassung kompakt, aber inhaltlich vollständig.\n- Ignoriere OOC und reine Ausschmückung, sofern sie keine Folgen hat.\n- Verwende member_ids, wenn möglich.\n- Gib nur gültiges JSON zurück.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    },
+    "arc_tiny": {
+      "displayName": "Tiny Consolidation Analysis",
+      "prompt": "Du bist darauf spezialisiert, viele kleine {{stmbchildtier}}-Einträge zu kompakten, kohärenten {{stmbtier}}-Zusammenfassungen zu verdichten.\n\nGib nur JSON zurück:\n{\n  \"summaries\": [\n    { \"title\": \"...\", \"summary\": \"...\", \"keywords\": [\"...\"], \"member_ids\": [\"<ID>\", \"...\"] }\n  ],\n  \"unassigned_items\": [\n    { \"id\": \"...\", \"reason\": \"...\" }\n  ]\n}\n\nRegeln:\n- Konzentriere dich auf Handlung, emotionale Entwicklung, Entscheidungen, Konflikte und Kontinuität.\n- Verfolge Ursache und Wirkung sehr klar, damit Handlung und Kontinuität verständlich bleiben.\n- Verdichte stark, aber bleibe präzise.\n- Vermerke nicht passende Elemente in unassigned_items.\n- Kein Kommentar außerhalb von JSON.",
+      "createdAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

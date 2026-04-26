@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "Intrigues",
+      "enabled": false,
+      "prompt": "Analysez la scène pour les fils narratifs, les arcs et mouvements. Mettez à jour le rapport si existant.",
+      "responseFormat": "=== Intrigues ===\n[Arc Principal]\n[Fil #1]...",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "Statut",
+      "enabled": false,
+      "prompt": "Analyse détaillée de {{user}} et {{char}} (incluant !lovefactor et !lustfactor). Mettez à jour le rapport existant.",
+      "responseFormat": "## Titre\n### AFFINITÉ\n### RELATION\n### OBJECTIFS...",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "Distribution",
+      "enabled": false,
+      "prompt": "Identifiez les PNJ importants. {{char}} et {{user}} sont exclus. Gardez par ordre d'importance.",
+      "responseFormat": "=== QUI EST QUI ===\nPNJ 1...",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "Évaluation",
+      "enabled": false,
+      "prompt": "Évaluez l'interaction. Listez ce que {{char}} a appris sur {{user}}.",
+      "responseFormat": "=== Ce que {{char}} a appris sur {{user}} ===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

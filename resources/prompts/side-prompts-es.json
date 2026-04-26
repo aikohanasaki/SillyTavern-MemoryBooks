@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "Puntos de Trama",
+      "enabled": false,
+      "prompt": "Analice la escena adjunta en busca de hilos argumentales, arcos de la historia y otros movimientos narrativos. Las escenas anteriores están ahí para proporcionar contexto. Genere un informe de hilos de la historia. Si ya existe un informe en el contexto, actualícelo en lugar de recrearlo.",
+      "responseFormat": "=== Puntos de Trama ===\n(a [punto en la historia cuando se hizo este análisis])\n\n[Arco Argumental Principal]\n(resumen de 2-3 frases del superobjetivo o trama principal)\n\n[Título del Hilo #1]\n- Resumen: (1 frase)\n- Estado: (activo / en espera)\n- En Juego: (cómo la resolución afectará a la historia en curso)\n- Última Vez Visto: (lugar o momento)\n- Personajes Clave: ...\n\n\n[Título del Hilo #2]\n- Resumen: (1 frase)\n- Estado: (activo / en espera)\n- En Juego: (cómo la resolución afectará a la historia en curso)\n- Última Vez Visto: (lugar o momento)\n- Personajes Clave: ...\n\n...\n\n-- Ganchos de Trama --\n- (ganchos de trama nuevos o potenciales)\n\n-- Dinámicas de los Personajes --\n- estado actual de las relaciones de {{user}}/{{char}} con los PNJ\n\n===Fin de los Puntos de Trama===\n",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "Estado",
+      "enabled": false,
+      "prompt": "Analice todo el contexto (escenas anteriores, memorias, lore, historial, interacciones) para generar un análisis detallado de {{user}} y {{char}} (incluyendo los comandos abreviados !lovefactor y !lustfactor). Nota: Si ya existe un informe de !status, actualícelo, no lo regurgite.",
+      "responseFormat": "Siga este formato general:\n\n## Titular Ingenioso o Resumen\n\n### AFINIDAD (0-100, con alguna relación con !lovefactor y !lustfactor)\n- Puntuación con evidencia\n- Cambios recientes \n- Citas de apoyo\n- Cualquier otra cosa que pueda ilustrar la afinidad actual\n\n### FACTOR DE AMOR y FACTOR DE LUJURIA\n(los informes de !lovefactor y !lustfactor van aquí)\n\n### ESTADO DE LA RELACIÓN (negativo = enemigos, 0 = extraños, 100 = compañeros de vida)\n- Confianza/límites/comunicación\n- Eventos clave\n- Problemas\n- Cualquier otro punto pertinente\n\n### METAS\n- Objetivos a corto/largo plazo\n- Progreso/obstáculos\n- Áreas de crecimiento\n- Cualquier otro punto pertinente\n\n### ANÁLISIS\n- Psicología/Punto de vista\n- Desarrollo/desencadenantes\n- Sugerencias para la historia\n- Cualquier otro punto pertinente\n\n### CONCLUSIÓN\n- Resumen OOC (1 párrafo)",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "Elenco de Personajes",
+      "enabled": false,
+      "prompt": "Usted es un reportero experto con un ojo claro para juzgar la importancia de los PNJ en la trama. \nPaso 1: Revise la escena y agregue o actualice los PNJ relacionados con la trama en el informe QUIÉN ES QUIÉN de los PNJ. Tenga en cuenta que {{char}} y {{user}} son personajes principales y NO necesitan ser incluidos en este informe.\nPaso 2: Esta lista debe mantenerse en orden de importancia para la trama, por lo que puede ser necesario reordenarla.\nPaso 3: Si su respuesta supera los 2000 tokens, elimine los PNJ con el menor impacto en la trama.",
+      "responseFormat": "===QUIÉN ES QUIÉN DE LOS PNJ===\n(En orden de importancia para la trama)\n\nPersona 1: descripción de 1-2 frases\nPersona 2: descripción de 1-2 frases\n===FIN DEL QUIÉN ES QUIÉN DE LOS PNJ===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "Evaluar",
+      "enabled": false,
+      "prompt": "Evalúe la interacción entre {{char}} y {{user}} hasta la fecha. Enumere toda la información que {{char}} ha aprendido sobre {{user}} en un bloque de código a través de la observación, el interrogatorio o la extracción de conclusiones de la interacción (similar a una \"nota mental para sí mismo\"). Si ya existe una lista, actualícela. Intente que sea eficiente en tokens y compacta, centrada en las cosas importantes.",
+      "responseFormat": "Use este formato: \n=== Cosas que {{char}} ha aprendido sobre {{user}} ===\n(lista detallada, en el punto de vista/tono de voz de {{char}})\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}

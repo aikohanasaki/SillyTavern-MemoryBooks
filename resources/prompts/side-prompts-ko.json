@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "prompts": {
+    "plotpoints": {
+      "key": "plotpoints",
+      "name": "플롯 포인트",
+      "enabled": false,
+      "prompt": "플롯 스레드, 스토리 아크 및 기타 서사적 움직임에 대해 첨부된 장면을 분석합니다. 이전 장면은 컨텍스트를 제공하기 위해 있습니다. 스토리 스레드 보고서를 생성합니다. 컨텍스트에 이미 보고서가 있는 경우 다시 만드는 대신 업데이트합니다.",
+      "responseFormat": "=== 플롯 포인트 ===\n(이 분석이 수행된 시점의 이야기 상황)\n\n[전체 플롯 아크]\n(초목표 또는 주요 플롯의 2-3 문장 요약)\n\n[스레드 #1 제목]\n- 요약: (1 문장)\n- 상태: (활성 / 보류 중)\n- 관건: (해결이 진행 중인 이야기에 미치는 영향)\n- 마지막 확인: (장소 또는 시간)\n- 주요 캐릭터: ...\n\n\n[스레드 #2 제목]\n- 요약: (1 문장)\n- 상태: (활성 / 보류 중)\n- 관건: (해결이 진행 중인 이야기에 미치는 영향)\n- 마지막 확인: (장소 또는 시간)\n- 주요 캐릭터: ...\n\n...\n\n-- 플롯 훅 --\n- (새롭거나 잠재적인 플롯 훅)\n\n-- 캐릭터 역학 --\n- {{user}}/{{char}}와 NPC의 관계 현황\n\n===플롯 포인트 종료===\n",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "status": {
+      "key": "status",
+      "name": "상태",
+      "enabled": false,
+      "prompt": "모든 컨텍스트(이전 장면, 메모리, 로어, 히스토리, 상호 작용)를 분석하여 {{user}} 및 {{char}}에 대한 상세 분석을 생성합니다(축약된 !lovefactor 및 !lustfactor 명령 포함). 참고: 기존 !status 보고서가 있는 경우, 그것을 업데이트하고 반복하지 마세요.",
+      "responseFormat": "이 일반적인 형식을 따르세요:\n\n## 재치 있는 헤드라인 또는 요약\n\n### 친밀도 (0-100, !lovefactor 및 !lustfactor와 어느 정도 관련 있음)\n- 증거가 있는 점수\n- 최근 변경 사항\n- 뒷받침하는 인용문\n- 현재 친밀도를 보여줄 수 있는 기타 사항\n\n### LOVEFACTOR 및 LUSTFACTOR\n(!lovefactor 및 !lustfactor 보고서는 여기에)\n\n### 관계 상태 (음수 = 적, 0 = 낯선 사람, 100 = 평생 파트너)\n- 신뢰/경계/소통\n- 주요 이벤트\n- 문제점\n- 기타 관련 사항\n\n### 목표\n- 단기/장기 목표\n- 진행/장애물\n- 성장 영역\n- 기타 관련 사항\n\n### 분석\n- 심리/관점\n- 발달/유발 요인\n- 이야기 제안\n- 기타 관련 사항\n\n### 요약\n- OOC 요약 (1 단락)",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "link",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 25,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "cast": {
+      "key": "cast",
+      "name": "등장인물",
+      "enabled": false,
+      "prompt": "당신은 플롯에 대한 NPC의 중요성을 판단하는 명확한 눈을 가진 숙련된 기자입니다. \n1단계: 장면을 검토하고 플롯 관련 NPC를 NPC WHO'S WHO 보고서에 추가하거나 업데이트하세요. {{char}}와 {{user}}는 주요 캐릭터이며 이 보고서에 포함될 필요가 없습니다.\n2단계: 이 목록은 플롯에 대한 중요도 순으로 유지되어야 하므로 재정렬이 필요할 수 있습니다.\n3단계: 응답이 2000 토큰을 초과하는 경우, 플롯에 가장 적은 영향을 미치는 NPC를 제거하세요.",
+      "responseFormat": "===NPC 명단===\n(플롯에 대한 중요도 순)\n\n인물 1: 1-2 문장 설명\n인물 2: 1-2 문장 설명\n===NPC 명단 종료===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 3,
+          "orderMode": "manual",
+          "orderValue": 15,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "assess": {
+      "key": "assess",
+      "name": "평가",
+      "enabled": false,
+      "prompt": "현재까지 {{char}}와 {{user}}의 상호 작용을 평가하세요. {{char}}가 관찰, 질문 또는 상호 작용에서 결론을 도출하여 {{user}}에 대해 알게 된 모든 정보를 코드 블록에 나열하세요(정신적인 \"자신에게 보내는 메모\"와 유사). 이미 목록이 있는 경우 업데이트하세요. 토큰 효율적이고 간결하게, 중요한 것에 초점을 맞춰 유지하려고 노력하세요.",
+      "responseFormat": "이 형식을 사용하세요:\n=== {{char}}가 {{user}}에 대해 배운 것들 ===\n(상세 목록, {{char}}의 관점/어조로)\n===",
+      "settings": {
+        "overrideProfileEnabled": false,
+        "lorebook": {
+          "constVectMode": "blue",
+          "position": 2,
+          "orderMode": "manual",
+          "orderValue": 30,
+          "preventRecursion": true,
+          "delayUntilRecursion": false,
+          "ignoreBudget": false
+        }
+      },
+      "triggers": {
+        "onAfterMemory": {
+          "enabled": true
+        },
+        "commands": [
+          "sideprompt"
+        ]
+      },
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    }
+  }
+}
