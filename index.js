@@ -18,6 +18,7 @@ import { SlashCommandEnumValue } from "../../../slash-commands/SlashCommandEnumV
 import {
   ARGUMENT_TYPE,
   SlashCommandArgument,
+  SlashCommandNamedArgument,
 } from "../../../slash-commands/SlashCommandArgument.js";
 import { executeSlashCommands } from "../../../slash-commands.js";
 import {
@@ -628,6 +629,80 @@ async function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
   return "";
 }
 
+function parseRequiredIntegerArg(namedArgs, name) {
+  const value = namedArgs?.[name];
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && Number.isInteger(parsed) ? parsed : null;
+}
+
+function validateSceneMemoryRange(startId, endId) {
+  // Validate range logic (start = end is valid for single message)
+  if (startId > endId) {
+    toastr.error(
+      translate(
+        "Start message cannot be greater than end message",
+        "STMemoryBooks_StartGreaterThanEnd",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return false;
+  }
+
+  // IMPORTANT: Use the global chat array for validation to match compileScene()
+  const activeChat = chat;
+
+  // Validate message IDs exist in current chat
+  if (startId < 0 || endId >= activeChat.length) {
+    toastr.error(
+      __st_t_tag`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`,
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return false;
+  }
+
+  // check if messages actually exist
+  if (!activeChat[startId] || !activeChat[endId]) {
+    toastr.error(
+      translate(
+        "One or more specified messages do not exist",
+        "STMemoryBooks_MessagesDoNotExist",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return false;
+  }
+
+  return true;
+}
+
+async function runSceneMemoryRange(startId, endId, options = {}) {
+  const { showSceneToast = true } = options;
+
+  if (!validateSceneMemoryRange(startId, endId)) {
+    return false;
+  }
+
+  // Atomically set both scene markers for /scenememory
+  setSceneRange(startId, endId);
+
+  if (showSceneToast) {
+    const context = getCurrentMemoryBooksContext();
+    const contextMsg = context.isGroupChat
+      ? ` in group "${context.groupName}"`
+      : "";
+    toastr.info(
+      __st_t_tag`Scene set: messages ${startId}-${endId}${contextMsg}`,
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+  }
+
+  return (await initiateMemoryCreation()) === true;
+}
+
 async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
   const range = String(unnamedArgs || "").trim();
 
@@ -669,55 +744,161 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     return "";
   }
 
-  // Validate range logic (start = end is valid for single message)
-  if (startId > endId) {
-    toastr.error(
-      translate(
-        "Start message cannot be greater than end message",
-        "STMemoryBooks_StartGreaterThanEnd",
-      ),
+  await runSceneMemoryRange(startId, endId);
+
+  return "";
+}
+
+async function handleStmbCatchupCommand(namedArgs) {
+  try {
+    if (isProcessingMemory) {
+      toastr.info(
+        translate(
+          "Memory creation is already in progress",
+          "STMemoryBooks_MemoryAlreadyInProgress",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    const interval = parseRequiredIntegerArg(namedArgs, "interval");
+    const startId = parseRequiredIntegerArg(namedArgs, "start");
+    const endId = parseRequiredIntegerArg(namedArgs, "end");
+
+    if (interval === null || startId === null || endId === null) {
+      toastr.error(
+        translate(
+          "Missing or invalid arguments. Use: /stmb-catchup interval:<chunk size> start:<message id> end:<message id>",
+          "STMemoryBooks_CatchupUsage",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    const context = getCurrentMemoryBooksContext();
+    if (context.isGroupChat) {
+      if (!context.groupId || !context.groupName) {
+        toastr.error(
+          translate(
+            "Group chat data not available, please wait a few seconds and try again.",
+            "STMemoryBooks_GroupChatDataUnavailable",
+          ),
+          translate("STMemoryBooks", "index.toast.title"),
+        );
+        return "";
+      }
+    } else if (!characters || characters.length === 0 || !characters[this_chid]) {
+      toastr.error(
+        translate(
+          "This command can only be run in an active chat.",
+          "STMemoryBooks_CatchupRequiresChat",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    const lastIndex = chat.length - 1;
+    if (lastIndex < 0) {
+      toastr.error(
+        translate(
+          "There are no messages in this chat yet.",
+          "STMemoryBooks_SetHighest_NoMessages",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    if (interval <= 0) {
+      toastr.error(
+        translate(
+          "Interval must be a positive whole number.",
+          "STMemoryBooks_CatchupInvalidInterval",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    if (startId < 0 || endId < 0) {
+      toastr.error(
+        __st_t_tag`Message IDs out of range. Valid range: 0-${lastIndex}`,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    if (startId > endId) {
+      toastr.error(
+        translate(
+          "Start message cannot be greater than end message",
+          "STMemoryBooks_StartGreaterThanEnd",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    if (endId > lastIndex) {
+      toastr.error(
+        __st_t_tag`Message IDs out of range. Valid range: 0-${lastIndex}`,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    const chunks = [];
+    for (let chunkStart = startId; chunkStart <= endId; chunkStart += interval) {
+      const chunkEnd = Math.min(chunkStart + interval - 1, endId);
+      if (!chat[chunkStart] || !chat[chunkEnd]) {
+        toastr.error(
+          __st_t_tag`Cannot run catch-up chunk ${chunkStart}-${chunkEnd}: one or more boundary messages do not exist.`,
+          translate("STMemoryBooks", "index.toast.title"),
+        );
+        return "";
+      }
+      chunks.push({ start: chunkStart, end: chunkEnd });
+    }
+
+    toastr.info(
+      __st_t_tag`STMB catch-up started: ${chunks.length} chunk${chunks.length === 1 ? "" : "s"}.`,
       translate("STMemoryBooks", "index.toast.title"),
     );
-    return "";
-  }
 
-  // IMPORTANT: Use the global chat array for validation to match compileScene()
-  const activeChat = chat;
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      toastr.info(
+        __st_t_tag`Creating catch-up memory ${i + 1}/${chunks.length}: messages ${chunk.start}-${chunk.end}`,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
 
-  // Validate message IDs exist in current chat
-  if (startId < 0 || endId >= activeChat.length) {
-    toastr.error(
-      __st_t_tag`Message IDs out of range. Valid range: 0-${activeChat.length - 1}`,
+      const success = await runSceneMemoryRange(chunk.start, chunk.end, {
+        showSceneToast: false,
+      });
+
+      if (!success) {
+        toastr.error(
+          __st_t_tag`STMB catch-up stopped at messages ${chunk.start}-${chunk.end}.`,
+          translate("STMemoryBooks", "index.toast.title"),
+        );
+        return "";
+      }
+    }
+
+    toastr.success(
+      __st_t_tag`STMB catch-up complete: ${chunks.length} chunk${chunks.length === 1 ? "" : "s"} processed.`,
       translate("STMemoryBooks", "index.toast.title"),
     );
-    return "";
-  }
-
-  // check if messages actually exist
-  if (!activeChat[startId] || !activeChat[endId]) {
+  } catch (error) {
+    console.error("STMemoryBooks: /stmb-catchup failed:", error);
     toastr.error(
-      translate(
-        "One or more specified messages do not exist",
-        "STMemoryBooks_MessagesDoNotExist",
-      ),
+      __st_t_tag`Failed to run /stmb-catchup: ${error.message}`,
       translate("STMemoryBooks", "index.toast.title"),
     );
-    return "";
   }
-
-  // Atomically set both scene markers for /scenememory
-  setSceneRange(startId, endId);
-
-  const context = getCurrentMemoryBooksContext();
-  const contextMsg = context.isGroupChat
-    ? ` in group "${context.groupName}"`
-    : "";
-  toastr.info(
-    __st_t_tag`Scene set: messages ${startId}-${endId}${contextMsg}`,
-    translate("STMemoryBooks", "index.toast.title"),
-  );
-
-  initiateMemoryCreation();
 
   return "";
 }
@@ -1745,7 +1926,7 @@ async function executeMemoryGeneration(
 
       if (previewResult.action === "cancel") {
         // User cancelled, abort the process
-        return;
+        return false;
       } else if (previewResult.action === "retry") {
         // User wants to retry - limit user-initiated retries to prevent infinite loops
         const maxUserRetries = 3; // Allow up to 3 user-initiated retries
@@ -1757,7 +1938,7 @@ async function executeMemoryGeneration(
             __st_t_tag`Maximum retry attempts (${maxUserRetries}) reached`,
             "STMemoryBooks",
           );
-          return { action: "cancel" };
+          return false;
         }
 
         toastr.info(
@@ -1792,7 +1973,7 @@ async function executeMemoryGeneration(
             ),
             "STMemoryBooks",
           );
-          return;
+          return false;
         }
 
         // Validate that edited memory data has required fields
@@ -1810,7 +1991,7 @@ async function executeMemoryGeneration(
             ),
             "STMemoryBooks",
           );
-          return;
+          return false;
         }
 
         finalMemoryResult = previewResult.memoryData;
@@ -1886,9 +2067,10 @@ async function executeMemoryGeneration(
       "STMemoryBooks",
     );
     await maybePromptAutoConsolidation(1, lorebookValidation);
+    return true;
   } catch (error) {
     if (isStmbStopError(error)) {
-      return;
+      return false;
     }
     console.error("STMemoryBooks: Error creating memory:", error);
 
@@ -1909,7 +2091,7 @@ async function executeMemoryGeneration(
       try {
         await sleepWithAbort(MEMORY_GENERATION.RETRY_DELAY_MS, stmbTask.signal);
       } catch (e) {
-        if (isStmbStopError(e)) return;
+        if (isStmbStopError(e)) return false;
         throw e;
       }
 
@@ -1988,6 +2170,7 @@ async function executeMemoryGeneration(
         "STMemoryBooks",
       );
     }
+    return false;
   } finally {
     if (ownsTask) {
       stmbTask.finish();
@@ -2009,7 +2192,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         ),
         "STMemoryBooks",
       );
-      return;
+      return false;
     }
   }
   // For group chats, check that we have group data
@@ -2022,13 +2205,13 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         ),
         "STMemoryBooks",
       );
-      return;
+      return false;
     }
   }
 
   // RACE CONDITION FIX: Check and set flag atomically
   if (isProcessingMemory) {
-    return;
+    return false;
   }
 
   // Set processing flag IMMEDIATELY after validation to prevent race conditions
@@ -2060,7 +2243,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         "STMemoryBooks",
       );
       isProcessingMemory = false;
-      return;
+      return false;
     }
 
     const lorebookValidation = await validateLorebook();
@@ -2079,7 +2262,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         );
       }
       isProcessingMemory = false;
-      return;
+      return false;
     }
 
     const allMemories = identifyMemoryEntries(lorebookValidation.data);
@@ -2112,7 +2295,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
               "STMemoryBooks",
             );
             isProcessingMemory = false;
-            return;
+            return false;
           }
         }
       }
@@ -2125,7 +2308,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     );
     if (!effectiveSettings) {
       isProcessingMemory = false;
-      return; // User cancelled
+      return false; // User cancelled
     }
 
     // Close settings popup if open
@@ -2135,7 +2318,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     }
 
     // Execute the main process with retry logic
-    await executeMemoryGeneration(
+    return await executeMemoryGeneration(
       sceneData,
       lorebookValidation,
       effectiveSettings,
@@ -2149,6 +2332,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       __st_t_tag`An unexpected error occurred: ${error.message}`,
       "STMemoryBooks",
     );
+    return false;
   } finally {
     // ALWAYS reset the flag, no matter how we exit
     isProcessingMemory = false;
@@ -5895,6 +6079,44 @@ function registerSlashCommands() {
     ),
   });
 
+  const stmbCatchupCmd = SlashCommand.fromProps({
+    name: "stmb-catchup",
+    callback: handleStmbCatchupCommand,
+    helpString: translate(
+      "Create scene memories over a message range in chunks. Usage: /stmb-catchup interval:50 start:0 end:600",
+      "STMemoryBooks_Slash_Catchup_Help",
+    ),
+    namedArgumentList: [
+      SlashCommandNamedArgument.fromProps({
+        name: "interval",
+        description: translate(
+          "How many memories per chunk?",
+          "STMemoryBooks_Slash_Catchup_ArgIntervalDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.NUMBER],
+        isRequired: true,
+      }),
+      SlashCommandNamedArgument.fromProps({
+        name: "start",
+        description: translate(
+          "start from which message id?",
+          "STMemoryBooks_Slash_Catchup_ArgStartDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.NUMBER],
+        isRequired: true,
+      }),
+      SlashCommandNamedArgument.fromProps({
+        name: "end",
+        description: translate(
+          "End at which message id?",
+          "STMemoryBooks_Slash_Catchup_ArgEndDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.NUMBER],
+        isRequired: true,
+      }),
+    ],
+  });
+
   const sidePromptCmd = SlashCommand.fromProps({
     name: "sideprompt",
     callback: handleSidePromptCommand,
@@ -6004,6 +6226,7 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
+  SlashCommandParser.addCommandObject(stmbCatchupCmd);
   SlashCommandParser.addCommandObject(sidePromptCmd);
   SlashCommandParser.addCommandObject(sidePromptOnCmd);
   SlashCommandParser.addCommandObject(sidePromptOffCmd);
