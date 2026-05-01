@@ -703,6 +703,30 @@ async function runSceneMemoryRange(startId, endId, options = {}) {
   return (await initiateMemoryCreation()) === true;
 }
 
+function compileSceneForCatchupPreflight(sceneRequest, unhideBeforeMemory) {
+  if (!unhideBeforeMemory) {
+    return compileScene(sceneRequest);
+  }
+
+  const restoredMessages = [];
+
+  try {
+    for (let i = sceneRequest.sceneStart; i <= sceneRequest.sceneEnd; i++) {
+      const message = chat[i];
+      if (message?.is_system) {
+        restoredMessages.push(message);
+        message.is_system = false;
+      }
+    }
+
+    return compileScene(sceneRequest);
+  } finally {
+    for (const message of restoredMessages) {
+      message.is_system = true;
+    }
+  }
+}
+
 async function validateStmbCatchupNonInteractive(settings, chunks) {
   const moduleSettings = settings?.moduleSettings || {};
 
@@ -720,23 +744,36 @@ async function validateStmbCatchupNonInteractive(settings, chunks) {
     );
   }
 
+  const defaultMemoryCount = clampInt(moduleSettings.defaultMemoryCount ?? 0, 0, 7);
+  if (defaultMemoryCount > 0) {
+    return __st_t_tag`/stmb-catchup is non-interactive. Set Default Previous Memories Count to "None (0 memories)" before running it.`;
+  }
+
   const isManualMode = !!moduleSettings.manualModeEnabled;
   const stmbData = isManualMode ? getSceneMarkers() || {} : null;
   const lorebookName = isManualMode
     ? stmbData?.manualLorebook ?? null
     : chat_metadata?.[METADATA_KEY] || null;
+  const canAutoCreateLorebook =
+    !isManualMode && !!moduleSettings.autoCreateLorebook;
 
-  if (!lorebookName || !world_names?.includes(lorebookName)) {
+  if (!lorebookName && !canAutoCreateLorebook) {
     return __st_t_tag`/stmb-catchup is non-interactive. Select a valid ${isManualMode ? "manual" : "chat-bound"} lorebook before running it.`;
   }
 
-  try {
-    const lorebookData = await loadWorldInfo(lorebookName);
-    if (!lorebookData) {
-      return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded.`;
+  if (lorebookName && !world_names?.includes(lorebookName)) {
+    return __st_t_tag`/stmb-catchup is non-interactive. Select a valid ${isManualMode ? "manual" : "chat-bound"} lorebook before running it.`;
+  }
+
+  if (lorebookName) {
+    try {
+      const lorebookData = await loadWorldInfo(lorebookName);
+      if (!lorebookData) {
+        return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded.`;
+      }
+    } catch (error) {
+      return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded: ${error.message}`;
     }
-  } catch (error) {
-    return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded: ${error.message}`;
   }
 
   const tokenThreshold = moduleSettings.tokenWarningThreshold ?? 30000;
@@ -744,7 +781,10 @@ async function validateStmbCatchupNonInteractive(settings, chunks) {
   for (const chunk of chunks) {
     try {
       const sceneRequest = createSceneRequest(chunk.start, chunk.end);
-      const compiledScene = compileScene(sceneRequest);
+      const compiledScene = compileSceneForCatchupPreflight(
+        sceneRequest,
+        !!moduleSettings.unhideBeforeMemory,
+      );
       const validation = validateCompiledScene(compiledScene);
       if (!validation.valid) {
         return __st_t_tag`/stmb-catchup cannot run non-interactively because chunk ${chunk.start}-${chunk.end} cannot be compiled: ${validation.errors.join(", ")}`;
