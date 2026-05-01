@@ -628,7 +628,7 @@
     "index.log.migratingV2": "Migration V2",
     "index.log.updatingProfileToJSON": "Profil \"{{name}}\" -> JSON",
     "STMemoryBooks_Slash_CreateMemory_Help": "Créer mémoire depuis scène",
-    "STMemoryBooks_Slash_SceneMemory_Help": "Définit plage et crée (ex: /scenememory 10-15)",
+    "STMemoryBooks_Slash_SceneMemory_Help": "Définir la plage de scène et créer une mémoire. Facultativement, indiquez une taille de lot pour diviser la plage en lots séquentiels (ex: /scenememory 10-15 ou /scenememory 1-310 30)",
     "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "Plage (X-Y)",
     "STMemoryBooks_Slash_NextMemory_Help": "Mémoire de la fin de la dernière au message actuel",
     "STMemoryBooks_Slash_SidePrompt_Help": "Lancer side prompt. Usage : /sideprompt \"Nom\" {{macro}}=\"value\" [X-Y]",

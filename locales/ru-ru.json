@@ -633,7 +633,7 @@
   "index.log.migratingV2": "STMemoryBooks: Миграция на архитектуру на основе JSON (v2)",
   "index.log.updatingProfileToJSON": "STMemoryBooks: Обновление профиля \"{{name}}\" для использования вывода JSON",
   "STMemoryBooks_Slash_CreateMemory_Help": "Создать память из отмеченной сцены",
-  "STMemoryBooks_Slash_SceneMemory_Help": "Установить диапазон сцены и создать память (например, /scenememory 10-15)",
+    "STMemoryBooks_Slash_SceneMemory_Help": "Установить диапазон сцены и создать память. При необходимости укажите размер пакета для разделения диапазона на последовательные пакеты (например, /scenememory 10-15 или /scenememory 1-310 30)",
   "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "Диапазон сообщений (формат X-Y)",
   "STMemoryBooks_Slash_NextMemory_Help": "Создать память от конца последней памяти до текущего сообщения",
   "STMemoryBooks_Slash_SidePrompt_Help": "Запустить боковой промпт (без аргументов открывает выбор). Использование: /sideprompt \"Имя\" {{macro}}=\"value\" [X-Y]",

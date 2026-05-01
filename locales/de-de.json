@@ -633,7 +633,7 @@
     "index.log.migratingV2": "STMemoryBooks: Migration auf JSON-Architektur (v2)",
     "index.log.updatingProfileToJSON": "STMemoryBooks: Profil \"{{name}}\" auf JSON-Ausgabe aktualisiert",
     "STMemoryBooks_Slash_CreateMemory_Help": "Erinnerung aus markierter Szene erstellen",
-    "STMemoryBooks_Slash_SceneMemory_Help": "Szenenbereich setzen und Erinnerung erstellen (z.B. /scenememory 10-15)",
+    "STMemoryBooks_Slash_SceneMemory_Help": "Szenenbereich setzen und Erinnerung erstellen. Optional eine Batch-Größe angeben, um den Bereich in sequenzielle Batches aufzuteilen (z.B. /scenememory 10-15 oder /scenememory 1-310 30)",
     "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "Nachrichtenbereich (Format X-Y)",
     "STMemoryBooks_Slash_NextMemory_Help": "Erinnerung ab Ende der letzten bis zur aktuellen Nachricht erstellen",
     "STMemoryBooks_Slash_SidePrompt_Help": "Side-Prompt ausführen (ohne Argumente öffnet Auswahl). Syntax: /sideprompt \"Name\" {{macro}}=\"value\" [X-Y]",

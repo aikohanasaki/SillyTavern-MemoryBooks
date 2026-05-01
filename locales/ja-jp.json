@@ -633,7 +633,7 @@
   "index.log.migratingV2": "STMemoryBooks: JSONベースのアーキテクチャに移行中（v2）",
   "index.log.updatingProfileToJSON": "STMemoryBooks: プロファイル\"{{name}}\"をJSON出力を使用するように更新中",
   "STMemoryBooks_Slash_CreateMemory_Help": "マークされたシーンからメモリを作成",
-  "STMemoryBooks_Slash_SceneMemory_Help": "シーン範囲を設定してメモリを作成（例: /scenememory 10-15）",
+  "STMemoryBooks_Slash_SceneMemory_Help": "シーン範囲を設定してメモリを作成。オプションでバッチサイズを指定して範囲を順次バッチに分割（例: /scenememory 10-15 または /scenememory 1-310 30）",
   "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "メッセージ範囲（X-Y形式）",
   "STMemoryBooks_Slash_NextMemory_Help": "最後のメモリの終わりから現在のメッセージまでメモリを作成",
   "STMemoryBooks_Slash_SidePrompt_Help": "サイドプロンプトを実行（引数なしでピッカーを開く）。使用法: /sideprompt \"名前\" {{macro}}=\"value\" [X-Y]",

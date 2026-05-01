@@ -974,7 +974,7 @@ Rules:
 
     // Slash Commands
     'STMemoryBooks_Slash_CreateMemory_Help': 'Create memory from marked scene',
-    'STMemoryBooks_Slash_SceneMemory_Help': 'Set scene range and create memory (e.g., /scenememory 10-15)',
+    'STMemoryBooks_Slash_SceneMemory_Help': 'Set scene range and create memory. Optionally provide a batch size to split the range into sequential batches (e.g., /scenememory 10-15 or /scenememory 1-310 30)',
     'STMemoryBooks_Slash_SceneMemory_ArgRangeDesc': 'Message range (X-Y format)',
     'STMemoryBooks_Slash_NextMemory_Help': 'Create memory from end of last memory to current message',
     'STMemoryBooks_Slash_SidePrompt_Help': 'Run side prompt (no args opens picker). Usage: /sideprompt "Name" {{macro}}="value" [X-Y]',

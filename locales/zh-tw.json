@@ -618,7 +618,7 @@
   "index.log.migratingV2": "STMemoryBooks: 正在遷移到基於 JSON 的架構 (v2)",
   "index.log.updatingProfileToJSON": "STMemoryBooks: 正在將設定檔 \"{{name}}\" 更新為使用 JSON 輸出",
   "STMemoryBooks_Slash_CreateMemory_Help": "從標記的場景建立記憶",
-  "STMemoryBooks_Slash_SceneMemory_Help": "設定場景範圍並建立記憶 (例如, /scenememory 10-15)",
+  "STMemoryBooks_Slash_SceneMemory_Help": "設定場景範圍並建立記憶。可選擇提供批次大小將範圍拆分為順序批次 (例如, /scenememory 10-15 或 /scenememory 1-310 30)",
   "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "訊息範圍 (X-Y 格式)",
   "STMemoryBooks_Slash_NextMemory_Help": "從上一個記憶的結尾到目前訊息建立記憶",
   "STMemoryBooks_Slash_SidePrompt_Help": "執行側邊提示 (無參數開啟選擇器)。用法: /sideprompt \"名稱\" {{macro}}=\"value\" [X-Y]",

@@ -633,7 +633,7 @@
   "index.log.migratingV2": "STMemoryBooks: Berhijrah ke seni bina berasaskan JSON (v2)",
   "index.log.updatingProfileToJSON": "STMemoryBooks: Mengemas kini profil \"{{name}}\" untuk menggunakan output JSON",
   "STMemoryBooks_Slash_CreateMemory_Help": "Cipta memori daripada babak yang ditanda",
-  "STMemoryBooks_Slash_SceneMemory_Help": "Tetapkan julat babak dan cipta memori (cth., /scenememory 10-15)",
+  "STMemoryBooks_Slash_SceneMemory_Help": "Tetapkan julat babak dan cipta memori. Secara pilihan berikan saiz batch untuk membahagikan julat kepada batch berurutan (cth., /scenememory 10-15 atau /scenememory 1-310 30)",
   "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "Julat mesej (format X-Y)",
   "STMemoryBooks_Slash_NextMemory_Help": "Cipta memori dari akhir memori terakhir ke mesej semasa",
   "STMemoryBooks_Slash_SidePrompt_Help": "Jalankan prom sampingan (tiada arg membuka pemilih). Penggunaan: /sideprompt \"Nama\" {{macro}}=\"value\" [X-Y]",

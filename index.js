@@ -629,12 +629,12 @@ async function handleCreateMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
-  const range = String(unnamedArgs || "").trim();
+  const input = String(unnamedArgs || "").trim();
 
-  if (!range) {
+  if (!input) {
     toastr.error(
       translate(
-        "Missing range argument. Use: /scenememory X-Y (e.g., /scenememory 10-15)",
+        "Missing range argument. Use: /scenememory X-Y [batchSize] (e.g., /scenememory 10-15 or /scenememory 1-310 30)",
         "STMemoryBooks_MissingRangeArgument",
       ),
       translate("STMemoryBooks", "index.toast.title"),
@@ -642,12 +642,15 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     return "";
   }
 
-  const match = range.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+  console.log('input',input);
+
+  // Accept optional trailing batch size: "X-Y" or "X-Y N"
+  const match = input.match(/^(\d+)\s*[-–—]\s*(\d+)(?:\s+(\d+))?$/);
 
   if (!match) {
     toastr.error(
       translate(
-        "Invalid format. Use: /scenememory X-Y (e.g., /scenememory 10-15)",
+        "Invalid format. Use: /scenememory X-Y [batchSize] (e.g., /scenememory 10-15 or /scenememory 1-310 30)",
         "STMemoryBooks_InvalidFormat",
       ),
       translate("STMemoryBooks", "index.toast.title"),
@@ -657,12 +660,24 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 
   const startId = Number(match[1]);
   const endId = Number(match[2]);
+  const batchSize = match[3] !== undefined ? Number(match[3]) : null;
 
   if (!Number.isFinite(startId) || !Number.isFinite(endId)) {
     toastr.error(
       translate(
-        "Invalid message IDs parsed. Use: /scenememory X-Y (e.g., /scenememory 10-15)",
+        "Invalid message IDs parsed. Use: /scenememory X-Y [batchSize] (e.g., /scenememory 10-15)",
         "STMemoryBooks_InvalidMessageIDs",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  if (batchSize !== null && (!Number.isFinite(batchSize) || batchSize < 1)) {
+    toastr.error(
+      translate(
+        "Invalid batch size. It must be a positive integer.",
+        "STMemoryBooks_InvalidBatchSize",
       ),
       translate("STMemoryBooks", "index.toast.title"),
     );
@@ -705,19 +720,60 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
     return "";
   }
 
-  // Atomically set both scene markers for /scenememory
-  setSceneRange(startId, endId);
-
   const context = getCurrentMemoryBooksContext();
   const contextMsg = context.isGroupChat
     ? ` in group "${context.groupName}"`
     : "";
+
+  // Single-shot path (no batch size): preserve original behavior
+  if (batchSize === null) {
+    setSceneRange(startId, endId);
+    toastr.info(
+      __st_t_tag`Scene set: messages ${startId}-${endId}${contextMsg}`,
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    initiateMemoryCreation();
+    return "";
+  }
+
+  // Batched path: sequentially process [start..end] in chunks of batchSize.
+  // The final chunk may be smaller than batchSize (e.g., 10 remaining from 30).
+  const totalMessages = endId - startId + 1;
+  const totalBatches = Math.ceil(totalMessages / batchSize);
+
   toastr.info(
-    __st_t_tag`Scene set: messages ${startId}-${endId}${contextMsg}`,
+    __st_t_tag`Batch memory started: messages ${startId}-${endId}${contextMsg} in ${totalBatches} batch(es) of up to ${batchSize}`,
     translate("STMemoryBooks", "index.toast.title"),
   );
 
-  initiateMemoryCreation();
+  let batchIndex = 0;
+  for (let batchStart = startId; batchStart <= endId; batchStart += batchSize) {
+    batchIndex++;
+    const batchEnd = Math.min(batchStart + batchSize - 1, endId);
+
+    // Re-validate messages still exist (chat could change between batches)
+    if (!chat[batchStart] || !chat[batchEnd]) {
+      toastr.error(
+        __st_t_tag`Batch ${batchIndex}/${totalBatches} aborted: messages ${batchStart}-${batchEnd} no longer exist`,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+
+    setSceneRange(batchStart, batchEnd);
+    toastr.info(
+      __st_t_tag`Processing batch ${batchIndex}/${totalBatches}: messages ${batchStart}-${batchEnd}`,
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+
+    // Await so each batch completes before starting the next one
+    await initiateMemoryCreation();
+  }
+
+  toastr.success(
+    __st_t_tag`Batch memory complete: processed ${totalBatches} batch(es) for messages ${startId}-${endId}`,
+    translate("STMemoryBooks", "index.toast.title"),
+  );
 
   return "";
 }
@@ -5871,13 +5927,13 @@ function registerSlashCommands() {
     name: "scenememory",
     callback: handleSceneMemoryCommand,
     helpString: translate(
-      "Set scene range and create memory (e.g., /scenememory 10-15)",
+      "Set scene range and create memory. Optionally provide a batch size to split the range into sequential batches (e.g., /scenememory 10-15 or /scenememory 1-310 30)",
       "STMemoryBooks_Slash_SceneMemory_Help",
     ),
     unnamedArgumentList: [
       SlashCommandArgument.fromProps({
         description: translate(
-          "Message range (X-Y format)",
+          'Message range in "X-Y" format, optionally followed by a batch size N (e.g., "1-310 30")',
           "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc",
         ),
         typeList: [ARGUMENT_TYPE.STRING],

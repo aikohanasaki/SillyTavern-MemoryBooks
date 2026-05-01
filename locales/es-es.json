@@ -634,7 +634,7 @@
     "index.log.migratingV2": "STMemoryBooks: Migrando a la arquitectura basada en JSON (v2)",
     "index.log.updatingProfileToJSON": "STMemoryBooks: Actualizando el perfil \"{{name}}\" para usar la salida JSON",
     "STMemoryBooks_Slash_CreateMemory_Help": "Crear memoria a partir de la escena marcada",
-    "STMemoryBooks_Slash_SceneMemory_Help": "Establecer el rango de la escena y crear memoria (ej., /scenememory 10-15)",
+    "STMemoryBooks_Slash_SceneMemory_Help": "Establecer el rango de la escena y crear memoria. Opcionalmente proporcione un tamaño de lote para dividir el rango en lotes secuenciales (ej., /scenememory 10-15 o /scenememory 1-310 30)",
     "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "Rango de mensajes (formato X-Y)",
     "STMemoryBooks_Slash_NextMemory_Help": "Crear memoria desde el final de la última memoria hasta el mensaje actual",
     "STMemoryBooks_Slash_SidePrompt_Help": "Ejecutar prompt lateral (sin argumentos abre el selector). Uso: /sideprompt \"Nombre\" {{macro}}=\"value\" [X-Y]",

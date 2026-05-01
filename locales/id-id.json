@@ -632,7 +632,7 @@
   "index.log.migratingV2": "STMemoryBooks: Memigrasikan ke arsitektur berbasis JSON (v2)",
   "index.log.updatingProfileToJSON": "STMemoryBooks: Memperbarui profil \"{{name}}\" untuk menggunakan output JSON",
   "STMemoryBooks_Slash_CreateMemory_Help": "Buat memori dari adegan yang ditandai",
-  "STMemoryBooks_Slash_SceneMemory_Help": "Atur rentang adegan dan buat memori (mis., /scenememory 10-15)",
+  "STMemoryBooks_Slash_SceneMemory_Help": "Atur rentang adegan dan buat memori. Opsional berikan ukuran batch untuk membagi rentang menjadi batch berurutan (mis., /scenememory 10-15 atau /scenememory 1-310 30)",
   "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "Rentang pesan (format X-Y)",
   "STMemoryBooks_Slash_NextMemory_Help": "Buat memori dari akhir memori terakhir ke pesan saat ini",
   "STMemoryBooks_Slash_SidePrompt_Help": "Jalankan prompt sampingan (tanpa argumen membuka pemilih). Penggunaan: /sideprompt \"Nama\" {{macro}}=\"value\" [X-Y]",

@@ -618,7 +618,7 @@
   "index.log.migratingV2": "STMemoryBooks: 正在迁移到基于 JSON 的架构 (v2)",
   "index.log.updatingProfileToJSON": "STMemoryBooks: 正在将配置文件 \"{{name}}\" 更新为使用 JSON 输出",
   "STMemoryBooks_Slash_CreateMemory_Help": "从标记的场景创建记忆",
-  "STMemoryBooks_Slash_SceneMemory_Help": "设置场景范围并创建记忆 (例如, /scenememory 10-15)",
+  "STMemoryBooks_Slash_SceneMemory_Help": "设置场景范围并创建记忆。可选择提供批量大小将范围拆分为顺序批次 (例如, /scenememory 10-15 或 /scenememory 1-310 30)",
   "STMemoryBooks_Slash_SceneMemory_ArgRangeDesc": "消息范围 (X-Y 格式)",
   "STMemoryBooks_Slash_NextMemory_Help": "从上一个记忆的结尾到当前消息创建记忆",
   "STMemoryBooks_Slash_SidePrompt_Help": "运行侧边提示 (无参数打开选择器)。用法: /sideprompt \"名称\" {{macro}}=\"value\" [X-Y]",

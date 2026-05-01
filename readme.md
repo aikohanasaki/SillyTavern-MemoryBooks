@@ -232,7 +232,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 ## 🆕 Slash Commands
 
 - `/creatememory` - Create memory from marked scene.
-- `/scenememory X-Y` - Set scene range and create memory (e.g., `/scenememory 10-15`).
+- `/scenememory X-Y Z` - Set scene range and create memory. Optionally provide a batch size to split the range into sequential batches (e.g., `/scenememory 10-15` or `/scenememory 1-310 30)`.
 - `/nextmemory` - Create memory from end of last memory to current message.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Run side prompt (`{{macro}}`s are optional).
 - `/sideprompt-on "Name" | all` - Enable a Side Prompt by name or all.
