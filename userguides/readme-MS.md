@@ -251,12 +251,39 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 - `/creatememory` - Cipta memori daripada babak yang ditandakan.
 - `/scenememory X-Y` - Tetapkan julat babak dan cipta memori, contohnya `/scenememory 10-15`.
 - `/nextmemory` - Cipta memori dari akhir memori terakhir hingga mesej semasa.
+- `/stmb-catchup interval:x start:y end:y` - Mencipta memori susulan untuk chat panjang sedia ada dengan memproses julat mesej yang dipilih dalam bahagian mengikut saiz interval.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Jalankan side prompt (`{{macro}}` adalah pilihan).
 - `/sideprompt-on "Name" | all` - Hidupkan side prompt mengikut nama atau semua.
 - `/sideprompt-off "Name" | all` - Matikan side prompt mengikut nama atau semua.
 - `/stmb-highest` - Kembalikan message id tertinggi bagi memori yang telah diproses dalam sembang ini.
 - `/stmb-set-highest <N|none>` - Tetapkan secara manual message id tertinggi yang telah diproses untuk sembang ini.
 - `/stmb-stop` - Hentikan semua penjanaan STMB yang sedang berjalan di mana-mana (henti kecemasan).
+
+### `/stmb-catchup`
+
+Gunakan `/stmb-catchup` apabila menukar chat panjang sedia ada kepada memori STMB.
+
+Sintaks:
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+Contoh:
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+Parameter:
+
+- `interval:x` - Anggaran bilangan mesej bagi setiap memori yang dijana.
+- `start:y` - Nombor mesej pertama yang akan disertakan.
+- `end:y` - Nombor mesej terakhir yang akan disertakan.
+
+Ini bertujuan untuk penukaran susulan, bukan penggunaan biasa secara berterusan. Selepas STMB sudah mengejar semula, gunakan ringkasan automatik atau `/nextmemory`.
+
+---
 
 ## 👥 Sokongan Sembang Kumpulan
 

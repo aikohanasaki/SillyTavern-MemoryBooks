@@ -231,12 +231,37 @@ Semua prompt dan preset **harus** menginstruksikan AI agar hanya mengembalikan J
 - `/creatememory` - Membuat memori dari adegan yang ditandai.
 - `/scenememory X-Y` - Mengatur rentang adegan lalu membuat memori (misalnya `/scenememory 10-15`).
 - `/nextmemory` - Membuat memori dari akhir memori terakhir sampai pesan saat ini.
+- `/stmb-catchup interval:x start:y end:y` - Membuat memori susulan untuk chat panjang yang sudah ada dengan memproses rentang pesan yang dipilih dalam potongan sesuai ukuran interval.
 - `/sideprompt "Nama" {{macro}}="value" [X-Y]` - Menjalankan side prompt (macro `{{...}}` opsional).
 - `/sideprompt-on "Nama" | all` - Mengaktifkan side prompt berdasarkan nama atau semuanya.
 - `/sideprompt-off "Nama" | all` - Menonaktifkan side prompt berdasarkan nama atau semuanya.
 - `/stmb-highest` - Mengembalikan message id tertinggi untuk memori yang sudah diproses di chat ini.
 - `/stmb-set-highest <N|none>` - Mengatur manual message id tertinggi yang sudah diproses untuk chat ini.
 - `/stmb-stop` - Menghentikan semua proses STMB yang sedang berjalan di mana pun (emergency halt).
+
+### `/stmb-catchup`
+
+Gunakan `/stmb-catchup` saat mengubah chat panjang yang sudah ada menjadi memori STMB.
+
+Sintaks:
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+Contoh:
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+Parameter:
+
+- `interval:x` - Perkiraan jumlah pesan per memori yang dibuat.
+- `start:y` - Nomor pesan pertama yang akan disertakan.
+- `end:y` - Nomor pesan terakhir yang akan disertakan.
+
+Ini ditujukan untuk konversi susulan, bukan untuk penggunaan rutin sehari-hari. Setelah STMB sudah menyusul, gunakan ringkasan otomatis atau `/nextmemory`.
 
 ## 👥 Dukungan Obrolan Grup
 

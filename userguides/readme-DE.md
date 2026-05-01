@@ -142,6 +142,31 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * `/creatememory` verwendet existierende Chevron-Start/End-Markierungen, um eine Erinnerung zu erstellen.
 * `/scenememory x-y` erstellt eine Erinnerung beginnend bei Nachricht x und endend bei Nachricht y.
 * `/nextmemory` erstellt eine Erinnerung mit allen Nachrichten seit der letzten Erinnerung.
+* `/stmb-catchup interval:x start:y end:y` - Erstellt Aufhol-Erinnerungen für einen bestehenden langen Chat, indem der ausgewählte Nachrichtenbereich in Abschnitte der angegebenen Intervallgröße verarbeitet wird.
+
+### `/stmb-catchup`
+
+Verwende `/stmb-catchup`, wenn du einen bestehenden langen Chat in STMB-Erinnerungen umwandeln möchtest.
+
+Syntax:
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+Beispiel:
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+Parameter:
+
+- `interval:x` - Ungefähre Anzahl von Nachrichten pro generierter Erinnerung.
+- `start:y` - Erste einzuschließende Nachrichtennummer.
+- `end:y` - Letzte einzuschließende Nachrichtennummer.
+
+Dies ist für die nachträgliche Umwandlung gedacht, nicht für die normale laufende Nutzung. Sobald STMB aufgeholt hat, verwende automatische Zusammenfassungen oder `/nextmemory`.
 
 ## 👥 Gruppenchat-Unterstützung
 

@@ -134,6 +134,31 @@ llama-server -m <ruta-del-modelo> -c <tamaño-contexto> --port 8080
 * `/creatememory` usará los marcadores de inicio/fin existentes para crear un recuerdo.
 * `/scenememory x-y` creará un recuerdo comenzando con el mensaje x y terminando con el mensaje y.
 * `/nextmemory` creará un recuerdo con todos los mensajes desde el último recuerdo.
+* `/stmb-catchup interval:x start:y end:y` - Crea recuerdos de puesta al día en un chat largo existente procesando el rango de mensajes seleccionado en bloques del tamaño indicado por el intervalo.
+
+### `/stmb-catchup`
+
+Usa `/stmb-catchup` cuando quieras convertir un chat largo existente en recuerdos de STMB.
+
+Sintaxis:
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+Ejemplo:
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+Parámetros:
+
+- `interval:x` - Número aproximado de mensajes por recuerdo generado.
+- `start:y` - Primer número de mensaje que se incluirá.
+- `end:y` - Último número de mensaje que se incluirá.
+
+Esto está pensado para la conversión de chats existentes, no para el uso normal continuo. Después de que STMB esté al día, usa los resúmenes automáticos o `/nextmemory`.
 
 ## 👥 Soporte para Chats Grupales
 

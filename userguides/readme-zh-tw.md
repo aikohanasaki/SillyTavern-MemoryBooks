@@ -133,6 +133,33 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * `/creatememory` 將使用現有的箭頭開始/結束標記來創建記憶。
 * `/scenememory x-y` 將創建一個從訊息 x 開始到訊息 y 結束的記憶。
 * `/nextmemory` 將創建一個包含自上次記憶以來所有訊息的記憶。
+* `/stmb-catchup interval:x start:y end:y` - 為既有的長聊天建立補記憶，透過依照指定間隔大小分段處理所選訊息範圍來產生記憶。
+
+### `/stmb-catchup`
+
+當你想把既有的長聊天轉換成 STMB 記憶時，使用 `/stmb-catchup`。
+
+語法：
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+範例：
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+參數：
+
+- `interval:x` - 每筆產生的記憶大約包含的訊息數量。
+- `start:y` - 要包含的第一則訊息編號。
+- `end:y` - 要包含的最後一則訊息編號。
+
+此指令用於補登轉換，不適合一般持續使用。STMB 追上既有聊天進度後，請使用自動摘要或 `/nextmemory`。
+
+---
 
 ## 👥 群組聊天支援
 
