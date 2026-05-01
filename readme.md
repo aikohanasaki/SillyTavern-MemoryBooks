@@ -234,12 +234,21 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 - `/creatememory` - Create memory from marked scene.
 - `/scenememory X-Y` - Set scene range and create memory (e.g., `/scenememory 10-15`).
 - `/nextmemory` - Create memory from end of last memory to current message.
+- `/stmb-catchup interval:x start:y end:y` - Create catch-up memories across an existing long chat by processing the selected message range in interval-sized chunks.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Run side prompt (`{{macro}}`s are optional).
 - `/sideprompt-on "Name" | all` - Enable a Side Prompt by name or all.
 - `/sideprompt-off "Name" | all` - Disable a Side Prompt by name or all.
 - `/stmb-highest` - Return the highest message id for processed memories in this chat.
 - `/stmb-set-highest <N|none>` - Manually set the highest processed message id for this chat.
 - `/stmb-stop` - Stop all in-flight STMB generation everywhere (emergency halt).
+
+### `/stmb-catchup`
+
+Use `/stmb-catchup` when converting an existing long chat into STMB memories. Syntax: `/stmb-catchup interval:x start:y end:y`
+
+Example: `/stmb-catchup interval:30 start:0 end:300`
+s
+---
 
 ## 👥 Group Chat Support
 
