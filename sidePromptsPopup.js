@@ -2,7 +2,8 @@ import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { escapeHtml } from '../../../utils.js';
 import { extension_settings } from '../../../extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+import { chat_metadata, saveSettingsDebounced } from '../../../../script.js';
+import { METADATA_KEY, world_names } from '../../../world-info.js';
 import {
     listTemplates,
     getTemplate,
@@ -17,6 +18,7 @@ import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 import { translate, applyLocale } from '../../../i18n.js';
 import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
+import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -153,6 +155,167 @@ function validateKeywordsMacroConfig({ prompt, responseFormat, keywordsTemplate 
         translate('STMemoryBooks', 'index.toast.title'),
     );
     return { ok: false, disallowedMacros };
+}
+
+function getMemoryLorebookName() {
+    const settings = extension_settings?.STMemoryBooks;
+    const markers = getSceneMarkers() || {};
+    return settings?.moduleSettings?.manualModeEnabled
+        ? (markers.manualLorebook || null)
+        : (chat_metadata?.[METADATA_KEY] || null);
+}
+
+function getChatSidePromptLorebookOverrides() {
+    const markers = getSceneMarkers() || {};
+    return markers.sidePromptLorebookOverrides && typeof markers.sidePromptLorebookOverrides === 'object'
+        ? markers.sidePromptLorebookOverrides
+        : {};
+}
+
+function setChatSidePromptLorebookOverride(key, lorebookName) {
+    const normalizedKey = String(key || '').trim();
+    if (!normalizedKey) return;
+
+    const markers = getSceneMarkers() || {};
+    if (!markers.sidePromptLorebookOverrides || typeof markers.sidePromptLorebookOverrides !== 'object') {
+        markers.sidePromptLorebookOverrides = {};
+    }
+
+    const normalizedLorebook = String(lorebookName || '').trim();
+    if (normalizedLorebook) {
+        markers.sidePromptLorebookOverrides[normalizedKey] = normalizedLorebook;
+    } else {
+        delete markers.sidePromptLorebookOverrides[normalizedKey];
+        if (Object.keys(markers.sidePromptLorebookOverrides).length === 0) {
+            delete markers.sidePromptLorebookOverrides;
+        }
+    }
+
+    saveMetadataForCurrentContext();
+}
+
+function getSidePromptLorebookTargetInfo(tpl) {
+    const key = String(tpl?.key || '').trim();
+    const chatOverrides = getChatSidePromptLorebookOverrides();
+    const hasChatOverride = key && Object.hasOwn(chatOverrides, key);
+    const chatOverride = hasChatOverride ? String(chatOverrides[key] || '').trim() : '';
+    const templateOverride = String(tpl?.settings?.lorebook?.targetLorebookName || '').trim();
+    const memoryLorebook = getMemoryLorebookName();
+
+    if (hasChatOverride && chatOverride === '__memory__') {
+        return {
+            value: memoryLorebook || '',
+            source: 'chat',
+            sourceLabel: translate('Chat override', 'STMemoryBooks_SidePromptLorebookSourceChat'),
+        };
+    }
+
+    if (hasChatOverride && chatOverride && Array.isArray(world_names) && world_names.includes(chatOverride)) {
+        return {
+            value: chatOverride,
+            source: 'chat',
+            sourceLabel: translate('Chat override', 'STMemoryBooks_SidePromptLorebookSourceChat'),
+        };
+    }
+
+    if (templateOverride && Array.isArray(world_names) && world_names.includes(templateOverride)) {
+        return {
+            value: templateOverride,
+            source: 'template',
+            sourceLabel: translate('Side prompt setting', 'STMemoryBooks_SidePromptLorebookSourceTemplate'),
+        };
+    }
+
+    return {
+        value: memoryLorebook || '',
+        source: 'memory',
+        sourceLabel: translate('Memory book default', 'STMemoryBooks_SidePromptLorebookSourceMemory'),
+    };
+}
+
+function getLorebookTargetSelectValue(tpl) {
+    const key = String(tpl?.key || '').trim();
+    const chatOverrides = getChatSidePromptLorebookOverrides();
+    const hasChatOverride = key && Object.hasOwn(chatOverrides, key);
+    const chatOverride = hasChatOverride ? String(chatOverrides[key] || '').trim() : '';
+    if (hasChatOverride && chatOverride === '__memory__') {
+        return '__memory__';
+    }
+    if (hasChatOverride && chatOverride && Array.isArray(world_names) && world_names.includes(chatOverride)) {
+        return chatOverride;
+    }
+
+    const templateOverride = String(tpl?.settings?.lorebook?.targetLorebookName || '').trim();
+    if (templateOverride && Array.isArray(world_names) && world_names.includes(templateOverride)) {
+        return templateOverride;
+    }
+
+    return '__memory__';
+}
+
+function buildLorebookTargetBlock({ idPrefix, tpl = null }) {
+    const targetInfo = getSidePromptLorebookTargetInfo(tpl);
+    const selectedValue = getLorebookTargetSelectValue(tpl);
+    const memoryLorebook = getMemoryLorebookName();
+    const currentTarget = targetInfo.value || translate('None selected', 'STMemoryBooks_NoneSelected');
+    const memoryLabel = memoryLorebook
+        ? tr('STMemoryBooks_SidePromptLorebookSameAsMemoryNamed', 'Same as memory lorebook ({{name}})', { name: memoryLorebook })
+        : translate('Same as memory lorebook (none selected)', 'STMemoryBooks_SidePromptLorebookSameAsMemoryNone');
+    const options = [
+        `<option value="__memory__" ${selectedValue === '__memory__' ? 'selected' : ''}>${escapeHtml(memoryLabel)}</option>`,
+        ...((Array.isArray(world_names) ? world_names : []).map(name =>
+            `<option value="${escapeHtml(name)}" ${selectedValue === name ? 'selected' : ''}>${escapeHtml(name)}</option>`
+        )),
+    ].join('');
+
+    return `
+        <div class="world_entry_form_control stmb-sp-lorebook-target">
+            <h4>${escapeHtml(translate('Lorebook Target', 'STMemoryBooks_SidePromptLorebookTarget'))}</h4>
+            <div class="info-block">
+                <small class="opacity50p">${escapeHtml(translate('Current Target:', 'STMemoryBooks_SidePromptLorebookCurrentTarget'))}</small>
+                <h5 id="${idPrefix}-target-current">${escapeHtml(currentTarget)}</h5>
+                <small class="opacity50p">${escapeHtml(translate('Source:', 'STMemoryBooks_SidePromptLorebookSource'))}</small>
+                <h5 id="${idPrefix}-target-source">${escapeHtml(targetInfo.sourceLabel)}</h5>
+            </div>
+            <label for="${idPrefix}-target-select">
+                <h5 style="margin: 8px 0 4px 0;">${escapeHtml(translate('Save side prompt entry to:', 'STMemoryBooks_SidePromptLorebookSaveTo'))}</h5>
+                <select id="${idPrefix}-target-select" class="text_pole" data-original-value="${escapeHtml(selectedValue)}">
+                    ${options}
+                </select>
+            </label>
+            <small class="opacity70p">${escapeHtml(translate('Changing this target will ask whether to save it for this chat only or for this side prompt going forward.', 'STMemoryBooks_SidePromptLorebookHelp'))}</small>
+        </div>
+    `;
+}
+
+async function promptLorebookTargetSaveScope() {
+    const content = DOMPurify.sanitize(`
+        <h3>${escapeHtml(translate('Save Lorebook Target', 'STMemoryBooks_SaveLorebookTarget'))}</h3>
+        <div class="world_entry_form_control">
+            <p>${escapeHtml(translate('Save this side prompt lorebook target for this chat only, or for this side prompt going forward?', 'STMemoryBooks_SaveLorebookTargetDesc'))}</p>
+        </div>
+    `);
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: false,
+        cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
+        customButtons: [
+            {
+                text: translate('This chat only', 'STMemoryBooks_ThisChatOnly'),
+                result: POPUP_RESULT.CUSTOM1,
+                appendAtEnd: true,
+            },
+            {
+                text: translate('This side prompt going forward', 'STMemoryBooks_ThisSidePromptGoingForward'),
+                result: POPUP_RESULT.CUSTOM2,
+                appendAtEnd: true,
+            },
+        ],
+    });
+
+    const result = await popup.show();
+    if (result === POPUP_RESULT.CUSTOM1) return 'chat';
+    if (result === POPUP_RESULT.CUSTOM2) return 'template';
+    return null;
 }
 
 /**
@@ -312,6 +475,8 @@ async function openEditTemplate(parentPopup, key) {
                 <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
             </div>
 
+            ${buildLorebookTargetBlock({ idPrefix: 'stmb-sp-edit-lb', tpl })}
+
             <div class="world_entry_form_control">
                 <label for="stmb-sp-edit-prompt">
                     <h4>${escapeHtml(translate('Prompt:', 'STMemoryBooks_PromptTitle'))}</h4>
@@ -467,6 +632,9 @@ async function openEditTemplate(parentPopup, key) {
             const newResponseFormat = dlg.querySelector('#stmb-sp-edit-response-format')?.value.trim() || '';
             const lorebookEntryTitleOverride = dlg.querySelector('#stmb-sp-edit-lb-entry-title-override')?.value.trim() || '';
             const lorebookEntryKeywords = dlg.querySelector('#stmb-sp-edit-lb-entry-keywords')?.value.trim() || '';
+            const lorebookTargetSelect = dlg.querySelector('#stmb-sp-edit-lb-target-select');
+            const selectedLorebookTarget = lorebookTargetSelect?.value || '__memory__';
+            const originalLorebookTarget = lorebookTargetSelect?.dataset?.originalValue || '__memory__';
             const newEnabled = !!dlg.querySelector('#stmb-sp-edit-enabled')?.checked;
 
             if (!newPrompt) {
@@ -535,6 +703,20 @@ async function openEditTemplate(parentPopup, key) {
             const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-edit-prev-mem-count')?.value ?? '0', 10);
 settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
 
+            let targetLorebookName = String(lb.targetLorebookName || '');
+            if (selectedLorebookTarget !== originalLorebookTarget) {
+                const targetScope = await promptLorebookTargetSaveScope();
+                if (!targetScope) return;
+
+                const targetName = selectedLorebookTarget === '__memory__' ? '' : selectedLorebookTarget;
+                if (targetScope === 'chat') {
+                    setChatSidePromptLorebookOverride(tpl.key, selectedLorebookTarget);
+                } else {
+                    targetLorebookName = targetName;
+                    setChatSidePromptLorebookOverride(tpl.key, '');
+                }
+            }
+
             settings.lorebook = {
                 constVectMode: ['link', 'green', 'blue'].includes(lbModeSel) ? lbModeSel : 'link',
                 position: Number.isFinite(lbPosRaw) ? lbPosRaw : 0,
@@ -546,6 +728,7 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
                 ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
                 ...(lorebookEntryTitleOverride ? { entryTitleOverride: lorebookEntryTitleOverride } : {}),
                 ...(lorebookEntryKeywords ? { entryKeywords: lorebookEntryKeywords } : {}),
+                ...(targetLorebookName ? { targetLorebookName } : {}),
             };
 
             await upsertTemplate({
@@ -630,6 +813,7 @@ async function openNewTemplate(parentPopup) {
                 <textarea id="stmb-sp-new-response-format" class="text_pole textarea_compact" rows="6" placeholder="${escapeHtml(translate('Optional response format', 'STMemoryBooks_ResponseFormatPlaceholder'))}"></textarea>
             </label>
         </div>
+        ${buildLorebookTargetBlock({ idPrefix: 'stmb-sp-new-lb' })}
         <div class="world_entry_form_control">
             <h4>${escapeHtml(translate('Lorebook Entry Settings', 'STMemoryBooks_LorebookEntrySettings'))}:</h4>
             <label for="stmb-sp-new-lb-entry-title-override">
@@ -783,6 +967,9 @@ async function openNewTemplate(parentPopup) {
         const responseFormat = dlg.querySelector('#stmb-sp-new-response-format')?.value.trim() || '';
         const lorebookEntryTitleOverride = dlg.querySelector('#stmb-sp-new-lb-entry-title-override')?.value.trim() || '';
         const lorebookEntryKeywords = dlg.querySelector('#stmb-sp-new-lb-entry-keywords')?.value.trim() || '';
+        const lorebookTargetSelect = dlg.querySelector('#stmb-sp-new-lb-target-select');
+        const selectedLorebookTarget = lorebookTargetSelect?.value || '__memory__';
+        const originalLorebookTarget = lorebookTargetSelect?.dataset?.originalValue || '__memory__';
 
         if (!prompt) {
             toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), translate('STMemoryBooks', 'index.toast.title'));
@@ -848,6 +1035,13 @@ async function openNewTemplate(parentPopup) {
         const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-new-prev-mem-count')?.value ?? '0', 10);
 settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
 
+        let targetScope = null;
+        const targetName = selectedLorebookTarget === '__memory__' ? '' : selectedLorebookTarget;
+        if (selectedLorebookTarget !== originalLorebookTarget) {
+            targetScope = await promptLorebookTargetSaveScope();
+            if (!targetScope) return;
+        }
+
         settings.lorebook = {
             constVectMode: ['link', 'green', 'blue'].includes(lbModeSel) ? lbModeSel : 'link',
             position: Number.isFinite(lbPosRaw) ? lbPosRaw : 0,
@@ -859,12 +1053,16 @@ settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw >
             ...(lbPosRaw === 7 && outletNameVal ? { outletName: outletNameVal } : {}),
             ...(lorebookEntryTitleOverride ? { entryTitleOverride: lorebookEntryTitleOverride } : {}),
             ...(lorebookEntryKeywords ? { entryKeywords: lorebookEntryKeywords } : {}),
+            ...(targetScope === 'template' && targetName ? { targetLorebookName: targetName } : {}),
         };
 
         try {
-            await upsertTemplate({ name, enabled, prompt, responseFormat, settings, triggers });
+            const key = await upsertTemplate({ name, enabled, prompt, responseFormat, settings, triggers });
+            if (targetScope === 'chat') {
+                setChatSidePromptLorebookOverride(key, selectedLorebookTarget);
+            }
             toastr.success(translate('SidePrompt created', 'STMemoryBooks_SidePromptCreated'), translate('STMemoryBooks', 'index.toast.title'));
-            await refreshList(parentPopup);
+            await refreshList(parentPopup, key);
         } catch (err) {
             console.error('STMemoryBooks: Error creating side prompt:', err);
             toastr.error(translate('Failed to create SidePrompt', 'STMemoryBooks_FailedToCreateSidePrompt'), translate('STMemoryBooks', 'index.toast.title'));
