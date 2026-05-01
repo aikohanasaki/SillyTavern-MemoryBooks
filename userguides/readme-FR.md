@@ -134,6 +134,31 @@ llama-server -m <chemin-du-modele> -c <taille-contexte> --port 8080
 * `/creatememory` utilisera les marqueurs de début/fin existants pour créer une mémoire.
 * `/scenememory x-y` créera une mémoire commençant au message x et finissant au message y.
 * `/nextmemory` créera une mémoire avec tous les messages depuis la dernière mémoire.
+* `/stmb-catchup interval:x start:y end:y` - Crée des souvenirs de rattrapage pour un long chat existant en traitant la plage de messages sélectionnée par blocs de la taille indiquée par l’intervalle.
+
+### `/stmb-catchup`
+
+Utilisez `/stmb-catchup` pour convertir un long chat existant en souvenirs STMB.
+
+Syntaxe :
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+Exemple :
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+Paramètres :
+
+- `interval:x` - Nombre approximatif de messages par souvenir généré.
+- `start:y` - Premier numéro de message à inclure.
+- `end:y` - Dernier numéro de message à inclure.
+
+Cette commande est destinée à la conversion de rattrapage, pas à l’utilisation normale en continu. Une fois STMB à jour, utilisez les résumés automatiques ou `/nextmemory`.
 
 ## 👥 Support des Discussions de Groupe
 

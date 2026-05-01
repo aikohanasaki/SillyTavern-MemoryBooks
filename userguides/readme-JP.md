@@ -133,6 +133,33 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * `/creatememory` : 既存の山括弧の開始/終了マーカーを使用してメモリを作成します。
 * `/scenememory x-y` : メッセージ x から始まりメッセージ y で終わるメモリを作成します。
 * `/nextmemory` : 前回のメモリ以降のすべてのメッセージを含むメモリを作成します。
+* `/stmb-catchup interval:x start:y end:y` - 既存の長いチャットを、指定したメッセージ範囲ごとに分割して処理し、キャッチアップ用のメモリーを作成します。
+
+### `/stmb-catchup`
+
+既存の長いチャットを STMB メモリーに変換したいときに `/stmb-catchup` を使用します。
+
+構文:
+
+```txt
+/stmb-catchup interval:x start:y end:y
+```
+
+例:
+
+```txt
+/stmb-catchup interval:30 start:0 end:300
+```
+
+パラメーター:
+
+- `interval:x` - 生成されるメモリー1件あたりのおおよそのメッセージ数。
+- `start:y` - 含める最初のメッセージ番号。
+- `end:y` - 含める最後のメッセージ番号。
+
+これは通常の継続利用ではなく、既存チャットを後から変換するための機能です。STMB が追いついた後は、自動要約または `/nextmemory` を使用してください。
+
+---
 
 ## 👥 グループチャットのサポート
 
