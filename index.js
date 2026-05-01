@@ -703,6 +703,66 @@ async function runSceneMemoryRange(startId, endId, options = {}) {
   return (await initiateMemoryCreation()) === true;
 }
 
+async function validateStmbCatchupNonInteractive(settings, chunks) {
+  const moduleSettings = settings?.moduleSettings || {};
+
+  if (!moduleSettings.alwaysUseDefault) {
+    return translate(
+      "/stmb-catchup is non-interactive. Enable 'Always use default profile' before running it.",
+      "STMemoryBooks_CatchupRequiresAlwaysUseDefault",
+    );
+  }
+
+  if (moduleSettings.showMemoryPreviews) {
+    return translate(
+      "/stmb-catchup is non-interactive. Disable memory previews before running it.",
+      "STMemoryBooks_CatchupRequiresNoPreviews",
+    );
+  }
+
+  const isManualMode = !!moduleSettings.manualModeEnabled;
+  const stmbData = isManualMode ? getSceneMarkers() || {} : null;
+  const lorebookName = isManualMode
+    ? stmbData?.manualLorebook ?? null
+    : chat_metadata?.[METADATA_KEY] || null;
+
+  if (!lorebookName || !world_names?.includes(lorebookName)) {
+    return __st_t_tag`/stmb-catchup is non-interactive. Select a valid ${isManualMode ? "manual" : "chat-bound"} lorebook before running it.`;
+  }
+
+  try {
+    const lorebookData = await loadWorldInfo(lorebookName);
+    if (!lorebookData) {
+      return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded.`;
+    }
+  } catch (error) {
+    return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded: ${error.message}`;
+  }
+
+  const tokenThreshold = moduleSettings.tokenWarningThreshold ?? 30000;
+
+  for (const chunk of chunks) {
+    try {
+      const sceneRequest = createSceneRequest(chunk.start, chunk.end);
+      const compiledScene = compileScene(sceneRequest);
+      const validation = validateCompiledScene(compiledScene);
+      if (!validation.valid) {
+        return __st_t_tag`/stmb-catchup cannot run non-interactively because chunk ${chunk.start}-${chunk.end} cannot be compiled: ${validation.errors.join(", ")}`;
+      }
+
+      const stats = await getSceneStats(compiledScene);
+      const estimatedTokens = Number(stats?.estimatedTokens ?? 0);
+      if (estimatedTokens > tokenThreshold) {
+        return __st_t_tag`/stmb-catchup is non-interactive. Chunk ${chunk.start}-${chunk.end} is estimated at ${estimatedTokens} tokens, above the token warning threshold (${tokenThreshold}). Increase the threshold or use a smaller interval.`;
+      }
+    } catch (error) {
+      return __st_t_tag`/stmb-catchup cannot run non-interactively because chunk ${chunk.start}-${chunk.end} cannot be compiled: ${error.message}`;
+    }
+  }
+
+  return null;
+}
+
 async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
   const range = String(unnamedArgs || "").trim();
 
@@ -861,6 +921,19 @@ async function handleStmbCatchupCommand(namedArgs) {
         return "";
       }
       chunks.push({ start: chunkStart, end: chunkEnd });
+    }
+
+    const settings = initializeSettings();
+    const interactiveBlocker = await validateStmbCatchupNonInteractive(
+      settings,
+      chunks,
+    );
+    if (interactiveBlocker) {
+      toastr.error(
+        interactiveBlocker,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
     }
 
     toastr.info(
