@@ -761,15 +761,18 @@ async function validateStmbCatchupNonInteractive(settings, chunks) {
     return __st_t_tag`/stmb-catchup is non-interactive. Select a valid ${isManualMode ? "manual" : "chat-bound"} lorebook before running it.`;
   }
 
-  if (lorebookName && !world_names?.includes(lorebookName)) {
-    return __st_t_tag`/stmb-catchup is non-interactive. Select a valid ${isManualMode ? "manual" : "chat-bound"} lorebook before running it.`;
-  }
-
   if (lorebookName) {
     try {
       const lorebookData = await loadWorldInfo(lorebookName);
       if (!lorebookData) {
         return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded.`;
+      }
+      if (
+        Array.isArray(world_names) &&
+        world_names.length > 0 &&
+        !world_names.includes(lorebookName)
+      ) {
+        return __st_t_tag`/stmb-catchup is non-interactive. Select a valid ${isManualMode ? "manual" : "chat-bound"} lorebook before running it.`;
       }
     } catch (error) {
       return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded: ${error.message}`;
