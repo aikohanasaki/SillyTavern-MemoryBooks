@@ -3,7 +3,8 @@
 **← [Back to README](readme.md)**
 
 ## v6.4.0 (May 1, 2026)
-- Add per-side prompt lorebook overrides
+- Add per-side prompt lorebook overrides.
+- Add `/stmb-catchup` command. Usage is `/stmb-catchup interval:x start:y end:y`.
 
 ## v6.3.5 (April 22, 2026)
 - Updated WI saving to match 1.17.0 defaults.

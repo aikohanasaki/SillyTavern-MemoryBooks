@@ -3,3 +3,4 @@ node_modules/
 .coderabbit.yaml
 *.build.*.map
 .vscode/
+AGENTS.md
