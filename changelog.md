@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.4.0 (May 1, 2026)
+- Add per-side prompt lorebook overrides
+
 ## v6.3.5 (April 22, 2026)
 - Updated WI saving to match 1.17.0 defaults.
 - Updated group chat metadata wording to match SillyTavern's current chat-file metadata format.

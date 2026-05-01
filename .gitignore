@@ -2,3 +2,4 @@ scripts/
 node_modules/
 .coderabbit.yaml
 *.build.*.map
+.vscode/
