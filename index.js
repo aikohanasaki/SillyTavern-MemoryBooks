@@ -108,9 +108,10 @@ import {
   evaluateTrackers,
   runAfterMemory,
   runSidePrompt,
+  runSidePromptSet,
 } from "./sidePrompts.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
-import { listTemplates } from "./sidePromptsManager.js";
+import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
   runSummaryAnalysisSequential,
   commitSummaryEntries,
@@ -1164,6 +1165,36 @@ async function handleSidePromptCommand(namedArgs, unnamedArgs) {
   return runSidePrompt(raw);
 }
 
+async function handleSidePromptSetCommand(namedArgs, unnamedArgs) {
+  const raw = String(unnamedArgs || "").trim();
+  if (!raw) {
+    toastr.info(
+      translate(
+        'SidePrompt set guide: Choose a quoted set name. Usage: /sideprompt-set "Name" [X-Y].',
+        "STMemoryBooks_SidePromptSetGuide",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+  return runSidePromptSet(raw, { macroMode: false });
+}
+
+async function handleSidePromptMacroSetCommand(namedArgs, unnamedArgs) {
+  const raw = String(unnamedArgs || "").trim();
+  if (!raw) {
+    toastr.info(
+      translate(
+        'SidePrompt macroset guide: Choose a quoted set name, then fill any prompted macros. Usage: /sideprompt-macroset "Name" {{macro}}="value" [X-Y].',
+        "STMemoryBooks_SidePromptMacroSetGuide",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+  return runSidePromptSet(raw, { macroMode: true });
+}
+
 /**
  * Slash: /sideprompt-on and /sideprompt-off
  * Toggle the same underlying "enabled" flag as the UI checkbox (stmb-sp-edit-enabled).
@@ -1256,6 +1287,7 @@ async function handleSidePromptOffCommand(namedArgs, unnamedArgs) {
  * Side Prompt cache for autocomplete
  */
 let sidePromptNameCache = [];
+let sidePromptSetNameCache = [];
 
 function isManualSidePromptEnabled(template) {
   const cmds = template?.triggers?.commands;
@@ -1274,6 +1306,11 @@ async function refreshSidePromptCache() {
         runtimeMacros: collectTemplateRuntimeMacros(t),
         manualEnabled: isManualSidePromptEnabled(t),
       }));
+    const sets = await listSets();
+    sidePromptSetNameCache = await Promise.all((sets || []).map(async (set) => ({
+      name: set.name,
+      runtimeMacros: await collectSetRuntimeMacros(set),
+    })));
   } catch (e) {
     console.warn(
       translate(
@@ -1297,6 +1334,11 @@ function findCachedSidePromptByName(name, entries = sidePromptNameCache) {
   return entries.find((entry) => entry.name.toLowerCase() === target) || null;
 }
 
+function findCachedSidePromptSetByName(name, entries = sidePromptSetNameCache) {
+  const target = String(name || "").toLowerCase();
+  return entries.find((entry) => entry.name.toLowerCase() === target) || null;
+}
+
 function buildSidePromptNameSuggestions(rawInput, options = {}) {
   const { manualOnly = false } = options;
   const input = String(rawInput || "").trimStart();
@@ -1314,6 +1356,24 @@ function buildSidePromptNameSuggestions(rawInput, options = {}) {
         : "No required runtime macros",
       "name",
       "📝",
+      () => !filter || entry.name.toLowerCase().includes(filter),
+    ),
+  );
+}
+
+function buildSidePromptSetNameSuggestions(rawInput) {
+  const input = String(rawInput || "").trimStart();
+  const filter = input.startsWith('"') || input.startsWith("'")
+    ? input.slice(1).toLowerCase()
+    : input.toLowerCase();
+  return sidePromptSetNameCache.map((entry) =>
+    new SlashCommandEnumValue(
+      formatQuotedSidePromptName(entry.name),
+      entry.runtimeMacros.length
+        ? `Required macros: ${entry.runtimeMacros.join(", ")}`
+        : "No required runtime macros",
+      "name",
+      "📚",
       () => !filter || entry.name.toLowerCase().includes(filter),
     ),
   );
@@ -1358,6 +1418,19 @@ const manualSidePromptTemplateEnumProvider = (executor) =>
 
 const allSidePromptTemplateEnumProvider = (executor) =>
   sidePromptTemplateEnumProvider(executor, { manualOnly: false });
+
+const sidePromptSetEnumProvider = (executor, options = {}) => {
+  const { includeMacros = false } = options;
+  const rawInput = String(executor?.unnamedArgumentList?.[0]?.value || "");
+  const draft = parseSidePromptCommandInput(rawInput, { allowIncomplete: true });
+  if (includeMacros && draft.nameClosed) {
+    const entry = findCachedSidePromptSetByName(draft.name);
+    if (entry) {
+      return buildSidePromptMacroSuggestions(rawInput, draft, entry);
+    }
+  }
+  return buildSidePromptSetNameSuggestions(rawInput);
+};
 
 /**
  * Helper: build triggers badges for prompt picker
@@ -6254,6 +6327,48 @@ function registerSlashCommands() {
     ],
   });
 
+  const sidePromptSetCmd = SlashCommand.fromProps({
+    name: "sideprompt-set",
+    callback: handleSidePromptSetCommand,
+    rawQuotes: true,
+    helpString: translate(
+      'Run side prompt set. Usage: /sideprompt-set "Name" [X-Y]',
+      "STMemoryBooks_Slash_SidePromptSet_Help",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          'Quoted set name, optionally followed by X-Y range',
+          "STMemoryBooks_Slash_SidePromptSet_ArgDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: true,
+        enumProvider: sidePromptSetEnumProvider,
+      }),
+    ],
+  });
+
+  const sidePromptMacroSetCmd = SlashCommand.fromProps({
+    name: "sideprompt-macroset",
+    callback: handleSidePromptMacroSetCommand,
+    rawQuotes: true,
+    helpString: translate(
+      'Run side prompt set with runtime macros. Usage: /sideprompt-macroset "Name" {{macro}}="value" [X-Y]',
+      "STMemoryBooks_Slash_SidePromptMacroSet_Help",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          'Quoted set name, then any required {{macro}}="value" assignments, optionally followed by X-Y range',
+          "STMemoryBooks_Slash_SidePromptMacroSet_ArgDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: true,
+        enumProvider: (executor) => sidePromptSetEnumProvider(executor, { includeMacros: true }),
+      }),
+    ],
+  });
+
   // Register enable/disable sideprompt commands
   const sidePromptOnCmd = SlashCommand.fromProps({
     name: "sideprompt-on",
@@ -6344,6 +6459,8 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(nextMemoryCmd);
   SlashCommandParser.addCommandObject(stmbCatchupCmd);
   SlashCommandParser.addCommandObject(sidePromptCmd);
+  SlashCommandParser.addCommandObject(sidePromptSetCmd);
+  SlashCommandParser.addCommandObject(sidePromptMacroSetCmd);
   SlashCommandParser.addCommandObject(sidePromptOnCmd);
   SlashCommandParser.addCommandObject(sidePromptOffCmd);
   SlashCommandParser.addCommandObject(highestMemCmd);

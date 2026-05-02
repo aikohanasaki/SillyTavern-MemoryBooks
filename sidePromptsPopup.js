@@ -13,6 +13,11 @@ import {
     exportToJSON as exportSidePromptsJSON,
     importFromJSON as importSidePromptsJSON,
     recreateBuiltInSidePrompts,
+    listSets,
+    getSet,
+    upsertSet,
+    duplicateSet,
+    removeSet,
 } from './sidePromptsManager.js';
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
 import { translate, applyLocale } from '../../../i18n.js';
@@ -194,6 +199,22 @@ function setChatSidePromptLorebookOverride(key, lorebookName) {
     saveMetadataForCurrentContext();
 }
 
+function getChatAfterMemorySetKey() {
+    const markers = getSceneMarkers() || {};
+    return String(markers.sidePromptAfterMemorySetKey || '').trim();
+}
+
+function setChatAfterMemorySetKey(setKey) {
+    const markers = getSceneMarkers() || {};
+    const normalized = String(setKey || '').trim();
+    if (normalized) {
+        markers.sidePromptAfterMemorySetKey = normalized;
+    } else {
+        delete markers.sidePromptAfterMemorySetKey;
+    }
+    saveMetadataForCurrentContext();
+}
+
 function getSidePromptLorebookTargetInfo(tpl) {
     const key = String(tpl?.key || '').trim();
     const chatOverrides = getChatSidePromptLorebookOverrides();
@@ -362,6 +383,257 @@ async function refreshList(popup, preserveKey = null) {
             row.style.backgroundColor = 'var(--cobalt30a)';
             row.style.border = '';
         }
+    }
+}
+
+function renderAfterMemorySetMode(sets) {
+    const selectedKey = getChatAfterMemorySetKey();
+    const hasSelected = selectedKey && (sets || []).some(set => set.key === selectedKey);
+    const options = [
+        `<option value="" ${!selectedKey ? 'selected' : ''}>${escapeHtml(translate('Use individually-enabled side prompts', 'STMemoryBooks_UseIndividuallyEnabledSidePrompts'))}</option>`,
+        ...(hasSelected ? [] : selectedKey ? [`<option value="${escapeHtml(selectedKey)}" selected>${escapeHtml(tr('STMemoryBooks_MissingSidePromptSetOption', 'Missing set: {{key}}', { key: selectedKey }))}</option>`] : []),
+        ...(sets || []).map(set => `<option value="${escapeHtml(set.key)}" ${selectedKey === set.key ? 'selected' : ''}>${escapeHtml(set.name)}</option>`),
+    ].join('');
+
+    return `
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-after-memory-set-mode">
+                <h4>${escapeHtml(translate('After-memory side prompt mode for this chat', 'STMemoryBooks_AfterMemorySidePromptMode'))}</h4>
+                <select id="stmb-sp-after-memory-set-mode" class="text_pole">
+                    ${options}
+                </select>
+            </label>
+            <small class="opacity70p">${escapeHtml(translate('Selecting a side prompt set replaces individually-enabled after-memory side prompts for this chat. Leave this set to individually-enabled side prompts to use the old behavior.', 'STMemoryBooks_SidePromptSetModeHelp'))}</small>
+        </div>
+    `;
+}
+
+function renderSetsList(sets) {
+    const rows = (sets || []).map(set => `
+        <tr data-set-key="${escapeHtml(set.key)}" style="border-bottom: 1px solid var(--SmartThemeBorderColor);">
+            <td style="padding: 8px;">${escapeHtml(set.name)}</td>
+            <td style="padding: 8px;">${Number(set.items?.length || 0)}</td>
+            <td style="padding: 8px; text-align:right;">
+                <span class="stmb-sp-inline-actions" style="display: inline-flex; gap: 10px;">
+                    <button class="stmb-sp-set-action stmb-sp-set-action-edit" title="${escapeHtml(translate('Edit', 'STMemoryBooks_Edit'))}" aria-label="${escapeHtml(translate('Edit', 'STMemoryBooks_Edit'))}" style="background:none;border:none;cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+                    <button class="stmb-sp-set-action stmb-sp-set-action-duplicate" title="${escapeHtml(translate('Duplicate', 'STMemoryBooks_Duplicate'))}" aria-label="${escapeHtml(translate('Duplicate', 'STMemoryBooks_Duplicate'))}" style="background:none;border:none;cursor:pointer;"><i class="fa-solid fa-copy"></i></button>
+                    <button class="stmb-sp-set-action stmb-sp-set-action-delete" title="${escapeHtml(translate('Delete', 'STMemoryBooks_Delete'))}" aria-label="${escapeHtml(translate('Delete', 'STMemoryBooks_Delete'))}" style="background:none;border:none;cursor:pointer;color:var(--redColor);"><i class="fa-solid fa-trash"></i></button>
+                </span>
+            </td>
+        </tr>
+    `).join('');
+
+    return `
+        <div class="world_entry_form_control">
+            <h4>${escapeHtml(translate('Side Prompt Sets', 'STMemoryBooks_SidePromptSets'))}</h4>
+            <small class="opacity70p">${escapeHtml(translate('Sets define which side prompts run instead of individually-enabled after-memory side prompts when a chat selects that set.', 'STMemoryBooks_SidePromptSetsHelp'))}</small>
+            <div style="max-height: 220px; overflow-y: auto; margin-top: 8px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">${escapeHtml(translate('Name', 'STMemoryBooks_Name'))}</th>
+                            <th style="width: 80px; text-align:left;">${escapeHtml(translate('Items', 'STMemoryBooks_Items'))}</th>
+                            <th style="width: 120px; text-align:right;">${escapeHtml(translate('Actions', 'STMemoryBooks_Actions'))}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows || `<tr><td colspan="3"><div class="opacity50p">${escapeHtml(translate('No side prompt sets available', 'STMemoryBooks_NoSidePromptSetsAvailable'))}</div></td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+            <div class="buttons_block justifyCenter gap10px whitespacenowrap" style="margin-top: 8px;">
+                <button id="stmb-sp-new-set" class="menu_button whitespacenowrap">${escapeHtml(translate('New Set', 'STMemoryBooks_NewSidePromptSet'))}</button>
+            </div>
+        </div>
+    `;
+}
+
+async function refreshSetControls(popup) {
+    const container = popup?.dlg?.querySelector('#stmb-sp-set-controls');
+    if (!container) return;
+    const sets = await listSets();
+    container.innerHTML = DOMPurify.sanitize(renderAfterMemorySetMode(sets) + renderSetsList(sets));
+    try { applyLocale(container); } catch (e) { /* no-op */ }
+
+    container.querySelector('#stmb-sp-after-memory-set-mode')?.addEventListener('change', (e) => {
+        setChatAfterMemorySetKey(e.target.value || '');
+        toastr.success(translate('After-memory side prompt mode saved for this chat.', 'STMemoryBooks_SidePromptSetModeSaved'), translate('STMemoryBooks', 'index.toast.title'));
+    });
+    container.querySelector('#stmb-sp-new-set')?.addEventListener('click', async () => {
+        await openEditSet(popup, null);
+    });
+}
+
+function makeSetItemId() {
+    return `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getTemplateOptions(templates, selectedKey) {
+    return (templates || []).map(tpl =>
+        `<option value="${escapeHtml(tpl.key)}" ${selectedKey === tpl.key ? 'selected' : ''}>${escapeHtml(tpl.name)}</option>`
+    ).join('');
+}
+
+function buildSetItemMacroFields(tpl, item) {
+    const macros = tpl ? collectTemplateRuntimeMacros(tpl) : [];
+    if (macros.length === 0) {
+        return `<small class="opacity50p">${escapeHtml(translate('No runtime macros for this side prompt.', 'STMemoryBooks_NoRuntimeMacrosForSidePrompt'))}</small>`;
+    }
+    return macros.map(token => `
+        <label style="display:block; margin-top: 6px;">
+            <small>${escapeHtml(token)}</small>
+            <input type="text" class="text_pole stmb-sp-set-item-macro" data-token="${escapeHtml(token)}" value="${escapeHtml(item?.runtimeMacros?.[token] || '')}" placeholder="${escapeHtml(translate('Literal value or set macro, e.g. {{npc_1}}', 'STMemoryBooks_SetMacroValuePlaceholder'))}">
+        </label>
+    `).join('');
+}
+
+function renderSetItemRow(item, templates) {
+    const tpl = (templates || []).find(t => t.key === item.promptKey) || templates?.[0] || null;
+    const promptKey = item.promptKey || tpl?.key || '';
+    return `
+        <div class="stmb-sp-set-item" data-item-id="${escapeHtml(item.id || makeSetItemId())}" style="border:1px solid var(--SmartThemeBorderColor); padding:8px; margin-bottom:8px;">
+            <div class="flex-container" style="gap:8px; align-items:end; flex-wrap:wrap;">
+                <label style="flex: 1 1 220px;">
+                    <h5 style="margin:0 0 4px 0;">${escapeHtml(translate('Side Prompt', 'STMemoryBooks_SidePrompt'))}</h5>
+                    <select class="text_pole stmb-sp-set-item-prompt">
+                        ${getTemplateOptions(templates, promptKey)}
+                    </select>
+                </label>
+                <label style="flex: 1 1 220px;">
+                    <h5 style="margin:0 0 4px 0;">${escapeHtml(translate('Row Label / Title', 'STMemoryBooks_SetItemLabel'))}</h5>
+                    <input type="text" class="text_pole stmb-sp-set-item-label" value="${escapeHtml(item.label || '')}" placeholder="${escapeHtml(translate('Optional title for this row', 'STMemoryBooks_SetItemLabelPlaceholder'))}">
+                </label>
+                <button class="menu_button stmb-sp-set-item-up" type="button" title="${escapeHtml(translate('Move up', 'STMemoryBooks_MoveUp'))}"><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="menu_button stmb-sp-set-item-down" type="button" title="${escapeHtml(translate('Move down', 'STMemoryBooks_MoveDown'))}"><i class="fa-solid fa-arrow-down"></i></button>
+                <button class="menu_button stmb-sp-set-item-copy" type="button" title="${escapeHtml(translate('Duplicate', 'STMemoryBooks_Duplicate'))}"><i class="fa-solid fa-copy"></i></button>
+                <button class="menu_button stmb-sp-set-item-delete" type="button" title="${escapeHtml(translate('Delete', 'STMemoryBooks_Delete'))}"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <div class="stmb-sp-set-item-macros" style="margin-top:8px;">
+                <h5 style="margin:0 0 4px 0;">${escapeHtml(translate('Macro Values', 'STMemoryBooks_MacroValues'))}</h5>
+                ${buildSetItemMacroFields(tpl, item)}
+            </div>
+        </div>
+    `;
+}
+
+function collectSetItemFromRow(row) {
+    const runtimeMacros = {};
+    row.querySelectorAll('.stmb-sp-set-item-macro').forEach(input => {
+        const token = input.dataset.token;
+        if (token) runtimeMacros[token] = input.value || '';
+    });
+    return {
+        id: row.dataset.itemId || makeSetItemId(),
+        promptKey: row.querySelector('.stmb-sp-set-item-prompt')?.value || '',
+        label: row.querySelector('.stmb-sp-set-item-label')?.value?.trim() || '',
+        runtimeMacros,
+    };
+}
+
+function collectSetItemsFromDialog(dlg) {
+    return Array.from(dlg.querySelectorAll('.stmb-sp-set-item'))
+        .map(collectSetItemFromRow)
+        .filter(item => item.promptKey);
+}
+
+async function openEditSet(parentPopup, key = null) {
+    const templates = await listTemplates();
+    if (!templates.length) {
+        toastr.error(translate('Create a side prompt before creating a set.', 'STMemoryBooks_CreateSidePromptBeforeSet'), translate('STMemoryBooks', 'index.toast.title'));
+        return;
+    }
+    const existing = key ? await getSet(key) : null;
+    const initialItems = existing?.items?.length
+        ? existing.items
+        : [{ id: makeSetItemId(), promptKey: templates[0].key, label: '', runtimeMacros: {} }];
+    const rows = initialItems.map(item => renderSetItemRow(item, templates)).join('');
+    const content = `
+        <h3>${escapeHtml(existing ? translate('Edit Side Prompt Set', 'STMemoryBooks_EditSidePromptSet') : translate('New Side Prompt Set', 'STMemoryBooks_NewSidePromptSet'))}</h3>
+        <div class="world_entry_form_control">
+            <label for="stmb-sp-set-name">
+                <h4>${escapeHtml(translate('Set Name', 'STMemoryBooks_SetName'))}</h4>
+                <input id="stmb-sp-set-name" class="text_pole" type="text" value="${escapeHtml(existing?.name || '')}">
+            </label>
+        </div>
+        <div class="world_entry_form_control">
+            <small class="opacity70p">${escapeHtml(translate('Each row runs one side prompt. You can use literal macro values or set-level macros like {{npc_1}} for /sideprompt-macroset.', 'STMemoryBooks_SetEditorHelp'))}</small>
+        </div>
+        <div id="stmb-sp-set-items">${rows}</div>
+        <div class="buttons_block justifyCenter gap10px whitespacenowrap">
+            <button id="stmb-sp-set-add-item" class="menu_button whitespacenowrap" type="button">${escapeHtml(translate('Add Row', 'STMemoryBooks_AddSetItem'))}</button>
+        </div>
+    `;
+
+    const setPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: translate('Save', 'STMemoryBooks_Save'),
+        cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
+    });
+
+    const attachHandlers = () => {
+        const dlg = setPopup.dlg;
+        if (!dlg) return;
+        const rowsContainer = dlg.querySelector('#stmb-sp-set-items');
+        const refreshRowMacros = (row) => {
+            const item = collectSetItemFromRow(row);
+            const tpl = templates.find(t => t.key === item.promptKey) || templates[0];
+            const macroContainer = row.querySelector('.stmb-sp-set-item-macros');
+            if (macroContainer) {
+                macroContainer.innerHTML = DOMPurify.sanitize(`<h5 style="margin:0 0 4px 0;">${escapeHtml(translate('Macro Values', 'STMemoryBooks_MacroValues'))}</h5>${buildSetItemMacroFields(tpl, item)}`);
+            }
+        };
+        dlg.querySelector('#stmb-sp-set-add-item')?.addEventListener('click', () => {
+            rowsContainer.insertAdjacentHTML('beforeend', DOMPurify.sanitize(renderSetItemRow({ id: makeSetItemId(), promptKey: templates[0].key, label: '', runtimeMacros: {} }, templates)));
+        });
+        dlg.addEventListener('change', (e) => {
+            const row = e.target.closest('.stmb-sp-set-item');
+            if (row && e.target.classList.contains('stmb-sp-set-item-prompt')) {
+                refreshRowMacros(row);
+            }
+        });
+        dlg.addEventListener('click', (e) => {
+            const row = e.target.closest('.stmb-sp-set-item');
+            if (!row) return;
+            if (e.target.closest('.stmb-sp-set-item-delete')) {
+                row.remove();
+            } else if (e.target.closest('.stmb-sp-set-item-copy')) {
+                const item = collectSetItemFromRow(row);
+                item.id = makeSetItemId();
+                row.insertAdjacentHTML('afterend', DOMPurify.sanitize(renderSetItemRow(item, templates)));
+            } else if (e.target.closest('.stmb-sp-set-item-up')) {
+                const prev = row.previousElementSibling;
+                if (prev) row.parentElement.insertBefore(row, prev);
+            } else if (e.target.closest('.stmb-sp-set-item-down')) {
+                const next = row.nextElementSibling;
+                if (next) row.parentElement.insertBefore(next, row);
+            }
+        });
+    };
+
+    const showPromise = setPopup.show();
+    attachHandlers();
+    const result = await showPromise;
+    if (result !== POPUP_RESULT.AFFIRMATIVE) return;
+
+    const dlg = setPopup.dlg;
+    const name = dlg.querySelector('#stmb-sp-set-name')?.value?.trim() || '';
+    const items = collectSetItemsFromDialog(dlg);
+    if (!items.length) {
+        toastr.error(translate('Add at least one side prompt to the set.', 'STMemoryBooks_SetNeedsItem'), translate('STMemoryBooks', 'index.toast.title'));
+        return;
+    }
+
+    try {
+        const savedKey = await upsertSet({ key: existing?.key || null, name, items });
+        toastr.success(translate('Side prompt set saved.', 'STMemoryBooks_SidePromptSetSaved'), translate('STMemoryBooks', 'index.toast.title'));
+        window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
+        await refreshSetControls(parentPopup);
+        await refreshList(parentPopup, savedKey);
+    } catch (err) {
+        console.error('STMemoryBooks: Error saving side prompt set:', err);
+        toastr.error(translate('Failed to save side prompt set.', 'STMemoryBooks_FailedToSaveSidePromptSet'), translate('STMemoryBooks', 'index.toast.title'));
     }
 }
 
@@ -1103,14 +1375,27 @@ async function importTemplates(event, parentPopup) {
         const text = await file.text();
         const res = await importSidePromptsJSON(text);
         if (res && typeof res === 'object') {
-            const { added = 0, renamed = 0, strippedDetails = [] } = res;
+            const { added = 0, renamed = 0, setsAdded = 0, setsRenamed = 0, strippedDetails = [] } = res;
             const detail = renamed > 0 ? tr('STMemoryBooks_ImportedSidePromptsRenamedDetail', ' ({{count}} renamed due to key conflicts)', { count: renamed }) : '';
-            toastr.success(tr('STMemoryBooks_ImportedSidePromptsDetail', 'Imported side prompts: {{added}} added{{detail}}', { added, detail }), translate('STMemoryBooks', 'index.toast.title'));
+            const setDetail = setsAdded > 0
+                ? tr('STMemoryBooks_ImportedSidePromptSetsDetail', '; sets: {{setsAdded}} added{{setsDetail}}', {
+                    setsAdded,
+                    setsDetail: setsRenamed > 0 ? tr('STMemoryBooks_ImportedSidePromptsRenamedDetail', ' ({{count}} renamed due to key conflicts)', { count: setsRenamed }) : '',
+                })
+                : '';
+            toastr.success(tr('STMemoryBooks_ImportedSidePromptsDetail', 'Imported side prompts: {{added}} added{{detail}}{{setDetail}}', { added, detail, setDetail }), translate('STMemoryBooks', 'index.toast.title'));
+            if (setsAdded > 0) {
+                toastr.success(tr('STMemoryBooks_ImportedSidePromptSetsDetail', 'Imported side prompt sets: {{setsAdded}} added{{setsDetail}}', {
+                    setsAdded,
+                    setsDetail: setsRenamed > 0 ? tr('STMemoryBooks_ImportedSidePromptsRenamedDetail', ' ({{count}} renamed due to key conflicts)', { count: setsRenamed }) : '',
+                }), translate('STMemoryBooks', 'index.toast.title'));
+            }
             showRuntimeMacroImportNormalizationToast(strippedDetails);
         } else {
             toastr.success(translate('Imported side prompts', 'STMemoryBooks_ImportedSidePrompts'), translate('STMemoryBooks', 'index.toast.title'));
         }
         await refreshList(parentPopup);
+        await refreshSetControls(parentPopup);
     } catch (err) {
         console.error('STMemoryBooks: Error importing side prompts:', err);
         toastr.error(tr('STMemoryBooks_FailedToImportSidePrompts', 'Failed to import: {{message}}', { message: err?.message || 'Unknown error' }), translate('STMemoryBooks', 'index.toast.title'));
@@ -1126,6 +1411,8 @@ export async function showSidePromptsPopup() {
         content += '<div class="world_entry_form_control">';
         content += '<p class="opacity70p" data-i18n="STMemoryBooks_SidePrompts_Desc">Create and manage side prompts for trackers and other behind-the-scenes functions.</p>';
         content += '</div>';
+
+        content += '<div id="stmb-sp-set-controls"></div>';
 
         // Search/filter box
         content += '<div class="world_entry_form_control">';
@@ -1188,6 +1475,8 @@ export async function showSidePromptsPopup() {
             // Search
             dlg.querySelector('#stmb-sp-search')?.addEventListener('input', () => refreshList(popup));
 
+            refreshSetControls(popup);
+
             // Buttons
             dlg.querySelector('#stmb-sp-new')?.addEventListener('click', async () => {
                 await openNewTemplate(popup);
@@ -1228,6 +1517,48 @@ export async function showSidePromptsPopup() {
 
             // Row selection and inline actions
             dlg.addEventListener('click', async (e) => {
+                const setActionBtn = e.target.closest('.stmb-sp-set-action');
+                const setRow = e.target.closest('tr[data-set-key]');
+                if (setActionBtn && setRow) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const setKey = setRow.dataset.setKey;
+                    if (setActionBtn.classList.contains('stmb-sp-set-action-edit')) {
+                        await openEditSet(popup, setKey);
+                    } else if (setActionBtn.classList.contains('stmb-sp-set-action-duplicate')) {
+                        try {
+                            await duplicateSet(setKey);
+                            toastr.success(translate('Side prompt set duplicated.', 'STMemoryBooks_SidePromptSetDuplicated'), translate('STMemoryBooks', 'index.toast.title'));
+                            window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
+                            await refreshSetControls(popup);
+                        } catch (err) {
+                            console.error('STMemoryBooks: Error duplicating side prompt set:', err);
+                            toastr.error(translate('Failed to duplicate side prompt set.', 'STMemoryBooks_FailedToDuplicateSidePromptSet'), translate('STMemoryBooks', 'index.toast.title'));
+                        }
+                    } else if (setActionBtn.classList.contains('stmb-sp-set-action-delete')) {
+                        const set = await getSet(setKey);
+                        const confirmPopup = new Popup(
+                            `<h3>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptSetTitle', 'Delete Side Prompt Set', { name: set?.name || setKey }))}</h3><p>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptSetConfirm', 'Delete "{{name}}"? Chats using this set will run no after-memory side prompts until a new mode is selected.', { name: set?.name || setKey }))}</p>`,
+                            POPUP_TYPE.CONFIRM,
+                            '',
+                            { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }
+                        );
+                        const res = await confirmPopup.show();
+                        if (res === POPUP_RESULT.AFFIRMATIVE) {
+                            try {
+                                await removeSet(setKey);
+                                toastr.success(translate('Side prompt set deleted.', 'STMemoryBooks_SidePromptSetDeleted'), translate('STMemoryBooks', 'index.toast.title'));
+                                window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
+                                await refreshSetControls(popup);
+                            } catch (err) {
+                                console.error('STMemoryBooks: Error deleting side prompt set:', err);
+                                toastr.error(translate('Failed to delete side prompt set.', 'STMemoryBooks_FailedToDeleteSidePromptSet'), translate('STMemoryBooks', 'index.toast.title'));
+                            }
+                        }
+                    }
+                    return;
+                }
+
                 const actionBtn = e.target.closest('.stmb-sp-action');
                 const row = e.target.closest('tr[data-tpl-key]');
                 if (!row) return;
