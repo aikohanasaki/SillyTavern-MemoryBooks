@@ -260,6 +260,8 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 - `/nextmemory` - Erstellt eine Erinnerung vom Ende der letzten Erinnerung bis zur aktuellen Nachricht.
 - `/stmb-catchup interval:x start:y end:y` - Erstellt Aufhol-Erinnerungen für einen bestehenden langen Chat, indem der ausgewählte Nachrichtenbereich in Abschnitten der angegebenen Intervallgröße verarbeitet wird.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Führt einen Side Prompt aus (`{{macro}}`s sind optional).
+- `/sideprompt-set "Set Name" [X-Y]` - Führt ein gespeichertes Side Prompt Set aus.
+- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Führt ein Side Prompt Set aus und übergibt wiederverwendbare Makrowerte.
 - `/sideprompt-on "Name" | all` - Aktiviert einen Side Prompt nach Name oder alle.
 - `/sideprompt-off "Name" | all` - Deaktiviert einen Side Prompt nach Name oder alle.
 - `/stmb-highest` - Gibt die höchste Nachrichten-ID für verarbeitete Erinnerungen in diesem Chat zurück.
@@ -320,7 +322,10 @@ Beispiel: `/stmb-catchup interval:30 start:0 end:300`
 
 ### 🎡 Tracker & Side Prompts
 
-Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Prompt-Einträge in Ihrem Erinnerungs-Lorebook. Side Prompts ermöglichen es Ihnen, **laufende Zustände** zu verfolgen, nicht nur vergangene Ereignisse. Zum Beispiel:
+> 📘 Side Prompts haben eine eigene Anleitung: [Side Prompts Guide](side-prompts-de.md). Verwenden Sie diese für Sets, Makros, Beispiele und Fehlerbehebung.
+> 🎡 Brauchen Sie den genauen Klickpfad? Siehe die [Scribe-Anleitung zum Aktivieren von Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
+
+Side Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pflegen. Nutzen Sie sie für Tracker und unterstützende Notizen, die die normale Charakterantwort nicht aufblähen sollen, zum Beispiel:
 
 - 💰 Inventar & Ressourcen („Welche Gegenstände hat der Benutzer?“)
 - ❤️ Beziehungsstatus („Was fühlt X für Y?“)
@@ -328,26 +333,24 @@ Side Prompts können wie Tracker verwendet werden und erstellen separate Side-Pr
 - 🎯 Quest-Fortschritt („Welche Ziele sind aktiv?“)
 - 🌍 Weltzustand („Was hat sich im Setting geändert?“)
 
-#### **Zugriff:** Klicken Sie in den Memory Books Einstellungen auf „🎡 Tracker & Side Prompts“.
+#### **Zugriff:** Klicken Sie in den Memory-Books-Einstellungen auf „🎡 Tracker & Side Prompts“.
 
 #### **Funktionen:**
 
-- Alle Side Prompts anzeigen.
-- Neue Prompts erstellen oder duplizieren, um mit verschiedenen Prompt-Stilen zu experimentieren.
-- Jedes Preset bearbeiten oder löschen (einschließlich der integrierten).
-- Presets als JSON-Dateien für Backup oder Teilen exportieren und importieren.
-- Manuell oder automatisch ausführen, je nach Vorlage.
-- Standard-SillyTavern-Makros/Platzhalter wie `{{user}}` und `{{char}}` in Side-Prompt-`Prompt`, `Response Format`, `Title` und `{{keyword}}`-Feldern verwenden.
-- Eigene Makros/Platzhalter wie `{{npc name}}` verwenden (diese müssen beim Ausführen von `/sideprompt` angegeben werden).
+- Side Prompts anzeigen, erstellen, duplizieren, bearbeiten, löschen, exportieren und importieren.
+- Side Prompts manuell, nach der Erinnerungserstellung oder als Teil eines Side Prompt Sets ausführen.
+- Standard-SillyTavern-Makros wie `{{user}}` und `{{char}}` verwenden.
+- Laufzeit-Makros wie `{{npc name}}` verwenden, wenn ein Prompt beim Ausführen einen Wert benötigt.
+- Side-Prompt-Ausgaben als separate Side-Prompt-Einträge im Erinnerungs-Lorebook speichern.
 
 #### **Nutzungstipps:**
 
-- Wenn Sie einen neuen Prompt erstellen, können Sie von den integrierten kopieren, um beste Kompatibilität zu gewährleisten.
-- Side Prompts müssen kein JSON zurückgeben! Sie können normalen Text zurückgeben.
-- Side Prompts werden aktualisiert/überschrieben. Das unterscheidet sie von Erinnerungen, die sequenziell gespeichert werden.
+- Kopieren Sie von den integrierten Vorlagen, wenn Sie einen neuen Prompt erstellen.
+- Side Prompts müssen kein JSON zurückgeben. Normaler Text oder Markdown ist in Ordnung.
+- Side Prompts werden normalerweise aktualisiert/überschrieben; Erinnerungen werden sequenziell gespeichert.
 - Manuelle Syntax: `/sideprompt "Name" {{macro}}="value" [X-Y]`.
-- Nachdem Sie einen Side Prompt in der Befehls-Autovervollständigung ausgewählt haben, schlägt STMB die noch benötigten Laufzeit-Makros für diese Vorlage vor.
-- Side Prompts mit eigenen Laufzeit-Makros (nicht ST-Standard) sind nur manuell nutzbar. STMB deaktiviert `On Interval` und `On After Memory` für diese Vorlagen beim Speichern/Importieren und warnt Sie, wenn das passiert.
+- Verwenden Sie Side Prompt Sets, wenn ein Chat ein geordnetes Bündel von Trackern braucht.
+- Ein ausgewähltes Side Prompt Set für „nach der Erinnerungserstellung“ ersetzt in diesem Chat die einzeln aktivierten Side Prompts für „nach der Erinnerungserstellung“.
 - Zusätzliche Side-Prompt-Vorlagenbibliothek als [JSON-Datei](../resources/SidePromptTemplateLibrary.json) - einfach importieren und verwenden.
 
 ---
