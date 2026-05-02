@@ -130,10 +130,18 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ## 🆕 斜線指令快捷鍵
 
-* `/creatememory` 將使用現有的箭頭開始/結束標記來創建記憶。
-* `/scenememory x-y` 將創建一個從訊息 x 開始到訊息 y 結束的記憶。
-* `/nextmemory` 將創建一個包含自上次記憶以來所有訊息的記憶。
-* `/stmb-catchup interval:x start:y end:y` - 為既有的長聊天建立補記憶，透過依照指定間隔大小分段處理所選訊息範圍來產生記憶。
+* `/creatememory` — 從已標記的場景建立記憶。
+* `/scenememory X-Y` — 設定場景範圍並建立記憶，例如 `/scenememory 10-15`。
+* `/nextmemory` — 從上一筆記憶結尾到目前訊息建立記憶。
+* `/stmb-catchup interval:x start:y end:y` — 為既有長聊天建立補記憶，透過依照指定間隔大小分段處理所選訊息範圍來產生記憶。
+* `/sideprompt "Name" {{macro}}="value" [X-Y]` — 執行 Side Prompt（`{{macro}}` 可選）。
+* `/sideprompt-set "Set Name" [X-Y]` — 執行已儲存的 Side Prompt Set。
+* `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` — 執行 Side Prompt Set 並提供可重複使用的巨集值。
+* `/sideprompt-on "Name" | all` — 依名稱啟用某個 Side Prompt，或啟用全部。
+* `/sideprompt-off "Name" | all` — 依名稱停用某個 Side Prompt，或停用全部。
+* `/stmb-highest` — 回傳此聊天中已處理記憶的最高 message id。
+* `/stmb-set-highest <N|none>` — 手動設定此聊天的最高已處理 message id。
+* `/stmb-stop` — 停止所有正在進行的 STMB 生成。用於緊急中止。
 
 ### `/stmb-catchup`
 
@@ -314,39 +322,36 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🎡 追蹤器與側邊提示詞
 
-側邊提示詞可以像追蹤器一樣使用，並會在你的記憶世界書中創建獨立的 side prompt 條目。側邊提示詞允許你追蹤 **當前狀態**，而不僅僅是過去的事件。例如：
+> 📘 Side Prompts 有獨立指南：[Side Prompts Guide](side-prompts-zh-tw.md)。請參考該指南了解 Sets、巨集、範例與疑難排解。
+> 🎡 需要完整點擊路徑？請參閱 [啟用 Side Prompts 的 Scribe 教學](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)。
 
-* 💰 庫存與資源 ("使用者擁有什麼物品？")
-* ❤️ 關係狀態 ("X 對 Y 的感覺如何？")
-* 📊 角色數值 ("當前健康、技能、聲望")
-* 🎯 任務進度 ("哪些目標是活躍的？")
-* 🌍 世界狀態 ("設定中有什麼變化？")
+Side Prompts 是獨立的 STMB 提示詞執行，用於維護持續的聊天狀態。可將它們用於追蹤器和輔助筆記，避免讓一般角色回覆變得臃腫，例如：
 
-#### **存取:** 從 Memory Books 設定中，點擊 “🎡 追蹤器與側邊提示詞” (側邊提示詞管理器)。
+* 💰 庫存與資源（「使用者擁有什麼物品？」）
+* ❤️ 關係狀態（「X 對 Y 的感覺如何？」）
+* 📊 角色數值（「當前健康、技能、聲望」）
+* 🎯 任務進度（「哪些目標是活躍的？」）
+* 🌍 世界狀態（「設定中有什麼變化？」）
+
+#### **存取:** 從 Memory Books 設定中，點擊 “🎡 追蹤器與側邊提示詞”。
 
 #### **功能:**
 
-```
-- 查看所有側邊提示詞。
-- 創建新的或複製提示詞以嘗試不同的提示詞風格。
-- 編輯或刪除任何預設組 (包括內建的)。
-- 將預設組匯出或匯入為 JSON 檔案以進行備份或分享。
-- 依照模板，手動或自動執行。
-- 在 `Prompt` 和 `Response Format` 中使用 `{{user}}`、`{{char}}` 之類的標準 ST 巨集。
-- 使用像 `{{npc name}}` 這樣的自訂執行階段巨集，它們會在執行 `/sideprompt` 時傳入。
-
-```
+* 查看、建立、複製、編輯、刪除、匯出與匯入 Side Prompts。
+* 手動執行 Side Prompts，在記憶建立後執行，或作為 Side Prompt Set 的一部分執行。
+* 使用 `{{user}}` 和 `{{char}}` 等標準 SillyTavern 巨集。
+* 當提示詞執行時需要提供值，可使用 `{{npc name}}` 等執行階段巨集。
+* 將 Side Prompt 輸出儲存為記憶世界書中的獨立 side-prompt 條目。
 
 #### **使用技巧:**
 
-```
-- 創建新提示詞時，你可以複製內建的以獲得最佳相容性。
-- 額外的側邊提示詞範本庫 [JSON 檔案](../resources/SidePromptTemplateLibrary.json) - 匯入即可使用。
-- 手動語法：`/sideprompt "名稱" {{macro}}="value" [X-Y]`。
-- 在命令自動完成中選擇 side prompt 後，STMB 會提示仍缺少的執行階段巨集。
-- 含有自訂執行階段巨集的 side prompt 只能手動執行。STMB 會在儲存/匯入時移除這類模板的 `On Interval` 和 `On After Memory`，並顯示警告。
-
-```
+* 建立新提示詞時，建議從內建範本複製。
+* Side Prompts 不必返回 JSON。純文字或 Markdown 都可以。
+* Side Prompts 通常會被更新/覆寫；記憶會依序儲存。
+* 手動語法：`/sideprompt "Name" {{macro}}="value" [X-Y]`。
+* 當聊天需要一組有順序的追蹤器時，使用 Side Prompt Sets。
+* 選定的「記憶建立後」Side Prompt Set 會取代該聊天中個別啟用的「記憶建立後」Side Prompts。
+* 額外的 Side Prompt 範本庫：[JSON 檔案](../resources/SidePromptTemplateLibrary.json)。匯入即可使用。
 
 ---
 
