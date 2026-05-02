@@ -1307,10 +1307,23 @@ async function refreshSidePromptCache() {
         manualEnabled: isManualSidePromptEnabled(t),
       }));
     const sets = await listSets();
-    sidePromptSetNameCache = await Promise.all((sets || []).map(async (set) => ({
+    const settledSets = await Promise.allSettled((sets || []).map(async (set) => ({
       name: set.name,
       runtimeMacros: await collectSetRuntimeMacros(set),
     })));
+    sidePromptSetNameCache = settledSets
+      .filter((result) => {
+        if (result.status === "fulfilled") return true;
+        console.warn(
+          translate(
+            "STMemoryBooks: side prompt cache refresh failed",
+            "index.warn.sidePromptCacheRefreshFailed",
+          ),
+          result.reason,
+        );
+        return false;
+      })
+      .map((result) => result.value);
   } catch (e) {
     console.warn(
       translate(

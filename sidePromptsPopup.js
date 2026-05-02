@@ -626,11 +626,10 @@ async function openEditSet(parentPopup, key = null) {
     }
 
     try {
-        const savedKey = await upsertSet({ key: existing?.key || null, name, items });
+        await upsertSet({ key: existing?.key || null, name, items });
         toastr.success(translate('Side prompt set saved.', 'STMemoryBooks_SidePromptSetSaved'), translate('STMemoryBooks', 'index.toast.title'));
         window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
         await refreshSetControls(parentPopup);
-        await refreshList(parentPopup, savedKey);
     } catch (err) {
         console.error('STMemoryBooks: Error saving side prompt set:', err);
         toastr.error(translate('Failed to save side prompt set.', 'STMemoryBooks_FailedToSaveSidePromptSet'), translate('STMemoryBooks', 'index.toast.title'));
@@ -1384,12 +1383,6 @@ async function importTemplates(event, parentPopup) {
                 })
                 : '';
             toastr.success(tr('STMemoryBooks_ImportedSidePromptsDetail', 'Imported side prompts: {{added}} added{{detail}}{{setDetail}}', { added, detail, setDetail }), translate('STMemoryBooks', 'index.toast.title'));
-            if (setsAdded > 0) {
-                toastr.success(tr('STMemoryBooks_ImportedSidePromptSetsDetail', 'Imported side prompt sets: {{setsAdded}} added{{setsDetail}}', {
-                    setsAdded,
-                    setsDetail: setsRenamed > 0 ? tr('STMemoryBooks_ImportedSidePromptsRenamedDetail', ' ({{count}} renamed due to key conflicts)', { count: setsRenamed }) : '',
-                }), translate('STMemoryBooks', 'index.toast.title'));
-            }
             showRuntimeMacroImportNormalizationToast(strippedDetails);
         } else {
             toastr.success(translate('Imported side prompts', 'STMemoryBooks_ImportedSidePrompts'), translate('STMemoryBooks', 'index.toast.title'));

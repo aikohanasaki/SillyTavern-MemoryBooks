@@ -1306,7 +1306,10 @@ export async function runSidePromptSet(args, options = {}) {
     try {
         const parsed = parseSidePromptCommandInput(args);
         if (parsed.error || !parsed.name) {
-            toastr.error(translate('Side prompt set name not provided. Usage: /sideprompt-set "Name" [X-Y]', 'STMemoryBooks_Toast_SidePromptSetNameNotProvided'), 'STMemoryBooks');
+            const message = options?.macroMode
+                ? translate('SidePrompt macroset guide: Choose a quoted set name, then fill any prompted macros. Usage: /sideprompt-macroset "Name" {{macro}}="value" [X-Y].', 'STMemoryBooks_SidePromptMacroSetGuide')
+                : translate('Side prompt set name not provided. Usage: /sideprompt-set "Name" [X-Y]', 'STMemoryBooks_Toast_SidePromptSetNameNotProvided');
+            toastr.error(message, 'STMemoryBooks');
             return '';
         }
 

@@ -818,7 +818,10 @@ export async function collectSetRuntimeMacros(setKeyOrSet, commandRuntimeMacros 
     for (const item of set.items || []) {
         const tpl = data.prompts?.[item.promptKey];
         if (!tpl) continue;
-        const itemRuntimeMacros = resolveSetItemRuntimeMacros(item, commandRuntimeMacros);
+        const itemRuntimeMacros = {
+            ...commandRuntimeMacros,
+            ...resolveSetItemRuntimeMacros(item, commandRuntimeMacros),
+        };
         required.push(...collectTemplateRuntimeMacros(tpl, itemRuntimeMacros));
     }
     return uniqueTokens(required);
@@ -845,7 +848,10 @@ export async function resolveSetItemsForRun(setKey, commandRuntimeMacros = {}, o
             continue;
         }
 
-        const runtimeMacros = resolveSetItemRuntimeMacros(item, commandRuntimeMacros);
+        const runtimeMacros = {
+            ...commandRuntimeMacros,
+            ...resolveSetItemRuntimeMacros(item, commandRuntimeMacros),
+        };
         const missingRuntimeMacros = collectTemplateRuntimeMacros(tpl, runtimeMacros);
         if (missingRuntimeMacros.length > 0 && !allowUnresolved) {
             skipped.push({ reason: 'missing-macros', item, tpl, missingRuntimeMacros });
