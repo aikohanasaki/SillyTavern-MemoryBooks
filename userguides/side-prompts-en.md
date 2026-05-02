@@ -1,109 +1,100 @@
-# Side Prompts
+# 🎡 Side Prompts
 
-Side Prompts are extra prompt runs used to analyze, track, summarize, clean up, or maintain information about a chat without making the normal character reply do all of that work.
-
-That is the plain-English version.
-
-Instead of asking the active character to both roleplay and maintain a relationship tracker, plot tracker, invention tracker, timeline, loose-end list, or NPC status sheet inside the same reply, a Side Prompt can run separately and produce a focused result.
-
-Side Prompts are useful because long roleplay chats accumulate too much information for one normal generation to handle cleanly. They give STMB a controlled way to run supporting analysis around the chat.
+Side Prompts are extra STMB prompt runs for chat maintenance. They can analyze, track, summarize, clean up, or update supporting notes without making the normal character reply do all that work. Use them when a chat needs an ongoing tracker, relationship report, plot list, invention log, NPC status sheet, timeline, or similar support document. The character can keep roleplaying. The Side Prompt handles the paperwork. ❤️
 
 ## Table of Contents
 
-1. [What Side Prompts Are](#what-side-prompts-are)
-2. [Why They Exist](#why-they-exist)
-3. [Common Uses](#common-uses)
-4. [How Side Prompt Runs Work](#how-side-prompt-runs-work)
-5. [Manual Side Prompt Runs](#manual-side-prompt-runs)
-6. [After-Memory Side Prompts](#after-memory-side-prompts)
-7. [Side Prompt Sets](#side-prompt-sets)
-8. [Macros](#macros)
-9. [Ranges](#ranges)
-10. [Previews, Batching, Saves, and Stops](#previews-batching-saves-and-stops)
-11. [Writing Good Side Prompts](#writing-good-side-prompts)
-12. [Examples](#examples)
-13. [Troubleshooting](#troubleshooting)
-14. [What Side Prompts Do Not Mean](#what-side-prompts-do-not-mean)
-15. [Takeaways](#takeaways)
+- [What Side Prompts Are](#what-side-prompts-are)
+- [When to Use Them](#when-to-use-them)
+- [Quick Setup Walkthrough](#quick-setup-walkthrough)
+- [How Runs Work](#how-runs-work)
+- [Manual Runs](#manual-runs)
+- [Automatic After-Memory Runs](#automatic-after-memory-runs)
+- [Side Prompt Sets](#side-prompt-sets)
+- [Macros](#macros)
+- [Message Ranges](#message-ranges)
+- [Writing Good Side Prompts](#writing-good-side-prompts)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [Takeaways](#takeaways)
+
+---
 
 ## What Side Prompts Are
 
-A Side Prompt is a named prompt that can be run against part of a chat.
+A Side Prompt is a named prompt that runs separately from the normal character reply.
 
-It can be used to produce things like:
+It can produce or update:
 
-- an updated tracker
-- a relationship analysis
-- a plot summary
-- a list of unresolved threads
-- a cleanup pass
-- a consistency report
-- a memory support note
-- a lorebook-style entry
+- plot trackers
+- relationship trackers
+- NPC or faction notes
+- inventory/resource lists
+- timelines
+- mystery/clue boards
+- invention or project trackers
+- continuity reports
+- cleanup notes
+- lorebook-style support entries
 
-The important part is that it is separate from the normal character reply.
+Side Prompts are different from normal memories. Memories usually save scene summaries in sequence. Side Prompts usually maintain an ongoing state document that gets updated or overwritten.
 
-The character does not need to stop roleplaying to maintain a spreadsheet of every unresolved subplot. That job can go to a Side Prompt instead.
+They also do **not** have to return JSON. Plain text and Markdown are fine unless your specific prompt or save target requires something stricter.
 
-## Why They Exist
+---
 
-Without Side Prompts, users and botmakers tend to cram too much into the normal generation prompt.
+## When to Use Them
 
-That causes predictable problems:
+Use Side Prompts for structured support work.
 
-- the bot starts narrating tracker logic instead of roleplaying
-- the normal reply gets bloated
-- memory updates become inconsistent
-- long chats accumulate loose ends that nobody is actually tracking
-- users end up manually asking for summaries every few scenes
-- botmakers duplicate the same analysis prompt in several places
+Good uses:
 
-Side Prompts are the boring answer to that problem. They give the supporting work somewhere to live.
+- **Plot points:** active threads, resolved threads, loose ends
+- **Relationships:** trust, tension, attraction, boundaries, goals
+- **NPCs:** what each NPC knows, wants, did recently, or needs next
+- **Timeline:** dates, travel, injuries, deadlines, countdowns
+- **World state:** changed locations, objects, factions, resources
+- **Mysteries:** clues, suspects, contradictions, unanswered questions
+- **Projects:** inventions, research, blockers, scope drift, next steps
+- **Continuity:** likely hallucination risks or missing context
 
-## Common Uses
+Bad uses:
 
-Side Prompts are best for structured support work.
-
-Good candidates:
-
-- **Plot points:** active storylines, unresolved hooks, recent developments, resolved threads
-- **Relationship tracking:** current relationship state, trust, conflict, attraction, boundaries, goals
-- **NPC tracking:** what each NPC knows, wants, did recently, or needs next
-- **Timeline tracking:** dates, events, travel, injuries, pregnancies, deadlines, countdowns
-- **Location tracking:** where characters are, what changed, what objects are present
-- **Mystery tracking:** clues, suspects, contradictions, unanswered questions
-- **Invention or project tracking:** progress, blockers, scope drift, next steps
-- **Scene cleanup:** what needs follow-up, what should be remembered, what can be discarded
-- **Continuity review:** inconsistencies, missing context, likely hallucination risks
-
-Bad candidates:
-
-- anything that must happen inside the next character reply
-- vague “make the story better” prompts with no concrete output
-- huge open-ended analysis prompts that produce essays every time
-- prompts that duplicate normal memory behavior without a clear reason
+- anything that must appear inside the next character reply
+- vague “make the story better” prompts
+- giant analysis prompts that produce essays every run
+- duplicate memory summaries with no separate job
 
 Side Prompts are not magic. A vague Side Prompt is just organized vagueness.
 
-## How Side Prompt Runs Work
+---
 
-A typical Side Prompt run looks like this:
+## Quick Setup Walkthrough
 
-1. STMB chooses the messages to analyze.
-2. The selected Side Prompt is prepared.
-3. Runtime macros are resolved, if the prompt needs them.
-4. The relevant chat range is compiled.
-5. The model generates the Side Prompt output.
-6. STMB checks the output.
-7. The result is saved, shown, or applied according to the Side Prompt setup.
+Need the click-by-click version? Use the [Scribe walkthrough for enabling Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
 
-The details can vary depending on the Side Prompt, but the general idea is stable: Side Prompts run a separate supporting pass over chat content.
+The short path is: open **Extensions**, open **Memory Books**, click **Side Prompts**, choose the prompt you want, enable it, optionally turn on **Run automatically after memory**, then **Save** and **Close**.
 
-They reuse the normal Side Prompt execution pipeline. That matters because previews, batching, lorebook overrides, blank-response checks, saves, stop handling, and notifications should all behave consistently instead of every command inventing its own special path.
+---
 
-## Manual Side Prompt Runs
+## How Runs Work
 
-Use `/sideprompt` when you want to run one Side Prompt manually.
+A normal Side Prompt run follows the same basic path:
+
+1. STMB chooses the messages to review.
+2. The Side Prompt is prepared.
+3. Any needed macros are filled in.
+4. The model generates the Side Prompt output.
+5. STMB checks the output.
+6. The result is previewed, saved, updated, or skipped according to the Side Prompt settings.
+
+Manual Side Prompts, after-memory Side Prompts, and Side Prompt Set rows should feel like the same system. They share the same general execution behavior for previews, batching, blank-response checks, saves, stop handling, and notifications.
+
+---
+
+## Manual Runs
+
+Use `/sideprompt` to run one Side Prompt manually.
 
 Basic form:
 
@@ -123,93 +114,59 @@ With a runtime macro:
 /sideprompt "Relationship Tracker" {{npc name}}="Alice" 10-20
 ```
 
-Use quotes around names with spaces.
+Use quotes around prompt names with spaces.
 
-Manual Side Prompt runs are useful when you want a one-off update or when you want to target a specific range of messages.
+Manual runs are best for one-off checks, targeted updates, and prompts that need custom macro values.
 
-## After-Memory Side Prompts
+---
 
-Some Side Prompts can be set to run automatically after memory.
+## Automatic After-Memory Runs
 
-This is useful for trackers that should stay current as the chat develops. For example, a plot tracker or relationship tracker may be useful after each memory update.
+Some Side Prompts can run automatically after a memory is created.
 
-The old behavior is simple:
+This is useful when a tracker should stay current as the chat develops. For example, a relationship tracker or plot tracker may update after each memory.
 
-- If a Side Prompt has **Run automatically after memory** enabled, it can run after memory.
-- If it is not enabled, it does not run automatically.
+There are two after-memory modes:
 
-This works well when you only have one or two automatic Side Prompts.
+- **Use individually-enabled side prompts** — old behavior; any Side Prompt with **Run automatically after memory** enabled can run.
+- **Use a named Side Prompt Set** — the selected set runs instead.
 
-It gets clumsy when every chat needs a different bundle of trackers. That is where Side Prompt Sets matter.
+A selected Side Prompt Set replaces individually-enabled after-memory Side Prompts. It does **not** add to them. That prevents duplicate runs caused by old checkboxes users forgot about.
+
+---
 
 ## Side Prompt Sets
 
-Side Prompt Sets let you group multiple Side Prompts together and run them as one ordered workflow.
+Side Prompt Sets group multiple Side Prompts into one ordered workflow.
 
-A Side Prompt Set is not just a folder. It is an ordered run list.
+A set is an ordered run list, not just a folder. The same Side Prompt can appear more than once with different macro values.
 
-That distinction matters because the same Side Prompt can appear more than once in the same set.
+Example set:
 
-For example, one set could run:
+1. Relationship Tracker with `{{npc name}} = Alice`
+2. Relationship Tracker with `{{npc name}} = Bob`
+3. Plot Points Tracker
+4. Scene Cleanup Notes
 
-1. Relationship tracker for `{{npc name}} = Alice`
-2. Relationship tracker for `{{npc name}} = Bob`
-3. Plot points tracker
-4. Scene cleanup notes
+This lets one prompt template maintain separate entries for different NPCs, factions, locations, or projects.
 
-That lets one prompt template maintain separate tracker entries for different people, factions, locations, or projects without needing duplicate prompt definitions.
+### Managing Sets
 
-### After-Memory Side Prompt Mode
+Open **🎡 Trackers & Side Prompts** to create, edit, duplicate, delete, or reorder sets.
 
-Each chat can choose its after-memory Side Prompt mode.
+Each row can include:
 
-The options are:
-
-- **Use individually-enabled side prompts**
-- a named Side Prompt Set
-
-If a chat uses **Use individually-enabled side prompts**, it keeps the old behavior. Side Prompts with **Run automatically after memory** enabled can run after memory.
-
-If a chat uses a named Side Prompt Set, that set runs after memory instead.
-
-A selected set replaces individually-enabled after-memory Side Prompts. It does not add to them.
-
-That part matters. Additive behavior sounds flexible until nobody can tell why something ran twice.
-
-### Managing Side Prompt Sets
-
-Side Prompt Sets are managed in the **Trackers & Side Prompts** popup.
-
-A set can be created, edited, duplicated, or deleted.
-
-Each set contains ordered rows. Each row can have:
-
-- a Side Prompt selector
+- a Side Prompt
 - an optional row label
-- macro values for that selected prompt
-- duplicate-row controls
-- delete-row controls
+- stored macro values
+- duplicate/delete controls
 - move up/down controls
 
-Rows run from top to bottom.
-
-If order matters, put foundational trackers first and cleanup/reporting prompts later.
-
-### Missing Sets and Missing Rows
-
-Side Prompt Sets are deliberately strict.
-
-- If no set is selected, the old individually-enabled after-memory behavior is used.
-- If a set is selected, individually-enabled after-memory Side Prompts are ignored for that chat.
-- If the selected set is missing or deleted, nothing runs and STMB warns you.
-- If one prompt inside the set is missing or deleted, that row is skipped and STMB warns you.
-- If an automatic after-memory run needs a macro value that cannot be resolved, that item is skipped and STMB warns you.
-
-Silent fallback would be worse. If the selected set disappeared, quietly running some other after-memory behavior would make debugging miserable.
+Rows run from top to bottom. Put foundational trackers first and cleanup/reporting prompts later.
 
 ### Running a Set Manually
 
-Use `/sideprompt-set` to run a named set manually using its stored macro values.
+Run a set with stored values:
 
 ```txt
 /sideprompt-set "Set Name"
@@ -221,39 +178,39 @@ With a range:
 /sideprompt-set "Set Name" 10-20
 ```
 
-If the set still needs macro values that are not stored, STMB should show an error telling you to use `/sideprompt-macroset`.
-
-### Running a Set With Macros
-
-Use `/sideprompt-macroset` when the set has unresolved set-level runtime tokens.
-
-```txt
-/sideprompt-macroset "Set Name" {{macro}}="value"
-```
-
-Example:
+Run a reusable set with macro values:
 
 ```txt
 /sideprompt-macroset "Relationship Pass" {{npc_1}}="Alice" {{npc_2}}="Bob" 10-20
 ```
 
-One supplied macro value can feed multiple rows in the set.
+Use `/sideprompt-macroset` when the set has reusable tokens that still need values.
 
-That is the point of set-level runtime tokens: define the cast once and let several Side Prompts use those values.
+### Missing Sets or Rows
+
+Side Prompt Sets are strict on purpose:
+
+- If no set is selected, individually-enabled after-memory behavior is used.
+- If a set is selected, individually-enabled after-memory prompts are ignored.
+- If the selected set was deleted, nothing runs and STMB warns you.
+- If a row points to a deleted prompt, that row is skipped and STMB warns you.
+- If a row still needs a macro value, that row is skipped and STMB warns you.
+
+Silent fallback would be worse. If a selected workflow broke, you should know.
+
+---
 
 ## Macros
 
-Side Prompts can use normal SillyTavern-style macros, but runtime macros are the special part to understand here.
+Side Prompts can use normal SillyTavern macros such as `{{user}}` and `{{char}}`.
 
-A runtime macro is a placeholder that must be filled in before the Side Prompt can run.
+They can also use runtime macros, which are placeholders filled in when the Side Prompt runs.
 
-Example:
+Example runtime macro:
 
 ```txt
 {{npc name}}
 ```
-
-A relationship tracker might use that macro so the same prompt can track different NPCs.
 
 Manual run:
 
@@ -261,53 +218,27 @@ Manual run:
 /sideprompt "Relationship Tracker" {{npc name}}="Alice"
 ```
 
-Set item value:
+Stored set value:
 
 ```txt
 {{npc name}} = Alice
 ```
 
-Reusable set-level token:
+Reusable set-level value:
 
 ```txt
 {{npc name}} = {{npc_1}}
 ```
 
-Then the set can be run with:
+Then run:
 
 ```txt
 /sideprompt-macroset "Relationship Pass" {{npc_1}}="Alice"
 ```
 
-### Literal Macro Values
+### Macro Tips
 
-Literal values are best when the set is meant for a specific chat.
-
-Example:
-
-```txt
-{{npc name}} = Alice
-```
-
-Use this when Alice is always Alice in that set.
-
-### Set-Level Runtime Tokens
-
-Set-level runtime tokens are best when the set should be reusable.
-
-Example:
-
-```txt
-{{npc name}} = {{npc_1}}
-```
-
-That lets the same set run for Alice today and Mira tomorrow.
-
-### Macro Naming
-
-Use boring macro names.
-
-Good:
+Use boring names:
 
 ```txt
 {{npc name}}
@@ -316,7 +247,7 @@ Good:
 {{project_name}}
 ```
 
-Less good:
+Avoid names like:
 
 ```txt
 {{the guy we mean}}
@@ -324,65 +255,35 @@ Less good:
 {{important person}}
 ```
 
-Spaces can be readable in the UI, but underscores are usually less annoying in slash commands.
+Spaces are readable in the UI. Underscores are usually less annoying in slash commands.
 
-## Ranges
+A Side Prompt with custom runtime macros should not be individually automated unless the needed values are stored somewhere, such as inside a Side Prompt Set row. Automatic runs cannot stop and ask you who `{{npc name}}` is supposed to be.
 
-Side Prompts can run against a message range.
+---
 
-Example:
+## Message Ranges
 
-```txt
-/sideprompt "Plot Points" 10-20
-```
-
-If you provide a range, that range is used.
-
-If you do not provide a range, Side Prompt behavior mirrors the existing `/sideprompt` behavior: it uses the normal since-last range logic with the existing cap/checkpoint behavior.
-
-For long chats, explicit ranges are useful when you know exactly what part of the chat needs analysis.
-
-For routine tracking, since-last behavior is usually less work.
-
-### Hidden Messages and Range Compiling
-
-Side Prompt range compiling should follow the same hidden-message preference used by memory.
-
-That means manual set runs such as:
+Side Prompts can run against a specific message range.
 
 ```txt
-/sideprompt-set "Name" 10-20
+/sideprompt "Plot Points" 50-80
 ```
 
-should respect the global unhide-before-memory preference instead of quietly using a different message-collection path.
+If you provide a range, STMB uses that range.
 
-This is one of those details users do not want to think about. Which is exactly why it should be consistent.
+If you do not provide a range, STMB uses the normal since-last Side Prompt behavior with the existing cap/checkpoint logic.
 
-## Previews, Batching, Saves, and Stops
+For routine tracking, since-last behavior is easier. For debugging or targeted cleanup, explicit ranges are clearer.
 
-Side Prompt runs should share the same execution behavior wherever possible.
+Side Prompt range compiling should follow the same hidden-message preference used by memory, including the global unhide-before-memory setting.
 
-That includes:
-
-- previews
-- batching
-- lorebook overrides
-- blank-response checks
-- saves
-- stop handling
-- notifications
-
-The practical user-facing point is simple: manual Side Prompts, after-memory Side Prompts, and Side Prompt Set rows should feel like the same system.
-
-If one path previews correctly and another path silently does something else, that is not flexibility. That is a bug farm.
+---
 
 ## Writing Good Side Prompts
 
-A good Side Prompt has a job.
+A good Side Prompt has a job. A bad Side Prompt has vibes.
 
-A bad Side Prompt has vibes.
-
-Be specific about:
+Be clear about:
 
 - what it should review
 - what it should update
@@ -393,9 +294,9 @@ Be specific about:
 
 ### Keep Output Short on Purpose
 
-Side Prompts are prone to bloat.
+Trackers bloat unless told not to.
 
-Do not merely say:
+Weak:
 
 ```txt
 Update the relationship tracker.
@@ -404,12 +305,10 @@ Update the relationship tracker.
 Better:
 
 ```txt
-Update the relationship tracker. Preserve existing useful facts, remove resolved or obsolete details, and keep each entry to 1-3 concise bullets. Output only the updated tracker.
+Update the relationship tracker. Preserve useful facts, remove resolved or obsolete details, and keep each entry to 1-3 concise bullets. Output only the updated tracker.
 ```
 
-If the prompt is for a long-running tracker, explicitly tell it not to grow forever.
-
-Useful wording:
+Useful guardrails:
 
 ```txt
 Do not append a new section unless there is genuinely new information. Merge updates into existing entries when possible.
@@ -425,7 +324,7 @@ Output only the updated report. No commentary, no explanation, no preface.
 
 ### Use Stable Headings
 
-Stable headings make repeated updates easier.
+Stable headings make repeated updates cleaner.
 
 Good:
 
@@ -447,21 +346,13 @@ Bad:
 # Here is my extensive and emotionally intelligent breakdown of everything that might be happening
 ```
 
-A model can update a stable document more cleanly than a rambling one.
+### Do Not Ask for Everything
 
-### Avoid Asking for Everything
+A Side Prompt that asks for every detail will usually produce every detail.
 
-A Side Prompt that asks for every possible detail will usually produce every possible detail.
-
-That is not a success state.
-
-Choose the level of detail you actually want to keep.
-
-For example, a plot tracker probably does not need every facial expression from the scene. It needs the unresolved hook, what changed, who knows, and what probably needs follow-up.
+Choose what matters. A plot tracker usually needs the unresolved hook, what changed, who knows, and what needs follow-up. It does not need every facial expression in the scene.
 
 ### Make Macro Use Obvious
-
-If a Side Prompt requires a macro, make the macro obvious in the prompt name or description.
 
 Good names:
 
@@ -471,7 +362,7 @@ NPC Status - {{npc name}}
 Faction Tracker - {{faction}}
 ```
 
-Less good:
+Less useful names:
 
 ```txt
 Tracker 3
@@ -479,21 +370,21 @@ Update thing
 Misc relationship prompt
 ```
 
-Users should not need to open the prompt body to understand why it is asking for a value.
+Users should not need to open the full prompt body to understand why it is asking for a value.
+
+---
 
 ## Examples
 
 ### Plot Points Tracker
 
-Use this when a chat has multiple active storylines and unresolved hooks.
-
-Example goal:
+Use this when a chat has several active storylines.
 
 ```txt
 Update the plot points tracker based on the selected messages. Keep only active or recently resolved threads. Group by storyline. Output only the updated tracker.
 ```
 
-Good output shape:
+Suggested shape:
 
 ```md
 # Plot Points
@@ -515,8 +406,6 @@ Good output shape:
 
 ### Relationship Tracker With Macro
 
-Use this when the same tracker prompt should work for multiple NPCs.
-
 Prompt requires:
 
 ```txt
@@ -536,19 +425,17 @@ Set rows:
 | 1 | Relationship Tracker | `{{npc name}} = Alice` |
 | 2 | Relationship Tracker | `{{npc name}} = Bob` |
 
-This avoids making separate prompt definitions for Alice, Bob, Carlos, and every other person in the cast.
+This avoids making separate prompt definitions for every NPC.
 
 ### Invention or Project Tracker
 
 Use this when a user keeps inventing, researching, building, or changing something over time.
 
-Example instruction:
-
 ```txt
 Update the project tracker. Track only meaningful changes in goal, progress, blockers, scope, dependencies, or story relevance. Keep entries concise and ordered by first introduction.
 ```
 
-This is better than saving ten separate memories that all say the project exists.
+This is usually cleaner than saving ten memory entries that all say the project exists.
 
 ### Reusable Cast Pass
 
@@ -559,19 +446,21 @@ Create a set using set-level runtime tokens:
 {{npc_2}}
 ```
 
-Then run:
+Run it:
 
 ```txt
 /sideprompt-macroset "Cast Pass" {{npc_1}}="Alice" {{npc_2}}="Bob"
 ```
 
-Later, reuse it:
+Reuse it later:
 
 ```txt
 /sideprompt-macroset "Cast Pass" {{npc_1}}="Mira" {{npc_2}}="Jonas"
 ```
 
-Same set, different cast.
+Same set. Different cast. 💡
+
+---
 
 ## Troubleshooting
 
@@ -579,16 +468,14 @@ Same set, different cast.
 
 Check:
 
-- Is the Side Prompt enabled for automatic after-memory runs?
+- Did memory actually run?
+- Is the Side Prompt enabled for after-memory runs?
 - Is the chat using **Use individually-enabled side prompts**?
 - Is the chat using a Side Prompt Set instead?
-- Does the Side Prompt require a macro that was not supplied?
-- Did memory actually run?
-- Was the Side Prompt missing, deleted, or renamed?
+- Does the prompt need a macro value that was not supplied?
+- Was the prompt deleted, renamed, or moved?
 
-If the chat is using a Side Prompt Set, individually-enabled after-memory checkboxes are ignored for that chat.
-
-That is intentional.
+If the chat uses a Side Prompt Set, individually-enabled after-memory checkboxes are ignored for that chat.
 
 ### My Side Prompt Set did not run.
 
@@ -597,27 +484,24 @@ Check:
 - Is the set selected for this chat?
 - Does the set still exist?
 - Do all rows point to existing Side Prompts?
-- Do the rows have required macro values?
-- Are you expecting automatic after-memory to ask you for missing macros? It cannot.
+- Do all required macros have stored or supplied values?
 
-Automatic runs cannot stop and ask for values. Use stored macro values or run the set manually with `/sideprompt-macroset`.
+Automatic runs cannot ask for missing values. Store macro values in the set or run it manually with `/sideprompt-macroset`.
 
-### One row in my set was skipped.
+### One row was skipped.
 
-The likely causes are:
+Likely causes:
 
 - the referenced Side Prompt was deleted
-- the referenced Side Prompt was renamed or no longer matches
-- the row has unresolved required macros
-- the output failed validation or came back blank
+- the referenced Side Prompt was renamed
+- the row has unresolved macros
+- the model returned a blank or invalid response
 
-The set should warn rather than silently pretending everything worked.
+STMB should warn instead of pretending everything worked.
 
 ### The output is too long.
 
-The Side Prompt is probably too permissive.
-
-Add hard instructions:
+Add hard limits:
 
 ```txt
 Keep the full output under 300 words.
@@ -628,49 +512,35 @@ Use no more than 5 active items.
 ```
 
 ```txt
-Merge related details. Do not preserve every minor event.
+Merge related details. Remove stale, resolved, or redundant details.
 ```
 
-```txt
-Remove stale, resolved, or redundant details.
-```
-
-Models do not naturally know when a tracker is becoming uselessly large. Tell them.
+Models do not naturally know when a tracker has become uselessly large. Tell them.
 
 ### It ran twice.
 
-Check whether you ran it manually and also have it set to run automatically.
+Check for:
 
-With Side Prompt Sets, a selected after-memory set replaces individually-enabled after-memory Side Prompts for that chat. That should prevent one common duplicate-run problem.
-
-If something still ran twice, look for:
-
+- manual run plus automatic run
 - duplicate rows inside a set
 - repeated copies of the same Side Prompt
-- manual run plus automatic run
 - multiple chats or tabs triggering work close together
+
+A selected Side Prompt Set should replace individually-enabled after-memory prompts, which prevents one common duplicate-run problem.
 
 ### The wrong messages were analyzed.
 
-Use an explicit range.
+Use an explicit range:
 
 ```txt
 /sideprompt "Plot Points" 50-80
 ```
 
-For routine use, since-last behavior is convenient. For debugging, explicit ranges are clearer.
+Since-last behavior is convenient. Explicit ranges are better for debugging.
 
 ### The tracker keeps stale information.
 
 Tell the Side Prompt to remove stale information.
-
-Bad:
-
-```txt
-Update the tracker.
-```
-
-Better:
 
 ```txt
 Update the tracker. Remove obsolete speculation, resolved conflicts, and details contradicted by the selected messages.
@@ -678,43 +548,7 @@ Update the tracker. Remove obsolete speculation, resolved conflicts, and details
 
 Trackers do not stay clean by accident.
 
-## What Side Prompts Do Not Mean
-
-### They do not replace memory.
-
-Side Prompts are support runs. Memory is still the system that stores and recalls long-term continuity.
-
-A Side Prompt can help produce memory-friendly information, but it is not the same thing as memory itself.
-
-### They do not automatically make bad prompts good.
-
-A vague Side Prompt will produce vague output.
-
-A bloated Side Prompt will produce bloat.
-
-A contradictory Side Prompt will produce contradiction with more confidence than it deserves.
-
-Garbage in, very organized garbage out.
-
-### They do not mean every chat needs automation.
-
-Some chats only need manual runs.
-
-Automatic after-memory Side Prompts are useful when the output should stay current. They are annoying when they run constantly for information nobody needs.
-
-### Side Prompt Sets are not additive after-memory bundles.
-
-If a chat has a Side Prompt Set selected, the set replaces individually-enabled after-memory Side Prompts for that chat.
-
-This is deliberate.
-
-The selected workflow should be the selected workflow, not the selected workflow plus whatever checkboxes someone forgot about three weeks ago.
-
-### They do not make provider failures impossible.
-
-Side Prompts still rely on model calls.
-
-If the upstream provider fails, times out, returns junk, or gives a blank response, the Side Prompt can still fail. The point is controlled behavior, not miracles.
+---
 
 ## Takeaways
 
@@ -722,18 +556,16 @@ If the upstream provider fails, times out, returns junk, or gives a blank respon
 
 Use Side Prompts when you want structured help maintaining a long chat.
 
-If you only need a one-time analysis, run a Side Prompt manually.
-
-If you want a tracker to stay current, use after-memory Side Prompts or a Side Prompt Set.
+Manual runs are best for one-time analysis. After-memory runs or Side Prompt Sets are best for trackers that should stay current.
 
 ### For Botmakers
 
-Build Side Prompts like maintenance tools, not like roleplay prose.
+Build Side Prompts like maintenance tools, not roleplay prose.
 
-Give them stable headings, clear output rules, and strict update behavior. Use macros when one prompt should work for several NPCs, factions, locations, or projects.
+Use stable headings, strict output rules, and clear update behavior. Use macros when one prompt should work for several NPCs, factions, locations, or projects.
 
 ### For Admins
 
-Side Prompts make STMB behavior easier to structure, but they also add more generated work.
+Side Prompts add more generated work.
 
-That means they should be predictable, inspectable, and boring in the best possible way. Sets help because they make the intended after-memory workflow explicit instead of leaving it to checkbox soup.
+That means they should be predictable, inspectable, and boring in the best possible way. Sets help because they make the intended workflow explicit instead of leaving it to checkbox soup.

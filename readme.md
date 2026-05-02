@@ -236,6 +236,8 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 - `/nextmemory` - Create memory from end of last memory to current message.
 - `/stmb-catchup interval:x start:y end:y` - Create catch-up memories across an existing long chat by processing the selected message range in interval-sized chunks.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Run side prompt (`{{macro}}`s are optional).
+- `/sideprompt-set "Set Name" [X-Y]` - Run a saved Side Prompt Set.
+- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Run a Side Prompt Set and supply reusable macro values.
 - `/sideprompt-on "Name" | all` - Enable a Side Prompt by name or all.
 - `/sideprompt-off "Name" | all` - Disable a Side Prompt by name or all.
 - `/stmb-highest` - Return the highest message id for processed memories in this chat.
@@ -247,7 +249,7 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 Use `/stmb-catchup` when converting an existing long chat into STMB memories. Syntax: `/stmb-catchup interval:x start:y end:y`
 
 Example: `/stmb-catchup interval:30 start:0 end:300`
-s
+
 ---
 
 ## 👥 Group Chat Support
@@ -291,7 +293,11 @@ s
 
 ### 🎡 Trackers & Side Prompts
 
-Side Prompts can be used like trackers and create separate side-prompt entries in your memory lorebook. Side Prompts allow you to track **ongoing state**, not just past events. For example:
+> 📘 Side Prompts have their own guide: [Side Prompts Guide](userguides/side-prompts-en.md). Use that for sets, macros, examples, and troubleshooting.
+> 🎡 Need the click path? See the [Scribe walkthrough for enabling Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
+
+Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. Use them for trackers and support notes that should not bloat the normal character reply, such as:
+
 - 💰 Inventory & Resources ("What items does the user have?")
 - ❤️ Relationship Status ("How does X feel about Y?")
 - 📊 Character Stats ("Current health, skills, reputation")
@@ -299,21 +305,21 @@ Side Prompts can be used like trackers and create separate side-prompt entries i
 - 🌍 World State ("What's changed in the setting?")
 
 #### **Access:** From the Memory Books settings, click “🎡 Trackers & Side Prompts”.
+
 #### **Features:**
-- View all side prompts.
-- Create new or duplicate prompts to experiment with different prompt styles.
-- Edit or delete any preset (including built-ins).
-- Export and import presets as JSON files for backup or sharing.
-- Run them manually or automatically, depending on the template.
-- Use standard SillyTavern macros/placeholders like `{{user}}` and `{{char}}` in side prompt `Prompt`, `Response Format`, `Title`, and `{{keyword}}` fields.
-- Use custom macros/placeholders like `{{npc name}}` (you must supply them when you run `/sideprompt`).
+- View, create, duplicate, edit, delete, export, and import Side Prompts.
+- Run Side Prompts manually, after memory, or as part of a Side Prompt Set.
+- Use standard SillyTavern macros like `{{user}}` and `{{char}}`.
+- Use runtime macros like `{{npc name}}` when a prompt needs a value supplied at run time.
+- Save Side Prompt output as separate side-prompt entries in your memory lorebook.
+
 #### **Usage Tips:**
-- When creating a new prompt, you can copy from built-ins for best compatibility.
-- Side prompts do not have to return JSON! They can return plain text.
-- Side prompts are updated/overwritten. This differentiates them from memories, which are saved sequentially. 
+- Copy from built-ins when making a new prompt.
+- Side Prompts do not have to return JSON. Plain text or Markdown is fine.
+- Side Prompts are usually updated/overwritten; memories are saved sequentially.
 - Manual syntax is `/sideprompt "Name" {{macro}}="value" [X-Y]`.
-- Once you choose a side prompt in slash-command autocomplete, STMB will suggest any required runtime macros for that template.
-- Side prompts with custom runtime macros (not ST default) are manual-only. STMB disables `On Interval` and `On After Memory` from those templates on save/import and warns you when that happens.
+- Use Side Prompt Sets when a chat needs an ordered bundle of trackers.
+- A selected after-memory Side Prompt Set replaces individually-enabled after-memory Side Prompts for that chat.
 - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use.
 
 ---
