@@ -260,6 +260,8 @@ Tous les prompts et presets **doivent** demander à l’IA de ne renvoyer que du
 - `/nextmemory` - Crée une mémoire depuis la fin de la dernière mémoire jusqu’au message actuel.
 - `/stmb-catchup interval:x start:y end:y` - Crée des mémoires de rattrapage pour un long chat existant en traitant la plage de messages sélectionnée par blocs de la taille indiquée par l’intervalle.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Exécute un Side Prompt (`{{macro}}` est optionnel).
+- `/sideprompt-set "Set Name" [X-Y]` - Exécute un Side Prompt Set enregistré.
+- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Exécute un Side Prompt Set et fournit des valeurs de macro réutilisables.
 - `/sideprompt-on "Name" | all` - Active un Side Prompt par nom, ou tous.
 - `/sideprompt-off "Name" | all` - Désactive un Side Prompt par nom, ou tous.
 - `/stmb-highest` - Renvoie l’ID de message le plus élevé pour les mémoires traitées dans ce chat.
@@ -320,7 +322,10 @@ Exemple : `/stmb-catchup interval:30 start:0 end:300`
 
 ### 🎡 Trackers & Side Prompts
 
-Les Side Prompts peuvent être utilisés comme trackers et créer des entrées Side Prompt séparées dans votre lorebook de mémoires. Les Side Prompts permettent de suivre **un état continu**, pas seulement des événements passés. Par exemple :
+> 📘 Les Side Prompts ont leur propre guide : [Guide des Side Prompts](side-prompts-fr.md). Utilisez-le pour les sets, les macros, les exemples et le dépannage.
+> 🎡 Besoin du chemin exact dans l’interface ? Consultez le [guide Scribe pour activer les Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
+
+Les Side Prompts sont des exécutions de prompt STMB séparées, utilisées pour maintenir l’état continu du chat. Utilisez-les pour des trackers et des notes de support qui ne devraient pas alourdir la réponse normale du personnage, par exemple :
 
 - 💰 Inventaire & ressources (“Quels objets l’utilisateur possède-t-il ?”)
 - ❤️ Statut relationnel (“Que ressent X pour Y ?”)
@@ -332,22 +337,20 @@ Les Side Prompts peuvent être utilisés comme trackers et créer des entrées S
 
 #### **Fonctionnalités :**
 
-- Voir tous les Side Prompts.
-- Créer de nouveaux prompts ou les dupliquer pour expérimenter avec différents styles.
-- Modifier ou supprimer n’importe quel preset, y compris les presets intégrés.
-- Exporter et importer des presets comme fichiers JSON pour sauvegarde ou partage.
-- Les exécuter manuellement ou automatiquement, selon le modèle.
-- Utiliser les macros/placeholders SillyTavern standard comme `{{user}}` et `{{char}}` dans les champs Side Prompt `Prompt`, `Response Format`, `Title` et `{{keyword}}`.
-- Utiliser des macros/placeholders personnalisés comme `{{npc name}}` ; vous devez les fournir lorsque vous exécutez `/sideprompt`.
+- Voir, créer, dupliquer, modifier, supprimer, exporter et importer des Side Prompts.
+- Exécuter des Side Prompts manuellement, après une mémoire ou dans le cadre d’un Side Prompt Set.
+- Utiliser les macros SillyTavern standard comme `{{user}}` et `{{char}}`.
+- Utiliser des macros d’exécution comme `{{npc name}}` lorsqu’un prompt a besoin d’une valeur fournie au moment de l’exécution.
+- Enregistrer la sortie du Side Prompt comme des entrées side-prompt séparées dans votre lorebook de mémoires.
 
 #### **Astuces d’utilisation :**
 
-- Lorsque vous créez un nouveau prompt, vous pouvez copier un modèle intégré pour une meilleure compatibilité.
-- Les Side Prompts ne sont pas obligés de renvoyer du JSON. Ils peuvent renvoyer du texte brut.
-- Les Side Prompts sont mis à jour/écrasés. Cela les différencie des mémoires, qui sont sauvegardées séquentiellement.
+- Copiez depuis les modèles intégrés lorsque vous créez un nouveau prompt.
+- Les Side Prompts ne sont pas obligés de renvoyer du JSON. Le texte brut ou le Markdown convient.
+- Les Side Prompts sont généralement mis à jour/écrasés ; les mémoires sont sauvegardées séquentiellement.
 - La syntaxe manuelle est `/sideprompt "Name" {{macro}}="value" [X-Y]`.
-- Après avoir choisi un Side Prompt dans l’autocomplétion des commandes slash, STMB suggérera toutes les macros d’exécution requises par ce modèle.
-- Les Side Prompts avec des macros d’exécution personnalisées qui ne sont pas les macros par défaut de ST sont uniquement manuels. STMB désactive `On Interval` et `On After Memory` pour ces modèles lors de l’enregistrement/import et vous avertit lorsque cela se produit.
+- Utilisez des Side Prompt Sets lorsqu’un chat a besoin d’un bundle ordonné de trackers.
+- Un Side Prompt Set sélectionné pour l’après-mémoire remplace les Side Prompts après mémoire activés individuellement pour ce chat.
 - Bibliothèque supplémentaire de modèles de Side Prompts : [fichier JSON](../resources/SidePromptTemplateLibrary.json). Il suffit de l’importer pour l’utiliser.
 
 ---
