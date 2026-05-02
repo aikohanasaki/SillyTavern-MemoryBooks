@@ -257,6 +257,8 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - `/nextmemory` - 마지막 기억 이후부터 현재 메시지까지로 기억을 생성합니다.
 - `/stmb-catchup interval:x start:y end:y` - 기존의 긴 채팅에서 선택한 메시지 범위를 interval 크기의 구간으로 나누어 캐치업용 메모리를 생성합니다.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - 사이드 프롬프트를 실행합니다. `{{macro}}`는 선택 사항입니다.
+- `/sideprompt-set "Set Name" [X-Y]` - 저장된 Side Prompt Set을 실행합니다.
+- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Side Prompt Set을 실행하고 재사용 가능한 매크로 값을 제공합니다.
 - `/sideprompt-on "Name" | all` - 이름으로 지정한 Side Prompt 또는 모든 Side Prompt를 활성화합니다.
 - `/sideprompt-off "Name" | all` - 이름으로 지정한 Side Prompt 또는 모든 Side Prompt를 비활성화합니다.
 - `/stmb-highest` - 이 채팅에서 처리된 기억의 가장 높은 메시지 ID를 반환합니다.
@@ -315,7 +317,10 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🎡 트래커 & 사이드 프롬프트
 
-사이드 프롬프트는 트래커처럼 사용할 수 있으며, 기억 로어북에 별도의 side-prompt 항목을 생성합니다. 사이드 프롬프트를 통해 과거 사건뿐만 아니라 **진행 중인 상태**를 추적할 수 있습니다. 예:
+> 📘 Side Prompts에는 별도의 가이드가 있습니다: [Side Prompts Guide](side-prompts-ko.md). 세트, 매크로, 예시, 문제 해결은 이 문서를 참고하세요.
+> 🎡 정확한 클릭 경로가 필요하면 [Side Prompts 활성화 Scribe 안내](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)를 참조하세요.
+
+Side Prompts는 진행 중인 채팅 상태를 유지하기 위한 별도의 STMB 프롬프트 실행입니다. 일반 캐릭터 응답을 불필요하게 늘리지 않고 트래커와 보조 메모를 관리할 때 사용합니다. 예:
 
 - 💰 인벤토리 & 자원 ("사용자가 무엇을 가지고 있는가?")
 - ❤️ 관계 상태 ("X는 Y에 대해 어떻게 느끼는가?")
@@ -323,27 +328,23 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - 🎯 퀘스트 진행 ("어떤 목표가 활성화되었는가?")
 - 🌍 월드 상태 ("설정에서 무엇이 변경되었는가?")
 
-#### **접근:** Memory Books 설정에서 `🎡 Trackers & Side Prompts`를 클릭하세요.
+#### **접근:** Memory Books 설정에서 “🎡 Trackers & Side Prompts”를 클릭하세요.
 
 #### **기능:**
-
-- 모든 사이드 프롬프트 보기.
-- 새 프롬프트를 생성하거나 복제하여 다양한 프롬프트 스타일 실험.
-- 내장 프리셋을 포함한 모든 프리셋 편집 또는 삭제.
-- 백업 또는 공유를 위해 프리셋을 JSON 파일로 내보내기 및 가져오기.
-- 템플릿에 따라 수동 또는 자동으로 실행.
-- side prompt의 `Prompt`, `Response Format`, `Title`, `{{keyword}}` 필드에서 `{{user}}`, `{{char}}` 같은 표준 SillyTavern 매크로/플레이스홀더 사용.
-- `{{npc name}}` 같은 사용자 지정 매크로/플레이스홀더 사용. `/sideprompt` 실행 시 값을 제공해야 합니다.
+- Side Prompts를 보기, 생성, 복제, 편집, 삭제, 내보내기, 가져오기할 수 있습니다.
+- Side Prompts를 수동으로 실행하거나, 기억 생성 후 실행하거나, Side Prompt Set의 일부로 실행할 수 있습니다.
+- `{{user}}`, `{{char}}` 같은 표준 SillyTavern 매크로를 사용할 수 있습니다.
+- 실행 시 값이 필요한 프롬프트에는 `{{npc name}}` 같은 런타임 매크로를 사용할 수 있습니다.
+- Side Prompt 출력을 기억 로어북의 별도 side-prompt 항목으로 저장할 수 있습니다.
 
 #### **사용 팁:**
-
-- 새 프롬프트를 만들 때 내장 프롬프트를 복사하면 호환성이 가장 좋습니다.
-- 사이드 프롬프트는 JSON을 반환할 필요가 없습니다. 일반 텍스트를 반환해도 됩니다.
-- 사이드 프롬프트는 갱신/덮어쓰기됩니다. 순차적으로 저장되는 기억과 다른 점입니다.
+- 새 프롬프트를 만들 때는 내장 프롬프트를 복사해서 시작하세요.
+- Side Prompts는 JSON을 반환할 필요가 없습니다. 일반 텍스트나 Markdown도 괜찮습니다.
+- Side Prompts는 보통 갱신/덮어쓰기됩니다. 기억은 순차적으로 저장됩니다.
 - 수동 구문: `/sideprompt "Name" {{macro}}="value" [X-Y]`.
-- 명령 자동완성에서 side prompt를 고르면 STMB가 해당 템플릿에 필요한 런타임 매크로를 제안합니다.
-- 사용자 지정 런타임 매크로(ST 기본값이 아닌 매크로)가 있는 side prompt는 수동 전용입니다. STMB는 저장/가져오기 시 해당 템플릿의 `On Interval`과 `On After Memory`를 비활성화하고 경고를 표시합니다.
-- 추가 사이드 프롬프트 템플릿 라이브러리 [JSON 파일](../resources/SidePromptTemplateLibrary.json)은 가져오기만 하면 바로 사용할 수 있습니다.
+- 채팅에 정렬된 트래커 묶음이 필요하면 Side Prompt Sets를 사용하세요.
+- 기억 생성 후 실행하도록 선택된 Side Prompt Set은 해당 채팅에서 개별적으로 활성화된 기억 생성 후 Side Prompts를 대체합니다.
+- 추가 Side Prompts 템플릿 라이브러리는 [JSON 파일](../resources/SidePromptTemplateLibrary.json)로 제공됩니다. 가져오기만 하면 사용할 수 있습니다.
 
 ---
 

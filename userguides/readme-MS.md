@@ -253,6 +253,8 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 - `/nextmemory` - Cipta memori dari akhir memori terakhir hingga mesej semasa.
 - `/stmb-catchup interval:x start:y end:y` - Mencipta memori susulan untuk chat panjang sedia ada dengan memproses julat mesej yang dipilih dalam bahagian mengikut saiz interval.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Jalankan side prompt (`{{macro}}` adalah pilihan).
+- `/sideprompt-set "Set Name" [X-Y]` - Jalankan Side Prompt Set yang disimpan.
+- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Jalankan Side Prompt Set dan bekalkan nilai makro yang boleh digunakan semula.
 - `/sideprompt-on "Name" | all` - Hidupkan side prompt mengikut nama atau semua.
 - `/sideprompt-off "Name" | all` - Matikan side prompt mengikut nama atau semua.
 - `/stmb-highest` - Kembalikan message id tertinggi bagi memori yang telah diproses dalam sembang ini.
@@ -329,7 +331,10 @@ Ini bertujuan untuk penukaran susulan, bukan penggunaan biasa secara berterusan.
 
 ### 🎡 Penjejak & Prom Sampingan
 
-Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side prompt yang berasingan dalam lorebook memori anda. Prom Sampingan membolehkan anda menjejak **keadaan semasa**, bukan hanya peristiwa lalu. Contohnya:
+> 📘 Side Prompts mempunyai panduan sendiri: [Side Prompts Guide](side-prompts-ms.md). Gunakan panduan itu untuk set, makro, contoh, dan penyelesaian masalah.
+> 🎡 Perlukan laluan klik yang tepat? Lihat [panduan Scribe untuk mengaktifkan Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
+
+Side Prompts ialah larian prompt STMB yang berasingan untuk mengekalkan keadaan sembang yang sedang berjalan. Gunakannya untuk penjejak dan nota sokongan yang tidak patut mengembungkan balasan watak biasa, contohnya:
 
 - 💰 Inventori & Sumber ("Apa item yang pengguna miliki?")
 - ❤️ Status Hubungan ("Apa perasaan X terhadap Y?")
@@ -337,28 +342,25 @@ Prom Sampingan boleh digunakan seperti penjejak dan akan mencipta entri side pro
 - 🎯 Kemajuan Misi ("Apa matlamat yang aktif?")
 - 🌍 Keadaan Dunia ("Apa yang berubah dalam latar?")
 
-#### **Akses**
-Daripada tetapan Memory Books, klik `🎡 Penjejak & Prom Sampingan`.
+#### **Akses:** Daripada tetapan Memory Books, klik “🎡 Penjejak & Prom Sampingan”.
 
-#### **Ciri-ciri**
+#### **Ciri-ciri:**
+- Lihat, cipta, gandakan, edit, padam, eksport, dan import Side Prompts.
+- Jalankan Side Prompts secara manual, selepas memori, atau sebagai sebahagian daripada Side Prompt Set.
+- Gunakan makro SillyTavern standard seperti `{{user}}` dan `{{char}}`.
+- Gunakan makro runtime seperti `{{npc name}}` apabila prompt memerlukan nilai yang dibekalkan semasa dijalankan.
+- Simpan output Side Prompt sebagai entri side-prompt yang berasingan dalam lorebook memori anda.
 
-- Lihat semua prom sampingan.
-- Cipta prom baharu atau gandakan prom sedia ada untuk bereksperimen dengan gaya yang berbeza.
-- Edit atau padam mana-mana pratetap, termasuk yang terbina dalam.
-- Eksport dan import pratetap sebagai fail JSON untuk sandaran atau perkongsian.
-- Jalankan secara manual atau automatik, bergantung pada templat.
-- Gunakan makro/placeholder SillyTavern standard seperti `{{user}}` dan `{{char}}` dalam medan `Prompt`, `Response Format`, `Title`, dan `{{keyword}}` bagi side prompt.
-- Gunakan makro tersuai seperti `{{npc name}}` yang anda bekalkan apabila menjalankan `/sideprompt`.
+#### **Tip Penggunaan:**
+- Salin daripada templat terbina dalam apabila mencipta prompt baharu.
+- Side Prompts tidak perlu mengembalikan JSON. Teks biasa atau Markdown juga boleh digunakan.
+- Side Prompts biasanya dikemas kini/ditindih; memori disimpan secara berurutan.
+- Sintaks manual ialah `/sideprompt "Name" {{macro}}="value" [X-Y]`.
+- Gunakan Side Prompt Sets apabila sembang memerlukan himpunan penjejak yang tersusun.
+- Side Prompt Set yang dipilih untuk dijalankan selepas memori akan menggantikan Side Prompts individu yang dihidupkan untuk dijalankan selepas memori dalam sembang itu.
+- Pustaka Templat Side Prompts tambahan tersedia sebagai [fail JSON](../resources/SidePromptTemplateLibrary.json). Import sahaja untuk digunakan.
 
-#### **Tip Penggunaan**
-
-- Apabila mencipta prom baharu, anda boleh menyalin daripada terbina dalam untuk keserasian terbaik.
-- Side prompt tidak perlu mengembalikan JSON. Ia boleh mengembalikan teks biasa.
-- Side prompt dikemas kini/ditindih. Ini membezakannya daripada memori yang disimpan secara berurutan.
-- Sintaks manual ialah `/sideprompt "Nama" {{macro}}="value" [X-Y]`.
-- Selepas anda memilih side prompt dalam autolengkap perintah, STMB akan mencadangkan makro runtime yang diperlukan untuk templat tersebut.
-- Side prompt dengan makro runtime tersuai (bukan ST default) adalah manual sahaja. STMB mematikan `On Interval` dan `On After Memory` daripada templat itu semasa simpan/import dan memaparkan amaran apabila itu berlaku.
-- Pustaka templat Side Prompts tambahan terdapat dalam [fail JSON](resources/SidePromptTemplateLibrary.json). Hanya import untuk digunakan.
+---
 
 ### 🧠 Integrasi Regex untuk Penyesuaian Lanjutan
 
