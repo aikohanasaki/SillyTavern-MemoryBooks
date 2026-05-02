@@ -2,6 +2,10 @@
 
 **← [Back to README](readme.md)**
 
+## v6.5.0 (May 2, 2026)
+- Add side prompt sets. 
+- Add specific side prompt documentation.
+
 ## v6.4.0 (May 1, 2026)
 - Add per-side prompt lorebook overrides.
 - Add `/stmb-catchup interval:x start:y end:y` for converting existing long chats into STMB memories in interval-sized chunks.
