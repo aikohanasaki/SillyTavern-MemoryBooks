@@ -233,6 +233,8 @@ Semua prompt dan preset **harus** menginstruksikan AI agar hanya mengembalikan J
 - `/nextmemory` - Membuat memori dari akhir memori terakhir sampai pesan saat ini.
 - `/stmb-catchup interval:x start:y end:y` - Membuat memori susulan untuk chat panjang yang sudah ada dengan memproses rentang pesan yang dipilih dalam potongan sesuai ukuran interval.
 - `/sideprompt "Nama" {{macro}}="value" [X-Y]` - Menjalankan side prompt (macro `{{...}}` opsional).
+- `/sideprompt-set "Nama Set" [X-Y]` - Menjalankan Side Prompt Set yang tersimpan.
+- `/sideprompt-macroset "Nama Set" {{macro}}="value" [X-Y]` - Menjalankan Side Prompt Set dan memberikan nilai macro yang dapat dipakai ulang.
 - `/sideprompt-on "Nama" | all` - Mengaktifkan side prompt berdasarkan nama atau semuanya.
 - `/sideprompt-off "Nama" | all` - Menonaktifkan side prompt berdasarkan nama atau semuanya.
 - `/stmb-highest` - Mengembalikan message id tertinggi untuk memori yang sudah diproses di chat ini.
@@ -304,7 +306,11 @@ Ini ditujukan untuk konversi susulan, bukan untuk penggunaan rutin sehari-hari. 
 
 ### 🎡 Pelacak & Prompt Sampingan
 
-Side Prompt dapat dipakai seperti tracker dan membuat entri side prompt terpisah di lorebook memori Anda. Side Prompt memungkinkan Anda melacak **keadaan yang sedang berlangsung**, bukan hanya kejadian masa lalu. Contohnya:
+> 📘 Side Prompt punya panduan sendiri: [Panduan Side Prompt](side-prompts-id.md). Gunakan itu untuk set, macro, contoh, dan pemecahan masalah.
+> 🎡 Perlu jalur klik yang tepat? Lihat [panduan Scribe untuk mengaktifkan Side Prompt](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
+
+Side Prompt adalah proses prompt STMB terpisah untuk memelihara keadaan chat yang sedang berlangsung. Gunakan untuk tracker dan catatan pendukung yang tidak perlu membuat balasan karakter normal membengkak, seperti:
+
 - 💰 Inventaris & Sumber Daya ("Item apa yang dimiliki pengguna?")
 - ❤️ Status Hubungan ("Bagaimana perasaan X terhadap Y?")
 - 📊 Statistik Karakter ("Kesehatan, keterampilan, reputasi saat ini")
@@ -312,22 +318,24 @@ Side Prompt dapat dipakai seperti tracker dan membuat entri side prompt terpisah
 - 🌍 Keadaan Dunia ("Apa yang berubah di latar?")
 
 #### **Akses:** Dari pengaturan Memory Books, klik “🎡 Pelacak & Prompt Sampingan”.
+
 #### **Fitur:**
-- Melihat semua side prompt.
-- Membuat prompt baru atau menduplikasi prompt untuk bereksperimen dengan gaya prompt yang berbeda.
-- Mengedit atau menghapus preset apa pun, termasuk bawaan.
-- Mengekspor dan mengimpor preset sebagai file JSON untuk cadangan atau berbagi.
-- Menjalankan secara manual atau otomatis, tergantung templatenya.
-- Menggunakan macro/placeholder standar SillyTavern seperti `{{user}}` dan `{{char}}` di field side prompt `Prompt`, `Response Format`, `Title`, dan `{{keyword}}`.
-- Menggunakan macro/placeholder kustom seperti `{{npc name}}` (Anda harus memberikannya saat menjalankan `/sideprompt`).
+
+- Melihat, membuat, menduplikasi, mengedit, menghapus, mengekspor, dan mengimpor Side Prompt.
+- Menjalankan Side Prompt secara manual, setelah memori, atau sebagai bagian dari Side Prompt Set.
+- Menggunakan macro standar SillyTavern seperti `{{user}}` dan `{{char}}`.
+- Menggunakan macro runtime seperti `{{npc name}}` ketika prompt membutuhkan nilai saat dijalankan.
+- Menyimpan output Side Prompt sebagai entri side-prompt terpisah di lorebook memori Anda.
+
 #### **Tips Penggunaan:**
-- Saat membuat prompt baru, Anda dapat menyalin dari bawaan untuk kompatibilitas terbaik.
-- Side prompt tidak harus mengembalikan JSON. Mereka bisa mengembalikan teks biasa.
-- Side prompt diperbarui/ditimpa. Ini membedakannya dari memori, yang disimpan berurutan.
+
+- Salin dari bawaan saat membuat prompt baru.
+- Side Prompt tidak harus mengembalikan JSON. Teks biasa atau Markdown tidak masalah.
+- Side Prompt biasanya diperbarui/ditimpa; memori disimpan berurutan.
 - Sintaks manual: `/sideprompt "Nama" {{macro}}="value" [X-Y]`.
-- Setelah Anda memilih side prompt di autocomplete perintah slash, STMB akan menyarankan macro runtime yang diperlukan untuk template itu.
-- Side prompt dengan macro runtime kustom (bukan default ST) hanya bisa dipakai manual. STMB menonaktifkan `On Interval` dan `On After Memory` dari template tersebut saat simpan/impor dan akan memberi peringatan.
-- Pustaka Template Side Prompt Tambahan ada di [file JSON](../resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan.
+- Gunakan Side Prompt Set saat chat membutuhkan bundel tracker yang berurutan.
+- Side Prompt Set yang dipilih untuk setelah memori menggantikan Side Prompt setelah memori yang diaktifkan satu per satu untuk chat tersebut.
+- Pustaka Template Side Prompt Tambahan tersedia sebagai [file JSON](../resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan.
 
 ---
 
