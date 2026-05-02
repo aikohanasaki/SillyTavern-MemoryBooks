@@ -1,110 +1,120 @@
-# 📕 Memory Books (SillyTavern 扩展)
+# 📕 Memory Books（SillyTavern 扩展）
 
-这是下一代 SillyTavern（酒馆）扩展，用于自动、结构化且可靠地创建记忆。在聊天中标记场景，利用 AI 生成基于 JSON 的总结，并将它们存储在您的世界书（Lorebook）中。支持群聊、高级配置文件管理、侧边提示词/追踪器，以及多层级记忆整合。
+这是下一代 SillyTavern 扩展，用于自动、结构化、可靠地创建记忆。在聊天中标记场景，使用 AI 生成基于 JSON 的总结，并将它们作为条目存入您的世界书（lorebook）。支持群聊、高级配置文件管理、Side Prompt/追踪器，以及多层级记忆整合。
 
 ### ❓ 词汇表
-- Scene (场景) → Memory (记忆)
-- Many Memories (多个记忆) → Summary / Consolidation (总结 / 整合)
-- Always-On (常驻) → Side Prompt / Tracker (侧边提示词/追踪器)
+- Scene（场景）→ Memory（记忆）  
+- Many Memories（多个记忆）→ Summary / Consolidation（总结 / 整合）  
+- Always-On（常驻）→ Side Prompt（Tracker / 追踪器）
 
 ## ❗ 请先阅读！
 
 从这里开始：
-* ⚠️‼️请阅读 [前置条件](#-前置条件-prerequisites) 以获取安装注意事项（特别是如果您运行文本补全 API）。
-* ❓ [常见问题 (FAQ)](#faq-常见问题)
-* 🛠️ [故障排除](#故障排除)
+* ⚠️‼️ 请阅读[前置条件](#-前置条件)，了解安装注意事项，特别是使用 Text Completion API 时。
+* 📽️ [Quickstart Video](https://youtu.be/mG2eRH_EhHs) — 仅英文。
+* ❓ [常见问题](#faq)
+* 🛠️ [故障排除](#troubleshooting)
 
 其他链接：
-* 📘 [用户指南 (简体中文)](USER_GUIDE-zh-cn.md)
-* 💡 [STMB 工作原理 (简体中文)](howSTMBworks-zh-cn.md)
+* 📘 [用户指南（简体中文）](USER_GUIDE-zh-cn.md)
 * 📋 [版本历史 & 更新日志](../changelog.md)
-* 💡 [配合 📚 Lorebook Ordering 使用 📕 Memory Books](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md)
+* 💡 [配合 📕 Memory Books 使用 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md)
 
-> 注意：支持多种语言：请参阅 [`/locales`](../locales) 文件夹查看列表。国际化/本地化的自述文件和用户指南可以在 [`/userguides`](./) 文件夹中找到。
-> 世界书转换器和侧边提示词模板库位于 [`/resources`](../resources) 文件夹中。
-
----
+> 注意：支持多种语言。请参阅 [`/locales`](../locales) 文件夹查看列表。本地化 Readme 和用户指南位于 [`/userguides`](./) 文件夹。  
+> 世界书转换器和 Side Prompt 模板库位于 [`/resources`](../resources) 文件夹。
 
 ## 📑 目录
 
-- [📋 前置条件 (Prerequisites)](#-前置条件-prerequisites)
-  - [📕 ST Memory Books 的 KoboldCpp 使用技巧](#-st-memory-books-的-koboldcpp-使用技巧)
-  - [📕 ST Memory Books 的 Llama.cpp 使用技巧](#-st-memory-books-的-llamacpp-使用技巧)
-- [💡 推荐的全局世界信息/世界书激活设置](#-推荐的全局世界信息世界书激活设置)
-- [🚀 快速开始](#-快速开始)
+- [前置条件](#-前置条件)
+  - [KoboldCpp 使用 📕 ST Memory Books 的提示](#koboldcpp-使用--st-memory-books-的提示)
+  - [Llama.cpp 使用 📕 ST Memory Books 的提示](#llamacpp-使用--st-memory-books-的提示)
+- [推荐的全局 World Info/Lorebook 激活设置](#-推荐的全局-world-infolorebook-激活设置)
+- [快速开始](#-快速开始)
   - [1. 安装 & 加载](#1-安装--加载)
   - [2. 标记场景](#2-标记场景)
   - [3. 创建记忆](#3-创建记忆)
-- [🆕 斜杠命令快捷方式](#-斜杠命令快捷方式)
-- [👥 群聊支持](#-群聊支持)
-- [🧭 操作模式](#-操作模式)
-  - [自动模式 (默认)](#自动模式-默认)
-  - [自动创建世界书模式 ⭐ *v4.2.0 新增*](#自动创建世界书模式--v420-新增)
-  - [手动世界书模式](#手动世界书模式)
-- [🧩 记忆类型：场景 (Scenes) vs 总结 (Summaries)](#-记忆类型场景-scenes-vs-总结-summaries)
-  - [🎬 场景记忆 (默认)](#-场景记忆-默认)
-  - [🌈 总结整合 (Summary Consolidation)](#-总结整合-summary-consolidation)
-- [📝 记忆生成](#-记忆生成)
-  - [仅限 JSON 输出](#仅限-json-输出)
+- [记忆类型：场景与总结](#-记忆类型场景与总结)
+  - [场景记忆（默认）](#-场景记忆默认)
+  - [总结整合](#-总结整合)
+- [记忆生成](#-记忆生成)
+  - [仅 JSON 输出](#仅-json-输出)
   - [内置预设](#内置预设)
   - [自定义提示词](#自定义提示词)
-- [📚 世界书集成](#-世界书集成)
-  - [🎡 追踪器 & 侧边提示词](#-追踪器--侧边提示词)
-  - [🧠 Regex (正则表达式) 集成实现高级自定义](#-regex-正则表达式-集成实现高级自定义)
-- [👤 配置文件管理 (Profile Management)](#-配置文件管理-profile-management)
-- [⚙️ 设置与配置](#-设置与配置)
+- [世界书集成](#-世界书集成)
+- [斜杠命令](#-斜杠命令)
+- [群聊支持](#-群聊支持)
+- [操作模式](#-操作模式)
+  - [自动模式（默认）](#自动模式默认)
+  - [自动创建世界书模式](#自动创建世界书模式)
+  - [手动世界书模式](#手动世界书模式)
+- [追踪器 & Side Prompts](#-追踪器--side-prompts)
+- [Regex 集成：高级自定义](#-regex-集成高级自定义)
+- [配置文件管理](#-配置文件管理)
+- [设置与配置](#-设置与配置)
   - [全局设置](#全局设置)
   - [配置文件字段](#配置文件字段)
-- [🏷️ 标题格式化](#-标题格式化)
-- [🧵 上下文记忆](#-上下文记忆)
-- [🎨 视觉反馈与辅助功能](#-视觉反馈与辅助功能)
-  - [我在扩展菜单里找不到 Memory Books！](#我在扩展菜单里找不到-memory-books)
-  - [我需要运行 Vectors (向量) 吗？](#我需要运行-vectors-向量-吗)
-  - [我应该为记忆制作一个单独的世界书，还是可以使用我已经用于其他事情的同一个世界书？](#我应该为记忆制作一个单独的世界书还是可以使用我已经用于其他事情的同一个世界书)
-  - [如果 Memory Books 是唯一的世界书，我应该使用 '延迟直到递归' 吗？](#如果-memory-books-是唯一的世界书我应该使用-延迟直到递归-吗)
-- [📚 配合 Lorebook Ordering (STLO) 提升体验](#-配合-lorebook-ordering-stlo-提升体验)
-- [📝 字符策略 (v4.5.1+)](#-字符策略-v451)
-- [请参阅 字符策略详情 以获取示例和迁移说明。](#请参阅-字符策略详情-以获取示例和迁移说明)
+- [标题格式化](#-标题格式化)
+- [上下文记忆](#-上下文记忆)
+- [视觉反馈与辅助功能](#-视觉反馈与辅助功能)
+- [FAQ](#faq)
+  - [我应该为记忆单独创建一本世界书，还是可以使用已经用于其他用途的同一本世界书？](#我应该为记忆单独创建一本世界书还是可以使用已经用于其他用途的同一本世界书)
+  - [我需要运行 Vectors 吗？](#我需要运行-vectors-吗)
+  - [如果 Memory Books 是唯一的世界书，我应该使用 Delay until recursion 吗？](#如果-memory-books-是唯一的世界书我应该使用-delay-until-recursion-吗)
+  - [为什么 AI 看不到我的条目？](#为什么-ai-看不到我的条目)
+- [Troubleshooting](#troubleshooting)
+- [配合 Lorebook Ordering (STLO) 提升体验](#-配合-lorebook-ordering-stlo-提升体验)
+- [字符策略](#-字符策略-v451)
+- [面向开发者](#-面向开发者)
+  - [构建扩展](#构建扩展)
+  - [Git hooks](#git-hooks)
 
-## 📋 前置条件 (Prerequisites)
+---
 
-- **SillyTavern:** 1.14.0+ (建议使用最新版)
-- **场景选择:** 必须设置开始和结束标记 (开始 < 结束)。
-- **聊天补全支持 (Chat Completion):** 完全支持 OpenAI, Claude, Anthropic, OpenRouter 或其他聊天补全 API。
-- **文本补全支持 (Text Completion):** 当通过聊天补全 (OpenAI-兼容) API 端点连接时，支持文本补全 API (Kobold, TextGen 等)。我建议按照下方的 KoboldCpp 提示设置聊天补全 API 连接（如果您使用的是 Ollama 或其他软件，请按需更改）。之后，设置一个 STMB 配置文件并使用“Custom (自定义)”（推荐）或全手动配置（仅当自定义失败或您有多个自定义连接时）。
-**注意**: 请注意，如果您使用文本补全，您必须...
+## 📋 前置条件
 
-### 📕 ST Memory Books 的 KoboldCpp 使用技巧
-在 ST 中进行如下设置（您可以在 STMB 正常工作后切回文本补全模式）：
-- API 选择 Chat Completion (聊天补全)
-- 选择 Custom (自定义) 聊天补全源
-- 端点使用 `http://localhost:5001/v1` (也可以使用 `127.0.0.1:5000/v1`)
-- 在 "custom API key" 中输入任何内容 (无所谓，但 ST 要求填一个)
-- 模型 ID 必须是 `koboldcpp/modelname` (不要在模型名称中包含 .gguf！)
-- 下载一个聊天补全预设 (Chat Completion Preset) 并导入它 (任何一个都可以)，仅仅是为了让你**拥有**一个聊天补全预设。这避免了“不支持 (not supported)”的错误。
-- 更改聊天补全预设的最大响应长度 (max response length)，使其至少为 2048；推荐 4096。(太小意味着你面临被截断的风险。)
+- **SillyTavern:** 1.14.0+（建议使用最新版）。
+- **场景选择:** 必须设置开始和结束标记（开始 < 结束）。
+- **Chat Completion 支持:** 完整支持 OpenAI、Claude、Anthropic、OpenRouter 或其他 Chat Completion API。
+- **Text Completion 支持:** Text Completion API（Kobold、TextGen 等）在通过 Chat Completion（OpenAI 兼容）API endpoint 连接时受支持。建议按照下方 KoboldCpp 提示设置 Chat Completion API 连接（如果使用 Ollama 或其他软件，请按需调整）。之后设置一个 STMB 配置文件，并使用 Custom（推荐）或全手动配置（仅当 Custom 失败，或您有多个 custom 连接时使用）。
 
-### 📕 ST Memory Books 的 Llama.cpp 使用技巧
-就像 Kobold 一样，在 ST 中将其设置为 _聊天补全 API_ (验证 STMB 工作正常后，您可以切回文本补全)：
-- 为聊天补全 API 创建一个新的连接配置文件
-- 补全源 (Completion Source): `Custom (Open-AI Compatible)`
-- 端点 URL (Endpoint URL): 如果在 docker 中运行 ST，则为 `http://host.docker.internal:8080/v1`，否则为 `http://localhost:8080/v1`
-- 自定义 API 密钥 (Custom API key): 输入任何内容 (ST 要求填一个)
-- 模型 ID: `llama2-7b-chat.gguf` (或者你的模型名，如果你在 llama.cpp 中只运行一个模型，这并不重要)
-- 提示词后处理 (Prompt post-processing): 无 (none)
+**注意:** 如果使用 Text Completion，必须拥有一个 Chat Completion Preset。
 
-为了启动 Llama.cpp，我建议将类似以下的内容放入 shell 脚本或 bat 文件中，以便更容易启动：
+### KoboldCpp 使用 📕 ST Memory Books 的提示
+
+在 ST 中这样设置。确认 STMB 能正常工作后，可以再切回 Text Completion。
+
+- Chat Completion API
+- Custom chat completion source
+- endpoint 使用 `http://localhost:5001/v1`（也可以使用 `127.0.0.1:5000/v1`）
+- 在 `custom API key` 中输入任意内容（内容无所谓，但 ST 要求填写）
+- Model ID 必须是 `koboldcpp/modelname`（不要在模型名中写 `.gguf`）
+- 下载并导入一个 Chat Completion Preset，任意一个都可以。这样可以避免 `not supported` 错误。
+- 将 Chat Completion Preset 的 max response length 设为至少 2048；推荐 4096。太小可能导致响应被截断。
+
+### Llama.cpp 使用 📕 ST Memory Books 的提示
+
+和 Kobold 一样，在 ST 中将以下内容设置为 _Chat Completion API_。验证 STMB 正常工作后，可以再切回去。
+
+- 为 Chat Completion API 创建一个新的 connection profile。
+- Completion Source: `Custom (Open-AI Compatible)`。
+- Endpoint URL: 如果 ST 在 Docker 中运行，使用 `http://host.docker.internal:8080/v1`；否则使用 `http://localhost:8080/v1`。
+- Custom API key: 输入任意内容（ST 要求填写）。
+- Model ID: `llama2-7b-chat.gguf` 或您的模型名；如果 llama.cpp 只运行一个模型，具体名称并不关键。
+- Prompt post-processing: none。
+
+为了更方便启动 Llama.cpp，建议把类似下面的内容放进 shell 脚本或 bat 文件：
+
 ```sh
 llama-server -m <model-path> -c <context-size> --port 8080
-
 ```
 
-## 💡 推荐的全局世界信息/世界书激活设置
+## 💡 推荐的全局 World Info/Lorebook 激活设置
 
-* **匹配全词 (Match Whole Words):** 保持未选中 (false)
-* **扫描深度 (Scan Depth):** 越高越好 (我设置为 8)
-* **最大递归步数 (Max Recursion Steps):** 2 (一般建议，非必须)
-* **上下文百分比 (Context %):** 80% (基于 100,000 token 的上下文窗口) - 假设您没有超长的聊天记录或庞大的角色设定。
+- **Match Whole Words:** 保持未选中（false）。
+- **Scan Depth:** 越高越好（我设置为 8）。
+- **Max Recursion Steps:** 2（一般建议，不是硬性要求）。
+- **Context %:** 80%（基于 100,000 token 的上下文窗口）——假设您没有非常庞大的聊天历史或角色设定。
+- 额外说明：如果记忆世界书是您唯一的世界书，请确保 STMB 配置文件中禁用了 `Delay until recursion`，否则记忆不会触发。
 
 ---
 
@@ -112,410 +122,440 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 1. **安装 & 加载**
 
-* 加载 SillyTavern 并选择一个角色或群聊。
-* 等待聊天消息上出现箭头按钮 (► ◄)（最多可能需要 10 秒）。
+- 加载 SillyTavern，并选择一个角色或群聊。
+- 等待聊天消息上出现箭头按钮（► ◄）。这可能需要最多 10 秒。
+
+![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **标记场景**
 
-* 点击场景第一条消息上的 ►。
-* 点击最后一条消息上的 ◄。
+- 点击场景第一条消息上的 ►。
+- 点击场景最后一条消息上的 ◄。
+
+下面是点击后箭头按钮外观的一些示例。颜色可能会因您的 CSS 主题而不同。
+
+![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **创建记忆**
 
-* 打开扩展菜单 (魔法棒图标 🪄) 并点击 "Memory Books"，或使用 `/creatememory` 斜杠命令。
-* 如果提示确认设置（配置文件、上下文、API/模型），请确认。
-* 等待 AI 生成并自动写入世界书条目。
+- 打开 Extensions 菜单（输入框左侧的魔法棒 🪄），点击 `Memory Books`，或使用 `/creatememory` 斜杠命令。
+- 如果出现提示，确认配置文件、上下文、API/模型设置。
+- 等待 AI 生成，并自动创建世界书条目。
 
 ---
 
-## 🆕 斜杠命令快捷方式
+## 🧩 记忆类型：场景与总结
 
-* `/creatememory` 将使用现有的箭头开始/结束标记来创建记忆。
-* `/scenememory x-y` 将创建一个从消息 x 开始到消息 y 结束的记忆。
-* `/nextmemory` 将创建一个包含自上次记忆以来所有消息的记忆。
-* `/stmb-catchup interval:x start:y end:y` - 为已有的长聊天创建补记忆，通过按指定间隔大小分段处理所选消息范围来生成记忆。
+📕 Memory Books 支持 **场景记忆** 和 **多层级总结整合**，它们面向不同类型的连续性需求。
 
-### `/stmb-catchup`
+### 🎬 场景记忆（默认）
 
-当你想把已有的长聊天转换为 STMB 记忆时，使用 `/stmb-catchup`。
+场景记忆捕捉某个消息范围内 **发生了什么**。
 
-语法：
-
-```txt
-/stmb-catchup interval:x start:y end:y
-```
-
-示例：
-
-```txt
-/stmb-catchup interval:30 start:0 end:300
-```
-
-参数：
-
-- `interval:x` - 每条生成记忆大约包含的消息数量。
-- `start:y` - 要包含的第一条消息编号。
-- `end:y` - 要包含的最后一条消息编号。
-
-此命令用于补录转换，不适合日常持续使用。STMB 追上现有聊天进度后，请使用自动摘要或 `/nextmemory`。
-
----
-
-## 👥 群聊支持
-
-* 所有功能均适用于群聊。
-* 场景标记、记忆创建和世界书集成都存储在当前聊天元数据中。
-* 无需特殊设置——只需选择群聊并正常使用即可。
-
----
-
-## 🧭 操作模式
-
-### **自动模式 (默认)**
-
-* **工作原理:** 自动使用绑定到当前聊天的世界书。
-* **适用场景:** 简单快捷。大多数用户应从这里开始。
-* **使用方法:** 确保在您的角色或群聊的“聊天世界书 (Chat Lorebooks)”下拉菜单中选择了一个世界书。
-
-### **自动创建世界书模式** ⭐ *v4.2.0 新增*
-
-* **工作原理:** 当不存在世界书时，使用您的自定义命名模板自动创建并绑定一个新的世界书。
-* **适用场景:** 新用户和快速设置。非常适合一键创建世界书。
-* **使用方法:**
-1. 在扩展设置中启用 "自动创建故事书 (如果不存在)"。
-2. 配置您的命名模板 (默认: "LTM - {{char}} - {{chat}}")。
-3. 当您在没有绑定世界书的情况下创建记忆时，系统会自动创建并绑定一个。
-
-
-* **模板占位符:** {{char}} (角色名), {{user}} (您的名字), {{chat}} (聊天 ID)
-* **智能编号:** 如果存在重复名称，自动添加数字 (2, 3, 4...)。
-* **注意:** 不能与“手动世界书模式”同时使用。
-
-### **手动世界书模式**
-
-* **工作原理:** 允许您按聊天为记忆选择不同的世界书，忽略绑定的主聊天世界书。
-* **适用场景:** 希望将记忆定向到特定的、独立的世界书的高级用户。
-* **使用方法:**
-1. 在扩展设置中启用 "启用手动故事书模式"。
-2. 第一次在聊天中创建记忆时，系统会提示您选择一个世界书。
-3. 此选择将针对该特定聊天保存，直到您清除它或切换回自动模式。
-
-
-* **注意:** 不能与“自动创建世界书模式”同时使用。
-
----
-
-## 🧩 记忆类型：场景 (Scenes) vs 总结 (Summaries)
-
-📕 Memory Books 支持 **两个层级的叙事记忆**，分别针对不同类型的连续性设计。
-
-### 🎬 场景记忆 (默认)
-
-场景记忆捕捉特定消息范围内 **发生了什么**。
-
-* 基于明确的场景选择 (► ◄)
-* 适合即时回忆
-* 保留对话、动作和直接结果
-* 最好频繁使用
+- 基于明确的场景选择（► ◄）。
+- 适合即时、细节级回忆。
+- 保留对话、动作和直接后果。
+- 最好频繁使用。
 
 这是标准且最常用的记忆类型。
 
 ---
 
-### 🌈 总结整合 (Summary Consolidation)
+### 🌈 总结整合
 
-总结整合捕捉跨越多个记忆或总结 **随时间发生的变化**。
+总结整合捕捉多个记忆或总结中 **随时间发生的变化**。
 
-与总结事件不同，篇章总结侧重于：
+它不是总结单一场景，而是关注：
 
-* 角色发展和关系转变
-* 长期目标、紧张局势和决议
-* 情感轨迹和叙事方向
-* 应保持稳定的持久状态变化
+- 角色发展与关系变化；
+- 长期目标、紧张关系与解决；
+- 情感轨迹和叙事方向；
+- 需要保持稳定的持久状态变化。
 
-总结整合是 **更高级别、频率更低** 的记忆，旨在防止长期聊天中的角色漂移和叙事丢失。
+第一个整合层级是 **Arc**，由场景记忆构成。更长的故事还支持更高层级：
 
-> 💡 将总结整合视为 *剧季回顾*，而不是场景日志。
+- Arc
+- Chapter
+- Book
+- Legend
+- Series
+- Epic
 
-#### 何时使用总结整合
+> 💡 可以把它们理解为 *回顾/概述*，不是场景日志。
 
-* 在发生重大关系转变后
-* 在故事章节或篇章结束时
-* 当动机、信任或权力动态发生变化时
-* 在开始故事的新阶段之前
+#### 何时使用整合总结
+
+- 发生重大关系变化之后。
+- 故事章节或篇章结束时。
+- 动机、信任或权力动态发生变化时。
+- 开始故事新阶段之前。
 
 #### 工作方式
 
-* 总结整合不是直接从原始聊天生成，而是从现有的 STMB 记忆/总结生成。
-* **整合记忆** 工具可让您选择目标总结层级和源条目。
-* 当所选层级达到其保存的最小有效源条目数时，STMB 会在需要时显示 yes/later 确认。
-* 如有需要，可以在整合后禁用源条目。
-* AI 总结失败可以在 UI 中查看和修正后重新提交。
+- 整合总结从现有 STMB 记忆/总结生成，而不是直接从原始聊天生成。
+- **Consolidate Memories** 工具允许您选择目标总结层级和源条目。
+- STMB 可以监控选定的总结层级，并在某一层级达到保存的最小合格源条目数时显示 yes/later 确认。
+- 如果希望更高层级总结接管，STMB 可以在整合后禁用源条目。
+- AI 总结失败时，可以先在 UI 中查看和修正，再重新提交。
 
-#### 旧 Beta 说明
+这带来的好处：
 
-* 篇章总结对提示词敏感，且设计上较为保守
-* 建议在提交到世界书之前进行审查
-* 最好与低优先级或元数据风格的世界书条目搭配使用
-
-这为您提供了：
-
-* 减少 token 使用
-* AI 对叙事流有更好的理解
+- 更低的 token 使用量；
+- 长聊天中更好的叙事连续性。
 
 ---
 
 ## 📝 记忆生成
 
-### **仅限 JSON 输出**
+### **仅 JSON 输出**
 
-所有提示词和预设 **必须** 指示 AI 仅返回有效的 JSON，例如：
+所有提示词和预设 **必须** 指示 AI 只返回有效 JSON，例如：
 
 ```json
 {
-  "title": "简短的场景标题",
+  "title": "简短场景标题",
   "content": "场景的详细总结...",
   "keywords": ["关键词1", "关键词2"]
 }
-
 ```
 
 **响应中不允许包含其他文本。**
 
 ### **内置预设**
 
-1. **Summary:** 详细的逐个节拍总结。
-2. **Summarize:** 带有时间线、节拍、互动、结果的 Markdown 标题。
+1. **Summary:** 详细的逐节拍总结。
+2. **Summarize:** 使用 Markdown 标题组织 timeline、beats、interactions、outcome。
 3. **Synopsis:** 全面、结构化的 markdown。
-4. **Sum Up:** 带有时间线的简明节拍总结。
-5. **Minimal:** 1-2 句话的总结。
-6. **Northgate:** 面向创作的文学风格总结。
+4. **Sum Up:** 带时间线的简明节拍总结。
+5. **Minimal:** 1–2 句话总结。
+6. **Northgate:** 面向创作写作的文学式总结风格。
 7. **Aelemar:** 侧重剧情点和角色记忆。
-8. **Comprehensive:** 更适合提取关键词的 synopsis 风格总结。
+8. **Comprehensive:** synopsis 风格总结，并改进关键词提取。
 
 ### **自定义提示词**
 
-* 创建您自己的提示词，但 **必须** 如上所述返回有效的 JSON。
+- 可以创建自己的提示词，但 **必须** 如上所示返回有效 JSON。
 
 ---
 
 ## 📚 世界书集成
 
-* **自动条目创建:** 新记忆作为包含所有元数据的条目存储。
-* **基于标志的检测:** 只有带有 `stmemorybooks` 标志的条目才会被识别为记忆。
-* **自动编号:** 顺序、零填充编号，支持多种格式 (`[000]`, `(000)`, `{000}`, `#000`)。
-* **手动/自动排序:** 每个配置文件的插入顺序设置。
-* **编辑器刷新:** 可选在添加记忆后自动刷新世界书编辑器。
+- **自动创建条目:** 新记忆会作为包含全部元数据的条目保存。
+- **基于标志检测:** 只有带有 `stmemorybooks` 标志的条目会被识别为记忆。
+- **自动编号:** 支持顺序、补零编号，以及多种格式（`[000]`、`(000)`、`{000}`、`#000`）。
+- **手动/自动排序:** 每个配置文件都有插入顺序设置。
+- **编辑器刷新:** 可选择在添加记忆后自动刷新世界书编辑器。
 
-> **现有记忆必须转换！**
+> **现有记忆必须转换！**  
 > 使用 [Lorebook Converter](../resources/lorebookconverter.html) 添加 `stmemorybooks` 标志和必填字段。
 
 ---
 
-### 🎡 追踪器 & 侧边提示词
+## 🆕 斜杠命令
 
-侧边提示词可以像追踪器一样使用，并会在您的记忆世界书中创建单独的 side prompt 条目。侧边提示词允许您追踪 **当前状态**，而不仅仅是过去的事件。例如：
+- `/creatememory` — 从已标记场景创建记忆。
+- `/scenememory X-Y` — 设置场景范围并创建记忆，例如 `/scenememory 10-15`。
+- `/nextmemory` — 从上一个记忆的结尾到当前消息创建记忆。
+- `/stmb-catchup interval:x start:y end:y` — 为已有长聊天创建补录记忆，将所选消息范围按指定间隔分块处理。
+- `/sideprompt "Name" {{macro}}="value" [X-Y]` — 运行 Side Prompt（`{{macro}}` 可选）。
+- `/sideprompt-on "Name" | all` — 按名称启用某个 Side Prompt，或启用全部。
+- `/sideprompt-off "Name" | all` — 按名称禁用某个 Side Prompt，或禁用全部。
+- `/stmb-highest` — 返回此聊天中已处理记忆的最高 message id。
+- `/stmb-set-highest <N|none>` — 手动设置此聊天的最高已处理 message id。
+- `/stmb-stop` — 停止所有正在进行的 STMB 生成。用于紧急中止。
 
-* 💰 物品与资源 ("用户拥有什么物品？")
-* ❤️ 关系状态 ("X 对 Y 感觉如何？")
-* 📊 角色属性 ("当前健康、技能、声望")
-* 🎯 任务进度 ("哪些目标处于激活状态？")
-* 🌍 世界状态 ("设定中发生了什么变化？")
+### `/stmb-catchup`
 
-#### **访问:** 从 Memory Books 设置中，点击 “🎡 追踪器 & 侧边提示词”。
+当您需要把已有长聊天转换为 STMB 记忆时，使用 `/stmb-catchup`。
+
+语法：`/stmb-catchup interval:x start:y end:y`
+
+示例：`/stmb-catchup interval:30 start:0 end:300`
+
+---
+
+## 👥 群聊支持
+
+- 所有功能都支持群聊。
+- 场景标记、记忆创建和世界书集成会存储在当前聊天元数据中。
+- 不需要特殊设置；选择群聊并正常使用即可。
+
+---
+
+## 🧭 操作模式
+
+### **自动模式（默认）**
+
+- **工作方式:** 自动使用绑定到当前聊天的世界书。
+- **适合:** 简单快速。大多数用户应从这里开始。
+- **使用方法:** 确保在角色或群聊的 `Chat Lorebooks` 下拉菜单中选择了世界书。
+
+![Chat lorebook binding example](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+
+### **自动创建世界书模式**
+
+- **工作方式:** 当没有世界书时，使用您的自定义命名模板自动创建并绑定一个新世界书。
+- **适合:** 新用户和快速设置。适合一键创建世界书。
+- **使用方法:**
+  1. 在扩展设置中启用 `Auto-create lorebook if none exists`。
+  2. 配置命名模板（默认：`LTM - {{char}} - {{chat}}`）。
+  3. 在没有绑定世界书的情况下创建记忆时，系统会自动创建并绑定一本世界书。
+- **模板占位符:** `{{char}}`（角色名）、`{{user}}`（您的名字）、`{{chat}}`（聊天 ID）。
+- **智能编号:** 如果存在重名，会自动添加数字（2、3、4...）。
+- **注意:** 不能与 Manual Lorebook Mode 同时使用。
+
+### **手动世界书模式**
+
+- **工作方式:** 允许您按聊天为记忆选择不同的世界书，忽略主聊天绑定的世界书。
+- **适合:** 想把记忆定向到某本独立世界书的高级用户。
+- **使用方法:**
+  1. 在扩展设置中启用 `Enable Manual Lorebook Mode`。
+  2. 第一次在聊天中创建记忆时，系统会提示您选择世界书。
+  3. 该选择会针对此聊天保存，直到您清除它或切回 Automatic Mode。
+- **注意:** 不能与 Auto-Create Lorebook Mode 同时使用。
+
+---
+
+### 🎡 追踪器 & Side Prompts
+
+Side Prompts 可以像追踪器一样使用，并会在您的记忆世界书中创建单独的 side-prompt 条目。Side Prompts 允许您追踪 **持续状态**，而不只是过去发生的事件。例如：
+
+- 💰 物品 & 资源：「用户拥有什么物品？」
+- ❤️ 关系状态：「X 对 Y 的感觉如何？」
+- 📊 角色属性：「当前健康、技能、声望」
+- 🎯 任务进度：「哪些目标处于激活状态？」
+- 🌍 世界状态：「设定中发生了什么变化？」
+
+#### **访问:** 在 Memory Books 设置中点击 `🎡 Trackers & Side Prompts`。
 
 #### **功能:**
 
-```
-- 查看所有侧边提示词。
-- 创建新提示词或复制提示词以尝试不同的提示词风格。
-- 编辑或删除任何预设（包括内置预设）。
-- 将预设导出和导入为 JSON 文件以进行备份或共享。
-- 根据模板，手动或自动运行。
-- 在 `Prompt` 和 `Response Format` 中使用 `{{user}}`、`{{char}}` 之类的标准 ST 宏。
-- 使用像 `{{npc name}}` 这样的自定义运行时宏，它们会在运行 `/sideprompt` 时传入。
-
-```
+- 查看所有 Side Prompts。
+- 创建新 Side Prompt，或复制现有 Side Prompt 以尝试不同提示词风格。
+- 编辑或删除任何预设，包括内置预设。
+- 将预设导出/导入为 JSON 文件，用于备份或共享。
+- 根据模板手动或自动运行。
+- 在 Side Prompt 的 `Prompt`、`Response Format`、`Title` 和 `{{keyword}}` 字段中使用 `{{user}}`、`{{char}}` 等标准 SillyTavern 宏/占位符。
+- 使用 `{{npc name}}` 这样的自定义宏/占位符；运行 `/sideprompt` 时必须提供它们。
 
 #### **使用技巧:**
 
-```
-- 创建新提示词时，您可以从内置提示词复制以获得最佳兼容性。
-- 额外的侧边提示词模板库 [JSON 文件](../resources/SidePromptTemplateLibrary.json) - 导入即可使用。
-- 手动语法：`/sideprompt "名称" {{macro}}="value" [X-Y]`。
-- 在命令自动补全中选择 side prompt 后，STMB 会提示还缺少的运行时宏。
-- 带有自定义运行时宏的 side prompt 只能手动运行。STMB 会在保存/导入时移除这类模板的 `On Interval` 和 `On After Memory`，并显示警告。
-
-```
-
----
-
-### 🧠 Regex (正则表达式) 集成实现高级自定义
-
-* **完全控制文本处理**: Memory Books 现在与 SillyTavern 的 **Regex** 扩展集成，允许您在发送前和解析前两个关键阶段应用文本转换。
-1. **提示词生成**: 使用针对 **用户输入 (User Input)** 的脚本，自动修改发送给 AI 的提示词。
-2. **响应解析**: 使用针对 **AI 输出 (AI Output)** 的脚本，在保存前清理、重新格式化或标准化原始响应。
-
-
-* **支持多选**: 您可以在 STMB 的选择弹窗中多选脚本。
-* **工作原理**: STMB 会管理您选中的脚本，并在发送前和解析前按顺序应用。即使 Regex 扩展中这些脚本已被禁用，只要在 STMB 中选中，它们仍会运行。
+- 创建新提示词时，可以复制内置提示词以获得最佳兼容性。
+- Side Prompts 不必返回 JSON。它们可以返回纯文本。
+- Side Prompts 会被更新/覆盖。这一点不同于按顺序保存的记忆。
+- 手动语法：`/sideprompt "Name" {{macro}}="value" [X-Y]`。
+- 在斜杠命令自动补全中选择 Side Prompt 后，STMB 会提示该模板需要的 runtime macros。
+- 带有自定义 runtime macros（非 ST 默认宏）的 Side Prompt 仅可手动运行。STMB 会在保存/导入时禁用这些模板的 `On Interval` 和 `On After Memory`，并显示警告。
+- 额外的 Side Prompt 模板库：[JSON 文件](../resources/SidePromptTemplateLibrary.json)。导入即可使用。
 
 ---
 
-## 👤 配置文件管理 (Profile Management)
+### 🧠 Regex 集成：高级自定义
 
-* **配置文件:** 每个配置文件包括 API、模型、温度、提示词/预设、标题格式和世界书设置。
-* **导入/导出:** 将配置文件作为 JSON 分享。
-* **配置文件创建:** 使用高级选项弹出窗口保存新配置文件。
-* **每个配置文件的覆盖:** 临时切换 API/模型/温度以创建记忆，然后恢复您的原始设置。
+- **完全控制文本处理:** Memory Books 现在与 SillyTavern 的 **Regex** 扩展集成，可以在两个关键阶段应用文本转换：
+  1. **提示词生成:** 创建针对 **User Input** 位置的 regex 脚本，自动修改发送给 AI 的提示词。
+  2. **响应解析:** 创建针对 **AI Output** 位置的 regex 脚本，在保存前清理、重新格式化或标准化 AI 的原始响应。
+- **支持多选:** 可以为发送前和接收后处理选择多个脚本。
+- **工作方式:** 在 STMB 中启用 `Use regex (advanced)`，点击 `📐 Configure regex…`，选择 STMB 应在发送给 AI 前、以及解析/保存响应前运行哪些脚本。
+- **重要:** Regex 选择由 STMB 控制。只要脚本在 STMB 中被选中，即使它在 Regex 扩展本身中处于禁用状态，也仍会运行。
+
+---
+
+## 👤 配置文件管理
+
+- **配置文件:** 每个配置文件包括 API、模型、temperature、提示词/预设、标题格式和世界书设置。
+- **导入/导出:** 可以以 JSON 形式分享配置文件。
+- **创建配置文件:** 使用高级选项弹窗保存新的配置文件。
+- **每配置文件覆盖:** 创建记忆时可以临时切换 API/模型/temperature，然后恢复原设置。
+- **内置 Provider/Profile:** STMB 包含必需的 `Current SillyTavern Settings` 选项，直接使用当前 SillyTavern 连接/设置。
 
 ---
 
 ## ⚙️ 设置与配置
 
+![Main settings panel](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+
 ### **全局设置**
 
-[Youtube 上的简短视频概览](https://youtu.be/mG2eRH_EhHs)
+[YouTube 简短视频概览](https://youtu.be/mG2eRH_EhHs)
 
-* **启用手动故事书模式:** 启用以按聊天选择世界书。
-* **自动创建故事书 (如果不存在):** ⭐ *v4.2.0 新增* - 使用您的命名模板自动创建并绑定世界书。
-* **Lorebook Name Template (世界书命名模板):** ⭐ *v4.2.0 新增* - 使用 {{char}}, {{user}}, {{chat}} 占位符自定义自动创建的世界书名称。
-* **Allow Scene Overlap (允许场景重叠):** 允许或阻止重叠的记忆范围。
-* **始终使用默认配置文件:** 跳过确认弹窗。
-* **显示记忆预览:** 启用预览弹窗，以便在添加到世界书之前查看和编辑记忆。
-* **显示通知:** 切换 Toast 消息提示。
-* **刷新编辑器:** 创建记忆后自动刷新世界书编辑器。
-* **Token Warning Threshold (Token 警告阈值):** 设置大场景的警告级别（默认：30,000）。
-* **Default Previous Memories (默认前序记忆):** 作为上下文包含的先前记忆数量 (0-7)。
-* **自动创建记忆摘要:** 按间隔启用自动记忆创建。
-* **自动摘要间隔:** 自动创建记忆总结的消息数量间隔。
-* **自动摘要缓冲区：** 可按消息数延迟自动总结。
-* **当某个层级准备好时提示合并:** 当所选总结层级达到足够的有效源条目时显示 yes/later 确认。
-* **自动合并层级：** 选择哪些总结层级应在满足条件时触发确认提示。当前支持 Arc 到 Series。
-* **Unhide hidden messages before memory generation:** 可以在创建记忆前运行 `/unhide X-Y`。
-* **添加记忆后自动隐藏消息:** 可选择隐藏所有已处理消息，或仅隐藏最近的记忆范围。
-* **使用正则表达式（高级）:** 启用 STMB 的 regex 选择弹窗（发送/解析处理）。
-* **记忆标题格式:** 选择或自定义（见下文）。
+- **Manual Lorebook Mode:** 启用按聊天选择世界书。
+- **Auto-create lorebook if none exists:** 使用命名模板自动创建并绑定世界书。
+- **Lorebook Name Template:** 使用 `{{char}}`、`{{user}}`、`{{chat}}` 占位符自定义自动创建的世界书名称。
+- **Allow Scene Overlap:** 允许或阻止记忆范围重叠。
+- **Always Use Default Profile:** 跳过确认弹窗。
+- **Show memory previews:** 启用预览弹窗，在加入世界书前查看和编辑记忆。
+- **Show Notifications:** 切换 toast 通知。
+- **Refresh Editor:** 创建记忆后自动刷新世界书编辑器。
+- **Max Response Tokens:** 设置记忆总结的最大生成长度。
+- **Token Warning Threshold:** 设置大场景警告阈值。
+- **Default Previous Memories:** 作为上下文包含的先前记忆数量（0–7）。
+- **Auto-create memory summaries:** 按间隔启用自动创建记忆。
+- **Auto-Summary Interval:** 自动创建记忆总结前等待的消息数。
+- **Auto-Summary Buffer:** 将自动总结延迟指定消息数。
+- **Prompt for consolidation when a tier is ready:** 当选定总结层级拥有足够合格源条目时，显示 yes/later 确认。
+- **Auto-Consolidation Tiers:** 选择一个或多个总结层级，在满足条件时触发确认。目前支持 Arc through Series。
+- **Unhide hidden messages before memory generation:** 创建记忆前可运行 `/unhide X-Y`。
+- **Auto-hide messages after adding memory:** 可选择隐藏所有已处理消息，或仅隐藏最近的记忆范围。
+- **Use regex (advanced):** 启用 STMB 的 Regex 选择弹窗，用于发送前/解析前处理。
+- **Memory Title Format:** 选择或自定义标题格式（见下文）。
+
+![Profile configuration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **配置文件字段**
 
-* **Name:** 显示名称。
-* **API/Provider:** `当前 SillyTavern 设置`、openai、claude、custom、full manual 等。
-* **Model:** 模型名称 (例如 gpt-4, claude-3-opus)。
-* **Temperature:** 0.0–2.0。
-* **Prompt or Preset:** 自定义或内置。
-* **Title Format:** 每个配置文件的模板。
-* **Activation Mode (激活模式):** Vectorized (向量化), Constant (常驻), Normal (普通)。
-* **Position (位置):** ↑Char, ↓Cha, ↑EM, ↓EM, ↑AN, Outlet (以及字段名称)。
-* **Order Mode (排序模式):** Auto (自动)/Manual (手动)。
-* **Recursion (递归):** 阻止/延迟递归。
+- **Name:** 显示名称。
+- **API/Provider:** `Current SillyTavern Settings`、openai、claude、custom、full manual 及其他支持的 provider。
+- **Model:** 模型名称，例如 gpt-4、claude-3-opus。
+- **Temperature:** 0.0–2.0。
+- **Prompt or Preset:** 自定义或内置。
+- **Title Format:** 每个配置文件的模板。
+- **Activation Mode:** Vectorized、Constant、Normal。
+- **Position:** ↑Char、↓Char、↑EM、↓EM、↑AN、↓AN、Outlet（以及字段名）。
+- **Order Mode:** auto/manual。
+- **Recursion:** prevent/delay until recursion。
 
 ---
 
 ## 🏷️ 标题格式化
 
-使用强大的模板系统自定义您的世界书条目标题。
+使用强大的模板系统自定义世界书条目标题。
 
-* **占位符:**
-* `{{title}}` - AI 生成的标题 (例如 "命运般的相遇")。
-* `{{scene}}` - 消息范围 (例如 "Scene 15-23")。
-* `{{char}}` - 角色名称。
-* `{{user}}` - 您的用户名。
-* `{{messages}}` - 场景中的消息数量。
-* `{{profile}}` - 用于生成的配置文件名称。
-* 各种格式的当前日期/时间占位符 (例如 `August 13, 2025` 表示日期, `11:08 PM` 表示时间)。
-
-
-* **自动编号:** 使用 `[0]`, `[00]`, `(0)`, `{0}`, `#0`，以及现在的包裹形式如 `#[000]`, `([000])`, `{[000]}` 进行顺序、零填充编号。
-* **自定义格式:** 您可以创建自己的格式。从 v4.5.1 开始，标题中允许使用所有可打印的 Unicode 字符（包括表情符号、CJK、重音符号、符号等）；仅阻止 Unicode 控制字符。
+- **占位符:**
+  - `{{title}}` — AI 生成的标题，例如「命运般的相遇」。
+  - `{{scene}}` — 消息范围，例如 `Scene 15-23`。
+  - `{{char}}` — 角色名。
+  - `{{user}}` — 您的用户名。
+  - `{{messages}}` — 场景中的消息数量。
+  - `{{profile}}` — 用于生成的配置文件名称。
+  - 多种格式的当前日期/时间占位符，例如 `August 13, 2025` 表示日期，`11:08 PM` 表示时间。
+- **自动编号:** 可使用 `[0]`、`[00]`、`(0)`、`{0}`、`#0`，也支持 `#[000]`、`([000])`、`{[000]}` 等包裹形式，用于顺序补零编号。
+- **自定义格式:** 可以创建自己的格式。从 v4.5.1 开始，标题中允许所有可打印 Unicode 字符，包括 emoji、CJK、重音字符、符号等；只会阻止 Unicode 控制字符。
 
 ---
 
 ## 🧵 上下文记忆
 
-* **包含最多 7 个先前的记忆** 作为上下文，以获得更好的连续性。
-* **Token 估算** 包含上下文记忆以确保准确性。
+- **最多可包含 7 个先前记忆** 作为上下文，以改善连续性。
+- **Token 估算** 会包含上下文记忆，以提高准确性。
+- **高级选项** 可让您针对单次记忆生成临时覆盖提示词/配置文件行为。
+
+![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 
 ---
 
 ## 🎨 视觉反馈与辅助功能
 
-* **按钮状态:**
-* Inactive (非活动), active (活动), valid selection (有效选择), in-scene (场景中), processing (处理中)。
+- **按钮状态:** inactive、active、valid selection、in-scene、processing。
 
+![Complete scene selection showing all visual states](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
-* **辅助功能:**
-* 键盘导航，焦点指示器，ARIA 属性，减少动画，移动端友好。
-
-
+- **辅助功能:** 键盘导航、焦点指示器、ARIA 属性、减少动画、移动端友好。
 
 ---
 
-# FAQ (常见问题)
+# FAQ
 
-### 我在扩展菜单里找不到 Memory Books！
+### 我应该为记忆单独创建一本世界书，还是可以使用已经用于其他用途的同一本世界书？
 
-设置位于扩展菜单中（输入框左侧的魔法棒图标 🪄）。寻找 "Memory Books"。
+我建议让记忆世界书成为单独的一本书。这样更容易把记忆和其他条目分开管理。例如，将它添加到群聊、在另一个聊天中使用，或通过 STLO 设置单独的世界书预算。
 
-### 我需要运行 Vectors (向量) 吗？
+### 我需要运行 Vectors 吗？
 
-世界信息中的 🔗 条目在 ST 的 UI 中被命名为 "vectorized" (向量化)。这就是为什么我使用 vectorized 这个词。如果您不使用 vectors 扩展（我不使用），它通过关键词工作。这都是自动化的，所以您不必考虑使用什么关键词。
+可以，但不是必需。如果您不使用 vectors 扩展（我也不用），Memory Books 会通过关键词工作。这是自动化的，所以您不需要自己考虑使用哪些关键词。
 
-### 我应该为记忆制作一个单独的世界书，还是可以使用我已经用于其他事情的同一个世界书？
+### 如果 Memory Books 是唯一的世界书，我应该使用 Delay until recursion 吗？
 
-我建议您的记忆世界书应该是一本单独的书。这使得组织记忆（相对于其他条目）更容易。例如，将其添加到群聊，在另一个聊天中使用它，或者设置单独的世界书预算（使用 STLO）。
+不应该。如果没有其他 World Info 或世界书，`Delay until recursion` 可能会阻止第一次循环触发，导致没有任何内容被激活。如果 Memory Books 是唯一的世界书，请禁用 `Delay until recursion`，或确保至少配置了一个额外的 World Info/世界书。
 
-### 如果 Memory Books 是唯一的世界书，我应该使用 '延迟直到递归' 吗？
+### 为什么 AI 看不到我的条目？
 
-不。如果没有其他世界信息或世界书，选择 '延迟直到递归' 可能会阻止第一次循环触发，导致没有任何内容被激活。如果 Memory Books 是唯一的世界书，请禁用 '延迟直到递归' 或确保至少配置了一个额外的世界信息/世界书。
+首先检查这些条目是否确实被发送了。我喜欢使用 [WorldInfo-Info](https://github.com/aikohanasaki/SillyTavern-WorldInfoInfo) 来检查。
+
+如果条目已经触发并发送给 AI，那可能需要在 OOC 中更明确地提醒 AI。例如：`[OOC: WHY are you not using the information you were given? Specifically: (whatever it was)]`
 
 ---
 
-# 故障排除 (Troubleshooting)
+# Troubleshooting
 
-* **没有可用或选定的世界书:**
-* 在手动模式下，根据提示选择一个世界书。
-* 在自动模式下，将一个世界书绑定到您的聊天。
-* 或者启用 "自动创建故事书 (如果不存在)" 进行自动创建。
+- **我在 Extensions 菜单里找不到 Memory Books！**  
+  设置位于 Extensions 菜单中（输入框左侧的魔法棒 🪄）。寻找 `Memory Books`。
 
+![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
 
-* **未选择场景:**
-* 标记开始 (►) 和结束 (◄) 点。
+- **没有可用或已选择的世界书:**
+  - 在 Manual Mode 中，根据提示选择世界书。
+  - 在 Automatic Mode 中，将世界书绑定到您的聊天。
+  - 或启用 `Auto-create lorebook if none exists` 自动创建。
 
+- **Lorebook Validation Error:**
+  - 您很可能删除了之前绑定的世界书。只要绑定一个新的世界书即可；空白世界书也可以。
 
-* **场景与现有记忆重叠:**
-* 选择不同的范围，或在设置中启用 "Allow scene overlap" (允许场景重叠)。
+- **未选择场景:**
+  - 同时标记开始（►）和结束（◄）点。
 
+- **场景与现有记忆重叠:**
+  - 选择不同范围，或在设置中启用 `Allow scene overlap`。
 
-* **AI 无法生成有效记忆:**
-* 使用支持 JSON 输出的模型。
-* 检查您的提示词和模型设置。
+![Scene overlap warning](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 
+- **AI 未能生成有效记忆:**
+  - 使用支持 JSON 输出的模型。
+  - 检查提示词和模型设置。
 
-* **超过 Token 警告阈值:**
-* 使用较小的场景，或增加阈值。
+- **超过 Token 警告阈值:**
+  - 使用更小的场景，或提高阈值。
 
+- **缺少箭头按钮:**
+  - 等待扩展加载，或刷新页面。
 
-* **缺少箭头按钮:**
-* 等待扩展加载，或刷新。
-
-
-* **角色数据不可用:**
-* 等待聊天/群组完全加载。
+- **角色数据不可用:**
+  - 等待聊天/群组完全加载。
 
 ---
 
 ## 📚 配合 Lorebook Ordering (STLO) 提升体验
 
-为了实现高级的记忆组织和更深层次的故事整合，我们强烈建议将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md) 一起使用。请参阅指南以获取最佳实践、设置说明和技巧！
+为了实现更高级的记忆组织和更深入的故事整合，请将 STMB 与 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20Simplified%20Chinese.md) 配合使用。请参阅该指南获取最佳实践、设置说明和技巧。
 
 ---
 
 ## 📝 字符策略 (v4.5.1+)
 
-* **标题中允许:** 允许所有可打印的 Unicode 字符，包括重音字母、表情符号、CJK 和符号。
-* **被阻止:** 仅阻止 Unicode 控制字符 (U+0000–U+001F, U+007F–U+009F)；这些字符会被自动移除。
+- **标题中允许:** 所有可打印 Unicode 字符，包括重音字母、emoji、CJK 和符号。
+- **被阻止:** 只有 Unicode 控制字符（U+0000–U+001F、U+007F–U+009F）会被阻止；这些字符会自动移除。
 
-## 请参阅 [字符策略详情](../charset.md) 以获取示例和迁移说明。
+请参阅 [Character Policy Details](../charset.md) 获取示例和迁移说明。
 
-*用爱心开发，使用 VS Code/Cline，经过广泛测试和社区反馈。* 🤖💕
+---
+
+## 👨‍💻 面向开发者
+
+### 构建扩展
+
+此扩展使用 Bun 进行构建。构建过程会压缩并打包源文件。
+
+```sh
+# 构建扩展
+bun run build
+```
+
+### Git hooks
+
+项目包含一个 pre-commit hook，会自动构建扩展并把构建产物加入提交。这可以确保构建文件始终与源代码同步。
+
+**安装 git hook:**
+
+```sh
+bun run install-hooks
+```
+
+该 hook 会：
+
+- 在每次 commit 前运行 `bun run build`；
+- 将构建产物加入 commit；
+- 如果构建失败，则中止 commit。
+
+---
+
+*使用 VS Code/Cline、广泛测试和社区反馈精心开发。* 🤖💕
