@@ -319,7 +319,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 🎡 トラッカーとサイドプロンプト
 
-> 📘 サイドプロンプトには専用ガイドがあります: [Side Prompts Guide](side-prompts-ja.md)。セット、マクロ、例、トラブルシューティングはこちらを参照してください。
+> 📘 サイドプロンプトには専用ガイドがあります: [Side Prompts Guide](side-prompts-jp.md)。セット、マクロ、例、トラブルシューティングはこちらを参照してください。
 > 🎡 正確なクリック手順が必要な場合は、[Side Prompts を有効化する Scribe 手順](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ) を参照してください。
 
 サイドプロンプトは、進行中のチャット状態を維持するための独立した STMB プロンプト実行です。通常のキャラクター返信を肥大化させたくないトラッカーや補助メモに使用できます。例：
