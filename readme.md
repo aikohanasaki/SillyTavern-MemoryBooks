@@ -49,6 +49,7 @@ Other links:
   - [Auto-Create Lorebook Mode](#auto-create-lorebook-mode)
   - [Manual Lorebook Mode](#manual-lorebook-mode)
 - [Trackers & Side Prompts](#-trackers--side-prompts)
+- [Compact / Review](#-compact--review)
 - [Regex Integration for Advanced Customization](#-regex-integration-for-advanced-customization)
 - [Profile Management](#-profile-management)
 - [Settings & Configuration](#-settings--configuration)
@@ -358,6 +359,12 @@ Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. U
 - Use Side Prompt Sets when a chat needs an ordered bundle of trackers.
 - A selected after-memory Side Prompt Set replaces individually-enabled after-memory Side Prompts for that chat.
 - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use.
+
+--- 
+
+## 🧹 Compact / Review
+
+Compact / Review helps clean up long STMB-managed lorebook entries. Use it when a Clip entry or Side Prompt entry has grown too large and you want the AI to make it more token-efficient. STMB will show the compacted version before replacing anything, so you can review it, edit it, copy it, or cancel.
 
 ---
 

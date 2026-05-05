@@ -15,7 +15,8 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
 - [Summary Consolidation](#-summary-consolidation)
 - [Trackers, Side Prompts, & Templates](#-trackers-side-prompts--templates-advanced-feature)
-- [Settings That Matter First](#-settings-that-matter-first)
+- [Compact / Review](#-compact--review)
+- [Settings That Matter First](#️-settings-that-matter-first)
 - [Troubleshooting](#-troubleshooting-when-things-dont-work)
 - [What ST Memory Books Doesn't Do](#-what-st-memory-books-doesnt-do)
 - [Getting Help & More Info](#-getting-help--more-info)
@@ -417,6 +418,38 @@ If your model keeps adding `(OOC: I hope this summary is helpful!)`, you can:
 4. Add that script to the **incoming** selection
 
 Now STMB will clean the response before previewing or saving it.
+
+---
+
+## 🧹 Compact / Review
+
+Over time, Clip entries and Side Prompt entries can get long. Long entries can waste context, especially if they are always active.
+
+**Compact / Review** asks the AI to rewrite one STMB-managed entry so it uses fewer tokens while keeping as much useful information as possible.
+
+### How it works
+
+1. Open the STMB entry you want to clean up.
+2. Click **Compact / Review**.
+3. STMB sends the current entry content to the AI.
+4. Review the compacted draft.
+5. Choose whether to replace the original, edit the draft, copy it, or cancel.
+
+STMB should never replace the original automatically. You always get to review the compacted version first.
+
+### Best used for
+
+- long Clip entries
+- Side Prompt tracker entries
+- repeated or overlapping notes
+- entries that are useful but starting to waste tokens
+
+### Not meant for
+
+- adding new facts
+- summarizing raw chat
+- creating new memories
+- rewriting ordinary lorebook entries that STMB does not manage
 
 ---
 

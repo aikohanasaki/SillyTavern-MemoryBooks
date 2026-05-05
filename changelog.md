@@ -3,8 +3,11 @@
 **← [Back to README](readme.md)**
 
 ## v6.6.0 (May 5, 2026)
-**Added: Clip to Memory Book**
+**New Feature: Clip to Memory Book**
 You can now highlight chat text and use the floating scissors button to save it as a bullet in a Memory Book entry marked with `[STMB Clip]`. Clip entries can be created, renamed, keyword-triggered or always active, and reviewed/compacted when they get long.
+
+**New Feature: Compact / Review**
+Clip entries and Side Prompt entries can grow over time. Compact / Review sends the selected entry to the AI with instructions to make it more token-efficient while preserving as much useful information as possible.
 
 ## v6.5.0 (May 2, 2026)
 - Add side prompt sets. 
