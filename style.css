@@ -2,7 +2,8 @@
 
 /* Base styling for all scene marker buttons */
 .mes_stmb_start,
-.mes_stmb_end {
+.mes_stmb_end,
+.mes_stmb_clip {
     color: var(--SmartThemeBodyColor);
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor);
@@ -18,7 +19,8 @@
 }
 
 .mes_stmb_start:hover,
-.mes_stmb_end:hover {
+.mes_stmb_end:hover,
+.mes_stmb_clip:hover {
     filter: grayscale(0) brightness(1.1);
 }
 
@@ -65,6 +67,18 @@
 .mes_stmb_start.in-scene:hover,
 .mes_stmb_end.in-scene:hover {
     filter: grayscale(0) brightness(1.1);
+}
+
+.mes_stmb_clip {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.stmb_floating_clip_button {
+    position: fixed;
+    z-index: 2147483646;
+    min-width: 28px;
+    min-height: 28px;
+    box-shadow: 0 2px 8px color-mix(in srgb, #000 35%, transparent 65%);
 }
 
 /* --- ANIMATIONS --- */
@@ -178,4 +192,54 @@
 .popup-button-custom {
     display: inline-flex;
     flex-wrap: wrap !important;
+}
+
+.stmb-clip-modal textarea,
+.stmb-compact-review textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.stmb-clip-textarea {
+    min-height: 90px;
+}
+
+.stmb-clip-preview {
+    min-height: 160px;
+    white-space: pre-wrap;
+    overflow: auto;
+}
+
+.stmb-clip-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.stmb-clip-label-row h4 {
+    margin: 0;
+}
+
+.stmb-clip-activation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 8px 0;
+}
+
+.stmb-clip-warning {
+    margin-top: 8px;
+}
+
+.stmb-review-entries {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stmb-review-entries th,
+.stmb-review-entries td {
+    padding: 6px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    text-align: left;
 }

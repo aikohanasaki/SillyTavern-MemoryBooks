@@ -24,6 +24,7 @@ import { translate, applyLocale } from '../../../i18n.js';
 import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
+import { showStmbEntryReviewPopup } from './clipManager.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -1425,6 +1426,7 @@ export async function showSidePromptsPopup() {
         // Action buttons
         content += '<div class="buttons_block justifyCenter gap10px whitespacenowrap">';
         content += `<button id="stmb-sp-new" class="menu_button whitespacenowrap">${escapeHtml(translate('New', 'STMemoryBooks_SidePrompts_New'))}</button>`;
+        content += `<button id="stmb-sp-review-entries" class="menu_button whitespacenowrap">${escapeHtml(translate('Compact / Review', 'STMemoryBooks_Clip_CompactReview'))}</button>`;
         content += `<button id="stmb-sp-export" class="menu_button whitespacenowrap">${escapeHtml(translate('Export JSON', 'STMemoryBooks_SidePrompts_ExportJSON'))}</button>`;
         content += `<button id="stmb-sp-import" class="menu_button whitespacenowrap">${escapeHtml(translate('Import JSON', 'STMemoryBooks_SidePrompts_ImportJSON'))}</button>`;
         content += `<button id="stmb-sp-recreate-builtins" class="menu_button whitespacenowrap">${escapeHtml(translate('♻️ Recreate Built-in Side Prompts', 'STMemoryBooks_SidePrompts_RecreateBuiltIns'))}</button>`;
@@ -1473,6 +1475,9 @@ export async function showSidePromptsPopup() {
             // Buttons
             dlg.querySelector('#stmb-sp-new')?.addEventListener('click', async () => {
                 await openNewTemplate(popup);
+            });
+            dlg.querySelector('#stmb-sp-review-entries')?.addEventListener('click', async () => {
+                await showStmbEntryReviewPopup();
             });
             dlg.querySelector('#stmb-sp-export')?.addEventListener('click', async () => {
                 await exportTemplates();

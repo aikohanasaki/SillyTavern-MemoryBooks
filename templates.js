@@ -55,6 +55,10 @@ export const settingsTemplate = Handlebars.compile(`
                 <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
             </label>
             <label class="checkbox_label">
+                <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
+            </label>
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_AllowSceneOverlap;[title]STMemoryBooks_AllowSceneOverlapTooltip" title="By default, STMB avoids message ID overlap between memories. Select this box to skip that check.">Allow scene overlap</span>
             </label>

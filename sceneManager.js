@@ -518,6 +518,7 @@ export function handleMessageDeletion(deletedId, settings) {
 export function createSceneButtons(messageElement) {
     const messageId = parseInt(messageElement.getAttribute('mesid'));
     let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
+    let addedButton = false;
 
     // If the button container doesn't exist (e.g., on user messages), create and append it.
     if (!extraButtonsContainer) {
@@ -536,37 +537,55 @@ export function createSceneButtons(messageElement) {
         }
     }
     
-    // Check if buttons already exist to prevent duplication
-    if (messageElement.querySelector('.mes_stmb_start')) return;
-    
-    // Create start button
-    const startButton = document.createElement('div');
-    startButton.title = translate('Mark Scene Start', 'STMemoryBooks_MarkSceneStart');
-    startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
-    startButton.setAttribute('tabindex', '0');
-    startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
+    if (!messageElement.querySelector('.mes_stmb_start')) {
+        const startButton = document.createElement('div');
+        startButton.title = translate('Mark Scene Start', 'STMemoryBooks_MarkSceneStart');
+        startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
+        startButton.setAttribute('tabindex', '0');
+        startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
+        startButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setSceneMarker(messageId, 'start');
+        });
+        extraButtonsContainer.appendChild(startButton);
+        addedButton = true;
+    }
 
-    // Create end button
-    const endButton = document.createElement('div');
-    endButton.title = translate('Mark Scene End', 'STMemoryBooks_MarkSceneEnd');
-    endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
-    endButton.setAttribute('tabindex', '0');
-    endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
-    
-    // Add event listeners
-    startButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setSceneMarker(messageId, 'start');
-    });
+    if (!messageElement.querySelector('.mes_stmb_end')) {
+        const endButton = document.createElement('div');
+        endButton.title = translate('Mark Scene End', 'STMemoryBooks_MarkSceneEnd');
+        endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
+        endButton.setAttribute('tabindex', '0');
+        endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
+        endButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setSceneMarker(messageId, 'end');
+        });
+        extraButtonsContainer.appendChild(endButton);
+        addedButton = true;
+    }
 
-    endButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setSceneMarker(messageId, 'end');
-    });
-    
-    // Append buttons
-    extraButtonsContainer.appendChild(startButton);
-    extraButtonsContainer.appendChild(endButton);
+    if (!messageElement.querySelector('.mes_stmb_clip')) {
+        const clipButton = document.createElement('div');
+        clipButton.title = translate('Clip highlighted text to Memory Book', 'STMemoryBooks_Clip_ButtonTitle');
+        clipButton.classList.add('mes_stmb_clip', 'mes_button', 'fa-solid', 'fa-scissors', 'interactable');
+        clipButton.setAttribute('tabindex', '0');
+        clipButton.setAttribute('data-i18n', '[title]STMemoryBooks_Clip_ButtonTitle');
+        clipButton.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+                const { handleClipButtonClick } = await import('./clipManager.js');
+                await handleClipButtonClick(messageElement);
+            } catch (error) {
+                console.error('STMemoryBooks: Failed to open clip workflow:', error);
+                toastr.error(translate('Failed to open Clip workflow.', 'STMemoryBooks_Clip_OpenFailed'), 'STMemoryBooks');
+            }
+        });
+        extraButtonsContainer.appendChild(clipButton);
+        addedButton = true;
+    }
+
+    return addedButton;
 }
 
 /**
