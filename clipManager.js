@@ -22,7 +22,9 @@ import {
 const MODULE_NAME = 'STMemoryBooks-ClipManager';
 const CREATE_NEW_VALUE = '__stmb_create_new_clip_entry__';
 const TOKEN_WARNING_THRESHOLD = 500;
-const FLOATING_CLIP_OFFSET = 34;
+const FLOATING_CLIP_X_OFFSET = 6;
+const FLOATING_CLIP_Y_OFFSET = -4;
+const FLOATING_CLIP_VIEWPORT_PADDING = 8;
 
 export const STMB_CLIP_TITLE_SUFFIX = ' [STMB Clip]';
 
@@ -49,12 +51,16 @@ export function getClipHeadlineFromTitle(title) {
 }
 
 function validateClipHeadline(headline) {
-    const clean = String(headline || '').trim();
+    const raw = String(headline || '').trim();
+    const clean = isClipEntryTitle(raw) ? getClipHeadlineFromTitle(raw) : raw;
     if (!clean) {
         throw new Error(tr('STMemoryBooks_Clip_ErrorEmptyHeadline', 'Entry title / section headline cannot be empty.'));
     }
     if (/[\r\n]/.test(clean) || /[\u0000-\u001F\u007F]/.test(clean)) {
         throw new Error(tr('STMemoryBooks_Clip_ErrorInvalidHeadlineControl', 'Entry title / section headline cannot contain newlines or control characters.'));
+    }
+    if (clean.includes('[STMB Clip]')) {
+        throw new Error(tr('STMemoryBooks_Clip_ErrorInvalidHeadlineSuffix', 'Entry title / section headline cannot contain [STMB Clip].'));
     }
     if (clean.includes('===')) {
         throw new Error(tr('STMemoryBooks_Clip_ErrorInvalidHeadlineMarker', 'Entry title / section headline cannot contain ===.'));
@@ -64,7 +70,7 @@ function validateClipHeadline(headline) {
 
 export function makeClipEntryTitle(headline) {
     const clean = validateClipHeadline(headline);
-    return isClipEntryTitle(clean) ? clean.trimEnd() : `${clean}${STMB_CLIP_TITLE_SUFFIX}`;
+    return `${clean}${STMB_CLIP_TITLE_SUFFIX}`;
 }
 
 export function makeClipStartMarker(headline) {
@@ -170,16 +176,16 @@ function analyzeClipWrapper(content, headline) {
     }
 
     if (startHeadlines.length === 1 && endHeadlines.length === 1) {
-        return { type: 'mismatch', wrapperHeadline: startHeadlines[0] };
+        return { type: 'mismatch', wrapperHeadline: startHeadlines[0], wrapperEndHeadline: endHeadlines[0] };
     }
 
     return { type: 'none' };
 }
 
-function replaceSingleWrapperHeadline(content, fromHeadline, toHeadline) {
+function replaceSingleWrapperHeadline(content, fromHeadline, toHeadline, fromEndHeadline = fromHeadline) {
     return String(content || '')
         .replace(makeClipStartMarker(fromHeadline), makeClipStartMarker(toHeadline))
-        .replace(makeClipEndMarker(fromHeadline), makeClipEndMarker(toHeadline));
+        .replace(makeClipEndMarker(fromEndHeadline), makeClipEndMarker(toHeadline));
 }
 
 function stripWrapperMarkerLines(content) {
@@ -219,6 +225,24 @@ function getSelectionChatMessage(selection) {
     const anchorMessage = getElementForNode(selection?.anchorNode)?.closest?.('#chat .mes[mesid]');
     const focusMessage = getElementForNode(selection?.focusNode)?.closest?.('#chat .mes[mesid]');
     return anchorMessage && anchorMessage === focusMessage ? anchorMessage : anchorMessage || focusMessage || null;
+}
+
+function getSelectionDirection(selection) {
+    const messageElement = getSelectionChatMessage(selection);
+    const element = getElementForNode(selection?.focusNode) || messageElement;
+    const direction = element ? getComputedStyle(element).direction : 'ltr';
+    return direction === 'rtl' ? 'rtl' : 'ltr';
+}
+
+function getSelectionAttachRect(range, direction = 'ltr') {
+    const rects = Array.from(range.getClientRects())
+        .filter(rect => rect.width > 0 && rect.height > 0);
+
+    if (rects.length > 0) {
+        return direction === 'rtl' ? rects[0] : rects[rects.length - 1];
+    }
+
+    return range.getBoundingClientRect();
 }
 
 function isFloatingClipEnabled() {
@@ -272,16 +296,26 @@ function getFloatingSelectionState() {
     if (!messageElement) return null;
 
     const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
+    const direction = getSelectionDirection(selection);
+    const rect = getSelectionAttachRect(range, direction);
     if (!rect || (rect.width === 0 && rect.height === 0)) return null;
 
-    return { selectedText, rect, messageElement };
+    return { selectedText, rect, direction, messageElement };
 }
 
 function getClipEntries(lorebookData) {
     return Object.values(lorebookData?.entries || {})
         .filter(entry => isClipEntryTitle(entry?.comment || ''))
         .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
+}
+
+function getClipEntryByFinalTitle(lorebookData, title) {
+    const exact = getEntryByTitle(lorebookData, title);
+    if (exact) return exact;
+
+    const normalizedTitle = String(title || '').trimEnd();
+    return Object.values(lorebookData?.entries || {})
+        .find(entry => isClipEntryTitle(entry?.comment || '') && String(entry.comment || '').trimEnd() === normalizedTitle) || null;
 }
 
 function parseKeywords(text) {
@@ -328,80 +362,51 @@ async function confirmConvertExistingContent() {
     return await popup.show() === POPUP_RESULT.AFFIRMATIVE;
 }
 
-async function resolveWrapperMismatch(entry, lorebookData, headline) {
+async function confirmMultipleWrapperConversion() {
+    const popup = new Popup(
+        DOMPurify.sanitize(`<h3>${escapeHtml(tr('STMemoryBooks_Clip_MultipleWrappersTitle', 'Multiple Clip Sections'))}</h3><p>${escapeHtml(tr('STMemoryBooks_Clip_MultipleWrappersMessage', 'STMB Clip entries support one section per entry. Convert this entry to one section using the title-derived headline?'))}</p>`),
+        POPUP_TYPE.CONFIRM,
+        '',
+        {
+            okButton: tr('STMemoryBooks_Clip_ConvertOneSection', 'Convert to One Section'),
+            cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
+        },
+    );
+    return await popup.show() === POPUP_RESULT.AFFIRMATIVE;
+}
+
+function buildUpdatedExistingContent(entry, bulletText, editedHeadline) {
+    const headline = validateClipHeadline(editedHeadline ?? getClipHeadlineFromTitle(entry.comment || ''));
     const analysis = analyzeClipWrapper(entry.content || '', headline);
+    if (analysis.type === 'valid') return appendBulletBeforeEndMarker(entry.content || '', headline, bulletText);
+    if (analysis.type === 'multiple') return convertExistingContentToWrappedContent(stripWrapperMarkerLines(entry.content || ''), headline, bulletText);
+    if (analysis.type === 'mismatch') {
+        const repairedContent = replaceSingleWrapperHeadline(entry.content || '', analysis.wrapperHeadline, headline, analysis.wrapperEndHeadline);
+        return appendBulletBeforeEndMarker(repairedContent, headline, bulletText);
+    }
+    return convertExistingContentToWrappedContent(entry.content || '', headline, bulletText);
+}
+
+async function buildExistingContentForSave(entry, bulletText, headline) {
+    const analysis = analyzeClipWrapper(entry.content || '', headline);
+
     if (analysis.type === 'valid') {
-        return { action: 'append', headline, title: entry.comment, content: entry.content || '' };
+        return appendBulletBeforeEndMarker(entry.content || '', headline, bulletText);
     }
 
     if (analysis.type === 'none') {
         const hasExisting = !!String(entry.content || '').trim();
         if (hasExisting && !await confirmConvertExistingContent()) return null;
-        return { action: 'convert', headline, title: entry.comment, content: entry.content || '' };
+        return convertExistingContentToWrappedContent(entry.content || '', headline, bulletText);
     }
 
     if (analysis.type === 'multiple') {
-        const popup = new Popup(
-            DOMPurify.sanitize(`<h3>${escapeHtml(tr('STMemoryBooks_Clip_MultipleWrappersTitle', 'Multiple Clip Sections'))}</h3><p>${escapeHtml(tr('STMemoryBooks_Clip_MultipleWrappersMessage', 'STMB Clip entries support one section per entry. Convert this entry to one section using the title-derived headline?'))}</p>`),
-            POPUP_TYPE.CONFIRM,
-            '',
-            {
-                okButton: tr('STMemoryBooks_Clip_ConvertOneSection', 'Convert to One Section'),
-                cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
-            },
-        );
-        if (await popup.show() !== POPUP_RESULT.AFFIRMATIVE) return null;
-        return { action: 'convert', headline, title: entry.comment, content: stripWrapperMarkerLines(entry.content || '') };
+        if (!await confirmMultipleWrapperConversion()) return null;
+        return convertExistingContentToWrappedContent(stripWrapperMarkerLines(entry.content || ''), headline, bulletText);
     }
 
-    const popup = new Popup(
-        DOMPurify.sanitize(`
-            <h3>${escapeHtml(tr('STMemoryBooks_Clip_WrapperMismatchTitle', 'Clip Wrapper Mismatch'))}</h3>
-            <p>${escapeHtml(tr('STMemoryBooks_Clip_WrapperMismatchMessage', 'The wrapper headline does not match the entry title. Choose how to resolve it before saving.'))}</p>
-        `),
-        POPUP_TYPE.TEXT,
-        '',
-        {
-            okButton: false,
-            cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
-            customButtons: [
-                { text: tr('STMemoryBooks_Clip_RenameWrapper', 'Rename Wrapper'), result: POPUP_RESULT.CUSTOM1, appendAtEnd: true },
-                { text: tr('STMemoryBooks_Clip_ChangeTitle', 'Change Entry Title'), result: POPUP_RESULT.CUSTOM2, appendAtEnd: true },
-            ],
-        },
-    );
-    const result = await popup.show();
-    if (result === POPUP_RESULT.CUSTOM1) {
-        return {
-            action: 'append',
-            headline,
-            title: entry.comment,
-            content: replaceSingleWrapperHeadline(entry.content || '', analysis.wrapperHeadline, headline),
-        };
-    }
-    if (result === POPUP_RESULT.CUSTOM2) {
-        const newTitle = makeClipEntryTitle(analysis.wrapperHeadline);
-        const duplicate = getEntryByTitle(lorebookData, newTitle);
-        if (duplicate && duplicate !== entry) {
-            throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with that title already exists.'));
-        }
-        return {
-            action: 'append',
-            headline: analysis.wrapperHeadline,
-            title: newTitle,
-            content: entry.content || '',
-        };
-    }
-    return null;
-}
-
-function buildUpdatedExistingContent(entry, bulletText) {
-    const headline = getClipHeadlineFromTitle(entry.comment || '');
-    const analysis = analyzeClipWrapper(entry.content || '', headline);
-    if (analysis.type === 'valid') return appendBulletBeforeEndMarker(entry.content || '', headline, bulletText);
-    if (analysis.type === 'multiple') return convertExistingContentToWrappedContent(stripWrapperMarkerLines(entry.content || ''), headline, bulletText);
-    if (analysis.type === 'mismatch') return entry.content || '';
-    return convertExistingContentToWrappedContent(entry.content || '', headline, bulletText);
+    const repairedContent = replaceSingleWrapperHeadline(entry.content || '', analysis.wrapperHeadline, headline, analysis.wrapperEndHeadline);
+    return appendBulletBeforeEndMarker(repairedContent, headline, bulletText);
 }
 
 function buildClipModalHtml(selectedText, clipEntries) {
@@ -424,11 +429,11 @@ function buildClipModalHtml(selectedText, clipEntries) {
                     <option value="${CREATE_NEW_VALUE}" ${clipEntries.length ? '' : 'selected'}>${escapeHtml(tr('STMemoryBooks_Clip_CreateNewEntry', 'Create new clip entry'))}</option>
                 </select>
             </label>
+            <label class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_Clip_Headline', 'Entry title / section headline'))}</h4>
+                <input id="stmb-clip-headline" class="text_pole" type="text" />
+            </label>
             <div id="stmb-clip-new-entry-fields" class="world_entry_form_control">
-                <label>
-                    <h4>${escapeHtml(tr('STMemoryBooks_Clip_Headline', 'Entry title / section headline'))}</h4>
-                    <input id="stmb-clip-headline" class="text_pole" type="text" />
-                </label>
                 <div class="stmb-clip-activation">
                     <label><input type="radio" name="stmb-clip-activation" value="constant" checked /> ${escapeHtml(tr('STMemoryBooks_Clip_AlwaysInclude', 'Always include this entry'))}</label>
                     <label><input type="radio" name="stmb-clip-activation" value="keyword" /> ${escapeHtml(tr('STMemoryBooks_Clip_ActivateByKeywords', 'Activate by keywords'))}</label>
@@ -472,6 +477,12 @@ function attachClipModalHandlers(popup, lorebookName, lorebookData, clipEntries)
     const getSelectedEntry = () => getEntryByTitle(lorebookData, entrySelect?.value || '');
     const getBulletText = () => clipText?.value || '';
 
+    const syncHeadlineFromSelection = () => {
+        if (!headlineInput) return;
+        const entry = getSelectedEntry();
+        headlineInput.value = entry ? getClipHeadlineFromTitle(entry.comment || '') : '';
+    };
+
     const syncActivation = () => {
         const activation = dlg.querySelector('input[name="stmb-clip-activation"]:checked')?.value || 'constant';
         if (keywordsRow) keywordsRow.style.display = activation === 'keyword' ? 'block' : 'none';
@@ -488,9 +499,9 @@ function attachClipModalHandlers(popup, lorebookName, lorebookData, clipEntries)
             if (mode === 'existing') {
                 const entry = getSelectedEntry();
                 current = entry?.content || '';
-                preview = entry ? buildUpdatedExistingContent(entry, getBulletText()) : '';
+                preview = entry ? buildUpdatedExistingContent(entry, getBulletText(), headlineInput?.value || '') : '';
             } else {
-                const headline = validateClipHeadline(headlineInput?.value || tr('STMemoryBooks_Clip_NewHeadlinePlaceholder', 'New Clip Entry'));
+                const headline = validateClipHeadline(headlineInput?.value || '');
                 preview = createClipEntryContent(headline, getBulletText());
             }
         } catch (error) {
@@ -502,7 +513,10 @@ function attachClipModalHandlers(popup, lorebookName, lorebookData, clipEntries)
         if (tokenWarning) tokenWarning.hidden = estimateTokens(preview) <= TOKEN_WARNING_THRESHOLD;
     };
 
-    entrySelect?.addEventListener('change', refreshPreview);
+    entrySelect?.addEventListener('change', () => {
+        syncHeadlineFromSelection();
+        refreshPreview();
+    });
     clipText?.addEventListener('input', refreshPreview);
     headlineInput?.addEventListener('input', refreshPreview);
     dlg.querySelectorAll('input[name="stmb-clip-activation"]').forEach(input => {
@@ -519,6 +533,7 @@ function attachClipModalHandlers(popup, lorebookName, lorebookData, clipEntries)
     });
 
     syncActivation();
+    syncHeadlineFromSelection();
     refreshPreview();
 }
 
@@ -555,18 +570,19 @@ async function showLongEntryWarning(lorebookName, lorebookData, entry, content) 
     return false;
 }
 
-async function saveExistingClip(lorebookName, lorebookData, title, bulletText) {
+async function saveExistingClip(lorebookName, lorebookData, title, bulletText, editedHeadline) {
     const entry = getEntryByTitle(lorebookData, title);
     if (!entry) throw new Error(tr('STMemoryBooks_Clip_ErrorEntryNotFound', 'Selected clip entry was not found.'));
 
-    let headline = getClipHeadlineFromTitle(entry.comment || '');
-    let resolved = await resolveWrapperMismatch(entry, lorebookData, headline);
-    if (!resolved) return false;
+    const headline = validateClipHeadline(editedHeadline);
+    const newTitle = makeClipEntryTitle(headline);
+    const duplicate = getClipEntryByFinalTitle(lorebookData, newTitle);
+    if (duplicate && duplicate !== entry) {
+        throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with this title already exists.'));
+    }
 
-    headline = resolved.headline;
-    let updatedContent = resolved.action === 'convert'
-        ? convertExistingContentToWrappedContent(resolved.content, headline, bulletText)
-        : appendBulletBeforeEndMarker(resolved.content, headline, bulletText);
+    const updatedContent = await buildExistingContentForSave(entry, bulletText, headline);
+    if (updatedContent == null) return false;
 
     if (hasDuplicateBullet(entry.content || '', formatClipBullet(bulletText)) && !await confirmDuplicateBullet()) {
         return false;
@@ -576,7 +592,7 @@ async function saveExistingClip(lorebookName, lorebookData, title, bulletText) {
         return false;
     }
 
-    entry.comment = resolved.title;
+    entry.comment = newTitle;
     entry.content = updatedContent;
     await saveLorebook(lorebookName, lorebookData);
     return true;
@@ -585,8 +601,8 @@ async function saveExistingClip(lorebookName, lorebookData, title, bulletText) {
 async function saveNewClip(lorebookName, lorebookData, dlg) {
     const headline = validateClipHeadline(dlg.querySelector('#stmb-clip-headline')?.value || '');
     const title = makeClipEntryTitle(headline);
-    if (getEntryByTitle(lorebookData, title)) {
-        throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with that title already exists.'));
+    if (getClipEntryByFinalTitle(lorebookData, title)) {
+        throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with this title already exists.'));
     }
 
     const bulletText = dlg.querySelector('#stmb-clip-text')?.value || '';
@@ -669,9 +685,10 @@ export async function openClipModalFromSelection({ selectedText, source = 'messa
         const bulletText = dlg.querySelector('#stmb-clip-text')?.value || '';
         formatClipBullet(bulletText);
         const selectedTitle = dlg.querySelector('#stmb-clip-entry-select')?.value || CREATE_NEW_VALUE;
+        const editedHeadline = dlg.querySelector('#stmb-clip-headline')?.value || '';
         const saved = selectedTitle === CREATE_NEW_VALUE
             ? await saveNewClip(lorebookName, lorebookData, dlg)
-            : await saveExistingClip(lorebookName, lorebookData, selectedTitle, bulletText);
+            : await saveExistingClip(lorebookName, lorebookData, selectedTitle, bulletText, editedHeadline);
 
         if (saved) {
             toastr.success(tr('STMemoryBooks_Clip_SaveSuccess', 'Clip saved to Memory Book.'), 'STMemoryBooks');
@@ -747,11 +764,18 @@ function updateFloatingClipButton() {
     }
 
     const buttonWidth = floatingClipButton.offsetWidth || 32;
-    const topCandidate = state.rect.top - FLOATING_CLIP_OFFSET;
-    const top = Math.max(6, topCandidate > 0 ? topCandidate : state.rect.bottom + 6);
+    const buttonHeight = floatingClipButton.offsetHeight || 32;
+    const edgeLeft = state.direction === 'rtl'
+        ? state.rect.left - buttonWidth - FLOATING_CLIP_X_OFFSET
+        : state.rect.right + FLOATING_CLIP_X_OFFSET;
+    const edgeTop = state.rect.top + (state.rect.height / 2) - (buttonHeight / 2) + FLOATING_CLIP_Y_OFFSET;
     const left = Math.min(
-        window.innerWidth - buttonWidth - 6,
-        Math.max(6, state.rect.left + (state.rect.width / 2) - (buttonWidth / 2)),
+        window.innerWidth - buttonWidth - FLOATING_CLIP_VIEWPORT_PADDING,
+        Math.max(FLOATING_CLIP_VIEWPORT_PADDING, edgeLeft),
+    );
+    const top = Math.min(
+        window.innerHeight - buttonHeight - FLOATING_CLIP_VIEWPORT_PADDING,
+        Math.max(FLOATING_CLIP_VIEWPORT_PADDING, edgeTop),
     );
 
     floatingClipButton.style.top = `${Math.round(top)}px`;
