@@ -522,6 +522,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "開啟摘要提示管理器失敗",
   "STMemoryBooks_SidePrompts": "追蹤器與側邊提示",
   "STMemoryBooks_FailedToOpenSidePrompts": "開啟側邊提示失敗",
+  "STMemoryBooks_FailedToOpenCompactReview": "開啟壓縮／檢查失敗",
   "STMemoryBooks_SelectPresetFirst": "請先選擇一個預設",
   "STMemoryBooks_NoProfilesAvailable": "沒有可用的設定檔",
   "STMemoryBooks_SelectedProfileNotFound": "未找到所選的設定檔",

@@ -518,6 +518,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "要約プロンプトマネージャーを開けませんでした",
   "STMemoryBooks_SidePrompts": "トラッカーとサイドプロンプト",
   "STMemoryBooks_FailedToOpenSidePrompts": "サイドプロンプトを開けませんでした",
+  "STMemoryBooks_FailedToOpenCompactReview": "Compact / Review を開けませんでした",
   "STMemoryBooks_SelectPresetFirst": "最初にプリセットを選択してください",
   "STMemoryBooks_NoProfilesAvailable": "利用可能なプロファイルがありません",
   "STMemoryBooks_SelectedProfileNotFound": "選択されたプロファイルが見つかりません",

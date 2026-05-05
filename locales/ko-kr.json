@@ -763,6 +763,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "요약 프롬프트 관리자를 열지 못했습니다",
   "STMemoryBooks_SidePrompts": "트래커 & 사이드 프롬프트",
   "STMemoryBooks_FailedToOpenSidePrompts": "사이드 프롬프트를 열지 못했습니다",
+  "STMemoryBooks_FailedToOpenCompactReview": "Compact / Review를 열지 못했습니다",
   "STMemoryBooks_SelectPresetFirst": "먼저 사전 설정을 선택하세요",
   "STMemoryBooks_NoProfilesAvailable": "사용 가능한 프로필 없음",
   "STMemoryBooks_SelectedProfileNotFound": "선택한 프로필을 찾을 수 없습니다",

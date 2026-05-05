@@ -725,6 +725,7 @@ export const localeData_en = {
     'STMemoryBooks_FailedToOpenSummaryPromptManager': 'Failed to open Summary Prompt Manager',
     'STMemoryBooks_SidePrompts': 'Side Prompts',
     'STMemoryBooks_FailedToOpenSidePrompts': 'Failed to open Side Prompts',
+    'STMemoryBooks_FailedToOpenCompactReview': 'Failed to open Compact / Review',
     'STMemoryBooks_SelectPresetFirst': 'Select a preset first',
     'STMemoryBooks_NoProfilesAvailable': 'No profiles available',
     'STMemoryBooks_SelectedProfileNotFound': 'Selected profile not found',

@@ -517,6 +517,7 @@
     "STMemoryBooks_FailedToOpenSummaryPromptManager": "Zusammenfassungs-Prompt-Manager konnte nicht geöffnet werden",
     "STMemoryBooks_SidePrompts": "Tracker & Neben-Prompts",
     "STMemoryBooks_FailedToOpenSidePrompts": "Side-Prompts konnten nicht geöffnet werden",
+    "STMemoryBooks_FailedToOpenCompactReview": "Compact / Review konnte nicht geöffnet werden",
     "STMemoryBooks_SelectPresetFirst": "Wähle zuerst eine Vorlage aus",
     "STMemoryBooks_NoProfilesAvailable": "Keine Profile verfügbar",
     "STMemoryBooks_SelectedProfileNotFound": "Gewähltes Profil nicht gefunden",

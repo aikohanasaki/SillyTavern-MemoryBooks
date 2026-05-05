@@ -525,6 +525,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "Gagal membuka Pengurus Prom Ringkasan",
   "STMemoryBooks_SidePrompts": "Penjejak & Prom Sampingan",
   "STMemoryBooks_FailedToOpenSidePrompts": "Gagal membuka Prom Sampingan",
+  "STMemoryBooks_FailedToOpenCompactReview": "Gagal membuka Compact / Review",
   "STMemoryBooks_SelectPresetFirst": "Pilih pratetap dahulu",
   "STMemoryBooks_NoProfilesAvailable": "Tiada profil tersedia",
   "STMemoryBooks_SelectedProfileNotFound": "Profil yang dipilih tidak ditemui",

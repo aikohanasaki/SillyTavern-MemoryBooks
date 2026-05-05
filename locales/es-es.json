@@ -518,6 +518,7 @@
     "STMemoryBooks_FailedToOpenSummaryPromptManager": "No se pudo abrir el Gestor de Prompts de Resumen",
     "STMemoryBooks_SidePrompts": "Rastreadores y Prompts secundarios",
     "STMemoryBooks_FailedToOpenSidePrompts": "No se pudieron abrir los Prompts Laterales",
+    "STMemoryBooks_FailedToOpenCompactReview": "No se pudo abrir Compact / Review",
     "STMemoryBooks_SelectPresetFirst": "Seleccione un preajuste primero",
     "STMemoryBooks_NoProfilesAvailable": "No hay perfiles disponibles",
     "STMemoryBooks_SelectedProfileNotFound": "Perfil seleccionado no encontrado",

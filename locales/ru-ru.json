@@ -526,6 +526,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "Не удалось открыть Менеджер Промптов Сводки",
   "STMemoryBooks_SidePrompts": "Трекеры и Боковые промты",
   "STMemoryBooks_FailedToOpenSidePrompts": "Не удалось открыть Боковые Промпты",
+  "STMemoryBooks_FailedToOpenCompactReview": "Не удалось открыть Сжать / Проверить",
   "STMemoryBooks_SelectPresetFirst": "Сначала выберите пресет",
   "STMemoryBooks_NoProfilesAvailable": "Профили отсутствуют",
   "STMemoryBooks_SelectedProfileNotFound": "Выбранный профиль не найден",
