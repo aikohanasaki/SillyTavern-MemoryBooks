@@ -18,6 +18,7 @@ import { getSceneMarkers } from './sceneManager.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
 let hasShownSidePromptRangeTip = false;
+export const STMB_SIDE_PROMPT_TITLE_SUFFIX = ' (STMB SidePrompt)';
 
 // Serialize preview popups to avoid overlap; enqueue in order of receipt
 let previewQueue = Promise.resolve();
@@ -480,7 +481,16 @@ function makeUpsertParamsFromLorebook(lbs, runtimeMacros = {}) {
 }
 
 function getSidePromptTitleSuffix() {
-    return ' (STMB SidePrompt)';
+    return STMB_SIDE_PROMPT_TITLE_SUFFIX;
+}
+
+export function isSidePromptEntryTitle(title) {
+    if (typeof title !== 'string') return false;
+    const clean = title.trimEnd();
+    return clean.endsWith(STMB_SIDE_PROMPT_TITLE_SUFFIX)
+        || clean.endsWith(' (STMB Plotpoints)')
+        || clean.endsWith(' (STMB Scoreboard)')
+        || clean.endsWith(' (STMB Tracker)');
 }
 
 function getResolvedSidePromptTitleBase(tpl, runtimeMacros = {}) {

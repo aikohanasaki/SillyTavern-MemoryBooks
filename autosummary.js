@@ -89,7 +89,7 @@ async function validateLorebookForAutoSummary() {
             createContext: 'auto-summary',
             manualMode: true,
             lorebookName,
-            retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, retry memory generation.'),
+            retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, try again.'),
         });
     }
 
@@ -97,7 +97,7 @@ async function validateLorebookForAutoSummary() {
         createContext: 'auto-summary',
         manualMode: false,
         lorebookName: chat_metadata?.[METADATA_KEY] || null,
-        retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, retry memory generation.'),
+        retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, try again.'),
     });
 }
 

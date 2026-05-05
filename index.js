@@ -110,6 +110,11 @@ import {
   runSidePrompt,
   runSidePromptSet,
 } from "./sidePrompts.js";
+import {
+  hideFloatingClipButton,
+  initializeFloatingClipButton,
+  refreshFloatingClipButtonSetting,
+} from "./clipManager.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
@@ -321,6 +326,7 @@ const defaultSettings = {
     alwaysUseDefault: true,
     showMemoryPreviews: false,
     showNotifications: true,
+    showFloatingClipButton: true,
     unhideBeforeMemory: false,
     refreshEditor: true,
     maxTokens: DEFAULT_MAX_TOKENS,
@@ -397,8 +403,7 @@ function processNodeForMessages(node) {
 
   // If the node itself is a message element
   if (node.matches && node.matches("#chat .mes[mesid]")) {
-    if (!node.querySelector(".mes_stmb_start")) {
-      createSceneButtons(node);
+    if (createSceneButtons(node)) {
       processedMessages.push(node);
     }
   }
@@ -406,8 +411,7 @@ function processNodeForMessages(node) {
   else if (node.querySelectorAll) {
     const newMessages = node.querySelectorAll("#chat .mes[mesid]");
     newMessages.forEach((mes) => {
-      if (!mes.querySelector(".mes_stmb_start")) {
-        createSceneButtons(mes);
+      if (createSceneButtons(mes)) {
         processedMessages.push(mes);
       }
     });
@@ -527,6 +531,7 @@ function handleChatChanged() {
       "index.log.chatChanged",
     ),
   );
+  hideFloatingClipButton();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
 
@@ -1636,6 +1641,9 @@ function validateSettings(settings) {
   settings.moduleSettings.autoSummaryBuffer = clampInt(settings.moduleSettings.autoSummaryBuffer ?? 0, 0, 50);
   if (settings.moduleSettings.autoConsolidationPromptEnabled === undefined) {
     settings.moduleSettings.autoConsolidationPromptEnabled = false;
+  }
+  if (settings.moduleSettings.showFloatingClipButton === undefined) {
+    settings.moduleSettings.showFloatingClipButton = true;
   }
   settings.moduleSettings.autoConsolidationTargetTiers =
     normalizeAutoConsolidationTargetTiers(
@@ -5204,6 +5212,7 @@ async function showSettingsPopup() {
     alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
     showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
+    showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
     unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
     refreshEditor: settings.moduleSettings.refreshEditor,
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
@@ -5438,6 +5447,13 @@ function setupSettingsEventListeners() {
     if (e.target.matches("#stmb-show-notifications")) {
       settings.moduleSettings.showNotifications = e.target.checked;
       saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-show-floating-clip-button")) {
+      settings.moduleSettings.showFloatingClipButton = e.target.checked;
+      saveSettingsDebounced();
+      refreshFloatingClipButtonSetting();
       return;
     }
 
@@ -5839,6 +5855,9 @@ function persistMainPopupSettings(popupElement) {
   const showNotifications =
     popupElement.querySelector("#stmb-show-notifications")?.checked ??
     settings.moduleSettings.showNotifications;
+  const showFloatingClipButton =
+    popupElement.querySelector("#stmb-show-floating-clip-button")?.checked ??
+    (settings.moduleSettings.showFloatingClipButton !== false);
   const unhideBeforeMemory =
     popupElement.querySelector("#stmb-unhide-before-memory")?.checked ??
     settings.moduleSettings.unhideBeforeMemory;
@@ -5920,6 +5939,12 @@ function persistMainPopupSettings(popupElement) {
 
   if (showNotifications !== settings.moduleSettings.showNotifications) {
     settings.moduleSettings.showNotifications = showNotifications;
+    hasChanges = true;
+  }
+
+  if (showFloatingClipButton !== (settings.moduleSettings.showFloatingClipButton !== false)) {
+    settings.moduleSettings.showFloatingClipButton = showFloatingClipButton;
+    refreshFloatingClipButtonSetting();
     hasChanges = true;
   }
 
@@ -6103,6 +6128,7 @@ async function refreshPopupContent() {
       alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
       showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
       showNotifications: settings.moduleSettings.showNotifications,
+      showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
       unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
       refreshEditor: settings.moduleSettings.refreshEditor,
       allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
@@ -6228,9 +6254,7 @@ function processExistingMessages() {
   if (messageElements.length > 0) {
     let buttonsAdded = 0;
     messageElements.forEach((messageElement) => {
-      // Check if buttons are already there to prevent duplication
-      if (!messageElement.querySelector(".mes_stmb_start")) {
-        createSceneButtons(messageElement);
+      if (createSceneButtons(messageElement)) {
         buttonsAdded++;
       }
     });
@@ -7508,6 +7532,7 @@ async function init() {
   // Initialize scene state
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
+  initializeFloatingClipButton();
 
   // Initialize chat observer
   try {
