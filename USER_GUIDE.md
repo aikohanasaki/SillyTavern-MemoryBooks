@@ -11,6 +11,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Quick Start](#-quick-start-5-minutes-to-your-first-memory)
 - [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
 - [Choose Your Style](#-choose-your-style)
+- [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
 - [Summary Consolidation](#-summary-consolidation)
 - [Trackers, Side Prompts, & Templates](#-trackers-side-prompts--templates-advanced-feature)
@@ -145,6 +146,67 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 - Integration with custom workflows
 
 </details>
+
+---
+
+## ✂️ Clip to Memory Book
+
+Use **Clip to Memory Book** when you want to save one important line or fact without creating a full scene memory. Highlight text in chat, click the floating scissors button, then choose an existing clip entry or create a new one.
+
+### When should I use clips?
+
+Clips are best for small facts you want the AI to remember, such as:
+
+- a character preference
+- a promise or secret
+- a relationship detail
+- a pet, place, item, or recurring detail
+- a quick “note to self” that does not need a full memory summary
+
+For larger scenes, use normal Memory creation instead.
+
+### How clipping works
+
+1. Highlight the sentence or phrase you want to save.
+2. Click the floating scissors button.
+3. Choose an existing clip entry, or create a new one.
+4. Review the entry preview.
+5. Save the clip.
+
+Clip entries are normal lorebook entries marked with `[STMB Clip]`. For example:
+
+```txt
+Seraphina Healed Me [STMB Clip]
+```
+
+Inside the entry, STMB keeps the content in a clean section format:
+
+```md
+=== Seraphina Healed Me ===
+
+- Seraphina healed my wounds with magic.
+
+=== END Seraphina Healed Me ===
+```
+
+### Creating or renaming clip entries
+
+When you create a new clip entry, the entry title also becomes the section heading. You can rename the entry while clipping, and STMB will update the section heading to match.
+
+New clip entries can be:
+
+- **always active**, for facts that should always be available
+- **keyword-triggered**, for facts that should only appear when matching words come up
+
+Use keywords when the clip is only relevant to a specific topic, character, place, pet, item, or relationship.
+
+### Floating scissors button
+
+The floating scissors button only appears after you highlight text inside the chat. You can turn this button on or off in the main Memory Books popup.
+
+### Reviewing long clip entries
+
+If a clip entry gets long, STMB may remind you to review it. You can edit it yourself, or use **Compact / Review** to ask the AI to make a clip or side prompt entry more token-efficient before you choose whether to replace the original.
 
 ---
 
