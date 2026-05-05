@@ -38,6 +38,11 @@ Perlukan bot untuk mengingat perkara penting, tetapi sejarah sembang terlalu pan
   - [🔧 Mencipta Prom Sampingan Tersuai](#-mencipta-prom-sampingan-tersuai)
   - [💬 Tip Pro](#-tip-pro)
   - [🧠 Kawalan Teks Termaju dengan Sambungan Regex](#-kawalan-teks-termaju-dengan-sambungan-regex)
+- [🧹 Pemadatan](#-pemadatan)
+  - [Apa yang boleh dipadatkan?](#apa-yang-boleh-dipadatkan)
+  - [Cara menggunakan Pemadatan](#cara-menggunakan-pemadatan)
+  - [Mengedit Prom Pemadatan](#mengedit-prom-pemadatan)
+  - [Penggunaan yang baik](#penggunaan-yang-baik)
 - [⚙️ Tetapan Yang Sebenarnya Penting](#-tetapan-yang-sebenarnya-penting)
 - [🔧 Penyelesaian Masalah (Apabila Perkara Tidak Menjadi)](#-penyelesaian-masalah-apabila-perkara-tidak-menjadi)
 - [🚫 Apa Yang ST Memory Books Tidak Lakukan](#-apa-yang-st-memory-books-tidak-lakukan)
@@ -353,6 +358,74 @@ ST Memory Books boleh menjalankan skrip Regex terpilih sebelum penjanaan dan seb
 * Klik **📐 Konfigurasi regex…**
 * Pilih secara berasingan skrip yang perlu berjalan sebelum menghantar teks kepada AI dan sebelum menyimpan
 * Pilihan dalam STMB tetap berkuat kuasa walaupun skrip itu dimatikan dalam sambungan Regex
+
+---
+
+## 🧹 Pemadatan
+
+Pemadatan membantu apabila entri lorebook yang diurus oleh STMB masih berguna, tetapi sudah menjadi terlalu panjang atau berulang. Daripada memotongnya secara manual, anda boleh meminta AI menulis semula entri itu dalam bentuk yang lebih cekap token.
+
+Ini ialah alat **semak dahulu**. STMB menunjukkan kandungan asal dan draf yang dipadatkan sebelum menggantikan apa-apa.
+
+### Apa yang boleh dipadatkan?
+
+Pemadatan boleh menyenaraikan entri ini daripada Buku Memori yang dipilih:
+
+- Entri Klip
+- Entri penjejak Prom Sampingan
+- Entri memori STMB
+
+Ia tidak memaparkan entri lorebook biasa yang tidak diurus oleh STMB.
+
+### Cara menggunakan Pemadatan
+
+1. Buka pop timbul Memory Books.
+2. Klik **📝 Pemadatan**.
+3. Pilih **Buku Memori** yang mahu disemak. Jika sembang semasa anda sudah mempunyai Buku Memori, ia mungkin dipilih secara automatik.
+4. Pilih **Profil Pemadatan**. Ini memilih sambungan/model AI yang akan menulis semula entri.
+5. Secara pilihan, klik **Edit Prom Pemadatan** jika anda mahu mengubah arahan penulisan semula.
+6. Cari entri dalam jadual dan klik **Padatkan Entri**.
+7. Semak hasilnya:
+   - **Kandungan asal** menunjukkan perkara yang sedang disimpan.
+   - **Draf dipadatkan** menunjukkan penulisan semula oleh AI.
+   - Kedua-duanya menunjukkan anggaran kiraan token.
+8. Edit draf yang dipadatkan jika perlu.
+9. Pilih satu:
+   - **Gantikan dengan Versi Dipadatkan** untuk menyimpan draf menggantikan entri asal.
+   - **Salin Draf Dipadatkan** untuk menyalinnya tanpa menyimpan.
+   - **Batal** untuk membiarkan entri tidak berubah.
+
+STMB tidak sepatutnya menggantikan entri asal secara senyap. Jika anda tidak mengklik **Gantikan dengan Versi Dipadatkan**, entri lorebook kekal seperti sebelumnya.
+
+### Mengedit Prom Pemadatan
+
+Prom Pemadatan mengawal cara AI menulis semula entri. Prom terbina dalam sengaja konservatif: kekalkan fakta penting, nama, kata ganti nama, makro, tajuk pembungkus, dan penanda akhir; buang pengulangan dan kata-kata bernilai rendah; jangan reka apa-apa.
+
+Prom ini menyokong pemegang tempat berikut:
+
+- `{{ENTRY_CONTENT}}` — kandungan entri semasa. Ini wajib ada.
+- `{{ENTRY_KIND}}` — jenis entri, seperti Klip, Prom Sampingan, atau Memori.
+- `{{ENTRY_TITLE}}` — tajuk entri.
+
+Gunakan **Tetapkan Semula kepada Lalai** jika prom tersuai anda mula berkelakuan buruk.
+
+### Penggunaan yang baik
+
+Gunakan Pemadatan untuk:
+
+- entri Klip yang panjang
+- penjejak Prom Sampingan yang mengulangi perkara yang sama dari semasa ke semasa
+- entri memori yang betul tetapi terlalu mengembung
+- entri sentiasa aktif yang menggunakan terlalu banyak token
+
+Jangan gunakannya untuk:
+
+- mencipta memori baharu daripada sembang
+- menambah fakta baharu
+- membaiki kesinambungan hilang yang tidak pernah ada dalam entri
+- mengedit entri lorebook biasa di luar STMB
+
+Pemadatan ialah alat pembersihan, bukan alat penjanaan memori.
 
 ---
 

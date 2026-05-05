@@ -40,6 +40,7 @@ Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk ko
   - [🔧 Membuat Prompt Sampingan Kustom](#-membuat-prompt-sampingan-kustom)
   - [💬 Tips Pro](#-tips-pro)
   - [🧠 Kontrol Teks Lanjutan dengan Ekstensi Regex](#-kontrol-teks-lanjutan-dengan-ekstensi-regex)
+- [🧹 Pemadatan](#-pemadatan)
 - [⚙️ Pengaturan yang Benar-benar Penting](#-pengaturan-yang-benar-benar-penting)
 - [🔧 Pemecahan Masalah (Saat Ada Masalah)](#-pemecahan-masalah-saat-ada-masalah)
 - [🚫 Apa yang Tidak Dilakukan ST Memory Books](#-apa-yang-tidak-dilakukan-st-memory-books)
@@ -391,6 +392,74 @@ ST Memory Books dapat menjalankan skrip Regex yang dipilih sebelum generasi dan 
 * Klik **📐 Konfigurasi ekspresi reguler…**
 * Pilih secara terpisah skrip mana yang harus berjalan sebelum mengirim teks ke AI dan sebelum menyimpan
 * Pilihan di dalam STMB tetap berlaku meskipun skrip itu dinonaktifkan di ekstensi Regex
+
+---
+
+## 🧹 Pemadatan
+
+Pemadatan membantu ketika entri lorebook yang dikelola STMB masih berguna, tetapi sudah menjadi terlalu panjang atau berulang. Alih-alih memangkasnya secara manual, Anda dapat meminta AI menulis ulang entri tersebut menjadi bentuk yang lebih hemat token.
+
+Ini adalah alat **tinjau dulu**. STMB menampilkan konten asli dan draf yang dipadatkan sebelum mengganti apa pun.
+
+### Apa yang bisa dipadatkan?
+
+Pemadatan dapat menampilkan entri berikut dari Buku Memori yang dipilih:
+
+- entri Klip
+- entri pelacak Prompt Sampingan
+- entri Memori STMB
+
+Pemadatan tidak menampilkan entri lorebook biasa yang tidak dikelola oleh STMB.
+
+### Cara menggunakan Pemadatan
+
+1. Buka popup Memory Books.
+2. Klik **📝 Pemadatan**.
+3. Pilih **Buku Memori** yang ingin Anda tinjau. Jika chat saat ini sudah memiliki Buku Memori, buku itu mungkin dipilih otomatis.
+4. Pilih **Profil Pemadatan**. Ini memilih koneksi/model AI yang akan menulis ulang entri.
+5. Opsional: klik **Edit Prompt Pemadatan** jika Anda ingin mengubah instruksi penulisan ulang.
+6. Temukan entri di tabel dan klik **Padatkan Entri**.
+7. Tinjau hasilnya:
+   - **Konten asli** menunjukkan konten yang saat ini tersimpan.
+   - **Draf yang dipadatkan** menunjukkan hasil penulisan ulang AI.
+   - Keduanya menampilkan perkiraan jumlah token.
+8. Edit draf yang dipadatkan jika perlu.
+9. Pilih salah satu:
+   - **Ganti dengan Versi yang Dipadatkan** untuk menyimpan draf di atas entri asli.
+   - **Salin Draf yang Dipadatkan** untuk menyalinnya tanpa menyimpan.
+   - **Batal** untuk membiarkan entri tidak berubah.
+
+STMB seharusnya tidak pernah mengganti entri asli secara diam-diam. Jika Anda tidak mengklik **Ganti dengan Versi yang Dipadatkan**, entri lorebook tetap seperti sebelumnya.
+
+### Mengedit Prompt Pemadatan
+
+Prompt Pemadatan mengontrol cara AI menulis ulang entri. Prompt bawaan sengaja konservatif: pertahankan fakta penting, nama, kata ganti, makro, tajuk pembungkus, dan penanda akhir; hapus pengulangan dan kata-kata bernilai rendah; jangan mengarang hal baru.
+
+Prompt mendukung placeholder berikut:
+
+- `{{ENTRY_CONTENT}}` — konten entri saat ini. Ini wajib ada.
+- `{{ENTRY_KIND}}` — jenis entri, seperti Klip, Prompt Sampingan, atau Memori.
+- `{{ENTRY_TITLE}}` — judul entri.
+
+Gunakan **Atur Ulang ke Default** jika prompt kustom Anda mulai berperilaku buruk.
+
+### Penggunaan yang baik
+
+Gunakan Pemadatan untuk:
+
+- entri Klip yang panjang
+- pelacak Prompt Sampingan yang mengulang informasi seiring waktu
+- entri memori yang benar tetapi terlalu besar
+- entri yang selalu aktif dan menghabiskan terlalu banyak token
+
+Jangan gunakan untuk:
+
+- membuat memori baru dari chat
+- menambahkan fakta baru
+- memperbaiki kontinuitas yang tidak pernah ada di entri
+- mengedit entri lorebook biasa di luar STMB
+
+Pemadatan adalah alat pembersihan, bukan alat pembuatan memori.
 
 ---
 

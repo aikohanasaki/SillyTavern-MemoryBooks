@@ -712,7 +712,7 @@ export async function openClipModalFromSelection({ selectedText, source = 'messa
     try {
         const dlg = popup.dlg;
         const bulletText = dlg.querySelector('#stmb-clip-text')?.value || '';
-        formatClipBullet(bulletText);
+        formatClipBullet(bulletText); // Validates non-empty text, throws if invalid
         const selectedTitle = dlg.querySelector('#stmb-clip-entry-select')?.value || CREATE_NEW_VALUE;
         const editedHeadline = dlg.querySelector('#stmb-clip-headline')?.value || '';
         const saved = selectedTitle === CREATE_NEW_VALUE

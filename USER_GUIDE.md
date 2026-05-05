@@ -15,7 +15,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
 - [Summary Consolidation](#-summary-consolidation)
 - [Trackers, Side Prompts, & Templates](#-trackers-side-prompts--templates-advanced-feature)
-- [Compact / Review](#-compact--review)
+- [Compaction](#-compaction)
 - [Settings That Matter First](#️-settings-that-matter-first)
 - [Troubleshooting](#-troubleshooting-when-things-dont-work)
 - [What ST Memory Books Doesn't Do](#-what-st-memory-books-doesnt-do)
@@ -207,7 +207,7 @@ The floating scissors button only appears after you highlight text inside the ch
 
 ### Reviewing long clip entries
 
-If a clip entry gets long, STMB may remind you to review it. You can edit it yourself, or use **Compact / Review** to ask the AI to make a clip or side prompt entry more token-efficient before you choose whether to replace the original.
+If a clip entry gets long, STMB may remind you to review it. You can edit it yourself, or use **Compaction** to ask the AI to make a clip, side prompt, or STMB memory entry more token-efficient before you choose whether to replace the original.
 
 ---
 
@@ -423,31 +423,69 @@ Now STMB will clean the response before previewing or saving it.
 
 ## 🧹 Compaction
 
-Over time, Clip entries and Side Prompt entries can get long. Long entries can waste context, especially if they are always active. Compaction asks the AI to rewrite one STMB-managed entry so it uses fewer tokens while keeping as much useful information as possible.
+Compaction helps when an STMB-managed lorebook entry is still useful, but has become too long or repetitive. Instead of manually trimming it, you can ask the AI to rewrite the entry in a more token-efficient form.
 
-### How it works
+This is a **review first** tool. STMB shows you the original and the compacted draft before replacing anything.
 
-1. In the main STMB pop-up, scroll down to the bottom and click **Compaction**.
-2. Select the lorebook (it may be pre-selected.) Find the entry and click **Compact**.
-3. STMB sends the current entry content to the AI.
-4. Review the compacted draft.
-5. Choose whether to replace the original, edit the draft, copy it, or cancel.
+### What can be compacted?
 
-STMB should never replace the original automatically. You always get to review the compacted version first.
+Compaction can list these entries from a selected Memory Book:
 
-### Best used for
+- Clip entries
+- Side Prompt tracker entries
+- STMB memory entries
+
+It does not show ordinary lorebook entries that STMB does not manage.
+
+### How to use Compaction
+
+1. Open the Memory Books popup.
+2. Click **📝 Compaction**.
+3. Select the **Memory Book** you want to review. If your current chat already has a Memory Book, it may be selected automatically.
+4. Select a **Compaction Profile**. This chooses which AI connection/model will rewrite the entry.
+5. Optional: click **Edit Compaction Prompt** if you want to change the rewrite instructions.
+6. Find the entry in the table and click **Compact Entry**.
+7. Review the result:
+   - **Original content** shows what is currently saved.
+   - **Compacted draft** shows the AI rewrite.
+   - Both show estimated token counts.
+8. Edit the compacted draft if needed.
+9. Choose one:
+   - **Replace with Compacted Version** to save the draft over the original entry.
+   - **Copy Compacted Draft** to copy it without saving.
+   - **Cancel** to leave the entry unchanged.
+
+STMB should never silently replace the original. If you do not click **Replace with Compacted Version**, the lorebook entry stays as it was.
+
+### Editing the Compaction Prompt
+
+The Compaction Prompt controls how the AI rewrites entries. The built-in prompt is intentionally conservative: preserve important facts, names, pronouns, macros, wrapper headings, and end markers; remove repetition and low-value wording; do not invent anything.
+
+The prompt supports these placeholders:
+
+- `{{ENTRY_CONTENT}}` — the current entry content. This is required.
+- `{{ENTRY_KIND}}` — the entry type, such as Clip, SidePrompt, or Memory.
+- `{{ENTRY_TITLE}}` — the entry title.
+
+Use **Reset to Default** if your custom prompt stops behaving well.
+
+### Good uses
+
+Use Compaction for:
 
 - long Clip entries
-- Side Prompt tracker entries
-- repeated or overlapping notes
-- entries that are useful but starting to waste tokens
+- Side Prompt trackers that repeat themselves over time
+- memory entries that are correct but bloated
+- always-active entries that are costing too many tokens
 
-### Not meant for
+Do not use it for:
 
+- creating a new memory from chat
 - adding new facts
-- summarizing raw chat
-- creating new memories
-- rewriting ordinary lorebook entries that STMB does not manage
+- fixing missing continuity that was never in the entry
+- editing normal lorebook entries outside STMB
+
+Compaction is a cleanup tool, not a memory-generation tool.
 
 ---
 

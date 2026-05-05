@@ -49,6 +49,7 @@ Pautan lain:
   - [Mod Cipta Lorebook Automatik](#mod-cipta-lorebook-automatik)
   - [Mod Lorebook Manual](#mod-lorebook-manual)
   - [🎡 Penjejak & Prom Sampingan](#-penjejak--prom-sampingan)
+  - [🧹 Pemadatan](#-pemadatan)
   - [🧠 Integrasi Regex untuk Penyesuaian Lanjutan](#-integrasi-regex-untuk-penyesuaian-lanjutan)
 - [👤 Pengurusan Profil](#-pengurusan-profil)
 - [⚙️ Tetapan & Konfigurasi](#-tetapan--konfigurasi)
@@ -359,6 +360,62 @@ Side Prompts ialah larian prompt STMB yang berasingan untuk mengekalkan keadaan 
 - Gunakan Side Prompt Sets apabila sembang memerlukan himpunan penjejak yang tersusun.
 - Side Prompt Set yang dipilih untuk dijalankan selepas memori akan menggantikan Side Prompts individu yang dihidupkan untuk dijalankan selepas memori dalam sembang itu.
 - Pustaka Templat Side Prompts tambahan tersedia sebagai [fail JSON](../resources/SidePromptTemplateLibrary.json). Import sahaja untuk digunakan.
+
+---
+
+### 🧹 Pemadatan
+
+Pemadatan ialah aliran semak untuk menjadikan entri lorebook yang diurus oleh STMB lebih cekap token. STMB meminta AI menulis semula satu entri sedia ada, kemudian menunjukkan kandungan asal dan draf yang dipadatkan sebelum apa-apa digantikan.
+
+Anda boleh membukanya daripada pop timbul utama Memory Books dengan **📝 Pemadatan**. Entri Klip yang panjang juga mungkin menawarkan butang **Padatkan Entri** daripada aliran Klip.
+
+#### Entri yang layak
+
+Pemadatan menyenaraikan entri yang layak daripada Buku Memori yang dipilih:
+
+- Entri Klip yang ditandakan dengan `[STMB Clip]`
+- Entri Prom Sampingan
+- Entri memori STMB yang ditandakan oleh Memory Books
+
+Entri lorebook biasa yang tidak diurus oleh STMB tidak akan dipaparkan.
+
+#### Cara ia berfungsi
+
+1. Buka Memory Books dan klik **📝 Pemadatan**.
+2. Pilih **Buku Memori**. Jika sembang semasa sudah mempunyai Buku Memori yang sah, STMB akan memilihnya terlebih dahulu; jika tidak, pilih satu daripada menu lungsur boleh cari.
+3. Pilih **Profil Pemadatan**. Ini mengawal sambungan/model AI yang digunakan untuk permintaan pemadatan.
+4. Secara pilihan, klik **Edit Prom Pemadatan** jika anda mahu mengubah arahan yang dihantar kepada AI.
+5. Klik **Padatkan Entri** di sebelah entri yang mahu ditulis semula.
+6. Bandingkan **Kandungan asal** dan **Draf dipadatkan**. STMB menunjukkan anggaran kiraan token untuk kedua-duanya.
+7. Edit draf jika perlu, kemudian pilih **Gantikan dengan Versi Dipadatkan**, **Salin Draf Dipadatkan**, atau **Batal**.
+
+STMB **tidak** menggantikan entri asal secara automatik. Entri lorebook hanya berubah jika anda mengklik **Gantikan dengan Versi Dipadatkan**.
+
+#### Prom Pemadatan
+
+Prom Pemadatan boleh diedit. Prom lalai menyuruh AI mengekalkan fakta penting, nama, kata ganti nama, makro, tajuk pembungkus, dan penanda akhir sambil membuang pengulangan dan kata-kata bernilai rendah.
+
+Pemegang tempat prom yang disokong:
+
+- `{{ENTRY_CONTENT}}` — kandungan entri lorebook semasa. Pemegang tempat ini wajib ada.
+- `{{ENTRY_KIND}}` — jenis entri, seperti Klip, Prom Sampingan, atau Memori.
+- `{{ENTRY_TITLE}}` — tajuk entri lorebook.
+
+Gunakan **Tetapkan Semula kepada Lalai** dalam editor prom jika anda mahu memulihkan Prom Pemadatan terbina dalam.
+
+#### Sesuai digunakan untuk
+
+- entri Klip yang panjang
+- entri penjejak Prom Sampingan yang telah mengumpul nota berulang
+- entri memori STMB yang berguna tetapi terlalu bertele-tele
+- entri yang sentiasa aktif dan mula membazir konteks
+
+#### Tidak dimaksudkan untuk
+
+- menambah fakta baharu
+- meringkaskan sembang mentah
+- mencipta memori baharu
+- menulis semula entri lorebook biasa yang tidak diurus oleh STMB
 
 ---
 

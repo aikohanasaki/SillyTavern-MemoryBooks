@@ -41,6 +41,7 @@
   - [💬 Consejo Pro](#-consejo-pro)
   - [⌨️ Sintaxis manual /sideprompt](#-sintaxis-manual-sideprompt)
   - [🧠 Control Avanzado de Texto con la Extensión Regex](#-control-avanzado-de-texto-con-la-extensión-regex)
+- [🧹 Compactación](#-compactación)
 - [⚙️ Configuraciones que Realmente Importan](#-configuraciones-que-realmente-importan)
 - [🔧 Solución de Problemas (Cuando las Cosas No Funcionan)](#-solución-de-problemas-cuando-las-cosas-no-funcionan)
 - [🚫 Lo que ST Memory Books No Hace](#-lo-que-st-memory-books-no-hace)
@@ -371,6 +372,74 @@ ST Memory Books puede ejecutar scripts Regex seleccionados antes de generar y an
 
 ---
 
+## 🧹 Compactación
+
+La compactación ayuda cuando una entrada de lorebook gestionada por STMB sigue siendo útil, pero se ha vuelto demasiado larga o repetitiva. En lugar de recortarla manualmente, puede pedir a la IA que la reescriba de forma más eficiente en tokens.
+
+Es una herramienta de **revisión primero**. STMB muestra el original y el borrador compactado antes de reemplazar nada.
+
+### ¿Qué se puede compactar?
+
+La compactación puede mostrar estas entradas de un Libro de Memoria seleccionado:
+
+- entradas de Clip
+- entradas de tracker de Prompt Lateral
+- entradas de memoria STMB
+
+No muestra entradas ordinarias de lorebook que STMB no gestiona.
+
+### Cómo usar la compactación
+
+1. Abra el popup de Memory Books.
+2. Haga clic en **📝 Compactación**.
+3. Seleccione el **Libro de Memoria** que quiere revisar. Si el chat actual ya tiene un Libro de Memoria, puede aparecer seleccionado automáticamente.
+4. Seleccione un **Perfil de compactación**. Esto elige qué conexión/modelo de IA reescribirá la entrada.
+5. Opcional: haga clic en **Editar prompt de compactación** si quiere cambiar las instrucciones de reescritura.
+6. Busque la entrada en la tabla y haga clic en **Compactar entrada**.
+7. Revise el resultado:
+   - **Contenido original** muestra lo que está guardado actualmente.
+   - **Borrador compactado** muestra la reescritura de la IA.
+   - Ambos muestran recuentos estimados de tokens.
+8. Edite el borrador compactado si hace falta.
+9. Elija una opción:
+   - **Reemplazar con la versión compactada** para guardar el borrador sobre la entrada original.
+   - **Copiar borrador compactado** para copiarlo sin guardar.
+   - **Cancelar** para dejar la entrada sin cambios.
+
+STMB no debería reemplazar nunca el original en silencio. Si no hace clic en **Reemplazar con la versión compactada**, la entrada de lorebook se queda como estaba.
+
+### Editar el Prompt de compactación
+
+El Prompt de compactación controla cómo la IA reescribe las entradas. El prompt incorporado es deliberadamente conservador: preservar hechos importantes, nombres, pronombres, macros, encabezados envoltorio y marcadores de fin; eliminar repetición y texto de bajo valor; no inventar nada.
+
+El prompt admite estos marcadores de posición:
+
+- `{{ENTRY_CONTENT}}` — el contenido actual de la entrada. Es obligatorio.
+- `{{ENTRY_KIND}}` — el tipo de entrada, como Clip, SidePrompt o Memory.
+- `{{ENTRY_TITLE}}` — el título de la entrada.
+
+Use **Restablecer al valor predeterminado** si su prompt personalizado deja de comportarse bien.
+
+### Buenos usos
+
+Use la compactación para:
+
+- entradas de Clip largas
+- trackers de Prompt Lateral que se repiten con el tiempo
+- entradas de memoria correctas pero infladas
+- entradas siempre activas que cuestan demasiados tokens
+
+No la use para:
+
+- crear una memoria nueva desde el chat
+- añadir nuevos datos
+- arreglar continuidad ausente que nunca estuvo en la entrada
+- editar entradas normales de lorebook fuera de STMB
+
+La compactación es una herramienta de limpieza, no una herramienta de generación de memoria.
+
+---
+
 ## ⚙️ Configuraciones que Realmente Importan
 
 Para la referencia completa, consulte [readme.md](readme.md).
@@ -385,6 +454,7 @@ Controles básicos importantes:
 * **Ocultar / mostrar mensajes** ayuda a ahorrar tokens
 * **Activar Modo Manual de Lorebook** y **Crear automáticamente un lorebook si no existe** controlan dónde se guardan los recuerdos
 * **Rastreadores y Prompts secundarios** habilita los rastreadores
+* **Compactación** permite limpiar entradas largas de Clip, Prompt Lateral o memoria STMB antes de reemplazarlas
 * **Avisar para consolidar cuando una capa esté lista** solo muestra la confirmación de consolidación
 
 ---
@@ -400,6 +470,7 @@ Comprobaciones rápidas:
 * Si el auto-summary no se ejecuta, confirme que creó primero una memoria manual y que el intervalo/buffer son razonables
 * Si los recuerdos no se guardan, asegúrese de que haya un lorebook vinculado al chat o de que **Crear automáticamente un lorebook si no existe** esté activado
 * Si el comportamiento de Regex parece incorrecto, revise la selección dentro de **📐 Configurar expresiones regulares…**
+* Si no aparecen entradas en **Compactación**, seleccione un Libro de Memoria y confirme que contiene entradas STMB elegibles
 * Si la consolidación no aparece, confirme que **Avisar para consolidar cuando una capa esté lista** esté activado y que el nivel objetivo esté incluido en **Capas de auto-consolidación**
 * Si la confirmación sí aparece, recuerde que **Yes** solo abre el popup de consolidación; no ejecuta la consolidación por sí sola
 

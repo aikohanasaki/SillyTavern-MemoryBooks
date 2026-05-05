@@ -51,6 +51,7 @@ Autres liens :
   - [Mode création automatique de lorebook](#mode-création-automatique-de-lorebook)
   - [Mode lorebook manuel](#mode-lorebook-manuel)
 - [Trackers & Side Prompts](#-trackers--side-prompts)
+- [Compaction](#-compaction)
 - [Intégration Regex pour personnalisation avancée](#-intégration-regex-pour-personnalisation-avancée)
 - [Gestion des profils](#-gestion-des-profils)
 - [Paramètres & configuration](#-paramètres--configuration)
@@ -352,6 +353,62 @@ Les Side Prompts sont des exécutions de prompt STMB séparées, utilisées pour
 - Utilisez des Side Prompt Sets lorsqu’un chat a besoin d’un bundle ordonné de trackers.
 - Un Side Prompt Set sélectionné pour l’après-mémoire remplace les Side Prompts après mémoire activés individuellement pour ce chat.
 - Bibliothèque supplémentaire de modèles de Side Prompts : [fichier JSON](../resources/SidePromptTemplateLibrary.json). Il suffit de l’importer pour l’utiliser.
+
+---
+
+## 🧹 Compaction
+
+La compaction est un flux de relecture qui sert à rendre les entrées de lorebook gérées par STMB plus économes en tokens. Elle demande à l’IA de réécrire une entrée existante, puis affiche l’original et le brouillon compacté avant tout remplacement.
+
+Vous pouvez l’ouvrir depuis la fenêtre principale de Memory Books avec **📝 Compaction**. Les longues entrées de clip peuvent aussi proposer un bouton **Compacter l’entrée** depuis le flux Clip.
+
+#### Entrées éligibles
+
+La compaction liste les entrées éligibles du Memory Book sélectionné :
+
+- les entrées Clip marquées avec `[STMB Clip]`
+- les entrées SidePrompt
+- les entrées de mémoire STMB signalées par Memory Books
+
+Les entrées ordinaires de lorebook qui ne sont pas gérées par STMB ne sont pas affichées.
+
+#### Fonctionnement
+
+1. Ouvrez Memory Books et cliquez sur **📝 Compaction**.
+2. Choisissez un **Memory Book**. Si le chat actuel a déjà un Memory Book valide, STMB le présélectionne ; sinon, choisissez-en un dans le menu déroulant avec recherche.
+3. Choisissez un **Profil de compaction**. Cela contrôle quelle connexion IA / quel modèle est utilisé pour la demande de compaction.
+4. Facultatif : cliquez sur **Modifier le prompt de compaction** si vous voulez changer les instructions envoyées à l’IA.
+5. Cliquez sur **Compacter l’entrée** à côté de l’entrée que vous voulez réécrire.
+6. Comparez **Contenu original** et **Brouillon compacté**. STMB affiche les estimations de tokens pour les deux.
+7. Modifiez le brouillon si nécessaire, puis choisissez **Remplacer par la version compactée**, **Copier le brouillon compacté** ou **Annuler**.
+
+STMB ne remplace **pas** l’original automatiquement. L’entrée de lorebook ne change que si vous cliquez sur **Remplacer par la version compactée**.
+
+#### Prompt de compaction
+
+Le Prompt de compaction est modifiable. Le prompt par défaut demande à l’IA de préserver les faits importants, les noms, les pronoms, les macros, les en-têtes d’enveloppe et les marqueurs de fin, tout en supprimant les redondances et les formulations à faible valeur.
+
+Placeholders pris en charge :
+
+- `{{ENTRY_CONTENT}}` — le contenu actuel de l’entrée de lorebook. Ce placeholder est obligatoire.
+- `{{ENTRY_KIND}}` — le type d’entrée, par exemple Clip, SidePrompt ou Mémoire.
+- `{{ENTRY_TITLE}}` — le titre de l’entrée de lorebook.
+
+Utilisez **Rétablir la valeur par défaut** dans l’éditeur de prompt si vous voulez restaurer le Prompt de compaction intégré.
+
+#### Meilleurs cas d’usage
+
+- longues entrées Clip
+- entrées de tracker SidePrompt qui ont accumulé des notes répétées
+- entrées de mémoire STMB utiles mais trop verbeuses
+- entrées toujours actives qui commencent à gaspiller du contexte
+
+#### À ne pas utiliser pour
+
+- ajouter de nouveaux faits
+- résumer le chat brut
+- créer de nouvelles mémoires
+- réécrire des entrées ordinaires de lorebook que STMB ne gère pas
 
 ---
 

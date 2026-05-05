@@ -49,7 +49,7 @@ Other links:
   - [Auto-Create Lorebook Mode](#auto-create-lorebook-mode)
   - [Manual Lorebook Mode](#manual-lorebook-mode)
 - [Trackers & Side Prompts](#-trackers--side-prompts)
-- [Compact / Review](#-compaction)
+- [Compaction](#-compaction)
 - [Regex Integration for Advanced Customization](#-regex-integration-for-advanced-customization)
 - [Profile Management](#-profile-management)
 - [Settings & Configuration](#-settings--configuration)
@@ -264,7 +264,7 @@ The visible section inside the entry uses the title without `[STMB Clip]`:
 - One clip entry has one section. Use focused titles like `Things {{user}} Likes`, `Pet Names`, or `Food Preferences` so keywords can stay specific.
 - New clip entries can be always active or keyword-triggered. Always active is easiest; keywords are better when the entry should only appear sometimes.
 - Existing entries can become clip entries by adding `[STMB Clip]` to the end of the title.
-- Long clip entries may show a reminder to review or compact them. Compact / Review can help make clip and side prompt entries more token-efficient before you replace the original.
+- Long clip entries may show a reminder to review or compact them. Compaction can help make clip, side prompt, and STMB memory entries more token-efficient before you replace the original.
 - Clip entries do not add source attribution. They save only the text you chose to clip.
 
 ## 🆕 Slash Commands
@@ -364,7 +364,57 @@ Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. U
 
 ## 🧹 Compaction
 
-Compaction helps clean up long STMB-managed lorebook entries by asking the AI to make them more token-efficient while preserving important information. STMB shows the compacted draft before replacing anything, so you can compare it with the original and choose whether to use it.
+Compaction is a review workflow for making STMB-managed lorebook entries more token-efficient. It asks the AI to rewrite one existing entry, then shows you the original and the compacted draft before anything is replaced.
+
+You can open it from the main Memory Books popup with **📝 Compaction**. Long Clip entries may also offer a **Compact Entry** button from the Clip workflow.
+
+#### Eligible entries
+
+Compaction lists eligible entries from the selected Memory Book:
+
+- Clip entries marked with `[STMB Clip]`
+- Side Prompt entries
+- STMB memory entries flagged by Memory Books
+
+Ordinary lorebook entries that are not managed by STMB are not shown.
+
+#### How it works
+
+1. Open Memory Books and click **📝 Compaction**.
+2. Choose a **Memory Book**. If the current chat already has a valid Memory Book, STMB pre-selects it; otherwise, choose one from the searchable dropdown.
+3. Choose a **Compaction Profile**. This controls which AI connection/model is used for the compaction request.
+4. Optional: click **Edit Compaction Prompt** if you want to change the instructions sent to the AI.
+5. Click **Compact Entry** next to the entry you want to rewrite.
+6. Compare **Original content** and **Compacted draft**. STMB shows estimated token counts for both.
+7. Edit the draft if needed, then choose **Replace with Compacted Version**, **Copy Compacted Draft**, or **Cancel**.
+
+STMB does **not** replace the original automatically. The lorebook entry is only changed if you click **Replace with Compacted Version**.
+
+#### Compaction Prompt
+
+The Compaction Prompt is editable. The default prompt tells the AI to preserve important facts, names, pronouns, macros, wrapper headings, and end markers while removing redundancy and low-value wording.
+
+Supported prompt placeholders:
+
+- `{{ENTRY_CONTENT}}` — the current lorebook entry content. This placeholder is required.
+- `{{ENTRY_KIND}}` — the entry type, such as Clip, SidePrompt, or Memory.
+- `{{ENTRY_TITLE}}` — the lorebook entry title.
+
+Use **Reset to Default** in the prompt editor if you want to restore the built-in Compaction Prompt.
+
+#### Best used for
+
+- long Clip entries
+- Side Prompt tracker entries that have accumulated repeated notes
+- STMB memory entries that are useful but wordy
+- entries that are always active and starting to waste context
+
+#### Not meant for
+
+- adding new facts
+- summarizing raw chat
+- creating new memories
+- rewriting ordinary lorebook entries that STMB does not manage
 
 ---
 

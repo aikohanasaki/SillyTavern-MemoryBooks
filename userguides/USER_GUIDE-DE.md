@@ -40,6 +40,7 @@ Brauchst du einen Bot, der sich an Dinge erinnert, aber der Chat ist zu lang fü
   - [💬 Pro-Tipp](#-pro-tipp)
   - [⌨️ Manuelle /sideprompt-Syntax](#-manuelle-sideprompt-syntax)
   - [🧠 Erweiterte Textkontrolle mit der Regex-Erweiterung](#-erweiterte-textkontrolle-mit-der-regex-erweiterung)
+- [🧹 Kompaktierung](#-kompaktierung)
 - [⚙️ Einstellungen, die wirklich wichtig sind](#-einstellungen-die-wirklich-wichtig-sind)
 - [🔧 Fehlerbehebung (Wenn Dinge nicht funktionieren)](#-fehlerbehebung-wenn-dinge-nicht-funktionieren)
 - [🚫 Was ST Memory Books nicht tut](#-was-st-memory-books-nicht-tut)
@@ -178,7 +179,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 * `/creatememory` - Erstelle Erinnerung aus der aktuell markierten Szene
 * `/nextmemory` - Fasse alles seit der letzten Erinnerung zusammen
 * `/sideprompt "Relationship Tracker" {{macro}}="value" [X-Y]` - Führe einen benutzerdefinierten Tracker aus, optional mit Bereich
-* `/sideprompt-on "Name"` oder `/sideprompt-off "Name"` - Schalte einen Side Prompt manuell ein oder aus
+* `/sideprompt-on "Name"` oder `/sideprompt-off "Name"` - Schalte einen Side-Prompt manuell ein oder aus
 * `/stmb-set-highest <N|none>` - Setze die Auto-Summary-Basis für den aktuellen Chat
 
 **Was du bekommst:**
@@ -303,7 +304,7 @@ Wenn die KI eine schlechte Konsolidierungs-Antwort liefert, kannst du die Antwor
 
 ### 💡 **Beispiele für Vorlagen**
 
-* Side Prompt Vorlagenbibliothek (importiere dieses JSON):
+* Side-Prompt-Vorlagenbibliothek (importiere dieses JSON):
 [SidePromptTemplateLibrary.json](../resources/SidePromptTemplateLibrary.json)
 
 Beispielhafte Prompt-Ideen:
@@ -342,10 +343,10 @@ Hinweise:
 
 - Der Name des Neben-Prompts muss in Anführungszeichen stehen.
 - Laufzeitmakro-Werte müssen ebenfalls in Anführungszeichen stehen.
-- Die Slash-Befehl-Autovervollständigung schlägt erforderliche Laufzeitmakros vor, nachdem du den Side Prompt ausgewählt hast.
+- Die Slash-Befehl-Autovervollständigung schlägt erforderliche Laufzeitmakros vor, nachdem du den Side-Prompt ausgewählt hast.
 - Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, bleibt STMB dabei im manuellen Modus und entfernt automatische Trigger.
-- `X-Y` ist optional. Wenn du es weglässt, verwendet STMB die Nachrichten seit dem letzten Zeitpunkt, an dem dieser Side Prompt aktualisiert wurde.
-- Wenn du Neben-Prompts manuell und getrennt ausführst, denke daran, **Versteckte Nachrichten vor der Erstellung einblenden** zu aktivieren.
+- `X-Y` ist optional. Wenn du es weglässt, verwendet STMB die Nachrichten seit dem letzten Zeitpunkt, an dem dieser Side-Prompt aktualisiert wurde.
+- Wenn du Neben-Prompts manuell und getrennt ausführst, denke daran, **Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** zu aktivieren.
 
 ---
 
@@ -357,6 +358,74 @@ ST Memory Books kann ausgewählte Regex-Skripte vor der Generierung und vor dem 
 * Klicke auf **📐 Regex konfigurieren…**
 * Wähle getrennt, welche Skripte vor dem Senden an die KI und vor dem Speichern laufen sollen
 * Die Auswahl in STMB zählt auch dann, wenn ein Skript in der Regex-Erweiterung selbst deaktiviert ist
+
+---
+
+## 🧹 Kompaktierung
+
+Die **Kompaktierung** hilft, wenn ein von STMB verwalteter Lorebook-Eintrag noch nützlich ist, aber zu lang oder zu wiederholend geworden ist. Statt ihn manuell zu kürzen, kannst du die KI bitten, den Eintrag token-effizienter umzuschreiben.
+
+Dies ist ein Werkzeug mit **Prüfung zuerst**. STMB zeigt **Originalinhalt** und **Kompaktierter Entwurf** an, bevor irgendetwas ersetzt wird.
+
+### Was kann kompaktiert werden?
+
+Die Kompaktierung kann diese Einträge aus einem ausgewählten **Memory Book** anzeigen:
+
+- Clip-Einträge
+- Side-Prompt-Tracker-Einträge
+- STMB-Erinnerungseinträge
+
+Normale Lorebook-Einträge, die nicht von STMB verwaltet werden, werden nicht angezeigt.
+
+### So verwendest du die Kompaktierung
+
+1. Öffne das Memory-Books-Popup.
+2. Klicke auf **📝 Kompaktierung**.
+3. Wähle das **Memory Book**, das du prüfen möchtest. Wenn der aktuelle Chat bereits ein Memory Book hat, kann es automatisch ausgewählt sein.
+4. Wähle ein **Kompaktierungsprofil**. Damit wählst du, welche KI-Verbindung bzw. welches Modell den Eintrag umschreibt.
+5. Optional: Klicke auf **Kompaktierungs-Prompt bearbeiten**, wenn du die Umschreib-Anweisungen ändern möchtest.
+6. Suche den Eintrag in der Tabelle und klicke auf **Eintrag kompaktieren**.
+7. Prüfe das Ergebnis:
+   - **Originalinhalt** zeigt, was aktuell gespeichert ist.
+   - **Kompaktierter Entwurf** zeigt die KI-Umschreibung.
+   - Beide zeigen **Geschätzte Token**.
+8. Bearbeite den kompaktierten Entwurf bei Bedarf.
+9. Wähle eine Option:
+   - **Durch kompaktierte Version ersetzen**, um den Entwurf über dem ursprünglichen Eintrag zu speichern.
+   - **Kompaktierten Entwurf kopieren**, um ihn zu kopieren, ohne zu speichern.
+   - **Abbrechen**, um den Eintrag unverändert zu lassen.
+
+STMB sollte den Originaltext nie stillschweigend ersetzen. Wenn du nicht **Durch kompaktierte Version ersetzen** anklickst, bleibt der Lorebook-Eintrag unverändert.
+
+### Den Kompaktierungs-Prompt bearbeiten
+
+Der **Kompaktierungs-Prompt** steuert, wie die KI Einträge umschreibt. Der eingebaute Prompt ist absichtlich konservativ: wichtige Fakten, Namen, Pronomen, Makros, Wrapper-Überschriften und Endmarkierungen erhalten; Wiederholungen und Formulierungen mit geringem Nutzen entfernen; nichts erfinden.
+
+Der Prompt unterstützt diese Platzhalter:
+
+- `{{ENTRY_CONTENT}}` — der aktuelle Inhalt des Eintrags. Dieser Platzhalter ist erforderlich; der Prompt-Editor warnt, wenn er fehlt.
+- `{{ENTRY_KIND}}` — die Art des Eintrags, zum Beispiel Clip, Side-Prompt oder Erinnerung.
+- `{{ENTRY_TITLE}}` — der Titel des Eintrags.
+
+Verwende **Auf Standard zurücksetzen**, wenn dein eigener Prompt nicht mehr gut funktioniert.
+
+### Gute Einsatzfälle
+
+Verwende die Kompaktierung für:
+
+- lange Clip-Einträge
+- Side-Prompt-Tracker, die sich mit der Zeit wiederholen
+- Erinnerungseinträge, die korrekt, aber aufgebläht sind
+- immer aktive Einträge, die zu viele Token kosten
+
+Verwende die Kompaktierung nicht für:
+
+- eine neue Erinnerung aus dem Chat erstellen
+- neue Fakten hinzufügen
+- fehlende Kontinuität reparieren, die nie im Eintrag stand
+- normale Lorebook-Einträge außerhalb von STMB bearbeiten
+
+Die Kompaktierung ist ein Aufräumwerkzeug, kein Werkzeug zur Erinnerungserstellung.
 
 ---
 
@@ -389,7 +458,7 @@ Schnelle Checks:
 * Wenn keine Erinnerungen gespeichert werden, muss ein Lorebook gebunden sein oder **Lorebook automatisch erstellen, falls keines existiert** aktiviert sein
 * Wenn Erinnerungen nicht ausgelöst werden, muss **Delay until recursion** deaktiviert sein
 * Wenn Regex seltsam wirkt, prüfe die Auswahl in **📐 Regex konfigurieren…**
-* Wenn Konsolidierung nicht erscheint, prüfe, ob **Bei erreichter Ebene zur Konsolidierung auffordern** aktiviert ist und ob die Zielstufe in **Auto-Konsolidierungsstufen** enthalten ist
+* Wenn Konsolidierung nicht erscheint, prüfe, ob **Bei erreichter Ebene zur Konsolidierung auffordern** aktiviert ist und ob die Zielstufe in **Auto-Konsolidierungsstufen:** enthalten ist
 
 ---
 
