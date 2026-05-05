@@ -267,3 +267,9 @@
     border-bottom: 1px solid var(--SmartThemeBorderColor);
     text-align: left;
 }
+
+.stmb-review-entry-action {
+    min-width: 9.5em;
+    gap: 6px;
+    white-space: nowrap;
+}
