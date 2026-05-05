@@ -49,7 +49,7 @@ Other links:
   - [Auto-Create Lorebook Mode](#auto-create-lorebook-mode)
   - [Manual Lorebook Mode](#manual-lorebook-mode)
 - [Trackers & Side Prompts](#-trackers--side-prompts)
-- [Compact / Review](#-compact--review)
+- [Compact / Review](#-compaction)
 - [Regex Integration for Advanced Customization](#-regex-integration-for-advanced-customization)
 - [Profile Management](#-profile-management)
 - [Settings & Configuration](#-settings--configuration)
@@ -362,9 +362,9 @@ Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. U
 
 --- 
 
-## 🧹 Compact / Review
+## 🧹 Compaction
 
-Compact / Review helps clean up long STMB-managed lorebook entries. Use it when a Clip entry or Side Prompt entry has grown too large and you want the AI to make it more token-efficient. STMB will show the compacted version before replacing anything, so you can review it, edit it, copy it, or cancel.
+Compaction helps clean up long STMB-managed lorebook entries by asking the AI to make them more token-efficient while preserving important information. STMB shows the compacted draft before replacing anything, so you can compare it with the original and choose whether to use it.
 
 ---
 

@@ -421,16 +421,14 @@ Now STMB will clean the response before previewing or saving it.
 
 ---
 
-## 🧹 Compact / Review
+## 🧹 Compaction
 
-Over time, Clip entries and Side Prompt entries can get long. Long entries can waste context, especially if they are always active.
-
-**Compact / Review** asks the AI to rewrite one STMB-managed entry so it uses fewer tokens while keeping as much useful information as possible.
+Over time, Clip entries and Side Prompt entries can get long. Long entries can waste context, especially if they are always active. Compaction asks the AI to rewrite one STMB-managed entry so it uses fewer tokens while keeping as much useful information as possible.
 
 ### How it works
 
-1. Open the STMB entry you want to clean up.
-2. Click **Compact / Review**.
+1. In the main STMB pop-up, scroll down to the bottom and click **Compaction**.
+2. Select the lorebook (it may be pre-selected.) Find the entry and click **Compact**.
 3. STMB sends the current entry content to the AI.
 4. Review the compacted draft.
 5. Choose whether to replace the original, edit the draft, copy it, or cancel.

@@ -1,22 +1,29 @@
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
+import { chat_metadata, saveSettingsDebounced } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import {
     createWorldInfoEntry,
+    loadWorldInfo,
+    METADATA_KEY,
     reloadEditor,
     saveWorldInfo,
+    world_names,
 } from '../../../world-info.js';
 import { DOMPurify } from '../../../../lib.js';
 import { oai_settings } from '../../../openai.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
-import { getEntryByTitle } from './addlore.js';
+import { getEntryByTitle, isMemoryEntry } from './addlore.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
+import { getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
 import { requestCompletion } from './stmemory.js';
 import {
     getCurrentApiInfo,
     getUIModelSettings,
     normalizeCompletionSource,
+    readIntInput,
+    resolveEffectiveConnectionFromProfile,
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ClipManager';
@@ -25,6 +32,28 @@ const TOKEN_WARNING_THRESHOLD = 500;
 const FLOATING_CLIP_X_OFFSET = 6;
 const FLOATING_CLIP_Y_OFFSET = -4;
 const FLOATING_CLIP_VIEWPORT_PADDING = 8;
+
+export const DEFAULT_COMPACTION_PROMPT_TEMPLATE = `Please aggressively make this lorebook entry more token-efficient while retaining as much useful information as possible.
+
+Rules:
+- Preserve all important facts, preferences, relationships, names, unresolved plot points, promises, secrets, constraints, and character-specific details.
+- Remove redundancy, filler, repeated phrasing, and low-value wording.
+- Merge overlapping bullets where possible.
+- Keep the entry readable as a lorebook entry.
+- Do not add new facts.
+- Do not invent explanations.
+- Do not change names, pronouns, macros, or proper nouns.
+- Preserve wrapper headings and end markers exactly if present.
+- Return only the revised entry content.
+
+Entry type:
+{{ENTRY_KIND}}
+
+Entry title:
+{{ENTRY_TITLE}}
+
+Entry content:
+{{ENTRY_CONTENT}}`;
 
 export const STMB_CLIP_TITLE_SUFFIX = ' [STMB Clip]';
 
@@ -446,7 +475,7 @@ function buildClipModalHtml(selectedText, clipEntries) {
             <div class="world_entry_form_control">
                 <div class="stmb-clip-label-row">
                     <h4>${escapeHtml(tr('STMemoryBooks_Clip_CurrentContent', 'Current entry content'))}</h4>
-                    <button id="stmb-clip-compact" type="button" class="menu_button stmb-clip-compact-btn">${escapeHtml(tr('STMemoryBooks_Clip_CompactReview', 'Compact / Review'))}</button>
+                    <button id="stmb-clip-compact" type="button" class="menu_button stmb-clip-compact-btn">${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</button>
                 </div>
                 <textarea id="stmb-clip-current-content" class="text_pole stmb-clip-preview" readonly></textarea>
             </div>
@@ -549,7 +578,7 @@ async function showLongEntryWarning(lorebookName, lorebookData, entry, content) 
             cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
             customButtons: [
                 { text: tr('STMemoryBooks_Clip_ReviewEntry', 'Review Entry'), result: POPUP_RESULT.CUSTOM1, appendAtEnd: true },
-                { text: tr('STMemoryBooks_Clip_CompactWithAI', 'Compact with AI'), result: POPUP_RESULT.CUSTOM2, appendAtEnd: true },
+                { text: tr('STMemoryBooks_Compaction_Button', 'Compact Entry'), result: POPUP_RESULT.CUSTOM2, appendAtEnd: true },
                 { text: tr('STMemoryBooks_Clip_SaveAnyway', 'Save Anyway'), result: POPUP_RESULT.CUSTOM3, appendAtEnd: true },
             ],
         },
@@ -822,30 +851,160 @@ export function initializeFloatingClipButton() {
     refreshFloatingClipButtonSetting();
 }
 
-function buildCompactionPrompt(entry, entryKind) {
-    const extraRules = entryKind === 'clip'
-        ? '- Prefer concise bullets.\n- Preserve bullet format unless a paragraph would be significantly more efficient.\n'
-        : '- Preserve the intended structure of the sideprompt output.\n- Do not remove section labels unless they are redundant.\n';
-    return `Please aggressively make this lorebook entry more token-efficient while retaining as much useful information as possible.
-
-Rules:
-- Preserve all important facts, preferences, relationships, names, unresolved plot points, promises, secrets, constraints, and character-specific details.
-- Remove redundancy, filler, repeated phrasing, and low-value wording.
-- Merge overlapping bullets where possible.
-- Keep the entry readable as a lorebook entry.
-- Do not add new facts.
-- Do not invent explanations.
-- Do not change names, pronouns, macros, or proper nouns.
-- Preserve the wrapper heading and end marker exactly if present.
-${extraRules}- Return only the revised entry content.
-
-Entry content:
-${entry.content || ''}`;
+function getModuleSettings() {
+    extension_settings.STMemoryBooks = extension_settings.STMemoryBooks || {};
+    extension_settings.STMemoryBooks.moduleSettings = extension_settings.STMemoryBooks.moduleSettings || {};
+    return extension_settings.STMemoryBooks.moduleSettings;
 }
 
-async function requestCompaction(entry, entryKind) {
-    const apiInfo = getCurrentApiInfo();
-    const modelInfo = getUIModelSettings();
+function getCompactionPromptTemplate() {
+    const saved = getModuleSettings().compactionPromptTemplate;
+    return typeof saved === 'string' && saved.trim()
+        ? saved
+        : DEFAULT_COMPACTION_PROMPT_TEMPLATE;
+}
+
+function setCompactionPromptTemplate(template) {
+    getModuleSettings().compactionPromptTemplate = String(template || '');
+    saveSettingsDebounced();
+}
+
+function getCompactionProfileIndex() {
+    const settings = extension_settings?.STMemoryBooks || {};
+    const profiles = Array.isArray(settings.profiles) ? settings.profiles : [];
+    if (profiles.length === 0) return 0;
+
+    const rawIndex = Number.parseInt(settings.moduleSettings?.compactionProfileIndex, 10);
+    if (Number.isFinite(rawIndex) && rawIndex >= 0 && rawIndex < profiles.length) {
+        return rawIndex;
+    }
+
+    const defaultIndex = Number.parseInt(settings.defaultProfile, 10);
+    return Number.isFinite(defaultIndex) && defaultIndex >= 0 && defaultIndex < profiles.length
+        ? defaultIndex
+        : 0;
+}
+
+function setCompactionProfileIndex(profileIndex) {
+    const settings = extension_settings?.STMemoryBooks || {};
+    const profiles = Array.isArray(settings.profiles) ? settings.profiles : [];
+    const parsed = Number.parseInt(profileIndex, 10);
+    const fallback = getCompactionProfileIndex();
+    getModuleSettings().compactionProfileIndex = Number.isFinite(parsed) && parsed >= 0 && parsed < profiles.length
+        ? parsed
+        : fallback;
+    saveSettingsDebounced();
+}
+
+function buildCompactionProfileOptions(selectedIndex = getCompactionProfileIndex()) {
+    const settings = extension_settings?.STMemoryBooks || {};
+    const profiles = Array.isArray(settings.profiles) ? settings.profiles : [];
+    return profiles.map((profile, index) => {
+        const displayName = profile?.isBuiltinCurrentST
+            ? tr('STMemoryBooks_Profile_CurrentST', 'Current SillyTavern Settings')
+            : profile?.name || tr('STMemoryBooks_Profile', 'Profile');
+        return `<option value="${escapeHtml(String(index))}"${index === selectedIndex ? ' selected' : ''}>${escapeHtml(displayName)}</option>`;
+    }).join('');
+}
+
+function buildCompactionProfileControl(selectId) {
+    return `
+        <div class="world_entry_form_control">
+            <h4>${escapeHtml(tr('STMemoryBooks_Compaction_Profile', 'Compaction Profile'))}</h4>
+            <select id="${escapeHtml(selectId)}" class="text_pole stmb-compaction-profile-select">
+                ${buildCompactionProfileOptions()}
+            </select>
+        </div>
+    `;
+}
+
+function initializeCompactionProfileSelect(popup, selectId) {
+    const select = popup.dlg?.querySelector(`#${selectId}`);
+    if (!select || !window.jQuery || typeof window.jQuery.fn.select2 !== 'function') return;
+
+    const $select = window.jQuery(select);
+    if ($select.hasClass('select2-hidden-accessible')) {
+        $select.select2('destroy');
+    }
+
+    $select.select2({
+        width: '100%',
+        placeholder: tr('STMemoryBooks_Compaction_SelectProfile', 'Select a Compaction profile...'),
+        allowClear: false,
+        dropdownParent: window.jQuery(popup.dlg),
+    });
+}
+
+function resolveCompactionProfileConnection(profileIndex = getCompactionProfileIndex()) {
+    const settings = extension_settings?.STMemoryBooks || {};
+    const profiles = Array.isArray(settings.profiles) ? settings.profiles : [];
+    const profile = profiles[profileIndex] || profiles[getCompactionProfileIndex()] || null;
+
+    if (!profile || profile?.connection?.api === 'current_st' || profile?.useDynamicSTSettings) {
+        const apiInfo = getCurrentApiInfo();
+        const modelInfo = getUIModelSettings();
+        return {
+            api: normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai'),
+            model: modelInfo.model || '',
+            temperature: modelInfo.temperature ?? 0.3,
+        };
+    }
+
+    const conn = resolveEffectiveConnectionFromProfile(profile);
+    return {
+        ...conn,
+        temperature: conn.temperature ?? 0.3,
+    };
+}
+
+function validateCompactionPromptTemplate(template) {
+    const value = String(template || '');
+    if (!value.trim()) {
+        return tr('STMemoryBooks_PromptCannotBeEmpty', 'Prompt cannot be empty');
+    }
+    if (!value.includes('{{ENTRY_CONTENT}}')) {
+        return tr('STMemoryBooks_Compaction_PromptMissingEntryContent', 'The Compaction prompt must include {{ENTRY_CONTENT}}.');
+    }
+    return null;
+}
+
+function buildCompactionPrompt(entry, entryKind, template = getCompactionPromptTemplate()) {
+    const replacements = {
+        ENTRY_CONTENT: String(entry?.content || ''),
+        ENTRY_KIND: String(entryKind || ''),
+        ENTRY_TITLE: String(entry?.comment || ''),
+    };
+
+    return String(template || DEFAULT_COMPACTION_PROMPT_TEMPLATE).replace(
+        /\{\{(ENTRY_CONTENT|ENTRY_KIND|ENTRY_TITLE)\}\}/g,
+        (_match, token) => replacements[token] ?? '',
+    );
+}
+
+function getCompactionEntryKind(entry) {
+    const title = entry?.comment || '';
+
+    if (isClipEntryTitle(title)) return 'clip';
+    if (isSidePromptEntryTitle(title)) return 'sideprompt';
+    if (isMemoryEntry(entry)) return 'memory';
+
+    return null;
+}
+
+function getCompactionEntryKindLabel(entryKind) {
+    if (entryKind === 'clip') return tr('STMemoryBooks_Compaction_TypeClip', 'Clip');
+    if (entryKind === 'sideprompt') return tr('STMemoryBooks_Compaction_TypeSidePrompt', 'SidePrompt');
+    if (entryKind === 'memory') return tr('STMemoryBooks_Compaction_TypeMemory', 'Memory');
+    return '';
+}
+
+async function requestCompaction(entry, entryKind, template = getCompactionPromptTemplate(), profileIndex = getCompactionProfileIndex()) {
+    const promptTemplateError = validateCompactionPromptTemplate(template);
+    if (promptTemplateError) {
+        throw new Error(promptTemplateError);
+    }
+
+    const connection = resolveCompactionProfileConnection(profileIndex);
     const extra = {};
     const stmbMaxTokens = Number.parseInt(extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens, 10);
     if (Number.isFinite(stmbMaxTokens) && stmbMaxTokens > 0) {
@@ -855,47 +1014,132 @@ async function requestCompaction(entry, entryKind) {
     }
 
     const { text } = await requestCompletion({
-        api: normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai'),
-        model: modelInfo.model || '',
-        temperature: modelInfo.temperature ?? 0.3,
-        prompt: buildCompactionPrompt(entry, entryKind),
+        api: connection.api,
+        model: connection.model || '',
+        temperature: connection.temperature ?? 0.3,
+        prompt: buildCompactionPrompt(entry, entryKind, template),
+        endpoint: connection.endpoint,
+        apiKey: connection.apiKey,
         extra,
     });
     const compacted = String(text || '').trim();
     if (!compacted) {
-        throw new Error(tr('STMemoryBooks_Clip_CompactionEmpty', 'Compaction returned empty content.'));
+        throw new Error(tr('STMemoryBooks_Compaction_Empty', 'Compaction returned empty content.'));
     }
     return compacted;
+}
+
+async function showCompactionPromptEditorPopup() {
+    const content = DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_Compaction_PromptTitle', 'Compaction Prompt'))}</h3>
+        <div class="world_entry_form_control">
+            <textarea id="stmb-compaction-prompt-template" class="text_pole textarea_compact" rows="18">${escapeHtml(getCompactionPromptTemplate())}</textarea>
+        </div>
+        <div class="buttons_block gap10px">
+            <button id="stmb-compaction-save-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_SavePrompt', 'Save Prompt'))}</button>
+            <button id="stmb-compaction-reset-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_ResetPrompt', 'Reset to Default'))}</button>
+            <button id="stmb-compaction-cancel-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Cancel', 'Cancel'))}</button>
+        </div>
+    `);
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: false,
+        cancelButton: false,
+    });
+    const showPromise = popup.show();
+    const textarea = popup.dlg?.querySelector('#stmb-compaction-prompt-template');
+
+    popup.dlg?.querySelector('#stmb-compaction-save-prompt')?.addEventListener('click', () => {
+        const nextTemplate = textarea?.value || '';
+        const error = validateCompactionPromptTemplate(nextTemplate);
+        if (error) {
+            toastr.error(error, 'STMemoryBooks');
+            return;
+        }
+        setCompactionPromptTemplate(nextTemplate);
+        popup.completeAffirmative();
+    });
+    popup.dlg?.querySelector('#stmb-compaction-reset-prompt')?.addEventListener('click', () => {
+        if (textarea) {
+            textarea.value = DEFAULT_COMPACTION_PROMPT_TEMPLATE;
+            textarea.focus();
+        }
+    });
+    popup.dlg?.querySelector('#stmb-compaction-cancel-prompt')?.addEventListener('click', () => {
+        popup.completeCancelled();
+    });
+
+    return await showPromise === POPUP_RESULT.AFFIRMATIVE;
+}
+
+async function showCompactionRequestPopup(entry, originalContent, entryKind) {
+    const content = DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
+        <div class="stmb-compact-review">
+            ${buildCompactionProfileControl('stmb-compaction-request-profile-select')}
+            <div class="buttons_block gap10px">
+                <button id="stmb-edit-compaction-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_EditPrompt', 'Edit Compaction Prompt'))}</button>
+            </div>
+            <div class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_Compaction_OriginalContent', 'Original content'))} (${estimateTokens(originalContent)} ${escapeHtml(tr('STMemoryBooks_EstimatedTokens', 'Estimated tokens'))})</h4>
+                <textarea class="text_pole stmb-clip-preview" readonly>${escapeHtml(originalContent)}</textarea>
+            </div>
+        </div>
+    `);
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: tr('STMemoryBooks_Compaction_Button', 'Compact Entry'),
+        cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
+    });
+    const showPromise = popup.show();
+    initializeCompactionProfileSelect(popup, 'stmb-compaction-request-profile-select');
+    popup.dlg?.querySelector('#stmb-compaction-request-profile-select')?.addEventListener('change', (event) => {
+        setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
+    });
+    popup.dlg?.querySelector('#stmb-edit-compaction-prompt')?.addEventListener('click', () => {
+        void showCompactionPromptEditorPopup();
+    });
+    const result = await showPromise;
+    return result === POPUP_RESULT.AFFIRMATIVE && !!entry && !!entryKind;
 }
 
 export async function showCompactReviewPopup(lorebookName, lorebookData, entry, options = {}) {
     if (!entry || !lorebookName || !lorebookData) return false;
     const originalContent = options.pendingContent != null ? String(options.pendingContent) : String(entry.content || '');
-    const entryKind = isClipEntryTitle(entry.comment || '') ? 'clip' : isSidePromptEntryTitle(entry.comment || '') ? 'sideprompt' : null;
+    const entryKind = getCompactionEntryKind(entry);
     if (!entryKind) return false;
+
+    if (!options.skipPromptStep) {
+        const shouldCompact = await showCompactionRequestPopup(entry, originalContent, entryKind);
+        if (!shouldCompact) return false;
+    }
 
     let compacted = '';
     try {
         compacted = await requestCompaction({ ...entry, content: originalContent }, entryKind);
     } catch (error) {
         console.error(`${MODULE_NAME}: Compaction failed:`, error);
-        toastr.error(error?.message || tr('STMemoryBooks_Clip_CompactionFailed', 'Compaction request failed.'), 'STMemoryBooks');
+        toastr.error(error?.message || tr('STMemoryBooks_Compaction_Failed', 'Compaction failed.'), 'STMemoryBooks');
         return false;
     }
 
     const content = DOMPurify.sanitize(`
-        <h3>${escapeHtml(tr('STMemoryBooks_Clip_CompactReview', 'Compact / Review'))}</h3>
+        <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
         <div class="stmb-compact-review">
             <div class="world_entry_form_control">
-                <h4>${escapeHtml(tr('STMemoryBooks_Clip_OriginalContent', 'Original content'))} (${estimateTokens(originalContent)} ${escapeHtml(tr('STMemoryBooks_EstimatedTokens', 'Estimated tokens'))})</h4>
+                <h4>${escapeHtml(tr('STMemoryBooks_Compaction_OriginalContent', 'Original content'))} (${estimateTokens(originalContent)} ${escapeHtml(tr('STMemoryBooks_EstimatedTokens', 'Estimated tokens'))})</h4>
                 <textarea class="text_pole stmb-clip-preview" readonly>${escapeHtml(originalContent)}</textarea>
             </div>
             <div class="world_entry_form_control">
-                <h4>${escapeHtml(tr('STMemoryBooks_Clip_CompactedContent', 'Compacted content'))} (${estimateTokens(compacted)} ${escapeHtml(tr('STMemoryBooks_EstimatedTokens', 'Estimated tokens'))})</h4>
+                <h4>${escapeHtml(tr('STMemoryBooks_Compaction_CompactedDraft', 'Compacted draft'))} (${estimateTokens(compacted)} ${escapeHtml(tr('STMemoryBooks_EstimatedTokens', 'Estimated tokens'))})</h4>
                 <textarea id="stmb-compact-content" class="text_pole stmb-clip-preview">${escapeHtml(compacted)}</textarea>
             </div>
             <div class="buttons_block gap10px">
-                <button id="stmb-copy-compacted" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Clip_CopyCompactedText', 'Copy Compacted Text'))}</button>
+                <button id="stmb-copy-compacted" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_CopyDraft', 'Copy Compacted Draft'))}</button>
             </div>
         </div>
     `);
@@ -904,7 +1148,7 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
         wide: true,
         large: true,
         allowVerticalScrolling: true,
-        okButton: tr('STMemoryBooks_Clip_ReplaceEntry', 'Replace Entry'),
+        okButton: tr('STMemoryBooks_Compaction_Replace', 'Replace with Compacted Version'),
         cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
     });
     const showPromise = popup.show();
@@ -921,7 +1165,7 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
 
     const replacement = popup.dlg?.querySelector('#stmb-compact-content')?.value?.trim() || '';
     if (!replacement) {
-        toastr.error(tr('STMemoryBooks_Clip_CompactionEmpty', 'Compaction returned empty content.'), 'STMemoryBooks');
+        toastr.error(tr('STMemoryBooks_Compaction_Empty', 'Compaction returned empty content.'), 'STMemoryBooks');
         return false;
     }
 
@@ -931,32 +1175,98 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
     return true;
 }
 
+async function getDefaultCompactionLorebookName() {
+    const settings = extension_settings?.STMemoryBooks;
+    const manualMode = !!settings?.moduleSettings?.manualModeEnabled;
+    const lorebookName = manualMode
+        ? getSceneMarkers()?.manualLorebook
+        : chat_metadata?.[METADATA_KEY];
+
+    return lorebookName && Array.isArray(world_names) && world_names.includes(lorebookName)
+        ? lorebookName
+        : '';
+}
+
+async function loadCompactionEntriesForLorebook(lorebookName) {
+    if (!lorebookName) return { lorebookName: '', lorebookData: null, entries: [] };
+
+    const lorebookData = await loadWorldInfo(lorebookName);
+    const entries = Object.values(lorebookData?.entries || {})
+        .filter(entry => getCompactionEntryKind(entry) !== null)
+        .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
+
+    return { lorebookName, lorebookData, entries };
+}
+
+function initializeCompactionLorebookSelect(popup) {
+    if (!window.jQuery || typeof window.jQuery.fn.select2 !== 'function') return;
+
+    const $select = window.jQuery('#stmb-compaction-lorebook-select');
+    if (!$select.length) return;
+
+    if ($select.hasClass('select2-hidden-accessible')) {
+        $select.select2('destroy');
+    }
+
+    $select.select2({
+        width: '100%',
+        placeholder: tr('STMemoryBooks_Compaction_SelectMemoryBook', 'Select a Memory Book...'),
+        allowClear: false,
+        dropdownParent: window.jQuery(popup.dlg),
+    });
+}
+
+function buildCompactionEntryRows(entries) {
+    return entries.map(entry => {
+        const entryKind = getCompactionEntryKind(entry);
+        return `
+        <tr data-entry-uid="${escapeHtml(String(entry.uid))}">
+            <td>${escapeHtml(entry.comment || '')}</td>
+            <td>${escapeHtml(getCompactionEntryKindLabel(entryKind))}</td>
+            <td>${estimateTokens(entry.content || '')}</td>
+            <td><button type="button" class="menu_button stmb-review-entry-action">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</button></td>
+        </tr>
+        `;
+    }).join('');
+}
+
 export async function showStmbEntryReviewPopup() {
-    const validation = await validateLorebookRequirement({ createContext: 'compact-review', skipAutoCreate: true });
-    if (!validation?.valid || !validation?.data || !validation?.name) {
-        if (!validation?.handled) {
-            toastr.error(validation?.error || tr('STMemoryBooks_Error_NoValidLorebookAvailable', 'No valid lorebook available.'), 'STMemoryBooks');
-        }
+    if (!Array.isArray(world_names) || world_names.length === 0) {
+        toastr.error(tr('STMemoryBooks_Compaction_NoLorebooks', 'No Memory Books were found.'), 'STMemoryBooks');
         return;
     }
 
-    const entries = Object.values(validation.data.entries || {})
-        .filter(entry => isClipEntryTitle(entry?.comment || '') || isSidePromptEntryTitle(entry?.comment || ''))
-        .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
-    const rows = entries.map(entry => `
-        <tr data-entry-uid="${escapeHtml(String(entry.uid))}">
-            <td>${escapeHtml(entry.comment || '')}</td>
-            <td>${isClipEntryTitle(entry.comment || '') ? escapeHtml('Clip') : escapeHtml('SidePrompt')}</td>
-            <td><button type="button" class="menu_button stmb-review-entry-action">${escapeHtml(tr('STMemoryBooks_Clip_CompactReview', 'Compact / Review'))}</button></td>
-        </tr>
-    `).join('');
+    const defaultLorebookName = await getDefaultCompactionLorebookName();
+    const lorebookOptions = [
+        '<option></option>',
+        ...world_names.map(name => `<option value="${escapeHtml(name)}"${name === defaultLorebookName ? ' selected' : ''}>${escapeHtml(name)}</option>`),
+    ].join('');
 
     const popup = new Popup(DOMPurify.sanitize(`
-        <h3>${escapeHtml(tr('STMemoryBooks_Clip_ReviewEntriesTitle', 'STMB Entry Review'))}</h3>
+        <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
+        <div class="world_entry_form_control">
+            <h4>${escapeHtml(tr('STMemoryBooks_Compaction_MemoryBook', 'Memory Book'))}</h4>
+            <select id="stmb-compaction-lorebook-select" class="text_pole">
+                ${lorebookOptions}
+            </select>
+        </div>
+        ${buildCompactionProfileControl('stmb-compaction-profile-select')}
+        <div class="buttons_block gap10px">
+            <button id="stmb-edit-compaction-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_EditPrompt', 'Edit Compaction Prompt'))}</button>
+        </div>
         <div class="world_entry_form_control">
             <table class="stmb-review-entries">
-                <thead><tr><th>${escapeHtml(tr('STMemoryBooks_Clip_ExistingEntry', 'Existing clip entry'))}</th><th>${escapeHtml(tr('STMemoryBooks_Type', 'Type'))}</th><th></th></tr></thead>
-                <tbody>${rows || `<tr><td colspan="3" class="opacity70p">${escapeHtml(tr('STMemoryBooks_Clip_NoReviewableEntries', 'No STMB Clip or SidePrompt entries were found in the current Memory Book.'))}</td></tr>`}</tbody>
+                <thead>
+                    <tr>
+                        <th>${escapeHtml(tr('STMemoryBooks_Entry', 'Entry'))}</th>
+                        <th>${escapeHtml(tr('STMemoryBooks_Type', 'Type'))}</th>
+                        <th>${escapeHtml(tr('STMemoryBooks_Tokens', 'Tokens'))}</th>
+                        <th>${escapeHtml(tr('STMemoryBooks_Action', 'Action'))}</th>
+                    </tr>
+                </thead>
+                <tbody id="stmb-compaction-entry-body">
+                    <tr><td colspan="4" class="opacity70p">${escapeHtml(defaultLorebookName ? '' : tr('STMemoryBooks_Compaction_NoSelectedLorebook', 'Select a Memory Book to see eligible entries.'))}</td></tr>
+                </tbody>
             </table>
         </div>
     `), POPUP_TYPE.TEXT, '', {
@@ -967,14 +1277,71 @@ export async function showStmbEntryReviewPopup() {
         cancelButton: tr('STMemoryBooks_Close', 'Close'),
     });
 
+    let currentLorebookName = '';
+    let currentLorebookData = null;
+    let currentEntries = [];
+
+    const renderEntries = (message = '') => {
+        const tbody = popup.dlg?.querySelector('#stmb-compaction-entry-body');
+        if (!tbody) return;
+        if (message) {
+            tbody.innerHTML = `<tr><td colspan="4" class="opacity70p">${escapeHtml(message)}</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = buildCompactionEntryRows(currentEntries)
+            || `<tr><td colspan="4" class="opacity70p">${escapeHtml(tr('STMemoryBooks_Compaction_NoEligibleEntries', 'No entries eligible for Compaction were found in this Memory Book.'))}</td></tr>`;
+    };
+
+    const loadSelectedLorebook = async (lorebookName) => {
+        currentLorebookName = lorebookName || '';
+        currentLorebookData = null;
+        currentEntries = [];
+        if (!currentLorebookName) {
+            renderEntries(tr('STMemoryBooks_Compaction_NoSelectedLorebook', 'Select a Memory Book to see eligible entries.'));
+            return;
+        }
+
+        try {
+            const loaded = await loadCompactionEntriesForLorebook(currentLorebookName);
+            currentLorebookData = loaded.lorebookData;
+            currentEntries = loaded.entries;
+            renderEntries();
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Failed to load compaction lorebook:`, error);
+            currentLorebookData = null;
+            currentEntries = [];
+            renderEntries(tr('STMemoryBooks_Compaction_Failed', 'Compaction failed.'));
+        }
+    };
+
     const showPromise = popup.show();
+    initializeCompactionLorebookSelect(popup);
+    initializeCompactionProfileSelect(popup, 'stmb-compaction-profile-select');
+    popup.dlg?.querySelector('#stmb-compaction-profile-select')?.addEventListener('change', (event) => {
+        setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
+    });
+    popup.dlg?.querySelector('#stmb-edit-compaction-prompt')?.addEventListener('click', () => {
+        void showCompactionPromptEditorPopup();
+    });
+    popup.dlg?.querySelector('#stmb-compaction-lorebook-select')?.addEventListener('change', (event) => {
+        void loadSelectedLorebook(event.target.value || '');
+    });
     popup.dlg?.addEventListener('click', async (event) => {
         const button = event.target.closest('.stmb-review-entry-action');
         if (!button) return;
         const row = button.closest('tr[data-entry-uid]');
         const uid = row?.dataset?.entryUid;
-        const entry = Object.values(validation.data.entries || {}).find(item => String(item.uid) === uid);
-        if (entry) await showCompactReviewPopup(validation.name, validation.data, entry);
+        const entry = Object.values(currentLorebookData?.entries || {}).find(item => String(item.uid) === uid);
+        if (entry) {
+            const replaced = await showCompactReviewPopup(currentLorebookName, currentLorebookData, entry, { skipPromptStep: true });
+            if (replaced) {
+                currentEntries = Object.values(currentLorebookData?.entries || {})
+                    .filter(item => getCompactionEntryKind(item) !== null)
+                    .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
+                renderEntries();
+            }
+        }
     });
+    await loadSelectedLorebook(defaultLorebookName);
     await showPromise;
 }
