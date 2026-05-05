@@ -1,12 +1,12 @@
 # 📕 Memory Books (Eine SillyTavern-Erweiterung)
 
-Eine SillyTavern-Erweiterung der nächsten Generation für automatische, strukturierte und zuverlässige Erstellung von Erinnerungen. Markiere Szenen im Chat, generiere JSON-basierte Zusammenfassungen mit KI und speichere sie als Einträge in deinen Lorebooks. Unterstützt Gruppenchats, erweiterte Profilverwaltung, Side Prompts/Tracker und mehrstufige Erinnerungskonsolidierung.
+Eine SillyTavern-Erweiterung der nächsten Generation für automatische, strukturierte und zuverlässige Erstellung von Erinnerungen. Markiere Szenen im Chat, generiere JSON-basierte Zusammenfassungen mit KI und speichere sie als Einträge in deinen Lorebooks. Unterstützt Gruppenchats, erweiterte Profilverwaltung, Side-Prompts/Tracker und mehrstufige Erinnerungskonsolidierung.
 
 ### ❓ Vokabular
 
 - Scene (Szene) → Memory (Erinnerung)
 - Many Memories (Viele Erinnerungen) → Summary / Consolidation (Zusammenfassung / Konsolidierung)
-- Always-On → Side Prompt (Tracker)
+- Always-On → Side-Prompt (Tracker)
 
 ## ❗ Bitte zuerst lesen!
 
@@ -24,7 +24,7 @@ Weitere Links:
 - 💡 [Verwendung von 📕 Memory Books mit 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20German.md)
 
 > Hinweis: Unterstützt verschiedene Sprachen: siehe Ordner [`/locales`](../locales) für eine Liste. Internationale/lokalisierte Readmes und Benutzerhandbücher finden Sie im Ordner [`/userguides`](./).
-> Lorebook-Konverter und die Vorlagenbibliothek für Side Prompts befinden sich im Ordner [`/resources`](../resources).
+> Lorebook-Konverter und die Vorlagenbibliothek für Side-Prompts befinden sich im Ordner [`/resources`](../resources).
 
 ## 📑 Inhaltsverzeichnis
 
@@ -50,7 +50,8 @@ Weitere Links:
   - [Automatischer Modus (Standard)](#automatischer-modus-standard)
   - [Lorebook automatisch erstellen](#lorebook-automatisch-erstellen)
   - [Manueller Lorebook-Modus](#manueller-lorebook-modus)
-- [Tracker & Side Prompts](#-tracker--side-prompts)
+- [Tracker & Neben-Prompts](#-tracker--neben-prompts)
+- [Kompaktierung](#-kompaktierung)
 - [Regex-Integration für fortgeschrittene Anpassung](#-regex-integration-für-fortgeschrittene-anpassung)
 - [Profilverwaltung](#-profilverwaltung)
 - [Einstellungen & Konfiguration](#-einstellungen--konfiguration)
@@ -116,7 +117,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - **Scan Depth:** höher ist besser (meins ist auf 8 eingestellt)
 - **Max Recursion Steps:** 2 (allgemeine Empfehlung, nicht erforderlich)
 - **Context %:** 80% (basierend auf einem Kontextfenster von 100.000 Token) - geht davon aus, dass Sie keinen extrem großen Chatverlauf oder Bots haben.
-- Zusätzlicher Hinweis: Wenn das Erinnerungs-Lorebook Ihr einziges Lorebook ist, stellen Sie sicher, dass im STMB-Profil „Delay until recursion“ deaktiviert ist, sonst werden die Erinnerungen nicht ausgelöst!
+- Zusätzlicher Hinweis: Wenn das Erinnerungs-Lorebook Ihr einziges Lorebook ist, stellen Sie sicher, dass im STMB-Profil „Verzögern bis Rekursion“ deaktiviert ist, sonst werden die Erinnerungen nicht ausgelöst!
 
 ---
 
@@ -259,11 +260,11 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 - `/scenememory X-Y` - Setzt den Szenenbereich und erstellt eine Erinnerung (z.B. `/scenememory 10-15`).
 - `/nextmemory` - Erstellt eine Erinnerung vom Ende der letzten Erinnerung bis zur aktuellen Nachricht.
 - `/stmb-catchup interval:x start:y end:y` - Erstellt Aufhol-Erinnerungen für einen bestehenden langen Chat, indem der ausgewählte Nachrichtenbereich in Abschnitten der angegebenen Intervallgröße verarbeitet wird.
-- `/sideprompt "Name" {{macro}}="value" [X-Y]` - Führt einen Side Prompt aus (`{{macro}}`s sind optional).
-- `/sideprompt-set "Set Name" [X-Y]` - Führt ein gespeichertes Side Prompt Set aus.
-- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Führt ein Side Prompt Set aus und übergibt wiederverwendbare Makrowerte.
-- `/sideprompt-on "Name" | all` - Aktiviert einen Side Prompt nach Name oder alle.
-- `/sideprompt-off "Name" | all` - Deaktiviert einen Side Prompt nach Name oder alle.
+- `/sideprompt "Name" {{macro}}="value" [X-Y]` - Führt einen Side-Prompt aus (`{{macro}}`s sind optional).
+- `/sideprompt-set "Set Name" [X-Y]` - Führt ein gespeichertes Side-Prompt-Set aus.
+- `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Führt ein Side-Prompt-Set aus und übergibt wiederverwendbare Makrowerte.
+- `/sideprompt-on "Name" | all` - Aktiviert einen Side-Prompt nach Name oder alle.
+- `/sideprompt-off "Name" | all` - Deaktiviert einen Side-Prompt nach Name oder alle.
 - `/stmb-highest` - Gibt die höchste Nachrichten-ID für verarbeitete Erinnerungen in diesem Chat zurück.
 - `/stmb-set-highest <N|none>` - Setzt die höchste verarbeitete Nachrichten-ID für diesen Chat manuell.
 - `/stmb-stop` - Stoppt alle laufenden STMB-Generierungen überall (Notfallstopp).
@@ -301,7 +302,7 @@ Beispiel: `/stmb-catchup interval:30 start:0 end:300`
 - **Wie es funktioniert:** Erstellt und bindet automatisch ein neues Lorebook, wenn keines existiert, unter Verwendung Ihrer benutzerdefinierten Namensvorlage.
 - **Am besten für:** Neue Benutzer und schnelle Einrichtung. Perfekt für die Lorebook-Erstellung mit einem Klick.
 - **Verwendung:**
-  1. Aktivieren Sie „Auto-create lorebook if none exists“ in den Einstellungen der Erweiterung.
+  1. Aktivieren Sie „Lorebook automatisch erstellen, falls keines existiert“ in den Einstellungen der Erweiterung.
   2. Konfigurieren Sie Ihre Namensvorlage (Standard: „LTM - {{char}} - {{chat}}“).
   3. Wenn Sie eine Erinnerung ohne gebundenes Lorebook erstellen, wird automatisch eines erstellt und gebunden.
 - **Vorlagen-Platzhalter:** `{{char}}` (Charaktername), `{{user}}` (Ihr Name), `{{chat}}` (Chat-ID)
@@ -313,19 +314,19 @@ Beispiel: `/stmb-catchup interval:30 start:0 end:300`
 - **Wie es funktioniert:** Ermöglicht Ihnen die Auswahl eines anderen Lorebooks für Erinnerungen auf Chat-Basis, wobei das an den Hauptchat gebundene Lorebook ignoriert wird.
 - **Am besten für:** Fortgeschrittene Benutzer, die Erinnerungen in ein spezifisches, separates Lorebook leiten möchten.
 - **Verwendung:**
-  1. Aktivieren Sie „Enable Manual Lorebook Mode“ in den Einstellungen der Erweiterung.
+  1. Aktivieren Sie „Manuellen Lorebook-Modus aktivieren“ in den Einstellungen der Erweiterung.
   2. Wenn Sie das erste Mal eine Erinnerung in einem Chat erstellen, werden Sie aufgefordert, ein Lorebook auszuwählen.
   3. Diese Wahl wird für diesen spezifischen Chat gespeichert, bis Sie sie löschen oder zum automatischen Modus zurückkehren.
 - **Hinweis:** Kann nicht gleichzeitig mit dem Modus „Lorebook automatisch erstellen“ verwendet werden.
 
 ---
 
-### 🎡 Tracker & Side Prompts
+### 🎡 Tracker & Neben-Prompts
 
-> 📘 Side Prompts haben eine eigene Anleitung: [Side Prompts Guide](side-prompts-de.md). Verwenden Sie diese für Sets, Makros, Beispiele und Fehlerbehebung.
-> 🎡 Brauchen Sie den genauen Klickpfad? Siehe die [Scribe-Anleitung zum Aktivieren von Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
+> 📘 Side-Prompts haben eine eigene Anleitung: [Side-Prompts Guide](side-prompts-de.md). Verwenden Sie diese für Sets, Makros, Beispiele und Fehlerbehebung.
+> 🎡 Brauchen Sie den genauen Klickpfad? Siehe die [Scribe-Anleitung zum Aktivieren von Side-Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
 
-Side Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pflegen. Nutzen Sie sie für Tracker und unterstützende Notizen, die die normale Charakterantwort nicht aufblähen sollen, zum Beispiel:
+Side-Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pflegen. Nutzen Sie sie für Tracker und unterstützende Notizen, die die normale Charakterantwort nicht aufblähen sollen, zum Beispiel:
 
 - 💰 Inventar & Ressourcen („Welche Gegenstände hat der Benutzer?“)
 - ❤️ Beziehungsstatus („Was fühlt X für Y?“)
@@ -333,12 +334,12 @@ Side Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pf
 - 🎯 Quest-Fortschritt („Welche Ziele sind aktiv?“)
 - 🌍 Weltzustand („Was hat sich im Setting geändert?“)
 
-#### **Zugriff:** Klicken Sie in den Memory-Books-Einstellungen auf „🎡 Tracker & Side Prompts“.
+#### **Zugriff:** Klicken Sie in den Memory-Books-Einstellungen auf „🎡 Tracker & Neben-Prompts“.
 
 #### **Funktionen:**
 
-- Side Prompts anzeigen, erstellen, duplizieren, bearbeiten, löschen, exportieren und importieren.
-- Side Prompts manuell, nach der Erinnerungserstellung oder als Teil eines Side Prompt Sets ausführen.
+- Side-Prompts anzeigen, erstellen, duplizieren, bearbeiten, löschen, exportieren und importieren.
+- Side-Prompts manuell, nach der Erinnerungserstellung oder als Teil eines Side-Prompt-Sets ausführen.
 - Standard-SillyTavern-Makros wie `{{user}}` und `{{char}}` verwenden.
 - Laufzeit-Makros wie `{{npc name}}` verwenden, wenn ein Prompt beim Ausführen einen Wert benötigt.
 - Side-Prompt-Ausgaben als separate Side-Prompt-Einträge im Erinnerungs-Lorebook speichern.
@@ -346,12 +347,68 @@ Side Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pf
 #### **Nutzungstipps:**
 
 - Kopieren Sie von den integrierten Vorlagen, wenn Sie einen neuen Prompt erstellen.
-- Side Prompts müssen kein JSON zurückgeben. Normaler Text oder Markdown ist in Ordnung.
-- Side Prompts werden normalerweise aktualisiert/überschrieben; Erinnerungen werden sequenziell gespeichert.
+- Side-Prompts müssen kein JSON zurückgeben. Normaler Text oder Markdown ist in Ordnung.
+- Side-Prompts werden normalerweise aktualisiert/überschrieben; Erinnerungen werden sequenziell gespeichert.
 - Manuelle Syntax: `/sideprompt "Name" {{macro}}="value" [X-Y]`.
-- Verwenden Sie Side Prompt Sets, wenn ein Chat ein geordnetes Bündel von Trackern braucht.
-- Ein ausgewähltes Side Prompt Set für „nach der Erinnerungserstellung“ ersetzt in diesem Chat die einzeln aktivierten Side Prompts für „nach der Erinnerungserstellung“.
+- Verwenden Sie Side-Prompt-Sets, wenn ein Chat ein geordnetes Bündel von Trackern braucht.
+- Ein ausgewähltes Side-Prompt-Set für „nach der Erinnerungserstellung“ ersetzt in diesem Chat die einzeln aktivierten Side-Prompts für „nach der Erinnerungserstellung“.
 - Zusätzliche Side-Prompt-Vorlagenbibliothek als [JSON-Datei](../resources/SidePromptTemplateLibrary.json) - einfach importieren und verwenden.
+
+---
+
+## 🧹 Kompaktierung
+
+Die **Kompaktierung** ist ein Prüf-Workflow, mit dem STMB-verwaltete Lorebook-Einträge token-effizienter gemacht werden können. STMB bittet die KI, einen bestehenden Eintrag umzuschreiben, und zeigt danach **Originalinhalt** und **Kompaktierter Entwurf** an, bevor irgendetwas ersetzt wird.
+
+Sie öffnen die Funktion im Haupt-Popup von Memory Books über **📝 Kompaktierung**. Lange Clip-Einträge können außerdem im Clip-Workflow die Schaltfläche **Eintrag kompaktieren** anbieten.
+
+#### Geeignete Einträge
+
+Die Kompaktierung listet geeignete Einträge aus dem ausgewählten **Memory Book** auf:
+
+- Clip-Einträge mit `[STMB Clip]`
+- Side-Prompt-Einträge
+- STMB-Erinnerungseinträge, die von Memory Books markiert wurden
+
+Normale Lorebook-Einträge, die nicht von STMB verwaltet werden, werden nicht angezeigt.
+
+#### Wie es funktioniert
+
+1. Öffnen Sie Memory Books und klicken Sie auf **📝 Kompaktierung**.
+2. Wählen Sie ein **Memory Book**. Wenn der aktuelle Chat bereits ein gültiges Memory Book hat, wählt STMB es vorab aus; andernfalls wählen Sie eines aus dem durchsuchbaren Dropdown.
+3. Wählen Sie ein **Kompaktierungsprofil**. Dieses Profil bestimmt, welche KI-Verbindung bzw. welches Modell für die Kompaktierungsanfrage verwendet wird.
+4. Optional: Klicken Sie auf **Kompaktierungs-Prompt bearbeiten**, wenn Sie die Anweisungen ändern möchten, die an die KI gesendet werden.
+5. Klicken Sie neben dem Eintrag, den Sie umschreiben möchten, auf **Eintrag kompaktieren**.
+6. Vergleichen Sie **Originalinhalt** und **Kompaktierter Entwurf**. STMB zeigt für beide **Geschätzte Token** an.
+7. Bearbeiten Sie den Entwurf bei Bedarf und wählen Sie dann **Durch kompaktierte Version ersetzen**, **Kompaktierten Entwurf kopieren** oder **Abbrechen**.
+
+STMB ersetzt den Originaltext **nicht** automatisch. Der Lorebook-Eintrag wird nur geändert, wenn Sie **Durch kompaktierte Version ersetzen** anklicken.
+
+#### Kompaktierungs-Prompt
+
+Der **Kompaktierungs-Prompt** ist bearbeitbar. Der Standard-Prompt weist die KI an, wichtige Fakten, Namen, Pronomen, Makros, Wrapper-Überschriften und Endmarkierungen zu erhalten, während Wiederholungen und Formulierungen mit geringem Nutzen entfernt werden.
+
+Unterstützte Prompt-Platzhalter:
+
+- `{{ENTRY_CONTENT}}` — der aktuelle Inhalt des Lorebook-Eintrags. Dieser Platzhalter ist erforderlich; der Prompt-Editor warnt, wenn er fehlt.
+- `{{ENTRY_KIND}}` — die Art des Eintrags, zum Beispiel Clip, Side-Prompt oder Erinnerung.
+- `{{ENTRY_TITLE}}` — der Titel des Lorebook-Eintrags.
+
+Verwenden Sie **Auf Standard zurücksetzen** im Prompt-Editor, wenn Sie den eingebauten Kompaktierungs-Prompt wiederherstellen möchten.
+
+#### Am besten geeignet für
+
+- lange Clip-Einträge
+- Side-Prompt-Tracker-Einträge, die wiederholte Notizen angesammelt haben
+- STMB-Erinnerungseinträge, die nützlich, aber wortreich sind
+- Einträge, die immer aktiv sind und langsam Kontext verschwenden
+
+#### Nicht gedacht für
+
+- neue Fakten hinzufügen
+- rohen Chat zusammenfassen
+- neue Erinnerungen erstellen
+- normale Lorebook-Einträge umschreiben, die nicht von STMB verwaltet werden
 
 ---
 
@@ -361,7 +418,7 @@ Side Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pf
   1. **Prompt-Generierung:** Ändern Sie automatisch die an die KI gesendeten Prompts, indem Sie Regex-Skripte erstellen, die auf die Platzierung **User Input** abzielen.
   2. **Antwort-Parsing:** Bereinigen, neu formatieren oder standardisieren Sie die rohe Antwort der KI, bevor sie gespeichert wird, indem Sie auf die Platzierung **AI Output** abzielen.
 - **Multi-Select-Unterstützung:** Sie können mehrere Regex-Skripte für ausgehende und eingehende Verarbeitung auswählen.
-- **Wie es funktioniert:** Schalten Sie in STMB `Use regex (advanced)` ein, klicken Sie auf `📐 Configure regex…` und wählen Sie, welche Skripte STMB vor dem Senden an die KI und vor dem Parsen/Speichern der Antwort ausführen soll.
+- **Wie es funktioniert:** Schalten Sie in STMB `Regex verwenden (fortgeschritten)` ein, klicken Sie auf `📐 Regex konfigurieren…` und wählen Sie, welche Skripte STMB vor dem Senden an die KI und vor dem Parsen/Speichern der Antwort ausführen soll.
 - **Wichtig:** Die Auswahl wird von STMB gesteuert. Die dort ausgewählten Skripte laufen **auch dann**, wenn sie in der Regex-Erweiterung selbst deaktiviert sind.
 
 ---
@@ -493,7 +550,7 @@ Wenn die Einträge ausgelöst und an die KI gesendet werden, sollten Sie die KI 
 - **Kein Lorebook verfügbar oder ausgewählt:**
   - Wählen Sie im manuellen Modus ein Lorebook aus, wenn Sie dazu aufgefordert werden.
   - Binden Sie im automatischen Modus ein Lorebook an Ihren Chat.
-  - Oder aktivieren Sie „Auto-create lorebook if none exists“ für die automatische Erstellung.
+  - Oder aktivieren Sie „Lorebook automatisch erstellen, falls keines existiert“ für die automatische Erstellung.
 
 - **Lorebook-Validierungsfehler:**
   - Wahrscheinlich haben Sie das zuvor gebundene Lorebook gelöscht. Binden Sie einfach ein neues Lorebook an (es kann leer sein).
@@ -502,7 +559,7 @@ Wenn die Einträge ausgelöst und an die KI gesendet werden, sollten Sie die KI 
   - Markieren Sie sowohl Start- (►) als auch Endpunkte (◄).
 
 - **Szene überschneidet sich mit bestehender Erinnerung:**
-  - Wählen Sie einen anderen Bereich oder aktivieren Sie „Allow Scene Overlap“ in den Einstellungen.
+  - Wählen Sie einen anderen Bereich oder aktivieren Sie „Szenen-Überlappung zulassen“ in den Einstellungen.
 
 ![Warnung bei Szenenüberschneidung](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 

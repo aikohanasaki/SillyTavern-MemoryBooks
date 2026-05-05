@@ -269,6 +269,8 @@
 }
 
 .stmb-review-entry-action {
+    display: flex;
+    align-items: center;
     min-width: 9.5em;
     gap: 6px;
     white-space: nowrap;

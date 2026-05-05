@@ -48,6 +48,7 @@ Tautan lain:
   - [Mode Buat Lorebook Otomatis](#mode-buat-lorebook-otomatis)
   - [Mode Lorebook Manual](#mode-lorebook-manual)
   - [🎡 Pelacak & Prompt Sampingan](#-pelacak--prompt-sampingan)
+  - [🧹 Pemadatan](#-pemadatan)
   - [🧠 Integrasi Regex untuk Kustomisasi Tingkat Lanjut](#-integrasi-regex-untuk-kustomisasi-tingkat-lanjut)
 - [👤 Manajemen Profil](#-manajemen-profil)
 - [⚙️ Pengaturan & Konfigurasi](#-pengaturan--konfigurasi)
@@ -336,6 +337,62 @@ Side Prompt adalah proses prompt STMB terpisah untuk memelihara keadaan chat yan
 - Gunakan Side Prompt Set saat chat membutuhkan bundel tracker yang berurutan.
 - Side Prompt Set yang dipilih untuk setelah memori menggantikan Side Prompt setelah memori yang diaktifkan satu per satu untuk chat tersebut.
 - Pustaka Template Side Prompt Tambahan tersedia sebagai [file JSON](../resources/SidePromptTemplateLibrary.json) - cukup impor untuk digunakan.
+
+---
+
+### 🧹 Pemadatan
+
+Pemadatan adalah alur kerja tinjau-dulu untuk membuat entri lorebook yang dikelola STMB menjadi lebih hemat token. STMB meminta AI menulis ulang satu entri yang sudah ada, lalu menampilkan konten asli dan draf yang dipadatkan sebelum apa pun diganti.
+
+Anda dapat membukanya dari popup utama Memory Books dengan **📝 Pemadatan**. Entri Klip yang panjang juga dapat menawarkan tombol **Padatkan Entri** dari alur kerja Klip.
+
+#### Entri yang memenuhi syarat
+
+Pemadatan menampilkan entri yang memenuhi syarat dari Buku Memori yang dipilih:
+
+- entri Klip yang ditandai dengan `[STMB Clip]`
+- entri Prompt Sampingan
+- entri Memori STMB yang ditandai oleh Memory Books
+
+Entri lorebook biasa yang tidak dikelola oleh STMB tidak ditampilkan.
+
+#### Cara kerjanya
+
+1. Buka Memory Books dan klik **📝 Pemadatan**.
+2. Pilih **Buku Memori**. Jika chat saat ini sudah memiliki Buku Memori yang valid, STMB akan memilihnya lebih dulu; jika tidak, pilih satu dari dropdown yang dapat dicari.
+3. Pilih **Profil Pemadatan**. Ini menentukan koneksi/model AI yang digunakan untuk permintaan pemadatan.
+4. Opsional: klik **Edit Prompt Pemadatan** jika Anda ingin mengubah instruksi yang dikirim ke AI.
+5. Klik **Padatkan Entri** di samping entri yang ingin Anda tulis ulang.
+6. Bandingkan **Konten asli** dan **Draf yang dipadatkan**. STMB menampilkan perkiraan token untuk keduanya.
+7. Edit draf jika perlu, lalu pilih **Ganti dengan Versi yang Dipadatkan**, **Salin Draf yang Dipadatkan**, atau **Batal**.
+
+STMB **tidak** mengganti entri asli secara otomatis. Entri lorebook hanya berubah jika Anda mengklik **Ganti dengan Versi yang Dipadatkan**.
+
+#### Prompt Pemadatan
+
+Prompt Pemadatan dapat diedit. Prompt bawaan meminta AI mempertahankan fakta penting, nama, kata ganti, makro, tajuk pembungkus, dan penanda akhir sambil menghapus pengulangan serta kata-kata bernilai rendah.
+
+Placeholder prompt yang didukung:
+
+- `{{ENTRY_CONTENT}}` — konten entri lorebook saat ini. Placeholder ini wajib ada.
+- `{{ENTRY_KIND}}` — jenis entri, seperti Klip, Prompt Sampingan, atau Memori.
+- `{{ENTRY_TITLE}}` — judul entri lorebook.
+
+Gunakan **Atur Ulang ke Default** di editor prompt jika Anda ingin mengembalikan Prompt Pemadatan bawaan.
+
+#### Paling berguna untuk
+
+- entri Klip yang panjang
+- entri pelacak Prompt Sampingan yang mengumpulkan catatan berulang
+- entri Memori STMB yang masih benar tetapi terlalu bertele-tele
+- entri yang selalu aktif dan mulai memboroskan konteks
+
+#### Tidak dimaksudkan untuk
+
+- menambahkan fakta baru
+- meringkas chat mentah
+- membuat memori baru
+- menulis ulang entri lorebook biasa yang tidak dikelola STMB
 
 ---
 
