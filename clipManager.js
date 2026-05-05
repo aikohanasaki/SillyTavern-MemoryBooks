@@ -1137,10 +1137,12 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
     try {
         compacted = await requestCompaction({ ...entry, content: originalContent }, entryKind, getCompactionPromptTemplate(), profileIndex);
     } catch (error) {
+        notifyCompactionRequestSettled(options);
         console.error(`${MODULE_NAME}: Compaction failed:`, error);
         toastr.error(error?.message || tr('STMemoryBooks_Compaction_Failed', 'Compaction failed.'), 'STMemoryBooks');
         return false;
     }
+    notifyCompactionRequestSettled(options);
 
     const content = DOMPurify.sanitize(`
         <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
@@ -1239,10 +1241,37 @@ function buildCompactionEntryRows(entries) {
             <td>${escapeHtml(entry.comment || '')}</td>
             <td>${escapeHtml(getCompactionEntryKindLabel(entryKind))}</td>
             <td>${estimateTokens(entry.content || '')}</td>
-            <td><button type="button" class="menu_button stmb-review-entry-action">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</button></td>
+            <td><button type="button" class="menu_button stmb-review-entry-action"><i class="fa-solid fa-compress-alt stmb-review-entry-action-icon" aria-hidden="true"></i><span class="stmb-review-entry-action-label">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</span></button></td>
         </tr>
         `;
     }).join('');
+}
+
+function setCompactionEntryActionLoading(button, isLoading) {
+    if (!button) return;
+    const icon = button.querySelector('.stmb-review-entry-action-icon');
+    const label = button.querySelector('.stmb-review-entry-action-label');
+    button.disabled = isLoading;
+    button.toggleAttribute('aria-busy', isLoading);
+    if (icon) {
+        icon.className = isLoading
+            ? 'fa-solid fa-spinner fa-spin stmb-review-entry-action-icon'
+            : 'fa-solid fa-compress-alt stmb-review-entry-action-icon';
+    }
+    if (label) {
+        label.textContent = isLoading
+            ? tr('STMemoryBooks_Compaction_Compacting', 'Compacting…')
+            : tr('STMemoryBooks_Compaction_Button', 'Compact Entry');
+    }
+}
+
+function notifyCompactionRequestSettled(options) {
+    if (typeof options?.onCompactionRequestSettled !== 'function') return;
+    try {
+        options.onCompactionRequestSettled();
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to clear Compaction loading state:`, error);
+    }
 }
 
 export async function showStmbEntryReviewPopup() {
@@ -1343,14 +1372,30 @@ export async function showStmbEntryReviewPopup() {
     });
     popup.dlg?.addEventListener('click', async (event) => {
         const button = event.target.closest('.stmb-review-entry-action');
-        if (!button) return;
+        if (!button || button.disabled) return;
         const row = button.closest('tr[data-entry-uid]');
         const uid = row?.dataset?.entryUid;
         const entry = Object.values(currentLorebookData?.entries || {}).find(item => String(item.uid) === uid);
         if (entry) {
-            const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-compaction-profile-select');
-            setCompactionProfileIndex(profileIndex);
-            const replaced = await showCompactReviewPopup(currentLorebookName, currentLorebookData, entry, { skipPromptStep: true, profileIndex });
+            setCompactionEntryActionLoading(button, true);
+            let loadingCleared = false;
+            const clearLoadingState = () => {
+                if (loadingCleared) return;
+                loadingCleared = true;
+                setCompactionEntryActionLoading(button, false);
+            };
+            let replaced = false;
+            try {
+                const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-compaction-profile-select');
+                setCompactionProfileIndex(profileIndex);
+                replaced = await showCompactReviewPopup(currentLorebookName, currentLorebookData, entry, {
+                    skipPromptStep: true,
+                    profileIndex,
+                    onCompactionRequestSettled: clearLoadingState,
+                });
+            } finally {
+                clearLoadingState();
+            }
             if (replaced) {
                 currentEntries = Object.values(currentLorebookData?.entries || {})
                     .filter(item => getCompactionEntryKind(item) !== null)

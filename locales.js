@@ -164,6 +164,7 @@ export const localeData_en = {
     'STMemoryBooks_Clip_CompactionEmpty': 'Compaction returned empty content.',
     'STMemoryBooks_Compaction_Title': 'Compaction',
     'STMemoryBooks_Compaction_Button': 'Compact Entry',
+    'STMemoryBooks_Compaction_Compacting': 'Compacting…',
     'STMemoryBooks_Compaction_EditPrompt': 'Edit Compaction Prompt',
     'STMemoryBooks_Compaction_PromptTitle': 'Compaction Prompt',
     'STMemoryBooks_Compaction_ResetPrompt': 'Reset to Default',
