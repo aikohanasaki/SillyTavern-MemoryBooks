@@ -111,6 +111,7 @@ import {
   runSidePromptSet,
 } from "./sidePrompts.js";
 import {
+  DEFAULT_COMPACTION_PROMPT_TEMPLATE,
   hideFloatingClipButton,
   initializeFloatingClipButton,
   refreshFloatingClipButtonSetting,
@@ -345,6 +346,8 @@ const defaultSettings = {
     autoConsolidationTargetTiers: [1],
     autoCreateLorebook: false,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
+    compactionPromptTemplate: DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+    compactionProfileIndex: 0,
     useRegex: false,
     selectedRegexOutgoing: [],
     selectedRegexIncoming: [],
@@ -1668,6 +1671,22 @@ function validateSettings(settings) {
     settings.moduleSettings.lorebookNameTemplate = "LTM - {{char}} - {{chat}}";
   }
 
+  if (
+    typeof settings.moduleSettings.compactionPromptTemplate !== "string" ||
+    !settings.moduleSettings.compactionPromptTemplate.trim()
+  ) {
+    settings.moduleSettings.compactionPromptTemplate = DEFAULT_COMPACTION_PROMPT_TEMPLATE;
+  }
+
+  settings.moduleSettings.compactionProfileIndex = clampInt(
+    readIntInput(
+      { value: settings.moduleSettings.compactionProfileIndex },
+      settings.defaultProfile ?? 0,
+    ),
+    0,
+    Math.max(0, settings.profiles.length - 1),
+  );
+
   const legacyOrderMode =
     settings.moduleSettings.summaryOrderMode ??
     settings.moduleSettings.arcOrderMode ??
@@ -2982,16 +3001,16 @@ function populateInlineButtons() {
       },
     },
     {
-      text: "📝 " + translate("Compact / Review", "STMemoryBooks_Clip_CompactReview"),
+      text: "📝 " + translate("Compaction", "STMemoryBooks_Compaction_Title"),
       id: "stmb-compact-review",
       action: async () => {
         try {
           await showStmbEntryReviewPopup();
         } catch (error) {
-          console.error(`${MODULE_NAME}: Error opening Compact / Review:`, error);
+          console.error(`${MODULE_NAME}: Error opening Compaction:`, error);
           toastr.error(
             translate(
-              "Failed to open Compact / Review",
+              "Failed to open Compaction",
               "STMemoryBooks_FailedToOpenCompactReview",
             ),
             "STMemoryBooks",
