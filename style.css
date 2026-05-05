@@ -20,7 +20,7 @@
 
 .mes_stmb_start:hover,
 .mes_stmb_end:hover,
-.mes_stmb_clip:hover {
+.mes .extraMesButtons .mes_stmb_clip:hover {
     filter: grayscale(0) brightness(1.1);
 }
 
@@ -75,10 +75,34 @@
 
 .stmb_floating_clip_button {
     position: fixed;
-    z-index: 2147483646;
-    min-width: 28px;
-    min-height: 28px;
-    box-shadow: 0 2px 8px color-mix(in srgb, #000 35%, transparent 65%);
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 6px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
+    box-shadow:
+        0 2px 8px var(--SmartThemeShadowColor),
+        0 0 0 1px var(--SmartThemeBorderColor);
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+}
+
+.stmb_floating_clip_button i {
+    color: var(--SmartThemeBodyColor);
+    font-size: 16px;
+    font-weight: 900;
+    pointer-events: none;
+}
+
+.stmb_floating_clip_button:active {
+    transform: translateY(1px);
 }
 
 /* --- ANIMATIONS --- */
