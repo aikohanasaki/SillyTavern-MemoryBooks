@@ -935,6 +935,13 @@ function initializeCompactionProfileSelect(popup, selectId) {
     });
 }
 
+function getCompactionProfileIndexFromSelect(popup, selectId) {
+    return readIntInput(
+        popup.dlg?.querySelector(`#${selectId}`),
+        getCompactionProfileIndex(),
+    );
+}
+
 function resolveCompactionProfileConnection(profileIndex = getCompactionProfileIndex()) {
     const settings = extension_settings?.STMemoryBooks || {};
     const profiles = Array.isArray(settings.profiles) ? settings.profiles : [];
@@ -1104,7 +1111,13 @@ async function showCompactionRequestPopup(entry, originalContent, entryKind) {
         void showCompactionPromptEditorPopup();
     });
     const result = await showPromise;
-    return result === POPUP_RESULT.AFFIRMATIVE && !!entry && !!entryKind;
+    if (result !== POPUP_RESULT.AFFIRMATIVE || !entry || !entryKind) {
+        return { confirmed: false, profileIndex: getCompactionProfileIndex() };
+    }
+
+    const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-compaction-request-profile-select');
+    setCompactionProfileIndex(profileIndex);
+    return { confirmed: true, profileIndex };
 }
 
 export async function showCompactReviewPopup(lorebookName, lorebookData, entry, options = {}) {
@@ -1112,15 +1125,17 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
     const originalContent = options.pendingContent != null ? String(options.pendingContent) : String(entry.content || '');
     const entryKind = getCompactionEntryKind(entry);
     if (!entryKind) return false;
+    let profileIndex = options.profileIndex ?? getCompactionProfileIndex();
 
     if (!options.skipPromptStep) {
-        const shouldCompact = await showCompactionRequestPopup(entry, originalContent, entryKind);
-        if (!shouldCompact) return false;
+        const requestResult = await showCompactionRequestPopup(entry, originalContent, entryKind);
+        if (!requestResult.confirmed) return false;
+        profileIndex = requestResult.profileIndex;
     }
 
     let compacted = '';
     try {
-        compacted = await requestCompaction({ ...entry, content: originalContent }, entryKind);
+        compacted = await requestCompaction({ ...entry, content: originalContent }, entryKind, getCompactionPromptTemplate(), profileIndex);
     } catch (error) {
         console.error(`${MODULE_NAME}: Compaction failed:`, error);
         toastr.error(error?.message || tr('STMemoryBooks_Compaction_Failed', 'Compaction failed.'), 'STMemoryBooks');
@@ -1333,7 +1348,9 @@ export async function showStmbEntryReviewPopup() {
         const uid = row?.dataset?.entryUid;
         const entry = Object.values(currentLorebookData?.entries || {}).find(item => String(item.uid) === uid);
         if (entry) {
-            const replaced = await showCompactReviewPopup(currentLorebookName, currentLorebookData, entry, { skipPromptStep: true });
+            const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-compaction-profile-select');
+            setCompactionProfileIndex(profileIndex);
+            const replaced = await showCompactReviewPopup(currentLorebookName, currentLorebookData, entry, { skipPromptStep: true, profileIndex });
             if (replaced) {
                 currentEntries = Object.values(currentLorebookData?.entries || {})
                     .filter(item => getCompactionEntryKind(item) !== null)
