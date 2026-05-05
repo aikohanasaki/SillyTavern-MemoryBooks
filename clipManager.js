@@ -65,6 +65,31 @@ function tr(key, fallback) {
     return translate(fallback, key);
 }
 
+function populateCompactionPromptButton(popup) {
+    const container = popup.dlg?.querySelector('#stmb-compaction-prompt-buttons');
+    if (!container) return;
+
+    const compactionPromptButtons = [
+        {
+            text: tr('STMemoryBooks_Compaction_EditPrompt', 'Edit Compaction Prompt'),
+            id: 'stmb-edit-compaction-prompt',
+            action: () => {
+                void showCompactionPromptEditorPopup();
+            },
+        },
+    ];
+
+    container.innerHTML = '';
+    compactionPromptButtons.forEach((buttonConfig) => {
+        const button = document.createElement('div');
+        button.className = 'menu_button interactable whitespacenowrap';
+        button.id = buttonConfig.id;
+        button.textContent = buttonConfig.text;
+        button.addEventListener('click', buttonConfig.action);
+        container.appendChild(button);
+    });
+}
+
 function estimateTokens(content) {
     return Math.ceil(String(content || '').length / 4);
 }
@@ -1086,8 +1111,7 @@ async function showCompactionRequestPopup(entry, originalContent, entryKind) {
         <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
         <div class="stmb-compact-review">
             ${buildCompactionProfileControl('stmb-compaction-request-profile-select')}
-            <div class="buttons_block gap10px">
-                <button id="stmb-edit-compaction-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_EditPrompt', 'Edit Compaction Prompt'))}</button>
+            <div id="stmb-compaction-prompt-buttons" class="buttons_block justifyCenter gap10px whitespacenowrap">
             </div>
             <div class="world_entry_form_control">
                 <h4>${escapeHtml(tr('STMemoryBooks_Compaction_OriginalContent', 'Original content'))} (${estimateTokens(originalContent)} ${escapeHtml(tr('STMemoryBooks_EstimatedTokens', 'Estimated tokens'))})</h4>
@@ -1103,12 +1127,10 @@ async function showCompactionRequestPopup(entry, originalContent, entryKind) {
         cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
     });
     const showPromise = popup.show();
+    populateCompactionPromptButton(popup);
     initializeCompactionProfileSelect(popup, 'stmb-compaction-request-profile-select');
     popup.dlg?.querySelector('#stmb-compaction-request-profile-select')?.addEventListener('change', (event) => {
         setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
-    });
-    popup.dlg?.querySelector('#stmb-edit-compaction-prompt')?.addEventListener('click', () => {
-        void showCompactionPromptEditorPopup();
     });
     const result = await showPromise;
     if (result !== POPUP_RESULT.AFFIRMATIVE || !entry || !entryKind) {
@@ -1295,8 +1317,7 @@ export async function showStmbEntryReviewPopup() {
             </select>
         </div>
         ${buildCompactionProfileControl('stmb-compaction-profile-select')}
-        <div class="buttons_block gap10px">
-            <button id="stmb-edit-compaction-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_EditPrompt', 'Edit Compaction Prompt'))}</button>
+        <div id="stmb-compaction-prompt-buttons" class="buttons_block justifyCenter gap10px whitespacenowrap">
         </div>
         <div class="world_entry_form_control">
             <table class="stmb-review-entries">
@@ -1359,13 +1380,11 @@ export async function showStmbEntryReviewPopup() {
     };
 
     const showPromise = popup.show();
+    populateCompactionPromptButton(popup);
     initializeCompactionLorebookSelect(popup);
     initializeCompactionProfileSelect(popup, 'stmb-compaction-profile-select');
     popup.dlg?.querySelector('#stmb-compaction-profile-select')?.addEventListener('change', (event) => {
         setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
-    });
-    popup.dlg?.querySelector('#stmb-edit-compaction-prompt')?.addEventListener('click', () => {
-        void showCompactionPromptEditorPopup();
     });
     popup.dlg?.querySelector('#stmb-compaction-lorebook-select')?.addEventListener('change', (event) => {
         void loadSelectedLorebook(event.target.value || '');
