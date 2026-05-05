@@ -41,6 +41,7 @@ Other links:
   - [Built-in Presets](#built-in-presets)
   - [Custom Prompts](#custom-prompts)
 - [Lorebook Integration](#-lorebook-integration)
+- [Clip to Memory Book](#-clip-to-memory-book)
 - [Slash Commands](#-slash-commands)
 - [Group Chat Support](#-group-chat-support)
 - [Modes of Operation](#-modes-of-operation)
@@ -228,6 +229,42 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 > Use the [Lorebook Converter](/resources/lorebookconverter.html) to add the `stmemorybooks` flag and required fields.
 
 ---
+
+
+## ✂️ Clip to Memory Book
+
+Clip to Memory Book is for quick “remember this” notes. Highlight important chat text, click the floating scissors button, and save the selected text as a bullet in your Memory Book without opening the lorebook editor first.
+
+#### How it works
+- Highlight the exact text you want to remember.
+- Click the floating scissors button. You can turn this button on or off in the Memory Books popup.
+- Choose an existing clip entry or create a new one.
+- Review the current entry and updated preview before saving.
+- Rename the entry/section if needed.
+
+Clip entries are normal lorebook entries marked with `[STMB Clip]` at the end of the entry title. For example:
+
+```txt
+Seraphina Healed Me [STMB Clip]
+```
+
+The visible section inside the entry uses the title without `[STMB Clip]`:
+
+```md
+=== Seraphina Healed Me ===
+
+- Seraphina healed my wounds with magic.
+- Seraphina, guardian of this forest
+
+=== END Seraphina Healed Me ===
+```
+
+#### Tips
+- One clip entry has one section. Use focused titles like `Things {{user}} Likes`, `Pet Names`, or `Food Preferences` so keywords can stay specific.
+- New clip entries can be always active or keyword-triggered. Always active is easiest; keywords are better when the entry should only appear sometimes.
+- Existing entries can become clip entries by adding `[STMB Clip]` to the end of the title.
+- Long clip entries may show a reminder to review or compact them. Compact / Review can help make clip and side prompt entries more token-efficient before you replace the original.
+- Clip entries do not add source attribution. They save only the text you chose to clip.
 
 ## 🆕 Slash Commands
 
