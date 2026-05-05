@@ -517,6 +517,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "Gagal membuka Manajer Prompt Ringkasan",
   "STMemoryBooks_SidePrompts": "Pelacak & Prompt Sampingan",
   "STMemoryBooks_FailedToOpenSidePrompts": "Gagal membuka Prompt Sampingan",
+  "STMemoryBooks_FailedToOpenCompactReview": "Gagal membuka Padatkan / Tinjau",
   "STMemoryBooks_SelectPresetFirst": "Pilih preset terlebih dahulu",
   "STMemoryBooks_NoProfilesAvailable": "Tidak ada profil yang tersedia",
   "STMemoryBooks_SelectedProfileNotFound": "Profil yang dipilih tidak ditemukan",

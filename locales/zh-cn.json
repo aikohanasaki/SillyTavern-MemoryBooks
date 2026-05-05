@@ -522,6 +522,7 @@
   "STMemoryBooks_FailedToOpenSummaryPromptManager": "打开摘要提示管理器失败",
   "STMemoryBooks_SidePrompts": "追踪器 & 侧边提示",
   "STMemoryBooks_FailedToOpenSidePrompts": "打开侧边提示失败",
+  "STMemoryBooks_FailedToOpenCompactReview": "打开压缩 / 检查失败",
   "STMemoryBooks_SelectPresetFirst": "请先选择一个预设",
   "STMemoryBooks_NoProfilesAvailable": "没有可用的配置文件",
   "STMemoryBooks_SelectedProfileNotFound": "未找到所选的配置文件",

@@ -517,6 +517,7 @@
     "STMemoryBooks_FailedToOpenSummaryPromptManager": "Ouverture impossible",
     "STMemoryBooks_SidePrompts": "Suivis & Prompts Secondaires",
     "STMemoryBooks_FailedToOpenSidePrompts": "Ouverture impossible",
+    "STMemoryBooks_FailedToOpenCompactReview": "Ouverture de Compact / Review impossible",
     "STMemoryBooks_SelectPresetFirst": "Choisissez un préréglage",
     "STMemoryBooks_NoProfilesAvailable": "Aucun profil",
     "STMemoryBooks_SelectedProfileNotFound": "Profil non trouvé",

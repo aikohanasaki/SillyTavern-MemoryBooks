@@ -114,6 +114,7 @@ import {
   hideFloatingClipButton,
   initializeFloatingClipButton,
   refreshFloatingClipButtonSetting,
+  showStmbEntryReviewPopup,
 } from "./clipManager.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
@@ -2974,6 +2975,24 @@ function populateInlineButtons() {
             translate(
               "Failed to open Trackers & Side Prompts Manager",
               "STMemoryBooks_FailedToOpenSidePrompts",
+            ),
+            "STMemoryBooks",
+          );
+        }
+      },
+    },
+    {
+      text: "📝 " + translate("Compact / Review", "STMemoryBooks_Clip_CompactReview"),
+      id: "stmb-compact-review",
+      action: async () => {
+        try {
+          await showStmbEntryReviewPopup();
+        } catch (error) {
+          console.error(`${MODULE_NAME}: Error opening Compact / Review:`, error);
+          toastr.error(
+            translate(
+              "Failed to open Compact / Review",
+              "STMemoryBooks_FailedToOpenCompactReview",
             ),
             "STMemoryBooks",
           );
