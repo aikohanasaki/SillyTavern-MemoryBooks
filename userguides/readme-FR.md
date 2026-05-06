@@ -5,8 +5,40 @@ Une extension de nouvelle génération pour SillyTavern permettant la création 
 ### ❓ Vocabulaire
 
 - Scene (Scène) → Memory (Mémoire)
+- One saved fact (Un fait enregistré) → Clip
+- Ongoing tracker (Suivi continu) → Side Prompt
 - Many Memories (Plusieurs mémoires) → Summary / Consolidation (Résumé / Consolidation)
-- Always-On (Toujours actif) → Side Prompt (Tracker/Suivi)
+- One long entry (Une longue entrée) → Compaction
+
+### Clips vs Side Prompts
+
+<details>
+<summary><strong>Clips vs Side Prompts</strong></summary>
+
+| **Clips** | **Side Prompts** |
+|---|---|
+| Enregistrent du texte sélectionné du chat dans une entrée de Memory Book. | Demandent à l’IA de relire le chat et de mettre à jour une entrée de suivi. |
+| Idéal pour un fait clair, une ligne, une promesse, une préférence, un objet ou une note. | Idéal pour les informations qui changent avec le temps. |
+| Pensez : « épingler cette note ». | Pensez : « garder cette section à jour ». |
+
+</details>
+
+Pour l’explication plus longue, consultez le [Guide utilisateur](USER_GUIDE-FR.md#-clips-vs-side-prompts).
+
+### Compaction vs Consolidation
+
+<details>
+<summary><strong>Compaction vs Consolidation</strong></summary>
+
+| **Compaction** | **Consolidation** |
+|---|---|
+| Raccourcit une entrée existante gérée par STMB. | Combine plusieurs mémoires ou résumés en un récapitulatif de niveau supérieur. |
+| À utiliser quand un Clip, un Side Prompt ou une entrée de mémoire est utile, mais devient trop long. | À utiliser quand plusieurs mémoires sont prêtes à devenir un Arc, Chapter, Book ou autre résumé plus large. |
+| Pensez : « raccourcir cette entrée ». | Pensez : « regrouper ces mémoires en récapitulatif ». |
+
+</details>
+
+Pour l’explication plus longue, consultez le [Guide utilisateur](USER_GUIDE-FR.md#-compaction-vs-consolidation).
 
 ## ❗ Lisez-moi d’abord !
 
@@ -44,6 +76,7 @@ Autres liens :
   - [Presets intégrés](#presets-intégrés)
   - [Prompts personnalisés](#prompts-personnalisés)
 - [Intégration lorebook](#-intégration-lorebook)
+- [Épingler dans le Memory Book](#️-épingler-dans-le-memory-book)
 - [Commandes slash](#-commandes-slash)
 - [Support des discussions de groupe](#-support-des-discussions-de-groupe)
 - [Modes de fonctionnement](#-modes-de-fonctionnement)
@@ -251,6 +284,44 @@ Tous les prompts et presets **doivent** demander à l’IA de ne renvoyer que du
 
 > **Les mémoires existantes doivent être converties.**
 > Utilisez le [Lorebook Converter](../resources/lorebookconverter.html) pour ajouter le flag `stmemorybooks` et les champs requis.
+
+---
+
+## ✂️ Épingler dans le Memory Book
+
+Utilisez **Épingler dans le Memory Book** quand vous voulez enregistrer une ligne ou un fait important sans créer une mémoire de scène complète. Surlignez du texte dans le chat, cliquez sur le bouton flottant avec les ciseaux, puis choisissez une entrée de clip existante ou créez-en une nouvelle.
+
+Vous ne savez pas si cela doit être un Clip ou un Side Prompt ? Consultez [Clips vs Side Prompts](USER_GUIDE-FR.md#-clips-vs-side-prompts).
+
+#### Fonctionnement
+
+1. Surlignez la phrase ou l’expression à enregistrer.
+2. Cliquez sur le bouton flottant avec les ciseaux.
+3. Choisissez une entrée de clip existante ou créez-en une nouvelle.
+4. Vérifiez l’aperçu de l’entrée.
+5. Enregistrez le clip.
+
+Les entrées de clip sont des entrées de lorebook normales marquées avec `[STMB Clip]`. Par exemple :
+
+```txt
+Seraphina Healed Me [STMB Clip]
+```
+
+À l’intérieur de l’entrée, STMB conserve le contenu dans un format de section propre :
+
+```md
+=== Seraphina Healed Me ===
+
+- Seraphina healed my wounds with magic.
+
+=== END Seraphina Healed Me ===
+```
+
+#### Conseils
+
+- Utilisez les Clips pour les faits isolés, préférences, promesses, objets ou notes courtes.
+- Utilisez la création de mémoire normale pour les scènes plus larges.
+- Si une entrée de clip devient trop longue, STMB peut vous rappeler de la vérifier ou de la raccourcir avec la Compaction.
 
 ---
 

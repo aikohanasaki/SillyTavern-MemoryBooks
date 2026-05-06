@@ -20,12 +20,20 @@
   - [📊 Prompts Secundarios y Rastreadores Inteligentes](#-prompts-secundarios-y-rastreadores-inteligentes)
   - [📚 Colecciones de Memoria](#-colecciones-de-memoria)
 - [🎯 Elija su Estilo](#-elija-su-estilo)
+- [✂️ Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
+  - [¿Cuándo debería usar Clips?](#cuándo-debería-usar-clips)
+  - [Cómo funciona el clipping](#cómo-funciona-el-clipping)
+  - [Crear o renombrar entradas de Clip](#crear-o-renombrar-entradas-de-clip)
+  - [Botón flotante de tijeras](#botón-flotante-de-tijeras)
+  - [Revisar entradas de Clip largas](#revisar-entradas-de-clip-largas)
+- [✂️ Clips vs Side Prompts](#️-clips-vs-side-prompts)
 - [🙈 Ahorro de tokens: ocultar / mostrar](#-ahorro-de-tokens-ocultar--mostrar)
   - [¿Qué significa “ocultar”?](#qué-significa-ocultar)
   - [¿Cuándo sirve?](#cuándo-sirve)
   - [Auto-hide después de crear memoria](#auto-hide-después-de-crear-memoria)
   - [Mostrar antes de generar memoria](#mostrar-antes-de-generar-memoria)
   - [Ajuste inicial recomendable](#ajuste-inicial-recomendable)
+- [🧭 Compaction vs Consolidation](#-compaction-vs-consolidation)
 - [🌈 Consolidación de resúmenes](#-consolidación-de-resúmenes)
   - [¿Qué es?](#qué-es)
   - [¿Cuándo usarlo?](#cuándo-usarlo)
@@ -193,6 +201,102 @@ Piense en ST Memory Books como su **bibliotecario personal de IA** para conversa
 
 ---
 
+## ✂️ Clip to Memory Book
+
+Use **Clip to Memory Book** cuando quiera guardar una línea o dato importante sin crear una memoria de escena completa. Resalte texto en el chat, haga clic en el botón flotante de tijeras y luego elija una entrada de Clip existente o cree una nueva.
+
+¿No sabe si esto debería ser un Clip o un Side Prompt? Consulte [Clips vs Side Prompts](#-clips-vs-side-prompts).
+
+### ¿Cuándo debería usar Clips?
+
+Los Clips son mejores para datos pequeños que quiere que la IA recuerde, por ejemplo:
+
+- una preferencia de un personaje
+- una promesa o secreto
+- un detalle de relación
+- una mascota, lugar, objeto o detalle recurrente
+- una “nota para mí” rápida que no necesita una memoria completa
+
+Para escenas más grandes, use la creación normal de Memory.
+
+### Cómo funciona el clipping
+
+1. Resalte la oración o frase que quiere guardar.
+2. Haga clic en el botón flotante de tijeras.
+3. Elija una entrada de Clip existente o cree una nueva.
+4. Revise la vista previa de la entrada.
+5. Guarde el Clip.
+
+Las entradas de Clip son entradas normales de lorebook marcadas con `[STMB Clip]`. Por ejemplo:
+
+```txt
+Seraphina Healed Me [STMB Clip]
+```
+
+Dentro de la entrada, STMB mantiene el contenido en un formato de sección limpio:
+
+```md
+=== Seraphina Healed Me ===
+
+- Seraphina healed my wounds with magic.
+
+=== END Seraphina Healed Me ===
+```
+
+### Crear o renombrar entradas de Clip
+
+Cuando crea una nueva entrada de Clip, el título de la entrada también se convierte en el encabezado de la sección. Puede renombrar la entrada mientras crea el Clip, y STMB actualizará el encabezado de la sección para que coincida.
+
+Las nuevas entradas de Clip pueden ser:
+
+- **siempre activas**, para datos que deberían estar siempre disponibles
+- **activadas por palabras clave**, para datos que solo deberían aparecer cuando surjan palabras coincidentes
+
+Use palabras clave cuando el Clip solo sea relevante para un tema, personaje, lugar, mascota, objeto o relación concretos.
+
+### Botón flotante de tijeras
+
+El botón flotante de tijeras solo aparece después de resaltar texto dentro del chat. Puede activarlo o desactivarlo en el popup principal de Memory Books.
+
+### Revisar entradas de Clip largas
+
+Si una entrada de Clip se vuelve larga, STMB puede recordarle que la revise. Puede editarla usted mismo, o usar **Compactación** para pedirle a la IA que haga una entrada de Clip, Side Prompt o Memory de STMB más eficiente en tokens antes de decidir si reemplaza la original.
+
+---
+
+## ✂️ Clips vs Side Prompts
+
+Los Clips y Side Prompts guardan información en su Memory Book, pero no sirven para el mismo trabajo.
+
+Regla simple: **los Clips guardan un dato específico. Los Side Prompts mantienen un rastreador vivo.**
+
+| **Clips** | **Side Prompts** |
+|---|---|
+| Guardan texto seleccionado del chat en una entrada de Memory Book. | Piden a la IA que revise el chat y actualice una entrada de rastreador. |
+| Son mejores para un dato claro, una línea, una promesa, una preferencia, un objeto o una nota. | Son mejores para información que cambia con el tiempo, como el estado de una relación, el progreso de una misión, inventario o hilos de trama sin resolver. |
+| Usted elige el texto exacto. STMB guarda lo que seleccionó. | La IA interpreta el chat y escribe o actualiza el rastreador. |
+| Úselos cuando el dato ya es obvio y no necesita análisis. | Úselos cuando la IA necesita comparar, resumir o actualizar estado a partir de varios mensajes. |
+| Normalmente crecen solo cuando usted añade otro Clip manualmente. | Pueden actualizarse repetidamente conforme cambia la historia. |
+| Piense: “fijar esta nota”. | Piense: “mantener esta sección actualizada”. |
+
+Ejemplos de buenos Clips:
+
+- `Aiko likes honey tea.`
+- `Andalino promised not to lie to her again.`
+- `Colt calls her Boss.`
+
+Ejemplos de buenos Side Prompts:
+
+- estado de relación
+- progreso actual de misión
+- inventario y recursos
+- directorio de NPCs
+- hilos de trama sin resolver
+
+Si solo necesita recordar un detalle, use un Clip. Si necesita un rastreador continuo, use un Side Prompt.
+
+---
+
 ## 🙈 Ahorro de tokens: ocultar / mostrar
 
 Una de las maneras más simples de reducir el desorden y ahorrar tokens en chats largos es ocultar mensajes después de convertirlos en memoria.
@@ -226,6 +330,26 @@ También puede definir cuántos mensajes recientes permanecen visibles con **Men
 * **Ocultar automáticamente solo los mensajes de la última memoria**
 * dejar **2** mensajes visibles
 * activar **Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)** si suele rehacer memorias o necesita volver a ver rangos concretos antes de generar
+
+## 🧭 Compaction vs Consolidation
+
+Los nombres se parecen, pero hacen trabajos distintos.
+
+Regla simple: **la Compactación limpia una entrada. La Consolidación combina varios recuerdos en una recapitulación de nivel superior.**
+
+| **Compaction / Compactación** | **Consolidation / Consolidación** |
+|---|---|
+| Hace más pequeña una entrada existente gestionada por STMB. | Combina varios recuerdos o resúmenes en una recapitulación de nivel superior. |
+| Trabaja con un Clip, una entrada de Side Prompt o una entrada de Memory de STMB a la vez. | Trabaja a partir de varias entradas de memoria/resumen seleccionadas. |
+| Es mejor cuando una entrada es útil, pero demasiado larga, repetitiva o cara de mantener en contexto. | Es mejor cuando los recuerdos de escenas antiguas se acumulan y deberían convertirse en un resumen Arc, Chapter, Book, Legend, Series o Epic. |
+| Reescribe la entrada seleccionada de forma más eficiente en tokens. | Crea una nueva entrada de resumen a partir de las entradas fuente seleccionadas. |
+| Debe conservar los datos existentes y eliminar relleno. | Debe conservar el arco de continuidad mayor y reducir el detalle escena por escena. |
+| No crea una nueva memoria a partir del chat sin procesar. | No compacta por sí sola una entrada inflada. |
+| Piense: “recortar esta entrada”. | Piense: “agrupar estos recuerdos en una recapitulación”. |
+
+Ambas herramientas son de revisión previa. STMB le muestra lo que escribió la IA antes de guardar o reemplazar nada.
+
+---
 
 ## 🌈 Consolidación de resúmenes
 

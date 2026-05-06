@@ -5,8 +5,40 @@ Eine SillyTavern-Erweiterung der nächsten Generation für automatische, struktu
 ### ❓ Vokabular
 
 - Scene (Szene) → Memory (Erinnerung)
+- One saved fact (Ein gespeicherter Fakt) → Clip
+- Ongoing tracker (Laufender Tracker) → Side-Prompt
 - Many Memories (Viele Erinnerungen) → Summary / Consolidation (Zusammenfassung / Konsolidierung)
-- Always-On → Side-Prompt (Tracker)
+- One long entry (Ein langer Eintrag) → Compaction (Kompaktierung)
+
+### Clips vs. Side-Prompts
+
+<details>
+<summary><strong>Clips vs. Side-Prompts</strong></summary>
+
+| **Clips** | **Side-Prompts** |
+|---|---|
+| Speichern ausgewählten Chat-Text in einem Memory-Book-Eintrag. | Bitten die KI, den Chat zu prüfen und einen Tracker-Eintrag zu aktualisieren. |
+| Am besten für einen klaren Fakt, eine Zeile, ein Versprechen, eine Vorliebe, einen Gegenstand oder eine Notiz. | Am besten für Informationen, die sich im Lauf der Zeit ändern. |
+| Denk: „diese Notiz anheften.“ | Denk: „diesen Abschnitt aktuell halten.“ |
+
+</details>
+
+Für die längere Erklärung siehe das [Benutzerhandbuch](USER_GUIDE-DE.md#-clips-vs-side-prompts).
+
+### Kompaktierung vs. Konsolidierung
+
+<details>
+<summary><strong>Kompaktierung vs. Konsolidierung</strong></summary>
+
+| **Kompaktierung** | **Konsolidierung** |
+|---|---|
+| Kürzt einen bestehenden STMB-verwalteten Eintrag. | Kombiniert mehrere Erinnerungen oder Zusammenfassungen zu einer höherstufigen Zusammenfassung. |
+| Verwende sie, wenn ein Clip, Side-Prompt oder Erinnerungseintrag nützlich ist, aber zu lang wird. | Verwende sie, wenn mehrere Erinnerungen bereit sind, zu einem Arc, Chapter, Book oder einer anderen größeren Zusammenfassung zu werden. |
+| Denk: „diesen einen Eintrag kürzen.“ | Denk: „diese Erinnerungen zu einer Zusammenfassung bündeln.“ |
+
+</details>
+
+Für die längere Erklärung siehe das [Benutzerhandbuch](USER_GUIDE-DE.md#-kompaktierung-vs-konsolidierung).
 
 ## ❗ Bitte zuerst lesen!
 
@@ -44,13 +76,14 @@ Weitere Links:
   - [Integrierte Vorlagen (Presets)](#integrierte-vorlagen-presets)
   - [Benutzerdefinierte Prompts](#benutzerdefinierte-prompts)
 - [Lorebook-Integration](#-lorebook-integration)
+- [In Memory Book clippen](#️-in-memory-book-clippen)
 - [Slash-Befehle](#-slash-befehle)
 - [Gruppenchat-Unterstützung](#-gruppenchat-unterstützung)
 - [Betriebsmodi](#-betriebsmodi)
   - [Automatischer Modus (Standard)](#automatischer-modus-standard)
   - [Lorebook automatisch erstellen](#lorebook-automatisch-erstellen)
   - [Manueller Lorebook-Modus](#manueller-lorebook-modus)
-- [Tracker & Neben-Prompts](#-tracker--neben-prompts)
+- [Tracker & Side-Prompts](#-tracker--side-prompts)
 - [Kompaktierung](#-kompaktierung)
 - [Regex-Integration für fortgeschrittene Anpassung](#-regex-integration-für-fortgeschrittene-anpassung)
 - [Profilverwaltung](#-profilverwaltung)
@@ -254,6 +287,44 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 
 ---
 
+## ✂️ In Memory Book clippen
+
+Verwende **In Memory Book clippen**, wenn du eine einzelne wichtige Zeile oder einen einzelnen Fakt speichern willst, ohne eine vollständige Szenen-Erinnerung zu erstellen. Markiere Text im Chat, klicke auf den schwebenden Scheren-Button und wähle dann einen bestehenden Clip-Eintrag aus oder erstelle einen neuen.
+
+Nicht sicher, ob es ein Clip oder ein Side-Prompt sein sollte? Siehe [Clips vs. Side-Prompts](USER_GUIDE-DE.md#-clips-vs-side-prompts).
+
+#### Wie es funktioniert
+
+1. Markiere den Satz oder Ausdruck, den du speichern willst.
+2. Klicke auf den schwebenden Scheren-Button.
+3. Wähle einen bestehenden Clip-Eintrag oder erstelle einen neuen.
+4. Prüfe die Eintragsvorschau.
+5. Speichere den Clip.
+
+Clip-Einträge sind normale Lorebook-Einträge, die mit `[STMB Clip]` markiert sind. Beispiel:
+
+```txt
+Seraphina Healed Me [STMB Clip]
+```
+
+Innerhalb des Eintrags hält STMB den Inhalt in einem sauberen Abschnittsformat:
+
+```md
+=== Seraphina Healed Me ===
+
+- Seraphina healed my wounds with magic.
+
+=== END Seraphina Healed Me ===
+```
+
+#### Tipps
+
+- Verwende Clips für einzelne Fakten, Vorlieben, Versprechen, Gegenstände oder kurze Notizen.
+- Verwende normale Erinnerungserstellung für größere Szenen.
+- Wenn ein Clip-Eintrag zu lang wird, kann STMB dich daran erinnern, ihn zu überprüfen oder mit der Kompaktierung zu kürzen.
+
+---
+
 ## 🆕 Slash-Befehle
 
 - `/creatememory` - Erstellt eine Erinnerung aus der markierten Szene.
@@ -321,7 +392,7 @@ Beispiel: `/stmb-catchup interval:30 start:0 end:300`
 
 ---
 
-### 🎡 Tracker & Neben-Prompts
+### 🎡 Tracker & Side-Prompts
 
 > 📘 Side-Prompts haben eine eigene Anleitung: [Side-Prompts Guide](side-prompts-de.md). Verwenden Sie diese für Sets, Makros, Beispiele und Fehlerbehebung.
 > 🎡 Brauchen Sie den genauen Klickpfad? Siehe die [Scribe-Anleitung zum Aktivieren von Side-Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
@@ -334,7 +405,7 @@ Side-Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pf
 - 🎯 Quest-Fortschritt („Welche Ziele sind aktiv?“)
 - 🌍 Weltzustand („Was hat sich im Setting geändert?“)
 
-#### **Zugriff:** Klicken Sie in den Memory-Books-Einstellungen auf „🎡 Tracker & Neben-Prompts“.
+#### **Zugriff:** Klicken Sie in den Memory-Books-Einstellungen auf „🎡 Tracker & Side-Prompts“.
 
 #### **Funktionen:**
 

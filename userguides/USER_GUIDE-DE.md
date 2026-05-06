@@ -10,42 +10,23 @@ Brauchst du einen Bot, der sich an Dinge erinnert, aber der Chat ist zu lang fü
 
 ## 📑 Inhaltsverzeichnis
 
-- [🚀 Schnellstart (5 Minuten bis zu deiner ersten Erinnerung!)](#-schnellstart-5-minuten-bis-zu-deiner-ersten-erinnerung)
-  - [Schritt 1: Finde die Erweiterung](#schritt-1-finde-die-erweiterung)
-  - [Schritt 2: Schalte die Auto-Magie ein](#schritt-2-schalte-die-auto-magie-ein)
-  - [Schritt 3: Chatte ganz normal](#schritt-3-chatte-ganz-normal)
-- [💡 Was ST Memory Books eigentlich tut](#-was-st-memory-books-eigentlich-tut)
-  - [🤖 Automatische Zusammenfassungen](#-automatische-zusammenfassungen)
-  - [✋ Manuelle Speichererstellung](#-manuelle-speichererstellung)
-  - [📊 Neben-Prompts & Intelligente Tracker](#-neben-prompts--intelligente-tracker)
-  - [📚 Erinnerungssammlungen (Memory Collections)](#-erinnerungssammlungen-memory-collections)
-- [🎯 Wähle deinen Stil](#-wähle-deinen-stil)
-- [🙈 Token sparen: Ausblenden / Einblenden](#-token-sparen-ausblenden--einblenden)
-  - [Was bedeutet „ausblenden“?](#was-bedeutet-ausblenden)
-  - [Wann ist das nützlich?](#wann-ist-das-nützlich)
-  - [Auto-hide nach der Erinnerungserstellung](#auto-hide-nach-der-erinnerungserstellung)
-  - [Vor der Erinnerungserstellung einblenden](#vor-der-erinnerungserstellung-einblenden)
-  - [Gute Start-Einstellung](#gute-start-einstellung)
-- [🌈 Zusammenfassungs-Konsolidierung](#-zusammenfassungs-konsolidierung)
-  - [Was ist das?](#was-ist-das)
-  - [Wann ist das nützlich?](#wann-ist-das-nützlich-1)
-  - [Läuft das automatisch?](#läuft-das-automatisch)
-  - [Wie benutzt man es?](#wie-benutzt-man-es)
-- [🎨 Tracker, Neben-Prompts & Vorlagen (Fortgeschrittene Funktion)](#-tracker-neben-prompts--vorlagen-fortgeschrittene-funktion)
-  - [🚀 Schnellstart mit Vorlagen](#-schnellstart-mit-vorlagen)
-  - [⚙️ Wie Neben-Prompts funktionieren](#-wie-neben-prompts-funktionieren)
-  - [🛠️ Neben-Prompts verwalten](#-neben-prompts-verwalten)
-  - [💡 Beispiele für Vorlagen](#-beispiele-für-vorlagen)
-  - [🔧 Erstellen eigener Neben-Prompts](#-erstellen-eigener-neben-prompts)
-  - [💬 Pro-Tipp](#-pro-tipp)
-  - [⌨️ Manuelle /sideprompt-Syntax](#-manuelle-sideprompt-syntax)
-  - [🧠 Erweiterte Textkontrolle mit der Regex-Erweiterung](#-erweiterte-textkontrolle-mit-der-regex-erweiterung)
-- [🧹 Kompaktierung](#-kompaktierung)
-- [⚙️ Einstellungen, die wirklich wichtig sind](#-einstellungen-die-wirklich-wichtig-sind)
-- [🔧 Fehlerbehebung (Wenn Dinge nicht funktionieren)](#-fehlerbehebung-wenn-dinge-nicht-funktionieren)
-- [🚫 Was ST Memory Books nicht tut](#-was-st-memory-books-nicht-tut)
-- [💡 Hilfe & Weitere Infos](#-hilfe--weitere-infos)
-  - [📚 Power-Up mit Lorebook Ordering (STLO)](#-power-up-mit-lorebook-ordering-stlo)
+- [Schnellstart](#-schnellstart-5-minuten-bis-zu-deiner-ersten-erinnerung)
+- [Was ST Memory Books eigentlich tut](#-was-st-memory-books-eigentlich-tut)
+- [Wähle deinen Stil](#-wähle-deinen-stil)
+- [In Memory Book clippen](#️-in-memory-book-clippen)
+- [Clips vs. Side-Prompts](#️-clips-vs-side-prompts)
+- [Token sparen: Nachrichten ausblenden/einblenden](#-token-sparen-ausblenden--einblenden)
+- [Kompaktierung vs. Konsolidierung](#-kompaktierung-vs-konsolidierung)
+- [Zusammenfassungs-Konsolidierung](#-zusammenfassungs-konsolidierung)
+- [Tracker, Side-Prompts & Vorlagen](#-tracker-side-prompts--vorlagen-fortgeschrittene-funktion)
+- [Kompaktierung](#-kompaktierung)
+- [Einstellungen, die wirklich wichtig sind](#️-einstellungen-die-wirklich-wichtig-sind)
+- [Fehlerbehebung](#-fehlerbehebung-wenn-dinge-nicht-funktionieren)
+- [Was ST Memory Books nicht tut](#-was-st-memory-books-nicht-tut)
+- [Hilfe & Weitere Infos](#-hilfe--weitere-infos)
+- [Power-Up mit Lorebook Ordering (STLO)](#-power-up-mit-lorebook-ordering-stlo)
+
+---
 
 ## 🚀 Schnellstart (5 Minuten bis zu deiner ersten Erinnerung!)
 
@@ -101,7 +82,7 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 * Erstelle Erinnerungen auf Abruf für besondere Momente
 * Großartig, um wichtige Handlungspunkte oder Charakterentwicklungen festzuhalten
 
-### 📊 **Neben-Prompts & Intelligente Tracker**
+### 📊 **Side-Prompts & Intelligente Tracker**
 
 *"Ich möchte Beziehungen, Handlungsstränge oder Statistiken verfolgen"*
 
@@ -192,6 +173,102 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 
 ---
 
+## ✂️ In Memory Book clippen
+
+Verwende **In Memory Book clippen**, wenn du eine wichtige Zeile oder einen wichtigen Fakt speichern willst, ohne eine vollständige Szenen-Erinnerung zu erstellen. Markiere Text im Chat, klicke auf den schwebenden Scheren-Button und wähle dann einen bestehenden Clip-Eintrag aus oder erstelle einen neuen.
+
+Nicht sicher, ob es ein Clip oder ein Side-Prompt sein sollte? Siehe [Clips vs. Side-Prompts](#-clips-vs-side-prompts).
+
+### Wann sollte ich Clips verwenden?
+
+Clips sind am besten für kleine Fakten, an die sich die KI erinnern soll, zum Beispiel:
+
+- eine Vorliebe eines Charakters
+- ein Versprechen oder Geheimnis
+- ein Beziehungsdetail
+- ein Haustier, Ort, Gegenstand oder wiederkehrendes Detail
+- eine schnelle „Notiz an mich“, die keine vollständige Erinnerung braucht
+
+Für größere Szenen verwende stattdessen die normale Erinnerungserstellung.
+
+### Wie Clippen funktioniert
+
+1. Markiere den Satz oder Ausdruck, den du speichern willst.
+2. Klicke auf den schwebenden Scheren-Button.
+3. Wähle einen bestehenden Clip-Eintrag oder erstelle einen neuen.
+4. Prüfe die Eintragsvorschau.
+5. Speichere den Clip.
+
+Clip-Einträge sind normale Lorebook-Einträge, die mit `[STMB Clip]` markiert sind. Beispiel:
+
+```txt
+Seraphina Healed Me [STMB Clip]
+```
+
+Innerhalb des Eintrags hält STMB den Inhalt in einem sauberen Abschnittsformat:
+
+```md
+=== Seraphina Healed Me ===
+
+- Seraphina healed my wounds with magic.
+
+=== END Seraphina Healed Me ===
+```
+
+### Clip-Einträge erstellen oder umbenennen
+
+Wenn du einen neuen Clip-Eintrag erstellst, wird der Eintragstitel auch zur Abschnittsüberschrift. Du kannst den Eintrag während des Clippens umbenennen; STMB aktualisiert dann die Abschnittsüberschrift entsprechend.
+
+Neue Clip-Einträge können sein:
+
+- **immer aktiv**, wenn Fakten immer verfügbar sein sollen
+- **durch Schlüsselwörter aktiviert**, wenn Fakten nur bei passenden Wörtern erscheinen sollen
+
+Verwende Schlüsselwörter, wenn der Clip nur für ein bestimmtes Thema, einen Charakter, Ort, ein Haustier, einen Gegenstand oder eine Beziehung relevant ist.
+
+### Schwebender Scheren-Button
+
+Der schwebende Scheren-Button erscheint nur, nachdem du Text im Chat markiert hast. Du kannst diesen Button im Haupt-Popup von Memory Books ein- oder ausschalten.
+
+### Lange Clip-Einträge überprüfen
+
+Wenn ein Clip-Eintrag lang wird, kann STMB dich daran erinnern, ihn zu überprüfen. Du kannst ihn selbst bearbeiten oder **Kompaktierung** verwenden, um die KI zu bitten, einen Clip-, Side-Prompt- oder STMB-Erinnerungseintrag token-effizienter zu machen, bevor du entscheidest, ob das Original ersetzt wird.
+
+---
+
+## ✂️ Clips vs. Side-Prompts
+
+Clips und Side-Prompts speichern beide Informationen in deinem Memory Book, aber sie haben nicht dieselbe Aufgabe.
+
+Einfache Regel: **Clips speichern einen bestimmten Fakt. Side-Prompts pflegen einen lebenden Tracker.**
+
+| **Clips** | **Side-Prompts** |
+|---|---|
+| Speichern ausgewählten Chat-Text in einem Memory-Book-Eintrag. | Bitten die KI, den Chat zu prüfen und einen Tracker-Eintrag zu aktualisieren. |
+| Am besten für einen klaren Fakt, eine Zeile, ein Versprechen, eine Vorliebe, einen Gegenstand oder eine Notiz. | Am besten für Informationen, die sich im Lauf der Zeit ändern, etwa Beziehungsstatus, Quest-Fortschritt, Inventar oder ungelöste Handlungsstränge. |
+| Du wählst den exakten Text. STMB speichert, was du markiert hast. | Die KI interpretiert den Chat und schreibt oder aktualisiert den Tracker. |
+| Verwende Clips, wenn der Fakt bereits offensichtlich ist und keine Analyse braucht. | Verwende Side-Prompts, wenn die KI mehrere Nachrichten vergleichen, zusammenfassen oder den Zustand aktualisieren muss. |
+| Wächst normalerweise nur, wenn du manuell einen weiteren Clip hinzufügst. | Kann wiederholt aktualisiert werden, während sich die Geschichte ändert. |
+| Denk: „diese Notiz anheften.“ | Denk: „diesen Abschnitt aktuell halten.“ |
+
+Gute Clips:
+
+- `Aiko mag Honigtee.`
+- `Andalino versprach, sie nicht wieder anzulügen.`
+- `Colt nennt sie Boss.`
+
+Gute Side-Prompts:
+
+- Beziehungsstatus
+- aktueller Quest-Fortschritt
+- Inventar und Ressourcen
+- NPC-Verzeichnis
+- ungelöste Handlungsstränge
+
+Wenn du nur ein einzelnes Detail merken willst, verwende einen Clip. Wenn du einen laufenden Tracker brauchst, verwende einen Side-Prompt.
+
+---
+
 ## 🙈 Token sparen: Ausblenden / Einblenden
 
 Eine der einfachsten Möglichkeiten, in langen Chats Token zu sparen, ist das Ausblenden von Nachrichten, nachdem sie bereits in Erinnerungen gespeichert wurden.
@@ -222,56 +299,85 @@ Mit **Sichtbare Nachrichten beibehalten** bestimmst du, wie viele aktuelle Nachr
 
 ### Gute Start-Einstellung
 
-* **Alle Nachrichten bis zur letzten Erinnerung verstecken**
+* **Nur Nachrichten in der letzten Erinnerung verstecken**
 * **2** Nachrichten sichtbar lassen
 * **Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** aktivieren
+
+## 🧭 Kompaktierung vs. Konsolidierung
+
+Die Namen klingen ähnlich, aber die Funktionen haben verschiedene Aufgaben.
+
+Einfache Regel: **Kompaktierung räumt einen Eintrag auf. Konsolidierung kombiniert mehrere Erinnerungen zu einer höherstufigen Zusammenfassung.**
+
+| **Kompaktierung** | **Konsolidierung** |
+|---|---|
+| Macht einen bestehenden STMB-verwalteten Eintrag kleiner. | Kombiniert mehrere Erinnerungen oder Zusammenfassungen zu einer höherstufigen Zusammenfassung. |
+| Arbeitet jeweils mit einem Clip-, Side-Prompt- oder STMB-Erinnerungseintrag. | Arbeitet mit mehreren ausgewählten Erinnerungs-/Zusammenfassungseinträgen. |
+| Am besten, wenn ein Eintrag nützlich ist, aber zu lang, wiederholend oder zu teuer für den Kontext wird. | Am besten, wenn ältere Szenen-Erinnerungen sich stapeln und zu einem Arc, Chapter, Book, Legend, Series oder Epic zusammengefasst werden sollen. |
+| Schreibt den ausgewählten Eintrag in einer token-effizienteren Form neu. | Erstellt aus den ausgewählten Quellen einen neuen Zusammenfassungseintrag. |
+| Soll vorhandene Fakten bewahren und Ballast entfernen. | Soll den größeren Kontinuitätsbogen bewahren und Szenen-Detail reduzieren. |
+| Erstellt keine neue Erinnerung aus rohem Chat. | Kompaktiert nicht von selbst einen einzelnen aufgeblähten Eintrag. |
+| Denk: „diesen einen Eintrag kürzen.“ | Denk: „diese Erinnerungen zu einer Zusammenfassung bündeln.“ |
+
+Beide Werkzeuge sind review-first: STMB zeigt dir, was die KI geschrieben hat, bevor etwas gespeichert oder ersetzt wird.
+
+---
 
 ## 🌈 Zusammenfassungs-Konsolidierung
 
 Zusammenfassungs-Konsolidierung hilft, lange Geschichten übersichtlich zu halten, indem ältere STMB-Erinnerungen zu höherstufigen Zusammenfassungen verdichtet werden.
 
-### Was ist das?
+### Q: Was ist Zusammenfassungs-Konsolidierung?
 
-STMB kann bestehende Erinnerungen oder Zusammenfassungen zu einer kompakteren Rückschau verbinden. Die erste Stufe ist **Arc**; weitere Stufen sind **Chapter**, **Book**, **Legend**, **Series** und **Epic**.
+**A:** Statt für immer nur Szenen-Erinnerungen zu erstellen, kann STMB bestehende Erinnerungen oder Zusammenfassungen zu einer kompakteren Zusammenfassung verbinden. Die erste Stufe ist **Arc**; für längere Geschichten sind auch höhere Zusammenfassungsstufen verfügbar:
 
-### Wann ist das nützlich?
+- Arc
+- Chapter
+- Book
+- Legend
+- Series
+- Epic
 
-* Deine Erinnerungsliste wird sehr lang
-* Alte Einträge brauchen kein vollständiges Szenen-Detail mehr
-* Du willst Token sparen, ohne die Kontinuität zu verlieren
-* Du willst sauberere, höherstufige narrative Rückblicke
+### Q: Warum sollte ich sie verwenden?
 
-### Läuft das automatisch?
+**A:** Konsolidierung ist nützlich, wenn:
 
-Nein. Die Konsolidierung braucht weiterhin eine Bestätigung.
+- deine Erinnerungsliste sehr lang wird
+- ältere Einträge kein vollständiges Szenen-Detail mehr brauchen
+- du Token sparen willst, ohne Kontinuität zu verlieren
+- du sauberere, höherstufige narrative Zusammenfassungen möchtest
 
-* Du kannst **Erinnerungen zusammenfassen** jederzeit manuell öffnen
-* Optional kann STMB bei einer erreichten Mindestanzahl eine Ja/Später-Bestätigung anzeigen
-* Wenn eine ausgewählte Zielstufe ihr gespeichertes Minimum an geeigneten Quellen erreicht, erscheint diese Bestätigung
-* „Ja“ öffnet nur das Konsolidierungs-Popup mit der bereits ausgewählten Stufe; es startet nicht still im Hintergrund
+### Q: Läuft sie automatisch?
 
-### Wie benutzt man es?
+**A:** Nein. Konsolidierung braucht weiterhin eine Bestätigung.
 
-1. Klicke im Haupt-Popup auf **Erinnerungen zusammenfassen**
-2. Wähle die Zielstufe
+- Du kannst **Erinnerungen konsolidieren** jederzeit manuell im Haupt-Popup öffnen
+- Du kannst auch **Bei erreichter Ebene zur Konsolidierung auffordern** aktivieren
+- Wenn eine ausgewählte Zielstufe ihr gespeichertes Minimum an geeigneten Einträgen erreicht, zeigt STMB eine **Ja/Später**-Bestätigung
+- Wenn du **Ja** wählst, öffnet STMB das Konsolidierungs-Popup mit dieser Stufe bereits ausgewählt; es läuft nicht still im Hintergrund
+
+### Q: Wie benutze ich sie?
+
+**A:** Um eine konsolidierte Zusammenfassung zu erstellen:
+
+1. Klicke im Haupt-Popup von STMB auf **Erinnerungen konsolidieren**
+2. Wähle die Ziel-Zusammenfassungsstufe
 3. Wähle die Quell-Einträge aus, die enthalten sein sollen
-4. Entscheide, ob die Quellen nach der Konsolidierung deaktiviert werden sollen
+4. Deaktiviere optional die Quell-Einträge, nachdem die neue Zusammenfassung erstellt wurde
 5. Klicke auf **Run**
 
-Für eine Vorschau dieser Einträge aktiviere in den Einstellungen die Vorschau der Erinnerungen.
-
-Wenn die KI eine schlechte Konsolidierungs-Antwort liefert, kannst du die Antwort prüfen und korrigieren, bevor du den Commit wiederholst.
+Für Vorschauen dieser Einträge aktiviere „Vorschauen anzeigen“ in deinen Präferenzen.
 
 ---
 
-## 🎨 Tracker, Neben-Prompts & Vorlagen (Fortgeschrittene Funktion)
+## 🎨 Tracker, Side-Prompts & Vorlagen (Fortgeschrittene Funktion)
 
-**Neben-Prompts** sind Hintergrund-Tracker, die helfen, laufende Story-Informationen aufrechtzuerhalten. Sie laufen parallel zur Speichererstellung und aktualisieren eigene Neben-Prompt-Lorebook-Einträge über die Zeit. Betrachte sie als **Helfer, die deine Geschichte beobachten und bestimmte Details aktuell halten**.
+**Side-Prompts** sind Hintergrund-Tracker, die helfen, laufende Story-Informationen aufrechtzuerhalten. Sie laufen parallel zur Speichererstellung und aktualisieren eigene Side-Prompt-Lorebook-Einträge über die Zeit. Betrachte sie als **Helfer, die deine Geschichte beobachten und bestimmte Details aktuell halten**.
 
 ### 🚀 **Schnellstart mit Vorlagen**
 
 1. Öffne die Einstellungen von Memory Books
-2. Klicke auf **Neben-Prompts**
+2. Klicke auf **Side-Prompts**
 3. Durchsuche die **Vorlagenbibliothek** und wähle aus, was zu deiner Geschichte passt:
    * **Character Development Tracker** – Verfolgt Persönlichkeitsveränderungen und Wachstum
    * **Relationship Dynamics** – Verfolgt Beziehungen zwischen Charakteren
@@ -281,7 +387,7 @@ Wenn die KI eine schlechte Konsolidierungs-Antwort liefert, kannst du die Antwor
 4. Aktiviere die gewünschten Vorlagen (du kannst sie später anpassen)
 5. Wenn die Vorlage benutzerdefinierte Laufzeitmakros enthält, wird sie nicht automatisch ausgeführt und muss manuell mit `/sideprompt` gestartet werden
 
-### ⚙️ **Wie Neben-Prompts funktionieren**
+### ⚙️ **Wie Side-Prompts funktionieren**
 
 * **Hintergrund-Tracker**: Sie laufen leise und aktualisieren Informationen im Laufe der Zeit
 * **Nicht störend**: Sie ändern nicht deine Haupt-KI-Einstellungen oder Charakter-Prompts
@@ -290,14 +396,14 @@ Wenn die KI eine schlechte Konsolidierungs-Antwort liefert, kannst du die Antwor
 * **Automatisch oder Manuell**: Standardvorlagen können automatisch laufen; Vorlagen mit benutzerdefinierten Laufzeitmakros sind nur manuell nutzbar
 * **Makro-Unterstützung**: `Prompt`, `Response Format`, `Title` und Keyword-Felder erweitern standardmäßige ST-Makros wie `{{user}}` und `{{char}}`
 * **Laufzeitmakros**: Nicht standardmäßige `{{...}}`-Platzhalter werden zu Pflichtangaben wie `{{npc name}}="Jane Doe"`
-* **Klartext erlaubt**: Neben-Prompts müssen kein JSON zurückgeben
-* **Überschreiben statt Anhängen**: Neben-Prompts aktualisieren ihren eigenen verfolgten Eintrag, statt bei jedem Lauf eine neue Erinnerung anzulegen
+* **Klartext erlaubt**: Side-Prompts müssen kein JSON zurückgeben
+* **Überschreiben statt Anhängen**: Side-Prompts aktualisieren ihren eigenen verfolgten Eintrag, statt bei jedem Lauf eine neue Erinnerung anzulegen
 * **Sicherheitsprüfung**: Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, entfernt STMB beim Speichern/Importieren automatische Trigger und zeigt eine Warnung an
-* **Optionaler Bereich**: `/sideprompt` kann auch ohne `X-Y` laufen; dann verwendet STMB die Nachrichten seit dem letzten Checkpoint dieses Neben-Prompts
+* **Optionaler Bereich**: `/sideprompt` kann auch ohne `X-Y` laufen; dann verwendet STMB die Nachrichten seit dem letzten Checkpoint dieses Side-Prompts
 
-### 🛠️ **Neben-Prompts verwalten**
+### 🛠️ **Side-Prompts verwalten**
 
-* **Neben-Prompts-Manager**: Erstelle, bearbeite, dupliziere und organisiere Tracker
+* **Side-Prompts-Manager**: Erstelle, bearbeite, dupliziere und organisiere Tracker
 * **Aktivieren / Deaktivieren**: Schalte Tracker jederzeit ein oder aus
 * **Import / Export**: Teile Vorlagen oder erstelle Backups
 * **Statusansicht**: Sieh, welche Tracker im aktuellen Chat aktiv sind und wann sie laufen
@@ -314,9 +420,9 @@ Beispielhafte Prompt-Ideen:
 * „Notiere neue World-Building-Details, wenn sie erscheinen“
 * „Verfolge die Beziehung zwischen Charakter A und Charakter B“
 
-### 🔧 **Erstellen eigener Neben-Prompts**
+### 🔧 **Erstellen eigener Side-Prompts**
 
-1. Öffne den Neben-Prompts-Manager
+1. Öffne den Side-Prompts-Manager
 2. Klicke auf **Neu erstellen**
 3. Schreibe eine kurze, klare Anweisung
    *(Beispiel: „Notiere immer, wie das Wetter in jeder Szene ist“)*
@@ -327,7 +433,7 @@ Beispielhafte Prompt-Ideen:
 
 ### 💬 **Pro-Tipp**
 
-Neben-Prompts funktionieren am besten, wenn sie **klein und fokussiert** sind. Statt „verfolge alles“ versuche „verfolge die romantische Spannung zwischen den Hauptcharakteren“.
+Side-Prompts funktionieren am besten, wenn sie **klein und fokussiert** sind. Statt „verfolge alles“ versuche „verfolge die romantische Spannung zwischen den Hauptcharakteren“.
 
 ### ⌨️ **Manuelle /sideprompt-Syntax**
 
@@ -341,12 +447,12 @@ Beispiele:
 
 Hinweise:
 
-- Der Name des Neben-Prompts muss in Anführungszeichen stehen.
+- Der Name des Side-Prompts muss in Anführungszeichen stehen.
 - Laufzeitmakro-Werte müssen ebenfalls in Anführungszeichen stehen.
 - Die Slash-Befehl-Autovervollständigung schlägt erforderliche Laufzeitmakros vor, nachdem du den Side-Prompt ausgewählt hast.
 - Wenn eine Vorlage benutzerdefinierte Laufzeitmakros enthält, bleibt STMB dabei im manuellen Modus und entfernt automatische Trigger.
 - `X-Y` ist optional. Wenn du es weglässt, verwendet STMB die Nachrichten seit dem letzten Zeitpunkt, an dem dieser Side-Prompt aktualisiert wurde.
-- Wenn du Neben-Prompts manuell und getrennt ausführst, denke daran, **Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** zu aktivieren.
+- Wenn du Side-Prompts manuell und getrennt ausführst, denke daran, **Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)** zu aktivieren.
 
 ---
 
@@ -442,7 +548,7 @@ Wichtige Basiskontrollen:
 * **Ausblenden / Einblenden von Nachrichten** hilft beim Tokensparen
 * **Manuellen Lorebook-Modus aktivieren** und **Lorebook automatisch erstellen, falls keines existiert** bestimmen, wohin Erinnerungen geschrieben werden
 * **Erinnerungsvorschauen anzeigen** lässt dich KI-Ausgaben vor dem Speichern prüfen oder bearbeiten
-* **Neben-Prompts** aktiviert Tracker
+* **Side-Prompts** aktiviert Tracker
 * **Bei erreichter Ebene zur Konsolidierung auffordern** zeigt Konsolidierung nur als Bestätigung
 
 ---
