@@ -12,7 +12,9 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
 - [Choose Your Style](#-choose-your-style)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
+- [Clips vs Side Prompts](#-clips-vs-side-prompts)
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
+- [Compaction vs Consolidation](#-compaction-vs-consolidation)
 - [Summary Consolidation](#-summary-consolidation)
 - [Trackers, Side Prompts, & Templates](#-trackers-side-prompts--templates-advanced-feature)
 - [Compaction](#-compaction)
@@ -154,6 +156,8 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 Use **Clip to Memory Book** when you want to save one important line or fact without creating a full scene memory. Highlight text in chat, click the floating scissors button, then choose an existing clip entry or create a new one.
 
+Not sure whether this should be a clip or a side prompt? See [Clips vs Side Prompts](#-clips-vs-side-prompts).
+
 ### When should I use clips?
 
 Clips are best for small facts you want the AI to remember, such as:
@@ -211,6 +215,39 @@ If a clip entry gets long, STMB may remind you to review it. You can edit it you
 
 ---
 
+## ✂️ Clips vs Side Prompts
+
+Clips and Side Prompts both save information into your Memory Book, but they are not for the same job.
+
+Plain rule: **Clips save a specific fact. Side Prompts maintain a living tracker.**
+
+| **Clips** | **Side Prompts** |
+|---|---|
+| Save selected chat text into a Memory Book entry. | Ask the AI to review chat and update a tracker entry. |
+| Best for one clear fact, line, promise, preference, item, or note. | Best for information that changes over time, like relationship status, quest progress, inventory, or unresolved plot threads. |
+| You choose the exact text. STMB saves what you selected. | The AI interprets the chat and writes or updates the tracker. |
+| Use when the fact is already obvious and does not need analysis. | Use when the AI needs to compare, summarize, or update state from multiple messages. |
+| Usually grows only when you manually add another clip. | Can update repeatedly as the story changes. |
+| Think: “pin this note.” | Think: “keep this section updated.” |
+
+Examples of good Clips:
+
+- `Aiko likes honey tea.`
+- `Theron promised not to lie to her again.`
+- `Colt calls her Boss.`
+
+Examples of good Side Prompts:
+
+- relationship status
+- current quest progress
+- inventory and resources
+- NPC directory
+- unresolved plot threads
+
+If you only need one remembered detail, use a Clip. If you need an ongoing tracker, use a Side Prompt.
+
+---
+
 ## 🙈 Token Saving: Hide / Unhide Messages
 
 One of the easiest ways to reduce clutter and save tokens in long chats is to hide messages after you have already turned them into memories.
@@ -245,6 +282,26 @@ Aiko's settings:
 - use **Auto-hide messages up to the last memory**
 - leave **2 messages unhidden**
 - turn on **Unhide hidden messages for memory generation**
+
+---
+
+## 🧭 Compaction vs Consolidation
+
+The names are similar, but they do different jobs.
+
+Plain rule: **Compaction cleans up one entry. Consolidation combines several memories into a higher-level recap.**
+
+| **Compaction** | **Consolidation** |
+|---|---|
+| Makes one existing STMB-managed entry smaller. | Combines multiple memories or summaries into one higher-level recap. |
+| Works on one Clip, Side Prompt entry, or STMB memory entry at a time. | Works from several selected memory/summary entries. |
+| Best when an entry is useful, but too long, repetitive, or expensive to keep in context. | Best when older scene memories are piling up and should become an Arc, Chapter, Book, Legend, Series, or Epic summary. |
+| Rewrites the selected entry in a more token-efficient form. | Creates a new summary entry from the selected source entries. |
+| Should preserve existing facts and remove bloat. | Should preserve the larger continuity arc and reduce scene-by-scene detail. |
+| Does not create a new memory from raw chat. | Does not compact one bloated entry by itself. |
+| Think: “trim this one entry.” | Think: “roll these memories up into a recap.” |
+
+Both tools are review-first. STMB shows you what the AI wrote before anything is saved or replaced.
 
 ---
 
@@ -298,6 +355,8 @@ For previews of these entries, enable "show previews" in your preferences.
 ## 🎨 Trackers, Side Prompts, & Templates (Advanced Feature)
 
 **Side Prompts** are background trackers that help maintain ongoing story information. They run alongside memory creation and update separate side-prompt lorebook entries over time. Think of them as **helpers that watch your story and keep certain details up to date**.
+
+If you only want to save one highlighted fact, use [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book) instead. Side Prompts are for repeated or ongoing tracking.
 
 ### 🚀 **Quick Start with Templates**
 
@@ -424,6 +483,8 @@ Now STMB will clean the response before previewing or saving it.
 ## 🧹 Compaction
 
 Compaction helps when an STMB-managed lorebook entry is still useful, but has become too long or repetitive. Instead of manually trimming it, you can ask the AI to rewrite the entry in a more token-efficient form.
+
+Not sure whether you want this or Summary Consolidation? Use the short version above: **Compaction cleans up one entry. Consolidation combines several memories into a higher-level recap.**
 
 This is a **review first** tool. STMB shows you the original and the compacted draft before replacing anything.
 
