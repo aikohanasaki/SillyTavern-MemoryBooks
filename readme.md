@@ -11,25 +11,31 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ### Clips vs Side Prompts
 
-Plain rule: **one fixed fact = Clip; ongoing tracker = Side Prompt.**
+<details>
+<summary><strong>Clips vs Side Prompts</strong></summary>
 
 | **Clips** | **Side Prompts** |
 |---|---|
-| Save selected chat text as a note in your Memory Book. | Ask the AI to review chat and update a tracker entry. |
-| Use when you already know the exact fact you want remembered. | Use when the information changes over time. |
+| Save selected chat text into a Memory Book entry. | Ask the AI to review chat and update a tracker entry. |
+| Best for one clear fact, line, promise, preference, item, or note. | Best for information that changes over time. |
 | Think: “pin this note.” | Think: “keep this section updated.” |
+
+</details>
 
 For the longer explanation, see the [User Guide](USER_GUIDE.md#-clips-vs-side-prompts).
 
 ### Compaction vs Consolidation
 
-Plain rule: **one bloated entry = Compaction; several memories = Consolidation.**
+<details>
+<summary><strong>Compaction vs Consolidation</strong></summary>
 
 | **Compaction** | **Consolidation** |
 |---|---|
 | Shortens one existing STMB-managed entry. | Combines multiple memories or summaries into one higher-level recap. |
 | Use when a Clip, Side Prompt, or Memory entry is useful, but getting too long. | Use when several memories are ready to become an Arc, Chapter, Book, or other larger summary. |
 | Think: “trim this one entry.” | Think: “roll these memories up into a recap.” |
+
+</details>
 
 For the longer explanation, see the [User Guide](USER_GUIDE.md#-compaction-vs-consolidation).
 
