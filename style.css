@@ -212,13 +212,23 @@
 /* Ensure Select2 dropdown is above modals/overlays */
 .select2-container--open { z-index: 2147483647 !important; }
 
-/* make menu buttons wrap */
-.popup-button-custom {
-    display: inline-flex;
+/* STMB popup action buttons wrap as whole buttons, not inside labels. */
+.popup.stmb-popup .popup-controls {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
     align-items: center;
     justify-content: center;
-    flex-wrap: nowrap !important;
+    gap: 8px;
+}
+
+.popup.stmb-popup .popup-controls .menu_button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
     white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
 }
 
 .stmb-nowrap-button {

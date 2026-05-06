@@ -35,6 +35,11 @@ export function clampInt(n, min, max) {
   return Math.min(Math.max(n, min), max);
 }
 
+export function markStmbPopup(popup) {
+    popup?.dlg?.classList?.add('stmb-popup');
+    return popup;
+}
+
 // Centralized DOM selectors - single source of truth
 export const SELECTORS = {
     extensionsMenu: '#extensionsMenu .list-group',

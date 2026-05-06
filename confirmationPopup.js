@@ -6,7 +6,7 @@ import { translate } from '../../../i18n.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
 import { tr } from './i18nHelpers.js';
-import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName } from './utils.js';
+import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName, markStmbPopup } from './utils.js';
 import { playMessageSound } from '../../../power-user.js';
 
 const MODULE_NAME = 'STMemoryBooks-ConfirmationPopup';
@@ -98,6 +98,7 @@ export async function showConfirmationPopup(sceneData, settings, currentModelSet
         }
       ]
     });
+    markStmbPopup(popup);
 
     activeMemoryPreviewPopups.add(popup);
     const result = await popup.show();
@@ -187,6 +188,7 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
         }
       ]
     });
+    markStmbPopup(popup);
 
     // Set up event listeners BEFORE popup is shown
     setupAdvancedOptionsListeners(popup, sceneData, settings, selectedProfile, chat_metadata);
@@ -670,6 +672,7 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
         }
       ]
     });
+    markStmbPopup(popup);
 
     activeMemoryPreviewPopups.add(popup);
     const result = await popup.show();

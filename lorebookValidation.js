@@ -11,7 +11,7 @@ import { DOMPurify } from "../../../../lib.js";
 import { translate } from "../../../i18n.js";
 import { autoCreateLorebook } from "./autocreate.js";
 import { getSceneMarkers } from "./sceneManager.js";
-import { showLorebookSelectionPopup } from "./utils.js";
+import { markStmbPopup, showLorebookSelectionPopup } from "./utils.js";
 import { escapeHtml } from "../../../utils.js";
 
 function getDefaultRetryText(manualMode) {
@@ -152,6 +152,7 @@ async function showLorebookRecoveryPopup({
     customButtons,
     leftAlign: true,
   });
+  markStmbPopup(recoveryPopup);
   const recoveryResult = await recoveryPopup.show();
 
   if (recoveryResult === POPUP_RESULT.CUSTOM1 && allowCreate) {

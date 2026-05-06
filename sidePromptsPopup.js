@@ -25,6 +25,7 @@ import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { showStmbEntryReviewPopup } from './clipManager.js';
+import { markStmbPopup } from './utils.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -333,6 +334,7 @@ async function promptLorebookTargetSaveScope() {
             },
         ],
     });
+    markStmbPopup(popup);
 
     const result = await popup.show();
     if (result === POPUP_RESULT.CUSTOM1) return 'chat';
