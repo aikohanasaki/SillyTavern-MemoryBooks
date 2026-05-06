@@ -1,6 +1,6 @@
 import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
-import { oai_settings } from '../../../openai.js';
+import { oai_settings, ZAI_ENDPOINT } from '../../../openai.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
@@ -200,6 +200,8 @@ export async function sendRawCompletionRequest({
         body.custom_url = oai_settings.custom_url || '';
     } else if (api === 'deepseek') {
         body.custom_url = `https://api.deepseek.com/chat/completions`; // use primary Deepseek endpoint
+    } else if (api === 'zai') {
+        body.zai_endpoint = oai_settings?.zai_endpoint || ZAI_ENDPOINT.COMMON;
     }
 
     const res = await fetch(url, {
