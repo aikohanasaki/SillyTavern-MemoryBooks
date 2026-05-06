@@ -18,34 +18,18 @@ Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk ko
   - [📊 Prompt Sampingan & Pelacak Cerdas](#-prompt-sampingan--pelacak-cerdas)
   - [📚 Koleksi Memori (Memory Collections)](#-koleksi-memori-memory-collections)
 - [🎯 Pilih Gaya Anda](#-pilih-gaya-anda)
-- [🙈 Penghematan token: sembunyikan / tampilkan pesan](#-penghematan-token-sembunyikan--tampilkan-pesan)
-  - [Apa arti “sembunyikan”?](#apa-arti-sembunyikan)
-  - [Kapan ini berguna?](#kapan-ini-berguna)
-  - [Auto-hide setelah pembuatan memori](#auto-hide-setelah-pembuatan-memori)
-  - [Tampilkan lagi sebelum pembuatan memori](#tampilkan-lagi-sebelum-pembuatan-memori)
-  - [Pengaturan awal yang disarankan](#pengaturan-awal-yang-disarankan)
+- [✂️ Klip ke Buku Memori](#-klip-ke-buku-memori)
+- [✂️ Klip vs Prompt Sampingan](#-klip-vs-prompt-sampingan)
+- [🙈 Penghematan Token: Sembunyikan / Tampilkan Pesan](#-penghematan-token-sembunyikan--tampilkan-pesan)
+- [🧭 Pemadatan vs Konsolidasi](#-pemadatan-vs-konsolidasi)
 - [🌈 Ringkasan Konsolidasi](#-ringkasan-konsolidasi)
-  - [T: Apa itu Ringkasan Konsolidasi?](#t-apa-itu-ringkasan-konsolidasi)
-  - [T: Mengapa menggunakannya?](#t-mengapa-menggunakannya)
-  - [T: Apakah ini berjalan otomatis?](#t-apakah-ini-berjalan-otomatis)
-  - [T: Bagaimana cara menggunakannya?](#t-bagaimana-cara-menggunakannya)
-  - [Apa yang dikonsolidasi, dan apa yang tidak?](#apa-yang-dikonsolidasi-dan-apa-yang-tidak)
-  - [Mengapa ini penting?](#mengapa-ini-penting)
-  - [Aturan praktis](#aturan-praktis)
 - [🎨 Pelacak, Prompt Sampingan, & Templat (Fitur Lanjutan)](#-pelacak-prompt-sampingan--templat-fitur-lanjutan)
-  - [🚀 Mulai Cepat dengan Templat](#-mulai-cepat-dengan-templat)
-  - [⚙️ Cara Kerja Prompt Sampingan](#-cara-kerja-prompt-sampingan)
-  - [🛠️ Mengelola Prompt Sampingan](#-mengelola-prompt-sampingan)
-  - [💡 Contoh Templat](#-contoh-templat)
-  - [🔧 Membuat Prompt Sampingan Kustom](#-membuat-prompt-sampingan-kustom)
-  - [💬 Tips Pro](#-tips-pro)
-  - [🧠 Kontrol Teks Lanjutan dengan Ekstensi Regex](#-kontrol-teks-lanjutan-dengan-ekstensi-regex)
 - [🧹 Pemadatan](#-pemadatan)
-- [⚙️ Pengaturan yang Benar-benar Penting](#-pengaturan-yang-benar-benar-penting)
+- [⚙️ Pengaturan yang Benar-benar Penting](#️-pengaturan-yang-benar-benar-penting)
 - [🔧 Pemecahan Masalah (Saat Ada Masalah)](#-pemecahan-masalah-saat-ada-masalah)
 - [🚫 Apa yang Tidak Dilakukan ST Memory Books](#-apa-yang-tidak-dilakukan-st-memory-books)
 - [💡 Bantuan & Info Lebih Lanjut](#-bantuan--info-lebih-lanjut)
-  - [📚 Tingkatkan Kekuatan dengan Pengurutan Lorebook (STLO)](#-tingkatkan-kekuatan-dengan-pengurutan-lorebook-stlo)
+- [📚 Tingkatkan Kekuatan dengan Pengurutan Lorebook (STLO)](#-tingkatkan-kekuatan-dengan-pengurutan-lorebook-stlo)
 
 ## 🚀 Mulai Cepat (5 Menit Menuju Memori Pertama Anda!)
 
@@ -192,6 +176,102 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 
 ---
 
+## ✂️ Klip ke Buku Memori
+
+Gunakan **Klip ke Buku Memori** saat Anda ingin menyimpan satu baris atau fakta penting tanpa membuat memori adegan penuh. Sorot teks di chat, klik tombol gunting mengambang, lalu pilih entri klip yang sudah ada atau buat entri baru.
+
+Tidak yakin ini sebaiknya menjadi klip atau Prompt Sampingan? Lihat [Klip vs Prompt Sampingan](#-klip-vs-prompt-sampingan).
+
+### Kapan saya harus memakai klip?
+
+Klip paling cocok untuk fakta kecil yang ingin Anda buat agar diingat AI, seperti:
+
+- preferensi karakter
+- janji atau rahasia
+- detail hubungan
+- hewan peliharaan, tempat, item, atau detail berulang
+- “catatan untuk diri sendiri” singkat yang tidak membutuhkan ringkasan memori penuh
+
+Untuk adegan yang lebih besar, gunakan pembuatan Memori biasa.
+
+### Cara kerja klip
+
+1. Sorot kalimat atau frasa yang ingin Anda simpan.
+2. Klik tombol gunting mengambang.
+3. Pilih entri klip yang sudah ada, atau buat entri baru.
+4. Tinjau pratinjau entri.
+5. Simpan klip.
+
+Entri klip adalah entri lorebook biasa yang ditandai dengan `[STMB Clip]`. Contoh:
+
+```txt
+Seraphina Menyembuhkanku [STMB Clip]
+```
+
+Di dalam entri, STMB menyimpan konten dalam format bagian yang rapi:
+
+```md
+=== Seraphina Menyembuhkanku ===
+
+- Seraphina menyembuhkan lukaku dengan sihir.
+
+=== END Seraphina Menyembuhkanku ===
+```
+
+### Membuat atau mengganti nama entri klip
+
+Saat Anda membuat entri klip baru, judul entri juga menjadi tajuk bagian. Anda dapat mengganti nama entri saat melakukan klip, dan STMB akan memperbarui tajuk bagian agar cocok.
+
+Entri klip baru dapat berupa:
+
+- **selalu aktif**, untuk fakta yang harus selalu tersedia
+- **dipicu kata kunci**, untuk fakta yang hanya perlu muncul saat kata yang cocok muncul
+
+Gunakan kata kunci saat klip hanya relevan dengan topik, karakter, tempat, hewan peliharaan, item, atau hubungan tertentu.
+
+### Tombol gunting mengambang
+
+Tombol gunting mengambang hanya muncul setelah Anda menyorot teks di dalam chat. Anda dapat mengaktifkan atau menonaktifkan tombol ini di popup utama Memory Books.
+
+### Meninjau entri klip yang panjang
+
+Jika entri klip menjadi panjang, STMB dapat mengingatkan Anda untuk meninjaunya. Anda dapat mengeditnya sendiri, atau menggunakan **Pemadatan** untuk meminta AI membuat entri klip, Prompt Sampingan, atau Memori STMB menjadi lebih hemat token sebelum Anda memilih apakah akan mengganti aslinya.
+
+---
+
+## ✂️ Klip vs Prompt Sampingan
+
+Klip dan Prompt Sampingan sama-sama menyimpan informasi ke Buku Memori Anda, tetapi keduanya bukan untuk pekerjaan yang sama.
+
+Aturan sederhana: **Klip menyimpan fakta tertentu. Prompt Sampingan memelihara tracker yang hidup.**
+
+| **Klip** | **Prompt Sampingan** |
+|---|---|
+| Menyimpan teks chat yang dipilih ke entri Buku Memori. | Meminta AI meninjau chat dan memperbarui entri tracker. |
+| Paling cocok untuk satu fakta, baris, janji, preferensi, item, atau catatan yang jelas. | Paling cocok untuk informasi yang berubah seiring waktu, seperti status hubungan, kemajuan quest, inventaris, atau alur plot yang belum selesai. |
+| Anda memilih teks persisnya. STMB menyimpan yang Anda pilih. | AI menafsirkan chat dan menulis atau memperbarui tracker. |
+| Gunakan saat fakta sudah jelas dan tidak membutuhkan analisis. | Gunakan saat AI perlu membandingkan, meringkas, atau memperbarui keadaan dari beberapa pesan. |
+| Biasanya hanya bertambah saat Anda menambahkan klip lain secara manual. | Dapat diperbarui berulang kali saat cerita berubah. |
+| Bayangkan: “sematkan catatan ini.” | Bayangkan: “tetap perbarui bagian ini.” |
+
+Contoh Klip yang baik:
+
+- `Aiko suka teh madu.`
+- `Andalino berjanji tidak akan berbohong kepadanya lagi.`
+- `Colt memanggilnya Boss.`
+
+Contoh Prompt Sampingan yang baik:
+
+- status hubungan
+- kemajuan quest saat ini
+- inventaris dan sumber daya
+- direktori NPC
+- alur plot yang belum selesai
+
+Jika Anda hanya membutuhkan satu detail yang diingat, gunakan Klip. Jika Anda membutuhkan tracker berkelanjutan, gunakan Prompt Sampingan.
+
+---
+
 ## 🙈 Penghematan token: sembunyikan / tampilkan pesan
 
 Salah satu cara termudah untuk mengurangi kekacauan dan menghemat token di chat panjang adalah menyembunyikan pesan setelah Anda sudah mengubahnya menjadi memori.
@@ -226,37 +306,58 @@ Anda juga bisa menentukan berapa banyak pesan terbaru yang tetap terlihat dengan
 * biarkan **2** pesan tetap terlihat
 * aktifkan **Tampilkan kembali pesan tersembunyi untuk pembuatan memori (menjalankan /unhide X-Y)**
 
+## 🧭 Pemadatan vs Konsolidasi
+
+Namanya mirip, tetapi keduanya melakukan pekerjaan yang berbeda.
+
+Aturan sederhana: **Pemadatan membersihkan satu entri. Konsolidasi menggabungkan beberapa memori menjadi rekap tingkat lebih tinggi.**
+
+| **Pemadatan** | **Konsolidasi** |
+|---|---|
+| Membuat satu entri yang sudah ada dan dikelola STMB menjadi lebih kecil. | Menggabungkan beberapa memori atau ringkasan menjadi satu rekap tingkat lebih tinggi. |
+| Bekerja pada satu entri Klip, entri Prompt Sampingan, atau entri memori STMB sekaligus. | Bekerja dari beberapa entri memori/ringkasan yang dipilih. |
+| Paling cocok saat entri masih berguna, tetapi terlalu panjang, berulang, atau mahal untuk tetap berada di konteks. | Paling cocok saat memori adegan lama menumpuk dan sebaiknya menjadi ringkasan Arc, Chapter, Book, Legend, Series, atau Epic. |
+| Menulis ulang entri yang dipilih dalam bentuk yang lebih hemat token. | Membuat entri ringkasan baru dari entri sumber yang dipilih. |
+| Harus mempertahankan fakta yang sudah ada dan membuang bloat. | Harus mempertahankan alur kontinuitas besar dan mengurangi detail adegan demi adegan. |
+| Tidak membuat memori baru dari chat mentah. | Tidak memadatkan satu entri yang membengkak dengan sendirinya. |
+| Bayangkan: “pangkas satu entri ini.” | Bayangkan: “gulung memori-memori ini menjadi rekap.” |
+
+Kedua alat ini bersifat tinjau dulu. STMB menunjukkan apa yang ditulis AI sebelum apa pun disimpan atau diganti.
+
+---
+
 ## 🌈 Ringkasan Konsolidasi
 
-Ringkasan konsolidasi membantu menjaga cerita panjang tetap terkelola dengan memadatkan memori STMB yang lama menjadi ringkasan tingkat lebih tinggi.
+Ringkasan Konsolidasi membantu menjaga cerita panjang tetap terkelola dengan memampatkan memori STMB lama menjadi entri rekap tingkat lebih tinggi.
 
 ### T: Apa itu Ringkasan Konsolidasi?
 
 **J:** Alih-alih hanya membuat memori tingkat adegan terus-menerus, STMB dapat menggabungkan memori atau ringkasan yang sudah ada menjadi rekap yang lebih ringkas. Tier pertama adalah **Arc**, dan tier rekap yang lebih tinggi juga tersedia untuk cerita yang lebih panjang:
 
-* Arc
-* Chapter
-* Book
-* Legend
-* Series
+- Arc
+- Chapter
+- Book
+- Legend
+- Series
+- Epic
 
 ### T: Mengapa menggunakannya?
 
 **J:** Konsolidasi berguna ketika:
 
-* Daftar memori Anda menjadi panjang
-* Entri lama tidak lagi memerlukan detail adegan demi adegan
-* Anda ingin mengurangi penggunaan token tanpa kehilangan kesinambungan
-* Anda ingin rekap naratif yang lebih bersih dan lebih tinggi tingkatnya
+- daftar memori Anda menjadi panjang
+- entri lama tidak lagi membutuhkan detail adegan demi adegan
+- Anda ingin mengurangi penggunaan token tanpa kehilangan kontinuitas
+- Anda ingin rekap naratif tingkat lebih tinggi yang lebih bersih
 
 ### T: Apakah ini berjalan otomatis?
 
 **J:** Tidak. Konsolidasi tetap memerlukan konfirmasi.
 
-* Anda selalu bisa membuka **Gabungkan Ingatan** secara manual dari popup utama
-* Anda juga bisa mengaktifkan **Tampilkan prompt konsolidasi saat tier siap**
-* Saat tier target yang dipilih mencapai minimum entri sumber yang memenuhi syarat, STMB menampilkan konfirmasi **yes/later**
-* Memilih **Yes** membuka popup konsolidasi dengan tier itu sudah dipilih; ini tidak berjalan sendiri secara diam-diam
+- Anda selalu dapat membuka **Gabungkan Ingatan** secara manual dari popup utama
+- Anda juga dapat mengaktifkan **Tampilkan prompt konsolidasi saat tier siap**
+- Saat tier target yang dipilih mencapai jumlah minimum entri yang memenuhi syarat yang tersimpan, STMB menampilkan konfirmasi **yes/later**
+- Memilih **Yes** membuka popup konsolidasi dengan tier tersebut sudah dipilih; alat ini tidak berjalan sendiri secara diam-diam
 
 ### T: Bagaimana cara menggunakannya?
 
@@ -268,136 +369,143 @@ Ringkasan konsolidasi membantu menjaga cerita panjang tetap terkelola dengan mem
 4. Opsional, nonaktifkan entri sumber setelah ringkasan baru dibuat
 5. Klik **Run**
 
-Jika AI memberikan respons konsolidasi yang buruk, STMB dapat menampilkan alur perbaikan/tinjau sebelum Anda mencoba menyimpan lagi.
-
-### Apa yang dikonsolidasi, dan apa yang tidak?
-
-Konsolidasi bekerja pada **memori STMB dan ringkasan STMB**.
-
-Artinya:
-
-* memori biasa dapat dikonsolidasi menjadi ringkasan tingkat lebih tinggi
-* ringkasan tingkat lebih tinggi kemudian dapat dikonsolidasi lagi menjadi rekap yang lebih besar
-
-Side prompt berbeda.
-
-**Side prompt adalah entri pelacak**, bukan entri ringkasan memori. Side prompt dimaksudkan untuk menjaga informasi berkelanjutan tetap mutakhir, seperti:
-
-* status hubungan
-* tujuan saat ini
-* papan skor
-* keadaan dunia
-* pelacak alur cerita
-
-Dengan kata lain:
-
-* **Memori** = "apa yang terjadi di adegan ini?"
-* **Side Prompt** = "apa keadaan saat ini dari hal ini?"
-* **Konsolidasi** = "ringkas banyak memori menjadi rekap yang lebih besar"
-
-### Mengapa ini penting?
-
-Ini penting karena pengguna kadang mengira entri pelacak akan ikut naik ke ringkasan Arc atau Chapter.
-
-Itu **tidak** terjadi.
-
-Jika Anda ingin sesuatu menjadi bagian dari Konsolidasi, item itu harus ada sebagai entri memori/ringkasan STMB biasa, bukan hanya sebagai side prompt.
-
-### Aturan praktis
-
-Gunakan:
-
-* **Memori** untuk rekap adegan
-* **Side Prompt** untuk pelacak yang terus berjalan
-* **Konsolidasi** untuk memadatkan memori lama menjadi rekap yang lebih besar
+Untuk pratinjau entri ini, aktifkan "tampilkan pratinjau" di preferensi Anda.
 
 ---
 
 ## 🎨 Pelacak, Prompt Sampingan, & Templat (Fitur Lanjutan)
 
-**Prompt Sampingan** adalah pelacak latar belakang yang membantu memelihara informasi cerita yang sedang berlangsung.
-Mereka mencipta entri Side Prompt yang berasingan di lorebook dan berjalan bersamaan dengan pembuatan memori. Anggap saja sebagai **asisten yang mengawasi cerita Anda dan menjaga detail tertentu tetap mutakhir**.
-Makro ST standard seperti `{{user}}` dan `{{char}}` dikembangkan di `Prompt` dan `Response Format`. Makro bukan standard `{{...}}` menjadi input wajib untuk dijalankan secara manual.
+**Prompt Sampingan** adalah tracker latar belakang yang membantu memelihara informasi cerita yang sedang berlangsung. Prompt ini berjalan berdampingan dengan pembuatan memori dan memperbarui entri lorebook Prompt Sampingan terpisah dari waktu ke waktu. Anggap ini sebagai **asisten yang mengawasi cerita Anda dan menjaga detail tertentu tetap mutakhir**.
+
+Jika Anda hanya ingin menyimpan satu fakta yang disorot, gunakan [Klip ke Buku Memori](#-klip-ke-buku-memori) sebagai gantinya. Prompt Sampingan adalah untuk pelacakan yang berulang atau berkelanjutan.
 
 ### 🚀 **Mulai Cepat dengan Templat**
 
-1. Buka pengaturan Memory Books.
-2. Klik **Prompt Sampingan**.
-3. Jelajahi **pustaka templat** dan pilih yang sesuai dengan cerita Anda:
-* **Character Development Tracker** – Melacak perubahan kepribadian dan pertumbuhan.
-* **Relationship Dynamics** – Melacak hubungan antar karakter.
-* **Plot Thread Tracker** – Melacak alur cerita yang sedang berlangsung.
-* **Mood & Atmosphere** – Melacak nada emosional.
-* **World Building Notes** – Melacak detail latar dan pengetahuan dunia (lore).
+1. Buka pengaturan Memory Books
+2. Klik **Prompt Sampingan**
+3. Jelajahi **pustaka templat** dan pilih yang cocok untuk cerita Anda:
 
+   * **Character Development Tracker** – Melacak perubahan dan pertumbuhan kepribadian
+   * **Relationship Dynamics** – Melacak hubungan antar karakter
+   * **Plot Thread Tracker** – Melacak alur cerita yang sedang berlangsung
+   * **Mood & Atmosphere** – Melacak nada emosional
+   * **World Building Notes** – Melacak detail latar dan lore
+4. Aktifkan templat yang Anda inginkan (Anda dapat menyesuaikannya nanti)
+5. Jika templat menggunakan pemicu otomatis, STMB akan terus memperbarui entri Prompt Sampingan itu bersama pembuatan memori
 
-4. Aktifkan templat yang Anda inginkan (Anda dapat menyesuaikannya nanti).
-5. Jika templat mengandungi makro runtime tersuai, ia tidak akan berjalan secara automatik dan mesti dimulakan secara manual dengan `/sideprompt`.
+[Panduan Scribe yang menunjukkan langkah demi langkah untuk mengaktifkan Prompt Sampingan otomatis](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)
 
 ### ⚙️ **Cara Kerja Prompt Sampingan**
 
-* **Pelacak Latar Belakang**: Mereka berjalan dengan tenang dan memperbarui informasi dari waktu ke waktu.
-* **Tidak Mengganggu**: Mereka tidak mengubah pengaturan AI utama atau prompt karakter Anda.
-* **Kontrol Per-Obrolan**: Obrolan yang berbeda dapat menggunakan pelacak yang berbeda.
-* **Berbasis Templat**: Gunakan templat bawaan atau buat sendiri.
-* **Otomatis atau Manual**: Templat standard boleh berjalan secara automatik; templat dengan makro runtime tersuai hanya boleh dijalankan secara manual.
-* **Sokongan Makro**: `Prompt` dan `Response Format` mengembangkan makro ST standard seperti `{{user}}` dan `{{char}}`.
-* **Pemeriksaan Keselamatan**: Jika templat mengandungi makro runtime tersuai, STMB membuang `onInterval` dan `onAfterMemory` semasa simpan/import dan memaparkan amaran.
-
-Ini membuat perilaku pemicu dapat dimengerti tanpa istilah teknis.
+* **Tracker Latar Belakang**: Berjalan diam-diam dan memperbarui informasi dari waktu ke waktu
+* **Tidak Mengganggu**: Tidak mengubah pengaturan AI utama atau prompt karakter Anda
+* **Kontrol Per-Chat**: Chat yang berbeda dapat memakai tracker yang berbeda
+* **Berbasis Templat**: Gunakan templat bawaan atau buat sendiri
+* **Otomatis atau Manual**: Templat standar dapat berjalan otomatis; templat dengan macro runtime kustom hanya manual
+* **Dukungan Macro**: Field `Prompt`, `Response Format`, `Title`, dan kata kunci dapat memperluas macro ST standar seperti `{{user}}` dan `{{char}}`
+* **Macro Runtime**: Token `{{...}}` non-standar menjadi input perintah wajib seperti `{{npc name}}="Jane Doe"`
+* **Teks Biasa Diizinkan**: Prompt Sampingan tidak harus mengembalikan JSON
+* **Perilaku Timpa**: Prompt Sampingan memperbarui entri tracker miliknya sendiri dari waktu ke waktu, bukan membuat memori berurutan baru setiap kali berjalan
 
 ### 🛠️ **Mengelola Prompt Sampingan**
 
-* **Pengelola Prompt Sampingan**: Buat, edit, duplikasi, dan atur pelacak.
-* **Enable / Disable**: Aktifkan atau nonaktifkan pelacak kapan saja.
-* **Import / Export**: Bagikan templat atau cadangkan.
-* **Status View**: Lihat pelacak mana yang aktif dalam obrolan saat ini.
-
-"Status View" lebih jelas daripada "Live Preview" untuk pembaca non-penutur asli bahasa Inggris.
+* **Pengelola Prompt Sampingan**: Membuat, mengedit, menduplikasi, dan mengatur tracker
+* **Aktifkan / Nonaktifkan**: Hidupkan atau matikan tracker kapan saja
+* **Impor / Ekspor**: Bagikan templat atau cadangkan
+* **Tampilan Status**: Lihat tracker mana yang aktif di chat saat ini dan kapan dijalankan
+* **Pemeriksaan Keamanan**: Jika templat memuat macro runtime kustom, STMB menghapus pemicu otomatis saat simpan/impor dan menampilkan toast peringatan
 
 ### 💡 **Contoh Templat**
 
-* Pustaka Templat Side Prompt (impor JSON ini):
-[SidePromptTemplateLibrary.json](../resources/SidePromptTemplateLibrary.json)
+* Pustaka Templat Prompt Sampingan (impor JSON ini):
+  [SidePromptTemplateLibrary.json](../resources/SidePromptTemplateLibrary.json)
 
 Ide prompt contoh:
 
-* "Lacak dialog penting dan interaksi karakter"
-* "Jaga status quest saat ini tetap mutakhir"
-* "Catat detail pembangunan dunia (world-building) baru saat muncul"
-* "Lacak hubungan antara Karakter A dan Karakter B"
+* “Lacak dialog penting dan interaksi karakter”
+* “Jaga status quest saat ini tetap mutakhir”
+* “Catat detail world-building baru saat muncul”
+* “Lacak hubungan antara Karakter A dan Karakter B”
 
 ### 🔧 **Membuat Prompt Sampingan Kustom**
 
-1. Buka Pengelola Prompt Sampingan.
-2. Klik **Buat Baru**.
+1. Buka Pengelola Prompt Sampingan
+2. Klik **Buat Baru**
 3. Tulis instruksi yang singkat dan jelas
-*(contoh: "Selalu catat bagaimana cuaca di setiap adegan")*
-4. Tambahkan jika perlu makro ST standard atau makro runtime dalam format `{{macro}}="value"`.
-5. Simpan dan aktifkan.
-6. Pelacak sekarang akan memperbarui informasi ini dari waktu ke waktu jika pencetus automatik kekal diaktifkan.
+   *(contoh: “Selalu catat seperti apa cuaca di setiap adegan”)*
+4. Opsional, tambahkan macro ST standar seperti `{{user}}` atau `{{char}}`
+5. Jika Anda menambahkan macro runtime kustom seperti `{{location name}}`, jalankan secara manual dengan `/sideprompt "Name" {{location name}}="value"`
+6. Simpan dan aktifkan
+7. Tracker sekarang akan memperbarui informasi ini dari waktu ke waktu jika memakai pemicu otomatis; jika tidak, jalankan secara manual saat diperlukan
 
 ### 💬 **Tips Pro**
 
 Prompt Sampingan bekerja paling baik jika **kecil dan terfokus**.
-Daripada "lacak segalanya," cobalah "lacak ketegangan romantis antara karakter utama."
+Alih-alih “lacak semuanya,” coba “lacak ketegangan romantis antara karakter utama.”
+
+### ⌨️ **Sintaks Manual /sideprompt**
+
+Gunakan:
+`/sideprompt "Name" {{macro}}="value" [X-Y]`
+
+Contoh:
+- `/sideprompt "Status" 10-20`
+- `/sideprompt "NPC Directory" {{npc name}}="Jane Doe" 40-50`
+- `/sideprompt "Location Notes" {{place name}}="Black Harbor" 100-120`
+
+Catatan:
+
+- Nama Prompt Sampingan harus diapit tanda kutip.
+- Nilai macro runtime harus diapit tanda kutip.
+- Autocomplete perintah slash akan menyarankan macro runtime yang diperlukan setelah Anda memilih Prompt Sampingan.
+- Jika templat memuat macro runtime kustom, STMB mempertahankannya sebagai manual-only dan menghapus pemicu otomatis.
+- `X-Y` bersifat opsional. Jika dihilangkan, STMB memakai pesan sejak terakhir kali Prompt Sampingan itu diperbarui.
+- Jika Anda menjalankan Prompt Sampingan secara manual dan terpisah, ingat untuk mengaktifkan `tampilkan kembali sebelum generasi`!
 
 ---
 
 ### 🧠 Kontrol Teks Lanjutan dengan Ekstensi Regex
 
-ST Memory Books dapat menjalankan skrip Regex yang dipilih sebelum generasi dan sebelum penyimpanan.
+**Ingin kendali penuh atas teks yang dikirim STMB ke AI dan diterima dari AI?** STMB dapat menjalankan skrip Regex yang dipilih sebelum generasi dan sebelum penyimpanan.
 
-* Aktifkan **Gunakan ekspresi reguler (lanjutan)** di STMB
-* Klik **📐 Konfigurasi ekspresi reguler…**
-* Pilih secara terpisah skrip mana yang harus berjalan sebelum mengirim teks ke AI dan sebelum menyimpan
-* Pilihan di dalam STMB tetap berlaku meskipun skrip itu dinonaktifkan di ekstensi Regex
+Ini berguna saat Anda ingin:
+- Membersihkan sampah berulang dari respons AI
+- Menormalkan nama atau istilah sebelum generasi
+- Memformat ulang teks sebelum STMB mem-parsing atau mempratinjaunya
+
+#### **Cara Kerjanya Sekarang**
+
+1. Buat skrip yang Anda inginkan di ekstensi **Regex** SillyTavern
+2. Di STMB, aktifkan **Gunakan regex (lanjutan)**
+3. Klik **📐 Konfigurasi regex…**
+4. Pilih skrip mana yang harus dijalankan STMB:
+   - sebelum mengirim teks ke AI
+   - sebelum menambahkan respons ke lorebook
+
+#### **Perilaku Penting**
+
+- Pemilihan Regex untuk STMB dikontrol di dalam **STMB**, bukan oleh status aktif/nonaktif skrip di ekstensi Regex
+- Skrip yang dipilih di STMB tetap dapat berjalan meskipun dinonaktifkan di ekstensi Regex itu sendiri
+- STMB mendukung multi-select untuk pemrosesan keluar dan masuk
+
+#### **Contoh Singkat**
+
+Jika model Anda terus menambahkan `(OOC: I hope this summary is helpful!)`, Anda dapat:
+
+1. Membuat skrip Regex yang menghapus teks itu
+2. Mengaktifkan **Gunakan regex (lanjutan)** di STMB
+3. Membuka **📐 Konfigurasi regex…**
+4. Menambahkan skrip itu ke pilihan **masuk**
+
+Sekarang STMB akan membersihkan respons sebelum mempratinjau atau menyimpannya.
 
 ---
 
 ## 🧹 Pemadatan
 
-Pemadatan membantu ketika entri lorebook yang dikelola STMB masih berguna, tetapi sudah menjadi terlalu panjang atau berulang. Alih-alih memangkasnya secara manual, Anda dapat meminta AI menulis ulang entri tersebut menjadi bentuk yang lebih hemat token.
+Pemadatan membantu ketika entri lorebook yang dikelola STMB masih berguna, tetapi menjadi terlalu panjang atau berulang. Alih-alih memangkasnya secara manual, Anda dapat meminta AI menulis ulang entri itu dalam bentuk yang lebih hemat token.
+
+Tidak yakin apakah Anda membutuhkan ini atau Ringkasan Konsolidasi? Gunakan versi singkat di atas: **Pemadatan membersihkan satu entri. Konsolidasi menggabungkan beberapa memori menjadi rekap tingkat lebih tinggi.**
 
 Ini adalah alat **tinjau dulu**. STMB menampilkan konten asli dan draf yang dipadatkan sebelum mengganti apa pun.
 
@@ -406,7 +514,7 @@ Ini adalah alat **tinjau dulu**. STMB menampilkan konten asli dan draf yang dipa
 Pemadatan dapat menampilkan entri berikut dari Buku Memori yang dipilih:
 
 - entri Klip
-- entri pelacak Prompt Sampingan
+- entri tracker Prompt Sampingan
 - entri Memori STMB
 
 Pemadatan tidak menampilkan entri lorebook biasa yang tidak dikelola oleh STMB.
@@ -420,12 +528,12 @@ Pemadatan tidak menampilkan entri lorebook biasa yang tidak dikelola oleh STMB.
 5. Opsional: klik **Edit Prompt Pemadatan** jika Anda ingin mengubah instruksi penulisan ulang.
 6. Temukan entri di tabel dan klik **Padatkan Entri**.
 7. Tinjau hasilnya:
-   - **Konten asli** menunjukkan konten yang saat ini tersimpan.
-   - **Draf yang dipadatkan** menunjukkan hasil penulisan ulang AI.
+   - **Konten asli** menunjukkan yang saat ini tersimpan.
+   - **Draf yang dipadatkan** menunjukkan penulisan ulang AI.
    - Keduanya menampilkan perkiraan jumlah token.
 8. Edit draf yang dipadatkan jika perlu.
 9. Pilih salah satu:
-   - **Ganti dengan Versi yang Dipadatkan** untuk menyimpan draf di atas entri asli.
+   - **Ganti dengan Versi yang Dipadatkan** untuk menyimpan draf menggantikan entri asli.
    - **Salin Draf yang Dipadatkan** untuk menyalinnya tanpa menyimpan.
    - **Batal** untuk membiarkan entri tidak berubah.
 
@@ -433,11 +541,11 @@ STMB seharusnya tidak pernah mengganti entri asli secara diam-diam. Jika Anda ti
 
 ### Mengedit Prompt Pemadatan
 
-Prompt Pemadatan mengontrol cara AI menulis ulang entri. Prompt bawaan sengaja konservatif: pertahankan fakta penting, nama, kata ganti, makro, tajuk pembungkus, dan penanda akhir; hapus pengulangan dan kata-kata bernilai rendah; jangan mengarang hal baru.
+Prompt Pemadatan mengontrol cara AI menulis ulang entri. Prompt bawaan sengaja konservatif: pertahankan fakta penting, nama, kata ganti, macro, tajuk pembungkus, dan penanda akhir; hapus pengulangan dan kata-kata bernilai rendah; jangan mengarang apa pun.
 
-Prompt mendukung placeholder berikut:
+Prompt ini mendukung placeholder berikut:
 
-- `{{ENTRY_CONTENT}}` — konten entri saat ini. Ini wajib ada.
+- `{{ENTRY_CONTENT}}` — konten entri saat ini. Ini wajib.
 - `{{ENTRY_KIND}}` — jenis entri, seperti Klip, Prompt Sampingan, atau Memori.
 - `{{ENTRY_TITLE}}` — judul entri.
 
@@ -448,15 +556,15 @@ Gunakan **Atur Ulang ke Default** jika prompt kustom Anda mulai berperilaku buru
 Gunakan Pemadatan untuk:
 
 - entri Klip yang panjang
-- pelacak Prompt Sampingan yang mengulang informasi seiring waktu
-- entri memori yang benar tetapi terlalu besar
-- entri yang selalu aktif dan menghabiskan terlalu banyak token
+- tracker Prompt Sampingan yang mengulang hal yang sama dari waktu ke waktu
+- entri memori yang benar tetapi membengkak
+- entri selalu aktif yang menghabiskan terlalu banyak token
 
-Jangan gunakan untuk:
+Jangan gunakan ini untuk:
 
 - membuat memori baru dari chat
 - menambahkan fakta baru
-- memperbaiki kontinuitas yang tidak pernah ada di entri
+- memperbaiki kontinuitas hilang yang tidak pernah ada di entri
 - mengedit entri lorebook biasa di luar STMB
 
 Pemadatan adalah alat pembersihan, bukan alat pembuatan memori.
