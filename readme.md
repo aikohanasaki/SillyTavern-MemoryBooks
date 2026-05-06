@@ -52,7 +52,7 @@ Other links:
 * 📋 [Version History & Changelog](changelog.md)
 * 💡 [Using 📕 Memory Books with 📚 Lorebook Ordering](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering/blob/main/guides/STMB%20and%20STLO%20-%20English.md)
 
-> Note: Supports various languages: see [`/locales`](locales) folder for list. Internaional/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
+> Note: Supports various languages: see [`/locales`](locales) folder for list. International/localized Readme and User Guides can be found in the [`/userguides`](userguides) folder. 
 > Lorebook converter and side prompt template library are in the [`/resources`](resources) folder.
 
 ## 📑 Table of Contents
