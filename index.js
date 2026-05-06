@@ -96,6 +96,7 @@ import {
   stmbStopAllInFlight,
   getStmbInFlightCount,
   isStmbStopError,
+  markStmbPopup,
   throwIfStmbStopped,
 } from "./utils.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
@@ -5431,6 +5432,7 @@ async function showSettingsPopup() {
       "",
       popupOptions,
     );
+    markStmbPopup(currentPopupInstance);
     setupSettingsEventListeners();
     populateInlineButtons();
     initializeSettingsPopupSelect2();
@@ -6269,6 +6271,7 @@ async function refreshPopupContent() {
     }
 
     const requiredClasses = [
+      "stmb-popup",
       "wide_dialogue_popup",
       "large_dialogue_popup",
       "vertical_scrolling_dialogue_popup",

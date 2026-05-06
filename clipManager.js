@@ -21,6 +21,7 @@ import { requestCompletion } from './stmemory.js';
 import {
     getCurrentApiInfo,
     getUIModelSettings,
+    markStmbPopup,
     normalizeCompletionSource,
     readIntInput,
     resolveEffectiveConnectionFromProfile,
@@ -608,6 +609,7 @@ async function showLongEntryWarning(lorebookName, lorebookData, entry, content) 
             ],
         },
     );
+    markStmbPopup(popup);
 
     const result = await popup.show();
     if (result === POPUP_RESULT.CUSTOM3) return true;
