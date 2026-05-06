@@ -12,7 +12,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
 - [Choose Your Style](#-choose-your-style)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
-- [Clips vs Side Prompts](#-clips-vs-side-prompts)
+- [Clips vs Side Prompts](#️-clips-vs-side-prompts)
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
 - [Compaction vs Consolidation](#-compaction-vs-consolidation)
 - [Summary Consolidation](#-summary-consolidation)
@@ -233,7 +233,7 @@ Plain rule: **Clips save a specific fact. Side Prompts maintain a living tracker
 Examples of good Clips:
 
 - `Aiko likes honey tea.`
-- `Theron promised not to lie to her again.`
+- `Andalino promised not to lie to her again.`
 - `Colt calls her Boss.`
 
 Examples of good Side Prompts:
