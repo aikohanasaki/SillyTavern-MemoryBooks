@@ -68,6 +68,7 @@ export const SELECTORS = {
     modelFireworks: '#model_fireworks_select',
     modelCometapi: '#model_cometapi_select',
     modelAzureOpenai: '#model_azure_openai_select',
+    modelZai: '#model_zai_select',
     tempOpenai: '#temp_openai',
     tempCounterOpenai: '#temp_counter_openai'
 };
@@ -77,7 +78,7 @@ const SUPPORTED_COMPLETION_SOURCES = [
     'openai', 'claude', 'openrouter', 'ai21', 'makersuite', 'vertexai',
     'mistralai', 'custom', 'cohere', 'perplexity', 'groq', 'nanogpt',
     'deepseek', 'electronhub', 'aimlapi', 'xai', 'pollinations',
-    'moonshot', 'fireworks', 'cometapi', 'azure_openai'
+    'moonshot', 'fireworks', 'cometapi', 'azure_openai', 'zai'
 ];
 
 /**
@@ -165,6 +166,7 @@ export function getApiSelectors() {
         fireworks:     `${prefix}model_fireworks_select`,
         cometapi:      `${prefix}model_cometapi_select`,
         azure_openai:  `${prefix}model_azure_openai_select`,
+        zai:           `${prefix}model_zai_select`,
     };
 
     const model = modelSelectorMap[completionSource] || modelSelectorMap.openai;

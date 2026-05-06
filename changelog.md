@@ -4,6 +4,7 @@
 
 ## v6.6.1 (May 6, 2026)
 - Bugfix: Flex row on buttons.
+- Tweak: Z.ai now picks up choice of endpoint from ST base.
 
 ## v6.6.0 (May 5, 2026)
 **New Feature: Clip to Memory Book**
