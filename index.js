@@ -4520,9 +4520,10 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     content += "</div></div>";
 
     // Entries checklist
-    content += `<div class="world_entry_form_control"><div id="stmb-summary-lock-status" class="opacity70p marginBot5"></div><div class="flex-container flexGap10 marginBot5">`;
-    content += `<button id="stmb-arc-select-all" class="menu_button">${escapeHtml(translate("Select All", "STMemoryBooks_SelectAll"))}</button>`;
-    content += `<button id="stmb-arc-deselect-all" class="menu_button">${escapeHtml(translate("Deselect All", "STMemoryBooks_DeselectAll"))}</button>`;
+    content += `<div class="world_entry_form_control"><div id="stmb-summary-lock-status" class="opacity70p marginBot5"></div>`;
+    content += `<div class="stmb-button-row marginBot5">`;
+    content += `<button id="stmb-arc-select-all" class="menu_button stmb-nowrap-button">${escapeHtml(translate("Select All", "STMemoryBooks_SelectAll"))}</button>`;
+    content += `<button id="stmb-arc-deselect-all" class="menu_button stmb-nowrap-button">${escapeHtml(translate("Deselect All", "STMemoryBooks_DeselectAll"))}</button>`;
     content += `</div>`;
     content += `<div id="stmb-arc-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--SmartHover2); padding:6px"></div>`;
     content += `<small id="stmb-summary-tip" class="opacity70p">${escapeHtml(translate("Tip: uncheck entries that should not be included.", "STMemoryBooks_ConsolidateArcs_Tip"))}</small>`;
