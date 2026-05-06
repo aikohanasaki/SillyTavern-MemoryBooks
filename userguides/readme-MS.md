@@ -3,9 +3,41 @@
 Sambungan SillyTavern generasi baharu untuk penciptaan memori yang automatik, berstruktur, dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpan sebagai entri dalam lorebook anda. Menyokong sembang kumpulan, pengurusan profil lanjutan, prom sampingan/penjejak, dan konsolidasi memori berbilang tahap.
 
 ### ❓ Kosa Kata
-- Scene → Memori
-- Many Memories → Ringkasan / Konsolidasi
-- Always-On → Prom Sampingan (Penjejak)
+- Scene → Memori  
+- Satu fakta yang disimpan → Klip  
+- Penjejak berterusan → Prom Sampingan  
+- Banyak Memori → Ringkasan / Konsolidasi  
+- Satu entri panjang → Pemadatan
+
+### Klip vs Prom Sampingan
+
+<details>
+<summary><strong>Klip vs Prom Sampingan</strong></summary>
+
+| **Klip** | **Prom Sampingan** |
+|---|---|
+| Simpan teks sembang yang dipilih ke dalam entri Buku Memori. | Minta AI menyemak sembang dan mengemas kini entri penjejak. |
+| Paling sesuai untuk satu fakta, baris, janji, pilihan, item, atau nota yang jelas. | Paling sesuai untuk maklumat yang berubah dari semasa ke semasa. |
+| Fikirkan: “pin nota ini.” | Fikirkan: “pastikan bahagian ini dikemas kini.” |
+
+</details>
+
+Untuk penjelasan lebih panjang, lihat [Panduan Pengguna](USER_GUIDE-MS.md#-klip-vs-prom-sampingan).
+
+### Pemadatan vs Konsolidasi
+
+<details>
+<summary><strong>Pemadatan vs Konsolidasi</strong></summary>
+
+| **Pemadatan** | **Konsolidasi** |
+|---|---|
+| Memendekkan satu entri sedia ada yang diurus STMB. | Menggabungkan beberapa memori atau ringkasan menjadi satu rekap peringkat lebih tinggi. |
+| Gunakan apabila entri Klip, Prom Sampingan, atau Memori masih berguna, tetapi semakin terlalu panjang. | Gunakan apabila beberapa memori sudah bersedia menjadi Arc, Chapter, Book, atau ringkasan yang lebih besar. |
+| Fikirkan: “kemaskan satu entri ini.” | Fikirkan: “gulung memori ini menjadi rekap.” |
+
+</details>
+
+Untuk penjelasan lebih panjang, lihat [Panduan Pengguna](USER_GUIDE-MS.md#-pemadatan-vs-konsolidasi).
 
 ## ❗ Baca Saya Dahulu!
 
@@ -42,15 +74,16 @@ Pautan lain:
   - [Pratetap Terbina Dalam](#pratetap-terbina-dalam)
   - [Prom Tersuai](#prom-tersuai)
 - [📚 Integrasi Lorebook](#-integrasi-lorebook)
+- [✂️ Klip ke Buku Memori](#-klip-ke-buku-memori)
 - [🆕 Pintasan Perintah Slash](#-pintasan-perintah-slash)
 - [👥 Sokongan Sembang Kumpulan](#-sokongan-sembang-kumpulan)
 - [🧭 Mod Operasi](#-mod-operasi)
   - [Mod Automatik (Lalai)](#mod-automatik-lalai)
   - [Mod Cipta Lorebook Automatik](#mod-cipta-lorebook-automatik)
   - [Mod Lorebook Manual](#mod-lorebook-manual)
-  - [🎡 Penjejak & Prom Sampingan](#-penjejak--prom-sampingan)
-  - [🧹 Pemadatan](#-pemadatan)
-  - [🧠 Integrasi Regex untuk Penyesuaian Lanjutan](#-integrasi-regex-untuk-penyesuaian-lanjutan)
+- [🎡 Penjejak & Prom Sampingan](#-penjejak--prom-sampingan)
+- [🧹 Pemadatan](#-pemadatan)
+- [🧠 Integrasi Regex untuk Penyesuaian Lanjutan](#-integrasi-regex-untuk-penyesuaian-lanjutan)
 - [👤 Pengurusan Profil](#-pengurusan-profil)
 - [⚙️ Tetapan & Konfigurasi](#-tetapan--konfigurasi)
   - [Tetapan Global](#tetapan-global)
@@ -58,12 +91,13 @@ Pautan lain:
 - [🏷️ Pemformatan Tajuk](#-pemformatan-tajuk)
 - [🧵 Memori Konteks](#-memori-konteks)
 - [🎨 Maklum Balas Visual & Kebolehcapaian](#-maklum-balas-visual--kebolehcapaian)
+- [Soalan Lazim](#soalan-lazim)
   - [Patutkah saya menggunakan lorebook berasingan untuk memori?](#patutkah-saya-menggunakan-lorebook-berasingan-untuk-memori)
   - [Adakah saya perlu menjalankan vektor?](#adakah-saya-perlu-menjalankan-vektor)
   - [Patutkah saya menggunakan 'Tangguhkan Sehingga Rekursi' jika Memory Books ialah satu-satunya lorebook?](#patutkah-saya-menggunakan-tangguhkan-sehingga-rekursi-jika-memory-books-ialah-satu-satunya-lorebook)
-  - [Mengapa AI tidak nampak entri saya?](#mengapa-ai-tidak-nampak-entri-saya)
+- [Penyelesaian Masalah](#penyelesaian-masalah)
 - [📚 Tingkatkan Kuasa dengan Penyusunan Lorebook (STLO)](#-tingkatkan-kuasa-dengan-penyusunan-lorebook-stlo)
-- [📝 Polisi Karakter (v4.5.1+)](#-polisi-karakter-v451)
+- [📝 Polisi Karakter](#-polisi-karakter-v451)
 - [👨‍💻 Untuk Pembangun](#-untuk-pembangun)
   - [Membina Sambungan](#membina-sambungan)
   - [Git Hooks](#git-hooks)
@@ -247,6 +281,47 @@ Semua prom dan pratetap **mesti** mengarahkan AI untuk memulangkan hanya JSON ya
 
 ---
 
+
+## ✂️ Klip ke Buku Memori
+
+Klip ke Buku Memori adalah untuk nota cepat “ingat ini”. Serlahkan teks sembang yang penting, klik butang gunting terapung, kemudian simpan teks yang dipilih sebagai poin dalam Buku Memori tanpa membuka editor lorebook terlebih dahulu.
+
+Jika anda mahu penjejak berterusan yang dikemas kini dari semasa ke semasa, gunakan Prom Sampingan. Versi ringkas: **Klip = satu fakta yang disimpan; Prom Sampingan = penjejak berterusan.**
+
+#### Cara ia berfungsi
+- Serlahkan teks tepat yang mahu anda ingat.
+- Klik butang gunting terapung. Anda boleh menghidupkan atau mematikan butang ini dalam pop timbul Memory Books.
+- Pilih entri klip sedia ada atau cipta entri baharu.
+- Semak entri semasa dan pratonton yang dikemas kini sebelum menyimpan.
+- Namakan semula entri/bahagian jika perlu.
+
+Entri klip ialah entri lorebook biasa yang ditandakan dengan `[STMB Clip]` di hujung tajuk entri. Contoh:
+
+```txt
+Seraphina Menyembuhkan Saya [STMB Clip]
+```
+
+Bahagian yang kelihatan dalam entri menggunakan tajuk tanpa `[STMB Clip]`:
+
+```md
+=== Seraphina Menyembuhkan Saya ===
+
+- Seraphina menyembuhkan luka saya dengan sihir.
+- Seraphina, penjaga hutan ini
+
+=== END Seraphina Menyembuhkan Saya ===
+```
+
+#### Tip
+- Satu entri klip mempunyai satu bahagian. Gunakan tajuk berfokus seperti `Perkara yang {{user}} Suka`, `Nama Panggilan`, atau `Pilihan Makanan` supaya kata kunci kekal khusus.
+- Entri klip baharu boleh sentiasa aktif atau dicetuskan kata kunci. Sentiasa aktif paling mudah; kata kunci lebih baik apabila entri hanya patut muncul kadang-kadang.
+- Entri sedia ada boleh menjadi entri klip dengan menambahkan `[STMB Clip]` di hujung tajuk.
+- Entri klip yang panjang mungkin menunjukkan peringatan untuk disemak atau dipadatkan. Pemadatan boleh membantu menjadikan entri klip, Prom Sampingan, dan memori STMB lebih cekap token sebelum anda menggantikan yang asal.
+- Entri klip tidak menambah atribusi sumber. Ia hanya menyimpan teks yang anda pilih untuk diklip.
+
+---
+
+
 ## 🆕 Pintasan Perintah Slash
 
 - `/creatememory` - Cipta memori daripada babak yang ditandakan.
@@ -335,7 +410,9 @@ Ini bertujuan untuk penukaran susulan, bukan penggunaan biasa secara berterusan.
 > 📘 Side Prompts mempunyai panduan sendiri: [Side Prompts Guide](side-prompts-ms.md). Gunakan panduan itu untuk set, makro, contoh, dan penyelesaian masalah.
 > 🎡 Perlukan laluan klik yang tepat? Lihat [panduan Scribe untuk mengaktifkan Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
 
-Side Prompts ialah larian prompt STMB yang berasingan untuk mengekalkan keadaan sembang yang sedang berjalan. Gunakannya untuk penjejak dan nota sokongan yang tidak patut mengembungkan balasan watak biasa, contohnya:
+Side Prompts ialah larian prompt STMB yang berasingan untuk mengekalkan keadaan sembang yang sedang berjalan. Gunakannya untuk penjejak dan nota sokongan yang tidak patut mengembungkan balasan watak biasa. Jika anda hanya mahu menyimpan satu fakta yang diserlahkan, gunakan Klip ke Buku Memori sebaliknya.
+
+Gunakan Side Prompts untuk perkara seperti:
 
 - 💰 Inventori & Sumber ("Apa item yang pengguna miliki?")
 - ❤️ Status Hubungan ("Apa perasaan X terhadap Y?")
@@ -366,6 +443,8 @@ Side Prompts ialah larian prompt STMB yang berasingan untuk mengekalkan keadaan 
 ### 🧹 Pemadatan
 
 Pemadatan ialah aliran semak untuk menjadikan entri lorebook yang diurus oleh STMB lebih cekap token. STMB meminta AI menulis semula satu entri sedia ada, kemudian menunjukkan kandungan asal dan draf yang dipadatkan sebelum apa-apa digantikan.
+
+Ini berasingan daripada Ringkasan Konsolidasi: Pemadatan menulis semula satu entri; Konsolidasi menggabungkan beberapa memori menjadi rekap yang lebih besar.
 
 Anda boleh membukanya daripada pop timbul utama Memory Books dengan **📝 Pemadatan**. Entri Klip yang panjang juga mungkin menawarkan butang **Padatkan Entri** daripada aliran Klip.
 
