@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.6.1 (May 6, 2026)
+- Bugfix: Flex row on buttons.
+
 ## v6.6.0 (May 5, 2026)
 **New Feature: Clip to Memory Book**
 You can now highlight chat text and use the floating scissors button to save it as a bullet in a Memory Book entry marked with `[STMB Clip]`. Clip entries can be created, renamed, keyword-triggered or always active, and reviewed/compacted when they get long.
