@@ -215,7 +215,23 @@
 /* make menu buttons wrap */
 .popup-button-custom {
     display: inline-flex;
-    flex-wrap: wrap !important;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+}
+
+.stmb-nowrap-button {
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+}
+
+.stmb-button-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
 }
 
 .stmb-clip-modal textarea,
