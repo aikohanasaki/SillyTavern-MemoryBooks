@@ -4,8 +4,34 @@ A next-generation SillyTavern extension for automatic, structured, and reliable 
 
 ### ❓ Vocabulary
 - Scene → Memory  
+- One saved fact → Clip  
+- Ongoing tracker → Side Prompt  
 - Many Memories → Summary / Consolidation  
-- Always-On → Side Prompt (Tracker)
+- One long entry → Compaction
+
+### Clips vs Side Prompts
+
+Plain rule: **one fixed fact = Clip; ongoing tracker = Side Prompt.**
+
+| **Clips** | **Side Prompts** |
+|---|---|
+| Save selected chat text as a note in your Memory Book. | Ask the AI to review chat and update a tracker entry. |
+| Use when you already know the exact fact you want remembered. | Use when the information changes over time. |
+| Think: “pin this note.” | Think: “keep this section updated.” |
+
+For the longer explanation, see the [User Guide](USER_GUIDE.md#-clips-vs-side-prompts).
+
+### Compaction vs Consolidation
+
+Plain rule: **one bloated entry = Compaction; several memories = Consolidation.**
+
+| **Compaction** | **Consolidation** |
+|---|---|
+| Shortens one existing STMB-managed entry. | Combines multiple memories or summaries into one higher-level recap. |
+| Use when a Clip, Side Prompt, or Memory entry is useful, but getting too long. | Use when several memories are ready to become an Arc, Chapter, Book, or other larger summary. |
+| Think: “trim this one entry.” | Think: “roll these memories up into a recap.” |
+
+For the longer explanation, see the [User Guide](USER_GUIDE.md#-compaction-vs-consolidation).
 
 ## ❗ Read Me First!
 
@@ -236,6 +262,8 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 
 Clip to Memory Book is for quick “remember this” notes. Highlight important chat text, click the floating scissors button, and save the selected text as a bullet in your Memory Book without opening the lorebook editor first.
 
+If you want an ongoing tracker that updates over time, use a Side Prompt instead. Short version: **Clip = one saved fact; Side Prompt = ongoing tracker.**
+
 #### How it works
 - Highlight the exact text you want to remember.
 - Click the floating scissors button. You can turn this button on or off in the Memory Books popup.
@@ -334,7 +362,9 @@ Example: `/stmb-catchup interval:30 start:0 end:300`
 > 📘 Side Prompts have their own guide: [Side Prompts Guide](userguides/side-prompts-en.md). Use that for sets, macros, examples, and troubleshooting.
 > 🎡 Need the click path? See the [Scribe walkthrough for enabling Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
 
-Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. Use them for trackers and support notes that should not bloat the normal character reply, such as:
+Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. Use them for trackers and support notes that should not bloat the normal character reply. If you only want to save one highlighted fact, use Clip to Memory Book instead.
+
+Use Side Prompts for things like:
 
 - 💰 Inventory & Resources ("What items does the user have?")
 - ❤️ Relationship Status ("How does X feel about Y?")
@@ -365,6 +395,8 @@ Side Prompts are separate STMB prompt runs for maintaining ongoing chat state. U
 ## 🧹 Compaction
 
 Compaction is a review workflow for making STMB-managed lorebook entries more token-efficient. It asks the AI to rewrite one existing entry, then shows you the original and the compacted draft before anything is replaced.
+
+This is separate from Summary Consolidation: Compaction rewrites one entry; Consolidation combines several memories into a larger recap.
 
 You can open it from the main Memory Books popup with **📝 Compaction**. Long Clip entries may also offer a **Compact Entry** button from the Clip workflow.
 
