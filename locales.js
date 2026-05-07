@@ -233,6 +233,7 @@ export const localeData_en = {
     'STMemoryBooks_ShowMemoryPreviewsTooltip': 'Shows previews for memories and side prompts returned from the AI.',
     'STMemoryBooks_ShowNotifications': 'Show notifications',
     'STMemoryBooks_ShowFloatingClipButton': 'Show floating Clip button when text is highlighted',
+    'STMemoryBooks_ShowMessageClipButton': 'Show message Clip button in message actions',
     'STMemoryBooks_UnhideBeforeMemory': 'Unhide hidden messages for memory generation (runs /unhide X-Y)',
 
     // Manual Mode

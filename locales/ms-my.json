@@ -101,6 +101,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "Menunjukkan pratonton untuk memori dan prompt sampingan yang dikembalikan oleh AI.",
     "STMemoryBooks_ShowNotifications": "Tunjukkan pemberitahuan",
     "STMemoryBooks_ShowFloatingClipButton": "Tunjukkan butang Klip terapung apabila teks diserlahkan",
+    "STMemoryBooks_ShowMessageClipButton": "Tunjukkan butang Klip mesej dalam tindakan mesej",
     "STMemoryBooks_UnhideBeforeMemory": "Nyahsembunyikan mesej tersembunyi untuk penjanaan memori (menjalankan /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "Dayakan Mod Buku Legenda Manual",
     "STMemoryBooks_ManualModeDesc": "Apabila didayakan, anda mesti menyatakan buku legenda untuk memori dan bukannya menggunakan yang terikat pada sembang.",

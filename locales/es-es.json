@@ -101,6 +101,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "Muestra vistas previas de las memorias y side prompts devueltos por la IA.",
     "STMemoryBooks_ShowNotifications": "Mostrar notificaciones",
     "STMemoryBooks_ShowFloatingClipButton": "Mostrar el botón flotante Clip cuando se resalte texto",
+    "STMemoryBooks_ShowMessageClipButton": "Mostrar el botón de recorte en las acciones del mensaje",
     "STMemoryBooks_UnhideBeforeMemory": "Mostrar mensajes ocultos para la generación de memoria (ejecuta /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "Activar Modo Manual de Lorebook",
     "STMemoryBooks_ManualModeDesc": "Cuando está activado, debe especificar un lorebook para las memorias en lugar de usar el vinculado al chat.",

@@ -1,5 +1,5 @@
 import { chat, chat_metadata } from '../../../../script.js';
-import { saveMetadataDebounced, getContext } from '../../../extensions.js';
+import { extension_settings, saveMetadataDebounced, getContext } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { SCENE_MANAGEMENT } from './constants.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
@@ -11,6 +11,10 @@ let currentSceneState = {
     start: null,
     end: null
 };
+
+function isMessageClipButtonEnabled() {
+    return extension_settings?.STMemoryBooks?.moduleSettings?.showMessageClipButton !== false;
+}
 
 /**
  * GROUP CHAT SUPPORT: Get current scene markers from appropriate metadata location
@@ -519,6 +523,8 @@ export function createSceneButtons(messageElement) {
     const messageId = parseInt(messageElement.getAttribute('mesid'));
     let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
     let addedButton = false;
+    const clipButtonEnabled = isMessageClipButtonEnabled();
+    const existingClipButton = messageElement.querySelector('.mes_stmb_clip');
 
     // If the button container doesn't exist (e.g., on user messages), create and append it.
     if (!extraButtonsContainer) {
@@ -565,12 +571,18 @@ export function createSceneButtons(messageElement) {
         addedButton = true;
     }
 
-    if (!messageElement.querySelector('.mes_stmb_clip')) {
+    if (!clipButtonEnabled) {
+        messageElement.querySelectorAll('.mes_stmb_clip').forEach((button) => button.remove());
+    } else if (!existingClipButton) {
         const clipButton = document.createElement('div');
         clipButton.title = translate('Clip highlighted text to Memory Book', 'STMemoryBooks_Clip_ButtonTitle');
         clipButton.classList.add('mes_stmb_clip', 'mes_button', 'fa-solid', 'fa-scissors', 'interactable');
         clipButton.setAttribute('tabindex', '0');
         clipButton.setAttribute('data-i18n', '[title]STMemoryBooks_Clip_ButtonTitle');
+        clipButton.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
         clipButton.addEventListener('click', async (e) => {
             e.stopPropagation();
             try {
@@ -586,6 +598,18 @@ export function createSceneButtons(messageElement) {
     }
 
     return addedButton;
+}
+
+export function refreshMessageClipButtonSetting() {
+    const messageElements = document.querySelectorAll('#chat .mes[mesid]');
+    if (isMessageClipButtonEnabled()) {
+        messageElements.forEach((messageElement) => createSceneButtons(messageElement));
+        return;
+    }
+
+    messageElements.forEach((messageElement) => {
+        messageElement.querySelectorAll('.mes_stmb_clip').forEach((button) => button.remove());
+    });
 }
 
 /**

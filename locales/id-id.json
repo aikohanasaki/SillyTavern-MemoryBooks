@@ -100,6 +100,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "Menampilkan pratinjau untuk memori dan Prompt Sampingan yang dikembalikan oleh AI.",
     "STMemoryBooks_ShowNotifications": "Tampilkan notifikasi",
     "STMemoryBooks_ShowFloatingClipButton": "Tampilkan tombol Klip mengambang saat teks disorot",
+    "STMemoryBooks_ShowMessageClipButton": "Tampilkan tombol Klip di tindakan pesan",
     "STMemoryBooks_UnhideBeforeMemory": "Tampilkan kembali pesan tersembunyi untuk pembuatan memori (menjalankan /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "Aktifkan Mode Buku Latar Manual",
     "STMemoryBooks_ManualModeDesc": "Saat diaktifkan, Anda harus menentukan buku latar untuk memori alih-alih menggunakan yang terikat pada obrolan.",

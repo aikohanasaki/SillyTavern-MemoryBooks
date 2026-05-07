@@ -100,6 +100,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "顯示 AI 傳回的記憶和側邊提示預覽。",
     "STMemoryBooks_ShowNotifications": "顯示通知",
     "STMemoryBooks_ShowFloatingClipButton": "醒目提示文字時顯示浮動剪輯按鈕",
+    "STMemoryBooks_ShowMessageClipButton": "在訊息操作中顯示訊息剪輯按鈕",
     "STMemoryBooks_UnhideBeforeMemory": "產生記憶前取消隱藏的訊息 (執行 /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "啟用手動故事書模式",
     "STMemoryBooks_ManualModeDesc": "啟用後，您必須為記憶指定一個故事書，而不是使用綁定到聊天的故事書。",

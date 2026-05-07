@@ -100,6 +100,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "AI가 반환한 메모리와 사이드 프롬프트의 미리보기를 표시합니다.",
     "STMemoryBooks_ShowNotifications": "알림 표시",
     "STMemoryBooks_ShowFloatingClipButton": "텍스트를 강조 표시할 때 플로팅 클립 버튼 표시",
+    "STMemoryBooks_ShowMessageClipButton": "메시지 작업에 메시지 클립 버튼 표시",
     "STMemoryBooks_UnhideBeforeMemory": "메모리 생성을 위해 숨겨진 메시지 숨김 해제 (/unhide X-Y 실행)",
     "STMemoryBooks_EnableManualMode": "수동 로어북 모드 활성화",
     "STMemoryBooks_ManualModeDesc": "활성화되면, 채팅에 바인딩된 로어북 대신 메모리를 위한 로어북을 지정해야 합니다.",
