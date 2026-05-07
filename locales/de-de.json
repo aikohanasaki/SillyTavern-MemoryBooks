@@ -101,7 +101,6 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "Zeigt Vorschauen für Erinnerungen und Side Prompts an, die von der KI zurückgegeben werden.",
     "STMemoryBooks_ShowNotifications": "Benachrichtigungen anzeigen",
     "STMemoryBooks_ShowFloatingClipButton": "Schwebenden Nachricht clippen anzeigen, wenn Text markiert ist",
-    "STMemoryBooks_ShowMessageClipButton": "Schaltfläche Nachricht clippen in den Nachrichtenaktionen anzeigen",
     "STMemoryBooks_UnhideBeforeMemory": "Versteckte Nachrichten für die Erstellung von Erinnerungen einblenden (führt /unhide X-Y aus)",
     "STMemoryBooks_EnableManualMode": "Manuellen Lorebook-Modus aktivieren",
     "STMemoryBooks_ManualModeDesc": "Wenn aktiviert, muss ein Lorebook für Erinnerungen manuell angegeben werden, anstatt das an den Chat gebundene zu verwenden.",
