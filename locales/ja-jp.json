@@ -101,7 +101,6 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "AIが返したメモリとサイドプロンプトのプレビューを表示します。",
     "STMemoryBooks_ShowNotifications": "通知を表示",
     "STMemoryBooks_ShowFloatingClipButton": "テキスト選択時にフローティングクリップボタンを表示",
-    "STMemoryBooks_ShowMessageClipButton": "メッセージアクションにクリップボタンを表示",
     "STMemoryBooks_UnhideBeforeMemory": "メモリ生成のために非表示のメッセージを再表示（/unhide X-Yを実行）",
     "STMemoryBooks_EnableManualMode": "手動ロアブックモードを有効にする",
     "STMemoryBooks_ManualModeDesc": "有効にすると、チャットにバインドされたものではなく、メモリ用のロアブックを指定する必要があります。",
