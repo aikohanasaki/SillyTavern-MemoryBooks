@@ -540,7 +540,7 @@ export function createSceneButtons(messageElement) {
     if (!messageElement.querySelector('.mes_stmb_start')) {
         const startButton = document.createElement('div');
         startButton.title = translate('Mark Scene Start', 'STMemoryBooks_MarkSceneStart');
-        startButton.classList.add('mes_stmb_start', 'mes_button', 'fa-solid', 'fa-caret-right', 'interactable');
+        startButton.classList.add('mes_stmb_start', 'fa-solid', 'fa-caret-right', 'interactable');
         startButton.setAttribute('tabindex', '0');
         startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
         startButton.addEventListener('click', (e) => {
@@ -554,7 +554,7 @@ export function createSceneButtons(messageElement) {
     if (!messageElement.querySelector('.mes_stmb_end')) {
         const endButton = document.createElement('div');
         endButton.title = translate('Mark Scene End', 'STMemoryBooks_MarkSceneEnd');
-        endButton.classList.add('mes_stmb_end', 'mes_button', 'fa-solid', 'fa-caret-left', 'interactable');
+        endButton.classList.add('mes_stmb_end', 'fa-solid', 'fa-caret-left', 'interactable');
         endButton.setAttribute('tabindex', '0');
         endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
         endButton.addEventListener('click', (e) => {

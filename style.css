@@ -2,8 +2,7 @@
 
 /* Base styling for all scene marker buttons */
 .mes_stmb_start,
-.mes_stmb_end,
-.mes_stmb_clip {
+.mes_stmb_end {
     color: var(--SmartThemeBodyColor);
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor);
@@ -19,8 +18,7 @@
 }
 
 .mes_stmb_start:hover,
-.mes_stmb_end:hover,
-.mes .extraMesButtons .mes_stmb_clip:hover {
+.mes_stmb_end:hover {
     filter: grayscale(0) brightness(1.1);
 }
 
@@ -65,12 +63,10 @@
 }
 
 .mes_stmb_start.in-scene:hover,
-.mes_stmb_end.in-scene:hover {
+.mes_stmb_end.in-scene:hover,
+.stmb_floating_clip_button:hover {
     filter: grayscale(0) brightness(1.1);
-}
-
-.mes_stmb_clip {
-    color: var(--SmartThemeQuoteColor);
+    opacity: 1;
 }
 
 .stmb_floating_clip_button {
@@ -85,17 +81,19 @@
     border-radius: 999px;
     border: 1px solid var(--SmartThemeBorderColor);
     background-color: var(--SmartThemeBlurTintColor);
-    color: var(--SmartThemeBodyColor);
+    color: var(--SmartThemeQuoteColor);
     box-shadow:
         0 2px 8px var(--SmartThemeShadowColor),
         0 0 0 1px var(--SmartThemeBorderColor);
     cursor: pointer;
     user-select: none;
     line-height: 1;
+    transition: opacity var(--animation-duration-2x) ease-in-out;
+    opacity: 0.7;
 }
 
 .stmb_floating_clip_button i {
-    color: var(--SmartThemeBodyColor);
+    color: var(--SmartThemeQuoteColor);
     font-size: 16px;
     font-weight: 900;
     pointer-events: none;
