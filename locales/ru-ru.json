@@ -101,6 +101,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "Показывает предпросмотр воспоминаний и сайд-промптов, возвращенных ИИ.",
     "STMemoryBooks_ShowNotifications": "Показывать уведомления",
     "STMemoryBooks_ShowFloatingClipButton": "Показывать плавающую кнопку фрагмента при выделении текста",
+    "STMemoryBooks_ShowMessageClipButton": "Показывать кнопку Клип в действиях с сообщением",
     "STMemoryBooks_UnhideBeforeMemory": "Показывать скрытые сообщения для генерации памяти (выполняет /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "Включить ручной режим Лора",
     "STMemoryBooks_ManualModeDesc": "При включении вы должны указать лорбук для памятей вместо того, чтобы использовать привязанный к чату.",

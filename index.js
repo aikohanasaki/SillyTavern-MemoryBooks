@@ -68,6 +68,7 @@ import {
   validateSceneMarkers,
   handleMessageDeletion,
   createSceneButtons,
+  refreshMessageClipButtonSetting,
   getSceneData,
   updateSceneStateCache,
   getCurrentSceneState,
@@ -330,6 +331,7 @@ const defaultSettings = {
     showMemoryPreviews: false,
     showNotifications: true,
     showFloatingClipButton: true,
+    showMessageClipButton: true,
     unhideBeforeMemory: false,
     refreshEditor: true,
     maxTokens: DEFAULT_MAX_TOKENS,
@@ -1649,6 +1651,9 @@ function validateSettings(settings) {
   }
   if (settings.moduleSettings.showFloatingClipButton === undefined) {
     settings.moduleSettings.showFloatingClipButton = true;
+  }
+  if (settings.moduleSettings.showMessageClipButton === undefined) {
+    settings.moduleSettings.showMessageClipButton = true;
   }
   settings.moduleSettings.autoConsolidationTargetTiers =
     normalizeAutoConsolidationTargetTiers(
@@ -5253,6 +5258,7 @@ async function showSettingsPopup() {
     showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
     showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
+    showMessageClipButton: settings.moduleSettings.showMessageClipButton !== false,
     unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
     refreshEditor: settings.moduleSettings.refreshEditor,
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
@@ -5495,6 +5501,13 @@ function setupSettingsEventListeners() {
       settings.moduleSettings.showFloatingClipButton = e.target.checked;
       saveSettingsDebounced();
       refreshFloatingClipButtonSetting();
+      return;
+    }
+
+    if (e.target.matches("#stmb-show-message-clip-button")) {
+      settings.moduleSettings.showMessageClipButton = e.target.checked;
+      saveSettingsDebounced();
+      refreshMessageClipButtonSetting();
       return;
     }
 
@@ -5899,6 +5912,9 @@ function persistMainPopupSettings(popupElement) {
   const showFloatingClipButton =
     popupElement.querySelector("#stmb-show-floating-clip-button")?.checked ??
     (settings.moduleSettings.showFloatingClipButton !== false);
+  const showMessageClipButton =
+    popupElement.querySelector("#stmb-show-message-clip-button")?.checked ??
+    (settings.moduleSettings.showMessageClipButton !== false);
   const unhideBeforeMemory =
     popupElement.querySelector("#stmb-unhide-before-memory")?.checked ??
     settings.moduleSettings.unhideBeforeMemory;
@@ -5986,6 +6002,12 @@ function persistMainPopupSettings(popupElement) {
   if (showFloatingClipButton !== (settings.moduleSettings.showFloatingClipButton !== false)) {
     settings.moduleSettings.showFloatingClipButton = showFloatingClipButton;
     refreshFloatingClipButtonSetting();
+    hasChanges = true;
+  }
+
+  if (showMessageClipButton !== (settings.moduleSettings.showMessageClipButton !== false)) {
+    settings.moduleSettings.showMessageClipButton = showMessageClipButton;
+    refreshMessageClipButtonSetting();
     hasChanges = true;
   }
 
@@ -6170,6 +6192,7 @@ async function refreshPopupContent() {
       showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
       showNotifications: settings.moduleSettings.showNotifications,
       showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
+      showMessageClipButton: settings.moduleSettings.showMessageClipButton !== false,
       unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
       refreshEditor: settings.moduleSettings.refreshEditor,
       allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,

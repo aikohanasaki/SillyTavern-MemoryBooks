@@ -101,6 +101,7 @@
     "STMemoryBooks_ShowMemoryPreviewsTooltip": "Affiche des aperçus des mémoires et des side prompts renvoyés par l'IA.",
     "STMemoryBooks_ShowNotifications": "Afficher les notifications",
     "STMemoryBooks_ShowFloatingClipButton": "Afficher le bouton Épingler flottant lorsque du texte est surligné",
+    "STMemoryBooks_ShowMessageClipButton": "Afficher le bouton Épingler dans les actions de message",
     "STMemoryBooks_UnhideBeforeMemory": "Afficher les messages cachés pour la génération (exécute /unhide X-Y)",
     "STMemoryBooks_EnableManualMode": "Activer le Mode Manuel du Lorebook",
     "STMemoryBooks_ManualModeDesc": "Si activé, vous devez spécifier un lorebook pour les mémoires au lieu d'utiliser celui lié au chat.",
