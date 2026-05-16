@@ -40,9 +40,9 @@ Bentuk kasarnya seperti ini:
 ```text
 [instruksi prompt / preset memori]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [nol atau lebih memori sebelumnya]
-=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
 Alice: ...
@@ -148,7 +148,7 @@ Bentuk kasarnya seperti ini:
 === PRIOR ENTRY ===
 [teks pelacak saat ini, jika ada]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [memori sebelumnya yang opsional]
 === END PREVIOUS SCENE CONTEXT ===
 

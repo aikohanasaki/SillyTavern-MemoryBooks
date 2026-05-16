@@ -40,9 +40,9 @@
 ```text
 [инструкции промпта памяти / пресета]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [ноль или больше более ранних памятей]
-=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
 Alice: ...
@@ -148,7 +148,7 @@ STMB иногда может спасти слегка неаккуратный 
 === PRIOR ENTRY ===
 [существующий текст трекера, если есть]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [необязательные предыдущие памяти]
 === END PREVIOUS SCENE CONTEXT ===
 

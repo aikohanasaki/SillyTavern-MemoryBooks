@@ -40,9 +40,9 @@ Sehr grob sieht das so aus:
 ```text
 [Anweisungen aus Erinnerungs-Prompt oder Voreinstellung]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [null oder mehr frühere Erinnerungen]
-=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
 Alice: ...
@@ -148,7 +148,7 @@ Sehr grob sieht das so aus:
 === PRIOR ENTRY ===
 [bestehender Tracker-Text, falls vorhanden]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [optionale frühere Erinnerungen]
 === END PREVIOUS SCENE CONTEXT ===
 

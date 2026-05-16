@@ -701,7 +701,7 @@ export const localeData_en = {
     'STMemoryBooks_CatchupRequiresAlwaysUseDefault': '/stmb-catchup is non-interactive. Enable \'Always use default profile\' before running it.',
     'STMemoryBooks_CatchupRequiresNoPreviews': '/stmb-catchup is non-interactive. Disable memory previews before running it.',
     'STMemoryBooks_NoLorebookAvailable': 'No lorebook available.',
-    'STMemoryBooks_NoMessagesToSummarize': 'There are no messages to summarize yet.',
+    'STMemoryBooks_NoMessagesToSummarize': 'There are no messages to process yet.',
     'STMemoryBooks_NoNewMessagesSinceLastMemory': 'No new messages since the last memory.',
     'STMemoryBooks_NextMemoryFailed': 'Failed to run /nextmemory.',
     'STMemoryBooks_OnlyNOfRequestedMemoriesAvailable': 'Only some of the requested memories are available',
@@ -1169,21 +1169,21 @@ For the keywords field, provide 15-30 specific, descriptive, relevant keywords f
 
 Return ONLY the JSON, no other text.`,
 
-    'STMemoryBooks_Prompt_summarize': `Analyze the following roleplay scene and return a structured summary as JSON.
+    'STMemoryBooks_Prompt_summarize': `Analyze the following roleplay scene and return structured processed output as JSON.
 
 You must respond with ONLY valid JSON in this exact format:
 {
   "title": "Short scene title (1-3 words)",
-  "content": "Detailed summary with markdown headers...",
+  "content": "Detailed processed output with markdown headers...",
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }
 
-For the content field, create a detailed bullet-point summary using markdown with these headers (but skip and ignore all OOC conversation/interaction):
+For the content field, process the scene into detailed bullet points using markdown with these headers (but skip and ignore all OOC conversation/interaction):
 - **Timeline**: Day/time this scene covers.
 - **Story Beats**: List all important plot events and story developments that occurred.
 - **Key Interactions**: Describe the important character interactions, dialogue highlights, and relationship developments.
 - **Notable Details**: Mention any important objects, settings, revelations, or details that might be relevant for future interactions.
-- **Outcome**: Summarize the result, resolution, or state of affairs at the end of the scene.
+- **Outcome**: Process the result, resolution, or state of affairs at the end of the scene.
 
 For the keywords field, provide 15-30 specific, descriptive, relevant keywords that would help a keyworded database find this conversation again if something is mentioned. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). Do not use abstract themes (e.g., "sadness", "love") or character names.
 
@@ -1367,7 +1367,7 @@ Return ONLY the JSON, no other text.`,
 
     // Built-in preset display names (English defaults; can be localized in locales/*.json)
     'STMemoryBooks_DisplayName_summary': 'Summary - Detailed beat-by-beat summaries in narrative prose',
-    'STMemoryBooks_DisplayName_summarize': 'Summarize - Bullet-point format',
+    'STMemoryBooks_DisplayName_summarize': 'Process - Bullet-point format',
     'STMemoryBooks_DisplayName_synopsis': 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
     'STMemoryBooks_DisplayName_sumup': 'Sum Up - Concise story beats in narrative prose',
     'STMemoryBooks_DisplayName_minimal': 'Minimal - Brief 1-2 sentence summary',
