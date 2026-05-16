@@ -201,7 +201,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
         parts.push(String(priorContent));
     }
     if (Array.isArray(previousSummaries) && previousSummaries.length > 0) {
-        parts.push('\n=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===\n');
+        parts.push('\n=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===\n');
         parts.push('These are previous memories for context only. Do NOT include them in your new output.\n\n');
         previousSummaries.forEach((m, i) => {
             parts.push(`Context ${i + 1} - ${m.title || 'Memory'}:\n`);

@@ -40,9 +40,9 @@ Bentuk kasarnya:
 ```text
 [arahan prompt / pratetap memori]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [sifar atau lebih memori terdahulu]
-=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
 Alice: ...
@@ -148,7 +148,7 @@ Bentuk kasarnya:
 === PRIOR ENTRY ===
 [teks penjejak sedia ada, jika ada]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [memori terdahulu pilihan]
 === END PREVIOUS SCENE CONTEXT ===
 

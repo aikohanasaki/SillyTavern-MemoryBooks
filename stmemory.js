@@ -927,7 +927,7 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
     
     // Add previous memories context if available
     if (previousSummariesContext && previousSummariesContext.length > 0) {
-        sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===");
+        sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===");
         sceneHeader.push("These are previous memories for context only. Do NOT include them in your new memory:");
         sceneHeader.push("");
         
@@ -940,7 +940,7 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
             sceneHeader.push("");
         });
         
-        sceneHeader.push("=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===");
+        sceneHeader.push("=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===");
         sceneHeader.push("");
     }
     

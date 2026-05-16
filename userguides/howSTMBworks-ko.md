@@ -40,9 +40,9 @@ STMB에는 세 가지 주요 워크플로가 있습니다.
 ```text
 [memory prompt / preset instructions]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [zero or more earlier memories]
-=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
 Alice: ...
@@ -148,7 +148,7 @@ STMB가 약간 지저분한 출력은 가끔 복구해 줄 수는 있지만, 프
 === PRIOR ENTRY ===
 [existing tracker text, if any]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [optional previous memories]
 === END PREVIOUS SCENE CONTEXT ===
 

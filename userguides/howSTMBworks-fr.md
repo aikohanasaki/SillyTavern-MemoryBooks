@@ -40,9 +40,9 @@ Forme très simplifiée :
 ```text
 [instructions du prompt / préréglage de mémoire]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [zéro ou plusieurs mémoires précédentes]
-=== END PREVIOUS SCENE CONTEXT - SUMMARIZE ONLY THE SCENE BELOW ===
+=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===
 
 === SCENE TRANSCRIPT ===
 Alice: ...
@@ -148,7 +148,7 @@ Forme très simplifiée :
 === PRIOR ENTRY ===
 [texte du suivi existant, le cas échéant]
 
-=== PREVIOUS SCENE CONTEXT (DO NOT SUMMARIZE) ===
+=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [mémoires précédentes optionnelles]
 === END PREVIOUS SCENE CONTEXT ===
 
