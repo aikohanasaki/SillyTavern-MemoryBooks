@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.6.2 (May 15, 2026)
+- Tweak: Switched "summarize" to "process".
+
 ## v6.6.1 (May 6, 2026)
 - Bugfix: Flex row on buttons.
 - Tweak: Z.ai now picks up choice of endpoint from ST base.
