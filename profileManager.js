@@ -84,14 +84,19 @@ const profileEditTemplate = Handlebars.compile(`
         </label>
 
         <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
+            <label class="checkbox_label marginTop5">
+                <input type="checkbox" id="stmb-profile-reverse-proxy" {{#if connection.reverseProxy}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_ReverseProxy">Reverse Proxy</span>
+            </label>
+
             <label for="stmb-profile-endpoint">
                 <h4 data-i18n="STMemoryBooks_APIEndpointURL">API Endpoint URL:</h4>
                 <input type="text" id="stmb-profile-endpoint" value="{{connection.endpoint}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIEndpointPlaceholder" placeholder="https://api.example.com/v1/chat/completions">
             </label>
 
             <label for="stmb-profile-apikey">
-                <h4 data-i18n="STMemoryBooks_APIKey">API Key:</h4>
-                <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIKeyPlaceholder" placeholder="Enter your API key">
+                <h4 id="stmb-profile-apikey-label" data-i18n="{{#if connection.reverseProxy}}STMemoryBooks_ProxyPassword{{else}}STMemoryBooks_APIKey{{/if}}">{{#if connection.reverseProxy}}Proxy Password:{{else}}API Key:{{/if}}</h4>
+                <input type="password" id="stmb-profile-apikey" value="{{connection.apiKey}}" class="text_pole" data-i18n="[placeholder]{{#if connection.reverseProxy}}STMemoryBooks_ProxyPasswordPlaceholder{{else}}STMemoryBooks_APIKeyPlaceholder{{/if}}" placeholder="{{#if connection.reverseProxy}}Enter proxy password{{else}}Enter your API key{{/if}}">
             </label>
 
             <div class="info-block hint warning marginBot10" data-i18n="STMemoryBooks_FullManualConfig">
@@ -563,6 +568,27 @@ export function importProfiles(event, settings, refreshCallback) {
 function setupProfileEditEventHandlers(popupInstance, settings) {
     const popupElement = popupInstance.dlg;
 
+    function syncFullManualReverseProxyFields() {
+        const reverseProxyInput = popupElement.querySelector('#stmb-profile-reverse-proxy');
+        const apiKeyLabel = popupElement.querySelector('#stmb-profile-apikey-label');
+        const apiKeyInput = popupElement.querySelector('#stmb-profile-apikey');
+        const isReverseProxy = !!reverseProxyInput?.checked;
+
+        if (apiKeyLabel) {
+            apiKeyLabel.textContent = isReverseProxy
+                ? translate('Proxy Password:', 'STMemoryBooks_ProxyPassword')
+                : translate('API Key:', 'STMemoryBooks_APIKey');
+            apiKeyLabel.setAttribute('data-i18n', isReverseProxy ? 'STMemoryBooks_ProxyPassword' : 'STMemoryBooks_APIKey');
+        }
+
+        if (apiKeyInput) {
+            apiKeyInput.placeholder = isReverseProxy
+                ? translate('Enter proxy password', 'STMemoryBooks_ProxyPasswordPlaceholder')
+                : translate('Enter your API key', 'STMemoryBooks_APIKeyPlaceholder');
+            apiKeyInput.setAttribute('data-i18n', `[placeholder]${isReverseProxy ? 'STMemoryBooks_ProxyPasswordPlaceholder' : 'STMemoryBooks_APIKeyPlaceholder'}`);
+        }
+    }
+
     // Open Summary Prompt Manager from profile editor
     popupElement.querySelector('#stmb-open-prompt-manager')?.addEventListener('click', () => {
         try {
@@ -724,6 +750,9 @@ function setupProfileEditEventHandlers(popupInstance, settings) {
         }
     });
 
+    popupElement.querySelector('#stmb-profile-reverse-proxy')?.addEventListener('change', syncFullManualReverseProxyFields);
+    syncFullManualReverseProxyFields();
+
     function syncOrderModeInputs(mode) {
         const orderValueInput = popupElement.querySelector('#stmb-profile-order-value');
         const reverseStartInput = popupElement.querySelector('#stmb-profile-reverse-start');
@@ -816,6 +845,8 @@ function buildProfileFromForm(popupElement, fallbackName) {
         temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
         endpoint: popupElement.querySelector('#stmb-profile-endpoint')?.value,
         apiKey: popupElement.querySelector('#stmb-profile-apikey')?.value,
+        reverseProxy: popupElement.querySelector('#stmb-profile-api')?.value === 'full-manual'
+            && popupElement.querySelector('#stmb-profile-reverse-proxy')?.checked,
         constVectMode: popupElement.querySelector('#stmb-profile-const-vect')?.value,
         position: popupElement.querySelector('#stmb-profile-position')?.value,
         orderMode: popupElement.querySelector('input[name="order-mode"]:checked')?.value,

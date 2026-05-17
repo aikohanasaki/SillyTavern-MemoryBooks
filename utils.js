@@ -968,6 +968,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {number} [data.reverseStart=9999] - Reverse ordering start (100-9999).
  * @param {boolean} [data.preventRecursion=true] - The prevent recursion flag.
  * @param {boolean} [data.delayUntilRecursion=false] - The delay until recursion flag.
+ * @param {boolean} [data.reverseProxy=false] - Whether full-manual apiKey should be treated as a proxy password.
  * @returns {Object} A structured and validated profile object.
  */
 export function createProfileObject(data = {}) {
@@ -1023,6 +1024,11 @@ export function createProfileObject(data = {}) {
     const apiKey = (data.apiKey || '').trim();
     if (apiKey) {
         profile.connection.apiKey = apiKey;
+    }
+
+    const reverseProxy = data.reverseProxy ?? data.connection?.reverseProxy;
+    if (profile.connection.api === 'full-manual' && reverseProxy) {
+        profile.connection.reverseProxy = true;
     }
 
     // A profile should have a preset OR a custom prompt. The custom prompt takes precedence.
