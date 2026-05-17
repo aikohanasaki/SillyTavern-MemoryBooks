@@ -217,6 +217,8 @@ export const localeData_en = {
     'STMemoryBooks_Jobs_Lorebook': 'Lorebook',
     'STMemoryBooks_Jobs_MemoryQueued': 'Memory job queued.',
     'STMemoryBooks_Jobs_ConsolidationQueued': 'Consolidation job queued.',
+    'STMemoryBooks_Jobs_TopInfoBarMissingNotice': 'Chat Info Bar is either disabled or not installed. The Memory Books job queue function requires Chat Info Bar--please install and/or enable the extension to access the job queue function. This is not required if you do not want job queueing.',
+    'STMemoryBooks_Jobs_TopInfoBarMissingDismiss': 'dismiss and never show this notification again',
     'STMemoryBooks_Clip_ReviewEntriesTitle': 'Compaction',
     'STMemoryBooks_Clip_NoReviewableEntries': 'No STMB Clip or SidePrompt entries were found in the current Memory Book.',
     'STMemoryBooks_Clip_ErrorEmptyHeadline': 'Entry title / section headline cannot be empty.',

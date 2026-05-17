@@ -4,13 +4,16 @@ import {
     event_types,
     getRequestHeaders,
     name2,
+    saveSettingsDebounced,
 } from '../../../../script.js';
 import {
+    extension_settings,
     getContext,
     saveMetadataDebounced,
 } from '../../../extensions.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
+import { Popup, POPUP_TYPE } from '../../../popup.js';
 
 const MODULE_NAME = 'STMemoryBooks-Jobs';
 const TOP_INFO_BAR_ID = 'extensionTopBar';
@@ -35,6 +38,7 @@ let jobsPanel = null;
 let jobsSummary = null;
 let jobsRows = null;
 let jobsActions = null;
+let missingTopInfoBarNoticeShown = false;
 
 function tr(key, fallback, params = null) {
     let value = translate(fallback, key);
@@ -45,6 +49,56 @@ function tr(key, fallback, params = null) {
         });
     }
     return value;
+}
+
+function getStmbModuleSettings() {
+    if (!extension_settings.STMemoryBooks) {
+        extension_settings.STMemoryBooks = {};
+    }
+    if (!extension_settings.STMemoryBooks.moduleSettings) {
+        extension_settings.STMemoryBooks.moduleSettings = {};
+    }
+    return extension_settings.STMemoryBooks.moduleSettings;
+}
+
+function showMissingTopInfoBarNotice() {
+    if (missingTopInfoBarNoticeShown) return;
+    const moduleSettings = getStmbModuleSettings();
+    if (moduleSettings.dismissMissingTopInfoBarJobsNotice === true) return;
+    missingTopInfoBarNoticeShown = true;
+
+    const content = `
+        <div class="stmb-jobs-topinfobar-notice">
+            <p>${escapeHtml(tr(
+                'STMemoryBooks_Jobs_TopInfoBarMissingNotice',
+                'Chat Info Bar is either disabled or not installed. The Memory Books job queue function requires Chat Info Bar--please install and/or enable the extension to access the job queue function. This is not required if you do not want job queueing.',
+            ))}</p>
+            <label class="checkbox_label stmb-jobs-topinfobar-dismiss">
+                <input type="checkbox" id="stmb-jobs-dismiss-topinfobar-notice">
+                <span>${escapeHtml(tr(
+                    'STMemoryBooks_Jobs_TopInfoBarMissingDismiss',
+                    'dismiss and never show this notification again',
+                ))}</span>
+            </label>
+        </div>`;
+
+    setTimeout(async () => {
+        try {
+            const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+                okButton: tr('STMemoryBooks_OK', 'OK'),
+                cancelButton: false,
+                wide: false,
+                allowVerticalScrolling: true,
+            });
+            await popup.show();
+            if (popup.dlg?.querySelector('#stmb-jobs-dismiss-topinfobar-notice')?.checked) {
+                moduleSettings.dismissMissingTopInfoBarJobsNotice = true;
+                saveSettingsDebounced();
+            }
+        } catch (error) {
+            console.warn(`${MODULE_NAME}: missing TopInfoBar notice failed`, error);
+        }
+    }, 0);
 }
 
 function safeClone(value) {
@@ -738,6 +792,7 @@ export function initStmbJobsIfTopInfoBarEnabled() {
     }
     if (!document.getElementById(TOP_INFO_BAR_ID)) {
         jobsEnabled = false;
+        showMissingTopInfoBarNotice();
         return false;
     }
     if (!ensureJobsUiElements()) {
