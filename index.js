@@ -150,6 +150,19 @@ import { tr } from "./i18nHelpers.js";
 import { validateLorebookRequirement } from "./lorebookValidation.js";
 import { getRegexScripts } from "../../../extensions/regex/engine.js";
 import {
+  areStmbJobsEnabled,
+  awaitStmbJobApproval,
+  cancelAllStmbJobs,
+  enqueueStmbJob,
+  getCurrentStmbChatRef,
+  getStmbChatKey,
+  hasActiveStmbJobs,
+  initStmbJobsIfTopInfoBarEnabled,
+  registerStmbJobExecutor,
+  updateHighestMemoryProcessedForChatRef,
+  withStmbWriteLane,
+} from "./stmbJobs.js";
+import {
   buildSidePromptMacroSuggestion,
   collectTemplateRuntimeMacros,
   formatQuotedSidePromptName,
@@ -286,7 +299,7 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
  * @returns {boolean} True if memory creation is in progress
  */
 export function isMemoryProcessing() {
-  return isProcessingMemory;
+  return isProcessingMemory || hasActiveStmbJobs(getStmbChatKey());
 }
 
 export { currentProfile };
@@ -1123,13 +1136,14 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
 async function handleStmbStopCommand(namedArgs, unnamedArgs) {
   const before = getStmbInFlightCount();
   const { stoppedCount } = stmbStopAllInFlight();
+  const canceledJobs = cancelAllStmbJobs();
 
   // Force-reset local "busy" flags so STMB returns to idle immediately.
   isProcessingMemory = false;
   isProcessingArc = false;
 
   const msg =
-    stoppedCount > 0 || before > 0
+    stoppedCount > 0 || before > 0 || canceledJobs > 0
       ? translate(
           "STMB generation manually stopped by user.",
           "STMemoryBooks_Stop_Stopped",
@@ -1139,7 +1153,7 @@ async function handleStmbStopCommand(namedArgs, unnamedArgs) {
           "STMemoryBooks_Stop_None",
         );
 
-  if (stoppedCount > 0 || before > 0) {
+  if (stoppedCount > 0 || before > 0 || canceledJobs > 0) {
     try {
       toastr.clear();
     } catch (e) {
@@ -2409,6 +2423,251 @@ async function executeMemoryGeneration(
   }
 }
 
+async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSettings) {
+  const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
+  const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
+  const compiledScene = compileScene(sceneRequest);
+  const validation = validateCompiledScene(compiledScene);
+  if (!validation.valid) {
+    throw new Error(`Scene compilation failed: ${validation.errors.join(", ")}`);
+  }
+
+  let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
+  if (summaryCount > 0) {
+    memoryFetchResult = await fetchPreviousSummaries(summaryCount, settings, chat_metadata);
+  }
+  compiledScene.previousSummariesContext = Array.isArray(memoryFetchResult?.summaries)
+    ? memoryFetchResult.summaries
+    : [];
+
+  const profileSnapshot = deepClone(profileSettings);
+  profileSnapshot.prompt = await getEffectivePromptAsync(profileSnapshot);
+  const chatRef = getCurrentStmbChatRef();
+  const lorebookName = String(lorebookValidation?.name || "").trim();
+
+  return {
+    type: "memory",
+    title: translate("Memory", "STMemoryBooks_Jobs_Memory"),
+    detail: `Messages ${sceneData.sceneStart}-${sceneData.sceneEnd}`,
+    chatRef,
+    chatKey: getStmbChatKey(chatRef),
+    lorebookName,
+    range: {
+      sceneStart: sceneData.sceneStart,
+      sceneEnd: sceneData.sceneEnd,
+    },
+    payload: {
+      sceneData: deepClone(sceneData),
+      compiledScene: deepClone(compiledScene),
+      lorebookName,
+      profileSettings: profileSnapshot,
+      summaryCount,
+      tokenThreshold,
+      settings: deepClone(settings),
+      titleFormat: extension_settings.STMemoryBooks?.titleFormat || "[000] - {{title}}",
+      memoryFetchResult: deepClone(memoryFetchResult),
+    },
+  };
+}
+
+function findOverlappingMemoryInLorebook(lorebookData, sceneData) {
+  const allMemories = identifyMemoryEntries(lorebookData);
+  const ns = Number(sceneData.sceneStart);
+  const ne = Number(sceneData.sceneEnd);
+  for (const mem of allMemories) {
+    const existingRange = getRangeFromMemoryEntry(mem.entry);
+    if (!existingRange || existingRange.start === null || existingRange.end === null) continue;
+    const s = Number(existingRange.start);
+    const e = Number(existingRange.end);
+    if (ns <= e && ne >= s) {
+      return { title: mem.title, start: s, end: e };
+    }
+  }
+  return null;
+}
+
+async function executeQueuedMemoryJob(job, jobContext) {
+  const payload = job?.payload || {};
+  const sceneData = payload.sceneData;
+  const compiledScene = payload.compiledScene;
+  const profileSettings = payload.profileSettings;
+  const settings = payload.settings || initializeSettings();
+  const lorebookName = String(payload.lorebookName || job.lorebookName || "").trim();
+  if (!sceneData || !compiledScene || !profileSettings || !lorebookName) {
+    throw new Error("Memory job snapshot is incomplete.");
+  }
+
+  jobContext.setState("generating", { detail: profileSettings.name || "Memory" });
+  const memoryResult = await createMemory(compiledScene, profileSettings, {
+    tokenWarningThreshold: payload.tokenThreshold,
+    signal: jobContext.signal,
+  });
+  jobContext.throwIfCancelled();
+
+  let finalMemoryResult = memoryResult;
+  if (settings.moduleSettings?.showMemoryPreviews) {
+    const approval = await awaitStmbJobApproval(
+      jobContext,
+      {
+        kind: "memoryApproval",
+        title: "Memory",
+        detail: job.detail,
+        open: async () => {
+          const result = await showMemoryPreviewPopup(memoryResult, sceneData, profileSettings);
+          if (result?.action === "cancel") return { decision: "cancel" };
+          if (result?.action === "retry") return { decision: "retry" };
+          if (result?.action === "edit") return { decision: "accept", editedData: result.memoryData };
+          return { decision: "accept" };
+        },
+      },
+      { detail: job.detail },
+    );
+    if (approval?.decision === "cancel" || approval?.decision === "reject") {
+      jobContext.patch({ state: "canceled", detail: "Canceled in approval" });
+      return;
+    }
+    if (approval?.decision === "retry") {
+      throw new Error("Retry requested; use the job retry action to run the original snapshot again.");
+    }
+    if (approval?.editedData) {
+      finalMemoryResult = approval.editedData;
+    }
+  }
+
+  jobContext.throwIfCancelled();
+  finalMemoryResult = {
+    ...finalMemoryResult,
+    titleFormat: payload.titleFormat || finalMemoryResult?.titleFormat,
+  };
+  jobContext.setState("saving", { detail: lorebookName });
+  let addResult = null;
+  await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
+    const freshLorebook = await loadWorldInfo(lorebookName);
+    if (!freshLorebook?.entries) {
+      throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
+    }
+    if (!settings.moduleSettings?.allowSceneOverlap) {
+      const overlap = findOverlappingMemoryInLorebook(freshLorebook, sceneData);
+      if (overlap) {
+        const error = new Error(`Scene overlaps with existing memory: "${overlap.title}" (messages ${overlap.start}-${overlap.end})`);
+        error.name = "StmbJobNeedsReview";
+        throw error;
+      }
+    }
+    addResult = await addMemoryToLorebook(
+      finalMemoryResult,
+      { valid: true, name: lorebookName, data: freshLorebook },
+      {
+        autoHide: false,
+        refreshEditor: getStmbChatKey(job.chatRef) === getStmbChatKey(),
+        updateHighestMemoryProcessed: false,
+      },
+    );
+    if (!addResult?.success) {
+      throw new Error(addResult?.error || "Failed to add memory to lorebook");
+    }
+  });
+
+  jobContext.throwIfCancelled();
+  await updateHighestMemoryProcessedForChatRef(job.chatRef, sceneData.sceneEnd);
+  jobContext.setResult({
+    lorebookName,
+    entryTitle: addResult?.entryTitle || "",
+  });
+
+  try {
+    jobContext.setState("post_save", { detail: "Running after-memory side prompts" });
+    await runAfterMemory(compiledScene, profileSettings, {
+      chatRef: job.chatRef,
+      chatKey: job.chatKey,
+      lorebookName,
+    });
+  } catch (error) {
+    console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
+  }
+}
+
+function fingerprintLorebookEntry(entry) {
+  if (!entry || typeof entry !== "object") return "";
+  return JSON.stringify({
+    uid: entry.uid,
+    comment: entry.comment || "",
+    content: entry.content || "",
+    disable: !!entry.disable,
+    stmemorybooks: !!entry.stmemorybooks,
+    stmbSummary: !!entry.stmbSummary,
+    stmbSummaryTier: entry.stmbSummaryTier ?? null,
+    type: entry.type ?? null,
+  });
+}
+
+async function executeQueuedConsolidationJob(job, jobContext) {
+  const payload = job?.payload || {};
+  const lorebookName = String(payload.lorebookName || job.lorebookName || "").trim();
+  const targetTier = clampInt(Number(payload.targetTier), 1, 6);
+  const selectedEntries = Array.isArray(payload.selectedEntries) ? payload.selectedEntries : [];
+  if (!lorebookName || selectedEntries.length === 0) {
+    throw new Error("Consolidation job snapshot is incomplete.");
+  }
+
+  jobContext.setState("generating", {
+    detail: `${getSummaryTierLabel(getSourceTierForTarget(targetTier))} -> ${getSummaryTierLabel(targetTier)}`,
+  });
+  const analysis = await runSummaryAnalysisSequential(
+    selectedEntries,
+    {
+      presetKey: payload.presetKey,
+      targetTier,
+      maxItemsPerPass: payload.maxItemsPerPass,
+      maxPasses: payload.maxPasses,
+      minAssigned: payload.minAssigned,
+      tokenTarget: payload.tokenTarget,
+      promptText: payload.promptText,
+    },
+    payload.profileSettings || null,
+  );
+  jobContext.throwIfCancelled();
+  const summaryCandidates = Array.isArray(analysis?.summaryCandidates)
+    ? analysis.summaryCandidates
+    : [];
+  if (summaryCandidates.length === 0) {
+    throw new Error("Summary analysis produced no usable summaries.");
+  }
+
+  jobContext.setState("saving", { detail: lorebookName });
+  await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
+    const freshLorebook = await loadWorldInfo(lorebookName);
+    if (!freshLorebook?.entries) {
+      throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
+    }
+    const expected = payload.sourceFingerprints || {};
+    for (const [uid, fingerprint] of Object.entries(expected)) {
+      const freshEntry = Object.values(freshLorebook.entries || {}).find((entry) => String(entry?.uid) === String(uid));
+      if (!freshEntry || fingerprintLorebookEntry(freshEntry) !== fingerprint) {
+        const error = new Error("A consolidation source entry changed before commit. Review the job before overwriting.");
+        error.name = "StmbJobNeedsReview";
+        throw error;
+      }
+    }
+    const result = await commitSummaryEntries({
+      lorebookName,
+      lorebookData: freshLorebook,
+      summaryCandidates,
+      targetTier,
+      disableOriginals: !!payload.disableOriginals,
+      summaryEntrySettings: payload.summaryEntrySettings,
+      orderMode: payload.summaryOrderMode,
+      orderValue: payload.summaryOrderValue,
+      reverseStart: payload.summaryReverseStart,
+    });
+    jobContext.setResult({
+      lorebookName,
+      targetTier,
+      created: Array.isArray(result?.results) ? result.results.length : summaryCandidates.length,
+    });
+  });
+}
+
 async function initiateMemoryCreation(selectedProfileIndex = null) {
   // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
   const context = getCurrentMemoryBooksContext();
@@ -2546,6 +2805,20 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     if (currentPopupInstance) {
       currentPopupInstance.completeCancelled();
       currentPopupInstance = null;
+    }
+
+    if (areStmbJobsEnabled()) {
+      const job = await buildQueuedMemoryJob(
+        sceneData,
+        lorebookValidation,
+        effectiveSettings,
+      );
+      enqueueStmbJob(job);
+      toastr.info(
+        translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
+        "STMemoryBooks",
+      );
+      return true;
     }
 
     // Execute the main process with retry logic
@@ -4988,6 +5261,50 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     const selectedEntries = selected
       .map((id) => entryMap.get(String(id)))
       .filter(Boolean);
+
+    if (areStmbJobsEnabled()) {
+      const chatRef = getCurrentStmbChatRef();
+      const profileSettings = deepClone(settings.profiles?.[settings.defaultProfile] || null);
+      if (profileSettings) {
+        profileSettings.prompt = await getEffectivePromptAsync(profileSettings);
+        profileSettings.effectiveConnection = profileSettings.connection
+          ? { ...profileSettings.connection }
+          : profileSettings.effectiveConnection;
+      }
+      enqueueStmbJob({
+        type: "consolidation",
+        title: targetLabel,
+        detail: `${sourceLabel} -> ${targetLabel}`,
+        chatRef,
+        chatKey: getStmbChatKey(chatRef),
+        lorebookName,
+        payload: {
+          lorebookName,
+          targetTier,
+          selectedEntries: deepClone(selectedEntries),
+          sourceFingerprints: Object.fromEntries(
+            selectedEntries.map((entry) => [String(entry.uid), fingerprintLorebookEntry(entry)]),
+          ),
+          presetKey,
+          promptText: await ArcPrompts.getPrompt(presetKey),
+          profileSettings,
+          maxItemsPerPass: options.maxItemsPerPass,
+          maxPasses: options.maxPasses,
+          minAssigned: requiredMin,
+          tokenTarget: options.tokenTarget,
+          disableOriginals,
+          summaryEntrySettings: chosenSummaryEntrySettings,
+          summaryOrderMode: normalizedArcOrderMode,
+          summaryOrderValue: chosenArcOrderValue,
+          summaryReverseStart: chosenArcReverseStart,
+        },
+      });
+      toastr.info(
+        translate("Consolidation job queued.", "STMemoryBooks_Jobs_ConsolidationQueued"),
+        "STMemoryBooks",
+      );
+      return;
+    }
 
     toastr.info(
       `Consolidating ${sourcePlural.toLowerCase()} into ${pluralizeSummaryLabel(
@@ -7593,6 +7910,9 @@ async function init() {
 
   // Setup event listeners
   setupEventListeners();
+  registerStmbJobExecutor("memory", executeQueuedMemoryJob);
+  registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
+  initStmbJobsIfTopInfoBarEnabled();
 
   // Preload side prompt names cache for autocomplete
   await refreshSidePromptCache();

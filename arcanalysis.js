@@ -617,8 +617,11 @@ export async function runSummaryAnalysisSequential(
 
   // Resolve prompt text
   let promptText = null;
+  if (typeof options?.promptText === "string" && options.promptText.trim()) {
+    promptText = options.promptText;
+  }
   try {
-    if (presetKey && (await ArcPrompts.isValid(presetKey))) {
+    if (!promptText && presetKey && (await ArcPrompts.isValid(presetKey))) {
       promptText = await ArcPrompts.getPrompt(presetKey);
     }
   } catch {}

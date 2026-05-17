@@ -382,7 +382,7 @@ export function applyLorebookEntrySettings(entry, lorebookSettings = {}, options
  * @param {string} lorebookValidation.name - Lorebook name
  * @returns {Promise<Object>} Result object with success status and details
  */
-export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
+export async function addMemoryToLorebook(memoryResult, lorebookValidation, options = {}) {
 
     try {
         if (!memoryResult?.content) {
@@ -398,7 +398,9 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         if (!titleFormat) {
             titleFormat = settings.titleFormat || i18n('addlore.titleFormats.8', '[000] - {{title}}');
         }
-        const refreshEditor = settings.moduleSettings?.refreshEditor !== false;
+        const refreshEditor = options.refreshEditor !== undefined
+            ? options.refreshEditor !== false
+            : settings.moduleSettings?.refreshEditor !== false;
 
         const lorebookSettings = memoryResult.lorebookSettings || {
             constVectMode: 'link',
@@ -438,7 +440,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
         // Execute auto-hide commands if enabled
         const autoHideMode = getAutoHideMode(settings.moduleSettings);
 
-        if (autoHideMode !== 'none') {
+        if (options.autoHide !== false && autoHideMode !== 'none') {
             const unhiddenCount = settings.moduleSettings.unhiddenEntriesCount ?? 2;
 
             if (autoHideMode === 'all') {
@@ -490,7 +492,9 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation) {
             }
         }
         // Update highest memory processed tracking
-        updateHighestMemoryProcessed(memoryResult);
+        if (options.updateHighestMemoryProcessed !== false) {
+            updateHighestMemoryProcessed(memoryResult);
+        }
 
         return {
             success: true,
