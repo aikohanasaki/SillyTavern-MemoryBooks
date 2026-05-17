@@ -466,3 +466,18 @@
     color: var(--SmartThemeRedColor, #ff6b6b);
     border-color: color-mix(in srgb, currentColor 22%, transparent);
 }
+
+.stmb-jobs-topinfobar-notice {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stmb-jobs-topinfobar-notice p {
+    margin: 0;
+}
+
+.stmb-jobs-topinfobar-dismiss {
+    justify-content: flex-start;
+    margin-top: 4px;
+}
