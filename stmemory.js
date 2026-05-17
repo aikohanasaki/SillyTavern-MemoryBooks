@@ -83,6 +83,21 @@ function getCurrentCompletionEndpoint() {
     return '/api/backends/chat-completions/generate';
 }
 
+const PROXY_SUPPORTED_COMPLETION_SOURCES = new Set([
+    'claude',
+    'openai',
+    'mistralai',
+    'makersuite',
+    'vertexai',
+    'deepseek',
+    'xai',
+    'zai',
+    'moonshot',
+]);
+
+function shouldForwardReverseProxy(api) {
+    return !!oai_settings?.reverse_proxy && PROXY_SUPPORTED_COMPLETION_SOURCES.has(api);
+}
 
 /**
 *Send a raw completion request to the backend, bypassing SillyTavern's chat context stack.*
@@ -202,6 +217,11 @@ export async function sendRawCompletionRequest({
         body.custom_url = `https://api.deepseek.com/chat/completions`; // use primary Deepseek endpoint
     } else if (api === 'zai') {
         body.zai_endpoint = oai_settings?.zai_endpoint || ZAI_ENDPOINT.COMMON;
+    }
+
+    if (shouldForwardReverseProxy(api)) {
+        body.reverse_proxy = oai_settings.reverse_proxy;
+        body.proxy_password = oai_settings.proxy_password || '';
     }
 
     const res = await fetch(url, {
