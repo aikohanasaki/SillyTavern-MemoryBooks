@@ -17,6 +17,7 @@ import { Popup, POPUP_TYPE } from '../../../popup.js';
 
 const MODULE_NAME = 'STMemoryBooks-Jobs';
 const TOP_INFO_BAR_ID = 'extensionTopBar';
+const TOP_INFO_BAR_CHAT_NAME_ID = 'extensionTopBarChatName';
 const JOB_BUTTON_ROOT_ID = 'stmb-jobs-topbar';
 const JOB_DRAWER_ID = 'top_chat_stmb_jobs';
 const ACTIVE_STATES = new Set(['queued', 'running', 'capturing_scene', 'assembling_prompt', 'generating', 'awaiting_approval', 'needs_review', 'saving', 'post_save']);
@@ -39,6 +40,14 @@ let jobsSummary = null;
 let jobsRows = null;
 let jobsActions = null;
 let missingTopInfoBarNoticeShown = false;
+
+function placeJobsTopBarButton(topBar, wrapper) {
+    const chatName = document.getElementById(TOP_INFO_BAR_CHAT_NAME_ID);
+    const anchor = chatName?.parentElement === topBar ? chatName : null;
+    if (wrapper.parentElement !== topBar || wrapper.nextElementSibling !== anchor) {
+        topBar.insertBefore(wrapper, anchor);
+    }
+}
 
 function tr(key, fallback, params = null) {
     let value = translate(fallback, key);
@@ -77,7 +86,7 @@ function showMissingTopInfoBarNotice() {
                 <input type="checkbox" id="stmb-jobs-dismiss-topinfobar-notice">
                 <span>${escapeHtml(tr(
                     'STMemoryBooks_Jobs_TopInfoBarMissingDismiss',
-                    'dismiss and never show this notification again',
+                    'Dismiss and never show this notification again.',
                 ))}</span>
             </label>
         </div>`;
@@ -672,6 +681,12 @@ function toggleJobsPanel() {
     renderStmbJobsUi();
 }
 
+function handleTopBarButtonKeydown(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleJobsPanel();
+}
+
 function findMutableJob(jobId) {
     const id = String(jobId || '').trim();
     if (!id) return null;
@@ -750,17 +765,21 @@ function ensureJobsUiElements() {
     if (!topBar) return false;
 
     let wrapper = document.getElementById(JOB_BUTTON_ROOT_ID);
-    if (!wrapper) {
-        wrapper = document.createElement('span');
-        wrapper.id = JOB_BUTTON_ROOT_ID;
-        wrapper.className = 'stmb-jobs-topbar';
-        wrapper.innerHTML = `
-            <button id="stmb-jobs-topbar-button" type="button" class="menu_button menu_button_icon stmb-jobs-topbar-button" aria-expanded="false" title="${escapeHtml(tr('STMemoryBooks_Jobs_NoActive', 'No active jobs'))}">
-                <i class="fa-solid fa-book stmb-jobs-topbar-icon" aria-hidden="true"></i>
-                <span id="stmb-jobs-topbar-badge" class="stmb-jobs-badge" style="display:none;"></span>
-            </button>`;
-        topBar.appendChild(wrapper);
+    if (wrapper && wrapper.tagName !== 'I') {
+        wrapper.remove();
+        wrapper = null;
     }
+    if (!wrapper) {
+        wrapper = document.createElement('i');
+        wrapper.id = JOB_BUTTON_ROOT_ID;
+        wrapper.className = 'fa-fw fa-solid fa-book right_menu_button stmb-jobs-topbar';
+        wrapper.title = tr('STMemoryBooks_Jobs_NoActive', 'No active jobs');
+        wrapper.tabIndex = 0;
+        wrapper.setAttribute('role', 'button');
+        wrapper.setAttribute('aria-expanded', 'false');
+        wrapper.innerHTML = '<span id="stmb-jobs-topbar-badge" class="stmb-jobs-badge" style="display:none;"></span>';
+    }
+    placeJobsTopBarButton(topBar, wrapper);
 
     let drawer = document.getElementById(JOB_DRAWER_ID);
     if (!drawer) {
@@ -776,7 +795,7 @@ function ensureJobsUiElements() {
         topBar.insertAdjacentElement('afterend', drawer);
     }
 
-    topBarButton = wrapper.querySelector('#stmb-jobs-topbar-button');
+    topBarButton = wrapper;
     topBarBadge = wrapper.querySelector('#stmb-jobs-topbar-badge');
     jobsPanel = drawer;
     jobsSummary = drawer.querySelector('#stmb-jobs-summary');
@@ -801,6 +820,7 @@ export function initStmbJobsIfTopInfoBarEnabled() {
     }
     if (!topBarButton.dataset.stmbJobsBound) {
         topBarButton.addEventListener('click', toggleJobsPanel);
+        topBarButton.addEventListener('keydown', handleTopBarButtonKeydown);
         topBarButton.dataset.stmbJobsBound = '1';
     }
     if (!jobsPanel.dataset.stmbJobsBound) {
