@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.7.0 (May 17, 2026)
+- Enhancement: Reverse proxy support now added (thank you @siberys (Discord) for the explanation on how reverse proxies should work in STMB 💖) Please note that this works the same way as ST's current reverse proxying works--I cannot diagnose your proxies unless you give me proxy information (please don't). 
+
 ## v6.6.2 (May 15, 2026)
 - Tweak: Switched "summarize" to "process".
 
