@@ -1,6 +1,6 @@
 {
     "display_name": "Memory Books",
-    "loading_order": 99,
+    "loading_order": 101,
     "requires": [],
     "optional": [],
     "js": "index.build.js",
