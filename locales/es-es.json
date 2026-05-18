@@ -370,6 +370,7 @@
     "STMemoryBooks_ThisSidePromptGoingForward": "Este Prompt Lateral en adelante",
     "STMemoryBooks_MenuItem": "Libros de Memoria",
     "STMemoryBooks_Close": "Cerrar",
+    "STMemoryBooks_GoBack": "Volver",
     "STMemoryBooks_NoMatches": "No hay coincidencias",
     "STMemoryBooks_RunSidePrompt": "Ejecutar Prompt Lateral",
     "STMemoryBooks_SearchSidePrompts": "Buscar Prompts Laterales...",

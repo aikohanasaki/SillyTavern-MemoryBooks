@@ -333,7 +333,7 @@ function getBuiltinTemplates() {
             key,
             name: translate('Cast of Characters', 'STMemoryBooks_CastOfCharacters'),
             enabled: false,
-            prompt: translate("You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot. \nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.\nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.", 'STMemoryBooks_CastOfCharactersPrompt'),
+            prompt: translate("You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot.\nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.\nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.", 'STMemoryBooks_CastOfCharactersPrompt'),
             responseFormat: translate("===NPC WHO'S WHO===\n(In order of importance to the plot)\n\nPerson 1: 1-2 sentence desription\nPerson 2: 1-2 sentence desription\n===END NPC WHO'S WHO===", 'STMemoryBooks_CastOfCharactersResponseFormat'),
             settings: {
                 overrideProfileEnabled: false,
@@ -366,7 +366,7 @@ function getBuiltinTemplates() {
             name: translate('Assess', 'STMemoryBooks_Assess'),
             enabled: false,
             prompt: translate("Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things.", 'STMemoryBooks_AssessPrompt'),
-            responseFormat: translate("Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===", 'STMemoryBooks_AssessResponseFormat'),
+            responseFormat: translate("Use this format:\n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===", 'STMemoryBooks_AssessResponseFormat'),
             settings: {
                 overrideProfileEnabled: false,
                 lorebook: {

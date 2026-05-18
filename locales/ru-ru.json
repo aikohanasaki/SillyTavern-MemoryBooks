@@ -370,6 +370,7 @@
     "STMemoryBooks_ThisSidePromptGoingForward": "Этот Боковой Промпт на будущее",
     "STMemoryBooks_MenuItem": "Книги Памяти",
     "STMemoryBooks_Close": "Закрыть",
+    "STMemoryBooks_GoBack": "Назад",
     "STMemoryBooks_NoMatches": "Нет совпадений",
     "STMemoryBooks_RunSidePrompt": "Запустить Боковой Промпт",
     "STMemoryBooks_SearchSidePrompts": "Поиск боковых промптов...",

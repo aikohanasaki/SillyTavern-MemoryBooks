@@ -98,6 +98,7 @@ import {
   isStmbStopError,
   markStmbPopup,
   throwIfStmbStopped,
+  withGoBackButton,
 } from "./utils.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
@@ -3279,7 +3280,7 @@ function populateInlineButtons() {
       id: "stmb-compact-review",
       action: async () => {
         try {
-          await showStmbEntryReviewPopup();
+          await showStmbEntryReviewPopup({ showGoBack: true });
         } catch (error) {
           console.error(`${MODULE_NAME}: Error opening Compaction:`, error);
           toastr.error(
@@ -3382,13 +3383,13 @@ async function showPromptManagerPopup() {
     content +=
       '<input type="file" id="stmb-pm-import-file" accept=".json" style="display: none;" />';
 
-    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    const popup = new Popup(content, POPUP_TYPE.TEXT, "", withGoBackButton({
       wide: true,
       large: true,
       allowVerticalScrolling: true,
       okButton: false,
       cancelButton: translate("Close", "STMemoryBooks_Close"),
-    });
+    }));
 
     // Attach handlers before showing the popup to ensure interactivity
     setupPromptManagerEventHandlers(popup);
@@ -3696,10 +3697,10 @@ async function createNewPreset(popup) {
         </div>
     `;
 
-  const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", {
+  const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", withGoBackButton({
     okButton: translate("Create", "STMemoryBooks_Create"),
     cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
-  });
+  }));
 
   const result = await editPopup.show();
 
@@ -3779,10 +3780,10 @@ async function editPreset(popup, presetKey) {
             </div>
         `;
 
-    const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", withGoBackButton({
       okButton: translate("Save", "STMemoryBooks_Save"),
       cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
-    });
+    }));
 
     const result = await editPopup.show();
 
@@ -4027,13 +4028,13 @@ async function showArcPromptManagerPopup() {
     content +=
       '<input type="file" id="stmb-apm-import-file" accept=".json" style="display: none;" />';
 
-    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    const popup = new Popup(content, POPUP_TYPE.TEXT, "", withGoBackButton({
       wide: true,
       large: true,
       allowVerticalScrolling: true,
       okButton: false,
       cancelButton: translate("Close", "STMemoryBooks_Close"),
-    });
+    }));
 
     // Attach handlers before showing the popup
     setupArcPromptManagerEventHandlers(popup);
@@ -4220,10 +4221,10 @@ async function createNewArcPreset(popup) {
             </label>
         </div>
     `;
-  const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", {
+  const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", withGoBackButton({
     okButton: translate("Create", "STMemoryBooks_Create"),
     cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
-  });
+  }));
   const result = await editPopup.show();
   if (result === POPUP_RESULT.AFFIRMATIVE) {
     const displayName = editPopup.dlg
@@ -4287,10 +4288,10 @@ async function editArcPreset(popup, presetKey) {
                 </label>
             </div>
         `;
-    const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    const editPopup = new Popup(content, POPUP_TYPE.TEXT, "", withGoBackButton({
       okButton: translate("Save", "STMemoryBooks_Save"),
       cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
-    });
+    }));
     const result = await editPopup.show();
     if (result === POPUP_RESULT.AFFIRMATIVE) {
       const newDisplayName = editPopup.dlg
@@ -4841,7 +4842,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       return hasChanges;
     };
 
-    popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, "", {
+    const summaryPopupOptions = {
       wide: true,
       large: true,
       allowVerticalScrolling: true,
@@ -4857,7 +4858,13 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           );
         }
       },
-    });
+    };
+    popup = new Popup(
+      DOMPurify.sanitize(content),
+      POPUP_TYPE.TEXT,
+      "",
+      popupOptions.showGoBack ? withGoBackButton(summaryPopupOptions) : summaryPopupOptions,
+    );
 
     // Attach handlers before show
     const dlg = popup.dlg;
@@ -5714,10 +5721,9 @@ async function showSettingsPopup() {
           "Consolidate Memories",
           "STMemoryBooks_ConsolidateArcsButton",
         ),
-      result: null,
       classes: ["menu_button"],
       action: async () => {
-        await showSummaryConsolidationPopup();
+        await showSummaryConsolidationPopup({ showGoBack: true });
       },
     }),
     customButtons.push({

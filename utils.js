@@ -40,6 +40,20 @@ export function markStmbPopup(popup) {
     return popup;
 }
 
+export function withGoBackButton(options = {}) {
+    return {
+        ...options,
+        customButtons: [
+            ...(Array.isArray(options.customButtons) ? options.customButtons : []),
+            {
+                text: translate('Go back', 'STMemoryBooks_GoBack'),
+                result: POPUP_RESULT.CANCELLED,
+                classes: ['menu_button'],
+            },
+        ],
+    };
+}
+
 // Centralized DOM selectors - single source of truth
 export const SELECTORS = {
     extensionsMenu: '#extensionsMenu .list-group',

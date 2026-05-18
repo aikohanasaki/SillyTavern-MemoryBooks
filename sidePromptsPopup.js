@@ -25,7 +25,7 @@ import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { showStmbEntryReviewPopup } from './clipManager.js';
-import { markStmbPopup } from './utils.js';
+import { markStmbPopup, withGoBackButton } from './utils.js';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -567,13 +567,13 @@ async function openEditSet(parentPopup, key = null) {
         </div>
     `;
 
-    const setPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+    const setPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', withGoBackButton({
         wide: true,
         large: true,
         allowVerticalScrolling: true,
         okButton: translate('Save', 'STMemoryBooks_Save'),
         cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
-    });
+    }));
 
     const attachHandlers = () => {
         const dlg = setPopup.dlg;
@@ -852,13 +852,13 @@ async function openEditTemplate(parentPopup, key) {
             </div>
         `;
 
-        const editPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+        const editPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', withGoBackButton({
             wide: true,
             large: true,
             allowVerticalScrolling: true,
             okButton: translate('Save', 'STMemoryBooks_Save'),
             cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
-        });
+        }));
 
         // Attach dynamic handlers before show
         const attachHandlers = () => {
@@ -1188,13 +1188,13 @@ async function openNewTemplate(parentPopup) {
         </div>
     `;
 
-    const newPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+    const newPopup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', withGoBackButton({
         wide: true,
         large: true,
         allowVerticalScrolling: true,
         okButton: translate('Create', 'STMemoryBooks_Create'),
         cancelButton: translate('Cancel', 'STMemoryBooks_Cancel')
-    });
+    }));
 
     const attachHandlers = () => {
         const dlg = newPopup.dlg;
@@ -1437,13 +1437,13 @@ export async function showSidePromptsPopup() {
         // Hidden file input for import
         content += '<input type="file" id="stmb-sp-import-file" accept=".json" style="display: none;" />';
 
-        const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', {
+        const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.TEXT, '', withGoBackButton({
             wide: true,
             large: true,
             allowVerticalScrolling: true,
             okButton: false,
             cancelButton: translate('Close', 'STMemoryBooks_Close')
-        });
+        }));
 
         // Attach handlers before show
         const attachHandlers = () => {
@@ -1479,7 +1479,7 @@ export async function showSidePromptsPopup() {
                 await openNewTemplate(popup);
             });
             dlg.querySelector('#stmb-sp-review-entries')?.addEventListener('click', async () => {
-                await showStmbEntryReviewPopup();
+                await showStmbEntryReviewPopup({ showGoBack: true });
             });
             dlg.querySelector('#stmb-sp-export')?.addEventListener('click', async () => {
                 await exportTemplates();
