@@ -369,6 +369,7 @@
     "STMemoryBooks_ThisSidePromptGoingForward": "Prompt Sampingan ini ke depannya",
     "STMemoryBooks_MenuItem": "Buku Memori",
     "STMemoryBooks_Close": "Tutup",
+    "STMemoryBooks_GoBack": "Kembali",
     "STMemoryBooks_NoMatches": "Tidak ada yang cocok",
     "STMemoryBooks_RunSidePrompt": "Jalankan Prompt Sampingan",
     "STMemoryBooks_SearchSidePrompts": "Cari prompt sampingan...",

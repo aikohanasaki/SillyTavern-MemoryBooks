@@ -25,6 +25,7 @@ import {
     normalizeCompletionSource,
     readIntInput,
     resolveEffectiveConnectionFromProfile,
+    withGoBackButton,
 } from './utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ClipManager';
@@ -1108,7 +1109,7 @@ async function showCompactionPromptEditorPopup() {
     return await showPromise === POPUP_RESULT.AFFIRMATIVE;
 }
 
-async function showCompactionRequestPopup(entry, originalContent, entryKind) {
+async function showCompactionRequestPopup(entry, originalContent, entryKind, options = {}) {
     const content = DOMPurify.sanitize(`
         <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
         <div class="stmb-compact-review">
@@ -1121,13 +1122,14 @@ async function showCompactionRequestPopup(entry, originalContent, entryKind) {
             </div>
         </div>
     `);
-    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+    const popupOptions = {
         wide: true,
         large: true,
         allowVerticalScrolling: true,
         okButton: tr('STMemoryBooks_Compaction_Button', 'Compact Entry'),
         cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
-    });
+    };
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', options.showGoBack ? withGoBackButton(popupOptions) : popupOptions);
     const showPromise = popup.show();
     populateCompactionPromptButton(popup);
     initializeCompactionProfileSelect(popup, 'stmb-compaction-request-profile-select');
@@ -1152,7 +1154,7 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
     let profileIndex = options.profileIndex ?? getCompactionProfileIndex();
 
     if (!options.skipPromptStep) {
-        const requestResult = await showCompactionRequestPopup(entry, originalContent, entryKind);
+        const requestResult = await showCompactionRequestPopup(entry, originalContent, entryKind, options);
         if (!requestResult.confirmed) return false;
         profileIndex = requestResult.profileIndex;
     }
@@ -1185,13 +1187,14 @@ export async function showCompactReviewPopup(lorebookName, lorebookData, entry, 
         </div>
     `);
 
-    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+    const popupOptions = {
         wide: true,
         large: true,
         allowVerticalScrolling: true,
         okButton: tr('STMemoryBooks_Compaction_Replace', 'Replace with Compacted Version'),
         cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
-    });
+    };
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', options.showGoBack ? withGoBackButton(popupOptions) : popupOptions);
     const showPromise = popup.show();
     popup.dlg?.querySelector('#stmb-copy-compacted')?.addEventListener('click', async () => {
         try {
@@ -1298,7 +1301,7 @@ function notifyCompactionRequestSettled(options) {
     }
 }
 
-export async function showStmbEntryReviewPopup() {
+export async function showStmbEntryReviewPopup(options = {}) {
     if (!Array.isArray(world_names) || world_names.length === 0) {
         toastr.error(tr('STMemoryBooks_Compaction_NoLorebooks', 'No Memory Books were found.'), 'STMemoryBooks');
         return;
@@ -1309,6 +1312,14 @@ export async function showStmbEntryReviewPopup() {
         '<option></option>',
         ...world_names.map(name => `<option value="${escapeHtml(name)}"${name === defaultLorebookName ? ' selected' : ''}>${escapeHtml(name)}</option>`),
     ].join('');
+
+    const popupOptions = {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: false,
+        cancelButton: tr('STMemoryBooks_Close', 'Close'),
+    };
 
     const popup = new Popup(DOMPurify.sanitize(`
         <h3>${escapeHtml(tr('STMemoryBooks_Compaction_Title', 'Compaction'))}</h3>
@@ -1336,13 +1347,7 @@ export async function showStmbEntryReviewPopup() {
                 </tbody>
             </table>
         </div>
-    `), POPUP_TYPE.TEXT, '', {
-        wide: true,
-        large: true,
-        allowVerticalScrolling: true,
-        okButton: false,
-        cancelButton: tr('STMemoryBooks_Close', 'Close'),
-    });
+    `), POPUP_TYPE.TEXT, '', options.showGoBack ? withGoBackButton(popupOptions) : popupOptions);
 
     let currentLorebookName = '';
     let currentLorebookData = null;
@@ -1413,6 +1418,7 @@ export async function showStmbEntryReviewPopup() {
                     skipPromptStep: true,
                     profileIndex,
                     onCompactionRequestSettled: clearLoadingState,
+                    showGoBack: options.showGoBack,
                 });
             } finally {
                 clearLoadingState();

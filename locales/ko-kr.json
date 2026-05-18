@@ -366,6 +366,7 @@
     "STMemoryBooks_ThisSidePromptGoingForward": "이 사이드 프롬프트에 앞으로 계속",
     "STMemoryBooks_MenuItem": "메모리 북",
     "STMemoryBooks_Close": "닫기",
+    "STMemoryBooks_GoBack": "뒤로",
     "STMemoryBooks_NoMatches": "일치하는 항목 없음",
     "STMemoryBooks_RunSidePrompt": "사이드 프롬프트 실행",
     "STMemoryBooks_SearchSidePrompts": "사이드 프롬프트 검색...",

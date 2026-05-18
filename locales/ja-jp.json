@@ -370,6 +370,7 @@
     "STMemoryBooks_ThisSidePromptGoingForward": "このサイドプロンプトで今後も使用",
     "STMemoryBooks_MenuItem": "メモリーブック",
     "STMemoryBooks_Close": "閉じる",
+    "STMemoryBooks_GoBack": "戻る",
     "STMemoryBooks_NoMatches": "一致なし",
     "STMemoryBooks_RunSidePrompt": "サイドプロンプトを実行",
     "STMemoryBooks_SearchSidePrompts": "サイドプロンプトを検索...",

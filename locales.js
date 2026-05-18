@@ -575,6 +575,7 @@ export const localeData_en = {
     // General / Menu
     'STMemoryBooks_MenuItem': 'Memory Books',
     'STMemoryBooks_Close': 'Close',
+    'STMemoryBooks_GoBack': 'Go back',
     'STMemoryBooks_NoMatches': 'No matches',
 
     // Side Prompt Picker
@@ -867,7 +868,7 @@ export const localeData_en = {
     'STMemoryBooks_PlotpointsResponseFormat': "=== Plot Points ===\n(as of [point in the story when this analysis was done])\n\n[Overarching Plot Arc]\n(2-3 sentence summary of the superobjective or major plot)\n\n[Thread #1 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n\n[Thread #2 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n...\n\n-- Plot Hooks --\n- (new or potential plot hooks)\n\n-- Character Dynamics --\n- current status of {{user}}'s/{{char}}'s relationships with NPCs\n\n===End Plot Points===\n",
     'STMemoryBooks_StatusResponseFormat': "Follow this general format:\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR and LUSTFACTOR\n(!lovefactor and !lustfactor reports go here)\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)",
     'STMemoryBooks_CastOfCharactersResponseFormat': "===NPC WHO'S WHO===\n(In order of importance to the plot)\n\nPerson 1: 1-2 sentence desription\nPerson 2: 1-2 sentence desription\n===END NPC WHO'S WHO===",
-    'STMemoryBooks_AssessResponseFormat': "Use this format: \n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
+    'STMemoryBooks_AssessResponseFormat': "Use this format:\n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
     'STMemoryBooks_FailedToSaveSidePrompts': 'Failed to save side prompts: {{status}} {{statusText}}',
     'STMemoryBooks_SidePromptsSaved': 'Side prompts saved successfully',
     'STMemoryBooks_MigratingSidePrompts': 'Migrating side prompts file from V1(type) to V2(triggers)',

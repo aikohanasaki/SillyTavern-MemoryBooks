@@ -366,6 +366,7 @@
     "STMemoryBooks_ThisSidePromptGoingForward": "此側邊提示今後使用",
     "STMemoryBooks_MenuItem": "記憶書",
     "STMemoryBooks_Close": "關閉",
+    "STMemoryBooks_GoBack": "返回",
     "STMemoryBooks_NoMatches": "沒有相符項",
     "STMemoryBooks_RunSidePrompt": "執行側邊提示",
     "STMemoryBooks_SearchSidePrompts": "搜尋側邊提示...",
