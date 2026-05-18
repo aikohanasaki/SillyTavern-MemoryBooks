@@ -975,6 +975,9 @@ export const localeData_en = {
     
     // Arcs
     'STMemoryBooks_ArcPromptManager': 'Consolidation Prompt Manager',
+    'STMemoryBooks_ArcPromptManager_SetDefault': 'Set Default',
+    'STMemoryBooks_ArcPromptManager_DefaultSaved': '"{{name}}" is now the default consolidation prompt.',
+    'STMemoryBooks_ArcPromptManager_DefaultSaveFailed': 'Failed to set default consolidation prompt',
     'STMemoryBooks_Arc_RebuildBuiltins': 'Rebuild from built-ins',
     'STMemoryBooks_Arc_MaxPerPass': 'Maximum number of {{stmbchildtier}} entries to process in each pass',
     'STMemoryBooks_Arc_MaxPasses': 'Number of automatic summary attempts',

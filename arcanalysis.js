@@ -572,7 +572,7 @@ export async function runSummaryAnalysisSequential(
   const runEpoch = parentTask.epoch;
   try {
   const {
-    presetKey = "arc_default",
+    presetKey = null,
     maxItemsPerPass = 12,
     maxPasses = 10,
     minAssigned = 2,
@@ -580,9 +580,16 @@ export async function runSummaryAnalysisSequential(
     targetTier = 1,
   } = options;
   const extra = options?.extra ?? {};
+  let effectivePresetKey = String(presetKey || "").trim();
+  if (!effectivePresetKey) {
+    try {
+      effectivePresetKey = await ArcPrompts.getDefaultPresetKey();
+    } catch {}
+  }
+  if (!effectivePresetKey) effectivePresetKey = "arc_default";
 
   // Determine local max passes (single-arc preset defaults to one pass unless explicitly overridden)
-  const singleArcPreset = presetKey === "arc_alternate";
+  const singleArcPreset = effectivePresetKey === "arc_alternate";
   const maxPassesLocal = Object.prototype.hasOwnProperty.call(
     options,
     "maxPasses",
@@ -621,8 +628,8 @@ export async function runSummaryAnalysisSequential(
     promptText = options.promptText;
   }
   try {
-    if (!promptText && presetKey && (await ArcPrompts.isValid(presetKey))) {
-      promptText = await ArcPrompts.getPrompt(presetKey);
+    if (!promptText && effectivePresetKey && (await ArcPrompts.isValid(effectivePresetKey))) {
+      promptText = await ArcPrompts.getPrompt(effectivePresetKey);
     }
   } catch {}
   if (!promptText) promptText = getDefaultArcPrompt();
