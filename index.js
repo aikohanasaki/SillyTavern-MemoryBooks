@@ -3992,6 +3992,7 @@ async function showArcPromptManagerPopup() {
 
     // Get list of arc presets
     const presets = await ArcPrompts.listPresets();
+    const defaultPresetKey = await ArcPrompts.getDefaultPresetKey();
 
     // Build the popup content
     let content =
@@ -4000,6 +4001,17 @@ async function showArcPromptManagerPopup() {
     content +=
       '<p data-i18n="STMemoryBooks_ArcPromptManager_Desc">Manage your Consolidation Analysis prompts. All presets are editable.</p>';
     content += "</div>";
+
+    content += '<div class="world_entry_form_control">';
+    content += `<label for="stmb-apm-default"><strong>${escapeHtml(translate("Set Default", "STMemoryBooks_ArcPromptManager_SetDefault"))}:</strong> `;
+    content += '<select id="stmb-apm-default" class="text_pole">';
+    for (const p of presets) {
+      const key = String(p.key || "");
+      const name = String(p.displayName || key);
+      const selected = key === defaultPresetKey ? " selected" : "";
+      content += `<option value="${escapeHtml(key)}"${selected}>${escapeHtml(name)}</option>`;
+    }
+    content += "</select></label></div>";
 
     // Search/filter box
     content += '<div class="world_entry_form_control">';
@@ -4127,6 +4139,32 @@ function setupArcPromptManagerEventHandlers(popup) {
         .textContent.toLowerCase();
       row.style.display = displayName.includes(term) ? "" : "none";
     });
+  });
+
+  dlg.querySelector("#stmb-apm-default")?.addEventListener("change", async (e) => {
+    const key = String(e.target.value || "").trim();
+    try {
+      await ArcPrompts.setDefaultPresetKey(key);
+      const displayName = await ArcPrompts.getDisplayName(key);
+      toastr.success(
+        tr(
+          "STMemoryBooks_ArcPromptManager_DefaultSaved",
+          '"{{name}}" is now the default consolidation prompt.',
+          { name: displayName },
+        ),
+        "STMemoryBooks",
+      );
+      window.dispatchEvent(new CustomEvent("stmb-arc-presets-updated"));
+    } catch (error) {
+      console.error("STMemoryBooks: Error setting default arc preset:", error);
+      toastr.error(
+        translate(
+          "Failed to set default consolidation prompt",
+          "STMemoryBooks_ArcPromptManager_DefaultSaveFailed",
+        ),
+        "STMemoryBooks",
+      );
+    }
   });
 
   // Buttons
@@ -4661,7 +4699,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     // Presets for Arc Analysis
     await ArcPrompts.firstRunInitIfMissing(extension_settings?.STMemoryBooks);
     const presets = await ArcPrompts.listPresets();
-    const defaultPresetKey = "arc_default";
+    const defaultPresetKey = await ArcPrompts.getDefaultPresetKey();
 
     // Defaults from settings
     const settings = initializeSettings();
@@ -5132,7 +5170,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
             ) {
               selEl.value = selectedBefore;
             } else {
-              selEl.value = defaultPresetKey;
+              selEl.value = await ArcPrompts.getDefaultPresetKey();
             }
           }
 
@@ -5209,7 +5247,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     }
 
     const presetKey = String(
-      dlg.querySelector("#stmb-arc-preset")?.value || "arc_default",
+      dlg.querySelector("#stmb-arc-preset")?.value || defaultPresetKey,
     );
     const options = {
       presetKey,

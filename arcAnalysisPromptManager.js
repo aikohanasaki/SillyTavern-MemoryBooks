@@ -87,12 +87,22 @@ function validatePromptsFile(data) {
   if (!data || typeof data !== 'object') return false;
   if (typeof data.version !== 'number') return false;
   if (!data.overrides || typeof data.overrides !== 'object') return false;
+  if (data.defaultPresetKey !== undefined && typeof data.defaultPresetKey !== 'string') return false;
   for (const [key, ov] of Object.entries(data.overrides)) {
     if (!ov || typeof ov !== 'object') return false;
     if (typeof ov.prompt !== 'string' || !ov.prompt.trim()) return false;
     if (ov.displayName !== undefined && typeof ov.displayName !== 'string') return false;
   }
   return true;
+}
+
+function getFallbackDefaultPresetKey(data = null) {
+  const builtIns = getBuiltInArcPrompts() || {};
+  const overrides = data?.overrides && typeof data.overrides === 'object' ? data.overrides : {};
+  const preferred = String(data?.defaultPresetKey || '').trim();
+  if (preferred && (overrides[preferred] || builtIns[preferred])) return preferred;
+  if (overrides.arc_default || builtIns.arc_default) return 'arc_default';
+  return Object.keys(overrides)[0] || Object.keys(builtIns)[0] || 'arc_default';
 }
 
 /**
@@ -147,6 +157,7 @@ async function loadOverrides(settings = null) {
 
     data = {
       version: SCHEMA.CURRENT_VERSION,
+      defaultPresetKey: 'arc_default',
       overrides,
     };
     await saveOverrides(data);
@@ -249,6 +260,32 @@ export async function getPrompt(key, settings = null) {
 }
 
 /**
+ * Get the selected default consolidation preset key
+ * @returns {Promise<string>}
+ */
+export async function getDefaultPresetKey(settings = null) {
+  const data = await loadOverrides(settings);
+  return getFallbackDefaultPresetKey(data);
+}
+
+/**
+ * Set the default consolidation preset key
+ * @param {string} key
+ * @returns {Promise<string>}
+ */
+export async function setDefaultPresetKey(key) {
+  const data = await loadOverrides();
+  const normalizedKey = String(key || '').trim();
+  const builtIns = getBuiltInArcPrompts() || {};
+  if (!normalizedKey || !(data.overrides[normalizedKey] || builtIns[normalizedKey])) {
+    throw new Error(`Arc preset "${normalizedKey}" not found`);
+  }
+  data.defaultPresetKey = normalizedKey;
+  await saveOverrides(data);
+  return normalizedKey;
+}
+
+/**
  * Get display name for a preset key
  * @param {string} key
  * @returns {Promise<string>}
@@ -334,6 +371,10 @@ export async function removePreset(key) {
   const data = await loadOverrides();
   if (!data.overrides[key]) throw new Error(`Arc preset "${key}" not found`);
   delete data.overrides[key];
+  const builtIns = getBuiltInArcPrompts() || {};
+  if (data.defaultPresetKey === key && !builtIns[key]) {
+    data.defaultPresetKey = getFallbackDefaultPresetKey(data);
+  }
   await saveOverrides(data);
 }
 
@@ -356,6 +397,7 @@ export async function importFromJSON(jsonString) {
   if (!validatePromptsFile(obj)) {
     throw new Error('Invalid consolidation prompts file structure.');
   }
+  obj.defaultPresetKey = getFallbackDefaultPresetKey(obj);
   await saveOverrides(obj);
 }
 
@@ -387,6 +429,7 @@ export async function recreateBuiltInPrompts(mode = 'overwrite') {
       }
     }
   }
+  data.defaultPresetKey = getFallbackDefaultPresetKey(data);
   await saveOverrides(data);
   cachedOverrides = data;
   console.log(`${MODULE_NAME}: Recreated arc built-ins (removed ${removed} overrides)`);
@@ -415,8 +458,9 @@ export async function rebuildFromBuiltIns(options = {}) {
 
   // Optional backup of existing file (using current persisted doc)
   let backupName;
+  let existing = null;
   try {
-    const existing = await loadOverrides();
+    existing = await loadOverrides();
     if (backup && existing) {
       const base = String(PROMPTS_FILE || 'stmb-arc-prompts.json').replace(/\.json$/i, '');
       const ts = now.replace(/[:.]/g, '-');
@@ -438,7 +482,14 @@ export async function rebuildFromBuiltIns(options = {}) {
     console.warn(`${MODULE_NAME}: Backup step failed:`, e);
   }
 
-  const doc = { version: SCHEMA.CURRENT_VERSION, overrides };
+  const doc = {
+    version: SCHEMA.CURRENT_VERSION,
+    defaultPresetKey: getFallbackDefaultPresetKey({
+      defaultPresetKey: existing?.defaultPresetKey,
+      overrides,
+    }),
+    overrides,
+  };
   await saveOverrides(doc);
   cachedOverrides = doc;
 
