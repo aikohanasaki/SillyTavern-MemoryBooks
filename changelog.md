@@ -3,7 +3,8 @@
 **← [Back to README](readme.md)**
 
 ## v6.8.1 (May 18, 2026)
-- Tweak: Added back button :D 
+- Tweak: Added back button. :D 
+- Tweak: Added default consolidation prompt selector.
 
 ## v6.8.0 (May 17, 2026)
 - NEW FEATURE: Job Queue allows for better control and visibility into what is currently processing. This feature requires the extension Chat Info Bar (Extension-TopInfoBar) to work. STMB will continue to function without it, but I recommend that you install it (it's an amazing extension).
