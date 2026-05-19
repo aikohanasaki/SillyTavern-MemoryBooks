@@ -147,17 +147,25 @@ llama-server -m <path-model> -c <context-size> --port 8080
 ## 🚀 Memulai
 
 ### 1. **Instal & Muat**
-- Muat SillyTavern dan pilih karakter atau obrolan grup.
-- Tunggu tombol chevron (► ◄) muncul pada pesan chat (mungkin perlu sampai 10 detik).
 
 ![Tunggu tombol ini](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
+- Muat SillyTavern dan pilih karakter atau obrolan grup.
+- Tunggu tombol chevron (► ◄) muncul pada pesan chat (mungkin perlu sampai 10 detik).
+
+
 ### 2. **Tandai Adegan**
+
+![Tombol mulai yang diklik](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+
+![Tombol di tengah adegan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
+
+![Tombol akhir yang diklik](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png)
+
 - Klik ► pada pesan pertama adegan Anda.
 - Klik ◄ pada pesan terakhir.
 
 Berikut contoh tampilan tombol chevron setelah diklik. Warna Anda bisa berbeda tergantung tema CSS!
-![Umpan balik visual yang menunjukkan pemilihan adegan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Buat Memori**
 - Buka menu Ekstensi (tongkat ajaib 🪄) lalu klik "Memory Books", atau gunakan perintah slash `/creatememory`.
@@ -183,6 +191,9 @@ Ini adalah jenis memori standar dan yang paling umum digunakan.
 ---
 
 ### 🌈 Konsolidasi Ringkasan
+
+![Tombol konsolidasi](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-consolidate.png)
+
 Konsolidasi ringkasan menangkap **apa yang berubah seiring waktu** di beberapa memori atau ringkasan.
 
 Daripada meringkas satu adegan, ringkasan konsolidasi berfokus pada:
@@ -264,6 +275,9 @@ Semua prompt dan preset **harus** menginstruksikan AI agar hanya mengembalikan J
 
 
 ## ✂️ Klip ke Buku Memori
+
+![Klip teks](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
+
 
 Klip ke Buku Memori adalah untuk catatan cepat “ingat ini”. Sorot teks chat penting, klik tombol gunting mengambang, lalu simpan teks yang dipilih sebagai poin di Buku Memori tanpa perlu membuka editor lorebook terlebih dahulu.
 
@@ -353,11 +367,13 @@ Ini ditujukan untuk konversi susulan, bukan untuk penggunaan rutin sehari-hari. 
 ## 🧭 Mode Operasi
 
 ### **Mode Otomatis (Default)**
+
+![Contoh binding lorebook chat](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+
 - **Cara kerjanya:** Secara otomatis memakai lorebook yang terikat pada chat Anda saat ini.
 - **Cocok untuk:** Kesederhanaan dan kecepatan. Sebagian besar pengguna sebaiknya mulai di sini.
 - **Cara memakai:** Pastikan lorebook dipilih di dropdown "Chat Lorebooks" untuk karakter atau obrolan grup Anda.
 
-![Contoh binding lorebook chat](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
 ### **Mode Buat Lorebook Otomatis**
 - **Cara kerjanya:** Secara otomatis membuat dan mengikat lorebook baru saat belum ada, memakai template penamaan kustom Anda.
@@ -382,6 +398,9 @@ Ini ditujukan untuk konversi susulan, bukan untuk penggunaan rutin sehari-hari. 
 ---
 
 ### 🎡 Pelacak & Prompt Sampingan
+
+![Tempat menemukan Pelacak & Prompt Sampingan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+
 
 > 📘 Side Prompt punya panduan sendiri: [Panduan Side Prompt](side-prompts-id.md). Gunakan itu untuk set, macro, contoh, dan pemecahan masalah.
 > 🎡 Perlu jalur klik yang tepat? Lihat [panduan Scribe untuk mengaktifkan Side Prompt](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
@@ -419,6 +438,9 @@ Gunakan Side Prompt untuk hal-hal seperti:
 ---
 
 ### 🧹 Pemadatan
+
+![Klik di sini untuk Menu Pemadatan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/compaction.png)
+
 
 Pemadatan adalah alur kerja tinjau-dulu untuk membuat entri lorebook yang dikelola STMB menjadi lebih hemat token. STMB meminta AI menulis ulang satu entri yang sudah ada, lalu menampilkan konten asli dan draf yang dipadatkan sebelum apa pun diganti.
 
@@ -477,6 +499,9 @@ Gunakan **Atur Ulang ke Default** di editor prompt jika Anda ingin mengembalikan
 ---
 
 ### 🧠 Integrasi Regex untuk Kustomisasi Tingkat Lanjut
+
+![Konfigurasi regex](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
+
 - **Kontrol Penuh atas Pemrosesan Teks:** Memory Books kini terintegrasi dengan ekstensi **Regex** SillyTavern, memungkinkan Anda menerapkan transformasi teks yang kuat pada dua tahap utama:
   1. **Pembuatan Prompt:** Secara otomatis memodifikasi prompt yang dikirim ke AI dengan membuat skrip regex yang menargetkan penempatan **User Input**.
   2. **Parsing Respons:** Membersihkan, memformat ulang, atau menstandarkan respons mentah AI sebelum disimpan dengan menargetkan penempatan **AI Output**.
@@ -488,6 +513,9 @@ Gunakan **Atur Ulang ke Default** di editor prompt jika Anda ingin mengembalikan
 
 ## 👤 Manajemen Profil
 
+![Manajemen Profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
+
+
 - **Profil:** Setiap profil mencakup API, model, temperatur, prompt/preset, format judul, dan pengaturan lorebook.
 - **Impor/Ekspor:** Bagikan profil sebagai JSON.
 - **Pembuatan Profil:** Gunakan popup opsi lanjutan untuk menyimpan profil baru.
@@ -498,7 +526,10 @@ Gunakan **Atur Ulang ke Default** di editor prompt jika Anda ingin mengembalikan
 
 ## ⚙️ Pengaturan & Konfigurasi
 
-![Panel pengaturan utama](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+![Panel pengaturan utama 1](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile1.png)
+![Panel pengaturan utama 2](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile2.png)
+![Panel pengaturan utama 3](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile3.png)
+
 
 ### **Pengaturan Global**
 [Video singkat di YouTube](https://youtu.be/mG2eRH_EhHs)
@@ -524,9 +555,11 @@ Gunakan **Atur Ulang ke Default** di editor prompt jika Anda ingin mengembalikan
 - **Gunakan ekspresi reguler (lanjutan):** Mengaktifkan popup pemilihan regex STMB untuk pemrosesan keluar/masuk.
 - **Format Judul Memori:** Pilih atau kustomisasi (lihat di bawah).
 
-![Konfigurasi profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Bidang Profil**
+
+![Konfigurasi profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
+
 - **Name:** Nama tampilan.
 - **API/Provider:** `Pengaturan SillyTavern Saat Ini`, openai, claude, custom, full manual, dan provider lain yang didukung.
 - **Model:** Nama model (misalnya, gpt-4, claude-3-opus).
@@ -541,6 +574,10 @@ Gunakan **Atur Ulang ke Default** di editor prompt jika Anda ingin mengembalikan
 ---
 
 ## 🏷️ Pemformatan Judul
+
+![Format judul](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformat.png)
+![Format-format judul](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+
 
 Kustomisasi judul entri lorebook Anda dengan sistem template yang kuat.
 
@@ -559,16 +596,21 @@ Kustomisasi judul entri lorebook Anda dengan sistem template yang kuat.
 
 ## 🧵 Memori Konteks
 
+![Pembuatan memori dengan konteks](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+
+
 - **Sertakan sampai 7 memori sebelumnya** sebagai konteks untuk kontinuitas yang lebih baik.
 - **Estimasi token** mencakup memori konteks agar lebih akurat.
 - **Opsi lanjutan** memungkinkan Anda menimpa perilaku prompt/profil sementara untuk satu kali pemakaian memori.
 
-![Pembuatan memori dengan konteks](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 
 ---
 
 <a id="optional-job-queue-chat-top-bar-required"></a>
 ## 🧾 Antrean Tugas Opsional (memerlukan Chat Top Bar)
+
+![Antrean Tugas ST Memory Books](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/queue.png)
+
 
 Antrean tugas bersifat opsional, tetapi kuat. Anda tidak membutuhkannya untuk menggunakan Memory Books.
 
@@ -585,13 +627,18 @@ Antrean dapat menampilkan status tugas, membatalkan tugas aktif, mencoba ulang t
 
 Jika Chat Top Bar tidak diinstal atau tidak diaktifkan, STMB tetap berfungsi normal. Anda hanya tidak akan memiliki UI antrean tugas.
 
+
+![Cara menginstal Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
+
 ---
 ## 🎨 Umpan Balik Visual & Aksesibilitas
+
+![Pemilihan adegan lengkap yang menunjukkan semua status visual](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
+
 
 - **Status Tombol:**
   - Tidak aktif, aktif, seleksi valid, di dalam adegan, memproses.
 
-![Pemilihan adegan lengkap yang menunjukkan semua status visual](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
 - **Aksesibilitas:**
   - Navigasi keyboard, indikator fokus, atribut ARIA, reduced motion, ramah seluler.
@@ -622,9 +669,14 @@ Jika entri sudah terpicu dan memang dikirim ke AI, mungkin Anda perlu menegur AI
 
 # Pemecahan Masalah
 
+![Peringatan tumpang tindih adegan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![Aktifkan tumpang tindih adegan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap2.png)
+
+
 - **Saya tidak bisa menemukan Memory Books di menu Ekstensi!**
   Pengaturan ada di menu Ekstensi (tongkat ajaib 🪄 di sebelah kiri kotak input Anda). Cari "Memory Books".
-  ![Lokasi pengaturan STMB](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
+![Lokasi pengaturan STMB](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
 
 - **Tidak ada lorebook yang tersedia atau dipilih:**
   - Dalam Mode Manual, pilih lorebook saat diminta.
@@ -640,7 +692,6 @@ Jika entri sudah terpicu dan memang dikirim ke AI, mungkin Anda perlu menegur AI
 - **Adegan tumpang tindih dengan memori yang sudah ada:**
   - Pilih rentang berbeda, atau aktifkan "Allow scene overlap" di pengaturan.
 
-  ![Peringatan tumpang tindih adegan](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 
 - **AI gagal membuat memori valid:**
   - Gunakan model yang mendukung output JSON.

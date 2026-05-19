@@ -156,19 +156,27 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 1. **설치 및 로드**
 
+![이 버튼들이 표시될 때까지 기다리기](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
+
+
 - SillyTavern을 로드하고 캐릭터나 그룹 채팅을 선택합니다.
 - 채팅 메시지에 갈매기형 화살표 버튼(► ◄)이 나타날 때까지 기다립니다. 최대 10초 정도 걸릴 수 있습니다.
 
-![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **장면(Scene) 표시**
+
+![클릭된 시작 버튼](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+
+![장면 중간 버튼](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
+
+![클릭된 끝 버튼](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png)
+
 
 - 장면의 첫 번째 메시지에서 ►를 클릭합니다.
 - 마지막 메시지에서 ◄를 클릭합니다.
 
 아래는 갈매기형 화살표 버튼을 클릭했을 때의 예시입니다. 사용하는 CSS 테마에 따라 색상은 다를 수 있습니다.
 
-![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **기억(Memory) 생성**
 
@@ -196,6 +204,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 ---
 
 ### 🌈 요약 통합 (Summary Consolidation)
+
+![통합 버튼](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-consolidate.png)
+
 
 요약 통합은 여러 기억이나 요약에 걸쳐 **시간이 지나며 무엇이 변했는지**를 포착합니다.
 
@@ -287,6 +298,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ## ✂️ 메모리 북에 클립
 
+![텍스트 클립](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
+
+
 메모리 북에 클립은 빠른 “이것을 기억해줘” 메모를 위한 기능입니다. 채팅에서 중요한 텍스트를 선택하고, 플로팅 가위 버튼을 클릭하면 로어북 편집기를 먼저 열지 않고도 선택한 텍스트를 메모리 북의 글머리표로 저장할 수 있습니다.
 
 시간이 지나며 계속 업데이트되는 트래커가 필요하다면 대신 사이드 프롬프트를 사용하세요. 짧게 말하면: **클립 = 저장한 단일 사실, 사이드 프롬프트 = 계속 갱신되는 트래커.**
@@ -361,11 +375,13 @@ Seraphina Healed Me [STMB Clip]
 
 ### **자동 모드 (기본값)**
 
+![채팅 로어북 연결 예시](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+
+
 - **작동 방식:** 현재 채팅에 바인딩된 로어북을 자동으로 사용합니다.
 - **추천 대상:** 단순함과 속도를 원하는 경우. 대부분의 사용자는 이 모드로 시작하는 것이 좋습니다.
 - **사용법:** 캐릭터 또는 그룹 채팅의 `Chat Lorebooks` 드롭다운에서 로어북이 선택되어 있는지 확인하세요.
 
-![Chat lorebook binding example](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
 ### **로어북 자동 생성 모드**
 
@@ -392,6 +408,9 @@ Seraphina Healed Me [STMB Clip]
 ---
 
 ### 🎡 트래커 & 사이드 프롬프트
+
+![트래커와 사이드 프롬프트 찾는 위치](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+
 
 > 📘 Side Prompts에는 별도의 가이드가 있습니다: [Side Prompts Guide](side-prompts-ko.md). 세트, 매크로, 예시, 문제 해결은 이 문서를 참고하세요.
 > 🎡 정확한 클릭 경로가 필요하면 [Side Prompts 활성화 Scribe 안내](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ)를 참조하세요.
@@ -425,6 +444,9 @@ Side Prompts는 진행 중인 채팅 상태를 유지하기 위한 별도의 STM
 ---
 
 ## 🧹 압축
+
+![압축 메뉴를 여는 위치](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/compaction.png)
+
 
 압축(Compaction)은 STMB가 관리하는 로어북 항목을 더 토큰 효율적으로 다듬기 위한 검토 워크플로입니다. AI에게 기존 항목 하나를 다시 쓰게 한 뒤, 원본과 압축 초안을 나란히 보여줍니다. 사용자가 명시적으로 교체하기 전에는 아무것도 덮어쓰지 않습니다.
 
@@ -482,6 +504,9 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 
 ### 🧠 고급 사용자 지정을 위한 Regex(정규표현식) 통합
 
+![regex 구성](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
+
+
 - **텍스트 처리에 대한 완전한 제어:** Memory Books는 SillyTavern의 **Regex** 확장 기능과 통합되어 두 단계에서 강력한 텍스트 변환을 적용할 수 있습니다.
   1. **프롬프트 생성(Prompt Generation):** **User Input** 위치를 대상으로 하는 regex 스크립트를 만들어 AI에 보내는 프롬프트를 자동으로 수정합니다.
   2. **응답 파싱(Response Parsing):** **AI Output** 위치를 대상으로 하여 저장 전에 AI의 원시 응답을 정리, 재포맷 또는 표준화합니다.
@@ -493,6 +518,9 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 
 ## 👤 프로필 관리
 
+![프로필 관리](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
+
+
 - **프로필:** 각 프로필에는 API, 모델, 온도(Temperature), 프롬프트/프리셋, 제목 서식, 로어북 설정이 포함됩니다.
 - **가져오기/내보내기:** 프로필을 JSON으로 공유할 수 있습니다.
 - **프로필 생성:** 고급 옵션 팝업을 사용하여 새 프로필을 저장합니다.
@@ -503,7 +531,10 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 
 ## ⚙️ 설정 및 구성
 
-![Main settings panel](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+![기본 설정 패널 1](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile1.png)
+![기본 설정 패널 2](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile2.png)
+![기본 설정 패널 3](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile3.png)
+
 
 ### **글로벌 설정**
 
@@ -530,9 +561,11 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 - **Use regex (advanced):** STMB의 송신/수신 처리용 regex 선택 팝업을 활성화합니다.
 - **Memory Title Format:** 선택하거나 사용자 지정합니다. 아래를 참조하세요.
 
-![Profile configuration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **프로필 필드**
+
+![프로필 구성](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
+
 
 - **Name:** 표시 이름.
 - **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual 및 기타 지원 Provider.
@@ -548,6 +581,10 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 ---
 
 ## 🏷️ 제목 서식 (Title Formatting)
+
+![제목 형식](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformat.png)
+![제목 형식 목록](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+
 
 강력한 템플릿 시스템을 사용하여 로어북 항목의 제목을 사용자 지정하세요.
 
@@ -566,16 +603,21 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 
 ## 🧵 문맥 기억 (Context Memories)
 
+![문맥을 포함한 기억 생성](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+
+
 - 더 나은 연속성을 위해 **최대 7개의 이전 기억을 문맥으로 포함**합니다.
 - **토큰 추정치**는 정확성을 위해 문맥 기억을 포함하여 계산됩니다.
 - **고급 옵션**을 사용하면 단일 기억 생성 실행에 대해 프롬프트/프로필 동작을 일시적으로 오버라이드할 수 있습니다.
 
-![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 
 ---
 
 <a id="optional-job-queue-chat-top-bar-required"></a>
 ## 🧾 선택 사항인 작업 대기열 (Chat Top Bar 필요)
+
+![ST Memory Books 작업 대기열](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/queue.png)
+
 
 작업 대기열은 선택 사항이지만 강력한 기능입니다. Memory Books를 사용하는 데 반드시 필요하지는 않습니다.
 
@@ -592,13 +634,18 @@ STMB는 원본을 자동으로 교체하지 않습니다. 로어북 항목은 **
 
 Chat Top Bar가 설치되어 있지 않거나 활성화되어 있지 않아도 STMB는 정상적으로 작동합니다. 다만 작업 대기열 UI는 사용할 수 없습니다.
 
+
+![Chat Top Bar 설치 방법](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
+
 ---
 ## 🎨 시각적 피드백 & 접근성
+
+![모든 시각 상태를 보여주는 전체 장면 선택](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
+
 
 - **버튼 상태:**
   - 비활성, 활성, 유효한 선택, 장면 내부, 처리 중.
 
-![Complete scene selection showing all visual states](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
 - **접근성:**
   - 키보드 탐색, 포커스 표시기, ARIA 속성, 동작 줄이기, 모바일 친화적.
@@ -629,10 +676,15 @@ Chat Top Bar가 설치되어 있지 않거나 활성화되어 있지 않아도 S
 
 # 문제 해결 (Troubleshooting)
 
+![장면 중복 경고](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![장면 중복 허용](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap2.png)
+
+
 - **확장 기능 메뉴에서 Memory Books를 찾을 수 없습니다!**
   설정은 확장 기능 메뉴(입력창 왼쪽의 마술봉 🪄)에 있습니다. `Memory Books`를 찾으세요.
 
-![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+![STMB 설정 위치](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
 
 - **사용 가능하거나 선택된 로어북이 없음:**
   - 수동 모드에서는 메시지가 뜰 때 로어북을 선택하세요.
@@ -648,7 +700,6 @@ Chat Top Bar가 설치되어 있지 않거나 활성화되어 있지 않아도 S
 - **장면이 기존 기억과 겹침:**
   - 다른 범위를 선택하거나 설정에서 `Allow Scene Overlap`을 활성화하세요.
 
-![Scene overlap warning](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 
 - **AI가 유효한 기억 생성에 실패함:**
   - JSON 출력을 지원하는 모델을 사용하세요.
