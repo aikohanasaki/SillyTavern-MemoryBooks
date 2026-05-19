@@ -974,6 +974,6 @@
     "STMemoryBooks_Jobs_Lorebook": "Lorebook",
     "STMemoryBooks_Jobs_MemoryQueued": "Erinnerungs-Job eingereiht.",
     "STMemoryBooks_Jobs_ConsolidationQueued": "Konsolidierungs-Job eingereiht.",
-    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Info Bar ist deaktiviert oder nicht installiert. Die Job-Warteschlange von Memory Books benötigt Chat Info Bar. Bitte installiere und/oder aktiviere die Erweiterung, um die Job-Warteschlange zu verwenden. Dies ist nicht erforderlich, wenn du keine Job-Warteschlange verwenden möchtest.",
+    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar ist deaktiviert oder nicht installiert. Die Job-Warteschlange von Memory Books benötigt Chat Top Bar. Bitte installiere und/oder aktiviere die Erweiterung, um die Job-Warteschlange zu verwenden. Dies ist nicht erforderlich, wenn du keine Job-Warteschlange verwenden möchtest.",
     "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Ausblenden und diese Benachrichtigung nie wieder anzeigen."
 }

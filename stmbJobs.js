@@ -80,7 +80,7 @@ function showMissingTopInfoBarNotice() {
         <div class="stmb-jobs-topinfobar-notice">
             <p>${escapeHtml(tr(
                 'STMemoryBooks_Jobs_TopInfoBarMissingNotice',
-                'Chat Info Bar is either disabled or not installed. The Memory Books job queue function requires Chat Info Bar--please install and/or enable the extension to access the job queue function. This is not required if you do not want job queueing.',
+                'Chat Top Bar is either disabled or not installed. The Memory Books job queue function requires Chat Top Bar--please install and/or enable the extension to access the job queue function. This is not required if you do not want job queueing.',
             ))}</p>
             <label class="checkbox_label stmb-jobs-topinfobar-dismiss">
                 <input type="checkbox" id="stmb-jobs-dismiss-topinfobar-notice">

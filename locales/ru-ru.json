@@ -969,6 +969,6 @@
     "STMemoryBooks_Jobs_Lorebook": "Лорбук",
     "STMemoryBooks_Jobs_MemoryQueued": "Задача памяти добавлена в очередь.",
     "STMemoryBooks_Jobs_ConsolidationQueued": "Задача консолидации добавлена в очередь.",
-    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Info Bar отключен или не установлен. Очередь задач Книг Памяти требует Chat Info Bar. Установите и/или включите расширение, чтобы получить доступ к очереди задач. Это не требуется, если вы не хотите использовать очередь задач.",
+    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar отключен или не установлен. Очередь задач Книг Памяти требует Chat Top Bar. Установите и/или включите расширение, чтобы получить доступ к очереди задач. Это не требуется, если вы не хотите использовать очередь задач.",
     "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Скрыть и больше не показывать это уведомление."
 }
