@@ -41,6 +41,7 @@ import {
   addMemoryToLorebook,
   DEFAULT_LOREBOOK_ENTRY_SETTINGS,
   getDefaultTitleFormats,
+  getAutoHideRanges,
   identifyMemoryEntries,
   getRangeFromMemoryEntry,
   normalizeLorebookEntrySettings,
@@ -308,6 +309,7 @@ export { currentProfile };
 const MODULE_NAME = "STMemoryBooks";
 
 let hasBeenInitialized = false;
+const deferredQueuedAutoHideRanges = new Map();
 
 // Supported Chat Completion sources
 const SUPPORTED_COMPLETION_SOURCES = [
@@ -558,6 +560,9 @@ function handleChatChanged() {
     try {
       // Full update needed for chat changes
       processExistingMessages();
+      flushDeferredQueuedAutoHideRanges().catch((error) => {
+        console.warn("STMemoryBooks: deferred auto-hide flush failed:", error);
+      });
     } catch (error) {
       console.error(
         translate(
@@ -2487,6 +2492,100 @@ function findOverlappingMemoryInLorebook(lorebookData, sceneData) {
   return null;
 }
 
+function getStmbChatKeySafe(chatRef = null) {
+  try {
+    return String(getStmbChatKey(chatRef)).trim();
+  } catch {
+    return "";
+  }
+}
+
+function isStmbJobChatCurrent(chatRef) {
+  const targetKey = getStmbChatKeySafe(chatRef);
+  const currentKey = getStmbChatKeySafe();
+  return Boolean(targetKey && currentKey && targetKey === currentKey);
+}
+
+function normalizeAutoHideRanges(ranges) {
+  return (Array.isArray(ranges) ? ranges : [])
+    .map((range) => ({
+      start: Math.trunc(Number(range?.start)),
+      end: Math.trunc(Number(range?.end)),
+    }))
+    .filter((range) => Number.isInteger(range.start) && Number.isInteger(range.end) && range.start >= 0 && range.end >= range.start);
+}
+
+function queueDeferredQueuedAutoHideRanges(chatRef, ranges) {
+  const chatKey = getStmbChatKeySafe(chatRef);
+  const safeRanges = normalizeAutoHideRanges(ranges);
+  if (!chatKey || safeRanges.length === 0) return;
+
+  const pending = deferredQueuedAutoHideRanges.get(chatKey) || [];
+  for (const range of safeRanges) {
+    if (!pending.some((existing) => existing.start === range.start && existing.end === range.end)) {
+      pending.push(range);
+    }
+  }
+  deferredQueuedAutoHideRanges.set(chatKey, pending);
+}
+
+async function runAutoHideRangesForCurrentChat(ranges) {
+  for (const range of normalizeAutoHideRanges(ranges)) {
+    await executeSlashCommands(`/hide ${range.start}-${range.end}`);
+  }
+}
+
+async function applyQueuedAutoHideRanges(chatRef, ranges) {
+  const safeRanges = normalizeAutoHideRanges(ranges);
+  if (safeRanges.length === 0) return;
+
+  if (!isStmbJobChatCurrent(chatRef)) {
+    queueDeferredQueuedAutoHideRanges(chatRef, safeRanges);
+    return;
+  }
+
+  try {
+    await runAutoHideRangesForCurrentChat(safeRanges);
+  } catch (error) {
+    console.warn("STMemoryBooks: queued auto-hide failed:", error);
+  }
+}
+
+async function flushDeferredQueuedAutoHideRanges() {
+  const chatKey = getStmbChatKeySafe();
+  const ranges = chatKey ? deferredQueuedAutoHideRanges.get(chatKey) : null;
+  if (!ranges?.length) return;
+
+  try {
+    await runAutoHideRangesForCurrentChat(ranges);
+    deferredQueuedAutoHideRanges.delete(chatKey);
+  } catch (error) {
+    console.warn("STMemoryBooks: deferred queued auto-hide failed:", error);
+  }
+}
+
+async function applyQueuedMemoryAutoHide(job, memoryResult, settings) {
+  const autoHidePlan = getAutoHideRanges(memoryResult, settings?.moduleSettings || {});
+  if (autoHidePlan.mode === "none") return;
+
+  if (autoHidePlan.invalidRange) {
+    console.warn(
+      "STMemoryBooks: queued auto-hide skipped - invalid scene range:",
+      autoHidePlan.rawRange,
+    );
+    toastr.warning(
+      translate(
+        "Auto-hide skipped: invalid scene range metadata",
+        "addlore.toast.autohideInvalidRange",
+      ),
+      translate("STMemoryBooks", "addlore.toast.title"),
+    );
+    return;
+  }
+
+  await applyQueuedAutoHideRanges(job.chatRef, autoHidePlan.ranges);
+}
+
 async function executeQueuedMemoryJob(job, jobContext) {
   const payload = job?.payload || {};
   const sceneData = payload.sceneData;
@@ -2569,6 +2668,8 @@ async function executeQueuedMemoryJob(job, jobContext) {
     }
   });
 
+  jobContext.throwIfCancelled();
+  await applyQueuedMemoryAutoHide(job, finalMemoryResult, settings);
   jobContext.throwIfCancelled();
   await updateHighestMemoryProcessedForChatRef(job.chatRef, sceneData.sceneEnd);
   jobContext.setResult({

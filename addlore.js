@@ -82,6 +82,110 @@ function getAutoHideMode(moduleSettings = {}) {
     }
 }
 
+export function getAutoHideRanges(memoryResult, moduleSettings = {}) {
+    const autoHideMode = getAutoHideMode(moduleSettings);
+    if (autoHideMode === 'none') {
+        return {
+            mode: autoHideMode,
+            ranges: [],
+            invalidRange: false,
+            rawRange: memoryResult?.metadata?.sceneRange,
+        };
+    }
+
+    const sceneData = parseSceneRange(memoryResult?.metadata?.sceneRange);
+    if (!sceneData) {
+        return {
+            mode: autoHideMode,
+            ranges: [],
+            invalidRange: true,
+            rawRange: memoryResult?.metadata?.sceneRange,
+        };
+    }
+
+    const unhiddenCount = moduleSettings.unhiddenEntriesCount ?? 2;
+    const { start: sceneStart, end: sceneEnd } = sceneData;
+
+    if (autoHideMode === 'all') {
+        if (unhiddenCount === 0) {
+            return {
+                mode: autoHideMode,
+                ranges: [{
+                    start: 0,
+                    end: sceneEnd,
+                    contextKey: 'addlore.hideCommand.allComplete',
+                    contextFallback: 'all mode - complete',
+                }],
+                invalidRange: false,
+                rawRange: memoryResult?.metadata?.sceneRange,
+            };
+        }
+
+        const hideEndIndex = sceneEnd - unhiddenCount;
+        return {
+            mode: autoHideMode,
+            ranges: hideEndIndex >= 0
+                ? [{
+                    start: 0,
+                    end: hideEndIndex,
+                    contextKey: 'addlore.hideCommand.allPartial',
+                    contextFallback: 'all mode - partial',
+                }]
+                : [],
+            invalidRange: false,
+            rawRange: memoryResult?.metadata?.sceneRange,
+        };
+    }
+
+    if (autoHideMode === 'last') {
+        const sceneSize = sceneEnd - sceneStart + 1;
+        if (unhiddenCount >= sceneSize) {
+            return {
+                mode: autoHideMode,
+                ranges: [],
+                invalidRange: false,
+                rawRange: memoryResult?.metadata?.sceneRange,
+            };
+        }
+
+        if (unhiddenCount === 0) {
+            return {
+                mode: autoHideMode,
+                ranges: [{
+                    start: sceneStart,
+                    end: sceneEnd,
+                    contextKey: 'addlore.hideCommand.lastHideAll',
+                    contextFallback: 'last mode - hide all',
+                }],
+                invalidRange: false,
+                rawRange: memoryResult?.metadata?.sceneRange,
+            };
+        }
+
+        const hideEnd = sceneEnd - unhiddenCount;
+        return {
+            mode: autoHideMode,
+            ranges: hideEnd >= sceneStart
+                ? [{
+                    start: sceneStart,
+                    end: hideEnd,
+                    contextKey: 'addlore.hideCommand.lastPartial',
+                    contextFallback: 'last mode - partial',
+                }]
+                : [],
+            invalidRange: false,
+            rawRange: memoryResult?.metadata?.sceneRange,
+        };
+    }
+
+    return {
+        mode: autoHideMode,
+        ranges: [],
+        invalidRange: false,
+        rawRange: memoryResult?.metadata?.sceneRange,
+    };
+}
+
 // Default title formats that users can select from
 const DEFAULT_TITLE_FORMATS = [
     '[000] - {{title}} ({{profile}})', // i18n('addlore.titleFormats.0', '[000] - {{title}} ({{profile}})')
@@ -438,56 +542,21 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
         }
         
         // Execute auto-hide commands if enabled
-        const autoHideMode = getAutoHideMode(settings.moduleSettings);
+        const autoHidePlan = getAutoHideRanges(memoryResult, settings.moduleSettings);
 
-        if (options.autoHide !== false && autoHideMode !== 'none') {
-            const unhiddenCount = settings.moduleSettings.unhiddenEntriesCount ?? 2;
-
-            if (autoHideMode === 'all') {
-                const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
-
-                if (!sceneData) {
-                    console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: memoryResult.metadata?.sceneRange }));
-                    toastr.warning(
-                        i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
-                        i18n('addlore.toast.title', 'STMemoryBooks')
+        if (options.autoHide !== false && autoHidePlan.mode !== 'none') {
+            if (autoHidePlan.invalidRange) {
+                console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: autoHidePlan.rawRange }));
+                toastr.warning(
+                    i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
+                    i18n('addlore.toast.title', 'STMemoryBooks')
+                );
+            } else {
+                for (const range of autoHidePlan.ranges) {
+                    await safeExecuteHideCommand(
+                        `/hide ${range.start}-${range.end}`,
+                        i18n(range.contextKey, range.contextFallback),
                     );
-                } else {
-                    const { start: sceneStart, end: sceneEnd } = sceneData;
-
-                    if (unhiddenCount === 0) {
-                        await safeExecuteHideCommand(`/hide 0-${sceneEnd}`, i18n('addlore.hideCommand.allComplete', 'all mode - complete'));
-                    } else {
-                        const hideEndIndex = sceneEnd - unhiddenCount;
-                        if (hideEndIndex >= 0) {
-                            await safeExecuteHideCommand(`/hide 0-${hideEndIndex}`, i18n('addlore.hideCommand.allPartial', 'all mode - partial'));
-                        }
-                        // Auto-hide silently skipped if not enough messages
-                    }
-                }
-            } else if (autoHideMode === 'last') {
-                const sceneData = parseSceneRange(memoryResult.metadata?.sceneRange);
-                if (!sceneData) {
-                    console.warn(i18n('addlore.warn.autohideSkippedInvalidRange', `${MODULE_NAME}: Auto-hide skipped - invalid scene range: "{{range}}"`, { range: memoryResult.metadata?.sceneRange }));
-                    toastr.warning(
-                        i18n('addlore.toast.autohideInvalidRange', 'Auto-hide skipped: invalid scene range metadata'),
-                        i18n('addlore.toast.title', 'STMemoryBooks')
-                    );
-                } else {
-                    const { start: sceneStart, end: sceneEnd } = sceneData;
-                    const sceneSize = sceneEnd - sceneStart + 1;
-
-                    if (unhiddenCount >= sceneSize) {
-                        // No hiding needed - want to keep more messages than scene contains
-                    } else if (unhiddenCount === 0) {
-                        await safeExecuteHideCommand(`/hide ${sceneStart}-${sceneEnd}`, i18n('addlore.hideCommand.lastHideAll', 'last mode - hide all'));
-                    } else {
-                        const hideEnd = sceneEnd - unhiddenCount;
-                        if (hideEnd >= sceneStart) {
-                            await safeExecuteHideCommand(`/hide ${sceneStart}-${hideEnd}`, i18n('addlore.hideCommand.lastPartial', 'last mode - partial'));
-                        }
-                        // Auto-hide silently skipped if not enough scene messages
-                    }
                 }
             }
         }
