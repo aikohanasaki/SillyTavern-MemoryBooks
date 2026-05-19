@@ -157,19 +157,27 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 1. **Установка и загрузка**
 
+![Дождитесь появления этих кнопок](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
+
+
 - Запустите SillyTavern и выберите персонажа или групповой чат.
 - Дождитесь появления кнопок-шевронов (► ◄) на сообщениях чата. Это может занять до 10 секунд.
 
-![Wait for these buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **Отметьте сцену**
+
+![Нажатая кнопка начала](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+
+![Кнопки в середине сцены](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
+
+![Нажатая кнопка конца](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png)
+
 
 - Нажмите ► на первом сообщении сцены.
 - Нажмите ◄ на последнем сообщении.
 
 Ниже показаны примеры того, как выглядят кнопки-шевроны после нажатия. Цвета могут отличаться в зависимости от CSS-темы.
 
-![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Создайте воспоминание**
 
@@ -197,6 +205,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 ---
 
 ### 🌈 Консолидация сводок
+
+![Кнопка консолидации](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-consolidate.png)
+
 
 Консолидация сводок фиксирует, **что изменилось со временем** в нескольких воспоминаниях или сводках.
 
@@ -288,6 +299,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ## ✂️ Clip to Memory Book
 
+![Клип текста](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
+
+
 **Clip to Memory Book** нужен для быстрых заметок «запомни это». Выделите важный текст в чате, нажмите плавающую кнопку с ножницами и сохраните выбранный текст как пункт в Memory Book без предварительного открытия редактора lorebook.
 
 Если вам нужен постоянный трекер, который обновляется со временем, используйте Side Prompt. Короткое правило: **Clip = один сохранённый факт; Side Prompt = постоянный трекер.**
@@ -360,11 +374,13 @@ Seraphina Healed Me [STMB Clip]
 
 ### **Автоматический режим (по умолчанию)**
 
+![Пример привязки лорбука к чату](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+
+
 - **Как это работает:** автоматически использует лорбук, привязанный к текущему чату.
 - **Лучше всего для:** простоты и скорости. Большинству пользователей стоит начинать отсюда.
 - **Как использовать:** убедитесь, что лорбук выбран в выпадающем меню `Chat Lorebooks` для вашего персонажа или группового чата.
 
-![Chat lorebook binding example](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
 ### **Режим авто-создания лорбука**
 
@@ -391,6 +407,9 @@ Seraphina Healed Me [STMB Clip]
 ---
 
 ### 🎡 Трекеры и Side Prompts
+
+![Где найти трекеры и Side Prompts](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+
 
 > 📘 Для Side Prompts есть отдельное руководство: [Side Prompts Guide](side-prompts-ru.md). Используйте его для Sets, макросов, примеров и устранения неполадок.
 > 🎡 Нужен точный путь по интерфейсу? См. [Scribe-инструкцию по включению Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
@@ -426,6 +445,9 @@ Side Prompts — это отдельные запуски промтов STMB д
 ---
 
 ### 🧹 Сжатие
+
+![Нажмите здесь, чтобы открыть меню сжатия](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/compaction.png)
+
 
 Сжатие — это процесс проверки, который помогает сделать записи лорбука, которыми управляет STMB, более эффективными по токенам. STMB просит ИИ переписать одну существующую запись, а затем показывает исходный текст и сжатый черновик до замены.
 
@@ -483,6 +505,9 @@ STMB **не** заменяет оригинал автоматически. За
 
 ### 🧠 Интеграция Regex для продвинутой настройки
 
+![Настройка regex](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
+
+
 - **Полный контроль над обработкой текста:** Memory Books интегрируется с расширением SillyTavern **Regex**, позволяя применять текстовые преобразования на двух ключевых этапах:
   1. **Генерация промта:** автоматически изменять промты, отправляемые ИИ, создавая regex-скрипты с размещением **User Input**.
   2. **Парсинг ответа:** очищать, переформатировать или стандартизировать сырой ответ ИИ перед сохранением, используя размещение **AI Output**.
@@ -494,6 +519,9 @@ STMB **не** заменяет оригинал автоматически. За
 
 ## 👤 Управление профилями
 
+![Управление профилями](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
+
+
 - **Профили:** каждый профиль включает API, модель, temperature, промт/пресет, формат заголовка и настройки лорбука.
 - **Import/Export:** профилями можно делиться в JSON.
 - **Создание профиля:** используйте всплывающее окно advanced options для сохранения новых профилей.
@@ -504,7 +532,10 @@ STMB **не** заменяет оригинал автоматически. За
 
 ## ⚙️ Настройки и конфигурация
 
-![Main settings panel](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+![Основная панель настроек 1](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile1.png)
+![Основная панель настроек 2](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile2.png)
+![Основная панель настроек 3](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile3.png)
+
 
 ### **Глобальные настройки**
 
@@ -531,9 +562,11 @@ STMB **не** заменяет оригинал автоматически. За
 - **Use regex (advanced):** включает STMB popup выбора Regex для исходящей/входящей обработки.
 - **Memory Title Format:** выбрать или настроить формат заголовка (см. ниже).
 
-![Profile configuration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Поля профиля**
+
+![Конфигурация профиля](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
+
 
 - **Name:** отображаемое имя.
 - **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual и другие поддерживаемые провайдеры.
@@ -549,6 +582,10 @@ STMB **не** заменяет оригинал автоматически. За
 ---
 
 ## 🏷️ Форматирование заголовков
+
+![Формат заголовка](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformat.png)
+![Форматы заголовков](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+
 
 Настраивайте заголовки записей лорбука с помощью мощной системы шаблонов.
 
@@ -567,16 +604,21 @@ STMB **не** заменяет оригинал автоматически. За
 
 ## 🧵 Контекстные воспоминания
 
+![Генерация памяти с контекстом](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+
+
 - **Можно включить до 7 предыдущих воспоминаний** как контекст для лучшей непрерывности.
 - **Оценка токенов** включает контекстные воспоминания для большей точности.
 - **Advanced options** позволяют временно переопределить prompt/profile behavior для одного запуска создания воспоминания.
 
-![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 
 ---
 
 <a id="optional-job-queue-chat-top-bar-required"></a>
 ## 🧾 Опциональная очередь задач (требуется Chat Top Bar)
+
+![Очередь задач ST Memory Books](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/queue.png)
+
 
 Очередь задач необязательна, но это мощная функция. Она не нужна для обычного использования Memory Books.
 
@@ -593,12 +635,17 @@ STMB **не** заменяет оригинал автоматически. За
 
 Если Chat Top Bar не установлен или не включён, STMB продолжит работать обычным образом. Просто интерфейс очереди задач будет недоступен.
 
+
+![Как установить Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
+
 ---
 ## 🎨 Визуальная обратная связь и доступность
 
+![Полный выбор сцены со всеми визуальными состояниями](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
+
+
 - **Состояния кнопок:** inactive, active, valid selection, in-scene, processing.
 
-![Complete scene selection showing all visual states](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
 - **Доступность:** навигация с клавиатуры, индикаторы фокуса, ARIA-атрибуты, reduced motion, адаптация для мобильных устройств.
 
@@ -628,10 +675,15 @@ STMB **не** заменяет оригинал автоматически. За
 
 # Troubleshooting
 
+![Предупреждение о пересечении сцен](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![Включить пересечение сцен](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap2.png)
+
+
 - **Я не могу найти Memory Books в меню Extensions!**  
   Настройки находятся в меню Extensions (волшебная палочка 🪄 слева от поля ввода). Ищите `Memory Books`.
 
-![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+![Расположение настроек STMB](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
+
 
 - **Лорбук недоступен или не выбран:**
   - В Manual Mode выберите лорбук при запросе.
@@ -647,7 +699,6 @@ STMB **не** заменяет оригинал автоматически. За
 - **Сцена перекрывается с существующим воспоминанием:**
   - Выберите другой диапазон или включите `Allow scene overlap` в настройках.
 
-![Scene overlap warning](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 
 - **ИИ не смог создать валидное воспоминание:**
   - Используйте модель, которая поддерживает JSON output.

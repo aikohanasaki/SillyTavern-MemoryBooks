@@ -636,6 +636,7 @@ If the entries are being triggered and are being sent to the AI, you should prob
 
 - **I can't find Memory Books in the Extensions menu!**
 Settings are located in the Extensions menu (the magic wand 🪄 to the left of your input box). Look for "Memory Books".
+
 ![Location of STMB settings](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
 
 - **No lorebook available or selected:**

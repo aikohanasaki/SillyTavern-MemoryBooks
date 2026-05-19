@@ -159,19 +159,27 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 1. **Installer & charger**
 
+![Attendez l’apparition de ces boutons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
+
+
 - Chargez SillyTavern et sélectionnez un personnage ou une discussion de groupe.
 - Attendez que les boutons chevrons (► ◄) apparaissent sur les messages du chat. Cela peut prendre jusqu’à 10 secondes.
 
-![Attendez l’apparition de ces boutons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **Marquer une scène**
+
+![Bouton de début sélectionné](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+
+![Boutons au milieu de la scène](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
+
+![Bouton de fin sélectionné](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png)
+
 
 - Cliquez sur ► sur le premier message de votre scène.
 - Cliquez sur ◄ sur le dernier message.
 
 Voici quelques exemples de l’apparence des boutons chevrons après clic. Les couleurs peuvent varier selon votre thème CSS.
 
-![Retour visuel montrant la sélection de scène](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Créer une mémoire**
 
@@ -199,6 +207,9 @@ C’est le type de mémoire standard et le plus couramment utilisé.
 ---
 
 ### 🌈 Consolidation des résumés
+
+![Bouton de consolidation](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-consolidate.png)
+
 
 La consolidation des résumés capture **ce qui a changé au fil du temps** à travers plusieurs mémoires ou résumés.
 
@@ -290,6 +301,9 @@ Tous les prompts et presets **doivent** demander à l’IA de ne renvoyer que du
 
 ## ✂️ Épingler dans le Memory Book
 
+![Texte épinglé](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
+
+
 Utilisez **Épingler dans le Memory Book** quand vous voulez enregistrer une ligne ou un fait important sans créer une mémoire de scène complète. Surlignez du texte dans le chat, cliquez sur le bouton flottant avec les ciseaux, puis choisissez une entrée de clip existante ou créez-en une nouvelle.
 
 Vous ne savez pas si cela doit être un Clip ou un Side Prompt ? Consultez [Clips vs Side Prompts](USER_GUIDE-FR.md#-clips-vs-side-prompts).
@@ -363,11 +377,13 @@ Exemple : `/stmb-catchup interval:30 start:0 end:300`
 
 ### **Mode automatique (par défaut)**
 
+![Exemple de liaison de lorebook au chat](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+
+
 - **Comment ça marche :** utilise automatiquement le lorebook lié à votre chat actuel.
 - **Idéal pour :** simplicité et rapidité. La plupart des utilisateurs devraient commencer ici.
 - **Pour l’utiliser :** assurez-vous qu’un lorebook est sélectionné dans le menu déroulant “Chat Lorebooks” pour votre personnage ou votre discussion de groupe.
 
-![Exemple de liaison de lorebook au chat](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
 ### **Mode création automatique de lorebook**
 
@@ -394,6 +410,9 @@ Exemple : `/stmb-catchup interval:30 start:0 end:300`
 ---
 
 ### 🎡 Trackers & Side Prompts
+
+![Où trouver les Trackers et Side Prompts](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+
 
 > 📘 Les Side Prompts ont leur propre guide : [Guide des Side Prompts](side-prompts-fr.md). Utilisez-le pour les sets, les macros, les exemples et le dépannage.
 > 🎡 Besoin du chemin exact dans l’interface ? Consultez le [guide Scribe pour activer les Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
@@ -429,6 +448,9 @@ Les Side Prompts sont des exécutions de prompt STMB séparées, utilisées pour
 ---
 
 ## 🧹 Compaction
+
+![Cliquez ici pour le menu de compaction](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/compaction.png)
+
 
 La compaction est un flux de relecture qui sert à rendre les entrées de lorebook gérées par STMB plus économes en tokens. Elle demande à l’IA de réécrire une entrée existante, puis affiche l’original et le brouillon compacté avant tout remplacement.
 
@@ -486,6 +508,9 @@ Utilisez **Rétablir la valeur par défaut** dans l’éditeur de prompt si vous
 
 ### 🧠 Intégration Regex pour personnalisation avancée
 
+![Configurer regex](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
+
+
 - **Contrôle total sur le traitement du texte :** Memory Books s’intègre avec l’extension **Regex** de SillyTavern, ce qui permet d’appliquer de puissantes transformations de texte à deux étapes clés :
   1. **Génération du prompt :** modifiez automatiquement les prompts envoyés à l’IA en créant des scripts regex ciblant l’emplacement **User Input**.
   2. **Analyse de la réponse :** nettoyez, reformatez ou standardisez la réponse brute de l’IA avant son enregistrement en ciblant l’emplacement **AI Output**.
@@ -497,6 +522,9 @@ Utilisez **Rétablir la valeur par défaut** dans l’éditeur de prompt si vous
 
 ## 👤 Gestion des profils
 
+![Gestion des profils](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
+
+
 - **Profils :** chaque profil inclut API, modèle, température, prompt/preset, format de titre et paramètres de lorebook.
 - **Import/Export :** partagez les profils au format JSON.
 - **Création de profil :** utilisez la popup d’options avancées pour enregistrer de nouveaux profils.
@@ -507,7 +535,10 @@ Utilisez **Rétablir la valeur par défaut** dans l’éditeur de prompt si vous
 
 ## ⚙️ Paramètres & configuration
 
-![Panneau principal des paramètres](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+![Panneau principal des paramètres 1](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile1.png)
+![Panneau principal des paramètres 2](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile2.png)
+![Panneau principal des paramètres 3](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile3.png)
+
 
 ### **Paramètres globaux**
 
@@ -534,9 +565,11 @@ Utilisez **Rétablir la valeur par défaut** dans l’éditeur de prompt si vous
 - **Use regex (advanced) :** active la fenêtre de sélection Regex de STMB pour le traitement sortant/entrant.
 - **Memory Title Format :** choisissez ou personnalisez le format ; voir ci-dessous.
 
-![Configuration de profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Champs du profil**
+
+![Configuration de profil](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
+
 
 - **Name :** nom d’affichage.
 - **API/Provider :** `Current SillyTavern Settings`, openai, claude, custom, full manual et autres fournisseurs pris en charge.
@@ -552,6 +585,10 @@ Utilisez **Rétablir la valeur par défaut** dans l’éditeur de prompt si vous
 ---
 
 ## 🏷️ Formatage des titres
+
+![Format de titre](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformat.png)
+![Formats de titre](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+
 
 Personnalisez les titres de vos entrées de lorebook avec un système de modèles puissant.
 
@@ -570,16 +607,21 @@ Personnalisez les titres de vos entrées de lorebook avec un système de modèle
 
 ## 🧵 Mémoires contextuelles
 
+![Génération de mémoire avec contexte](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+
+
 - **Inclure jusqu’à 7 mémoires précédentes** comme contexte pour une meilleure continuité.
 - **L’estimation des tokens** inclut les mémoires contextuelles pour plus de précision.
 - **Les options avancées** permettent de surcharger temporairement le comportement prompt/profil pour une seule génération de mémoire.
 
-![Génération de mémoire avec contexte](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 
 ---
 
 <a id="optional-job-queue-chat-top-bar-required"></a>
 ## 🧾 File d’attente des tâches optionnelle (Chat Top Bar requis)
+
+![File d’attente des tâches ST Memory Books](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/queue.png)
+
 
 La file d’attente des tâches est optionnelle, mais puissante. Vous n’en avez pas besoin pour utiliser Memory Books.
 
@@ -596,13 +638,18 @@ La file peut afficher l’état des tâches, vous permettre d’annuler les tâc
 
 Si Chat Top Bar n’est pas installé ou activé, STMB fonctionne toujours normalement. Vous n’aurez simplement pas l’interface de file d’attente des tâches.
 
+
+![Comment installer Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
+
 ---
 ## 🎨 Retour visuel & accessibilité
+
+![Sélection de scène complète montrant tous les états visuels](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
+
 
 - **États des boutons :**
   - Inactif, actif, sélection valide, dans la scène, traitement en cours.
 
-![Sélection de scène complète montrant tous les états visuels](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
 - **Accessibilité :**
   - Navigation au clavier, indicateurs de focus, attributs ARIA, mouvement réduit et compatibilité mobile.
@@ -633,8 +680,13 @@ Si les entrées se déclenchent et sont envoyées à l’IA, vous devrez probabl
 
 # Dépannage
 
+![Avertissement de chevauchement de scène](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![Activer le chevauchement de scène](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap2.png)
+
+
 - **Je ne trouve pas Memory Books dans le menu Extensions !**
   Les paramètres se trouvent dans le menu Extensions (la baguette magique 🪄 à gauche de votre zone de saisie). Cherchez “Memory Books”.
+
 
 ![Emplacement des paramètres STMB](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
 
@@ -652,7 +704,6 @@ Si les entrées se déclenchent et sont envoyées à l’IA, vous devrez probabl
 - **La scène chevauche une mémoire existante :**
   - Choisissez une plage différente ou activez “Allow Scene Overlap” dans les paramètres.
 
-![Avertissement de chevauchement de scène](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
 
 - **L’IA n’a pas réussi à générer une mémoire valide :**
   - Utilisez un modèle qui prend en charge la sortie JSON.

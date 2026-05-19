@@ -159,19 +159,27 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 ### 1. **Installieren & Laden**
 
+![Auf diese Schaltflächen warten](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
+
+
 - Laden Sie SillyTavern und wählen Sie einen Charakter oder Gruppenchat aus.
 - Warten Sie, bis die Chevron-Schaltflächen (► ◄) an den Chat-Nachrichten erscheinen (kann bis zu 10 Sekunden dauern).
 
-![Auf diese Schaltflächen warten](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/startup.png)
 
 ### 2. **Eine Szene markieren**
+
+![Angeklickte Start-Schaltfläche](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+
+![Schaltflächen innerhalb der Szene](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
+
+![Angeklickte End-Schaltfläche](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png)
+
 
 - Klicken Sie auf ► bei der ersten Nachricht Ihrer Szene.
 - Klicken Sie auf ◄ bei der letzten Nachricht.
 
 Unten sehen Sie Beispiele dafür, wie die Chevron-Schaltflächen aussehen, wenn sie angeklickt wurden. Ihre Farben können je nach CSS-Theme abweichen!
 
-![Visuelles Feedback mit Szenenauswahl](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ### 3. **Eine Erinnerung erstellen**
 
@@ -199,6 +207,9 @@ Dies ist der Standard- und am häufigsten verwendete Erinnerungstyp.
 ---
 
 ### 🌈 Zusammenfassungs-Konsolidierung
+
+![Konsolidieren-Schaltfläche](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-consolidate.png)
+
 
 Zusammenfassungs-Konsolidierung erfasst, **was sich im Laufe der Zeit verändert hat**, über mehrere Erinnerungen oder Zusammenfassungen hinweg.
 
@@ -290,6 +301,9 @@ Alle Prompts und Presets **müssen** die KI anweisen, nur gültiges JSON zurück
 
 ## ✂️ In Memory Book clippen
 
+![Text clippen](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
+
+
 Verwende **In Memory Book clippen**, wenn du eine einzelne wichtige Zeile oder einen einzelnen Fakt speichern willst, ohne eine vollständige Szenen-Erinnerung zu erstellen. Markiere Text im Chat, klicke auf den schwebenden Scheren-Button und wähle dann einen bestehenden Clip-Eintrag aus oder erstelle einen neuen.
 
 Nicht sicher, ob es ein Clip oder ein Side-Prompt sein sollte? Siehe [Clips vs. Side-Prompts](USER_GUIDE-DE.md#-clips-vs-side-prompts).
@@ -363,11 +377,13 @@ Beispiel: `/stmb-catchup interval:30 start:0 end:300`
 
 ### **Automatischer Modus (Standard)**
 
+![Beispiel für Chat-Lorebook-Bindung](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
+
+
 - **Wie es funktioniert:** Verwendet automatisch das Lorebook, das an Ihren aktuellen Chat gebunden ist.
 - **Am besten für:** Einfachheit und Geschwindigkeit. Die meisten Benutzer sollten hiermit beginnen.
 - **Verwendung:** Stellen Sie sicher, dass im Dropdown-Menü „Chat Lorebooks“ für Ihren Charakter oder Gruppenchat ein Lorebook ausgewählt ist.
 
-![Beispiel für Chat-Lorebook-Bindung](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/chatlorebook.png)
 
 ### **Lorebook automatisch erstellen**
 
@@ -394,6 +410,9 @@ Beispiel: `/stmb-catchup interval:30 start:0 end:300`
 ---
 
 ### 🎡 Tracker & Side-Prompts
+
+![Wo Tracker und Side-Prompts zu finden sind](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+
 
 > 📘 Side-Prompts haben eine eigene Anleitung: [Side-Prompts Guide](side-prompts-de.md). Verwenden Sie diese für Sets, Makros, Beispiele und Fehlerbehebung.
 > 🎡 Brauchen Sie den genauen Klickpfad? Siehe die [Scribe-Anleitung zum Aktivieren von Side-Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
@@ -429,6 +448,9 @@ Side-Prompts sind separate STMB-Prompt-Läufe, die den laufenden Chat-Zustand pf
 ---
 
 ## 🧹 Kompaktierung
+
+![Hier klicken für das Kompaktierungsmenü](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/compaction.png)
+
 
 Die **Kompaktierung** ist ein Prüf-Workflow, mit dem STMB-verwaltete Lorebook-Einträge token-effizienter gemacht werden können. STMB bittet die KI, einen bestehenden Eintrag umzuschreiben, und zeigt danach **Originalinhalt** und **Kompaktierter Entwurf** an, bevor irgendetwas ersetzt wird.
 
@@ -486,6 +508,9 @@ Verwenden Sie **Auf Standard zurücksetzen** im Prompt-Editor, wenn Sie den eing
 
 ### 🧠 Regex-Integration für fortgeschrittene Anpassung
 
+![Regex konfigurieren](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
+
+
 - **Volle Kontrolle über Textverarbeitung:** Memory Books integriert sich mit der **Regex**-Erweiterung von SillyTavern, was leistungsstarke Texttransformationen in zwei Schlüsselphasen ermöglicht:
   1. **Prompt-Generierung:** Ändern Sie automatisch die an die KI gesendeten Prompts, indem Sie Regex-Skripte erstellen, die auf die Platzierung **User Input** abzielen.
   2. **Antwort-Parsing:** Bereinigen, neu formatieren oder standardisieren Sie die rohe Antwort der KI, bevor sie gespeichert wird, indem Sie auf die Platzierung **AI Output** abzielen.
@@ -497,6 +522,9 @@ Verwenden Sie **Auf Standard zurücksetzen** im Prompt-Editor, wenn Sie den eing
 
 ## 👤 Profilverwaltung
 
+![Profilverwaltung](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
+
+
 - **Profile:** Jedes Profil enthält Einstellungen für API, Modell, Temperatur, Prompt/Preset, Titelformat und Lorebook.
 - **Import/Export:** Profile als JSON teilen.
 - **Profil-Erstellung:** Verwenden Sie das Popup für erweiterte Optionen, um neue Profile zu speichern.
@@ -507,7 +535,10 @@ Verwenden Sie **Auf Standard zurücksetzen** im Prompt-Editor, wenn Sie den eing
 
 ## ⚙️ Einstellungen & Konfiguration
 
-![Haupteinstellungsbereich](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+![Haupteinstellungsbereich 1](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile1.png)
+![Haupteinstellungsbereich 2](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile2.png)
+![Haupteinstellungsbereich 3](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile3.png)
+
 
 ### **Globale Einstellungen**
 
@@ -534,9 +565,11 @@ Verwenden Sie **Auf Standard zurücksetzen** im Prompt-Editor, wenn Sie den eing
 - **Use regex (advanced):** Aktiviert das STMB-Regex-Auswahl-Popup für ausgehende/eingehende Verarbeitung.
 - **Memory Title Format:** Wählen oder anpassen (siehe unten).
 
-![Profilkonfiguration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
 
 ### **Profil-Felder**
+
+![Profilkonfiguration](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Profile.png)
+
 
 - **Name:** Anzeigename.
 - **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual und andere unterstützte Provider.
@@ -552,6 +585,10 @@ Verwenden Sie **Auf Standard zurücksetzen** im Prompt-Editor, wenn Sie den eing
 ---
 
 ## 🏷️ Titel-Formatierung
+
+![Titelformat](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformat.png)
+![Titelformate](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+
 
 Passen Sie die Titel Ihrer Lorebook-Einträge mit einem leistungsstarken Vorlagensystem an.
 
@@ -570,16 +607,21 @@ Passen Sie die Titel Ihrer Lorebook-Einträge mit einem leistungsstarken Vorlage
 
 ## 🧵 Kontext-Erinnerungen
 
+![Erinnerungsgenerierung mit Kontext](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+
+
 - **Bis zu 7 vorherige Erinnerungen einbeziehen** als Kontext für bessere Kontinuität.
 - **Token-Schätzung** schließt Kontext-Erinnerungen für Genauigkeit ein.
 - **Erweiterte Optionen** lassen Sie Prompt-/Profilverhalten vorübergehend für einen einzelnen Erinnerungslauf überschreiben.
 
-![Erinnerungsgenerierung mit Kontext](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
 
 ---
 
 <a id="optional-job-queue-chat-top-bar-required"></a>
 ## 🧾 Optionale Job-Warteschlange (Chat Top Bar erforderlich)
+
+![ST Memory Books-Job-Warteschlange](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/queue.png)
+
 
 Die Job-Warteschlange ist optional, aber leistungsstark. Sie brauchen sie nicht, um Memory Books zu verwenden.
 
@@ -596,13 +638,18 @@ Die Warteschlange kann den Jobstatus anzeigen, aktive Jobs abbrechen lassen, feh
 
 Wenn Chat Top Bar nicht installiert oder nicht aktiviert ist, funktioniert STMB weiterhin normal. Sie haben dann nur keine Job-Warteschlangen-Oberfläche.
 
+
+![So installieren Sie Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
+
 ---
 ## 🎨 Visuelles Feedback & Barrierefreiheit
+
+![Vollständige Szenenauswahl mit allen visuellen Zuständen](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
+
 
 - **Schaltflächen-Zustände:**
   - Inaktiv, aktiv, gültige Auswahl, in-scene (in der Szene), processing (verarbeitet).
 
-![Vollständige Szenenauswahl mit allen visuellen Zuständen](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/example.png)
 
 - **Barrierefreiheit:**
   - Tastaturnavigation, Fokusindikatoren, ARIA-Attribute, reduzierte Bewegung, mobilfreundlich.
@@ -638,6 +685,7 @@ Wenn die Einträge ausgelöst und an die KI gesendet werden, sollten Sie die KI 
 
 ![Position der STMB-Einstellungen](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/menu.png)
 
+
 - **Kein Lorebook verfügbar oder ausgewählt:**
   - Wählen Sie im manuellen Modus ein Lorebook aus, wenn Sie dazu aufgefordert werden.
   - Binden Sie im automatischen Modus ein Lorebook an Ihren Chat.
@@ -652,7 +700,9 @@ Wenn die Einträge ausgelöst und an die KI gesendet werden, sollten Sie die KI 
 - **Szene überschneidet sich mit bestehender Erinnerung:**
   - Wählen Sie einen anderen Bereich oder aktivieren Sie „Szenen-Überlappung zulassen“ in den Einstellungen.
 
+
 ![Warnung bei Szenenüberschneidung](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![Szenenüberschneidung aktivieren](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap2.png)
 
 - **KI konnte keine gültige Erinnerung generieren:**
   - Verwenden Sie ein Modell, das JSON-Ausgabe unterstützt.
