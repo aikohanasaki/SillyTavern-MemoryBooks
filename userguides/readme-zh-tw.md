@@ -84,6 +84,7 @@
   - [設定檔欄位 (Profile Fields)](#設定檔欄位-profile-fields)
 - [🏷️ 標題格式化](#-標題格式化)
 - [🧵 上下文記憶 (Context Memories)](#-上下文記憶-context-memories)
+- [🧾 選用工作佇列](#optional-job-queue-chat-top-bar-required)
 - [🎨 視覺回饋與無障礙設計](#-視覺回饋與無障礙設計)
   - [我在 Extensions (擴充功能) 選單中找不到 Memory Books！](#我在-extensions-擴充功能-選單中找不到-memory-books)
   - [我需要運作 Vectors (向量) 嗎？](#我需要運作-vectors-向量-嗎)
@@ -96,7 +97,7 @@
 ## 📋 前置需求
 
 - **SillyTavern:** 1.14.0+ (建議使用最新版本)
-- **場景選擇:** 必須設定開始和結束標記 (開始 < 結束)。
+- **選用工作佇列:** STMB 不需要工作佇列也能運作。若要使用佇列功能，請安裝並啟用 **Chat Top Bar** / **Chat Top Info Bar**，這是 SillyTavern 官方擴充功能，會在聊天視窗上方加入一條頂部列。STMB 會使用該頂部列顯示 **記憶書任務** 按鈕和抽屜。
 - **Chat Completion 支援:** 完全支援 OpenAI, Claude, Anthropic, OpenRouter 或其他聊天補全 API。
 - **Text Completion 支援:** 當透過 Chat Completion (OpenAI 相容) API 端點連接時，支援文本補全 API (Kobold, TextGen 等)。我建議根據下方的 KoboldCpp 提示設定 Chat Completion API 連接 (如果你使用 Ollama 或其他軟體，請依需求調整)。之後，設定一個 STMB 設定檔並使用 Custom (推薦) 或全手動配置 (僅當 Custom 失敗或你有多個自訂連接時使用)。
 **注意**: 請注意，如果你使用 Text Completion，你必須... (原文此處中斷，請接續閱讀下方設定提示)
@@ -530,6 +531,25 @@ STMB 不會自動替換原文。只有點擊 **替換為壓縮版本** 後，lor
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 選用工作佇列（需要 Chat Top Bar）
+
+工作佇列是選用功能，但很強大。你不需要它也能使用 Memory Books。
+
+如果安裝並啟用 **Chat Top Bar** / **Chat Top Info Bar**，STMB 會在聊天頂部列加入 **記憶書任務** 按鈕。它會開啟一個佇列抽屜，讓你查看進行中、已完成、失敗、已取消，或需要審核的 Memory Books 任務。
+
+這在以下情況特別有用：
+
+- 從較長的場景建立記憶
+- 執行整合
+- 在建立記憶後執行 Side Prompts
+- 在長聊天中工作，並希望更清楚地查看進度和審核處理
+
+佇列可以顯示任務狀態、取消進行中的任務、重試失敗的任務，並隱藏已完成的任務。如果佇列中的任務需要使用者審核，STMB 可以將它標記為 **需要審核**，而不是靜默覆寫可能不安全的內容。
+
+如果未安裝或未啟用 Chat Top Bar，STMB 仍會正常運作。你只是無法使用工作佇列 UI。
+
+---
 ## 🎨 視覺回饋與無障礙設計
 
 * **按鈕狀態:**

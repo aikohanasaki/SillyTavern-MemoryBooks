@@ -90,6 +90,7 @@ Pautan lain:
   - [Medan Profil](#medan-profil)
 - [🏷️ Pemformatan Tajuk](#-pemformatan-tajuk)
 - [🧵 Memori Konteks](#-memori-konteks)
+- [🧾 Barisan Tugas Pilihan](#optional-job-queue-chat-top-bar-required)
 - [🎨 Maklum Balas Visual & Kebolehcapaian](#-maklum-balas-visual--kebolehcapaian)
 - [Soalan Lazim](#soalan-lazim)
   - [Patutkah saya menggunakan lorebook berasingan untuk memori?](#patutkah-saya-menggunakan-lorebook-berasingan-untuk-memori)
@@ -105,7 +106,7 @@ Pautan lain:
 ## 📋 Prasyarat
 
 - **SillyTavern:** 1.14.0+ (disyorkan versi terkini)
-- **Pemilihan Babak:** Penanda mula dan tamat mesti ditetapkan, dengan `mula < tamat`
+- **Barisan Tugas Pilihan:** STMB berfungsi tanpa barisan tugas. Untuk menggunakan barisan, pasang dan aktifkan **Chat Top Bar** / **Chat Top Info Bar**, sambungan rasmi SillyTavern yang menambah bar atas pada tetingkap chat. STMB menggunakan bar itu untuk memaparkan butang dan laci **Tugas Buku Memori**.
 - **Sokongan Chat Completion:** Sokongan penuh untuk OpenAI, Claude, Anthropic, OpenRouter, atau API chat completion lain
 - **Sokongan Text Completion:** API text completion (Kobold, TextGen, dll.) disokong apabila disambungkan melalui titik akhir API Chat Completion yang serasi OpenAI. Saya syorkan menyediakan sambungan API Chat Completion mengikut tip KoboldCpp di bawah, kemudian sediakan profil STMB dan gunakan konfigurasi Tersuai (disyorkan) atau manual penuh jika perlu.
 
@@ -592,6 +593,25 @@ Sesuaikan tajuk entri lorebook anda menggunakan sistem templat yang berkuasa.
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 Barisan Tugas Pilihan (memerlukan Chat Top Bar)
+
+Barisan tugas adalah pilihan, tetapi berkuasa. Anda tidak memerlukannya untuk menggunakan Memory Books.
+
+Jika anda memasang dan mengaktifkan **Chat Top Bar** / **Chat Top Info Bar**, STMB menambah butang **Tugas Buku Memori** pada bar atas chat. Ini membuka laci barisan tempat anda boleh melihat tugas Memory Books yang aktif, selesai, gagal, dibatalkan, atau perlu disemak.
+
+Ini sangat berguna apabila anda:
+
+- mencipta memori daripada babak yang lebih panjang
+- menjalankan konsolidasi
+- menjalankan Side Prompts selepas penciptaan memori
+- bekerja dalam chat panjang dan mahukan kemajuan serta pengendalian semakan yang lebih jelas
+
+Barisan boleh menunjukkan status tugas, membatalkan tugas aktif, mencuba semula tugas yang gagal, dan menyembunyikan tugas yang selesai. Jika tugas dalam barisan memerlukan semakan pengguna, STMB boleh menandakannya sebagai **Perlu semakan** dan bukannya menulis ganti sesuatu yang tidak selamat secara senyap.
+
+Jika Chat Top Bar tidak dipasang atau tidak diaktifkan, STMB masih berfungsi seperti biasa. Anda hanya tidak akan mempunyai UI barisan tugas.
+
+---
 ## 🎨 Maklum Balas Visual & Kebolehcapaian
 
 - **Keadaan Butang:** tidak aktif, aktif, pemilihan sah, dalam babak, memproses.

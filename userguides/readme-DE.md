@@ -92,6 +92,7 @@ Weitere Links:
   - [Profil-Felder](#profil-felder)
 - [Titel-Formatierung](#-titel-formatierung)
 - [Kontext-Erinnerungen](#-kontext-erinnerungen)
+- [Optionale Job-Warteschlange](#optional-job-queue-chat-top-bar-required)
 - [Visuelles Feedback & Barrierefreiheit](#-visuelles-feedback--barrierefreiheit)
 - [FAQ](#faq)
   - [Sollte ich ein separates Lorebook für Erinnerungen erstellen, oder kann ich dasselbe Lorebook verwenden, das ich bereits für andere Dinge nutze?](#sollte-ich-ein-separates-lorebook-für-erinnerungen-erstellen-oder-kann-ich-dasselbe-lorebook-verwenden-das-ich-bereits-für-andere-dinge-nutze)
@@ -110,7 +111,7 @@ Weitere Links:
 ## 📋 Voraussetzungen
 
 - **SillyTavern:** 1.14.0+ (aktuellste Version empfohlen)
-- **Szenenauswahl:** Start- und Endmarkierungen (Start < Ende) müssen gesetzt sein.
+- **Optionale Job-Warteschlange:** STMB funktioniert auch ohne die Job-Warteschlange. Um Warteschlangen zu nutzen, installieren und aktivieren Sie **Chat Top Bar** / **Chat Top Info Bar**, die offizielle SillyTavern-Erweiterung, die dem Chatfenster eine obere Leiste hinzufügt. STMB verwendet diese Leiste, um die Schaltfläche und die Seitenleiste für **Memory Books-Jobs** anzuzeigen.
 - **Chat Completion Support:** Volle Unterstützung für OpenAI, Claude, Anthropic, OpenRouter oder andere Chat Completion APIs.
 - **Text Completion Support:** Text Completion APIs (Kobold, TextGen usw.) werden unterstützt, wenn sie über einen Chat Completion (OpenAI-kompatiblen) API-Endpunkt verbunden sind. Ich empfehle, eine Chat Completion API-Verbindung gemäß den untenstehenden KoboldCpp-Tipps einzurichten (passen Sie dies bei Bedarf an, falls Sie Ollama oder andere Software nutzen). Richten Sie danach ein STMB-Profil ein und verwenden Sie `Custom` (empfohlen) oder die vollständige manuelle Konfiguration (nur falls `Custom` fehlschlägt oder Sie mehr als eine benutzerdefinierte Verbindung haben).
 **HINWEIS:** Wenn Sie Text Completion verwenden, müssen Sie ein Chat Completion Preset haben!
@@ -577,6 +578,25 @@ Passen Sie die Titel Ihrer Lorebook-Einträge mit einem leistungsstarken Vorlage
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 Optionale Job-Warteschlange (Chat Top Bar erforderlich)
+
+Die Job-Warteschlange ist optional, aber leistungsstark. Sie brauchen sie nicht, um Memory Books zu verwenden.
+
+Wenn Sie **Chat Top Bar** / **Chat Top Info Bar** installieren und aktivieren, fügt STMB der oberen Chat-Leiste eine Schaltfläche für **Memory Books-Jobs** hinzu. Diese öffnet eine Seitenleiste, in der Sie aktive, abgeschlossene, fehlgeschlagene, abgebrochene oder prüfungsbedürftige Memory-Books-Jobs sehen können.
+
+Das ist besonders nützlich, wenn Sie:
+
+- Erinnerungen aus längeren Szenen erstellen
+- Konsolidierungen ausführen
+- Side-Prompts nach der Erinnerungserstellung ausführen
+- in langen Chats arbeiten und klareren Fortschritt sowie bessere Review-Behandlung möchten
+
+Die Warteschlange kann den Jobstatus anzeigen, aktive Jobs abbrechen lassen, fehlgeschlagene Jobs erneut versuchen und abgeschlossene Jobs ausblenden. Wenn ein Job eine Benutzerprüfung braucht, kann STMB ihn als **Benötigt Prüfung** markieren, statt stillschweigend etwas Unsicheres zu überschreiben.
+
+Wenn Chat Top Bar nicht installiert oder nicht aktiviert ist, funktioniert STMB weiterhin normal. Sie haben dann nur keine Job-Warteschlangen-Oberfläche.
+
+---
 ## 🎨 Visuelles Feedback & Barrierefreiheit
 
 - **Schaltflächen-Zustände:**

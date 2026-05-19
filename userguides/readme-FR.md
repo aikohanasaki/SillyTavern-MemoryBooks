@@ -92,6 +92,7 @@ Autres liens :
   - [Champs du profil](#champs-du-profil)
 - [Formatage des titres](#-formatage-des-titres)
 - [Mémoires contextuelles](#-mémoires-contextuelles)
+- [File d’attente des tâches optionnelle](#optional-job-queue-chat-top-bar-required)
 - [Retour visuel & accessibilité](#-retour-visuel--accessibilité)
 - [FAQ](#faq)
   - [Dois-je créer un lorebook séparé pour les mémoires, ou puis-je utiliser le même lorebook que celui que j’utilise déjà pour autre chose ?](#dois-je-créer-un-lorebook-séparé-pour-les-mémoires-ou-puis-je-utiliser-le-même-lorebook-que-celui-que-jutilise-déjà-pour-autre-chose-)
@@ -110,7 +111,7 @@ Autres liens :
 ## 📋 Prérequis
 
 - **SillyTavern :** 1.14.0+ (dernière version recommandée)
-- **Sélection de scène :** les marqueurs de début et de fin (début < fin) doivent être définis.
+- **File d’attente des tâches optionnelle :** STMB fonctionne sans la file d’attente des tâches. Pour utiliser la file, installez et activez **Chat Top Bar** / **Chat Top Info Bar**, l’extension officielle de SillyTavern qui ajoute une barre supérieure à la fenêtre de chat. STMB utilise cette barre pour afficher le bouton et le panneau **Tâches Memory Books**.
 - **Support Chat Completion :** support complet pour OpenAI, Claude, Anthropic, OpenRouter ou d’autres API Chat Completion.
 - **Support Text Completion :** les API Text Completion (Kobold, TextGen, etc.) sont prises en charge lorsqu’elles sont connectées via un endpoint d’API Chat Completion compatible OpenAI. Je recommande de configurer une connexion Chat Completion selon les conseils KoboldCpp ci-dessous ; adaptez si nécessaire si vous utilisez Ollama ou un autre logiciel. Ensuite, configurez un profil STMB et utilisez `Custom` (recommandé) ou la configuration manuelle complète (uniquement si `Custom` échoue ou si vous avez plus d’une connexion personnalisée).
 **NOTE :** si vous utilisez Text Completion, vous devez avoir un preset Chat Completion.
@@ -577,6 +578,25 @@ Personnalisez les titres de vos entrées de lorebook avec un système de modèle
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 File d’attente des tâches optionnelle (Chat Top Bar requis)
+
+La file d’attente des tâches est optionnelle, mais puissante. Vous n’en avez pas besoin pour utiliser Memory Books.
+
+Si vous installez et activez **Chat Top Bar** / **Chat Top Info Bar**, STMB ajoute un bouton **Tâches Memory Books** à la barre supérieure du chat. Ce bouton ouvre un panneau de file d’attente où vous pouvez voir les tâches Memory Books actives, terminées, échouées, annulées ou nécessitant une révision.
+
+C’est particulièrement utile lorsque vous :
+
+- créez des mémoires à partir de scènes longues
+- lancez une consolidation
+- lancez des Side Prompts après la création de mémoires
+- travaillez dans de longs chats et voulez un suivi plus clair de la progression et des révisions
+
+La file peut afficher l’état des tâches, vous permettre d’annuler les tâches actives, de relancer les tâches échouées et d’écarter les tâches terminées. Si une tâche en file nécessite une révision utilisateur, STMB peut la marquer comme **Nécessite une révision** au lieu d’écraser silencieusement quelque chose de risqué.
+
+Si Chat Top Bar n’est pas installé ou activé, STMB fonctionne toujours normalement. Vous n’aurez simplement pas l’interface de file d’attente des tâches.
+
+---
 ## 🎨 Retour visuel & accessibilité
 
 - **États des boutons :**

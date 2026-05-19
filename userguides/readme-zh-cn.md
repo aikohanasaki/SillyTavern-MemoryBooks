@@ -82,6 +82,7 @@
   - [配置文件字段](#配置文件字段)
 - [标题格式化](#-标题格式化)
 - [上下文记忆](#-上下文记忆)
+- [可选任务队列](#optional-job-queue-chat-top-bar-required)
 - [视觉反馈与辅助功能](#-视觉反馈与辅助功能)
 - [FAQ](#faq)
   - [我应该为记忆单独创建一本世界书，还是可以使用已经用于其他用途的同一本世界书？](#我应该为记忆单独创建一本世界书还是可以使用已经用于其他用途的同一本世界书)
@@ -100,7 +101,7 @@
 ## 📋 前置条件
 
 - **SillyTavern:** 1.14.0+（建议使用最新版）。
-- **场景选择:** 必须设置开始和结束标记（开始 < 结束）。
+- **可选任务队列:** STMB 不需要任务队列也能工作。若要使用队列功能，请安装并启用 **Chat Top Bar** / **Chat Top Info Bar**，这是 SillyTavern 官方扩展，会在聊天窗口顶部添加一条栏。STMB 会使用这条栏显示 **记忆书任务** 按钮和抽屉。
 - **Chat Completion 支持:** 完整支持 OpenAI、Claude、Anthropic、OpenRouter 或其他 Chat Completion API。
 - **Text Completion 支持:** Text Completion API（Kobold、TextGen 等）在通过 Chat Completion（OpenAI 兼容）API endpoint 连接时受支持。建议按照下方 KoboldCpp 提示设置 Chat Completion API 连接（如果使用 Ollama 或其他软件，请按需调整）。之后设置一个 STMB 配置文件，并使用 Custom（推荐）或全手动配置（仅当 Custom 失败，或您有多个 custom 连接时使用）。
 
@@ -534,6 +535,25 @@ STMB 不会自动替换原文。只有点击 **替换为压缩版本** 后，lor
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 可选任务队列（需要 Chat Top Bar）
+
+任务队列是可选功能，但很强大。使用 Memory Books 不需要它。
+
+如果安装并启用 **Chat Top Bar** / **Chat Top Info Bar**，STMB 会在聊天顶部栏添加 **记忆书任务** 按钮。它会打开一个队列抽屉，你可以查看正在进行、已完成、失败、已取消或需要审核的 Memory Books 任务。
+
+这在以下情况特别有用：
+
+- 从较长场景创建记忆
+- 运行整合
+- 在创建记忆后运行 Side Prompts
+- 在长聊天中工作，并希望更清楚地查看进度和审核处理
+
+队列可以显示任务状态、取消活动任务、重试失败任务，并清除已完成任务。如果队列中的任务需要用户审核，STMB 可以将其标记为 **需要审核**，而不是静默覆盖可能不安全的内容。
+
+如果未安装或未启用 Chat Top Bar，STMB 仍会正常工作。只是不会显示任务队列 UI。
+
+---
 ## 🎨 视觉反馈与辅助功能
 
 - **按钮状态:** inactive、active、valid selection、in-scene、processing。
