@@ -969,7 +969,10 @@ async function executeQueuedSidePromptBatchJob(job, context) {
             defaults: item.defaults,
             entryOverrides: item.entryOverrides,
             metadataUpdates: {
+                [`STMB_sp_${tpl.key}_lastMsgId`]: compiledScene?.metadata?.sceneEnd ?? null,
                 [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
+                STMB_tracker_lastMsgId: compiledScene?.metadata?.sceneEnd ?? null,
+                STMB_tracker_lastRunAt: new Date().toISOString(),
             },
         });
         group.names.push(name);
