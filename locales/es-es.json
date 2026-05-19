@@ -974,6 +974,6 @@
     "STMemoryBooks_Jobs_Lorebook": "Lorebook",
     "STMemoryBooks_Jobs_MemoryQueued": "Trabajo de memoria en cola.",
     "STMemoryBooks_Jobs_ConsolidationQueued": "Trabajo de consolidación en cola.",
-    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Info Bar está desactivada o no está instalada. La cola de trabajos de Libros de Memoria requiere Chat Info Bar. Instala y/o activa la extensión para acceder a la cola de trabajos. Esto no es necesario si no quieres usar la cola de trabajos.",
+    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar está desactivada o no está instalada. La cola de trabajos de Libros de Memoria requiere Chat Top Bar. Instala y/o activa la extensión para acceder a la cola de trabajos. Esto no es necesario si no quieres usar la cola de trabajos.",
     "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Ocultar y no volver a mostrar esta notificación."
 }

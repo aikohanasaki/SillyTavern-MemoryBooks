@@ -969,6 +969,6 @@
     "STMemoryBooks_Jobs_Lorebook": "Buku Legenda",
     "STMemoryBooks_Jobs_MemoryQueued": "Tugas memori dimasukkan ke baris gilir.",
     "STMemoryBooks_Jobs_ConsolidationQueued": "Tugas penyatuan dimasukkan ke baris gilir.",
-    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Info Bar sama ada dinyahdayakan atau tidak dipasang. Fungsi baris gilir tugas Buku Memori memerlukan Chat Info Bar. Sila pasang dan/atau dayakan sambungan tersebut untuk mengakses fungsi baris gilir tugas. Ini tidak diperlukan jika anda tidak mahu menggunakan baris gilir tugas.",
+    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar sama ada dinyahdayakan atau tidak dipasang. Fungsi baris gilir tugas Buku Memori memerlukan Chat Top Bar. Sila pasang dan/atau dayakan sambungan tersebut untuk mengakses fungsi baris gilir tugas. Ini tidak diperlukan jika anda tidak mahu menggunakan baris gilir tugas.",
     "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Sembunyikan dan jangan tunjukkan pemberitahuan ini lagi."
 }

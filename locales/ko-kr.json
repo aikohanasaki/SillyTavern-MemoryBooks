@@ -969,6 +969,6 @@
     "STMemoryBooks_Jobs_Lorebook": "로어북",
     "STMemoryBooks_Jobs_MemoryQueued": "메모리 작업이 대기열에 추가되었습니다.",
     "STMemoryBooks_Jobs_ConsolidationQueued": "통합 작업이 대기열에 추가되었습니다.",
-    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Info Bar가 비활성화되어 있거나 설치되어 있지 않습니다. 메모리 북 작업 대기열 기능에는 Chat Info Bar가 필요합니다. 작업 대기열 기능을 사용하려면 해당 확장 기능을 설치하거나 활성화하세요. 작업 대기열을 사용하지 않으려면 필요하지 않습니다.",
+    "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar가 비활성화되어 있거나 설치되어 있지 않습니다. 메모리 북 작업 대기열 기능에는 Chat Top Bar가 필요합니다. 작업 대기열 기능을 사용하려면 해당 확장 기능을 설치하거나 활성화하세요. 작업 대기열을 사용하지 않으려면 필요하지 않습니다.",
     "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "숨기고 이 알림을 다시 표시하지 않기."
 }

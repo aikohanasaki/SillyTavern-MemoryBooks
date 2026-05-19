@@ -9,7 +9,7 @@
 - Bugfix: Autohide with job queue.
 
 ## v6.8.0 (May 17, 2026)
-- NEW FEATURE: Job Queue allows for better control and visibility into what is currently processing. This feature requires the extension Chat Info Bar (Extension-TopInfoBar) to work. STMB will continue to function without it, but I recommend that you install it (it's an amazing extension).
+- NEW FEATURE: Job Queue allows for better control and visibility into what is currently processing. This feature requires the extension Chat Top Bar (Extension-TopInfoBar) to work. STMB will continue to function without it, but I recommend that you install it (it's an amazing extension).
 
 ## v6.7.0 (May 17, 2026)
 - Enhancement: Reverse proxy support now added (thank you @siberys (Discord) for the explanation on how reverse proxies should work in STMB 💖) Please note that this works the same way as ST's current reverse proxying works--I cannot diagnose your proxies unless you give me proxy information (please don't). 
