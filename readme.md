@@ -89,6 +89,7 @@ Other links:
   - [Profile Fields](#profile-fields)
 - [Title Formatting](#-title-formatting)
 - [Context Memories](#-context-memories)
+- [Optional Job Queue](#-optional-job-queue-chat-top-bar-required)
 - [Visual Feedback & Accessibility](#-visual-feedback--accessibility)
 - [FAQ](#faq)
   - [Should I make a separate lorebook for memories, or can I use the same lorebook I'm already using for other things?](#should-i-make-a-separate-lorebook-for-memories-or-can-i-use-the-same-lorebook-im-already-using-for-other-things)
@@ -106,7 +107,7 @@ Other links:
 ## 📋 Prerequisites
 
 - **SillyTavern:** 1.14.0+ (latest recommended)
-- **Scene Selection:** Start and end markers (start < end) must be set.
+- **Optional Job Queue:** STMB works without the job queue. To use queueing, install and enable **Chat Top Bar** / **Chat Top Info Bar**, the official SillyTavern extension that adds a top bar to the chat window. STMB uses that top bar to show the Memory Books Jobs button and queue drawer.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
 - **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via a Chat Completion (OpenAI-compatible) API endpoint. I recommend setting up a Chat Completion API connection according to the KoboldCpp tips below (change as needed if you are Ollama or other software). After that, set up an STMB profile and use Custom (recommended) or full manual configuration (only if Custom fails or you have more than one custom connection).
 **NOTE**: Please note that if you use Text Completion, you must have a chat completion preset!
@@ -158,7 +159,11 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - Click ◄ on the last message.
 
 Below are some examples of what the chevron buttons look like when clicked. Your colors may vary depending on your CSS theme!
-![Visual feedback showing scene selection](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+![Clicked start button](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
+
+![Mid-scene buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
+
+![Clicked end button](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-end.png)
 
 ### 3. **Create a Memory**
 - Open the Extensions menu (the magic wand 🪄) and click "Memory Books", or use `/creatememory` slash command.
@@ -184,6 +189,9 @@ This is the standard and most commonly used memory type.
 ---
 
 ### 🌈 Summary Consolidation
+
+![Consolidate button](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-consolidate.png)
+
 Summary consolidation captures **what changed over time** across multiple memories or summaries.
 
 Instead of summarizing one scene, consolidated summaries focus on:
@@ -265,6 +273,8 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 
 
 ## ✂️ Clip to Memory Book
+
+![Clip text](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
 
 Clip to Memory Book is for quick “remember this” notes. Highlight important chat text, click the floating scissors button, and save the selected text as a bullet in your Memory Book without opening the lorebook editor first.
 
@@ -365,6 +375,8 @@ Example: `/stmb-catchup interval:30 start:0 end:300`
 
 ### 🎡 Trackers & Side Prompts
 
+~[Where to find Trackers and Side Prompts](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+
 > 📘 Side Prompts have their own guide: [Side Prompts Guide](userguides/side-prompts-en.md). Use that for sets, macros, examples, and troubleshooting.
 > 🎡 Need the click path? See the [Scribe walkthrough for enabling Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
 
@@ -399,6 +411,8 @@ Use Side Prompts for things like:
 --- 
 
 ## 🧹 Compaction
+
+![Click here for Compaction Menu](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/compaction.png)
 
 Compaction is a review workflow for making STMB-managed lorebook entries more token-efficient. It asks the AI to rewrite one existing entry, then shows you the original and the compacted draft before anything is replaced.
 
@@ -457,6 +471,9 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 ---
 
 ### 🧠 Regex Integration for Advanced Customization
+
+![Configure regex](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
+
 - **Full Control Over Text Processing**: Memory Books now integrates with SillyTavern's **Regex** extension, allowing you to apply powerful text transformations at two key stages:
     1.  **Prompt Generation**: Automatically modify the prompts sent to the AI by creating regex scripts that target the **User Input** placement.
     2.  **Response Parsing**: Clean, reformat, or standardize the AI's raw response before it's saved by targeting the **AI Output** placement.
@@ -468,6 +485,8 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 ## 👤 Profile Management
 
+![Profile Management](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
+
 - **Profiles:** Each profile includes API, model, temperature, prompt/preset, title format, and lorebook settings.
 - **Import/Export:** Share profiles as JSON.
 - **Profile Creation:** Use the advanced options popup to save new profiles.
@@ -478,7 +497,9 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 ## ⚙️ Settings & Configuration
 
-![Main settings panel](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/Main.png)
+![Main settings panel 1](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile1.png)
+![Main settings panel 2](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile2.png)
+![Main settings panel 3](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profile3.png)
 
 ### **Global Settings**
 [Short video overview on Youtube](https://youtu.be/mG2eRH_EhHs)
@@ -522,6 +543,9 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 ## 🏷️ Title Formatting
 
+![Title format](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformat.png)
+![Title formats](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/titleformats.png)
+
 Customize the titles of your lorebook entries using a powerful template system.
 
 - **Placeholders:**
@@ -544,6 +568,31 @@ Customize the titles of your lorebook entries using a powerful template system.
 - **Advanced options** let you temporarily override prompt/profile behavior for a single memory run.
 
 ![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+
+---
+
+## 🧾 Optional Job Queue (Chat Top Bar required)
+
+![ST Memory Books Job Queue](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/queue.png)
+
+The job queue is optional. You do not need it to use Memory Books.
+
+If you install and enable **Chat Top Bar** / **Chat Top Info Bar**, STMB adds a **Memory Books Jobs** button to the top chat bar. This opens a queue drawer where you can see active, completed, failed, canceled, or review-needed Memory Books jobs.
+
+This is especially useful when you are:
+
+- creating memories from longer scenes
+- running consolidation
+- running Side Prompts after memory creation
+- working in long chats where you want clearer progress and review handling
+
+The queue can show job status, let you cancel active jobs, retry failed jobs, and dismiss completed jobs. If a queued job needs user review, STMB can mark it as **Needs review** instead of silently overwriting something unsafe.
+
+If Chat Top Bar is not installed or enabled, STMB still works normally. You just will not have the job queue UI.
+
+### Installing Chat Top Bar
+
+![How to install Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
 
 ---
 
@@ -603,6 +652,7 @@ Settings are located in the Extensions menu (the magic wand 🪄 to the left of 
   - Choose a different range, or enable "Allow scene overlap" in settings.
 
 ![Scene overlap warning](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap.png)
+![Enable scene overlap](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/overlap2.png)
 
 - **AI failed to generate valid memory:**
   - Use a model that supports JSON output.

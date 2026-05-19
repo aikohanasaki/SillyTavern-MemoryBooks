@@ -89,6 +89,7 @@ Tautan lain:
   - [Bidang Profil](#bidang-profil)
 - [🏷️ Pemformatan Judul](#-pemformatan-judul)
 - [🧵 Memori Konteks](#-memori-konteks)
+- [🧾 Antrean Tugas Opsional](#optional-job-queue-chat-top-bar-required)
 - [🎨 Umpan Balik Visual & Aksesibilitas](#-umpan-balik-visual--aksesibilitas)
 - [FAQ](#faq)
   - [Haruskah saya membuat lorebook terpisah untuk memori, atau boleh memakai lorebook yang sama untuk hal lain?](#haruskah-saya-membuat-lorebook-terpisah-untuk-memori-atau-boleh-memakai-lorebook-yang-sama-untuk-hal-lain)
@@ -104,7 +105,7 @@ Tautan lain:
 ## 📋 Prasyarat
 
 - **SillyTavern:** 1.14.0+ (versi terbaru disarankan)
-- **Pemilihan Adegan:** Penanda awal dan akhir (start < end) harus diatur.
+- **Antrean Tugas Opsional:** STMB tetap berfungsi tanpa antrean tugas. Untuk menggunakan antrean, instal dan aktifkan **Chat Top Bar** / **Chat Top Info Bar**, ekstensi resmi SillyTavern yang menambahkan bilah atas ke jendela chat. STMB memakai bilah itu untuk menampilkan tombol dan drawer **Tugas Buku Memori**.
 - **Dukungan Chat Completion:** Dukungan penuh untuk OpenAI, Claude, Anthropic, OpenRouter, atau API chat completion lainnya.
 - **Dukungan Text Completion:** API text completion (Kobold, TextGen, dll.) didukung jika dihubungkan melalui endpoint Chat Completion API yang kompatibel dengan OpenAI. Saya menyarankan menyiapkan koneksi Chat Completion API sesuai tips KoboldCpp di bawah ini (ubah sesuai kebutuhan jika Anda memakai Ollama atau perangkat lunak lain). Setelah itu, siapkan profil STMB dan gunakan konfigurasi Custom (disarankan) atau konfigurasi manual penuh jika Custom gagal atau Anda punya lebih dari satu koneksi kustom.
 **CATATAN**: Jika Anda memakai Text Completion, Anda tetap harus memiliki preset chat completion!
@@ -566,6 +567,25 @@ Kustomisasi judul entri lorebook Anda dengan sistem template yang kuat.
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 Antrean Tugas Opsional (memerlukan Chat Top Bar)
+
+Antrean tugas bersifat opsional, tetapi kuat. Anda tidak membutuhkannya untuk menggunakan Memory Books.
+
+Jika Anda menginstal dan mengaktifkan **Chat Top Bar** / **Chat Top Info Bar**, STMB menambahkan tombol **Tugas Buku Memori** ke bilah atas chat. Tombol ini membuka drawer antrean tempat Anda dapat melihat tugas Memory Books yang aktif, selesai, gagal, dibatalkan, atau perlu ditinjau.
+
+Ini sangat berguna saat Anda:
+
+- membuat memori dari adegan yang lebih panjang
+- menjalankan konsolidasi
+- menjalankan Side Prompts setelah pembuatan memori
+- bekerja di chat panjang dan ingin progres serta penanganan review yang lebih jelas
+
+Antrean dapat menampilkan status tugas, membatalkan tugas aktif, mencoba ulang tugas yang gagal, dan menutup tugas yang selesai. Jika tugas dalam antrean perlu ditinjau pengguna, STMB dapat menandainya sebagai **Perlu ditinjau** alih-alih diam-diam menimpa sesuatu yang tidak aman.
+
+Jika Chat Top Bar tidak diinstal atau tidak diaktifkan, STMB tetap berfungsi normal. Anda hanya tidak akan memiliki UI antrean tugas.
+
+---
 ## 🎨 Umpan Balik Visual & Aksesibilitas
 
 - **Status Tombol:**

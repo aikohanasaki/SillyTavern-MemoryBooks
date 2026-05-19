@@ -92,6 +92,7 @@ Otros enlaces:
   - [Campos del perfil](#campos-del-perfil)
 - [Formato de títulos](#-formato-de-títulos)
 - [Recuerdos de contexto](#-recuerdos-de-contexto)
+- [Cola de trabajos opcional](#optional-job-queue-chat-top-bar-required)
 - [Retroalimentación visual y accesibilidad](#-retroalimentación-visual-y-accesibilidad)
 - [FAQ](#faq)
   - [¿Debo hacer un lorebook separado para los recuerdos, o puedo usar el mismo lorebook que ya uso para otras cosas?](#debo-hacer-un-lorebook-separado-para-los-recuerdos-o-puedo-usar-el-mismo-lorebook-que-ya-uso-para-otras-cosas)
@@ -110,7 +111,7 @@ Otros enlaces:
 ## 📋 Prerrequisitos
 
 - **SillyTavern:** 1.14.0+ (se recomienda la versión más reciente)
-- **Selección de escena:** deben estar definidos los marcadores de inicio y fin (inicio < fin).
+- **Cola de trabajos opcional:** STMB funciona sin la cola de trabajos. Para usar la cola, instala y activa **Chat Top Bar** / **Chat Top Info Bar**, la extensión oficial de SillyTavern que añade una barra superior a la ventana de chat. STMB usa esa barra para mostrar el botón y el panel de **Trabajos de Libros de Memoria**.
 - **Soporte de Chat Completion:** soporte completo para OpenAI, Claude, Anthropic, OpenRouter u otras APIs de Chat Completion.
 - **Soporte de Text Completion:** las APIs de Text Completion (Kobold, TextGen, etc.) son compatibles cuando se conectan mediante un endpoint de API de Chat Completion compatible con OpenAI. Recomiendo configurar una conexión de Chat Completion según los consejos de KoboldCpp que aparecen abajo; ajusta según sea necesario si usas Ollama u otro software. Después, configura un perfil de STMB y usa `Custom` (recomendado) o la configuración manual completa (solo si `Custom` falla o tienes más de una conexión personalizada).
 **NOTA:** Si usas Text Completion, debes tener un preset de Chat Completion.
@@ -576,6 +577,25 @@ Personaliza los títulos de tus entradas de lorebook usando un sistema de planti
 
 ---
 
+<a id="optional-job-queue-chat-top-bar-required"></a>
+## 🧾 Cola de trabajos opcional (requiere Chat Top Bar)
+
+La cola de trabajos es opcional, pero potente. No la necesitas para usar Memory Books.
+
+Si instalas y activas **Chat Top Bar** / **Chat Top Info Bar**, STMB añade un botón de **Trabajos de Libros de Memoria** a la barra superior del chat. Ese botón abre un panel de cola donde puedes ver trabajos de Memory Books activos, completados, fallidos, cancelados o pendientes de revisión.
+
+Esto resulta especialmente útil cuando estás:
+
+- creando recuerdos a partir de escenas largas
+- ejecutando consolidación
+- ejecutando Side Prompts después de crear recuerdos
+- trabajando en chats largos donde quieres un progreso más claro y mejor manejo de revisiones
+
+La cola puede mostrar el estado de cada trabajo, permitirte cancelar trabajos activos, reintentar trabajos fallidos y descartar trabajos completados. Si un trabajo en cola necesita revisión del usuario, STMB puede marcarlo como **Necesita revisión** en lugar de sobrescribir algo inseguro en silencio.
+
+Si Chat Top Bar no está instalado o activado, STMB sigue funcionando normalmente. Simplemente no tendrás la interfaz de cola de trabajos.
+
+---
 ## 🎨 Retroalimentación visual y accesibilidad
 
 - **Estados de botón:**
