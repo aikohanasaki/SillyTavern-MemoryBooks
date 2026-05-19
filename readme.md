@@ -159,6 +159,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - Click ◄ on the last message.
 
 Below are some examples of what the chevron buttons look like when clicked. Your colors may vary depending on your CSS theme!
+
 ![Clicked start button](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-start.png)
 
 ![Mid-scene buttons](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/button-middle.png)
@@ -375,7 +376,7 @@ Example: `/stmb-catchup interval:30 start:0 end:300`
 
 ### 🎡 Trackers & Side Prompts
 
-~[Where to find Trackers and Side Prompts](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
+![Where to find Trackers and Side Prompts](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/sp.png)
 
 > 📘 Side Prompts have their own guide: [Side Prompts Guide](userguides/side-prompts-en.md). Use that for sets, macros, examples, and troubleshooting.
 > 🎡 Need the click path? See the [Scribe walkthrough for enabling Side Prompts](https://scribehow.com/viewer/How_to_Enable_Side_Prompts_in_Memory_Books__fif494uSSjCmxE2ZCmRGxQ).
