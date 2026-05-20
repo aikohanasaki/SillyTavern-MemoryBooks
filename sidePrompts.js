@@ -795,16 +795,19 @@ async function executeQueuedSidePromptJob(job, context) {
                 title: tpl.name || 'Side Prompt',
                 detail: job.detail || '',
                 open: async () => {
-                    const result = await showMemoryPreviewPopup(
-                        { extractedTitle: payload.unifiedTitle, content: text, suggestedKeys: [] },
-                        {
-                            sceneStart: payload.compiledScene?.metadata?.sceneStart ?? 0,
-                            sceneEnd: payload.compiledScene?.metadata?.sceneEnd ?? 0,
-                            messageCount: payload.compiledScene?.metadata?.messageCount ?? payload.compiledScene?.messages?.length ?? 0,
-                        },
-                        { name: 'SidePrompt' },
-                        { lockTitle: true },
-                    );
+                    let result;
+                    await enqueuePreview(async () => {
+                        result = await showMemoryPreviewPopup(
+                            { extractedTitle: payload.unifiedTitle, content: text, suggestedKeys: [] },
+                            {
+                                sceneStart: payload.compiledScene?.metadata?.sceneStart ?? 0,
+                                sceneEnd: payload.compiledScene?.metadata?.sceneEnd ?? 0,
+                                messageCount: payload.compiledScene?.metadata?.messageCount ?? payload.compiledScene?.messages?.length ?? 0,
+                            },
+                            { name: 'SidePrompt' },
+                            { lockTitle: true },
+                        );
+                    });
                     if (result?.action === 'cancel') return { decision: 'cancel' };
                     if (result?.action === 'retry') return { decision: 'retry' };
                     if (result?.action === 'edit') return { decision: 'accept', editedText: result.memoryData?.content ?? text };
@@ -1310,16 +1313,19 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     setMeta: runItem.set ? { setKey: runItem.set.key, setName: runItem.set.name, itemId: runItem.item?.id || '' } : null,
                 });
             }
-            for (let i = 0; i < preparedItems.length; i += maxConcurrent) {
-                const wave = preparedItems.slice(i, i + maxConcurrent);
-                enqueueStmbJob(buildSidePromptBatchJob({
-                    items: wave,
+            for (const item of preparedItems) {
+                enqueueStmbJob(buildSidePromptJob({
+                    tpl: item.tpl,
+                    lore: item.lore,
                     compiledScene,
+                    prepared: item.prepared,
+                    runtimeMacros: item.runtimeMacros,
                     trigger: 'onAfterMemory',
+                    setMeta: item.setMeta,
                     chatRef: options.chatRef || null,
                     chatKey: options.chatKey || null,
                 }));
-                queued += wave.length;
+                queued++;
             }
             if (queued > 0 && showNotifications) {
                 toastr.info(__st_t_tag`Side Prompts after memory queued: ${queued}.`, 'STMemoryBooks');

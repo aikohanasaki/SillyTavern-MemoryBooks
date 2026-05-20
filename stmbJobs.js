@@ -23,6 +23,7 @@ const JOB_DRAWER_ID = 'top_chat_stmb_jobs';
 const ACTIVE_STATES = new Set(['queued', 'running', 'capturing_scene', 'assembling_prompt', 'generating', 'awaiting_approval', 'needs_review', 'saving', 'post_save']);
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled', 'blocked', 'skipped']);
 const RECENT_LIMIT = 25;
+const CONCURRENT_JOB_TYPES = new Set(['sidePrompt']);
 
 const jobStores = new Map();
 const jobExecutors = new Map();
@@ -68,6 +69,17 @@ function getStmbModuleSettings() {
         extension_settings.STMemoryBooks.moduleSettings = {};
     }
     return extension_settings.STMemoryBooks.moduleSettings;
+}
+
+function clampInt(value, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return min;
+    return Math.max(min, Math.min(max, Math.floor(number)));
+}
+
+function getSidePromptJobLimit() {
+    const moduleSettings = getStmbModuleSettings();
+    return clampInt(moduleSettings.sidePromptsMaxConcurrent ?? 2, 1, 5);
 }
 
 function showMissingTopInfoBarNotice() {
@@ -226,13 +238,21 @@ function ensureStore(chatKey) {
     if (!jobStores.has(key)) {
         jobStores.set(key, {
             queue: [],
-            runningJob: null,
+            runningJobs: [],
             recentHistory: [],
             runnerActive: false,
             lastUpdated: Date.now(),
         });
     }
     return jobStores.get(key);
+}
+
+function getRunningJobs(store) {
+    if (!store) return [];
+    if (Array.isArray(store.runningJobs)) return store.runningJobs;
+    store.runningJobs = store.runningJob ? [store.runningJob] : [];
+    delete store.runningJob;
+    return store.runningJobs;
 }
 
 function cloneJobForView(job = {}) {
@@ -278,7 +298,7 @@ function finishJob(store, job, state, patch = {}) {
     job.finishedAt = Date.now();
     job.updatedAt = job.finishedAt;
     Object.assign(job, patch);
-    store.runningJob = null;
+    store.runningJobs = getRunningJobs(store).filter(item => item.id !== job.id);
     store.recentHistory.unshift(job);
     if (store.recentHistory.length > RECENT_LIMIT) {
         store.recentHistory.length = RECENT_LIMIT;
@@ -334,51 +354,78 @@ function buildContext(store, job) {
     };
 }
 
+function canStartQueuedJob(store, job) {
+    if (!job) return false;
+    const runningJobs = getRunningJobs(store);
+    const jobType = String(job.type || '');
+    const isConcurrent = CONCURRENT_JOB_TYPES.has(jobType);
+
+    if (!isConcurrent) {
+        return runningJobs.length === 0;
+    }
+
+    if (runningJobs.some(running => !CONCURRENT_JOB_TYPES.has(String(running.type || '')))) {
+        return false;
+    }
+
+    const runningSameType = runningJobs.filter(running => String(running.type || '') === jobType).length;
+    const limit = jobType === 'sidePrompt' ? getSidePromptJobLimit() : 1;
+    return runningSameType < limit;
+}
+
+async function executeRunningJob(chatKey, store, job, executor) {
+    try {
+        const context = buildContext(store, job);
+        await executor(job, context);
+        if (context.isCancelled()) {
+            finishJob(store, job, 'canceled', { detail: job.detail || 'Canceled' });
+        } else if (!TERMINAL_STATES.has(job.state)) {
+            finishJob(store, job, 'completed');
+        } else {
+            finishJob(store, job, job.state);
+        }
+    } catch (error) {
+        const isAbort = String(error?.name || '') === 'AbortError' || String(error?.message || '').includes('Cancelled');
+        const needsReview = String(error?.name || '') === 'StmbJobNeedsReview';
+        finishJob(store, job, isAbort ? 'canceled' : needsReview ? 'blocked' : 'failed', {
+            error: isAbort ? null : { message: String(error?.message || error) },
+            detail: isAbort ? 'Canceled' : needsReview ? 'Needs review' : job.detail,
+        });
+    } finally {
+        runNextJob(chatKey).catch(error => console.warn(`${MODULE_NAME}: queue runner failed`, error));
+    }
+}
+
+function startQueuedJob(chatKey, store) {
+    const job = store.queue.shift();
+    getRunningJobs(store).push(job);
+    job.state = 'running';
+    job.startedAt = Date.now();
+    job.updatedAt = job.startedAt;
+    touchStore(store);
+
+    const executor = jobExecutors.get(String(job.type || ''));
+    if (!executor) {
+        finishJob(store, job, 'failed', { error: { message: `No executor registered for ${job.type}` } });
+        return;
+    }
+
+    executeRunningJob(chatKey, store, job, executor)
+        .catch(error => console.warn(`${MODULE_NAME}: queued job failed outside executor wrapper`, error));
+}
+
 async function runNextJob(chatKey) {
     const store = ensureStore(chatKey);
-    if (store.runnerActive || store.runningJob || store.queue.length === 0) {
+    if (store.runnerActive || store.queue.length === 0) {
         return;
     }
     store.runnerActive = true;
     try {
-        while (!store.runningJob && store.queue.length > 0) {
-            const job = store.queue.shift();
-            store.runningJob = job;
-            job.state = 'running';
-            job.startedAt = Date.now();
-            job.updatedAt = job.startedAt;
-            touchStore(store);
-
-            const executor = jobExecutors.get(String(job.type || ''));
-            if (!executor) {
-                finishJob(store, job, 'failed', { error: { message: `No executor registered for ${job.type}` } });
-                continue;
-            }
-
-            try {
-                const context = buildContext(store, job);
-                await executor(job, context);
-                if (context.isCancelled()) {
-                    finishJob(store, job, 'canceled', { detail: job.detail || 'Canceled' });
-                } else if (!TERMINAL_STATES.has(job.state)) {
-                    finishJob(store, job, 'completed');
-                } else {
-                    finishJob(store, job, job.state);
-                }
-            } catch (error) {
-                const isAbort = String(error?.name || '') === 'AbortError' || String(error?.message || '').includes('Cancelled');
-                const needsReview = String(error?.name || '') === 'StmbJobNeedsReview';
-                finishJob(store, job, isAbort ? 'canceled' : needsReview ? 'blocked' : 'failed', {
-                    error: isAbort ? null : { message: String(error?.message || error) },
-                    detail: isAbort ? 'Canceled' : needsReview ? 'Needs review' : job.detail,
-                });
-            }
+        while (store.queue.length > 0 && canStartQueuedJob(store, store.queue[0])) {
+            startQueuedJob(chatKey, store);
         }
     } finally {
         store.runnerActive = false;
-        if (!store.runningJob && store.queue.length > 0) {
-            setTimeout(() => runNextJob(chatKey).catch(error => console.warn(`${MODULE_NAME}: queue runner failed`, error)), 0);
-        }
     }
 }
 
@@ -435,18 +482,20 @@ export function subscribeToStmbJobs(listener) {
 export function hasActiveStmbJobs(chatKey = null) {
     if (chatKey) {
         const store = jobStores.get(String(chatKey));
-        return Boolean(store?.runningJob || store?.queue?.length);
+        return Boolean(getRunningJobs(store).length || store?.queue?.length);
     }
     for (const store of jobStores.values()) {
-        if (store.runningJob || store.queue.length > 0) return true;
+        if (getRunningJobs(store).length || store.queue.length > 0) return true;
     }
     return false;
 }
 
-export function cancelActiveStmbJob(chatKey = null) {
+export function cancelActiveStmbJob(chatKey = null, jobId = null) {
     const key = String(chatKey || getStmbChatKey()).trim();
     const store = jobStores.get(key);
-    const job = store?.runningJob;
+    const runningJobs = getRunningJobs(store);
+    const id = String(jobId || '').trim();
+    const job = id ? runningJobs.find(item => item.id === id) : runningJobs[0];
     if (!job) return false;
     job.cancelled = true;
     try {
@@ -464,11 +513,11 @@ export function cancelActiveStmbJob(chatKey = null) {
 export function cancelAllStmbJobs(reason = 'stmb-stop') {
     let count = 0;
     for (const store of jobStores.values()) {
-        if (store.runningJob) {
+        for (const job of getRunningJobs(store)) {
             count++;
-            store.runningJob.cancelled = true;
+            job.cancelled = true;
             try {
-                store.runningJob.abortController.abort(reason);
+                job.abortController.abort(reason);
             } catch {}
         }
         for (const job of store.queue) {
@@ -597,7 +646,7 @@ function getCurrentStoreRows() {
     const store = jobStores.get(chatKey);
     if (!store) return [];
     return [
-        ...(store.runningJob ? [store.runningJob] : []),
+        ...getRunningJobs(store),
         ...store.queue,
         ...store.recentHistory,
     ].map(cloneJobForView);
@@ -662,9 +711,7 @@ function renderStmbJobsUi() {
     }).join('');
 
     const currentStore = jobStores.get(getStmbChatKey());
-    const reviewJob = currentStore?.runningJob?.state === 'needs_review'
-        ? currentStore.runningJob
-        : null;
+    const reviewJob = getRunningJobs(currentStore).find(job => job.state === 'needs_review') || null;
     const approval = reviewJob ? pendingApprovals.get(reviewJob.id) : null;
     if (approval && isCurrentJobChat(reviewJob)) {
         setTimeout(() => {
@@ -691,7 +738,8 @@ function findMutableJob(jobId) {
     const id = String(jobId || '').trim();
     if (!id) return null;
     for (const [chatKey, store] of jobStores.entries()) {
-        if (store.runningJob?.id === id) return { chatKey, store, job: store.runningJob };
+        const running = getRunningJobs(store).find(job => job.id === id);
+        if (running) return { chatKey, store, job: running };
         const queued = store.queue.find(job => job.id === id);
         if (queued) return { chatKey, store, job: queued };
         const recent = store.recentHistory.find(job => job.id === id);
@@ -716,14 +764,15 @@ function handlePanelClick(event) {
     const record = findMutableJob(jobId);
     if (!record) return;
     if (action === 'cancel-job') {
-        if (record.store.runningJob?.id === record.job.id) {
-            cancelActiveStmbJob(record.chatKey);
+        if (getRunningJobs(record.store).some(job => job.id === record.job.id)) {
+            cancelActiveStmbJob(record.chatKey, record.job.id);
         } else {
             record.store.queue = record.store.queue.filter(job => job.id !== record.job.id);
             record.job.state = 'canceled';
             record.job.finishedAt = Date.now();
             record.store.recentHistory.unshift(record.job);
             touchStore(record.store);
+            runNextJob(record.chatKey).catch(error => console.warn(`${MODULE_NAME}: queue runner failed`, error));
         }
         return;
     }
