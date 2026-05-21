@@ -51,6 +51,10 @@ export const settingsTemplate = Handlebars.compile(`
                 <span data-i18n="STMemoryBooks_ShowMemoryPreviews;[title]STMemoryBooks_ShowMemoryPreviewsTooltip" title="Shows previews for memories and side prompts returned from the AI.">Show memory previews</span>
             </label>
             <label class="checkbox_label">
+                <input type="checkbox" id="stmb-show-consolidation-previews" {{#if showConsolidationPreviews}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_ShowConsolidationPreviews;[title]STMemoryBooks_ShowConsolidationPreviewsTooltip" title="Shows previews for consolidation summaries returned from the AI.">Show consolidation previews</span>
+            </label>
+            <label class="checkbox_label">
                 <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
             </label>
@@ -506,4 +510,86 @@ export const memoryPreviewTemplate = Handlebars.compile(`
             <div class="fontsize90p"><span data-i18n="STMemoryBooks_Profile">Profile</span>: {{#if profileName}}{{profileName}}{{else}}<span data-i18n="STMemoryBooks_UnknownProfile">Unknown Profile</span>{{/if}}</div>
         </div>
     </div>
+`);
+
+/**
+ * Consolidation preview dialog template
+ */
+export const consolidationPreviewTemplate = Handlebars.compile(`
+    <h3 data-i18n="STMemoryBooks_ConsolidationPreview_Title">Consolidation Preview</h3>
+    <div class="world_entry_form_control">
+        <small class="marginBot10" data-i18n="STMemoryBooks_ConsolidationPreview_Desc">Review generated summaries before saving. You can edit title, summary, and keywords.</small>
+    </div>
+
+    {{#if ambiguousAssignments}}
+    <div class="info-block warning marginBot10" data-i18n="STMemoryBooks_ConsolidationPreview_AmbiguousAssignments">
+        Multiple consolidation returned more than one summary but the memory assignments were not clearly stated and it is not known which memories belong to which summary. Individual summary edit/accept is not available--the entire batch must be approved or rejected for regeneration.
+    </div>
+    {{/if}}
+
+    {{#if lockedCount}}
+    <div class="info-block marginBot10">
+        <span data-i18n="STMemoryBooks_ConsolidationPreview_BankedCount">Already accepted summaries</span>: {{lockedCount}}
+    </div>
+    {{/if}}
+
+    <div class="stmb-consolidation-preview-list">
+        {{#each summaries}}
+        <div class="world_entry_form_control stmb-consolidation-preview-card" data-summary-index="{{index}}">
+            <h4>{{tierLabel}} {{displayNumber}}</h4>
+
+            {{#if ../allowIndividualActions}}
+            <div class="flex flexFlowRow gap10px marginBot10">
+                <label class="checkbox_label">
+                    <input type="radio" name="stmb-consolidation-action-{{index}}" value="accept" checked>
+                    <span data-i18n="STMemoryBooks_ConsolidationPreview_AcceptSummary">Accept this summary</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="radio" name="stmb-consolidation-action-{{index}}" value="reject">
+                    <span data-i18n="STMemoryBooks_ConsolidationPreview_RegenerateSummary">Regenerate its assigned memories</span>
+                </label>
+            </div>
+            {{/if}}
+
+            <label>
+                <h4 data-i18n="STMemoryBooks_ConsolidationPreview_SummaryTitle">Summary Title:</h4>
+                <input type="text" class="text_pole stmb-consolidation-preview-title" value="{{title}}" data-i18n="[placeholder]STMemoryBooks_ConsolidationPreview_TitlePlaceholder" placeholder="Summary title">
+            </label>
+
+            <label>
+                <h4 data-i18n="STMemoryBooks_ConsolidationPreview_SummaryContent">Summary Content:</h4>
+                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="stmb-consolidation-preview-content-{{index}}" title="Expand the editor" data-i18n="[title]STMemoryBooks_ExpandEditor"></i>
+                <textarea id="stmb-consolidation-preview-content-{{index}}" class="text_pole textarea_compact stmb-consolidation-preview-content" rows="8" data-i18n="[placeholder]STMemoryBooks_ConsolidationPreview_ContentPlaceholder" placeholder="Summary content">{{summary}}</textarea>
+            </label>
+
+            <label>
+                <h4 data-i18n="STMemoryBooks_Keywords">Keywords:</h4>
+                <small class="opacity50p" data-i18n="STMemoryBooks_KeywordsDesc">Separate keywords with commas</small>
+                <input type="text" class="text_pole stmb-consolidation-preview-keywords" value="{{keywordsText}}" data-i18n="[placeholder]STMemoryBooks_KeywordsPlaceholder" placeholder="keyword1, keyword2, keyword3">
+            </label>
+
+            <details class="marginTop10">
+                <summary data-i18n="STMemoryBooks_ConsolidationPreview_AssignedMemories">Assigned source memories</summary>
+                <div class="padding10 marginTop5 stmb-box">
+                    {{#if sources.length}}
+                    {{#each sources}}
+                    <div class="marginBot10">
+                        <strong>{{title}}</strong>
+                        <div class="opacity70p fontsize90p">{{excerpt}}</div>
+                    </div>
+                    {{/each}}
+                    {{else}}
+                    <div class="opacity70p" data-i18n="STMemoryBooks_ConsolidationPreview_NoAssignedMemories">No assigned source memories found.</div>
+                    {{/if}}
+                </div>
+            </details>
+        </div>
+        {{/each}}
+    </div>
+
+    {{#if pendingCount}}
+    <div class="info-block marginTop10">
+        <span data-i18n="STMemoryBooks_ConsolidationPreview_PendingCount">Pending source memories after this round</span>: {{pendingCount}}
+    </div>
+    {{/if}}
 `);
