@@ -859,7 +859,7 @@
     "STMemoryBooks_Arc_RebuildNote": "重建後，預設清單會自動重新整理。",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "建立摘要後禁用所選來源條目",
     "STMemoryBooks_ConsolidateArcs_Tip": "提示：取消勾選不應包含的條目。",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "顯示合併預覽",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "顯示 AI 傳回的合併摘要預覽。",
     "STMemoryBooks_ConsolidationPreview_Title": "合併預覽",
     "STMemoryBooks_ConsolidationPreview_Desc": "儲存前審核產生的摘要。您可以編輯標題、摘要和關鍵字。",

@@ -859,7 +859,7 @@
     "STMemoryBooks_Arc_RebuildNote": "재구축 후에는 사전 설정 목록이 자동으로 새로고침됩니다.",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "요약 생성 후 원본 항목을 비활성화합니다.",
     "STMemoryBooks_ConsolidateArcs_Tip": "팁: 포함하고 싶지 않은 메모리는 선택을 해제하세요.",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "통합 미리보기 표시",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "AI가 반환한 통합 요약의 미리보기를 표시합니다.",
     "STMemoryBooks_ConsolidationPreview_Title": "통합 미리보기",
     "STMemoryBooks_ConsolidationPreview_Desc": "저장하기 전에 생성된 요약을 검토하세요. 제목, 요약, 키워드를 편집할 수 있습니다.",

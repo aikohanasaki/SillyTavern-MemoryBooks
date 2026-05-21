@@ -866,7 +866,7 @@
     "STMemoryBooks_FailedToOpenArcPromptManager": "Konsolidierungs-Prompt-Manager konnte nicht geöffnet werden",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "Ausgewählte Quell-Einträge nach dem Erstellen der Zusammenfassung deaktivieren",
     "STMemoryBooks_ConsolidateArcs_Tip": "Tipp: Deaktiviere die Einträge, die nicht aufgenommen werden sollen.",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "Konsolidierungsvorschauen anzeigen",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "Zeigt Vorschauen für von der KI zurückgegebene Konsolidierungs-Zusammenfassungen an.",
     "STMemoryBooks_ConsolidationPreview_Title": "Konsolidierungsvorschau",
     "STMemoryBooks_ConsolidationPreview_Desc": "Überprüfe generierte Zusammenfassungen vor dem Speichern. Du kannst Titel, Zusammenfassung und Schlüsselwörter bearbeiten.",

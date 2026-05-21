@@ -859,7 +859,7 @@
     "STMemoryBooks_Arc_RebuildNote": "再構築後、プリセット一覧は自動的に更新されます。",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "要約作成後に選択したソース項目を無効化する",
     "STMemoryBooks_ConsolidateArcs_Tip": "ヒント: 含めたくない項目のチェックを外してください。",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "統合プレビューを表示",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "AI から返された統合サマリーのプレビューを表示します。",
     "STMemoryBooks_ConsolidationPreview_Title": "統合プレビュー",
     "STMemoryBooks_ConsolidationPreview_Desc": "保存前に生成されたサマリーを確認します。タイトル、サマリー、キーワードを編集できます。",

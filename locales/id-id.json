@@ -859,7 +859,7 @@
     "STMemoryBooks_Arc_RebuildNote": "Setelah proses pembangunan ulang selesai, daftar preset akan diperbarui secara otomatis.",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "Nonaktifkan entri asli setelah membuat ringkasan",
     "STMemoryBooks_ConsolidateArcs_Tip": "Tips: hapus centang memori yang tidak ingin disertakan.",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "Tampilkan pratinjau konsolidasi",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "Menampilkan pratinjau ringkasan konsolidasi yang dikembalikan oleh AI.",
     "STMemoryBooks_ConsolidationPreview_Title": "Pratinjau konsolidasi",
     "STMemoryBooks_ConsolidationPreview_Desc": "Tinjau ringkasan yang dihasilkan sebelum menyimpan. Anda dapat mengedit judul, ringkasan, dan kata kunci.",

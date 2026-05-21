@@ -859,7 +859,7 @@
     "STMemoryBooks_Arc_RebuildNote": "После воссоздания список пресетов обновится автоматически.",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "Отключить выбранные исходные записи после создания сводок",
     "STMemoryBooks_ConsolidateArcs_Tip": "Совет: снимите отметки с тех записей, которые не следует включать.",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "Показывать предпросмотр консолидации",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "Показывает предпросмотр сводок консолидации, возвращенных ИИ.",
     "STMemoryBooks_ConsolidationPreview_Title": "Предпросмотр консолидации",
     "STMemoryBooks_ConsolidationPreview_Desc": "Просмотрите созданные сводки перед сохранением. Вы можете изменить заголовок, сводку и ключевые слова.",
