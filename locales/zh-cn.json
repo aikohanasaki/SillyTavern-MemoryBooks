@@ -859,7 +859,7 @@
     "STMemoryBooks_Arc_RebuildNote": "重建后，预设列表会自动刷新。",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "创建摘要后禁用所选来源条目",
     "STMemoryBooks_ConsolidateArcs_Tip": "提示：取消勾选不应包含的条目。",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "显示合并预览",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "显示 AI 返回的合并摘要预览。",
     "STMemoryBooks_ConsolidationPreview_Title": "合并预览",
     "STMemoryBooks_ConsolidationPreview_Desc": "保存前审核生成的摘要。您可以编辑标题、摘要和关键词。",

@@ -860,7 +860,7 @@
     "STMemoryBooks_FailedToOpenArcPromptManager": "Impossible d'ouvrir le gestionnaire de prompts de consolidation",
     "STMemoryBooks_ConsolidateArcs_DisableOriginals": "Désactiver les entrées source sélectionnées après la création du résumé.",
     "STMemoryBooks_ConsolidateArcs_Tip": "Conseil : décochez les entrées qui ne doivent pas être incluses.",
-    "STMemoryBooks_ShowConsolidationPreviews": "Show consolidation previews",
+    "STMemoryBooks_ShowConsolidationPreviews": "Afficher les aperçus de consolidation",
     "STMemoryBooks_ShowConsolidationPreviewsTooltip": "Affiche des aperçus des résumés de consolidation renvoyés par l'IA.",
     "STMemoryBooks_ConsolidationPreview_Title": "Aperçu de la consolidation",
     "STMemoryBooks_ConsolidationPreview_Desc": "Relisez les résumés générés avant de les enregistrer. Vous pouvez modifier le titre, le résumé et les mots-clés.",
