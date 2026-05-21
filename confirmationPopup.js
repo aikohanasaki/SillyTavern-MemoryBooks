@@ -1,7 +1,7 @@
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
-import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTemplate } from './templates.js';
+import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTemplate, consolidationPreviewTemplate } from './templates.js';
 import { translate } from '../../../i18n.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
@@ -763,6 +763,187 @@ export async function showMemoryPreviewPopup(memoryResult, sceneData, profileSet
     return {
       action: 'cancel'
     };
+  } finally {
+    if (popup) {
+      activeMemoryPreviewPopups.delete(popup);
+    }
+  }
+}
+
+function previewKeywordsToString(keywords) {
+  if (Array.isArray(keywords)) {
+    return keywords.filter(k => k && typeof k === 'string').join(', ');
+  }
+  if (typeof keywords === 'string') {
+    return keywords.trim();
+  }
+  return '';
+}
+
+function parsePreviewKeywords(keywordText) {
+  if (!keywordText || typeof keywordText !== 'string') {
+    return [];
+  }
+  return keywordText
+    .split(',')
+    .map(k => k.trim())
+    .filter(k => k.length > 0 && typeof k === 'string');
+}
+
+function truncatePreviewText(text, maxLength = 180) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength - 3)}...`;
+}
+
+/**
+ * Show consolidation preview popup for one generated summary batch.
+ * Users can edit title/content/keywords, but source memberIds are read-only.
+ */
+export async function showConsolidationPreviewPopup({
+  summaryCandidates,
+  selectedEntries,
+  targetLabel = 'Summary',
+  sourceLabel = 'Memory',
+  ambiguousAssignments = false,
+  lockedCount = 0,
+  pendingCount = 0,
+} = {}) {
+  let popup = null;
+  try {
+    const candidates = Array.isArray(summaryCandidates) ? summaryCandidates : [];
+    const sources = Array.isArray(selectedEntries) ? selectedEntries : [];
+    if (candidates.length === 0) {
+      return { action: 'cancel' };
+    }
+
+    const sourceMap = new Map(
+      sources
+        .filter(entry => entry && entry.uid !== undefined && entry.uid !== null)
+        .map(entry => [String(entry.uid), entry]),
+    );
+    const allowIndividualActions = !ambiguousAssignments;
+    const templateData = {
+      ambiguousAssignments,
+      allowIndividualActions,
+      lockedCount,
+      pendingCount,
+      summaries: candidates.map((candidate, index) => {
+        const memberIds = Array.isArray(candidate?.memberIds)
+          ? candidate.memberIds.map(id => String(id))
+          : [];
+        return {
+          index,
+          displayNumber: index + 1,
+          tierLabel: targetLabel,
+          title: String(candidate?.title || '').trim(),
+          summary: String(candidate?.summary || '').trim(),
+          keywordsText: previewKeywordsToString(candidate?.keywords),
+          sources: memberIds.map(id => {
+            const entry = sourceMap.get(String(id));
+            return {
+              id,
+              title: String(entry?.comment || entry?.title || `${sourceLabel} ${id}`).trim(),
+              excerpt: truncatePreviewText(entry?.content || ''),
+            };
+          }),
+        };
+      }),
+    };
+
+    const content = DOMPurify.sanitize(consolidationPreviewTemplate(templateData));
+    safePlayMessageSound();
+
+    popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+      okButton: ambiguousAssignments
+        ? translate('Save Entire Batch', 'STMemoryBooks_ConsolidationPreview_SaveEntireBatch')
+        : translate('Apply Selections', 'STMemoryBooks_ConsolidationPreview_ApplySelections'),
+      cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
+      allowVerticalScrolling: true,
+      wide: true,
+      large: true,
+      customButtons: [
+        {
+          text: translate('Regenerate Batch', 'STMemoryBooks_ConsolidationPreview_RegenerateBatch'),
+          result: STMB_POPUP_RESULTS.RETRY,
+          classes: ['menu_button', 'whitespacenowrap'],
+          action: null,
+        },
+      ],
+    });
+    markStmbPopup(popup);
+
+    activeMemoryPreviewPopups.add(popup);
+    const result = await popup.show();
+
+    if (result === STMB_POPUP_RESULTS.RETRY) {
+      return { action: 'retryAll' };
+    }
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+      return { action: 'cancel' };
+    }
+
+    const popupElement = popup.dlg;
+    if (!popupElement) {
+      toastr.error(
+        translate('Unable to read edited values', 'STMemoryBooks_Toast_UnableToReadEditedValues'),
+        translate('STMemoryBooks', 'confirmationPopup.toast.title'),
+      );
+      return { action: 'cancel' };
+    }
+
+    const acceptedCandidates = [];
+    const rejectedCandidates = [];
+    for (const card of Array.from(popupElement.querySelectorAll('.stmb-consolidation-preview-card'))) {
+      const index = Number(card.dataset.summaryIndex);
+      const original = candidates[index];
+      if (!original) continue;
+
+      const title = card.querySelector('.stmb-consolidation-preview-title')?.value?.trim() || '';
+      const summary = card.querySelector('.stmb-consolidation-preview-content')?.value?.trim() || '';
+      const keywordsText = card.querySelector('.stmb-consolidation-preview-keywords')?.value?.trim() || '';
+      if (!title) {
+        toastr.error(
+          translate('Summary title cannot be empty', 'STMemoryBooks_ConsolidationPreview_TitleRequired'),
+          'STMemoryBooks',
+        );
+        return { action: 'cancel' };
+      }
+      if (!summary) {
+        toastr.error(
+          translate('Summary content cannot be empty', 'STMemoryBooks_ConsolidationPreview_ContentRequired'),
+          'STMemoryBooks',
+        );
+        return { action: 'cancel' };
+      }
+
+      const editedCandidate = {
+        ...original,
+        title,
+        summary,
+        keywords: parsePreviewKeywords(keywordsText),
+        memberIds: Array.isArray(original.memberIds)
+          ? original.memberIds.map(id => String(id))
+          : [],
+      };
+      const action = ambiguousAssignments
+        ? 'accept'
+        : card.querySelector(`input[name="stmb-consolidation-action-${index}"]:checked`)?.value || 'accept';
+      if (action === 'reject') {
+        rejectedCandidates.push(editedCandidate);
+      } else {
+        acceptedCandidates.push(editedCandidate);
+      }
+    }
+
+    return {
+      action: 'apply',
+      acceptedCandidates,
+      rejectedCandidates,
+    };
+  } catch (error) {
+    console.error(`${MODULE_NAME}: Error showing consolidation preview popup:`, error);
+    return { action: 'cancel' };
   } finally {
     if (popup) {
       activeMemoryPreviewPopups.delete(popup);

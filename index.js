@@ -80,6 +80,7 @@ import {
   showConfirmationPopup,
   fetchPreviousSummaries,
   showMemoryPreviewPopup,
+  showConsolidationPreviewPopup,
   closeActiveMemoryPreviewPopups,
 } from "./confirmationPopup.js";
 import {
@@ -344,6 +345,7 @@ const defaultSettings = {
   moduleSettings: {
     alwaysUseDefault: true,
     showMemoryPreviews: false,
+    showConsolidationPreviews: false,
     showNotifications: true,
     showFloatingClipButton: true,
     unhideBeforeMemory: false,
@@ -1667,6 +1669,9 @@ function validateSettings(settings) {
   if (settings.moduleSettings.autoConsolidationPromptEnabled === undefined) {
     settings.moduleSettings.autoConsolidationPromptEnabled = false;
   }
+  if (settings.moduleSettings.showConsolidationPreviews === undefined) {
+    settings.moduleSettings.showConsolidationPreviews = false;
+  }
   if (settings.moduleSettings.showFloatingClipButton === undefined) {
     settings.moduleSettings.showFloatingClipButton = true;
   }
@@ -2703,6 +2708,171 @@ function fingerprintLorebookEntry(entry) {
   });
 }
 
+function verifyConsolidationSourceFingerprints(lorebookData, expected, sourceIds = null) {
+  const expectedEntries = expected && typeof expected === "object" ? expected : {};
+  const idsToCheck = sourceIds
+    ? Array.from(new Set(Array.from(sourceIds).map(String)))
+    : Object.keys(expectedEntries);
+  if (idsToCheck.length === 0) return;
+
+  const entries = Object.values(lorebookData?.entries || {});
+  for (const uid of idsToCheck) {
+    const fingerprint = expectedEntries[String(uid)];
+    if (!fingerprint) continue;
+    const freshEntry = entries.find((entry) => String(entry?.uid) === String(uid));
+    if (!freshEntry || fingerprintLorebookEntry(freshEntry) !== fingerprint) {
+      const error = new Error("A consolidation source entry changed before commit. Review the job before overwriting.");
+      error.name = "StmbJobNeedsReview";
+      throw error;
+    }
+  }
+}
+
+function getEntryUid(entry) {
+  const uid = entry?.uid;
+  return uid === undefined || uid === null ? null : String(uid);
+}
+
+function collectSummaryMemberIds(candidates) {
+  const ids = new Set();
+  for (const candidate of candidates || []) {
+    for (const id of candidate?.memberIds || []) {
+      ids.add(String(id));
+    }
+  }
+  return ids;
+}
+
+function getEntriesById(selectedEntries, ids) {
+  const wanted = new Set(Array.from(ids || []).map(String));
+  return (selectedEntries || []).filter((entry) => {
+    const uid = getEntryUid(entry);
+    return uid !== null && wanted.has(uid);
+  });
+}
+
+function hasAmbiguousMultiSummaryAssignments(summaryCandidates, selectedEntries) {
+  const candidates = Array.isArray(summaryCandidates) ? summaryCandidates : [];
+  if (candidates.length <= 1) return false;
+
+  const sourceIds = new Set(
+    (selectedEntries || [])
+      .map(getEntryUid)
+      .filter((uid) => uid !== null),
+  );
+  const seen = new Set();
+  for (const candidate of candidates) {
+    const memberIds = Array.isArray(candidate?.memberIds)
+      ? candidate.memberIds.map(String)
+      : [];
+    if (!candidate?.memberIdsClear || memberIds.length === 0) {
+      return true;
+    }
+    for (const id of memberIds) {
+      if (!sourceIds.has(id) || seen.has(id)) {
+        return true;
+      }
+      seen.add(id);
+    }
+  }
+  return false;
+}
+
+async function runConsolidationPreviewWorkflow({
+  initialAnalysis,
+  selectedEntries,
+  targetTier,
+  sourceLabel,
+  targetLabel,
+  generateAnalysis,
+  commitCandidates,
+  throwIfCancelled = null,
+}) {
+  const originalEntries = Array.isArray(selectedEntries) ? selectedEntries : [];
+  const pendingIds = new Set(
+    originalEntries
+      .map(getEntryUid)
+      .filter((uid) => uid !== null),
+  );
+  const committedCandidates = [];
+  const committedResults = [];
+  let analysis = initialAnalysis || {};
+
+  while (pendingIds.size > 0) {
+    if (typeof throwIfCancelled === "function") throwIfCancelled();
+    const summaryCandidates = Array.isArray(analysis?.summaryCandidates)
+      ? analysis.summaryCandidates
+      : [];
+    if (summaryCandidates.length === 0) {
+      return {
+        canceled: false,
+        created: committedResults.length,
+        leftovers: Array.from(pendingIds),
+      };
+    }
+
+    const pendingEntries = getEntriesById(originalEntries, pendingIds);
+    const ambiguousAssignments = hasAmbiguousMultiSummaryAssignments(
+      summaryCandidates,
+      pendingEntries,
+    );
+    const acceptedByDefaultIds = collectSummaryMemberIds(summaryCandidates);
+    const pendingAfterAcceptAll = new Set(pendingIds);
+    for (const id of acceptedByDefaultIds) {
+      pendingAfterAcceptAll.delete(String(id));
+    }
+
+    const previewResult = await showConsolidationPreviewPopup({
+      summaryCandidates,
+      selectedEntries: pendingEntries,
+      targetLabel,
+      sourceLabel,
+      ambiguousAssignments,
+      lockedCount: committedCandidates.length,
+      pendingCount: pendingAfterAcceptAll.size,
+    });
+    if (typeof throwIfCancelled === "function") throwIfCancelled();
+
+    if (previewResult?.action === "cancel") {
+      return {
+        canceled: true,
+        created: committedResults.length,
+        leftovers: Array.from(pendingIds),
+      };
+    }
+
+    if (previewResult?.action === "retryAll") {
+      analysis = await generateAnalysis(pendingEntries, committedCandidates);
+      continue;
+    }
+
+    const acceptedCandidates = Array.isArray(previewResult?.acceptedCandidates)
+      ? previewResult.acceptedCandidates
+      : [];
+    if (acceptedCandidates.length > 0) {
+      const commitResult = await commitCandidates(acceptedCandidates);
+      const results = Array.isArray(commitResult?.results) ? commitResult.results : [];
+      committedResults.push(...results);
+      committedCandidates.push(...acceptedCandidates);
+      for (const id of collectSummaryMemberIds(acceptedCandidates)) {
+        pendingIds.delete(String(id));
+      }
+    }
+
+    if (pendingIds.size === 0) break;
+
+    const nextPendingEntries = getEntriesById(originalEntries, pendingIds);
+    if (nextPendingEntries.length === 0) break;
+    analysis = await generateAnalysis(nextPendingEntries, committedCandidates);
+  }
+
+  return {
+    canceled: false,
+    created: committedResults.length,
+    leftovers: Array.from(pendingIds),
+  };
+}
+
 async function executeQueuedConsolidationJob(job, jobContext) {
   const payload = job?.payload || {};
   const lorebookName = String(payload.lorebookName || job.lorebookName || "").trim();
@@ -2736,21 +2906,104 @@ async function executeQueuedConsolidationJob(job, jobContext) {
     throw new Error("Summary analysis produced no usable summaries.");
   }
 
+  const liveSettings = initializeSettings();
+  if (liveSettings.moduleSettings?.showConsolidationPreviews) {
+    const approval = await awaitStmbJobApproval(
+      jobContext,
+      {
+        kind: "consolidationApproval",
+        title: getSummaryTierLabel(targetTier),
+        detail: job.detail,
+        open: async () => {
+          const previewResult = await runConsolidationPreviewWorkflow({
+            initialAnalysis: analysis,
+            selectedEntries,
+            targetTier,
+            sourceLabel: getSummaryTierLabel(getSourceTierForTarget(targetTier)),
+            targetLabel: getSummaryTierLabel(targetTier),
+            throwIfCancelled: () => jobContext.throwIfCancelled(),
+            generateAnalysis: async (entries, lockedSummaries) => {
+              jobContext.setState("generating", {
+                detail: `${getSummaryTierLabel(getSourceTierForTarget(targetTier))} -> ${getSummaryTierLabel(targetTier)}`,
+              });
+              return await runSummaryAnalysisSequential(
+                entries,
+                {
+                  presetKey: payload.presetKey,
+                  targetTier,
+                  maxItemsPerPass: payload.maxItemsPerPass,
+                  maxPasses: payload.maxPasses,
+                  minAssigned: payload.minAssigned,
+                  tokenTarget: payload.tokenTarget,
+                  promptText: payload.promptText,
+                  lockedSummaries,
+                },
+                payload.profileSettings || null,
+              );
+            },
+            commitCandidates: async (candidates) => {
+              jobContext.setState("saving", { detail: lorebookName });
+              let result = null;
+              await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
+                const freshLorebook = await loadWorldInfo(lorebookName);
+                if (!freshLorebook?.entries) {
+                  throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
+                }
+                verifyConsolidationSourceFingerprints(
+                  freshLorebook,
+                  payload.sourceFingerprints || {},
+                  collectSummaryMemberIds(candidates),
+                );
+                result = await commitSummaryEntries({
+                  lorebookName,
+                  lorebookData: freshLorebook,
+                  summaryCandidates: candidates,
+                  targetTier,
+                  disableOriginals: !!payload.disableOriginals,
+                  summaryEntrySettings: payload.summaryEntrySettings,
+                  orderMode: payload.summaryOrderMode,
+                  orderValue: payload.summaryOrderValue,
+                  reverseStart: payload.summaryReverseStart,
+                });
+              });
+              return result;
+            },
+          });
+          return { decision: "accept", previewResult };
+        },
+      },
+      { detail: job.detail },
+    );
+    if (approval?.decision === "cancel" || approval?.decision === "reject") {
+      jobContext.patch({ state: "canceled", detail: "Canceled in approval" });
+      return;
+    }
+    if (approval?.decision === "error") {
+      throw approval.error || new Error("Consolidation approval failed.");
+    }
+    const previewResult = approval?.previewResult;
+    if (previewResult?.canceled && !previewResult.created) {
+      jobContext.patch({ state: "canceled", detail: "Canceled in approval" });
+      return;
+    }
+    jobContext.setResult({
+      lorebookName,
+      targetTier,
+      created: Number(previewResult?.created || 0),
+      leftovers: Array.isArray(previewResult?.leftovers)
+        ? previewResult.leftovers.length
+        : 0,
+    });
+    return;
+  }
+
   jobContext.setState("saving", { detail: lorebookName });
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
     const freshLorebook = await loadWorldInfo(lorebookName);
     if (!freshLorebook?.entries) {
       throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
     }
-    const expected = payload.sourceFingerprints || {};
-    for (const [uid, fingerprint] of Object.entries(expected)) {
-      const freshEntry = Object.values(freshLorebook.entries || {}).find((entry) => String(entry?.uid) === String(uid));
-      if (!freshEntry || fingerprintLorebookEntry(freshEntry) !== fingerprint) {
-        const error = new Error("A consolidation source entry changed before commit. Review the job before overwriting.");
-        error.name = "StmbJobNeedsReview";
-        throw error;
-      }
-    }
+    verifyConsolidationSourceFingerprints(freshLorebook, payload.sourceFingerprints || {});
     const result = await commitSummaryEntries({
       lorebookName,
       lorebookData: freshLorebook,
@@ -5407,6 +5660,9 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     const selectedEntries = selected
       .map((id) => entryMap.get(String(id)))
       .filter(Boolean);
+    const selectedSourceFingerprints = Object.fromEntries(
+      selectedEntries.map((entry) => [String(entry.uid), fingerprintLorebookEntry(entry)]),
+    );
 
     if (areStmbJobsEnabled()) {
       const chatRef = getCurrentStmbChatRef();
@@ -5428,9 +5684,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           lorebookName,
           targetTier,
           selectedEntries: deepClone(selectedEntries),
-          sourceFingerprints: Object.fromEntries(
-            selectedEntries.map((entry) => [String(entry.uid), fingerprintLorebookEntry(entry)]),
-          ),
+          sourceFingerprints: selectedSourceFingerprints,
           presetKey,
           promptText: await ArcPrompts.getPrompt(presetKey),
           profileSettings,
@@ -5563,6 +5817,95 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         showFailedSummaryResponsePopup(lastFailedArcError);
       } catch (e2) {
         console.error(e2);
+      }
+      return;
+    }
+
+    if (settings.moduleSettings?.showConsolidationPreviews) {
+      try {
+        let latestCommittedLorebookData = null;
+        const previewResult = await runConsolidationPreviewWorkflow({
+          initialAnalysis: analysis,
+          selectedEntries,
+          targetTier,
+          sourceLabel,
+          targetLabel,
+          throwIfCancelled: null,
+          generateAnalysis: async (entries, lockedSummaries) => {
+            return await runSummaryAnalysisSequential(
+              entries,
+              {
+                ...options,
+                lockedSummaries,
+              },
+              null,
+            );
+          },
+          commitCandidates: async (candidates) => {
+            let result = null;
+            await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
+              const freshLorebook = await loadWorldInfo(lorebookName);
+              if (!freshLorebook?.entries) {
+                throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
+              }
+              verifyConsolidationSourceFingerprints(
+                freshLorebook,
+                selectedSourceFingerprints,
+                collectSummaryMemberIds(candidates),
+              );
+              result = await commitSummaryEntries({
+                lorebookName,
+                lorebookData: freshLorebook,
+                summaryCandidates: candidates,
+                targetTier,
+                disableOriginals,
+                summaryEntrySettings: chosenSummaryEntrySettings,
+                orderMode: normalizedArcOrderMode,
+                orderValue: chosenArcOrderValue,
+                reverseStart: chosenArcReverseStart,
+              });
+              latestCommittedLorebookData = freshLorebook;
+            });
+            return result;
+          },
+        });
+        const created = Number(previewResult?.created || 0);
+        if (created > 0) {
+          const createdLabel =
+            created === 1
+              ? targetLabel.toLowerCase()
+              : pluralizeSummaryLabel(targetLabel).toLowerCase();
+          const leftoverCount = Array.isArray(previewResult?.leftovers)
+            ? previewResult.leftovers.length
+            : 0;
+          let msg = `Created ${created} ${createdLabel}${leftoverCount ? `, ${leftoverCount} leftover` : ""}.`;
+          if (previewResult?.canceled) {
+            msg += " Remaining consolidation canceled.";
+          }
+          toastr.success(__st_t_tag`${msg}`, "STMemoryBooks");
+          clearAutoConsolidationPromptState(targetTier);
+          if (targetTier < 6) {
+            await maybePromptAutoConsolidation(targetTier + 1, {
+              valid: true,
+              name: lorebookName,
+              data: latestCommittedLorebookData || lorebookData,
+            });
+          }
+        }
+        lastFailedArcError = null;
+        lastFailedArcContext = null;
+        try {
+          toastr.clear(lastArcFailureToast);
+        } catch (e) {}
+        lastArcFailureToast = null;
+      } catch (e) {
+        if (isStmbStopError(e)) {
+          return;
+        }
+        toastr.error(
+          __st_t_tag`Summary preview failed: ${e.message || e}`,
+          "STMemoryBooks",
+        );
       }
       return;
     }
@@ -5714,6 +6057,7 @@ async function showSettingsPopup() {
       !!sceneMarkers?.highestMemoryProcessedManuallySet,
     alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
     showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
+    showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
     showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
     unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
@@ -5943,6 +6287,12 @@ function setupSettingsEventListeners() {
 
     if (e.target.matches("#stmb-show-memory-previews")) {
       settings.moduleSettings.showMemoryPreviews = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-show-consolidation-previews")) {
+      settings.moduleSettings.showConsolidationPreviews = e.target.checked;
       saveSettingsDebounced();
       return;
     }
@@ -6355,6 +6705,9 @@ function persistMainPopupSettings(popupElement) {
   const showMemoryPreviews =
     popupElement.querySelector("#stmb-show-memory-previews")?.checked ??
     settings.moduleSettings.showMemoryPreviews;
+  const showConsolidationPreviews =
+    popupElement.querySelector("#stmb-show-consolidation-previews")?.checked ??
+    settings.moduleSettings.showConsolidationPreviews;
   const showNotifications =
     popupElement.querySelector("#stmb-show-notifications")?.checked ??
     settings.moduleSettings.showNotifications;
@@ -6437,6 +6790,15 @@ function persistMainPopupSettings(popupElement) {
 
   if (showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews) {
     settings.moduleSettings.showMemoryPreviews = showMemoryPreviews;
+    hasChanges = true;
+  }
+
+  if (
+    showConsolidationPreviews !==
+    settings.moduleSettings.showConsolidationPreviews
+  ) {
+    settings.moduleSettings.showConsolidationPreviews =
+      showConsolidationPreviews;
     hasChanges = true;
   }
 
@@ -6630,6 +6992,7 @@ async function refreshPopupContent() {
         !!sceneMarkers?.highestMemoryProcessedManuallySet,
       alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
       showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
+      showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
       showNotifications: settings.moduleSettings.showNotifications,
       showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
       unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
