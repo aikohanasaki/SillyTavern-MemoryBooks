@@ -2908,6 +2908,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
 
   const liveSettings = initializeSettings();
   if (liveSettings.moduleSettings?.showConsolidationPreviews) {
+    let latestCommittedLorebookData = null;
     const approval = await awaitStmbJobApproval(
       jobContext,
       {
@@ -2965,6 +2966,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
                   orderValue: payload.summaryOrderValue,
                   reverseStart: payload.summaryReverseStart,
                 });
+                latestCommittedLorebookData = freshLorebook;
               });
               return result;
             },
@@ -2982,6 +2984,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
       throw approval.error || new Error("Consolidation approval failed.");
     }
     const previewResult = approval?.previewResult;
+    const created = Number(previewResult?.created || 0);
     if (previewResult?.canceled && !previewResult.created) {
       jobContext.patch({ state: "canceled", detail: "Canceled in approval" });
       return;
@@ -2989,15 +2992,24 @@ async function executeQueuedConsolidationJob(job, jobContext) {
     jobContext.setResult({
       lorebookName,
       targetTier,
-      created: Number(previewResult?.created || 0),
+      created,
       leftovers: Array.isArray(previewResult?.leftovers)
         ? previewResult.leftovers.length
         : 0,
+    });
+    await runPostConsolidationCommitFlow({
+      created,
+      targetTier,
+      lorebookName,
+      lorebookData: latestCommittedLorebookData,
+      chatRef: job.chatRef,
     });
     return;
   }
 
   jobContext.setState("saving", { detail: lorebookName });
+  let created = 0;
+  let latestCommittedLorebookData = null;
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
     const freshLorebook = await loadWorldInfo(lorebookName);
     if (!freshLorebook?.entries) {
@@ -3015,11 +3027,20 @@ async function executeQueuedConsolidationJob(job, jobContext) {
       orderValue: payload.summaryOrderValue,
       reverseStart: payload.summaryReverseStart,
     });
+    created = Array.isArray(result?.results) ? result.results.length : summaryCandidates.length;
+    latestCommittedLorebookData = freshLorebook;
     jobContext.setResult({
       lorebookName,
       targetTier,
-      created: Array.isArray(result?.results) ? result.results.length : summaryCandidates.length,
+      created,
     });
+  });
+  await runPostConsolidationCommitFlow({
+    created,
+    targetTier,
+    lorebookName,
+    lorebookData: latestCommittedLorebookData,
+    chatRef: job.chatRef,
   });
 }
 
@@ -5006,6 +5027,27 @@ function clearAutoConsolidationPromptState(targetTier) {
   }
 }
 
+async function runPostConsolidationCommitFlow({
+  created,
+  targetTier,
+  lorebookName,
+  lorebookData,
+  chatRef = null,
+} = {}) {
+  if (Number(created || 0) <= 0) return;
+  if (chatRef && !isStmbJobChatCurrent(chatRef)) return;
+
+  const normalizedTargetTier = clampInt(Number(targetTier), 1, 6);
+  clearAutoConsolidationPromptState(normalizedTargetTier);
+  if (normalizedTargetTier < 6) {
+    await maybePromptAutoConsolidation(normalizedTargetTier + 1, {
+      valid: true,
+      name: lorebookName,
+      data: lorebookData,
+    });
+  }
+}
+
 /**
  * Show summary consolidation popup
  */
@@ -5883,14 +5925,12 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
             msg += " Remaining consolidation canceled.";
           }
           toastr.success(__st_t_tag`${msg}`, "STMemoryBooks");
-          clearAutoConsolidationPromptState(targetTier);
-          if (targetTier < 6) {
-            await maybePromptAutoConsolidation(targetTier + 1, {
-              valid: true,
-              name: lorebookName,
-              data: latestCommittedLorebookData || lorebookData,
-            });
-          }
+          await runPostConsolidationCommitFlow({
+            created,
+            targetTier,
+            lorebookName,
+            lorebookData: latestCommittedLorebookData || lorebookData,
+          });
         }
         lastFailedArcError = null;
         lastFailedArcContext = null;
@@ -5940,14 +5980,12 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         toastr.clear(lastArcFailureToast);
       } catch (e) {}
       lastArcFailureToast = null;
-      clearAutoConsolidationPromptState(targetTier);
-      if (targetTier < 6) {
-        await maybePromptAutoConsolidation(targetTier + 1, {
-          valid: true,
-          name: lorebookName,
-          data: lorebookData,
-        });
-      }
+      await runPostConsolidationCommitFlow({
+        created,
+        targetTier,
+        lorebookName,
+        lorebookData,
+      });
     } catch (e) {
       if (isStmbStopError(e)) {
         return;
@@ -7941,14 +7979,12 @@ async function applyManualFixedSummaryJson(correctedRaw) {
       toastr.clear(lastArcFailureToast);
     } catch (e) {}
     lastArcFailureToast = null;
-    clearAutoConsolidationPromptState(targetTier);
-    if (targetTier < 6) {
-      await maybePromptAutoConsolidation(targetTier + 1, {
-        valid: true,
-        name: context.lorebookName,
-        data: context.lorebookData,
-      });
-    }
+    await runPostConsolidationCommitFlow({
+      created,
+      targetTier,
+      lorebookName: context.lorebookName,
+      lorebookData: context.lorebookData,
+    });
   } catch (e) {
     if (isStmbStopError(e)) {
       return;
