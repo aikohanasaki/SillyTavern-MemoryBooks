@@ -857,7 +857,7 @@ export async function showConsolidationPreviewPopup({
     popup = new Popup(content, POPUP_TYPE.TEXT, '', {
       okButton: ambiguousAssignments
         ? translate('Save Entire Batch', 'STMemoryBooks_ConsolidationPreview_SaveEntireBatch')
-        : translate('Apply Selections', 'STMemoryBooks_ConsolidationPreview_ApplySelections'),
+        : translate('Finish Review and Save', 'STMemoryBooks_ConsolidationPreview_ApplySelections'),
       cancelButton: translate('Cancel', 'STMemoryBooks_Cancel'),
       allowVerticalScrolling: true,
       wide: true,

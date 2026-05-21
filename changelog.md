@@ -2,7 +2,7 @@
 
 **← [Back to README](readme.md)**
 
-## v6.9.0 (May 18, 2026)
+## v6.9.0 (May 20, 2026)
 - Enhancement: Added consolidation previews. 
 - Bugfix: Sideprompt batch processing fixed.
 

@@ -546,7 +546,7 @@ export const consolidationPreviewTemplate = Handlebars.compile(`
                 </label>
                 <label class="checkbox_label">
                     <input type="radio" name="stmb-consolidation-action-{{index}}" value="reject">
-                    <span data-i18n="STMemoryBooks_ConsolidationPreview_RegenerateSummary">Regenerate its assigned memories</span>
+                    <span data-i18n="STMemoryBooks_ConsolidationPreview_RegenerateSummary">Regenerate consolidation with the same memories</span>
                 </label>
             </div>
             {{/if}}
