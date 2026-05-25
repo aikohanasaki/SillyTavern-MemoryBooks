@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.9.2 (May 25, 2026)
+- Enhancement: Google Vertex added (thank you @TwinkleStar1029 on Github!).
+
 ## v6.9.1 (May 24, 2026)
 - Bugfix: Group chat processing fixed.
 
