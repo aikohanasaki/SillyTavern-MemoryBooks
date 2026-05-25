@@ -224,6 +224,12 @@ export async function sendRawCompletionRequest({
         body.proxy_password = oai_settings.proxy_password || '';
     }
 
+    if (api === 'vertexai') {
+        body.vertexai_auth_mode = oai_settings?.vertexai_auth_mode || 'express';
+        body.vertexai_region = oai_settings?.vertexai_region || 'us-central1';
+        body.vertexai_express_project_id = oai_settings?.vertexai_express_project_id || '';
+    }
+
     const res = await fetch(url, {
         method: 'POST',
         headers: headers,
