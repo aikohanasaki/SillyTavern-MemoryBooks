@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.9.1 (May 24, 2026)
+- Bugfix: Group chat processing fixed.
+
 ## v6.9.0 (May 20, 2026)
 - Enhancement: Added consolidation previews. 
 - Bugfix: Sideprompt batch processing fixed.

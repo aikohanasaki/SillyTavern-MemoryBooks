@@ -201,7 +201,7 @@ async function checkAutoSummaryTrigger() {
  */
 export async function handleAutoSummaryMessageReceived() {
     try {
-        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
+        if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
             const currentMessageCount = chat.length;
             console.log(i18n('autosummary.log.messageReceivedSingle', 'STMemoryBooks: Message received - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
 
