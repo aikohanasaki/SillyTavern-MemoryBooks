@@ -49,7 +49,6 @@ import {
 import { autoCreateLorebook } from "./autocreate.js";
 import {
   handleAutoSummaryMessageReceived,
-  handleAutoSummaryGroupFinished,
   clearAutoSummaryState,
 } from "./autosummary.js";
 import {
@@ -610,22 +609,6 @@ async function handleMessageReceived() {
       translate(
         "STMemoryBooks: Error in handleMessageReceived:",
         "index.error.handleMessageReceived",
-      ),
-      error,
-    );
-  }
-}
-
-async function handleGroupWrapperFinished() {
-  try {
-    setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
-    await handleAutoSummaryGroupFinished();
-    await evaluateTrackers();
-  } catch (error) {
-    console.error(
-      translate(
-        "STMemoryBooks: Error in handleGroupWrapperFinished:",
-        "index.error.handleGroupWrapperFinished",
       ),
       error,
     );
@@ -7448,10 +7431,6 @@ function setupEventListeners() {
     handleMessageDeletion(deletedId, settings);
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
-  eventSource.on(
-    event_types.GROUP_WRAPPER_FINISHED,
-    handleGroupWrapperFinished,
-  );
 
   // Track dry-run state for generation events
   eventSource.on(event_types.GENERATION_STARTED, (type, options, dryRun) => {

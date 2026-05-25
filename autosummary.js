@@ -2,7 +2,7 @@ import { extension_settings } from '../../../extensions.js';
 import { chat, chat_metadata } from '../../../../script.js';
 import { METADATA_KEY } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
-import { getCurrentMemoryBooksContext, showLorebookSelectionPopup, clampInt } from './utils.js';
+import { showLorebookSelectionPopup, clampInt } from './utils.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
@@ -196,43 +196,19 @@ async function checkAutoSummaryTrigger() {
 }
 
 /**
- * Handle auto-summary for single character chats on message received
+ * Handle auto-summary on message received
  * @returns {Promise<void>}
  */
 export async function handleAutoSummaryMessageReceived() {
     try {
-        const context = getCurrentMemoryBooksContext();
-
-        // Only check auto-summary for single character chats on MESSAGE_RECEIVED
-        // Group chats will be handled by GROUP_WRAPPER_FINISHED event
-        if (!context.isGroupChat && extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
+        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
             const currentMessageCount = chat.length;
-            console.log(i18n('autosummary.log.messageReceivedSingle', 'STMemoryBooks: Message received (single chat) - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
+            console.log(i18n('autosummary.log.messageReceivedSingle', 'STMemoryBooks: Message received - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
 
             await checkAutoSummaryTrigger();
-        } else if (context.isGroupChat) {
-            console.log(i18n('autosummary.log.messageReceivedGroup', 'STMemoryBooks: Message received in group chat - deferring to GROUP_WRAPPER_FINISHED'));
         }
     } catch (error) {
         console.error(i18n('autosummary.log.messageHandlerError', 'STMemoryBooks: Error in auto-summary message received handler:'), error);
-    }
-}
-
-/**
- * Handle auto-summary for group chats when all members have finished speaking
- * @returns {Promise<void>}
- */
-export async function handleAutoSummaryGroupFinished() {
-    try {
-        if (extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled) {
-            const currentMessageCount = chat.length;
-            console.log(i18n('autosummary.log.groupFinished', 'STMemoryBooks: Group conversation finished - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
-
-            // Check auto-summary trigger after all group members have finished speaking
-            await checkAutoSummaryTrigger();
-        }
-    } catch (error) {
-        console.error(i18n('autosummary.log.groupHandlerError', 'STMemoryBooks: Error in auto-summary group finished handler:'), error);
     }
 }
 
