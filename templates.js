@@ -275,7 +275,7 @@ export const settingsTemplate = Handlebars.compile(`
                 {{#each titleFormats}}
                 <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>
                 {{/each}}
-                <option value="custom" data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
+                <option value="custom" {{#if isCustomTitleFormat}}selected{{/if}} data-i18n="STMemoryBooks_CustomTitleFormat">Custom Title Format...</option>
             </select>
             <input type="text" id="stmb-custom-title-format" class="text_pole marginTop5 {{#unless showCustomInput}}displayNone{{/unless}}"
                 data-i18n="[placeholder]STMemoryBooks_EnterCustomFormat" placeholder="Enter custom format" value="{{titleFormat}}">

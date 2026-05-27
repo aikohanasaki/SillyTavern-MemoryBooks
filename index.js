@@ -339,6 +339,7 @@ const SUPPORTED_COMPLETION_SOURCES = [
 ];
 
 const DEFAULT_MAX_TOKENS = 4000;
+const DEFAULT_TITLE_FORMAT = "[000] - {{title}}";
 
 const defaultSettings = {
   moduleSettings: {
@@ -388,7 +389,7 @@ const defaultSettings = {
       6: 5,
     },
   },
-  titleFormat: "[000] - {{title}}",
+  titleFormat: DEFAULT_TITLE_FORMAT,
   profiles: [], // Will be populated dynamically with current ST settings
   defaultProfile: 0,
   migrationVersion: 4,
@@ -407,6 +408,21 @@ let lastFailedAIContext = null;
 let lastFailedArcError = null;
 let lastArcFailureToast = null;
 let lastFailedArcContext = null;
+
+function getDefaultProfileTitleFormat(settings) {
+  const defaultProfile = settings?.profiles?.[settings.defaultProfile];
+  return defaultProfile?.titleFormat || settings?.titleFormat || DEFAULT_TITLE_FORMAT;
+}
+
+function setDefaultProfileTitleFormat(settings, titleFormat) {
+  const nextTitleFormat = titleFormat || DEFAULT_TITLE_FORMAT;
+  const defaultProfile = settings?.profiles?.[settings.defaultProfile];
+  if (defaultProfile) {
+    defaultProfile.titleFormat = nextTitleFormat;
+  }
+  settings.titleFormat = nextTitleFormat;
+  return nextTitleFormat;
+}
 
 /* Settings cache for restoration */
 let cachedSettings = null;
@@ -1536,16 +1552,6 @@ function initializeSettings() {
       );
     }
 
-    // Clean up any existing dynamic profiles that may have titleFormat
-    extension_settings.STMemoryBooks.profiles.forEach((profile) => {
-      if (profile.useDynamicSTSettings && profile.titleFormat) {
-        delete profile.titleFormat;
-        console.log(
-          __st_t_tag`${MODULE_NAME}: Removed static titleFormat from dynamic profile`,
-        );
-      }
-    });
-
     // Update migration version
     extension_settings.STMemoryBooks.migrationVersion = 4;
     saveSettingsDebounced();
@@ -1852,8 +1858,12 @@ async function showAndGetMemorySettings(
       return null; // User cancelled
     }
   } else {
-    // Use default profile without confirmation
-    const selectedProfile = settings.profiles[settings.defaultProfile];
+    // Use the selected profile when provided; otherwise use the default profile without confirmation.
+    const profileIndex =
+      selectedProfileIndex !== null
+        ? selectedProfileIndex
+        : settings.defaultProfile;
+    const selectedProfile = settings.profiles[profileIndex] || settings.profiles[settings.defaultProfile];
     confirmationResult = {
       confirmed: true,
       profileSettings: {
@@ -2458,7 +2468,6 @@ async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSett
       summaryCount,
       tokenThreshold,
       settings: deepClone(settings),
-      titleFormat: extension_settings.STMemoryBooks?.titleFormat || "[000] - {{title}}",
       memoryFetchResult: deepClone(memoryFetchResult),
     },
   };
@@ -2623,10 +2632,6 @@ async function executeQueuedMemoryJob(job, jobContext) {
   }
 
   jobContext.throwIfCancelled();
-  finalMemoryResult = {
-    ...finalMemoryResult,
-    titleFormat: payload.titleFormat || finalMemoryResult?.titleFormat,
-  };
   jobContext.setState("saving", { detail: lorebookName });
   let addResult = null;
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
@@ -6062,6 +6067,8 @@ async function showSettingsPopup() {
     console.warn("STMemoryBooks: Failed to enumerate Regex scripts for UI", e);
   }
   const selectedProfile = settings.profiles[settings.defaultProfile];
+  const defaultProfileTitleFormat = getDefaultProfileTitleFormat(settings);
+  const isCustomTitleFormat = !getDefaultTitleFormats().includes(defaultProfileTitleFormat);
   const sceneMarkers = getSceneMarkers();
 
   // Get current lorebook information
@@ -6131,7 +6138,7 @@ async function showSettingsPopup() {
           : profile.name,
       isDefault: index === settings.defaultProfile,
     })),
-    titleFormat: settings.titleFormat,
+    titleFormat: defaultProfileTitleFormat,
     // Regex selection UI
     useRegex: settings.moduleSettings.useRegex || false,
     regexOptions,
@@ -6139,9 +6146,10 @@ async function showSettingsPopup() {
     selectedRegexIncoming,
     titleFormats: getDefaultTitleFormats().map((format) => ({
       value: format,
-      isSelected: format === settings.titleFormat,
+      isSelected: format === defaultProfileTitleFormat,
     })),
-    showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
+    isCustomTitleFormat,
+    showCustomInput: isCustomTitleFormat,
     selectedProfile: {
       ...selectedProfile,
       connection:
@@ -6164,7 +6172,7 @@ async function showSettingsPopup() {
                   ? selectedProfile.connection.temperature
                   : 0.7,
             },
-      titleFormat: selectedProfile.titleFormat || settings.titleFormat,
+      titleFormat: selectedProfile.titleFormat || defaultProfileTitleFormat,
       effectivePrompt:
         selectedProfile.prompt && selectedProfile.prompt.trim()
           ? selectedProfile.prompt
@@ -6550,7 +6558,7 @@ function setupSettingsEventListeners() {
         // Title format is profile-specific
         if (summaryTitle)
           summaryTitle.textContent =
-            selectedProfile.titleFormat || settings.titleFormat;
+            selectedProfile.titleFormat || getDefaultProfileTitleFormat(settings);
         if (summaryPrompt)
           summaryPrompt.textContent =
             await getEffectivePromptAsync(selectedProfile);
@@ -6569,12 +6577,17 @@ function setupSettingsEventListeners() {
         customInput.focus();
       } else {
         customInput.classList.add("displayNone");
-        settings.titleFormat = e.target.value;
+        setDefaultProfileTitleFormat(settings, e.target.value);
         saveSettingsDebounced();
 
         // Update the preview
         if (summaryTitle) {
-          summaryTitle.textContent = e.target.value;
+          const profileSelect = popupElement.querySelector("#stmb-profile-select");
+          const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile), 0, settings.profiles.length - 1);
+          summaryTitle.textContent =
+            selectedIndex === settings.defaultProfile
+              ? e.target.value
+              : settings.profiles[selectedIndex]?.titleFormat || getDefaultProfileTitleFormat(settings);
         }
       }
       return;
@@ -6681,12 +6694,17 @@ function setupSettingsEventListeners() {
     if (e.target.matches("#stmb-custom-title-format")) {
       const value = e.target.value.trim();
       if (value && value.includes("000")) {
-        settings.titleFormat = value;
+        setDefaultProfileTitleFormat(settings, value);
         saveSettingsDebounced();
 
         const summaryTitle = popupElement.querySelector("#stmb-summary-title");
         if (summaryTitle) {
-          summaryTitle.textContent = value;
+          const profileSelect = popupElement.querySelector("#stmb-profile-select");
+          const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile), 0, settings.profiles.length - 1);
+          summaryTitle.textContent =
+            selectedIndex === settings.defaultProfile
+              ? value
+              : settings.profiles[selectedIndex]?.titleFormat || getDefaultProfileTitleFormat(settings);
         }
       }
     }
@@ -6704,7 +6722,12 @@ function setupSettingsEventListeners() {
 
     const summaryTitle = popupElement.querySelector("#stmb-summary-title");
     if (summaryTitle) {
-      summaryTitle.textContent = value;
+      const settings = initializeSettings();
+      const profileSelect = popupElement.querySelector("#stmb-profile-select");
+      const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile), 0, settings.profiles.length - 1);
+      if (selectedIndex === settings.defaultProfile) {
+        summaryTitle.textContent = value;
+      }
     }
   });
 }
@@ -6942,7 +6965,7 @@ function persistMainPopupSettings(popupElement) {
   const customTitleFormat = popupElement
     .querySelector("#stmb-custom-title-format")
     ?.value?.trim();
-  let nextTitleFormat = settings.titleFormat;
+  let nextTitleFormat = getDefaultProfileTitleFormat(settings);
   if (titleFormatSelect?.value === "custom") {
     if (customTitleFormat && customTitleFormat.includes("000")) {
       nextTitleFormat = customTitleFormat;
@@ -6951,8 +6974,11 @@ function persistMainPopupSettings(popupElement) {
     nextTitleFormat = titleFormatSelect.value;
   }
 
-  if (nextTitleFormat !== settings.titleFormat) {
-    settings.titleFormat = nextTitleFormat;
+  if (
+    nextTitleFormat !== settings.titleFormat ||
+    nextTitleFormat !== settings.profiles?.[settings.defaultProfile]?.titleFormat
+  ) {
+    setDefaultProfileTitleFormat(settings, nextTitleFormat);
     hasChanges = true;
   }
 
@@ -6995,6 +7021,8 @@ async function refreshPopupContent() {
     const settings = initializeSettings();
     const sceneData = await getSceneData();
     const selectedProfile = settings.profiles[settings.defaultProfile];
+    const defaultProfileTitleFormat = getDefaultProfileTitleFormat(settings);
+    const isCustomTitleFormat = !getDefaultTitleFormats().includes(defaultProfileTitleFormat);
     const sceneMarkers = getSceneMarkers();
 
     // Get current lorebook information
@@ -7066,12 +7094,13 @@ async function refreshPopupContent() {
             : profile.name,
         isDefault: index === settings.defaultProfile,
       })),
-      titleFormat: settings.titleFormat,
+      titleFormat: defaultProfileTitleFormat,
       titleFormats: getDefaultTitleFormats().map((format) => ({
         value: format,
-        isSelected: format === settings.titleFormat,
+        isSelected: format === defaultProfileTitleFormat,
       })),
-      showCustomInput: !getDefaultTitleFormats().includes(settings.titleFormat),
+      isCustomTitleFormat,
+      showCustomInput: isCustomTitleFormat,
       selectedProfile: {
         ...selectedProfile,
         connection:
@@ -7091,7 +7120,7 @@ async function refreshPopupContent() {
                 model: selectedProfile.connection?.model || "gpt-4.1",
                 temperature: selectedProfile.connection?.temperature ?? 0.7,
               },
-        titleFormat: selectedProfile.titleFormat || settings.titleFormat,
+        titleFormat: selectedProfile.titleFormat || defaultProfileTitleFormat,
         effectivePrompt:
           selectedProfile.prompt && selectedProfile.prompt.trim()
             ? selectedProfile.prompt
@@ -7653,10 +7682,7 @@ async function applyManualFixedJson(correctedRaw) {
         version: "2.0",
       },
       suggestedKeys: cleanKeywords,
-      titleFormat:
-        profile.useDynamicSTSettings || profile?.connection?.api === "current_st"
-          ? extension_settings.STMemoryBooks?.titleFormat || "[000] - {{title}}"
-          : profile.titleFormat || "[000] - {{title}}",
+      titleFormat: profile.titleFormat || DEFAULT_TITLE_FORMAT,
       lorebookSettings: {
         constVectMode: profile.constVectMode,
         position: profile.position,
