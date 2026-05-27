@@ -45,6 +45,7 @@ const profileEditTemplate = Handlebars.compile(`
                 <option value="aimlapi" {{#if (eq connection.api "aimlapi")}}selected{{/if}}>AI/ML API</option>
                 <option value="claude" {{#if (eq connection.api "claude")}}selected{{/if}}>Anthropic/Claude</option>
                 <option value="azure_openai" {{#if (eq connection.api "azure_openai")}}selected{{/if}}>Azure OpenAI</option>
+                <option value="chutes" {{#if (eq connection.api "chutes")}}selected{{/if}}>Chutes</option>
                 <option value="cohere" {{#if (eq connection.api "cohere")}}selected{{/if}}>Cohere</option>
                 <option value="cometapi" {{#if (eq connection.api "cometapi")}}selected{{/if}}>Comet API</option>
                 <option value="deepseek" {{#if (eq connection.api "deepseek")}}selected{{/if}}>DeepSeek</option>
