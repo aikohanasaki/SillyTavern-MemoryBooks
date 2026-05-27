@@ -320,7 +320,7 @@ export async function newProfile(settings, refreshCallback) {
         const apiInfo = getCurrentApiInfo();
 
         // Logic to handle title format for the template
-        const currentTitleFormat = settings.titleFormat || '[000] - {{title}}';
+        const currentTitleFormat = settings.profiles?.[settings.defaultProfile]?.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
         const isCustomTitleFormat = !allTitleFormats.includes(currentTitleFormat);
         await SummaryPromptManager.firstRunInitIfMissing(settings);
@@ -882,6 +882,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
 export function validateAndFixProfiles(settings) {
     const issues = [];
     const fixes = [];
+    const legacyTitleFormat = settings.titleFormat || '[000] - {{title}}';
 
     if (!settings.profiles || !Array.isArray(settings.profiles)) {
         settings.profiles = [];
@@ -895,6 +896,7 @@ export function validateAndFixProfiles(settings) {
             api: 'current_st',
             preset: 'summary',
             isBuiltinCurrentST: true,
+            titleFormat: legacyTitleFormat,
         });
 
         settings.profiles.push(dynamicProfile);
@@ -944,6 +946,7 @@ export function validateAndFixProfiles(settings) {
                     api: 'current_st',
                     preset: 'summary',
                     isBuiltinCurrentST: true,
+                    titleFormat: legacyTitleFormat,
                 });
                 settings.profiles.unshift(dynamicProfile);
                 if (typeof settings.defaultProfile === 'number') {
@@ -1006,7 +1009,7 @@ export function validateAndFixProfiles(settings) {
         }
         // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {
-            profile.titleFormat = settings.titleFormat || '[000] - {{title}}';
+            profile.titleFormat = legacyTitleFormat;
             fixes.push(`Added missing title format to profile "${profile.name}"`);
         }
     });
@@ -1014,6 +1017,12 @@ export function validateAndFixProfiles(settings) {
     if (settings.defaultProfile >= settings.profiles.length) {
         settings.defaultProfile = 0;
         fixes.push('Fixed invalid default profile index');
+    }
+
+    const defaultProfile = settings.profiles[settings.defaultProfile];
+    if (defaultProfile?.titleFormat && settings.titleFormat !== defaultProfile.titleFormat) {
+        settings.titleFormat = defaultProfile.titleFormat;
+        fixes.push('Mirrored default profile title format to legacy settings.titleFormat');
     }
 
     return {

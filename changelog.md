@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.9.3 (May 27, 2026)
+- Bugfix: Memory title formats now consistently use selected profile setting.
+
 ## v6.9.2 (May 25, 2026)
 - Enhancement: Google Vertex added (thank you @TwinkleStar1029 on Github!).
 

@@ -500,7 +500,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
         const settings = extension_settings.STMemoryBooks || {};
         let titleFormat = memoryResult.titleFormat;
         if (!titleFormat) {
-            titleFormat = settings.titleFormat || i18n('addlore.titleFormats.8', '[000] - {{title}}');
+            titleFormat = settings.profiles?.[settings.defaultProfile]?.titleFormat || settings.titleFormat || i18n('addlore.titleFormats.8', '[000] - {{title}}');
         }
         const refreshEditor = options.refreshEditor !== undefined
             ? options.refreshEditor !== false
