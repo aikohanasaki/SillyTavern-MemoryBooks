@@ -253,7 +253,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  */
 async function runLLM(prompt, overrides = null, options = {}) {
     // Determine connection
-    let api, model, temperature, endpoint, apiKey;
+    let api, model, temperature, endpoint, apiKey, reverseProxy;
 
     if (overrides && (overrides.api || overrides.model)) {
         api = normalizeCompletionSource(overrides.api || 'openai');
@@ -261,6 +261,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         temperature = typeof overrides.temperature === 'number' ? overrides.temperature : 0.7;
         endpoint = overrides.endpoint || null;
         apiKey = overrides.apiKey || null;
+        reverseProxy = !!overrides.reverseProxy;
         console.debug(`${MODULE_NAME}: runLLM using overrides api=${api} model=${model} temp=${temperature}`);
     } else {
         const apiInfo = getCurrentApiInfo();
@@ -268,6 +269,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
         model = modelInfo.model || '';
         temperature = modelInfo.temperature ?? 0.7;
+        reverseProxy = false;
         console.debug(`${MODULE_NAME}: runLLM using UI settings api=${api} model=${model} temp=${temperature}`);
     }
 
@@ -292,6 +294,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         endpoint,
         apiKey,
         extra,
+        reverseProxy,
         signal: options?.signal || null,
     });
     
@@ -324,10 +327,10 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         if (profile && (profile.effectiveConnection || profile.connection)) {
             const rawConn = profile.effectiveConnection || profile.connection || {};
             const conn = resolveEffectiveConnectionFromProfile(profile);
-            const { api, model, temperature, endpoint, apiKey } = conn;
+            const { api, model, temperature, endpoint, apiKey, reverseProxy } = conn;
             const extra = rawConn && typeof rawConn.extra === 'object' && rawConn.extra ? rawConn.extra : undefined;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, extra };
+            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra };
         }
 
         const settings = extension_settings?.STMemoryBooks;
@@ -345,8 +348,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
                 const model = modelInfo.model || '';
                 const temperature = modelInfo.temperature ?? 0.7;
+                const reverseProxy = !!over?.connection?.reverseProxy;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature };
+                return { api, model, temperature, reverseProxy };
             } else {
                 const conn = over?.connection || {};
                 const api = normalizeCompletionSource(conn.api || 'openai');
@@ -354,9 +358,10 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
                 const endpoint = conn.endpoint || null;
                 const apiKey = conn.apiKey || null;
+                const reverseProxy = !!conn.reverseProxy;
                 const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature, endpoint, apiKey, extra };
+                return { api, model, temperature, endpoint, apiKey, reverseProxy, extra };
             }
         }
 
@@ -370,7 +375,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const model = modelInfo.model || '';
             const temperature = modelInfo.temperature ?? 0.7;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection fallback to UI (no profiles) api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature };
+            return { api, model, temperature, reverseProxy: false };
         }
         if (!Number.isFinite(idx) || idx < 0 || idx >= profiles.length) idx = 0;
 
@@ -382,8 +387,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
             const model = modelInfo.model || '';
             const temperature = modelInfo.temperature ?? 0.7;
+            const reverseProxy = !!def?.connection?.reverseProxy;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via dynamic default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature };
+            return { api, model, temperature, reverseProxy };
         } else {
             const conn = def?.connection || {};
             const api = normalizeCompletionSource(conn.api || 'openai');
@@ -391,9 +397,10 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
             const endpoint = conn.endpoint || null;
             const apiKey = conn.apiKey || null;
+            const reverseProxy = !!conn.reverseProxy;
             const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, extra };
+            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra };
         }
     } catch (err) {
         // Ultimate fallback: UI
@@ -403,7 +410,7 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         const model = modelInfo.model || '';
         const temperature = modelInfo.temperature ?? 0.7;
         console.warn(`${MODULE_NAME}: resolveSidePromptConnection error; falling back to UI`, err);
-        return { api, model, temperature };
+        return { api, model, temperature, reverseProxy: false };
     }
 }
 
@@ -1161,31 +1168,25 @@ export async function evaluateTrackers() {
 
             // Preview gating if enabled
             try {
-                const settings = extension_settings?.STMemoryBooks;
-                if (settings?.moduleSettings?.showMemoryPreviews) {
-                    const memoryResult = {
-                        extractedTitle: prepared.unifiedTitle,
-                        content: resultText,
-                        suggestedKeys: [],
-                    };
-                    const sceneDataForPreview = {
-                        sceneStart: compiled?.metadata?.sceneStart ?? boundedStart,
-                        sceneEnd: compiled?.metadata?.sceneEnd ?? currentLast,
-                        messageCount: compiled?.metadata?.messageCount ?? (compiled?.messages?.length ?? 0),
-                    };
-                    const profileSettingsForPreview = { name: 'SidePrompt' };
-                    let previewResult;
-                    await enqueuePreview(async () => {
-                        previewResult = await showMemoryPreviewPopup(memoryResult, sceneDataForPreview, profileSettingsForPreview, { lockTitle: true });
-                    });
-                    if (previewResult?.action === 'cancel' || previewResult?.action === 'retry') {
-                        console.log(`${MODULE_NAME}: SidePrompt "${tpl.name}" canceled or retry requested in preview; skipping save`);
-                        continue;
-                    } else if (previewResult?.action === 'edit' && previewResult.memoryData) {
-                        resultText = previewResult.memoryData.content ?? resultText;
-                    }
+                throwIfStmbStopped(runEpoch);
+                const previewResult = await resolveSidePromptPreview({
+                    tpl,
+                    initialText: resultText,
+                    finalPrompt: prepared.finalPrompt,
+                    conn: prepared.conn,
+                    compiledScene: compiled,
+                    runEpoch,
+                    queuePreview: true,
+                    unifiedTitle: prepared.unifiedTitle,
+                    retryTaskLabel: `SidePrompt:onInterval:retry:${tpl?.key || tpl?.name || 'unknown'}`,
+                });
+                if (!previewResult.approved) {
+                    console.log(`${MODULE_NAME}: SidePrompt "${tpl.name}" canceled in preview; skipping save`);
+                    continue;
                 }
+                resultText = previewResult.text;
             } catch (previewErr) {
+                if (isStmbStopError(previewErr)) return;
                 console.warn(`${MODULE_NAME}: Preview step failed; proceeding without preview`, previewErr);
             }
 

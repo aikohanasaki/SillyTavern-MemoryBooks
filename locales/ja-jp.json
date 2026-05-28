@@ -412,7 +412,7 @@
     "STMemoryBooks_APIEndpointPlaceholder": "https://api.example.com/v1/chat/completions",
     "STMemoryBooks_APIKey": "APIキー:",
     "STMemoryBooks_APIKeyPlaceholder": "APIキーを入力",
-    "STMemoryBooks_ReverseProxy": "リバースプロキシ",
+    "STMemoryBooks_ReverseProxy": "リバースプロキシを使用",
     "STMemoryBooks_ProxyPassword": "プロキシパスワード:",
     "STMemoryBooks_ProxyPasswordPlaceholder": "プロキシパスワードを入力",
     "STMemoryBooks_LorebookEntrySettings": "ロアブックエントリ設定",

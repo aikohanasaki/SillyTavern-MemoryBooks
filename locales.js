@@ -627,7 +627,7 @@ export const localeData_en = {
     'STMemoryBooks_APIEndpointPlaceholder': 'https://api.example.com/v1/chat/completions',
     'STMemoryBooks_APIKey': 'API Key:',
     'STMemoryBooks_APIKeyPlaceholder': 'Enter your API key',
-    'STMemoryBooks_ReverseProxy': 'Reverse Proxy',
+    'STMemoryBooks_ReverseProxy': 'Use reverse proxy',
     'STMemoryBooks_ProxyPassword': 'Proxy Password:',
     'STMemoryBooks_ProxyPasswordPlaceholder': 'Enter proxy password',
     'STMemoryBooks_LorebookEntrySettings': 'Lorebook Entry Settings',

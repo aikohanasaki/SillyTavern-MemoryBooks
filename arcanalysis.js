@@ -328,6 +328,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
     endpoint: conn.endpoint,
     apiKey: conn.apiKey,
     extra,
+    reverseProxy: !!conn.reverseProxy,
     signal,
   });
   if (runEpoch !== null) throwIfStmbStopped(runEpoch);
@@ -354,6 +355,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
       endpoint: conn.endpoint,
       apiKey: conn.apiKey,
       extra,
+      reverseProxy: !!conn.reverseProxy,
       signal,
     });
     if (runEpoch !== null) throwIfStmbStopped(runEpoch);
@@ -761,6 +763,7 @@ export async function runSummaryAnalysisSequential(
           endpoint: conn.endpoint,
           apiKey: conn.apiKey,
           extra,
+          reverseProxy: !!conn.reverseProxy,
           signal: task.signal,
         });
         task.throwIfStopped();
@@ -790,6 +793,7 @@ export async function runSummaryAnalysisSequential(
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
             extra,
+            reverseProxy: !!conn.reverseProxy,
             signal: task.signal,
           });
           task.throwIfStopped();
@@ -1020,6 +1024,7 @@ function resolveConnection(profileOrConnection) {
             : getUIModelSettings().temperature ?? 0.2,
       endpoint: c.endpoint,
       apiKey: c.apiKey,
+      reverseProxy: !!c.reverseProxy,
     };
   }
   // Fallback: current UI

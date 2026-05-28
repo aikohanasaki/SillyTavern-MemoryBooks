@@ -408,7 +408,7 @@
     "STMemoryBooks_APIEndpointPlaceholder": "https://api.example.com/v1/chat/completions",
     "STMemoryBooks_APIKey": "API 金鑰:",
     "STMemoryBooks_APIKeyPlaceholder": "輸入您的 API 金鑰",
-    "STMemoryBooks_ReverseProxy": "反向代理",
+    "STMemoryBooks_ReverseProxy": "使用反向代理",
     "STMemoryBooks_ProxyPassword": "代理密碼:",
     "STMemoryBooks_ProxyPasswordPlaceholder": "輸入代理密碼",
     "STMemoryBooks_LorebookEntrySettings": "故事書條目設定",

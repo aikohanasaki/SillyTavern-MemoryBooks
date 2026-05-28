@@ -408,7 +408,7 @@
     "STMemoryBooks_APIEndpointPlaceholder": "https://api.example.com/v1/chat/completions",
     "STMemoryBooks_APIKey": "API 키:",
     "STMemoryBooks_APIKeyPlaceholder": "API 키를 입력하세요",
-    "STMemoryBooks_ReverseProxy": "리버스 프록시",
+    "STMemoryBooks_ReverseProxy": "리버스 프록시 사용",
     "STMemoryBooks_ProxyPassword": "프록시 비밀번호:",
     "STMemoryBooks_ProxyPasswordPlaceholder": "프록시 비밀번호를 입력하세요",
     "STMemoryBooks_LorebookEntrySettings": "로어북 항목 설정",

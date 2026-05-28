@@ -5,6 +5,7 @@
 ## v6.9.3 (May 27, 2026)
 - Bugfix: Memory title formats now consistently use selected profile setting.
 - Tweak: Add Chutes provider.
+- Bugfix: Reverse proxy checkbox added.
 
 ## v6.9.2 (May 25, 2026)
 - Enhancement: Google Vertex added (thank you @TwinkleStar1029 on Github!).

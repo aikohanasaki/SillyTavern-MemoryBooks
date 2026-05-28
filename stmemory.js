@@ -95,8 +95,8 @@ const PROXY_SUPPORTED_COMPLETION_SOURCES = new Set([
     'moonshot',
 ]);
 
-function shouldForwardReverseProxy(api) {
-    return !!oai_settings?.reverse_proxy && PROXY_SUPPORTED_COMPLETION_SOURCES.has(api);
+function shouldForwardReverseProxy(api, reverseProxy) {
+    return !!reverseProxy && !!oai_settings?.reverse_proxy && PROXY_SUPPORTED_COMPLETION_SOURCES.has(api);
 }
 
 /**
@@ -110,6 +110,7 @@ function shouldForwardReverseProxy(api) {
 *@param {string} [opts.api] - 'openai', 'claude', 'makersuite', 'custom', etc. (Note: ST uses 'makersuite' as the canonical provider key; avoid other aliases).*
 *@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
+*@param {boolean} [opts.reverseProxy] - Whether to forward SillyTavern reverse proxy settings for supported providers*
 *@returns {Promise<{text: string, full: object}>}*
 */
 export async function sendRawCompletionRequest({
@@ -120,6 +121,7 @@ export async function sendRawCompletionRequest({
     endpoint = null,
     apiKey = null,
     extra = {},
+    reverseProxy = false,
     signal = null,
 }) {
     let url = getCurrentCompletionEndpoint();
@@ -219,7 +221,7 @@ export async function sendRawCompletionRequest({
         body.zai_endpoint = oai_settings?.zai_endpoint || ZAI_ENDPOINT.COMMON;
     }
 
-    if (shouldForwardReverseProxy(api)) {
+    if (shouldForwardReverseProxy(api, reverseProxy)) {
         body.reverse_proxy = oai_settings.reverse_proxy;
         body.proxy_password = oai_settings.proxy_password || '';
     }
@@ -278,7 +280,7 @@ export async function sendRawCompletionRequest({
 /**
  * Unified request wrapper for side prompts and memory generation.
  * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
- * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object }} opts
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean }} opts
  * @returns {Promise<{ text: string, full: object }>}
  */
 export async function requestCompletion({
@@ -289,6 +291,7 @@ export async function requestCompletion({
     endpoint = null,
     apiKey = null,
     extra = {},
+    reverseProxy = false,
     signal = null,
 }) {
     // Delegate all provider-specific shaping to sendRawCompletionRequest which already
@@ -301,6 +304,7 @@ export async function requestCompletion({
         endpoint,
         apiKey,
         extra,
+        reverseProxy,
         signal,
     });
 }
@@ -774,6 +778,7 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
             extra: extra,
+            reverseProxy: !!conn.reverseProxy,
             signal,
         });
 

@@ -411,7 +411,7 @@
     "STMemoryBooks_APIEndpointPlaceholder": "https://api.example.com/v1/chat/completions",
     "STMemoryBooks_APIKey": "Kunci API:",
     "STMemoryBooks_APIKeyPlaceholder": "Masukkan kunci API Anda",
-    "STMemoryBooks_ReverseProxy": "Proxy terbalik",
+    "STMemoryBooks_ReverseProxy": "Gunakan proxy terbalik",
     "STMemoryBooks_ProxyPassword": "Kata sandi proxy:",
     "STMemoryBooks_ProxyPasswordPlaceholder": "Masukkan kata sandi proxy",
     "STMemoryBooks_LorebookEntrySettings": "Pengaturan Entri Buku Latar",
