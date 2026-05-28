@@ -532,13 +532,13 @@ export async function estimateTokens(text, options = {}) {
 
 /**
  * Resolve a profile's effective connection into a normalized shape
- * { api, model, temperature, endpoint, apiKey }.
+ * { api, model, temperature, endpoint, apiKey, reverseProxy }.
  * - Applies normalizeCompletionSource to api
  * - Clamps temperature to [0, 2] with default 0.7
- * - Passes through endpoint/apiKey if provided on the profile connection
+ * - Passes through endpoint/apiKey/reverseProxy if provided on the profile connection
  *
  * @param {Object} profile
- * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string }}
+ * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string, reverseProxy?: boolean }}
  */
 export function resolveEffectiveConnectionFromProfile(profile) {
     const conn = (profile?.effectiveConnection || profile?.connection || {});
@@ -550,8 +550,9 @@ export function resolveEffectiveConnectionFromProfile(profile) {
     }
     const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
     const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
+    const reverseProxy = !!conn.reverseProxy;
 
-    return { api, model, temperature, endpoint, apiKey };
+    return { api, model, temperature, endpoint, apiKey, reverseProxy };
 }
 
 
@@ -984,11 +985,13 @@ export function formatPresetDisplayName(presetName) {
  * @param {number} [data.reverseStart=9999] - Reverse ordering start (100-9999).
  * @param {boolean} [data.preventRecursion=true] - The prevent recursion flag.
  * @param {boolean} [data.delayUntilRecursion=false] - The delay until recursion flag.
- * @param {boolean} [data.reverseProxy=false] - Whether full-manual apiKey should be treated as a proxy password.
+ * @param {boolean} [data.reverseProxy=false] - Whether this profile should use reverse proxy settings.
  * @returns {Object} A structured and validated profile object.
  */
 export function createProfileObject(data = {}) {
-    let temperature = parseTemperature(data.temperature);
+    const inputConn = (data.connection && typeof data.connection === 'object') ? data.connection : {};
+
+    let temperature = parseTemperature(data.temperature ?? inputConn.temperature);
     if (temperature === null) {
         temperature = 0.7;
     }
@@ -996,7 +999,7 @@ export function createProfileObject(data = {}) {
     const profile = {
         name: (data.name || 'New Profile').trim(),
         connection: {
-            api: data.api || 'openai',
+            api: data.api || inputConn.api || 'openai',
             temperature: temperature,
         },
         prompt: (data.prompt || '').trim(),
@@ -1026,24 +1029,24 @@ export function createProfileObject(data = {}) {
         profile.titleFormat = data.titleFormat || '[000] - {{title}}';
     }
 
-    const model = (data.model || '').trim();
+    const model = (data.model ?? inputConn.model ?? '').trim();
     if (model) {
         profile.connection.model = model;
     }
 
     // Add endpoint and apiKey for full-manual configuration
-    const endpoint = (data.endpoint || '').trim();
+    const endpoint = (data.endpoint ?? inputConn.endpoint ?? '').trim();
     if (endpoint) {
         profile.connection.endpoint = endpoint;
     }
 
-    const apiKey = (data.apiKey || '').trim();
+    const apiKey = (data.apiKey ?? inputConn.apiKey ?? '').trim();
     if (apiKey) {
         profile.connection.apiKey = apiKey;
     }
 
-    const reverseProxy = data.reverseProxy ?? data.connection?.reverseProxy;
-    if (profile.connection.api === 'full-manual' && reverseProxy) {
+    const reverseProxy = data.reverseProxy ?? inputConn.reverseProxy;
+    if (reverseProxy) {
         profile.connection.reverseProxy = true;
     }
 

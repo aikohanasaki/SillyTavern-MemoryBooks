@@ -982,6 +982,7 @@ function resolveCompactionProfileConnection(profileIndex = getCompactionProfileI
             api: normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai'),
             model: modelInfo.model || '',
             temperature: modelInfo.temperature ?? 0.3,
+            reverseProxy: !!profile?.connection?.reverseProxy,
         };
     }
 
@@ -1055,6 +1056,7 @@ async function requestCompaction(entry, entryKind, template = getCompactionPromp
         prompt: buildCompactionPrompt(entry, entryKind, template),
         endpoint: connection.endpoint,
         apiKey: connection.apiKey,
+        reverseProxy: !!connection.reverseProxy,
         extra,
     });
     const compacted = String(text || '').trim();

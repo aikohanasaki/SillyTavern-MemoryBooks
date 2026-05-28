@@ -412,7 +412,7 @@
     "STMemoryBooks_APIEndpointPlaceholder": "https://api.example.com/v1/chat/completions",
     "STMemoryBooks_APIKey": "Kunci API:",
     "STMemoryBooks_APIKeyPlaceholder": "Masukkan kunci API anda",
-    "STMemoryBooks_ReverseProxy": "Proksi songsang",
+    "STMemoryBooks_ReverseProxy": "Gunakan proksi songsang",
     "STMemoryBooks_ProxyPassword": "Kata laluan proksi:",
     "STMemoryBooks_ProxyPasswordPlaceholder": "Masukkan kata laluan proksi",
     "STMemoryBooks_LorebookEntrySettings": "Tetapan Entri Buku Legenda",

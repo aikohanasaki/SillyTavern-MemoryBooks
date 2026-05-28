@@ -84,12 +84,12 @@ const profileEditTemplate = Handlebars.compile(`
             <input type="number" id="stmb-profile-temperature" value="{{connection.temperature}}" class="text_pole" min="0" max="2" step="0.1" data-i18n="[placeholder]STMemoryBooks_TemperaturePlaceholder" placeholder="DO NOT LEAVE BLANK! If unsure put 0.8." {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
         </label>
 
-        <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
-            <label class="checkbox_label marginTop5">
-                <input type="checkbox" id="stmb-profile-reverse-proxy" {{#if connection.reverseProxy}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_ReverseProxy">Reverse Proxy</span>
-            </label>
+        <label class="checkbox_label marginTop5">
+            <input type="checkbox" id="stmb-profile-reverse-proxy" {{#if connection.reverseProxy}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ReverseProxy">Use reverse proxy</span>
+        </label>
 
+        <div id="stmb-full-manual-section" class="{{#unless (eq connection.api 'full-manual')}}displayNone{{/unless}}">
             <label for="stmb-profile-endpoint">
                 <h4 data-i18n="STMemoryBooks_APIEndpointURL">API Endpoint URL:</h4>
                 <input type="text" id="stmb-profile-endpoint" value="{{connection.endpoint}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_APIEndpointPlaceholder" placeholder="https://api.example.com/v1/chat/completions">
@@ -846,8 +846,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
         temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
         endpoint: popupElement.querySelector('#stmb-profile-endpoint')?.value,
         apiKey: popupElement.querySelector('#stmb-profile-apikey')?.value,
-        reverseProxy: popupElement.querySelector('#stmb-profile-api')?.value === 'full-manual'
-            && popupElement.querySelector('#stmb-profile-reverse-proxy')?.checked,
+        reverseProxy: popupElement.querySelector('#stmb-profile-reverse-proxy')?.checked,
         constVectMode: popupElement.querySelector('#stmb-profile-const-vect')?.value,
         position: popupElement.querySelector('#stmb-profile-position')?.value,
         orderMode: popupElement.querySelector('input[name="order-mode"]:checked')?.value,

@@ -412,7 +412,7 @@
     "STMemoryBooks_APIEndpointPlaceholder": "https://api.example.com/v1/chat/completions",
     "STMemoryBooks_APIKey": "Clave de API:",
     "STMemoryBooks_APIKeyPlaceholder": "Introduzca su clave de API",
-    "STMemoryBooks_ReverseProxy": "Proxy inverso",
+    "STMemoryBooks_ReverseProxy": "Usar proxy inverso",
     "STMemoryBooks_ProxyPassword": "Contraseña de proxy:",
     "STMemoryBooks_ProxyPasswordPlaceholder": "Introduzca la contraseña de proxy",
     "STMemoryBooks_LorebookEntrySettings": "Ajustes de Entrada de Lorebook",
