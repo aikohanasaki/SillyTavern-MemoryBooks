@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.10.1 (May 29, 2026)
+- Bugfix: Consolidation manual lorebook fix.
+
 ## v6.10.0 (May 29, 2026)
 - NEW FEATURE: Topical Clip extracts and creates topical entries from existing STMB memories/Clips.
 - Tweak: json_schema request toggle per profile.
