@@ -402,6 +402,7 @@
     "STMemoryBooks_CustomAPI": "사용자 지정 API",
     "STMemoryBooks_FullManualConfig": "전체 수동 구성",
     "STMemoryBooks_APIProfileConfigHint": "💡 프로필 설정 팁: STMB는 ST 설정에서 API 정보와 키를 자동으로 읽어옵니다. 먼저 ST에서 테스트 메시지를 사용하여 연결을 구성하고 테스트하세요. 그런 다음 위 드롭다운 메뉴에서 해당 설정을 선택하여 메모리 생성에 사용하세요. 두 가지 다른 사용자 지정 OpenAI 호환 설정이 필요한 경우에만 전체 수동 구성을 사용하십시오. 그렇지 않은 경우, ST에서 역할극용과 메모리 북용으로 두 개의 연결 프로필을 생성하면 됩니다.",
+    "STMemoryBooks_SkipStructuredOutput": "구조화된 출력을 건너뛰고 일반 텍스트 완성을 사용",
     "STMemoryBooks_TemperatureRange": "온도 (0.0 - 2.0):",
     "STMemoryBooks_TemperaturePlaceholder": "비워두지 마세요! 확실하지 않으면 0.8을 입력하세요.",
     "STMemoryBooks_APIEndpointURL": "API 엔드포인트 URL:",
