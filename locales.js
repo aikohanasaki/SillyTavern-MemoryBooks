@@ -260,6 +260,8 @@ export const localeData_en = {
     'STMemoryBooks_Jobs_Lorebook': 'Lorebook',
     'STMemoryBooks_Jobs_MemoryQueued': 'Memory job queued.',
     'STMemoryBooks_Jobs_ConsolidationQueued': 'Consolidation job queued.',
+    'STMemoryBooks_Jobs_FinishBeforeChatChangeWarning': 'Let Memory Books jobs finish before changing chats. Auto-memory and auto-consolidation prompts are only reliable in the current chat.',
+    'STMemoryBooks_Jobs_ChatChangedActiveWarning': 'Memory Books jobs are still active. Auto-memory and auto-consolidation prompts may not run until you return or another trigger occurs.',
     'STMemoryBooks_Jobs_TopInfoBarMissingNotice': 'Chat Top Bar is either disabled or not installed. The Memory Books job queue function requires Chat Top Bar--please install and/or enable the extension to access the job queue function. This is not required if you do not want job queueing.',
     'STMemoryBooks_Jobs_TopInfoBarMissingDismiss': 'Dismiss and never show this notification again.',
     'STMemoryBooks_Clip_ReviewEntriesTitle': 'Compaction',

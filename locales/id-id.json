@@ -1033,6 +1033,8 @@
   "STMemoryBooks_Jobs_Lorebook": "Buku Latar",
   "STMemoryBooks_Jobs_MemoryQueued": "Tugas memori masuk antrean.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Tugas konsolidasi masuk antrean.",
+  "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Biarkan tugas Buku Memori selesai sebelum berpindah chat. Memori otomatis dan prompt konsolidasi otomatis hanya andal di chat saat ini.",
+  "STMemoryBooks_Jobs_ChatChangedActiveWarning": "Tugas Buku Memori masih aktif. Memori otomatis dan prompt konsolidasi otomatis mungkin tidak berjalan sampai Anda kembali atau pemicu lain terjadi.",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar dinonaktifkan atau tidak terpasang. Fungsi antrean tugas Buku Memori memerlukan Chat Top Bar. Pasang dan/atau aktifkan ekstensi tersebut untuk mengakses fungsi antrean tugas. Ini tidak diperlukan jika Anda tidak ingin memakai antrean tugas.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Sembunyikan dan jangan tampilkan notifikasi ini lagi."
 }

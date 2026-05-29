@@ -1038,6 +1038,8 @@
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
   "STMemoryBooks_Jobs_MemoryQueued": "Erinnerungs-Job eingereiht.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Konsolidierungs-Job eingereiht.",
+  "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Lass Memory Books-Jobs fertig werden, bevor du den Chat wechselst. Auto-Erinnerungen und Auto-Konsolidierungsabfragen sind nur im aktuellen Chat zuverlässig.",
+  "STMemoryBooks_Jobs_ChatChangedActiveWarning": "Memory Books-Jobs sind noch aktiv. Auto-Erinnerungen und Auto-Konsolidierungsabfragen werden möglicherweise erst ausgeführt, wenn du zurückkehrst oder ein weiterer Auslöser eintritt.",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar ist deaktiviert oder nicht installiert. Die Job-Warteschlange von Memory Books benötigt Chat Top Bar. Bitte installiere und/oder aktiviere die Erweiterung, um die Job-Warteschlange zu verwenden. Dies ist nicht erforderlich, wenn du keine Job-Warteschlange verwenden möchtest.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Ausblenden und diese Benachrichtigung nie wieder anzeigen."
 }

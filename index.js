@@ -50,6 +50,7 @@ import { autoCreateLorebook } from "./autocreate.js";
 import {
   handleAutoSummaryMessageReceived,
   clearAutoSummaryState,
+  retryAutoSummaryAfterJobIdle,
 } from "./autosummary.js";
 import {
   editProfile,
@@ -162,6 +163,7 @@ import {
   hasActiveStmbJobs,
   initStmbJobsIfTopInfoBarEnabled,
   registerStmbJobExecutor,
+  subscribeToStmbJobs,
   updateHighestMemoryProcessedForChatRef,
   withStmbWriteLane,
 } from "./stmbJobs.js";
@@ -311,6 +313,7 @@ const MODULE_NAME = "STMemoryBooks";
 
 let hasBeenInitialized = false;
 const deferredQueuedAutoHideRanges = new Map();
+let autoSummaryJobRetryInFlight = false;
 
 // Supported Chat Completion sources
 const SUPPORTED_COMPLETION_SOURCES = [
@@ -571,6 +574,15 @@ function handleChatChanged() {
       "index.log.chatChanged",
     ),
   );
+  if (hasActiveStmbJobs()) {
+    toastr.warning(
+      translate(
+        "Memory Books jobs are still active. Auto-memory and auto-consolidation prompts may not run until you return or another trigger occurs.",
+        "STMemoryBooks_Jobs_ChatChangedActiveWarning",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+  }
   hideFloatingClipButton();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
@@ -631,6 +643,20 @@ async function handleMessageReceived() {
       error,
     );
   }
+}
+
+function handleStmbJobStateChanged() {
+  if (autoSummaryJobRetryInFlight) return;
+  if (hasActiveStmbJobs(getStmbChatKey())) return;
+
+  autoSummaryJobRetryInFlight = true;
+  retryAutoSummaryAfterJobIdle()
+    .catch((error) => {
+      console.warn("STMemoryBooks: auto-summary retry after job idle failed:", error);
+    })
+    .finally(() => {
+      autoSummaryJobRetryInFlight = false;
+    });
 }
 
 /**
@@ -2317,7 +2343,10 @@ async function executeMemoryGeneration(
       __st_t_tag`Memory "${addResult.entryTitle}" created successfully${contextMsg}${retryMsg}!`,
       "STMemoryBooks",
     );
-    await maybePromptAutoConsolidation(1, lorebookValidation);
+    await maybePromptSelectedAutoConsolidation({
+      minTargetTier: 1,
+      lorebookValidation,
+    });
     return true;
   } catch (error) {
     if (isStmbStopError(error)) {
@@ -2636,6 +2665,7 @@ async function executeQueuedMemoryJob(job, jobContext) {
   jobContext.throwIfCancelled();
   jobContext.setState("saving", { detail: lorebookName });
   let addResult = null;
+  let latestLorebookData = null;
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
     const freshLorebook = await loadWorldInfo(lorebookName);
     if (!freshLorebook?.entries) {
@@ -2661,6 +2691,7 @@ async function executeQueuedMemoryJob(job, jobContext) {
     if (!addResult?.success) {
       throw new Error(addResult?.error || "Failed to add memory to lorebook");
     }
+    latestLorebookData = freshLorebook;
   });
 
   jobContext.throwIfCancelled();
@@ -2681,6 +2712,19 @@ async function executeQueuedMemoryJob(job, jobContext) {
     });
   } catch (error) {
     console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
+  }
+
+  jobContext.throwIfCancelled();
+  if (isStmbJobChatCurrent(job.chatRef)) {
+    clearAutoSummaryState();
+    await maybePromptSelectedAutoConsolidation({
+      minTargetTier: 1,
+      lorebookValidation: {
+        valid: true,
+        name: lorebookName,
+        data: latestLorebookData,
+      },
+    });
   }
 }
 
@@ -3182,6 +3226,13 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       enqueueStmbJob(job);
       toastr.info(
         translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
+        "STMemoryBooks",
+      );
+      toastr.warning(
+        translate(
+          "Let Memory Books jobs finish before changing chats. Auto-memory and auto-consolidation prompts are only reliable in the current chat.",
+          "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning",
+        ),
         "STMemoryBooks",
       );
       return true;
@@ -4932,10 +4983,17 @@ function getAutoConsolidationTierOptions() {
 }
 
 async function maybePromptAutoConsolidation(targetTier, lorebookValidation = null) {
+  const emptyResult = {
+    checked: false,
+    ready: false,
+    prompted: false,
+    alreadyPrompted: false,
+  };
+
   try {
     const settings = initializeSettings();
     if (!settings?.moduleSettings?.autoConsolidationPromptEnabled) {
-      return;
+      return emptyResult;
     }
 
     const normalizedTargetTier = clampInt(Number(targetTier), 1, 6);
@@ -4944,7 +5002,7 @@ async function maybePromptAutoConsolidation(targetTier, lorebookValidation = nul
         settings.moduleSettings.autoConsolidationTargetTier,
     );
     if (!configuredTargetTiers.includes(normalizedTargetTier)) {
-      return;
+      return emptyResult;
     }
 
     const sourceTier = getSourceTierForTarget(normalizedTargetTier);
@@ -4953,7 +5011,7 @@ async function maybePromptAutoConsolidation(targetTier, lorebookValidation = nul
         ? lorebookValidation
         : await validateLorebook(true);
     if (!lorebookState?.valid || !lorebookState?.data) {
-      return;
+      return { ...emptyResult, checked: true, targetTier: normalizedTargetTier };
     }
 
     const lorebookData = lorebookState.data;
@@ -4969,13 +5027,27 @@ async function maybePromptAutoConsolidation(targetTier, lorebookValidation = nul
       isEligibleSummarySourceEntry(entry, sourceTier),
     ).length;
     if (eligibleCount < requiredMin) {
-      return;
+      return {
+        ...emptyResult,
+        checked: true,
+        targetTier: normalizedTargetTier,
+        eligibleCount,
+        requiredMin,
+      };
     }
 
     const stmbData = getSceneMarkers() || {};
     const promptKey = `${normalizedTargetTier}:${eligibleCount}`;
     if (stmbData.autoConsolidationLastPromptKey === promptKey) {
-      return;
+      return {
+        checked: true,
+        ready: true,
+        prompted: false,
+        alreadyPrompted: true,
+        targetTier: normalizedTargetTier,
+        eligibleCount,
+        requiredMin,
+      };
     }
     stmbData.autoConsolidationLastPromptKey = promptKey;
     saveMetadataForCurrentContext();
@@ -5018,9 +5090,43 @@ async function maybePromptAutoConsolidation(targetTier, lorebookValidation = nul
         initialTargetTier: normalizedTargetTier,
       });
     }
+    return {
+      checked: true,
+      ready: true,
+      prompted: true,
+      alreadyPrompted: false,
+      targetTier: normalizedTargetTier,
+      eligibleCount,
+      requiredMin,
+    };
   } catch (error) {
     console.error("STMemoryBooks: Auto-consolidation prompt check failed:", error);
+    return { ...emptyResult, error };
   }
+}
+
+async function maybePromptSelectedAutoConsolidation({
+  minTargetTier = 1,
+  lorebookValidation = null,
+} = {}) {
+  const settings = initializeSettings();
+  if (!settings?.moduleSettings?.autoConsolidationPromptEnabled) {
+    return null;
+  }
+
+  const minimumTier = clampInt(Number(minTargetTier), 1, 5);
+  const configuredTargetTiers = normalizeAutoConsolidationTargetTiers(
+    settings.moduleSettings.autoConsolidationTargetTiers ??
+      settings.moduleSettings.autoConsolidationTargetTier,
+  ).filter((tier) => tier >= minimumTier && tier <= 5);
+
+  for (const targetTier of configuredTargetTiers) {
+    const result = await maybePromptAutoConsolidation(targetTier, lorebookValidation);
+    if (result?.ready || result?.error) {
+      return result;
+    }
+  }
+  return null;
 }
 
 function clearAutoConsolidationPromptState(targetTier) {
@@ -5048,10 +5154,13 @@ async function runPostConsolidationCommitFlow({
   const normalizedTargetTier = clampInt(Number(targetTier), 1, 6);
   clearAutoConsolidationPromptState(normalizedTargetTier);
   if (normalizedTargetTier < 6) {
-    await maybePromptAutoConsolidation(normalizedTargetTier + 1, {
-      valid: true,
-      name: lorebookName,
-      data: lorebookData,
+    await maybePromptSelectedAutoConsolidation({
+      minTargetTier: normalizedTargetTier + 1,
+      lorebookValidation: {
+        valid: true,
+        name: lorebookName,
+        data: lorebookData,
+      },
     });
   }
 }
@@ -8482,6 +8591,7 @@ async function init() {
   setupEventListeners();
   registerStmbJobExecutor("memory", executeQueuedMemoryJob);
   registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
+  subscribeToStmbJobs(handleStmbJobStateChanged);
   initStmbJobsIfTopInfoBarEnabled();
 
   // Preload side prompt names cache for autocomplete
