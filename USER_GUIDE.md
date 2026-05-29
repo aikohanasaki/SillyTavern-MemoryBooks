@@ -12,6 +12,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
 - [Choose Your Style](#-choose-your-style)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
+- [Topical Clip](#-topical-clip)
 - [Clips vs Side Prompts](#️-clips-vs-side-prompts)
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
 - [Compaction vs Consolidation](#-compaction-vs-consolidation)
@@ -245,6 +246,205 @@ Examples of good Side Prompts:
 - unresolved plot threads
 
 If you only need one remembered detail, use a Clip. If you need an ongoing tracker, use a Side Prompt.
+
+---
+
+## 🔎 Topical Clip
+
+Topical Clip is for making one focused “about this topic” memory entry from memories you already created.
+
+Think of it like asking STMB:
+
+> “Read my saved memories and make one useful entry about this person, place, relationship, plot thread, item, secret, or topic.”
+
+It is still a Clip-style entry, but you are not clipping highlighted chat text. Instead, STMB uses existing memory entries as the source.
+
+Plain rule: **Clip saves selected text. Topical Clip gathers related details from saved memories. Side Prompts maintain trackers over time.**
+
+### When to use Topical Clip
+
+Use Topical Clip when your Memory Book already has several memories and you want one easier-to-trigger entry about a specific subject.
+
+Good examples:
+
+- A recurring NPC
+- A relationship between two characters
+- A mystery or investigation
+- A location
+- A faction
+- A character’s powers, injuries, promises, secrets, or preferences
+- A plot thread that appears across many scenes
+
+Example topics:
+
+```txt
+Seraphina
+{{user}}'s magic
+Alex and Mira's relationship
+The Black Harbor investigation
+The silver key
+````
+
+### When not to use Topical Clip
+
+Do not use Topical Clip when:
+
+* you only want to save one highlighted line from chat — use **Clip to Memory Book**
+* you want a tracker that updates automatically during future memory runs — use **Side Prompts**
+* you want to shorten one long entry — use **Compaction**
+* you want to combine several memories into a higher-level recap — use **Summary Consolidation**
+
+### How to use Topical Clip
+
+1. Open the Memory Books popup.
+2. Click **🔎 Topical Clip**.
+3. Choose the **Source Memory Book**.
+4. Enter the **Topic**.
+
+   * This is the subject the AI should focus on.
+   * Keep it specific.
+5. Enter **Keywords**.
+
+   * These become the lorebook activation keywords.
+   * If you leave keywords empty, STMB uses the topic.
+6. Choose a mode:
+
+   * **Create new Topical Clip** makes a new `[STMB Clip]` entry.
+   * **Update existing entry** updates an existing Clip entry.
+7. Choose a **Generation Profile**.
+
+   * This controls which AI connection/model writes the draft.
+8. Optional: click **Edit Topical Clip Prompt** if you want to change the instructions sent to the AI.
+9. Click **Generate Draft**.
+10. Review the generated draft.
+11. Edit the draft if needed.
+12. Click **Save Topical Clip**.
+
+STMB does not save the draft automatically. The lorebook only changes after you click **Save Topical Clip**.
+
+### Creating a new Topical Clip
+
+When you create a new Topical Clip, STMB creates a Clip-style lorebook entry.
+
+For example, if your topic is:
+
+```txt
+Seraphina
+```
+
+The entry title will look like:
+
+```txt
+About Seraphina [STMB Clip]
+```
+
+The visible section inside the entry uses the same Clip wrapper style as normal Clip entries.
+
+### Updating an existing Topical Clip
+
+Topical Clip can also update an existing `[STMB Clip]` entry.
+
+This is useful when you already have an entry like:
+
+```txt
+About Seraphina [STMB Clip]
+```
+
+and new memories have been added since the last time you updated it.
+
+When a Topical Clip update saves successfully, STMB stores a small run history on that entry. This includes the source memories used during the run. On the next update, STMB can use that history to find only new or changed source memories instead of rereading everything.
+
+This keeps updates smaller and helps avoid repeatedly feeding the same old memories back into the AI.
+
+### Rebuild from all source memories
+
+When updating an existing Topical Clip, you may see **Rebuild from all source memories**.
+
+Leave this off for normal updates. STMB will use only new or changed source memories when it can.
+
+Turn it on when:
+
+* the existing Topical Clip is badly outdated
+* you changed the Topical Clip prompt
+* you changed the topic or keywords significantly
+* you want the AI to reconsider all saved memories for that topic
+* the entry has no useful run history yet
+
+### What source entries does it use?
+
+Topical Clip uses confirmed STMB memory entries from the selected Memory Book.
+
+It does not use:
+
+* normal Clip entries
+* Side Prompt tracker entries
+* ordinary lorebook entries that are not managed by STMB
+
+This keeps Topical Clip focused on memories STMB already knows how to identify safely.
+
+### Good Topical Clip habits
+
+Use focused topics.
+
+Better:
+
+```txt
+Alex and Mira's relationship
+```
+
+Less useful:
+
+```txt
+Everything about the story
+```
+
+Better:
+
+```txt
+The silver key
+```
+
+Less useful:
+
+```txt
+Important items
+```
+
+Topical Clip works best when the topic is narrow enough that the AI can tell what belongs and what does not.
+
+### Prompt editing
+
+The Topical Clip prompt is editable.
+
+The default prompt tells the AI to:
+
+* extract only information related to the topic
+* avoid unrelated events
+* preserve names, relationships, preferences, promises, secrets, constraints, and unresolved issues
+* mention conflicts instead of silently choosing one version
+* update existing Clip content without duplicating it
+* avoid inventing missing details
+
+The prompt must include:
+
+```txt
+{{SOURCE_MEMORIES}}
+```
+
+Without that placeholder, STMB will not know where to put the source memories.
+
+Other supported placeholders include:
+
+```txt
+{{MODE}}
+{{TOPIC}}
+{{KEYWORDS}}
+{{EXISTING_CLIP}}
+{{EXISTING_ENTRY_CONTENT}}
+{{SOURCE_MEMORIES}}
+```
+
+Use **Reset to Default** if your custom prompt stops working well.
 
 ---
 
