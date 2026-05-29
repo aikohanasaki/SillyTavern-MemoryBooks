@@ -87,7 +87,8 @@ Rules:
 - If updating an existing Clip, add missing relevant details and remove duplication.
 - Keep the result useful as a lorebook/memory entry.
 - Avoid filler and generic phrasing.
-- Return only the finished entry content.`;
+- Return only the finished entry content.
+- Do not return JSON, title fields, keywords fields, or Clip wrapper markers.`;
 
 export const STMB_CLIP_TITLE_SUFFIX = ' [STMB Clip]';
 
@@ -1370,8 +1371,33 @@ function makeTopicalClipHeadline(topic) {
     return `About ${validateClipHeadline(topic)}`;
 }
 
-function normalizeTopicalClipDraftBody(body, headline) {
+function stripTopicalClipDraftFence(body) {
     const raw = String(body || '').trim();
+    const fullFence = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if (fullFence) return fullFence[1].trim();
+
+    const jsonFence = raw.match(/```json\s*([\s\S]*?)\s*```/i);
+    return jsonFence ? jsonFence[1].trim() : raw;
+}
+
+function extractTopicalClipDraftContent(body) {
+    const raw = stripTopicalClipDraftFence(body);
+    if (!raw) return '';
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && typeof parsed.content === 'string') {
+            return parsed.content.trim();
+        }
+    } catch {
+        // Non-JSON drafts are expected; use the raw model text.
+    }
+
+    return raw;
+}
+
+function normalizeTopicalClipDraftBody(body, headline) {
+    const raw = extractTopicalClipDraftContent(body);
     if (!raw) return '';
     const startMarker = makeClipStartMarker(headline);
     const endMarker = makeClipEndMarker(headline);
@@ -1821,20 +1847,24 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
                 <input id="stmb-topical-clip-keywords" class="text_pole" type="text" />
                 <small class="opacity70p">${escapeHtml(tr('STMemoryBooks_TopicalClip_KeywordsHelp', 'Saving updates this entry’s activation keywords. Empty keywords are filled from Topic.'))}</small>
             </label>
-            <div class="world_entry_form_control">
+            <label class="world_entry_form_control">
                 <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Mode', 'Mode'))}</h4>
-                <label><input type="radio" name="stmb-topical-clip-mode" value="create" checked /> ${escapeHtml(tr('STMemoryBooks_TopicalClip_CreateNew', 'Create new Topical Clip'))}</label>
-                <label><input type="radio" name="stmb-topical-clip-mode" value="update" /> ${escapeHtml(tr('STMemoryBooks_TopicalClip_UpdateExisting', 'Update existing entry'))}</label>
-            </div>
+                <select id="stmb-topical-clip-mode" class="text_pole">
+                    <option value="create" selected>${escapeHtml(tr('STMemoryBooks_TopicalClip_CreateNew', 'Create new Topical Clip'))}</option>
+                    <option value="update">${escapeHtml(tr('STMemoryBooks_TopicalClip_UpdateExisting', 'Update existing entry'))}</option>
+                </select>
+            </label>
             <div id="stmb-topical-clip-target-row" class="world_entry_form_control" hidden>
                 <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_TargetEntry', 'Entry to update'))}</h4>
                 <select id="stmb-topical-clip-target-select" class="text_pole"></select>
                 <small id="stmb-topical-clip-metadata-message" class="opacity70p"></small>
             </div>
-            <label id="stmb-topical-clip-rebuild-row" class="world_entry_form_control" hidden>
-                <input id="stmb-topical-clip-rebuild-all" type="checkbox" />
-                ${escapeHtml(tr('STMemoryBooks_TopicalClip_RebuildAll', 'Rebuild from all source memories'))}
-            </label>
+            <div id="stmb-topical-clip-rebuild-row" class="world_entry_form_control" hidden>
+                <label class="checkbox_label">
+                    <input id="stmb-topical-clip-rebuild-all" type="checkbox" />
+                    <span>${escapeHtml(tr('STMemoryBooks_TopicalClip_RebuildAll', 'Rebuild from all source memories'))}</span>
+                </label>
+            </div>
             ${buildCompactionProfileControl('stmb-topical-clip-profile-select', {
                 label: tr('STMemoryBooks_TopicalClip_Profile', 'Generation Profile'),
             })}
@@ -1842,14 +1872,16 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
                 <button id="stmb-topical-clip-edit-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_EditPrompt', 'Edit Topical Clip Prompt'))}</button>
             </div>
             <div id="stmb-topical-clip-diagnostics" class="info_block"></div>
-            <div class="buttons_block justifyCenter gap10px">
-                <button id="stmb-topical-clip-generate" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_GenerateDraft', 'Generate Draft'))}</button>
-                <button id="stmb-topical-clip-save" type="button" class="menu_button" disabled>${escapeHtml(tr('STMemoryBooks_TopicalClip_Save', 'Save Topical Clip'))}</button>
+            <div class="buttons_block justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-topical-clip-generate" type="button" class="menu_button whitespacenowrap">${escapeHtml(tr('STMemoryBooks_TopicalClip_GenerateDraft', 'Generate Draft'))}</button>
             </div>
             <label class="world_entry_form_control">
                 <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Draft', 'Generated draft'))}</h4>
                 <textarea id="stmb-topical-clip-draft" class="text_pole stmb-clip-preview" rows="14"></textarea>
             </label>
+            <div class="buttons_block justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-topical-clip-save" type="button" class="menu_button whitespacenowrap" disabled>${escapeHtml(tr('STMemoryBooks_TopicalClip_Save', 'Save Topical Clip'))}</button>
+            </div>
         </div>
     `);
 }
@@ -1891,6 +1923,7 @@ export async function showTopicalClipPopup(options = {}) {
 
     const dlg = popup.dlg;
     const lorebookSelect = dlg?.querySelector('#stmb-topical-clip-lorebook-select');
+    const modeSelect = dlg?.querySelector('#stmb-topical-clip-mode');
     const topicInput = dlg?.querySelector('#stmb-topical-clip-topic');
     const keywordsInput = dlg?.querySelector('#stmb-topical-clip-keywords');
     const targetRow = dlg?.querySelector('#stmb-topical-clip-target-row');
@@ -1903,7 +1936,7 @@ export async function showTopicalClipPopup(options = {}) {
     const saveButton = dlg?.querySelector('#stmb-topical-clip-save');
     const generateButton = dlg?.querySelector('#stmb-topical-clip-generate');
 
-    const getMode = () => dlg?.querySelector('input[name="stmb-topical-clip-mode"]:checked')?.value || 'create';
+    const getMode = () => modeSelect?.value || 'create';
     const getSelectedTargetEntry = () => findEntryByStableId(currentLorebookData, targetSelect?.value || '');
     const clearDraft = () => {
         generationContext = null;
@@ -1980,9 +2013,7 @@ export async function showTopicalClipPopup(options = {}) {
         }
     };
 
-    dlg?.querySelectorAll('input[name="stmb-topical-clip-mode"]').forEach(input => {
-        input.addEventListener('change', renderMode);
-    });
+    modeSelect?.addEventListener('change', renderMode);
     lorebookSelect?.addEventListener('change', event => {
         void loadSelectedLorebook(event.target.value || '');
     });
