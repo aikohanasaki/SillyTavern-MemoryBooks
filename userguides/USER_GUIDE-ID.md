@@ -20,6 +20,7 @@ Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk ko
 - [🎯 Pilih Gaya Anda](#-pilih-gaya-anda)
 - [✂️ Klip ke Buku Memori](#-klip-ke-buku-memori)
 - [✂️ Klip vs Prompt Sampingan](#-klip-vs-prompt-sampingan)
+- [Klip Topikal](#-klip-topikal)
 - [🙈 Penghematan Token: Sembunyikan / Tampilkan Pesan](#-penghematan-token-sembunyikan--tampilkan-pesan)
 - [🧭 Pemadatan vs Konsolidasi](#-pemadatan-vs-konsolidasi)
 - [🌈 Ringkasan Konsolidasi](#-ringkasan-konsolidasi)
@@ -269,6 +270,203 @@ Contoh Prompt Sampingan yang baik:
 - alur plot yang belum selesai
 
 Jika Anda hanya membutuhkan satu detail yang diingat, gunakan Klip. Jika Anda membutuhkan tracker berkelanjutan, gunakan Prompt Sampingan.
+
+---
+
+---
+
+## 🔎 Klip Topikal
+
+Klip Topikal digunakan untuk membuat satu entri “tentang topik ini” yang terfokus dari memori yang sudah Anda buat.
+
+Anggap seperti meminta STMB:
+
+> “Baca memori tersimpan saya dan buat satu entri berguna tentang orang, tempat, hubungan, alur plot, item, rahasia, atau topik ini.”
+
+Ini tetap entri bergaya Klip, tetapi Anda tidak mengklip teks chat yang disorot. Sebagai gantinya, STMB menggunakan entri memori yang sudah ada sebagai sumber.
+
+Aturan sederhana: **Klip menyimpan teks yang dipilih. Klip Topikal mengumpulkan detail terkait dari memori tersimpan. Prompt Sampingan menjaga pelacak tetap diperbarui dari waktu ke waktu.**
+
+### Kapan menggunakan Klip Topikal
+
+Gunakan Klip Topikal saat Buku Memori Anda sudah memiliki beberapa memori dan Anda ingin satu entri yang lebih mudah dipicu tentang subjek tertentu.
+
+Contoh yang baik:
+
+- NPC yang sering muncul
+- Hubungan antara dua karakter
+- Misteri atau penyelidikan
+- Lokasi
+- Faksi
+- Kekuatan, luka, janji, rahasia, atau preferensi karakter
+- Alur plot yang muncul di banyak adegan
+
+Contoh topik:
+
+```txt
+Seraphina
+Sihir {{user}}
+Hubungan Alex dan Mira
+Penyelidikan Black Harbor
+Kunci perak
+```
+
+### Kapan tidak menggunakan Klip Topikal
+
+Jangan gunakan Klip Topikal saat:
+
+- Anda hanya ingin menyimpan satu baris chat yang disorot — gunakan **Klip ke Buku Memori**
+- Anda ingin pelacak yang diperbarui otomatis pada proses memori berikutnya — gunakan **Prompt Sampingan**
+- Anda ingin memendekkan satu entri panjang — gunakan **Pemadatan**
+- Anda ingin menggabungkan beberapa memori menjadi ringkasan tingkat lebih tinggi — gunakan **Konsolidasi Ringkasan**
+
+### Cara menggunakan Klip Topikal
+
+1. Buka popup Memory Books.
+2. Klik **🔎 Klip Topikal**.
+3. Pilih **Buku Memori sumber**.
+4. Masukkan **Topik**.
+   - Ini adalah subjek yang harus difokuskan oleh AI.
+   - Buat tetap spesifik.
+5. Masukkan **Kata kunci**.
+   - Ini menjadi kata kunci aktivasi entri lorebook.
+   - Jika kata kunci dibiarkan kosong, STMB memakai topik.
+6. Pilih mode:
+   - **Buat Klip Topikal baru** membuat entri `[STMB Clip]` baru.
+   - **Perbarui entri yang ada** memperbarui entri Klip yang sudah ada.
+7. Pilih **Profil Pembuatan**.
+   - Ini menentukan koneksi/model AI mana yang menulis draf.
+8. Opsional: klik **Edit Prompt Klip Topikal** jika ingin mengubah instruksi yang dikirim ke AI.
+9. Klik **Buat Draf**.
+10. Tinjau draf yang dibuat.
+11. Edit draf jika perlu.
+12. Klik **Simpan Klip Topikal**.
+
+STMB tidak menyimpan draf secara otomatis. Lorebook hanya berubah setelah Anda mengklik **Simpan Klip Topikal**.
+
+### Membuat Klip Topikal baru
+
+Saat Anda membuat Klip Topikal baru, STMB membuat entri lorebook bergaya Klip.
+
+Misalnya, jika topiknya:
+
+```txt
+Seraphina
+```
+
+judul entrinya akan terlihat seperti:
+
+```txt
+Tentang Seraphina [STMB Clip]
+```
+
+Bagian yang terlihat di dalam entri memakai gaya wrapper Klip yang sama seperti entri Klip biasa.
+
+### Memperbarui Klip Topikal yang sudah ada
+
+Klip Topikal juga dapat memperbarui entri `[STMB Clip]` yang sudah ada.
+
+Ini berguna jika Anda sudah memiliki entri seperti:
+
+```txt
+Tentang Seraphina [STMB Clip]
+```
+
+dan memori baru telah ditambahkan sejak terakhir kali Anda memperbaruinya.
+
+Saat pembaruan Klip Topikal berhasil disimpan, STMB menyimpan sedikit riwayat proses pada entri itu. Ini mencakup memori sumber yang digunakan selama proses tersebut. Pada pembaruan berikutnya, STMB dapat memakai riwayat itu untuk menemukan hanya memori sumber baru atau berubah, alih-alih membaca semuanya lagi.
+
+Ini membuat pembaruan lebih kecil dan membantu menghindari pengiriman memori lama yang sama ke AI berulang-ulang.
+
+### Bangun ulang dari semua memori sumber
+
+Saat memperbarui Klip Topikal yang sudah ada, Anda mungkin melihat **Bangun ulang dari semua memori sumber**.
+
+Biarkan mati untuk pembaruan normal. STMB akan memakai hanya memori sumber baru atau berubah jika memungkinkan.
+
+Aktifkan saat:
+
+- Klip Topikal yang ada sudah sangat usang
+- Anda mengubah prompt Klip Topikal
+- Anda banyak mengubah topik atau kata kunci
+- Anda ingin AI mempertimbangkan ulang semua memori tersimpan untuk topik itu
+- entri belum memiliki riwayat proses yang berguna
+
+### Entri sumber apa yang digunakan?
+
+Klip Topikal menggunakan entri memori STMB yang sudah dikonfirmasi dari Buku Memori yang dipilih.
+
+Ini tidak menggunakan:
+
+- entri Klip normal
+- entri pelacak Prompt Sampingan
+- entri lorebook biasa yang tidak dikelola oleh STMB
+
+Ini menjaga Klip Topikal tetap fokus pada memori yang dapat dikenali STMB dengan aman.
+
+### Kebiasaan baik untuk Klip Topikal
+
+Gunakan topik yang terfokus.
+
+Lebih baik:
+
+```txt
+Hubungan Alex dan Mira
+```
+
+Kurang berguna:
+
+```txt
+Semua tentang cerita
+```
+
+Lebih baik:
+
+```txt
+Kunci perak
+```
+
+Kurang berguna:
+
+```txt
+Item penting
+```
+
+Klip Topikal bekerja paling baik saat topiknya cukup sempit sehingga AI bisa mengetahui mana yang termasuk dan mana yang tidak.
+
+### Mengedit prompt
+
+Prompt Klip Topikal bisa diedit.
+
+Prompt default meminta AI untuk:
+
+- mengekstrak hanya informasi yang terkait dengan topik
+- menghindari peristiwa yang tidak terkait
+- mempertahankan nama, hubungan, preferensi, janji, rahasia, batasan, dan masalah yang belum selesai
+- menyebutkan konflik alih-alih diam-diam memilih satu versi
+- memperbarui konten Klip yang sudah ada tanpa menggandakannya
+- tidak mengarang detail yang hilang
+
+Prompt harus menyertakan:
+
+```txt
+{{SOURCE_MEMORIES}}
+```
+
+Tanpa placeholder itu, STMB tidak tahu di mana harus meletakkan memori sumber.
+
+Placeholder lain yang didukung mencakup:
+
+```txt
+{{MODE}}
+{{TOPIC}}
+{{KEYWORDS}}
+{{EXISTING_CLIP}}
+{{EXISTING_ENTRY_CONTENT}}
+{{SOURCE_MEMORIES}}
+```
+
+Gunakan **Reset to Default** jika prompt kustom Anda tidak lagi bekerja dengan baik.
 
 ---
 

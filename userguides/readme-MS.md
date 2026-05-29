@@ -75,6 +75,7 @@ Pautan lain:
   - [Prom Tersuai](#prom-tersuai)
 - [📚 Integrasi Lorebook](#-integrasi-lorebook)
 - [✂️ Klip ke Buku Memori](#-klip-ke-buku-memori)
+- [Klip Topikal](#-klip-topikal)
 - [🆕 Pintasan Perintah Slash](#-pintasan-perintah-slash)
 - [👥 Sokongan Sembang Kumpulan](#-sokongan-sembang-kumpulan)
 - [🧭 Mod Operasi](#-mod-operasi)
@@ -336,6 +337,54 @@ Bahagian yang kelihatan dalam entri menggunakan tajuk tanpa `[STMB Clip]`:
 
 ---
 
+## 🔎 Klip Topikal
+
+Klip Topikal mencipta atau mengemas kini entri memori bergaya Klip yang berfokus tentang satu topik.
+
+Gunakan apabila anda sudah mempunyai memori STMB yang disimpan, tetapi mahu satu entri “tentang topik ini” yang kemas dan mengumpulkan butiran berkaitan daripada memori tersebut. Contoh:
+
+- `Tentang Seraphina`
+- `Tentang sihir {{user}}`
+- `Tentang hubungan Alex dan Mira`
+- `Tentang siasatan Black Harbor`
+
+Klip Topikal berbeza daripada Klip ke Buku Memori biasa. Klip biasa menyimpan teks chat yang diserlahkan secara terus. Klip Topikal membaca entri memori STMB sedia ada, meminta AI mengekstrak butiran tentang satu topik, kemudian memberikan draf yang boleh diedit sebelum disimpan.
+
+#### Cara ia berfungsi
+
+1. Buka Memory Books.
+2. Klik **🔎 Klip Topikal**.
+3. Pilih **Buku Memori sumber**.
+4. Masukkan **Topik**.
+5. Masukkan **Kata kunci** pengaktifan, atau biarkan kosong untuk menggunakan topik.
+6. Pilih sama ada untuk mencipta Klip Topikal baharu atau mengemas kini entri `[STMB Clip]` sedia ada.
+7. Pilih **Profil Penjanaan**.
+8. Klik **Jana Draf**.
+9. Semak dan edit draf.
+10. Klik **Simpan Klip Topikal** hanya apabila anda berpuas hati.
+
+Klip Topikal menyimpan entri sebagai entri Klip biasa yang ditandakan dengan `[STMB Clip]`. Entri baharu menggunakan tajuk seperti:
+
+```txt
+Tentang Seraphina [STMB Clip]
+```
+
+#### Mengemas kini Klip Topikal sedia ada
+
+Apabila anda mengemas kini Klip Topikal sedia ada, STMB mengingati memori sumber yang digunakan semasa larian terakhir yang berjaya. Kemas kini seterusnya biasanya hanya menggunakan memori sumber yang baharu atau berubah.
+
+Jika anda mahu membina semula keseluruhan entri daripada semua memori yang layak, hidupkan **Bina semula daripada semua memori sumber** sebelum menjana draf.
+
+#### Nota
+
+- Klip Topikal hanya menggunakan entri memori STMB yang disahkan sebagai bahan sumber.
+- Entri Klip dan entri Prom Sampingan tidak digunakan sebagai memori sumber.
+- Sasaran kemas kini ialah entri `[STMB Clip]` sedia ada.
+- Draf AI sentiasa boleh disemak dan diedit sebelum disimpan.
+- STMB tidak menyimpan draf yang dijana sehingga anda mengklik **Simpan Klip Topikal**.
+- Jika permintaan besar, STMB mungkin menunjukkan amaran token sebelum menjalankannya.
+
+---
 
 ## 🆕 Pintasan Perintah Slash
 

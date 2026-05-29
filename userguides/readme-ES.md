@@ -77,6 +77,7 @@ Otros enlaces:
   - [Prompts personalizados](#prompts-personalizados)
 - [Integración con lorebook](#-integración-con-lorebook)
 - [Clip to Memory Book](#-clip-to-memory-book)
+- [Clip temático](#-clip-temático)
 - [Comandos de barra](#-comandos-de-barra)
 - [Soporte para chats grupales](#-soporte-para-chats-grupales)
 - [Modos de operación](#-modos-de-operación)
@@ -338,6 +339,55 @@ La sección visible dentro de la entrada usa el título sin `[STMB Clip]`:
 - Las entradas existentes pueden convertirse en entradas de Clip añadiendo `[STMB Clip]` al final del título.
 - Las entradas de Clip largas pueden mostrar un recordatorio para revisarlas o compactarlas. La Compactación puede ayudar a hacer más eficientes en tokens las entradas de Clip, Side Prompt y Memory antes de reemplazar el original.
 - Las entradas de Clip no añaden atribución de fuente. Solo guardan el texto que eligió recortar.
+
+## 🔎 Clip temático
+
+Clip temático crea o actualiza una entrada de memoria enfocada, de estilo Clip, sobre un tema.
+
+Úselo cuando ya tenga memorias STMB guardadas, pero quiera una entrada limpia de “sobre este tema” que reúna detalles relacionados de esas memorias. Por ejemplo:
+
+- `Sobre Seraphina`
+- `Sobre la magia de {{user}}`
+- `Sobre la relación de Alex y Mira`
+- `Sobre la investigación de Black Harbor`
+
+Clip temático es diferente de Clip to Memory Book normal. Un Clip normal guarda directamente el texto resaltado del chat. Clip temático lee entradas de memoria STMB existentes, pide a la IA que extraiga detalles sobre un tema y luego le da un borrador editable antes de guardar.
+
+#### Cómo funciona
+
+1. Abra Memory Books.
+2. Haga clic en **🔎 Clip temático**.
+3. Elija el **Libro de Memoria de origen**.
+4. Escriba un **Tema**.
+5. Escriba **Palabras clave** de activación, o déjelas vacías para usar el tema.
+6. Elija si quiere crear un Clip temático nuevo o actualizar una entrada `[STMB Clip]` existente.
+7. Elija un **Perfil de generación**.
+8. Haga clic en **Generar borrador**.
+9. Revise y edite el borrador.
+10. Haga clic en **Guardar Clip temático** solo cuando esté conforme.
+
+Clip temático guarda las entradas como entradas de Clip normales marcadas con `[STMB Clip]`. Las entradas nuevas usan un título como:
+
+```txt
+Sobre Seraphina [STMB Clip]
+```
+
+#### Actualizar Clips temáticos existentes
+
+Cuando actualiza un Clip temático existente, STMB recuerda qué memorias de origen se usaron durante la última ejecución correcta. La siguiente actualización normalmente usa solo memorias de origen nuevas o modificadas.
+
+Si quiere reconstruir toda la entrada desde todas las memorias elegibles, active **Reconstruir desde todas las memorias de origen** antes de generar el borrador.
+
+#### Notas
+
+- Clip temático usa solo entradas de memoria STMB confirmadas como material de origen.
+- Las entradas de Clip y las entradas de Side Prompt no se usan como memorias de origen.
+- Los objetivos de actualización son entradas `[STMB Clip]` existentes.
+- El borrador de la IA siempre se puede revisar y editar antes de guardar.
+- STMB no guarda el borrador generado hasta que haga clic en **Guardar Clip temático**.
+- Si la solicitud es grande, STMB puede mostrar una advertencia de tokens antes de ejecutarla.
+
+---
 
 ## 🆕 Comandos de barra
 
