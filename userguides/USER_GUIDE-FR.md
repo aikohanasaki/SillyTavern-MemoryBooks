@@ -13,6 +13,7 @@ Vous voulez que le bot se souvienne de ce qui s'est passé, mais votre chat est 
 - [Choisir votre style](#-choisir-votre-style)
 - [Épingler dans le Memory Book](#️-épingler-dans-le-memory-book)
 - [Clips vs Side Prompts](#️-clips-vs-side-prompts)
+- [Clip thématique](#-clip-thématique)
 - [Économie de tokens : masquer / afficher](#-économie-de-tokens--masquer--afficher)
 - [Compaction vs Consolidation](#-compaction-vs-consolidation)
 - [Consolidation des résumés](#-consolidation-des-résumés)
@@ -250,6 +251,203 @@ Bons exemples de Side Prompts :
 - fils narratifs non résolus
 
 Si vous voulez seulement retenir un détail, utilisez un Clip. Si vous avez besoin d’un tracker continu, utilisez un Side Prompt.
+
+---
+
+---
+
+## 🔎 Clip thématique
+
+Le Clip thématique sert à créer une entrée ciblée « à propos de ce sujet » à partir de mémoires que vous avez déjà créées.
+
+Imaginez que vous demandez à STMB :
+
+> « Lis mes mémoires enregistrées et crée une entrée utile à propos de cette personne, de ce lieu, de cette relation, de ce fil d’intrigue, de cet objet, de ce secret ou de ce sujet. »
+
+C’est toujours une entrée de type Clip, mais vous ne découpez pas du texte sélectionné dans le chat. STMB utilise plutôt des entrées de mémoire existantes comme source.
+
+Règle simple : **Clip enregistre le texte sélectionné. Clip thématique rassemble les détails liés depuis les mémoires enregistrées. Side Prompts gardent des trackers à jour au fil du temps.**
+
+### Quand utiliser le Clip thématique
+
+Utilisez le Clip thématique lorsque votre Memory Book contient déjà plusieurs mémoires et que vous voulez une entrée plus facile à déclencher sur un sujet précis.
+
+Bons exemples :
+
+- Un PNJ récurrent
+- Une relation entre deux personnages
+- Un mystère ou une enquête
+- Un lieu
+- Une faction
+- Les pouvoirs, blessures, promesses, secrets ou préférences d’un personnage
+- Un fil d’intrigue qui apparaît dans plusieurs scènes
+
+Exemples de sujets :
+
+```txt
+Seraphina
+La magie de {{user}}
+La relation entre Alex et Mira
+L'enquête de Black Harbor
+La clé d'argent
+```
+
+### Quand ne pas utiliser le Clip thématique
+
+N’utilisez pas le Clip thématique si :
+
+- vous voulez seulement enregistrer une ligne sélectionnée du chat — utilisez **Épingler dans le Memory Book**
+- vous voulez un tracker qui se met automatiquement à jour pendant les futures exécutions de mémoire — utilisez **Side Prompts**
+- vous voulez raccourcir une longue entrée — utilisez **Compaction**
+- vous voulez combiner plusieurs mémoires dans un résumé de niveau supérieur — utilisez **Consolidation des résumés**
+
+### Comment utiliser le Clip thématique
+
+1. Ouvrez la fenêtre Memory Books.
+2. Cliquez sur **🔎 Clip thématique**.
+3. Choisissez le **Memory Book source**.
+4. Saisissez le **Sujet**.
+   - C’est le sujet sur lequel l’IA doit se concentrer.
+   - Gardez-le précis.
+5. Saisissez des **Mots-clés**.
+   - Ils deviennent les mots-clés d’activation de l’entrée de lorebook.
+   - Si vous laissez les mots-clés vides, STMB utilise le sujet.
+6. Choisissez un mode :
+   - **Créer un nouveau clip thématique** crée une nouvelle entrée `[STMB Clip]`.
+   - **Mettre à jour l'entrée existante** met à jour une entrée de Clip existante.
+7. Choisissez un **Profil de génération**.
+   - Il contrôle quelle connexion/modèle IA écrit le brouillon.
+8. Optionnel : cliquez sur **Modifier le prompt du clip thématique** si vous voulez changer les instructions envoyées à l’IA.
+9. Cliquez sur **Générer un brouillon**.
+10. Relisez le brouillon généré.
+11. Modifiez le brouillon si nécessaire.
+12. Cliquez sur **Enregistrer le clip thématique**.
+
+STMB n’enregistre pas le brouillon automatiquement. Le lorebook ne change qu’après le clic sur **Enregistrer le clip thématique**.
+
+### Créer un nouveau Clip thématique
+
+Quand vous créez un nouveau Clip thématique, STMB crée une entrée de lorebook de type Clip.
+
+Par exemple, si votre sujet est :
+
+```txt
+Seraphina
+```
+
+le titre de l’entrée ressemblera à :
+
+```txt
+À propos de Seraphina [STMB Clip]
+```
+
+La section visible dans l’entrée utilise le même style d’encadrement que les entrées de Clip normales.
+
+### Mettre à jour un Clip thématique existant
+
+Le Clip thématique peut aussi mettre à jour une entrée `[STMB Clip]` existante.
+
+C’est utile si vous avez déjà une entrée comme :
+
+```txt
+À propos de Seraphina [STMB Clip]
+```
+
+et que de nouvelles mémoires ont été ajoutées depuis sa dernière mise à jour.
+
+Quand une mise à jour de Clip thématique est enregistrée avec succès, STMB stocke un petit historique d’exécution sur cette entrée. Il inclut les mémoires source utilisées pendant l’exécution. Lors de la mise à jour suivante, STMB peut utiliser cet historique pour trouver seulement les mémoires source nouvelles ou modifiées au lieu de tout relire.
+
+Cela garde les mises à jour plus petites et évite de renvoyer sans cesse les mêmes anciennes mémoires à l’IA.
+
+### Reconstruire depuis toutes les mémoires source
+
+Lorsque vous mettez à jour un Clip thématique existant, vous pouvez voir **Reconstruire depuis toutes les mémoires source**.
+
+Laissez cette option désactivée pour les mises à jour normales. STMB utilisera seulement les mémoires source nouvelles ou modifiées quand c’est possible.
+
+Activez-la quand :
+
+- le Clip thématique existant est très obsolète
+- vous avez changé le prompt de Clip thématique
+- vous avez beaucoup changé le sujet ou les mots-clés
+- vous voulez que l’IA reconsidère toutes les mémoires enregistrées pour ce sujet
+- l’entrée n’a pas encore d’historique d’exécution utile
+
+### Quelles entrées source utilise-t-il ?
+
+Le Clip thématique utilise les entrées de mémoire STMB confirmées du Memory Book sélectionné.
+
+Il n’utilise pas :
+
+- les entrées de Clip normales
+- les entrées de tracker Side Prompt
+- les entrées de lorebook ordinaires qui ne sont pas gérées par STMB
+
+Cela garde le Clip thématique concentré sur les mémoires que STMB peut identifier de manière sûre.
+
+### Bonnes habitudes pour le Clip thématique
+
+Utilisez des sujets ciblés.
+
+Mieux :
+
+```txt
+La relation entre Alex et Mira
+```
+
+Moins utile :
+
+```txt
+Tout sur l'histoire
+```
+
+Mieux :
+
+```txt
+La clé d'argent
+```
+
+Moins utile :
+
+```txt
+Objets importants
+```
+
+Le Clip thématique fonctionne mieux quand le sujet est assez précis pour que l’IA puisse savoir ce qui appartient au sujet et ce qui n’y appartient pas.
+
+### Modifier le prompt
+
+Le prompt de Clip thématique est modifiable.
+
+Le prompt par défaut dit à l’IA de :
+
+- extraire seulement les informations liées au sujet
+- éviter les événements sans rapport
+- préserver les noms, relations, préférences, promesses, secrets, contraintes et questions non résolues
+- mentionner les contradictions au lieu de choisir une version en silence
+- mettre à jour le contenu de Clip existant sans le dupliquer
+- éviter d’inventer les détails manquants
+
+Le prompt doit inclure :
+
+```txt
+{{SOURCE_MEMORIES}}
+```
+
+Sans ce placeholder, STMB ne sait pas où placer les mémoires source.
+
+Les autres placeholders pris en charge incluent :
+
+```txt
+{{MODE}}
+{{TOPIC}}
+{{KEYWORDS}}
+{{EXISTING_CLIP}}
+{{EXISTING_ENTRY_CONTENT}}
+{{SOURCE_MEMORIES}}
+```
+
+Utilisez **Reset to Default** si votre prompt personnalisé ne fonctionne plus bien.
 
 ---
 

@@ -15,6 +15,7 @@ Brauchst du einen Bot, der sich an Dinge erinnert, aber der Chat ist zu lang fü
 - [Wähle deinen Stil](#-wähle-deinen-stil)
 - [In Memory Book clippen](#️-in-memory-book-clippen)
 - [Clips vs. Side-Prompts](#️-clips-vs-side-prompts)
+- [Themen-Clip](#-themen-clip)
 - [Token sparen: Nachrichten ausblenden/einblenden](#-token-sparen-ausblenden--einblenden)
 - [Kompaktierung vs. Konsolidierung](#-kompaktierung-vs-konsolidierung)
 - [Zusammenfassungs-Konsolidierung](#-zusammenfassungs-konsolidierung)
@@ -266,6 +267,203 @@ Gute Side-Prompts:
 - ungelöste Handlungsstränge
 
 Wenn du nur ein einzelnes Detail merken willst, verwende einen Clip. Wenn du einen laufenden Tracker brauchst, verwende einen Side-Prompt.
+
+---
+
+---
+
+## 🔎 Themen-Clip
+
+Der Themen-Clip erstellt aus bereits vorhandenen Erinnerungen einen fokussierten „Über dieses Thema“-Eintrag.
+
+Stell es dir so vor, als würdest du STMB bitten:
+
+> „Lies meine gespeicherten Erinnerungen und erstelle einen nützlichen Eintrag über diese Person, diesen Ort, diese Beziehung, diesen Plotstrang, diesen Gegenstand, dieses Geheimnis oder dieses Thema.“
+
+Es ist weiterhin ein Clip-artiger Eintrag, aber du clippst keinen markierten Chat-Text. Stattdessen nutzt STMB bestehende Erinnerungseinträge als Quelle.
+
+Einfache Regel: **Clip speichert ausgewählten Text. Themen-Clip sammelt zusammengehörige Details aus gespeicherten Erinnerungen. Side-Prompts halten Tracker im Lauf der Zeit aktuell.**
+
+### Wann du den Themen-Clip verwenden solltest
+
+Verwende den Themen-Clip, wenn dein Memory Book bereits mehrere Erinnerungen enthält und du einen leichter auslösbaren Eintrag zu einem bestimmten Thema möchtest.
+
+Gute Beispiele:
+
+- Ein wiederkehrender NPC
+- Eine Beziehung zwischen zwei Figuren
+- Ein Rätsel oder eine Ermittlung
+- Ein Ort
+- Eine Fraktion
+- Kräfte, Verletzungen, Versprechen, Geheimnisse oder Vorlieben einer Figur
+- Ein Plotstrang, der in mehreren Szenen auftaucht
+
+Beispielthemen:
+
+```txt
+Seraphina
+{{user}}s Magie
+Alex und Miras Beziehung
+Die Black-Harbor-Ermittlung
+Der silberne Schlüssel
+```
+
+### Wann du den Themen-Clip nicht verwenden solltest
+
+Verwende den Themen-Clip nicht, wenn:
+
+- du nur eine einzelne markierte Zeile aus dem Chat speichern möchtest — nutze **Clip to Memory Book**
+- du einen Tracker möchtest, der bei zukünftigen Erinnerungsläufen automatisch aktualisiert wird — nutze **Side-Prompts**
+- du einen langen Eintrag kürzen möchtest — nutze **Kompaktierung**
+- du mehrere Erinnerungen zu einer höherstufigen Zusammenfassung kombinieren möchtest — nutze **Zusammenfassungs-Konsolidierung**
+
+### So verwendest du den Themen-Clip
+
+1. Öffne das Memory-Books-Popup.
+2. Klicke auf **🔎 Themen-Clip**.
+3. Wähle das **Quell-Memory-Book**.
+4. Gib das **Thema** ein.
+   - Das ist der Gegenstand, auf den sich die KI konzentrieren soll.
+   - Halte es spezifisch.
+5. Gib **Schlüsselwörter** ein.
+   - Diese werden zu den Aktivierungsschlüsselwörtern des Lorebook-Eintrags.
+   - Wenn du die Schlüsselwörter leer lässt, verwendet STMB das Thema.
+6. Wähle einen Modus:
+   - **Neuen Themen-Clip erstellen** erstellt einen neuen `[STMB Clip]`-Eintrag.
+   - **Vorhandenen Eintrag aktualisieren** aktualisiert einen bestehenden Clip-Eintrag.
+7. Wähle ein **Generierungsprofil**.
+   - Dieses steuert, welche KI-Verbindung/welches Modell den Entwurf schreibt.
+8. Optional: Klicke auf **Themen-Clip-Prompt bearbeiten**, wenn du die Anweisungen an die KI ändern möchtest.
+9. Klicke auf **Entwurf generieren**.
+10. Prüfe den generierten Entwurf.
+11. Bearbeite den Entwurf bei Bedarf.
+12. Klicke auf **Themen-Clip speichern**.
+
+STMB speichert den Entwurf nicht automatisch. Das Lorebook ändert sich erst, wenn du auf **Themen-Clip speichern** klickst.
+
+### Einen neuen Themen-Clip erstellen
+
+Wenn du einen neuen Themen-Clip erstellst, legt STMB einen Clip-artigen Lorebook-Eintrag an.
+
+Wenn dein Thema zum Beispiel lautet:
+
+```txt
+Seraphina
+```
+
+sieht der Eintragstitel so aus:
+
+```txt
+Über Seraphina [STMB Clip]
+```
+
+Der sichtbare Abschnitt im Eintrag verwendet denselben Clip-Wrapper-Stil wie normale Clip-Einträge.
+
+### Einen bestehenden Themen-Clip aktualisieren
+
+Der Themen-Clip kann auch einen bestehenden `[STMB Clip]`-Eintrag aktualisieren.
+
+Das ist nützlich, wenn du bereits einen Eintrag wie diesen hast:
+
+```txt
+Über Seraphina [STMB Clip]
+```
+
+und seit dem letzten Update neue Erinnerungen hinzugekommen sind.
+
+Wenn ein Themen-Clip-Update erfolgreich gespeichert wird, speichert STMB eine kleine Laufhistorie auf diesem Eintrag. Dazu gehören die Quell-Erinnerungen, die während des Laufs verwendet wurden. Beim nächsten Update kann STMB diese Historie nutzen, um nur neue oder geänderte Quell-Erinnerungen zu finden, statt alles erneut zu lesen.
+
+Das hält Updates kleiner und verhindert, dass dieselben alten Erinnerungen immer wieder an die KI gesendet werden.
+
+### Aus allen Quell-Erinnerungen neu erstellen
+
+Beim Aktualisieren eines bestehenden Themen-Clips siehst du eventuell **Aus allen Quell-Erinnerungen neu erstellen**.
+
+Lasse das für normale Updates ausgeschaltet. STMB verwendet nach Möglichkeit nur neue oder geänderte Quell-Erinnerungen.
+
+Schalte es ein, wenn:
+
+- der bestehende Themen-Clip stark veraltet ist
+- du den Themen-Clip-Prompt geändert hast
+- du Thema oder Schlüsselwörter deutlich geändert hast
+- die KI alle gespeicherten Erinnerungen zu diesem Thema neu prüfen soll
+- der Eintrag noch keine nützliche Laufhistorie hat
+
+### Welche Quelleinträge verwendet er?
+
+Der Themen-Clip nutzt bestätigte STMB-Erinnerungseinträge aus dem ausgewählten Memory Book.
+
+Er nutzt nicht:
+
+- normale Clip-Einträge
+- Side-Prompt-Tracker-Einträge
+- gewöhnliche Lorebook-Einträge, die nicht von STMB verwaltet werden
+
+So bleibt der Themen-Clip auf Erinnerungen beschränkt, die STMB sicher erkennen kann.
+
+### Gute Gewohnheiten für Themen-Clips
+
+Verwende fokussierte Themen.
+
+Besser:
+
+```txt
+Alex und Miras Beziehung
+```
+
+Weniger nützlich:
+
+```txt
+Alles über die Geschichte
+```
+
+Besser:
+
+```txt
+Der silberne Schlüssel
+```
+
+Weniger nützlich:
+
+```txt
+Wichtige Gegenstände
+```
+
+Der Themen-Clip funktioniert am besten, wenn das Thema eng genug ist, dass die KI erkennen kann, was dazugehört und was nicht.
+
+### Prompt-Bearbeitung
+
+Der Themen-Clip-Prompt ist bearbeitbar.
+
+Der Standard-Prompt weist die KI an:
+
+- nur Informationen zum Thema zu extrahieren
+- nicht verwandte Ereignisse zu vermeiden
+- Namen, Beziehungen, Vorlieben, Versprechen, Geheimnisse, Einschränkungen und offene Punkte zu bewahren
+- Widersprüche zu erwähnen, statt still eine Version auszuwählen
+- bestehenden Clip-Inhalt zu aktualisieren, ohne ihn zu duplizieren
+- keine fehlenden Details zu erfinden
+
+Der Prompt muss Folgendes enthalten:
+
+```txt
+{{SOURCE_MEMORIES}}
+```
+
+Ohne diesen Platzhalter weiß STMB nicht, wo es die Quell-Erinnerungen einfügen soll.
+
+Weitere unterstützte Platzhalter sind:
+
+```txt
+{{MODE}}
+{{TOPIC}}
+{{KEYWORDS}}
+{{EXISTING_CLIP}}
+{{EXISTING_ENTRY_CONTENT}}
+{{SOURCE_MEMORIES}}
+```
+
+Nutze **Auf Standard zurücksetzen**, wenn dein benutzerdefinierter Prompt nicht mehr gut funktioniert.
 
 ---
 

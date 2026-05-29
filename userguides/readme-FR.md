@@ -77,6 +77,7 @@ Autres liens :
   - [Prompts personnalisés](#prompts-personnalisés)
 - [Intégration lorebook](#-intégration-lorebook)
 - [Épingler dans le Memory Book](#️-épingler-dans-le-memory-book)
+- [Clip thématique](#-clip-thématique)
 - [Commandes slash](#-commandes-slash)
 - [Support des discussions de groupe](#-support-des-discussions-de-groupe)
 - [Modes de fonctionnement](#-modes-de-fonctionnement)
@@ -337,6 +338,55 @@ Seraphina Healed Me [STMB Clip]
 - Utilisez les Clips pour les faits isolés, préférences, promesses, objets ou notes courtes.
 - Utilisez la création de mémoire normale pour les scènes plus larges.
 - Si une entrée de clip devient trop longue, STMB peut vous rappeler de la vérifier ou de la raccourcir avec la Compaction.
+
+---
+
+## 🔎 Clip thématique
+
+Le Clip thématique crée ou met à jour une entrée de mémoire ciblée, de type Clip, sur un sujet.
+
+Utilisez-le quand vous avez déjà des mémoires STMB enregistrées, mais que vous voulez une entrée claire « à propos de ce sujet » qui rassemble les détails liés dans ces mémoires. Par exemple :
+
+- `À propos de Seraphina`
+- `À propos de la magie de {{user}}`
+- `À propos de la relation entre Alex et Mira`
+- `À propos de l'enquête de Black Harbor`
+
+Le Clip thématique est différent de l’épinglage normal dans le Memory Book. Un Clip normal enregistre directement le texte sélectionné dans le chat. Le Clip thématique lit des entrées de mémoire STMB existantes, demande à l’IA d’extraire les détails liés à un sujet, puis vous donne un brouillon modifiable avant l’enregistrement.
+
+#### Fonctionnement
+
+1. Ouvrez Memory Books.
+2. Cliquez sur **🔎 Clip thématique**.
+3. Choisissez le **Memory Book source**.
+4. Saisissez un **Sujet**.
+5. Saisissez des **Mots-clés** d’activation, ou laissez-les vides pour utiliser le sujet.
+6. Choisissez de créer un nouveau Clip thématique ou de mettre à jour une entrée `[STMB Clip]` existante.
+7. Choisissez un **Profil de génération**.
+8. Cliquez sur **Générer un brouillon**.
+9. Relisez et modifiez le brouillon.
+10. Cliquez sur **Enregistrer le clip thématique** seulement quand il vous convient.
+
+Le Clip thématique enregistre les entrées comme des entrées de Clip normales marquées avec `[STMB Clip]`. Les nouvelles entrées utilisent un titre comme :
+
+```txt
+À propos de Seraphina [STMB Clip]
+```
+
+#### Mettre à jour des Clips thématiques existants
+
+Quand vous mettez à jour un Clip thématique existant, STMB mémorise les mémoires source utilisées lors de la dernière exécution réussie. La mise à jour suivante utilise normalement seulement les mémoires source nouvelles ou modifiées.
+
+Si vous voulez reconstruire toute l’entrée à partir de toutes les mémoires éligibles, activez **Reconstruire depuis toutes les mémoires source** avant de générer le brouillon.
+
+#### Notes
+
+- Le Clip thématique utilise seulement des entrées de mémoire STMB confirmées comme matériau source.
+- Les entrées de Clip et de Side Prompt ne sont pas utilisées comme mémoires source.
+- Les cibles de mise à jour sont des entrées `[STMB Clip]` existantes.
+- Le brouillon de l’IA peut toujours être relu et modifié avant l’enregistrement.
+- STMB n’enregistre pas le brouillon généré tant que vous ne cliquez pas sur **Enregistrer le clip thématique**.
+- Si la demande est volumineuse, STMB peut afficher un avertissement de tokens avant l’exécution.
 
 ---
 

@@ -77,6 +77,7 @@ Weitere Links:
   - [Benutzerdefinierte Prompts](#benutzerdefinierte-prompts)
 - [Lorebook-Integration](#-lorebook-integration)
 - [In Memory Book clippen](#️-in-memory-book-clippen)
+- [Themen-Clip](#-themen-clip)
 - [Slash-Befehle](#-slash-befehle)
 - [Gruppenchat-Unterstützung](#-gruppenchat-unterstützung)
 - [Betriebsmodi](#-betriebsmodi)
@@ -337,6 +338,55 @@ Innerhalb des Eintrags hält STMB den Inhalt in einem sauberen Abschnittsformat:
 - Verwende Clips für einzelne Fakten, Vorlieben, Versprechen, Gegenstände oder kurze Notizen.
 - Verwende normale Erinnerungserstellung für größere Szenen.
 - Wenn ein Clip-Eintrag zu lang wird, kann STMB dich daran erinnern, ihn zu überprüfen oder mit der Kompaktierung zu kürzen.
+
+---
+
+## 🔎 Themen-Clip
+
+Der Themen-Clip erstellt oder aktualisiert einen fokussierten Clip-artigen Erinnerungseintrag zu einem Thema.
+
+Nutze ihn, wenn du bereits STMB-Erinnerungen gespeichert hast, aber einen sauberen „Über dieses Thema“-Eintrag möchtest, der zusammengehörige Details aus diesen Erinnerungen sammelt. Zum Beispiel:
+
+- `Über Seraphina`
+- `Über {{user}}s Magie`
+- `Über Alex und Miras Beziehung`
+- `Über die Black-Harbor-Ermittlung`
+
+Der Themen-Clip unterscheidet sich vom normalen Clippen ins Memory Book. Ein normaler Clip speichert ausgewählten Chat-Text direkt. Der Themen-Clip liest bestehende STMB-Erinnerungseinträge, lässt die KI Details zu einem Thema extrahieren und gibt dir dann einen bearbeitbaren Entwurf vor dem Speichern.
+
+#### Funktionsweise
+
+1. Öffne Memory Books.
+2. Klicke auf **🔎 Themen-Clip**.
+3. Wähle das **Quell-Memory-Book**.
+4. Gib ein **Thema** ein.
+5. Gib Aktivierungs-**Schlüsselwörter** ein, oder lasse sie leer, um das Thema zu verwenden.
+6. Wähle, ob du einen neuen Themen-Clip erstellen oder einen bestehenden `[STMB Clip]`-Eintrag aktualisieren möchtest.
+7. Wähle ein **Generierungsprofil**.
+8. Klicke auf **Entwurf generieren**.
+9. Prüfe und bearbeite den Entwurf.
+10. Klicke erst auf **Themen-Clip speichern**, wenn du zufrieden bist.
+
+Themen-Clips werden als normale Clip-Einträge mit `[STMB Clip]` gespeichert. Neue Einträge verwenden einen Titel wie:
+
+```txt
+Über Seraphina [STMB Clip]
+```
+
+#### Bestehende Themen-Clips aktualisieren
+
+Wenn du einen bestehenden Themen-Clip aktualisierst, merkt sich STMB, welche Quell-Erinnerungen beim letzten erfolgreichen Lauf verwendet wurden. Beim nächsten Update werden normalerweise nur neue oder geänderte Quell-Erinnerungen verwendet.
+
+Wenn du den ganzen Eintrag aus allen passenden Erinnerungen neu aufbauen möchtest, aktiviere **Aus allen Quell-Erinnerungen neu erstellen**, bevor du den Entwurf generierst.
+
+#### Hinweise
+
+- Der Themen-Clip nutzt nur bestätigte STMB-Erinnerungseinträge als Quellmaterial.
+- Clip-Einträge und Side-Prompt-Einträge werden nicht als Quell-Erinnerungen verwendet.
+- Aktualisierungsziele sind bestehende `[STMB Clip]`-Einträge.
+- Der KI-Entwurf ist immer prüfbar und bearbeitbar, bevor er gespeichert wird.
+- STMB speichert den generierten Entwurf erst, wenn du auf **Themen-Clip speichern** klickst.
+- Wenn die Anfrage groß ist, kann STMB vor dem Start eine Token-Warnung anzeigen.
 
 ---
 
