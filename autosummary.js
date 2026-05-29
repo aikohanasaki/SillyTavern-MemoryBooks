@@ -8,6 +8,9 @@ import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 
+let autoSummarySkippedForProcessing = false;
+let autoSummarySkippedMarkersRef = null;
+
 /**
  * i18n helper: translate with Mustache-style {{var}} interpolation
  * Use like i18n('KEY', 'Fallback {{var}}', { var: 'value' })
@@ -127,6 +130,8 @@ async function checkAutoSummaryTrigger() {
 
         // Check if memory creation is in progress
         if (isMemoryProcessing()) {
+            autoSummarySkippedForProcessing = true;
+            autoSummarySkippedMarkersRef = stmbData;
             console.log(i18n('autosummary.log.skippedInProgress', 'STMemoryBooks: Auto-summary skipped - memory creation in progress'));
             return;
         }
@@ -210,6 +215,28 @@ export async function handleAutoSummaryMessageReceived() {
     } catch (error) {
         console.error(i18n('autosummary.log.messageHandlerError', 'STMemoryBooks: Error in auto-summary message received handler:'), error);
     }
+}
+
+/**
+ * Retry an auto-summary check that was skipped while memory/job processing was active.
+ * @returns {Promise<void>}
+ */
+export async function retryAutoSummaryAfterJobIdle() {
+    if (!autoSummarySkippedForProcessing) {
+        return;
+    }
+    if (isMemoryProcessing()) {
+        return;
+    }
+    if (autoSummarySkippedMarkersRef && autoSummarySkippedMarkersRef !== getSceneMarkers()) {
+        autoSummarySkippedForProcessing = false;
+        autoSummarySkippedMarkersRef = null;
+        return;
+    }
+
+    autoSummarySkippedForProcessing = false;
+    autoSummarySkippedMarkersRef = null;
+    await checkAutoSummaryTrigger();
 }
 
 /**

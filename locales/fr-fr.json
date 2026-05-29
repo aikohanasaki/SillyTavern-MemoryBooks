@@ -1032,6 +1032,8 @@
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
   "STMemoryBooks_Jobs_MemoryQueued": "Tâche de mémoire mise en file d'attente.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Tâche de consolidation mise en file d'attente.",
+  "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Laissez les tâches Memory Books se terminer avant de changer de chat. Les mémoires automatiques et les invites d'auto-consolidation ne sont fiables que dans le chat actuel.",
+  "STMemoryBooks_Jobs_ChatChangedActiveWarning": "Des tâches Memory Books sont encore actives. Les mémoires automatiques et les invites d'auto-consolidation peuvent ne pas s'exécuter avant votre retour ou un autre déclencheur.",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar est désactivé ou n'est pas installé. La file de tâches Memory Books nécessite Chat Top Bar. Veuillez installer et/ou activer l'extension pour accéder à la file de tâches. Ce n'est pas nécessaire si vous ne souhaitez pas utiliser la file de tâches.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Masquer et ne plus jamais afficher cette notification."
 }

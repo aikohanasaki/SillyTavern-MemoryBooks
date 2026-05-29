@@ -1038,6 +1038,8 @@
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
   "STMemoryBooks_Jobs_MemoryQueued": "Trabajo de memoria en cola.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Trabajo de consolidación en cola.",
+  "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Deja que los trabajos de Libros de Memoria terminen antes de cambiar de chat. La memoria automática y los avisos de auto-consolidación solo son fiables en el chat actual.",
+  "STMemoryBooks_Jobs_ChatChangedActiveWarning": "Aún hay trabajos de Libros de Memoria activos. La memoria automática y los avisos de auto-consolidación podrían no ejecutarse hasta que vuelvas o se produzca otro disparador.",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar está desactivada o no está instalada. La cola de trabajos de Libros de Memoria requiere Chat Top Bar. Instala y/o activa la extensión para acceder a la cola de trabajos. Esto no es necesario si no quieres usar la cola de trabajos.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Ocultar y no volver a mostrar esta notificación."
 }
