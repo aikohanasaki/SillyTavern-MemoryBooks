@@ -5088,6 +5088,7 @@ async function maybePromptAutoConsolidation(targetTier, lorebookValidation = nul
     if (result === POPUP_RESULT.AFFIRMATIVE) {
       await showSummaryConsolidationPopup({
         initialTargetTier: normalizedTargetTier,
+        lorebookValidation: lorebookState,
       });
     }
     return {
@@ -5171,7 +5172,9 @@ async function runPostConsolidationCommitFlow({
 async function showSummaryConsolidationPopup(popupOptions = {}) {
   try {
     // Do not auto-create a lorebook for this path; allow UI to render
-    const lorebookValidation = await validateLorebook(true);
+    const lorebookValidation = popupOptions?.lorebookValidation?.valid
+      ? popupOptions.lorebookValidation
+      : await validateLorebook(true);
 
     if (lorebookValidation?.handled) {
       return;
