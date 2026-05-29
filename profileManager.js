@@ -74,6 +74,11 @@ const profileEditTemplate = Handlebars.compile(`
             <small data-i18n="STMemoryBooks_APIProfileConfigHint">💡 Profile Setup Hint: STMB automatically reads API info and keys from your ST config. First, configure and test your connection in ST using Test Message. Then select it from the dropdown above to use those settings for memory generation. Only use Full Manual Configuration if you need two different Custom OpenAI-Compatible setups; otherwise, just create two connection profiles in ST—one for roleplay and one for Memory Books.</small>
         </div>
 
+        <label class="checkbox_label marginTop5">
+            <input type="checkbox" id="stmb-profile-skip-structured-output" {{#if skipStructuredOutput}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_SkipStructuredOutput">Skip structured output and use plain-text completion</span>
+        </label>
+
         <label for="stmb-profile-model">
             <h4 data-i18n="STMemoryBooks_Model">Model:</h4>
             <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ModelPlaceholder" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
@@ -263,6 +268,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             reverseStart: Number.isFinite(profile.reverseStart) ? profile.reverseStart : DEFAULT_REVERSE_START,
             preventRecursion: profile.preventRecursion,
             delayUntilRecursion: profile.delayUntilRecursion,
+            skipStructuredOutput: Boolean(profile.skipStructuredOutput),
             outletName: profile.outletName || '',
             hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false
         };
@@ -357,6 +363,7 @@ export async function newProfile(settings, refreshCallback) {
             reverseStart: DEFAULT_REVERSE_START,
             preventRecursion: false,
             delayUntilRecursion: false,
+            skipStructuredOutput: false,
             outletName: ''
         };
 
@@ -854,6 +861,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
         reverseStart: popupElement.querySelector('#stmb-profile-reverse-start')?.value,
         preventRecursion: popupElement.querySelector('#stmb-profile-prevent-recursion')?.checked,
         delayUntilRecursion: popupElement.querySelector('#stmb-profile-delay-recursion')?.checked,
+        skipStructuredOutput: popupElement.querySelector('#stmb-profile-skip-structured-output')?.checked,
     };
 
     // Step 2: Intelligently determine whether to use the selected preset or the custom prompt.
@@ -1006,6 +1014,12 @@ export function validateAndFixProfiles(settings) {
         if (profile.delayUntilRecursion === undefined) {
             profile.delayUntilRecursion = false;
             fixes.push(`Added default 'delayUntilRecursion' to profile "${profile.name}"`);
+        }
+        if (profile.skipStructuredOutput === undefined) {
+            profile.skipStructuredOutput = false;
+            fixes.push(`Added default 'skipStructuredOutput' to profile "${profile.name}"`);
+        } else {
+            profile.skipStructuredOutput = Boolean(profile.skipStructuredOutput);
         }
         // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {

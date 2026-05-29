@@ -985,6 +985,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {number} [data.reverseStart=9999] - Reverse ordering start (100-9999).
  * @param {boolean} [data.preventRecursion=true] - The prevent recursion flag.
  * @param {boolean} [data.delayUntilRecursion=false] - The delay until recursion flag.
+ * @param {boolean} [data.skipStructuredOutput=false] - Whether to skip provider structured-output requests.
  * @param {boolean} [data.reverseProxy=false] - Whether this profile should use reverse proxy settings.
  * @returns {Object} A structured and validated profile object.
  */
@@ -1017,6 +1018,7 @@ export function createProfileObject(data = {}) {
         })(),
         preventRecursion: data.preventRecursion !== undefined ? data.preventRecursion : true,
         delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : false,
+        skipStructuredOutput: Boolean(data.skipStructuredOutput),
     };
 
     // Preserve builtin marker for the STMB-required "Current SillyTavern Settings" profile.

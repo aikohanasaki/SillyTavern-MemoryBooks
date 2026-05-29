@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.9.4 (May 29, 2026)
+- Tweak: json_schema request toggle per profile.
+
 ## v6.9.3 (May 27, 2026)
 - Bugfix: Memory title formats now consistently use selected profile setting.
 - Tweak: Add Chutes provider.

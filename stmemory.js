@@ -9,6 +9,32 @@ const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
 
+const MEMORY_RESPONSE_JSON_SCHEMA = Object.freeze({
+    name: 'stmb_memory',
+    description: 'A generated Memory Books lorebook memory.',
+    strict: true,
+    value: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['content', 'title', 'keywords'],
+        properties: {
+            content: {
+                type: 'string',
+                description: 'The memory content to save in the lorebook.',
+            },
+            title: {
+                type: 'string',
+                description: 'A short title for the memory.',
+            },
+            keywords: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Activation keywords for the memory.',
+            },
+        },
+    },
+});
+
 // --- ST Regex selection-based execution (bypass engine gating) ---
 
 /**
@@ -99,6 +125,50 @@ function shouldForwardReverseProxy(api, reverseProxy) {
     return !!reverseProxy && !!oai_settings?.reverse_proxy && PROXY_SUPPORTED_COMPLETION_SOURCES.has(api);
 }
 
+function extractStructuredToolInput(contentBlocks) {
+    if (!Array.isArray(contentBlocks)) {
+        return '';
+    }
+
+    const toolUseInput = contentBlocks.find(block =>
+        block && typeof block === 'object' && block.type === 'tool_use' && block.input && typeof block.input === 'object',
+    )?.input;
+
+    if (!toolUseInput) {
+        return '';
+    }
+
+    try {
+        return JSON.stringify(toolUseInput);
+    } catch {
+        return '';
+    }
+}
+
+function extractChatMessageText(message) {
+    if (!message || typeof message !== 'object') {
+        return '';
+    }
+
+    const content = message.content;
+    if (typeof content === 'string') {
+        return content;
+    }
+
+    const toolUseJson = extractStructuredToolInput(content);
+    if (toolUseJson) {
+        return toolUseJson;
+    }
+
+    if (Array.isArray(content)) {
+        return content
+            .map(block => typeof block?.text === 'string' ? block.text : '')
+            .join('');
+    }
+
+    return '';
+}
+
 /**
 *Send a raw completion request to the backend, bypassing SillyTavern's chat context stack.*
 *Supports OpenAI, Claude, Gemini, and custom OpenAI-compatible endpoints.*
@@ -111,6 +181,7 @@ function shouldForwardReverseProxy(api, reverseProxy) {
 *@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
 *@param {boolean} [opts.reverseProxy] - Whether to forward SillyTavern reverse proxy settings for supported providers*
+*@param {Object|null} [opts.jsonSchema] - Optional SillyTavern structured-output schema*
 *@returns {Promise<{text: string, full: object}>}*
 */
 export async function sendRawCompletionRequest({
@@ -123,6 +194,7 @@ export async function sendRawCompletionRequest({
     extra = {},
     reverseProxy = false,
     signal = null,
+    jsonSchema = null,
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
@@ -221,6 +293,10 @@ export async function sendRawCompletionRequest({
         body.zai_endpoint = oai_settings?.zai_endpoint || ZAI_ENDPOINT.COMMON;
     }
 
+    if (jsonSchema && api !== 'full-manual') {
+        body.json_schema = jsonSchema;
+    }
+
     if (shouldForwardReverseProxy(api, reverseProxy)) {
         body.reverse_proxy = oai_settings.reverse_proxy;
         body.proxy_password = oai_settings.proxy_password || '';
@@ -247,6 +323,7 @@ export async function sendRawCompletionRequest({
             providerBody = '';
         }
         const err = new Error(`LLM request failed: ${res.status} ${res.statusText}`);
+        err.status = res.status;
         if (providerBody) {
             err.providerBody = providerBody;
         }
@@ -258,18 +335,18 @@ export async function sendRawCompletionRequest({
     let text = '';
 
     // Handle different response formats
-    if (data.choices?.[0]?.message?.content) {
-        text = data.choices[0].message.content;
+    const messageText = extractChatMessageText(data.choices?.[0]?.message);
+    if (messageText) {
+        text = messageText;
     } else if (data.completion) {
         text = data.completion;
     } else if (data.choices?.[0]?.text) {
         text = data.choices[0].text;
     } else if (data.content && Array.isArray(data.content)) {
-        // Handle Claude's new structured format directly in raw response
-        const textBlock = data.content.find(block =>
-            block && typeof block === 'object' && block.type === 'text' && block.text
-        );
-        text = textBlock?.text || '';
+        text = extractStructuredToolInput(data.content)
+            || data.content
+                .map(block => typeof block?.text === 'string' ? block.text : '')
+                .join('');
     } else if (typeof data.content === 'string') {
         text = data.content;
     }
@@ -280,7 +357,7 @@ export async function sendRawCompletionRequest({
 /**
  * Unified request wrapper for side prompts and memory generation.
  * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
- * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean }} opts
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object }} opts
  * @returns {Promise<{ text: string, full: object }>}
  */
 export async function requestCompletion({
@@ -293,6 +370,7 @@ export async function requestCompletion({
     extra = {},
     reverseProxy = false,
     signal = null,
+    jsonSchema = null,
 }) {
     // Delegate all provider-specific shaping to sendRawCompletionRequest which already
     // handles: full-manual, custom (custom_model_id  oai_settings.custom_url), and normal providers.
@@ -306,6 +384,7 @@ export async function requestCompletion({
         extra,
         reverseProxy,
         signal,
+        jsonSchema,
     });
 }
 
@@ -727,12 +806,50 @@ export function parseAIJsonResponse(aiResponse) {
 }
 
 // Submit corrected raw, return a memory-like object for insertion
- export async function submitCorrectedRaw(correctedRaw, profile) {
+export async function submitCorrectedRaw(correctedRaw, profile) {
     // Reuse parsing  memory construction logic
     const memory = generateMemoryFromRaw(correctedRaw, profile);
     // In a real app, you might submit to backend or trigger an insertion event.
     // Here we return the memory object so the caller/UI can insert/use it accordingly.
     return memory;
+}
+
+function shouldUseStructuredOutput(profile, apiType) {
+    return !profile?.skipStructuredOutput && apiType !== 'full-manual';
+}
+
+function shouldFallbackFromStructuredOutput(error) {
+    if (isStmbStopError(error) || error instanceof AIResponseError) {
+        return false;
+    }
+
+    const combinedText = [
+        error?.message,
+        error?.providerBody,
+        error?.rawResponse,
+    ].map(value => String(value || '')).join('\n').toLowerCase();
+
+    return combinedText.includes('response_format')
+        || combinedText.includes('json_schema')
+        || combinedText.includes('json_object')
+        || combinedText.includes('structured output');
+}
+
+function assertProviderDidNotTruncate(providerResponse, rawText) {
+    const finishReason = providerResponse?.choices?.[0]?.finish_reason || providerResponse?.finish_reason || providerResponse?.stop_reason;
+    const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
+    if (fr.includes('length') || fr.includes('max')) {
+        const err = makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', false);
+        try { err.rawResponse = rawText || ''; } catch {}
+        try { err.providerResponse = providerResponse || null; } catch {}
+        throw err;
+    }
+    if (providerResponse?.truncated === true) {
+        const err = makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', false);
+        try { err.rawResponse = rawText || ''; } catch {}
+        try { err.providerResponse = providerResponse || null; } catch {}
+        throw err;
+    }
 }
 
 /**
@@ -770,7 +887,8 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             extra.max_tokens = oai_settings.openai_max_tokens;
         }
 
-        const { text: aiResponseText, full: aiFull } = await sendRawCompletionRequest({
+        const useStructuredOutput = shouldUseStructuredOutput(profile, apiType);
+        const requestOptions = {
             model: conn.model,
             prompt: promptString,
             temperature: conn.temperature,
@@ -780,23 +898,27 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             extra: extra,
             reverseProxy: !!conn.reverseProxy,
             signal,
-        });
+            jsonSchema: useStructuredOutput ? MEMORY_RESPONSE_JSON_SCHEMA : null,
+        };
 
-        // Detect provider-reported truncation before attempting to parse
-        const finishReason = aiFull?.choices?.[0]?.finish_reason || aiFull?.finish_reason || aiFull?.stop_reason;
-        const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
-        if (fr.includes('length') || fr.includes('max')) {
-            const err = makeAIError('PROVIDER_TRUNCATION', 'Model response appears truncated (provider finish_reason). Please increase Max Response Length.', false);
-            try { err.rawResponse = aiResponseText || ''; } catch {}
-            try { err.providerResponse = aiFull || null; } catch {}
-            throw err;
+        let aiResponse;
+        try {
+            aiResponse = await sendRawCompletionRequest(requestOptions);
+        } catch (error) {
+            if (!useStructuredOutput || !shouldFallbackFromStructuredOutput(error)) {
+                throw error;
+            }
+
+            console.warn(`${MODULE_NAME}: Structured-output request failed; retrying as plain-text completion.`, error);
+            aiResponse = await sendRawCompletionRequest({
+                ...requestOptions,
+                jsonSchema: null,
+            });
         }
-        if (aiFull?.truncated === true) {
-            const err = makeAIError('PROVIDER_TRUNCATION_FLAG', 'Model response appears truncated (provider flag). Please increase Max Response Length.', false);
-            try { err.rawResponse = aiResponseText || ''; } catch {}
-            try { err.providerResponse = aiFull || null; } catch {}
-            throw err;
-        }
+
+        const aiResponseText = aiResponse.text;
+        const aiFull = aiResponse.full;
+        assertProviderDidNotTruncate(aiFull, aiResponseText);
 
         const jsonResult = parseAIJsonResponse(aiResponseText);
 

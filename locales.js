@@ -620,6 +620,7 @@ export const localeData_en = {
     'STMemoryBooks_APIProvider': 'API/Provider:',
     'STMemoryBooks_CustomAPI': 'Custom API',
     'STMemoryBooks_APIProfileConfigHint': '💡 Profile Setup Hint: STMB automatically reads API info and keys from your ST config. First, configure and test your connection in ST using Test Message. Then select it from the dropdown above to use those settings for memory generation. Only use Full Manual Configuration if you need two different Custom OpenAI-Compatible setups; otherwise, just create two connection profiles in ST—one for roleplay and one for Memory Books.',
+    'STMemoryBooks_SkipStructuredOutput': 'Skip structured output and use plain-text completion',
     'STMemoryBooks_FullManualConfig': 'Full Manual Configuration',
     'STMemoryBooks_TemperatureRange': 'Temperature (0.0 - 2.0):',
     'STMemoryBooks_TemperaturePlaceholder': 'DO NOT LEAVE BLANK! If unsure put 0.8.',
