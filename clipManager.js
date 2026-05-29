@@ -1605,9 +1605,9 @@ async function showTopicalClipPromptEditorPopup() {
             <textarea id="stmb-topical-clip-prompt-template" class="text_pole textarea_compact" rows="18">${escapeHtml(getTopicalClipPromptTemplate())}</textarea>
         </div>
         <div class="buttons_block gap10px">
-            <button id="stmb-topical-clip-save-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_SavePrompt', 'Save Prompt'))}</button>
-            <button id="stmb-topical-clip-reset-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_ResetPrompt', 'Reset to Default'))}</button>
-            <button id="stmb-topical-clip-cancel-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Cancel', 'Cancel'))}</button>
+            <button id="stmb-topical-clip-save-prompt" type="button" class="menu_button whitespacenowrap">${escapeHtml(tr('STMemoryBooks_Compaction_SavePrompt', 'Save Prompt'))}</button>
+            <button id="stmb-topical-clip-reset-prompt" type="button" class="menu_button whitespacenowrap">${escapeHtml(tr('STMemoryBooks_Compaction_ResetPrompt', 'Reset to Default'))}</button>
+            <button id="stmb-topical-clip-cancel-prompt" type="button" class="menu_button whitespacenowrap">${escapeHtml(tr('STMemoryBooks_Cancel', 'Cancel'))}</button>
         </div>
     `);
     const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
@@ -1871,7 +1871,7 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
             <div class="buttons_block justifyCenter gap10px whitespacenowrap">
                 <button id="stmb-topical-clip-edit-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_EditPrompt', 'Edit Topical Clip Prompt'))}</button>
             </div>
-            <div id="stmb-topical-clip-diagnostics" class="info_block"></div>
+            <div id="stmb-topical-clip-diagnostics" class="info_block info-block"></div>
             <div class="buttons_block justifyCenter gap10px whitespacenowrap">
                 <button id="stmb-topical-clip-generate" type="button" class="menu_button whitespacenowrap">${escapeHtml(tr('STMemoryBooks_TopicalClip_GenerateDraft', 'Generate Draft'))}</button>
             </div>
