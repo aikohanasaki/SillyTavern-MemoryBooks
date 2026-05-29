@@ -119,6 +119,7 @@ import {
   initializeFloatingClipButton,
   refreshFloatingClipButtonSetting,
   showStmbEntryReviewPopup,
+  showTopicalClipPopup,
 } from "./clipManager.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
@@ -3651,6 +3652,24 @@ function populateInlineButtons() {
             translate(
               "Failed to open Compaction",
               "STMemoryBooks_FailedToOpenCompactReview",
+            ),
+            "STMemoryBooks",
+          );
+        }
+      },
+    },
+    {
+      text: "🔎 " + translate("Topical Clip", "STMemoryBooks_TopicalClip_Title"),
+      id: "stmb-topical-clip",
+      action: async () => {
+        try {
+          await showTopicalClipPopup({ showGoBack: true });
+        } catch (error) {
+          console.error(`${MODULE_NAME}: Error opening Topical Clip:`, error);
+          toastr.error(
+            translate(
+              "Failed to open Topical Clip",
+              "STMemoryBooks_TopicalClip_OpenFailed",
             ),
             "STMemoryBooks",
           );

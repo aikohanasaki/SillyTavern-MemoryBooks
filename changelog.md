@@ -2,7 +2,8 @@
 
 **← [Back to README](readme.md)**
 
-## v6.9.4 (May 29, 2026)
+## v6.10.0 (May 29, 2026)
+- NEW FEATURE: Topical Clip extracts and creates topical entries from existing STMB memories/Clips.
 - Tweak: json_schema request toggle per profile.
 
 ## v6.9.3 (May 27, 2026)
