@@ -27,6 +27,7 @@ import {
     resolveEffectiveConnectionFromProfile,
     withGoBackButton,
 } from './utils.js';
+import { withStmbWriteLane } from './stmbJobs.js';
 
 const MODULE_NAME = 'STMemoryBooks-ClipManager';
 const CREATE_NEW_VALUE = '__stmb_create_new_clip_entry__';
@@ -57,14 +58,52 @@ Entry title:
 Entry content:
 {{ENTRY_CONTENT}}`;
 
+export const DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE = `You are creating or updating a focused memory entry about one topic.
+
+Mode:
+{{MODE}}
+
+Topic:
+{{TOPIC}}
+
+Keywords:
+{{KEYWORDS}}
+
+Existing Clip content, if updating an existing Clip:
+{{EXISTING_CLIP}}
+
+Source memories:
+{{SOURCE_MEMORIES}}
+
+Task:
+Extract only information directly relevant to the topic and produce one finished replacement memory entry.
+
+Rules:
+- Do not summarize unrelated events.
+- Do not invent missing details.
+- Preserve concrete facts, relationships, preferences, names, places, unresolved issues, promises, secrets, constraints, and important changes over time.
+- If the memories conflict, mention the conflict instead of silently choosing one version.
+- If updating an existing Clip, preserve useful existing information unless the source memories clearly correct or supersede it.
+- If updating an existing Clip, add missing relevant details and remove duplication.
+- Keep the result useful as a lorebook/memory entry.
+- Avoid filler and generic phrasing.
+- Return only the finished entry content.`;
+
 export const STMB_CLIP_TITLE_SUFFIX = ' [STMB Clip]';
 
 let floatingClipButton = null;
 let floatingClipListenersBound = false;
 let floatingClipUpdateTimer = null;
 
-function tr(key, fallback) {
-    return translate(fallback, key);
+function tr(key, fallback, params = null) {
+    let value = translate(fallback, key);
+    if (params) {
+        value = value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, name) => {
+            const replacement = params[name];
+            return replacement === undefined || replacement === null ? '' : String(replacement);
+        });
+    }
+    return value;
 }
 
 function populateCompactionPromptButton(popup) {
@@ -935,10 +974,11 @@ function buildCompactionProfileOptions(selectedIndex = getCompactionProfileIndex
     }).join('');
 }
 
-function buildCompactionProfileControl(selectId) {
+function buildCompactionProfileControl(selectId, options = {}) {
+    const label = options.label || tr('STMemoryBooks_Compaction_Profile', 'Compaction Profile');
     return `
         <div class="world_entry_form_control">
-            <h4>${escapeHtml(tr('STMemoryBooks_Compaction_Profile', 'Compaction Profile'))}</h4>
+            <h4>${escapeHtml(label)}</h4>
             <select id="${escapeHtml(selectId)}" class="text_pole stmb-compaction-profile-select">
                 ${buildCompactionProfileOptions()}
             </select>
@@ -946,7 +986,7 @@ function buildCompactionProfileControl(selectId) {
     `;
 }
 
-function initializeCompactionProfileSelect(popup, selectId) {
+function initializeCompactionProfileSelect(popup, selectId, options = {}) {
     const select = popup.dlg?.querySelector(`#${selectId}`);
     if (!select || !window.jQuery || typeof window.jQuery.fn.select2 !== 'function') return;
 
@@ -957,7 +997,7 @@ function initializeCompactionProfileSelect(popup, selectId) {
 
     $select.select2({
         width: '100%',
-        placeholder: tr('STMemoryBooks_Compaction_SelectProfile', 'Select a Compaction profile...'),
+        placeholder: options.placeholder || tr('STMemoryBooks_Compaction_SelectProfile', 'Select a Compaction profile...'),
         allowClear: false,
         dropdownParent: window.jQuery(popup.dlg),
     });
@@ -1244,10 +1284,10 @@ async function loadCompactionEntriesForLorebook(lorebookName) {
     return { lorebookName, lorebookData, entries };
 }
 
-function initializeCompactionLorebookSelect(popup) {
+function initializeCompactionLorebookSelect(popup, selectId = 'stmb-compaction-lorebook-select', options = {}) {
     if (!window.jQuery || typeof window.jQuery.fn.select2 !== 'function') return;
 
-    const $select = window.jQuery('#stmb-compaction-lorebook-select');
+    const $select = window.jQuery(popup.dlg?.querySelector(`#${selectId}`));
     if (!$select.length) return;
 
     if ($select.hasClass('select2-hidden-accessible')) {
@@ -1256,7 +1296,7 @@ function initializeCompactionLorebookSelect(popup) {
 
     $select.select2({
         width: '100%',
-        placeholder: tr('STMemoryBooks_Compaction_SelectMemoryBook', 'Select a Memory Book...'),
+        placeholder: options.placeholder || tr('STMemoryBooks_Compaction_SelectMemoryBook', 'Select a Memory Book...'),
         allowClear: false,
         dropdownParent: window.jQuery(popup.dlg),
     });
@@ -1301,6 +1341,819 @@ function notifyCompactionRequestSettled(options) {
     } catch (error) {
         console.warn(`${MODULE_NAME}: Failed to clear Compaction loading state:`, error);
     }
+}
+
+function getTopicalClipPromptTemplate() {
+    const saved = getModuleSettings().topicalClipPromptTemplate;
+    return typeof saved === 'string' && saved.trim()
+        ? saved
+        : DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE;
+}
+
+function setTopicalClipPromptTemplate(template) {
+    getModuleSettings().topicalClipPromptTemplate = String(template || '');
+    saveSettingsDebounced();
+}
+
+function validateTopicalClipPromptTemplate(template) {
+    const value = String(template || '');
+    if (!value.trim()) {
+        return tr('STMemoryBooks_PromptCannotBeEmpty', 'Prompt cannot be empty');
+    }
+    if (!value.includes('{{SOURCE_MEMORIES}}')) {
+        return tr('STMemoryBooks_TopicalClip_PromptMissingSourceMemories', 'The Topical Clip prompt must include {{SOURCE_MEMORIES}}.');
+    }
+    return null;
+}
+
+function makeTopicalClipHeadline(topic) {
+    return `About ${validateClipHeadline(topic)}`;
+}
+
+function normalizeTopicalClipDraftBody(body, headline) {
+    const raw = String(body || '').trim();
+    if (!raw) return '';
+    const startMarker = makeClipStartMarker(headline);
+    const endMarker = makeClipEndMarker(headline);
+    const startIndex = raw.indexOf(startMarker);
+    const endIndex = raw.indexOf(endMarker);
+    if (startIndex >= 0 && endIndex > startIndex) {
+        return raw.slice(startIndex + startMarker.length, endIndex).trim();
+    }
+    return stripWrapperMarkerLines(raw);
+}
+
+function createTopicalClipEntryContent(headline, body) {
+    const cleanHeadline = validateClipHeadline(headline);
+    const cleanBody = normalizeTopicalClipDraftBody(body, cleanHeadline);
+    if (!cleanBody) {
+        throw new Error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'));
+    }
+    return `${makeClipStartMarker(cleanHeadline)}\n\n${cleanBody}\n\n${makeClipEndMarker(cleanHeadline)}`;
+}
+
+function getEntryStableId(entry) {
+    const id = entry?.uid ?? entry?.id ?? null;
+    return id === undefined || id === null ? null : String(id);
+}
+
+function getEntrySortValue(entry) {
+    const displayIndex = Number(entry?.displayIndex);
+    if (Number.isFinite(displayIndex)) return displayIndex;
+    const order = Number(entry?.order);
+    if (Number.isFinite(order)) return order;
+    const uid = Number(entry?.uid ?? entry?.id);
+    return Number.isFinite(uid) ? uid : 0;
+}
+
+function getEntryKeys(entry) {
+    return Array.isArray(entry?.key) ? entry.key.map(key => String(key || '').trim()).filter(Boolean) : [];
+}
+
+function stableHashString(value) {
+    const text = String(value || '');
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function stableHashTopicalSourceEntry(entry) {
+    return stableHashString(JSON.stringify({
+        uid: entry?.uid ?? null,
+        id: entry?.id ?? null,
+        title: entry?.comment ?? entry?.title ?? '',
+        keys: getEntryKeys(entry),
+        content: entry?.content ?? '',
+    }));
+}
+
+function snapshotTopicalSourceEntries(entries) {
+    return (entries || []).map(entry => ({
+        uid: entry?.uid ?? entry?.id ?? null,
+        hash: stableHashTopicalSourceEntry(entry),
+        title: String(entry?.comment ?? entry?.title ?? ''),
+    }));
+}
+
+function buildTopicalSnapshotMap(snapshot) {
+    const map = new Map();
+    for (const item of Array.isArray(snapshot) ? snapshot : []) {
+        const uid = item?.uid ?? null;
+        const key = uid === null || uid === undefined ? String(item?.hash || '') : String(uid);
+        if (!key) continue;
+        map.set(key, String(item?.hash || ''));
+    }
+    return map;
+}
+
+function getTopicalClipMetadata(entry) {
+    return entry?.data?.extensions?.aikobots?.topical_clip || null;
+}
+
+function setTopicalClipMetadata(entry, metadata) {
+    entry.data = entry.data && typeof entry.data === 'object' ? entry.data : {};
+    entry.data.extensions = entry.data.extensions && typeof entry.data.extensions === 'object' ? entry.data.extensions : {};
+    entry.data.extensions.aikobots = entry.data.extensions.aikobots && typeof entry.data.extensions.aikobots === 'object'
+        ? entry.data.extensions.aikobots
+        : {};
+    entry.data.extensions.aikobots.topical_clip = metadata;
+}
+
+function isSameEntry(left, right) {
+    const leftId = getEntryStableId(left);
+    const rightId = getEntryStableId(right);
+    return leftId !== null && rightId !== null && leftId === rightId;
+}
+
+function findEntryByStableId(lorebookData, id) {
+    const wanted = id === undefined || id === null ? null : String(id);
+    if (!wanted) return null;
+    return Object.values(lorebookData?.entries || {})
+        .find(entry => getEntryStableId(entry) === wanted) || null;
+}
+
+function getTopicalSourceEntries(lorebookData, targetEntry = null) {
+    return Object.values(lorebookData?.entries || {})
+        .filter(entry => {
+            if (!isMemoryEntry(entry)) return false;
+            if (isClipEntryTitle(entry?.comment || '')) return false;
+            if (isSidePromptEntryTitle(entry?.comment || '')) return false;
+            if (targetEntry && isSameEntry(entry, targetEntry)) return false;
+            return true;
+        })
+        .sort((a, b) => getEntrySortValue(a) - getEntrySortValue(b) || String(a.comment || '').localeCompare(String(b.comment || '')));
+}
+
+function getTopicalChangedSourceEntries(allEligibleEntries, targetEntry, rebuildAll) {
+    if (rebuildAll || !targetEntry) return allEligibleEntries;
+    const metadata = getTopicalClipMetadata(targetEntry);
+    if (!metadata?.last_source_snapshot) return allEligibleEntries;
+    const previous = buildTopicalSnapshotMap(metadata.last_source_snapshot);
+    return allEligibleEntries.filter(entry => {
+        const uid = getEntryStableId(entry);
+        const hash = stableHashTopicalSourceEntry(entry);
+        const key = uid || hash;
+        return previous.get(key) !== hash;
+    });
+}
+
+function formatSourceMemoriesForPrompt(entries) {
+    return (entries || []).map((entry, index) => {
+        const number = String(index + 1).padStart(3, '0');
+        const title = String(entry?.comment || entry?.title || tr('STMemoryBooks_Untitled', 'Untitled'));
+        const keys = getEntryKeys(entry).join(', ');
+        const content = String(entry?.content || '').trim();
+        return [
+            `=== SOURCE MEMORY ${number} ===`,
+            `UID: ${entry?.uid ?? entry?.id ?? ''}`,
+            `Title: ${title}`,
+            `Keywords: ${keys}`,
+            `Content:`,
+            content,
+            `=== END SOURCE MEMORY ${number} ===`,
+        ].join('\n');
+    }).join('\n\n');
+}
+
+function extractClipInnerContent(entry) {
+    const content = String(entry?.content || '');
+    const headline = getClipHeadlineFromTitle(entry?.comment || '');
+    const startMarker = makeClipStartMarker(headline);
+    const endMarker = makeClipEndMarker(headline);
+    const startIndex = content.indexOf(startMarker);
+    const endIndex = content.indexOf(endMarker);
+    if (startIndex >= 0 && endIndex > startIndex) {
+        return content.slice(startIndex + startMarker.length, endIndex).trim();
+    }
+    return stripWrapperMarkerLines(content);
+}
+
+function buildTopicalClipPrompt({ mode, topic, keywords, sourceEntries, existingClip, template = getTopicalClipPromptTemplate() }) {
+    const replacements = {
+        MODE: String(mode || ''),
+        TOPIC: String(topic || ''),
+        KEYWORDS: (keywords || []).join(', '),
+        SOURCE_MEMORIES: formatSourceMemoriesForPrompt(sourceEntries),
+        EXISTING_CLIP: String(existingClip || ''),
+        EXISTING_ENTRY_CONTENT: String(existingClip || ''),
+    };
+    return String(template || DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE).replace(
+        /\{\{(MODE|TOPIC|KEYWORDS|SOURCE_MEMORIES|EXISTING_CLIP|EXISTING_ENTRY_CONTENT)\}\}/g,
+        (_match, token) => replacements[token] ?? '',
+    );
+}
+
+async function requestTopicalClipDraft(prompt, profileIndex) {
+    const connection = resolveCompactionProfileConnection(profileIndex);
+    const extra = {};
+    const stmbMaxTokens = Number.parseInt(extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens, 10);
+    if (Number.isFinite(stmbMaxTokens) && stmbMaxTokens > 0) {
+        extra.max_tokens = stmbMaxTokens;
+    } else if (oai_settings?.openai_max_tokens) {
+        extra.max_tokens = oai_settings.openai_max_tokens;
+    }
+    const { text } = await requestCompletion({
+        api: connection.api,
+        model: connection.model || '',
+        temperature: connection.temperature ?? 0.3,
+        prompt,
+        endpoint: connection.endpoint,
+        apiKey: connection.apiKey,
+        reverseProxy: !!connection.reverseProxy,
+        extra,
+    });
+    const draft = String(text || '').trim();
+    if (!draft) {
+        throw new Error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'));
+    }
+    return draft;
+}
+
+async function showTopicalClipPromptEditorPopup() {
+    const content = DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_TopicalClip_PromptTitle', 'Topical Clip Prompt'))}</h3>
+        <div class="world_entry_form_control">
+            <textarea id="stmb-topical-clip-prompt-template" class="text_pole textarea_compact" rows="18">${escapeHtml(getTopicalClipPromptTemplate())}</textarea>
+        </div>
+        <div class="buttons_block gap10px">
+            <button id="stmb-topical-clip-save-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_SavePrompt', 'Save Prompt'))}</button>
+            <button id="stmb-topical-clip-reset-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_ResetPrompt', 'Reset to Default'))}</button>
+            <button id="stmb-topical-clip-cancel-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Cancel', 'Cancel'))}</button>
+        </div>
+    `);
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: false,
+        cancelButton: false,
+    });
+    markStmbPopup(popup);
+    const showPromise = popup.show();
+    const textarea = popup.dlg?.querySelector('#stmb-topical-clip-prompt-template');
+
+    popup.dlg?.querySelector('#stmb-topical-clip-save-prompt')?.addEventListener('click', () => {
+        const nextTemplate = textarea?.value || '';
+        const error = validateTopicalClipPromptTemplate(nextTemplate);
+        if (error) {
+            toastr.error(error, 'STMemoryBooks');
+            return;
+        }
+        setTopicalClipPromptTemplate(nextTemplate);
+        popup.completeAffirmative();
+    });
+    popup.dlg?.querySelector('#stmb-topical-clip-reset-prompt')?.addEventListener('click', () => {
+        if (textarea) {
+            textarea.value = DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE;
+            textarea.focus();
+        }
+    });
+    popup.dlg?.querySelector('#stmb-topical-clip-cancel-prompt')?.addEventListener('click', () => {
+        popup.completeCancelled();
+    });
+
+    return await showPromise === POPUP_RESULT.AFFIRMATIVE;
+}
+
+async function confirmTopicalClipTokenException({ estimatedTokens: tokenCount, threshold, eligibleCount, usedCount }) {
+    const content = DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_TopicalClip_TokenWarningTitle', 'Topical Clip token warning'))}</h3>
+        <p>${escapeHtml(tr('STMemoryBooks_TopicalClip_TokenWarningMessage', 'This Topical Clip request is estimated at {{tokens}} tokens, above the warning threshold of {{threshold}}. Eligible source memories: {{eligible}}. Source memories to use: {{used}}.', {
+            tokens: tokenCount,
+            threshold,
+            eligible: eligibleCount,
+            used: usedCount,
+        }))}</p>
+        <p>${escapeHtml(tr('STMemoryBooks_TopicalClip_TokenWarningAdvice', 'Raise the token warning threshold in settings, reduce source memories later, or allow this one run to continue.'))}</p>
+    `);
+    const popup = new Popup(content, POPUP_TYPE.TEXT, '', {
+        okButton: false,
+        cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
+        customButtons: [
+            { text: tr('STMemoryBooks_TopicalClip_RunOnceAnyway', 'Run Once Anyway'), result: POPUP_RESULT.CUSTOM1, appendAtEnd: true },
+        ],
+    });
+    markStmbPopup(popup);
+    return await popup.show() === POPUP_RESULT.CUSTOM1;
+}
+
+function formatLocalTopicalClipTimestamp(date = new Date()) {
+    const pad = value => String(value).padStart(2, '0');
+    return [
+        date.getFullYear(),
+        '-',
+        pad(date.getMonth() + 1),
+        '-',
+        pad(date.getDate()),
+        ' ',
+        pad(date.getHours()),
+        pad(date.getMinutes()),
+    ].join('');
+}
+
+function makeDuplicateSafeTopicalFallbackHeadline(lorebookData, topic) {
+    const base = `About ${validateClipHeadline(topic)} (Topical Clip ${formatLocalTopicalClipTimestamp()})`;
+    let headline = base;
+    let suffix = 2;
+    while (getClipEntryByFinalTitle(lorebookData, makeClipEntryTitle(headline))) {
+        headline = `${base} ${suffix}`;
+        suffix += 1;
+    }
+    return headline;
+}
+
+function getTopicalDuplicateCreateMessage() {
+    return tr('STMemoryBooks_TopicalClip_DuplicateCreateTitle', 'An entry with this title already exists. Choose update mode or use a different topic/title.');
+}
+
+function createTopicalClipRunMetadata({ topic, keywords, lorebookName, sourceSnapshot }) {
+    return {
+        version: 1,
+        topic,
+        keywords,
+        source_memory_book: lorebookName,
+        last_successful_run_at: new Date().toISOString(),
+        last_source_snapshot: sourceSnapshot,
+    };
+}
+
+async function saveTopicalClipDraft(context, draft, options = {}) {
+    const {
+        lorebookName,
+        mode,
+        topic,
+        keywords,
+        targetUid,
+        targetContentHash,
+        sourceSnapshot,
+    } = context || {};
+    const contentDraft = String(draft || '').trim();
+    if (!contentDraft) {
+        throw new Error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'));
+    }
+    const keywordsArray = Array.isArray(keywords) ? keywords : [];
+
+    let result = null;
+    await withStmbWriteLane({ type: 'lorebook', name: lorebookName }, async () => {
+        const freshLorebook = await loadWorldInfo(lorebookName);
+        if (!freshLorebook?.entries) {
+            throw new Error(tr('STMemoryBooks_Error_FailedToLoadLorebook', 'Failed to load lorebook'));
+        }
+
+        if (mode === 'update' && !options.forceCreateNew) {
+            const target = findEntryByStableId(freshLorebook, targetUid);
+            if (!target) {
+                throw new Error(tr('STMemoryBooks_TopicalClip_NoTargetEntry', 'Choose an entry to update.'));
+            }
+            const currentHash = stableHashString(String(target.content || ''));
+            if (targetContentHash && currentHash !== targetContentHash) {
+                const staleError = new Error(tr('STMemoryBooks_TopicalClip_TargetChanged', 'The selected Clip changed after draft generation.'));
+                staleError.code = 'TOPICAL_CLIP_TARGET_CHANGED';
+                throw staleError;
+            }
+
+            const headline = getClipHeadlineFromTitle(target.comment || makeTopicalClipHeadline(topic));
+            target.content = createTopicalClipEntryContent(headline, contentDraft);
+            target.key = keywordsArray;
+            target.keysecondary = Array.isArray(target.keysecondary) ? target.keysecondary : [];
+            target.constant = false;
+            target.vectorized = true;
+            target.selective = true;
+            target.disable = false;
+            setTopicalClipMetadata(target, createTopicalClipRunMetadata({
+                topic,
+                keywords: keywordsArray,
+                lorebookName,
+                sourceSnapshot,
+            }));
+            await saveLorebook(lorebookName, freshLorebook);
+            result = { mode: 'update', lorebookData: freshLorebook };
+            return;
+        }
+
+        const headline = options.forceCreateNew
+            ? makeDuplicateSafeTopicalFallbackHeadline(freshLorebook, topic)
+            : makeTopicalClipHeadline(topic);
+        const title = makeClipEntryTitle(headline);
+        if (getClipEntryByFinalTitle(freshLorebook, title)) {
+            throw new Error(getTopicalDuplicateCreateMessage());
+        }
+        const entry = createWorldInfoEntry(lorebookName, freshLorebook);
+        if (!entry) {
+            throw new Error(tr('STMemoryBooks_Clip_ErrorCreateEntryFailed', 'Failed to create clip entry.'));
+        }
+        entry.comment = title;
+        entry.content = createTopicalClipEntryContent(headline, contentDraft);
+        entry.key = keywordsArray;
+        entry.keysecondary = Array.isArray(entry.keysecondary) ? entry.keysecondary : [];
+        entry.constant = false;
+        entry.vectorized = true;
+        entry.selective = true;
+        entry.disable = false;
+        entry.position = typeof entry.position === 'number' ? entry.position : 0;
+        entry.order = typeof entry.order === 'number' ? entry.order : 100;
+        setTopicalClipMetadata(entry, createTopicalClipRunMetadata({
+            topic,
+            keywords: keywordsArray,
+            lorebookName,
+            sourceSnapshot,
+        }));
+        await saveLorebook(lorebookName, freshLorebook);
+        result = { mode: 'create', lorebookData: freshLorebook };
+    });
+    return result;
+}
+
+async function confirmTopicalClipTargetChangedCreateNew() {
+    const content = DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_TopicalClip_TargetChangedTitle', 'Selected Clip changed'))}</h3>
+        <p>${escapeHtml(tr('STMemoryBooks_TopicalClip_TargetChangedMessage', 'The selected Clip changed after this draft was generated. Create a new Topical Clip entry instead, or abort without saving.'))}</p>
+    `);
+    const popup = new Popup(content, POPUP_TYPE.CONFIRM, '', {
+        okButton: tr('STMemoryBooks_TopicalClip_CreateNewInstead', 'Create New Entry'),
+        cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
+    });
+    markStmbPopup(popup);
+    return await popup.show() === POPUP_RESULT.AFFIRMATIVE;
+}
+
+function buildTopicalClipTargetOptions(entries) {
+    return (entries || []).map(entry => {
+        const uid = getEntryStableId(entry);
+        const keys = getEntryKeys(entry);
+        const label = keys.length
+            ? `${entry.comment || ''} (${keys.join(', ')})`
+            : String(entry.comment || '');
+        return `<option value="${escapeHtml(uid || '')}">${escapeHtml(label)}</option>`;
+    }).join('');
+}
+
+function getTopicalClipTargetEntries(lorebookData) {
+    return Object.values(lorebookData?.entries || {})
+        .filter(entry => isClipEntryTitle(entry?.comment || ''))
+        .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
+}
+
+function buildTopicalClipPopupHtml(defaultLorebookName) {
+    const lorebookOptions = [
+        '<option></option>',
+        ...world_names.map(name => `<option value="${escapeHtml(name)}"${name === defaultLorebookName ? ' selected' : ''}>${escapeHtml(name)}</option>`),
+    ].join('');
+    return DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_TopicalClip_Title', 'Topical Clip'))}</h3>
+        <p class="opacity70p">${escapeHtml(tr('STMemoryBooks_TopicalClip_Description', 'Create or update a focused Clip-style memory entry about one topic.'))}</p>
+        <div class="stmb-topical-clip">
+            <div class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_SourceMemoryBook', 'Source Memory Book'))}</h4>
+                <select id="stmb-topical-clip-lorebook-select" class="text_pole">
+                    ${lorebookOptions}
+                </select>
+            </div>
+            <label class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Topic', 'Topic'))}</h4>
+                <input id="stmb-topical-clip-topic" class="text_pole" type="text" />
+            </label>
+            <label class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Keywords', 'Keywords'))}</h4>
+                <input id="stmb-topical-clip-keywords" class="text_pole" type="text" />
+                <small class="opacity70p">${escapeHtml(tr('STMemoryBooks_TopicalClip_KeywordsHelp', 'Saving updates this entry’s activation keywords. Empty keywords are filled from Topic.'))}</small>
+            </label>
+            <div class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Mode', 'Mode'))}</h4>
+                <label><input type="radio" name="stmb-topical-clip-mode" value="create" checked /> ${escapeHtml(tr('STMemoryBooks_TopicalClip_CreateNew', 'Create new Topical Clip'))}</label>
+                <label><input type="radio" name="stmb-topical-clip-mode" value="update" /> ${escapeHtml(tr('STMemoryBooks_TopicalClip_UpdateExisting', 'Update existing entry'))}</label>
+            </div>
+            <div id="stmb-topical-clip-target-row" class="world_entry_form_control" hidden>
+                <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_TargetEntry', 'Entry to update'))}</h4>
+                <select id="stmb-topical-clip-target-select" class="text_pole"></select>
+                <small id="stmb-topical-clip-metadata-message" class="opacity70p"></small>
+            </div>
+            <label id="stmb-topical-clip-rebuild-row" class="world_entry_form_control" hidden>
+                <input id="stmb-topical-clip-rebuild-all" type="checkbox" />
+                ${escapeHtml(tr('STMemoryBooks_TopicalClip_RebuildAll', 'Rebuild from all source memories'))}
+            </label>
+            ${buildCompactionProfileControl('stmb-topical-clip-profile-select', {
+                label: tr('STMemoryBooks_TopicalClip_Profile', 'Generation Profile'),
+            })}
+            <div class="buttons_block justifyCenter gap10px whitespacenowrap">
+                <button id="stmb-topical-clip-edit-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_EditPrompt', 'Edit Topical Clip Prompt'))}</button>
+            </div>
+            <div id="stmb-topical-clip-diagnostics" class="info_block"></div>
+            <div class="buttons_block justifyCenter gap10px">
+                <button id="stmb-topical-clip-generate" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_GenerateDraft', 'Generate Draft'))}</button>
+                <button id="stmb-topical-clip-save" type="button" class="menu_button" disabled>${escapeHtml(tr('STMemoryBooks_TopicalClip_Save', 'Save Topical Clip'))}</button>
+            </div>
+            <label class="world_entry_form_control">
+                <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Draft', 'Generated draft'))}</h4>
+                <textarea id="stmb-topical-clip-draft" class="text_pole stmb-clip-preview" rows="14"></textarea>
+            </label>
+        </div>
+    `);
+}
+
+export async function showTopicalClipPopup(options = {}) {
+    if (!Array.isArray(world_names) || world_names.length === 0) {
+        toastr.error(tr('STMemoryBooks_Compaction_NoLorebooks', 'No Memory Books were found.'), 'STMemoryBooks');
+        return;
+    }
+
+    const defaultLorebookName = await getDefaultCompactionLorebookName();
+    const popup = new Popup(buildTopicalClipPopupHtml(defaultLorebookName), POPUP_TYPE.TEXT, '', options.showGoBack ? withGoBackButton({
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: false,
+        cancelButton: tr('STMemoryBooks_Close', 'Close'),
+    }) : {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true,
+        okButton: false,
+        cancelButton: tr('STMemoryBooks_Close', 'Close'),
+    });
+    markStmbPopup(popup);
+
+    let currentLorebookName = '';
+    let currentLorebookData = null;
+    let currentTargetEntries = [];
+    let generationContext = null;
+
+    const showPromise = popup.show();
+    initializeCompactionLorebookSelect(popup, 'stmb-topical-clip-lorebook-select', {
+        placeholder: tr('STMemoryBooks_Compaction_SelectMemoryBook', 'Select a Memory Book...'),
+    });
+    initializeCompactionProfileSelect(popup, 'stmb-topical-clip-profile-select', {
+        placeholder: tr('STMemoryBooks_Compaction_SelectProfile', 'Select a Compaction profile...'),
+    });
+
+    const dlg = popup.dlg;
+    const lorebookSelect = dlg?.querySelector('#stmb-topical-clip-lorebook-select');
+    const topicInput = dlg?.querySelector('#stmb-topical-clip-topic');
+    const keywordsInput = dlg?.querySelector('#stmb-topical-clip-keywords');
+    const targetRow = dlg?.querySelector('#stmb-topical-clip-target-row');
+    const targetSelect = dlg?.querySelector('#stmb-topical-clip-target-select');
+    const metadataMessage = dlg?.querySelector('#stmb-topical-clip-metadata-message');
+    const rebuildRow = dlg?.querySelector('#stmb-topical-clip-rebuild-row');
+    const rebuildInput = dlg?.querySelector('#stmb-topical-clip-rebuild-all');
+    const diagnostics = dlg?.querySelector('#stmb-topical-clip-diagnostics');
+    const draftTextarea = dlg?.querySelector('#stmb-topical-clip-draft');
+    const saveButton = dlg?.querySelector('#stmb-topical-clip-save');
+    const generateButton = dlg?.querySelector('#stmb-topical-clip-generate');
+
+    const getMode = () => dlg?.querySelector('input[name="stmb-topical-clip-mode"]:checked')?.value || 'create';
+    const getSelectedTargetEntry = () => findEntryByStableId(currentLorebookData, targetSelect?.value || '');
+    const clearDraft = () => {
+        generationContext = null;
+        if (draftTextarea) draftTextarea.value = '';
+        if (saveButton) saveButton.disabled = true;
+    };
+    const renderDiagnostics = (message = '') => {
+        if (!diagnostics) return;
+        const target = getMode() === 'update' ? getSelectedTargetEntry() : null;
+        const allEligible = currentLorebookData ? getTopicalSourceEntries(currentLorebookData, target) : [];
+        const rebuildAll = !!rebuildInput?.checked;
+        const used = getMode() === 'update'
+            ? getTopicalChangedSourceEntries(allEligible, target, rebuildAll)
+            : allEligible;
+        const threshold = Number.parseInt(extension_settings?.STMemoryBooks?.moduleSettings?.tokenWarningThreshold, 10) || 30000;
+        const prefix = tr('STMemoryBooks_TopicalClip_Diagnostics', 'Eligible source memories: {{eligible}}. Source memories to use: {{used}}. Token warning threshold: {{threshold}}.', {
+            eligible: allEligible.length,
+            used: used.length,
+            threshold,
+        });
+        diagnostics.textContent = message ? `${prefix} ${message}` : prefix;
+    };
+    const renderTargetMetadataMessage = () => {
+        if (!metadataMessage) return;
+        const target = getSelectedTargetEntry();
+        if (!target || getMode() !== 'update') {
+            metadataMessage.textContent = '';
+            return;
+        }
+        metadataMessage.textContent = getTopicalClipMetadata(target)
+            ? ''
+            : tr('STMemoryBooks_TopicalClip_MetadataMissing', 'This entry has no Topical Clip run history. The first update will use all eligible source memories.');
+    };
+    const renderMode = () => {
+        const updateMode = getMode() === 'update';
+        if (targetRow) targetRow.hidden = !updateMode;
+        if (rebuildRow) rebuildRow.hidden = !updateMode;
+        renderTargetMetadataMessage();
+        renderDiagnostics();
+        clearDraft();
+    };
+    const renderTargets = () => {
+        currentTargetEntries = getTopicalClipTargetEntries(currentLorebookData);
+        if (targetSelect) {
+            targetSelect.innerHTML = [
+                '<option></option>',
+                buildTopicalClipTargetOptions(currentTargetEntries),
+            ].join('');
+        }
+        renderTargetMetadataMessage();
+        renderDiagnostics();
+    };
+    const loadSelectedLorebook = async (lorebookName) => {
+        currentLorebookName = lorebookName || '';
+        currentLorebookData = null;
+        currentTargetEntries = [];
+        clearDraft();
+        if (!currentLorebookName) {
+            renderDiagnostics(tr('STMemoryBooks_Compaction_NoSelectedLorebook', 'Select a Memory Book to see eligible entries.'));
+            renderTargets();
+            return;
+        }
+        try {
+            currentLorebookData = await loadWorldInfo(currentLorebookName);
+            if (!currentLorebookData?.entries) {
+                throw new Error(tr('STMemoryBooks_Error_FailedToLoadLorebook', 'Failed to load lorebook'));
+            }
+            renderTargets();
+        } catch (error) {
+            console.error(`${MODULE_NAME}: Failed to load Topical Clip lorebook:`, error);
+            currentLorebookData = null;
+            renderTargets();
+            renderDiagnostics(tr('STMemoryBooks_Error_FailedToLoadLorebook', 'Failed to load lorebook'));
+        }
+    };
+
+    dlg?.querySelectorAll('input[name="stmb-topical-clip-mode"]').forEach(input => {
+        input.addEventListener('change', renderMode);
+    });
+    lorebookSelect?.addEventListener('change', event => {
+        void loadSelectedLorebook(event.target.value || '');
+    });
+    targetSelect?.addEventListener('change', () => {
+        renderTargetMetadataMessage();
+        renderDiagnostics();
+        clearDraft();
+    });
+    rebuildInput?.addEventListener('change', () => {
+        renderDiagnostics();
+        clearDraft();
+    });
+    topicInput?.addEventListener('input', clearDraft);
+    keywordsInput?.addEventListener('input', clearDraft);
+    draftTextarea?.addEventListener('input', () => {
+        if (saveButton) saveButton.disabled = !String(draftTextarea.value || '').trim() || !generationContext;
+    });
+    dlg?.querySelector('#stmb-topical-clip-profile-select')?.addEventListener('change', event => {
+        setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
+        clearDraft();
+    });
+    dlg?.querySelector('#stmb-topical-clip-edit-prompt')?.addEventListener('click', () => {
+        void showTopicalClipPromptEditorPopup();
+    });
+    generateButton?.addEventListener('click', async () => {
+        if (!currentLorebookName || !currentLorebookData?.entries) {
+            toastr.error(tr('STMemoryBooks_Compaction_NoSelectedLorebook', 'Select a Memory Book to see eligible entries.'), 'STMemoryBooks');
+            return;
+        }
+        const mode = getMode();
+        const topic = String(topicInput?.value || '').trim();
+        if (!topic) {
+            toastr.error(tr('STMemoryBooks_TopicalClip_EmptyTopic', 'Topic is required.'), 'STMemoryBooks');
+            topicInput?.focus();
+            return;
+        }
+        let keywords = parseKeywords(keywordsInput?.value || '');
+        if (keywords.length === 0) {
+            keywords = [topic];
+            if (keywordsInput) keywordsInput.value = topic;
+        }
+        const target = mode === 'update' ? getSelectedTargetEntry() : null;
+        if (mode === 'update' && !target) {
+            toastr.error(tr('STMemoryBooks_TopicalClip_NoTargetEntry', 'Choose an entry to update.'), 'STMemoryBooks');
+            return;
+        }
+        const templateError = validateTopicalClipPromptTemplate(getTopicalClipPromptTemplate());
+        if (templateError) {
+            toastr.error(templateError, 'STMemoryBooks');
+            return;
+        }
+
+        const allEligibleSources = getTopicalSourceEntries(currentLorebookData, target);
+        if (allEligibleSources.length === 0) {
+            toastr.error(tr('STMemoryBooks_TopicalClip_NoMemories', 'No STMB memory entries were found in this Memory Book.'), 'STMemoryBooks');
+            return;
+        }
+        const rebuildAll = !!rebuildInput?.checked;
+        const sourceEntries = mode === 'update'
+            ? getTopicalChangedSourceEntries(allEligibleSources, target, rebuildAll)
+            : allEligibleSources;
+        if (mode === 'update' && sourceEntries.length === 0) {
+            toastr.info(tr('STMemoryBooks_TopicalClip_NoNewMemories', 'No new STMB memory entries were found for this Topical Clip.'), 'STMemoryBooks');
+            renderDiagnostics(tr('STMemoryBooks_TopicalClip_NoNewMemories', 'No new STMB memory entries were found for this Topical Clip.'));
+            return;
+        }
+
+        const existingClip = mode === 'update' ? extractClipInnerContent(target) : '';
+        const prompt = buildTopicalClipPrompt({
+            mode,
+            topic,
+            keywords,
+            sourceEntries,
+            existingClip,
+        });
+        const estimatedPromptTokens = estimateTokens(prompt) + 500;
+        const threshold = Number.parseInt(extension_settings?.STMemoryBooks?.moduleSettings?.tokenWarningThreshold, 10) || 30000;
+        renderDiagnostics(tr('STMemoryBooks_TopicalClip_EstimatedTokens', 'Estimated request tokens: {{tokens}}. Eligible source memories: {{eligible}}. Source memories to use: {{used}}. Token warning threshold: {{threshold}}.', {
+            tokens: estimatedPromptTokens,
+            eligible: allEligibleSources.length,
+            used: sourceEntries.length,
+            threshold,
+        }));
+        if (estimatedPromptTokens > threshold) {
+            const allowed = await confirmTopicalClipTokenException({
+                estimatedTokens: estimatedPromptTokens,
+                threshold,
+                eligibleCount: allEligibleSources.length,
+                usedCount: sourceEntries.length,
+            });
+            if (!allowed) return;
+        }
+
+        generateButton.disabled = true;
+        generateButton.textContent = tr('STMemoryBooks_Jobs_Generating', 'Generating');
+        if (saveButton) saveButton.disabled = true;
+        try {
+            const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-topical-clip-profile-select');
+            setCompactionProfileIndex(profileIndex);
+            const draft = await requestTopicalClipDraft(prompt, profileIndex);
+            const draftHeadline = mode === 'update'
+                ? getClipHeadlineFromTitle(target.comment || makeTopicalClipHeadline(topic))
+                : makeTopicalClipHeadline(topic);
+            const normalizedDraft = normalizeTopicalClipDraftBody(draft, draftHeadline);
+            if (!normalizedDraft) {
+                throw new Error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'));
+            }
+            generationContext = {
+                lorebookName: currentLorebookName,
+                mode,
+                topic,
+                keywords,
+                targetUid: target ? getEntryStableId(target) : null,
+                targetContentHash: target ? stableHashString(String(target.content || '')) : null,
+                sourceSnapshot: snapshotTopicalSourceEntries(allEligibleSources),
+            };
+            if (draftTextarea) draftTextarea.value = normalizedDraft;
+            if (saveButton) saveButton.disabled = false;
+            renderDiagnostics(tr('STMemoryBooks_TopicalClip_DraftReady', 'Draft generated. Review and edit before saving.'));
+        } catch (error) {
+            generationContext = null;
+            console.error(`${MODULE_NAME}: Topical Clip generation failed:`, error);
+            toastr.error(error?.message || tr('STMemoryBooks_TopicalClip_Failed', 'Topical Clip generation failed.'), 'STMemoryBooks');
+        } finally {
+            generateButton.disabled = false;
+            generateButton.textContent = tr('STMemoryBooks_TopicalClip_GenerateDraft', 'Generate Draft');
+        }
+    });
+    saveButton?.addEventListener('click', async () => {
+        const draft = String(draftTextarea?.value || '').trim();
+        if (!generationContext) return;
+        if (!draft) {
+            toastr.error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'), 'STMemoryBooks');
+            return;
+        }
+        saveButton.disabled = true;
+        try {
+            const result = await saveTopicalClipDraft(generationContext, draft);
+            toastr.success(result?.mode === 'update'
+                ? tr('STMemoryBooks_TopicalClip_UpdateSuccess', 'Topical Clip entry updated.')
+                : tr('STMemoryBooks_TopicalClip_SaveSuccess', 'Topical Clip saved to Memory Book.'),
+            'STMemoryBooks');
+            popup.completeAffirmative();
+        } catch (error) {
+            if (error?.code === 'TOPICAL_CLIP_TARGET_CHANGED') {
+                const createNew = await confirmTopicalClipTargetChangedCreateNew();
+                if (createNew) {
+                    try {
+                        const result = await saveTopicalClipDraft(generationContext, draft, { forceCreateNew: true });
+                        toastr.success(result?.mode === 'create'
+                            ? tr('STMemoryBooks_TopicalClip_SaveSuccess', 'Topical Clip saved to Memory Book.')
+                            : tr('STMemoryBooks_TopicalClip_UpdateSuccess', 'Topical Clip entry updated.'),
+                        'STMemoryBooks');
+                        popup.completeAffirmative();
+                        return;
+                    } catch (fallbackError) {
+                        console.error(`${MODULE_NAME}: Failed to save stale Topical Clip as a new entry:`, fallbackError);
+                        toastr.error(fallbackError?.message || tr('STMemoryBooks_TopicalClip_SaveFailed', 'Failed to save Topical Clip.'), 'STMemoryBooks');
+                    }
+                }
+            } else {
+                console.error(`${MODULE_NAME}: Failed to save Topical Clip:`, error);
+                toastr.error(error?.message || tr('STMemoryBooks_TopicalClip_SaveFailed', 'Failed to save Topical Clip.'), 'STMemoryBooks');
+            }
+            saveButton.disabled = false;
+        }
+    });
+
+    renderMode();
+    await loadSelectedLorebook(defaultLorebookName);
+    await showPromise;
 }
 
 export async function showStmbEntryReviewPopup(options = {}) {
