@@ -58,37 +58,50 @@ Entry title:
 Entry content:
 {{ENTRY_CONTENT}}`;
 
-export const DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE = `You are creating or updating a focused memory entry about one topic.
+export const DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE = `SYSTEM: You are a memory compiler. You do not converse. You do not ask questions.
+You do not offer options. You execute the task below and return only the output. You are writing a focused memory entry (lorebook/Clip) about a SINGLE topic.
 
-Mode:
-{{MODE}}
+Mode: {{MODE}}
+Topic: {{TOPIC}}
+Keywords: {{KEYWORDS}}
 
-Topic:
-{{TOPIC}}
-
-Keywords:
-{{KEYWORDS}}
-
-Existing Clip content, if updating an existing Clip:
+Existing Clip content (if updating):
 {{EXISTING_CLIP}}
 
 Source memories:
 {{SOURCE_MEMORIES}}
 
-Task:
-Extract only information directly relevant to the topic and produce one finished replacement memory entry.
+---
 
-Rules:
-- Do not summarize unrelated events.
-- Do not invent missing details.
-- Preserve concrete facts, relationships, preferences, names, places, unresolved issues, promises, secrets, constraints, and important changes over time.
-- If the memories conflict, mention the conflict instead of silently choosing one version.
-- If updating an existing Clip, preserve useful existing information unless the source memories clearly correct or supersede it.
-- If updating an existing Clip, add missing relevant details and remove duplication.
-- Keep the result useful as a lorebook/memory entry.
-- Avoid filler and generic phrasing.
-- Return only the finished entry content.
-- Do not return JSON, title fields, keywords fields, or Clip wrapper markers.`;
+TASK:
+Produce a finished memory entry containing ONLY information directly relevant to {{TOPIC}}.
+Organize the output by sub-topic or attribute — NOT by chronology or narrative order.
+Each piece of information should stand on its own as a discrete, retrievable fact.
+
+OUTPUT FORMAT:
+Write in tight, factual prose, bullet points, or labeled attribute blocks (your choice, whichever is denser).
+
+CONTENT RULES:
+- Include: concrete facts, names, relationships, preferences, places, constraints, promises, secrets, unresolved issues, and meaningful changes over time.
+- Exclude: events, context, or details unrelated to {{TOPIC}} even if they appear in the source memories.
+- Conflicts: if source memories contradict each other, note the conflict explicitly (e.g. "Claimed X in one account, Y in another") rather than silently picking one.
+- No invention: do not infer or fill gaps with plausible-sounding details.
+
+IF UPDATING AN EXISTING CLIP:
+- Preserve useful existing content unless source memories clearly correct or supersede it.
+- Merge in new relevant details; remove redundancy.
+- Do not regress — the result should be strictly more useful than the existing Clip.
+
+Return only the finished entry content. No JSON, no title field, no keyword field, no wrapper markers.
+
+CRITICAL:
+- Do not greet the user.
+- Do not ask clarifying questions.
+- Do not offer alternative directions or options.
+- Do not explain what you are about to do.
+- Begin your response with the first word of the memory entry itself.
+- If the source memories contain insufficient information to write an entry, return only: [INSUFFICIENT DATA: <one sentence reason>]
+- Any response that is not the finished entry or the insufficient-data marker is a failure.`;
 
 export const STMB_CLIP_TITLE_SUFFIX = ' [STMB Clip]';
 

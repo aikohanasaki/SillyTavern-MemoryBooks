@@ -74,6 +74,7 @@ Other links:
   - [Custom Prompts](#custom-prompts)
 - [Lorebook Integration](#-lorebook-integration)
 - [Clip to Memory Book](#-clip-to-memory-book)
+- [Topical Clip](#-topical-clip)
 - [Slash Commands](#-slash-commands)
 - [Group Chat Support](#-group-chat-support)
 - [Modes of Operation](#-modes-of-operation)
@@ -311,6 +312,53 @@ The visible section inside the entry uses the title without `[STMB Clip]`:
 - Existing entries can become clip entries by adding `[STMB Clip]` to the end of the title.
 - Long clip entries may show a reminder to review or compact them. Compaction can help make clip, side prompt, and STMB memory entries more token-efficient before you replace the original.
 - Clip entries do not add source attribution. They save only the text you chose to clip.
+
+## 🔎 Topical Clip
+
+Topical Clip creates or updates a focused Clip-style memory entry about one topic.
+
+Use it when you already have STMB memories saved, but want one clean “about this” entry that gathers related details from those memories. For example:
+
+- `About Seraphina`
+- `About {{user}}'s magic`
+- `About the Black Harbor investigation`
+- `About Alex and Mira's relationship`
+
+Topical Clip is different from normal Clip to Memory Book. A normal Clip saves highlighted chat text directly. Topical Clip reads existing STMB memory entries, asks the AI to extract details about one topic, then gives you an editable draft before saving.
+
+#### How it works
+
+1. Open Memory Books.
+2. Click **🔎 Topical Clip**.
+3. Choose the **Source Memory Book**.
+4. Enter a **Topic**.
+5. Enter activation **Keywords**, or leave them empty to use the topic.
+6. Choose whether to create a new Topical Clip or update an existing `[STMB Clip]` entry.
+7. Choose a **Generation Profile**.
+8. Click **Generate Draft**.
+9. Review and edit the draft.
+10. Click **Save Topical Clip** only when you are happy with it.
+
+Topical Clip saves entries as normal Clip entries marked with `[STMB Clip]`. New entries use a title like:
+
+```txt
+About Elliott [STMB Clip]
+````
+
+#### Updating existing Topical Clips
+
+When you update an existing Topical Clip, STMB remembers which source memories were used during the last successful run. The next update normally uses only new or changed source memories.
+
+If you want to rebuild the whole entry from all eligible memories, enable **Rebuild from all source memories** before generating the draft.
+
+#### Notes
+
+* Topical Clip only uses confirmed STMB memory entries as source material.
+* Clip entries and Side Prompt entries are not used as source memories.
+* Update targets are existing `[STMB Clip]` entries.
+* The AI draft is always reviewable and editable before saving.
+* STMB does not save the generated draft until you click **Save Topical Clip**.
+* If the request is large, STMB may show a token warning before running.
 
 ## 🆕 Slash Commands
 
