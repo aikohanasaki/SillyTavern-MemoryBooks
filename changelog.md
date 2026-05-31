@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.10.2 (May 31, 2026)
+- Enhancement/Bugfix: SSE streaming format support (AT LAST).
+
 ## v6.10.1 (May 29, 2026)
 - Bugfix: Consolidation manual lorebook fix.
 
