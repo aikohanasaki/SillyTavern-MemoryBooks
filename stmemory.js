@@ -1,6 +1,7 @@
 import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
-import { oai_settings, ZAI_ENDPOINT } from '../../../openai.js';
+import { getStreamingReply, oai_settings, ZAI_ENDPOINT } from '../../../openai.js';
+import EventSourceStream from '../../../sse-stream.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings } from '../../../extensions.js';
@@ -169,6 +170,142 @@ function extractChatMessageText(message) {
     return '';
 }
 
+function extractCompletionText(data) {
+    const messageText = extractChatMessageText(data?.choices?.[0]?.message);
+    if (messageText) {
+        return messageText;
+    }
+
+    if (data?.completion) {
+        return data.completion;
+    }
+
+    if (data?.choices?.[0]?.text) {
+        return data.choices[0].text;
+    }
+
+    if (data?.content && Array.isArray(data.content)) {
+        return extractStructuredToolInput(data.content)
+            || data.content
+                .map(block => typeof block?.text === 'string' ? block.text : '')
+                .join('');
+    }
+
+    if (typeof data?.content === 'string') {
+        return data.content;
+    }
+
+    return '';
+}
+
+function isEventStreamResponse(response) {
+    return String(response?.headers?.get('content-type') || '').toLowerCase().includes('text/event-stream');
+}
+
+function looksLikeSsePayload(text) {
+    return /^\s*(?:event|data|id|retry)\s*:/m.test(String(text || ''));
+}
+
+function getStreamingFinishReason(data) {
+    return data?.choices?.[0]?.finish_reason
+        || data?.choices?.[0]?.finishReason
+        || data?.finish_reason
+        || data?.stop_reason
+        || null;
+}
+
+function makeStreamingParseError(message, rawEvent, cause = null) {
+    const err = new Error(message);
+    err.name = 'StreamingResponseParseError';
+    err.rawResponse = rawEvent;
+    if (cause) {
+        err.cause = cause;
+    }
+    return err;
+}
+
+function makeSyntheticStreamingResponse(text, lastEvent, lastRawEvent, finishReason) {
+    return {
+        choices: [
+            {
+                index: 0,
+                message: {
+                    role: 'assistant',
+                    content: text,
+                },
+                finish_reason: finishReason || null,
+            },
+        ],
+        stmb_streaming: {
+            source: 'sse',
+            finish_reason: finishReason || null,
+            last_event: lastEvent || null,
+            last_raw_event: lastRawEvent || '',
+        },
+    };
+}
+
+async function parseSseCompletionResponseBody(body, api) {
+    if (!body) {
+        throw makeStreamingParseError('Streaming response did not include a readable body.', '');
+    }
+
+    const eventStream = new EventSourceStream();
+    const reader = body.pipeThrough(eventStream).getReader();
+    const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
+    let text = '';
+    let lastEvent = null;
+    let lastRawEvent = '';
+    let finishReason = null;
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+
+            const rawData = String(value?.data || '');
+            lastRawEvent = rawData;
+            if (rawData === '[DONE]') {
+                break;
+            }
+
+            let parsed;
+            try {
+                parsed = JSON.parse(rawData);
+            } catch (error) {
+                throw makeStreamingParseError('Failed to parse streaming completion event JSON.', rawData, error);
+            }
+
+            lastEvent = parsed;
+            finishReason = getStreamingFinishReason(parsed) || finishReason;
+            text += getStreamingReply(parsed, state, { chatCompletionSource: api, overrideShowThoughts: false });
+        }
+    } finally {
+        try {
+            reader.releaseLock();
+        } catch {
+            // Ignore reader cleanup errors; the response has already been consumed.
+        }
+    }
+
+    return makeSyntheticStreamingResponse(text, lastEvent, lastRawEvent, finishReason);
+}
+
+async function parseCompletionResponse(response, api) {
+    if (isEventStreamResponse(response)) {
+        return await parseSseCompletionResponseBody(response.body, api);
+    }
+
+    const bodyText = await response.text();
+    if (looksLikeSsePayload(bodyText)) {
+        return await parseSseCompletionResponseBody(new Response(bodyText).body, api);
+    }
+
+    return JSON.parse(bodyText);
+}
+
 /**
 *Send a raw completion request to the backend, bypassing SillyTavern's chat context stack.*
 *Supports OpenAI, Claude, Gemini, and custom OpenAI-compatible endpoints.*
@@ -330,26 +467,8 @@ export async function sendRawCompletionRequest({
         throw err;
     }
 
-    const data = await res.json();
-
-    let text = '';
-
-    // Handle different response formats
-    const messageText = extractChatMessageText(data.choices?.[0]?.message);
-    if (messageText) {
-        text = messageText;
-    } else if (data.completion) {
-        text = data.completion;
-    } else if (data.choices?.[0]?.text) {
-        text = data.choices[0].text;
-    } else if (data.content && Array.isArray(data.content)) {
-        text = extractStructuredToolInput(data.content)
-            || data.content
-                .map(block => typeof block?.text === 'string' ? block.text : '')
-                .join('');
-    } else if (typeof data.content === 'string') {
-        text = data.content;
-    }
+    const data = await parseCompletionResponse(res, api);
+    const text = extractCompletionText(data);
 
     return { text, full: data };
 }
