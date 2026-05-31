@@ -393,6 +393,7 @@ export async function sendRawCompletionRequest({
         model,
         temperature,
         chat_completion_source: api,
+        stream: false,
         ...extra,
     };
 
@@ -419,6 +420,7 @@ export async function sendRawCompletionRequest({
                 { role: 'user', content: prompt }
             ],
             temperature,
+            stream: false,
             ...extra,
         };
     } else if (api === 'custom' && model) {
