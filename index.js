@@ -3228,13 +3228,6 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
         "STMemoryBooks",
       );
-      toastr.warning(
-        translate(
-          "Let Memory Books jobs finish before changing chats. Auto-memory and auto-consolidation prompts are only reliable in the current chat.",
-          "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning",
-        ),
-        "STMemoryBooks",
-      );
       return true;
     }
 

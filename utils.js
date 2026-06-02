@@ -957,6 +957,31 @@ export function parseTemperature(input) {
 }
 
 /**
+ * Parse persisted boolean-like profile flags without treating non-empty strings as true.
+ * @param {boolean|string|number} input - Boolean-like input
+ * @param {boolean} fallback - Value to use when input is not boolean-like
+ * @returns {boolean} Parsed boolean value
+ */
+export function parseBooleanFlag(input, fallback = false) {
+    if (typeof input === 'boolean') {
+        return input;
+    }
+
+    if (typeof input === 'string') {
+        const normalized = input.trim().toLowerCase();
+        if (normalized === 'true' || normalized === '1') return true;
+        if (normalized === 'false' || normalized === '0') return false;
+    }
+
+    if (typeof input === 'number') {
+        if (input === 1) return true;
+        if (input === 0) return false;
+    }
+
+    return fallback;
+}
+
+/**
  * Format preset name for display
  * @param {string} presetName - Internal preset name
  * @returns {string} Display-friendly name
@@ -1019,7 +1044,7 @@ export function createProfileObject(data = {}) {
         })(),
         preventRecursion: data.preventRecursion !== undefined ? data.preventRecursion : true,
         delayUntilRecursion: data.delayUntilRecursion !== undefined ? data.delayUntilRecursion : false,
-        skipStructuredOutput: Boolean(data.skipStructuredOutput),
+        skipStructuredOutput: parseBooleanFlag(data.skipStructuredOutput, false),
     };
 
     // Preserve builtin marker for the STMB-required "Current SillyTavern Settings" profile.
@@ -1028,7 +1053,7 @@ export function createProfileObject(data = {}) {
     }
 
     if (profile.connection.api !== 'full-manual') {
-        profile.useChatCompletionService = Boolean(data.useChatCompletionService);
+        profile.useChatCompletionService = parseBooleanFlag(data.useChatCompletionService, false);
     }
 
     // Set titleFormat if explicitly provided, or if it's not a dynamic profile
