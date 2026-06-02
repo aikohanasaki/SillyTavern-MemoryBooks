@@ -1032,11 +1032,13 @@ function resolveCompactionProfileConnection(profileIndex = getCompactionProfileI
     if (!profile || profile?.connection?.api === 'current_st' || profile?.useDynamicSTSettings) {
         const apiInfo = getCurrentApiInfo();
         const modelInfo = getUIModelSettings();
+        const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
         return {
-            api: normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai'),
+            api,
             model: modelInfo.model || '',
             temperature: modelInfo.temperature ?? 0.3,
             reverseProxy: !!profile?.connection?.reverseProxy,
+            useChatCompletionService: !!profile?.useChatCompletionService && api !== 'full-manual',
         };
     }
 
@@ -1044,6 +1046,7 @@ function resolveCompactionProfileConnection(profileIndex = getCompactionProfileI
     return {
         ...conn,
         temperature: conn.temperature ?? 0.3,
+        useChatCompletionService: !!profile.useChatCompletionService && conn.api !== 'full-manual',
     };
 }
 
@@ -1112,6 +1115,7 @@ async function requestCompaction(entry, entryKind, template = getCompactionPromp
         apiKey: connection.apiKey,
         reverseProxy: !!connection.reverseProxy,
         extra,
+        useChatCompletionService: !!connection.useChatCompletionService,
     });
     const compacted = String(text || '').trim();
     if (!compacted) {
@@ -1603,6 +1607,7 @@ async function requestTopicalClipDraft(prompt, profileIndex) {
         apiKey: connection.apiKey,
         reverseProxy: !!connection.reverseProxy,
         extra,
+        useChatCompletionService: !!connection.useChatCompletionService,
     });
     const draft = String(text || '').trim();
     if (!draft) {

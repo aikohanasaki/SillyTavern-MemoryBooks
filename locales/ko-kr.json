@@ -1036,5 +1036,7 @@
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "채팅을 변경하기 전에 Memory Books 작업이 끝날 때까지 기다려 주세요. 자동 메모리와 자동 통합 프롬프트는 현재 채팅에서만 안정적으로 동작합니다.",
   "STMemoryBooks_Jobs_ChatChangedActiveWarning": "Memory Books 작업이 아직 활성 상태입니다. 돌아오거나 다른 트리거가 발생할 때까지 자동 메모리와 자동 통합 프롬프트가 실행되지 않을 수 있습니다.",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar가 비활성화되어 있거나 설치되어 있지 않습니다. 메모리 북 작업 대기열 기능에는 Chat Top Bar가 필요합니다. 작업 대기열 기능을 사용하려면 해당 확장 기능을 설치하거나 활성화하세요. 작업 대기열을 사용하지 않으려면 필요하지 않습니다.",
-  "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "숨기고 이 알림을 다시 표시하지 않기."
+  "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "숨기고 이 알림을 다시 표시하지 않기.",
+  "STMemoryBooks_UseChatCompletionService": "ST의 ChatCompletionService 사용",
+  "STMemoryBooks_UseChatCompletionServiceDesc": "이 프로필을 SillyTavern의 내장 채팅 완성 요청 도우미를 통해 라우팅합니다. 전체 수동 구성 프로필에는 영향을 주지 않습니다."
 }

@@ -986,6 +986,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {boolean} [data.preventRecursion=true] - The prevent recursion flag.
  * @param {boolean} [data.delayUntilRecursion=false] - The delay until recursion flag.
  * @param {boolean} [data.skipStructuredOutput=false] - Whether to skip provider structured-output requests.
+ * @param {boolean} [data.useChatCompletionService=false] - Whether to use SillyTavern's ChatCompletionService for eligible requests.
  * @param {boolean} [data.reverseProxy=false] - Whether this profile should use reverse proxy settings.
  * @returns {Object} A structured and validated profile object.
  */
@@ -1024,6 +1025,10 @@ export function createProfileObject(data = {}) {
     // Preserve builtin marker for the STMB-required "Current SillyTavern Settings" profile.
     if (data.isBuiltinCurrentST) {
         profile.isBuiltinCurrentST = true;
+    }
+
+    if (profile.connection.api !== 'full-manual') {
+        profile.useChatCompletionService = Boolean(data.useChatCompletionService);
     }
 
     // Set titleFormat if explicitly provided, or if it's not a dynamic profile

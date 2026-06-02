@@ -4,11 +4,12 @@ import { getStreamingReply, oai_settings, ZAI_ENDPOINT } from '../../../openai.j
 import EventSourceStream from '../../../sse-stream.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
-import { extension_settings } from '../../../extensions.js';
+import { extension_settings, getContext } from '../../../extensions.js';
 import dirtyJson from 'dirty-json';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
+let hasWarnedMissingChatCompletionService = false;
 
 const MEMORY_RESPONSE_JSON_SCHEMA = Object.freeze({
     name: 'stmb_memory',
@@ -306,6 +307,40 @@ async function parseCompletionResponse(response, api) {
     return JSON.parse(bodyText);
 }
 
+function getChatCompletionServiceOrNull() {
+    try {
+        const service = getContext?.()?.ChatCompletionService;
+        if (service && typeof service.sendRequest === 'function') {
+            return service;
+        }
+    } catch (error) {
+        if (!hasWarnedMissingChatCompletionService) {
+            console.warn(`${MODULE_NAME}: ChatCompletionService is unavailable; falling back to STMB request path.`, error);
+            hasWarnedMissingChatCompletionService = true;
+        }
+        return null;
+    }
+
+    if (!hasWarnedMissingChatCompletionService) {
+        console.warn(`${MODULE_NAME}: ChatCompletionService is unavailable; falling back to STMB request path.`);
+        hasWarnedMissingChatCompletionService = true;
+    }
+    return null;
+}
+
+async function sendViaChatCompletionService(body, signal) {
+    const service = getChatCompletionServiceOrNull();
+    if (!service) {
+        return null;
+    }
+
+    const full = await service.sendRequest(body, false, signal);
+    return {
+        text: extractCompletionText(full),
+        full,
+    };
+}
+
 /**
 *Send a raw completion request to the backend, bypassing SillyTavern's chat context stack.*
 *Supports OpenAI, Claude, Gemini, and custom OpenAI-compatible endpoints.*
@@ -319,6 +354,7 @@ async function parseCompletionResponse(response, api) {
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
 *@param {boolean} [opts.reverseProxy] - Whether to forward SillyTavern reverse proxy settings for supported providers*
 *@param {Object|null} [opts.jsonSchema] - Optional SillyTavern structured-output schema*
+*@param {boolean} [opts.useChatCompletionService=false] - Whether to use SillyTavern's ChatCompletionService for non-manual requests*
 *@returns {Promise<{text: string, full: object}>}*
 */
 export async function sendRawCompletionRequest({
@@ -332,6 +368,7 @@ export async function sendRawCompletionRequest({
     reverseProxy = false,
     signal = null,
     jsonSchema = null,
+    useChatCompletionService = false,
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
@@ -447,6 +484,13 @@ export async function sendRawCompletionRequest({
         body.vertexai_express_project_id = oai_settings?.vertexai_express_project_id || '';
     }
 
+    if (api !== 'full-manual' && useChatCompletionService) {
+        const serviceResult = await sendViaChatCompletionService(body, signal);
+        if (serviceResult) {
+            return serviceResult;
+        }
+    }
+
     const res = await fetch(url, {
         method: 'POST',
         headers: headers,
@@ -478,7 +522,7 @@ export async function sendRawCompletionRequest({
 /**
  * Unified request wrapper for side prompts and memory generation.
  * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
- * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object }} opts
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean }} opts
  * @returns {Promise<{ text: string, full: object }>}
  */
 export async function requestCompletion({
@@ -492,6 +536,7 @@ export async function requestCompletion({
     reverseProxy = false,
     signal = null,
     jsonSchema = null,
+    useChatCompletionService = false,
 }) {
     // Delegate all provider-specific shaping to sendRawCompletionRequest which already
     // handles: full-manual, custom (custom_model_id  oai_settings.custom_url), and normal providers.
@@ -506,6 +551,7 @@ export async function requestCompletion({
         reverseProxy,
         signal,
         jsonSchema,
+        useChatCompletionService,
     });
 }
 
@@ -1020,6 +1066,7 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             reverseProxy: !!conn.reverseProxy,
             signal,
             jsonSchema: useStructuredOutput ? MEMORY_RESPONSE_JSON_SCHEMA : null,
+            useChatCompletionService: profile?.useChatCompletionService === true && apiType !== 'full-manual',
         };
 
         let aiResponse;

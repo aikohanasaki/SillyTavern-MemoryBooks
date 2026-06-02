@@ -79,6 +79,14 @@ const profileEditTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_SkipStructuredOutput">Skip structured output and use plain-text completion</span>
         </label>
 
+        <div id="stmb-profile-chat-completion-service-container" class="{{#if (eq connection.api 'full-manual')}}displayNone{{/if}}">
+            <label class="checkbox_label marginTop5">
+                <input type="checkbox" id="stmb-profile-use-chat-completion-service" {{#if useChatCompletionService}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_UseChatCompletionService">Use ST's ChatCompletionService</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_UseChatCompletionServiceDesc">Routes this profile through SillyTavern's built-in chat completion request helper. Full Manual profiles are not affected.</small>
+        </div>
+
         <label for="stmb-profile-model">
             <h4 data-i18n="STMemoryBooks_Model">Model:</h4>
             <input type="text" id="stmb-profile-model" value="{{connection.model}}" class="text_pole" data-i18n="[placeholder]STMemoryBooks_ModelPlaceholder" placeholder="Paste model ID here" {{#if (eq connection.api "current_st")}}disabled title="Managed by SillyTavern UI"{{/if}}>
@@ -269,6 +277,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             preventRecursion: profile.preventRecursion,
             delayUntilRecursion: profile.delayUntilRecursion,
             skipStructuredOutput: Boolean(profile.skipStructuredOutput),
+            useChatCompletionService: Boolean(profile.useChatCompletionService) && connection.api !== 'full-manual',
             outletName: profile.outletName || '',
             hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false
         };
@@ -364,6 +373,7 @@ export async function newProfile(settings, refreshCallback) {
             preventRecursion: false,
             delayUntilRecursion: false,
             skipStructuredOutput: false,
+            useChatCompletionService: false,
             outletName: ''
         };
 
@@ -739,12 +749,19 @@ function setupProfileEditEventHandlers(popupInstance, settings) {
 
     popupElement.querySelector('#stmb-profile-api')?.addEventListener('change', (e) => {
         const fullManualSection = popupElement.querySelector('#stmb-full-manual-section');
+        const chatCompletionServiceContainer = popupElement.querySelector('#stmb-profile-chat-completion-service-container');
+        const chatCompletionServiceInput = popupElement.querySelector('#stmb-profile-use-chat-completion-service');
         const modelInput = popupElement.querySelector('#stmb-profile-model');
         const tempInput = popupElement.querySelector('#stmb-profile-temperature');
         if (e.target.value === 'full-manual') {
             fullManualSection.classList.remove('displayNone');
+            chatCompletionServiceContainer?.classList.add('displayNone');
+            if (chatCompletionServiceInput) {
+                chatCompletionServiceInput.checked = false;
+            }
         } else {
             fullManualSection.classList.add('displayNone');
+            chatCompletionServiceContainer?.classList.remove('displayNone');
         }
         // Disable model/temp when using Current SillyTavern Settings provider
         const isCurrentST = e.target.value === 'current_st';
@@ -863,6 +880,10 @@ function buildProfileFromForm(popupElement, fallbackName) {
         delayUntilRecursion: popupElement.querySelector('#stmb-profile-delay-recursion')?.checked,
         skipStructuredOutput: popupElement.querySelector('#stmb-profile-skip-structured-output')?.checked,
     };
+
+    if (data.api !== 'full-manual') {
+        data.useChatCompletionService = popupElement.querySelector('#stmb-profile-use-chat-completion-service')?.checked;
+    }
 
     // Step 2: Intelligently determine whether to use the selected preset or the custom prompt.
     const presetSelect = popupElement.querySelector('#stmb-profile-preset');
@@ -1020,6 +1041,17 @@ export function validateAndFixProfiles(settings) {
             fixes.push(`Added default 'skipStructuredOutput' to profile "${profile.name}"`);
         } else {
             profile.skipStructuredOutput = Boolean(profile.skipStructuredOutput);
+        }
+        if (profile.connection?.api === 'full-manual') {
+            if ('useChatCompletionService' in profile) {
+                delete profile.useChatCompletionService;
+                fixes.push(`Removed 'useChatCompletionService' from Full Manual profile "${profile.name}"`);
+            }
+        } else if (profile.useChatCompletionService === undefined) {
+            profile.useChatCompletionService = false;
+            fixes.push(`Added default 'useChatCompletionService' to profile "${profile.name}"`);
+        } else {
+            profile.useChatCompletionService = Boolean(profile.useChatCompletionService);
         }
         // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {
