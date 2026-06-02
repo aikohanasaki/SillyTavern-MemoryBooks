@@ -334,7 +334,16 @@ async function sendViaChatCompletionService(body, signal) {
         return null;
     }
 
-    const full = await service.sendRequest(body, false, signal);
+    let full;
+    try {
+        full = await service.sendRequest(body, false, signal);
+    } catch (error) {
+        if (signal?.aborted) {
+            throw error;
+        }
+        console.warn(`${MODULE_NAME}: ChatCompletionService request failed; falling back to STMB request path.`, error);
+        return null;
+    }
     return {
         text: extractCompletionText(full),
         full,
