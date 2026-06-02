@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.11.0 (June 2, 2026)
+- Enhancement: Optional per-profile SillyTavern ChatCompletionService routing.
+
 ## v6.10.2 (May 31, 2026)
 - Enhancement/Bugfix: SSE streaming format support (AT LAST).
 

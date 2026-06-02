@@ -1036,5 +1036,7 @@
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "請先讓記憶書任務完成，再切換聊天。自動記憶和自動合併提示只在目前聊天中可靠。",
   "STMemoryBooks_Jobs_ChatChangedActiveWarning": "記憶書任務仍在執行。自動記憶和自動合併提示可能要等您返回或出現另一個觸發條件後才會執行。",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar 已停用或未安裝。記憶書任務佇列功能需要 Chat Top Bar。請安裝和/或啟用該擴充功能以存取任務佇列功能。如果您不想使用任務佇列，則不需要這樣做。",
-  "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "隱藏且不再顯示此通知。"
+  "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "隱藏且不再顯示此通知。",
+  "STMemoryBooks_UseChatCompletionService": "使用 ST 的 ChatCompletionService",
+  "STMemoryBooks_UseChatCompletionServiceDesc": "透過 SillyTavern 內建的聊天補全請求助手路由此設定檔。完全手動設定檔不受影響。"
 }

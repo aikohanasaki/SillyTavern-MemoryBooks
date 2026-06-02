@@ -1036,5 +1036,7 @@
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Biarkan tugas Buku Memori selesai sebelum menukar chat. Memori automatik dan prompt konsolidasi automatik hanya boleh dipercayai dalam chat semasa.",
   "STMemoryBooks_Jobs_ChatChangedActiveWarning": "Tugas Buku Memori masih aktif. Memori automatik dan prompt konsolidasi automatik mungkin tidak berjalan sehingga anda kembali atau pencetus lain berlaku.",
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar sama ada dinyahdayakan atau tidak dipasang. Fungsi baris gilir tugas Buku Memori memerlukan Chat Top Bar. Sila pasang dan/atau dayakan sambungan tersebut untuk mengakses fungsi baris gilir tugas. Ini tidak diperlukan jika anda tidak mahu menggunakan baris gilir tugas.",
-  "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Sembunyikan dan jangan tunjukkan pemberitahuan ini lagi."
+  "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Sembunyikan dan jangan tunjukkan pemberitahuan ini lagi.",
+  "STMemoryBooks_UseChatCompletionService": "Gunakan ChatCompletionService ST",
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Menghalakan profil ini melalui pembantu permintaan pelengkapan chat terbina dalam SillyTavern. Profil Konfigurasi Manual Penuh tidak terjejas."
 }

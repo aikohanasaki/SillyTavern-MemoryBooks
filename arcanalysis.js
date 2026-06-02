@@ -330,6 +330,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
     extra,
     reverseProxy: !!conn.reverseProxy,
     signal,
+    useChatCompletionService: !!conn.useChatCompletionService,
   });
   if (runEpoch !== null) throwIfStmbStopped(runEpoch);
   try {
@@ -357,6 +358,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
       extra,
       reverseProxy: !!conn.reverseProxy,
       signal,
+      useChatCompletionService: !!conn.useChatCompletionService,
     });
     if (runEpoch !== null) throwIfStmbStopped(runEpoch);
     kw = parseKeywordsResponse(retry.text);
@@ -765,6 +767,7 @@ export async function runSummaryAnalysisSequential(
           extra,
           reverseProxy: !!conn.reverseProxy,
           signal: task.signal,
+          useChatCompletionService: !!conn.useChatCompletionService,
         });
         task.throwIfStopped();
         text = res.text;
@@ -795,6 +798,7 @@ export async function runSummaryAnalysisSequential(
             extra,
             reverseProxy: !!conn.reverseProxy,
             signal: task.signal,
+            useChatCompletionService: !!conn.useChatCompletionService,
           });
           task.throwIfStopped();
           return res;
@@ -1009,12 +1013,13 @@ function resolveConnection(profileOrConnection) {
     const apiIsCurrentST = String(c?.api || "").toLowerCase() === "current_st";
     const apiInfo = apiIsCurrentST ? getCurrentApiInfo() : null;
     const ui = apiIsCurrentST ? getUIModelSettings() : null;
+    const api = normalizeCompletionSource(
+      apiIsCurrentST
+        ? apiInfo?.completionSource || "openai"
+        : c.api || getCurrentApiInfo().completionSource || "openai",
+    );
     return {
-      api: normalizeCompletionSource(
-        apiIsCurrentST
-          ? apiInfo?.completionSource || "openai"
-          : c.api || getCurrentApiInfo().completionSource || "openai",
-      ),
+      api,
       model: apiIsCurrentST ? ui?.model || "" : c.model || getUIModelSettings().model || "",
       temperature:
         apiIsCurrentST
@@ -1025,6 +1030,7 @@ function resolveConnection(profileOrConnection) {
       endpoint: c.endpoint,
       apiKey: c.apiKey,
       reverseProxy: !!c.reverseProxy,
+      useChatCompletionService: !!profileOrConnection.useChatCompletionService && api !== "full-manual",
     };
   }
   // Fallback: current UI

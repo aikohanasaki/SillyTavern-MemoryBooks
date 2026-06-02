@@ -253,7 +253,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  */
 async function runLLM(prompt, overrides = null, options = {}) {
     // Determine connection
-    let api, model, temperature, endpoint, apiKey, reverseProxy;
+    let api, model, temperature, endpoint, apiKey, reverseProxy, useChatCompletionService;
 
     if (overrides && (overrides.api || overrides.model)) {
         api = normalizeCompletionSource(overrides.api || 'openai');
@@ -262,6 +262,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         endpoint = overrides.endpoint || null;
         apiKey = overrides.apiKey || null;
         reverseProxy = !!overrides.reverseProxy;
+        useChatCompletionService = !!overrides.useChatCompletionService && api !== 'full-manual';
         console.debug(`${MODULE_NAME}: runLLM using overrides api=${api} model=${model} temp=${temperature}`);
     } else {
         const apiInfo = getCurrentApiInfo();
@@ -270,6 +271,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         model = modelInfo.model || '';
         temperature = modelInfo.temperature ?? 0.7;
         reverseProxy = false;
+        useChatCompletionService = false;
         console.debug(`${MODULE_NAME}: runLLM using UI settings api=${api} model=${model} temp=${temperature}`);
     }
 
@@ -296,6 +298,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         extra,
         reverseProxy,
         signal: options?.signal || null,
+        useChatCompletionService,
     });
     
     // Apply the same explicit incoming regex selection flow used by memories.
@@ -329,8 +332,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const conn = resolveEffectiveConnectionFromProfile(profile);
             const { api, model, temperature, endpoint, apiKey, reverseProxy } = conn;
             const extra = rawConn && typeof rawConn.extra === 'object' && rawConn.extra ? rawConn.extra : undefined;
+            const useChatCompletionService = !!profile.useChatCompletionService && api !== 'full-manual';
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra };
+            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService };
         }
 
         const settings = extension_settings?.STMemoryBooks;
@@ -349,8 +353,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const model = modelInfo.model || '';
                 const temperature = modelInfo.temperature ?? 0.7;
                 const reverseProxy = !!over?.connection?.reverseProxy;
+                const useChatCompletionService = !!over?.useChatCompletionService;
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature, reverseProxy };
+                return { api, model, temperature, reverseProxy, useChatCompletionService };
             } else {
                 const conn = over?.connection || {};
                 const api = normalizeCompletionSource(conn.api || 'openai');
@@ -360,8 +365,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const apiKey = conn.apiKey || null;
                 const reverseProxy = !!conn.reverseProxy;
                 const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
+                const useChatCompletionService = !!over?.useChatCompletionService && api !== 'full-manual';
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature, endpoint, apiKey, reverseProxy, extra };
+                return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService };
             }
         }
 
@@ -388,8 +394,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const model = modelInfo.model || '';
             const temperature = modelInfo.temperature ?? 0.7;
             const reverseProxy = !!def?.connection?.reverseProxy;
+            const useChatCompletionService = !!def?.useChatCompletionService;
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using UI via dynamic default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, reverseProxy };
+            return { api, model, temperature, reverseProxy, useChatCompletionService };
         } else {
             const conn = def?.connection || {};
             const api = normalizeCompletionSource(conn.api || 'openai');
@@ -399,8 +406,9 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const apiKey = conn.apiKey || null;
             const reverseProxy = !!conn.reverseProxy;
             const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
+            const useChatCompletionService = !!def?.useChatCompletionService && api !== 'full-manual';
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra };
+            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService };
         }
     } catch (err) {
         // Ultimate fallback: UI
