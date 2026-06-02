@@ -7,7 +7,8 @@ import {
     getCurrentApiInfo,
     createProfileObject,
     clampInt,
-    readIntInput
+    readIntInput,
+    parseBooleanFlag
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
 import * as SummaryPromptManager from './summaryPromptManager.js';
@@ -1040,7 +1041,7 @@ export function validateAndFixProfiles(settings) {
             profile.skipStructuredOutput = false;
             fixes.push(`Added default 'skipStructuredOutput' to profile "${profile.name}"`);
         } else {
-            profile.skipStructuredOutput = Boolean(profile.skipStructuredOutput);
+            profile.skipStructuredOutput = parseBooleanFlag(profile.skipStructuredOutput, false);
         }
         if (profile.connection?.api === 'full-manual') {
             if ('useChatCompletionService' in profile) {
@@ -1051,7 +1052,7 @@ export function validateAndFixProfiles(settings) {
             profile.useChatCompletionService = false;
             fixes.push(`Added default 'useChatCompletionService' to profile "${profile.name}"`);
         } else {
-            profile.useChatCompletionService = Boolean(profile.useChatCompletionService);
+            profile.useChatCompletionService = parseBooleanFlag(profile.useChatCompletionService, false);
         }
         // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {
