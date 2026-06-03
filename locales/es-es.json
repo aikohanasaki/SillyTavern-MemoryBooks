@@ -1043,5 +1043,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar está desactivada o no está instalada. La cola de trabajos de Libros de Memoria requiere Chat Top Bar. Instala y/o activa la extensión para acceder a la cola de trabajos. Esto no es necesario si no quieres usar la cola de trabajos.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Ocultar y no volver a mostrar esta notificación.",
   "STMemoryBooks_UseChatCompletionService": "Usar ChatCompletionService de ST",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "Enruta este perfil a través del asistente integrado de SillyTavern para solicitudes de completado de chat. Los perfiles de Configuración Manual Completa no se ven afectados."
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Enruta este perfil a través del asistente integrado de SillyTavern para solicitudes de completado de chat. Los perfiles de Configuración Manual Completa no se ven afectados.",
+  "STMemoryBooks_ChatCompletionPreset": "Preset de completado de chat:",
+  "STMemoryBooks_ChatCompletionPresetDesc": "Opcional. Aplica un preset de completado de chat de SillyTavern mediante ChatCompletionService.processRequest.",
+  "STMemoryBooks_NoChatCompletionPreset": "Sin preset de completado de chat"
 }

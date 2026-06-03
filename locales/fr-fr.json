@@ -1037,5 +1037,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar est désactivé ou n'est pas installé. La file de tâches Memory Books nécessite Chat Top Bar. Veuillez installer et/ou activer l'extension pour accéder à la file de tâches. Ce n'est pas nécessaire si vous ne souhaitez pas utiliser la file de tâches.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Masquer et ne plus jamais afficher cette notification.",
   "STMemoryBooks_UseChatCompletionService": "Utiliser le ChatCompletionService de ST",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "Achemine ce profil via l’assistant intégré de SillyTavern pour les requêtes de complétion de chat. Les profils en configuration manuelle complète ne sont pas affectés."
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Achemine ce profil via l’assistant intégré de SillyTavern pour les requêtes de complétion de chat. Les profils en configuration manuelle complète ne sont pas affectés.",
+  "STMemoryBooks_ChatCompletionPreset": "Preset de complétion de chat :",
+  "STMemoryBooks_ChatCompletionPresetDesc": "Facultatif. Applique un preset de complétion de chat SillyTavern via ChatCompletionService.processRequest.",
+  "STMemoryBooks_NoChatCompletionPreset": "Aucun preset de complétion de chat"
 }

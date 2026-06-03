@@ -1038,5 +1038,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar отключен или не установлен. Очередь задач Книг Памяти требует Chat Top Bar. Установите и/или включите расширение, чтобы получить доступ к очереди задач. Это не требуется, если вы не хотите использовать очередь задач.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Скрыть и больше не показывать это уведомление.",
   "STMemoryBooks_UseChatCompletionService": "Использовать ChatCompletionService ST",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "Направляет этот профиль через встроенный помощник запросов чат-завершения SillyTavern. Профили с полной ручной конфигурацией не затрагиваются."
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Направляет этот профиль через встроенный помощник запросов чат-завершения SillyTavern. Профили с полной ручной конфигурацией не затрагиваются.",
+  "STMemoryBooks_ChatCompletionPreset": "Пресет чат-завершения:",
+  "STMemoryBooks_ChatCompletionPresetDesc": "Необязательно. Применяет пресет чат-завершения SillyTavern через ChatCompletionService.processRequest.",
+  "STMemoryBooks_NoChatCompletionPreset": "Без пресета чат-завершения"
 }

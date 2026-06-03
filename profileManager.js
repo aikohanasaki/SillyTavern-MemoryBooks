@@ -13,10 +13,50 @@ import {
 import { getDefaultTitleFormats } from './addlore.js';
 import * as SummaryPromptManager from './summaryPromptManager.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
+import { getPresetManager } from '../../../preset-manager.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 const BUILTIN_CURRENT_ST_NAME = 'Current SillyTavern Settings';
 const DEFAULT_REVERSE_START = 9999;
+
+function getChatCompletionPresetOptions(selectedPreset = '') {
+    const selected = String(selectedPreset || '').trim();
+    const options = [{
+        value: '',
+        displayName: translate('No Chat Completion preset', 'STMemoryBooks_NoChatCompletionPreset'),
+        selected: !selected,
+    }];
+
+    try {
+        const manager = getPresetManager('openai');
+        const presetList = manager?.getPresetList?.('openai');
+        const names = Array.isArray(presetList?.preset_names)
+            ? presetList.preset_names
+            : Object.keys(presetList?.preset_names || {});
+
+        for (const name of names) {
+            const value = String(name || '').trim();
+            if (!value) continue;
+            options.push({
+                value,
+                displayName: value,
+                selected: value === selected,
+            });
+        }
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to load Chat Completion presets`, error);
+    }
+
+    if (selected && !options.some(option => option.value === selected)) {
+        options.push({
+            value: selected,
+            displayName: selected,
+            selected: true,
+        });
+    }
+
+    return options;
+}
 
 /**
  * Profile edit template
@@ -86,6 +126,17 @@ const profileEditTemplate = Handlebars.compile(`
                 <span data-i18n="STMemoryBooks_UseChatCompletionService">Use ST's ChatCompletionService</span>
             </label>
             <small class="opacity50p" data-i18n="STMemoryBooks_UseChatCompletionServiceDesc">Routes this profile through SillyTavern's built-in chat completion request helper. Full Manual profiles are not affected.</small>
+            <div id="stmb-profile-chat-completion-preset-container" class="marginTop5 {{#unless useChatCompletionService}}displayNone{{/unless}}">
+                <label for="stmb-profile-chat-completion-preset">
+                    <h4 data-i18n="STMemoryBooks_ChatCompletionPreset">Chat Completion Preset:</h4>
+                    <small class="opacity50p" data-i18n="STMemoryBooks_ChatCompletionPresetDesc">Optional. Applies a SillyTavern chat completion preset through ChatCompletionService.processRequest.</small>
+                    <select id="stmb-profile-chat-completion-preset" class="text_pole">
+                        {{#each chatCompletionPresetOptions}}
+                        <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
+                        {{/each}}
+                    </select>
+                </label>
+            </div>
         </div>
 
         <label for="stmb-profile-model">
@@ -279,6 +330,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             delayUntilRecursion: profile.delayUntilRecursion,
             skipStructuredOutput: Boolean(profile.skipStructuredOutput),
             useChatCompletionService: Boolean(profile.useChatCompletionService) && connection.api !== 'full-manual',
+            chatCompletionPresetOptions: getChatCompletionPresetOptions(profile.chatCompletionPreset || ''),
             outletName: profile.outletName || '',
             hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false
         };
@@ -375,6 +427,7 @@ export async function newProfile(settings, refreshCallback) {
             delayUntilRecursion: false,
             skipStructuredOutput: false,
             useChatCompletionService: false,
+            chatCompletionPresetOptions: getChatCompletionPresetOptions(''),
             outletName: ''
         };
 
@@ -608,6 +661,14 @@ function setupProfileEditEventHandlers(popupInstance, settings) {
         }
     }
 
+    function syncChatCompletionPresetFields() {
+        const apiSelect = popupElement.querySelector('#stmb-profile-api');
+        const useServiceInput = popupElement.querySelector('#stmb-profile-use-chat-completion-service');
+        const presetContainer = popupElement.querySelector('#stmb-profile-chat-completion-preset-container');
+        const isEligible = apiSelect?.value !== 'full-manual' && !!useServiceInput?.checked;
+        presetContainer?.classList.toggle('displayNone', !isEligible);
+    }
+
     // Open Summary Prompt Manager from profile editor
     popupElement.querySelector('#stmb-open-prompt-manager')?.addEventListener('click', () => {
         try {
@@ -764,6 +825,7 @@ function setupProfileEditEventHandlers(popupInstance, settings) {
             fullManualSection.classList.add('displayNone');
             chatCompletionServiceContainer?.classList.remove('displayNone');
         }
+        syncChatCompletionPresetFields();
         // Disable model/temp when using Current SillyTavern Settings provider
         const isCurrentST = e.target.value === 'current_st';
         if (modelInput) {
@@ -775,6 +837,9 @@ function setupProfileEditEventHandlers(popupInstance, settings) {
             tempInput.title = isCurrentST ? 'Managed by SillyTavern UI' : '';
         }
     });
+
+    popupElement.querySelector('#stmb-profile-use-chat-completion-service')?.addEventListener('change', syncChatCompletionPresetFields);
+    syncChatCompletionPresetFields();
 
     popupElement.querySelector('#stmb-profile-reverse-proxy')?.addEventListener('change', syncFullManualReverseProxyFields);
     syncFullManualReverseProxyFields();
@@ -884,6 +949,7 @@ function buildProfileFromForm(popupElement, fallbackName) {
 
     if (data.api !== 'full-manual') {
         data.useChatCompletionService = popupElement.querySelector('#stmb-profile-use-chat-completion-service')?.checked;
+        data.chatCompletionPreset = popupElement.querySelector('#stmb-profile-chat-completion-preset')?.value || '';
     }
 
     // Step 2: Intelligently determine whether to use the selected preset or the custom prompt.
@@ -1048,11 +1114,24 @@ export function validateAndFixProfiles(settings) {
                 delete profile.useChatCompletionService;
                 fixes.push(`Removed 'useChatCompletionService' from Full Manual profile "${profile.name}"`);
             }
+            if ('chatCompletionPreset' in profile) {
+                delete profile.chatCompletionPreset;
+                fixes.push(`Removed 'chatCompletionPreset' from Full Manual profile "${profile.name}"`);
+            }
         } else if (profile.useChatCompletionService === undefined) {
             profile.useChatCompletionService = false;
             fixes.push(`Added default 'useChatCompletionService' to profile "${profile.name}"`);
         } else {
             profile.useChatCompletionService = parseBooleanFlag(profile.useChatCompletionService, false);
+        }
+        if (profile.connection?.api !== 'full-manual') {
+            const chatCompletionPreset = String(profile.chatCompletionPreset || '').trim();
+            if (profile.useChatCompletionService && chatCompletionPreset) {
+                profile.chatCompletionPreset = chatCompletionPreset;
+            } else if ('chatCompletionPreset' in profile) {
+                delete profile.chatCompletionPreset;
+                fixes.push(`Removed inactive 'chatCompletionPreset' from profile "${profile.name}"`);
+            }
         }
         // Ensure all existing profiles have a title format
         if (!profile.titleFormat) {

@@ -1038,5 +1038,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar が無効、またはインストールされていません。メモリーブックのジョブキュー機能には Chat Top Bar が必要です。ジョブキュー機能を使用するには、拡張機能をインストールまたは有効化してください。ジョブキューを使用しない場合は必要ありません。",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "非表示にして、この通知を今後表示しない。",
   "STMemoryBooks_UseChatCompletionService": "STのChatCompletionServiceを使用",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "このプロファイルをSillyTavern内蔵のチャット補完リクエストヘルパー経由で送信します。完全手動設定のプロファイルには影響しません。"
+  "STMemoryBooks_UseChatCompletionServiceDesc": "このプロファイルをSillyTavern内蔵のチャット補完リクエストヘルパー経由で送信します。完全手動設定のプロファイルには影響しません。",
+  "STMemoryBooks_ChatCompletionPreset": "チャット補完プリセット:",
+  "STMemoryBooks_ChatCompletionPresetDesc": "任意。ChatCompletionService.processRequest 経由で SillyTavern のチャット補完プリセットを適用します。",
+  "STMemoryBooks_NoChatCompletionPreset": "チャット補完プリセットなし"
 }
