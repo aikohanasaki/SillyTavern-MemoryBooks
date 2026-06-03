@@ -1043,5 +1043,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar ist deaktiviert oder nicht installiert. Die Job-Warteschlange von Memory Books benötigt Chat Top Bar. Bitte installiere und/oder aktiviere die Erweiterung, um die Job-Warteschlange zu verwenden. Dies ist nicht erforderlich, wenn du keine Job-Warteschlange verwenden möchtest.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Ausblenden und diese Benachrichtigung nie wieder anzeigen.",
   "STMemoryBooks_UseChatCompletionService": "STs ChatCompletionService verwenden",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "Leitet dieses Profil über SillyTaverns integrierten Anfragehelfer für Chat-Vervollständigungen. Vollständig manuelle Profile sind nicht betroffen."
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Leitet dieses Profil über SillyTaverns integrierten Anfragehelfer für Chat-Vervollständigungen. Vollständig manuelle Profile sind nicht betroffen.",
+  "STMemoryBooks_ChatCompletionPreset": "Chat-Completion-Preset:",
+  "STMemoryBooks_ChatCompletionPresetDesc": "Optional. Wendet ein SillyTavern-Chat-Completion-Preset über ChatCompletionService.processRequest an.",
+  "STMemoryBooks_NoChatCompletionPreset": "Kein Chat-Completion-Preset"
 }

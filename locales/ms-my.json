@@ -1038,5 +1038,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar sama ada dinyahdayakan atau tidak dipasang. Fungsi baris gilir tugas Buku Memori memerlukan Chat Top Bar. Sila pasang dan/atau dayakan sambungan tersebut untuk mengakses fungsi baris gilir tugas. Ini tidak diperlukan jika anda tidak mahu menggunakan baris gilir tugas.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Sembunyikan dan jangan tunjukkan pemberitahuan ini lagi.",
   "STMemoryBooks_UseChatCompletionService": "Gunakan ChatCompletionService ST",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "Menghalakan profil ini melalui pembantu permintaan pelengkapan chat terbina dalam SillyTavern. Profil Konfigurasi Manual Penuh tidak terjejas."
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Menghalakan profil ini melalui pembantu permintaan pelengkapan chat terbina dalam SillyTavern. Profil Konfigurasi Manual Penuh tidak terjejas.",
+  "STMemoryBooks_ChatCompletionPreset": "Preset pelengkapan chat:",
+  "STMemoryBooks_ChatCompletionPresetDesc": "Pilihan. Menggunakan preset pelengkapan chat SillyTavern melalui ChatCompletionService.processRequest.",
+  "STMemoryBooks_NoChatCompletionPreset": "Tiada preset pelengkapan chat"
 }

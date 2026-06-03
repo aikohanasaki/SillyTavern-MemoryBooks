@@ -1038,5 +1038,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar dinonaktifkan atau tidak terpasang. Fungsi antrean tugas Buku Memori memerlukan Chat Top Bar. Pasang dan/atau aktifkan ekstensi tersebut untuk mengakses fungsi antrean tugas. Ini tidak diperlukan jika Anda tidak ingin memakai antrean tugas.",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "Sembunyikan dan jangan tampilkan notifikasi ini lagi.",
   "STMemoryBooks_UseChatCompletionService": "Gunakan ChatCompletionService ST",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "Merutekan profil ini melalui pembantu permintaan penyelesaian chat bawaan SillyTavern. Profil Konfigurasi Manual Penuh tidak terpengaruh."
+  "STMemoryBooks_UseChatCompletionServiceDesc": "Merutekan profil ini melalui pembantu permintaan penyelesaian chat bawaan SillyTavern. Profil Konfigurasi Manual Penuh tidak terpengaruh.",
+  "STMemoryBooks_ChatCompletionPreset": "Preset penyelesaian chat:",
+  "STMemoryBooks_ChatCompletionPresetDesc": "Opsional. Menerapkan preset penyelesaian chat SillyTavern melalui ChatCompletionService.processRequest.",
+  "STMemoryBooks_NoChatCompletionPreset": "Tanpa preset penyelesaian chat"
 }

@@ -328,15 +328,23 @@ function getChatCompletionServiceOrNull() {
     return null;
 }
 
-async function sendViaChatCompletionService(body, signal) {
+async function sendViaChatCompletionService(body, signal, presetName = '') {
     const service = getChatCompletionServiceOrNull();
     if (!service) {
         return null;
     }
 
+    const normalizedPresetName = typeof presetName === 'string' ? presetName.trim() : '';
     let full;
     try {
-        full = await service.sendRequest(body, false, signal);
+        if (normalizedPresetName && typeof service.processRequest === 'function') {
+            full = await service.processRequest(body, { presetName: normalizedPresetName }, false, signal);
+        } else {
+            if (normalizedPresetName && typeof service.processRequest !== 'function') {
+                console.warn(`${MODULE_NAME}: ChatCompletionService.processRequest is unavailable; falling back to sendRequest.`);
+            }
+            full = await service.sendRequest(body, false, signal);
+        }
     } catch (error) {
         if (signal?.aborted) {
             throw error;
@@ -364,6 +372,7 @@ async function sendViaChatCompletionService(body, signal) {
 *@param {boolean} [opts.reverseProxy] - Whether to forward SillyTavern reverse proxy settings for supported providers*
 *@param {Object|null} [opts.jsonSchema] - Optional SillyTavern structured-output schema*
 *@param {boolean} [opts.useChatCompletionService=false] - Whether to use SillyTavern's ChatCompletionService for non-manual requests*
+*@param {string} [opts.chatCompletionPreset=''] - Optional SillyTavern chat completion preset to apply through ChatCompletionService.processRequest*
 *@returns {Promise<{text: string, full: object}>}*
 */
 export async function sendRawCompletionRequest({
@@ -378,6 +387,7 @@ export async function sendRawCompletionRequest({
     signal = null,
     jsonSchema = null,
     useChatCompletionService = false,
+    chatCompletionPreset = '',
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
@@ -494,7 +504,7 @@ export async function sendRawCompletionRequest({
     }
 
     if (api !== 'full-manual' && useChatCompletionService) {
-        const serviceResult = await sendViaChatCompletionService(body, signal);
+        const serviceResult = await sendViaChatCompletionService(body, signal, chatCompletionPreset);
         if (serviceResult) {
             return serviceResult;
         }
@@ -531,7 +541,7 @@ export async function sendRawCompletionRequest({
 /**
  * Unified request wrapper for side prompts and memory generation.
  * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
- * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean }} opts
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean, chatCompletionPreset?: string }} opts
  * @returns {Promise<{ text: string, full: object }>}
  */
 export async function requestCompletion({
@@ -546,6 +556,7 @@ export async function requestCompletion({
     signal = null,
     jsonSchema = null,
     useChatCompletionService = false,
+    chatCompletionPreset = '',
 }) {
     // Delegate all provider-specific shaping to sendRawCompletionRequest which already
     // handles: full-manual, custom (custom_model_id  oai_settings.custom_url), and normal providers.
@@ -561,6 +572,7 @@ export async function requestCompletion({
         signal,
         jsonSchema,
         useChatCompletionService,
+        chatCompletionPreset,
     });
 }
 
@@ -1076,6 +1088,7 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             signal,
             jsonSchema: useStructuredOutput ? MEMORY_RESPONSE_JSON_SCHEMA : null,
             useChatCompletionService: profile?.useChatCompletionService === true && apiType !== 'full-manual',
+            chatCompletionPreset: profile?.chatCompletionPreset || '',
         };
 
         let aiResponse;

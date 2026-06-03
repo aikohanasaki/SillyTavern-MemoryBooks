@@ -331,6 +331,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
     reverseProxy: !!conn.reverseProxy,
     signal,
     useChatCompletionService: !!conn.useChatCompletionService,
+    chatCompletionPreset: conn.chatCompletionPreset || "",
   });
   if (runEpoch !== null) throwIfStmbStopped(runEpoch);
   try {
@@ -359,6 +360,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
       reverseProxy: !!conn.reverseProxy,
       signal,
       useChatCompletionService: !!conn.useChatCompletionService,
+      chatCompletionPreset: conn.chatCompletionPreset || "",
     });
     if (runEpoch !== null) throwIfStmbStopped(runEpoch);
     kw = parseKeywordsResponse(retry.text);
@@ -768,6 +770,7 @@ export async function runSummaryAnalysisSequential(
           reverseProxy: !!conn.reverseProxy,
           signal: task.signal,
           useChatCompletionService: !!conn.useChatCompletionService,
+          chatCompletionPreset: conn.chatCompletionPreset || "",
         });
         task.throwIfStopped();
         text = res.text;
@@ -799,6 +802,7 @@ export async function runSummaryAnalysisSequential(
             reverseProxy: !!conn.reverseProxy,
             signal: task.signal,
             useChatCompletionService: !!conn.useChatCompletionService,
+            chatCompletionPreset: conn.chatCompletionPreset || "",
           });
           task.throwIfStopped();
           return res;
@@ -1031,6 +1035,10 @@ function resolveConnection(profileOrConnection) {
       apiKey: c.apiKey,
       reverseProxy: !!c.reverseProxy,
       useChatCompletionService: !!profileOrConnection.useChatCompletionService && api !== "full-manual",
+      chatCompletionPreset:
+        !!profileOrConnection.useChatCompletionService && api !== "full-manual"
+          ? String(profileOrConnection.chatCompletionPreset || "").trim()
+          : "",
     };
   }
   // Fallback: current UI

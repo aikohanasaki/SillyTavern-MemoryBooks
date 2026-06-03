@@ -1038,5 +1038,8 @@
   "STMemoryBooks_Jobs_TopInfoBarMissingNotice": "Chat Top Bar 已停用或未安裝。記憶書任務佇列功能需要 Chat Top Bar。請安裝和/或啟用該擴充功能以存取任務佇列功能。如果您不想使用任務佇列，則不需要這樣做。",
   "STMemoryBooks_Jobs_TopInfoBarMissingDismiss": "隱藏且不再顯示此通知。",
   "STMemoryBooks_UseChatCompletionService": "使用 ST 的 ChatCompletionService",
-  "STMemoryBooks_UseChatCompletionServiceDesc": "透過 SillyTavern 內建的聊天補全請求助手路由此設定檔。完全手動設定檔不受影響。"
+  "STMemoryBooks_UseChatCompletionServiceDesc": "透過 SillyTavern 內建的聊天補全請求助手路由此設定檔。完全手動設定檔不受影響。",
+  "STMemoryBooks_ChatCompletionPreset": "聊天補全預設：",
+  "STMemoryBooks_ChatCompletionPresetDesc": "可選。透過 ChatCompletionService.processRequest 套用 SillyTavern 聊天補全預設。",
+  "STMemoryBooks_NoChatCompletionPreset": "無聊天補全預設"
 }

@@ -1039,6 +1039,10 @@ function resolveCompactionProfileConnection(profileIndex = getCompactionProfileI
             temperature: modelInfo.temperature ?? 0.3,
             reverseProxy: !!profile?.connection?.reverseProxy,
             useChatCompletionService: !!profile?.useChatCompletionService && api !== 'full-manual',
+            chatCompletionPreset:
+                !!profile?.useChatCompletionService && api !== 'full-manual'
+                    ? String(profile?.chatCompletionPreset || '').trim()
+                    : '',
         };
     }
 
@@ -1047,6 +1051,10 @@ function resolveCompactionProfileConnection(profileIndex = getCompactionProfileI
         ...conn,
         temperature: conn.temperature ?? 0.3,
         useChatCompletionService: !!profile.useChatCompletionService && conn.api !== 'full-manual',
+        chatCompletionPreset:
+            !!profile.useChatCompletionService && conn.api !== 'full-manual'
+                ? String(profile.chatCompletionPreset || '').trim()
+                : '',
     };
 }
 
@@ -1116,6 +1124,7 @@ async function requestCompaction(entry, entryKind, template = getCompactionPromp
         reverseProxy: !!connection.reverseProxy,
         extra,
         useChatCompletionService: !!connection.useChatCompletionService,
+        chatCompletionPreset: connection.chatCompletionPreset || '',
     });
     const compacted = String(text || '').trim();
     if (!compacted) {
@@ -1608,6 +1617,7 @@ async function requestTopicalClipDraft(prompt, profileIndex) {
         reverseProxy: !!connection.reverseProxy,
         extra,
         useChatCompletionService: !!connection.useChatCompletionService,
+        chatCompletionPreset: connection.chatCompletionPreset || '',
     });
     const draft = String(text || '').trim();
     if (!draft) {
