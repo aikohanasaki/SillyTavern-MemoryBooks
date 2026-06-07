@@ -9,17 +9,20 @@ import {
 import {
     extension_settings,
     getContext,
+    openThirdPartyExtensionMenu,
     saveMetadataDebounced,
 } from '../../../extensions.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
-import { Popup, POPUP_TYPE } from '../../../popup.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 
 const MODULE_NAME = 'STMemoryBooks-Jobs';
 const TOP_INFO_BAR_ID = 'extensionTopBar';
 const TOP_INFO_BAR_CHAT_NAME_ID = 'extensionTopBarChatName';
+const TOP_INFO_BAR_EXTENSION_URL = 'https://github.com/SillyTavern/Extension-TopInfoBar';
 const JOB_BUTTON_ROOT_ID = 'stmb-jobs-topbar';
 const JOB_DRAWER_ID = 'top_chat_stmb_jobs';
+const INSTALL_TOP_INFO_BAR_RESULT = POPUP_RESULT.CUSTOM1;
 const ACTIVE_STATES = new Set(['queued', 'running', 'capturing_scene', 'assembling_prompt', 'generating', 'awaiting_approval', 'needs_review', 'saving', 'post_save']);
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled', 'blocked', 'skipped']);
 const RECENT_LIMIT = 25;
@@ -87,13 +90,22 @@ function showMissingTopInfoBarNotice() {
     const moduleSettings = getStmbModuleSettings();
     if (moduleSettings.dismissMissingTopInfoBarJobsNotice === true) return;
     missingTopInfoBarNoticeShown = true;
+    const noticeText = tr(
+        'STMemoryBooks_Jobs_TopInfoBarMissingNotice',
+        'Chat Top Bar is either disabled or not installed.\n\nThe optional Memory Books job queue uses Chat Top Bar to show the Jobs button and queue drawer. Chat Top Bar is an official SillyTavern extension by Cohee1207.\n\nInstall or enable Chat Top Bar to use job queueing. If you do not want to use Chat Top Bar, STMB will still work normally; only the job queue function will be unavailable.\n\nOfficial extension:\nhttps://github.com/SillyTavern/Extension-TopInfoBar',
+    );
+    const noticeHtml = escapeHtml(noticeText)
+        .replace(
+            escapeHtml(TOP_INFO_BAR_EXTENSION_URL),
+            `<a href="${TOP_INFO_BAR_EXTENSION_URL}" target="_blank" rel="noopener noreferrer">${escapeHtml(TOP_INFO_BAR_EXTENSION_URL)}</a>`,
+        )
+        .split(/\n{2,}/)
+        .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+        .join('');
 
     const content = `
         <div class="stmb-jobs-topinfobar-notice">
-            <p>${escapeHtml(tr(
-                'STMemoryBooks_Jobs_TopInfoBarMissingNotice',
-                'Chat Top Bar is either disabled or not installed. The Memory Books job queue function requires Chat Top Bar--please install and/or enable the extension to access the job queue function. This is not required if you do not want job queueing.',
-            ))}</p>
+            ${noticeHtml}
             <label class="checkbox_label stmb-jobs-topinfobar-dismiss">
                 <input type="checkbox" id="stmb-jobs-dismiss-topinfobar-notice">
                 <span>${escapeHtml(tr(
@@ -110,11 +122,19 @@ function showMissingTopInfoBarNotice() {
                 cancelButton: false,
                 wide: false,
                 allowVerticalScrolling: true,
+                customButtons: [{
+                    text: tr('STMemoryBooks_Jobs_TopInfoBarInstall', 'Install Chat Top Bar'),
+                    result: INSTALL_TOP_INFO_BAR_RESULT,
+                    classes: ['menu_button', 'whitespacenowrap'],
+                }],
             });
-            await popup.show();
+            const result = await popup.show();
             if (popup.dlg?.querySelector('#stmb-jobs-dismiss-topinfobar-notice')?.checked) {
                 moduleSettings.dismissMissingTopInfoBarJobsNotice = true;
                 saveSettingsDebounced();
+            }
+            if (result === INSTALL_TOP_INFO_BAR_RESULT) {
+                await openThirdPartyExtensionMenu(TOP_INFO_BAR_EXTENSION_URL);
             }
         } catch (error) {
             console.warn(`${MODULE_NAME}: missing TopInfoBar notice failed`, error);
