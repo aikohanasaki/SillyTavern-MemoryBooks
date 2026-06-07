@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.11.1 (June 6, 2026)
+- Tweak: Add Chat Top Bar install info.
+
 ## v6.11.0 (June 2, 2026)
 - Enhancement: Optional per-profile SillyTavern ChatCompletionService routing.
 - Tweak: Fix profile save normalization.
