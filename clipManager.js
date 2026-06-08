@@ -1356,7 +1356,7 @@ function buildCompactionEntryRows(entries) {
             <td data-label="${entryLabel}">${escapeHtml(entry.comment || '')}</td>
             <td data-label="${typeLabel}">${escapeHtml(getCompactionEntryKindLabel(entryKind))}</td>
             <td data-label="${tokensLabel}">${estimateTokens(entry.content || '')}</td>
-            <td data-label="${actionLabel}"><button type="button" class="menu_button stmb-review-entry-action"><i class="fa-solid fa-compress-alt stmb-review-entry-action-icon" aria-hidden="true"></i><span class="stmb-review-entry-action-label">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</span></button></td>
+            <td data-label="${actionLabel}"><button type="button" class="menu_button stmb-review-entry-action whitespacenowrap"><i class="fa-solid fa-compress-alt stmb-review-entry-action-icon" aria-hidden="true"></i><span class="stmb-review-entry-action-label">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</span></button></td>
         </tr>
         `;
     }).join('');
