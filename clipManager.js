@@ -1330,14 +1330,19 @@ function initializeCompactionLorebookSelect(popup, selectId = 'stmb-compaction-l
 }
 
 function buildCompactionEntryRows(entries) {
+    const entryLabel = escapeHtml(tr('STMemoryBooks_Entry', 'Entry'));
+    const typeLabel = escapeHtml(tr('STMemoryBooks_Type', 'Type'));
+    const tokensLabel = escapeHtml(tr('STMemoryBooks_Tokens', 'Tokens'));
+    const actionLabel = escapeHtml(tr('STMemoryBooks_Action', 'Action'));
+
     return entries.map(entry => {
         const entryKind = getCompactionEntryKind(entry);
         return `
         <tr data-entry-uid="${escapeHtml(String(entry.uid))}">
-            <td>${escapeHtml(entry.comment || '')}</td>
-            <td>${escapeHtml(getCompactionEntryKindLabel(entryKind))}</td>
-            <td>${estimateTokens(entry.content || '')}</td>
-            <td><button type="button" class="menu_button stmb-review-entry-action"><i class="fa-solid fa-compress-alt stmb-review-entry-action-icon" aria-hidden="true"></i><span class="stmb-review-entry-action-label">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</span></button></td>
+            <td data-label="${entryLabel}">${escapeHtml(entry.comment || '')}</td>
+            <td data-label="${typeLabel}">${escapeHtml(getCompactionEntryKindLabel(entryKind))}</td>
+            <td data-label="${tokensLabel}">${estimateTokens(entry.content || '')}</td>
+            <td data-label="${actionLabel}"><button type="button" class="menu_button stmb-review-entry-action"><i class="fa-solid fa-compress-alt stmb-review-entry-action-icon" aria-hidden="true"></i><span class="stmb-review-entry-action-label">${escapeHtml(tr('STMemoryBooks_Compaction_Button', 'Compact Entry'))}</span></button></td>
         </tr>
         `;
     }).join('');

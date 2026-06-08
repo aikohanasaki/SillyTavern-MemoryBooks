@@ -300,6 +300,70 @@
     white-space: nowrap;
 }
 
+@media screen and (max-width: 600px) {
+    .stmb-review-entries thead {
+        display: none;
+    }
+
+    .stmb-review-entries,
+    .stmb-review-entries tbody,
+    .stmb-review-entries tr,
+    .stmb-review-entries td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .stmb-review-entries tr {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--SmartThemeBorderColor);
+    }
+
+    .stmb-review-entries td {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 4px 10px;
+        padding: 4px 6px;
+        border-bottom: 0;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .stmb-review-entries td::before {
+        content: attr(data-label);
+        flex: 0 0 5.5em;
+        max-width: 40%;
+        font-weight: bold;
+        opacity: 0.85;
+    }
+
+    .stmb-review-entries td:first-child {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .stmb-review-entries td:first-child::before {
+        flex-basis: auto;
+        max-width: none;
+    }
+
+    .stmb-review-entries td[colspan]::before {
+        content: none;
+    }
+
+    .stmb-review-entries td:last-child {
+        justify-content: flex-start;
+    }
+
+    .stmb-review-entry-action {
+        min-width: 0;
+        max-width: 100%;
+        white-space: normal;
+    }
+}
+
 #top_chat_stmb_jobs {
     display: none;
     flex-direction: column;
