@@ -1017,6 +1017,20 @@ function initializeCompactionProfileSelect(popup, selectId, options = {}) {
     });
 }
 
+function addCompactionSelectChangeListener(select, handler) {
+    if (!select || typeof handler !== 'function') return;
+
+    const $select = window.jQuery && typeof window.jQuery === 'function'
+        ? window.jQuery(select)
+        : null;
+    if ($select?.length && $select.hasClass('select2-hidden-accessible')) {
+        $select.on('change.stmbCompaction', handler);
+        return;
+    }
+
+    select.addEventListener('change', handler);
+}
+
 function getCompactionProfileIndexFromSelect(popup, selectId) {
     return readIntInput(
         popup.dlg?.querySelector(`#${selectId}`),
@@ -1202,7 +1216,7 @@ async function showCompactionRequestPopup(entry, originalContent, entryKind, opt
     const showPromise = popup.show();
     populateCompactionPromptButton(popup);
     initializeCompactionProfileSelect(popup, 'stmb-compaction-request-profile-select');
-    popup.dlg?.querySelector('#stmb-compaction-request-profile-select')?.addEventListener('change', (event) => {
+    addCompactionSelectChangeListener(popup.dlg?.querySelector('#stmb-compaction-request-profile-select'), (event) => {
         setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
     });
     const result = await showPromise;
@@ -2047,7 +2061,7 @@ export async function showTopicalClipPopup(options = {}) {
     };
 
     modeSelect?.addEventListener('change', renderMode);
-    lorebookSelect?.addEventListener('change', event => {
+    addCompactionSelectChangeListener(lorebookSelect, event => {
         void loadSelectedLorebook(event.target.value || '');
     });
     targetSelect?.addEventListener('change', () => {
@@ -2064,7 +2078,7 @@ export async function showTopicalClipPopup(options = {}) {
     draftTextarea?.addEventListener('input', () => {
         if (saveButton) saveButton.disabled = !String(draftTextarea.value || '').trim() || !generationContext;
     });
-    dlg?.querySelector('#stmb-topical-clip-profile-select')?.addEventListener('change', event => {
+    addCompactionSelectChangeListener(dlg?.querySelector('#stmb-topical-clip-profile-select'), event => {
         setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
         clearDraft();
     });
@@ -2309,10 +2323,10 @@ export async function showStmbEntryReviewPopup(options = {}) {
     populateCompactionPromptButton(popup);
     initializeCompactionLorebookSelect(popup);
     initializeCompactionProfileSelect(popup, 'stmb-compaction-profile-select');
-    popup.dlg?.querySelector('#stmb-compaction-profile-select')?.addEventListener('change', (event) => {
+    addCompactionSelectChangeListener(popup.dlg?.querySelector('#stmb-compaction-profile-select'), (event) => {
         setCompactionProfileIndex(readIntInput(event.target, getCompactionProfileIndex()));
     });
-    popup.dlg?.querySelector('#stmb-compaction-lorebook-select')?.addEventListener('change', (event) => {
+    addCompactionSelectChangeListener(popup.dlg?.querySelector('#stmb-compaction-lorebook-select'), (event) => {
         void loadSelectedLorebook(event.target.value || '');
     });
     popup.dlg?.addEventListener('click', async (event) => {
