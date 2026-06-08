@@ -320,11 +320,11 @@
     }
 
     .stmb-review-entries td {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 4px 10px;
+        display: grid;
+        grid-template-columns: 5.5em minmax(0, 1fr);
+        align-items: start;
+        column-gap: 10px;
+        row-gap: 4px;
         padding: 4px 6px;
         border-bottom: 0;
         overflow-wrap: anywhere;
@@ -333,34 +333,16 @@
 
     .stmb-review-entries td::before {
         content: attr(data-label);
-        flex: 0 0 5.5em;
-        max-width: 40%;
         font-weight: bold;
         opacity: 0.85;
     }
 
-    .stmb-review-entries td:first-child {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .stmb-review-entries td:first-child::before {
-        flex-basis: auto;
-        max-width: none;
+    .stmb-review-entries td[colspan] {
+        display: block;
     }
 
     .stmb-review-entries td[colspan]::before {
         content: none;
-    }
-
-    .stmb-review-entries td:last-child {
-        justify-content: flex-start;
-    }
-
-    .stmb-review-entry-action {
-        min-width: 0;
-        max-width: 100%;
-        white-space: normal;
     }
 }
 
