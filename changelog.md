@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.11.2 (June 8, 2026)
+- Tweak: Compaction layout tweaks.
+
 ## v6.11.1 (June 6, 2026)
 - Tweak: Add Chat Top Bar install info.
 
