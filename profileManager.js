@@ -754,7 +754,7 @@ function renderAdditionalContextResolvedRows(list, rows) {
                 <span class="fa-solid fa-grip-lines stmb-additional-context-drag drag-handle" title="${escapeHtml(translate('Drag to reorder', 'STMemoryBooks_Profile_AlsoIncludeDrag'))}"></span>
                 <span class="flex1">${escapeHtml(label)}</span>
                 ${stale}
-                <button type="button" class="menu_button stmb-additional-context-remove" data-i18n="STMemoryBooks_Profile_AlsoIncludeRemove">${escapeHtml(translate('Remove', 'STMemoryBooks_Profile_AlsoIncludeRemove'))}</button>
+                <button type="button" class="menu_button stmb-additional-context-remove whitespacenowrap" data-i18n="STMemoryBooks_Profile_AlsoIncludeRemove">${escapeHtml(translate('Remove', 'STMemoryBooks_Profile_AlsoIncludeRemove'))}</button>
             </div>
         `;
     }).join('');
