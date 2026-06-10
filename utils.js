@@ -864,6 +864,57 @@ export function validateProfile(profile) {
 }
 
 /**
+ * Normalize ordered additional lorebook-entry references stored on a profile.
+ * @param {Array} refs
+ * @returns {{lorebookName: string, uid: string}[]}
+ */
+export function normalizeAdditionalContextEntries(refs) {
+    if (!Array.isArray(refs)) return [];
+
+    const seen = new Set();
+    const normalized = [];
+    for (const ref of refs) {
+        if (!ref || typeof ref !== 'object') continue;
+        const lorebookName = String(ref.lorebookName || '').trim();
+        const uid = String(ref.uid ?? '').trim();
+        if (!lorebookName || !uid) continue;
+
+        const dedupeKey = `${lorebookName}\u0000${uid}`;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+        normalized.push({ lorebookName, uid });
+    }
+    return normalized;
+}
+
+/**
+ * Get the user-facing lorebook entry title used by STMB pickers/prompts.
+ * @param {Object} entry
+ * @param {string|number} uidFallback
+ * @returns {string}
+ */
+export function getLorebookEntryDisplayName(entry, uidFallback = '') {
+    const title = String(entry?.comment || entry?.name || '').trim();
+    if (title) return title;
+    const uid = String(entry?.uid ?? uidFallback ?? '').trim();
+    return uid ? `Entry ${uid}` : 'Untitled entry';
+}
+
+/**
+ * Find a lorebook entry by UID, accepting either object key or entry.uid.
+ * @param {Object} lorebookData
+ * @param {string|number} uid
+ * @returns {Object|null}
+ */
+export function getLorebookEntryByUid(lorebookData, uid) {
+    const uidString = String(uid ?? '');
+    if (!uidString || !lorebookData?.entries) return null;
+    return lorebookData.entries[uidString]
+        || Object.values(lorebookData.entries).find(entry => String(entry?.uid ?? '') === uidString)
+        || null;
+}
+
+/**
  * Deep clone an object (simplified lodash.cloneDeep alternative)
  * @param {any} obj - Object to clone
  * @returns {any} Deep cloned object
@@ -1051,6 +1102,13 @@ export function createProfileObject(data = {}) {
     // Preserve builtin marker for the STMB-required "Current SillyTavern Settings" profile.
     if (data.isBuiltinCurrentST) {
         profile.isBuiltinCurrentST = true;
+    }
+
+    if (!profile.isBuiltinCurrentST) {
+        const additionalContextEntries = normalizeAdditionalContextEntries(data.additionalContextEntries);
+        if (additionalContextEntries.length > 0) {
+            profile.additionalContextEntries = additionalContextEntries;
+        }
     }
 
     if (profile.connection.api !== 'full-manual') {
