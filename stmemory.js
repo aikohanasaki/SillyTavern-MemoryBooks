@@ -1,10 +1,12 @@
-import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError, normalizeAdditionalContextEntries, getLorebookEntryDisplayName, getLorebookEntryByUid } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { getStreamingReply, oai_settings, ZAI_ENDPOINT } from '../../../openai.js';
 import EventSourceStream from '../../../sse-stream.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings, getContext } from '../../../extensions.js';
+import { loadWorldInfo, world_names } from '../../../world-info.js';
+import { translate } from '../../../i18n.js';
 import dirtyJson from 'dirty-json';
 const $ = window.jQuery;
 
@@ -1247,15 +1249,83 @@ function validateInputs(compiledScene, profile) {
     }
 }
 
+async function resolveAdditionalContextEntries(profile) {
+    const refs = normalizeAdditionalContextEntries(profile?.additionalContextEntries);
+    if (refs.length === 0 || profile?.isBuiltinCurrentST) {
+        return { entries: [], skipped: [] };
+    }
+
+    const cache = new Map();
+    const entries = [];
+    const skipped = [];
+
+    for (const ref of refs) {
+        try {
+            if (!Array.isArray(world_names) || !world_names.includes(ref.lorebookName)) {
+                skipped.push({ ...ref, reason: 'missing-lorebook' });
+                continue;
+            }
+
+            if (!cache.has(ref.lorebookName)) {
+                cache.set(ref.lorebookName, await loadWorldInfo(ref.lorebookName));
+            }
+
+            const entry = getLorebookEntryByUid(cache.get(ref.lorebookName), ref.uid);
+            if (!entry) {
+                skipped.push({ ...ref, reason: 'missing-entry' });
+                continue;
+            }
+
+            entries.push({
+                lorebookName: ref.lorebookName,
+                uid: ref.uid,
+                title: getLorebookEntryDisplayName(entry, ref.uid),
+                content: String(entry.content || '').trim(),
+            });
+        } catch (error) {
+            console.warn(`${MODULE_NAME}: Failed to resolve additional context entry`, ref, error);
+            skipped.push({ ...ref, reason: 'load-failed' });
+        }
+    }
+
+    if (skipped.length > 0) {
+        console.warn(`${MODULE_NAME}: Skipped ${skipped.length} stale additional context entr${skipped.length === 1 ? 'y' : 'ies'}`, skipped);
+        try {
+            toastr.warning(
+                translate('Some additional context entries could not be loaded and were skipped.', 'STMemoryBooks_Profile_AlsoIncludeSkipped'),
+                'STMemoryBooks',
+                { preventDuplicates: true },
+            );
+        } catch {}
+    }
+
+    return { entries, skipped };
+}
+
+function appendAdditionalContextSection(sceneHeader, additionalContextEntries = []) {
+    const usableEntries = additionalContextEntries.filter(entry => entry.content);
+    if (usableEntries.length === 0) return;
+
+    sceneHeader.push("=== ADDITIONAL CONTEXT FOR REFERENCE ===");
+    usableEntries.forEach((entry, index) => {
+        sceneHeader.push(`Reference ${index + 1} - ${entry.title}:`);
+        sceneHeader.push(entry.content);
+        sceneHeader.push("");
+    });
+    sceneHeader.push("=== END ADDITIONAL CONTEXT FOR REFERENCE ===");
+    sceneHeader.push("");
+}
+
 /**
  * Formats the array of scene messages into a single text block for the AI.
  * @private
  * @param {Array<Object>} messages - The messages from the compiled scene.
  * @param {Object} metadata - The metadata from the compiled scene.
  * @param {Array<Object>} previousSummariesContext - Previous summaries for context (optional).
+ * @param {Array<Object>} additionalContextEntries - Explicit profile-selected lorebook entries.
  * @returns {string} A formatted string representing the chat scene.
  */
-function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
+function formatSceneForAI(messages, metadata, previousSummariesContext = [], additionalContextEntries = []) {
     const messageLines = messages.map(message => {
         const speaker = message.name || 'Unknown';
         const content = (message.mes || '').trim();
@@ -1266,6 +1336,8 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
         ""
     ];
     
+    appendAdditionalContextSection(sceneHeader, additionalContextEntries);
+
     // Add previous memories context if available
     if (previousSummariesContext && previousSummariesContext.length > 0) {
         sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===");
@@ -1284,7 +1356,7 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = []) {
         sceneHeader.push("=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===");
         sceneHeader.push("");
     }
-    
+
     sceneHeader.push("=== SCENE TRANSCRIPT ===");
     sceneHeader.push(...messageLines);
     sceneHeader.push("");
@@ -1320,7 +1392,8 @@ async function buildPrompt(compiledScene, profile) {
     const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);
     
     // Build scene text for user prompt
-    const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext);
+    const additionalContext = await resolveAdditionalContextEntries(profile);
+    const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext, additionalContext.entries);
     
     // Combine system prompt and scene
     const finalPrompt = `${processedSystemPrompt}\n\n${sceneText}`;

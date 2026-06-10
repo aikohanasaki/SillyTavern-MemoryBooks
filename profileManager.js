@@ -8,12 +8,17 @@ import {
     createProfileObject,
     clampInt,
     readIntInput,
-    parseBooleanFlag
+    parseBooleanFlag,
+    normalizeAdditionalContextEntries,
+    getLorebookEntryDisplayName,
+    getLorebookEntryByUid
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
 import * as SummaryPromptManager from './summaryPromptManager.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { getPresetManager } from '../../../preset-manager.js';
+import { loadWorldInfo, world_names } from '../../../world-info.js';
+import { escapeHtml, getSortableDelay } from '../../../utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 const BUILTIN_CURRENT_ST_NAME = 'Current SillyTavern Settings';
@@ -208,6 +213,26 @@ const profileEditTemplate = Handlebars.compile(`
         <input type="text" id="stmb-profile-custom-title-format" class="text_pole marginTop5 {{#unless showCustomTitleInput}}displayNone{{/unless}}"
             data-i18n="[placeholder]STMemoryBooks_EnterCustomFormat" placeholder="Enter custom format" value="{{titleFormat}}">
     </div>
+
+    {{#if canUseAdditionalContext}}
+    <div class="world_entry_form_control marginTop5" id="stmb-profile-additional-context-section">
+        <h4 data-i18n="STMemoryBooks_Profile_AlsoInclude">Also include:</h4>
+        <small class="opacity50p" data-i18n="STMemoryBooks_Profile_AlsoIncludeDesc">Include selected lorebook entries as additional reference context when creating memories with this profile. Entries will be included in the order below. Drag and drop to reorder.</small>
+        <div class="buttons_block gap10px marginTop5">
+            <label for="stmb-profile-additional-lorebook" class="flex1">
+                <span data-i18n="STMemoryBooks_Profile_AlsoIncludeLorebook">Lorebook</span>
+                <select id="stmb-profile-additional-lorebook" class="text_pole"></select>
+            </label>
+            <label for="stmb-profile-additional-entry" class="flex1">
+                <span data-i18n="STMemoryBooks_Profile_AlsoIncludeEntry">Entry</span>
+                <select id="stmb-profile-additional-entry" class="text_pole"></select>
+            </label>
+            <button id="stmb-profile-additional-add" type="button" class="menu_button whitespacenowrap" data-i18n="STMemoryBooks_Profile_AlsoIncludeAdd">Add</button>
+        </div>
+        <div id="stmb-profile-additional-context-list" class="marginTop5"></div>
+    </div>
+    {{/if}}
+
     <hr>
     <h4 data-i18n="STMemoryBooks_LorebookEntrySettings">Lorebook Entry Settings</h4>
     <div class="info-block hint marginBot10" data-i18n="STMemoryBooks_LorebookEntrySettingsDesc">
@@ -332,7 +357,8 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             useChatCompletionService: Boolean(profile.useChatCompletionService) && connection.api !== 'full-manual',
             chatCompletionPresetOptions: getChatCompletionPresetOptions(profile.chatCompletionPreset || ''),
             outletName: profile.outletName || '',
-            hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false
+            hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false,
+            canUseAdditionalContext: !isBuiltinCurrentST,
         };
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -345,7 +371,9 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             allowVerticalScrolling: true,
         });
 
-        setupProfileEditEventHandlers(popupInstance, settings);
+        setupProfileEditEventHandlers(popupInstance, settings, {
+            additionalContextEntries: isBuiltinCurrentST ? [] : profile.additionalContextEntries,
+        });
 
         const result = await popupInstance.show();
 
@@ -428,7 +456,8 @@ export async function newProfile(settings, refreshCallback) {
             skipStructuredOutput: false,
             useChatCompletionService: false,
             chatCompletionPresetOptions: getChatCompletionPresetOptions(''),
-            outletName: ''
+            outletName: '',
+            canUseAdditionalContext: true,
         };
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -441,7 +470,9 @@ export async function newProfile(settings, refreshCallback) {
             allowVerticalScrolling: true,
         });
 
-        setupProfileEditEventHandlers(popupInstance, settings);
+        setupProfileEditEventHandlers(popupInstance, settings, {
+            additionalContextEntries: [],
+        });
 
         const result = await popupInstance.show();
 
@@ -634,11 +665,213 @@ export function importProfiles(event, settings, refreshCallback) {
     event.target.value = '';
 }
 
+async function getLorebookEntriesForPicker(lorebookName) {
+    const data = await loadWorldInfo(lorebookName);
+    return Object.entries(data?.entries || {})
+        .map(([key, entry]) => ({
+            uid: String(entry?.uid ?? key),
+            title: getLorebookEntryDisplayName(entry, key),
+        }))
+        .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+async function resolveAdditionalContextRows(refs) {
+    const normalized = normalizeAdditionalContextEntries(refs);
+    const cache = new Map();
+    const rows = [];
+
+    for (const ref of normalized) {
+        let staleReason = '';
+        let title = '';
+        try {
+            if (!Array.isArray(world_names) || !world_names.includes(ref.lorebookName)) {
+                staleReason = translate('Missing lorebook', 'STMemoryBooks_Profile_AlsoIncludeMissingLorebook');
+            } else {
+                if (!cache.has(ref.lorebookName)) {
+                    cache.set(ref.lorebookName, await loadWorldInfo(ref.lorebookName));
+                }
+                const entry = getLorebookEntryByUid(cache.get(ref.lorebookName), ref.uid);
+                if (entry) {
+                    title = getLorebookEntryDisplayName(entry, ref.uid);
+                } else {
+                    staleReason = translate('Missing entry', 'STMemoryBooks_Profile_AlsoIncludeMissingEntry');
+                }
+            }
+        } catch (error) {
+            console.warn(`${MODULE_NAME}: Failed to resolve additional context entry`, ref, error);
+            staleReason = translate('Load failed', 'STMemoryBooks_Profile_AlsoIncludeLoadFailedShort');
+        }
+
+        rows.push({
+            ...ref,
+            title: title || String(ref.uid),
+            staleReason,
+        });
+    }
+
+    return rows;
+}
+
+function readAdditionalContextEntriesFromList(list) {
+    if (!list) return [];
+    return normalizeAdditionalContextEntries(Array.from(list.querySelectorAll('[data-lorebook-name][data-entry-uid]')).map(row => ({
+        lorebookName: row.dataset.lorebookName,
+        uid: row.dataset.entryUid,
+    })));
+}
+
+function setupSortableAdditionalContextList(list) {
+    if (!list || typeof window.jQuery !== 'function') return;
+    try {
+        const $list = window.jQuery(list);
+        if ($list.data('ui-sortable')) {
+            $list.sortable('destroy');
+        }
+        $list.sortable({
+            delay: getSortableDelay(),
+            handle: '.stmb-additional-context-drag',
+        });
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to initialize additional context sorting`, error);
+    }
+}
+
+function renderAdditionalContextResolvedRows(list, rows) {
+    if (!list) return;
+
+    if (rows.length === 0) {
+        list.innerHTML = `<div class="opacity70p" data-i18n="STMemoryBooks_Profile_AlsoIncludeEmpty">${escapeHtml(translate('No additional context entries selected.', 'STMemoryBooks_Profile_AlsoIncludeEmpty'))}</div>`;
+        return;
+    }
+
+    list.innerHTML = rows.map(row => {
+        const label = `${row.lorebookName} - ${row.title}`;
+        const stale = row.staleReason
+            ? `<span class="textWarn" data-i18n="STMemoryBooks_Profile_AlsoIncludeStale">${escapeHtml(translate('Stale', 'STMemoryBooks_Profile_AlsoIncludeStale'))}: ${escapeHtml(row.staleReason)}</span>`
+            : '';
+        return `
+            <div class="stmb-profile-additional-context-row flex-container alignitemscenter gap10px marginTop5" data-lorebook-name="${escapeHtml(row.lorebookName)}" data-entry-uid="${escapeHtml(row.uid)}">
+                <span class="fa-solid fa-grip-lines stmb-additional-context-drag drag-handle" title="${escapeHtml(translate('Drag to reorder', 'STMemoryBooks_Profile_AlsoIncludeDrag'))}"></span>
+                <span class="flex1">${escapeHtml(label)}</span>
+                ${stale}
+                <button type="button" class="menu_button stmb-additional-context-remove" data-i18n="STMemoryBooks_Profile_AlsoIncludeRemove">${escapeHtml(translate('Remove', 'STMemoryBooks_Profile_AlsoIncludeRemove'))}</button>
+            </div>
+        `;
+    }).join('');
+
+    list.querySelectorAll('.stmb-additional-context-remove').forEach(button => {
+        button.addEventListener('click', () => {
+            button.closest('[data-lorebook-name][data-entry-uid]')?.remove();
+            if (!list.querySelector('[data-lorebook-name][data-entry-uid]')) {
+                void renderAdditionalContextRows(list, []);
+            }
+        });
+    });
+
+    setupSortableAdditionalContextList(list);
+}
+
+async function renderAdditionalContextRows(list, refs) {
+    if (!list) return;
+    const normalized = normalizeAdditionalContextEntries(refs);
+    const renderToken = `${Date.now()}:${Math.random()}`;
+    list.dataset.renderToken = renderToken;
+
+    renderAdditionalContextResolvedRows(list, normalized.map(ref => ({
+        ...ref,
+        title: String(ref.uid),
+        staleReason: '',
+    })));
+
+    const rows = await resolveAdditionalContextRows(normalized);
+    if (list.dataset.renderToken !== renderToken) return;
+    renderAdditionalContextResolvedRows(list, rows);
+}
+
+function populateAdditionalContextLorebookSelect(select) {
+    if (!select) return;
+    const names = Array.isArray(world_names) ? world_names.filter(Boolean) : [];
+    if (names.length === 0) {
+        select.innerHTML = `<option value="">${escapeHtml(translate('No lorebooks found', 'STMemoryBooks_Profile_AlsoIncludeNoLorebooks'))}</option>`;
+        select.disabled = true;
+        return;
+    }
+
+    select.disabled = false;
+    select.innerHTML = [
+        `<option value="">${escapeHtml(translate('Select a lorebook...', 'STMemoryBooks_Profile_AlsoIncludeSelectLorebook'))}</option>`,
+        ...names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`),
+    ].join('');
+}
+
+async function populateAdditionalContextEntrySelect(select, lorebookName) {
+    if (!select) return;
+    select.disabled = true;
+    if (!lorebookName) {
+        select.innerHTML = `<option value="">${escapeHtml(translate('Select an entry...', 'STMemoryBooks_Profile_AlsoIncludeSelectEntry'))}</option>`;
+        return;
+    }
+
+    select.innerHTML = `<option value="">${escapeHtml(translate('Loading entries...', 'STMemoryBooks_Profile_AlsoIncludeLoadingEntries'))}</option>`;
+    try {
+        const entries = await getLorebookEntriesForPicker(lorebookName);
+        if (entries.length === 0) {
+            select.innerHTML = `<option value="">${escapeHtml(translate('No entries found', 'STMemoryBooks_Profile_AlsoIncludeNoEntries'))}</option>`;
+            return;
+        }
+
+        select.innerHTML = [
+            `<option value="">${escapeHtml(translate('Select an entry...', 'STMemoryBooks_Profile_AlsoIncludeSelectEntry'))}</option>`,
+            ...entries.map(entry => `<option value="${escapeHtml(entry.uid)}">${escapeHtml(entry.title)}</option>`),
+        ].join('');
+        select.disabled = false;
+    } catch (error) {
+        console.warn(`${MODULE_NAME}: Failed to load entries for additional context picker`, error);
+        select.innerHTML = `<option value="">${escapeHtml(translate('Failed to load entries', 'STMemoryBooks_Profile_AlsoIncludeLoadFailed'))}</option>`;
+    }
+}
+
+function setupAdditionalContextControls(popupElement, initialRefs = []) {
+    const section = popupElement.querySelector('#stmb-profile-additional-context-section');
+    if (!section) return;
+
+    const lorebookSelect = section.querySelector('#stmb-profile-additional-lorebook');
+    const entrySelect = section.querySelector('#stmb-profile-additional-entry');
+    const addButton = section.querySelector('#stmb-profile-additional-add');
+    const list = section.querySelector('#stmb-profile-additional-context-list');
+
+    populateAdditionalContextLorebookSelect(lorebookSelect);
+    void populateAdditionalContextEntrySelect(entrySelect, lorebookSelect?.value || '');
+    void renderAdditionalContextRows(list, initialRefs);
+
+    lorebookSelect?.addEventListener('change', () => {
+        void populateAdditionalContextEntrySelect(entrySelect, lorebookSelect.value);
+    });
+
+    addButton?.addEventListener('click', async () => {
+        const lorebookName = String(lorebookSelect?.value || '').trim();
+        const uid = String(entrySelect?.value || '').trim();
+        if (!lorebookName || !uid) {
+            toastr.warning(translate('Choose a lorebook and entry first.', 'STMemoryBooks_Profile_AlsoIncludeMissingSelection'), 'STMemoryBooks');
+            return;
+        }
+
+        const current = readAdditionalContextEntriesFromList(list);
+        if (current.some(ref => ref.lorebookName === lorebookName && ref.uid === uid)) {
+            toastr.warning(translate('That entry is already included in this profile.', 'STMemoryBooks_Profile_AlsoIncludeDuplicate'), 'STMemoryBooks');
+            return;
+        }
+
+        await renderAdditionalContextRows(list, [...current, { lorebookName, uid }]);
+    });
+}
+
 /**
  * Setup event handlers for profile edit popup
  */
-function setupProfileEditEventHandlers(popupInstance, settings) {
+function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
     const popupElement = popupInstance.dlg;
+    setupAdditionalContextControls(popupElement, options.additionalContextEntries);
 
     function syncFullManualReverseProxyFields() {
         const reverseProxyInput = popupElement.querySelector('#stmb-profile-reverse-proxy');
@@ -947,6 +1180,11 @@ function buildProfileFromForm(popupElement, fallbackName) {
         skipStructuredOutput: popupElement.querySelector('#stmb-profile-skip-structured-output')?.checked,
     };
 
+    const additionalContextList = popupElement.querySelector('#stmb-profile-additional-context-list');
+    if (additionalContextList) {
+        data.additionalContextEntries = readAdditionalContextEntriesFromList(additionalContextList);
+    }
+
     if (data.api !== 'full-manual') {
         data.useChatCompletionService = popupElement.querySelector('#stmb-profile-use-chat-completion-service')?.checked;
         data.chatCompletionPreset = popupElement.querySelector('#stmb-profile-chat-completion-preset')?.value || '';
@@ -1079,6 +1317,10 @@ export function validateAndFixProfiles(settings) {
             profile.name = BUILTIN_CURRENT_ST_NAME;
             profile.connection = profile.connection || {};
             profile.connection.api = 'current_st';
+            if ('additionalContextEntries' in profile) {
+                delete profile.additionalContextEntries;
+                fixes.push(`Removed 'additionalContextEntries' from builtin profile "${profile.name}"`);
+            }
         }
 
         // For each profile, we check if the new settings exist. If not, we add the defaults.
@@ -1131,6 +1373,18 @@ export function validateAndFixProfiles(settings) {
             } else if ('chatCompletionPreset' in profile) {
                 delete profile.chatCompletionPreset;
                 fixes.push(`Removed inactive 'chatCompletionPreset' from profile "${profile.name}"`);
+            }
+        }
+        if (!profile?.isBuiltinCurrentST) {
+            const additionalContextEntries = normalizeAdditionalContextEntries(profile.additionalContextEntries);
+            if (additionalContextEntries.length > 0) {
+                if (JSON.stringify(profile.additionalContextEntries) !== JSON.stringify(additionalContextEntries)) {
+                    profile.additionalContextEntries = additionalContextEntries;
+                    fixes.push(`Normalized 'additionalContextEntries' for profile "${profile.name}"`);
+                }
+            } else if ('additionalContextEntries' in profile) {
+                delete profile.additionalContextEntries;
+                fixes.push(`Removed empty 'additionalContextEntries' from profile "${profile.name}"`);
             }
         }
         // Ensure all existing profiles have a title format
