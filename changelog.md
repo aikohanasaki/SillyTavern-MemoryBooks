@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v6.12.0 (June 10, 2026)
+- NEW FEATURE: Additional Context allows you to add context to memories. You must create a profile (you cannot add them to "Current SillyTavern Settings".)
+
 ## v6.11.2 (June 8, 2026)
 - Tweak: Compaction layout tweaks.
 
