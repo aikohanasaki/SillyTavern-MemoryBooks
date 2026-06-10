@@ -894,8 +894,10 @@ export function normalizeAdditionalContextEntries(refs) {
  * @returns {string}
  */
 export function getLorebookEntryDisplayName(entry, uidFallback = '') {
-    const title = String(entry?.comment || entry?.name || '').trim();
-    if (title) return title;
+    const comment = String(entry?.comment ?? '').trim();
+    if (comment) return comment;
+    const name = String(entry?.name ?? '').trim();
+    if (name) return name;
     const uid = String(entry?.uid ?? uidFallback ?? '').trim();
     return uid ? `Entry ${uid}` : 'Untitled entry';
 }
