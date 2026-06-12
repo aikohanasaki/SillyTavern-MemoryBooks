@@ -1,13 +1,19 @@
-import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError, normalizeAdditionalContextEntries, getLorebookEntryDisplayName, getLorebookEntryByUid } from './utils.js';
+import { getEffectivePrompt, getCurrentApiInfo, normalizeCompletionSource, estimateTokens, isStmbStopError, StmbCancelledError, normalizeAdditionalContextEntries } from './utils.js';
 import { characters, this_chid, substituteParams, getRequestHeaders } from '../../../../script.js';
 import { getStreamingReply, oai_settings, ZAI_ENDPOINT } from '../../../openai.js';
 import EventSourceStream from '../../../sse-stream.js';
 import { runRegexScript, getRegexScripts } from '../../../extensions/regex/engine.js';
 import { groups } from '../../../group-chats.js';
 import { extension_settings, getContext } from '../../../extensions.js';
-import { loadWorldInfo, world_names } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import dirtyJson from 'dirty-json';
+import { getSceneMarkers } from './sceneManager.js';
+import {
+    CONTEXT_NONE_KEY,
+    getContextSetting,
+    resolveContextSettingEntries,
+    resolveContextSettingEntriesFromRefs,
+} from './contextSettingsManager.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -1249,47 +1255,61 @@ function validateInputs(compiledScene, profile) {
     }
 }
 
-async function resolveAdditionalContextEntries(profile) {
+async function resolveAdditionalContextEntries(profile, compiledScene = null) {
+    if (Array.isArray(compiledScene?.additionalContextEntries)) {
+        return { entries: compiledScene.additionalContextEntries, skipped: [], source: 'snapshot' };
+    }
+
+    const markers = getSceneMarkers() || {};
+    const hasContextSettingKey = Object.hasOwn(markers, 'contextSettingKey');
+    if (hasContextSettingKey) {
+        const contextSettingKey = String(markers.contextSettingKey || '').trim();
+        if (contextSettingKey === CONTEXT_NONE_KEY || !contextSettingKey) {
+            return { entries: [], skipped: [], source: 'none' };
+        }
+
+        const setting = await getContextSetting(contextSettingKey);
+        if (!setting) {
+            console.warn(`${MODULE_NAME}: Selected context setting was not found: ${contextSettingKey}`);
+            try {
+                toastr.warning(
+                    translate('Selected context setting was not found. Continuing without Additional Context.', 'STMemoryBooks_ContextSettings_MissingSelectedWarning'),
+                    'STMemoryBooks',
+                    { preventDuplicates: true },
+                );
+            } catch {}
+            return { entries: [], skipped: [], source: 'missing' };
+        }
+
+        const resolved = await resolveContextSettingEntries(setting);
+        if (resolved.skipped?.length > 0) {
+            console.warn(`${MODULE_NAME}: Skipped ${resolved.skipped.length} stale context setting entr${resolved.skipped.length === 1 ? 'y' : 'ies'}`, resolved.skipped);
+            try {
+                toastr.warning(
+                    translate('Some additional context entries could not be loaded and were skipped.', 'STMemoryBooks_Profile_AlsoIncludeSkipped'),
+                    'STMemoryBooks',
+                    { preventDuplicates: true },
+                );
+            } catch {}
+        }
+        return { ...resolved, source: 'context-setting' };
+    }
+
     const refs = normalizeAdditionalContextEntries(profile?.additionalContextEntries);
     if (refs.length === 0 || profile?.isBuiltinCurrentST) {
-        return { entries: [], skipped: [] };
+        return { entries: [], skipped: [], source: 'none' };
     }
 
-    const cache = new Map();
-    const entries = [];
-    const skipped = [];
-
-    for (const ref of refs) {
-        try {
-            if (!Array.isArray(world_names) || !world_names.includes(ref.lorebookName)) {
-                skipped.push({ ...ref, reason: 'missing-lorebook' });
-                continue;
-            }
-
-            if (!cache.has(ref.lorebookName)) {
-                cache.set(ref.lorebookName, await loadWorldInfo(ref.lorebookName));
-            }
-
-            const entry = getLorebookEntryByUid(cache.get(ref.lorebookName), ref.uid);
-            if (!entry) {
-                skipped.push({ ...ref, reason: 'missing-entry' });
-                continue;
-            }
-
-            entries.push({
-                lorebookName: ref.lorebookName,
-                uid: ref.uid,
-                title: getLorebookEntryDisplayName(entry, ref.uid),
-                content: String(entry.content || '').trim(),
-            });
-        } catch (error) {
-            console.warn(`${MODULE_NAME}: Failed to resolve additional context entry`, ref, error);
-            skipped.push({ ...ref, reason: 'load-failed' });
-        }
-    }
-
-    if (skipped.length > 0) {
-        console.warn(`${MODULE_NAME}: Skipped ${skipped.length} stale additional context entr${skipped.length === 1 ? 'y' : 'ies'}`, skipped);
+    try {
+        toastr.warning(
+            translate('Using legacy profile Additional Context for this run. It will be migrated to Context Settings when possible.', 'STMemoryBooks_ContextSettings_LegacyProfileWarning'),
+            'STMemoryBooks',
+            { preventDuplicates: true },
+        );
+    } catch {}
+    const resolved = await resolveContextSettingEntriesFromRefs(refs);
+    if (resolved.skipped?.length > 0) {
+        console.warn(`${MODULE_NAME}: Skipped ${resolved.skipped.length} stale legacy additional context entr${resolved.skipped.length === 1 ? 'y' : 'ies'}`, resolved.skipped);
         try {
             toastr.warning(
                 translate('Some additional context entries could not be loaded and were skipped.', 'STMemoryBooks_Profile_AlsoIncludeSkipped'),
@@ -1298,8 +1318,7 @@ async function resolveAdditionalContextEntries(profile) {
             );
         } catch {}
     }
-
-    return { entries, skipped };
+    return { ...resolved, source: 'legacy-profile' };
 }
 
 function appendAdditionalContextSection(sceneHeader, additionalContextEntries = []) {
@@ -1392,7 +1411,7 @@ async function buildPrompt(compiledScene, profile) {
     const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);
     
     // Build scene text for user prompt
-    const additionalContext = await resolveAdditionalContextEntries(profile);
+    const additionalContext = await resolveAdditionalContextEntries(profile, compiledScene);
     const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext, additionalContext.entries);
     
     // Combine system prompt and scene

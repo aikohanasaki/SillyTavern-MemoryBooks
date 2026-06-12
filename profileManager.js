@@ -11,7 +11,8 @@ import {
     parseBooleanFlag,
     normalizeAdditionalContextEntries,
     getLorebookEntryDisplayName,
-    getLorebookEntryByUid
+    getLorebookEntryByUid,
+    generateProfileKey
 } from './utils.js';
 import { getDefaultTitleFormats } from './addlore.js';
 import * as SummaryPromptManager from './summaryPromptManager.js';
@@ -358,7 +359,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             chatCompletionPresetOptions: getChatCompletionPresetOptions(profile.chatCompletionPreset || ''),
             outletName: profile.outletName || '',
             hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false,
-            canUseAdditionalContext: !isBuiltinCurrentST,
+            canUseAdditionalContext: false,
         };
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -378,7 +379,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
         const result = await popupInstance.show();
 
         if (result === POPUP_RESULT.AFFIRMATIVE) {
-            const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name);
+            const updatedProfile = buildProfileFromForm(popupInstance.dlg, profile.name, profile);
 
             // Enforce builtin profile invariants even if UI is bypassed.
             if (profile?.isBuiltinCurrentST) {
@@ -457,7 +458,7 @@ export async function newProfile(settings, refreshCallback) {
             useChatCompletionService: false,
             chatCompletionPresetOptions: getChatCompletionPresetOptions(''),
             outletName: '',
-            canUseAdditionalContext: true,
+            canUseAdditionalContext: false,
         };
 
         const content = DOMPurify.sanitize(profileEditTemplate(templateData));
@@ -617,6 +618,7 @@ export function importProfiles(event, settings, refreshCallback) {
             let importedCount = 0;
             let skippedCount = 0;
             const existingNames = settings.profiles.map(p => p.name);
+            const existingProfileKeys = new Set(settings.profiles.map(p => String(p?.profileKey || '').trim()).filter(Boolean));
 
             // Merge profiles (avoid duplicates by name)
             validProfiles.forEach(importProfile => {
@@ -625,6 +627,10 @@ export function importProfiles(event, settings, refreshCallback) {
                     // Ensure unique name and clean structure
                     const finalName = generateSafeProfileName(importProfile.name, existingNames);
                     importProfile.name = finalName;
+                    if (!importProfile.profileKey || existingProfileKeys.has(importProfile.profileKey)) {
+                        importProfile.profileKey = generateProfileKey();
+                    }
+                    existingProfileKeys.add(importProfile.profileKey);
                     existingNames.push(finalName);
 
                     settings.profiles.push(importProfile);
@@ -1160,9 +1166,10 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
 /**
  * Build profile object from form data
  */
-function buildProfileFromForm(popupElement, fallbackName) {
+function buildProfileFromForm(popupElement, fallbackName, existingProfile = {}) {
     // Step 1: Gather all the raw data from the form into a single object.
     const data = {
+        profileKey: existingProfile?.profileKey,
         name: popupElement.querySelector('#stmb-profile-name')?.value.trim() || fallbackName,
         api: popupElement.querySelector('#stmb-profile-api')?.value,
         model: popupElement.querySelector('#stmb-profile-model')?.value,
@@ -1299,6 +1306,7 @@ export function validateAndFixProfiles(settings) {
         console.warn(`${MODULE_NAME}: Failed to enforce builtin Current ST profile invariants`, e);
     }
 
+    const seenProfileKeys = new Set();
     settings.profiles.forEach((profile, index) => {
         if (!validateProfile(profile)) {
             issues.push(`Profile ${index} is invalid`);
@@ -1311,6 +1319,13 @@ export function validateAndFixProfiles(settings) {
                 fixes.push(`Fixed missing connection for profile ${index}`);
             }
         }
+
+        const existingProfileKey = String(profile?.profileKey || '').trim();
+        if (!existingProfileKey || seenProfileKeys.has(existingProfileKey)) {
+            profile.profileKey = generateProfileKey();
+            fixes.push(`Assigned stable profile key for profile "${profile.name || index}"`);
+        }
+        seenProfileKeys.add(profile.profileKey);
 
         // Enforce builtin profile invariants.
         if (profile?.isBuiltinCurrentST) {
