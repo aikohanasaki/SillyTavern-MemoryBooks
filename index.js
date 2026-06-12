@@ -584,14 +584,17 @@ let lastContextPromptChatKey = null;
 async function maybePromptContextSettingForChatOpen() {
   try {
     const chatKey = getStmbChatKeySafe();
-    if (chatKey && lastContextPromptChatKey === chatKey) return;
-    lastContextPromptChatKey = chatKey || null;
+    if (!chatKey || lastContextPromptChatKey === chatKey) return;
 
-    if (getChatContextSettingKey()) return;
+    if (getChatContextSettingKey()) {
+      lastContextPromptChatKey = chatKey;
+      return;
+    }
     const settings = initializeSettings();
     const profile = settings.profiles?.[settings.defaultProfile] || null;
     if (!profile) return;
     await maybePromptForMigratedContextSetting(profile, { blocking: false });
+    lastContextPromptChatKey = chatKey;
   } catch (error) {
     console.warn("STMemoryBooks: Context setting chat-open prompt failed:", error);
   }
@@ -2597,7 +2600,7 @@ async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSett
     blockingPrompt: true,
   });
   if (additionalContextSnapshot.cancelled) {
-    throw new Error("Memory job was not queued because context setting selection was cancelled.");
+    return null;
   }
   compiledScene.additionalContextEntries = deepClone(additionalContextSnapshot.entries);
   profileSnapshot.prompt = await getEffectivePromptAsync(profileSnapshot);
@@ -3347,6 +3350,9 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         lorebookValidation,
         effectiveSettings,
       );
+      if (!job) {
+        return false;
+      }
       enqueueStmbJob(job);
       toastr.info(
         translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
