@@ -125,6 +125,18 @@ import {
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
+  CONTEXT_NONE_KEY,
+  getContextSetting,
+  migrateProfileAdditionalContext,
+  resolveContextSettingEntries,
+  resolveContextSettingEntriesFromRefs,
+} from "./contextSettingsManager.js";
+import {
+  getChatContextSettingKey,
+  maybePromptForMigratedContextSetting,
+  showContextSettingsPopup,
+} from "./contextSettingsPopup.js";
+import {
   runSummaryAnalysisSequential,
   commitSummaryEntries,
   parseSummaryJsonResponse,
@@ -567,6 +579,24 @@ function cleanupChatObserver() {
   }
 }
 
+let lastContextPromptChatKey = null;
+
+async function maybePromptContextSettingForChatOpen() {
+  try {
+    const chatKey = getStmbChatKeySafe();
+    if (chatKey && lastContextPromptChatKey === chatKey) return;
+    lastContextPromptChatKey = chatKey || null;
+
+    if (getChatContextSettingKey()) return;
+    const settings = initializeSettings();
+    const profile = settings.profiles?.[settings.defaultProfile] || null;
+    if (!profile) return;
+    await maybePromptForMigratedContextSetting(profile, { blocking: false });
+  } catch (error) {
+    console.warn("STMemoryBooks: Context setting chat-open prompt failed:", error);
+  }
+}
+
 function handleChatChanged() {
   console.log(
     translate(
@@ -586,6 +616,7 @@ function handleChatChanged() {
   hideFloatingClipButton();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
+  void maybePromptContextSettingForChatOpen();
 
   setTimeout(() => {
     try {
@@ -2123,6 +2154,14 @@ async function executeMemoryGeneration(
       );
     }
 
+    const additionalContextSnapshot = await resolveAdditionalContextSnapshot(profileSettings, {
+      blockingPrompt: true,
+    });
+    if (additionalContextSnapshot.cancelled) {
+      return false;
+    }
+    compiledScene.additionalContextEntries = additionalContextSnapshot.entries;
+
     // Fetch previous memories if requested
     let previousMemories = [];
     memoryFetchResult = {
@@ -2458,6 +2497,84 @@ async function executeMemoryGeneration(
   }
 }
 
+function showSkippedAdditionalContextWarning(skipped = []) {
+  if (!Array.isArray(skipped) || skipped.length === 0) return;
+  toastr.warning(
+    translate(
+      "Some additional context entries could not be loaded and were skipped.",
+      "STMemoryBooks_Profile_AlsoIncludeSkipped",
+    ),
+    "STMemoryBooks",
+    { preventDuplicates: true },
+  );
+}
+
+async function resolveAdditionalContextSnapshot(profileSettings, options = {}) {
+  const selectedKey = getChatContextSettingKey();
+  if (selectedKey) {
+    if (selectedKey === CONTEXT_NONE_KEY) {
+      return { cancelled: false, entries: [], source: "none" };
+    }
+
+    const setting = await getContextSetting(selectedKey);
+    if (!setting) {
+      toastr.warning(
+        translate(
+          "Selected context setting was not found. Continuing without Additional Context.",
+          "STMemoryBooks_ContextSettings_MissingSelectedWarning",
+        ),
+        "STMemoryBooks",
+        { preventDuplicates: true },
+      );
+      return { cancelled: false, entries: [], source: "missing" };
+    }
+
+    const resolved = await resolveContextSettingEntries(setting);
+    showSkippedAdditionalContextWarning(resolved.skipped);
+    return { cancelled: false, entries: resolved.entries, source: "context-setting" };
+  }
+
+  const promptResult = await maybePromptForMigratedContextSetting(profileSettings, {
+    blocking: !!options.blockingPrompt,
+  });
+  if (!promptResult?.proceed) {
+    return { cancelled: true, entries: [], source: "cancelled" };
+  }
+
+  const selectedAfterPrompt = getChatContextSettingKey();
+  if (selectedAfterPrompt) {
+    return await resolveAdditionalContextSnapshot(profileSettings, {
+      ...options,
+      blockingPrompt: false,
+    });
+  }
+
+  if (Array.isArray(profileSettings?.additionalContextEntries) && profileSettings.additionalContextEntries.length > 0) {
+    toastr.warning(
+      translate(
+        "Using legacy profile Additional Context for this run. It will be migrated to Context Settings when possible.",
+        "STMemoryBooks_ContextSettings_LegacyProfileWarning",
+      ),
+      "STMemoryBooks",
+      { preventDuplicates: true },
+    );
+    try {
+      const settings = initializeSettings();
+      const migrationResult = await migrateProfileAdditionalContext(settings);
+      if (migrationResult.removedLegacy > 0) {
+        saveSettingsDebounced();
+      }
+    } catch (error) {
+      console.warn("STMemoryBooks: Legacy Additional Context migration attempt failed:", error);
+    }
+    const resolved = await resolveContextSettingEntriesFromRefs(profileSettings.additionalContextEntries);
+    showSkippedAdditionalContextWarning(resolved.skipped);
+    return { cancelled: false, entries: resolved.entries, source: "legacy-profile" };
+  }
+
+  return { cancelled: false, entries: [], source: "none" };
+}
+
 async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSettings) {
   const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
   const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
@@ -2476,6 +2593,13 @@ async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSett
     : [];
 
   const profileSnapshot = deepClone(profileSettings);
+  const additionalContextSnapshot = await resolveAdditionalContextSnapshot(profileSnapshot, {
+    blockingPrompt: true,
+  });
+  if (additionalContextSnapshot.cancelled) {
+    throw new Error("Memory job was not queued because context setting selection was cancelled.");
+  }
+  compiledScene.additionalContextEntries = deepClone(additionalContextSnapshot.entries);
   profileSnapshot.prompt = await getEffectivePromptAsync(profileSnapshot);
   const chatRef = getCurrentStmbChatRef();
   const lorebookName = String(lorebookValidation?.name || "").trim();
@@ -3678,6 +3802,24 @@ function populateInlineButtons() {
             translate(
               "Failed to open Trackers & Side Prompts Manager",
               "STMemoryBooks_FailedToOpenSidePrompts",
+            ),
+            "STMemoryBooks",
+          );
+        }
+      },
+    },
+    {
+      text: "📎 " + translate("Context Settings", "STMemoryBooks_ContextSettings_Title"),
+      id: "stmb-context-settings",
+      action: async () => {
+        try {
+          await showContextSettingsPopup();
+        } catch (error) {
+          console.error(`${MODULE_NAME}: Error opening Context Settings:`, error);
+          toastr.error(
+            translate(
+              "Failed to open Context Settings",
+              "STMemoryBooks_ContextSettings_OpenFailed",
             ),
             "STMemoryBooks",
           );
@@ -8563,6 +8705,18 @@ async function init() {
     }
   }
 
+  try {
+    const migrationResult = await migrateProfileAdditionalContext(settings);
+    if (migrationResult.removedLegacy > 0) {
+      saveSettingsDebounced();
+    }
+    if (migrationResult.migrated > 0) {
+      console.log("STMemoryBooks: Migrated profile Additional Context into context settings:", migrationResult);
+    }
+  } catch (error) {
+    console.warn("STMemoryBooks: Failed to migrate Additional Context into context settings; legacy profile entries remain available.", error);
+  }
+
   // Initialize scene state
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
@@ -8600,6 +8754,7 @@ async function init() {
   // This handles cases where a chat is already loaded when the extension initializes
   try {
     processExistingMessages();
+    void maybePromptContextSettingForChatOpen();
     console.log(
       "STMemoryBooks: Processed existing messages during initialization",
     );

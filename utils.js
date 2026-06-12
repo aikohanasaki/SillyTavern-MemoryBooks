@@ -887,6 +887,10 @@ export function normalizeAdditionalContextEntries(refs) {
     return normalized;
 }
 
+export function generateProfileKey() {
+    return `profile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /**
  * Get the user-facing lorebook entry title used by STMB pickers/prompts.
  * @param {Object} entry
@@ -1078,6 +1082,9 @@ export function createProfileObject(data = {}) {
     }
 
     const profile = {
+        profileKey: (typeof data.profileKey === 'string' && data.profileKey.trim())
+            ? data.profileKey.trim()
+            : generateProfileKey(),
         name: (data.name || 'New Profile').trim(),
         connection: {
             api: data.api || inputConn.api || 'openai',
