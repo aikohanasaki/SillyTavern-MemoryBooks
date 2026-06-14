@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "保存无上下文",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "未找到所选上下文设置。将在没有额外上下文的情况下继续。",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "本次运行正在使用旧版配置文件的额外上下文。可行时会迁移到上下文设置。",
-  "STMemoryBooks_ContextSettings_OpenFailed": "打开上下文设置失败"
+  "STMemoryBooks_ContextSettings_OpenFailed": "打开上下文设置失败",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "使用额外上下文",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "额外上下文来源",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "跟随聊天",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟随聊天会使用此聊天的额外上下文。选择命名的上下文设置会为此 side prompt 覆盖它。"
 }

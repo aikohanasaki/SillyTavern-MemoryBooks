@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "儲存無內容脈絡",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "找不到所選內容脈絡設定。將在沒有額外內容脈絡的情況下繼續。",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "本次執行正在使用舊版設定檔的額外內容脈絡。可行時會遷移到內容脈絡設定。",
-  "STMemoryBooks_ContextSettings_OpenFailed": "開啟內容脈絡設定失敗"
+  "STMemoryBooks_ContextSettings_OpenFailed": "開啟內容脈絡設定失敗",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "使用額外內容脈絡",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "額外內容脈絡來源",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "跟隨聊天",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟隨聊天會使用此聊天的額外內容脈絡。選擇命名的內容脈絡設定會為此 side prompt 覆蓋它。"
 }

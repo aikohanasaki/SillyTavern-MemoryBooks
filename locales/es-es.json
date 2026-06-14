@@ -1103,5 +1103,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "Guardar Sin contexto",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "No se encontró el ajuste de contexto seleccionado. Continuando sin contexto adicional.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "Usando el contexto adicional del perfil antiguo para esta ejecución. Se migrará a Ajustes de contexto cuando sea posible.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "Error al abrir Ajustes de contexto"
+  "STMemoryBooks_ContextSettings_OpenFailed": "Error al abrir Ajustes de contexto",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "Usar contexto adicional",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "Fuente de contexto adicional",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Seguir chat",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Seguir chat usa el contexto adicional de este chat. Elegir un ajuste de contexto con nombre lo reemplaza para este side prompt."
 }

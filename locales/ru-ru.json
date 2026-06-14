@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "Сохранить Без контекста",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "Выбранная настройка контекста не найдена. Продолжение без дополнительного контекста.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "Для этого запуска используется дополнительный контекст устаревшего профиля. По возможности он будет мигрирован в настройки контекста.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "Не удалось открыть настройки контекста"
+  "STMemoryBooks_ContextSettings_OpenFailed": "Не удалось открыть настройки контекста",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "Использовать дополнительный контекст",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "Источник дополнительного контекста",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Следовать чату",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Следовать чату использует дополнительный контекст этого чата. Выбор именованной настройки контекста переопределяет его для этого бокового промпта."
 }

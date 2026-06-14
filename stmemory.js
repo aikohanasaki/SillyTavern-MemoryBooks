@@ -1321,7 +1321,7 @@ async function resolveAdditionalContextEntries(profile, compiledScene = null) {
     return { ...resolved, source: 'legacy-profile' };
 }
 
-function appendAdditionalContextSection(sceneHeader, additionalContextEntries = []) {
+export function appendAdditionalContextSection(sceneHeader, additionalContextEntries = []) {
     const usableEntries = additionalContextEntries.filter(entry => entry.content);
     if (usableEntries.length === 0) return;
 

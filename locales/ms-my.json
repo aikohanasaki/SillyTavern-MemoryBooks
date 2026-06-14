@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "Simpan Tiada Konteks",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "Tetapan konteks yang dipilih tidak ditemui. Meneruskan tanpa konteks tambahan.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "Menggunakan konteks tambahan profil legasi untuk pelaksanaan ini. Ia akan dimigrasikan ke Tetapan Konteks apabila boleh.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "Gagal membuka Tetapan Konteks"
+  "STMemoryBooks_ContextSettings_OpenFailed": "Gagal membuka Tetapan Konteks",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "Gunakan konteks tambahan",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "Sumber konteks tambahan",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Ikut chat",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikut chat menggunakan konteks tambahan chat ini. Memilih tetapan konteks bernama akan menggantikannya untuk side prompt ini."
 }

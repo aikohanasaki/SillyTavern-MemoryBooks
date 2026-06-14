@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "컨텍스트 없음 저장",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "선택한 컨텍스트 설정을 찾을 수 없습니다. 추가 컨텍스트 없이 계속합니다.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "이 실행에서는 기존 프로필의 추가 컨텍스트를 사용합니다. 가능하면 컨텍스트 설정으로 마이그레이션됩니다.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "컨텍스트 설정을 열지 못했습니다"
+  "STMemoryBooks_ContextSettings_OpenFailed": "컨텍스트 설정을 열지 못했습니다",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "추가 컨텍스트 사용",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "추가 컨텍스트 소스",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "채팅 따르기",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "채팅 따르기는 이 채팅의 추가 컨텍스트를 사용합니다. 이름이 있는 컨텍스트 설정을 선택하면 이 사이드 프롬프트에서 해당 설정이 우선됩니다."
 }
