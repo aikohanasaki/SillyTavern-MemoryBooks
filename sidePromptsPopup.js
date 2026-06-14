@@ -26,6 +26,9 @@ import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { showStmbEntryReviewPopup } from './clipManager.js';
 import { markStmbPopup, withGoBackButton } from './utils.js';
+import { listContextSettings } from './contextSettingsManager.js';
+
+const SIDE_PROMPT_CONTEXT_FOLLOW_CHAT = '__follow_chat__';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -309,6 +312,74 @@ function buildLorebookTargetBlock({ idPrefix, tpl = null }) {
             <small class="opacity70p">${escapeHtml(translate('Changing this target will ask whether to save it for this chat only or for this side prompt going forward.', 'STMemoryBooks_SidePromptLorebookHelp'))}</small>
         </div>
     `;
+}
+
+function buildAdditionalContextOptions(contextSettings = [], selectedValue = SIDE_PROMPT_CONTEXT_FOLLOW_CHAT) {
+    const settings = Array.isArray(contextSettings) ? contextSettings : [];
+    const hasSelectedSetting = selectedValue !== SIDE_PROMPT_CONTEXT_FOLLOW_CHAT
+        && settings.some(setting => setting.key === selectedValue);
+    const options = [
+        `<option value="${SIDE_PROMPT_CONTEXT_FOLLOW_CHAT}" ${selectedValue === SIDE_PROMPT_CONTEXT_FOLLOW_CHAT ? 'selected' : ''}>${escapeHtml(translate('Follow chat', 'STMemoryBooks_SidePromptAdditionalContextFollowChat'))}</option>`,
+        ...(hasSelectedSetting || selectedValue === SIDE_PROMPT_CONTEXT_FOLLOW_CHAT ? [] : [`<option value="${escapeHtml(selectedValue)}" selected>${escapeHtml(tr('STMemoryBooks_ContextSettings_MissingOption', 'Missing setting: {{key}}', { key: selectedValue }))}</option>`]),
+        ...settings.map(setting =>
+            `<option value="${escapeHtml(setting.key)}" ${selectedValue === setting.key ? 'selected' : ''}>${escapeHtml(setting.name)}</option>`
+        ),
+    ];
+    return options.join('');
+}
+
+function buildAdditionalContextBlock({ idPrefix, settings = {}, contextSettings = [] }) {
+    const additionalContext = settings?.additionalContext || {};
+    const enabled = !!additionalContext.enabled;
+    const fixedKey = String(additionalContext.contextSettingKey || '').trim();
+    const selectedValue = enabled && additionalContext.mode === 'fixed' && fixedKey
+        ? fixedKey
+        : SIDE_PROMPT_CONTEXT_FOLLOW_CHAT;
+
+    return `
+        <div class="world_entry_form_control stmb-sp-additional-context">
+            <label class="checkbox_label">
+                <input type="checkbox" id="${idPrefix}-ac-enabled" ${enabled ? 'checked' : ''}>
+                <span>${escapeHtml(translate('Use additional context', 'STMemoryBooks_SidePromptUseAdditionalContext'))}</span>
+            </label>
+            <div id="${idPrefix}-ac-container" style="display:${enabled ? 'block' : 'none'}; margin-left:28px;">
+                <label for="${idPrefix}-ac-select">
+                    <h5 style="margin: 4px 0;">${escapeHtml(translate('Additional Context Source', 'STMemoryBooks_SidePromptAdditionalContextSource'))}</h5>
+                    <select id="${idPrefix}-ac-select" class="text_pole">
+                        ${buildAdditionalContextOptions(contextSettings, selectedValue)}
+                    </select>
+                </label>
+                <small class="opacity70p">${escapeHtml(translate("Follow chat uses this chat's Additional Context. Choosing a named context setting overrides it for this side prompt.", 'STMemoryBooks_SidePromptAdditionalContextHelp'))}</small>
+            </div>
+        </div>
+    `;
+}
+
+function attachAdditionalContextHandlers(dlg, idPrefix) {
+    const checkbox = dlg.querySelector(`#${idPrefix}-ac-enabled`);
+    const container = dlg.querySelector(`#${idPrefix}-ac-container`);
+    checkbox?.addEventListener('change', () => {
+        if (container) container.style.display = checkbox.checked ? 'block' : 'none';
+    });
+}
+
+function readAdditionalContextSettings(dlg, idPrefix) {
+    const enabled = !!dlg.querySelector(`#${idPrefix}-ac-enabled`)?.checked;
+    if (!enabled) return null;
+
+    const selectedValue = String(dlg.querySelector(`#${idPrefix}-ac-select`)?.value || SIDE_PROMPT_CONTEXT_FOLLOW_CHAT).trim();
+    if (!selectedValue || selectedValue === SIDE_PROMPT_CONTEXT_FOLLOW_CHAT) {
+        return {
+            enabled: true,
+            mode: 'followChat',
+        };
+    }
+
+    return {
+        enabled: true,
+        mode: 'fixed',
+        contextSettingKey: selectedValue,
+    };
 }
 
 async function promptLorebookTargetSaveScope() {
@@ -701,6 +772,7 @@ async function openEditTemplate(parentPopup, key) {
         const lbIgnoreBudget = !!lb.ignoreBudget;
         const lbEntryTitleOverride = String(lb.entryTitleOverride || '');
         const lbEntryKeywords = String(lb.entryKeywords || '');
+        const contextSettings = await listContextSettings();
 
         const content = `
             <h3>${escapeHtml(translate('Edit Side Prompt', 'STMemoryBooks_EditSidePrompt'))}</h3>
@@ -748,6 +820,8 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
                 <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
             </div>
+
+            ${buildAdditionalContextBlock({ idPrefix: 'stmb-sp-edit', settings: s, contextSettings })}
 
             ${buildLorebookTargetBlock({ idPrefix: 'stmb-sp-edit-lb', tpl })}
 
@@ -877,6 +951,7 @@ async function openEditTemplate(parentPopup, key) {
             cbOverride?.addEventListener('change', () => {
                 if (overrideCont) overrideCont.style.display = cbOverride.checked ? 'block' : 'none';
             });
+            attachAdditionalContextHandlers(dlg, 'stmb-sp-edit');
 
             // Lorebook order mode visibility
             const orderAuto = dlg.querySelector('#stmb-sp-edit-lb-order-auto');
@@ -975,7 +1050,13 @@ async function openEditTemplate(parentPopup, key) {
             const outletNameVal = lbPosRaw === 7 ? (dlg.querySelector('#stmb-sp-edit-lb-outlet-name')?.value?.trim() || '') : '';
 
             const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-edit-prev-mem-count')?.value ?? '0', 10);
-settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
+            settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
+            const additionalContextSettings = readAdditionalContextSettings(dlg, 'stmb-sp-edit');
+            if (additionalContextSettings) {
+                settings.additionalContext = additionalContextSettings;
+            } else {
+                delete settings.additionalContext;
+            }
 
             let targetLorebookName = String(lb.targetLorebookName || '');
             if (selectedLorebookTarget !== originalLorebookTarget) {
@@ -1037,6 +1118,7 @@ async function openNewTemplate(parentPopup) {
     const options = profiles.map((p, i) =>
         `<option value="${i}" ${i === idx ? 'selected' : ''}>${escapeHtml(p?.name || ('Profile ' + (i + 1)))}</option>`
     ).join('');
+    const contextSettings = await listContextSettings();
 
     const content = `
         <h3>${escapeHtml(translate('New Side Prompt', 'STMemoryBooks_NewSidePrompt'))}</h3>
@@ -1169,6 +1251,8 @@ async function openNewTemplate(parentPopup) {
             <small class="opacity70p">${escapeHtml(translate('Number of previous memory entries to include before scene text (0 = none).', 'STMemoryBooks_PreviousMemoriesHelp'))}</small>
         </div>
 
+        ${buildAdditionalContextBlock({ idPrefix: 'stmb-sp-new', settings: {}, contextSettings })}
+
         <div class="world_entry_form_control">
             <h4>${escapeHtml(translate('Overrides:', 'STMemoryBooks_Overrides'))}</h4>
             <div class="world_entry_form_control">
@@ -1211,6 +1295,7 @@ async function openNewTemplate(parentPopup) {
         cbOverride?.addEventListener('change', () => {
             if (overrideCont) overrideCont.style.display = cbOverride.checked ? 'block' : 'none';
         });
+        attachAdditionalContextHandlers(dlg, 'stmb-sp-new');
 
         // Lorebook order mode visibility
         const orderAuto = dlg.querySelector('#stmb-sp-new-lb-order-auto');
@@ -1307,7 +1392,11 @@ async function openNewTemplate(parentPopup) {
         const outletNameVal = lbPosRaw === 7 ? (dlg.querySelector('#stmb-sp-new-lb-outlet-name')?.value?.trim() || '') : '';
 
         const prevCountRaw = parseInt(dlg.querySelector('#stmb-sp-new-prev-mem-count')?.value ?? '0', 10);
-settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
+        settings.previousMemoriesCount = Number.isFinite(prevCountRaw) && prevCountRaw > 0 ? Math.min(prevCountRaw, 7) : 0;
+        const additionalContextSettings = readAdditionalContextSettings(dlg, 'stmb-sp-new');
+        if (additionalContextSettings) {
+            settings.additionalContext = additionalContextSettings;
+        }
 
         let targetScope = null;
         const targetName = selectedLorebookTarget === '__memory__' ? '' : selectedLorebookTarget;

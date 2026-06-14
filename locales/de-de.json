@@ -1103,5 +1103,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "Kein Kontext speichern",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "Die ausgewählte Kontexteinstellung wurde nicht gefunden. Fortsetzung ohne zusätzlichen Kontext.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "Für diesen Lauf wird der zusätzliche Kontext des alten Profils verwendet. Er wird nach Möglichkeit zu den Kontexteinstellungen migriert.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "Kontexteinstellungen konnten nicht geöffnet werden"
+  "STMemoryBooks_ContextSettings_OpenFailed": "Kontexteinstellungen konnten nicht geöffnet werden",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "Zusätzlichen Kontext verwenden",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "Quelle für zusätzlichen Kontext",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Chat folgen",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Chat folgen verwendet den zusätzlichen Kontext dieses Chats. Eine benannte Kontexteinstellung überschreibt ihn für diesen Side Prompt."
 }

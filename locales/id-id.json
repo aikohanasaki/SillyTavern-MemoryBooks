@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "Simpan Tanpa Konteks",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "Pengaturan konteks yang dipilih tidak ditemukan. Melanjutkan tanpa konteks tambahan.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "Menggunakan konteks tambahan profil lama untuk proses ini. Ini akan dimigrasikan ke Pengaturan Konteks bila memungkinkan.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "Gagal membuka Pengaturan Konteks"
+  "STMemoryBooks_ContextSettings_OpenFailed": "Gagal membuka Pengaturan Konteks",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "Gunakan konteks tambahan",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "Sumber konteks tambahan",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Ikuti obrolan",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikuti obrolan menggunakan konteks tambahan obrolan ini. Memilih pengaturan konteks bernama akan menggantikannya untuk side prompt ini."
 }

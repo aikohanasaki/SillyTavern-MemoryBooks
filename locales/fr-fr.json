@@ -1097,5 +1097,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "Enregistrer Aucun contexte",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "Le paramètre de contexte sélectionné est introuvable. Poursuite sans contexte supplémentaire.",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "Utilisation du contexte supplémentaire du profil hérité pour cette exécution. Il sera migré vers les paramètres de contexte lorsque possible.",
-  "STMemoryBooks_ContextSettings_OpenFailed": "Échec de l’ouverture des paramètres de contexte"
+  "STMemoryBooks_ContextSettings_OpenFailed": "Échec de l’ouverture des paramètres de contexte",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "Utiliser le contexte supplémentaire",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "Source du contexte supplémentaire",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Suivre le chat",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Suivre le chat utilise le contexte supplémentaire de ce chat. Choisir un paramètre de contexte nommé le remplace pour ce side prompt."
 }

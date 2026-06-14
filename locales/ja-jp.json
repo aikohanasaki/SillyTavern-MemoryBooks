@@ -1098,5 +1098,9 @@
   "STMemoryBooks_ContextSettings_SaveNoContext": "コンテキストなしを保存",
   "STMemoryBooks_ContextSettings_MissingSelectedWarning": "選択したコンテキスト設定が見つかりません。追加コンテキストなしで続行します。",
   "STMemoryBooks_ContextSettings_LegacyProfileWarning": "この実行では従来プロファイルの追加コンテキストを使用しています。可能な場合はコンテキスト設定に移行されます。",
-  "STMemoryBooks_ContextSettings_OpenFailed": "コンテキスト設定を開けませんでした"
+  "STMemoryBooks_ContextSettings_OpenFailed": "コンテキスト設定を開けませんでした",
+  "STMemoryBooks_SidePromptUseAdditionalContext": "追加コンテキストを使用",
+  "STMemoryBooks_SidePromptAdditionalContextSource": "追加コンテキストのソース",
+  "STMemoryBooks_SidePromptAdditionalContextFollowChat": "チャットに従う",
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "チャットに従うと、このチャットの追加コンテキストを使用します。名前付きコンテキスト設定を選ぶと、このサイドプロンプトではそれが優先されます。"
 }

@@ -4,7 +4,7 @@ import { loadWorldInfo, world_names } from '../../../world-info.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
-import { applySelectedRegex, requestCompletion } from './stmemory.js';
+import { appendAdditionalContextSection, applySelectedRegex, requestCompletion } from './stmemory.js';
 import { findSetByName, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
@@ -14,6 +14,11 @@ import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens
 import { tr } from './i18nHelpers.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { getSceneMarkers } from './sceneManager.js';
+import {
+    CONTEXT_NONE_KEY,
+    getContextSetting,
+    resolveContextSettingEntries,
+} from './contextSettingsManager.js';
 import {
     areStmbJobsEnabled,
     awaitStmbJobApproval,
@@ -202,7 +207,66 @@ async function compileRange(start, end) {
 /**
  * Build a plain prompt by combining template prompt + prior content + compiled scene text
  */
-function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat, previousSummaries = [], runtimeMacros = {}) {
+function appendSidePromptAdditionalContext(parts, additionalContextEntries = []) {
+    const section = [];
+    appendAdditionalContextSection(section, additionalContextEntries);
+    if (section.length === 0) return;
+
+    parts.push('\n');
+    parts.push(section.join('\n'));
+}
+
+async function resolveSidePromptAdditionalContextEntries(tpl) {
+    const config = tpl?.settings?.additionalContext || {};
+    if (!config?.enabled) {
+        return { entries: [], skipped: [], source: 'none' };
+    }
+
+    const mode = config.mode === 'fixed' ? 'fixed' : 'followChat';
+    let contextSettingKey = '';
+
+    if (mode === 'fixed') {
+        contextSettingKey = String(config.contextSettingKey || '').trim();
+    } else {
+        const markers = getSceneMarkers() || {};
+        contextSettingKey = Object.hasOwn(markers, 'contextSettingKey')
+            ? String(markers.contextSettingKey || '').trim()
+            : '';
+    }
+
+    if (!contextSettingKey || contextSettingKey === CONTEXT_NONE_KEY) {
+        return { entries: [], skipped: [], source: mode === 'fixed' ? 'fixed-none' : 'chat-none' };
+    }
+
+    const setting = await getContextSetting(contextSettingKey);
+    if (!setting) {
+        console.warn(`${MODULE_NAME}: Selected side prompt context setting was not found: ${contextSettingKey}`);
+        try {
+            toastr.warning(
+                translate('Selected context setting was not found. Continuing without Additional Context.', 'STMemoryBooks_ContextSettings_MissingSelectedWarning'),
+                'STMemoryBooks',
+                { preventDuplicates: true },
+            );
+        } catch {}
+        return { entries: [], skipped: [], source: 'missing' };
+    }
+
+    const resolved = await resolveContextSettingEntries(setting);
+    if (resolved.skipped?.length > 0) {
+        console.warn(`${MODULE_NAME}: Skipped ${resolved.skipped.length} stale side prompt context setting entr${resolved.skipped.length === 1 ? 'y' : 'ies'}`, resolved.skipped);
+        try {
+            toastr.warning(
+                translate('Some additional context entries could not be loaded and were skipped.', 'STMemoryBooks_Profile_AlsoIncludeSkipped'),
+                'STMemoryBooks',
+                { preventDuplicates: true },
+            );
+        } catch {}
+    }
+
+    return { ...resolved, source: mode === 'fixed' ? 'fixed' : 'chat' };
+}
+
+function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat, previousSummaries = [], runtimeMacros = {}, additionalContextEntries = []) {
     const parts = [];
     parts.push(applySidePromptMacros(templatePrompt, runtimeMacros));
     if (priorContent && String(priorContent).trim()) {
@@ -222,6 +286,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
         });
         parts.push('=== END PREVIOUS SCENE CONTEXT ===\n');
     }
+    appendSidePromptAdditionalContext(parts, additionalContextEntries);
     // Derive scene text from the compiled scene here to keep a single source of truth
     const sceneText = compiledScene ? toReadableText(compiledScene) : '';
     parts.push('\n=== SCENE TEXT ===\n');
@@ -601,7 +666,8 @@ async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverr
         } catch {}
     }
 
-    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat, prevSummaries, runtimeMacros);
+    const additionalContext = await resolveSidePromptAdditionalContextEntries(tpl);
+    const finalPrompt = buildPrompt(tpl.prompt, prior, compiledScene, tpl.responseFormat, prevSummaries, runtimeMacros, additionalContext.entries);
     const idx = Number(tpl?.settings?.overrideProfileIndex);
     const useOverride = !!tpl?.settings?.overrideProfileEnabled && Number.isFinite(idx);
     const conn = useOverride
