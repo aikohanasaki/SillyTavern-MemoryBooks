@@ -33,6 +33,13 @@ export function getChatContextSettingKey() {
     return hasChatContextSelection(markers) ? String(markers.contextSettingKey || '') : '';
 }
 
+export async function hasValidChatContextSettingSelection() {
+    const key = getChatContextSettingKey();
+    if (!key) return false;
+    if (key === CONTEXT_NONE_KEY) return true;
+    return !!await getContextSetting(key);
+}
+
 function setChatContextSettingKey(key) {
     const markers = getSceneMarkers() || {};
     const normalized = String(key || '').trim();
@@ -42,6 +49,16 @@ function setChatContextSettingKey(key) {
         delete markers.contextSettingKey;
     }
     saveMetadataForCurrentContext();
+}
+
+export function clearChatContextSettingKey(key) {
+    const markers = getSceneMarkers() || {};
+    const normalized = String(key || '').trim();
+    if (!hasChatContextSelection(markers)) return false;
+    if (normalized && String(markers.contextSettingKey || '') !== normalized) return false;
+    delete markers.contextSettingKey;
+    saveMetadataForCurrentContext();
+    return true;
 }
 
 async function getLorebookEntriesForPicker(lorebookName) {
@@ -442,7 +459,11 @@ async function showContextSelectionPrompt({ profile, blocking = false } = {}) {
 export async function maybePromptForMigratedContextSetting(profile, options = {}) {
     const markers = getSceneMarkers() || {};
     if (hasChatContextSelection(markers)) {
-        return { proceed: true, action: 'already-set', key: String(markers.contextSettingKey || '') };
+        if (!await hasValidChatContextSettingSelection()) {
+            clearChatContextSettingKey();
+        } else {
+            return { proceed: true, action: 'already-set', key: String(markers.contextSettingKey || '') };
+        }
     }
 
     const migratedKey = await getMigratedContextSettingKeyForProfile(profile);
