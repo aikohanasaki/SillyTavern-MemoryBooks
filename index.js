@@ -580,11 +580,18 @@ function cleanupChatObserver() {
 }
 
 let lastContextPromptChatKey = null;
+let contextPromptInFlightChatKey = null;
 
 async function maybePromptContextSettingForChatOpen() {
+  let chatKey = null;
   try {
-    const chatKey = getStmbChatKeySafe();
-    if (!chatKey || lastContextPromptChatKey === chatKey) return;
+    chatKey = getStmbChatKeySafe();
+    if (
+      !chatKey ||
+      lastContextPromptChatKey === chatKey ||
+      contextPromptInFlightChatKey === chatKey
+    ) return;
+    contextPromptInFlightChatKey = chatKey;
 
     if (getChatContextSettingKey()) {
       lastContextPromptChatKey = chatKey;
@@ -597,6 +604,10 @@ async function maybePromptContextSettingForChatOpen() {
     lastContextPromptChatKey = chatKey;
   } catch (error) {
     console.warn("STMemoryBooks: Context setting chat-open prompt failed:", error);
+  } finally {
+    if (contextPromptInFlightChatKey === chatKey) {
+      contextPromptInFlightChatKey = null;
+    }
   }
 }
 
