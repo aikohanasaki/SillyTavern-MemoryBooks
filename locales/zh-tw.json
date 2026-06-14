@@ -1102,5 +1102,5 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "使用額外內容脈絡",
   "STMemoryBooks_SidePromptAdditionalContextSource": "額外內容脈絡來源",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "跟隨聊天",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟隨聊天會使用此聊天的額外內容脈絡。選擇命名的內容脈絡設定會為此 side prompt 覆蓋它。"
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟隨聊天會使用此聊天的額外內容脈絡。選擇命名的內容脈絡設定會為此側邊提示覆蓋它。"
 }

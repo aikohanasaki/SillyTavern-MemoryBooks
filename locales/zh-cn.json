@@ -1102,5 +1102,5 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "使用额外上下文",
   "STMemoryBooks_SidePromptAdditionalContextSource": "额外上下文来源",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "跟随聊天",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟随聊天会使用此聊天的额外上下文。选择命名的上下文设置会为此 side prompt 覆盖它。"
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟随聊天会使用此聊天的额外上下文。选择命名的上下文设置会覆盖此侧边提示的该设置。"
 }
