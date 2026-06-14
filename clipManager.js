@@ -1555,7 +1555,7 @@ function getTopicalSourceEntries(lorebookData, targetEntry = null) {
             if (targetEntry && isSameEntry(entry, targetEntry)) return false;
             return true;
         })
-        .sort((a, b) => getEntrySortValue(a) - getEntrySortValue(b) || String(a.comment || '').localeCompare(String(b.comment || '')));
+        .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')) || getEntrySortValue(a) - getEntrySortValue(b));
 }
 
 function getTopicalChangedSourceEntries(allEligibleEntries, targetEntry, rebuildAll) {
@@ -1872,10 +1872,7 @@ function buildTopicalSourceMemoryOptions(entries, selectedIds = null) {
     return (entries || []).map(entry => {
         const id = getTopicalSourcePickerId(entry);
         if (!id) return '';
-        const keys = getEntryKeys(entry);
-        const label = keys.length
-            ? `${entry.comment || tr('STMemoryBooks_Untitled', 'Untitled')} (${keys.join(', ')})`
-            : String(entry.comment || tr('STMemoryBooks_Untitled', 'Untitled'));
+        const label = String(entry.comment || tr('STMemoryBooks_Untitled', 'Untitled'));
         const checked = selectedIds === null || selectedIds.has(String(id)) ? ' checked' : '';
         return `<label class="flex-container flexGap10" style="align-items:center; margin:2px 0"><input type="checkbox" class="stmb-topical-clip-source-item" value="${escapeHtml(id)}"${checked} /> <span>${escapeHtml(label)}</span></label>`;
     }).join('');
