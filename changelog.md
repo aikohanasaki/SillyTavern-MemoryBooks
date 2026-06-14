@@ -2,8 +2,12 @@
 
 **← [Back to README](readme.md)**
 
+## v7.1.0 (June 14, 2026)
+- Added side prompt additional context selection. 
+
 ## v7.0.1 (June 14, 2026)
 - Added Topical Clip memory selection.
+- Fixed selection appearance.
 
 ## v7.0.0 (June 13, 2026)
 - BREAKING/MIGRATION: Additional Context has moved from profiles to reusable Context Settings with per-chat selection. Existing profile Additional Context is migrated automatically.
