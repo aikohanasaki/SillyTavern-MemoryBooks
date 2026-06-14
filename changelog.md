@@ -2,6 +2,12 @@
 
 **← [Back to README](readme.md)**
 
+## v7.0.1 (June 14, 2026)
+- Added Topical Clip memory selection.
+
+## v7.0.0 (June 13, 2026)
+- BREAKING/MIGRATION: Additional Context has moved from profiles to reusable Context Settings with per-chat selection. Existing profile Additional Context is migrated automatically.
+
 ## v6.12.0 (June 10, 2026)
 - NEW FEATURE: Additional Context allows you to add context to memories. You must create a profile (you cannot add them to "Current SillyTavern Settings".)
 

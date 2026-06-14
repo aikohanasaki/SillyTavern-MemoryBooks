@@ -132,7 +132,9 @@ import {
   resolveContextSettingEntriesFromRefs,
 } from "./contextSettingsManager.js";
 import {
+  clearChatContextSettingKey,
   getChatContextSettingKey,
+  hasValidChatContextSettingSelection,
   maybePromptForMigratedContextSetting,
   showContextSettingsPopup,
 } from "./contextSettingsPopup.js";
@@ -593,7 +595,7 @@ async function maybePromptContextSettingForChatOpen() {
     ) return;
     contextPromptInFlightChatKey = chatKey;
 
-    if (getChatContextSettingKey()) {
+    if (await hasValidChatContextSettingSelection()) {
       lastContextPromptChatKey = chatKey;
       return;
     }
@@ -2525,6 +2527,7 @@ function showSkippedAdditionalContextWarning(skipped = []) {
 
 async function resolveAdditionalContextSnapshot(profileSettings, options = {}) {
   const selectedKey = getChatContextSettingKey();
+  let missingSelectedKey = false;
   if (selectedKey) {
     if (selectedKey === CONTEXT_NONE_KEY) {
       return { cancelled: false, entries: [], source: "none" };
@@ -2532,20 +2535,13 @@ async function resolveAdditionalContextSnapshot(profileSettings, options = {}) {
 
     const setting = await getContextSetting(selectedKey);
     if (!setting) {
-      toastr.warning(
-        translate(
-          "Selected context setting was not found. Continuing without Additional Context.",
-          "STMemoryBooks_ContextSettings_MissingSelectedWarning",
-        ),
-        "STMemoryBooks",
-        { preventDuplicates: true },
-      );
-      return { cancelled: false, entries: [], source: "missing" };
+      clearChatContextSettingKey(selectedKey);
+      missingSelectedKey = true;
+    } else {
+      const resolved = await resolveContextSettingEntries(setting);
+      showSkippedAdditionalContextWarning(resolved.skipped);
+      return { cancelled: false, entries: resolved.entries, source: "context-setting" };
     }
-
-    const resolved = await resolveContextSettingEntries(setting);
-    showSkippedAdditionalContextWarning(resolved.skipped);
-    return { cancelled: false, entries: resolved.entries, source: "context-setting" };
   }
 
   const promptResult = await maybePromptForMigratedContextSetting(profileSettings, {
@@ -2584,6 +2580,17 @@ async function resolveAdditionalContextSnapshot(profileSettings, options = {}) {
     const resolved = await resolveContextSettingEntriesFromRefs(profileSettings.additionalContextEntries);
     showSkippedAdditionalContextWarning(resolved.skipped);
     return { cancelled: false, entries: resolved.entries, source: "legacy-profile" };
+  }
+
+  if (missingSelectedKey) {
+    toastr.warning(
+      translate(
+        "Selected context setting was not found. Continuing without Additional Context.",
+        "STMemoryBooks_ContextSettings_MissingSelectedWarning",
+      ),
+      "STMemoryBooks",
+      { preventDuplicates: true },
+    );
   }
 
   return { cancelled: false, entries: [], source: "none" };
