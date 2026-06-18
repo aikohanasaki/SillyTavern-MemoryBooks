@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v7.2.0 (June 18, 2026)
+- Added Memory Books boundary and chat jump button.
+
 ## v7.1.0 (June 14, 2026)
 - Added side prompt additional context selection. 
 
