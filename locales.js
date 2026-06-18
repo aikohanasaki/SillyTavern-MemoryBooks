@@ -312,6 +312,16 @@ export const localeData_en = {
     'STMemoryBooks_ShowMemoryPreviewsTooltip': 'Shows previews for memories and side prompts returned from the AI.',
     'STMemoryBooks_ShowNotifications': 'Show notifications',
     'STMemoryBooks_ShowFloatingClipButton': 'Show floating Clip button when text is highlighted',
+    'STMemoryBooks_MemoryBoundaryMode': 'Memory boundary indicator',
+    'STMemoryBooks_MemoryBoundaryModeDesc': 'Show a chat divider, a jump button, or both at the Memory Books processed boundary.',
+    'STMemoryBooks_MemoryBoundaryModeOff': 'Off',
+    'STMemoryBooks_MemoryBoundaryModeDivider': 'Memory boundary',
+    'STMemoryBooks_MemoryBoundaryModeButton': 'Jump button',
+    'STMemoryBooks_MemoryBoundaryModeBoth': 'Memory boundary + jump button',
+    'STMemoryBooks_MemoryBoundaryLabel': 'Memory Books boundary',
+    'STMemoryBooks_JumpToUnprocessedMemory': 'Jump to first unprocessed message',
+    'STMemoryBooks_NoMemoriesProcessedYet': 'No memories have been processed for this chat yet.',
+    'STMemoryBooks_TargetNotRendered': 'Highest memory is #{{messageId}}. Scroll up or load more messages to reach it.',
     'STMemoryBooks_UnhideBeforeMemory': 'Unhide hidden messages for memory generation (runs /unhide X-Y)',
 
     // Manual Mode
