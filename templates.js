@@ -62,6 +62,15 @@ export const settingsTemplate = Handlebars.compile(`
                 <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
             </label>
+            <label for="stmb-memory-boundary-mode">
+                <span data-i18n="STMemoryBooks_MemoryBoundaryMode">Memory boundary indicator</span>
+                <small class="opacity50p" data-i18n="STMemoryBooks_MemoryBoundaryModeDesc">Show a chat divider, a jump button, or both at the Memory Books processed boundary.</small>
+                <select id="stmb-memory-boundary-mode" class="text_pole">
+                    {{#each memoryBoundaryModeOptions}}
+                        <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
+                    {{/each}}
+                </select>
+            </label>
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_AllowSceneOverlap;[title]STMemoryBooks_AllowSceneOverlapTooltip" title="By default, STMB avoids message ID overlap between memories. Select this box to skip that check.">Allow scene overlap</span>

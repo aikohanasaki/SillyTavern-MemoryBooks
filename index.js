@@ -239,6 +239,7 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
     delete stmbData.highestMemoryProcessedManuallySet;
     saveMetadataForCurrentContext();
     await refreshPopupContent();
+    refreshMemoryBoundaryUi();
     toastr.success(
       translate(
         "Last processed message cleared (no memories processed).",
@@ -300,6 +301,7 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
   stmbData.highestMemoryProcessedManuallySet = true;
   saveMetadataForCurrentContext();
   await refreshPopupContent();
+  refreshMemoryBoundaryUi();
 
   toastr.success(
     tr(
@@ -359,6 +361,18 @@ const SUPPORTED_COMPLETION_SOURCES = [
 
 const DEFAULT_MAX_TOKENS = 4000;
 const DEFAULT_TITLE_FORMAT = "[000] - {{title}}";
+const MEMORY_BOUNDARY_MODES = Object.freeze({
+  OFF: "",
+  DIVIDER: "divider",
+  BUTTON: "button",
+  BOTH: "both",
+});
+const MEMORY_BOUNDARY_MODE_VALUES = new Set(Object.values(MEMORY_BOUNDARY_MODES));
+const DEFAULT_MEMORY_BOUNDARY_MODE = MEMORY_BOUNDARY_MODES.BOTH;
+const MEMORY_BOUNDARY_BUTTON_SIZE = 36;
+const MEMORY_BOUNDARY_BUTTON_MARGIN = 12;
+const MEMORY_BOUNDARY_BUTTON_DEFAULT_BOTTOM = 112;
+const MEMORY_BOUNDARY_BUTTON_DEFAULT_RIGHT = 18;
 
 const defaultSettings = {
   moduleSettings: {
@@ -367,6 +381,8 @@ const defaultSettings = {
     showConsolidationPreviews: false,
     showNotifications: true,
     showFloatingClipButton: true,
+    memoryBoundaryMode: DEFAULT_MEMORY_BOUNDARY_MODE,
+    memoryBoundaryButtonPosition: null,
     unhideBeforeMemory: false,
     refreshEditor: true,
     maxTokens: DEFAULT_MAX_TOKENS,
@@ -427,6 +443,269 @@ let lastFailedAIContext = null;
 let lastFailedArcError = null;
 let lastArcFailureToast = null;
 let lastFailedArcContext = null;
+let memoryBoundaryButton = null;
+let memoryBoundaryButtonDragState = null;
+
+function normalizeMemoryBoundaryMode(mode) {
+  const value = String(mode ?? DEFAULT_MEMORY_BOUNDARY_MODE);
+  return MEMORY_BOUNDARY_MODE_VALUES.has(value) ? value : DEFAULT_MEMORY_BOUNDARY_MODE;
+}
+
+function isMemoryBoundaryDividerEnabled(mode = null) {
+  const normalized = normalizeMemoryBoundaryMode(mode ?? extension_settings?.STMemoryBooks?.moduleSettings?.memoryBoundaryMode);
+  return normalized === MEMORY_BOUNDARY_MODES.DIVIDER || normalized === MEMORY_BOUNDARY_MODES.BOTH;
+}
+
+function isMemoryBoundaryButtonEnabled(mode = null) {
+  const normalized = normalizeMemoryBoundaryMode(mode ?? extension_settings?.STMemoryBooks?.moduleSettings?.memoryBoundaryMode);
+  return normalized === MEMORY_BOUNDARY_MODES.BUTTON || normalized === MEMORY_BOUNDARY_MODES.BOTH;
+}
+
+function getMemoryBoundaryModeOptions(selectedMode) {
+  const selected = normalizeMemoryBoundaryMode(selectedMode);
+  return [
+    {
+      value: MEMORY_BOUNDARY_MODES.OFF,
+      label: translate("Off", "STMemoryBooks_MemoryBoundaryModeOff"),
+      isSelected: selected === MEMORY_BOUNDARY_MODES.OFF,
+    },
+    {
+      value: MEMORY_BOUNDARY_MODES.DIVIDER,
+      label: translate("Memory boundary", "STMemoryBooks_MemoryBoundaryModeDivider"),
+      isSelected: selected === MEMORY_BOUNDARY_MODES.DIVIDER,
+    },
+    {
+      value: MEMORY_BOUNDARY_MODES.BUTTON,
+      label: translate("Jump button", "STMemoryBooks_MemoryBoundaryModeButton"),
+      isSelected: selected === MEMORY_BOUNDARY_MODES.BUTTON,
+    },
+    {
+      value: MEMORY_BOUNDARY_MODES.BOTH,
+      label: translate("Memory boundary + jump button", "STMemoryBooks_MemoryBoundaryModeBoth"),
+      isSelected: selected === MEMORY_BOUNDARY_MODES.BOTH,
+    },
+  ];
+}
+
+function getMemoryBoundaryTargetId() {
+  const highest = getHighestMemoryProcessed();
+  if (!Number.isFinite(highest)) {
+    return null;
+  }
+
+  const nextId = highest + 1;
+  if (chat[nextId]) {
+    return nextId;
+  }
+
+  if (chat[highest]) {
+    return highest;
+  }
+
+  return null;
+}
+
+function getRenderedMessageElement(messageId) {
+  if (!Number.isFinite(messageId)) return null;
+  return document.querySelector(`#chat .mes[mesid="${messageId}"]`);
+}
+
+function clearMemoryBoundaryDivider() {
+  document.querySelectorAll(".stmb_memory_boundary_divider").forEach((element) => element.remove());
+  document.querySelectorAll(".stmb_memory_boundary_target").forEach((element) => {
+    element.classList.remove("stmb_memory_boundary_target");
+  });
+}
+
+function refreshMemoryBoundaryDivider() {
+  clearMemoryBoundaryDivider();
+
+  if (!isMemoryBoundaryDividerEnabled()) {
+    return;
+  }
+
+  const targetId = getMemoryBoundaryTargetId();
+  const targetElement = getRenderedMessageElement(targetId);
+  if (!targetElement) {
+    return;
+  }
+
+  const divider = document.createElement("div");
+  divider.classList.add("stmb_memory_boundary_divider");
+  divider.setAttribute("data-i18n", "STMemoryBooks_MemoryBoundaryLabel");
+  divider.textContent = translate("Memory Books boundary", "STMemoryBooks_MemoryBoundaryLabel");
+  targetElement.classList.add("stmb_memory_boundary_target");
+  targetElement.prepend(divider);
+}
+
+function clampMemoryBoundaryButtonPosition(position = {}) {
+  const maxLeft = Math.max(MEMORY_BOUNDARY_BUTTON_MARGIN, window.innerWidth - MEMORY_BOUNDARY_BUTTON_SIZE - MEMORY_BOUNDARY_BUTTON_MARGIN);
+  const maxTop = Math.max(MEMORY_BOUNDARY_BUTTON_MARGIN, window.innerHeight - MEMORY_BOUNDARY_BUTTON_SIZE - MEMORY_BOUNDARY_BUTTON_MARGIN);
+  const fallbackLeft = window.innerWidth - MEMORY_BOUNDARY_BUTTON_SIZE - MEMORY_BOUNDARY_BUTTON_DEFAULT_RIGHT;
+  const fallbackTop = window.innerHeight - MEMORY_BOUNDARY_BUTTON_SIZE - MEMORY_BOUNDARY_BUTTON_DEFAULT_BOTTOM;
+  const rawLeft = Number.isFinite(Number(position.left)) ? Number(position.left) : fallbackLeft;
+  const rawTop = Number.isFinite(Number(position.top)) ? Number(position.top) : fallbackTop;
+
+  return {
+    left: Math.round(clampInt(rawLeft, MEMORY_BOUNDARY_BUTTON_MARGIN, maxLeft)),
+    top: Math.round(clampInt(rawTop, MEMORY_BOUNDARY_BUTTON_MARGIN, maxTop)),
+  };
+}
+
+function applyMemoryBoundaryButtonPosition() {
+  if (!memoryBoundaryButton) return;
+  const settings = initializeSettings();
+  const position = clampMemoryBoundaryButtonPosition(settings.moduleSettings.memoryBoundaryButtonPosition || {});
+  memoryBoundaryButton.style.left = `${position.left}px`;
+  memoryBoundaryButton.style.top = `${position.top}px`;
+}
+
+function saveMemoryBoundaryButtonPosition(position) {
+  const settings = initializeSettings();
+  settings.moduleSettings.memoryBoundaryButtonPosition = clampMemoryBoundaryButtonPosition(position);
+  saveSettingsDebounced();
+}
+
+function showNoMemoryBoundaryToast() {
+  toastr.info(
+    translate(
+      "No memories have been processed for this chat yet.",
+      "STMemoryBooks_NoMemoriesProcessedYet",
+    ),
+    translate("STMemoryBooks", "index.toast.title"),
+  );
+}
+
+function scrollToMemoryBoundaryTarget() {
+  const highest = getHighestMemoryProcessed();
+  const targetId = getMemoryBoundaryTargetId();
+
+  if (!Number.isFinite(highest) || !Number.isFinite(targetId)) {
+    showNoMemoryBoundaryToast();
+    return;
+  }
+
+  const targetElement = getRenderedMessageElement(targetId);
+  if (targetElement) {
+    targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  const chatContainer = document.getElementById("chat");
+  if (chatContainer) {
+    chatContainer.scrollTop = 0;
+  }
+  toastr.info(
+    tr(
+      "STMemoryBooks_TargetNotRendered",
+      "Highest memory is #{{messageId}}. Scroll up or load more messages to reach it.",
+      { messageId: highest },
+    ),
+    translate("STMemoryBooks", "index.toast.title"),
+  );
+}
+
+function handleMemoryBoundaryButtonPointerMove(event) {
+  if (!memoryBoundaryButtonDragState || !memoryBoundaryButton) return;
+
+  const position = clampMemoryBoundaryButtonPosition({
+    left: event.clientX - memoryBoundaryButtonDragState.offsetX,
+    top: event.clientY - memoryBoundaryButtonDragState.offsetY,
+  });
+
+  if (
+    Math.abs(position.left - memoryBoundaryButtonDragState.startLeft) > 2 ||
+    Math.abs(position.top - memoryBoundaryButtonDragState.startTop) > 2
+  ) {
+    memoryBoundaryButtonDragState.moved = true;
+  }
+
+  memoryBoundaryButton.style.left = `${position.left}px`;
+  memoryBoundaryButton.style.top = `${position.top}px`;
+}
+
+function handleMemoryBoundaryButtonPointerUp() {
+  if (!memoryBoundaryButtonDragState || !memoryBoundaryButton) return;
+
+  const moved = memoryBoundaryButtonDragState.moved;
+  const position = {
+    left: parseInt(memoryBoundaryButton.style.left, 10),
+    top: parseInt(memoryBoundaryButton.style.top, 10),
+  };
+
+  document.removeEventListener("pointermove", handleMemoryBoundaryButtonPointerMove);
+  document.removeEventListener("pointerup", handleMemoryBoundaryButtonPointerUp);
+  memoryBoundaryButtonDragState = null;
+  saveMemoryBoundaryButtonPosition(position);
+
+  if (moved) {
+    memoryBoundaryButton.dataset.stmbDragged = "true";
+    setTimeout(() => {
+      if (memoryBoundaryButton) {
+        delete memoryBoundaryButton.dataset.stmbDragged;
+      }
+    }, 0);
+  }
+}
+
+function createMemoryBoundaryButton() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = "stmb-memory-boundary-jump";
+  button.classList.add("stmb_memory_boundary_button", "interactable");
+  button.title = translate("Jump to first unprocessed message", "STMemoryBooks_JumpToUnprocessedMemory");
+  button.setAttribute("data-i18n", "[title]STMemoryBooks_JumpToUnprocessedMemory");
+  button.innerHTML = '<i class="fa-solid fa-angles-up" aria-hidden="true"></i>';
+
+  button.addEventListener("pointerdown", (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = button.getBoundingClientRect();
+    memoryBoundaryButtonDragState = {
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false,
+    };
+    document.addEventListener("pointermove", handleMemoryBoundaryButtonPointerMove);
+    document.addEventListener("pointerup", handleMemoryBoundaryButtonPointerUp);
+  });
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (button.dataset.stmbDragged === "true") {
+      return;
+    }
+    scrollToMemoryBoundaryTarget();
+  });
+
+  document.body.appendChild(button);
+  applyLocale(button);
+  return button;
+}
+
+function refreshMemoryBoundaryButton() {
+  if (!isMemoryBoundaryButtonEnabled()) {
+    memoryBoundaryButton?.remove();
+    memoryBoundaryButton = null;
+    return;
+  }
+
+  if (!memoryBoundaryButton) {
+    memoryBoundaryButton = createMemoryBoundaryButton();
+  }
+
+  applyMemoryBoundaryButtonPosition();
+  memoryBoundaryButton.style.display = "inline-flex";
+}
+
+function refreshMemoryBoundaryUi() {
+  refreshMemoryBoundaryDivider();
+  refreshMemoryBoundaryButton();
+}
 
 function getDefaultProfileTitleFormat(settings) {
   const defaultProfile = settings?.profiles?.[settings.defaultProfile];
@@ -533,6 +812,7 @@ function initializeChatObserver() {
         try {
           // Use partial update for new messages only
           updateNewMessageButtonStates(newlyProcessedMessages);
+          refreshMemoryBoundaryUi();
         } catch (error) {
           console.error(
             translate(
@@ -630,6 +910,7 @@ function handleChatChanged() {
     );
   }
   hideFloatingClipButton();
+  refreshMemoryBoundaryUi();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
   void maybePromptContextSettingForChatOpen();
@@ -679,6 +960,7 @@ function validateAndCleanupSceneMarkers() {
 async function handleMessageReceived() {
   try {
     setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
+    setTimeout(refreshMemoryBoundaryUi, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     await handleAutoSummaryMessageReceived();
     await evaluateTrackers();
   } catch (error) {
@@ -1739,6 +2021,18 @@ function validateSettings(settings) {
   if (settings.moduleSettings.showFloatingClipButton === undefined) {
     settings.moduleSettings.showFloatingClipButton = true;
   }
+  settings.moduleSettings.memoryBoundaryMode = normalizeMemoryBoundaryMode(
+    settings.moduleSettings.memoryBoundaryMode,
+  );
+  if (
+    settings.moduleSettings.memoryBoundaryButtonPosition !== null &&
+    (
+      typeof settings.moduleSettings.memoryBoundaryButtonPosition !== "object" ||
+      Array.isArray(settings.moduleSettings.memoryBoundaryButtonPosition)
+    )
+  ) {
+    settings.moduleSettings.memoryBoundaryButtonPosition = null;
+  }
   settings.moduleSettings.autoConsolidationTargetTiers =
     normalizeAutoConsolidationTargetTiers(
       settings.moduleSettings.autoConsolidationTargetTiers ??
@@ -2371,6 +2665,7 @@ async function executeMemoryGeneration(
       stmbData.highestMemoryProcessed = sceneData.sceneEnd;
       delete stmbData.highestMemoryProcessedManuallySet;
       saveMetadataForCurrentContext();
+      refreshMemoryBoundaryUi();
     } catch (e) {
       console.warn(
         "STMemoryBooks: Failed to update highestMemoryProcessed baseline:",
@@ -6379,6 +6674,8 @@ async function showSettingsPopup() {
     showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
     showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
+    memoryBoundaryMode: normalizeMemoryBoundaryMode(settings.moduleSettings.memoryBoundaryMode),
+    memoryBoundaryModeOptions: getMemoryBoundaryModeOptions(settings.moduleSettings.memoryBoundaryMode),
     unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
     refreshEditor: settings.moduleSettings.refreshEditor,
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
@@ -6627,6 +6924,13 @@ function setupSettingsEventListeners() {
       settings.moduleSettings.showFloatingClipButton = e.target.checked;
       saveSettingsDebounced();
       refreshFloatingClipButtonSetting();
+      return;
+    }
+
+    if (e.target.matches("#stmb-memory-boundary-mode")) {
+      settings.moduleSettings.memoryBoundaryMode = normalizeMemoryBoundaryMode(e.target.value);
+      saveSettingsDebounced();
+      refreshMemoryBoundaryUi();
       return;
     }
 
@@ -7049,6 +7353,10 @@ function persistMainPopupSettings(popupElement) {
   const showFloatingClipButton =
     popupElement.querySelector("#stmb-show-floating-clip-button")?.checked ??
     (settings.moduleSettings.showFloatingClipButton !== false);
+  const memoryBoundaryMode = normalizeMemoryBoundaryMode(
+    popupElement.querySelector("#stmb-memory-boundary-mode")?.value ??
+      settings.moduleSettings.memoryBoundaryMode,
+  );
   const unhideBeforeMemory =
     popupElement.querySelector("#stmb-unhide-before-memory")?.checked ??
     settings.moduleSettings.unhideBeforeMemory;
@@ -7145,6 +7453,12 @@ function persistMainPopupSettings(popupElement) {
   if (showFloatingClipButton !== (settings.moduleSettings.showFloatingClipButton !== false)) {
     settings.moduleSettings.showFloatingClipButton = showFloatingClipButton;
     refreshFloatingClipButtonSetting();
+    hasChanges = true;
+  }
+
+  if (memoryBoundaryMode !== normalizeMemoryBoundaryMode(settings.moduleSettings.memoryBoundaryMode)) {
+    settings.moduleSettings.memoryBoundaryMode = memoryBoundaryMode;
+    refreshMemoryBoundaryUi();
     hasChanges = true;
   }
 
@@ -7335,6 +7649,8 @@ async function refreshPopupContent() {
       showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
       showNotifications: settings.moduleSettings.showNotifications,
       showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
+      memoryBoundaryMode: normalizeMemoryBoundaryMode(settings.moduleSettings.memoryBoundaryMode),
+      memoryBoundaryModeOptions: getMemoryBoundaryModeOptions(settings.moduleSettings.memoryBoundaryMode),
       unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
       refreshEditor: settings.moduleSettings.refreshEditor,
       allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
@@ -7470,6 +7786,8 @@ function processExistingMessages() {
     // Full update needed for chat loads
     updateAllButtonStates();
   }
+
+  refreshMemoryBoundaryUi();
 }
 
 /**
@@ -7749,6 +8067,7 @@ function setupEventListeners() {
   eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
     const settings = initializeSettings();
     handleMessageDeletion(deletedId, settings);
+    refreshMemoryBoundaryUi();
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
 
@@ -7827,6 +8146,7 @@ function setupEventListeners() {
   });
 
   window.addEventListener("beforeunload", cleanupChatObserver);
+  window.addEventListener("resize", refreshMemoryBoundaryButton);
 }
 
 /**
@@ -8032,6 +8352,7 @@ async function applyManualFixedJson(correctedRaw) {
       stmbData.highestMemoryProcessed = context.sceneData.sceneEnd;
       delete stmbData.highestMemoryProcessedManuallySet;
       saveMetadataForCurrentContext();
+      refreshMemoryBoundaryUi();
     } catch (e) {
       console.warn(
         "STMemoryBooks: Failed to update highestMemoryProcessed baseline:",
