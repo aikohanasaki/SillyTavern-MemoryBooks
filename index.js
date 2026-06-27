@@ -1132,11 +1132,6 @@ async function validateStmbCatchupNonInteractive(settings, chunks) {
     );
   }
 
-  const defaultMemoryCount = clampInt(moduleSettings.defaultMemoryCount ?? 0, 0, 7);
-  if (defaultMemoryCount > 0) {
-    return __st_t_tag`/stmb-catchup is non-interactive. Set Default Previous Memories Count to "None (0 memories)" before running it.`;
-  }
-
   const isManualMode = !!moduleSettings.manualModeEnabled;
   const stmbData = isManualMode ? getSceneMarkers() || {} : null;
   const lorebookName = isManualMode
