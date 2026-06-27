@@ -395,7 +395,7 @@ Si vous voulez reconstruire toute l’entrée à partir de toutes les mémoires 
 - `/creatememory` - Crée une mémoire à partir de la scène marquée.
 - `/scenememory X-Y` - Définit la plage de scène et crée une mémoire (par exemple, `/scenememory 10-15`).
 - `/nextmemory` - Crée une mémoire depuis la fin de la dernière mémoire jusqu’au message actuel.
-- `/stmb-catchup interval:x start:y end:y` - Crée des mémoires de rattrapage pour un long chat existant en traitant la plage de messages sélectionnée par blocs de la taille indiquée par l’intervalle.
+- `/stmb-catchup interval=x start=y end=y` - Crée des mémoires de rattrapage pour un long chat existant en traitant la plage de messages sélectionnée par blocs de la taille indiquée par l’intervalle.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Exécute un Side Prompt (`{{macro}}` est optionnel).
 - `/sideprompt-set "Set Name" [X-Y]` - Exécute un Side Prompt Set enregistré.
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Exécute un Side Prompt Set et fournit des valeurs de macro réutilisables.
@@ -409,9 +409,9 @@ Si vous voulez reconstruire toute l’entrée à partir de toutes les mémoires 
 
 Utilisez `/stmb-catchup` lorsque vous voulez convertir un long chat existant en mémoires STMB.
 
-Syntaxe : `/stmb-catchup interval:x start:y end:y`
+Syntaxe : `/stmb-catchup interval=x start=y end=y`
 
-Exemple : `/stmb-catchup interval:30 start:0 end:300`
+Exemple : `/stmb-catchup interval=30 start=0 end=300`
 
 ---
 

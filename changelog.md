@@ -86,7 +86,7 @@ Clip entries and Side Prompt entries can grow over time. Compaction sends the se
 
 ## v6.4.0 (May 1, 2026)
 - Add per-side prompt lorebook overrides.
-- Add `/stmb-catchup interval:x start:y end:y` for converting existing long chats into STMB memories in interval-sized chunks.
+- Add `/stmb-catchup interval=x start=y end=y` for converting existing long chats into STMB memories in interval-sized chunks.
 
 ## v6.3.5 (April 22, 2026)
 - Updated WI saving to match 1.17.0 defaults.

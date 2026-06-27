@@ -348,7 +348,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 - `/creatememory` — 从已标记场景创建记忆。
 - `/scenememory X-Y` — 设置场景范围并创建记忆，例如 `/scenememory 10-15`。
 - `/nextmemory` — 从上一个记忆的结尾到当前消息创建记忆。
-- `/stmb-catchup interval:x start:y end:y` — 为已有长聊天创建补录记忆，将所选消息范围按指定间隔分块处理。
+- `/stmb-catchup interval=x start=y end=y` — 为已有长聊天创建补录记忆，将所选消息范围按指定间隔分块处理。
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` — 运行 Side Prompt（`{{macro}}` 可选）。
 - `/sideprompt-set "Set Name" [X-Y]` — 运行已保存的 Side Prompt Set。
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` — 运行 Side Prompt Set 并提供可复用的宏值。
@@ -362,9 +362,9 @@ llama-server -m <model-path> -c <context-size> --port 8080
 
 当您需要把已有长聊天转换为 STMB 记忆时，使用 `/stmb-catchup`。
 
-语法：`/stmb-catchup interval:x start:y end:y`
+语法：`/stmb-catchup interval=x start=y end=y`
 
-示例：`/stmb-catchup interval:30 start:0 end:300`
+示例：`/stmb-catchup interval=30 start=0 end=300`
 
 ---
 
