@@ -1260,7 +1260,7 @@ async function handleStmbCatchupCommand(namedArgs) {
     if (interval === null || startId === null || endId === null) {
       toastr.error(
         translate(
-          "Missing or invalid arguments. Use: /stmb-catchup interval:<chunk size> start:<message id> end:<message id>",
+          "Missing or invalid arguments. Use: /stmb-catchup interval=<chunk size> start=<message id> end=<message id>",
           "STMemoryBooks_CatchupUsage",
         ),
         translate("STMemoryBooks", "index.toast.title"),
@@ -7835,7 +7835,7 @@ function registerSlashCommands() {
     name: "stmb-catchup",
     callback: handleStmbCatchupCommand,
     helpString: translate(
-      "Create scene memories over a message range in chunks. Usage: /stmb-catchup interval:50 start:0 end:600",
+      "Create scene memories over a message range in chunks. Usage: /stmb-catchup interval=50 start=0 end=600",
       "STMemoryBooks_Slash_Catchup_Help",
     ),
     namedArgumentList: [

@@ -391,7 +391,7 @@ Jika anda mahu membina semula keseluruhan entri daripada semua memori yang layak
 - `/creatememory` - Cipta memori daripada babak yang ditandakan.
 - `/scenememory X-Y` - Tetapkan julat babak dan cipta memori, contohnya `/scenememory 10-15`.
 - `/nextmemory` - Cipta memori dari akhir memori terakhir hingga mesej semasa.
-- `/stmb-catchup interval:x start:y end:y` - Mencipta memori susulan untuk chat panjang sedia ada dengan memproses julat mesej yang dipilih dalam bahagian mengikut saiz interval.
+- `/stmb-catchup interval=x start=y end=y` - Mencipta memori susulan untuk chat panjang sedia ada dengan memproses julat mesej yang dipilih dalam bahagian mengikut saiz interval.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Jalankan side prompt (`{{macro}}` adalah pilihan).
 - `/sideprompt-set "Set Name" [X-Y]` - Jalankan Side Prompt Set yang disimpan.
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Jalankan Side Prompt Set dan bekalkan nilai makro yang boleh digunakan semula.
@@ -408,20 +408,20 @@ Gunakan `/stmb-catchup` apabila menukar chat panjang sedia ada kepada memori STM
 Sintaks:
 
 ```txt
-/stmb-catchup interval:x start:y end:y
+/stmb-catchup interval=x start=y end=y
 ```
 
 Contoh:
 
 ```txt
-/stmb-catchup interval:30 start:0 end:300
+/stmb-catchup interval=30 start=0 end=300
 ```
 
 Parameter:
 
-- `interval:x` - Anggaran bilangan mesej bagi setiap memori yang dijana.
-- `start:y` - Nombor mesej pertama yang akan disertakan.
-- `end:y` - Nombor mesej terakhir yang akan disertakan.
+- `interval=x` - Anggaran bilangan mesej bagi setiap memori yang dijana.
+- `start=y` - Nombor mesej pertama yang akan disertakan.
+- `end=y` - Nombor mesej terakhir yang akan disertakan.
 
 Ini bertujuan untuk penukaran susulan, bukan penggunaan biasa secara berterusan. Selepas STMB sudah mengejar semula, gunakan ringkasan automatik atau `/nextmemory`.
 

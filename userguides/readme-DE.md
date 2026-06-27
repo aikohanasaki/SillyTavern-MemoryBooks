@@ -395,7 +395,7 @@ Wenn du den ganzen Eintrag aus allen passenden Erinnerungen neu aufbauen möchte
 - `/creatememory` - Erstellt eine Erinnerung aus der markierten Szene.
 - `/scenememory X-Y` - Setzt den Szenenbereich und erstellt eine Erinnerung (z.B. `/scenememory 10-15`).
 - `/nextmemory` - Erstellt eine Erinnerung vom Ende der letzten Erinnerung bis zur aktuellen Nachricht.
-- `/stmb-catchup interval:x start:y end:y` - Erstellt Aufhol-Erinnerungen für einen bestehenden langen Chat, indem der ausgewählte Nachrichtenbereich in Abschnitten der angegebenen Intervallgröße verarbeitet wird.
+- `/stmb-catchup interval=x start=y end=y` - Erstellt Aufhol-Erinnerungen für einen bestehenden langen Chat, indem der ausgewählte Nachrichtenbereich in Abschnitten der angegebenen Intervallgröße verarbeitet wird.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Führt einen Side-Prompt aus (`{{macro}}`s sind optional).
 - `/sideprompt-set "Set Name" [X-Y]` - Führt ein gespeichertes Side-Prompt-Set aus.
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Führt ein Side-Prompt-Set aus und übergibt wiederverwendbare Makrowerte.
@@ -409,9 +409,9 @@ Wenn du den ganzen Eintrag aus allen passenden Erinnerungen neu aufbauen möchte
 
 Verwenden Sie `/stmb-catchup`, wenn Sie einen bestehenden langen Chat in STMB-Erinnerungen umwandeln möchten.
 
-Syntax: `/stmb-catchup interval:x start:y end:y`
+Syntax: `/stmb-catchup interval=x start=y end=y`
 
-Beispiel: `/stmb-catchup interval:30 start:0 end:300`
+Beispiel: `/stmb-catchup interval=30 start=0 end=300`
 
 ---
 

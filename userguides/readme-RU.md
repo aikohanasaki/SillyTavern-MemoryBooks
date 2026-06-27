@@ -392,7 +392,7 @@ Seraphina Healed Me [STMB Clip]
 - `/creatememory` — создать воспоминание из отмеченной сцены.
 - `/scenememory X-Y` — установить диапазон сцены и создать воспоминание, например `/scenememory 10-15`.
 - `/nextmemory` — создать воспоминание от конца последнего воспоминания до текущего сообщения.
-- `/stmb-catchup interval:x start:y end:y` — создать догоняющие воспоминания для существующего длинного чата, обрабатывая выбранный диапазон сообщений блоками указанного размера.
+- `/stmb-catchup interval=x start=y end=y` — создать догоняющие воспоминания для существующего длинного чата, обрабатывая выбранный диапазон сообщений блоками указанного размера.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` — запустить Side Prompt (`{{macro}}` необязательны).
 - `/sideprompt-set "Set Name" [X-Y]` — запустить сохраненный Side Prompt Set.
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` — запустить Side Prompt Set и передать переиспользуемые значения макросов.
@@ -406,9 +406,9 @@ Seraphina Healed Me [STMB Clip]
 
 Используйте `/stmb-catchup`, когда нужно преобразовать существующий длинный чат в воспоминания STMB.
 
-Синтаксис: `/stmb-catchup interval:x start:y end:y`
+Синтаксис: `/stmb-catchup interval=x start=y end=y`
 
-Пример: `/stmb-catchup interval:30 start:0 end:300`
+Пример: `/stmb-catchup interval=30 start=0 end=300`
 
 ---
 

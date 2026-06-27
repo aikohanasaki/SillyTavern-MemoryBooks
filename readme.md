@@ -365,7 +365,7 @@ If you want to rebuild the whole entry from all eligible memories, enable **Rebu
 - `/creatememory` - Create memory from marked scene.
 - `/scenememory X-Y` - Set scene range and create memory (e.g., `/scenememory 10-15`).
 - `/nextmemory` - Create memory from end of last memory to current message.
-- `/stmb-catchup interval:x start:y end:y` - Create catch-up memories across an existing long chat by processing the selected message range in interval-sized chunks.
+- `/stmb-catchup interval=x start=y end=y` - Create catch-up memories across an existing long chat by processing the selected message range in interval-sized chunks.
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - Run side prompt (`{{macro}}`s are optional).
 - `/sideprompt-set "Set Name" [X-Y]` - Run a saved Side Prompt Set.
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Run a Side Prompt Set and supply reusable macro values.
@@ -377,9 +377,9 @@ If you want to rebuild the whole entry from all eligible memories, enable **Rebu
 
 ### `/stmb-catchup`
 
-Use `/stmb-catchup` when converting an existing long chat into STMB memories. Syntax: `/stmb-catchup interval:x start:y end:y`
+Use `/stmb-catchup` when converting an existing long chat into STMB memories. Syntax: `/stmb-catchup interval=x start=y end=y`
 
-Example: `/stmb-catchup interval:30 start:0 end:300`
+Example: `/stmb-catchup interval=30 start=0 end=300`
 
 ---
 

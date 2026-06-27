@@ -397,7 +397,7 @@ Seraphinaについて [STMB Clip]
 - `/creatememory` - マーク済みシーンからメモリを作成します。
 - `/scenememory X-Y` - シーン範囲を設定してメモリを作成します（例: `/scenememory 10-15`）。
 - `/nextmemory` - 前回のメモリの終端から現在のメッセージまでを使ってメモリを作成します。
-- `/stmb-catchup interval:x start:y end:y` - 既存の長いチャットを、指定したメッセージ範囲ごとに interval サイズのチャンクへ分割して、キャッチアップ用メモリを作成します。
+- `/stmb-catchup interval=x start=y end=y` - 既存の長いチャットを、指定したメッセージ範囲ごとに interval サイズのチャンクへ分割して、キャッチアップ用メモリを作成します。
 - `/sideprompt "Name" {{macro}}="value" [X-Y]` - サイドプロンプトを実行します（`{{macro}}` は任意です）。
 - `/sideprompt-set "Set Name" [X-Y]` - 保存済みの Side Prompt Set を実行します。
 - `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` - Side Prompt Set を実行し、再利用可能なマクロ値を渡します。
@@ -409,9 +409,9 @@ Seraphinaについて [STMB Clip]
 
 ### `/stmb-catchup`
 
-既存の長いチャットを STMB メモリに変換したいときに `/stmb-catchup` を使用します。構文: `/stmb-catchup interval:x start:y end:y`
+既存の長いチャットを STMB メモリに変換したいときに `/stmb-catchup` を使用します。構文: `/stmb-catchup interval=x start=y end=y`
 
-例: `/stmb-catchup interval:30 start:0 end:300`
+例: `/stmb-catchup interval=30 start=0 end=300`
 
 ---
 

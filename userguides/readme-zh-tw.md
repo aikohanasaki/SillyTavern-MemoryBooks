@@ -172,7 +172,7 @@ llama-server -m <model-path> -c <context-size> --port 8080
 * `/creatememory` — 從已標記的場景建立記憶。
 * `/scenememory X-Y` — 設定場景範圍並建立記憶，例如 `/scenememory 10-15`。
 * `/nextmemory` — 從上一筆記憶結尾到目前訊息建立記憶。
-* `/stmb-catchup interval:x start:y end:y` — 為既有長聊天建立補記憶，透過依照指定間隔大小分段處理所選訊息範圍來產生記憶。
+* `/stmb-catchup interval=x start=y end=y` — 為既有長聊天建立補記憶，透過依照指定間隔大小分段處理所選訊息範圍來產生記憶。
 * `/sideprompt "Name" {{macro}}="value" [X-Y]` — 執行 Side Prompt（`{{macro}}` 可選）。
 * `/sideprompt-set "Set Name" [X-Y]` — 執行已儲存的 Side Prompt Set。
 * `/sideprompt-macroset "Set Name" {{macro}}="value" [X-Y]` — 執行 Side Prompt Set 並提供可重複使用的巨集值。
@@ -189,20 +189,20 @@ llama-server -m <model-path> -c <context-size> --port 8080
 語法：
 
 ```txt
-/stmb-catchup interval:x start:y end:y
+/stmb-catchup interval=x start=y end=y
 ```
 
 範例：
 
 ```txt
-/stmb-catchup interval:30 start:0 end:300
+/stmb-catchup interval=30 start=0 end=300
 ```
 
 參數：
 
-- `interval:x` - 每筆產生的記憶大約包含的訊息數量。
-- `start:y` - 要包含的第一則訊息編號。
-- `end:y` - 要包含的最後一則訊息編號。
+- `interval=x` - 每筆產生的記憶大約包含的訊息數量。
+- `start=y` - 要包含的第一則訊息編號。
+- `end=y` - 要包含的最後一則訊息編號。
 
 此指令用於補登轉換，不適合一般持續使用。STMB 追上既有聊天進度後，請使用自動摘要或 `/nextmemory`。
 
