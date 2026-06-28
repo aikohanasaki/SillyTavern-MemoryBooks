@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v7.2.1 (June 27, 2026)
+- Fixed STMB demanding 0 memories in catchup.
+
 ## v7.2.0 (June 18, 2026)
 - Added Memory Books boundary and chat jump button.
 
