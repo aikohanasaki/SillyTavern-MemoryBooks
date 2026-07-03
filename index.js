@@ -2435,13 +2435,12 @@ function createMemoryInclusionGroup(memoryResult) {
 }
 
 function cloneMemoryResultForCharacter(memoryResult, characterFilterName) {
-  return {
-    ...memoryResult,
-    metadata: {
-      ...(memoryResult.metadata || {}),
-      characterFilterNames: [characterFilterName],
-    },
+  const cloned = deepClone(memoryResult);
+  cloned.metadata = {
+    ...(cloned.metadata || {}),
+    characterFilterNames: [characterFilterName],
   };
+  return cloned;
 }
 
 function removeLorebookEntryByUid(lorebookData, uid) {
@@ -2511,9 +2510,8 @@ async function rollbackManualGroupLorebookWrites(writtenEntries, lorebookDataByN
   }
 }
 
-async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation, options = {}) {
+function getManualGroupCopyTargets(memoryResult, options = {}) {
   const { members = [], bindings = {} } = options;
-  const inclusionGroup = createMemoryInclusionGroup(memoryResult);
   const speakerNames = Array.isArray(memoryResult?.metadata?.characterFilterNames)
     ? Array.from(new Set(memoryResult.metadata.characterFilterNames.map((name) => String(name || "").trim()).filter(Boolean)))
     : [];
@@ -2536,6 +2534,64 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
     copyTargets.push({ speakerName, member, lorebookName });
   }
 
+  return copyTargets;
+}
+
+function getManualGroupTouchedLorebookNames(primaryLorebookName, copyTargets = []) {
+  const names = new Set();
+  const primaryName = String(primaryLorebookName || "").trim();
+  if (primaryName) {
+    names.add(primaryName);
+  }
+  for (const target of copyTargets) {
+    const lorebookName = String(target?.lorebookName || "").trim();
+    if (lorebookName) {
+      names.add(lorebookName);
+    }
+  }
+  return Array.from(names);
+}
+
+async function withLorebookWriteLanes(lorebookNames, task) {
+  const names = Array.from(new Set(
+    (Array.isArray(lorebookNames) ? lorebookNames : [])
+      .map((name) => String(name || "").trim())
+      .filter(Boolean),
+  )).sort((a, b) => a.localeCompare(b));
+
+  const runAt = async (index) => {
+    if (index >= names.length) {
+      return await task();
+    }
+    return await withStmbWriteLane(
+      { type: "lorebook", name: names[index] },
+      () => runAt(index + 1),
+    );
+  };
+
+  return await runAt(0);
+}
+
+async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation, options = {}) {
+  const copyTargets = Array.isArray(options.copyTargets)
+    ? options.copyTargets
+    : getManualGroupCopyTargets(memoryResult, options);
+  const touchedLorebookNames = getManualGroupTouchedLorebookNames(
+    lorebookValidation.name,
+    copyTargets,
+  );
+
+  if (!options.writeLanesHeld) {
+    return await withLorebookWriteLanes(touchedLorebookNames, () =>
+      addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation, {
+        ...options,
+        copyTargets,
+        writeLanesHeld: true,
+      }),
+    );
+  }
+
+  const inclusionGroup = createMemoryInclusionGroup(memoryResult);
   const lorebookDataByName = new Map();
   for (const target of copyTargets) {
     if (lorebookDataByName.has(target.lorebookName)) {
@@ -3592,7 +3648,29 @@ async function executeQueuedMemoryJob(job, jobContext) {
   jobContext.setState("saving", { detail: lorebookName });
   let addResult = null;
   let latestLorebookData = null;
-  await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
+  const queuedContext = {
+    ...(payload.memoryBooksContext || getCurrentMemoryBooksContext()),
+    manualGroupLorebookBindings: payload.manualGroupLorebookBindings || null,
+  };
+  const manualGroupLorebooks = await validateManualGroupLorebookBindingsForMemory(
+    settings,
+    queuedContext,
+  );
+  if (!manualGroupLorebooks.valid) {
+    throw new Error(manualGroupLorebooks.error);
+  }
+  const shouldWriteManualGroupLorebooks =
+    settings.moduleSettings?.manualModeEnabled &&
+    queuedContext.isGroupChat &&
+    isStloAvailableForManualGroupLorebooks();
+  const manualGroupCopyTargets = shouldWriteManualGroupLorebooks
+    ? getManualGroupCopyTargets(finalMemoryResult, manualGroupLorebooks)
+    : [];
+  const lorebookWriteLaneNames = shouldWriteManualGroupLorebooks
+    ? getManualGroupTouchedLorebookNames(lorebookName, manualGroupCopyTargets)
+    : [lorebookName];
+
+  await withLorebookWriteLanes(lorebookWriteLaneNames, async () => {
     const freshLorebook = await loadWorldInfo(lorebookName);
     if (!freshLorebook?.entries) {
       throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
@@ -3605,27 +3683,16 @@ async function executeQueuedMemoryJob(job, jobContext) {
         throw error;
       }
     }
-    const queuedContext = {
-      ...(payload.memoryBooksContext || getCurrentMemoryBooksContext()),
-      manualGroupLorebookBindings: payload.manualGroupLorebookBindings || null,
-    };
-    const manualGroupLorebooks = await validateManualGroupLorebookBindingsForMemory(
-      settings,
-      queuedContext,
-    );
-    if (!manualGroupLorebooks.valid) {
-      throw new Error(manualGroupLorebooks.error);
-    }
     const baseValidation = { valid: true, name: lorebookName, data: freshLorebook };
     addResult =
-      settings.moduleSettings?.manualModeEnabled &&
-      queuedContext.isGroupChat &&
-      isStloAvailableForManualGroupLorebooks()
+      shouldWriteManualGroupLorebooks
         ? await addMemoryToManualGroupLorebooks(
             finalMemoryResult,
             baseValidation,
             {
               ...manualGroupLorebooks,
+              copyTargets: manualGroupCopyTargets,
+              writeLanesHeld: true,
               primaryAddOptions: {
                 autoHide: false,
                 refreshEditor: getStmbChatKey(job.chatRef) === getStmbChatKey(),
