@@ -1,5 +1,6 @@
-import { chat, name1, name2 } from '../../../../script.js';
+import { chat, characters, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
+import { selected_group, groups } from '../../../group-chats.js';
 import { estimateTokens } from './utils.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
@@ -30,6 +31,8 @@ export function compileScene(sceneRequest) {
     
     // Extract and format messages in range
     const sceneMessages = [];
+    const participantFilterNames = new Set();
+    const groupParticipantResolver = createGroupParticipantResolver();
     let hiddenMessageCount = 0;
     let skippedMessageCount = 0;
     
@@ -55,10 +58,21 @@ export function compileScene(sceneRequest) {
             mes: cleanMessageContent(message.mes, message.is_user),
             send_date: message.send_date || new Date().toISOString()
         };
+
+        if (!message.is_user && typeof message.original_avatar === 'string' && message.original_avatar.trim()) {
+            compiledMessage.original_avatar = message.original_avatar.trim();
+        }
         
         // Add optional user indicator if available
         if (message.is_user !== undefined) {
             compiledMessage.is_user = message.is_user;
+        }
+
+        if (groupParticipantResolver && !message.is_user) {
+            const filterName = resolveGroupParticipantFilterName(message, groupParticipantResolver);
+            if (filterName) {
+                participantFilterNames.add(filterName);
+            }
         }
         
         sceneMessages.push(compiledMessage);
@@ -78,6 +92,10 @@ export function compileScene(sceneRequest) {
         totalChatLength: chat.length,
         userName: name1 || translate('User', 'chatcompile.defaults.user')
     };
+
+    if (participantFilterNames.size > 0) {
+        metadata.characterFilterNames = Array.from(participantFilterNames);
+    }
     
     const compiledScene = {
         metadata,
@@ -248,6 +266,74 @@ export function toReadableText(compiledScene) {
 function cleanSpeakerName(name) {
     if (!name) return translate('Unknown', 'common.unknown');
     return name.trim() || translate('Unknown', 'common.unknown');
+}
+
+function createGroupParticipantResolver() {
+    if (!selected_group || !Array.isArray(groups) || !Array.isArray(characters)) {
+        return null;
+    }
+
+    const group = groups.find(item => String(item?.id) === String(selected_group));
+    if (!group || !Array.isArray(group.members) || group.members.length === 0) {
+        return null;
+    }
+
+    const memberAvatars = new Set();
+    const avatarsBySpeaker = new Map();
+
+    for (const member of group.members) {
+        const memberId = String(member || '').trim();
+        if (!memberId) {
+            continue;
+        }
+
+        const character = characters.find(item => item?.avatar === memberId || item?.name === memberId);
+        const avatar = String(character?.avatar || memberId).trim();
+        if (!avatar) {
+            continue;
+        }
+
+        memberAvatars.add(avatar);
+        const speakerName = String(character?.name || '').trim();
+        if (!speakerName) {
+            continue;
+        }
+
+        if (!avatarsBySpeaker.has(speakerName)) {
+            avatarsBySpeaker.set(speakerName, new Set());
+        }
+        avatarsBySpeaker.get(speakerName).add(avatar);
+    }
+
+    return { memberAvatars, avatarsBySpeaker };
+}
+
+function resolveGroupParticipantFilterName(message, resolver) {
+    const originalAvatar = String(message?.original_avatar || '').trim();
+    if (originalAvatar && resolver.memberAvatars.has(originalAvatar)) {
+        return getCharacterFilterNameFromAvatar(originalAvatar);
+    }
+
+    const speakerName = String(message?.name || '').trim();
+    if (!speakerName) {
+        return null;
+    }
+
+    const avatarMatches = resolver.avatarsBySpeaker.get(speakerName);
+    if (!avatarMatches || avatarMatches.size !== 1) {
+        return null;
+    }
+
+    return getCharacterFilterNameFromAvatar(Array.from(avatarMatches)[0]);
+}
+
+function getCharacterFilterNameFromAvatar(avatar) {
+    const trimmed = String(avatar || '').trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    return trimmed.replace(/\.[^/.]+$/, '');
 }
 
 /**
