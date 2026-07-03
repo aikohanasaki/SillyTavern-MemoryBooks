@@ -597,11 +597,20 @@ export function getCurrentGroupLorebookMembers() {
             avatar,
             memberId,
             name,
-            characterFilterName: character?.name ? name : '',
+            characterFilterName: avatar ? getCharacterFilterNameFromAvatar(avatar) : '',
         });
     }
 
     return members;
+}
+
+function getCharacterFilterNameFromAvatar(avatar) {
+    const trimmed = String(avatar || '').trim();
+    if (!trimmed) {
+        return '';
+    }
+
+    return trimmed.replace(/\.[^/.]+$/, '');
 }
 
 
