@@ -410,10 +410,15 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
         return null;
     }
 
-    const lorebookOptions = world_names.map(name => {
+    const lorebookOptions = [
+        !currentLorebook
+            ? `<option value="" selected disabled>${translate('None selected', 'STMemoryBooks_NoneSelected')}</option>`
+            : '',
+        ...world_names.map(name => {
         const selected = name === currentLorebook ? ' selected' : '';
         return `<option value="${name}"${selected}>${name}</option>`;
-    }).join('');
+        }),
+    ].join('');
 
     const popupContent = `
         <h4>Select a Memory Book</h4>
@@ -431,6 +436,10 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
 
     if (result === POPUP_RESULT.AFFIRMATIVE) {
         const selectedLorebook = popup.dlg.querySelector('#stmb-manual-lorebook-select').value;
+        if (!selectedLorebook) {
+            toastr.error(translate('Please select a lorebook for manual mode', 'STMemoryBooks_PleaseSelectLorebookForManualMode'), 'STMemoryBooks');
+            return null;
+        }
 
         // Only save and show success if a different lorebook was actually selected
         if (selectedLorebook !== currentLorebook) {
@@ -553,6 +562,46 @@ export function resolveEffectiveConnectionFromProfile(profile) {
     const reverseProxy = !!conn.reverseProxy;
 
     return { api, model, temperature, endpoint, apiKey, reverseProxy };
+}
+
+export function getCurrentGroupLorebookMembers() {
+    if (!selected_group || !Array.isArray(groups) || !Array.isArray(characters)) {
+        return [];
+    }
+
+    const group = groups.find(item => String(item?.id) === String(selected_group));
+    if (!group || !Array.isArray(group.members)) {
+        return [];
+    }
+
+    const members = [];
+    const seen = new Set();
+    for (const member of group.members) {
+        const memberId = String(member || '').trim();
+        if (!memberId || seen.has(memberId)) {
+            continue;
+        }
+
+        const character = characters.find(item => item?.avatar === memberId || item?.name === memberId);
+        const avatar = String(character?.avatar || memberId).trim();
+        const key = avatar || memberId;
+        if (!key || seen.has(key)) {
+            continue;
+        }
+
+        seen.add(memberId);
+        seen.add(key);
+        const name = String(character?.name || memberId).trim() || memberId;
+        members.push({
+            key,
+            avatar,
+            memberId,
+            name,
+            characterFilterName: character?.name ? name : '',
+        });
+    }
+
+    return members;
 }
 
 
