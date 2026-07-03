@@ -276,6 +276,44 @@
     white-space: nowrap;
 }
 
+.stmb-manual-group-lorebook-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.stmb-manual-group-lorebook-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.stmb-manual-group-lorebook-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.stmb-manual-group-lorebook-select {
+    width: 100%;
+}
+
+.stmb-manual-group-lorebook-row-disabled {
+    opacity: 0.55;
+}
+
+.stmb-manual-group-lorebook-row-disabled select,
+.stmb-manual-group-lorebook-row-disabled button {
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .stmb-manual-group-lorebook-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Ensure Select2 dropdown is above modals/overlays */
 .select2-container--open { z-index: 2147483647 !important; }
 

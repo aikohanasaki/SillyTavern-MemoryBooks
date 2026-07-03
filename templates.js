@@ -155,6 +155,9 @@ export const settingsTemplate = Handlebars.compile(`
                 <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-manual-lorebook-buttons">
                     <!-- Manual lorebook buttons will be dynamically inserted here -->
                 </div>
+                <div id="stmb-manual-group-lorebook-bindings" class="marginTop10">
+                    <!-- Group character lorebook bindings will be dynamically inserted here -->
+                </div>
             </div>
 
             <div id="stmb-automatic-info" class="marginTop5" style="display: {{#if manualModeEnabled}}none{{else}}block{{/if}};">

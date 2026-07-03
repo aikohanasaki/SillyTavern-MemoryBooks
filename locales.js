@@ -342,6 +342,17 @@ export const localeData_en = {
     'STMemoryBooks_NoneSelected': 'None selected',
     'STMemoryBooks_UsingChatBound': 'Using chat-bound lorebook',
     'STMemoryBooks_NoChatBound': 'No chat-bound lorebook. Memories will require lorebook selection.',
+    'STMemoryBooks_Clear': 'Clear',
+    'STMemoryBooks_GroupCharacterLorebooks': 'Group Character Lorebooks',
+    'STMemoryBooks_GroupCharacterLorebooksDesc': 'Select a lorebook for every group member. The same lorebook may be selected more than once.',
+    'STMemoryBooks_GroupCharacterLorebooksRequiresSTLO': 'Individual lorebook designation requires SillyTavern-LorebookOrdering.',
+    'STMemoryBooks_GroupLorebooksNoMembers': 'No group members are available for manual lorebook setup.',
+    'STMemoryBooks_GroupManualLorebooksIncomplete': 'Group manual lorebooks are incomplete: {{details}}',
+    'STMemoryBooks_GroupManualLorebookMissing': '{{name}}: no lorebook selected',
+    'STMemoryBooks_GroupManualLorebookDeleted': '{{name}}: "{{lorebookName}}" not found',
+    'STMemoryBooks_GroupMemberLorebookSet': '{{name}} manual lorebook set to "{{lorebookName}}"',
+    'STMemoryBooks_GroupMemberLorebookCleared': '{{name}} manual lorebook cleared',
+    'STMemoryBooks_PleaseSelectGroupLorebookForManualMode': 'Please select a group lorebook for manual mode',
 
     // Scene Options
     'STMemoryBooks_AllowSceneOverlap': 'Allow scene overlap',

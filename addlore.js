@@ -516,17 +516,30 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
             delayUntilRecursion: true
         };
 
+        const effectiveMemoryResult = options.characterFilterNames
+            ? {
+                ...memoryResult,
+                metadata: {
+                    ...(memoryResult.metadata || {}),
+                    characterFilterNames: options.characterFilterNames,
+                },
+            }
+            : memoryResult;
+
         const newEntry = createWorldInfoEntry(lorebookValidation.name, lorebookValidation.data);
 
         if (!newEntry) {
             throw new Error(i18n('addlore.errors.createEntryFailed', 'Failed to create new lorebook entry'));
         }
 
-        const entryTitle = generateEntryTitle(titleFormat, memoryResult, lorebookValidation.data);
-        populateLorebookEntry(newEntry, memoryResult, entryTitle, lorebookSettings);
+        const entryTitle = generateEntryTitle(titleFormat, effectiveMemoryResult, lorebookValidation.data);
+        populateLorebookEntry(newEntry, effectiveMemoryResult, entryTitle, lorebookSettings);
+        if (options.inclusionGroup) {
+            newEntry.group = String(options.inclusionGroup);
+        }
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
 
-        if (settings.moduleSettings?.showNotifications !== false) {
+        if (options.showNotification !== false && settings.moduleSettings?.showNotifications !== false) {
             toastr.success(
                 i18n('addlore.toast.added', 'Memory "{{entryTitle}}" added to "{{lorebookName}}"', { entryTitle: entryTitle, lorebookName: lorebookValidation.name }),
                 i18n('addlore.toast.title', 'STMemoryBooks')
@@ -542,7 +555,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
         }
         
         // Execute auto-hide commands if enabled
-        const autoHidePlan = getAutoHideRanges(memoryResult, settings.moduleSettings);
+        const autoHidePlan = getAutoHideRanges(effectiveMemoryResult, settings.moduleSettings);
 
         if (options.autoHide !== false && autoHidePlan.mode !== 'none') {
             if (autoHidePlan.invalidRange) {
@@ -562,7 +575,7 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
         }
         // Update highest memory processed tracking
         if (options.updateHighestMemoryProcessed !== false) {
-            updateHighestMemoryProcessed(memoryResult);
+            updateHighestMemoryProcessed(effectiveMemoryResult);
         }
 
         return {

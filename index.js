@@ -90,6 +90,7 @@ import {
   getCurrentApiInfo,
   SELECTORS,
   getCurrentMemoryBooksContext,
+  getCurrentGroupLorebookMembers,
   getEffectiveLorebookName,
   showLorebookSelectionPopup,
   readIntInput,
@@ -361,6 +362,12 @@ const SUPPORTED_COMPLETION_SOURCES = [
 
 const DEFAULT_MAX_TOKENS = 4000;
 const DEFAULT_TITLE_FORMAT = "[000] - {{title}}";
+const STLO_EXTENSION_KEYS = new Set([
+  "sillytavern-lorebookordering",
+  "lorebookordering",
+  "st-lorebookordering",
+  "stlo",
+]);
 const MEMORY_BOUNDARY_MODES = Object.freeze({
   OFF: "",
   DIVIDER: "divider",
@@ -1160,6 +1167,15 @@ async function validateStmbCatchupNonInteractive(settings, chunks) {
     } catch (error) {
       return __st_t_tag`/stmb-catchup is non-interactive. The selected lorebook "${lorebookName}" could not be loaded: ${error.message}`;
     }
+  }
+
+  const context = getCurrentMemoryBooksContext();
+  const manualGroupLorebooks = await validateManualGroupLorebookBindingsForMemory(
+    settings,
+    context,
+  );
+  if (!manualGroupLorebooks.valid) {
+    return manualGroupLorebooks.error;
   }
 
   const tokenThreshold = moduleSettings.tokenWarningThreshold ?? 30000;
@@ -2187,6 +2203,437 @@ export async function validateLorebook(skipAutoCreate = false) {
   });
 }
 
+function getManualCharacterLorebookBindings(stmbData = null) {
+  const source = stmbData || getSceneMarkers() || {};
+  if (
+    !source.manualCharacterLorebooks ||
+    typeof source.manualCharacterLorebooks !== "object" ||
+    Array.isArray(source.manualCharacterLorebooks)
+  ) {
+    source.manualCharacterLorebooks = {};
+  }
+
+  return source.manualCharacterLorebooks;
+}
+
+function getValidManualGroupMembers() {
+  return getCurrentGroupLorebookMembers().filter(
+    (member) => member?.key && member.characterFilterName,
+  );
+}
+
+function createManualGroupLorebookBindingSnapshot(stmbData = null) {
+  return {
+    members: deepClone(getValidManualGroupMembers()),
+    bindings: deepClone(getManualCharacterLorebookBindings(stmbData)),
+  };
+}
+
+function normalizeExtensionKey(value) {
+  const lastSegment = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\\/g, "/")
+    .split("/")
+    .filter(Boolean)
+    .pop();
+  return String(lastSegment || "").replace(/^third-party\//, "");
+}
+
+function isStloExtensionKey(value) {
+  const normalized = normalizeExtensionKey(value);
+  return (
+    STLO_EXTENSION_KEYS.has(normalized) ||
+    normalized.includes("lorebookordering") ||
+    normalized.includes("lorebook-ordering")
+  );
+}
+
+function collectDisabledExtensionKeys(settingsRoot) {
+  const disabled = new Set();
+  if (!settingsRoot || typeof settingsRoot !== "object") {
+    return disabled;
+  }
+
+  const candidates = [
+    settingsRoot.disabledExtensions,
+    settingsRoot.disabled_extensions,
+    settingsRoot.disabledExtensionNames,
+    settingsRoot.disabled_extension_names,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      for (const item of candidate) {
+        disabled.add(normalizeExtensionKey(item));
+      }
+    } else if (candidate && typeof candidate === "object") {
+      for (const [key, value] of Object.entries(candidate)) {
+        if (value) {
+          disabled.add(normalizeExtensionKey(key));
+        }
+      }
+    }
+  }
+
+  return disabled;
+}
+
+function getStloExtensionState() {
+  const roots = [
+    extension_settings,
+    window?.extension_settings,
+    window?.SillyTavern?.extensionSettings,
+  ].filter(Boolean);
+  const disabledKeys = new Set();
+  const candidates = [];
+
+  for (const root of roots) {
+    for (const key of collectDisabledExtensionKeys(root)) {
+      disabledKeys.add(key);
+    }
+
+    if (!root || typeof root !== "object") {
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(root)) {
+      if (!isStloExtensionKey(key)) {
+        continue;
+      }
+
+      candidates.push({ key, value });
+    }
+  }
+
+  const globalInstalled = Boolean(
+    window?.SillyTavernLorebookOrdering ||
+    window?.LorebookOrdering ||
+    window?.STLorebookOrdering ||
+    window?.STLO,
+  );
+  const installed = candidates.length > 0 || globalInstalled;
+  if (!installed) {
+    return { installed: false, enabled: false };
+  }
+
+  const disabledByKey = candidates.some((candidate) =>
+    disabledKeys.has(normalizeExtensionKey(candidate.key)),
+  );
+  const disabledByAnyStloKey = Array.from(disabledKeys).some((key) =>
+    isStloExtensionKey(key),
+  );
+  const disabledBySetting = candidates.some((candidate) =>
+    candidate.value &&
+    typeof candidate.value === "object" &&
+    (candidate.value.enabled === false || candidate.value.disabled === true),
+  );
+
+  return {
+    installed: true,
+    enabled: !disabledByKey && !disabledByAnyStloKey && !disabledBySetting,
+  };
+}
+
+function isStloAvailableForManualGroupLorebooks() {
+  const state = getStloExtensionState();
+  return state.installed && state.enabled;
+}
+
+function getManualGroupBindingIssues(stmbData = null, snapshot = null) {
+  const members = Array.isArray(snapshot?.members)
+    ? snapshot.members
+    : getValidManualGroupMembers();
+  const bindings =
+    snapshot?.bindings && typeof snapshot.bindings === "object" && !Array.isArray(snapshot.bindings)
+      ? snapshot.bindings
+      : getManualCharacterLorebookBindings(stmbData);
+  const issues = [];
+
+  for (const member of members) {
+    const lorebookName = String(bindings[member.key] || "").trim();
+    if (!lorebookName) {
+      issues.push({ member, reason: "missing" });
+    } else if (!Array.isArray(world_names) || !world_names.includes(lorebookName)) {
+      issues.push({ member, reason: "deleted", lorebookName });
+    }
+  }
+
+  return { members, bindings, issues };
+}
+
+function formatManualGroupBindingIssue(issue) {
+  if (issue.reason === "deleted") {
+    return tr(
+      "STMemoryBooks_GroupManualLorebookDeleted",
+      '{{name}}: "{{lorebookName}}" not found',
+      { name: issue.member.name, lorebookName: issue.lorebookName },
+    );
+  }
+
+  return tr(
+    "STMemoryBooks_GroupManualLorebookMissing",
+    "{{name}}: no lorebook selected",
+    { name: issue.member.name },
+  );
+}
+
+async function validateManualGroupLorebookBindingsForMemory(settings, context) {
+  if (
+    !settings?.moduleSettings?.manualModeEnabled ||
+    !context?.isGroupChat ||
+    !isStloAvailableForManualGroupLorebooks()
+  ) {
+    return { valid: true, members: [], bindings: {} };
+  }
+
+  const snapshot = context?.manualGroupLorebookBindings || null;
+  const stmbData = snapshot ? null : getSceneMarkers() || {};
+  const { members, bindings, issues } = getManualGroupBindingIssues(stmbData, snapshot);
+
+  if (members.length === 0) {
+    return {
+      valid: false,
+      handled: true,
+      error: translate(
+        "No group members are available for manual lorebook setup.",
+        "STMemoryBooks_GroupLorebooksNoMembers",
+      ),
+    };
+  }
+
+  if (issues.length > 0) {
+    const details = issues.map(formatManualGroupBindingIssue).join("; ");
+    return {
+      valid: false,
+      handled: true,
+      error: tr(
+        "STMemoryBooks_GroupManualLorebooksIncomplete",
+        "Group manual lorebooks are incomplete: {{details}}",
+        { details },
+      ),
+    };
+  }
+
+  return {
+    valid: true,
+    members,
+    bindings,
+    manualGroupLorebookBindings: {
+      members: deepClone(members),
+      bindings: deepClone(bindings),
+    },
+    memoryBooksContext: deepClone(context),
+  };
+}
+
+function createMemoryInclusionGroup(memoryResult) {
+  const sceneRange = String(memoryResult?.metadata?.sceneRange || "unknown").replace(/[^A-Za-z0-9_-]/g, "_");
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).slice(2, 8);
+  return `STMB-${sceneRange}-${timestamp}-${random}`;
+}
+
+function cloneMemoryResultForCharacter(memoryResult, characterFilterName) {
+  return {
+    ...memoryResult,
+    metadata: {
+      ...(memoryResult.metadata || {}),
+      characterFilterNames: [characterFilterName],
+    },
+  };
+}
+
+function removeLorebookEntryByUid(lorebookData, uid) {
+  if (!lorebookData?.entries || uid === undefined || uid === null) {
+    return false;
+  }
+
+  const uidString = String(uid);
+  if (Object.prototype.hasOwnProperty.call(lorebookData.entries, uidString)) {
+    delete lorebookData.entries[uidString];
+    return true;
+  }
+
+  for (const [entryKey, entry] of Object.entries(lorebookData.entries)) {
+    if (String(entry?.uid ?? "") === uidString) {
+      delete lorebookData.entries[entryKey];
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function removeLorebookEntriesByInclusionGroup(lorebookData, inclusionGroup) {
+  if (!lorebookData?.entries || !inclusionGroup) {
+    return false;
+  }
+
+  let removed = false;
+  for (const [entryKey, entry] of Object.entries(lorebookData.entries)) {
+    if (String(entry?.group ?? "") === String(inclusionGroup)) {
+      delete lorebookData.entries[entryKey];
+      removed = true;
+    }
+  }
+
+  return removed;
+}
+
+async function rollbackManualGroupLorebookWrites(writtenEntries, lorebookDataByName, inclusionGroup) {
+  const touchedLorebooks = new Set();
+
+  for (const written of writtenEntries) {
+    const lorebookData = lorebookDataByName.get(written.lorebookName);
+    if (!lorebookData) {
+      continue;
+    }
+
+    if (removeLorebookEntryByUid(lorebookData, written.entryId)) {
+      touchedLorebooks.add(written.lorebookName);
+    }
+  }
+
+  for (const [lorebookName, lorebookData] of lorebookDataByName.entries()) {
+    if (removeLorebookEntriesByInclusionGroup(lorebookData, inclusionGroup)) {
+      touchedLorebooks.add(lorebookName);
+    }
+  }
+
+  for (const lorebookName of touchedLorebooks) {
+    await saveWorldInfo(lorebookName, lorebookDataByName.get(lorebookName), true);
+    try {
+      await Promise.resolve(reloadEditor(lorebookName));
+    } catch (e) {
+      console.warn(`STMemoryBooks: reloadEditor failed after rolling back "${lorebookName}":`, e);
+    }
+  }
+}
+
+async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation, options = {}) {
+  const { members = [], bindings = {} } = options;
+  const inclusionGroup = createMemoryInclusionGroup(memoryResult);
+  const speakerNames = Array.isArray(memoryResult?.metadata?.characterFilterNames)
+    ? Array.from(new Set(memoryResult.metadata.characterFilterNames.map((name) => String(name || "").trim()).filter(Boolean)))
+    : [];
+  const membersByFilterName = new Map(
+    members.map((member) => [member.characterFilterName, member]),
+  );
+  const copyTargets = [];
+
+  for (const speakerName of speakerNames) {
+    const member = membersByFilterName.get(speakerName);
+    if (!member) {
+      continue;
+    }
+
+    const lorebookName = String(bindings[member.key] || "").trim();
+    if (!lorebookName) {
+      continue;
+    }
+
+    copyTargets.push({ speakerName, member, lorebookName });
+  }
+
+  const lorebookDataByName = new Map();
+  for (const target of copyTargets) {
+    if (lorebookDataByName.has(target.lorebookName)) {
+      continue;
+    }
+
+    const lorebookData = target.lorebookName === lorebookValidation.name
+      ? lorebookValidation.data
+      : await loadWorldInfo(target.lorebookName);
+    if (!lorebookData) {
+      throw new Error(__st_t_tag`Failed to load manual lorebook "${target.lorebookName}" for ${target.member.name}.`);
+    }
+
+    lorebookDataByName.set(target.lorebookName, lorebookData);
+  }
+  lorebookDataByName.set(lorebookValidation.name, lorebookValidation.data);
+
+  const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation, {
+    updateHighestMemoryProcessed: false,
+    ...(options.primaryAddOptions || {}),
+    inclusionGroup,
+  });
+
+  if (!addResult.success) {
+    return addResult;
+  }
+
+  const writtenEntries = [{
+    lorebookName: addResult.lorebookName,
+    entryId: addResult.entryId,
+    entryTitle: addResult.entryTitle,
+    inclusionGroup,
+  }];
+  const copiedResults = [];
+
+  try {
+    for (const target of copyTargets) {
+      const copyResult = await addMemoryToLorebook(
+        cloneMemoryResultForCharacter(memoryResult, target.speakerName),
+        { valid: true, name: target.lorebookName, data: lorebookDataByName.get(target.lorebookName) },
+        {
+          inclusionGroup,
+          characterFilterNames: [target.speakerName],
+          autoHide: false,
+          updateHighestMemoryProcessed: false,
+          refreshEditor: false,
+          showNotification: false,
+        },
+      );
+
+      if (!copyResult.success) {
+        throw new Error(copyResult.error || __st_t_tag`Failed to add memory copy to "${target.lorebookName}".`);
+      }
+
+      writtenEntries.push({
+        lorebookName: copyResult.lorebookName,
+        entryId: copyResult.entryId,
+        entryTitle: copyResult.entryTitle,
+        inclusionGroup,
+      });
+      copiedResults.push(copyResult);
+    }
+  } catch (error) {
+    try {
+      await rollbackManualGroupLorebookWrites(writtenEntries, lorebookDataByName, inclusionGroup);
+    } catch (rollbackError) {
+      console.error("STMemoryBooks: Failed to roll back partial manual group lorebook writes:", rollbackError);
+      return {
+        success: false,
+        error: error.message,
+        message: error.message,
+        inclusionGroup,
+        partialFailure: true,
+        rollbackSucceeded: false,
+        writtenEntries,
+        rollbackError: rollbackError.message,
+      };
+    }
+
+    return {
+      success: false,
+      error: error.message,
+      message: error.message,
+      inclusionGroup,
+      partialFailure: false,
+      rollbackSucceeded: true,
+      writtenEntries,
+    };
+  }
+
+  return {
+    ...addResult,
+    inclusionGroup,
+    copiedCount: copiedResults.length,
+    copiedResults,
+  };
+}
+
 /**
  * Extract and validate settings from confirmation popup or defaults
  */
@@ -2354,6 +2801,7 @@ async function executeMemoryGeneration(
   effectiveSettings,
   retryCount = 0,
   stmbTask = null,
+  manualGroupLorebookValidation = null,
 ) {
   const ownsTask = !stmbTask;
   if (!stmbTask) stmbTask = createStmbInFlightTask("MemoryGeneration");
@@ -2576,6 +3024,8 @@ async function executeMemoryGeneration(
           lorebookValidation,
           effectiveSettings,
           nextRetryCount,
+          null,
+          manualGroupLorebookValidation,
         );
       }
 
@@ -2628,10 +3078,27 @@ async function executeMemoryGeneration(
     throwIfStmbStopped(runEpoch);
 
     // Add to lorebook silently
-    const addResult = await addMemoryToLorebook(
-      finalMemoryResult,
-      lorebookValidation,
-    );
+    const saveContext = getCurrentMemoryBooksContext();
+    const resolvedManualGroupLorebooks =
+      manualGroupLorebookValidation ||
+      await validateManualGroupLorebookBindingsForMemory(settings, saveContext);
+    if (!resolvedManualGroupLorebooks.valid) {
+      throw new Error(resolvedManualGroupLorebooks.error);
+    }
+
+    const addResult =
+      settings?.moduleSettings?.manualModeEnabled &&
+      saveContext.isGroupChat &&
+      isStloAvailableForManualGroupLorebooks()
+        ? await addMemoryToManualGroupLorebooks(
+            finalMemoryResult,
+            lorebookValidation,
+            resolvedManualGroupLorebooks,
+          )
+        : await addMemoryToLorebook(
+            finalMemoryResult,
+            lorebookValidation,
+          );
 
     if (!addResult.success) {
       throw new Error(addResult.error || "Failed to add memory to lorebook");
@@ -2727,6 +3194,7 @@ async function executeMemoryGeneration(
         effectiveSettings,
         retryCount + 1,
         stmbTask,
+        manualGroupLorebookValidation,
       );
     }
 
@@ -2757,6 +3225,10 @@ async function executeMemoryGeneration(
         memoryFetchResult,
         sceneStats,
         settings,
+        memoryBooksContext: deepClone(manualGroupLorebookValidation?.memoryBooksContext),
+        manualGroupLorebookBindings: deepClone(
+          manualGroupLorebookValidation?.manualGroupLorebookBindings,
+        ),
         summaryCount,
         tokenThreshold,
         sceneRange:
@@ -2886,7 +3358,12 @@ async function resolveAdditionalContextSnapshot(profileSettings, options = {}) {
   return { cancelled: false, entries: [], source: "none" };
 }
 
-async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSettings) {
+async function buildQueuedMemoryJob(
+  sceneData,
+  lorebookValidation,
+  effectiveSettings,
+  manualGroupLorebookValidation = null,
+) {
   const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
   const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
   const compiledScene = compileScene(sceneRequest);
@@ -2913,6 +3390,18 @@ async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSett
   compiledScene.additionalContextEntries = deepClone(additionalContextSnapshot.entries);
   profileSnapshot.prompt = await getEffectivePromptAsync(profileSnapshot);
   const chatRef = getCurrentStmbChatRef();
+  const memoryBooksContext =
+    manualGroupLorebookValidation?.memoryBooksContext ||
+    getCurrentMemoryBooksContext();
+  const manualGroupLorebookBindings =
+    manualGroupLorebookValidation?.manualGroupLorebookBindings ||
+    (
+      settings?.moduleSettings?.manualModeEnabled &&
+      memoryBooksContext?.isGroupChat &&
+      isStloAvailableForManualGroupLorebooks()
+        ? createManualGroupLorebookBindingSnapshot()
+        : null
+    );
   const lorebookName = String(lorebookValidation?.name || "").trim();
 
   return {
@@ -2935,6 +3424,8 @@ async function buildQueuedMemoryJob(sceneData, lorebookValidation, effectiveSett
       tokenThreshold,
       settings: deepClone(settings),
       memoryFetchResult: deepClone(memoryFetchResult),
+      memoryBooksContext: deepClone(memoryBooksContext),
+      manualGroupLorebookBindings,
     },
   };
 }
@@ -3114,15 +3605,43 @@ async function executeQueuedMemoryJob(job, jobContext) {
         throw error;
       }
     }
-    addResult = await addMemoryToLorebook(
-      finalMemoryResult,
-      { valid: true, name: lorebookName, data: freshLorebook },
-      {
-        autoHide: false,
-        refreshEditor: getStmbChatKey(job.chatRef) === getStmbChatKey(),
-        updateHighestMemoryProcessed: false,
-      },
+    const queuedContext = {
+      ...(payload.memoryBooksContext || getCurrentMemoryBooksContext()),
+      manualGroupLorebookBindings: payload.manualGroupLorebookBindings || null,
+    };
+    const manualGroupLorebooks = await validateManualGroupLorebookBindingsForMemory(
+      settings,
+      queuedContext,
     );
+    if (!manualGroupLorebooks.valid) {
+      throw new Error(manualGroupLorebooks.error);
+    }
+    const baseValidation = { valid: true, name: lorebookName, data: freshLorebook };
+    addResult =
+      settings.moduleSettings?.manualModeEnabled &&
+      queuedContext.isGroupChat &&
+      isStloAvailableForManualGroupLorebooks()
+        ? await addMemoryToManualGroupLorebooks(
+            finalMemoryResult,
+            baseValidation,
+            {
+              ...manualGroupLorebooks,
+              primaryAddOptions: {
+                autoHide: false,
+                refreshEditor: getStmbChatKey(job.chatRef) === getStmbChatKey(),
+                updateHighestMemoryProcessed: false,
+              },
+            },
+          )
+        : await addMemoryToLorebook(
+            finalMemoryResult,
+            baseValidation,
+            {
+              autoHide: false,
+              refreshEditor: getStmbChatKey(job.chatRef) === getStmbChatKey(),
+              updateHighestMemoryProcessed: false,
+            },
+          );
     if (!addResult?.success) {
       throw new Error(addResult?.error || "Failed to add memory to lorebook");
     }
@@ -3600,6 +4119,23 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       return false;
     }
 
+    const manualGroupLorebookValidation =
+      await validateManualGroupLorebookBindingsForMemory(settings, context);
+    if (!manualGroupLorebookValidation.valid) {
+      toastr.error(manualGroupLorebookValidation.error, "STMemoryBooks");
+      try {
+        if (currentPopupInstance) {
+          await refreshPopupContent();
+        } else {
+          void showSettingsPopup();
+        }
+      } catch (e) {
+        console.warn("STMemoryBooks: Failed to refresh manual group lorebook UI:", e);
+      }
+      isProcessingMemory = false;
+      return false;
+    }
+
     const allMemories = identifyMemoryEntries(lorebookValidation.data);
     const newStart = sceneData.sceneStart;
     const newEnd = sceneData.sceneEnd;
@@ -3657,6 +4193,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         sceneData,
         lorebookValidation,
         effectiveSettings,
+        manualGroupLorebookValidation,
       );
       if (!job) {
         return false;
@@ -3674,6 +4211,9 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       sceneData,
       lorebookValidation,
       effectiveSettings,
+      0,
+      null,
+      manualGroupLorebookValidation,
     );
   } catch (error) {
     console.error(
@@ -3793,6 +4333,160 @@ function updateLorebookStatusDisplay() {
   // Manual lorebook button visibility is now handled by populateInlineButtons()
 }
 
+function appendLorebookSelectOptions(select, currentLorebook = null) {
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = translate("None selected", "STMemoryBooks_NoneSelected");
+  placeholder.selected = !currentLorebook;
+  placeholder.disabled = true;
+  select.appendChild(placeholder);
+
+  if (
+    currentLorebook &&
+    (!Array.isArray(world_names) || !world_names.includes(currentLorebook))
+  ) {
+    const missingOption = document.createElement("option");
+    missingOption.value = currentLorebook;
+    missingOption.textContent = __st_t_tag`Missing: ${currentLorebook}`;
+    missingOption.selected = true;
+    select.appendChild(missingOption);
+  }
+
+  for (const name of world_names || []) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    option.selected = name === currentLorebook;
+    select.appendChild(option);
+  }
+}
+
+function renderManualGroupLorebookBindings(container, stmbData) {
+  container.innerHTML = "";
+
+  const context = getCurrentMemoryBooksContext();
+  if (!context.isGroupChat) {
+    return;
+  }
+
+  const members = getValidManualGroupMembers();
+  const stloAvailable = isStloAvailableForManualGroupLorebooks();
+  const stloRequiredText = translate(
+    "Individual lorebook designation requires SillyTavern-LorebookOrdering.",
+    "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO",
+  );
+  if (members.length === 0) {
+    const empty = document.createElement("small");
+    empty.className = "opacity50p";
+    empty.textContent = translate(
+      "No group members are available for manual lorebook setup.",
+      "STMemoryBooks_GroupLorebooksNoMembers",
+    );
+    container.appendChild(empty);
+    return;
+  }
+
+  const title = document.createElement("h4");
+  title.textContent = translate(
+    "Group Character Lorebooks",
+    "STMemoryBooks_GroupCharacterLorebooks",
+  );
+  container.appendChild(title);
+
+  const help = document.createElement("small");
+  help.className = "opacity50p";
+  help.textContent = stloAvailable
+    ? translate(
+        "Select a lorebook for every group member. The same lorebook may be selected more than once.",
+        "STMemoryBooks_GroupCharacterLorebooksDesc",
+      )
+    : stloRequiredText;
+  help.title = stloAvailable ? "" : stloRequiredText;
+  container.appendChild(help);
+
+  const bindings = getManualCharacterLorebookBindings(stmbData);
+  const rows = document.createElement("div");
+  rows.className = "stmb-manual-group-lorebook-list";
+
+  for (const member of members) {
+    const currentLorebook = String(bindings[member.key] || "").trim();
+    const row = document.createElement("div");
+    row.className = "stmb-manual-group-lorebook-row";
+    if (!stloAvailable) {
+      row.classList.add("stmb-manual-group-lorebook-row-disabled");
+      row.title = stloRequiredText;
+    }
+
+    const label = document.createElement("label");
+    label.className = "stmb-manual-group-lorebook-label";
+    label.textContent = member.name;
+    row.appendChild(label);
+
+    const select = document.createElement("select");
+    select.className = "text_pole stmb-manual-group-lorebook-select";
+    select.dataset.memberKey = member.key;
+    select.disabled = !stloAvailable;
+    select.title = stloAvailable ? "" : stloRequiredText;
+    appendLorebookSelectOptions(select, currentLorebook);
+    select.addEventListener("change", () => {
+      if (!stloAvailable) {
+        return;
+      }
+
+      const selectedLorebook = String(select.value || "").trim();
+      if (!selectedLorebook) {
+        return;
+      }
+
+      const liveData = getSceneMarkers() || {};
+      const liveBindings = getManualCharacterLorebookBindings(liveData);
+      liveBindings[member.key] = selectedLorebook;
+      saveMetadataForCurrentContext();
+      toastr.success(
+        tr(
+          "STMemoryBooks_GroupMemberLorebookSet",
+          '{{name}} manual lorebook set to "{{lorebookName}}"',
+          { name: member.name, lorebookName: selectedLorebook },
+        ),
+        "STMemoryBooks",
+      );
+      refreshPopupContent();
+    });
+    row.appendChild(select);
+
+    const clearButton = document.createElement("button");
+    clearButton.type = "button";
+    clearButton.className = "menu_button stmb-nowrap-button";
+    clearButton.textContent = translate("Clear", "STMemoryBooks_Clear");
+    clearButton.disabled = !stloAvailable || !currentLorebook;
+    clearButton.title = stloAvailable ? "" : stloRequiredText;
+    clearButton.addEventListener("click", () => {
+      if (!stloAvailable) {
+        return;
+      }
+
+      const liveData = getSceneMarkers() || {};
+      const liveBindings = getManualCharacterLorebookBindings(liveData);
+      delete liveBindings[member.key];
+      saveMetadataForCurrentContext();
+      toastr.success(
+        tr(
+          "STMemoryBooks_GroupMemberLorebookCleared",
+          "{{name}} manual lorebook cleared",
+          { name: member.name },
+        ),
+        "STMemoryBooks",
+      );
+      refreshPopupContent();
+    });
+    row.appendChild(clearButton);
+
+    rows.appendChild(row);
+  }
+
+  container.appendChild(rows);
+}
+
 /**
  * Populate inline button containers with dynamic buttons (profile and manual lorebook buttons)
  */
@@ -3805,6 +4499,9 @@ function populateInlineButtons() {
   // Get all button containers
   const manualLorebookContainer = currentPopupInstance.content.querySelector(
     "#stmb-manual-lorebook-buttons",
+  );
+  const manualGroupLorebookContainer = currentPopupInstance.content.querySelector(
+    "#stmb-manual-group-lorebook-bindings",
   );
   const profileButtonsContainer = currentPopupInstance.content.querySelector(
     "#stmb-profile-buttons",
@@ -3905,6 +4602,12 @@ function populateInlineButtons() {
       button.addEventListener("click", buttonConfig.action);
       manualLorebookContainer.appendChild(button);
     });
+
+    if (manualGroupLorebookContainer) {
+      renderManualGroupLorebookBindings(manualGroupLorebookContainer, stmbData);
+    }
+  } else if (manualGroupLorebookContainer) {
+    manualGroupLorebookContainer.innerHTML = "";
   }
 
   if (!profileButtonsContainer || !extraFunctionContainer) return;
@@ -7022,11 +7725,26 @@ function setupSettingsEventListeners() {
         // Check if there's a chat-bound lorebook
         const chatBoundLorebook = chat_metadata?.[METADATA_KEY];
         const stmbData = getSceneMarkers() || {};
+        const context = getCurrentMemoryBooksContext();
 
         // If switching to manual mode and no manual lorebook is set
         if (!stmbData.manualLorebook) {
+          if (context.isGroupChat) {
+            toastr.info(
+              translate(
+                "Please select a group lorebook for manual mode",
+                "STMemoryBooks_PleaseSelectGroupLorebookForManualMode",
+              ),
+              "STMemoryBooks",
+            );
+            const selectedLorebook = await showLorebookSelectionPopup();
+            if (!selectedLorebook) {
+              e.target.checked = false;
+              return;
+            }
+          }
           // If there's a chat-bound lorebook, suggest using it or selecting a different one
-          if (chatBoundLorebook) {
+          else if (chatBoundLorebook) {
             const popupContent = `
                             <h4 data-i18n="STMemoryBooks_ManualLorebookSetupTitle">Manual Lorebook Setup</h4>
                             <div class="world_entry_form_control">
@@ -8322,10 +9040,29 @@ async function applyManualFixedJson(correctedRaw) {
     };
 
     throwIfStmbStopped(runEpoch);
-    const addResult = await addMemoryToLorebook(
-      memoryResult,
-      context.lorebookValidation,
-    );
+    const settings = context.settings || initializeSettings();
+    const saveContext = {
+      ...(context.memoryBooksContext || getCurrentMemoryBooksContext()),
+      manualGroupLorebookBindings: context.manualGroupLorebookBindings || null,
+    };
+    const manualGroupLorebooks =
+      await validateManualGroupLorebookBindingsForMemory(settings, saveContext);
+    if (!manualGroupLorebooks.valid) {
+      throw new Error(manualGroupLorebooks.error);
+    }
+    const addResult =
+      settings?.moduleSettings?.manualModeEnabled &&
+      saveContext.isGroupChat &&
+      isStloAvailableForManualGroupLorebooks()
+        ? await addMemoryToManualGroupLorebooks(
+            memoryResult,
+            context.lorebookValidation,
+            manualGroupLorebooks,
+          )
+        : await addMemoryToLorebook(
+            memoryResult,
+            context.lorebookValidation,
+          );
     throwIfStmbStopped(runEpoch);
 
     if (!addResult.success) {
