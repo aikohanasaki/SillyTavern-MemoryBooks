@@ -1182,6 +1182,9 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 characterName: compiledScene.metadata.characterName,
                 userName: compiledScene.metadata.userName,
                 chatId: compiledScene.metadata.chatId,
+                characterFilterNames: Array.isArray(compiledScene.metadata.characterFilterNames)
+                    ? [...compiledScene.metadata.characterFilterNames]
+                    : undefined,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',

@@ -613,6 +613,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
         orderNumberLabel: 'memory',
         showOrderClampNotification: true,
     });
+    applyMemoryCharacterFilter(entry, memoryResult);
     if (memoryResult.metadata?.sceneRange) { // Set metadata for scene range if available
         const rangeParts = memoryResult.metadata.sceneRange.split('-');
         if (rangeParts.length === 2) {
@@ -621,6 +622,39 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
         }
     }
     
+}
+
+function applyMemoryCharacterFilter(entry, memoryResult) {
+    const names = normalizeCharacterFilterNames(memoryResult?.metadata?.characterFilterNames);
+    if (names.length === 0) {
+        return;
+    }
+
+    entry.characterFilter = {
+        isExclude: false,
+        names,
+        tags: [],
+    };
+}
+
+function normalizeCharacterFilterNames(value) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const seen = new Set();
+    const names = [];
+    for (const item of value) {
+        const name = String(item || '').trim();
+        if (!name || seen.has(name)) {
+            continue;
+        }
+
+        seen.add(name);
+        names.push(name);
+    }
+
+    return names;
 }
 
 /**
