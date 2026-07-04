@@ -1128,5 +1128,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "Usar contexto adicional",
   "STMemoryBooks_SidePromptAdditionalContextSource": "Fuente de contexto adicional",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Seguir chat",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "Seguir chat usa el contexto adicional de este chat. Elegir un ajuste de contexto con nombre lo reemplaza para este side prompt."
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Seguir chat usa el contexto adicional de este chat. Elegir un ajuste de contexto con nombre lo reemplaza para este side prompt.",
+  "STMemoryBooks_GroupParticipants_Title": "Confirmar participantes de la memoria",
+  "STMemoryBooks_GroupParticipants_Desc": "Selecciona los personajes a los que se aplica esta memoria. Si no seleccionas ninguno, se aplicará a todos los personajes del grupo.",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "Aceptar automáticamente los participantes detectados en el futuro",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "Algunos lorebooks están por debajo del umbral",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "Algunos lorebooks vinculados no tienen suficientes entradas elegibles para crear {{targetLabel}}. ¿Continuar con los lorebooks listos?",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "Se crearon {{count}} resúmenes consolidados en lorebooks vinculados.",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "Las vistas previas de consolidación actualmente revisan solo el lorebook de grupo. Desactiva las vistas previas o activa trabajos en segundo plano para procesar todos los lorebooks vinculados juntos.",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} trabajos de consolidación en cola.",
+  "STMemoryBooks_Ready": "Listo",
+  "STMemoryBooks_Skipped": "Omitido",
+  "STMemoryBooks_Continue": "Continuar"
 }

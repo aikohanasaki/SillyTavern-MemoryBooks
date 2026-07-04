@@ -1123,5 +1123,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "追加コンテキストを使用",
   "STMemoryBooks_SidePromptAdditionalContextSource": "追加コンテキストのソース",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "チャットに従う",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "チャットに従うと、このチャットの追加コンテキストを使用します。名前付きコンテキスト設定を選ぶと、このサイドプロンプトではそれが優先されます。"
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "チャットに従うと、このチャットの追加コンテキストを使用します。名前付きコンテキスト設定を選ぶと、このサイドプロンプトではそれが優先されます。",
+  "STMemoryBooks_GroupParticipants_Title": "メモリーの参加者を確認",
+  "STMemoryBooks_GroupParticipants_Desc": "このメモリーが適用されるキャラクターを選択します。何も選択しない場合、グループ内の全キャラクターに適用されます。",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "今後は検出された参加者を自動的に承認",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "一部の lorebook がしきい値未満です",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "一部の紐付け済み lorebook には {{targetLabel}} を作成するための対象エントリが足りません。準備できている lorebook で続行しますか？",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "紐付け済み lorebook 全体で {{count}} 件の統合サマリーを作成しました。",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "統合プレビューは現在グループ lorebook のみを確認します。すべての紐付け済み lorebook をまとめて処理するには、プレビューを無効にするかバックグラウンドジョブを有効にしてください。",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} 件の統合ジョブをキューに追加しました。",
+  "STMemoryBooks_Ready": "準備完了",
+  "STMemoryBooks_Skipped": "スキップ",
+  "STMemoryBooks_Continue": "続行"
 }

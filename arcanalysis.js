@@ -382,6 +382,16 @@ export function buildBriefsFromEntries(entries) {
   const briefs = [];
   for (const e of entries) {
     if (!e || typeof e !== "object") continue;
+    if (e.__stmbGapMarker) {
+      briefs.push({
+        id: String(e.id || `gap-${briefs.length + 1}`),
+        order: Number.isFinite(Number(e.order)) ? Number(e.order) : 0,
+        content: String(e.content || "").trim(),
+        title: String(e.title || "Chronology gap").trim(),
+        gapMarker: true,
+      });
+      continue;
+    }
     const id = String(e.uid ?? "");
     const order = extractNumberFromTitle(e.comment ?? "") ?? 0;
     const content = String(e.content ?? "").trim();
@@ -466,7 +476,7 @@ export function buildSummaryAnalysisPrompt({
 
     lines.push(`=== ${childTierLabel} ${memNo} ===`);
     lines.push(`Title: ${title}`);
-    lines.push(`Contents: ${content}`);
+    lines.push(b.gapMarker ? `Note: ${content}` : `Contents: ${content}`);
     lines.push(`=== end ${childTierLabel} ${memNo} ===`);
     lines.push("");
   });
@@ -642,7 +652,12 @@ export async function runSummaryAnalysisSequential(
     .map((x) => (x && x.entry ? x.entry : x))
     .filter(Boolean);
   const allBriefs = buildBriefsFromEntries(rawEntries);
-  const remainingMap = new Map(allBriefs.map((b) => [b.id, b]));
+  const gapBriefs = allBriefs.filter((b) => b.gapMarker);
+  const remainingMap = new Map(
+    allBriefs
+      .filter((b) => !b.gapMarker)
+      .map((b) => [b.id, b]),
+  );
   const acceptedSummaries = [];
   // Keep the latest raw model output for UX/debug (used when no usable arcs are produced).
   let lastRawText = "";
@@ -694,6 +709,18 @@ export async function runSummaryAnalysisSequential(
     }
 
     if (batch.length === 0) break;
+    if (gapBriefs.length > 0 && batch.length > 0) {
+      const batchOrders = batch.map((b) => Number(b.order || 0));
+      const minOrder = Math.min(...batchOrders);
+      const maxOrder = Math.max(...batchOrders);
+      for (const gap of gapBriefs) {
+        const order = Number(gap.order || 0);
+        if (order >= minOrder && order <= maxOrder && !batch.find((b) => b.id === gap.id)) {
+          batch.push(gap);
+        }
+      }
+      batch.sort((a, b) => a.order - b.order);
+    }
 
     // Pass/batch debug
     try {
@@ -848,7 +875,7 @@ export async function runSummaryAnalysisSequential(
       });
     }
 
-    const assigned = batch.filter((b) => !unassignedIds.has(b.id));
+    const assigned = batch.filter((b) => !b.gapMarker && !unassignedIds.has(b.id));
 
     // Parse/assignment debug
     try {
@@ -1062,6 +1089,41 @@ function extractSummarySequenceFromTitle(title) {
   return null;
 }
 
+function normalizeCharacterFilterNames(value) {
+  const names = [];
+  const seen = new Set();
+  for (const item of Array.isArray(value) ? value : []) {
+    const name = String(item || "").trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    names.push(name);
+  }
+  return names;
+}
+
+function collectSummarySourceCharacterFilter(summary, lorebookData) {
+  const ids = new Set((summary?.memberIds || []).map(String));
+  if (ids.size === 0) return [];
+  const names = [];
+  const seen = new Set();
+  for (const entry of Object.values(lorebookData?.entries || {})) {
+    if (!ids.has(String(entry?.uid))) continue;
+    const entryNames = normalizeCharacterFilterNames(entry?.characterFilter?.names);
+    if (entryNames.length === 0) {
+      // A source entry with no character filter was globally visible;
+      // the consolidated summary must remain unrestricted too.
+      return [];
+    }
+    for (const name of entryNames) {
+      if (!seen.has(name)) {
+        seen.add(name);
+        names.push(name);
+      }
+    }
+  }
+  return names;
+}
+
 export function getNextSummaryNumber(lorebookData, targetTier = 1) {
   const entries = Object.values(lorebookData?.entries || {});
   let maxNum = 0;
@@ -1199,6 +1261,20 @@ export async function commitSummaryEntries({
         key: Array.isArray(keywords) ? keywords : [],
         disable: false,
       };
+      const characterFilterNames = normalizeCharacterFilterNames(
+        summary.characterFilterNames || collectSummarySourceCharacterFilter(summary, lorebookData),
+      );
+      if (characterFilterNames.length > 0) {
+        entryOverrides.characterFilter = {
+          isExclude: false,
+          names: characterFilterNames,
+          tags: [],
+        };
+      }
+      if (summary.inclusionGroup) {
+        entryOverrides.group = String(summary.inclusionGroup);
+        entryOverrides.STMB_inclusionGroup = String(summary.inclusionGroup);
+      }
       throwIfStmbStopped(runEpoch);
       const res = await upsertLorebookEntriesBatch(
         lorebookName,

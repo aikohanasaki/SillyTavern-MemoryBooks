@@ -406,6 +406,7 @@ const defaultSettings = {
     autoConsolidationPromptEnabled: false,
     autoConsolidationTargetTiers: [1],
     autoCreateLorebook: false,
+    autoAcceptGroupParticipants: false,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     compactionPromptTemplate: DEFAULT_COMPACTION_PROMPT_TEMPLATE,
     compactionProfileIndex: 0,
@@ -2055,6 +2056,9 @@ function validateSettings(settings) {
   if (settings.moduleSettings.autoCreateLorebook === undefined) {
     settings.moduleSettings.autoCreateLorebook = false;
   }
+  if (settings.moduleSettings.autoAcceptGroupParticipants === undefined) {
+    settings.moduleSettings.autoAcceptGroupParticipants = false;
+  }
 
   // Validate unhide-before-memory setting (defaults to false)
   if (settings.moduleSettings.unhideBeforeMemory === undefined) {
@@ -2227,6 +2231,168 @@ function createManualGroupLorebookBindingSnapshot(stmbData = null) {
     members: deepClone(getValidManualGroupMembers()),
     bindings: deepClone(getManualCharacterLorebookBindings(stmbData)),
   };
+}
+
+function normalizeCharacterFilterNamesForGroup(value) {
+  const seen = new Set();
+  const names = [];
+  for (const item of Array.isArray(value) ? value : []) {
+    const name = String(item || "").trim();
+    if (!name || seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    names.push(name);
+  }
+  return names;
+}
+
+function getAllManualGroupCharacterFilterNames(manualGroupLorebooks = null) {
+  return normalizeCharacterFilterNamesForGroup(
+    (manualGroupLorebooks?.members || getValidManualGroupMembers())
+      .map((member) => member?.characterFilterName),
+  );
+}
+
+function ensureGroupMemoryParticipantFilters(memoryResult, manualGroupLorebooks = null) {
+  const allNames = getAllManualGroupCharacterFilterNames(manualGroupLorebooks);
+  const existing = normalizeCharacterFilterNamesForGroup(
+    memoryResult?.metadata?.characterFilterNames,
+  ).filter((name) => allNames.length === 0 || allNames.includes(name));
+  const names = existing.length > 0
+    ? existing
+    : allNames;
+
+  if (memoryResult && typeof memoryResult === "object") {
+    memoryResult.metadata = {
+      ...(memoryResult.metadata || {}),
+      characterFilterNames: names,
+    };
+  }
+
+  return names;
+}
+
+function getNextCanonicalMemoryNumber(lorebookData) {
+  const entries = identifyMemoryEntries(lorebookData);
+  let maxNumber = 0;
+  for (const entry of entries) {
+    const number = Number(entry?.number);
+    if (Number.isFinite(number) && number > maxNumber) {
+      maxNumber = number;
+    }
+  }
+  return maxNumber + 1;
+}
+
+function sanitizeInclusionGroupPart(value, fallback = "Memory") {
+  const sanitized = String(value || "")
+    .trim()
+    .replace(/[^\p{L}\p{N}_-]+/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return sanitized || fallback;
+}
+
+function createCanonicalMemoryInclusionGroup(memoryResult, lorebookData = null, context = null) {
+  const number = getNextCanonicalMemoryNumber(lorebookData || { entries: {} });
+  const chatName = context?.groupName || context?.chatName || context?.chatId || "Chat";
+  return `${sanitizeInclusionGroupPart(chatName, "Chat")}-Memory-${String(number).padStart(3, "0")}`;
+}
+
+function getCanonicalMemoryCopyMetadata({ inclusionGroup, canonicalLorebookName, canonicalEntryId = null }) {
+  const match = String(inclusionGroup || "").match(/Memory-(\d+)$/);
+  const canonicalMemoryNumber = match ? Number(match[1]) : null;
+  return {
+    STMB_canonical: true,
+    STMB_canonicalLorebook: canonicalLorebookName || "",
+    STMB_canonicalEntryUid: canonicalEntryId,
+    STMB_canonicalMemoryNumber: Number.isFinite(canonicalMemoryNumber) ? canonicalMemoryNumber : null,
+    STMB_inclusionGroup: inclusionGroup || "",
+  };
+}
+
+function applyGroupMemoryParticipantFilters(compiledScene, names) {
+  if (!compiledScene || typeof compiledScene !== "object") {
+    return [];
+  }
+  const characterFilterNames = normalizeCharacterFilterNamesForGroup(names);
+  compiledScene.metadata = {
+    ...(compiledScene.metadata || {}),
+    characterFilterNames,
+  };
+  return characterFilterNames;
+}
+
+async function confirmGroupMemoryParticipants(compiledScene, settings, manualGroupLorebooks) {
+  if (
+    !settings?.moduleSettings?.manualModeEnabled ||
+    !manualGroupLorebooks?.valid ||
+    !Array.isArray(manualGroupLorebooks.members) ||
+    manualGroupLorebooks.members.length === 0
+  ) {
+    return true;
+  }
+
+  const allNames = getAllManualGroupCharacterFilterNames(manualGroupLorebooks);
+  if (allNames.length === 0) {
+    return true;
+  }
+
+  const detected = normalizeCharacterFilterNamesForGroup(
+    compiledScene?.metadata?.characterFilterNames,
+  ).filter((name) => allNames.includes(name));
+  const selected = new Set(detected.length > 0 ? detected : allNames);
+
+  if (settings.moduleSettings.autoAcceptGroupParticipants) {
+    applyGroupMemoryParticipantFilters(compiledScene, Array.from(selected));
+    return true;
+  }
+
+  const rows = manualGroupLorebooks.members.map((member) => {
+    const name = String(member?.characterFilterName || "").trim();
+    if (!name) return "";
+    const checked = selected.has(name) ? " checked" : "";
+    const label = String(member?.name || name);
+    return `<label class="checkbox_label"><input type="checkbox" class="stmb-group-participant" value="${escapeHtml(name)}"${checked}> <span>${escapeHtml(label)}</span></label>`;
+  }).join("");
+
+  const content = `
+    <h3>${escapeHtml(translate("Confirm memory participants", "STMemoryBooks_GroupParticipants_Title"))}</h3>
+    <p>${escapeHtml(translate("Select the characters this memory applies to. If none are selected, it will apply to every group character.", "STMemoryBooks_GroupParticipants_Desc"))}</p>
+    <div class="world_entry_form_control">
+      <div class="flex-container flexFlowColumn">${rows}</div>
+    </div>
+    <label class="checkbox_label">
+      <input type="checkbox" id="stmb-group-participants-auto">
+      <span>${escapeHtml(translate("Automatically accept detected participants in future", "STMemoryBooks_GroupParticipants_AutoAccept"))}</span>
+    </label>
+  `;
+
+  const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.CONFIRM, "", {
+    okButton: translate("Save", "STMemoryBooks_Save"),
+    cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
+  });
+  const result = await popup.show();
+  if (result !== POPUP_RESULT.AFFIRMATIVE) {
+    return false;
+  }
+
+  const chosen = Array.from(popup.dlg.querySelectorAll(".stmb-group-participant"))
+    .filter((checkbox) => checkbox.checked)
+    .map((checkbox) => checkbox.value);
+  applyGroupMemoryParticipantFilters(
+    compiledScene,
+    chosen.length > 0 ? chosen : allNames,
+  );
+
+  if (popup.dlg.querySelector("#stmb-group-participants-auto")?.checked) {
+    settings.moduleSettings.autoAcceptGroupParticipants = true;
+    extension_settings.STMemoryBooks.moduleSettings.autoAcceptGroupParticipants = true;
+    saveSettingsDebounced();
+  }
+
+  return true;
 }
 
 function normalizeExtensionKey(value) {
@@ -2427,22 +2593,6 @@ async function validateManualGroupLorebookBindingsForMemory(settings, context) {
   };
 }
 
-function createMemoryInclusionGroup(memoryResult) {
-  const sceneRange = String(memoryResult?.metadata?.sceneRange || "unknown").replace(/[^A-Za-z0-9_-]/g, "_");
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).slice(2, 8);
-  return `STMB-${sceneRange}-${timestamp}-${random}`;
-}
-
-function cloneMemoryResultForCharacter(memoryResult, characterFilterName) {
-  const cloned = deepClone(memoryResult);
-  cloned.metadata = {
-    ...(cloned.metadata || {}),
-    characterFilterNames: [characterFilterName],
-  };
-  return cloned;
-}
-
 function removeLorebookEntryByUid(lorebookData, uid) {
   if (!lorebookData?.entries || uid === undefined || uid === null) {
     return false;
@@ -2512,13 +2662,12 @@ async function rollbackManualGroupLorebookWrites(writtenEntries, lorebookDataByN
 
 function getManualGroupCopyTargets(memoryResult, options = {}) {
   const { members = [], bindings = {} } = options;
-  const speakerNames = Array.isArray(memoryResult?.metadata?.characterFilterNames)
-    ? Array.from(new Set(memoryResult.metadata.characterFilterNames.map((name) => String(name || "").trim()).filter(Boolean)))
-    : [];
+  const speakerNames = ensureGroupMemoryParticipantFilters(memoryResult, options);
   const membersByFilterName = new Map(
     members.map((member) => [member.characterFilterName, member]),
   );
   const copyTargets = [];
+  const seenLorebooks = new Set();
 
   for (const speakerName of speakerNames) {
     const member = membersByFilterName.get(speakerName);
@@ -2530,6 +2679,10 @@ function getManualGroupCopyTargets(memoryResult, options = {}) {
     if (!lorebookName) {
       continue;
     }
+    if (seenLorebooks.has(lorebookName)) {
+      continue;
+    }
+    seenLorebooks.add(lorebookName);
 
     copyTargets.push({ speakerName, member, lorebookName });
   }
@@ -2550,6 +2703,130 @@ function getManualGroupTouchedLorebookNames(primaryLorebookName, copyTargets = [
     }
   }
   return Array.from(names);
+}
+
+async function getManualGroupConsolidationLorebooks(primaryLorebookName, lorebookData, manualGroupLorebooks = null) {
+  const settings = initializeSettings();
+  const context = getCurrentMemoryBooksContext();
+  if (
+    !settings?.moduleSettings?.manualModeEnabled ||
+    !context?.isGroupChat ||
+    !isStloAvailableForManualGroupLorebooks()
+  ) {
+    return [{ role: "group", lorebookName: primaryLorebookName, lorebookData, member: null }];
+  }
+
+  const validation = manualGroupLorebooks?.valid
+    ? manualGroupLorebooks
+    : await validateManualGroupLorebookBindingsForMemory(settings, context);
+  if (!validation?.valid) {
+    throw new Error(validation?.error || "Group manual lorebooks are not configured.");
+  }
+
+  const items = [{ role: "group", lorebookName: primaryLorebookName, lorebookData, member: null }];
+  const seen = new Set([String(primaryLorebookName)]);
+  for (const member of validation.members || []) {
+    const memberLorebookName = String(validation.bindings?.[member.key] || "").trim();
+    if (!memberLorebookName || seen.has(memberLorebookName)) {
+      continue;
+    }
+    const memberLorebookData = await loadWorldInfo(memberLorebookName);
+    if (!memberLorebookData?.entries) {
+      throw new Error(__st_t_tag`Lorebook "${memberLorebookName}" could not be loaded.`);
+    }
+    if (migrateLorebookSummarySchema(memberLorebookData)) {
+      await saveWorldInfo(memberLorebookName, memberLorebookData, true);
+    }
+    seen.add(memberLorebookName);
+    items.push({
+      role: "character",
+      lorebookName: memberLorebookName,
+      lorebookData: memberLorebookData,
+      member,
+    });
+  }
+  return items;
+}
+
+async function confirmPartialGroupConsolidation(readyItems, skippedItems, targetLabel) {
+  if (!Array.isArray(skippedItems) || skippedItems.length === 0) {
+    return true;
+  }
+
+  const readyList = readyItems
+    .map((item) => `<li>${escapeHtml(item.lorebookName)} (${item.count})</li>`)
+    .join("");
+  const skippedList = skippedItems
+    .map((item) => `<li>${escapeHtml(item.lorebookName)} (${item.count}/${item.requiredMin})</li>`)
+    .join("");
+  const content = `
+    <h3>${escapeHtml(translate("Some lorebooks are below the threshold", "STMemoryBooks_GroupConsolidation_PartialTitle"))}</h3>
+    <p>${escapeHtml(tr("STMemoryBooks_GroupConsolidation_PartialDesc", "Some bound lorebooks do not have enough eligible entries to create a {{targetLabel}}. Continue with the ready lorebooks?", { targetLabel }))}</p>
+    <div class="world_entry_form_control">
+      <strong>${escapeHtml(translate("Ready", "STMemoryBooks_Ready"))}</strong>
+      <ul>${readyList}</ul>
+      <strong>${escapeHtml(translate("Skipped", "STMemoryBooks_Skipped"))}</strong>
+      <ul>${skippedList}</ul>
+    </div>
+  `;
+  const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.CONFIRM, "", {
+    okButton: translate("Continue", "STMemoryBooks_Continue"),
+    cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
+  });
+  return await popup.show() === POPUP_RESULT.AFFIRMATIVE;
+}
+
+function getEntryCanonicalNumber(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const direct = Number(entry.STMB_canonicalMemoryNumber ?? entry.STMB_memoryNumber);
+  if (Number.isFinite(direct) && direct > 0) return Math.trunc(direct);
+  const title = String(entry.comment || "");
+  const bracket = title.match(/\[(\d+)\]/);
+  if (bracket) return Number(bracket[1]);
+  const leading = title.match(/^(\d+)[\s-]/);
+  if (leading) return Number(leading[1]);
+  return null;
+}
+
+function withCharacterGapMarkers(entries, groupLorebookData, member) {
+  const selectedEntries = Array.isArray(entries) ? entries : [];
+  if (!member || selectedEntries.length === 0) {
+    return selectedEntries;
+  }
+
+  const selectedNumbers = selectedEntries
+    .map(getEntryCanonicalNumber)
+    .filter((number) => Number.isFinite(number) && number > 0);
+  if (selectedNumbers.length < 2) {
+    return selectedEntries;
+  }
+
+  const minNumber = Math.min(...selectedNumbers);
+  const maxNumber = Math.max(...selectedNumbers);
+  const selectedSet = new Set(selectedNumbers.map(Number));
+  const groupNumbers = identifyMemoryEntries(groupLorebookData)
+    .map((item) => Number(item.number))
+    .filter((number) => Number.isFinite(number) && number >= minNumber && number <= maxNumber);
+  const markerNumbers = groupNumbers.filter((number) => !selectedSet.has(number));
+  if (markerNumbers.length === 0) {
+    return selectedEntries;
+  }
+
+  const characterName = String(member?.name || member?.characterFilterName || "{{char}}").trim() || "{{char}}";
+  const markerText = `Some summaries are omitted here because ${characterName} did not participate in them; treat this as a chronological gap, not missing context ${characterName} should know.`;
+  const markers = markerNumbers.map((number) => ({
+    __stmbGapMarker: true,
+    id: `gap-${member.key || characterName}-${number}`,
+    order: number - 0.5,
+    title: `Skipped summaries before ${String(number).padStart(3, "0")}`,
+    content: markerText,
+  }));
+
+  return [...selectedEntries, ...markers].sort((a, b) => {
+    const aOrder = a.__stmbGapMarker ? a.order : getEntryCanonicalNumber(a) || 0;
+    const bOrder = b.__stmbGapMarker ? b.order : getEntryCanonicalNumber(b) || 0;
+    return aOrder - bOrder;
+  });
 }
 
 async function withLorebookWriteLanes(lorebookNames, task) {
@@ -2573,9 +2850,11 @@ async function withLorebookWriteLanes(lorebookNames, task) {
 }
 
 async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation, options = {}) {
-  const copyTargets = Array.isArray(options.copyTargets)
+  const primaryLorebookName = String(lorebookValidation?.name || "").trim();
+  const copyTargets = (Array.isArray(options.copyTargets)
     ? options.copyTargets
-    : getManualGroupCopyTargets(memoryResult, options);
+    : getManualGroupCopyTargets(memoryResult, options))
+    .filter((target) => String(target?.lorebookName || "").trim() !== primaryLorebookName);
   const touchedLorebookNames = getManualGroupTouchedLorebookNames(
     lorebookValidation.name,
     copyTargets,
@@ -2591,7 +2870,13 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
     );
   }
 
-  const inclusionGroup = createMemoryInclusionGroup(memoryResult);
+  const context = options.memoryBooksContext || getCurrentMemoryBooksContext();
+  ensureGroupMemoryParticipantFilters(memoryResult, options);
+  const inclusionGroup = createCanonicalMemoryInclusionGroup(
+    memoryResult,
+    lorebookValidation.data,
+    context,
+  );
   const lorebookDataByName = new Map();
   for (const target of copyTargets) {
     if (lorebookDataByName.has(target.lorebookName)) {
@@ -2609,14 +2894,27 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
   }
   lorebookDataByName.set(lorebookValidation.name, lorebookValidation.data);
 
+  const baseEntryMetadata = getCanonicalMemoryCopyMetadata({
+    inclusionGroup,
+    canonicalLorebookName: lorebookValidation.name,
+  });
+
   const addResult = await addMemoryToLorebook(memoryResult, lorebookValidation, {
     updateHighestMemoryProcessed: false,
     ...(options.primaryAddOptions || {}),
     inclusionGroup,
+    characterFilterNames: memoryResult.metadata.characterFilterNames,
+    entryMetadata: baseEntryMetadata,
   });
 
   if (!addResult.success) {
     return addResult;
+  }
+
+  const canonicalEntry = Object.values(lorebookValidation.data?.entries || {})
+    .find((entry) => String(entry?.uid ?? "") === String(addResult.entryId));
+  if (canonicalEntry) {
+    canonicalEntry.STMB_canonicalEntryUid = addResult.entryId;
   }
 
   const writtenEntries = [{
@@ -2630,11 +2928,20 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
   try {
     for (const target of copyTargets) {
       const copyResult = await addMemoryToLorebook(
-        cloneMemoryResultForCharacter(memoryResult, target.speakerName),
+        deepClone(memoryResult),
         { valid: true, name: target.lorebookName, data: lorebookDataByName.get(target.lorebookName) },
         {
           inclusionGroup,
-          characterFilterNames: [target.speakerName],
+          entryTitle: addResult.entryTitle,
+          characterFilterNames: memoryResult.metadata.characterFilterNames,
+          entryMetadata: {
+            ...getCanonicalMemoryCopyMetadata({
+              inclusionGroup,
+              canonicalLorebookName: lorebookValidation.name,
+              canonicalEntryId: addResult.entryId,
+            }),
+            STMB_canonical: false,
+          },
           autoHide: false,
           updateHighestMemoryProcessed: false,
           refreshEditor: false,
@@ -2653,6 +2960,10 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
         inclusionGroup,
       });
       copiedResults.push(copyResult);
+    }
+
+    if (canonicalEntry) {
+      await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
     }
   } catch (error) {
     try {
@@ -2858,12 +3169,15 @@ async function executeMemoryGeneration(
   retryCount = 0,
   stmbTask = null,
   manualGroupLorebookValidation = null,
+  retryState = null,
 ) {
   const ownsTask = !stmbTask;
   if (!stmbTask) stmbTask = createStmbInFlightTask("MemoryGeneration");
   const runEpoch = stmbTask.epoch;
   const { profileSettings, summaryCount, tokenThreshold, settings } =
     effectiveSettings;
+  const generationRetryState =
+    retryState && typeof retryState === "object" ? retryState : {};
   currentProfile = profileSettings;
   let compiledScene = null;
   let memoryFetchResult = null;
@@ -2961,6 +3275,31 @@ async function executeMemoryGeneration(
       throw new Error(
         `Scene compilation failed: ${validation.errors.join(", ")}`,
       );
+    }
+
+    if (
+      manualGroupLorebookValidation?.valid &&
+      settings?.moduleSettings?.manualModeEnabled &&
+      getCurrentMemoryBooksContext().isGroupChat
+    ) {
+      if (Array.isArray(generationRetryState.characterFilterNames)) {
+        applyGroupMemoryParticipantFilters(
+          compiledScene,
+          generationRetryState.characterFilterNames,
+        );
+      } else {
+        const participantsConfirmed = await confirmGroupMemoryParticipants(
+          compiledScene,
+          settings,
+          manualGroupLorebookValidation,
+        );
+        if (!participantsConfirmed) {
+          return false;
+        }
+        generationRetryState.characterFilterNames = normalizeCharacterFilterNamesForGroup(
+          compiledScene?.metadata?.characterFilterNames,
+        );
+      }
     }
 
     const additionalContextSnapshot = await resolveAdditionalContextSnapshot(profileSettings, {
@@ -3082,6 +3421,7 @@ async function executeMemoryGeneration(
           nextRetryCount,
           null,
           manualGroupLorebookValidation,
+          generationRetryState,
         );
       }
 
@@ -3251,6 +3591,7 @@ async function executeMemoryGeneration(
         retryCount + 1,
         stmbTask,
         manualGroupLorebookValidation,
+        generationRetryState,
       );
     }
 
@@ -3426,6 +3767,21 @@ async function buildQueuedMemoryJob(
   const validation = validateCompiledScene(compiledScene);
   if (!validation.valid) {
     throw new Error(`Scene compilation failed: ${validation.errors.join(", ")}`);
+  }
+
+  if (
+    manualGroupLorebookValidation?.valid &&
+    settings?.moduleSettings?.manualModeEnabled &&
+    getCurrentMemoryBooksContext().isGroupChat
+  ) {
+    const participantsConfirmed = await confirmGroupMemoryParticipants(
+      compiledScene,
+      settings,
+      manualGroupLorebookValidation,
+    );
+    if (!participantsConfirmed) {
+      return null;
+    }
   }
 
   let memoryFetchResult = { summaries: [], actualCount: 0, requestedCount: 0 };
@@ -7044,6 +7400,58 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     const selectedSourceFingerprints = Object.fromEntries(
       selectedEntries.map((entry) => [String(entry.uid), fingerprintLorebookEntry(entry)]),
     );
+    let consolidationWorkItems = [{
+      lorebookName,
+      lorebookData,
+      selectedEntries,
+      sourceFingerprints: selectedSourceFingerprints,
+      count: selectedEntries.length,
+      requiredMin,
+      role: "group",
+    }];
+
+    try {
+      const boundLorebooks = await getManualGroupConsolidationLorebooks(lorebookName, lorebookData);
+      if (boundLorebooks.length > 1) {
+        const readyItems = [];
+        const skippedItems = [];
+        for (const item of boundLorebooks) {
+          if (item.lorebookName === lorebookName) {
+            readyItems.push(consolidationWorkItems[0]);
+            continue;
+          }
+          const itemEntries = sortEntries(
+            Object.values(item.lorebookData.entries || {}).filter((entry) =>
+              isEligibleSummarySourceEntry(entry, sourceTier),
+            ),
+          );
+          const selectedItemEntries = item.role === "character"
+            ? withCharacterGapMarkers(itemEntries, lorebookData, item.member)
+            : itemEntries;
+          const workItem = {
+            ...item,
+            selectedEntries: selectedItemEntries,
+            sourceFingerprints: Object.fromEntries(
+              itemEntries.map((entry) => [String(entry.uid), fingerprintLorebookEntry(entry)]),
+            ),
+            count: itemEntries.length,
+            requiredMin,
+          };
+          if (itemEntries.length >= requiredMin) {
+            readyItems.push(workItem);
+          } else {
+            skippedItems.push(workItem);
+          }
+        }
+        if (!await confirmPartialGroupConsolidation(readyItems, skippedItems, targetLabel.toLowerCase())) {
+          return;
+        }
+        consolidationWorkItems = readyItems;
+      }
+    } catch (error) {
+      toastr.error(error.message || String(error), "STMemoryBooks");
+      return;
+    }
 
     if (areStmbJobsEnabled()) {
       const chatRef = getCurrentStmbChatRef();
@@ -7054,34 +7462,39 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           ? { ...profileSettings.connection }
           : profileSettings.effectiveConnection;
       }
-      enqueueStmbJob({
-        type: "consolidation",
-        title: targetLabel,
-        detail: `${sourceLabel} -> ${targetLabel}`,
-        chatRef,
-        chatKey: getStmbChatKey(chatRef),
-        lorebookName,
-        payload: {
-          lorebookName,
-          targetTier,
-          selectedEntries: deepClone(selectedEntries),
-          sourceFingerprints: selectedSourceFingerprints,
-          presetKey,
-          promptText: await ArcPrompts.getPrompt(presetKey),
-          profileSettings,
-          maxItemsPerPass: options.maxItemsPerPass,
-          maxPasses: options.maxPasses,
-          minAssigned: requiredMin,
-          tokenTarget: options.tokenTarget,
-          disableOriginals,
-          summaryEntrySettings: chosenSummaryEntrySettings,
-          summaryOrderMode: normalizedArcOrderMode,
-          summaryOrderValue: chosenArcOrderValue,
-          summaryReverseStart: chosenArcReverseStart,
-        },
-      });
+      const promptText = await ArcPrompts.getPrompt(presetKey);
+      for (const workItem of consolidationWorkItems) {
+        enqueueStmbJob({
+          type: "consolidation",
+          title: targetLabel,
+          detail: `${workItem.lorebookName}: ${sourceLabel} -> ${targetLabel}`,
+          chatRef,
+          chatKey: getStmbChatKey(chatRef),
+          lorebookName: workItem.lorebookName,
+          payload: {
+            lorebookName: workItem.lorebookName,
+            targetTier,
+            selectedEntries: deepClone(workItem.selectedEntries),
+            sourceFingerprints: workItem.sourceFingerprints,
+            presetKey,
+            promptText,
+            profileSettings,
+            maxItemsPerPass: options.maxItemsPerPass,
+            maxPasses: options.maxPasses,
+            minAssigned: requiredMin,
+            tokenTarget: options.tokenTarget,
+            disableOriginals,
+            summaryEntrySettings: chosenSummaryEntrySettings,
+            summaryOrderMode: normalizedArcOrderMode,
+            summaryOrderValue: chosenArcOrderValue,
+            summaryReverseStart: chosenArcReverseStart,
+          },
+        });
+      }
       toastr.info(
-        translate("Consolidation job queued.", "STMemoryBooks_Jobs_ConsolidationQueued"),
+        consolidationWorkItems.length === 1
+          ? translate("Consolidation job queued.", "STMemoryBooks_Jobs_ConsolidationQueued")
+          : tr("STMemoryBooks_Jobs_ConsolidationQueuedMany", "{{count}} consolidation jobs queued.", { count: consolidationWorkItems.length }),
         "STMemoryBooks",
       );
       return;
@@ -7094,6 +7507,71 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       "STMemoryBooks",
       { timeOut: 0 },
     );
+
+    if (consolidationWorkItems.length > 1 && !settings.moduleSettings?.showConsolidationPreviews) {
+      let totalCreated = 0;
+      for (const workItem of consolidationWorkItems) {
+        let itemAnalysis = null;
+        try {
+          itemAnalysis = await runSummaryAnalysisSequential(workItem.selectedEntries, options, null);
+        } catch (e) {
+          if (isStmbStopError(e)) return;
+          toastr.error(__st_t_tag`Summary analysis failed for "${workItem.lorebookName}": ${e.message}`, "STMemoryBooks");
+          return;
+        }
+        const itemCandidates = Array.isArray(itemAnalysis?.summaryCandidates)
+          ? itemAnalysis.summaryCandidates
+          : [];
+        if (itemCandidates.length === 0) {
+          toastr.warning(__st_t_tag`No usable summaries were produced for "${workItem.lorebookName}".`, "STMemoryBooks");
+          continue;
+        }
+        try {
+          let result = null;
+          await withStmbWriteLane({ type: "lorebook", name: workItem.lorebookName }, async () => {
+            const freshLorebook = await loadWorldInfo(workItem.lorebookName);
+            if (!freshLorebook?.entries) {
+              throw new Error(`Lorebook "${workItem.lorebookName}" could not be loaded.`);
+            }
+            verifyConsolidationSourceFingerprints(freshLorebook, workItem.sourceFingerprints || {});
+            result = await commitSummaryEntries({
+              lorebookName: workItem.lorebookName,
+              lorebookData: freshLorebook,
+              summaryCandidates: itemCandidates,
+              targetTier,
+              disableOriginals,
+              summaryEntrySettings: chosenSummaryEntrySettings,
+              orderMode: normalizedArcOrderMode,
+              orderValue: chosenArcOrderValue,
+              reverseStart: chosenArcReverseStart,
+            });
+            await runPostConsolidationCommitFlow({
+              created: Array.isArray(result?.results) ? result.results.length : itemCandidates.length,
+              targetTier,
+              lorebookName: workItem.lorebookName,
+              lorebookData: freshLorebook,
+            });
+          });
+          totalCreated += Array.isArray(result?.results) ? result.results.length : itemCandidates.length;
+        } catch (e) {
+          if (isStmbStopError(e)) return;
+          toastr.error(__st_t_tag`Failed to commit summaries for "${workItem.lorebookName}": ${e.message}`, "STMemoryBooks");
+          return;
+        }
+      }
+      toastr.success(
+        tr("STMemoryBooks_GroupConsolidation_CreatedMany", "Created {{count}} consolidated summaries across bound lorebooks.", { count: totalCreated }),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    if (consolidationWorkItems.length > 1 && settings.moduleSettings?.showConsolidationPreviews) {
+      toastr.warning(
+        translate("Consolidation previews currently review the group lorebook only. Disable previews or enable background jobs to process all bound lorebooks together.", "STMemoryBooks_GroupConsolidation_PreviewSingleWarning"),
+        "STMemoryBooks",
+      );
+    }
 
     let analysis;
     try {

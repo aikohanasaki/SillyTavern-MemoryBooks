@@ -172,7 +172,7 @@
   "STMemoryBooks_NoChatBound": "無聊天綁定的故事書。記憶將需要選擇故事書。",
   "STMemoryBooks_Clear": "清除",
   "STMemoryBooks_GroupCharacterLorebooks": "群組角色故事書",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "為每個群組成員選擇一個故事書。同一個故事書可以被選擇多次。",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "為每個群組成員選擇一本故事書。同一本故事書可以重複選擇。",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "單獨指定故事書需要 STLO。",
   "STMemoryBooks_GroupLorebooksNoMembers": "沒有可用於手動故事書設定的群組成員。",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "群組手動故事書尚未完整：{{details}}",
@@ -1123,5 +1123,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "使用額外內容脈絡",
   "STMemoryBooks_SidePromptAdditionalContextSource": "額外內容脈絡來源",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "跟隨聊天",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟隨聊天會使用此聊天的額外內容脈絡。選擇命名的內容脈絡設定會為此側邊提示覆蓋它。"
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "跟隨聊天會使用此聊天的額外內容脈絡。選擇命名的內容脈絡設定會為此側邊提示覆蓋它。",
+  "STMemoryBooks_GroupParticipants_Title": "確認記憶參與者",
+  "STMemoryBooks_GroupParticipants_Desc": "選擇此記憶適用的角色。如果未選擇任何角色，它將適用於所有群組角色。",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "以後自動接受偵測到的參與者",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "部分 lorebook 低於閾值",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "部分已綁定 lorebook 沒有足夠的合格條目來建立 {{targetLabel}}。是否繼續處理已就緒的 lorebook？",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "已在已綁定 lorebook 中建立 {{count}} 個合併摘要。",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "合併預覽目前只審閱群組 lorebook。請關閉預覽或啟用背景工作，以便一起處理所有已綁定 lorebook。",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "已佇列 {{count}} 個合併工作。",
+  "STMemoryBooks_Ready": "已就緒",
+  "STMemoryBooks_Skipped": "已跳過",
+  "STMemoryBooks_Continue": "繼續"
 }
