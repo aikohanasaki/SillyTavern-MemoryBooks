@@ -1128,5 +1128,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "Zusätzlichen Kontext verwenden",
   "STMemoryBooks_SidePromptAdditionalContextSource": "Quelle für zusätzlichen Kontext",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Chat folgen",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "Chat folgen verwendet den zusätzlichen Kontext dieses Chats. Eine benannte Kontexteinstellung überschreibt ihn für diesen Side Prompt."
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Chat folgen verwendet den zusätzlichen Kontext dieses Chats. Eine benannte Kontexteinstellung überschreibt ihn für diesen Side Prompt.",
+  "STMemoryBooks_GroupParticipants_Title": "Erinnerungsteilnehmer bestätigen",
+  "STMemoryBooks_GroupParticipants_Desc": "Wähle die Charaktere aus, für die diese Erinnerung gilt. Wenn keine ausgewählt sind, gilt sie für alle Gruppencharaktere.",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "Erkannte Teilnehmer künftig automatisch akzeptieren",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "Einige Lorebooks liegen unter dem Schwellenwert",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "Einige gebundene Lorebooks haben nicht genug geeignete Einträge, um {{targetLabel}} zu erstellen. Mit den bereiten Lorebooks fortfahren?",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "{{count}} konsolidierte Zusammenfassungen über gebundene Lorebooks hinweg erstellt.",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "Konsolidierungsvorschauen prüfen derzeit nur das Gruppen-Lorebook. Deaktiviere Vorschauen oder aktiviere Hintergrundjobs, um alle gebundenen Lorebooks gemeinsam zu verarbeiten.",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} Konsolidierungsjobs eingereiht.",
+  "STMemoryBooks_Ready": "Bereit",
+  "STMemoryBooks_Skipped": "Übersprungen",
+  "STMemoryBooks_Continue": "Fortfahren"
 }

@@ -1123,5 +1123,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "Gunakan konteks tambahan",
   "STMemoryBooks_SidePromptAdditionalContextSource": "Sumber konteks tambahan",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Ikuti obrolan",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikuti obrolan menggunakan konteks tambahan obrolan ini. Memilih pengaturan konteks bernama akan menggantikannya untuk side prompt ini."
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikuti obrolan menggunakan konteks tambahan obrolan ini. Memilih pengaturan konteks bernama akan menggantikannya untuk side prompt ini.",
+  "STMemoryBooks_GroupParticipants_Title": "Konfirmasi peserta memori",
+  "STMemoryBooks_GroupParticipants_Desc": "Pilih karakter yang berlaku untuk memori ini. Jika tidak ada yang dipilih, memori akan berlaku untuk semua karakter grup.",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "Terima peserta yang terdeteksi secara otomatis ke depannya",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "Beberapa lorebook di bawah ambang",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "Beberapa lorebook tertaut tidak memiliki cukup entri yang memenuhi syarat untuk membuat {{targetLabel}}. Lanjutkan dengan lorebook yang siap?",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "Membuat {{count}} ringkasan terkonsolidasi di lorebook tertaut.",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "Pratinjau konsolidasi saat ini hanya meninjau lorebook grup. Nonaktifkan pratinjau atau aktifkan pekerjaan latar belakang untuk memproses semua lorebook tertaut bersama-sama.",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} pekerjaan konsolidasi diantrekan.",
+  "STMemoryBooks_Ready": "Siap",
+  "STMemoryBooks_Skipped": "Dilewati",
+  "STMemoryBooks_Continue": "Lanjutkan"
 }

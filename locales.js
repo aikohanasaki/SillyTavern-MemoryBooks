@@ -353,6 +353,17 @@ export const localeData_en = {
     'STMemoryBooks_GroupMemberLorebookSet': '{{name}} manual lorebook set to "{{lorebookName}}"',
     'STMemoryBooks_GroupMemberLorebookCleared': '{{name}} manual lorebook cleared',
     'STMemoryBooks_PleaseSelectGroupLorebookForManualMode': 'Please select a group lorebook for manual mode',
+    'STMemoryBooks_GroupParticipants_Title': 'Confirm memory participants',
+    'STMemoryBooks_GroupParticipants_Desc': 'Select the characters this memory applies to. If none are selected, it will apply to every group character.',
+    'STMemoryBooks_GroupParticipants_AutoAccept': 'Automatically accept detected participants in future',
+    'STMemoryBooks_GroupConsolidation_PartialTitle': 'Some lorebooks are below the threshold',
+    'STMemoryBooks_GroupConsolidation_PartialDesc': 'Some bound lorebooks do not have enough eligible entries to create a {{targetLabel}}. Continue with the ready lorebooks?',
+    'STMemoryBooks_GroupConsolidation_CreatedMany': 'Created {{count}} consolidated summaries across bound lorebooks.',
+    'STMemoryBooks_GroupConsolidation_PreviewSingleWarning': 'Consolidation previews currently review the group lorebook only. Disable previews or enable background jobs to process all bound lorebooks together.',
+    'STMemoryBooks_Jobs_ConsolidationQueuedMany': '{{count}} consolidation jobs queued.',
+    'STMemoryBooks_Ready': 'Ready',
+    'STMemoryBooks_Skipped': 'Skipped',
+    'STMemoryBooks_Continue': 'Continue',
 
     // Scene Options
     'STMemoryBooks_AllowSceneOverlap': 'Allow scene overlap',

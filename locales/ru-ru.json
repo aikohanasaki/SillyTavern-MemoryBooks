@@ -1123,5 +1123,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "Использовать дополнительный контекст",
   "STMemoryBooks_SidePromptAdditionalContextSource": "Источник дополнительного контекста",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Следовать чату",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "Следовать чату использует дополнительный контекст этого чата. Выбор именованной настройки контекста переопределяет его для этого бокового промпта."
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Следовать чату использует дополнительный контекст этого чата. Выбор именованной настройки контекста переопределяет его для этого бокового промпта.",
+  "STMemoryBooks_GroupParticipants_Title": "Подтвердить участников воспоминания",
+  "STMemoryBooks_GroupParticipants_Desc": "Выберите персонажей, к которым относится это воспоминание. Если никто не выбран, оно будет относиться ко всем персонажам группы.",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "Автоматически принимать обнаруженных участников в будущем",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "Некоторые лорбуки ниже порога",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "В некоторых привязанных лорбуках недостаточно подходящих записей для создания {{targetLabel}}. Продолжить с готовыми лорбуками?",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "Создано {{count}} консолидированных сводок в привязанных лорбуках.",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "Предпросмотр консолидации сейчас проверяет только групповой лорбук. Отключите предпросмотр или включите фоновые задания, чтобы обработать все привязанные лорбуки вместе.",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} заданий консолидации поставлено в очередь.",
+  "STMemoryBooks_Ready": "Готово",
+  "STMemoryBooks_Skipped": "Пропущено",
+  "STMemoryBooks_Continue": "Продолжить"
 }

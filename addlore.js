@@ -532,10 +532,17 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
             throw new Error(i18n('addlore.errors.createEntryFailed', 'Failed to create new lorebook entry'));
         }
 
-        const entryTitle = generateEntryTitle(titleFormat, effectiveMemoryResult, lorebookValidation.data);
+        const entryTitle = options.entryTitle
+            ? sanitizeTitle(String(options.entryTitle))
+            : generateEntryTitle(titleFormat, effectiveMemoryResult, lorebookValidation.data);
         populateLorebookEntry(newEntry, effectiveMemoryResult, entryTitle, lorebookSettings);
         if (options.inclusionGroup) {
             newEntry.group = String(options.inclusionGroup);
+        }
+        if (options.entryMetadata && typeof options.entryMetadata === 'object') {
+            for (const [key, value] of Object.entries(options.entryMetadata)) {
+                newEntry[key] = value;
+            }
         }
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
 

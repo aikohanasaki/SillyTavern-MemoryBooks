@@ -1122,5 +1122,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "Utiliser le contexte supplémentaire",
   "STMemoryBooks_SidePromptAdditionalContextSource": "Source du contexte supplémentaire",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Suivre le chat",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "Suivre le chat utilise le contexte supplémentaire de ce chat. Choisir un paramètre de contexte nommé le remplace pour ce side prompt."
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Suivre le chat utilise le contexte supplémentaire de ce chat. Choisir un paramètre de contexte nommé le remplace pour ce side prompt.",
+  "STMemoryBooks_GroupParticipants_Title": "Confirmer les participants de la mémoire",
+  "STMemoryBooks_GroupParticipants_Desc": "Sélectionnez les personnages auxquels cette mémoire s’applique. Si aucun n’est sélectionné, elle s’appliquera à tous les personnages du groupe.",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "Accepter automatiquement les participants détectés à l’avenir",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "Certains lorebooks sont sous le seuil",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "Certains lorebooks liés n’ont pas assez d’entrées éligibles pour créer {{targetLabel}}. Continuer avec les lorebooks prêts ?",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "{{count}} résumés consolidés créés dans les lorebooks liés.",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "Les aperçus de consolidation examinent actuellement seulement le lorebook de groupe. Désactivez les aperçus ou activez les tâches en arrière-plan pour traiter tous les lorebooks liés ensemble.",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} tâches de consolidation mises en file.",
+  "STMemoryBooks_Ready": "Prêt",
+  "STMemoryBooks_Skipped": "Ignoré",
+  "STMemoryBooks_Continue": "Continuer"
 }

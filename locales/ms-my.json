@@ -1123,5 +1123,16 @@
   "STMemoryBooks_SidePromptUseAdditionalContext": "Gunakan konteks tambahan",
   "STMemoryBooks_SidePromptAdditionalContextSource": "Sumber konteks tambahan",
   "STMemoryBooks_SidePromptAdditionalContextFollowChat": "Ikut chat",
-  "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikut chat menggunakan konteks tambahan chat ini. Memilih tetapan konteks bernama akan menggantikannya untuk side prompt ini."
+  "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikut chat menggunakan konteks tambahan chat ini. Memilih tetapan konteks bernama akan menggantikannya untuk side prompt ini.",
+  "STMemoryBooks_GroupParticipants_Title": "Sahkan peserta memori",
+  "STMemoryBooks_GroupParticipants_Desc": "Pilih watak yang memori ini terpakai. Jika tiada dipilih, ia akan terpakai kepada semua watak kumpulan.",
+  "STMemoryBooks_GroupParticipants_AutoAccept": "Terima peserta yang dikesan secara automatik pada masa hadapan",
+  "STMemoryBooks_GroupConsolidation_PartialTitle": "Beberapa lorebook berada di bawah ambang",
+  "STMemoryBooks_GroupConsolidation_PartialDesc": "Beberapa lorebook terikat tidak mempunyai entri layak yang mencukupi untuk mencipta {{targetLabel}}. Teruskan dengan lorebook yang sedia?",
+  "STMemoryBooks_GroupConsolidation_CreatedMany": "Mencipta {{count}} ringkasan tergabung merentas lorebook terikat.",
+  "STMemoryBooks_GroupConsolidation_PreviewSingleWarning": "Pratonton penggabungan buat masa ini hanya menyemak lorebook kumpulan. Nyahdayakan pratonton atau dayakan kerja latar belakang untuk memproses semua lorebook terikat bersama-sama.",
+  "STMemoryBooks_Jobs_ConsolidationQueuedMany": "{{count}} kerja penggabungan dibariskan.",
+  "STMemoryBooks_Ready": "Sedia",
+  "STMemoryBooks_Skipped": "Dilangkau",
+  "STMemoryBooks_Continue": "Teruskan"
 }
