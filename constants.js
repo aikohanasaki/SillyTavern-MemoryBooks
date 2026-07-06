@@ -47,6 +47,8 @@ export const SCHEMA = {
 // Display name localization defaults and i18n keys for built-in presets
 export const DISPLAY_NAME_DEFAULTS = {
     summary: 'Summary - Detailed beat-by-beat summaries in narrative prose',
+    group: 'Group - Shared group memory with clear attribution',
+    char: 'Character - Targeted character memory',
     summarize: 'Summarize - Bullet-point format',
     synopsis: 'Synopsis - Long and comprehensive (beats, interactions, details) with headings',
     sumup: 'Sum Up - Concise story beats in narrative prose',
@@ -58,6 +60,8 @@ export const DISPLAY_NAME_DEFAULTS = {
 
 export const DISPLAY_NAME_I18N_KEYS = {
     summary: 'STMemoryBooks_DisplayName_summary',
+    group: 'STMemoryBooks_DisplayName_group',
+    char: 'STMemoryBooks_DisplayName_char',
     summarize: 'STMemoryBooks_DisplayName_summarize',
     synopsis: 'STMemoryBooks_DisplayName_synopsis',
     sumup: 'STMemoryBooks_DisplayName_sumup',

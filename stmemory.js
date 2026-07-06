@@ -1249,11 +1249,17 @@ function validateInputs(compiledScene, profile) {
         throw new Error('Invalid or empty compiled scene data provided.');
     }
 
-    // profile must have a non-empty prompt OR a preset key
+    // profile must have a non-empty prompt, preset key, or resolved group-specific prompt.
     const hasPrompt = typeof profile?.prompt === 'string' && profile.prompt.trim().length > 0;
     const hasPreset = typeof profile?.preset === 'string' && profile.preset.trim().length > 0;
+    const hasGroupSpecificPrompt = Boolean(profile?.useGroupSpecificPrompts) && (
+        (typeof profile?.groupPrompt === 'string' && profile.groupPrompt.trim().length > 0)
+        || (typeof profile?.characterPrompt === 'string' && profile.characterPrompt.trim().length > 0)
+        || (typeof profile?.groupPreset === 'string' && profile.groupPreset.trim().length > 0)
+        || (typeof profile?.characterPreset === 'string' && profile.characterPreset.trim().length > 0)
+    );
 
-    if (!hasPrompt && !hasPreset) {
+    if (!hasPrompt && !hasPreset && !hasGroupSpecificPrompt) {
         throw new InvalidProfileError('Invalid profile configuration. You must set either a custom prompt or a valid preset.');
     }
 }
@@ -1408,10 +1414,15 @@ async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
     
     // Use utils.js to get the effective prompt (now designed for JSON output)
-    const systemPrompt = await getEffectivePrompt(profile);
+    const promptProfile = {
+        ...(profile || {}),
+        stmbPromptTarget: metadata?.stmbPromptTarget || profile?.stmbPromptTarget || '',
+    };
+    const systemPrompt = await getEffectivePrompt(promptProfile);
     
     // Use substituteParams to allow for standard macros like {{char}} and {{user}}
-    const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName);
+    const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName)
+        .replace(/\{\{\s*group\s*\}\}/gi, metadata.groupName || metadata.characterName || '');
     
     // Build scene text for user prompt
     const additionalContext = await resolveAdditionalContextEntries(profile, compiledScene);

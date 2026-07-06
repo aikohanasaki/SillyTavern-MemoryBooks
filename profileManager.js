@@ -187,6 +187,29 @@ const profileEditTemplate = Handlebars.compile(`
                 {{/each}}
             </select>
         </label>
+        <label class="checkbox_label marginTop5">
+            <input type="checkbox" id="stmb-profile-use-group-specific-prompts" {{#if useGroupSpecificPrompts}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_Profile_UseGroupSpecificPrompts">Use separate group and character prompts in group chats</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_Profile_UseGroupSpecificPromptsDesc">When enabled, group-chat memories use the group prompt for the group lorebook and the character prompt for character-focused targets.</small>
+        <div id="stmb-profile-group-specific-prompts" class="marginTop5 {{#unless useGroupSpecificPrompts}}displayNone{{/unless}}">
+            <label for="stmb-profile-group-preset">
+                <h4 data-i18n="STMemoryBooks_Profile_GroupPreset">Group Summary Prompt:</h4>
+                <select id="stmb-profile-group-preset" class="text_pole">
+                    {{#each groupPresetOptions}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
+                    {{/each}}
+                </select>
+            </label>
+            <label for="stmb-profile-character-preset">
+                <h4 data-i18n="STMemoryBooks_Profile_CharacterPreset">Character Summary Prompt:</h4>
+                <select id="stmb-profile-character-preset" class="text_pole">
+                    {{#each characterPresetOptions}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
+                    {{/each}}
+                </select>
+            </label>
+        </div>
         {{#if hasLegacyCustomPrompt}}
         <div id="stmb-legacy-custom-prompt" class="displayNone">{{prompt}}</div>
         {{/if}}
@@ -322,6 +345,16 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             displayName: p.displayName,
             selected: p.key === (profile.preset || '')
         }));
+        const groupPresetOptions = presetList.map(p => ({
+            value: p.key,
+            displayName: p.displayName,
+            selected: p.key === (profile.groupPreset || 'group')
+        }));
+        const characterPresetOptions = presetList.map(p => ({
+            value: p.key,
+            displayName: p.displayName,
+            selected: p.key === (profile.characterPreset || 'char')
+        }));
         const connection = profile.connection || { temperature: 0.7 };
         const profileTitleFormat = profile.titleFormat || settings.titleFormat || '[000] - {{title}}';
         const allTitleFormats = getDefaultTitleFormats();
@@ -337,6 +370,9 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             preset: profile.preset || '',
             currentApi: apiInfo.api || 'Unknown',
             presetOptions: presetOptions,
+            groupPresetOptions,
+            characterPresetOptions,
+            useGroupSpecificPrompts: Boolean(profile.useGroupSpecificPrompts),
             isNameLocked: isBuiltinCurrentST,
             isProviderLocked: isBuiltinCurrentST,
             // Pass title format data to the template
@@ -428,6 +464,16 @@ export async function newProfile(settings, refreshCallback) {
             displayName: p.displayName,
             selected: false
         }));
+        const groupPresetOptions = presetList.map(p => ({
+            value: p.key,
+            displayName: p.displayName,
+            selected: p.key === 'group'
+        }));
+        const characterPresetOptions = presetList.map(p => ({
+            value: p.key,
+            displayName: p.displayName,
+            selected: p.key === 'char'
+        }));
 
         const templateData = {
             name: defaultName,
@@ -437,6 +483,9 @@ export async function newProfile(settings, refreshCallback) {
             preset: '',
             currentApi: apiInfo.api || 'Unknown',
             presetOptions: presetOptions,
+            groupPresetOptions,
+            characterPresetOptions,
+            useGroupSpecificPrompts: false,
             isNameLocked: false,
             isProviderLocked: false,
             // Pass title format data to the template
@@ -908,6 +957,46 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
         presetContainer?.classList.toggle('displayNone', !isEligible);
     }
 
+    function syncGroupSpecificPromptFields() {
+        const enabled = !!popupElement.querySelector('#stmb-profile-use-group-specific-prompts')?.checked;
+        popupElement.querySelector('#stmb-profile-group-specific-prompts')?.classList.toggle('displayNone', !enabled);
+    }
+
+    async function refreshSummaryPresetSelects(showToast = false) {
+        const selectors = [
+            '#stmb-profile-preset',
+            '#stmb-profile-group-preset',
+            '#stmb-profile-character-preset',
+        ];
+        const previousValues = new Map();
+        for (const selector of selectors) {
+            const selectEl = popupElement.querySelector(selector);
+            if (selectEl) previousValues.set(selector, selectEl.value);
+        }
+
+        const presetList = await SummaryPromptManager.listPresets();
+        for (const selector of selectors) {
+            const selectEl = popupElement.querySelector(selector);
+            if (!selectEl) continue;
+            const prev = previousValues.get(selector) || '';
+            selectEl.innerHTML = '';
+            presetList.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.key;
+                opt.textContent = p.displayName;
+                if (p.key === prev) opt.selected = true;
+                selectEl.appendChild(opt);
+            });
+            if (![...selectEl.options].some(o => o.value === prev) && selectEl.options.length > 0) {
+                selectEl.selectedIndex = 0;
+            }
+        }
+
+        if (showToast) {
+            toastr.success(translate('Preset list refreshed', 'STMemoryBooks_PresetListRefreshed'), 'STMemoryBooks');
+        }
+    }
+
     // Open Summary Prompt Manager from profile editor
     popupElement.querySelector('#stmb-open-prompt-manager')?.addEventListener('click', () => {
         try {
@@ -926,27 +1015,7 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
     // Refresh presets list in the dropdown (useful after creating a new preset)
     popupElement.querySelector('#stmb-refresh-presets')?.addEventListener('click', async () => {
         try {
-            const selectEl = popupElement.querySelector('#stmb-profile-preset');
-            if (!selectEl) return;
-            const prev = selectEl.value;
-
-            const presetList = await SummaryPromptManager.listPresets();
-            // Rebuild options
-            selectEl.innerHTML = '';
-            presetList.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.key;
-                opt.textContent = p.displayName;
-                if (p.key === prev) opt.selected = true;
-                selectEl.appendChild(opt);
-            });
-
-            // If previous value no longer exists, default to first option
-            if (![...selectEl.options].some(o => o.value === prev) && selectEl.options.length > 0) {
-                selectEl.selectedIndex = 0;
-            }
-
-            toastr.success(translate('Preset list refreshed', 'STMemoryBooks_PresetListRefreshed'), 'STMemoryBooks');
+            await refreshSummaryPresetSelects(true);
         } catch (err) {
             console.error(`${MODULE_NAME}: Error refreshing presets:`, err);
             toastr.error(translate('Failed to refresh presets', 'STMemoryBooks_FailedToRefreshPresets'), 'STMemoryBooks');
@@ -956,23 +1025,7 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
     // Auto-refresh presets when Prompt Manager updates presets
     const stmbOnPresetsUpdated = async () => {
         try {
-            const selectEl2 = popupElement.querySelector('#stmb-profile-preset');
-            if (!selectEl2) return;
-            const prev2 = selectEl2.value;
-
-            const presetList2 = await SummaryPromptManager.listPresets();
-            selectEl2.innerHTML = '';
-            presetList2.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.key;
-                opt.textContent = p.displayName;
-                if (p.key === prev2) opt.selected = true;
-                selectEl2.appendChild(opt);
-            });
-
-            if (![...selectEl2.options].some(o => o.value === prev2) && selectEl2.options.length > 0) {
-                selectEl2.selectedIndex = 0;
-            }
+            await refreshSummaryPresetSelects(false);
         } catch (e) {
             console.error(`${MODULE_NAME}: Error auto-refreshing presets on update:`, e);
         }
@@ -1080,6 +1133,9 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
     popupElement.querySelector('#stmb-profile-use-chat-completion-service')?.addEventListener('change', syncChatCompletionPresetFields);
     syncChatCompletionPresetFields();
 
+    popupElement.querySelector('#stmb-profile-use-group-specific-prompts')?.addEventListener('change', syncGroupSpecificPromptFields);
+    syncGroupSpecificPromptFields();
+
     popupElement.querySelector('#stmb-profile-reverse-proxy')?.addEventListener('change', syncFullManualReverseProxyFields);
     syncFullManualReverseProxyFields();
 
@@ -1185,6 +1241,9 @@ function buildProfileFromForm(popupElement, fallbackName, existingProfile = {}) 
         preventRecursion: popupElement.querySelector('#stmb-profile-prevent-recursion')?.checked,
         delayUntilRecursion: popupElement.querySelector('#stmb-profile-delay-recursion')?.checked,
         skipStructuredOutput: popupElement.querySelector('#stmb-profile-skip-structured-output')?.checked,
+        useGroupSpecificPrompts: popupElement.querySelector('#stmb-profile-use-group-specific-prompts')?.checked,
+        groupPreset: popupElement.querySelector('#stmb-profile-group-preset')?.value || 'group',
+        characterPreset: popupElement.querySelector('#stmb-profile-character-preset')?.value || 'char',
     };
 
     const additionalContextList = popupElement.querySelector('#stmb-profile-additional-context-list');
