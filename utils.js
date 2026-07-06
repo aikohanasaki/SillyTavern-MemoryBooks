@@ -644,6 +644,98 @@ For the keywords field, provide 15-30 specific, descriptive, relevant keywords f
 Return ONLY the JSON, no other text.`,
             'STMemoryBooks_Prompt_summary'
         ),
+        group: `Analyze the following roleplay scene and create a memory entry from an omniscient POV.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short, descriptive scene title (3-6 words)",
+  "content": "Structured memory summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+- Write the memory as continuity relevant to the target group as a shared unit.
+- Include shared events, mutual decisions, group plans, promises, conflicts, secrets, relationship shifts, unresolved tensions, and facts that affect the group dynamic.
+- Include individual actions or emotions only when they changed the shared group state.
+- Do not create a merged personality for the group. Keep attribution clear: Alice did X, Bob thought Y, both agreed Z.
+- If only one member knows something, say so. Do not imply shared knowledge unless the scene supports it.
+
+For the content field, use this markdown structure:
+
+# [Scene Title]
+**Timeline**: (date/day/time, if known)
+
+## Target-Relevant Events
+- Summarize the events that matter to this group in chronological order.
+- Use cause -> intention -> reaction -> consequence logic.
+- Exclude flavor-only details unless they reveal a lasting character or relationship change.
+
+## Attribution
+- Clearly state who did what.
+- Clearly state who knew what.
+- Clearly state who felt, believed, suspected, misunderstood, or intended what.
+- Do not assign private thoughts or emotions to a character unless the scene text supports them.
+
+## Continuity Impact
+- Record what should matter in future scenes: decisions, injuries, promises, secrets, changed relationships, new knowledge, unresolved threads, practical consequences, emotional shifts, or altered trust.
+- Separate shared knowledge from member-specific knowledge.
+
+## Exclusions
+- Ignore and exclude all [OOC] or meta discussion.
+- Do not include unsupported assumptions.
+- Do not collapse multiple characters into vague phrases like "they felt" unless every target member clearly felt it.
+
+For the keywords field:
+- Generate 15-30 standalone topical keywords for retrieval.
+- Keywords must be concrete and scene-specific: locations, objects, proper nouns, unique actions, repeated motifs, plans, injuries, named events, or distinctive phrases.
+- Do not use abstract themes.
+- Do not use these major character names as keywords: {{group}}. NPC names may be used if the NPC played a major role.
+- Prefer keywords that would fire if the user later mentions the noun/action alone.
+
+Return ONLY the JSON, no additional text.`,
+        char: `Analyze the following scene and create a memory entry written with {{char}} as the focus.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short, descriptive scene title (3-6 words)",
+  "content": "Structured memory summary...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+Important: This is NOT a general scene summary. This is a targeted memory entry.
+- Write the memory as continuity relevant to {{char}}.
+- Include what {{char}} did, said, thought, felt, noticed, learned, decided, promised, concealed, misunderstood, or was affected by.
+- Include other characters depending on how their actions, words, emotions, or decisions matter to {{char}}'s future continuity.
+- Do not include information {{char}} could not know unless it directly affects future continuity and is clearly marked as external scene knowledge.
+- Attribute all actions, thoughts, emotions, and knowledge clearly. Do not blur characters together.
+
+For the content field, use this markdown structure:
+
+# [Scene Title]
+**Timeline**: (date/day/time, if known)
+
+## Target-Relevant Events
+- Summarize the events that matter to {{char}} in chronological order.
+- Use cause -> intention -> reaction -> consequence logic.
+- Exclude flavor-only details unless they reveal a lasting character or relationship change.
+
+## Attribution
+- Clearly state who did what.
+- Clearly state who knew what.
+- Clearly state who felt, believed, suspected, misunderstood, or intended what.
+- Do not assign private thoughts or emotions to a character unless the scene text supports them.
+
+## Continuity Impact
+- Record what should matter in future scenes: decisions, injuries, promises, secrets, changed relationships, new knowledge, unresolved threads, practical consequences, emotional shifts, or altered trust.
+- Separate shared knowledge from member-specific knowledge.
+
+## Exclusions
+- Ignore and exclude all [OOC] or meta discussion.
+- Do not summarize the whole scene if it is not relevant to {{char}}.
+- Do not include unsupported assumptions.
+
+For the keywords field, generate 15-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important topical terms. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). No compound keywords unless they are proper nouns. Do not use abstract themes (e.g., "sadness", "love") or character names.
+
+Return ONLY the JSON, no additional text.`,
         summarize: translate(
 `Analyze the following roleplay scene and return a structured summary as JSON.
 
@@ -888,6 +980,21 @@ export async function getPresetPrompt(presetName) {
 export async function getEffectivePrompt(profile) {
     if (!profile) {
         return getDefaultPrompt();
+    }
+    const targetKind = String(profile?.stmbPromptTarget || '').trim().toLowerCase();
+    if (profile.useGroupSpecificPrompts && targetKind) {
+        if (targetKind === 'group') {
+            if (typeof profile.groupPrompt === 'string' && profile.groupPrompt.trim()) {
+                return profile.groupPrompt;
+            }
+            return await getCustomPresetPrompt(profile.groupPreset || 'group');
+        }
+        if (targetKind === 'character' || targetKind === 'char') {
+            if (typeof profile.characterPrompt === 'string' && profile.characterPrompt.trim()) {
+                return profile.characterPrompt;
+            }
+            return await getCustomPresetPrompt(profile.characterPreset || 'char');
+        }
     }
     if (profile.preset) {
         return await getCustomPresetPrompt(profile.preset);
@@ -1150,6 +1257,9 @@ export function createProfileObject(data = {}) {
         },
         prompt: (data.prompt || '').trim(),
         preset: data.preset || '',
+        useGroupSpecificPrompts: parseBooleanFlag(data.useGroupSpecificPrompts, false),
+        groupPreset: String(data.groupPreset || 'group').trim() || 'group',
+        characterPreset: String(data.characterPreset || data.charPreset || 'char').trim() || 'char',
         constVectMode: data.constVectMode || 'link',
         position: data.position !== undefined ? Number(data.position) : 0,
         orderMode: data.orderMode || 'auto',

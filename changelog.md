@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v8.0.0 (July 5, 2026)
+- NEW FEATURE: Multi-character memories in group chats.
+
 ## v7.2.1 (June 27, 2026)
 - Fixed STMB demanding 0 memories in catchup.
 

@@ -4,6 +4,8 @@ import { selected_group, groups } from '../../../group-chats.js';
 import { estimateTokens } from './utils.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
+const MODULE_NAME = 'STMemoryBooks-ChatCompile';
+
 /**
  * Compile chat messages between scene markers into structured format
  * @param {Object} sceneRequest - Scene compilation request
@@ -69,7 +71,7 @@ export function compileScene(sceneRequest) {
         }
 
         if (groupParticipantResolver && !message.is_user) {
-            const filterName = resolveGroupParticipantFilterName(message, groupParticipantResolver);
+            const filterName = resolveGroupParticipantFilterName(message, groupParticipantResolver, i);
             if (filterName) {
                 participantFilterNames.add(filterName);
             }
@@ -308,7 +310,7 @@ function createGroupParticipantResolver() {
     return { memberAvatars, avatarsBySpeaker };
 }
 
-function resolveGroupParticipantFilterName(message, resolver) {
+function resolveGroupParticipantFilterName(message, resolver, messageId = null) {
     const originalAvatar = String(message?.original_avatar || '').trim();
     if (originalAvatar && resolver.memberAvatars.has(originalAvatar)) {
         return getCharacterFilterNameFromAvatar(originalAvatar);
@@ -321,6 +323,12 @@ function resolveGroupParticipantFilterName(message, resolver) {
 
     const avatarMatches = resolver.avatarsBySpeaker.get(speakerName);
     if (!avatarMatches || avatarMatches.size !== 1) {
+        if (avatarMatches?.size > 1) {
+            console.warn(
+                `${MODULE_NAME}: Ambiguous group participant name "${speakerName}" at message ${messageId ?? 'unknown'}; skipping character filter participant because original_avatar is unavailable or does not match a group member.`,
+                { speakerName, avatarMatches: Array.from(avatarMatches) },
+            );
+        }
         return null;
     }
 
