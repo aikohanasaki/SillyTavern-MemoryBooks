@@ -1252,11 +1252,19 @@ function validateInputs(compiledScene, profile) {
     // profile must have a non-empty prompt, preset key, or resolved group-specific prompt.
     const hasPrompt = typeof profile?.prompt === 'string' && profile.prompt.trim().length > 0;
     const hasPreset = typeof profile?.preset === 'string' && profile.preset.trim().length > 0;
-    const hasGroupSpecificPrompt = Boolean(profile?.useGroupSpecificPrompts) && (
+    const promptTarget = String(compiledScene?.metadata?.stmbPromptTarget || profile?.stmbPromptTarget || '').trim().toLowerCase();
+    const hasGroupPrompt =
         (typeof profile?.groupPrompt === 'string' && profile.groupPrompt.trim().length > 0)
-        || (typeof profile?.characterPrompt === 'string' && profile.characterPrompt.trim().length > 0)
-        || (typeof profile?.groupPreset === 'string' && profile.groupPreset.trim().length > 0)
-        || (typeof profile?.characterPreset === 'string' && profile.characterPreset.trim().length > 0)
+        || (typeof profile?.groupPreset === 'string' && profile.groupPreset.trim().length > 0);
+    const hasCharacterPrompt =
+        (typeof profile?.characterPrompt === 'string' && profile.characterPrompt.trim().length > 0)
+        || (typeof profile?.characterPreset === 'string' && profile.characterPreset.trim().length > 0);
+    const hasGroupSpecificPrompt = Boolean(profile?.useGroupSpecificPrompts) && (
+        promptTarget === 'group'
+            ? hasGroupPrompt
+            : promptTarget === 'character' || promptTarget === 'char'
+                ? hasCharacterPrompt
+                : hasGroupPrompt || hasCharacterPrompt
     );
 
     if (!hasPrompt && !hasPreset && !hasGroupSpecificPrompt) {
@@ -1421,8 +1429,9 @@ async function buildPrompt(compiledScene, profile) {
     const systemPrompt = await getEffectivePrompt(promptProfile);
     
     // Use substituteParams to allow for standard macros like {{char}} and {{user}}
+    const groupName = metadata.groupName || metadata.characterName || '';
     const processedSystemPrompt = substituteParams(systemPrompt, metadata.userName, metadata.characterName)
-        .replace(/\{\{\s*group\s*\}\}/gi, metadata.groupName || metadata.characterName || '');
+        .replace(/\{\{\s*group\s*\}\}/gi, () => groupName);
     
     // Build scene text for user prompt
     const additionalContext = await resolveAdditionalContextEntries(profile, compiledScene);
