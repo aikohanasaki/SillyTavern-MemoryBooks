@@ -1101,27 +1101,51 @@ function normalizeCharacterFilterNames(value) {
   return names;
 }
 
+function makeCharacterFilter(isExclude, names) {
+  const normalizedNames = normalizeCharacterFilterNames(names);
+  if (normalizedNames.length === 0) return null;
+  return {
+    isExclude: !!isExclude,
+    names: normalizedNames,
+    tags: [],
+  };
+}
+
 function collectSummarySourceCharacterFilter(summary, lorebookData) {
   const ids = new Set((summary?.memberIds || []).map(String));
-  if (ids.size === 0) return [];
-  const names = [];
-  const seen = new Set();
+  if (ids.size === 0) return null;
+  const includeNames = [];
+  const excludeNames = [];
+  const includeSeen = new Set();
+  const excludeSeen = new Set();
+  let hasUnfilteredSource = false;
   for (const entry of Object.values(lorebookData?.entries || {})) {
     if (!ids.has(String(entry?.uid))) continue;
-    const entryNames = normalizeCharacterFilterNames(entry?.characterFilter?.names);
+    const filter = entry?.characterFilter;
+    const entryNames = normalizeCharacterFilterNames(filter?.names);
     if (entryNames.length === 0) {
-      // A source entry with no character filter was globally visible;
-      // the consolidated summary must remain unrestricted too.
-      return [];
+      hasUnfilteredSource = true;
+      continue;
     }
+    const targetNames = filter?.isExclude ? excludeNames : includeNames;
+    const targetSeen = filter?.isExclude ? excludeSeen : includeSeen;
     for (const name of entryNames) {
-      if (!seen.has(name)) {
-        seen.add(name);
-        names.push(name);
+      if (!targetSeen.has(name)) {
+        targetSeen.add(name);
+        targetNames.push(name);
       }
     }
   }
-  return names;
+  if (hasUnfilteredSource) {
+    // Preserve existing include-only behavior: any unrestricted source keeps
+    // the consolidated summary unrestricted.
+    return null;
+  }
+  const excludedNames = new Set(excludeNames);
+  return makeCharacterFilter(
+    false,
+    includeNames.filter((name) => !excludedNames.has(name)),
+  );
 }
 
 export function getNextSummaryNumber(lorebookData, targetTier = 1) {
@@ -1261,15 +1285,11 @@ export async function commitSummaryEntries({
         key: Array.isArray(keywords) ? keywords : [],
         disable: false,
       };
-      const characterFilterNames = normalizeCharacterFilterNames(
-        summary.characterFilterNames || collectSummarySourceCharacterFilter(summary, lorebookData),
-      );
-      if (characterFilterNames.length > 0) {
-        entryOverrides.characterFilter = {
-          isExclude: false,
-          names: characterFilterNames,
-          tags: [],
-        };
+      const characterFilter = summary.characterFilterNames
+        ? makeCharacterFilter(false, summary.characterFilterNames)
+        : collectSummarySourceCharacterFilter(summary, lorebookData);
+      if (characterFilter) {
+        entryOverrides.characterFilter = characterFilter;
       }
       if (summary.inclusionGroup) {
         entryOverrides.group = String(summary.inclusionGroup);
