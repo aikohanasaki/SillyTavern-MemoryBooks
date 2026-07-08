@@ -6,11 +6,21 @@ import { getBuiltInArcPrompts, getDefaultArcPrompt } from './templatesArcPrompts
 const MODULE_NAME = 'STMemoryBooks-ArcAnalysisPromptManager';
 const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
 
- // Preferred translation keys for built-in consolidation presets
- const BUILTIN_DISPLAY_NAMES = {
-   arc_default: 'Multi-Consolidation Analysis',
-   arc_alternate: 'Single Consolidation Analysis',
- };
+// Preferred translation keys for built-in consolidation presets.
+const BUILTIN_DISPLAY_NAMES = {
+  arc_default: {
+    fallback: 'Multi-Consolidation Analysis',
+    key: 'STMemoryBooks_ArcPrompt_DisplayName_Default',
+  },
+  arc_alternate: {
+    fallback: 'Single Consolidation Analysis',
+    key: 'STMemoryBooks_ArcPrompt_DisplayName_Alternate',
+  },
+  arc_tiny: {
+    fallback: 'Tiny Consolidation Analysis',
+    key: 'STMemoryBooks_ArcPrompt_DisplayName_Tiny',
+  },
+};
 
 /**
  * In-memory cache of loaded overrides
@@ -58,6 +68,14 @@ function generateDisplayNameFromContent(prompt) {
     return toTitleCase(cleaned.substring(0, 50));
   }
   return 'Consolidation Prompt';
+}
+
+function getBuiltInDisplayName(key, prompt = '') {
+  const definition = BUILTIN_DISPLAY_NAMES[key];
+  const fallback = definition?.fallback
+    || toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' '))
+    || generateDisplayNameFromContent(prompt);
+  return definition?.key ? (translate(fallback, definition.key) || fallback) : fallback;
 }
 
 /**
@@ -141,15 +159,8 @@ async function loadOverrides(settings = null) {
     const builtIns = getBuiltInArcPrompts() || {};
     // Seed all built-ins as overridable entries for consistent UX
     for (const [key, prompt] of Object.entries(builtIns)) {
-      let displayName;
-      if (BUILTIN_DISPLAY_NAMES[key]) {
-        const translated = translate(BUILTIN_DISPLAY_NAMES[key]);
-        displayName = translated || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt);
-      } else {
-        displayName = toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt);
-      }
       overrides[key] = {
-        displayName,
+        displayName: getBuiltInDisplayName(key, prompt),
         prompt,
         createdAt: now,
       };
@@ -229,7 +240,7 @@ export async function listPresets(settings = null) {
     if (!(key in data.overrides)) {
       presets.push({
         key,
-        displayName: (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' '))),
+        displayName: getBuiltInDisplayName(key, builtIns[key]),
         createdAt: null,
       });
     }
@@ -295,7 +306,7 @@ export async function getDisplayName(key, settings = null) {
   if (data.overrides[key] && data.overrides[key].displayName) {
     return data.overrides[key].displayName;
   }
-  return BUILTIN_DISPLAY_NAMES[key] || toTitleCase(String(key || '').replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || 'Consolidation Prompt';
+  return getBuiltInDisplayName(key);
 }
 
 /**
@@ -449,8 +460,7 @@ export async function rebuildFromBuiltIns(options = {}) {
   const overrides = {};
   for (const [key, prompt] of Object.entries(builtIns)) {
     overrides[key] = {
-      displayName:
-        (BUILTIN_DISPLAY_NAMES[key] || toTitleCase(key.replace(/^arc[_-]?/, '').replace(/[_-]/g, ' ')) || generateDisplayNameFromContent(prompt)),
+      displayName: getBuiltInDisplayName(key, prompt),
       prompt,
       createdAt: now,
     };
