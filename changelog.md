@@ -5,6 +5,7 @@
 ## v8.0.0 (July 8, 2026)
 - MAJOR NEW FEATURE: Multi-character memories in group chats.
 - Bugfix: useChatCompletionService now reads streaming value from oai_settings.stream_openai.
+- Tweak: Refactored settings layouts.
 
 ## v7.2.1 (June 27, 2026)
 - Fixed STMB demanding 0 memories in catchup.
