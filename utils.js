@@ -644,7 +644,8 @@ For the keywords field, provide 15-30 specific, descriptive, relevant keywords f
 Return ONLY the JSON, no other text.`,
             'STMemoryBooks_Prompt_summary'
         ),
-        group: `Analyze the following roleplay scene and create a memory entry from an omniscient POV.
+        group: translate(
+`Analyze the following roleplay scene and create a memory entry from an omniscient POV.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -692,7 +693,10 @@ For the keywords field:
 - Prefer keywords that would fire if the user later mentions the noun/action alone.
 
 Return ONLY the JSON, no additional text.`,
-        char: `Analyze the following scene and create a memory entry written with {{char}} as the focus.
+            'STMemoryBooks_Prompt_group'
+        ),
+        char: translate(
+`Analyze the following scene and create a memory entry written with {{char}} as the focus.
 
 You must respond with ONLY valid JSON in this exact format:
 {
@@ -736,6 +740,8 @@ For the content field, use this markdown structure:
 For the keywords field, generate 15-30 specific, descriptive, highly relevant keywords for database retrieval - focus on the most important topical terms. Keywords must be concrete and scene-specific (locations, objects, proper nouns, unique actions). No compound keywords unless they are proper nouns. Do not use abstract themes (e.g., "sadness", "love") or character names.
 
 Return ONLY the JSON, no additional text.`,
+            'STMemoryBooks_Prompt_char'
+        ),
         summarize: translate(
 `Analyze the following roleplay scene and return a structured summary as JSON.
 
