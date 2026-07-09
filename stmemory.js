@@ -343,15 +343,49 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
     }
 
     const normalizedPresetName = typeof presetName === 'string' ? presetName.trim() : '';
+    const serviceBody = {
+        ...body,
+        stream: !!oai_settings?.stream_openai,
+    };
     let full;
     try {
         if (normalizedPresetName && typeof service.processRequest === 'function') {
-            full = await service.processRequest(body, { presetName: normalizedPresetName }, false, signal);
+            full = await service.processRequest(serviceBody, { presetName: normalizedPresetName }, false, signal);
         } else {
             if (normalizedPresetName && typeof service.processRequest !== 'function') {
                 console.warn(`${MODULE_NAME}: ChatCompletionService.processRequest is unavailable; falling back to sendRequest.`);
             }
-            full = await service.sendRequest(body, false, signal);
+            full = await service.sendRequest(serviceBody, false, signal);
+        }
+
+        if (typeof full === 'function') {
+            let text = '';
+            let lastChunk = null;
+            for await (const chunk of full()) {
+                lastChunk = chunk;
+                if (typeof chunk?.text === 'string') {
+                    text = chunk.text;
+                }
+            }
+            return {
+                text,
+                full: {
+                    choices: [
+                        {
+                            index: 0,
+                            message: {
+                                role: 'assistant',
+                                content: text,
+                            },
+                            finish_reason: null,
+                        },
+                    ],
+                    stmb_streaming: {
+                        source: 'chat_completion_service',
+                        last_chunk: lastChunk || null,
+                    },
+                },
+            };
         }
     } catch (error) {
         if (signal?.aborted) {
