@@ -75,7 +75,11 @@ import {
   saveMetadataForCurrentContext,
   getHighestMemoryProcessed
 } from "./sceneManager.js";
-import { settingsTemplate } from "./templates.js";
+import {
+  automaticMemoriesSettingsTemplate,
+  generalSettingsTemplate,
+  settingsTemplate,
+} from "./templates.js";
 import {
   showConfirmationPopup,
   fetchPreviousSummaries,
@@ -5414,6 +5418,16 @@ function populateInlineButtons() {
   // Create additional function buttons
   const promptManagerButtons = [
     {
+      text: "⚙️ " + translate("General Settings", "STMemoryBooks_Preferences"),
+      id: "stmb-general-settings",
+      action: showGeneralSettingsPopup,
+    },
+    {
+      text: "⏱️ " + translate("Automatic Memories", "STMemoryBooks_AutoMemory"),
+      id: "stmb-automatic-memories-settings",
+      action: showAutomaticMemoriesSettingsPopup,
+    },
+    {
       text:
         "🧩 " +
         translate(
@@ -8151,8 +8165,8 @@ async function showArcConsolidationPopup() {
   return showSummaryConsolidationPopup();
 }
 
-function initializeSettingsPopupSelect2() {
-  if (!currentPopupInstance?.dlg) return;
+function initializeSettingsPopupSelect2(popupInstance = currentPopupInstance) {
+  if (!popupInstance?.dlg) return;
 
   setTimeout(() => {
     try {
@@ -8160,7 +8174,7 @@ function initializeSettingsPopupSelect2() {
         return;
       }
 
-      const $select = window.jQuery("#stmb-auto-consolidation-target-tier");
+      const $select = window.jQuery(popupInstance.dlg).find("#stmb-auto-consolidation-target-tier");
       if (!$select.length) return;
 
       if ($select.hasClass("select2-hidden-accessible")) {
@@ -8175,7 +8189,7 @@ function initializeSettingsPopupSelect2() {
         ),
         closeOnSelect: false,
         allowClear: true,
-        dropdownParent: window.jQuery(currentPopupInstance.dlg),
+        dropdownParent: window.jQuery(popupInstance.dlg),
       });
     } catch (error) {
       console.warn(
@@ -8186,15 +8200,13 @@ function initializeSettingsPopupSelect2() {
   }, 0);
 }
 
-/**
- * Show main settings popup
- */
-async function showSettingsPopup() {
+async function buildSettingsTemplateData() {
   const settings = initializeSettings();
   await SummaryPromptManager.firstRunInitIfMissing(settings);
   const sceneData = await getSceneData();
+  const sceneMarkers = getSceneMarkers();
 
-  // Build Regex script options (Global, Scoped, Preset), include disabled too
+  // Build Regex script options (Global, Scoped, Preset), include disabled too.
   const selectedRegexOutgoing = Array.isArray(
     settings.moduleSettings.selectedRegexOutgoing,
   )
@@ -8221,17 +8233,19 @@ async function showSettingsPopup() {
   } catch (e) {
     console.warn("STMemoryBooks: Failed to enumerate Regex scripts for UI", e);
   }
+
   const selectedProfile = settings.profiles[settings.defaultProfile];
   const defaultProfileTitleFormat = getDefaultProfileTitleFormat(settings);
   const isCustomTitleFormat = !getDefaultTitleFormats().includes(defaultProfileTitleFormat);
-  const sceneMarkers = getSceneMarkers();
-
-  // Get current lorebook information
   const isManualMode = settings.moduleSettings.manualModeEnabled;
   const chatBoundLorebook = chat_metadata?.[METADATA_KEY] ?? null;
   const manualLorebook = sceneMarkers?.manualLorebook ?? null;
+  const autoConsolidationTargetTiers = normalizeAutoConsolidationTargetTiers(
+    settings.moduleSettings.autoConsolidationTargetTiers ??
+      settings.moduleSettings.autoConsolidationTargetTier,
+  );
 
-  const templateData = {
+  return {
     hasScene: !!sceneData,
     sceneData: sceneData,
     highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
@@ -8268,21 +8282,14 @@ async function showSettingsPopup() {
     autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
     autoConsolidationPromptEnabled:
       settings.moduleSettings.autoConsolidationPromptEnabled ?? false,
-    autoConsolidationTargetTiers: normalizeAutoConsolidationTargetTiers(
-      settings.moduleSettings.autoConsolidationTargetTiers ??
-        settings.moduleSettings.autoConsolidationTargetTier,
-    ),
+    autoConsolidationTargetTiers,
     autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
     lorebookNameTemplate:
       settings.moduleSettings.lorebookNameTemplate ||
       "LTM - {{char}} - {{chat}}",
     autoConsolidationTierOptions: getAutoConsolidationTierOptions().map((option) => ({
       ...option,
-      isSelected:
-        normalizeAutoConsolidationTargetTiers(
-          settings.moduleSettings.autoConsolidationTargetTiers ??
-            settings.moduleSettings.autoConsolidationTargetTier,
-        ).includes(Number(option.value)),
+      isSelected: autoConsolidationTargetTiers.includes(Number(option.value)),
     })),
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
@@ -8338,6 +8345,14 @@ async function showSettingsPopup() {
             : getDefaultPrompt(),
     },
   };
+}
+
+/**
+ * Show main settings popup
+ */
+async function showSettingsPopup() {
+  const settings = initializeSettings();
+  const templateData = await buildSettingsTemplateData();
 
   const content = DOMPurify.sanitize(settingsTemplate(templateData));
 
@@ -8425,9 +8440,9 @@ async function showSettingsPopup() {
       popupOptions,
     );
     markStmbPopup(currentPopupInstance);
-    setupSettingsEventListeners();
+    setupSettingsEventListeners(currentPopupInstance);
     populateInlineButtons();
-    initializeSettingsPopupSelect2();
+    initializeSettingsPopupSelect2(currentPopupInstance);
     await currentPopupInstance.show();
   } catch (error) {
     console.error("STMemoryBooks: Error showing settings popup:", error);
@@ -8435,13 +8450,68 @@ async function showSettingsPopup() {
   }
 }
 
+async function showGeneralSettingsPopup() {
+  try {
+    const templateData = await buildSettingsTemplateData();
+    const content = DOMPurify.sanitize(generalSettingsTemplate(templateData));
+    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+      wide: true,
+      large: true,
+      allowVerticalScrolling: true,
+      cancelButton: translate("Close", "STMemoryBooks_Close"),
+      okButton: false,
+      onClose: handleSettingsFormPopupClose,
+    });
+    markStmbPopup(popup);
+    setupSettingsEventListeners(popup);
+    await popup.show();
+  } catch (error) {
+    console.error("STMemoryBooks: Error showing general settings popup:", error);
+    toastr.error(
+      translate(
+        "Failed to open settings",
+        "STMemoryBooks_FailedToOpenSettings",
+      ),
+      "STMemoryBooks",
+    );
+  }
+}
+
+async function showAutomaticMemoriesSettingsPopup() {
+  try {
+    const templateData = await buildSettingsTemplateData();
+    const content = DOMPurify.sanitize(automaticMemoriesSettingsTemplate(templateData));
+    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+      wide: true,
+      large: true,
+      allowVerticalScrolling: true,
+      cancelButton: translate("Close", "STMemoryBooks_Close"),
+      okButton: false,
+      onClose: handleSettingsFormPopupClose,
+    });
+    markStmbPopup(popup);
+    setupSettingsEventListeners(popup);
+    initializeSettingsPopupSelect2(popup);
+    await popup.show();
+  } catch (error) {
+    console.error("STMemoryBooks: Error showing automatic memories settings popup:", error);
+    toastr.error(
+      translate(
+        "Failed to open Automatic Memories settings",
+        "STMemoryBooks_FailedToOpenAutomaticMemoriesSettings",
+      ),
+      "STMemoryBooks",
+    );
+  }
+}
+
 /**
  * Setup event listeners for settings popup using full event delegation
  */
-function setupSettingsEventListeners() {
-  if (!currentPopupInstance) return;
+function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
+  if (!popupInstance?.dlg) return;
 
-  const popupElement = currentPopupInstance.dlg;
+  const popupElement = popupInstance.dlg;
 
   // Use full event delegation for all interactions
   popupElement.addEventListener("click", async (e) => {
@@ -8691,7 +8761,7 @@ function setupSettingsEventListeners() {
     }
 
     if (e.target.matches("#stmb-profile-select")) {
-      const newIndex = clampInt(readIntInput(e.target), 0, profiles.length - 1);
+      const newIndex = clampInt(readIntInput(e.target), 0, settings.profiles.length - 1);
       if (newIndex >= 0 && newIndex < settings.profiles.length) {
         const selectedProfile = settings.profiles[newIndex];
         const summaryApi = popupElement.querySelector("#stmb-summary-api");
@@ -8996,16 +9066,23 @@ function persistMainPopupSettings(popupElement) {
   const autoConsolidationPromptEnabled =
     popupElement.querySelector("#stmb-auto-consolidation-prompt-enabled")
       ?.checked ?? settings.moduleSettings.autoConsolidationPromptEnabled;
-  const autoConsolidationTargetTiers = normalizeAutoConsolidationTargetTiers(
-    Array.from(
-      popupElement.querySelector("#stmb-auto-consolidation-target-tier")
-        ?.selectedOptions ?? [],
-    ).map((option) => option.value),
-    { fallback: [] },
+  const autoConsolidationTargetTierSelect = popupElement.querySelector(
+    "#stmb-auto-consolidation-target-tier",
   );
+  const autoConsolidationTargetTiers = autoConsolidationTargetTierSelect
+    ? normalizeAutoConsolidationTargetTiers(
+        Array.from(autoConsolidationTargetTierSelect.selectedOptions ?? []).map(
+          (option) => option.value,
+        ),
+        { fallback: [] },
+      )
+    : normalizeAutoConsolidationTargetTiers(
+        settings.moduleSettings.autoConsolidationTargetTiers ??
+          settings.moduleSettings.autoConsolidationTargetTier,
+      );
   const maxTokens = readIntInput(
     popupElement.querySelector("#stmb-max-tokens"),
-    DEFAULT_MAX_TOKENS,
+    settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS,
   );
   const maxTokensNormalized =
     Number.isFinite(maxTokens) && maxTokens >= 0 ? maxTokens : DEFAULT_MAX_TOKENS;
@@ -9179,9 +9256,9 @@ function persistMainPopupSettings(popupElement) {
 }
 
 /**
- * Handle settings popup close
+ * Handle any settings form popup close.
  */
-function handleSettingsPopupClose(popup) {
+function handleSettingsFormPopupClose(popup) {
   try {
     persistMainPopupSettings(popup.dlg);
   } catch (error) {
@@ -9194,6 +9271,13 @@ function handleSettingsPopupClose(popup) {
       "STMemoryBooks",
     );
   }
+}
+
+/**
+ * Handle main settings popup close.
+ */
+function handleSettingsPopupClose(popup) {
+  handleSettingsFormPopupClose(popup);
   currentPopupInstance = null;
 }
 
@@ -9208,119 +9292,7 @@ async function refreshPopupContent() {
   try {
     persistMainPopupSettings(currentPopupInstance.dlg);
     const settings = initializeSettings();
-    const sceneData = await getSceneData();
-    const selectedProfile = settings.profiles[settings.defaultProfile];
-    const defaultProfileTitleFormat = getDefaultProfileTitleFormat(settings);
-    const isCustomTitleFormat = !getDefaultTitleFormats().includes(defaultProfileTitleFormat);
-    const sceneMarkers = getSceneMarkers();
-
-    // Get current lorebook information
-    const isManualMode = settings.moduleSettings.manualModeEnabled;
-    const chatBoundLorebook = chat_metadata?.[METADATA_KEY] || null;
-    const manualLorebook = sceneMarkers?.manualLorebook || null;
-
-    const templateData = {
-      hasScene: !!sceneData,
-      sceneData: sceneData,
-      highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
-      hasHighestMemoryProcessed: Number.isFinite(
-        sceneMarkers?.highestMemoryProcessed,
-      ),
-      highestMemoryProcessedManuallySet:
-        !!sceneMarkers?.highestMemoryProcessedManuallySet,
-      alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
-      showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
-      showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
-      showNotifications: settings.moduleSettings.showNotifications,
-      showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
-      memoryBoundaryMode: normalizeMemoryBoundaryMode(settings.moduleSettings.memoryBoundaryMode),
-      memoryBoundaryModeOptions: getMemoryBoundaryModeOptions(settings.moduleSettings.memoryBoundaryMode),
-      unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
-      refreshEditor: settings.moduleSettings.refreshEditor,
-      allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
-      manualModeEnabled: settings.moduleSettings.manualModeEnabled,
-      maxTokens:
-        settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS,
-
-      // Lorebook status information
-      lorebookMode: isManualMode ? "Manual" : "Automatic (Chat-bound)",
-      currentLorebookName: isManualMode ? manualLorebook : chatBoundLorebook,
-      manualLorebookName: manualLorebook,
-      chatBoundLorebookName: chatBoundLorebook,
-      availableLorebooks: world_names ?? [],
-      autoHideMode: getAutoHideMode(settings.moduleSettings),
-      unhiddenEntriesCount: settings.moduleSettings.unhiddenEntriesCount ?? 0,
-      tokenWarningThreshold:
-        settings.moduleSettings.tokenWarningThreshold ?? 50000,
-      defaultMemoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
-      autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
-      autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
-      autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 0,
-      autoConsolidationPromptEnabled:
-        settings.moduleSettings.autoConsolidationPromptEnabled ?? false,
-      autoConsolidationTargetTiers: normalizeAutoConsolidationTargetTiers(
-        settings.moduleSettings.autoConsolidationTargetTiers ??
-          settings.moduleSettings.autoConsolidationTargetTier,
-      ),
-      autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
-      lorebookNameTemplate:
-        settings.moduleSettings.lorebookNameTemplate ||
-        "LTM - {{char}} - {{chat}}",
-      autoConsolidationTierOptions: getAutoConsolidationTierOptions().map((option) => ({
-        ...option,
-        isSelected:
-          normalizeAutoConsolidationTargetTiers(
-            settings.moduleSettings.autoConsolidationTargetTiers ??
-              settings.moduleSettings.autoConsolidationTargetTier,
-          ).includes(Number(option.value)),
-      })),
-      profiles: settings.profiles.map((profile, index) => ({
-        ...profile,
-        name:
-          profile?.isBuiltinCurrentST
-            ? translate(
-                "Current SillyTavern Settings",
-                "STMemoryBooks_Profile_CurrentST",
-              )
-            : profile.name,
-        isDefault: index === settings.defaultProfile,
-      })),
-      titleFormat: defaultProfileTitleFormat,
-      titleFormats: getDefaultTitleFormats().map((format) => ({
-        value: format,
-        isSelected: format === defaultProfileTitleFormat,
-      })),
-      isCustomTitleFormat,
-      showCustomInput: isCustomTitleFormat,
-      selectedProfile: {
-        ...selectedProfile,
-        connection:
-          selectedProfile.useDynamicSTSettings ||
-          selectedProfile?.connection?.api === "current_st"
-            ? (() => {
-                const currentApiInfo = getCurrentApiInfo();
-                const currentSettings = getUIModelSettings();
-                return {
-                  api: currentApiInfo.completionSource || "openai",
-                  model: currentSettings.model || "Not Set",
-                  temperature: currentSettings.temperature ?? 0.7,
-                };
-              })()
-            : {
-                api: selectedProfile.connection?.api || "openai",
-                model: selectedProfile.connection?.model || "gpt-4.1",
-                temperature: selectedProfile.connection?.temperature ?? 0.7,
-              },
-        titleFormat: selectedProfile.titleFormat || defaultProfileTitleFormat,
-        effectivePrompt:
-          selectedProfile.prompt && selectedProfile.prompt.trim()
-            ? selectedProfile.prompt
-            : selectedProfile.preset
-              ? await SummaryPromptManager.getPrompt(selectedProfile.preset)
-              : getDefaultPrompt(),
-      },
-    };
-
+    const templateData = await buildSettingsTemplateData();
     const newHtml = DOMPurify.sanitize(settingsTemplate(templateData));
 
     // Update the popup content directly
@@ -9347,7 +9319,7 @@ async function refreshPopupContent() {
 
     // Repopulate profile buttons after content refresh
     populateInlineButtons();
-    initializeSettingsPopupSelect2();
+    initializeSettingsPopupSelect2(currentPopupInstance);
   } catch (error) {
     console.error("STMemoryBooks: Error refreshing popup content:", error);
   }

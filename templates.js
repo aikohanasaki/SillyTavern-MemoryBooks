@@ -4,7 +4,7 @@ import { Handlebars } from '../../../../lib.js';
  * Main settings template
  */
 export const settingsTemplate = Handlebars.compile(`
-    <h2 data-i18n="STMemoryBooks_Settings">📕 Memory Books Settings</h2>
+    <h2 data-i18n="STMemoryBooks_Settings">📕 Memory Books</h2>
         {{#if hasScene}}
         <div id="stmb-scene" class="padding10 marginBot10">
             <div class="marginBot5" data-i18n="STMemoryBooks_CurrentScene">Current Scene:</div>
@@ -38,103 +38,6 @@ export const settingsTemplate = Handlebars.compile(`
             <small data-i18n="STMemoryBooks_AutoSummaryNote">Please note that Auto-Summary requires you to "prime" every chat with at least one manual memory. After that, summaries will be made automatically.</small>
         </div>
         {{/if}}
-
-        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Preferences">Preferences:</h3>
-
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_ShowMemoryPreviews;[title]STMemoryBooks_ShowMemoryPreviewsTooltip" title="Shows previews for memories and side prompts returned from the AI.">Show memory previews</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-show-consolidation-previews" {{#if showConsolidationPreviews}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_ShowConsolidationPreviews;[title]STMemoryBooks_ShowConsolidationPreviewsTooltip" title="Shows previews for consolidation summaries returned from the AI.">Show consolidation previews</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
-            </label>
-            <label for="stmb-memory-boundary-mode">
-                <span data-i18n="STMemoryBooks_MemoryBoundaryMode">Memory boundary indicator</span>
-                <small class="opacity50p" data-i18n="STMemoryBooks_MemoryBoundaryModeDesc">Show a chat divider, a jump button, or both at the Memory Books processed boundary.</small>
-                <select id="stmb-memory-boundary-mode" class="text_pole">
-                    {{#each memoryBoundaryModeOptions}}
-                        <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
-                    {{/each}}
-                </select>
-            </label>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_AllowSceneOverlap;[title]STMemoryBooks_AllowSceneOverlapTooltip" title="By default, STMB avoids message ID overlap between memories. Select this box to skip that check.">Allow scene overlap</span>
-            </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AllowSceneOverlapDesc">Check this box to skip checking for overlapping memories/scenes.</small>
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_RefreshEditor">Refresh lorebook editor after adding memories</span>
-            </label>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-max-tokens">
-                <h4 data-i18n="STMemoryBooks_MaxTokens">Max Response Tokens:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_MaxTokensDesc">Maximum number of tokens to use for memory summaries.</small>
-                <input type="number" id="stmb-max-tokens" class="text_pole"
-                    value="{{maxTokens}}" min="0" step="1"
-                    placeholder="4000">
-            </label>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-token-warning-threshold">
-                <h4 data-i18n="STMemoryBooks_TokenWarning">Token Warning Threshold:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_TokenWarningDesc">Show confirmation dialog when estimated input tokens exceed this threshold. Default: 30,000</small>
-                <input type="number" id="stmb-token-warning-threshold" class="text_pole"
-                    value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
-                    placeholder="30000">
-            </label>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-default-memory-count">
-                <h4 data-i18n="STMemoryBooks_DefaultMemoryCount">Default Previous Memories Count:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_DefaultMemoryCountDesc">Default number of previous memories to include as context when creating new memories.</small>
-                <select id="stmb-default-memory-count" class="text_pole">
-                    <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount0">None (0 memories)</option>
-                    <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount1">Last 1 memory</option>
-                    <option value="2" {{#if (eq defaultMemoryCount 2)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount2">Last 2 memories</option>
-                    <option value="3" {{#if (eq defaultMemoryCount 3)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount3">Last 3 memories</option>
-                    <option value="4" {{#if (eq defaultMemoryCount 4)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount4">Last 4 memories</option>
-                    <option value="5" {{#if (eq defaultMemoryCount 5)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount5">Last 5 memories</option>
-                    <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount6">Last 6 memories</option>
-                    <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount7">Last 7 memories</option>
-                </select>
-            </label>
-        </div>
-
-        <hr class="marginTop10 marginBot10">
-
-        <div class="world_entry_form_control" class="flex-container">
-            <div class="flex flexFlowRow alignItemsBaseline">
-                <label class="checkbox_label">
-                    <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
-                    <span data-i18n="STMemoryBooks_UseRegexAdvanced">Use regex (advanced)</span>
-                </label>
-            </div>
-            <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
-                <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}" data-i18n="STMemoryBooks_ConfigureRegex">
-                    📐 Configure regex…
-                </button>
-            </div>
-            <small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
-        </div>
 
         <h3 class="stmb-section-title" data-i18n="STMemoryBooks_CurrentLorebookConfig">Current Lorebook Configuration</h3>
 
@@ -198,87 +101,6 @@ export const settingsTemplate = Handlebars.compile(`
             </label>
         </div>
 
-        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_TokenSaving">Token Saving (Hide/Unhide Messages)</h3>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-auto-hide-mode">
-                <h4 data-i18n="STMemoryBooks_AutoHideMode">Auto-hide messages after adding memory:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_AutoHideModeDesc">Choose what messages to automatically hide after creating a memory.</small>
-                <select id="stmb-auto-hide-mode" class="text_pole">
-                    <option value="none" {{#if (eq autoHideMode "none")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideNone">Do not auto-hide</option>
-                    <option value="all" {{#if (eq autoHideMode "all")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideAll">Auto-hide all messages up to the last memory</option>
-                    <option value="last" {{#if (eq autoHideMode "last")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideLast">Auto-hide only messages in the last memory</option>
-                </select>
-            </label>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-unhidden-entries-count">
-                <h4 data-i18n="STMemoryBooks_UnhiddenCount">Messages to leave unhidden:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_UnhiddenCountDesc">Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)</small>
-                <input type="number" id="stmb-unhidden-entries-count" class="text_pole"
-                    value="{{unhiddenEntriesCount}}" min="0" max="50" step="1"
-                    placeholder="2">
-            </label>
-        </div>
-        
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
-            </label>
-        </div>
-
-        <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoMemory">Automatic Memories</h3>
-
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
-            </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc;[title]STMemoryBooks_AutoSummaryWarnTooltip" title="Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest &lt;N|none&gt; to control the baseline.">Automatically run /nextmemory after a specified number of messages.</small>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-auto-summary-interval">
-                <h4 data-i18n="STMemoryBooks_AutoSummaryInterval">Auto-Summary Interval:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryIntervalDesc">Number of messages after which to automatically create a memory summary.</small>
-                <input type="number" id="stmb-auto-summary-interval" class="text_pole"
-                    value="{{autoSummaryInterval}}" min="10" max="200" step="1"
-                    placeholder="50">
-            </label>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-auto-summary-buffer">
-                <h4 data-i18n="STMemoryBooks_AutoSummaryBuffer">Auto-Summary Buffer:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryBufferDesc">Delay auto-summary by X messages (belated generation). Default 2, max 50.</small>
-                <input type="number" id="stmb-auto-summary-buffer" class="text_pole"
-                    value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0">
-            </label>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-auto-consolidation-prompt-enabled" {{#if autoConsolidationPromptEnabled}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_AutoConsolidationEnabled">Prompt for consolidation when a tier is ready</span>
-            </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_AutoConsolidationDesc">Shows a yes/no prompt when any selected summary tier has enough eligible source entries. Uses each tier's saved minimum.</small>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label for="stmb-auto-consolidation-target-tier">
-                <h4 data-i18n="STMemoryBooks_AutoConsolidationTier">Auto-Consolidation Tiers:</h4>
-                <small class="opacity50p" data-i18n="STMemoryBooks_AutoConsolidationTierDesc">Choose which summary tiers should trigger the confirmation prompt.</small>
-            </label>
-        </div>
-
-        <select id="stmb-auto-consolidation-target-tier" class="text_pole" multiple size="6">
-            {{#each autoConsolidationTierOptions}}
-            <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
-            {{/each}}
-        </select>
-
         <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Profiles">Memory Profiles:</h3>
 
             <div class="world_entry_form_control">
@@ -327,15 +149,203 @@ export const settingsTemplate = Handlebars.compile(`
             <!-- extra function buttons will be dynamically inserted here -->
         </div>
 
-        <h4 class="stmb-section-title" data-i18n="STMemoryBooks_promptManagerButtons">Prompt Managers</h4>
+        <h4 class="stmb-section-title" data-i18n="STMemoryBooks_promptManagerButtons">Settings</h4>
 
         <div class="info-block">
-            <small class="opacity50p" data-i18n="STMemoryBooks_PromptManagerButtonsHint">Want to tweak things? Use the buttons below to customize each prompt type.</small>
+            <small class="opacity50p" data-i18n="STMemoryBooks_PromptManagerButtonsHint">Use the buttons below to explore customization options.</small>
             <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap" id="stmb-prompt-manager-buttons">
                 <!-- prompt manager buttons will be dynamically inserted here -->
             </div>
         </div>
 
+`);
+
+/**
+ * General settings popup template
+ */
+export const generalSettingsTemplate = Handlebars.compile(`
+    <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Preferences">General Settings</h3>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
+        </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ShowMemoryPreviews;[title]STMemoryBooks_ShowMemoryPreviewsTooltip" title="Shows previews for memories and side prompts returned from the AI.">Show memory previews</span>
+        </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-show-consolidation-previews" {{#if showConsolidationPreviews}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ShowConsolidationPreviews;[title]STMemoryBooks_ShowConsolidationPreviewsTooltip" title="Shows previews for consolidation summaries returned from the AI.">Show consolidation previews</span>
+        </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-show-notifications" {{#if showNotifications}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
+        </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
+        </label>
+        <label for="stmb-memory-boundary-mode">
+            <span data-i18n="STMemoryBooks_MemoryBoundaryMode">Memory boundary indicator</span>
+            <small class="opacity50p" data-i18n="STMemoryBooks_MemoryBoundaryModeDesc">Show a chat divider, a jump button, or both at the Memory Books processed boundary.</small>
+            <select id="stmb-memory-boundary-mode" class="text_pole">
+                {{#each memoryBoundaryModeOptions}}
+                    <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
+                {{/each}}
+            </select>
+        </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-allow-scene-overlap" {{#if allowSceneOverlap}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AllowSceneOverlap;[title]STMemoryBooks_AllowSceneOverlapTooltip" title="By default, STMB avoids message ID overlap between memories. Select this box to skip that check.">Allow scene overlap</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AllowSceneOverlapDesc">Check this box to skip checking for overlapping memories/scenes.</small>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_RefreshEditor">Refresh lorebook editor after adding memories</span>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-max-tokens">
+            <h4 data-i18n="STMemoryBooks_MaxTokens">Max Response Tokens:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_MaxTokensDesc">Maximum number of tokens to use for memory summaries.</small>
+            <input type="number" id="stmb-max-tokens" class="text_pole"
+                value="{{maxTokens}}" min="0" step="1"
+                placeholder="4000">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-token-warning-threshold">
+            <h4 data-i18n="STMemoryBooks_TokenWarning">Token Warning Threshold:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_TokenWarningDesc">Show confirmation dialog when estimated input tokens exceed this threshold. Default: 30,000</small>
+            <input type="number" id="stmb-token-warning-threshold" class="text_pole"
+                value="{{tokenWarningThreshold}}" min="1000" max="200000" step="1000"
+                placeholder="30000">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-default-memory-count">
+            <h4 data-i18n="STMemoryBooks_DefaultMemoryCount">Default Previous Memories Count:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_DefaultMemoryCountDesc">Default number of previous memories to include as context when creating new memories.</small>
+            <select id="stmb-default-memory-count" class="text_pole">
+                <option value="0" {{#if (eq defaultMemoryCount 0)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount0">None (0 memories)</option>
+                <option value="1" {{#if (eq defaultMemoryCount 1)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount1">Last 1 memory</option>
+                <option value="2" {{#if (eq defaultMemoryCount 2)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount2">Last 2 memories</option>
+                <option value="3" {{#if (eq defaultMemoryCount 3)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount3">Last 3 memories</option>
+                <option value="4" {{#if (eq defaultMemoryCount 4)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount4">Last 4 memories</option>
+                <option value="5" {{#if (eq defaultMemoryCount 5)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount5">Last 5 memories</option>
+                <option value="6" {{#if (eq defaultMemoryCount 6)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount6">Last 6 memories</option>
+                <option value="7" {{#if (eq defaultMemoryCount 7)}}selected{{/if}} data-i18n="STMemoryBooks_MemoryCount7">Last 7 memories</option>
+            </select>
+        </label>
+    </div>
+
+    <hr class="marginTop10 marginBot10">
+
+    <div class="world_entry_form_control flex-container">
+        <div class="flex flexFlowRow alignItemsBaseline">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-use-regex" {{#if useRegex}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_UseRegexAdvanced">Use regex (advanced)</span>
+            </label>
+        </div>
+        <div class="flex flexFlowRow buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+            <button id="stmb-configure-regex" class="menu_button whitespacenowrap" style="{{#unless useRegex}}display:none;{{/unless}}" data-i18n="STMemoryBooks_ConfigureRegex">
+                📐 Configure regex…
+            </button>
+        </div>
+        <small class="opacity70p" data-i18n="STMemoryBooks_RegexSelection_Desc">Selecting a regex here will run it REGARDLESS of whether it is enabled or disabled.</small>
+    </div>
+
+    <h3 class="stmb-section-title" data-i18n="STMemoryBooks_TokenSaving">Token Saving (Hide/Unhide Messages)</h3>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-hide-mode">
+            <h4 data-i18n="STMemoryBooks_AutoHideMode">Auto-hide messages after adding memory:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoHideModeDesc">Choose what messages to automatically hide after creating a memory.</small>
+            <select id="stmb-auto-hide-mode" class="text_pole">
+                <option value="none" {{#if (eq autoHideMode "none")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideNone">Do not auto-hide</option>
+                <option value="all" {{#if (eq autoHideMode "all")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideAll">Auto-hide all messages up to the last memory</option>
+                <option value="last" {{#if (eq autoHideMode "last")}}selected{{/if}} data-i18n="STMemoryBooks_AutoHideLast">Auto-hide only messages in the last memory</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-unhidden-entries-count">
+            <h4 data-i18n="STMemoryBooks_UnhiddenCount">Messages to leave unhidden:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_UnhiddenCountDesc">Number of recent messages to leave visible when auto-hiding (0 = hide all up to scene end)</small>
+            <input type="number" id="stmb-unhidden-entries-count" class="text_pole"
+                value="{{unhiddenEntriesCount}}" min="0" max="50" step="1"
+                placeholder="2">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-unhide-before-memory" {{#if unhideBeforeMemory}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
+        </label>
+    </div>
+`);
+
+/**
+ * Automatic memories settings popup template
+ */
+export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
+    <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoMemory">Automatic Memories</h3>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc;[title]STMemoryBooks_AutoSummaryWarnTooltip" title="Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest &lt;N|none&gt; to control the baseline.">Automatically run /nextmemory after a specified number of messages.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-summary-interval">
+            <h4 data-i18n="STMemoryBooks_AutoSummaryInterval">Auto-Summary Interval:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryIntervalDesc">Number of messages after which to automatically create a memory summary.</small>
+            <input type="number" id="stmb-auto-summary-interval" class="text_pole"
+                value="{{autoSummaryInterval}}" min="10" max="200" step="1"
+                placeholder="50">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-summary-buffer">
+            <h4 data-i18n="STMemoryBooks_AutoSummaryBuffer">Auto-Summary Buffer:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryBufferDesc">Delay auto-summary by X messages (belated generation). Default 2, max 50.</small>
+            <input type="number" id="stmb-auto-summary-buffer" class="text_pole"
+                value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-consolidation-prompt-enabled" {{#if autoConsolidationPromptEnabled}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoConsolidationEnabled">Prompt for consolidation when a tier is ready</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoConsolidationDesc">Shows a yes/no prompt when any selected summary tier has enough eligible source entries. Uses each tier's saved minimum.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-consolidation-target-tier">
+            <h4 data-i18n="STMemoryBooks_AutoConsolidationTier">Auto-Consolidation Tiers:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoConsolidationTierDesc">Choose which summary tiers should trigger the confirmation prompt.</small>
+        </label>
+    </div>
+
+    <select id="stmb-auto-consolidation-target-tier" class="text_pole" multiple size="6">
+        {{#each autoConsolidationTierOptions}}
+        <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+    </select>
 `);
 
 /**

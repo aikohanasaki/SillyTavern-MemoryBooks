@@ -110,7 +110,7 @@ export async function loadLocaleJson(lang) {
  */
 export const localeData_en = {
     // Main Settings Header
-    'STMemoryBooks_Settings': '📕 Memory Books Settings',
+    'STMemoryBooks_Settings': '📕 Memory Books',
 
     // Scene Display
     'STMemoryBooks_CurrentScene': 'Current Scene:',
@@ -307,7 +307,7 @@ export const localeData_en = {
     'STMemoryBooks_Stop_None': 'STMB stop issued, but no generation is in progress.',
 
     // Preferences Section
-    'STMemoryBooks_Preferences': 'Preferences:',
+    'STMemoryBooks_Preferences': 'General Settings',
     'STMemoryBooks_AlwaysUseDefault': 'Always use default profile (no confirmation prompt)',
     'STMemoryBooks_ShowMemoryPreviews': 'Show memory previews',
     'STMemoryBooks_ShowMemoryPreviewsTooltip': 'Shows previews for memories and side prompts returned from the AI.',
@@ -470,8 +470,10 @@ export const localeData_en = {
     'STMemoryBooks_ViewPrompt': 'View Prompt',
     'STMemoryBooks_ProfileActions': 'Profile Actions:',
     'STMemoryBooks_extraFunctionButtons': 'Import/Export Profiles:',
-    'STMemoryBooks_promptManagerButtons': 'Prompt Managers',
-    'STMemoryBooks_PromptManagerButtonsHint': 'Want to tweak things? Use the buttons below to customize each prompt type.',
+    'STMemoryBooks_promptManagerButtons': 'Settings',
+    'STMemoryBooks_PromptManagerButtonsHint': 'Use the buttons below to explore customization options.',
+    'STMemoryBooks_FailedToOpenSettings': 'Failed to open settings',
+    'STMemoryBooks_FailedToOpenAutomaticMemoriesSettings': 'Failed to open Automatic Memories settings',
 
     // Confirmation Popup
     'STMemoryBooks_CreateMemory': 'Create Memory',
