@@ -2354,6 +2354,22 @@ function applyGroupMemoryParticipantFilters(compiledScene, names) {
   return characterFilterNames;
 }
 
+function getAutomaticGroupMemoryAddOptions(memoryResult, compiledScene, context) {
+  if (!context?.isGroupChat) {
+    return {};
+  }
+
+  const characterFilterNames = normalizeCharacterFilterNamesForGroup(
+    compiledScene?.metadata?.characterFilterNames ||
+    memoryResult?.metadata?.characterFilterNames,
+  );
+  if (characterFilterNames.length === 0) {
+    return {};
+  }
+
+  return { characterFilterNames };
+}
+
 async function confirmGroupMemoryParticipants(compiledScene, settings, manualGroupLorebooks) {
   if (
     !settings?.moduleSettings?.manualModeEnabled ||
@@ -3656,6 +3672,9 @@ async function executeMemoryGeneration(
       settings?.moduleSettings?.manualModeEnabled &&
       saveContext.isGroupChat &&
       isStloAvailableForManualGroupLorebooks();
+    const automaticGroupAddOptions = shouldWriteManualGroupLorebooks
+      ? {}
+      : getAutomaticGroupMemoryAddOptions(finalMemoryResult, compiledScene, saveContext);
     const characterFocusedMemories = shouldWriteManualGroupLorebooks &&
       shouldGenerateCharacterFocusedManualGroupMemories(settings, saveContext, profileSettings)
         ? await generateCharacterFocusedManualGroupMemories({
@@ -3682,6 +3701,7 @@ async function executeMemoryGeneration(
         : await addMemoryToLorebook(
             finalMemoryResult,
             lorebookValidation,
+            automaticGroupAddOptions,
           );
 
     if (!addResult.success) {
@@ -4212,6 +4232,9 @@ async function executeQueuedMemoryJob(job, jobContext) {
     settings.moduleSettings?.manualModeEnabled &&
     queuedContext.isGroupChat &&
     isStloAvailableForManualGroupLorebooks();
+  const automaticGroupAddOptions = shouldWriteManualGroupLorebooks
+    ? {}
+    : getAutomaticGroupMemoryAddOptions(finalMemoryResult, compiledScene, queuedContext);
   const manualGroupCopyTargets = shouldWriteManualGroupLorebooks
     ? getManualGroupCopyTargets(finalMemoryResult, manualGroupLorebooks)
     : [];
@@ -4268,6 +4291,7 @@ async function executeQueuedMemoryJob(job, jobContext) {
             finalMemoryResult,
             baseValidation,
             {
+              ...automaticGroupAddOptions,
               autoHide: false,
               refreshEditor: getStmbChatKey(job.chatRef) === getStmbChatKey(),
               updateHighestMemoryProcessed: false,
@@ -9897,10 +9921,15 @@ async function applyManualFixedJson(correctedRaw) {
     if (!manualGroupLorebooks.valid) {
       throw new Error(manualGroupLorebooks.error);
     }
-    const addResult =
+    const shouldWriteManualGroupLorebooks =
       settings?.moduleSettings?.manualModeEnabled &&
       saveContext.isGroupChat &&
-      isStloAvailableForManualGroupLorebooks()
+      isStloAvailableForManualGroupLorebooks();
+    const automaticGroupAddOptions = shouldWriteManualGroupLorebooks
+      ? {}
+      : getAutomaticGroupMemoryAddOptions(memoryResult, compiledScene, saveContext);
+    const addResult =
+      shouldWriteManualGroupLorebooks
         ? await addMemoryToManualGroupLorebooks(
             memoryResult,
             context.lorebookValidation,
@@ -9909,6 +9938,7 @@ async function applyManualFixedJson(correctedRaw) {
         : await addMemoryToLorebook(
             memoryResult,
             context.lorebookValidation,
+            automaticGroupAddOptions,
           );
     throwIfStmbStopped(runEpoch);
 
