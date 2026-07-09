@@ -564,28 +564,43 @@ export function resolveEffectiveConnectionFromProfile(profile) {
     return { api, model, temperature, endpoint, apiKey, reverseProxy };
 }
 
-export function getCurrentGroupLorebookMembers() {
+export function createGroupParticipantResolver() {
     if (!selected_group || !Array.isArray(groups) || !Array.isArray(characters)) {
-        return [];
+        return null;
     }
 
     const group = groups.find(item => String(item?.id) === String(selected_group));
-    if (!group || !Array.isArray(group.members)) {
-        return [];
+    if (!group || !Array.isArray(group.members) || group.members.length === 0) {
+        return null;
     }
 
     const members = [];
+    const memberAvatars = new Set();
+    const avatarsBySpeaker = new Map();
     const seen = new Set();
     for (const member of group.members) {
         const memberId = String(member || '').trim();
-        if (!memberId || seen.has(memberId)) {
+        if (!memberId) {
             continue;
         }
 
         const character = characters.find(item => item?.avatar === memberId || item?.name === memberId);
         const avatar = String(character?.avatar || memberId).trim();
+        if (!avatar) {
+            continue;
+        }
+
+        memberAvatars.add(avatar);
+        const speakerName = String(character?.name || '').trim();
+        if (speakerName) {
+            if (!avatarsBySpeaker.has(speakerName)) {
+                avatarsBySpeaker.set(speakerName, new Set());
+            }
+            avatarsBySpeaker.get(speakerName).add(avatar);
+        }
+
         const key = avatar || memberId;
-        if (!key || seen.has(key)) {
+        if (seen.has(memberId) || seen.has(key)) {
             continue;
         }
 
@@ -597,14 +612,43 @@ export function getCurrentGroupLorebookMembers() {
             avatar,
             memberId,
             name,
-            characterFilterName: avatar ? getCharacterFilterNameFromAvatar(avatar) : '',
+            characterFilterName: getCharacterFilterNameFromAvatar(avatar),
         });
     }
 
-    return members;
+    return { memberAvatars, avatarsBySpeaker, members };
 }
 
-function getCharacterFilterNameFromAvatar(avatar) {
+export function getCurrentGroupLorebookMembers() {
+    return createGroupParticipantResolver()?.members || [];
+}
+
+export function resolveGroupParticipantFilterName(message, resolver, messageId = null, logPrefix = MODULE_NAME) {
+    const originalAvatar = String(message?.original_avatar || '').trim();
+    if (originalAvatar && resolver.memberAvatars.has(originalAvatar)) {
+        return getCharacterFilterNameFromAvatar(originalAvatar);
+    }
+
+    const speakerName = String(message?.name || '').trim();
+    if (!speakerName) {
+        return null;
+    }
+
+    const avatarMatches = resolver.avatarsBySpeaker.get(speakerName);
+    if (!avatarMatches || avatarMatches.size !== 1) {
+        if (avatarMatches?.size > 1) {
+            console.warn(
+                `${logPrefix}: Ambiguous group participant name "${speakerName}" at message ${messageId ?? 'unknown'}; skipping character filter participant because original_avatar is unavailable or does not match a group member.`,
+                { speakerName, avatarMatches: Array.from(avatarMatches) },
+            );
+        }
+        return null;
+    }
+
+    return getCharacterFilterNameFromAvatar(Array.from(avatarMatches)[0]);
+}
+
+export function getCharacterFilterNameFromAvatar(avatar) {
     const trimmed = String(avatar || '').trim();
     if (!trimmed) {
         return '';

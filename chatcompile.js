@@ -1,7 +1,10 @@
-import { chat, characters, name1, name2 } from '../../../../script.js';
+import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
-import { selected_group, groups } from '../../../group-chats.js';
-import { estimateTokens } from './utils.js';
+import {
+    createGroupParticipantResolver,
+    estimateTokens,
+    resolveGroupParticipantFilterName,
+} from './utils.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-ChatCompile';
@@ -71,7 +74,7 @@ export function compileScene(sceneRequest) {
         }
 
         if (groupParticipantResolver && !message.is_user) {
-            const filterName = resolveGroupParticipantFilterName(message, groupParticipantResolver, i);
+            const filterName = resolveGroupParticipantFilterName(message, groupParticipantResolver, i, MODULE_NAME);
             if (filterName) {
                 participantFilterNames.add(filterName);
             }
@@ -268,80 +271,6 @@ export function toReadableText(compiledScene) {
 function cleanSpeakerName(name) {
     if (!name) return translate('Unknown', 'common.unknown');
     return name.trim() || translate('Unknown', 'common.unknown');
-}
-
-function createGroupParticipantResolver() {
-    if (!selected_group || !Array.isArray(groups) || !Array.isArray(characters)) {
-        return null;
-    }
-
-    const group = groups.find(item => String(item?.id) === String(selected_group));
-    if (!group || !Array.isArray(group.members) || group.members.length === 0) {
-        return null;
-    }
-
-    const memberAvatars = new Set();
-    const avatarsBySpeaker = new Map();
-
-    for (const member of group.members) {
-        const memberId = String(member || '').trim();
-        if (!memberId) {
-            continue;
-        }
-
-        const character = characters.find(item => item?.avatar === memberId || item?.name === memberId);
-        const avatar = String(character?.avatar || memberId).trim();
-        if (!avatar) {
-            continue;
-        }
-
-        memberAvatars.add(avatar);
-        const speakerName = String(character?.name || '').trim();
-        if (!speakerName) {
-            continue;
-        }
-
-        if (!avatarsBySpeaker.has(speakerName)) {
-            avatarsBySpeaker.set(speakerName, new Set());
-        }
-        avatarsBySpeaker.get(speakerName).add(avatar);
-    }
-
-    return { memberAvatars, avatarsBySpeaker };
-}
-
-function resolveGroupParticipantFilterName(message, resolver, messageId = null) {
-    const originalAvatar = String(message?.original_avatar || '').trim();
-    if (originalAvatar && resolver.memberAvatars.has(originalAvatar)) {
-        return getCharacterFilterNameFromAvatar(originalAvatar);
-    }
-
-    const speakerName = String(message?.name || '').trim();
-    if (!speakerName) {
-        return null;
-    }
-
-    const avatarMatches = resolver.avatarsBySpeaker.get(speakerName);
-    if (!avatarMatches || avatarMatches.size !== 1) {
-        if (avatarMatches?.size > 1) {
-            console.warn(
-                `${MODULE_NAME}: Ambiguous group participant name "${speakerName}" at message ${messageId ?? 'unknown'}; skipping character filter participant because original_avatar is unavailable or does not match a group member.`,
-                { speakerName, avatarMatches: Array.from(avatarMatches) },
-            );
-        }
-        return null;
-    }
-
-    return getCharacterFilterNameFromAvatar(Array.from(avatarMatches)[0]);
-}
-
-function getCharacterFilterNameFromAvatar(avatar) {
-    const trimmed = String(avatar || '').trim();
-    if (!trimmed) {
-        return null;
-    }
-
-    return trimmed.replace(/\.[^/.]+$/, '');
 }
 
 /**
