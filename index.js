@@ -2696,8 +2696,7 @@ function getManualGroupCopyTargets(memoryResult, options = {}) {
   const membersByFilterName = new Map(
     members.map((member) => [member.characterFilterName, member]),
   );
-  const copyTargets = [];
-  const seenLorebooks = new Set();
+  const targetsByLorebook = new Map();
 
   for (const speakerName of speakerNames) {
     const member = membersByFilterName.get(speakerName);
@@ -2709,15 +2708,27 @@ function getManualGroupCopyTargets(memoryResult, options = {}) {
     if (!lorebookName) {
       continue;
     }
-    if (seenLorebooks.has(lorebookName)) {
+
+    let target = targetsByLorebook.get(lorebookName);
+    if (!target) {
+      target = {
+        speakerName,
+        member,
+        lorebookName,
+        speakerNames: [],
+        members: [],
+      };
+      targetsByLorebook.set(lorebookName, target);
+    }
+
+    if (target.speakerNames.includes(speakerName)) {
       continue;
     }
-    seenLorebooks.add(lorebookName);
-
-    copyTargets.push({ speakerName, member, lorebookName });
+    target.speakerNames.push(speakerName);
+    target.members.push(member);
   }
 
-  return copyTargets;
+  return Array.from(targetsByLorebook.values());
 }
 
 function getManualGroupTouchedLorebookNames(primaryLorebookName, copyTargets = []) {
@@ -2733,6 +2744,44 @@ function getManualGroupTouchedLorebookNames(primaryLorebookName, copyTargets = [
     }
   }
   return Array.from(names);
+}
+
+function getManualGroupCopyTargetSpeakerNames(target, fallbackNames = []) {
+  const names = normalizeCharacterFilterNamesForGroup([
+    ...(Array.isArray(target?.speakerNames) ? target.speakerNames : []),
+    target?.speakerName,
+  ]);
+  return names.length > 0
+    ? names
+    : normalizeCharacterFilterNamesForGroup(fallbackNames);
+}
+
+function getManualGroupCopyTargetMembers(target) {
+  const members = Array.isArray(target?.members)
+    ? target.members.filter(Boolean)
+    : [];
+  return members.length > 0
+    ? members
+    : (target?.member ? [target.member] : []);
+}
+
+function formatManualGroupMemberNames(members, fallback = "{{char}}") {
+  const sourceMembers = Array.isArray(members)
+    ? members
+    : (members ? [members] : []);
+  const names = sourceMembers
+    .map((member) => String(member?.name || member?.characterFilterName || "").trim())
+    .filter(Boolean);
+  if (names.length === 0) {
+    return fallback;
+  }
+  if (names.length === 1) {
+    return names[0];
+  }
+  if (names.length === 2) {
+    return `${names[0]} and ${names[1]}`;
+  }
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
 async function getManualGroupConsolidationLorebooks(primaryLorebookName, lorebookData, manualGroupLorebooks = null) {
@@ -2753,27 +2802,42 @@ async function getManualGroupConsolidationLorebooks(primaryLorebookName, loreboo
     throw new Error(validation?.error || "Group manual lorebooks are not configured.");
   }
 
-  const items = [{ role: "group", lorebookName: primaryLorebookName, lorebookData, member: null }];
-  const seen = new Set([String(primaryLorebookName)]);
+  const items = [{
+    role: "group",
+    lorebookName: primaryLorebookName,
+    lorebookData,
+    member: null,
+    members: [],
+  }];
+  const itemsByLorebook = new Map();
+  const primaryName = String(primaryLorebookName);
   for (const member of validation.members || []) {
     const memberLorebookName = String(validation.bindings?.[member.key] || "").trim();
-    if (!memberLorebookName || seen.has(memberLorebookName)) {
+    if (!memberLorebookName || memberLorebookName === primaryName) {
       continue;
     }
-    const memberLorebookData = await loadWorldInfo(memberLorebookName);
-    if (!memberLorebookData?.entries) {
-      throw new Error(__st_t_tag`Lorebook "${memberLorebookName}" could not be loaded.`);
+
+    let item = itemsByLorebook.get(memberLorebookName);
+    if (!item) {
+      const memberLorebookData = await loadWorldInfo(memberLorebookName);
+      if (!memberLorebookData?.entries) {
+        throw new Error(__st_t_tag`Lorebook "${memberLorebookName}" could not be loaded.`);
+      }
+      if (migrateLorebookSummarySchema(memberLorebookData)) {
+        await saveWorldInfo(memberLorebookName, memberLorebookData, true);
+      }
+      item = {
+        role: "character",
+        lorebookName: memberLorebookName,
+        lorebookData: memberLorebookData,
+        member,
+        members: [],
+      };
+      itemsByLorebook.set(memberLorebookName, item);
+      items.push(item);
     }
-    if (migrateLorebookSummarySchema(memberLorebookData)) {
-      await saveWorldInfo(memberLorebookName, memberLorebookData, true);
-    }
-    seen.add(memberLorebookName);
-    items.push({
-      role: "character",
-      lorebookName: memberLorebookName,
-      lorebookData: memberLorebookData,
-      member,
-    });
+
+    item.members.push(member);
   }
   return items;
 }
@@ -2818,9 +2882,12 @@ function getEntryCanonicalNumber(entry) {
   return null;
 }
 
-function withCharacterGapMarkers(entries, groupLorebookData, member) {
+function withCharacterGapMarkers(entries, groupLorebookData, memberOrMembers) {
   const selectedEntries = Array.isArray(entries) ? entries : [];
-  if (!member || selectedEntries.length === 0) {
+  const members = Array.isArray(memberOrMembers)
+    ? memberOrMembers.filter(Boolean)
+    : (memberOrMembers ? [memberOrMembers] : []);
+  if (members.length === 0 || selectedEntries.length === 0) {
     return selectedEntries;
   }
 
@@ -2842,11 +2909,16 @@ function withCharacterGapMarkers(entries, groupLorebookData, member) {
     return selectedEntries;
   }
 
-  const characterName = String(member?.name || member?.characterFilterName || "{{char}}").trim() || "{{char}}";
-  const markerText = `Some summaries are omitted here because ${characterName} did not participate in them; treat this as a chronological gap, not missing context ${characterName} should know.`;
+  const characterName = formatManualGroupMemberNames(members);
+  const contextOwner = members.length === 1 ? characterName : "they";
+  const markerText = `Some summaries are omitted here because ${characterName} did not participate in them; treat this as a chronological gap, not missing context ${contextOwner} should know.`;
+  const markerKey = members
+    .map((member) => String(member?.key || member?.characterFilterName || member?.name || "").trim())
+    .filter(Boolean)
+    .join("-");
   const markers = markerNumbers.map((number) => ({
     __stmbGapMarker: true,
-    id: `gap-${member.key || characterName}-${number}`,
+    id: `gap-${markerKey || characterName}-${number}`,
     order: number - 0.5,
     title: `Skipped summaries before ${String(number).padStart(3, "0")}`,
     content: markerText,
@@ -2917,7 +2989,8 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
       ? lorebookValidation.data
       : await loadWorldInfo(target.lorebookName);
     if (!lorebookData) {
-      throw new Error(__st_t_tag`Failed to load manual lorebook "${target.lorebookName}" for ${target.member.name}.`);
+      const memberNames = formatManualGroupMemberNames(getManualGroupCopyTargetMembers(target), target.lorebookName);
+      throw new Error(__st_t_tag`Failed to load manual lorebook "${target.lorebookName}" for ${memberNames}.`);
     }
 
     lorebookDataByName.set(target.lorebookName, lorebookData);
@@ -2960,13 +3033,15 @@ async function addMemoryToManualGroupLorebooks(memoryResult, lorebookValidation,
       const targetMemoryResult = options.characterMemoryResultsByLorebookName instanceof Map
         ? options.characterMemoryResultsByLorebookName.get(target.lorebookName)
         : null;
+      const characterFilterNames = targetMemoryResult?.metadata?.characterFilterNames ||
+        getManualGroupCopyTargetSpeakerNames(target, memoryResult.metadata?.characterFilterNames);
       const copyResult = await addMemoryToLorebook(
         deepClone(targetMemoryResult || memoryResult),
         { valid: true, name: target.lorebookName, data: lorebookDataByName.get(target.lorebookName) },
         {
           inclusionGroup,
           entryTitle: targetMemoryResult ? undefined : addResult.entryTitle,
-          characterFilterNames: targetMemoryResult?.metadata?.characterFilterNames || memoryResult.metadata.characterFilterNames,
+          characterFilterNames,
           entryMetadata: {
             ...getCanonicalMemoryCopyMetadata({
               inclusionGroup,
@@ -3058,7 +3133,14 @@ async function generateCharacterFocusedManualGroupMemories({
   }
 
   for (const target of copyTargets) {
-    const characterName = String(target?.member?.name || target?.speakerName || target?.member?.characterFilterName || "").trim();
+    const targetSpeakerNames = getManualGroupCopyTargetSpeakerNames(target);
+    if (targetSpeakerNames.length !== 1) {
+      continue;
+    }
+
+    const speakerName = targetSpeakerNames[0];
+    const member = getManualGroupCopyTargetMembers(target)[0] || target?.member;
+    const characterName = String(member?.name || speakerName || member?.characterFilterName || "").trim();
     if (!characterName || !target?.lorebookName) {
       continue;
     }
@@ -3068,7 +3150,7 @@ async function generateCharacterFocusedManualGroupMemories({
       ...(characterScene.metadata || {}),
       characterName,
       stmbPromptTarget: "character",
-      characterFilterNames: target.speakerName ? [target.speakerName] : [],
+      characterFilterNames: [speakerName],
     };
 
     const characterMemory = await createMemory(characterScene, profileSettings, {
@@ -3076,7 +3158,7 @@ async function generateCharacterFocusedManualGroupMemories({
       signal,
     });
     ensureGroupMemoryParticipantFilters(characterMemory, {
-      characterFilterNames: target.speakerName ? [target.speakerName] : [],
+      characterFilterNames: [speakerName],
     });
     characterMemoryResultsByLorebookName.set(target.lorebookName, characterMemory);
   }
@@ -7523,6 +7605,11 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     const selectedEntries = selected
       .map((id) => entryMap.get(String(id)))
       .filter(Boolean);
+    const selectedCanonicalNumbers = new Set(
+      selectedEntries
+        .map(getEntryCanonicalNumber)
+        .filter((number) => Number.isFinite(number) && number > 0),
+    );
     const selectedSourceFingerprints = Object.fromEntries(
       selectedEntries.map((entry) => [String(entry.uid), fingerprintLorebookEntry(entry)]),
     );
@@ -7548,11 +7635,15 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           }
           const itemEntries = sortEntries(
             Object.values(item.lorebookData.entries || {}).filter((entry) =>
-              isEligibleSummarySourceEntry(entry, sourceTier),
+              isEligibleSummarySourceEntry(entry, sourceTier) &&
+              (
+                selectedCanonicalNumbers.size === 0 ||
+                selectedCanonicalNumbers.has(getEntryCanonicalNumber(entry))
+              ),
             ),
           );
           const selectedItemEntries = item.role === "character"
-            ? withCharacterGapMarkers(itemEntries, lorebookData, item.member)
+            ? withCharacterGapMarkers(itemEntries, lorebookData, item.members || item.member)
             : itemEntries;
           const workItem = {
             ...item,
