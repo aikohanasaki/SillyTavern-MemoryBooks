@@ -741,10 +741,23 @@ export async function runSummaryAnalysisSequential(
       targetTier,
     });
     let tokenEst = await estimateTokens(prompt, { estimatedOutput: 500 });
+    const countRealBriefs = (briefs) => briefs.filter((b) => !b.gapMarker).length;
+    const removeLastTrimmableBrief = () => {
+      for (let i = batch.length - 1; i >= 0; i--) {
+        if (batch[i]?.gapMarker) {
+          batch.splice(i, 1);
+          return true;
+        }
+      }
+      if (countRealBriefs(batch) > 1) {
+        batch.pop();
+        return true;
+      }
+      return false;
+    };
     const origLen = batch.length;
     let trimmed = false;
-    while (tokenEst.total > effectiveTokenTarget && batch.length > 1) {
-      batch.pop();
+    while (tokenEst.total > effectiveTokenTarget && removeLastTrimmableBrief()) {
       trimmed = true;
       prompt = buildSummaryAnalysisPrompt({
         briefs: batch,
@@ -767,13 +780,15 @@ export async function runSummaryAnalysisSequential(
         );
       } catch {}
     }
-    if (tokenEst.total > effectiveTokenTarget && batch.length === 1) {
+    const realBatchLen = countRealBriefs(batch);
+    if (realBatchLen === 0) break;
+    if (tokenEst.total > effectiveTokenTarget && realBatchLen === 1) {
       // Dynamically raise the budget to fit this single large memory
       const prevBudget = effectiveTokenTarget;
       effectiveTokenTarget = tokenEst.total;
       try {
         console.debug(
-          "STMB ArcAnalysis: raised budget for single item from %d to %d (est=%d)",
+          "STMB ArcAnalysis: raised budget for single real item from %d to %d (est=%d)",
           prevBudget,
           effectiveTokenTarget,
           tokenEst.total,

@@ -3,7 +3,7 @@
 **← [Back to README](readme.md)**
 
 ## v8.0.0 (July 8, 2026)
-- NEW FEATURE: Multi-character memories in group chats.
+- MAJOR NEW FEATURE: Multi-character memories in group chats.
 - Bugfix: useChatCompletionService now reads streaming value from oai_settings.stream_openai.
 
 ## v7.2.1 (June 27, 2026)
