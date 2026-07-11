@@ -385,9 +385,45 @@ Example: `/stmb-catchup interval=30 start=0 end=300`
 
 ## 👥 Group Chat Support
 
-- All features work with group chats.
-- Scene markers, memory creation, and lorebook integration are stored in the active chat metadata.
-- No special setup required—just select a group chat and use as normal.
+STMB works in group chats with the same manual, automatic, and slash-command memory tools used in one-on-one chats. You do not need to turn on a separate group-chat mode: select the group and use STMB normally.
+
+#### Participant-aware memories
+
+- STMB reads the speaker attached to each group-chat message and keeps character attribution clear in the generated summary.
+- When STMB can identify the participating group members, the saved memory receives an inclusive SillyTavern character filter for those members. This keeps a group memory tied to the characters who were actually part of the scene.
+- Scene markers, the highest processed message, manual lorebook choices, and other per-chat state are stored with the active group chat. Switching chats does not move those settings to another chat.
+
+#### Automatic and Auto-Create modes: one Memory Book
+
+Automatic Mode uses the lorebook bound to the group chat. Auto-Create Mode can create and bind one if the group does not have a lorebook yet. In either mode, memories are saved to that group Memory Book and participant filters are added automatically when the speakers can be identified.
+
+This is the easiest setup and is enough for most group chats.
+
+#### Manual Mode: group and character Memory Books
+
+Manual Lorebook Mode can maintain a main group Memory Book plus a designated Memory Book for every group member. Individual character-lorebook designation requires [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) to be installed and enabled.
+
+1. Open a group chat and enable **Manual Lorebook Mode**.
+2. Select the main manual lorebook. This becomes the canonical group Memory Book.
+3. Under **Group Character Lorebooks**, select a lorebook for every member. You may assign the same lorebook to more than one character.
+4. Create a memory normally.
+5. Confirm which characters participated. STMB preselects the members it detected from the messages. Selecting no one applies the memory to every group member.
+
+STMB saves the canonical memory to the group Memory Book and copies it to the selected participants' designated Memory Books. The related entries are linked internally so group and character consolidation can keep their timelines aligned. If any required character lorebook is missing or deleted, STMB stops instead of leaving a partial set of memories.
+
+The participant confirmation includes **Automatically accept detected participants in future**. Enable it if you trust the message-speaker detection and do not want to approve the list on every memory.
+
+#### Separate group and character prompts (optional)
+
+For different versions of the same memory:
+
+1. Open **Profile Manager** and edit the profile used for memory creation.
+2. Enable **Use separate group and character prompts in group chats**.
+3. Choose a **Group Summary Prompt** and a **Character Summary Prompt**.
+
+The group prompt writes the shared version for the main group Memory Book. In Manual Mode with STLO, the character prompt can create a character-focused version for an individually assigned character Memory Book. This costs additional generation requests, but it lets the shared memory describe the whole scene while an individual copy concentrates on what mattered to that character. If multiple members share one assigned Memory Book, STMB keeps one shared copy there instead.
+
+> 💡 **Recommended:** Start with one group Memory Book. Add per-character Memory Books only when you need different knowledge, continuity, or context for individual members.
 
 ---
 
