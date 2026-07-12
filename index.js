@@ -109,6 +109,7 @@ import {
 } from "./utils.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
+  MEMORY_TIER_CACHE_REFRESH_EVENT,
   MEMORY_GENERATION,
   SCENE_MANAGEMENT,
   UI_SETTINGS,
@@ -160,6 +161,11 @@ import {
   migrateLorebookSummarySchema,
   normalizeSummaryMinChildren,
 } from "./summaryTiers.js";
+import {
+  refreshMemoryTierMacroCache,
+  registerMemoryTierMacros,
+  updateMemoryTierMacroCache,
+} from "./memoryTierMacros.js";
 import { summaryPromptsTableTemplate } from "./templatesSummaryPrompts.js";
 import {
   t as __st_t_tag,
@@ -955,6 +961,7 @@ function handleChatChanged() {
   refreshMemoryBoundaryUi();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
+  void refreshMemoryTierMacroCache();
   void maybePromptContextSettingForChatOpen();
 
   setTimeout(() => {
@@ -5224,6 +5231,7 @@ function populateInlineButtons() {
             const stmbData = getSceneMarkers() || {};
             delete stmbData.manualLorebook;
             saveMetadataForCurrentContext();
+            void refreshMemoryTierMacroCache();
 
             // Refresh the popup content
             refreshPopupContent();
@@ -8746,6 +8754,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       }
 
       settings.moduleSettings.manualModeEnabled = e.target.checked;
+      void refreshMemoryTierMacroCache();
       saveSettingsDebounced();
       updateLorebookStatusDisplay();
       populateInlineButtons();
@@ -9620,6 +9629,10 @@ function setupEventListeners() {
   $(document).on("click", SELECTORS.menuItem, showSettingsPopup);
 
   eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
+  eventSource.on(MEMORY_TIER_CACHE_REFRESH_EVENT, refreshMemoryTierMacroCache);
+  eventSource.on(event_types.WORLDINFO_UPDATED, (name, data) => {
+    updateMemoryTierMacroCache(name, data);
+  });
   eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
     const settings = initializeSettings();
     handleMessageDeletion(deletedId, settings);
@@ -10668,6 +10681,8 @@ async function init() {
 
   // Setup event listeners
   setupEventListeners();
+  registerMemoryTierMacros();
+  await refreshMemoryTierMacroCache();
   registerStmbJobExecutor("memory", executeQueuedMemoryJob);
   registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
   subscribeToStmbJobs(handleStmbJobStateChanged);

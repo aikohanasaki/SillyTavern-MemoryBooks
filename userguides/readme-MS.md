@@ -429,9 +429,45 @@ Ini bertujuan untuk penukaran susulan, bukan penggunaan biasa secara berterusan.
 
 ## 👥 Sokongan Sembang Kumpulan
 
-- Semua ciri berfungsi dengan sembang kumpulan.
-- Penanda babak, penciptaan memori, dan integrasi lorebook disimpan dalam metadata sembang aktif.
-- Tiada persediaan khas diperlukan. Pilih sahaja sembang kumpulan dan gunakannya seperti biasa.
+STMB berfungsi dalam sembang kumpulan dengan alat memori manual, automatik dan arahan slash yang sama seperti dalam sembang satu dengan satu. Anda tidak perlu menghidupkan mod sembang kumpulan yang berasingan: pilih kumpulan dan gunakan STMB seperti biasa.
+
+#### Memori yang menyedari peserta
+
+- STMB membaca penutur yang dilampirkan pada setiap mesej sembang kumpulan dan memastikan atribusi watak jelas dalam ringkasan yang dijana.
+- Apabila STMB dapat mengenal pasti ahli kumpulan yang mengambil bahagian, memori yang disimpan menerima penapis watak SillyTavern inklusif untuk ahli tersebut. Ini memastikan memori kumpulan terikat kepada watak yang benar-benar terlibat dalam babak itu.
+- Penanda babak, ID mesej tertinggi yang telah diproses, pilihan lorebook manual dan keadaan lain bagi setiap sembang disimpan bersama sembang kumpulan aktif. Menukar sembang tidak memindahkan tetapan tersebut ke sembang lain.
+
+#### Mod Automatik dan Cipta Automatik: satu Memory Book
+
+Mod Automatik menggunakan lorebook yang terikat pada sembang kumpulan. Mod Cipta Automatik boleh mencipta dan mengikat satu lorebook jika kumpulan itu belum memilikinya. Dalam kedua-dua mod, memori disimpan ke Memory Book kumpulan tersebut dan penapis peserta ditambahkan secara automatik apabila penutur dapat dikenal pasti.
+
+Ini ialah persediaan paling mudah dan mencukupi untuk kebanyakan sembang kumpulan.
+
+#### Mod Manual: Memory Book kumpulan dan watak
+
+Mod Lorebook Manual boleh mengekalkan satu Memory Book kumpulan utama serta satu Memory Book yang ditetapkan untuk setiap ahli kumpulan. Penetapan lorebook watak individu memerlukan [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) dipasang dan diaktifkan.
+
+1. Buka sembang kumpulan dan aktifkan **Mod Lorebook Manual**.
+2. Pilih lorebook manual utama. Ini menjadi Memory Book kumpulan kanonik.
+3. Di bawah **Lorebook Watak Kumpulan**, pilih satu lorebook untuk setiap ahli. Anda boleh menetapkan lorebook yang sama kepada lebih daripada satu watak.
+4. Cipta memori seperti biasa.
+5. Sahkan watak yang mengambil bahagian. STMB memilih awal ahli yang dikesan daripada mesej. Jika tiada sesiapa dipilih, memori digunakan untuk semua ahli kumpulan.
+
+STMB menyimpan memori kanonik ke Memory Book kumpulan dan menyalinnya ke Memory Book yang ditetapkan untuk peserta terpilih. Entri berkaitan dipautkan secara dalaman supaya konsolidasi kumpulan dan watak dapat mengekalkan garis masa yang selaras. Jika mana-mana lorebook watak yang diperlukan tiada atau telah dipadam, STMB berhenti dan tidak meninggalkan set memori separa.
+
+Pengesahan peserta mengandungi pilihan **Terima peserta yang dikesan secara automatik pada masa hadapan**. Aktifkannya jika anda mempercayai pengesanan penutur dan tidak mahu meluluskan senarai bagi setiap memori.
+
+#### Prom kumpulan dan watak yang berasingan (pilihan)
+
+Untuk menghasilkan versi berlainan bagi memori yang sama:
+
+1. Buka **Pengurus Profil** dan edit profil yang digunakan untuk penciptaan memori.
+2. Aktifkan **Gunakan prom kumpulan dan watak yang berasingan dalam sembang kumpulan**.
+3. Pilih **Prom Ringkasan Kumpulan** dan **Prom Ringkasan Watak**.
+
+Prom kumpulan menulis versi bersama untuk Memory Book kumpulan utama. Dalam Mod Manual dengan STLO, prom watak boleh menghasilkan versi berfokuskan watak untuk Memory Book yang ditetapkan secara individu. Ini menggunakan permintaan penjanaan tambahan, tetapi membolehkan memori bersama menerangkan keseluruhan babak sementara salinan individu menumpukan perkara yang penting kepada watak tersebut. Jika beberapa ahli berkongsi satu Memory Book yang ditetapkan, STMB mengekalkan hanya satu salinan bersama di situ.
+
+> 💡 **Disyorkan:** Mulakan dengan satu Memory Book kumpulan. Tambahkan Memory Book bagi setiap watak hanya apabila ahli tertentu memerlukan pengetahuan, kesinambungan atau konteks yang berbeza.
 
 ---
 
@@ -702,6 +738,8 @@ Barisan boleh menunjukkan status tugas, membatalkan tugas aktif, mencuba semula 
 
 Jika Chat Top Bar tidak dipasang atau tidak diaktifkan, STMB masih berfungsi seperti biasa. Anda hanya tidak akan mempunyai UI barisan tugas.
 
+
+### Memasang Chat Top Bar
 
 ![Cara memasang Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
 

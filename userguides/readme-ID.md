@@ -407,9 +407,45 @@ Ini ditujukan untuk konversi susulan, bukan untuk penggunaan rutin sehari-hari. 
 
 ## 👥 Dukungan Obrolan Grup
 
-- Semua fitur bekerja dengan obrolan grup.
-- Penanda adegan, pembuatan memori, dan integrasi lorebook disimpan di metadata chat aktif.
-- Tidak perlu pengaturan khusus - cukup pilih obrolan grup dan gunakan seperti biasa.
+STMB bekerja dalam obrolan grup dengan alat memori manual, otomatis, dan perintah slash yang sama seperti pada chat satu-lawan-satu. Anda tidak perlu mengaktifkan mode obrolan grup terpisah: pilih grup lalu gunakan STMB seperti biasa.
+
+#### Memori yang menyadari peserta
+
+- STMB membaca pembicara yang terhubung ke setiap pesan obrolan grup dan menjaga atribusi karakter tetap jelas dalam ringkasan yang dihasilkan.
+- Saat STMB dapat mengenali anggota grup yang berpartisipasi, memori yang disimpan menerima filter karakter SillyTavern inklusif untuk anggota tersebut. Dengan demikian, memori grup tetap terikat pada karakter yang benar-benar terlibat dalam adegan.
+- Penanda adegan, ID pesan tertinggi yang telah diproses, pilihan lorebook manual, dan status lain per chat disimpan bersama obrolan grup aktif. Berpindah chat tidak memindahkan pengaturan tersebut ke chat lain.
+
+#### Mode Otomatis dan Buat-Otomatis: satu Memory Book
+
+Mode Otomatis menggunakan lorebook yang terikat ke obrolan grup. Mode Buat-Otomatis dapat membuat dan mengikat satu lorebook jika grup belum memilikinya. Dalam kedua mode, memori disimpan ke Memory Book grup tersebut dan filter peserta ditambahkan otomatis ketika pembicara dapat dikenali.
+
+Ini adalah pengaturan termudah dan cukup untuk sebagian besar obrolan grup.
+
+#### Mode Manual: Memory Book grup dan karakter
+
+Mode Lorebook Manual dapat mempertahankan satu Memory Book grup utama serta satu Memory Book yang ditetapkan untuk setiap anggota grup. Penetapan lorebook karakter individual memerlukan [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) yang telah dipasang dan diaktifkan.
+
+1. Buka obrolan grup dan aktifkan **Mode Lorebook Manual**.
+2. Pilih lorebook manual utama. Lorebook ini menjadi Memory Book grup kanonis.
+3. Di bawah **Lorebook Karakter Grup**, pilih satu lorebook untuk setiap anggota. Anda boleh menetapkan lorebook yang sama untuk lebih dari satu karakter.
+4. Buat memori seperti biasa.
+5. Konfirmasikan karakter mana yang berpartisipasi. STMB memilih sebelumnya anggota yang terdeteksi dari pesan. Jika tidak memilih siapa pun, memori diterapkan ke semua anggota grup.
+
+STMB menyimpan memori kanonis ke Memory Book grup dan menyalinnya ke Memory Book yang ditetapkan bagi peserta terpilih. Entri terkait ditautkan secara internal agar konsolidasi grup dan karakter dapat menjaga linimasa tetap selaras. Jika lorebook karakter yang diwajibkan hilang atau dihapus, STMB berhenti daripada meninggalkan kumpulan memori yang hanya tersimpan sebagian.
+
+Konfirmasi peserta mencakup opsi **Terima peserta yang terdeteksi secara otomatis di masa mendatang**. Aktifkan jika Anda memercayai deteksi pembicara dan tidak ingin menyetujui daftar setiap kali membuat memori.
+
+#### Prompt grup dan karakter terpisah (opsional)
+
+Untuk membuat versi berbeda dari memori yang sama:
+
+1. Buka **Pengelola Profil** dan edit profil yang digunakan untuk membuat memori.
+2. Aktifkan **Gunakan prompt grup dan karakter terpisah dalam obrolan grup**.
+3. Pilih **Prompt Ringkasan Grup** dan **Prompt Ringkasan Karakter**.
+
+Prompt grup menulis versi bersama untuk Memory Book grup utama. Dalam Mode Manual dengan STLO, prompt karakter dapat membuat versi yang berfokus pada karakter untuk Memory Book yang ditetapkan secara individual. Ini menggunakan permintaan generasi tambahan, tetapi memungkinkan memori bersama menjelaskan seluruh adegan sementara salinan individual berfokus pada hal yang penting bagi karakter tersebut. Jika beberapa anggota berbagi satu Memory Book yang sama, STMB hanya mempertahankan satu salinan bersama di sana.
+
+> 💡 **Disarankan:** Mulailah dengan satu Memory Book grup. Tambahkan Memory Book per karakter hanya ketika Anda membutuhkan pengetahuan, kontinuitas, atau konteks yang berbeda untuk anggota tertentu.
 
 ---
 
@@ -676,6 +712,8 @@ Antrean dapat menampilkan status tugas, membatalkan tugas aktif, mencoba ulang t
 
 Jika Chat Top Bar tidak diinstal atau tidak diaktifkan, STMB tetap berfungsi normal. Anda hanya tidak akan memiliki UI antrean tugas.
 
+
+### Memasang Chat Top Bar
 
 ![Cara menginstal Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
 

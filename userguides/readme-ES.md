@@ -416,9 +416,45 @@ Ejemplo: `/stmb-catchup interval=30 start=0 end=300`
 
 ## 👥 Soporte para chats grupales
 
-- Todas las funciones funcionan con chats grupales.
-- Los marcadores de escena, la creación de recuerdos y la integración con el lorebook se almacenan en los metadatos del chat activo.
-- No se requiere configuración especial; solo selecciona un chat grupal y úsalo normalmente.
+STMB funciona en chats grupales con las mismas herramientas de memoria manuales, automáticas y mediante comandos de barra que se usan en chats individuales. No necesitas activar un modo separado para chats grupales: selecciona el grupo y usa STMB normalmente.
+
+#### Recuerdos conscientes de los participantes
+
+- STMB lee el hablante asociado a cada mensaje del chat grupal y mantiene clara la atribución de personajes en el resumen generado.
+- Cuando STMB puede identificar a los miembros participantes del grupo, el recuerdo guardado recibe un filtro inclusivo de personajes de SillyTavern para esos miembros. Esto mantiene el recuerdo grupal vinculado a los personajes que realmente participaron en la escena.
+- Los marcadores de escena, el mensaje procesado más alto, las elecciones manuales de lorebook y otros estados por chat se guardan con el chat grupal activo. Cambiar de chat no traslada esos ajustes a otro chat.
+
+#### Modos Automático y Auto-Crear: un Memory Book
+
+El Modo Automático usa el lorebook vinculado al chat grupal. El Modo Auto-Crear puede crear y vincular uno si el grupo todavía no tiene un lorebook. En ambos modos, los recuerdos se guardan en ese Memory Book grupal y los filtros de participantes se añaden automáticamente cuando se pueden identificar los hablantes.
+
+Esta es la configuración más sencilla y es suficiente para la mayoría de los chats grupales.
+
+#### Modo Manual: Memory Books grupales y de personajes
+
+El Modo Manual de lorebook puede mantener un Memory Book principal del grupo y un Memory Book designado para cada integrante. Para designar lorebooks individuales de personajes, es necesario tener [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) instalado y activado.
+
+1. Abre un chat grupal y activa el **Modo Manual de lorebook**.
+2. Selecciona el lorebook manual principal. Este se convierte en el Memory Book canónico del grupo.
+3. En **Lorebooks de personajes del grupo**, selecciona un lorebook para cada integrante. Puedes asignar el mismo lorebook a más de un personaje.
+4. Crea un recuerdo normalmente.
+5. Confirma qué personajes participaron. STMB preselecciona a los integrantes detectados en los mensajes. Si no seleccionas a nadie, el recuerdo se aplica a todos los integrantes del grupo.
+
+STMB guarda el recuerdo canónico en el Memory Book del grupo y lo copia a los Memory Books designados de los participantes seleccionados. Las entradas relacionadas quedan vinculadas internamente para que la consolidación grupal y la de personajes puedan mantener sus líneas temporales alineadas. Si falta o se elimina algún lorebook de personaje requerido, STMB se detiene en lugar de dejar un conjunto parcial de recuerdos.
+
+La confirmación de participantes incluye **Aceptar automáticamente a los participantes detectados en el futuro**. Actívala si confías en la detección de hablantes y no quieres aprobar la lista en cada recuerdo.
+
+#### Prompts separados para el grupo y los personajes (opcional)
+
+Para crear versiones distintas del mismo recuerdo:
+
+1. Abre el **Gestor de perfiles** y edita el perfil utilizado para crear recuerdos.
+2. Activa **Usar prompts separados para el grupo y los personajes en chats grupales**.
+3. Elige un **Prompt de resumen grupal** y un **Prompt de resumen de personaje**.
+
+El prompt grupal escribe la versión compartida para el Memory Book principal del grupo. En Modo Manual con STLO, el prompt de personaje puede crear una versión centrada en el personaje para un Memory Book asignado individualmente. Esto utiliza solicitudes de generación adicionales, pero permite que el recuerdo compartido describa toda la escena mientras una copia individual se concentra en lo que importó para ese personaje. Si varios integrantes comparten el mismo Memory Book asignado, STMB mantiene una sola copia compartida allí.
+
+> 💡 **Recomendado:** Empieza con un solo Memory Book grupal. Añade Memory Books por personaje únicamente cuando necesites conocimiento, continuidad o contexto diferentes para integrantes concretos.
 
 ---
 
@@ -687,6 +723,8 @@ La cola puede mostrar el estado de cada trabajo, permitirte cancelar trabajos ac
 
 Si Chat Top Bar no está instalado o activado, STMB sigue funcionando normalmente. Simplemente no tendrás la interfaz de cola de trabajos.
 
+
+### Instalar Chat Top Bar
 
 ![Cómo instalar Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
 

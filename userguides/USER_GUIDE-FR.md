@@ -11,6 +11,7 @@ Vous voulez que le bot se souvienne de ce qui s'est passé, mais votre chat est 
 - [Démarrage rapide](#-démarrage-rapide-5-minutes-pour-votre-première-mémoire)
 - [Ce que fait réellement ST Memory Books](#-ce-que-fait-réellement-st-memory-books)
 - [Choisir votre style](#-choisir-votre-style)
+- [Chats de groupe](#-chats-de-groupe)
 - [Épingler dans le Memory Book](#️-épingler-dans-le-memory-book)
 - [Clips vs Side Prompts](#️-clips-vs-side-prompts)
 - [Clip thématique](#-clip-thématique)
@@ -155,6 +156,66 @@ Pensez à ST Memory Books comme à votre **bibliothécaire IA personnel** pour l
 - Une intégration plus confortable si vous aimez travailler au clavier
 
 </details>
+
+---
+
+## 👥 Chats de groupe
+
+Oui, ST Memory Books fonctionne avec les chats de groupe ! Vous pouvez délimiter des scènes, créer des mémoires manuellement, utiliser les résumés automatiques et lancer des commandes slash comme dans un chat individuel.
+
+Il n'y a pas de bouton caché « mode groupe » à trouver. Ouvrez votre chat de groupe et utilisez STMB normalement.
+
+### Que devient une mémoire de groupe ?
+
+STMB tient compte des personnes qui ont parlé pendant la scène. Lorsqu'il peut identifier les participants, il ajoute ces personnages au filtre de personnages de la mémoire. En clair : la mémoire reste liée aux personnes réellement présentes, au lieu de traiter tout le groupe comme un seul personnage géant.
+
+Le prompt de résumé est également conçu pour séparer correctement les noms et les connaissances. Si Alice a fait une promesse et que Bob a appris un secret, la mémoire doit l'indiquer précisément, et non tout mélanger en disant qu'« ils savaient et ressentaient la même chose ».
+
+### La configuration simple : un seul Memory Book pour le groupe
+
+C'est la configuration recommandée pour commencer.
+
+1. Associez un lorebook au chat de groupe.
+2. Créez vos mémoires normalement.
+3. C'est tout ! STMB enregistre les mémoires dans le Memory Book du groupe et ajoute des filtres de participants lorsqu'il peut identifier les locuteurs.
+
+Si **Créer le lorebook s'il n'existe pas** est activé, STMB peut créer et associer automatiquement le Memory Book du groupe.
+
+Cette configuration convient lorsque tout le monde partage la même histoire générale et que vous n'avez pas besoin de conserver plusieurs versions de chaque mémoire.
+
+### La configuration avancée : des Memory Books séparés par personnage
+
+Vous voulez que le groupe conserve une histoire commune, tout en donnant à chaque personnage ses propres mémoires pertinentes ? Utilisez le **Mode Manuel du Lorebook** avec [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering).
+
+1. Installez et activez STLO.
+2. Ouvrez le chat de groupe.
+3. Activez le **Mode Manuel du Lorebook** dans Memory Books.
+4. Sélectionnez le Memory Book principal du groupe.
+5. Sous **Lorebooks des personnages du groupe**, choisissez un Memory Book pour chaque membre.
+6. Créez votre mémoire.
+7. Vérifiez la liste des participants avant la génération. STMB présélectionne les personnages détectés dans la scène.
+
+La version principale est enregistrée dans le Memory Book du groupe. Les copies sont enregistrées uniquement dans les Memory Books attribués aux participants sélectionnés. Si aucun participant n'est coché, STMB considère que la mémoire s'applique à l'ensemble du groupe.
+
+Si la détection des participants vous convient, activez **Accepter automatiquement les participants détectés à l'avenir** afin de ne plus confirmer la liste à chaque fois.
+
+### Facultatif : écrire une version commune et une version centrée sur le personnage
+
+Ouvrez le **Gestionnaire de profils**, modifiez votre profil de mémoire et activez **Utiliser des prompts de groupe et de personnage séparés dans les chats de groupe**.
+
+- Le **Prompt de résumé du groupe** rédige la mémoire commune du groupe.
+- Le **Prompt de résumé du personnage** rédige une version centrée sur le personnage pour son Memory Book individuel avec la configuration avancée Mode Manuel + STLO. Si plusieurs membres partagent le même Memory Book attribué, STMB n'y conserve qu'une seule copie commune.
+
+Cette option est utile lorsque les personnages ne savent pas les mêmes choses, n'accordent pas la même importance aux différentes parties d'une scène ou ont besoin de leur propre continuité émotionnelle. Elle entraîne cependant des requêtes IA supplémentaires ; laissez-la désactivée si vous n'avez pas réellement besoin de ces versions séparées.
+
+### Quelques points à retenir
+
+- Les réglages et la progression d'un chat de groupe appartiennent au chat actuel. Passer à un autre groupe ou chat ne transfère ni les marqueurs de scène ni le point de référence des messages traités.
+- En Mode Manuel, chaque membre du groupe doit avoir un lorebook valide attribué avant que STMB puisse enregistrer la mémoire distribuée.
+- Vous pouvez attribuer le même Memory Book de personnage à plusieurs membres du groupe.
+- Si les noms des locuteurs sont inhabituels ou dupliqués, vérifiez la liste des participants au lieu de l'accepter automatiquement.
+
+**Ma recommandation :** commencez avec un seul Memory Book pour le groupe. Passez à des Memory Books séparés par personnage uniquement lorsque votre histoire a réellement besoin de connaissances privées ou d'une continuité individuelle. La simplicité est préférable tant qu'elle suffit.
 
 ---
 
