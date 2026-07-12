@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v8.1.0 (July 12, 2026)
+- Enhancement: Added `{{memtier0}}` (Memory), `{{memtier1}}` (Arc), `{{memtier2}}` (Chapter), `{{memtier3}}` (Book), `{{memtier4}}` (Legend), `{{memtier5}}` (Series), `{{memtier6}}` (Epic), `{{memclips}}` (Clips), `{{memside}}` (Side Prompts) macros that will return the number of entries in the current chat-bound lorebook. 
+
 ## v8.0.0 (July 8, 2026)
 - MAJOR NEW FEATURE: Multi-character memories in group chats.
 - Bugfix: useChatCompletionService now reads streaming value from oai_settings.stream_openai.

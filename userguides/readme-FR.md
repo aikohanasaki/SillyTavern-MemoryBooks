@@ -417,9 +417,45 @@ Exemple : `/stmb-catchup interval=30 start=0 end=300`
 
 ## 👥 Support des discussions de groupe
 
-- Toutes les fonctionnalités fonctionnent avec les discussions de groupe.
-- Les marqueurs de scène, la création de mémoire et l’intégration lorebook sont stockés dans les métadonnées du chat actif.
-- Aucune configuration spéciale n’est requise ; sélectionnez simplement une discussion de groupe et utilisez comme d’habitude.
+STMB fonctionne dans les discussions de groupe avec les mêmes outils de mémoire manuels, automatiques et par commandes slash que dans les discussions individuelles. Il n’est pas nécessaire d’activer un mode de groupe distinct : sélectionnez le groupe et utilisez STMB normalement.
+
+#### Mémoires tenant compte des participants
+
+- STMB lit l’intervenant associé à chaque message de groupe et conserve une attribution claire des personnages dans le résumé généré.
+- Lorsque STMB peut identifier les membres du groupe qui ont participé, la mémoire enregistrée reçoit un filtre de personnages SillyTavern inclusif pour ces membres. La mémoire de groupe reste ainsi liée aux personnages réellement présents dans la scène.
+- Les marqueurs de scène, l’identifiant de message traité le plus élevé, les choix manuels de lorebook et les autres états propres au chat sont enregistrés avec la discussion de groupe active. Changer de chat ne transfère pas ces réglages vers un autre chat.
+
+#### Modes Automatique et Création automatique : un Memory Book
+
+Le Mode automatique utilise le lorebook lié à la discussion de groupe. Le Mode création automatique peut en créer et en lier un si le groupe ne possède pas encore de lorebook. Dans les deux modes, les mémoires sont enregistrées dans ce Memory Book de groupe et les filtres de participants sont ajoutés automatiquement lorsque les intervenants peuvent être identifiés.
+
+C’est la configuration la plus simple et elle suffit à la plupart des discussions de groupe.
+
+#### Mode manuel : Memory Books de groupe et de personnages
+
+Le Mode lorebook manuel peut gérer un Memory Book principal pour le groupe ainsi qu’un Memory Book désigné pour chaque membre. La désignation de lorebooks individuels par personnage nécessite l’installation et l’activation de [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering).
+
+1. Ouvrez une discussion de groupe et activez le **Mode lorebook manuel**.
+2. Sélectionnez le lorebook manuel principal. Il devient le Memory Book de référence du groupe.
+3. Sous **Lorebooks des personnages du groupe**, sélectionnez un lorebook pour chaque membre. Vous pouvez attribuer le même lorebook à plusieurs personnages.
+4. Créez une mémoire normalement.
+5. Confirmez quels personnages ont participé. STMB présélectionne les membres détectés dans les messages. Ne sélectionner personne applique la mémoire à tous les membres du groupe.
+
+STMB enregistre la mémoire de référence dans le Memory Book du groupe et la copie dans les Memory Books désignés des participants sélectionnés. Les entrées associées sont liées en interne afin que les consolidations de groupe et de personnage puissent conserver des chronologies synchronisées. Si un lorebook de personnage requis est absent ou supprimé, STMB s’arrête au lieu de laisser un ensemble incomplet de mémoires.
+
+La confirmation des participants inclut **Accepter automatiquement les participants détectés à l’avenir**. Activez cette option si vous faites confiance à la détection des intervenants et ne souhaitez pas valider la liste pour chaque mémoire.
+
+#### Prompts de groupe et de personnage distincts (facultatif)
+
+Pour créer différentes versions de la même mémoire :
+
+1. Ouvrez le **Gestionnaire de profils** et modifiez le profil utilisé pour créer les mémoires.
+2. Activez **Utiliser des prompts de groupe et de personnage distincts dans les discussions de groupe**.
+3. Choisissez un **Prompt de résumé de groupe** et un **Prompt de résumé de personnage**.
+
+Le prompt de groupe écrit la version partagée dans le Memory Book principal du groupe. En Mode manuel avec STLO, le prompt de personnage peut créer une version centrée sur le personnage dans un Memory Book qui lui est attribué individuellement. Cela utilise des requêtes de génération supplémentaires, mais permet à la mémoire partagée de décrire toute la scène tandis qu’une copie individuelle se concentre sur ce qui comptait pour ce personnage. Si plusieurs membres partagent le même Memory Book attribué, STMB n’y conserve qu’une seule copie partagée.
+
+> 💡 **Recommandation :** Commencez avec un seul Memory Book de groupe. Ajoutez des Memory Books par personnage uniquement lorsque certains membres ont besoin de connaissances, d’une continuité ou d’un contexte différents.
 
 ---
 
@@ -688,6 +724,8 @@ La file peut afficher l’état des tâches, vous permettre d’annuler les tâc
 
 Si Chat Top Bar n’est pas installé ou activé, STMB fonctionne toujours normalement. Vous n’aurez simplement pas l’interface de file d’attente des tâches.
 
+
+### Installer Chat Top Bar
 
 ![Comment installer Chat Top Bar](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/install.png)
 

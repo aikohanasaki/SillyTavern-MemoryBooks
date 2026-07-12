@@ -13,6 +13,7 @@ Brauchst du einen Bot, der sich an Dinge erinnert, aber der Chat ist zu lang fü
 - [Schnellstart](#-schnellstart-5-minuten-bis-zu-deiner-ersten-erinnerung)
 - [Was ST Memory Books eigentlich tut](#-was-st-memory-books-eigentlich-tut)
 - [Wähle deinen Stil](#-wähle-deinen-stil)
+- [Gruppenchats](#-gruppenchats)
 - [In Memory Book clippen](#️-in-memory-book-clippen)
 - [Clips vs. Side-Prompts](#️-clips-vs-side-prompts)
 - [Themen-Clip](#-themen-clip)
@@ -171,6 +172,66 @@ Betrachte ST Memory Books als deinen **persönlichen KI-Bibliothekar** für Chat
 * Integration in benutzerdefinierte Arbeitsabläufe
 
 </details>
+
+---
+
+## 👥 Gruppenchats
+
+Ja, ST Memory Books funktioniert mit Gruppenchats! Du kannst Szenen markieren, Erinnerungen manuell erstellen, automatische Zusammenfassungen verwenden und Slash-Befehle ausführen – genau wie in einem Einzelchat.
+
+Du musst keinen versteckten „Gruppenmodus“-Schalter suchen. Öffne einfach deinen Gruppenchat und verwende STMB wie gewohnt.
+
+### Was passiert mit einer Gruppenerinnerung?
+
+STMB achtet darauf, wer während der Szene gesprochen hat. Wenn es die Beteiligten erkennen kann, fügt es diese Charaktere dem Charakterfilter der Erinnerung hinzu. Einfach gesagt: Die Erinnerung bleibt mit den Personen verbunden, die tatsächlich dabei waren, statt die ganze Gruppe wie einen einzigen riesigen Charakter zu behandeln.
+
+Der Zusammenfassungs-Prompt ist außerdem so formuliert, dass Namen und Wissen getrennt bleiben. Wenn Alice ein Versprechen gab und Bob ein Geheimnis erfuhr, sollte die Erinnerung genau das sagen – und nicht alles zu „sie wussten und fühlten dasselbe“ verwischen.
+
+### Die einfache Einrichtung: ein Memory Book für die Gruppe
+
+Damit solltest du am besten beginnen.
+
+1. Verknüpfe ein Lorebook mit dem Gruppenchat.
+2. Erstelle Erinnerungen wie gewohnt.
+3. Das war's! STMB speichert die Erinnerungen im Gruppen-Memory-Book und fügt Beteiligtenfilter hinzu, wenn es die Sprecher erkennen kann.
+
+Wenn **Lorebook automatisch erstellen, falls keines existiert** aktiviert ist, kann STMB das Gruppen-Memory-Book für dich erstellen und verknüpfen.
+
+Diese Einrichtung eignet sich am besten, wenn alle dieselbe allgemeine Handlungsgeschichte teilen und du keine getrennten Versionen jeder Erinnerung pflegen musst.
+
+### Die erweiterte Einrichtung: separate Charakter-Memory-Books
+
+Soll die Gruppe eine gemeinsame Geschichte haben, während jeder Charakter zusätzlich seine eigenen relevanten Erinnerungen behält? Das ist mit dem **Manuellen Lorebook-Modus** und [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) möglich.
+
+1. Installiere und aktiviere STLO.
+2. Öffne den Gruppenchat.
+3. Aktiviere in Memory Books den **Manuellen Lorebook-Modus**.
+4. Wähle das Haupt-Memory-Book der Gruppe aus.
+5. Wähle unter **Gruppencharakter-Lorebooks** für jedes Gruppenmitglied ein Memory Book aus.
+6. Erstelle deine Erinnerung.
+7. Prüfe vor der Generierung die Beteiligtenliste. STMB wählt die Charaktere, die es in der Szene gefunden hat, bereits voraus.
+
+Die Hauptversion wird im Gruppen-Memory-Book gespeichert. Kopien werden nur in den zugewiesenen Memory Books der ausgewählten Beteiligten gespeichert. Wenn du alle Beteiligten abwählst, behandelt STMB die Erinnerung als für die gesamte Gruppe gültig.
+
+Wenn du mit der Beteiligtenerkennung von STMB zufrieden bist, aktiviere **Erkannte Beteiligte künftig automatisch übernehmen**, damit du die Liste nicht jedes Mal bestätigen musst.
+
+### Optional: eine gemeinsame und eine charakterbezogene Version schreiben
+
+Öffne den **Profil-Manager**, bearbeite dein Erinnerungsprofil und aktiviere **Separate Gruppen- und Charakter-Prompts in Gruppenchats verwenden**.
+
+- Der **Gruppen-Zusammenfassungs-Prompt** schreibt die gemeinsame Gruppenerinnerung.
+- Der **Charakter-Zusammenfassungs-Prompt** schreibt eine charakterbezogene Version für das individuell zugewiesene Charakter-Memory-Book, wenn du die erweiterte Einrichtung mit Manuellem Modus und STLO verwendest. Wenn mehrere Mitglieder dasselbe zugewiesene Memory Book nutzen, behält STMB dort eine einzige gemeinsame Kopie.
+
+Das ist sehr nützlich, wenn Charaktere unterschiedliche Dinge wissen, verschiedene Teile der Szene wichtig finden oder ihre eigene emotionale Kontinuität brauchen. Es erzeugt jedoch zusätzliche KI-Anfragen. Lass die Option daher ausgeschaltet, wenn du diese getrennten Versionen nicht wirklich brauchst.
+
+### Einige Dinge, die du beachten solltest
+
+- Gruppenchateinstellungen und Fortschritt gehören zum aktuellen Chat. Wenn du zu einer anderen Gruppe oder einem anderen Chat wechselst, werden Szenenmarkierungen und der Basispunkt der verarbeiteten Nachrichten nicht übernommen.
+- Im Manuellen Modus benötigt jedes Gruppenmitglied ein gültig zugewiesenes Lorebook, bevor STMB die verteilte Erinnerung speichern kann.
+- Du kannst dasselbe Charakter-Memory-Book mehreren Gruppenmitgliedern zuweisen.
+- Wenn Sprechernamen ungewöhnlich oder doppelt vorhanden sind, prüfe die Beteiligtenliste, statt sie automatisch zu übernehmen.
+
+**Meine Empfehlung:** Beginne mit einem einzigen Gruppen-Memory-Book. Wechsle erst dann zu getrennten Charakter-Memory-Books, wenn deine Geschichte wirklich privates Wissen oder individuelle Kontinuität benötigt. Einfach ist gut, bis es nicht mehr ausreicht.
 
 ---
 

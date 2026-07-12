@@ -18,6 +18,7 @@ Perlukan bot untuk mengingat perkara penting, tetapi sejarah sembang terlalu pan
   - [📊 Prom Sampingan & Penjejak Pintar](#-prom-sampingan--penjejak-pintar)
   - [📚 Koleksi Memori](#-koleksi-memori)
 - [🎯 Pilih Gaya Anda](#-pilih-gaya-anda)
+- [👥 Sembang Berkumpulan](#-sembang-berkumpulan)
 - [✂️ Klip ke Buku Memori](#-klip-ke-buku-memori)
 - [✂️ Klip vs Prom Sampingan](#-klip-vs-prom-sampingan)
 - [Klip Topikal](#-klip-topikal)
@@ -155,6 +156,66 @@ Anggaplah ST Memory Books sebagai **pustakawan AI peribadi** anda untuk perbuala
 - Integrasi dengan aliran kerja tersuai
 
 </details>
+
+---
+
+## 👥 Sembang Berkumpulan
+
+Ya, ST Memory Books berfungsi dengan sembang berkumpulan! Anda boleh menandakan babak, mencipta memori secara manual, menggunakan ringkasan automatik, dan menjalankan arahan slash sama seperti dalam sembang satu dengan satu.
+
+Anda tidak perlu mencari suis “mod kumpulan” yang tersembunyi. Buka sembang berkumpulan anda dan gunakan STMB seperti biasa.
+
+### Apa yang berlaku kepada memori kumpulan?
+
+STMB memberi perhatian kepada siapa yang bercakap dalam babak tersebut. Apabila ia dapat mengenal pasti peserta, STMB menambahkan watak-watak itu pada penapis watak memori. Dalam bahasa mudah: memori kekal berkaitan dengan mereka yang benar-benar berada di situ, dan bukannya menganggap seluruh kumpulan sebagai satu watak besar.
+
+Prom ringkasan juga ditulis supaya nama dan pengetahuan kekal berasingan. Jika Alice membuat janji dan Bob mengetahui satu rahsia, memori sepatutnya menyatakan perkara itu dengan tepat—bukan mengaburkannya menjadi “mereka mengetahui dan merasakan perkara yang sama.”
+
+### Tetapan mudah: satu Memory Book untuk kumpulan
+
+Ini ialah tetapan yang disyorkan untuk permulaan.
+
+1. Kaitkan satu lorebook dengan sembang berkumpulan.
+2. Cipta memori seperti biasa.
+3. Itu sahaja! STMB menyimpan memori ke dalam Memory Book kumpulan dan menambahkan penapis peserta apabila ia dapat mengenal pasti penutur.
+
+Jika **Cipta lorebook secara automatik jika tiada** didayakan, STMB boleh mencipta dan mengaitkan Memory Book kumpulan untuk anda.
+
+Tetapan ini paling sesuai apabila semua ahli berkongsi sejarah cerita umum yang sama dan anda tidak perlu mengekalkan versi berasingan bagi setiap memori.
+
+### Tetapan lanjutan: Memory Book watak yang berasingan
+
+Mahu kumpulan mempunyai satu sejarah bersama sementara setiap watak turut menyimpan memori relevan mereka sendiri? Anda boleh melakukannya dengan **Mod Lorebook Manual** dan [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering).
+
+1. Pasang dan dayakan STLO.
+2. Buka sembang berkumpulan.
+3. Hidupkan **Mod Lorebook Manual** dalam Memory Books.
+4. Pilih Memory Book utama kumpulan.
+5. Di bawah **Lorebook Watak Kumpulan**, pilih satu Memory Book untuk setiap ahli kumpulan.
+6. Cipta memori anda.
+7. Semak senarai peserta sebelum penjanaan. STMB akan memilih terlebih dahulu watak yang ditemuinya dalam babak tersebut.
+
+Versi utama disimpan dalam Memory Book kumpulan. Salinan hanya disimpan dalam Memory Book yang ditetapkan kepada peserta yang dipilih. Jika anda membiarkan semua peserta tidak ditanda, STMB menganggap memori itu terpakai kepada seluruh kumpulan.
+
+Jika anda berpuas hati dengan pengesanan peserta STMB, tandakan **Terima peserta yang dikesan secara automatik pada masa hadapan** supaya anda tidak perlu mengesahkan senarai setiap kali.
+
+### Pilihan: tulis versi bersama dan versi berfokuskan watak
+
+Buka **Pengurus Profil**, edit profil memori anda, dan dayakan **Gunakan prom kumpulan dan watak yang berasingan dalam sembang berkumpulan**.
+
+- **Prom Ringkasan Kumpulan** menulis memori bersama kumpulan.
+- **Prom Ringkasan Watak** menulis versi berfokuskan watak untuk Memory Book watak yang ditetapkan secara individu apabila menggunakan tetapan lanjutan Mod Manual + STLO. Jika beberapa ahli berkongsi satu Memory Book yang sama, STMB hanya menyimpan satu salinan bersama di situ.
+
+Ini sangat berguna apabila watak mengetahui perkara yang berbeza, mengambil berat tentang bahagian babak yang berbeza, atau memerlukan kesinambungan emosi masing-masing. Ia juga menghasilkan permintaan AI tambahan, jadi biarkan ia dimatikan melainkan anda benar-benar mahukan versi berasingan tersebut.
+
+### Beberapa perkara untuk diingati
+
+- Tetapan dan kemajuan sembang berkumpulan adalah khusus untuk sembang semasa. Beralih ke kumpulan atau sembang lain tidak membawa penanda babak atau garis dasar mesej yang telah diproses.
+- Dalam Mod Manual, setiap ahli kumpulan memerlukan lorebook sah yang ditetapkan sebelum STMB boleh menyimpan memori yang diedarkan.
+- Anda boleh menetapkan Memory Book watak yang sama kepada lebih daripada seorang ahli kumpulan.
+- Jika nama penutur luar biasa atau berulang, semak senarai peserta dan jangan menerimanya secara automatik.
+
+**Cadangan saya:** mulakan dengan satu Memory Book kumpulan. Beralih kepada Memory Book watak berasingan hanya apabila cerita anda benar-benar memerlukan pengetahuan peribadi atau kesinambungan individu. Tetapan ringkas adalah baik sehingga ia tidak lagi mencukupi.
 
 ---
 

@@ -18,6 +18,7 @@
   - [📊 侧边提示词与智能追踪器](#-侧边提示词与智能追踪器)
   - [📚 记忆集合](#-记忆集合)
 - [🎯 选择你的风格](#-选择你的风格)
+- [👥 群聊](#-群聊)
 - [✂️ 摘录到记忆书](#clip-to-memory-book)
 - [✂️ 摘录 vs 侧边提示词](#clips-vs-side-prompts)
 - [主题摘录](#-主题摘录)
@@ -172,6 +173,66 @@
 - 与自定义工作流集成
 
 </details>
+
+---
+
+## 👥 群聊
+
+可以，ST Memory Books 支持群聊！你可以像在一对一聊天中一样标记场景、手动创建记忆、使用自动摘要并运行 Slash 命令。
+
+你不需要寻找隐藏的“群聊模式”开关。直接打开群聊并正常使用 STMB 即可。
+
+### 群聊记忆会怎样处理？
+
+STMB 会留意场景中是谁在说话。如果它能识别参与者，就会把这些角色加入记忆的角色过滤器。简单来说：记忆会和真正参与现场的人保持关联，而不是把整个群组当成一个巨大的单一角色。
+
+摘要提示词也会尽量把姓名和各自掌握的信息分开。如果 Alice 做出了承诺，而 Bob 得知了一个秘密，记忆应该明确写出这两件事，而不是含糊地写成“他们知道并感受着同样的事情”。
+
+### 简单设置：群组共用一本 Memory Book
+
+建议先从这种设置开始。
+
+1. 给群聊绑定一个 lorebook。
+2. 正常创建记忆。
+3. 完成！STMB 会把记忆保存到群组 Memory Book，并在能够识别说话者时添加参与者过滤器。
+
+如果启用了 **Auto-create lorebook if none exists**，STMB 可以自动创建并绑定群组 Memory Book。
+
+当所有角色共享同一段大致的故事历史，而且你不需要为每条记忆维护多个版本时，这种设置最合适。
+
+### 高级设置：为角色分别使用 Memory Book
+
+想让群组拥有一份共享历史，同时让每个角色保留与自己有关的记忆？你可以配合 **Manual Lorebook Mode** 和 [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) 来实现。
+
+1. 安装并启用 STLO。
+2. 打开群聊。
+3. 在 Memory Books 中开启 **Manual Lorebook Mode**。
+4. 选择群组的主 Memory Book。
+5. 在 **Group Character Lorebooks** 下，为每个群组成员选择一个 Memory Book。
+6. 创建记忆。
+7. 生成前检查参与者列表。STMB 会预先选中它在场景中发现的角色。
+
+主版本会保存到群组 Memory Book。副本只会保存到所选参与者各自被分配的 Memory Book。如果你取消勾选所有参与者，STMB 会把这条记忆视为适用于整个群组。
+
+如果你认可 STMB 的参与者识别结果，可以勾选 **Automatically accept detected participants in future**，以后就不必每次都确认列表。
+
+### 可选：分别生成共享版本和角色视角版本
+
+打开 **Profile Manager**，编辑记忆配置文件，并启用 **Use separate group and character prompts in group chats**。
+
+- **Group Summary Prompt** 用于生成群组共享记忆。
+- **Character Summary Prompt** 会在高级 Manual Mode + STLO 设置下，为单独分配的角色 Memory Book 生成以该角色为重点的版本。如果多个成员共用同一本被分配的 Memory Book，STMB 只会在那里保留一份共享副本。
+
+当不同角色掌握不同信息、在意场景中的不同部分，或需要各自的情感连续性时，这项功能很有用。不过它也会增加 AI 请求次数，所以除非你确实需要这些独立版本，否则建议保持关闭。
+
+### 需要记住的几点
+
+- 群聊设置和进度属于当前聊天。切换到另一个群组或聊天时，场景标记和已处理消息基线不会随之转移。
+- 在 Manual Mode 下，STMB 保存分发记忆之前，每个群组成员都必须分配到一个有效的 lorebook。
+- 同一本角色 Memory Book 可以分配给多个群组成员。
+- 如果说话者姓名比较特殊或有重复，请检查参与者列表，不要直接自动接受。
+
+**建议：** 先使用一本群组 Memory Book。只有当故事确实需要私密知识或角色各自的连续性时，再改用分开的角色 Memory Book。简单设置在不够用之前，通常就是更好的设置。
 
 ---
 

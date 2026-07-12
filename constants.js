@@ -31,6 +31,8 @@ export const UI_SETTINGS = {
     CHAT_OBSERVER_DEBOUNCE_MS: 50,
 };
 
+export const MEMORY_TIER_CACHE_REFRESH_EVENT = 'stmb_memory_tier_cache_refresh';
+
 // File names
 export const FILE_NAMES = {
     PROMPTS_FILE: 'stmb-summary-prompts.json',

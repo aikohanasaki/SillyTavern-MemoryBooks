@@ -1,11 +1,11 @@
-import { chat_metadata, characters, name2, this_chid } from '../../../../script.js';
+import { chat_metadata, characters, eventSource, name2, this_chid } from '../../../../script.js';
 import { getContext, extension_settings } from '../../../extensions.js';
 import { selected_group, groups } from '../../../group-chats.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
-import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from './constants.js';
+import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS, MEMORY_TIER_CACHE_REFRESH_EVENT } from './constants.js';
 import { translate } from '../../../i18n.js';
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
@@ -387,6 +387,7 @@ export async function getEffectiveLorebookName() {
         // Save the selection to the chat's metadata
         stmbData.manualLorebook = selectedLorebook;
         saveMetadataForCurrentContext(); // Use the existing function from sceneManager to save correctly for groups/single chats
+        void eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT);
         
         toastr.success(`"${selectedLorebook}" is now the Memory Book for this chat.`, 'STMemoryBooks');
         return selectedLorebook;
@@ -446,6 +447,7 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
             const stmbData = getSceneMarkers();
             stmbData.manualLorebook = selectedLorebook;
             saveMetadataForCurrentContext();
+            void eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT);
 
             toastr.success(`Manual lorebook changed to: ${selectedLorebook}`, 'STMemoryBooks');
             return selectedLorebook;

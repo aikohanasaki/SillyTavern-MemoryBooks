@@ -18,6 +18,7 @@ Butuh bot untuk mengingat banyak hal, tetapi obrolannya terlalu panjang untuk ko
   - [📊 Prompt Sampingan & Pelacak Cerdas](#-prompt-sampingan--pelacak-cerdas)
   - [📚 Koleksi Memori (Memory Collections)](#-koleksi-memori-memory-collections)
 - [🎯 Pilih Gaya Anda](#-pilih-gaya-anda)
+- [👥 Obrolan Grup](#-obrolan-grup)
 - [✂️ Klip ke Buku Memori](#-klip-ke-buku-memori)
 - [✂️ Klip vs Prompt Sampingan](#-klip-vs-prompt-sampingan)
 - [Klip Topikal](#-klip-topikal)
@@ -174,6 +175,66 @@ Anggaplah ST Memory Books sebagai **pustakawan AI pribadi** Anda untuk percakapa
 * Integrasi dengan alur kerja kustom.
 
 </details>
+
+---
+
+## 👥 Obrolan Grup
+
+Ya, ST Memory Books dapat digunakan dalam obrolan grup! Anda dapat menandai adegan, membuat memori secara manual, memakai ringkasan otomatis, dan menjalankan perintah slash seperti pada obrolan satu lawan satu.
+
+Anda tidak perlu mencari sakelar “mode grup” yang tersembunyi. Buka obrolan grup dan gunakan STMB seperti biasa.
+
+### Apa yang terjadi pada memori grup?
+
+STMB memperhatikan siapa yang berbicara selama adegan. Jika dapat mengenali para peserta, STMB menambahkan karakter tersebut ke filter karakter memori. Sederhananya: memori tetap terhubung dengan orang-orang yang benar-benar ada di sana, bukan memperlakukan seluruh grup sebagai satu karakter raksasa.
+
+Prompt ringkasan juga dirancang agar nama dan pengetahuan tetap terpisah. Jika Alice membuat janji dan Bob mengetahui sebuah rahasia, memori seharusnya menyatakan hal itu dengan jelas—bukan mencampurnya menjadi “mereka mengetahui dan merasakan hal yang sama.”
+
+### Pengaturan mudah: satu Memory Book untuk grup
+
+Ini adalah pengaturan yang disarankan untuk memulai.
+
+1. Tautkan sebuah lorebook ke obrolan grup.
+2. Buat memori seperti biasa.
+3. Selesai! STMB menyimpan memori ke Memory Book grup dan menambahkan filter peserta jika dapat mengenali pembicaranya.
+
+Jika **Buat lorebook secara otomatis jika tidak ada** diaktifkan, STMB dapat membuat dan menautkan Memory Book grup untuk Anda.
+
+Pengaturan ini paling sesuai ketika semua anggota berbagi riwayat cerita umum yang sama dan Anda tidak perlu memelihara versi terpisah dari setiap memori.
+
+### Pengaturan lanjutan: Memory Book karakter yang terpisah
+
+Ingin grup memiliki satu riwayat bersama sementara setiap karakter juga menyimpan memorinya sendiri yang relevan? Anda dapat melakukannya dengan **Mode Lorebook Manual** dan [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering).
+
+1. Instal dan aktifkan STLO.
+2. Buka obrolan grup.
+3. Aktifkan **Mode Lorebook Manual** di Memory Books.
+4. Pilih Memory Book utama untuk grup.
+5. Di bawah **Lorebook Karakter Grup**, pilih sebuah Memory Book untuk setiap anggota grup.
+6. Buat memori Anda.
+7. Periksa daftar peserta sebelum pembuatan. STMB akan memilih terlebih dahulu karakter yang ditemukannya dalam adegan.
+
+Versi utama disimpan ke Memory Book grup. Salinan hanya disimpan ke Memory Book yang ditetapkan untuk peserta yang dipilih. Jika semua peserta tidak dicentang, STMB menganggap memori tersebut berlaku untuk seluruh grup.
+
+Jika Anda puas dengan deteksi peserta STMB, aktifkan **Terima peserta yang terdeteksi secara otomatis di masa mendatang** agar tidak perlu mengonfirmasi daftar setiap kali.
+
+### Opsional: tulis versi bersama dan versi yang berfokus pada karakter
+
+Buka **Pengelola Profil**, edit profil memori Anda, lalu aktifkan **Gunakan prompt grup dan karakter terpisah dalam obrolan grup**.
+
+- **Prompt Ringkasan Grup** menulis memori bersama untuk grup.
+- **Prompt Ringkasan Karakter** menulis versi yang berfokus pada karakter untuk Memory Book karakter yang ditetapkan secara individual saat memakai pengaturan lanjutan Mode Manual + STLO. Jika beberapa anggota berbagi satu Memory Book yang sama, STMB hanya menyimpan satu salinan bersama di sana.
+
+Ini sangat berguna ketika karakter mengetahui hal yang berbeda, memedulikan bagian adegan yang berbeda, atau membutuhkan kesinambungan emosional masing-masing. Namun, fitur ini juga menghasilkan permintaan AI tambahan, jadi biarkan tetap nonaktif kecuali Anda benar-benar membutuhkan versi terpisah tersebut.
+
+### Beberapa hal yang perlu diingat
+
+- Pengaturan dan progres obrolan grup hanya berlaku untuk obrolan saat ini. Beralih ke grup atau obrolan lain tidak membawa penanda adegan atau patokan pesan yang telah diproses.
+- Dalam Mode Manual, setiap anggota grup harus memiliki lorebook valid yang ditetapkan sebelum STMB dapat menyimpan memori yang didistribusikan.
+- Anda dapat menetapkan Memory Book karakter yang sama kepada lebih dari satu anggota grup.
+- Jika nama pembicara tidak biasa atau ada yang sama, tinjau daftar peserta daripada menerimanya secara otomatis.
+
+**Saran saya:** mulailah dengan satu Memory Book grup. Gunakan Memory Book karakter terpisah hanya ketika cerita Anda benar-benar membutuhkan pengetahuan pribadi atau kesinambungan individual. Pengaturan sederhana adalah pilihan yang baik sampai tidak lagi mencukupi.
 
 ---
 
