@@ -25,10 +25,19 @@ import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { showStmbEntryReviewPopup } from './clipManager.js';
-import { markStmbPopup, withGoBackButton } from './utils.js';
+import { getCurrentMemoryBooksContext, markStmbPopup, withGoBackButton } from './utils.js';
 import { listContextSettings } from './contextSettingsManager.js';
+import {
+    SIDE_PROMPT_AFTER_MEMORY_SET_KEY,
+    clearDeletedSidePromptSetReferences,
+    getDefaultSidePromptSetKey,
+    normalizeSidePromptSetKey,
+} from './sidePromptSetDefaults.js';
 
 const SIDE_PROMPT_CONTEXT_FOLLOW_CHAT = '__follow_chat__';
+const SIDE_PROMPT_SET_MODE_INHERIT = 'mode:inherit';
+const SIDE_PROMPT_SET_MODE_INDIVIDUAL = 'mode:individual';
+const SIDE_PROMPT_SET_VALUE_PREFIX = 'set:';
 
 /**
  * Build a human-readable triggers summary array for display/search
@@ -204,18 +213,29 @@ function setChatSidePromptLorebookOverride(key, lorebookName) {
     saveMetadataForCurrentContext();
 }
 
-function getChatAfterMemorySetKey() {
+function getChatAfterMemorySetSelection() {
     const markers = getSceneMarkers() || {};
-    return String(markers.sidePromptAfterMemorySetKey || '').trim();
+    const hasOverride = Object.hasOwn(markers, SIDE_PROMPT_AFTER_MEMORY_SET_KEY);
+    return {
+        hasOverride,
+        setKey: hasOverride
+            ? normalizeSidePromptSetKey(markers[SIDE_PROMPT_AFTER_MEMORY_SET_KEY])
+            : '',
+    };
 }
 
-function setChatAfterMemorySetKey(setKey) {
+function setChatAfterMemorySetMode(mode) {
     const markers = getSceneMarkers() || {};
-    const normalized = String(setKey || '').trim();
-    if (normalized) {
-        markers.sidePromptAfterMemorySetKey = normalized;
+    if (mode === SIDE_PROMPT_SET_MODE_INHERIT) {
+        delete markers[SIDE_PROMPT_AFTER_MEMORY_SET_KEY];
+    } else if (mode === SIDE_PROMPT_SET_MODE_INDIVIDUAL) {
+        markers[SIDE_PROMPT_AFTER_MEMORY_SET_KEY] = '';
+    } else if (mode.startsWith(SIDE_PROMPT_SET_VALUE_PREFIX)) {
+        markers[SIDE_PROMPT_AFTER_MEMORY_SET_KEY] = normalizeSidePromptSetKey(
+            decodeURIComponent(mode.slice(SIDE_PROMPT_SET_VALUE_PREFIX.length)),
+        );
     } else {
-        delete markers.sidePromptAfterMemorySetKey;
+        return;
     }
     saveMetadataForCurrentContext();
 }
@@ -461,12 +481,25 @@ async function refreshList(popup, preserveKey = null) {
 }
 
 function renderAfterMemorySetMode(sets) {
-    const selectedKey = getChatAfterMemorySetKey();
+    const { hasOverride, setKey: selectedKey } = getChatAfterMemorySetSelection();
+    const sceneContext = getCurrentMemoryBooksContext();
+    const defaultSetKey = getDefaultSidePromptSetKey(
+        extension_settings?.STMemoryBooks?.moduleSettings,
+        sceneContext,
+    );
+    const defaultSet = (sets || []).find(set => set.key === defaultSetKey);
+    const inheritLabel = sceneContext?.isGroupChat
+        ? translate('Inherit group chat default', 'STMemoryBooks_InheritGroupSidePromptDefault')
+        : translate('Inherit solo chat default', 'STMemoryBooks_InheritSoloSidePromptDefault');
+    const inheritedMissingLabel = !defaultSet && defaultSetKey
+        ? ` — ${tr('STMemoryBooks_MissingSidePromptSetOption', 'Missing set: {{key}}', { key: defaultSetKey })}`
+        : '';
     const hasSelected = selectedKey && (sets || []).some(set => set.key === selectedKey);
     const options = [
-        `<option value="" ${!selectedKey ? 'selected' : ''}>${escapeHtml(translate('Use individually-enabled side prompts', 'STMemoryBooks_UseIndividuallyEnabledSidePrompts'))}</option>`,
-        ...(hasSelected ? [] : selectedKey ? [`<option value="${escapeHtml(selectedKey)}" selected>${escapeHtml(tr('STMemoryBooks_MissingSidePromptSetOption', 'Missing set: {{key}}', { key: selectedKey }))}</option>`] : []),
-        ...(sets || []).map(set => `<option value="${escapeHtml(set.key)}" ${selectedKey === set.key ? 'selected' : ''}>${escapeHtml(set.name)}</option>`),
+        `<option value="${SIDE_PROMPT_SET_MODE_INHERIT}" ${!hasOverride ? 'selected' : ''}>${escapeHtml(inheritLabel + inheritedMissingLabel)}</option>`,
+        `<option value="${SIDE_PROMPT_SET_MODE_INDIVIDUAL}" ${hasOverride && !selectedKey ? 'selected' : ''}>${escapeHtml(translate('Use individually-enabled side prompts', 'STMemoryBooks_UseIndividuallyEnabledSidePrompts'))}</option>`,
+        ...(hasSelected ? [] : selectedKey ? [`<option value="${SIDE_PROMPT_SET_VALUE_PREFIX}${encodeURIComponent(selectedKey)}" selected>${escapeHtml(tr('STMemoryBooks_MissingSidePromptSetOption', 'Missing set: {{key}}', { key: selectedKey }))}</option>`] : []),
+        ...(sets || []).map(set => `<option value="${SIDE_PROMPT_SET_VALUE_PREFIX}${encodeURIComponent(set.key)}" ${hasOverride && selectedKey === set.key ? 'selected' : ''}>${escapeHtml(set.name)}</option>`),
     ].join('');
 
     return `
@@ -477,7 +510,7 @@ function renderAfterMemorySetMode(sets) {
                     ${options}
                 </select>
             </label>
-            <small class="opacity70p">${escapeHtml(translate('Selecting a side prompt set replaces individually-enabled after-memory side prompts for this chat. Leave this set to individually-enabled side prompts to use the old behavior.', 'STMemoryBooks_SidePromptSetModeHelp'))}</small>
+            <small class="opacity70p">${escapeHtml(translate('Inherit uses the matching solo or group default. You can explicitly use individually-enabled side prompts or select a specific set for this chat.', 'STMemoryBooks_SidePromptSetModeHelp'))}</small>
         </div>
     `;
 }
@@ -530,7 +563,7 @@ async function refreshSetControls(popup) {
     try { applyLocale(container); } catch (e) { /* no-op */ }
 
     container.querySelector('#stmb-sp-after-memory-set-mode')?.addEventListener('change', (e) => {
-        setChatAfterMemorySetKey(e.target.value || '');
+        setChatAfterMemorySetMode(e.target.value);
         toastr.success(translate('After-memory side prompt mode saved for this chat.', 'STMemoryBooks_SidePromptSetModeSaved'), translate('STMemoryBooks', 'index.toast.title'));
     });
     container.querySelector('#stmb-sp-new-set')?.addEventListener('click', async () => {
@@ -1636,6 +1669,13 @@ export async function showSidePromptsPopup() {
                         if (res === POPUP_RESULT.AFFIRMATIVE) {
                             try {
                                 await removeSet(setKey);
+                                const cleanup = clearDeletedSidePromptSetReferences(
+                                    extension_settings?.STMemoryBooks?.moduleSettings,
+                                    getSceneMarkers() || {},
+                                    setKey,
+                                );
+                                if (cleanup.settingsChanged) saveSettingsDebounced();
+                                if (cleanup.chatChanged) saveMetadataForCurrentContext();
                                 toastr.success(translate('Side prompt set deleted.', 'STMemoryBooks_SidePromptSetDeleted'), translate('STMemoryBooks', 'index.toast.title'));
                                 window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
                                 await refreshSetControls(popup);

@@ -131,6 +131,10 @@ import {
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
+  normalizeDefaultSidePromptSetKeys,
+  normalizeSidePromptSetKey,
+} from "./sidePromptSetDefaults.js";
+import {
   CONTEXT_NONE_KEY,
   getContextSetting,
   migrateProfileAdditionalContext,
@@ -453,6 +457,8 @@ const defaultSettings = {
     useRegex: false,
     selectedRegexOutgoing: [],
     selectedRegexIncoming: [],
+    defaultSoloSidePromptSetKey: "",
+    defaultGroupSidePromptSetKey: "",
     // Arc creation ordering (applies to newly created arcs)
     arcOrderMode: "auto",
     arcOrderValue: 100,
@@ -2027,6 +2033,8 @@ function validateSettings(settings) {
   if (!settings.moduleSettings) {
     settings.moduleSettings = deepClone(defaultSettings.moduleSettings);
   }
+
+  normalizeDefaultSidePromptSetKeys(settings.moduleSettings);
 
   // Validate maxTokens and fall back to the app default when unset or invalid.
   // A value of 0 is intentional: it means "inherit SillyTavern's Chat Completion setting".
@@ -3730,7 +3738,11 @@ async function executeMemoryGeneration(
         model: connDbg.model,
         temperature: connDbg.temperature,
       });
-      await runAfterMemory(compiledScene, profileSettings);
+      await runAfterMemory(compiledScene, profileSettings, {
+        sceneContext: saveContext,
+        sceneMarkers: getSceneMarkers() || {},
+        settings,
+      });
     } catch (e) {
       console.warn("STMemoryBooks: runAfterMemory failed:", e);
     }
@@ -4061,6 +4073,7 @@ async function buildQueuedMemoryJob(
       settings: deepClone(settings),
       memoryFetchResult: deepClone(memoryFetchResult),
       memoryBooksContext: deepClone(memoryBooksContext),
+      sceneMarkers: deepClone(getSceneMarkers() || {}),
       manualGroupLorebookBindings,
     },
   };
@@ -4329,6 +4342,9 @@ async function executeQueuedMemoryJob(job, jobContext) {
       chatRef: job.chatRef,
       chatKey: job.chatKey,
       lorebookName,
+      sceneContext: queuedContext,
+      sceneMarkers: payload.sceneMarkers || {},
+      settings,
     });
   } catch (error) {
     console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
@@ -8208,7 +8224,7 @@ function initializeSettingsPopupSelect2(popupInstance = currentPopupInstance) {
   }, 0);
 }
 
-async function buildSettingsTemplateData() {
+async function buildSettingsTemplateData({ includeSidePromptSets = false } = {}) {
   const settings = initializeSettings();
   await SummaryPromptManager.firstRunInitIfMissing(settings);
   const sceneData = await getSceneData();
@@ -8252,6 +8268,39 @@ async function buildSettingsTemplateData() {
     settings.moduleSettings.autoConsolidationTargetTiers ??
       settings.moduleSettings.autoConsolidationTargetTier,
   );
+  const sidePromptSets = includeSidePromptSets ? await listSets() : [];
+  const buildDefaultSidePromptSetOptions = (selectedKey) => {
+    const normalizedSelectedKey = normalizeSidePromptSetKey(selectedKey);
+    const hasSelectedSet = !!normalizedSelectedKey
+      && sidePromptSets.some((set) => set.key === normalizedSelectedKey);
+    return [
+      {
+        key: "",
+        name: translate(
+          "Use individually-enabled side prompts",
+          "STMemoryBooks_UseIndividuallyEnabledSidePrompts",
+        ),
+        isSelected: !normalizedSelectedKey,
+      },
+      ...(!hasSelectedSet && normalizedSelectedKey
+        ? [{
+            key: normalizedSelectedKey,
+            name: tr(
+              "STMemoryBooks_MissingSidePromptSetOption",
+              "Missing set: {{key}}",
+              { key: normalizedSelectedKey },
+            ),
+            isSelected: true,
+            isMissing: true,
+          }]
+        : []),
+      ...sidePromptSets.map((set) => ({
+        key: set.key,
+        name: set.name,
+        isSelected: set.key === normalizedSelectedKey,
+      })),
+    ];
+  };
 
   return {
     hasScene: !!sceneData,
@@ -8285,6 +8334,12 @@ async function buildSettingsTemplateData() {
     tokenWarningThreshold:
       settings.moduleSettings.tokenWarningThreshold ?? 50000,
     defaultMemoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
+    defaultSoloSidePromptSetOptions: buildDefaultSidePromptSetOptions(
+      settings.moduleSettings.defaultSoloSidePromptSetKey,
+    ),
+    defaultGroupSidePromptSetOptions: buildDefaultSidePromptSetOptions(
+      settings.moduleSettings.defaultGroupSidePromptSetKey,
+    ),
     autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
     autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
@@ -8460,7 +8515,7 @@ async function showSettingsPopup() {
 
 async function showGeneralSettingsPopup() {
   try {
-    const templateData = await buildSettingsTemplateData();
+    const templateData = await buildSettingsTemplateData({ includeSidePromptSets: true });
     const content = DOMPurify.sanitize(generalSettingsTemplate(templateData));
     const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
       wide: true,
@@ -8583,6 +8638,22 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
 
     if (e.target.matches("#stmb-refresh-editor")) {
       settings.moduleSettings.refreshEditor = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-default-solo-side-prompt-set")) {
+      settings.moduleSettings.defaultSoloSidePromptSetKey = normalizeSidePromptSetKey(
+        e.target.value,
+      );
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-default-group-side-prompt-set")) {
+      settings.moduleSettings.defaultGroupSidePromptSetKey = normalizeSidePromptSetKey(
+        e.target.value,
+      );
       saveSettingsDebounced();
       return;
     }
@@ -9029,6 +9100,14 @@ function persistMainPopupSettings(popupElement) {
   const allowSceneOverlap =
     popupElement.querySelector("#stmb-allow-scene-overlap")?.checked ??
     settings.moduleSettings.allowSceneOverlap;
+  const defaultSoloSidePromptSetKey = normalizeSidePromptSetKey(
+    popupElement.querySelector("#stmb-default-solo-side-prompt-set")?.value ??
+      settings.moduleSettings.defaultSoloSidePromptSetKey,
+  );
+  const defaultGroupSidePromptSetKey = normalizeSidePromptSetKey(
+    popupElement.querySelector("#stmb-default-group-side-prompt-set")?.value ??
+      settings.moduleSettings.defaultGroupSidePromptSetKey,
+  );
   const manualModeEnabled =
     popupElement.querySelector("#stmb-manual-mode-enabled")?.checked ??
     settings.moduleSettings.manualModeEnabled;
@@ -9144,6 +9223,24 @@ function persistMainPopupSettings(popupElement) {
 
   if (allowSceneOverlap !== settings.moduleSettings.allowSceneOverlap) {
     settings.moduleSettings.allowSceneOverlap = allowSceneOverlap;
+    hasChanges = true;
+  }
+
+  if (
+    defaultSoloSidePromptSetKey !==
+    settings.moduleSettings.defaultSoloSidePromptSetKey
+  ) {
+    settings.moduleSettings.defaultSoloSidePromptSetKey =
+      defaultSoloSidePromptSetKey;
+    hasChanges = true;
+  }
+
+  if (
+    defaultGroupSidePromptSetKey !==
+    settings.moduleSettings.defaultGroupSidePromptSetKey
+  ) {
+    settings.moduleSettings.defaultGroupSidePromptSetKey =
+      defaultGroupSidePromptSetKey;
     hasChanges = true;
   }
 
@@ -9938,7 +10035,11 @@ async function applyManualFixedJson(correctedRaw) {
         model: connDbg.model,
         temperature: connDbg.temperature,
       });
-      await runAfterMemory(compiledScene, profile);
+      await runAfterMemory(compiledScene, profile, {
+        sceneContext: saveContext,
+        sceneMarkers: getSceneMarkers() || {},
+        settings,
+      });
     } catch (e) {
       console.warn("STMemoryBooks: runAfterMemory failed:", e);
     }
