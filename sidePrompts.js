@@ -3,7 +3,7 @@ import { extension_settings } from '../../../extensions.js';
 import { loadWorldInfo, world_names } from '../../../world-info.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
-import { getCurrentApiInfo, getUIModelSettings, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
+import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { appendAdditionalContextSection, applySelectedRegex, requestCompletion } from './stmemory.js';
 import { findSetByName, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
@@ -28,6 +28,7 @@ import {
     registerStmbJobExecutor,
     withStmbWriteLane,
 } from './stmbJobs.js';
+import { resolveAfterMemorySidePromptSet } from './sidePromptSetDefaults.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -775,11 +776,6 @@ async function resolveSidePromptPreview({
     }
 }
 
-function getSelectedAfterMemorySetKey() {
-    const markers = getSceneMarkers() || {};
-    return String(markers.sidePromptAfterMemorySetKey || '').trim();
-}
-
 function logSkippedSetItems(skipped = [], context = 'set') {
     for (const item of skipped || []) {
         if (item.reason === 'missing-set') {
@@ -1320,7 +1316,16 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
     const parentTask = createStmbInFlightTask('SidePrompts:onAfterMemory');
     const runEpoch = parentTask.epoch;
     try {
-        const selectedSetKey = getSelectedAfterMemorySetKey();
+        const sceneContext = options.sceneContext || getCurrentMemoryBooksContext();
+        const sceneMarkers = options.sceneMarkers || getSceneMarkers() || {};
+        const moduleSettings = options.settings?.moduleSettings
+            || extension_settings?.STMemoryBooks?.moduleSettings
+            || {};
+        const { setKey: selectedSetKey } = resolveAfterMemorySidePromptSet(
+            sceneMarkers,
+            moduleSettings,
+            sceneContext,
+        );
         let runItems = [];
         if (selectedSetKey) {
             const resolvedSet = await resolveSetItemsForRun(selectedSetKey, {}, { allowUnresolved: false });

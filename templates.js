@@ -208,6 +208,27 @@ export const generalSettingsTemplate = Handlebars.compile(`
     </div>
 
     <div class="world_entry_form_control">
+        <h4 data-i18n="STMemoryBooks_DefaultAfterMemorySidePromptSets">Default After-Memory Side Prompt Sets</h4>
+        <small class="opacity50p" data-i18n="STMemoryBooks_DefaultAfterMemorySidePromptSetsHelp">Chats without a per-chat override inherit the matching default. An empty selection uses individually-enabled side prompts.</small>
+        <label for="stmb-default-solo-side-prompt-set">
+            <span data-i18n="STMemoryBooks_DefaultSoloSidePromptSet">Default for solo chats</span>
+            <select id="stmb-default-solo-side-prompt-set" class="text_pole">
+                {{#each defaultSoloSidePromptSetOptions}}
+                    <option value="{{key}}" {{#if isSelected}}selected{{/if}}>{{name}}</option>
+                {{/each}}
+            </select>
+        </label>
+        <label for="stmb-default-group-side-prompt-set">
+            <span data-i18n="STMemoryBooks_DefaultGroupSidePromptSet">Default for group chats</span>
+            <select id="stmb-default-group-side-prompt-set" class="text_pole">
+                {{#each defaultGroupSidePromptSetOptions}}
+                    <option value="{{key}}" {{#if isSelected}}selected{{/if}}>{{name}}</option>
+                {{/each}}
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
         <label for="stmb-max-tokens">
             <h4 data-i18n="STMemoryBooks_MaxTokens">Max Response Tokens:</h4>
             <small class="opacity50p" data-i18n="STMemoryBooks_MaxTokensDesc">Maximum number of tokens to use for memory summaries.</small>
