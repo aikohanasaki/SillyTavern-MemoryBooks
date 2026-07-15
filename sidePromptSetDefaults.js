@@ -27,7 +27,7 @@ export function getDefaultSidePromptSetKey(moduleSettings, sceneContext) {
     return normalizeSidePromptSetKey(moduleSettings?.[settingKey]);
 }
 
-export function resolveAfterMemorySidePromptSet(markers, moduleSettings, sceneContext) {
+export function resolveAutomaticSidePromptSet(markers, moduleSettings, sceneContext) {
     const hasChatOverride = !!markers
         && typeof markers === 'object'
         && Object.hasOwn(markers, SIDE_PROMPT_AFTER_MEMORY_SET_KEY);
@@ -40,6 +40,31 @@ export function resolveAfterMemorySidePromptSet(markers, moduleSettings, sceneCo
         mode: setKey ? 'set' : 'individual',
         source: hasChatOverride ? 'chat' : 'default',
     };
+}
+
+// Backward-compatible name retained for callers that predate interval set scoping.
+export function resolveAfterMemorySidePromptSet(markers, moduleSettings, sceneContext) {
+    return resolveAutomaticSidePromptSet(markers, moduleSettings, sceneContext);
+}
+
+/**
+ * Limit resolved set rows to templates enabled for the requested automatic trigger.
+ * Manual set runs intentionally do not use this filter.
+ */
+export function filterAutomaticSidePromptSetItems(items, trigger) {
+    return (Array.isArray(items) ? items : []).filter((item) => {
+        const template = item?.baseTpl || item?.tpl;
+        if (!template?.enabled) return false;
+
+        if (trigger === 'onAfterMemory') {
+            return !!template.triggers?.onAfterMemory?.enabled;
+        }
+        if (trigger === 'onInterval') {
+            const visibleMessages = Number(template.triggers?.onInterval?.visibleMessages);
+            return Number.isFinite(visibleMessages) && visibleMessages >= 1;
+        }
+        return false;
+    });
 }
 
 export function clearDeletedSidePromptSetReferences(moduleSettings, markers, deletedSetKey) {
