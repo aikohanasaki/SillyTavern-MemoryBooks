@@ -397,7 +397,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "Échec de duplication de l'ensemble de side prompts.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "Échec de suppression de l'ensemble de side prompts.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "Supprimer l'ensemble de Side Prompts",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "Supprimer « {{name}} » ? Les chats qui utilisent cet ensemble n'exécuteront aucun side prompt après mémoire tant qu'un nouveau mode ne sera pas sélectionné.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "Supprimer « {{name}} » ? Les chats qui héritent d'une valeur par défaut correspondante, ainsi que ce chat s'il utilise explicitement cet ensemble, seront réinitialisés aux side prompts après mémoire activés individuellement. Les autres chats ayant un remplacement explicite vers cet ensemble conserveront une sélection manquante jusqu'à ce qu'un autre mode soit choisi.",
   "STMemoryBooks_MissingSidePromptSetOption": "Ensemble manquant : {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "Créez un side prompt avant de créer un ensemble.",
   "STMemoryBooks_SetNeedsItem": "Ajoutez au moins un side prompt à l'ensemble.",

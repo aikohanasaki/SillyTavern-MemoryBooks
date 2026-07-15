@@ -396,7 +396,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "Gagal menduplikasi set prompt sampingan.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "Gagal menghapus set prompt sampingan.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "Hapus Set Prompt Sampingan",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "Hapus \"{{name}}\"? Obrolan yang menggunakan set ini tidak akan menjalankan prompt sampingan setelah memori sampai mode baru dipilih.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "Hapus \"{{name}}\"? Obrolan yang mewarisi default yang cocok, dan obrolan ini jika secara eksplisit menggunakan set tersebut, akan diatur ulang ke prompt sampingan setelah memori yang diaktifkan satu per satu. Obrolan lain dengan penggantian eksplisit ke set ini akan mempertahankan pilihan yang hilang sampai mode lain dipilih.",
   "STMemoryBooks_MissingSidePromptSetOption": "Set hilang: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "Buat prompt sampingan sebelum membuat set.",
   "STMemoryBooks_SetNeedsItem": "Tambahkan setidaknya satu prompt sampingan ke set.",

@@ -3362,6 +3362,16 @@ function sleepWithAbort(ms, signal) {
   });
 }
 
+function captureMemoryOriginSnapshot(sceneContext = null) {
+  const chatRef = deepClone(getCurrentStmbChatRef());
+  return {
+    chatRef,
+    chatKey: getStmbChatKey(chatRef),
+    sceneContext: deepClone(sceneContext || getCurrentMemoryBooksContext()),
+    sceneMarkers: deepClone(getSceneMarkers() || {}),
+  };
+}
+
 async function executeMemoryGeneration(
   sceneData,
   lorebookValidation,
@@ -3378,6 +3388,12 @@ async function executeMemoryGeneration(
     effectiveSettings;
   const generationRetryState =
     retryState && typeof retryState === "object" ? retryState : {};
+  const memoryOriginSnapshot =
+    generationRetryState.memoryOriginSnapshot ||
+    captureMemoryOriginSnapshot(
+      manualGroupLorebookValidation?.memoryBooksContext,
+    );
+  generationRetryState.memoryOriginSnapshot = memoryOriginSnapshot;
   currentProfile = profileSettings;
   let compiledScene = null;
   let memoryFetchResult = null;
@@ -3739,8 +3755,10 @@ async function executeMemoryGeneration(
         temperature: connDbg.temperature,
       });
       await runAfterMemory(compiledScene, profileSettings, {
-        sceneContext: saveContext,
-        sceneMarkers: getSceneMarkers() || {},
+        chatRef: memoryOriginSnapshot.chatRef,
+        chatKey: memoryOriginSnapshot.chatKey,
+        sceneContext: memoryOriginSnapshot.sceneContext,
+        sceneMarkers: memoryOriginSnapshot.sceneMarkers,
         settings,
       });
     } catch (e) {
@@ -3853,7 +3871,10 @@ async function executeMemoryGeneration(
         memoryFetchResult,
         sceneStats,
         settings,
-        memoryBooksContext: deepClone(manualGroupLorebookValidation?.memoryBooksContext),
+        chatRef: deepClone(memoryOriginSnapshot.chatRef),
+        chatKey: memoryOriginSnapshot.chatKey,
+        sceneMarkers: deepClone(memoryOriginSnapshot.sceneMarkers),
+        memoryBooksContext: deepClone(memoryOriginSnapshot.sceneContext),
         manualGroupLorebookBindings: deepClone(
           manualGroupLorebookValidation?.manualGroupLorebookBindings,
         ),
@@ -3991,11 +4012,30 @@ async function buildQueuedMemoryJob(
   lorebookValidation,
   effectiveSettings,
   manualGroupLorebookValidation = null,
+  memoryOriginSnapshot = null,
 ) {
   const { profileSettings, summaryCount, tokenThreshold, settings } = effectiveSettings;
+  const originSnapshot =
+    memoryOriginSnapshot ||
+    captureMemoryOriginSnapshot(
+      manualGroupLorebookValidation?.memoryBooksContext,
+    );
+  const chatRef = originSnapshot.chatRef;
+  const memoryBooksContext =
+    manualGroupLorebookValidation?.memoryBooksContext ||
+    originSnapshot.sceneContext;
+  const manualGroupLorebookBindings =
+    manualGroupLorebookValidation?.manualGroupLorebookBindings ||
+    (
+      settings?.moduleSettings?.manualModeEnabled &&
+      memoryBooksContext?.isGroupChat &&
+      isStloAvailableForManualGroupLorebooks()
+        ? createManualGroupLorebookBindingSnapshot(originSnapshot.sceneMarkers)
+        : null
+    );
   const sceneRequest = createSceneRequest(sceneData.sceneStart, sceneData.sceneEnd);
   const compiledScene = compileScene(sceneRequest);
-  const promptContext = getCurrentMemoryBooksContext();
+  const promptContext = originSnapshot.sceneContext;
   compiledScene.metadata = {
     ...(compiledScene.metadata || {}),
     groupName: promptContext?.groupName || compiledScene.metadata?.groupName,
@@ -4009,7 +4049,7 @@ async function buildQueuedMemoryJob(
   if (
     manualGroupLorebookValidation?.valid &&
     settings?.moduleSettings?.manualModeEnabled &&
-    getCurrentMemoryBooksContext().isGroupChat
+    originSnapshot.sceneContext?.isGroupChat
   ) {
     const participantsConfirmed = await confirmGroupMemoryParticipants(
       compiledScene,
@@ -4037,19 +4077,6 @@ async function buildQueuedMemoryJob(
     return null;
   }
   compiledScene.additionalContextEntries = deepClone(additionalContextSnapshot.entries);
-  const chatRef = getCurrentStmbChatRef();
-  const memoryBooksContext =
-    manualGroupLorebookValidation?.memoryBooksContext ||
-    getCurrentMemoryBooksContext();
-  const manualGroupLorebookBindings =
-    manualGroupLorebookValidation?.manualGroupLorebookBindings ||
-    (
-      settings?.moduleSettings?.manualModeEnabled &&
-      memoryBooksContext?.isGroupChat &&
-      isStloAvailableForManualGroupLorebooks()
-        ? createManualGroupLorebookBindingSnapshot()
-        : null
-    );
   const lorebookName = String(lorebookValidation?.name || "").trim();
 
   return {
@@ -4057,7 +4084,7 @@ async function buildQueuedMemoryJob(
     title: translate("Memory", "STMemoryBooks_Jobs_Memory"),
     detail: `Messages ${sceneData.sceneStart}-${sceneData.sceneEnd}`,
     chatRef,
-    chatKey: getStmbChatKey(chatRef),
+    chatKey: originSnapshot.chatKey,
     lorebookName,
     range: {
       sceneStart: sceneData.sceneStart,
@@ -4073,7 +4100,7 @@ async function buildQueuedMemoryJob(
       settings: deepClone(settings),
       memoryFetchResult: deepClone(memoryFetchResult),
       memoryBooksContext: deepClone(memoryBooksContext),
-      sceneMarkers: deepClone(getSceneMarkers() || {}),
+      sceneMarkers: deepClone(originSnapshot.sceneMarkers),
       manualGroupLorebookBindings,
     },
   };
@@ -4717,6 +4744,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
 async function initiateMemoryCreation(selectedProfileIndex = null) {
   // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
   const context = getCurrentMemoryBooksContext();
+  const memoryOriginSnapshot = captureMemoryOriginSnapshot(context);
 
   // For single character chats, check character data
   if (!context.isGroupChat) {
@@ -4876,6 +4904,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
         lorebookValidation,
         effectiveSettings,
         manualGroupLorebookValidation,
+        memoryOriginSnapshot,
       );
       if (!job) {
         return false;
@@ -4896,6 +4925,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       0,
       null,
       manualGroupLorebookValidation,
+      { memoryOriginSnapshot },
     );
   } catch (error) {
     console.error(
@@ -10036,8 +10066,10 @@ async function applyManualFixedJson(correctedRaw) {
         temperature: connDbg.temperature,
       });
       await runAfterMemory(compiledScene, profile, {
-        sceneContext: saveContext,
-        sceneMarkers: getSceneMarkers() || {},
+        chatRef: context.chatRef || null,
+        chatKey: context.chatKey || null,
+        sceneContext: context.memoryBooksContext || saveContext,
+        sceneMarkers: context.sceneMarkers || {},
         settings,
       });
     } catch (e) {
