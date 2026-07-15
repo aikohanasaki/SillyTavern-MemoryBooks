@@ -28,7 +28,7 @@ import {
     registerStmbJobExecutor,
     withStmbWriteLane,
 } from './stmbJobs.js';
-import { resolveAfterMemorySidePromptSet } from './sidePromptSetDefaults.js';
+import { filterAutomaticSidePromptSetItems, resolveAutomaticSidePromptSet } from './sidePromptSetDefaults.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -792,6 +792,14 @@ function logSkippedSetItems(skipped = [], context = 'set') {
     }
 }
 
+function getAutomaticSetSkippedItems(skipped = [], trigger) {
+    return (skipped || []).filter((item) => (
+        item.reason === 'missing-set'
+        || item.reason === 'missing-template'
+        || filterAutomaticSidePromptSetItems([item], trigger).length > 0
+    ));
+}
+
 function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros = {}, trigger = 'manual', setMeta = null, chatRef: providedChatRef = null, chatKey: providedChatKey = null }) {
     const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
     const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runtimeMacros);
@@ -1137,24 +1145,52 @@ export async function evaluateTrackers() {
     const evalEpoch = parentTask.epoch;
     try {
         throwIfStmbStopped(evalEpoch);
-        const enabledInterval = await listByTrigger('onInterval');
-        if (!enabledInterval || enabledInterval.length === 0) return;
+        const sceneContext = getCurrentMemoryBooksContext();
+        const sceneMarkers = getSceneMarkers() || {};
+        const moduleSettings = extension_settings?.STMemoryBooks?.moduleSettings || {};
+        const { setKey: selectedSetKey } = resolveAutomaticSidePromptSet(
+            sceneMarkers,
+            moduleSettings,
+            sceneContext,
+        );
+        let intervalRunItems;
+        if (selectedSetKey) {
+            const resolvedSet = await resolveSetItemsForRun(selectedSetKey, {}, { allowUnresolved: false });
+            const skipped = getAutomaticSetSkippedItems(resolvedSet.skipped, 'onInterval');
+            logSkippedSetItems(skipped, 'onInterval');
+            if (!resolvedSet.set) return;
+            intervalRunItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onInterval');
+        } else {
+            const enabledInterval = await listByTrigger('onInterval');
+            intervalRunItems = (enabledInterval || []).map(tpl => ({
+                tpl,
+                baseTpl: tpl,
+                runtimeMacros: {},
+                name: tpl.name,
+                set: null,
+                item: null,
+            }));
+        }
+        if (intervalRunItems.length === 0) return;
 
         const defaultOverrides = resolveSidePromptConnection(null);
 
         const currentLast = chat.length - 1;
         if (currentLast < 0) return;
 
-        for (const tpl of enabledInterval) {
+        for (const runItem of intervalRunItems) {
+            const tpl = runItem.tpl;
+            const runtimeMacros = runItem.runtimeMacros || {};
+            const displayName = runItem.name || tpl.name;
             let lore;
             try {
                 lore = await resolveSidePromptLorebook(tpl);
             } catch (err) {
-                console.warn(`${MODULE_NAME}: Unable to resolve lorebook for interval sideprompt "${tpl?.name || 'unknown'}":`, err);
+                console.warn(`${MODULE_NAME}: Unable to resolve lorebook for interval sideprompt "${displayName || 'unknown'}":`, err);
                 continue;
             }
 
-            const lookupTitles = getSidePromptLookupTitles(tpl, {}, ['tracker']);
+            const lookupTitles = getSidePromptLookupTitles(tpl, runtimeMacros, ['tracker']);
             const existing = findFirstLoreEntryByTitle(lore.data, lookupTitles);
             const lastMsgId = getSidePromptLastMessageId(tpl, existing);
             const lastRunAt = existing?.[`STMB_sp_${tpl.key}_lastRunAt`]
@@ -1194,6 +1230,7 @@ export async function evaluateTrackers() {
                 compiledScene: compiled,
                 defaultOverrides,
                 fallbackKinds: ['tracker'],
+                runtimeMacros,
             });
 
             if (areStmbJobsEnabled()) {
@@ -1203,11 +1240,12 @@ export async function evaluateTrackers() {
                     lore,
                     compiledScene: compiled,
                     prepared,
-                    runtimeMacros: {},
+                    runtimeMacros,
                     trigger: 'onInterval',
+                    setMeta: runItem.set ? { setKey: runItem.set.key, setName: runItem.set.name, itemId: runItem.item?.id || '' } : null,
                 }));
                 console.log(`${MODULE_NAME}: Interval sideprompt queued`, {
-                    name: tpl.name,
+                    name: displayName,
                     key: tpl.key,
                     range: `${boundedStart}-${currentLast}`,
                 });
@@ -1220,7 +1258,7 @@ export async function evaluateTrackers() {
             try {
                 console.log(`${MODULE_NAME}: SidePrompt attempt`, {
                     trigger: 'onInterval',
-                    name: tpl.name,
+                    name: displayName,
                     key: tpl.key,
                     range: `${boundedStart}-${currentLast}`,
                     visibleSince,
@@ -1237,7 +1275,7 @@ export async function evaluateTrackers() {
             } catch (err) {
                 if (isStmbStopError(err)) return;
                 console.error(`${MODULE_NAME}: Interval sideprompt LLM failed:`, err);
-                toastr.error(__st_t_tag`SidePrompt "${tpl.name}" failed: ${err.message}`, 'STMemoryBooks');
+                toastr.error(__st_t_tag`SidePrompt "${displayName}" failed: ${err.message}`, 'STMemoryBooks');
                 continue;
             }
 
@@ -1274,7 +1312,7 @@ export async function evaluateTrackers() {
             try {
                 throwIfStmbStopped(runEpoch);
                 const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
-                const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs);
+                const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runtimeMacros);
                 const endId = compiled?.metadata?.sceneEnd ?? currentLast;
                 await upsertLorebookEntryByTitle(lore.name, lore.data, prepared.unifiedTitle, resultText, {
                     defaults,
@@ -1289,7 +1327,7 @@ export async function evaluateTrackers() {
                 });
                 console.log(`${MODULE_NAME}: SidePrompt success`, {
                     trigger: 'onInterval',
-                    name: tpl.name,
+                    name: displayName,
                     key: tpl.key,
                     saved: true,
                     contentChars: resultText.length,
@@ -1321,7 +1359,7 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
         const moduleSettings = options.settings?.moduleSettings
             || extension_settings?.STMemoryBooks?.moduleSettings
             || {};
-        const { setKey: selectedSetKey } = resolveAfterMemorySidePromptSet(
+        const { setKey: selectedSetKey } = resolveAutomaticSidePromptSet(
             sceneMarkers,
             moduleSettings,
             sceneContext,
@@ -1329,12 +1367,13 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
         let runItems = [];
         if (selectedSetKey) {
             const resolvedSet = await resolveSetItemsForRun(selectedSetKey, {}, { allowUnresolved: false });
-            logSkippedSetItems(resolvedSet.skipped, 'onAfterMemory');
+            const skipped = getAutomaticSetSkippedItems(resolvedSet.skipped, 'onAfterMemory');
+            logSkippedSetItems(skipped, 'onAfterMemory');
             if (!resolvedSet.set) {
                 toastr.warning(translate('Selected side prompt set was not found. No after-memory side prompts were run.', 'STMemoryBooks_SidePromptSetMissingNoFallback'), 'STMemoryBooks');
                 return;
             }
-            const missingMacros = summarizeMissingSetMacros(resolvedSet.skipped);
+            const missingMacros = summarizeMissingSetMacros(skipped);
             if (missingMacros.length > 0) {
                 toastr.warning(
                     tr(
@@ -1345,7 +1384,7 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     'STMemoryBooks',
                 );
             }
-            runItems = resolvedSet.runnable;
+            runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemory');
         } else {
             const enabledAfter = await listByTrigger('onAfterMemory');
             runItems = (enabledAfter || []).map(tpl => ({

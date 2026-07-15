@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
     clearDeletedSidePromptSetReferences,
+    filterAutomaticSidePromptSetItems,
     normalizeDefaultSidePromptSetKeys,
     resolveAfterMemorySidePromptSet,
+    resolveAutomaticSidePromptSet,
 } from './sidePromptSetDefaults.js';
 
 test('normalizes solo and group default side prompt set keys', () => {
@@ -33,6 +35,10 @@ test('resolves absent chat metadata through the matching solo or group default',
     assert.deepEqual(
         resolveAfterMemorySidePromptSet({}, settings, { isGroupChat: true }),
         { setKey: 'group-set', mode: 'set', source: 'default' },
+    );
+    assert.deepEqual(
+        resolveAutomaticSidePromptSet({}, settings, { isGroupChat: false }),
+        { setKey: 'solo-set', mode: 'set', source: 'default' },
     );
 });
 
@@ -87,4 +93,66 @@ test('deleting a shared global default clears both chat types without creating a
     assert.equal(settings.defaultSoloSidePromptSetKey, '');
     assert.equal(settings.defaultGroupSidePromptSetKey, '');
     assert.ok(!Object.hasOwn(markers, 'sidePromptAfterMemorySetKey'));
+});
+
+test('filters automatic set rows by enabled trigger while preserving row order', () => {
+    const afterMemory = {
+        id: 'after',
+        baseTpl: {
+            enabled: true,
+            triggers: { onAfterMemory: { enabled: true } },
+        },
+    };
+    const intervalOnly = {
+        id: 'interval',
+        baseTpl: {
+            enabled: true,
+            triggers: { onInterval: { visibleMessages: 12 } },
+        },
+    };
+    const disabledInterval = {
+        id: 'disabled-interval',
+        baseTpl: {
+            enabled: false,
+            triggers: {
+                onAfterMemory: { enabled: true },
+                onInterval: { visibleMessages: 12 },
+            },
+        },
+    };
+    const invalidInterval = {
+        id: 'invalid-interval',
+        baseTpl: {
+            enabled: true,
+            triggers: { onInterval: { visibleMessages: 0 } },
+        },
+    };
+    const both = {
+        id: 'both',
+        baseTpl: {
+            enabled: true,
+            triggers: {
+                onAfterMemory: { enabled: true },
+                onInterval: { visibleMessages: 25 },
+            },
+        },
+    };
+    const effectiveTemplateOnly = {
+        id: 'effective-template-only',
+        tpl: {
+            enabled: true,
+            triggers: { onInterval: { visibleMessages: 5 } },
+        },
+    };
+    const rows = [afterMemory, intervalOnly, disabledInterval, invalidInterval, both, effectiveTemplateOnly];
+
+    assert.deepEqual(
+        filterAutomaticSidePromptSetItems(rows, 'onAfterMemory').map(item => item.id),
+        ['after', 'both'],
+    );
+    assert.deepEqual(
+        filterAutomaticSidePromptSetItems(rows, 'onInterval').map(item => item.id),
+        ['interval', 'both', 'effective-template-only'],
+    );
+    assert.deepEqual(filterAutomaticSidePromptSetItems(rows, 'manual'), []);
 });
