@@ -1660,7 +1660,7 @@ export async function showSidePromptsPopup() {
                     } else if (setActionBtn.classList.contains('stmb-sp-set-action-delete')) {
                         const set = await getSet(setKey);
                         const confirmPopup = new Popup(
-                            `<h3>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptSetTitle', 'Delete Side Prompt Set', { name: set?.name || setKey }))}</h3><p>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptSetConfirm', 'Delete "{{name}}"? Chats using this set will run no after-memory side prompts until a new mode is selected.', { name: set?.name || setKey }))}</p>`,
+                            `<h3>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptSetTitle', 'Delete Side Prompt Set', { name: set?.name || setKey }))}</h3><p>${escapeHtml(tr('STMemoryBooks_DeleteSidePromptSetConfirm', 'Delete "{{name}}"? Chats inheriting a matching default, and this chat if it explicitly uses the set, will reset to individually-enabled after-memory side prompts. Other chats with an explicit override to this set will keep a missing selection until another mode is chosen.', { name: set?.name || setKey }))}</p>`,
                             POPUP_TYPE.CONFIRM,
                             '',
                             { okButton: translate('Delete', 'STMemoryBooks_Delete'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }

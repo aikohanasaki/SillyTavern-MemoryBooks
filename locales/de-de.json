@@ -397,7 +397,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "Side-Prompt-Set konnte nicht dupliziert werden.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "Side-Prompt-Set konnte nicht gelöscht werden.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "Side-Prompt-Set löschen",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "\"{{name}}\" löschen? Chats, die dieses Set verwenden, führen keine Side-Prompts nach Erinnerungen aus, bis ein neuer Modus ausgewählt wird.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "\"{{name}}\" löschen? Chats, die einen passenden Standard erben, und dieser Chat, falls er das Set ausdrücklich verwendet, werden auf einzeln aktivierte Side-Prompts nach Erinnerungen zurückgesetzt. Andere Chats mit einer ausdrücklichen Überschreibung auf dieses Set behalten eine fehlende Auswahl, bis ein anderer Modus gewählt wird.",
   "STMemoryBooks_MissingSidePromptSetOption": "Fehlendes Set: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "Erstelle einen Side-Prompt, bevor du ein Set erstellst.",
   "STMemoryBooks_SetNeedsItem": "Füge dem Set mindestens einen Side-Prompt hinzu.",

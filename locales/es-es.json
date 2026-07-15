@@ -397,7 +397,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "No se pudo duplicar el conjunto de prompts laterales.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "No se pudo eliminar el conjunto de prompts laterales.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "Eliminar Conjunto de Prompts Laterales",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "¿Eliminar \"{{name}}\"? Los chats que usen este conjunto no ejecutarán prompts laterales después de la memoria hasta que se seleccione un nuevo modo.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "¿Eliminar \"{{name}}\"? Los chats que hereden un valor predeterminado coincidente, y este chat si usa explícitamente el conjunto, se restablecerán a los prompts laterales después de la memoria habilitados individualmente. Otros chats con una anulación explícita de este conjunto conservarán una selección inexistente hasta que se elija otro modo.",
   "STMemoryBooks_MissingSidePromptSetOption": "Conjunto ausente: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "Crea un prompt lateral antes de crear un conjunto.",
   "STMemoryBooks_SetNeedsItem": "Añade al menos un prompt lateral al conjunto.",

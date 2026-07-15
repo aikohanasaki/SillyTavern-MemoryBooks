@@ -397,7 +397,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "Не удалось дублировать набор Боковых Промптов.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "Не удалось удалить набор Боковых Промптов.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "Удалить набор Боковых Промптов",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "Удалить «{{name}}»? Чаты, использующие этот набор, не будут запускать Боковые Промпты после памяти, пока не будет выбран новый режим.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "Удалить «{{name}}»? Чаты, наследующие соответствующее значение по умолчанию, а также текущий чат, если он явно использует этот набор, будут сброшены на индивидуально включённые Боковые Промпты после памяти. Другие чаты с явным переопределением на этот набор сохранят отсутствующий выбор, пока не будет выбран другой режим.",
   "STMemoryBooks_MissingSidePromptSetOption": "Отсутствует набор: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "Создайте Боковой Промпт перед созданием набора.",
   "STMemoryBooks_SetNeedsItem": "Добавьте в набор хотя бы один Боковой Промпт.",

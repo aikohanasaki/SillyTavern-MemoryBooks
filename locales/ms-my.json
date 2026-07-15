@@ -397,7 +397,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "Gagal menduplikasi set prom sampingan.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "Gagal memadamkan set prom sampingan.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "Padamkan Set Prom Sampingan",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "Padamkan \"{{name}}\"? Sembang yang menggunakan set ini tidak akan menjalankan prom sampingan selepas memori sehingga mod baharu dipilih.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "Padamkan \"{{name}}\"? Sembang yang mewarisi lalai yang sepadan, dan sembang ini jika menggunakan set tersebut secara jelas, akan ditetapkan semula kepada prom sampingan selepas memori yang didayakan secara individu. Sembang lain dengan penggantian jelas kepada set ini akan mengekalkan pilihan yang hilang sehingga mod lain dipilih.",
   "STMemoryBooks_MissingSidePromptSetOption": "Set hilang: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "Cipta prom sampingan sebelum mencipta set.",
   "STMemoryBooks_SetNeedsItem": "Tambah sekurang-kurangnya satu prom sampingan pada set.",

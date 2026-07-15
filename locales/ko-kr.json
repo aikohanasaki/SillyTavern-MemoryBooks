@@ -393,7 +393,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "사이드 프롬프트 세트를 복제하지 못했습니다.",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "사이드 프롬프트 세트를 삭제하지 못했습니다.",
   "STMemoryBooks_DeleteSidePromptSetTitle": "사이드 프롬프트 세트 삭제",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "\"{{name}}\"을(를) 삭제하시겠습니까? 이 세트를 사용하는 채팅은 새 모드가 선택될 때까지 메모리 후 사이드 프롬프트를 실행하지 않습니다.",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "\"{{name}}\"을(를) 삭제하시겠습니까? 일치하는 기본값을 상속하는 채팅과 이 세트를 명시적으로 사용하는 경우의 현재 채팅은 개별적으로 활성화된 메모리 후 사이드 프롬프트로 재설정됩니다. 이 세트에 대한 명시적 재정의가 있는 다른 채팅은 다른 모드를 선택할 때까지 선택 항목이 누락된 상태로 유지됩니다.",
   "STMemoryBooks_MissingSidePromptSetOption": "누락된 세트: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "세트를 만들기 전에 사이드 프롬프트를 만드세요.",
   "STMemoryBooks_SetNeedsItem": "세트에 하나 이상의 사이드 프롬프트를 추가하세요.",

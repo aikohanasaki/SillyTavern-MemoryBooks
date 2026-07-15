@@ -397,7 +397,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "サイドプロンプトセットの複製に失敗しました。",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "サイドプロンプトセットの削除に失敗しました。",
   "STMemoryBooks_DeleteSidePromptSetTitle": "サイドプロンプトセットを削除",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "「{{name}}」を削除しますか？このセットを使用しているチャットでは、新しいモードが選択されるまでメモリ後サイドプロンプトは実行されません。",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "「{{name}}」を削除しますか？一致するデフォルトを継承しているチャットと、このセットを明示的に使用している場合の現在のチャットは、個別に有効化されたメモリ後サイドプロンプトにリセットされます。このセットへの明示的なオーバーライドがある他のチャットでは、別のモードを選択するまで選択項目が見つからない状態が維持されます。",
   "STMemoryBooks_MissingSidePromptSetOption": "不足しているセット: {{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "セットを作成する前にサイドプロンプトを作成してください。",
   "STMemoryBooks_SetNeedsItem": "セットには少なくとも1つのサイドプロンプトを追加してください。",

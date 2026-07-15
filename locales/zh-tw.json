@@ -393,7 +393,7 @@
   "STMemoryBooks_FailedToDuplicateSidePromptSet": "複製側邊提示集失敗。",
   "STMemoryBooks_FailedToDeleteSidePromptSet": "刪除側邊提示集失敗。",
   "STMemoryBooks_DeleteSidePromptSetTitle": "刪除側邊提示集",
-  "STMemoryBooks_DeleteSidePromptSetConfirm": "刪除「{{name}}」？使用此提示集的聊天將不會執行任何記憶後側邊提示，直到選擇新的模式為止。",
+  "STMemoryBooks_DeleteSidePromptSetConfirm": "刪除「{{name}}」？繼承相符預設值的聊天，以及目前聊天（如果明確使用此提示集），將重設為個別啟用的記憶後側邊提示。其他明確覆寫為此提示集的聊天將保留缺少的選擇，直到選擇其他模式。",
   "STMemoryBooks_MissingSidePromptSetOption": "缺少提示集：{{key}}",
   "STMemoryBooks_CreateSidePromptBeforeSet": "請先建立側邊提示，再建立提示集。",
   "STMemoryBooks_SetNeedsItem": "請至少新增一個側邊提示到提示集。",

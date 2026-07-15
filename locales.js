@@ -627,7 +627,7 @@ export const localeData_en = {
     'STMemoryBooks_FailedToDuplicateSidePromptSet': 'Failed to duplicate side prompt set.',
     'STMemoryBooks_FailedToDeleteSidePromptSet': 'Failed to delete side prompt set.',
     'STMemoryBooks_DeleteSidePromptSetTitle': 'Delete Side Prompt Set',
-    'STMemoryBooks_DeleteSidePromptSetConfirm': 'Delete "{{name}}"? Chats using this set will run no after-memory side prompts until a new mode is selected.',
+    'STMemoryBooks_DeleteSidePromptSetConfirm': 'Delete "{{name}}"? Chats inheriting a matching default, and this chat if it explicitly uses the set, will reset to individually-enabled after-memory side prompts. Other chats with an explicit override to this set will keep a missing selection until another mode is chosen.',
     'STMemoryBooks_MissingSidePromptSetOption': 'Missing set: {{key}}',
     'STMemoryBooks_CreateSidePromptBeforeSet': 'Create a side prompt before creating a set.',
     'STMemoryBooks_SetNeedsItem': 'Add at least one side prompt to the set.',
