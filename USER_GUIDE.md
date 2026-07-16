@@ -186,11 +186,15 @@ Want the group to have one shared history while each character also keeps their 
 2. Open the group chat.
 3. Turn on **Manual Lorebook Mode** in Memory Books.
 4. Select the main group Memory Book.
-5. Under **Group Character Lorebooks**, choose a Memory Book for every group member.
+5. Under **Group Character Lorebooks**, choose a Memory Book for every group member. The main group Memory Book cannot also be selected as a character Memory Book.
 6. Create your memory.
 7. Check the participant list before generation. STMB will preselect the characters it found in the scene.
 
 The main version goes into the group Memory Book. Copies go only to the selected participants' assigned Memory Books. If you leave every participant unchecked, STMB treats the memory as applying to the whole group.
+
+When you assign a character Memory Book, STMB also adds that character to the lorebook's STLO `characterOverrides` metadata and enables **Only activate for specific characters**. Existing STLO priority, budget, order, and character settings are preserved. Older assignments are updated automatically when you open Memory Books or create a memory.
+
+Clearing or changing the assignment does not remove the old STLO character filter. If that lorebook should no longer activate for the character, open STLO and remove the retained override there.
 
 If you are happy with STMB's participant detection, check **Automatically accept detected participants in future** so you do not have to confirm the list every time.
 

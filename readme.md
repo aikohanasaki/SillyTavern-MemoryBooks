@@ -405,11 +405,15 @@ Manual Lorebook Mode can maintain a main group Memory Book plus a designated Mem
 
 1. Open a group chat and enable **Manual Lorebook Mode**.
 2. Select the main manual lorebook. This becomes the canonical group Memory Book.
-3. Under **Group Character Lorebooks**, select a lorebook for every member. You may assign the same lorebook to more than one character.
+3. Under **Group Character Lorebooks**, select a lorebook for every member. You may assign the same character lorebook to more than one character, but the canonical group Memory Book cannot also be a character Memory Book.
 4. Create a memory normally.
 5. Confirm which characters participated. STMB preselects the members it detected from the messages. Selecting no one applies the memory to every group member.
 
 STMB saves the canonical memory to the group Memory Book and copies it to the selected participants' designated Memory Books. The related entries are linked internally so group and character consolidation can keep their timelines aligned. If any required character lorebook is missing or deleted, STMB stops instead of leaving a partial set of memories.
+
+Selecting a character Memory Book also updates that lorebook's root-level STLO metadata. STMB adds the character's avatar basename to `stlo.characterOverrides` and enables `stlo.onlyWhenSpeaking`, while preserving existing STLO priorities, budgets, and character overrides. Existing manual assignments are repaired automatically when the Memory Books panel opens or before memory generation.
+
+STLO filters use merge-only behavior: clearing or changing an STMB assignment does not delete the old lorebook's STLO character override. Remove that retained filter in STLO if the lorebook should no longer activate for that character.
 
 The participant confirmation includes **Automatically accept detected participants in future**. Enable it if you trust the message-speaker detection and do not want to approve the list on every memory.
 

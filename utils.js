@@ -7,6 +7,7 @@ import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.j
 import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
 import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS, MEMORY_TIER_CACHE_REFRESH_EVENT } from './constants.js';
 import { translate } from '../../../i18n.js';
+import { escapeHtml } from '../../../utils.js';
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
@@ -402,22 +403,37 @@ export async function getEffectiveLorebookName() {
  * This function is intended for "change" operations where the user explicitly wants to select a different lorebook.
  *
  * @param {string} currentLorebook - The currently selected lorebook (optional, for display purposes)
+ * @param {{excludedLorebookNames?: string[]}} options - Lorebooks unavailable for selection.
  * @returns {Promise<string|null>} The name of the selected lorebook, or null if cancelled/no selection made.
  */
-export async function showLorebookSelectionPopup(currentLorebook = null) {
+export async function showLorebookSelectionPopup(currentLorebook = null, options = {}) {
+    const markers = getSceneMarkers() || {};
+    const currentCharacterLorebooks = markers.manualCharacterLorebooks
+        && typeof markers.manualCharacterLorebooks === 'object'
+        && !Array.isArray(markers.manualCharacterLorebooks)
+        ? Object.values(markers.manualCharacterLorebooks)
+        : [];
+    const excludedLorebooks = new Set([
+        ...currentCharacterLorebooks,
+        ...(Array.isArray(options.excludedLorebookNames) ? options.excludedLorebookNames : []),
+    ].map(name => String(name || '').trim()).filter(Boolean));
+    const availableLorebooks = world_names.filter(name => !excludedLorebooks.has(name));
+
     // Check if lorebooks are available
-    if (world_names.length === 0) {
+    if (availableLorebooks.length === 0) {
         toastr.error('No lorebooks found to select from.', 'STMemoryBooks');
         return null;
     }
 
     const lorebookOptions = [
-        !currentLorebook
+        currentLorebook && excludedLorebooks.has(currentLorebook)
+            ? `<option value="${escapeHtml(currentLorebook)}" selected disabled>${translate('Unavailable character Memory Book: {{name}}', 'STMemoryBooks_ManualLorebookUnavailableCharacterBook').replace('{{name}}', escapeHtml(currentLorebook))}</option>`
+            : !currentLorebook
             ? `<option value="" selected disabled>${translate('None selected', 'STMemoryBooks_NoneSelected')}</option>`
             : '',
-        ...world_names.map(name => {
+        ...availableLorebooks.map(name => {
         const selected = name === currentLorebook ? ' selected' : '';
-        return `<option value="${name}"${selected}>${name}</option>`;
+        return `<option value="${escapeHtml(name)}"${selected}>${escapeHtml(name)}</option>`;
         }),
     ].join('');
 
@@ -425,7 +441,7 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
         <h4>Select a Memory Book</h4>
         <div class="world_entry_form_control">
             <p>Choose which lorebook should be used for this chat's memories.</p>
-            ${currentLorebook ? `<p><strong>Current:</strong> ${currentLorebook}</p>` : ''}
+            ${currentLorebook ? `<p><strong>Current:</strong> ${escapeHtml(currentLorebook)}</p>` : ''}
             <select id="stmb-manual-lorebook-select" class="text_pole">
                 ${lorebookOptions}
             </select>
@@ -439,6 +455,13 @@ export async function showLorebookSelectionPopup(currentLorebook = null) {
         const selectedLorebook = popup.dlg.querySelector('#stmb-manual-lorebook-select').value;
         if (!selectedLorebook) {
             toastr.error(translate('Please select a lorebook for manual mode', 'STMemoryBooks_PleaseSelectLorebookForManualMode'), 'STMemoryBooks');
+            return null;
+        }
+        if (excludedLorebooks.has(selectedLorebook)) {
+            toastr.error(
+                translate('A character Memory Book cannot also be the main group Memory Book.', 'STMemoryBooks_ManualLorebookCharacterConflict'),
+                'STMemoryBooks',
+            );
             return null;
         }
 
