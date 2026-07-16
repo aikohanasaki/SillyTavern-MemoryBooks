@@ -516,7 +516,7 @@ export function handleMessageDeletion(deletedId, settings) {
  * Create message action buttons with consistent styling
  */
 export function createSceneButtons(messageElement) {
-    const messageId = parseInt(messageElement.getAttribute('mesid'));
+    const getCurrentMessageId = () => parseInt(messageElement.getAttribute('mesid'));
     let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
     let addedButton = false;
 
@@ -545,7 +545,7 @@ export function createSceneButtons(messageElement) {
         startButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneStart');
         startButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            setSceneMarker(messageId, 'start');
+            setSceneMarker(getCurrentMessageId(), 'start');
         });
         extraButtonsContainer.appendChild(startButton);
         addedButton = true;
@@ -559,7 +559,7 @@ export function createSceneButtons(messageElement) {
         endButton.setAttribute('data-i18n', '[title]STMemoryBooks_MarkSceneEnd');
         endButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            setSceneMarker(messageId, 'end');
+            setSceneMarker(getCurrentMessageId(), 'end');
         });
         extraButtonsContainer.appendChild(endButton);
         addedButton = true;

@@ -2,7 +2,11 @@
 
 **← [Back to README](readme.md)**
 
+## v8.2.1 (July 15, 2026)
+- Bugfix: Fix re-setting scene markers after message deletion.
+
 ## v8.2.0 (July 14, 2026)
+- Enhancement: Now you ca## v8.2.0 (July 14, 2026)
 - Enhancement: Now you can set default Side Prompt sets for groups and solo chats in Memory Books > General Settings. 
 - Bugfix: Side prompts outside of the set should NOT trigger when the set is selected. This includes interval side prompts. 
 
