@@ -2,6 +2,9 @@
 
 **← [Back to README](readme.md)**
 
+## v8.2.2 (July 16, 2026)
+- Bugfix: Fix STLO metadata writes.
+
 ## v8.2.1 (July 15, 2026)
 - Bugfix: Fix re-setting scene markers after message deletion.
 
