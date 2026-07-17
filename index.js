@@ -5300,17 +5300,27 @@ function renderManualGroupLorebookBindings(container, stmbData) {
       row.classList.add("stmb-processing");
       select.disabled = true;
       clearButton.disabled = true;
+      let assignedLorebook = currentLorebook;
       try {
-        await syncStloCharacterFilterTargets([{
-          lorebookName: selectedLorebook,
-          characterNames: [member.characterFilterName],
-          members: [member],
-        }]);
+        try {
+          await syncStloCharacterFilterTargets([{
+            lorebookName: selectedLorebook,
+            characterNames: [member.characterFilterName],
+            members: [member],
+          }]);
 
-        const liveData = getSceneMarkers() || {};
-        const liveBindings = getManualCharacterLorebookBindings(liveData);
-        liveBindings[member.key] = selectedLorebook;
-        saveMetadataForCurrentContext();
+          const liveData = getSceneMarkers() || {};
+          const liveBindings = getManualCharacterLorebookBindings(liveData);
+          liveBindings[member.key] = selectedLorebook;
+          saveMetadataForCurrentContext();
+          assignedLorebook = selectedLorebook;
+        } catch (error) {
+          console.error("STMemoryBooks: Failed to assign character lorebook:", error);
+          select.value = currentLorebook;
+          toastr.error(error?.message || String(error), "STMemoryBooks");
+          return;
+        }
+
         toastr.success(
           tr(
             "STMemoryBooks_GroupMemberLorebookSet",
@@ -5319,15 +5329,15 @@ function renderManualGroupLorebookBindings(container, stmbData) {
           ),
           "STMemoryBooks",
         );
-        await refreshPopupContent();
-      } catch (error) {
-        console.error("STMemoryBooks: Failed to assign character lorebook:", error);
-        select.value = currentLorebook;
-        toastr.error(error?.message || String(error), "STMemoryBooks");
+        try {
+          await refreshPopupContent();
+        } catch (error) {
+          console.warn("STMemoryBooks: Assignment updated, but popup refresh failed:", error);
+        }
       } finally {
         row.classList.remove("stmb-processing");
         select.disabled = !stloAvailable;
-        clearButton.disabled = !stloAvailable || !currentLorebook;
+        clearButton.disabled = !stloAvailable || !assignedLorebook;
       }
     });
     row.appendChild(select);

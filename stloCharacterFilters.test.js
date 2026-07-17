@@ -73,6 +73,28 @@ test('is idempotent after filters are synchronized', () => {
     assert.deepEqual(result.addedNames, []);
 });
 
+test('stores __proto__ as a serializable own override and remains idempotent', () => {
+    const lorebook = { entries: {} };
+
+    const firstResult = applyStloCharacterFilters(lorebook, ['__proto__']);
+
+    assert.equal(Object.prototype.hasOwnProperty.call(lorebook.stlo.characterOverrides, '__proto__'), true);
+    assert.deepEqual(lorebook.stlo.characterOverrides.__proto__, {
+        priority: 3,
+        orderAdjustment: 0,
+    });
+    assert.deepEqual(JSON.parse(JSON.stringify(lorebook)).stlo.characterOverrides.__proto__, {
+        priority: 3,
+        orderAdjustment: 0,
+    });
+    assert.deepEqual(firstResult.addedNames, ['__proto__']);
+
+    const secondResult = applyStloCharacterFilters(lorebook, ['__proto__']);
+
+    assert.equal(secondResult.changed, false);
+    assert.deepEqual(secondResult.addedNames, []);
+});
+
 test('rejects malformed STLO containers without replacing them', () => {
     const malformedStlo = { stlo: 'invalid' };
     assert.throws(
