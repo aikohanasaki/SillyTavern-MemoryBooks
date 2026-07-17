@@ -72,10 +72,15 @@ export function applyStloCharacterFilters(lorebookData, characterNames) {
         if (Object.prototype.hasOwnProperty.call(stlo.characterOverrides, name)) {
             continue;
         }
-        stlo.characterOverrides[name] = {
-            priority: defaultPriority,
-            orderAdjustment: defaultOrderAdjustment,
-        };
+        Object.defineProperty(stlo.characterOverrides, name, {
+            value: {
+                priority: defaultPriority,
+                orderAdjustment: defaultOrderAdjustment,
+            },
+            enumerable: true,
+            configurable: true,
+            writable: true,
+        });
         addedNames.push(name);
     }
 
