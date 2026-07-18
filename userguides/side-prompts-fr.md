@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompts
 
 Les Side Prompts sont des exécutions de prompts STMB supplémentaires pour l’entretien des chats. Ils peuvent analyser, suivre, résumer, nettoyer ou mettre à jour des notes de soutien sans obliger la réponse normale du personnage à faire tout ce travail.

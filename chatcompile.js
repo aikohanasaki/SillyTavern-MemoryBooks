@@ -1,3 +1,6 @@
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { chat, name1, name2 } from '../../../../script.js';
 import { getContext } from '../../../extensions.js';
 import {

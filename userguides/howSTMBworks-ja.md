@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # SillyTavern Memory Books (STMB) の仕組み
 
 これは、STMB の仕組みを高いレベルで説明する文書です。コードの説明をするものではありません。代わりに、この文書では STMB がどんな情報を組み立て、どの順番で送り、モデルに何を返してほしいのかを説明します。

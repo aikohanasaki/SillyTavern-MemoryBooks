@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # How SillyTavern Memory Books (STMB) Works
 
 This is a high-level explanation of how STMB works. It is not meant to explain the code! Instead, this document explains what information STMB assembles, what order it is sent in, and what the model is expected to return.
@@ -361,4 +366,3 @@ If your prompt answers those five questions clearly, it will usually work well w
 
 - "What should I optimize first when rewriting prompts?"
   First optimize the return format. Then optimize what details to preserve. Style comes after that.
-

@@ -1,3 +1,6 @@
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { getRequestHeaders } from '../../../../script.js';
 import { getBuiltInPresetPrompts, getDefaultPrompt } from './utils.js';
 import { FILE_NAMES, SCHEMA, DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS } from './constants.js';

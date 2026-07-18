@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 ST Memory Books - Asisten Memori Obrolan AI Anda
 
 **Ubah percakapan obrolan tanpa akhir Anda menjadi memori yang terorganisir dan dapat dicari!**

@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 Memory Books (SillyTavern 확장 기능)
 
 자동화되고 구조적이며 신뢰할 수 있는 기억(Memory) 생성을 위한 차세대 SillyTavern 확장 기능입니다. 채팅 안의 장면(Scene)을 표시하고, AI로 JSON 기반 요약을 생성한 뒤 로어북(Lorebook) 항목으로 저장합니다. 그룹 채팅, 고급 프로필 관리, 사이드 프롬프트/트래커, 다단계 메모리 통합을 지원합니다.

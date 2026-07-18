@@ -1,3 +1,6 @@
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
+
 export const SIDE_PROMPT_AFTER_MEMORY_SET_KEY = 'sidePromptAfterMemorySetKey';
 export const DEFAULT_SOLO_SIDE_PROMPT_SET_KEY = 'defaultSoloSidePromptSetKey';
 export const DEFAULT_GROUP_SIDE_PROMPT_SET_KEY = 'defaultGroupSidePromptSetKey';

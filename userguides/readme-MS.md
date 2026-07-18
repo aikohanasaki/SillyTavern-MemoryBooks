@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 Memory Books (Sambungan SillyTavern)
 
 Sambungan SillyTavern generasi baharu untuk penciptaan memori yang automatik, berstruktur, dan boleh dipercayai. Tandakan babak dalam sembang, jana ringkasan berasaskan JSON dengan AI, dan simpan sebagai entri dalam lorebook anda. Menyokong sembang kumpulan, pengurusan profil lanjutan, prom sampingan/penjejak, dan konsolidasi memori berbilang tahap.

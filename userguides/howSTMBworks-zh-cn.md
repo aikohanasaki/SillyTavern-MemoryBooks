@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # SillyTavern 记忆书（STMB）如何工作
 
 这是一份关于 STMB 如何工作的高层说明。它不是用来解释代码的。相反，这份文档说明的是：STMB 会组装哪些信息、按什么顺序发送，以及期望模型返回什么。

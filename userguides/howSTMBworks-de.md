@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # Wie SillyTavern Memory Books (STMB) funktionieren
 
 Dies ist eine allgemeine Erklärung dazu, wie STMB arbeitet. Der Text ist nicht dazu gedacht, den Code zu erklären. Stattdessen geht es darum, welche Informationen STMB zusammenstellt, in welcher Reihenfolge sie gesendet werden und was das Modell zurückgeben soll.

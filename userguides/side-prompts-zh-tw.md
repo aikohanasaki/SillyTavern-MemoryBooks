@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompts
 
 Side Prompts 是 STMB 用於聊天維護的額外提示詞執行。它們可以分析、追蹤、摘要、整理，或更新輔助筆記，不必把這些工作全部塞進一般角色回覆裡。

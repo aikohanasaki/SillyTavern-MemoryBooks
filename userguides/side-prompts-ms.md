@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompts
 
 Side Prompt ialah larian prompt STMB tambahan untuk penyelenggaraan chat. Ia boleh menganalisis, menjejak, meringkaskan, membersihkan, atau mengemas kini nota sokongan tanpa memaksa balasan karakter biasa melakukan semua kerja itu.

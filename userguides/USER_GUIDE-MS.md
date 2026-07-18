@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 ST Memory Books - Pembantu Memori Sembang AI Anda
 
 **Tukarkan perbualan sembang anda yang panjang kepada memori yang tersusun dan boleh dicari!**

@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # Cara SillyTavern Memory Books (STMB) Berfungsi
 
 Ini ialah penjelasan peringkat tinggi tentang cara STMB berfungsi. Ia bukan untuk menerangkan kod. Sebaliknya, dokumen ini menerangkan maklumat apa yang STMB himpunkan, dalam susunan apa ia dihantar, dan apakah yang dijangka akan dipulangkan oleh model.

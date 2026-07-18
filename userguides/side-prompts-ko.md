@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompt
 
 Side Prompt는 채팅 유지 관리를 위한 추가 STMB 프롬프트 실행입니다. 일반 캐릭터 응답이 모든 작업을 떠안지 않아도 되도록, 분석, 추적, 요약, 정리, 보조 노트 업데이트를 처리할 수 있습니다.

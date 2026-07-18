@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompts
 
 Side Prompt adalah run prompt STMB tambahan untuk pemeliharaan chat. Side Prompt dapat menganalisis, melacak, meringkas, merapikan, atau memperbarui catatan pendukung tanpa membuat balasan karakter normal harus mengerjakan semua itu.

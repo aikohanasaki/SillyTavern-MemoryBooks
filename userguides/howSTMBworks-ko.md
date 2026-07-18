@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # SillyTavern 메모리 북(STMB)의 작동 방식
 
 이 문서는 STMB가 어떻게 작동하는지에 대한 높은 수준의 설명입니다. 코드를 설명하려는 문서가 아닙니다. 대신 STMB가 어떤 정보를 조합하는지, 어떤 순서로 보내는지, 그리고 모델이 무엇을 반환해야 하는지를 설명합니다.

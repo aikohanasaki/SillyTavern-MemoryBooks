@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 ST Memory Books - 您的 AI 聊天記憶助手
 
 **將漫長的聊天對話整理成有條理、可搜尋的記憶！**

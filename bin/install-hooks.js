@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
 
 import fs from 'fs';
 import path from 'path';
