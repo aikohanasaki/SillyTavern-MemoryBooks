@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompts
 
 Side Prompts are extra STMB prompt runs for chat maintenance. They can analyze, track, summarize, clean up, or update supporting notes without making the normal character reply do all that work. Use them when a chat needs an ongoing tracker, relationship report, plot list, invention log, NPC status sheet, timeline, or similar support document. The character can keep roleplaying. The Side Prompt handles the paperwork. ❤️

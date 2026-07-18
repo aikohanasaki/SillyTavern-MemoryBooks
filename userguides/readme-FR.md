@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 Memory Books (Une extension pour SillyTavern)
 
 Une extension de nouvelle génération pour SillyTavern permettant la création automatique, structurée et fiable de mémoires. Marquez des scènes dans le chat, générez des résumés basés sur JSON avec l’IA, puis stockez-les comme entrées dans vos lorebooks. Prend en charge les discussions de groupe, la gestion avancée des profils, les Side Prompts/trackers et la consolidation de mémoires multi-niveaux.

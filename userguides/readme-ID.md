@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 Memory Books (Ekstensi SillyTavern)
 
 Ekstensi SillyTavern generasi baru untuk pembuatan memori otomatis, terstruktur, dan andal. Tandai adegan di chat, buat ringkasan berbasis JSON dengan AI, lalu simpan sebagai entri di lorebook Anda. Mendukung obrolan grup, manajemen profil tingkat lanjut, tracker/prompt sampingan, dan konsolidasi memori bertingkat.

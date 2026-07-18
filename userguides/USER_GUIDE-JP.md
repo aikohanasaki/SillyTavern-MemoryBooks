@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 ST Memory Books - AIチャット記憶アシスタント
 
 **終わりのないチャット会話を、整理された検索可能な「思い出」に変えましょう！**

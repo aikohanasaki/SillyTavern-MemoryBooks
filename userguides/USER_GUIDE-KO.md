@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 ST Memory Books - AI 채팅 기억 보조 도구
 
 **끝없는 채팅 대화를 체계적이고 검색 가능한 기억으로 바꿔보세요!**

@@ -1,3 +1,6 @@
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { getRequestHeaders } from '../../../../script.js';
 import { translate } from '../../../i18n.js';
 import { loadWorldInfo, world_names } from '../../../world-info.js';

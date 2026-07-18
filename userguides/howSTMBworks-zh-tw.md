@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # SillyTavern 記憶書（STMB）怎麼運作
 
 這是一份高層級說明，講的是 STMB 如何運作，不是拿來解釋程式碼的。重點是：STMB 會先組裝哪些資訊、照什麼順序送出，以及模型應該回傳什麼。

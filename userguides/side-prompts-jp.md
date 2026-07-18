@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 🎡 Side Prompts（サイドプロンプト）
 
 Side Prompt は、チャット管理のために追加で実行される STMB プロンプトです。通常のキャラクター返信にすべての作業を押し込まずに、分析、追跡、要約、整理、補助メモの更新などを行えます。

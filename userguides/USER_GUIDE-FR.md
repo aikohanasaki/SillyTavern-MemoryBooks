@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 ST Memory Books - Votre assistant mémoire IA pour le chat
 
 **Transformez vos longues conversations en souvenirs organisés et faciles à retrouver !**

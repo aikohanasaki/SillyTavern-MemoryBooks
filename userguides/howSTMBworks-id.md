@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # Cara Kerja SillyTavern Memory Books (STMB)
 
 Ini adalah penjelasan tingkat tinggi tentang cara kerja STMB. Dokumen ini tidak dimaksudkan untuk menjelaskan kodenya. Sebaliknya, dokumen ini menjelaskan informasi apa yang STMB rangkai, dalam urutan apa informasi itu dikirim, dan seperti apa hasil yang diharapkan dari model.

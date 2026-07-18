@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 Memory Books (Eine SillyTavern-Erweiterung)
 
 Eine SillyTavern-Erweiterung der nächsten Generation für automatische, strukturierte und zuverlässige Erstellung von Erinnerungen. Markiere Szenen im Chat, generiere JSON-basierte Zusammenfassungen mit KI und speichere sie als Einträge in deinen Lorebooks. Unterstützt Gruppenchats, erweiterte Profilverwaltung, Side-Prompts/Tracker und mehrstufige Erinnerungskonsolidierung.

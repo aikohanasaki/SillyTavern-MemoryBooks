@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 # 📕 Memory Books (SillyTavern 擴充功能)
 
 這是 SillyTavern 的次世代擴充功能，用於自動、結構化且可靠的記憶創建。在聊天中標記場景，使用 AI 生成基於 JSON 的總結，並將其儲存在你的世界書（Lorebooks）中。支援群組聊天、進階設定檔管理、側邊提示詞/追蹤器，以及多層級記憶整合。

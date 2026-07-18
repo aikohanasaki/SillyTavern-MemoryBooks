@@ -1,3 +1,6 @@
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { chat_metadata, characters, eventSource, name2, this_chid } from '../../../../script.js';
 import { getContext, extension_settings } from '../../../extensions.js';
 import { selected_group, groups } from '../../../group-chats.js';
