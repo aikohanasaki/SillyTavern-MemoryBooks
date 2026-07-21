@@ -7,3 +7,5 @@ node_modules/
 *.build.*.map
 .vscode/
 AGENTS.md
+eval/reports/
+eval/predictions*.json
