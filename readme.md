@@ -3,6 +3,10 @@ Copyright (C) 2024–2026 Aiko Hanasaki
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
+<p align="center">
+  <img src="assets/banner.png" alt="SillyTavern MemoryBooks — Capture Every Moment!" />
+</p>
+
 # 📕 Memory Books (A SillyTavern Extension)
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as entries in your lorebooks. Supports group chats, advanced profile management, side prompts/trackers, and multi-tier memory consolidation.
