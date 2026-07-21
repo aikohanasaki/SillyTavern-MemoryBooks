@@ -714,6 +714,13 @@ async function saveExistingClip(lorebookName, lorebookData, title, bulletText, e
 async function saveNewClip(lorebookName, lorebookData, dlg) {
     const headline = validateClipHeadline(dlg.querySelector('#stmb-clip-headline')?.value || '');
     const title = makeClipEntryTitle(headline);
+
+    // STMBC-HOOK: clip save path — fork's Clipper+ generates a paired context
+    // entry (≤50-word blurb + 3-6 keywords) on top of the upstream clip.
+    // Phase 1 lands the empty call site; Phase 3 (Clipper+) wires it up.
+    const clipperPlus = await globalThis.STMBC?.onClipSave?.({
+        lorebookName, lorebookData, dlg, headline, title,
+    }).catch?.(() => null) ?? null;
     if (getClipEntryByFinalTitle(lorebookData, title)) {
         throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with this title already exists.'));
     }

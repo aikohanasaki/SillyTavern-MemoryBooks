@@ -11012,6 +11012,10 @@ async function init() {
   // Register slash commands
   registerSlashCommands();
 
+  // STMBC-HOOK: extension init — init sentinel/clipper+/auditor after upstream init.
+  // Phase 1 lands the empty call site; Phase 2 (sentinel) wires this up.
+  try { void globalThis.STMBC?.onExtensionInit?.({ extension_settings, MODULE_NAME }); } catch (_e) { /* no-op until Phase 2 */ }
+
   // Process any messages that are already on the screen at initialization time
   // This handles cases where a chat is already loaded when the extension initializes
   try {

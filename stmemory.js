@@ -1457,7 +1457,14 @@ async function estimateTokenUsage(promptString) {
  */
 async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
-    
+
+    // STMBC-HOOK: prompt assembly — inject living-entry context, delta-not-rehash
+    // instructions, and error-control rules (per plan §4.4). Phase 1 lands the
+    // empty call site; Phase 4 (living-lorebook orchestration) wires it up.
+    const livingContext = await globalThis.STMBC?.buildPromptContext?.({
+        compiledScene, profile, metadata, messages, previousSummariesContext,
+    }).catch?.(() => null) ?? null;
+
     // Use utils.js to get the effective prompt (now designed for JSON output)
     const promptProfile = {
         ...(profile || {}),

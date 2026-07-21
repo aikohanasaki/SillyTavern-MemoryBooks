@@ -1,14 +1,14 @@
 {
-    "display_name": "Memory Books",
+    "display_name": "MemoryBooks Auto",
     "loading_order": 101,
     "requires": [],
     "optional": [],
     "js": "index.build.js",
     "css": "style.build.css",
-    "author": "aikohanasaki",
-    "version": "8.2.2",
+    "author": "phattbeats",
+    "version": "8.2.2-a.1",
     "license": "AGPL-3.0",
-    "homePage": "https://github.com/aikohanasaki/SillyTavern-MemoryBooks",
+    "homePage": "https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto",
     "auto_update": true,
-    "description": "Creates and saves chat memories and trackers to SillyTavern lorebooks with keywords and numbered titles. Localized in multiple languages."
+    "description": "Fork of SillyTavern-MemoryBooks adding automatic scene-boundary detection (sentinel), smarter clips (Clipper+), and a living-lorebook auditor. Settings key (STMemoryBooks) and lorebook flags (stmemorybooks, [STMB Clip]) unchanged from upstream for data compatibility."
 }

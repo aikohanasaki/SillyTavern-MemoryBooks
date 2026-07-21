@@ -1651,6 +1651,14 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
 export async function runSidePrompt(args) {
     const parentTask = createStmbInFlightTask('SidePrompts:manual');
     const runEpoch = parentTask.epoch;
+
+    // STMBC-HOOK: side-prompt filtering — fork filters per-scene runs to
+    // characters present in the just-processed scene (per plan §4.4). Phase 1
+    // lands the empty call site; Phase 4 (living-lorebook orchestration) wires it up.
+    const filtered = await globalThis.STMBC?.filterSidePromptRun?.({
+        args, parentTask, runEpoch,
+    }).catch?.(() => null) ?? null;
+    if (filtered?.skip) return filtered.result ?? '';
     try {
         const parsed = parseSidePromptCommandInput(args);
         if (parsed.error || !parsed.name) {
