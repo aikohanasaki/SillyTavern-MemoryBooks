@@ -136,3 +136,57 @@ test('formatForPrompt strips headers and internal thoughts before formatting', (
     const formatted = formatForPrompt(msg, 500);
     assert.equal(formatted, '[1] A: Real text.');
 });
+
+// ----------------------------------------------------------------------------
+// Smoke test against the bundled fixture (plan §3.1 / §6 Phase 0 acceptance)
+// ----------------------------------------------------------------------------
+
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname_ = fileURLToPath(new URL('.', import.meta.url));
+const fixturePath = resolve(__dirname_, 'fixtures/transcript.jsonl');
+
+test('smoke: parses the bundled 329-message Satire Fantasy Isekai JSONL', { skip: !existsSync(fixturePath) }, async () => {
+    const { parseJsonlFile } = await import('./parser.js');
+    const { messages, warnings } = await parseJsonlFile(fixturePath);
+
+    // The fixture has 330 lines (1 chat_metadata header + 329 messages).
+    // Plan §3.1 says "328-message" but the actual JSONL has 329. We assert
+    // the real number here; plan wording is stale.
+    assert.equal(messages.length, 329,
+        `expected 329 messages, got ${messages.length} (plan §3.1 says 328, actual JSONL has 329)`);
+    assert.equal(warnings.length, 0);
+
+    // 1-based indexing — first message is index 1, not 0.
+    assert.equal(messages[0].index, 1);
+    assert.equal(messages[messages.length - 1].index, 329);
+
+    // Speaker identity (Brandon = user, Satire Fantasy Isekai = narrator).
+    const speakers = new Set(messages.map((m) => m.speaker));
+    assert.deepEqual([...speakers].sort(), ['Brandon', 'Satire Fantasy Isekai']);
+
+    const brandonMsgs = messages.filter((m) => m.speaker === 'Brandon');
+    const narratorMsgs = messages.filter((m) => m.speaker === 'Satire Fantasy Isekai');
+    assert.ok(brandonMsgs.every((m) => m.isUser === true), 'all Brandon messages should be user');
+    assert.ok(narratorMsgs.every((m) => m.isUser === false), 'all narrator messages should be assistant');
+    assert.ok(brandonMsgs.length > 100 && narratorMsgs.length > 100,
+        `expected >100 of each, got Brandon=${brandonMsgs.length} narrator=${narratorMsgs.length}`);
+
+    // Raw mes is preserved (first message is the canonical truck-flattening
+    // opening line of the Satire Fantasy Isekai story).
+    assert.match(messages[0].text, /pedestrian crossing/);
+    assert.match(messages[0].text, /pristine white truck/);
+
+    // sendDate is parsed when present.
+    assert.match(messages[0].sendDate, /^\d{4}-\d{2}-\d{2}T/);
+
+    // Narrator messages that DO carry headers should parse cleanly.
+    // (Some early/transitional narrator messages don't carry a header at all —
+    // e.g. the disembodied voice at the start of the story. That's normal.)
+    const withHeaders = narratorMsgs.filter((m) => m.headers && m.headers.location);
+    assert.ok(withHeaders.length > 100, `expected >100 narrator msgs with headers, got ${withHeaders.length}`);
+    assert.ok(withHeaders.every((m) => typeof m.headers.location === 'string' && m.headers.location.length > 0),
+        'every parsed narrator header should carry a non-empty location');
+});
