@@ -50,6 +50,7 @@ eval/                          Phase 0 eval harness (offline; no SillyTavern nee
   README.md                    run guide
   fixtures/                    bundled Satire Fantasy Isekai JSONL + worldbook + plan
   materials/stmb-auto/         plan doc at the path referenced by PHA-1416
+autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (global + per-chat), defaults, validation, get/set, resolver helpers
 FORK_NOTES.md                  this file
 ```
 
@@ -66,9 +67,11 @@ on SillyTavern at all; it runs offline against JSONL exports.
 | `stmemory.js:1461` | +5 (the hook line + variable) | Phase 4 prompt assembly | Yes — appends at the start of `buildPrompt`, no behavioral change when `STMBC` is undefined. |
 | `clipManager.js:718` | +6 (the hook line + variable) | Phase 3 clip save path | Yes — appends at the top of `saveNewClip`, before any validation. |
 | `sidePrompts.js:1655` | +6 (the hook line + early-return guard) | Phase 4 side-prompt filtering | Yes — appends at the top of `runSidePrompt`. |
+| `index.js` (P2.2) | +~197 (imports, menu button, popup, event delegation, init backfill) | Phase 2 P2.2 — Auto-module settings panel + detection profile picker | Yes — additive; reuses existing patterns (`automaticMemoriesSettingsTemplate`, `setupSettingsEventListeners`, `initializeSettings`, `validateSettings`, `saveSettingsDebounced`); no upstream function bodies changed. New menu item is appended to `promptManagerButtons`. |
+| `templates.js` (P2.2) | +~133 (one new Handlebars template: `autoModuleSettingsTemplate`) | Phase 2 P2.2 — auto-module settings UI | Yes — additive; new export at the bottom of the file. |
 | `.gitignore` | +2 (`eval/reports/`, `eval/predictions*.json`) | Don't commit generated reports. | Yes — gitignore merges trivially. |
 
-**Total: 6 files modified, 22 lines added, 6 lines changed in metadata. No
+**Total: 8 files modified, ~330 lines added (most additive), 6 lines changed in metadata. No
 upstream function bodies, control flow, or data structures touched.**
 
 ## Merge drill (per plan §1.2.3)
@@ -98,6 +101,9 @@ artifacts are committed; never hand-edit them.
 | Phase 0 — Eval harness | P0.3 scorer + CLI | PHA-1416 | done |
 | Phase 0 — Eval harness | P0.5 docs | PHA-1431 | done (in `eval/README.md` + `eval/run.sh`) |
 | Phase 1 — Fork setup | P1.1 plumbing | PHA-1426 | done (this file) |
+| Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
+| Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
+| Phase 2 — Sentinel | P2.2 auto settings panel + detection profile picker | PHA-1436 | done |
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 1 — Fork setup | P1.4 merge drill | (open) | todo |

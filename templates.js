@@ -639,3 +639,136 @@ export const consolidationPreviewTemplate = Handlebars.compile(`
     </div>
     {{/if}}
 `);
+
+/**
+ * STMB-Auto (Phase 2): settings panel for the Auto module.
+ *
+ * Renders the global settings under extension_settings.STMemoryBooks.autoModule
+ * (sentinel on/off, cadence, window size, truncation, guard, detection profile,
+ * detection prompt, debug logging) and the per-chat overrides under
+ * chat_metadata.stmbc (enabled, watermark fallback, structure-hint regex,
+ * prompt override). Plan §4.5.
+ */
+export const autoModuleSettingsTemplate = Handlebars.compile(`
+    <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoModule_Global">🛰️ Auto Module — Global</h3>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-sentinel-enabled" {{#if auto.sentinelEnabled}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoModule_SentinelEnabled">Enable Sentinel (auto scene-boundary detection)</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_SentinelEnabledDesc">When enabled, the sentinel watches the chat and emits scene boundaries to STMB's memory pipeline. Phase 2 acceptance requires this + a working detection profile.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-cadence-messages">
+            <h4 data-i18n="STMemoryBooks_AutoModule_Cadence">Cadence (messages between cycles):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_CadenceDesc">Minimum new messages before the sentinel fires another detection cycle. Default 8.</small>
+            <input type="number" id="stmb-auto-cadence-messages" class="text_pole"
+                value="{{auto.cadenceMessages}}" min="1" max="200" step="1" placeholder="8">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-window-size">
+            <h4 data-i18n="STMemoryBooks_AutoModule_WindowSize">Detection window size:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_WindowSizeDesc">Messages per detection call. Default 26 (per plan §3.1).</small>
+            <input type="number" id="stmb-auto-window-size" class="text_pole"
+                value="{{auto.windowSize}}" min="4" max="200" step="1" placeholder="26">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-window-overlap">
+            <h4 data-i18n="STMemoryBooks_AutoModule_WindowOverlap">Window overlap (messages):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_WindowOverlapDesc">Overlap between consecutive detection windows. Default 8.</small>
+            <input type="number" id="stmb-auto-window-overlap" class="text_pole"
+                value="{{auto.windowOverlap}}" min="0" max="100" step="1" placeholder="8">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-truncate-chars">
+            <h4 data-i18n="STMemoryBooks_AutoModule_TruncateChars">Per-message truncation (chars):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_TruncateCharsDesc">Each message is truncated to this many characters before the detection prompt. Transition language lives in openings; default 500 (per plan §3.3).</small>
+            <input type="number" id="stmb-auto-truncate-chars" class="text_pole"
+                value="{{auto.truncateChars}}" min="50" max="5000" step="50" placeholder="500">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-guard-size">
+            <h4 data-i18n="STMemoryBooks_AutoModule_GuardSize">Trailing guard (messages):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_GuardSizeDesc">Detection never emits a boundary within the last N messages (scene may be incomplete; sentinel runs one scene behind). Default 4.</small>
+            <input type="number" id="stmb-auto-guard-size" class="text_pole"
+                value="{{auto.guardSize}}" min="0" max="50" step="1" placeholder="4">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-detection-profile">
+            <h4 data-i18n="STMemoryBooks_AutoModule_DetectionProfile">Detection profile:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_DetectionProfileDesc">Reuses STMB's profileManager. Detection wants a cheap model. "Use default" = the standard STMB profile.</small>
+            <select id="stmb-auto-detection-profile" class="text_pole">
+                {{#each auto.detectionProfileOptions}}
+                <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
+                {{/each}}
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-detection-prompt">
+            <h4 data-i18n="STMemoryBooks_AutoModule_DetectionPrompt">Detection prompt override:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_DetectionPromptDesc">Leave empty to use the bundled baseline (plan Appendix A). Per-chat override takes precedence.</small>
+            <textarea id="stmb-auto-detection-prompt" class="text_pole" rows="6"
+                placeholder="You are a scene-boundary detector...">{{auto.detectionPrompt}}</textarea>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-debug-logging" {{#if auto.debugLogging}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoModule_DebugLogging">Debug logging (ring buffer in chat_metadata)</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_DebugLoggingDesc">Logs detection cycles to a chat_metadata ring buffer for inspection. Off by default; can balloon in long chats.</small>
+    </div>
+
+    <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoModule_PerChat">🛰️ Auto Module — Per-chat overrides</h3>
+    <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_PerChatDesc">Stored on the current chat's metadata. Empty = inherit from global.</small>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-chat-enabled" {{#if chatAuto.enabled}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoModule_ChatEnabled">Sentinel enabled for this chat</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ChatEnabledDesc">Overrides global sentinelEnabled for this chat. Check = forced on; uncheck = forced off; "Use global" = follow global. (Current UI uses a boolean; the "inherit" sentinel is "use global" via unchecking both.)</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-chat-watermark-fallback">
+            <h4 data-i18n="STMemoryBooks_AutoModule_ChatWatermarkFallback">Watermark fallback (message index):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ChatWatermarkFallbackDesc">If no scene marker and no prior memory, start detection from this message index. Leave empty for none.</small>
+            <input type="number" id="stmb-auto-chat-watermark-fallback" class="text_pole"
+                value="{{chatAuto.watermarkFallbackDisplay}}" min="0" max="1000000" step="1" placeholder="empty">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-chat-structure-hint">
+            <h4 data-i18n="STMemoryBooks_AutoModule_ChatStructureHint">Structure-hint regex:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ChatStructureHintDesc">Optional free deterministic boundary source (e.g. your narrator's header pattern). LLM remains fallback/tiebreaker. Invalid regex falls back to empty.</small>
+            <input type="text" id="stmb-auto-chat-structure-hint" class="text_pole"
+                value="{{chatAuto.structureHintRegex}}" placeholder="\\[\\s*🕰️">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-chat-prompt-override">
+            <h4 data-i18n="STMemoryBooks_AutoModule_ChatPromptOverride">Per-chat prompt override:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ChatPromptOverrideDesc">Overrides both the global detection prompt and the bundled baseline for this chat only.</small>
+            <textarea id="stmb-auto-chat-prompt-override" class="text_pole" rows="4"
+                placeholder="(empty = no override)">{{chatAuto.promptOverride}}</textarea>
+        </label>
+    </div>
+`);

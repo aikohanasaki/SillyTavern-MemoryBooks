@@ -82,7 +82,22 @@ import {
   automaticMemoriesSettingsTemplate,
   generalSettingsTemplate,
   settingsTemplate,
+  autoModuleSettingsTemplate,
 } from "./templates.js";
+import {
+  AUTO_MODULE_DEFAULTS,
+  CHAT_AUTO_DEFAULTS,
+  validateAutoPatch,
+  validateChatAutoPatch,
+  getAutoSettings,
+  setAutoSettings,
+  initializeAutoSettings,
+  getChatAutoSettings,
+  setChatAutoSettings,
+  initializeChatAutoSettings,
+  resolveSentinelEnabled,
+  resolveDetectionPrompt,
+} from "./autoSettings.js";
 import {
   showConfirmationPopup,
   fetchPreviousSummaries,
@@ -2019,6 +2034,12 @@ function initializeSettings() {
     );
     saveSettingsDebounced();
   }
+
+  // STMBC-HOOK-PHASE2: backfill the Auto-module settings container so the
+  // sentinel subsystem has a stable shape on first read. Migration-safe:
+  // initializeAutoSettings only writes missing fields.
+  initializeAutoSettings(extension_settings.STMemoryBooks);
+  initializeChatAutoSettings(chat_metadata);
 
   return validationResult;
 }
@@ -5661,6 +5682,11 @@ function populateInlineButtons() {
       action: showAutomaticMemoriesSettingsPopup,
     },
     {
+      text: "🛰️ " + translate("Auto Module (Sentinel)", "STMemoryBooks_AutoModule"),
+      id: "stmb-auto-module-settings",
+      action: showAutoModuleSettingsPopup,
+    },
+    {
       text:
         "🧩 " +
         translate(
@@ -8781,6 +8807,177 @@ async function showAutomaticMemoriesSettingsPopup() {
       "STMemoryBooks",
     );
   }
+}
+
+/**
+ * STMB-Auto (Phase 2 / P2.2): settings popup for the Auto module.
+ *
+ * Renders both the global settings (extension_settings.STMemoryBooks.autoModule)
+ * and the per-chat overrides (chat_metadata.stmbc). Plan §4.5.
+ */
+async function showAutoModuleSettingsPopup() {
+  try {
+    const templateData = await buildAutoModuleTemplateData();
+    const content = DOMPurify.sanitize(autoModuleSettingsTemplate(templateData));
+    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+      wide: true,
+      large: true,
+      allowVerticalScrolling: true,
+      cancelButton: translate("Close", "STMemoryBooks_Close"),
+      okButton: false,
+      onClose: handleSettingsFormPopupClose,
+    });
+    markStmbPopup(popup);
+    setupAutoModuleEventListeners(popup);
+    await popup.show();
+  } catch (error) {
+    console.error("STMemoryBooks: Error showing auto module settings popup:", error);
+    toastr.error(
+      translate(
+        "Failed to open Auto Module settings",
+        "STMemoryBooks_FailedToOpenAutoModuleSettings",
+      ),
+      "STMemoryBooks",
+    );
+  }
+}
+
+/**
+ * Build the template data for the Auto module popup. Reads global + per-chat
+ * settings, augments with profile list (for the detection profile picker).
+ */
+async function buildAutoModuleTemplateData() {
+  const settings = initializeSettings();
+  const auto = getAutoSettings(settings);
+  const chatAutoRaw = getChatAutoSettings(chat_metadata, { globalSentinelEnabled: auto.sentinelEnabled });
+
+  // Detection profile picker: reuses STMB's profileManager. The detection
+  // profile index points into settings.profiles. "null" means "use the default
+  // STMB profile" (settings.defaultProfile).
+  const profileOptions = [
+    { value: 'null', label: translate('Use default STMB profile', 'STMemoryBooks_AutoModule_UseDefaultProfile'), isSelected: auto.detectionProfileIndex == null },
+  ];
+  if (Array.isArray(settings.profiles)) {
+    settings.profiles.forEach((profile, index) => {
+      const name = profile?.name || translate('Untitled profile', 'STMemoryBooks_UntitledProfile');
+      profileOptions.push({
+        value: String(index),
+        label: name,
+        isSelected: auto.detectionProfileIndex === index,
+      });
+    });
+  }
+
+  return {
+    auto: {
+      ...auto,
+      detectionProfileOptions: profileOptions,
+    },
+    chatAuto: {
+      enabled: chatAutoRaw.enabled,
+      // null displayed as empty in the input placeholder
+      watermarkFallbackDisplay: chatAutoRaw.watermarkFallback == null ? '' : String(chatAutoRaw.watermarkFallback),
+      structureHintRegex: chatAutoRaw.structureHintRegex || '',
+      promptOverride: chatAutoRaw.promptOverride || '',
+    },
+  };
+}
+
+/**
+ * Event delegation for the Auto module popup. Mirrors the pattern in
+ * setupSettingsEventListeners but is scoped to the Auto fields.
+ */
+function setupAutoModuleEventListeners(popupInstance) {
+  if (!popupInstance?.dlg) return;
+  const popupElement = popupInstance.dlg;
+  const settings = initializeSettings();
+
+  popupElement.addEventListener('change', async (e) => {
+    const t = e.target;
+
+    // --- Global autoModule fields ---
+    if (t.matches('#stmb-auto-sentinel-enabled')) {
+      setAutoSettings(settings, validateAutoPatch({ sentinelEnabled: t.checked }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-cadence-messages')) {
+      const v = parseInt(t.value, 10);
+      setAutoSettings(settings, validateAutoPatch({ cadenceMessages: v }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-window-size')) {
+      const v = parseInt(t.value, 10);
+      setAutoSettings(settings, validateAutoPatch({ windowSize: v }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-window-overlap')) {
+      const v = parseInt(t.value, 10);
+      setAutoSettings(settings, validateAutoPatch({ windowOverlap: v }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-truncate-chars')) {
+      const v = parseInt(t.value, 10);
+      setAutoSettings(settings, validateAutoPatch({ truncateChars: v }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-guard-size')) {
+      const v = parseInt(t.value, 10);
+      setAutoSettings(settings, validateAutoPatch({ guardSize: v }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-detection-profile')) {
+      // "null" string means default profile
+      const raw = t.value;
+      const idx = (raw === 'null' || raw === '') ? null : parseInt(raw, 10);
+      setAutoSettings(settings, validateAutoPatch({ detectionProfileIndex: idx }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-debug-logging')) {
+      setAutoSettings(settings, validateAutoPatch({ debugLogging: t.checked }));
+      saveSettingsDebounced();
+      return;
+    }
+
+    // --- Per-chat overrides ---
+    if (t.matches('#stmb-auto-chat-enabled')) {
+      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ enabled: t.checked }));
+      saveMetadata();
+      return;
+    }
+    if (t.matches('#stmb-auto-chat-watermark-fallback')) {
+      const v = t.value === '' ? null : parseInt(t.value, 10);
+      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ watermarkFallback: v }));
+      saveMetadata();
+      return;
+    }
+  });
+
+  popupElement.addEventListener('input', async (e) => {
+    const t = e.target;
+
+    if (t.matches('#stmb-auto-detection-prompt')) {
+      setAutoSettings(settings, validateAutoPatch({ detectionPrompt: t.value }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-chat-structure-hint')) {
+      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ structureHintRegex: t.value }));
+      saveMetadata();
+      return;
+    }
+    if (t.matches('#stmb-auto-chat-prompt-override')) {
+      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ promptOverride: t.value }));
+      saveMetadata();
+      return;
+    }
+  });
 }
 
 /**
