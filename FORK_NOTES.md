@@ -52,6 +52,7 @@ eval/                          Phase 0 eval harness (offline; no SillyTavern nee
   materials/stmb-auto/         plan doc at the path referenced by PHA-1416
 autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (global + per-chat), defaults, validation, get/set, resolver helpers
 sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
+auditorTechnicalPass.js + .test.js Phase 5 (P5.3) — technical pass + claim re-verification jobs (auditor)
 eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
 autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
 FORK_NOTES.md                  this file
@@ -119,6 +120,7 @@ artifacts are committed; never hand-edit them.
 | Phase 6 — Merge drill, hardening, release | P6.2 README + CHANGELOG + AGPL headers | PHA-1473 | done |
 | `addlore.js` (P4.4) | `populateLorebookEntry` (the entry-populator that already attaches STMB_start/STMB_end metadata) gains a provenance append call with an inline fallback; respects `memoryResult.metadata.skipProvenance` opt-out | Phase 4 (P4.4) provenance lines | Yes — additive; existing entry structure preserved. The inline fallback mirrors nudgeHelpers exactly (4 structural tests pin parity). |
 | Phase 4 — Living-lorebook orchestration | P4.4 event-template preset + consolidation/compaction nudges | PHA-1467 | done |
+| Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs | PHA-1459 | done |
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 1 — Fork setup | P1.4 merge drill | (open) | todo |
