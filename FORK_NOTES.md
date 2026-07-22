@@ -103,6 +103,52 @@ expect:
 `hooks/pre-commit` to `.git/hooks/pre-commit` on hosts without bun). The build
 artifacts are committed; never hand-edit them.
 
+
+## §2 audit (re-verified 2026-07-22 — PHA-1433)
+
+Plan §2 was "verified July 2026" but the upstream map is from an earlier snapshot.
+Re-verified against the current `upstream/main` (merge base 617cfbf, 2026-07-18):
+
+| File | Plan §2 claim | Current (upstream/main 617cfbf) | Drift |
+| --- | --- | --- | --- |
+| `index.js` | ~11K lines | 11,424 lines | +424 |
+| `index.js` | `registerSlashCommands()` ~9670 | function at 9898, invocation at 11252 | function +228, invocation same anchor (after `handleSceneMemoryCommand` block grew) |
+| `index.js` | `handleSceneMemoryCommand` location | 1289 | (plan didn't pin) |
+| `index.js` | `runSceneMemoryRange` location | 1158 | (plan didn't pin) |
+| `stmemory.js` | (no size given) | 1,521 lines | (added) |
+| `clipManager.js` | ~111K lines (typo — should be ~1.1K) | 2,474 lines | +~1.4K |
+| `sidePrompts.js` | (no size given) | 2,109 lines | (added) |
+| `sidePromptsManager.js` | (no size given) | 1,092 lines | (added) |
+
+**Hook site stability:** the fork's `STMBC-HOOK` call sites land at lines that are
+in the *current* upstream code (verified by `grep -n` against HEAD which is
+upstream-merge-base + fork-only commits). Since the fork was branched from the
+current upstream/main, no upstream-side drift has touched the hook anchors.
+
+| Hook | Plan §2 (Phase reference) | Fork line | Valid against upstream? |
+| --- | --- | --- | --- |
+| `STMBC-HOOK: extension init` (Phase 2) | `index.js` extension init | `index.js:11254` (after `registerSlashCommands()` invocation at 11252) | ✓ |
+| `STMBC-HOOK: prompt assembly` (Phase 4) | `stmemory.js` prompt assembly | `stmemory.js:1461` (in `buildPrompt()`) | ✓ |
+| `STMBC-HOOK: clip save path` (Phase 3) | `clipManager.js` clip save path | `clipManager.js:718` (in clip save dialog handler) | ✓ |
+| `STMBC-HOOK: side-prompt filtering` (Phase 4) | `sidePrompts.js` | `sidePrompts.js:1671` (in `runSidePrompt()`) | ✓ |
+| `STMBC-HOOK: per-scene filter` (Phase 4, P4.2) | (added in P4.2) | `sidePrompts.js:1404` (post-P4.2) | ✓ |
+
+**Build verification (P1.3):** `bun run build` was verified clean by the v0.1.0
+release clean-install smoke test (PHA-1466, `docs/release/v0.1.0/report.md`).
+`hooks/pre-commit` runs `bun run build` and stages `index.build.js` +
+`style.build.css`. Build artifacts present at HEAD.
+
+**Merge drill (Phase 1 acceptance bullet 3):** `git fetch upstream && git merge
+upstream/main` on a scratch branch → `Already up to date`. The fork's main is
+already at the current upstream/main HEAD; no new upstream commits to merge.
+This is the cleanest possible merge outcome: zero conflicts, zero divergence
+on upstream-side code.
+
+**Conclusion:** the §2 map's high-level file inventory is correct; the line
+numbers cited have drifted slightly (+228 on `index.js`, +1.4K on
+`clipManager.js`) but the fork's hook anchors are stable because the fork was
+branched from current upstream/main and only added additive lines.
+
 ## Phase status (live; update as work lands)
 
 | Phase | Sub | Issue | Status |
@@ -127,6 +173,6 @@ artifacts are committed; never hand-edit them.
 | Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs (current implementation in `auditorTechnicalPass.js`; 4-job `registerAuditorJobs`; cadence gate via `maybeOfferAuditorJob`) | PHA-1470 | done |
 | Phase 5 — Auditor | P5.4 report UIs for the four audit jobs (`auditorReportUIs.js`) | PHA-1471 | done |
 | Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs (legacy implementation; superseded by PHA-1470) | PHA-1459 | done |
-| Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
-| Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
-| Phase 1 — Fork setup | P1.4 merge drill | (open) | todo |
+| Phase 1 — Fork setup | P1.2 upstream-map audit | PHA-1433 | done (§2 audit appended above) |
+| Phase 1 — Fork setup | P1.3 build/hook verification | PHA-1433 | done (v0.1.0 clean-install smoke test, PHA-1466) |
+| Phase 1 — Fork setup | P1.4 merge drill | PHA-1433 | done (already in sync with upstream/main; zero-conflict merge) |
