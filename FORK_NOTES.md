@@ -165,7 +165,8 @@ branched from current upstream/main and only added additive lines.
 | Phase 4 — Living-lorebook orchestration | P4.2 per-scene side-prompt filtering + event-template preset | PHA-1450 | done |
 | Phase 2 — Sentinel | P2.4 force-disable native auto-summary (config, not deletion) | PHA-1456 | done |
 | Phase 6 — Merge drill, hardening, release | P6.2 README + CHANGELOG + AGPL headers | PHA-1473 | done |
-| Phase 6 — Merge drill, hardening, release | P6.2 release tag v0.1.0 + clean-install verification | PHA-1466 | done |
+| Phase 6 — Merge drill, hardening, release | P6.2 release tag v0.1.0 + clean-install verification | PHA-1466 | done (initial tag + verification at f09b25b / 1dfc263) |
+| Phase 6 — Merge drill, hardening, release | P6.3 post-merge clean-install re-verification + tag v0.1.0 moved to HEAD | PHA-1474 | done (390/390 tests pass, 19 ESM imports resolve, tag moved to 7107ac0; see `docs/release/v0.1.0/report.md`) |
 | `addlore.js` (P4.4) | `populateLorebookEntry` (the entry-populator that already attaches STMB_start/STMB_end metadata) gains a provenance append call with an inline fallback; respects `memoryResult.metadata.skipProvenance` opt-out | Phase 4 (P4.4) provenance lines | Yes — additive; existing entry structure preserved. The inline fallback mirrors nudgeHelpers exactly (4 structural tests pin parity). |
 | Phase 4 — Living-lorebook orchestration | P4.4 event-template preset + consolidation/compaction nudges | PHA-1467 | done |
 | Phase 5 — Auditor | P5.1 chunk walker (checkpoint/resume/halt) | PHA-1468 | done |

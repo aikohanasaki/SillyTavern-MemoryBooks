@@ -18,16 +18,25 @@ First fork release. All fork additions live in new files or behind greppable
 are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
 `[STMB Clip]` preserved per plan §1.2.6 (data compat).
 
-**Verified:**
-- `node --test *.test.js eval/*.test.js` → **228 / 228 pass** from a fresh drop-in
-  on stock SillyTavern release branch. See
-  [`docs/release/v0.1.0/report.md`](./docs/release/v0.1.0/report.md).
-- All 18 ESM import paths in the bundled `index.build.js` resolve to modules that
-  exist in upstream `SillyTavern` release branch.
-- Build artifact `index.build.js` parses cleanly under `bun build --target browser`.
+**Verified (post-merge re-verification, PHA-1474):**
+- `node --test *.test.js eval/*.test.js` → **390 / 390 pass** from a fresh drop-in
+  on stock SillyTavern release branch (307 fork unit tests + 83 eval harness
+  tests). See [`docs/release/v0.1.0/report.md`](./docs/release/v0.1.0/report.md).
+- All **19** ESM import paths in the bundled `index.build.js` resolve to modules
+  that exist in upstream `SillyTavern` release branch (the extra
+  `../../../sse-stream.js` path was introduced by upstream code in this window).
+- Build artifact `index.build.js` (859,760 bytes) parses cleanly under
+  `node --check`.
 - README §'Migration from stock STMB' data-compat claims verified against source
   (no renames of `STMemoryBooks`, `stmemorybooks`, or `[STMB Clip]` anywhere in
   the fork).
+- Upstream merge drill (PHA-1472): `git merge upstream/main` from `main` is a
+  no-op (merge base `617cfbf`, 2026-07-18) — fork is already in sync.
+- All five STMBC-HOOK markers (extension init, prompt assembly, clip save,
+  side-prompt filter, per-scene filter) verified valid against current
+  upstream code per PHA-1433 §2 audit.
+
+**Tag:** v0.1.0 → `7107ac0b9a625b9a9c25cf10762ee7f56eb08595` (current HEAD of `main`).
 
 ### Phase 0 — Eval harness (PHA-1416, PHA-1423)
 - `eval/parser.js` — SillyTavern JSONL parser (1-based indexing, header parsing via
