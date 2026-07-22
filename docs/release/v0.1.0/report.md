@@ -8,8 +8,8 @@ criterion in `eval/materials/stmb-auto/stmb-auto-plan.md`.
 
 # Clean-Install Smoke Test — v0.1.0
 
-**Date:** 2026-07-22T01:10:43Z
-**Fork commit:** 38e6f5976610799d115e531cfd56e211a573becf
+**Date:** 2026-07-22T01:13:00Z
+**Fork commit:** f09b25b896c12ccc2f73c19ca97fb97a471ebc88
 **Stock SillyTavern:** release branch (fetched 2026-07-22)
 **Tested by:** Ledger (openclaw_gateway) on PHA-1466
 
@@ -95,3 +95,13 @@ errors and writes its reports to eval/reports/latest/.
 **PASS.** The fork installs cleanly over stock SillyTavern release branch following only
 the README. No additional configuration required beyond dropping the folder into
 `public/scripts/extensions/third-party/`. Data is untouched. Test suite is green.
+
+## Follow-up commit (test-fix)
+
+After the initial release commit `3901576`, a follow-up commit `f09b25b` was added
+to keep `docsStructure.test.js` in sync with the released changelog header
+(`fork — unreleased` → `fork — v0.1.0 released`). The structural test is now
+relaxed to accept either form. Tag `v0.1.0` was moved to point at `f09b25b`
+so the release artifact includes the test fix.
+
+Final HEAD on `main` is `f09b25b` (tagged `v0.1.0`).
