@@ -15,6 +15,11 @@ Satire Fantasy Isekai fixture. Phase 0 acceptance gate: **precision ≥ 0.9 at
 | recall (merged) | 0.677 (21/31) | 0.710 (22/31) |
 
 36 predictions from 18 windows, 0 windows skipped (no JSON failures).
+
+P6.1 acceptance re-run (2026-07-22, HEAD 5d650bd, same config): 18/18 windows,
+0 skipped, 32 predictions — precision(raw)@±1 **0.969** (31/32), recall(raw)@±1
+0.579. Gate re-confirmed after the hardening commits; sole false positive vs
+raw @±1: id 2.
 False positives vs raw @±1: ids 2, 174, 241. The gate metric is
 precision(raw)@±1 per the plan's convention — every prediction must land on a
 real transition; recall is informational at this phase.
