@@ -11,12 +11,23 @@ to land in `changelog.md`.
 Fork-specific changes only. Upstream changelog lives at [`changelog.md`](./changelog.md).
 Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 
-## v0.1.0-a.1 (unreleased)
+## v0.1.0 (2026-07-22) — release
 
 First fork release. All fork additions live in new files or behind greppable
 `STMBC-HOOK` markers; upstream function bodies, control flow, and data structures
 are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
 `[STMB Clip]` preserved per plan §1.2.6 (data compat).
+
+**Verified:**
+- `node --test *.test.js eval/*.test.js` → **228 / 228 pass** from a fresh drop-in
+  on stock SillyTavern release branch. See
+  [`docs/release/v0.1.0/report.md`](./docs/release/v0.1.0/report.md).
+- All 18 ESM import paths in the bundled `index.build.js` resolve to modules that
+  exist in upstream `SillyTavern` release branch.
+- Build artifact `index.build.js` parses cleanly under `bun build --target browser`.
+- README §'Migration from stock STMB' data-compat claims verified against source
+  (no renames of `STMemoryBooks`, `stmemorybooks`, or `[STMB Clip]` anywhere in
+  the fork).
 
 ### Phase 0 — Eval harness (PHA-1416, PHA-1423)
 - `eval/parser.js` — SillyTavern JSONL parser (1-based indexing, header parsing via

@@ -7,13 +7,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 **← [Back to README](readme.md)**
 
-## v8.2.2-a.1 (fork — unreleased)
+## v8.2.2-a.1 (fork — v0.1.0 released 2026-07-22)
 
 First fork release (`SillyTavern-MemoryBooks-Auto`). Adds Phase 0 eval harness,
 Phase 1 fork plumbing, Phase 2 auto-module settings + sentinel-aware auto-summary
-gate, Phase 4 per-scene side-prompt filter + event-template preset. Settings key
-`STMemoryBooks` and lorebook flags `stmemorybooks` / `[STMB Clip]` preserved for
-data compat. See [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
+gate, Phase 4 per-scene side-prompt filter + event-template preset, Phase 4
+provenance lines + consolidation/compaction nudges, Phase 5 auditor technical
+pass. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
+`[STMB Clip]` preserved for data compat. Clean-install verified on stock
+SillyTavern release branch — see [`docs/release/v0.1.0/report.md`](./docs/release/v0.1.0/report.md)
+and [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
 
 ## v8.2.2 (July 16, 2026)
 - Bugfix: Fix STLO metadata writes.

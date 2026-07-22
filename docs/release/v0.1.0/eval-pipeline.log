@@ -1,0 +1,75 @@
+=== Unit tests ===
+✔ parseTimeToMinutes handles 12-hour format (2.579597ms)
+✔ parseTimeToMinutes handles 24-hour format (0.189139ms)
+✔ parseTimeToMinutes returns null for invalid input (0.161737ms)
+✔ computeRawBoundaries starts a scene at the first narrator (1.14264ms)
+✔ computeRawBoundaries flags location change (0.303746ms)
+✔ computeRawBoundaries flags >90 min time jump as boundary (0.214768ms)
+✔ computeRawBoundaries does NOT flag a 30 min time jump (0.210029ms)
+✔ computeRawBoundaries wraps midnight correctly (0.199619ms)
+✔ mergeShortScenes keeps long scenes intact (0.525297ms)
+✔ mergeShortScenes drops multiple short scenes in a row (0.343082ms)
+✔ mergeShortScenes handles empty input (0.172207ms)
+✔ deriveGroundTruth produces boundaries list and detailed debug info (0.265424ms)
+✔ parseHeader extracts time, date, location, weather from a valid header (2.387612ms)
+✔ parseHeader returns null when no header is present (0.267408ms)
+✔ parseHeader handles missing fields gracefully (0.272979ms)
+✔ stripForDetection removes the header line (0.554082ms)
+✔ stripForDetection removes internal-thought blocks (0.300711ms)
+✔ parseJsonlLine recognizes the metadata header line (0.299118ms)
+✔ parseJsonlLine recognizes a message line (0.21605ms)
+✔ parseJsonlLine skips invalid JSON (0.230167ms)
+✔ parseJsonlText numbers messages starting at 1 after the metadata line (1.328081ms)
+✔ parseJsonlText assigns 1-based indices even with blank lines (0.407113ms)
+✔ formatForPrompt produces [id] Speaker: text and truncates (0.393356ms)
+✔ formatForPrompt strips headers and internal thoughts before formatting (0.147229ms)
+✔ smoke: parses the bundled 329-message Satire Fantasy Isekai JSONL (30.730295ms)
+✔ empty inputs produce zero metrics without throwing (2.495878ms)
+✔ predictions without ground truth: precision 0, recall undefined denominator (0.348942ms)
+✔ ground truth without predictions: recall 0, all missed (0.223976ms)
+✔ exact alignment: precision 1.0, recall 1.0, F1 1.0 (0.287585ms)
+✔ ±1 tolerance matches single-message offsets (0.2686ms)
+✔ ±1 tolerance does NOT match two-message offsets (0.239956ms)
+✔ ±2 tolerance matches two-message offsets (0.222101ms)
+✔ partial recall: missed ground truths and hallucinated predictions (0.228403ms)
+✔ unmatched predictions reported in order (0.286725ms)
+✔ zero tolerance requires exact equality (0.295762ms)
+✔ out-of-range indices are filtered when messageCount provided (0.343162ms)
+✔ duplicate indices are deduplicated (first occurrence wins on order) (0.212764ms)
+✔ non-integer entries are silently filtered (0.181695ms)
+✔ greedy matching: a single prediction can only match one ground truth (0.221561ms)
+✔ greedy matching walks cursors and never skips a matchable pair (1.330756ms)
+✔ matching handles clusters without consuming across gaps (0.262519ms)
+✔ scoreAtTolerances returns one result per tolerance in input order (0.2846ms)
+✔ scoreAtTolerances defaults to [1, 2] (0.166035ms)
+✔ plan §3.2: full-text conservative config reports P=0.94 R=0.26 (0.227211ms)
+✔ plan §3.2 sensitivity-tuned: P=1.00 R≈0.70 at ±1 (0.176956ms)
+✔ formatScoreLine produces one-line summary (0.353341ms)
+✔ formatMarkdownReport includes summary table and per-boundary table (0.554864ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 123.693106
+
+=== Pipeline (header oracle) ===
+[1/4] Parsing /tmp/st-clean-test/SillyTavern-release/public/scripts/extensions/third-party/SillyTavern-MemoryBooks-Auto/eval/fixtures/transcript.jsonl…
+        329 messages parsed.
+[2/4] Deriving ground truth (time-jump=90min, min-scene=6msgs)…
+        67 raw boundaries → 22 merged (dropped 45 short scenes).
+        Scene lengths: min=6 max=34 avg=14.9
+[3/4] Running detector "oracle"…
+        67 predicted boundaries.
+        18 detection windows built (size=26, overlap=8, guard=4, truncate=500).
+[4/4] Scoring at ±{1,2} tolerance…
+        ±1: P=0.33 R=1.00 F1=0.49 (TP=22 FP=45 FN=0 of pred=67 gt=22)
+        ±2: P=0.33 R=1.00 F1=0.49 (TP=22 FP=45 FN=0 of pred=67 gt=22)
+
+Reports written to /tmp/st-clean-test/SillyTavern-release/public/scripts/extensions/third-party/SillyTavern-MemoryBooks-Auto/eval/reports/latest/
+  - report.md     (Markdown)
+  - report.json   (machine-readable)
+  - predictions.json
+  - ground-truth.json
