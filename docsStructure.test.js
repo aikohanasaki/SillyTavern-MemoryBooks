@@ -107,7 +107,11 @@ test('changelog.md: original AGPL header preserved', () => {
 
 test('changelog.md: fork entry prepended at the top', () => {
     assert.match(changelogUpstream, /^## v8\.2\.2-a\.1/m, 'fork entry must be the first version entry');
-    assert.match(changelogUpstream, /fork — unreleased/, 'fork entry must be marked as fork/unreleased');
+    // Accept either 'unreleased' (pre-release) or 'fork — v0.1.0 released YYYY-MM-DD' (post-release)
+    assert.ok(
+        /fork — (unreleased|v0\.1\.0 released)/.test(changelogUpstream),
+        'fork entry must be marked as fork/unreleased or fork/v0.1.0 released',
+    );
 });
 
 // ----------------------------------------------------------------------------
