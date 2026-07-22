@@ -127,7 +127,18 @@ export async function handleSentinelMessageReceived() {
     try {
         const deps = buildSentinelDeps();
         if (!deps) return;
-        await runSentinelCycle(deps);
+        const record = await runSentinelCycle(deps);
+        // A boundary was detected and memory generation began ("mid-job") but
+        // failed partway — this is not the silent-skip detection-retry path
+        // (that stays quiet by design, §3.3 "never guess"), so surface it.
+        if (record?.action === 'processed' && record.error) {
+            try {
+                toastr.warning(
+                    `Sentinel: scene memory failed mid-cycle (${record.error}). ${record.processed?.length ?? 0} scene(s) saved before the failure.`,
+                    'STMemoryBooks',
+                );
+            } catch { /* toastr optional */ }
+        }
     } catch (err) {
         console.error('STMemoryBooks: sentinel handler error', err);
     } finally {
