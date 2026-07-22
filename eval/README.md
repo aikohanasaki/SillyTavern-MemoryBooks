@@ -60,19 +60,49 @@ node --test eval/*.test.js
 
 ## Acceptance gate (plan §6 Phase 0)
 
+Phase 0 acceptance: **precision ≥ 0.90 at ±1** against the bundled fixture
+(plan §6). The runner exits 0 when the gate passes, 1 when it fails.
+
+The default detector is `--detector oracle` (header-derived, sanity test).
+The oracle produces **raw** boundaries (every header change + every
+>90-min jump — 67 in the bundled fixture), while the ground truth merges
+scenes shorter than 6 messages, ending at **22 merged boundaries**. So
+the oracle fails the gate by design — that failure is the sanity test:
+
 ```
 [4/4] Scoring at ±{1,2} tolerance…
-        ±1: P=1.00 R=1.00 F1=1.00 (TP=22 FP=0 FN=0 of pred=22 gt=22)
-        ±2: P=1.00 R=1.00 F1=1.00 (TP=22 FP=0 FN=0 of pred=22 gt=22)
+        ±1: P=0.33 R=1.00 F1=0.49 (TP=22 FP=45 FN=0 of pred=67 gt=22)
+        ±2: P=0.33 R=1.00 F1=0.49 (TP=22 FP=45 FN=0 of pred=67 gt=22)
 
-✅ Phase 0 acceptance gate PASSED: precision 1.0000 ≥ 0.90 at ±1
+❌ Phase 0 acceptance gate FAILED: precision 0.3284 < 0.90 at ±1
 ```
 
-The runner exits 0 when the gate passes, 1 when it fails. The header oracle
-(`--detector oracle`) is a sanity test and is not expected to pass the gate
-(precision 1.0 is mathematically impossible when predicting 67 raw boundaries
-against 22 ground truths). The gate is meaningful for the **real LLM
-detector** that PHA-1427 / Phase 0.3 will plug in.
+The gate is meaningful for the **real LLM detector** (`--detector openai`),
+where the model is supposed to *infer* boundaries from prose rather than
+read the headers — and where the human-aligned §3.2 expectation is
+precision **0.93–1.00 at ±1**. If the oracle passes, something is wrong
+with your ground-truth derivation; if `openai` fails, see "Expected
+numbers (plan §3.2)" below for the target range.
+
+## Expected numbers (plan §3.2)
+
+These are the precision/recall numbers the original 2026-07-20 STMB
+run reported for "Satire Fantasy Isekai" against this same fixture,
+with a Claude-family detector. The Phase 0 harness makes any model or
+prompt change measurable against these:
+
+| Config                                            | Precision (±1) | Recall | Prompt size |
+|---------------------------------------------------|----------------|--------|-------------|
+| Full text, conservative prompt                    | **0.94**       | 26%    | ~10K tok    |
+| Truncated 500 chars/msg                           | **0.93**       | 52%    | ~4K tok     |
+| Truncated + sensitivity-tuned prompt (production) | **1.00**       | 67–74% | ~4K tok     |
+
+`STMB_PROMPT_FILE` is the production-config knob — point it at
+`eval/prompts/baseline.txt` (or your own copy) and re-run. After a
+real LLM run you should see a number at or above **0.93** on the ±1
+column; the acceptance gate of **0.90** is conservative against §3.2.
+Numbers are "approach validated," not a hard floor across models — see
+plan §3.2 caveats.
 
 ## Module reference
 
@@ -152,6 +182,18 @@ predictions file for offline re-runs.
 - `recall = matched_ground_truth / total_ground_truth`.
 - `f1 = 2 · P · R / (P + R)` (zero when both are zero).
 
+## Headers are FREE ground-truth labels
+
+> **Integrity note:** the `[ 🕰️ Time | 🗓️ date | 📍 location | 🌫️ weather ]`
+> header block (and `<details>…🧠 INTERNAL THOUGHTS…</details>` blocks)
+> is **stripped before the detection prompt is built.** Headers exist
+> only as the **ground-truth source** for `groundTruth.js` — they are
+> never fed to the detector. This means the LLM is evaluated on plain
+> prose, i.e. the generic, structure-free case that real-world chats
+> usually are. If you fork this harness to evaluate chats that *do*
+> carry header stamps in production, the detector numbers still
+> reflect detection without that scaffolding.
+
 ## Header format reminder
 
 The Satire Fantasy Isekai narrator messages begin with a header block like:
@@ -162,7 +204,8 @@ The Satire Fantasy Isekai narrator messages begin with a header block like:
 
 `parser.js` splits this on `|` and looks for each emoji prefix; new weather
 or stamp emojis are tolerated without regex updates. Internal-thought blocks
-(`<details>…🧠 INTERNAL THOUGHTS…</details>`) are stripped before detection.
+(`<details>…🧠 INTERNAL THOUGHTS…</details>`) are stripped before detection
+(see the callout above).
 
 ## Status (Phase 0 wiring)
 
