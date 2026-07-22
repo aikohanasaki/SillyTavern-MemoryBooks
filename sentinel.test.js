@@ -15,17 +15,13 @@ import {
     extractWindowMessages,
     formatDetectionWindow,
     buildDetectionWindow,
-    isCadenceReached,
-    effectiveCadence,
-    sentinelConfigFromAutoSettings,
     parseIdArray,
     compileStructureHint,
     structureHintBoundaries,
     snapAndGuardBoundaries,
     planSceneRanges,
     detectBoundaries,
-    classifyDetectionConfidence,
-    runSentinelDetectionCycle,
+    runSentinelCycle,
 } from './sentinelCore.js';
 
 // ---------------------------------------------------------------- fixtures
@@ -180,34 +176,6 @@ test('detectBoundaries returns null ids after a second failure', async () => {
     assert.equal(det.attempts.length, 2);
 });
 
-// ------------------------------------------- P4.6 confidence classification
-
-test('P4.6: classifyDetectionConfidence mirrors eval/detect.js labels', () => {
-    assert.equal(classifyDetectionConfidence({ ids: [3], attempts: ['[3]'] }), 'high');
-    assert.equal(classifyDetectionConfidence({ ids: [3], attempts: ['prose', '[3]'] }), 'low');
-    assert.equal(classifyDetectionConfidence({ ids: null, attempts: ['prose', 'more prose'] }), 'failed');
-    // Defensive: an aggregated/unknown round is never silently "high".
-    assert.equal(classifyDetectionConfidence(), 'failed');
-});
-
-test('P4.6: detectBoundaries labels a clean first parse "high"', async () => {
-    const det = await detectBoundaries({
-        detect: async () => '[7]', systemPrompt: 'P', windowText: 'W',
-    });
-    assert.equal(det.confidence, 'high');
-});
-
-test('P4.6: detectBoundaries labels a reprimand-rescued parse "low"', async () => {
-    let n = 0;
-    const det = await detectBoundaries({
-        detect: async () => (++n === 1 ? 'Sure! Here you go:' : '[7]'),
-        systemPrompt: 'P',
-        windowText: 'W',
-    });
-    assert.equal(det.ids.length, 1);
-    assert.equal(det.confidence, 'low');
-});
-
 // ---------------------------------------------------------------- full cycle
 
 function cycleDeps(overrides = {}) {
@@ -227,19 +195,19 @@ function cycleDeps(overrides = {}) {
 
 test('cycle skips when fewer than N new messages', async () => {
     const { deps, calls } = cycleDeps({ getChat: () => makeChat(10), getWatermark: () => 4 });
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'skip:cadence');   // newMsgs = 5 < 8
     assert.equal(calls.detect.length, 0);
 });
 
 test('cycle skips when a job is in flight', async () => {
     const { deps } = cycleDeps({ isJobInFlight: () => true });
-    assert.equal((await runSentinelDetectionCycle(deps)).action, 'skip:job-in-flight');
+    assert.equal((await runSentinelCycle(deps)).action, 'skip:job-in-flight');
 });
 
 test('cycle skips (never guesses) when detection is unparseable after retry', async () => {
     const { deps, calls } = cycleDeps({ detect: async () => 'prose only' });
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'skip:unparseable');
     assert.equal(calls.ranges.length, 0);
     assert.equal(r.rawAttempts.length, 2); // initial + one "JSON only" retry
@@ -247,7 +215,7 @@ test('cycle skips (never guesses) when detection is unparseable after retry', as
 
 test('cycle skips on detection API error', async () => {
     const { deps, calls } = cycleDeps({ detect: async () => { throw new Error('503'); } });
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'skip:detect-error');
     assert.match(r.error, /503/);
     assert.equal(calls.ranges.length, 0);
@@ -256,7 +224,7 @@ test('cycle skips on detection API error', async () => {
 test('cycle memorizes completed scenes sequentially, oldest-first', async () => {
     // 30-message chat, watermark 4. Boundary 12 and 20 -> scenes [5..11], [12..19].
     const { deps, calls } = cycleDeps({ detect: async () => '[12, 20]' });
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'processed');
     assert.deepEqual(r.ranges, [[5, 11], [12, 19]]);
     assert.deepEqual(calls.ranges, [[5, 11], [12, 19]]); // in order
@@ -267,7 +235,7 @@ test('cycle memorizes completed scenes sequentially, oldest-first', async () => 
 test('cycle drops a boundary inside the guard zone', async () => {
     // lastIndex 29, guard 4 -> guardLimit 25. Boundary 28 must be dropped.
     const { deps, calls } = cycleDeps({ detect: async () => '[28]' });
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'no-boundary');
     assert.equal(calls.ranges.length, 0);
 });
@@ -278,7 +246,7 @@ test('cycle aborts remaining ranges when a memory run fails', async () => {
         runSceneMemoryRange: async (s) => { if (s === 12) throw new Error('boom'); calls.ranges.push([s]); },
     });
     // re-inject calls tracking since we overrode runSceneMemoryRange
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'processed');
     assert.deepEqual(r.processed, [[5, 11]]);        // first scene done
     assert.match(r.error, /boom/);                   // second aborted
@@ -293,7 +261,7 @@ test('cycle uses the per-chat structure hint as a deterministic boundary source'
         detect: async () => '[]',                    // LLM finds nothing
         config: { structureHintRegex: '^\\[.*\\|.*\\]' },
     });
-    const r = await runSentinelDetectionCycle(deps);
+    const r = await runSentinelCycle(deps);
     assert.equal(r.action, 'processed');
     assert.deepEqual(r.boundaries, [14]);
     assert.deepEqual(calls.ranges, [[5, 13]]);
@@ -305,199 +273,4 @@ test('SENTINEL_DEFAULTS match the validated production config (plan §3.3)', () 
     assert.equal(SENTINEL_DEFAULTS.overlap, 4);
     assert.equal(SENTINEL_DEFAULTS.truncate, 500);
     assert.equal(SENTINEL_DEFAULTS.guard, 4);
-});
-
-// ------------------------------------------------- cadence predicate (P2.1↔P2.3)
-
-test('isCadenceReached is the shared gate predicate', () => {
-    assert.equal(isCadenceReached(30, 4, 8), true);    // lastIndex 29 - 4 = 25
-    assert.equal(isCadenceReached(13, 4, 8), true);    // lastIndex 12 - 4 = 8
-    assert.equal(isCadenceReached(12, 4, 8), false);   // lastIndex 11 - 4 = 7
-    assert.equal(isCadenceReached(8, -1, 8), true);    // fresh chat, nothing memorized
-    assert.equal(isCadenceReached(0, -1, 8), false);   // empty chat
-});
-
-// -------------------------------------------- cadence floor / edge trigger (PHA-1547)
-
-test('isCadenceReached measures from the cadence floor when it is ahead of the watermark', () => {
-    // Watermark 4, floor 20: a cycle already examined up to index 20 and found
-    // nothing, so nothing before index 28 should re-fire the gate.
-    assert.equal(isCadenceReached(30, 4, 8, 20), true);    // lastIndex 29 - 20 = 9
-    assert.equal(isCadenceReached(29, 4, 8, 20), true);    // lastIndex 28 - 20 = 8
-    assert.equal(isCadenceReached(28, 4, 8, 20), false);   // lastIndex 27 - 20 = 7
-    assert.equal(isCadenceReached(25, 4, 8, 20), false);   // the level trigger said true here
-});
-
-test('isCadenceReached ignores a floor behind the watermark', () => {
-    // A memory advanced the watermark past a stale floor — the watermark wins.
-    assert.equal(isCadenceReached(30, 25, 8, 4), false);   // lastIndex 29 - 25 = 4
-    assert.equal(isCadenceReached(40, 25, 8, 4), true);
-});
-
-test('isCadenceReached ignores a floor ahead of the chat (deleted messages / branch swap)', () => {
-    // A floor past the end of the chat would otherwise deadlock the gate forever.
-    assert.equal(isCadenceReached(30, 4, 8, 500), true);
-    assert.equal(isCadenceReached(30, 4, 8, NaN), true);
-});
-
-test('isCadenceReached defaults to the pre-floor behavior', () => {
-    // The engine calls it with three arguments, deliberately: a queued job must
-    // never be rejected by a floor that its own gate already cleared.
-    assert.equal(isCadenceReached(30, 4, 8), isCadenceReached(30, 4, 8, -1));
-    assert.equal(isCadenceReached(30, 4, 8), true);
-});
-
-// ------------------------------ cadence vs window invariant (PHA-1547 guard)
-
-test('effectiveCadence never lets the cadence outrun the window', () => {
-    // cadenceN <= window - guard, or messages fall between two looks and are
-    // never re-examined once the gate is an edge trigger.
-    assert.equal(effectiveCadence(8, 26, 4), 8);      // the shipped defaults, untouched
-    assert.equal(effectiveCadence(22, 26, 4), 22);    // exactly at the limit
-    assert.equal(effectiveCadence(24, 26, 4), 22);    // clamped
-    assert.equal(effectiveCadence(200, 26, 4), 22);
-    assert.equal(effectiveCadence(24, 16, 4), 12);
-    assert.equal(effectiveCadence(1, 26, 4), 1);      // below the limit is always fine
-});
-
-test('effectiveCadence never returns less than 1', () => {
-    // window == guard leaves nothing cuttable; the cadence still has to be a
-    // positive step or the gate would fire on a zero-length interval forever.
-    assert.equal(effectiveCadence(8, 4, 4), 1);
-    assert.equal(effectiveCadence(8, 2, 8), 1);
-    assert.equal(effectiveCadence(0, 26, 4), 8);      // garbage cadence -> the default
-    assert.equal(effectiveCadence(NaN, 26, 4), 8);
-    assert.equal(effectiveCadence(NaN, NaN, NaN), 1);
-});
-
-test('sentinelConfigFromAutoSettings applies the cadence/window invariant', () => {
-    const clamped = sentinelConfigFromAutoSettings({ cadenceMessages: 60, windowSize: 26, guardSize: 4 });
-    assert.equal(clamped.cadenceN, 22);
-    assert.equal(clamped.window, 26);
-    assert.equal(clamped.guard, 4);
-
-    const untouched = sentinelConfigFromAutoSettings({ cadenceMessages: 8, windowSize: 26, guardSize: 4 });
-    assert.equal(untouched.cadenceN, 8);
-});
-
-test('isCadenceReached agrees with the engine at the boundary', async () => {
-    // The gate and the engine must never disagree — a gate that says "go" while
-    // the engine says "skip:cadence" would enqueue empty jobs forever.
-    for (const len of [11, 12, 13, 14]) {
-        const { deps } = cycleDeps({ getChat: () => makeChat(len), getWatermark: () => 4 });
-        const gate = isCadenceReached(len, 4, SENTINEL_DEFAULTS.cadenceN);
-        const engine = (await runSentinelDetectionCycle(deps)).action !== 'skip:cadence';
-        assert.equal(gate, engine, `disagreement at chat length ${len}`);
-    }
-});
-
-// ------------------------------------------------- abort seam (P2.3 /stmb-stop)
-
-test('cycle aborts before the detection call when already cancelled', async () => {
-    const { deps, calls } = cycleDeps({ isCancelled: () => true });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'abort:cancelled');
-    assert.equal(r.at, 'start');
-    assert.equal(calls.detect.length, 0);
-    assert.equal(calls.ranges.length, 0);
-});
-
-test('cycle aborts after the window is built but before spending a detection call', async () => {
-    // Cancelled only once the cycle is under way (e.g. /stmb-stop lands while
-    // the job is starting): no LLM call is made.
-    let calls_ = 0;
-    const { deps, calls } = cycleDeps({ isCancelled: () => ++calls_ > 1 });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'abort:cancelled');
-    assert.equal(r.at, 'before-detect');
-    assert.equal(calls.detect.length, 0);
-});
-
-test('cycle stops between scenes when cancelled mid-memorize, keeping finished work', async () => {
-    // detect -> [12, 20] gives ranges [[5,11],[12,19]]. Cancel after the first
-    // scene is memorized: the second must not run, and the first must stand.
-    let memorized = 0;
-    const { deps, calls } = cycleDeps({
-        detect: async () => '[12, 20]',
-        isCancelled: () => memorized >= 1,
-    });
-    const inner = deps.runSceneMemoryRange;
-    deps.runSceneMemoryRange = async (s, e) => { memorized++; return inner(s, e); };
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'abort:cancelled');
-    assert.equal(r.at, 'during-memorize');
-    assert.deepEqual(r.processed, [[5, 11]]);   // finished work is kept
-    assert.deepEqual(calls.ranges, [[5, 11]]);  // second scene never started
-});
-
-test('an uncancelled cycle never consults an absent isCancelled dep', async () => {
-    // Back-compat: deps without isCancelled behave exactly as before.
-    const { deps } = cycleDeps({ detect: async () => '[12]' });
-    delete deps.isCancelled;
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'processed');
-});
-
-// -------------------------------------------------- P4.6 confidence on the record
-//
-// The engine's contract is "never throws for expected conditions", so the
-// low-confidence signal is a FIELD, not an exception. sentinelCadence.js does
-// the routing. These tests pin both halves of that: the field is present and
-// correct, AND the engine still returns normally in every case.
-
-test('P4.6: a clean cycle carries confidence "high"', async () => {
-    const { deps } = cycleDeps({ detect: async () => '[12, 20]' });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'processed');
-    assert.equal(r.confidence, 'high');
-});
-
-test('P4.6: a reprimand-rescued cycle carries confidence "low" and still processes', async () => {
-    let n = 0;
-    const { deps, calls } = cycleDeps({
-        detect: async () => (++n === 1 ? 'Well, I think scene 12 and 20...' : '[12, 20]'),
-    });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'processed');
-    assert.equal(r.confidence, 'low');
-    // Skip-and-continue is untouched: the memories still committed.
-    assert.deepEqual(calls.ranges, [[5, 11], [12, 19]]);
-});
-
-test('P4.6: skip:unparseable carries confidence "failed"', async () => {
-    const { deps } = cycleDeps({ detect: async () => 'prose only' });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'skip:unparseable');
-    assert.equal(r.confidence, 'failed');
-});
-
-test('P4.6: skip:detect-error carries confidence "failed"', async () => {
-    const { deps } = cycleDeps({ detect: async () => { throw new Error('503'); } });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'skip:detect-error');
-    assert.equal(r.confidence, 'failed');
-});
-
-test('P4.6: a structure-hint rescue is still labelled "failed" (the model output was unusable)', async () => {
-    const chat = makeChat(30, {
-        14: { mes: '[ 🕰️ 15:00 | 📍 Forest | dusk ] They pressed on.' },
-    });
-    const { deps } = cycleDeps({
-        getChat: () => chat,
-        detect: async () => 'no json here',
-        config: { structureHintRegex: '^\\[.*\\|.*\\]' },
-    });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'processed');
-    assert.deepEqual(r.boundaries, [14]);
-    assert.equal(r.confidence, 'failed');
-});
-
-test('P4.6 control: a cycle that never calls the detector carries no confidence', async () => {
-    // Only detection quality is routable — a cadence/window skip has nothing to
-    // review, and must not be able to block a job.
-    const { deps } = cycleDeps({ getChat: () => makeChat(10), getWatermark: () => 4 });
-    const r = await runSentinelDetectionCycle(deps);
-    assert.equal(r.action, 'skip:cadence');
-    assert.equal(r.confidence, undefined);
 });

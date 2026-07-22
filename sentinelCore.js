@@ -8,12 +8,7 @@
 // This file holds the dependency-injected, SillyTavern-free core so it is
 // unit-testable under node:test (see sentinel.test.js), exactly like the eval
 // harness. The runtime binding that wires real chat/settings/profile/memory
-// functions into runSentinelDetectionCycle lives in sentinel.js.
-//
-// Naming (P2.1↔P2.3 integration): the engine here is `runSentinelDetectionCycle`.
-// `runSentinelCycle` is the *job executor* in sentinelCadence.js, which has a
-// different signature `(job, context)` and calls into this engine. Keep them
-// distinct.
+// functions into runSentinelCycle lives in sentinel.js.
 //
 // The Sentinel autonomously detects scene boundaries in the unprocessed tail of
 // a chat and generates a scene memory per completed scene, one scene behind the
@@ -29,8 +24,7 @@
 //        per-chat structure-hint regex boundary within +/-1)
 //     -> runSceneMemoryRange(W+1..B-1) per boundary, sequentially oldest-first,
 //        awaited (each memory advances the watermark for the next scene)
-//     -> emit a structured cycle record via the injected `log` dep (the job
-//        executor in sentinelCadence.js persists it to the debug ring buffer).
+//     -> log the cycle to a small ring buffer in chat_metadata for debugging.
 //
 // Trigger event (P1.2 note, plan §3.3): SillyTavern exposes no GENERATION_ENDED
 // event and STMB subscribes to none — the original draft assumed one. We reuse
@@ -51,14 +45,8 @@ export const SENTINEL_DEFAULTS = Object.freeze({
     structureHintRegex: null, // optional per-chat deterministic boundary source
 });
 
-// NOTE (P2.1↔P2.3 integration): the per-cycle debug ring buffer in chat
-// metadata is owned outright by sentinelCadence.js — it holds the key, the cap,
-// and the only writer, and that is the contract the jobs dashboard reads. P2.1
-// originally shipped a second, independent writer to the same key
-// (`SENTINEL_RING_SIZE`); that duplicate was removed when the two branches were
-// integrated. This file has NO chat-metadata access of any kind: the engine
-// only *emits* a record via the injected `log` dep, and persisting it is the
-// job executor's business.
+/** Ring-buffer size for per-cycle debug records in chat_metadata.stmbc.cycleLog. */
+export const SENTINEL_RING_SIZE = 20;
 
 /** Baseline detection prompt — validated in eval (plan Appendix A). User-editable. */
 export const APPENDIX_A_PROMPT =
@@ -147,126 +135,6 @@ export function buildDetectionWindow(chat, { watermark, window: windowSize, over
     if (lastIndex - start + 1 > windowSize) start = lastIndex - windowSize + 1;
     start = Math.max(0, start);
     return { start, end: lastIndex, messages: extractWindowMessages(chat, start, lastIndex) };
-}
-
-/**
- * Map the *stored* Auto-module settings (P2.2 names, what the settings panel
- * writes) onto this engine's internal config names.
- *
- * P2.1↔P2.2 integration: P2.1 was written against its own key names
- * (`cadenceN`, `window`, …) read straight out of `extension_settings`; P2.2
- * shipped the settings panel writing different names (`cadenceMessages`,
- * `windowSize`, …). Without this mapping the settings panel would have had no
- * effect on the sentinel at all. Keeping the mapping HERE (pure, no imports)
- * rather than in sentinel.js means the offline acceptance harness drives the
- * exact same translation production does.
- *
- * @param {object} globalAuto - from autoSettings.getAutoSettings(settings)
- * @param {object} [chatAuto] - from autoSettings.getChatAutoSettings(chatMeta)
- * @param {string|null} [detectionPrompt] - from autoSettings.resolveDetectionPrompt;
- *        null means "use the bundled APPENDIX_A_PROMPT".
- * @returns {object} engine config (the `config` dep of runSentinelDetectionCycle)
- */
-export function sentinelConfigFromAutoSettings(globalAuto, chatAuto = {}, detectionPrompt = null) {
-    const g = globalAuto || {};
-    const c = chatAuto || {};
-    const window = g.windowSize ?? SENTINEL_DEFAULTS.window;
-    const guard = g.guardSize ?? SENTINEL_DEFAULTS.guard;
-    return {
-        ...SENTINEL_DEFAULTS,
-        cadenceN: effectiveCadence(g.cadenceMessages ?? SENTINEL_DEFAULTS.cadenceN, window, guard),
-        window,
-        overlap: g.windowOverlap ?? SENTINEL_DEFAULTS.overlap,
-        truncate: g.truncateChars ?? SENTINEL_DEFAULTS.truncate,
-        guard,
-        detectionProfile: g.detectionProfileIndex ?? SENTINEL_DEFAULTS.detectionProfile,
-        detectionPrompt: detectionPrompt ?? null,
-        structureHintRegex: c.structureHintRegex || null,
-    };
-}
-
-/**
- * Clamp the configured cadence to what the detection window can actually cover.
- *
- * Once the cadence is an edge trigger (PHA-1547) the sentinel looks at the tail
- * once and then waits `cadenceN` messages before looking again. Between those
- * two looks the window must still reach back over everything the first look saw
- * but was forbidden to cut — the final `guard` messages. The next window spans
- * `[end + cadenceN - window + 1 .. end + cadenceN]`, so covering `end - guard + 1`
- * requires:
- *
- *     cadenceN <= window - guard
- *
- * Violate it and messages fall between two looks and are never re-examined:
- * on the Phase 2 fixture, cadence 24 / window 16 drops boundary coverage from
- * 22/22 to 8/19, and cadence 200 / window 26 to 1/13. The settings panel allows
- * cadence up to 200 and windows as small as 4, so this is reachable by a user
- * turning one knob — and the old level trigger hid it by re-looking on every
- * single message, at ~12x the LLM cost.
- *
- * Clamping errs toward looking MORE often than asked, never less, and the
- * shipped defaults (cadence 8, window 26, guard 4 => limit 22) are untouched.
- *
- * @param {number} cadenceN
- * @param {number} window
- * @param {number} guard
- * @returns {number} the cadence the sentinel will actually use (>= 1)
- */
-export function effectiveCadence(cadenceN, window, guard) {
-    const requested = Number(cadenceN);
-    const limit = Number(window) - Number(guard);
-    const safe = Number.isFinite(limit) ? Math.max(1, limit) : 1;
-    if (!Number.isFinite(requested) || requested < 1) return Math.min(SENTINEL_DEFAULTS.cadenceN, safe);
-    return Math.min(requested, safe);
-}
-
-/**
- * The cadence predicate: has the chat grown by at least `cadenceN` messages
- * since the last point the sentinel is known to have looked at? (plan §3.3)
- *
- * P2.1↔P2.3 integration: this is the single source of truth for "should a
- * cycle happen now". It is consulted twice, deliberately and idempotently:
- *   1. in the MESSAGE_RECEIVED gate (sentinel.js) — a cheap check so we only
- *      *enqueue* a job when a cycle is actually due, and
- *   2. inside the engine itself — because a queued job may run much later,
- *      by which time the watermark may have moved.
- *
- * EDGE, NOT LEVEL (PHA-1547). Measuring purely from the watermark makes this a
- * *level* trigger: once the backlog exceeds `cadenceN` the predicate stays true
- * on every subsequent message until a memory advances the watermark, so a
- * 34-message scene burns ~26 detection calls to find its one boundary (279
- * cycles / 22 memories on the Phase 2 fixture, 257 of them fruitless). Offline
- * that is only a cycle count; in production every one is a real LLM call.
- *
- * `cadenceFloor` is the fix: the highest chat index a completed detection call
- * has already examined (`window.end` of the last cycle that actually reached
- * the detector). Measuring from `max(watermark, cadenceFloor)` turns this into
- * an edge trigger — after a cycle looks at the tail and commits to what it
- * found there, we wait a full `cadenceN` before paying for another look.
- *
- * Re-examination is not lost: the window (26) is far wider than the cadence
- * step (8) plus the guard (4), so the next cycle still re-covers everything the
- * previous one could legally have cut, minus what it already memorized.
- *
- * A floor ahead of `lastIndex` is stale (messages deleted, branch swap, chat
- * reload onto a shorter history) and is ignored rather than deadlocking the
- * gate forever.
- *
- * @param {number} chatLength
- * @param {number} watermark - highest already-memorized chat index (-1 = none)
- * @param {number} cadenceN
- * @param {number} [cadenceFloor=-1] - highest chat index already examined by a
- *        completed detection call (-1 = none); see sentinelCadence.js, which
- *        owns its persistence in chat metadata.
- * @returns {boolean}
- */
-export function isCadenceReached(chatLength, watermark, cadenceN, cadenceFloor = -1) {
-    const lastIndex = Number(chatLength) - 1;
-    if (!Number.isFinite(lastIndex) || lastIndex < 0) return false;
-    const floor = Number(cadenceFloor);
-    const usableFloor = (Number.isFinite(floor) && floor <= lastIndex) ? floor : -1;
-    const since = Math.max(Number(watermark), usableFloor);
-    return (lastIndex - since) >= Number(cadenceN);
 }
 
 /**
@@ -371,33 +239,9 @@ export function planSceneRanges(watermark, boundaries) {
 }
 
 /**
- * How clean the parse actually was, for one detection round (P4.6). Mirrors the
- * per-window `confidence` field the eval detector produces
- * (eval/detect.js, PHA-1511) so the offline harness and the live sentinel label
- * the same thing the same way:
- *
- *   'high'   — the first attempt parsed cleanly (no reprimand needed)
- *   'low'    — the first attempt failed; the JSON-only retry parsed
- *   'failed' — no attempt parsed (or the detection call threw)
- *
- * Anything other than 'high' is low-confidence and belongs in the review queue.
- * The classification lives here (pure) but the *routing* decision is the job
- * boundary's — see `cycleNeedsReview` in sentinelCadence.js.
- *
- * @param {{ids: Array<number>|null, attempts: Array<string>}} round
- * @returns {'high'|'low'|'failed'}
- */
-export function classifyDetectionConfidence(round = {}) {
-    if (round.ids == null) return 'failed';
-    const attempts = Array.isArray(round.attempts) ? round.attempts.length : 0;
-    return attempts <= 1 ? 'high' : 'low';
-}
-
-/**
  * One detection round for a window: single call, then a single "JSON only"
- * retry on parse failure. Returns { ids, attempts, confidence } with
- * ids === null when the window is unparseable after the retry (skip — never
- * guess, §3.3).
+ * retry on parse failure. Returns { ids, attempts } with ids === null when the
+ * window is unparseable after the retry (skip — never guess, §3.3).
  * `detect(prompt) => Promise<string>` is the injected single-shot LLM call; it
  * may throw (API error) — the caller treats that as a skipped cycle.
  * @param {{detect:(prompt:string)=>Promise<string>, systemPrompt:string, windowText:string}} p
@@ -417,24 +261,15 @@ export async function detectBoundaries({ detect, systemPrompt, windowText }) {
         attempts.push(reply);
         ids = parseIdArray(reply);
     }
-    return { ids, attempts, confidence: classifyDetectionConfidence({ ids, attempts }) };
+    return { ids, attempts };
 }
 
 /**
- * Run one full Sentinel detection cycle against injected dependencies. Pure of
- * any SillyTavern import — the binding layer supplies real functions; tests
- * supply stubs. Returns (and logs) a structured record describing the cycle for
- * the debug ring buffer. Never throws for expected conditions; only truly
- * unexpected programmer errors propagate. That contract is load-bearing for the
- * offline harness, so P4.6's low-confidence signal is a `confidence` FIELD on
- * the record ('high'|'low'|'failed', absent when no detection call was made) —
- * the throw that routes a job to `needs_review` happens one layer up, at the
- * job boundary in sentinelCadence.js (`cycleNeedsReview`).
- *
- * NAME (P2.1↔P2.3 integration): this is the *engine*. It is deliberately NOT
- * called `runSentinelCycle` — that name belongs to the job executor in
- * sentinelCadence.js, whose signature is `(job, context)`. The executor calls
- * into this function via the runner registered by `registerSentinelCadence`.
+ * Run one full Sentinel cycle against injected dependencies. Pure of any
+ * SillyTavern import — the binding layer supplies real functions; tests supply
+ * stubs. Returns (and logs) a structured record describing the cycle for the
+ * debug ring buffer. Never throws for expected conditions; only truly
+ * unexpected programmer errors propagate.
  *
  * @param {{
  *   config?: object,
@@ -443,15 +278,13 @@ export async function detectBoundaries({ detect, systemPrompt, windowText }) {
  *   isJobInFlight: () => boolean,
  *   detect: (prompt:string) => Promise<string>,
  *   runSceneMemoryRange: (start:number, end:number) => Promise<any>,
- *   isCancelled?: () => boolean,
  *   log?: (record:object) => void,
  * }} deps
  * @returns {Promise<object>} the cycle record ({ action, ... }).
  */
-export async function runSentinelDetectionCycle(deps) {
+export async function runSentinelCycle(deps) {
     const { getChat, getWatermark, isJobInFlight, detect, runSceneMemoryRange } = deps;
     const log = typeof deps.log === 'function' ? deps.log : () => {};
-    const isCancelled = typeof deps.isCancelled === 'function' ? deps.isCancelled : () => false;
     const cfg = { ...SENTINEL_DEFAULTS, ...(deps.config || {}) };
 
     const record = (action, extra = {}) => {
@@ -460,11 +293,6 @@ export async function runSentinelDetectionCycle(deps) {
         return r;
     };
 
-    // Abort seam (P2.3 /stmb-stop + /stmbc-stop): the job executor owns an
-    // AbortController; we consult it before every expensive or side-effecting
-    // step so a cancel actually interrupts a *real* cycle, not just a stub.
-    if (isCancelled()) return record('abort:cancelled', { at: 'start' });
-
     const chat = getChat();
     if (!Array.isArray(chat) || chat.length === 0) return record('skip:empty-chat');
     if (isJobInFlight()) return record('skip:job-in-flight');
@@ -472,9 +300,7 @@ export async function runSentinelDetectionCycle(deps) {
     const watermark = getWatermark();
     const lastIndex = chat.length - 1;
     const newMsgs = lastIndex - watermark;
-    if (!isCadenceReached(chat.length, watermark, cfg.cadenceN)) {
-        return record('skip:cadence', { watermark, newMsgs, need: cfg.cadenceN });
-    }
+    if (newMsgs < cfg.cadenceN) return record('skip:cadence', { watermark, newMsgs, need: cfg.cadenceN });
 
     const win = buildDetectionWindow(chat, { watermark, window: cfg.window, overlap: cfg.overlap });
     if (win.messages.length === 0) return record('skip:empty-window', { watermark });
@@ -486,13 +312,6 @@ export async function runSentinelDetectionCycle(deps) {
     const structureIds = structureHintBoundaries(win.messages, regex);
 
     // Detection call (strict JSON, one retry, then skip). API errors => skip.
-    if (isCancelled()) {
-        return record('abort:cancelled', {
-            at: 'before-detect',
-            watermark,
-            window: { start: win.start, end: win.end },
-        });
-    }
     let det;
     try {
         det = await detectBoundaries({
@@ -507,7 +326,6 @@ export async function runSentinelDetectionCycle(deps) {
             watermark,
             window: { start: win.start, end: win.end },
             error: String(err?.message || err),
-            confidence: 'failed',
         });
     }
 
@@ -517,7 +335,6 @@ export async function runSentinelDetectionCycle(deps) {
             watermark,
             window: { start: win.start, end: win.end },
             rawAttempts: det.attempts,
-            confidence: det.confidence,
         });
     }
 
@@ -539,12 +356,6 @@ export async function runSentinelDetectionCycle(deps) {
         structureIds,
         boundaries,
         ranges,
-        // P4.6: how clean the parse was. Note the structure-hint fallback case —
-        // `det.ids === null` with deterministic `structureIds` still reaches here
-        // and is honestly labelled 'failed': the model's answer was unusable even
-        // though the regex saved the cycle. That is exactly a case a human should
-        // look at, so it routes to review like any other low-confidence cycle.
-        confidence: det.confidence,
     };
 
     if (ranges.length === 0) return record('no-boundary', base);
@@ -553,14 +364,9 @@ export async function runSentinelDetectionCycle(deps) {
     // advances the watermark, so the ranges (computed up-front from the initial
     // watermark + absolute boundary indices) stay correct across the loop. Abort
     // the remainder on failure — a missed early scene would misalign the rest.
-    // A cancel between scenes stops cleanly at a scene boundary: everything
-    // already memorized stays memorized (and has advanced the watermark), so a
-    // later cycle resumes from there rather than redoing work.
     const processed = [];
     let error = null;
-    let cancelled = false;
     for (const [start, end] of ranges) {
-        if (isCancelled()) { cancelled = true; break; }
         try {
             await runSceneMemoryRange(start, end);
             processed.push([start, end]);
@@ -570,9 +376,6 @@ export async function runSentinelDetectionCycle(deps) {
         }
     }
 
-    if (cancelled) {
-        return record('abort:cancelled', { ...base, at: 'during-memorize', processed, error });
-    }
     return record('processed', { ...base, processed, error });
 }
 

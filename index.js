@@ -55,18 +55,8 @@ import {
   clearAutoSummaryState,
   retryAutoSummaryAfterJobIdle,
 } from "./autosummary.js";
-// STMBC-HOOK(sentinel): autonomous scene-boundary detection (fork; plan §4.1).
-// `handleSentinelMessageReceived` is the cadence gate (enqueues a cycle job);
-// `runSentinelDetectionForJob` is the engine runner the P2.3 job executor calls.
-import {
-  handleSentinelMessageReceived,
-  runSentinelDetectionForJob,
-} from "./sentinel.js";
-// STMBC-HOOK(clipper): paired keyword-activated context entry on clip save
-// (fork; plan §4.2). The module registers itself as `globalThis.STMBC.onClipSave`
-// at import time, filling the hook that upstream clipManager.js:saveNewClip
-// (Phase 1 call site) already awaits — no upstream file modification needed.
-import "./clipperPlus.js";
+// STMBC-HOOK(sentinel): autonomous scene-boundary detection cycle (fork; plan §4.1).
+import { handleSentinelMessageReceived } from "./sentinel.js";
 import {
   editProfile,
   newProfile,
@@ -94,23 +84,7 @@ import {
   automaticMemoriesSettingsTemplate,
   generalSettingsTemplate,
   settingsTemplate,
-  autoModuleSettingsTemplate,
 } from "./templates.js";
-import {
-  AUTO_MODULE_DEFAULTS,
-  CHAT_AUTO_DEFAULTS,
-  validateAutoPatch,
-  validateChatAutoPatch,
-  getAutoSettings,
-  setAutoSettings,
-  initializeAutoSettings,
-  getChatAutoSettings,
-  setChatAutoSettings,
-  initializeChatAutoSettings,
-  resolveSentinelEnabled,
-  resolveDetectionPrompt,
-  resolveAutoSummaryEnabled,
-} from "./autoSettings.js";
 import {
   showConfirmationPopup,
   fetchPreviousSummaries,
@@ -217,7 +191,6 @@ import {
   areStmbJobsEnabled,
   awaitStmbJobApproval,
   cancelAllStmbJobs,
-  cancelStmbcJobs,
   enqueueStmbJob,
   getCurrentStmbChatRef,
   getStmbChatKey,
@@ -228,20 +201,6 @@ import {
   updateHighestMemoryProcessedForChatRef,
   withStmbWriteLane,
 } from "./stmbJobs.js";
-import {
-  registerAuditorJobs,
-  maybeOfferAuditorJob,
-} from "./auditorTechnicalPass.js";
-import {
-  enqueueSentinelCycle,
-  registerSentinelCadence,
-} from "./sentinelCadence.js";
-import {
-  showCoverageReportPopup,
-  showRegenerationDiffPopup,
-  showTechnicalPassPopup,
-  showClaimReverificationPopup,
-} from "./auditorReportUIs.js";
 import {
   buildSidePromptMacroSuggestion,
   collectTemplateRuntimeMacros,
@@ -1067,9 +1026,8 @@ async function handleMessageReceived() {
     setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     setTimeout(refreshMemoryBoundaryUi, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     await handleAutoSummaryMessageReceived();
-    // STMBC-HOOK(sentinel): cadence gate on the same proven cadence event.
-    // Enqueues at most one sentinel cycle job; no-ops unless the sentinel is
-    // enabled for this chat (plan §3.3). Detection itself runs in the job.
+    // STMBC-HOOK(sentinel): run one detection cycle on the same proven cadence
+    // event. No-ops unless the sentinel is enabled for this chat (plan §3.3).
     await handleSentinelMessageReceived();
     await evaluateTrackers();
   } catch (error) {
@@ -1611,18 +1569,10 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
 /**
  * Slash: /stmb-stop
  * Panic button: stop all in-flight STMB generation everywhere.
- *
- * Covers the upstream STMB work (`stmbStopAllInFlight`) AND every dashboard
- * job — `cancelAllStmbJobs` halts all `stmbc-*` (sentinel cycle + audit) jobs
- * alongside the upstream `memory`/`consolidation`/`sidePrompt` jobs. The
- * fork's narrower /stmbc-stop calls `cancelStmbcJobs` instead so users can
- * halt fork-only work without disturbing upstream generation.
  */
 async function handleStmbStopCommand(namedArgs, unnamedArgs) {
   const before = getStmbInFlightCount();
   const { stoppedCount } = stmbStopAllInFlight();
-  // cancelAllStmbJobs halts every job in the STMB jobs dashboard, including
-  // the fork's `stmbc-sentinel-cycle` and the four `stmbc-audit-*` jobs.
   const canceledJobs = cancelAllStmbJobs();
 
   // Force-reset local "busy" flags so STMB returns to idle immediately.
@@ -1655,180 +1605,6 @@ async function handleStmbStopCommand(namedArgs, unnamedArgs) {
   toastr.info(msg, "STMemoryBooks");
   console.log(`STMemoryBooks: ${msg}`);
   return "";
-}
-
-/**
- * Slash: /audit [coverage|regenerate|technical|claims]
- * P5.5 — on-demand surface for the four audit jobs (plan §4.3).
- * Enqueues the named audit job via the STMB jobs dashboard.
- */
-async function handleAuditCommand(namedArgs, unnamedArgs) {
-  const raw = String(unnamedArgs || "").trim().toLowerCase();
-  let jobType = 'stmbc-audit-coverage';
-  switch (raw) {
-    case '':
-    case 'coverage':
-      jobType = 'stmbc-audit-coverage';
-      break;
-    case 'regenerate':
-    case 'regen':
-      jobType = 'stmbc-audit-regenerate';
-      break;
-    case 'technical':
-    case 'tech':
-      jobType = 'stmbc-audit-technical';
-      break;
-    case 'claims':
-    case 'claim':
-      jobType = 'stmbc-audit-claims';
-      break;
-    default:
-      toastr.error(
-        translate(
-          'Unknown audit job type: "{{type}}". Use coverage, regenerate, technical, or claims.',
-          'STMemoryBooks_Audit_UnknownType',
-        ).replace('{{type}}', raw),
-        translate('STMemoryBooks', 'index.toast.title'),
-      );
-      return '';
-  }
-
-  try {
-    const { enqueueAuditorJobByType } = await import('./auditorCadence.js');
-    const ns = (typeof globalThis !== 'undefined') ? globalThis.STMB : null;
-    const enqueue = (ns && typeof ns.enqueueStmbJob === 'function')
-      ? ns.enqueueStmbJob.bind(ns)
-      : null;
-    const result = enqueueAuditorJobByType({ jobType, enqueueStmbJob: enqueue });
-    if (!result.ok) {
-      toastr.error(
-        translate(
-          'Failed to enqueue audit job: {{reason}}',
-          'STMemoryBooks_Audit_EnqueueFailed',
-        ).replace('{{reason}}', String(result.reason || 'unknown')),
-        translate('STMemoryBooks', 'index.toast.title'),
-      );
-      return '';
-    }
-    const titleMap = {
-      'stmbc-audit-coverage': 'Coverage Audit',
-      'stmbc-audit-regenerate': 'Entry Regeneration',
-      'stmbc-audit-technical': 'Technical Pass',
-      'stmbc-audit-claims': 'Claim Re-verification',
-    };
-    toastr.info(
-      translate(
-        'Audit job "Audit" queued.',
-        'STMemoryBooks_Audit_Queued',
-      ).replace('Audit', String(titleMap[result.jobType] || result.jobType)),
-      translate('STMemoryBooks', 'index.toast.title'),
-    );
-    return '';
-  } catch (err) {
-    console.error('STMemoryBooks: /audit failed:', err);
-    toastr.error(
-      translate(
-        'Failed to run audit command.',
-        'STMemoryBooks_Audit_Failed',
-      ),
-      translate('STMemoryBooks', 'index.toast.title'),
-    );
-    return '';
-  }
-}
-
-/**
- * Slash: /stmbc-detect
- * P2.3 — force a sentinel cycle on the current chat (plan §4.1).
- *
- * Funnels through `enqueueSentinelCycle` so the dashboard + ring buffer
- * (/stmbc-sentinel-cycle job type) see the same shape as the cadence gate
- * (P2.1) — the only difference is the trigger label ('manual' vs 'auto').
- * The cycle runs even when the global default would queue it, because the
- * user explicitly asked for it.
- */
-async function handleStmbcDetectCommand(namedArgs, unnamedArgs) {
-  try {
-    // Force a manual cycle, regardless of the global on/off. Users run
-    // /stmbc-detect precisely when they want a cycle now; the per-chat
-    // opt-out still applies (resolver keeps the gate honest).
-    // NOTE: autoSettings.js resolvers take the fork's *slice* of the settings
-    // (`extension_settings.STMemoryBooks`), not the whole object — P2.3 passed
-    // the whole object here, which would have made the resolver read an absent
-    // `autoModule` and always report "disabled". Latent today (force: true
-    // bypasses the resolver), fixed on P2.1 integration.
-    const result = enqueueSentinelCycle({
-      enqueueStmbJob,
-      settings: extension_settings[MODULE_NAME],
-      chatMeta: chat_metadata,
-      trigger: 'manual',
-      force: true,
-    });
-    if (!result.ok) {
-      toastr.error(
-        translate(
-          'Failed to enqueue sentinel cycle: {{reason}}',
-          'STMemoryBooks_SentinelCycle_EnqueueFailed',
-        ).replace('{{reason}}', String(result.reason || 'unknown')),
-        translate('STMemoryBooks', 'index.toast.title'),
-      );
-      return '';
-    }
-    toastr.info(
-      translate(
-        'Sentinel cycle queued (job id {{id}}).',
-        'STMemoryBooks_SentinelCycle_Queued',
-      ).replace('{{id}}', String(result.jobId || '')),
-      translate('STMemoryBooks', 'index.toast.title'),
-    );
-    return '';
-  } catch (err) {
-    console.error('STMemoryBooks: /stmbc-detect failed:', err);
-    toastr.error(
-      translate(
-        'Failed to run /stmbc-detect.',
-        'STMemoryBooks_SentinelCycle_Failed',
-      ),
-      translate('STMemoryBooks', 'index.toast.title'),
-    );
-    return '';
-  }
-}
-
-/**
- * Slash: /stmbc-stop
- * P2.3 — halt every fork cycle job (sentinel cycles + audit jobs).
- *
- * Distinct from /stmb-stop (the upstream panic button, which also halts
- * memory + consolidation + sidePrompt jobs). The fork's slash command lets
- * a user stop fork-only work without disturbing upstream generation.
- * The shared `cancelStmbcJobs` helper matches the `stmbc-` prefix so
- * adding new fork job types is automatic — no command list to maintain.
- */
-async function handleStmbcStopCommand(namedArgs, unnamedArgs) {
-  const result = cancelStmbcJobs();
-  const count = (result && typeof result.count === 'number') ? result.count : 0;
-  const types = (result && Array.isArray(result.types)) ? result.types : [];
-  if (count === 0) {
-    toastr.info(
-      translate(
-        'No fork jobs to stop.',
-        'STMemoryBooks_SentinelCycle_StopNone',
-      ),
-      translate('STMemoryBooks', 'index.toast.title'),
-    );
-    return '';
-  }
-  const detail = types.length > 0 ? ` (${types.join(', ')})` : '';
-  toastr.info(
-    translate(
-      'Stopped {{count}} fork job(s){{detail}}.',
-      'STMemoryBooks_SentinelCycle_Stopped',
-    ).replace('{{count}}', String(count)).replace('{{detail}}', detail),
-    translate('STMemoryBooks', 'index.toast.title'),
-  );
-  console.log(`STMemoryBooks: /stmbc-stop cancelled ${count} fork job(s): ${types.join(', ')}`);
-  return '';
 }
 
 /**
@@ -2250,12 +2026,6 @@ function initializeSettings() {
     );
     saveSettingsDebounced();
   }
-
-  // STMBC-HOOK-PHASE2: backfill the Auto-module settings container so the
-  // sentinel subsystem has a stable shape on first read. Migration-safe:
-  // initializeAutoSettings only writes missing fields.
-  initializeAutoSettings(extension_settings.STMemoryBooks);
-  initializeChatAutoSettings(chat_metadata);
 
   return validationResult;
 }
@@ -5898,11 +5668,6 @@ function populateInlineButtons() {
       action: showAutomaticMemoriesSettingsPopup,
     },
     {
-      text: "🛰️ " + translate("Auto Module (Sentinel)", "STMemoryBooks_AutoModule"),
-      id: "stmb-auto-module-settings",
-      action: showAutoModuleSettingsPopup,
-    },
-    {
       text:
         "🧩 " +
         translate(
@@ -8791,8 +8556,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     defaultGroupSidePromptSetOptions: buildDefaultSidePromptSetOptions(
       settings.moduleSettings.defaultGroupSidePromptSetKey,
     ),
-    autoSummaryEnabled: resolveAutoSummaryEnabled(settings, chat_metadata),
-    autoSummaryForceDisabledBySentinel: resolveSentinelEnabled(settings, chat_metadata),
+    autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
     autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
     autoConsolidationPromptEnabled:
@@ -9024,188 +8788,6 @@ async function showAutomaticMemoriesSettingsPopup() {
       "STMemoryBooks",
     );
   }
-}
-
-/**
- * STMB-Auto (Phase 2 / P2.2): settings popup for the Auto module.
- *
- * Renders both the global settings (extension_settings.STMemoryBooks.autoModule)
- * and the per-chat overrides (chat_metadata.stmbc). Plan §4.5.
- */
-async function showAutoModuleSettingsPopup() {
-  try {
-    const templateData = await buildAutoModuleTemplateData();
-    const content = DOMPurify.sanitize(autoModuleSettingsTemplate(templateData));
-    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
-      wide: true,
-      large: true,
-      allowVerticalScrolling: true,
-      cancelButton: translate("Close", "STMemoryBooks_Close"),
-      okButton: false,
-      onClose: handleSettingsFormPopupClose,
-    });
-    markStmbPopup(popup);
-    setupAutoModuleEventListeners(popup);
-    await popup.show();
-  } catch (error) {
-    console.error("STMemoryBooks: Error showing auto module settings popup:", error);
-    toastr.error(
-      translate(
-        "Failed to open Auto Module settings",
-        "STMemoryBooks_FailedToOpenAutoModuleSettings",
-      ),
-      "STMemoryBooks",
-    );
-  }
-}
-
-/**
- * Build the template data for the Auto module popup. Reads global + per-chat
- * settings, augments with profile list (for the detection profile picker).
- */
-async function buildAutoModuleTemplateData() {
-  const settings = initializeSettings();
-  const auto = getAutoSettings(settings);
-  const chatAutoRaw = getChatAutoSettings(chat_metadata, { globalSentinelEnabled: auto.sentinelEnabled });
-
-  // Detection profile picker: reuses STMB's profileManager. The detection
-  // profile index points into settings.profiles. "null" means "use the default
-  // STMB profile" (settings.defaultProfile).
-  const profileOptions = [
-    { value: 'null', label: translate('Use default STMB profile', 'STMemoryBooks_AutoModule_UseDefaultProfile'), isSelected: auto.detectionProfileIndex == null },
-  ];
-  if (Array.isArray(settings.profiles)) {
-    settings.profiles.forEach((profile, index) => {
-      const name = profile?.name || translate('Untitled profile', 'STMemoryBooks_UntitledProfile');
-      profileOptions.push({
-        value: String(index),
-        label: name,
-        isSelected: auto.detectionProfileIndex === index,
-      });
-    });
-  }
-
-  return {
-    auto: {
-      ...auto,
-      detectionProfileOptions: profileOptions,
-    },
-    chatAuto: {
-      enabled: chatAutoRaw.enabled,
-      // null displayed as empty in the input placeholder
-      watermarkFallbackDisplay: chatAutoRaw.watermarkFallback == null ? '' : String(chatAutoRaw.watermarkFallback),
-      structureHintRegex: chatAutoRaw.structureHintRegex || '',
-      promptOverride: chatAutoRaw.promptOverride || '',
-    },
-  };
-}
-
-/**
- * Event delegation for the Auto module popup. Mirrors the pattern in
- * setupSettingsEventListeners but is scoped to the Auto fields.
- */
-function setupAutoModuleEventListeners(popupInstance) {
-  if (!popupInstance?.dlg) return;
-  const popupElement = popupInstance.dlg;
-  const settings = initializeSettings();
-
-  popupElement.addEventListener('change', async (e) => {
-    const t = e.target;
-
-    // --- Global autoModule fields ---
-    if (t.matches('#stmb-auto-sentinel-enabled')) {
-      setAutoSettings(settings, validateAutoPatch({ sentinelEnabled: t.checked }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-cadence-messages')) {
-      const v = parseInt(t.value, 10);
-      setAutoSettings(settings, validateAutoPatch({ cadenceMessages: v }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-window-size')) {
-      const v = parseInt(t.value, 10);
-      setAutoSettings(settings, validateAutoPatch({ windowSize: v }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-window-overlap')) {
-      const v = parseInt(t.value, 10);
-      setAutoSettings(settings, validateAutoPatch({ windowOverlap: v }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-truncate-chars')) {
-      const v = parseInt(t.value, 10);
-      setAutoSettings(settings, validateAutoPatch({ truncateChars: v }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-guard-size')) {
-      const v = parseInt(t.value, 10);
-      setAutoSettings(settings, validateAutoPatch({ guardSize: v }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-detection-profile')) {
-      // "null" string means default profile
-      const raw = t.value;
-      const idx = (raw === 'null' || raw === '') ? null : parseInt(raw, 10);
-      setAutoSettings(settings, validateAutoPatch({ detectionProfileIndex: idx }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-debug-logging')) {
-      setAutoSettings(settings, validateAutoPatch({ debugLogging: t.checked }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-auditor-offer-enabled')) {
-      setAutoSettings(settings, validateAutoPatch({ auditorOfferEnabled: t.checked }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-auditor-every-n-scenes')) {
-      const v = parseInt(t.value, 10);
-      setAutoSettings(settings, validateAutoPatch({ auditorEveryNScenes: v }));
-      saveSettingsDebounced();
-      return;
-    }
-
-    // --- Per-chat overrides ---
-    if (t.matches('#stmb-auto-chat-enabled')) {
-      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ enabled: t.checked }));
-      saveMetadata();
-      return;
-    }
-    if (t.matches('#stmb-auto-chat-watermark-fallback')) {
-      const v = t.value === '' ? null : parseInt(t.value, 10);
-      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ watermarkFallback: v }));
-      saveMetadata();
-      return;
-    }
-  });
-
-  popupElement.addEventListener('input', async (e) => {
-    const t = e.target;
-
-    if (t.matches('#stmb-auto-detection-prompt')) {
-      setAutoSettings(settings, validateAutoPatch({ detectionPrompt: t.value }));
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-chat-structure-hint')) {
-      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ structureHintRegex: t.value }));
-      saveMetadata();
-      return;
-    }
-    if (t.matches('#stmb-auto-chat-prompt-override')) {
-      setChatAutoSettings(chat_metadata, validateChatAutoPatch({ promptOverride: t.value }));
-      saveMetadata();
-      return;
-    }
-  });
 }
 
 /**
@@ -9570,23 +9152,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
     }
 
     if (e.target.matches("#stmb-auto-summary-enabled")) {
-      // STMBC-HOOK-PHASE2: refuse to enable native auto-summary while sentinel
-      // is on (plan §4.1). The stored value is forced to false; the checkbox
-      // is also disabled in the template. autosummary.js is left intact.
-      const wantOn = e.target.checked;
-      const sentinelOn = resolveSentinelEnabled(settings, chat_metadata);
-      if (wantOn && sentinelOn) {
-        e.target.checked = false;
-        toastr.warning(
-          translate(
-            "Native Auto-Summary is force-disabled while Sentinel is enabled. Disable Sentinel first.",
-            "STMemoryBooks_AutoSummaryBlockedBySentinel",
-          ),
-          "STMemoryBooks",
-        );
-        return;
-      }
-      settings.moduleSettings.autoSummaryEnabled = wantOn;
+      settings.moduleSettings.autoSummaryEnabled = e.target.checked;
       saveSettingsDebounced();
       return;
     }
@@ -10335,57 +9901,6 @@ function registerSlashCommands() {
     ),
   });
 
-  const auditCmd = SlashCommand.fromProps({
-    name: "audit",
-    callback: handleAuditCommand,
-    helpString: translate(
-      "Run an audit job on demand. Usage: /audit [coverage|regenerate|technical|claims] (default: coverage)",
-      "STMemoryBooks_Slash_Audit_Help",
-    ),
-    unnamedArgumentList: [
-      SlashCommandArgument.fromProps({
-        description: translate(
-          "Audit job type: coverage | regenerate | technical | claims (default: coverage)",
-          "STMemoryBooks_Slash_Audit_ArgTypeDesc",
-        ),
-        typeList: [ARGUMENT_TYPE.STRING],
-        isRequired: false,
-        enumProvider: () => [
-          new SlashCommandEnumValue("coverage"),
-          new SlashCommandEnumValue("regenerate"),
-          new SlashCommandEnumValue("technical"),
-          new SlashCommandEnumValue("claims"),
-        ],
-      }),
-    ],
-  });
-
-  // Phase 2 P2.3: on-demand surface for the sentinel cycle (plan §4.1).
-  // Forces a cycle even when the global default is off, so the user can
-  // run ad-hoc detection from any chat. The cycle appears in the jobs
-  // dashboard as `stmbc-sentinel-cycle` and is logged to
-  // `chat_metadata.stmbc.cycleLog` for debugging.
-  const stmbcDetectCmd = SlashCommand.fromProps({
-    name: "stmbc-detect",
-    callback: handleStmbcDetectCommand,
-    helpString: translate(
-      "Force a sentinel cycle on the current chat (plan §4.1). Usage: /stmbc-detect",
-      "STMemoryBooks_Slash_SentinelDetect_Help",
-    ),
-  });
-
-  // Phase 2 P2.3: halt the fork's cycle jobs (sentinel + audit) without
-  // touching upstream memory/consolidation/sidePrompt jobs. Matches the
-  // `stmbc-` job-type prefix so new fork job types are auto-covered.
-  const stmbcStopCmd = SlashCommand.fromProps({
-    name: "stmbc-stop",
-    callback: handleStmbcStopCommand,
-    helpString: translate(
-      "Stop all fork cycle jobs (sentinel cycles + audit jobs) for the current chat. Usage: /stmbc-stop",
-      "STMemoryBooks_Slash_SentinelStop_Help",
-    ),
-  });
-
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -10398,9 +9913,6 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(highestMemCmd);
   SlashCommandParser.addCommandObject(setHighestMemCmd);
   SlashCommandParser.addCommandObject(stmbStopCmd);
-  SlashCommandParser.addCommandObject(auditCmd);
-  SlashCommandParser.addCommandObject(stmbcDetectCmd);
-  SlashCommandParser.addCommandObject(stmbcStopCmd);
 }
 
 /**
@@ -11501,41 +11013,11 @@ async function init() {
   subscribeToStmbJobs(handleStmbJobStateChanged);
   initStmbJobsIfTopInfoBarEnabled();
 
-  // Phase 5 P5.4: register the four auditor job executors with the STMB jobs
-  // dashboard. Each routes through awaitStmbJobApproval so the report UI
-  // surfaces in the existing jobs panel + review flow. Never auto-runs; the
-  // cadence offer is gated by `maybeOfferAuditorJob` (per plan §4.3).
-  registerAuditorJobs({
-    registerStmbJobExecutor,
-    awaitStmbJobApproval,
-  }, {
-    showCoverageReportPopup,
-    showRegenerationDiffPopup,
-    showTechnicalPassPopup,
-    showClaimReverificationPopup,
-  });
-
-  // Phase 2 P2.3 + P2.1: register the sentinel cycle job type with the STMB
-  // jobs dashboard AND install the P2.1 detection engine behind it. The
-  // executor owns the job contract (abort, ring buffer in
-  // `chat_metadata.stmbc.cycleLog`, metadata save); the injected runner does
-  // the detection. /stmbc-detect and the MESSAGE_RECEIVED cadence gate
-  // (sentinel.js) both funnel through `enqueueSentinelCycle`, so there is
-  // exactly one code path and one job per cycle.
-  registerSentinelCadence(
-    { registerStmbJobExecutor },
-    { runDetectionCycle: runSentinelDetectionForJob },
-  );
-
   // Preload side prompt names cache for autocomplete
   await refreshSidePromptCache();
 
   // Register slash commands
   registerSlashCommands();
-
-  // STMBC-HOOK: extension init — init sentinel/clipper+/auditor after upstream init.
-  // Phase 1 lands the empty call site; Phase 2 (sentinel) wires this up.
-  try { void globalThis.STMBC?.onExtensionInit?.({ extension_settings, MODULE_NAME }); } catch (_e) { /* no-op until Phase 2 */ }
 
   // Process any messages that are already on the screen at initialization time
   // This handles cases where a chat is already loaded when the extension initializes
