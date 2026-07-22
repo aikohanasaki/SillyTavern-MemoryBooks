@@ -51,6 +51,8 @@ eval/                          Phase 0 eval harness (offline; no SillyTavern nee
   fixtures/                    bundled Satire Fantasy Isekai JSONL + worldbook + plan
   materials/stmb-auto/         plan doc at the path referenced by PHA-1416
 autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (global + per-chat), defaults, validation, get/set, resolver helpers
+sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
+eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
 FORK_NOTES.md                  this file
 ```
 
@@ -67,6 +69,9 @@ on SillyTavern at all; it runs offline against JSONL exports.
 | `stmemory.js:1461` | +5 (the hook line + variable) | Phase 4 prompt assembly | Yes — appends at the start of `buildPrompt`, no behavioral change when `STMBC` is undefined. |
 | `clipManager.js:718` | +6 (the hook line + variable) | Phase 3 clip save path | Yes — appends at the top of `saveNewClip`, before any validation. |
 | `sidePrompts.js:1655` | +6 (the hook line + early-return guard) | Phase 4 side-prompt filtering | Yes — appends at the top of `runSidePrompt`. |
+| `sidePrompts.js:1404` | +12 (filter call between set/trigger filter and the runItems.length===0 early return) | Phase 4 (P4.2) per-scene side-prompt filtering | Yes — additive; reuses `compiledScene.metadata.characterFilterNames` from chatcompile.js; non-character-scoped items pass through unfiltered; gated by `filterRunItemsByScenePresence` from the new module. |
+| `utils.js` (P4.2) | +new entry in `getBuiltInPresetPrompts`, `getPresetNames`, `isValidPreset` | Phase 4 (P4.2) event-template preset | Yes — additive key (`event`) into existing maps/lists. No existing function bodies modified. |
+| `constants.js` (P4.2) | +2 entries (`event` in `DISPLAY_NAME_DEFAULTS`, `DISPLAY_NAME_I18N_KEYS`) | Phase 4 (P4.2) event-template preset display | Yes — additive map entries. |
 | `index.js` (P2.2) | +~197 (imports, menu button, popup, event delegation, init backfill) | Phase 2 P2.2 — Auto-module settings panel + detection profile picker | Yes — additive; reuses existing patterns (`automaticMemoriesSettingsTemplate`, `setupSettingsEventListeners`, `initializeSettings`, `validateSettings`, `saveSettingsDebounced`); no upstream function bodies changed. New menu item is appended to `promptManagerButtons`. |
 | `templates.js` (P2.2) | +~133 (one new Handlebars template: `autoModuleSettingsTemplate`) | Phase 2 P2.2 — auto-module settings UI | Yes — additive; new export at the bottom of the file. |
 | `.gitignore` | +2 (`eval/reports/`, `eval/predictions*.json`) | Don't commit generated reports. | Yes — gitignore merges trivially. |
@@ -104,6 +109,7 @@ artifacts are committed; never hand-edit them.
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 2 — Sentinel | P2.2 auto settings panel + detection profile picker | PHA-1436 | done |
+| Phase 4 — Living-lorebook orchestration | P4.2 per-scene side-prompt filtering + event-template preset | PHA-1450 | done |
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 1 — Fork setup | P1.4 merge drill | (open) | todo |

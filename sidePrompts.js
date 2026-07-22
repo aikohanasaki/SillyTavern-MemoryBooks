@@ -32,6 +32,7 @@ import {
     withStmbWriteLane,
 } from './stmbJobs.js';
 import { filterAutomaticSidePromptSetItems, resolveAutomaticSidePromptSet } from './sidePromptSetDefaults.js';
+import { filterRunItemsByScenePresence, formatSkippedScenePresenceLog } from './sceneCharacterFilter.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -1387,7 +1388,7 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     'STMemoryBooks',
                 );
             }
-            runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemory');
+runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemory');
         } else {
             const enabledAfter = await listByTrigger('onAfterMemory');
             runItems = (enabledAfter || []).map(tpl => ({
@@ -1398,6 +1399,21 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                 set: null,
                 item: null,
             }));
+        }
+
+        // STMBC-HOOK: per-scene side-prompt filtering — restrict character-scoped
+        // run items ({{char}} runtime macro binding) to characters present in the
+        // just-processed scene (plan §4.4). Uses compiledScene.metadata.characterFilterNames
+        // when available (from chatcompile.js's group-participant resolver), else a
+        // cheap name-scan over scene messages. Non-character-scoped items (chat-wide
+        // side prompts like Plotpoints) always pass through unfiltered.
+        {
+            const { runnable, skipped } = filterRunItemsByScenePresence(runItems, compiledScene);
+            if (skipped.length > 0) {
+                const logLine = formatSkippedScenePresenceLog(skipped);
+                if (logLine) console.log(`${MODULE_NAME}: ${logLine}`);
+            }
+            runItems = runnable;
         }
 
         if (!runItems || runItems.length === 0) return;

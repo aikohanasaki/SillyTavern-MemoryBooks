@@ -1012,6 +1012,60 @@ Your goal: **keywords should fire when the noun/action is mentioned alone**, not
 
 Return ONLY the JSON — no additional text.`,
             'STMemoryBooks_Prompt_comprehensive'
+        ),
+        event: translate(
+`Analyze the following roleplay scene and produce a structured event memory as JSON.
+
+You must respond with ONLY valid JSON in this exact format:
+{
+  "title": "Short scene title (1-3 words)",
+  "content": "Structured event memory...",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+This is an **event-style** memory (plan Appendix B). It captures what HAPPENED in the scene, not a relationship or character profile. Prefer this format for scene memories where the question is "what changed in the world?" rather than "who is this person?" or "what is this place like?".
+
+For the content field, use this markdown structure:
+
+# [Event Title]
+**Timeline**: (day/time, if known)
+
+## Name
+- One short clause naming the event (who/what/where/when, ~5-15 words).
+
+## Summary
+- 2-4 sentences covering the arc of the event: setup → turning point → outcome.
+- Stay close to the scene's own framing; do not invent causes or effects the text doesn't support.
+
+## Key Events
+- Bullet list of the discrete beats in chronological order.
+- Each bullet is one concrete thing that happened (action, decision, revelation, conflict, change).
+- Use cause → intention → reaction → consequence logic where the scene supports it.
+
+## Significance
+- Why this event matters going forward: changed relationships, new knowledge, new commitments, broken promises, new threats/opportunities, lasting emotional shifts.
+- Only include significance the scene text actually supports. "Unspecified" beats invented impact.
+
+## Key Quotes
+- 2-4 short verbatim quotes that capture the event's turning points or voice.
+- Quote the characters' actual lines; do not paraphrase, do not invent.
+- If the scene has no quotable lines, return an empty array.
+
+## Exclusions
+- Ignore and exclude all [OOC] or meta discussion.
+- Do not include relationship character profiles or location descriptions — that's what the Character and Location presets are for.
+- Do not assign private thoughts or emotions to characters unless the scene text supports them.
+- Do not include unsupported assumptions.
+
+For the keywords field, generate 15-30 specific, descriptive, highly relevant keywords for retrieval. Keywords must be:
+- Concrete and scene-specific (locations, objects, proper nouns, unique actions, named events).
+- One concept per keyword.
+- Useful for retrieval if the user mentions that noun or action alone.
+- Not the names of major characters ({{char}} / {{user}}). NPC names are OK if they played a major role.
+- Not thematic, emotional, or abstract.
+
+Return ONLY the JSON, no additional text.`,
+            'STMemoryBooks_Prompt_event'
         )
     };
 }
@@ -1196,7 +1250,7 @@ export function deepClone(obj) {
  * @returns {string[]} Array of preset names
  */
 export function getPresetNames() {
-    return ['summary', 'summarize', 'synopsis', 'sumup', 'minimal', 'northgate', 'aelemar', 'comprehensive'];
+    return ['summary', 'summarize', 'synopsis', 'sumup', 'minimal', 'northgate', 'aelemar', 'comprehensive', 'event'];
 }
 
 /**
@@ -1205,7 +1259,7 @@ export function getPresetNames() {
  * @returns {boolean} Whether the preset exists
  */
 export function isValidPreset(presetName) {
-    const builtIns = new Set(['summary', 'summarize', 'synopsis', 'sumup', 'minimal', 'northgate', 'aelemar', 'comprehensive']);
+    const builtIns = new Set(['summary', 'summarize', 'synopsis', 'sumup', 'minimal', 'northgate', 'aelemar', 'comprehensive', 'event']);
     return builtIns.has(presetName);
 }
 
