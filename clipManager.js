@@ -17,8 +17,6 @@ import { oai_settings } from '../../../openai.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
 import { getEntryByTitle, isMemoryEntry } from './addlore.js';
-// STMBC-HOOK(clipper): paired keyword-activated context entry on clip save (fork; plan §4.2).
-import { maybeGeneratePairedContextEntry } from './clipperPlus.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
@@ -33,6 +31,8 @@ import {
     withGoBackButton,
 } from './utils.js';
 import { withStmbWriteLane } from './stmbJobs.js';
+// STMBC-HOOK(clipper): paired keyword-activated context entry on clip save (fork; plan §4.2).
+import { maybeGeneratePairedContextEntry } from './clipperPlus.js';
 
 const MODULE_NAME = 'STMemoryBooks-ClipManager';
 const CREATE_NEW_VALUE = '__stmb_create_new_clip_entry__';
@@ -716,7 +716,6 @@ async function saveExistingClip(lorebookName, lorebookData, title, bulletText, e
 async function saveNewClip(lorebookName, lorebookData, dlg) {
     const headline = validateClipHeadline(dlg.querySelector('#stmb-clip-headline')?.value || '');
     const title = makeClipEntryTitle(headline);
-
     if (getClipEntryByFinalTitle(lorebookData, title)) {
         throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with this title already exists.'));
     }
@@ -751,15 +750,10 @@ async function saveNewClip(lorebookName, lorebookData, dlg) {
 
     await saveLorebook(lorebookName, lorebookData);
 
-    // STMBC-HOOK(clipper): clip save path — after the upstream [STMB Clip] entry
-    // is written and persisted, the fork's Clipper+ generates a PAIRED context
-    // entry (≤50-word blurb + 3-6 keywords, keyword-activated, recursion-proof)
-    // alongside it (plan §4.2). The upstream entry above is never touched, and
-    // this call self-gates on autoModule.clipper.enabled (default off) and
-    // swallows every error, so stock clip save is unaffected either way.
-    await maybeGeneratePairedContextEntry({
-        lorebookName, lorebookData, quote: bulletText, headline, quoteTitle: title,
-    });
+    // STMBC-HOOK(clipper): after the upstream [STMB Clip] entry is written, generate +
+    // write the paired context entry (fork; plan §4.2). No-op unless Clipper+ is enabled;
+    // self-contained (never throws), so the clip above is unaffected either way.
+    await maybeGeneratePairedContextEntry({ lorebookName, lorebookData, quote: bulletText, headline, quoteTitle: title });
 
     return true;
 }

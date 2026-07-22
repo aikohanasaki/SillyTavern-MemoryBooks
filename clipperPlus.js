@@ -1,63 +1,19 @@
 // Copyright (C) 2024–2026 Aiko Hanasaki
 // SPDX-License-Identifier: AGPL-3.0-only
 //
-// STMB-Auto fork — Clipper+ SillyTavern binding layer (Phase 3, task P3.2).
-// Plan: eval/materials/stmb-auto/stmb-auto-plan.md §4.2 (Clipper+).
+// STMB-Auto fork — Clipper+ SillyTavern binding layer (Phase 3, task P3.1).
+// Plan: eval/materials/stmb-auto/stmb-auto-plan.md §4.2.
 //
 // Wires real SillyTavern chat/settings/profile/LLM/world-info functions into the
-// pure core (clipperPlusCore.js). Registers itself as the
-// `globalThis.STMBC.onClipSave` callback that the upstream clipManager.js hook
-// (placed in Phase 1 at `clipManager.js:saveNewClip`) awaits. No upstream file
-// is modified — the hook is a no-op until this module registers, so a fork
-// build without clipperPlus.js behaves byte-identically to upstream.
+// pure core (clipperPlusCore.js). Invoked by exactly ONE `STMBC-HOOK(clipper)`
+// line in clipManager.js `saveNewClip()`, AFTER the upstream `[STMB Clip]` entry
+// has been written. The upstream clip entry is never touched.
 //
-// `maybeGeneratePairedContextEntry` is self-contained: it self-gates on the
-// `autoModule.clipper.enabled` setting and swallows every error, so it can
-// never break — or even delay-with-a-throw — the clip save. When Clipper+ is
-// disabled the whole thing is a single early-return, keeping stock clip
-// behaviour byte-identical (Phase 3 acceptance: "feature toggled off =
-// byte-identical upstream behaviour").
-//
-// ---------------------------------------------------------------------------
-// Phase 3 acceptance mapping (plan §4.2 + Appendix B)
-// ---------------------------------------------------------------------------
-//
-//   "Paired context entry"             → `buildPairedEntry` builds an entry
-//                                        with `key=[built.keywords]`,
-//                                        `preventRecursion:true`,
-//                                        `excludeRecursion:true`,
-//                                        `constant:false`. (see upsert call)
-//
-//   "Keyword-activated"                → `entry.key = built.keywords`.
-//   "preventRecursion + excludeRecursion"
-//                                      → set on the entry overrides (recursion
-//                                        must be off because the blurb names
-//                                        multiple characters; without this one
-//                                        clip cascades half the cast).
-//
-//   "Content = blurb + provenance `src: msgs X–Y`"
-//                                      → `buildContextEntryContent` writes the
-//                                        blurb, then `Context for clip: <title>`,
-//                                        then `src: msgs X–Y`.
-//
-//   "Title cross-references the quote entry, never constant"
-//                                      → `buildContextEntryTitle` returns
-//                                        `<headline> [STMB Clip Context]`;
-//                                        shares the quote headline (cross-ref)
-//                                        and uses a DISTINCT suffix so it is
-//                                        never mistaken for a clip entry by
-//                                        `isClipEntryTitle` / compaction /
-//                                        clip lists; the quote entry stays
-//                                        the compaction target.
-//
-//   "Fires only on its keywords"       → keyword-activated + constant:false.
-//   "Cascades nothing"                 → preventRecursion + excludeRecursion.
-//   "Compaction still lists the quote entry"
-//                                      → distinct title suffix keeps the
-//                                        context entry out of compaction /
-//                                        clip lists (which match `[STMB Clip]`,
-//                                        not `[STMB Clip Context]`).
-// ---------------------------------------------------------------------------
+// maybeGeneratePairedContextEntry() is self-contained: it self-gates on the
+// `autoModule.clipper.enabled` setting and swallows every error, so it can never
+// break — or even delay-with-a-throw — the clip save. When Clipper+ is disabled
+// the whole thing is a single early-return, keeping stock clip behavior
+// byte-identical (Phase 3 acceptance).
 
 import { extension_settings } from '../../../extensions.js';
 import { chat, chat_metadata } from '../../../../script.js';
@@ -81,36 +37,10 @@ import {
 
 const LOG = 'STMemoryBooks: Clipper+';
 
-// ---------------------------------------------------------------- registration
-
 /**
- * Register the Clipper+ binding layer on `globalThis.STMBC`. The Phase 1
- * upstream hook in `clipManager.js:saveNewClip` already awaits
- * `globalThis.STMBC?.onClipSave?.({ lorebookName, lorebookData, dlg, headline,
- * title })` — this module fills that slot.
- *
- * Idempotent: re-registration overwrites (so live-reload during development
- * behaves correctly). Safe in the no-op fork case (the hook tolerates a
- * missing `STMBC.onClipSave`).
- */
-function registerClipperPlusHook() {
-    if (typeof globalThis === 'undefined') return;
-    globalThis.STMBC = globalThis.STMBC || {};
-    globalThis.STMBC.onClipSave = onClipSave;
-    // Also expose onExtensionInit for future init-time work (e.g. settings
-    // UI for the clipper namespace) — currently a no-op.
-    if (typeof globalThis.STMBC.onExtensionInit !== 'function') {
-        globalThis.STMBC.onExtensionInit = () => {};
-    }
-}
-registerClipperPlusHook();
-
-// ---------------------------------------------------------------- generation
-
-/**
- * Resolve the generation connection from the configured Clipper+ profile, or
- * the STMB default profile. Unlike the sentinel (a cheap detection profile),
- * blurb writing is generative, so the default is the user's main STMB profile.
+ * Resolve the generation connection from the configured Clipper+ profile, or the
+ * STMB default profile. Unlike the sentinel (a cheap detection profile), blurb
+ * writing is generative, so the default is the user's main STMB profile.
  */
 function resolveGenerationConnection(cfg) {
     const settings = extension_settings.STMemoryBooks || {};
@@ -152,8 +82,6 @@ async function generatePaired(conn, basePrompt) {
     }
     return parsed;
 }
-
-// ---------------------------------------------------------------- confirm dialog
 
 /**
  * Small editable confirm dialog for the generated context entry. Returns the
@@ -204,30 +132,16 @@ async function showConfirmDialog({ blurb, keywords, headline, quoteTitle }) {
     };
 }
 
-// ---------------------------------------------------------------- clip-save entry
-
 /**
- * Phase 3 (P3.2) hook entry point. Wired into the upstream clipManager.js
- * `saveNewClip` via the `globalThis.STMBC.onClipSave` callback placed in
- * Phase 1 — there is no upstream file modification in this fork.
+ * Clip-save hook entry point (called from clipManager.js `saveNewClip`). Given
+ * the just-saved quote's identifiers, generate and write the paired context
+ * entry. Self-gating and error-swallowing: any skip/failure returns quietly and
+ * never affects the clip that was already saved.
  *
- * The Phase 1 hook already passed `{ lorebookName, lorebookData, dlg, headline,
- * title }`; `dlg` carries the quote text in `#stmb-clip-text`, and `title` is
- * the upstream `[STMB Clip]`-suffixed title the clip entry will use. We derive
- * the parameters for `maybeGeneratePairedContextEntry` here and re-use the
- * same pure-logic builder + LLM + dialog flow as the original P3.1 binding.
- *
- * Self-gating and error-swallowing: any skip/failure returns quietly and
- * never affects the clip that is about to be saved.
- *
- * @param {{lorebookName:string, lorebookData:object, dlg:any, headline:string, title:string}} p
+ * @param {{lorebookName:string, lorebookData:object, quote:string, headline:string, quoteTitle:string}} p
  */
-export async function onClipSave({ lorebookName, lorebookData, dlg, headline, title: quoteTitle }) {
+export async function maybeGeneratePairedContextEntry({ lorebookName, lorebookData, quote, headline, quoteTitle }) {
     try {
-        const quote = (dlg && typeof dlg.querySelector === 'function')
-            ? (dlg.querySelector('#stmb-clip-text')?.value || '')
-            : '';
-
         const cfg = resolveClipperConfig(
             extension_settings?.STMemoryBooks?.autoModule,
             chat_metadata?.stmbc,
@@ -311,42 +225,11 @@ export async function onClipSave({ lorebookName, lorebookData, dlg, headline, ti
         });
 
         try {
-            const toastr = globalThis.toastr;
-            if (toastr?.success) toastr.success('Paired context entry added.', 'STMemoryBooks');
+            toastr.success('Paired context entry added.', 'STMemoryBooks');
         } catch { /* toastr may be absent in some contexts */ }
         console.debug(`${LOG}: wrote paired context entry "${built.title}" (keys: ${built.keywords.join(', ')})`);
     } catch (err) {
-        // Never break the clip save — the quote is about to be persisted.
-        // Every "never guess" skip path above already `return`s before this
-        // catch, so reaching here always means a genuine mid-job failure
-        // (API call, lorebook write, …) — surface it (plan §6 P6.1: no
-        // silent poisoning).
+        // Never break the clip save — the quote is already persisted.
         console.error(`${LOG}: paired context entry failed`, err);
-        try {
-            const toastr = globalThis.toastr;
-            if (toastr?.warning) {
-                toastr.warning(
-                    `Clipper+: paired context entry failed (${err?.message || err}). The clip itself was still saved.`,
-                    'STMemoryBooks',
-                );
-            }
-        } catch { /* toastr may be absent in some contexts */ }
     }
-}
-
-// Backwards-compatible export: the original P3.1 binding called this
-// `maybeGeneratePairedContextEntry`. The Phase 3 hook now flows through
-// `onClipSave` (the callback), but the helper is still exported for any
-// caller that wants to drive it directly (e.g. tests, future `/stmbc-clip`
-// slash command).
-export async function maybeGeneratePairedContextEntry({ lorebookName, lorebookData, quote, headline, quoteTitle }) {
-    return onClipSave({
-        lorebookName,
-        lorebookData,
-        // Synthesize a minimal dlg so the quote is reachable via querySelector
-        // (matches the upstream `dlg.querySelector('#stmb-clip-text')` shape).
-        dlg: { querySelector: () => ({ value: quote || '' }) },
-        headline,
-        title: quoteTitle,
-    });
 }
