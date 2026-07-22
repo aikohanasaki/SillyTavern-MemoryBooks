@@ -9,6 +9,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 # 📕 Memory Books (A SillyTavern Extension)
 
+<!--
+Fork banner: this repo is the upstream project; the active development
+fork with auto scene detection, paired-clip context, and chunked auditor
+lives at https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
+See README.fork.md for the fork's install + migration guide, or
+CHANGELOG.fork.md for fork-specific changes.
+-->
+
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as entries in your lorebooks. Supports group chats, advanced profile management, side prompts/trackers, and multi-tier memory consolidation.
 
 ### ❓ Vocabulary
@@ -812,6 +820,10 @@ The hook will:
 ---
 
 *Developed with love using VS Code/Cline, extensive testing, and community feedback.* 🤖💕
+
+## Fork
+
+An active fork adds scene-boundary detection (sentinel), paired-clip context (Clipper+), and a chunked lorebook auditor on top of this base. Repo: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto · Fork install + migration: [`README.fork.md`](./README.fork.md) · Fork changes: [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) · Merge map: [`FORK_NOTES.md`](./FORK_NOTES.md).
 
 ## Copyright and license
 
