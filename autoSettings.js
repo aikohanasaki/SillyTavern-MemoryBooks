@@ -41,7 +41,7 @@ function getDefaultChatMeta() {
 // Defaults
 // ----------------------------------------------------------------------------
 
-/** @type {Readonly<{sentinelEnabled: boolean, cadenceMessages: number, windowSize: number, windowOverlap: number, truncateChars: number, guardSize: number, detectionProfileIndex: number|null, detectionPrompt: string, debugLogging: boolean}>} */
+/** @type {Readonly<{sentinelEnabled: boolean, cadenceMessages: number, windowSize: number, windowOverlap: number, truncateChars: number, guardSize: number, detectionProfileIndex: number|null, detectionPrompt: string, debugLogging: boolean, auditorOfferEnabled: boolean, auditorEveryNScenes: number}>} */
 export const AUTO_MODULE_DEFAULTS = Object.freeze({
     sentinelEnabled: false,
     cadenceMessages: 8,
@@ -52,6 +52,8 @@ export const AUTO_MODULE_DEFAULTS = Object.freeze({
     detectionProfileIndex: null, // null = use the default STMB profile
     detectionPrompt: '', // empty = use the bundled baseline prompt
     debugLogging: false,
+    auditorOfferEnabled: true,
+    auditorEveryNScenes: 15,
 });
 
 /** @type {Readonly<{enabled: boolean|null, watermarkFallback: number|null, structureHintRegex: string, promptOverride: string}>} */
@@ -73,6 +75,7 @@ const CLAMPS = Object.freeze({
     truncateChars:   { min: 50, max: 5000, def: AUTO_MODULE_DEFAULTS.truncateChars },
     guardSize:       { min: 0, max: 50, def: AUTO_MODULE_DEFAULTS.guardSize },
     watermarkFallback: { min: 0, max: 1_000_000, def: 0 },
+    auditorEveryNScenes: { min: 1, max: 1000, def: AUTO_MODULE_DEFAULTS.auditorEveryNScenes },
 });
 
 function clampInt(value, { min, max, def }) {

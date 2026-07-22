@@ -615,6 +615,196 @@ export function runAuditorJobs(lorebookData, chatSlice, opts = {}) {
 }
 
 // ----------------------------------------------------------------------------
+// Phase 5 P5.4 — Coverage audit + entry regeneration pure functions
+// ----------------------------------------------------------------------------
+
+/**
+ * Run a coverage audit: cross-reference running notes (from the chunk walker)
+ * against existing lorebook entries. Surface missing / thin / stale items.
+ *
+ * Per plan §4.3.1: "Coverage audit: running notes vs. existing entries → report
+ * of missing/thin entries; one-click generate per item."
+ *
+ * Pure: no DOM, no LLM. The cadence offer (plan §4.3: "on demand + non-blocking
+ * offer every M scene memories") is gated separately.
+ *
+ * @param {{items?: Array<{key: string, kind?: string, sightings?: number, note?: string}>}|null|undefined} notes
+ * @param {object|null|undefined} lorebookData - { entries: {uid: entry} }
+ * @param {object} [opts]
+ * @param {number} [opts.thinSightingThreshold=3]  - below this is 'thin'
+ * @param {number} [opts.staleSightingThreshold=10] - above this with no entry is 'stale'
+ * @returns {{
+ *   items: Array<{key: string, kind: string, severity: 'missing'|'thin'|'stale', sightings: number, note: string}>,
+ *   summary: { total: number, flagged: number },
+ * }}
+ */
+export function runCoverageAudit(notes, lorebookData, opts = {}) {
+    const noteItems = Array.isArray(notes?.items) ? notes.items : [];
+    const entries = (lorebookData?.entries && typeof lorebookData.entries === 'object')
+        ? lorebookData.entries : {};
+    const thinThreshold = Number.isInteger(opts.thinSightingThreshold) ? opts.thinSightingThreshold : 3;
+    const staleThreshold = Number.isInteger(opts.staleSightingThreshold) ? opts.staleSightingThreshold : 10;
+
+    const coveredKeySet = new Set();
+    for (const uid of Object.keys(entries)) {
+        const raw = entries[uid];
+        if (!isMemoryEntry(raw)) continue;
+        const e = normalizeEntry(raw, uid);
+        for (const k of e.keys) {
+            const lk = String(k || '').trim().toLowerCase();
+            if (!lk) continue;
+            coveredKeySet.add(lk);
+        }
+        const titleKey = String(e.title || '').trim().toLowerCase();
+        if (titleKey) coveredKeySet.add(titleKey);
+    }
+
+    const items = [];
+    const seenKeys = new Set();
+    for (const raw of noteItems) {
+        const key = String(raw?.key || '').trim();
+        if (!key) continue;
+        const lk = key.toLowerCase();
+        if (seenKeys.has(lk)) continue;
+        seenKeys.add(lk);
+
+        const sightings = Number.isFinite(Number(raw?.sightings)) ? Number(raw.sightings) : 1;
+        const kind = String(raw?.kind || 'other').toLowerCase();
+        const note = String(raw?.note || '').trim();
+
+        if (!coveredKeySet.has(lk)) {
+            let severity;
+            if (sightings >= staleThreshold) severity = 'stale';
+            else if (sightings < thinThreshold) severity = 'thin';
+            else severity = 'missing';
+            items.push({ key, kind, severity, sightings, note });
+        }
+    }
+
+    return {
+        items,
+        summary: { total: items.length, flagged: items.length },
+    };
+}
+
+/**
+ * Normalize a range string like "msgs 3-5" / "msgs 3–5" to a canonical
+ * "msgs 3-5" form. Returns null if the input can't be parsed.
+ */
+function normalizeProvenanceRange(input) {
+    const s = String(input ?? '').trim();
+    if (!s) return null;
+    const m = s.match(/^(?:msgs?\s*)?(\d+)\s*[-–—]\s*(\d+)$/i);
+    if (!m) return null;
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return a <= b ? `msgs ${a}-${b}` : `msgs ${b}-${a}`;
+}
+
+/**
+ * Compute a simple 0..1 similarity between two strings (Jaccard over word
+ * tokens after lowercasing + punctuation strip). Used by the regeneration
+ * report to decide whether a candidate "drifted" from source enough to
+ * warrant a diff view.
+ */
+function jaccardSimilarity(a, b) {
+    const tokenize = (s) => new Set(
+        String(s ?? '').toLowerCase()
+            .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+            .split(/\s+/)
+            .filter(Boolean)
+    );
+    const A = tokenize(a);
+    const B = tokenize(b);
+    if (A.size === 0 && B.size === 0) return 1;
+    if (A.size === 0 || B.size === 0) return 0;
+    let inter = 0;
+    for (const t of A) if (B.has(t)) inter++;
+    const union = A.size + B.size - inter;
+    return union > 0 ? inter / union : 0;
+}
+
+/**
+ * Run entry regeneration: for each entry with provenance ranges, build a
+ * candidate diff (current vs a stitched-together slice of source chunks).
+ * Pure: no LLM; the report is the structural diff and similarity score.
+ * The actual regeneration would happen via a separate job (LLM call) once
+ * the user accepts a candidate.
+ *
+ * Per plan §4.3.2: "Entry regeneration: re-derive a chosen living entry
+ * from source chunks where its name appears (kills rewrite-drift ...).
+ * Diff view; user approves (or auto-approve setting)."
+ *
+ * @param {object|null|undefined} lorebookData - { entries: {uid: entry} }
+ * @param {Array<{mesid?: number, name?: string, mes?: string}>|null|undefined} chatSlice
+ * @param {object} [opts]
+ * @param {number} [opts.minDrift=0.30]   - similarity below (1 - minDrift) counts as 'changed'
+ * @param {number} [opts.contextBefore=2] - messages of context before the range
+ * @param {number} [opts.contextAfter=2]  - messages of context after the range
+ * @returns {{
+ *   candidates: Array<{entryUid: number, title: string, currentContent: string, derivedContent: string, sourceRanges: string[], similarity: number}>,
+ *   summary: { total: number, changed: number },
+ * }}
+ */
+export function runEntryRegeneration(lorebookData, chatSlice, opts = {}) {
+    const entries = (lorebookData?.entries && typeof lorebookData.entries === 'object')
+        ? lorebookData.entries : {};
+    const slice = Array.isArray(chatSlice) ? chatSlice : [];
+    const minDrift = Number.isFinite(Number(opts.minDrift)) ? Number(opts.minDrift) : 0.30;
+    const ctxBefore = Number.isInteger(opts.contextBefore) ? opts.contextBefore : 2;
+    const ctxAfter = Number.isInteger(opts.contextAfter) ? opts.contextAfter : 2;
+
+    const candidates = [];
+    for (const uid of Object.keys(entries)) {
+        const raw = entries[uid];
+        if (!isMemoryEntry(raw)) continue;
+        const e = normalizeEntry(raw, uid);
+        const ranges = extractProvenanceRanges(e.content);
+        if (ranges.length === 0) continue;
+
+        const sourceParts = [];
+        const normalizedRanges = [];
+        for (const r of ranges) {
+            // extractProvenanceRanges returns {start, end} objects (1-based).
+            const a = Number(r?.start);
+            const b = Number(r?.end);
+            if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+            // Ranges in provenance lines are 1-based message numbers; chatSlice
+            // is 0-indexed, so shift down by 1 before slicing.
+            const lo = Math.max(0, Math.min(a, b) - 1 - ctxBefore);
+            const hi = Math.min(slice.length - 1, Math.max(a, b) - 1 + ctxAfter);
+            const window = slice.slice(lo, hi + 1).map((m) => {
+                const name = String(m?.name || '').trim();
+                const text = String(m?.mes || '').trim();
+                return name ? `${name}: ${text}` : text;
+            }).filter(Boolean).join('\n');
+            if (window) sourceParts.push(window);
+            normalizedRanges.push(`msgs ${a}-${b}`);
+        }
+        if (sourceParts.length === 0) continue;
+
+        const derivedContent = sourceParts.join('\n\n');
+        const similarity = jaccardSimilarity(e.content, derivedContent);
+        if (similarity < (1 - minDrift)) {
+            candidates.push({
+                entryUid: e.uid,
+                title: e.title,
+                currentContent: e.content,
+                derivedContent,
+                sourceRanges: normalizedRanges,
+                similarity,
+            });
+        }
+    }
+
+    return {
+        candidates,
+        summary: { total: candidates.length, changed: candidates.length },
+    };
+}
+
+// ----------------------------------------------------------------------------
 // Job executor registration (for the STMB jobs dashboard)
 // ----------------------------------------------------------------------------
 
@@ -631,23 +821,181 @@ export function runAuditorJobs(lorebookData, chatSlice, opts = {}) {
  * @param {object|null} stmbJobsApi - { registerStmbJobExecutor, buildJob, ... }
  *                                 pass null to no-op (test environments).
  */
-export function registerAuditorJobs(stmbJobsApi) {
+/**
+ * Register the four auditor job executors with STMB's jobs dashboard
+ * (stmbJobs.js). Each executor runs its pure-function report and then routes
+ * through `awaitStmbJobApproval` to surface the report UI for the user.
+ *
+ * Per plan §4.3, the four jobs are:
+ *   1. Coverage audit   → `stmbc-audit-coverage`
+ *   2. Entry regeneration → `stmbc-audit-regenerate`
+ *   3. Technical pass    → `stmbc-audit-technical`
+ *   4. Claim re-verification → `stmbc-audit-claims`
+ *
+ * Each executor accepts `{ lorebookData, chatSlice, notes, options, popupShim }`
+ * on the input. `popupShim` is optional — when present (browser / ST runtime)
+ * the executor opens the report UI; when absent (Node test path) the executor
+ * returns the raw report data so tests can assert on it directly.
+ *
+ * Per plan §5 cadence: "on demand + a non-blocking offer every M scene
+ * memories (default 15). Never auto-runs." The cadence offer is wired
+ * separately (see `maybeOfferAuditorJob` in autoSettings.js).
+ *
+ * @param {object|null} stmbJobsApi - { registerStmbJobExecutor, awaitStmbJobApproval }
+ * @param {object} [opts]
+ * @param {Function} [opts.showCoverageReportPopup]   - injected report popup
+ * @param {Function} [opts.showRegenerationDiffPopup] - injected report popup
+ * @param {Function} [opts.showTechnicalPassPopup]    - injected report popup
+ * @param {Function} [opts.showClaimReverificationPopup] - injected report popup
+ * @returns {boolean} true if at least one executor registered
+ */
+export function registerAuditorJobs(stmbJobsApi, opts = {}) {
     if (!stmbJobsApi || typeof stmbJobsApi.registerStmbJobExecutor !== 'function') return false;
 
-    stmbJobsApi.registerStmbJobExecutor('stmbc-audit-technical', async (job) => {
-        // The dashboard passes the job context (input data). We expect
-        // `{ lorebookData, chatSlice, options }` to be on job.input.
+    const showCoverage = opts.showCoverageReportPopup;
+    const showRegen = opts.showRegenerationDiffPopup;
+    const showTechnical = opts.showTechnicalPassPopup;
+    const showClaims = opts.showClaimReverificationPopup;
+
+    // Coverage audit
+    stmbJobsApi.registerStmbJobExecutor('stmbc-audit-coverage', async (job) => {
+        const input = job?.input ?? job?.payload ?? {};
+        const lorebookData = input.lorebookData ?? input.lorebook ?? null;
+        const notes = input.notes ?? null;
+        const options = input.options ?? {};
+        const report = runCoverageAudit(notes, lorebookData, options);
+        if (typeof showCoverage === 'function' && typeof stmbJobsApi.awaitStmbJobApproval === 'function') {
+            const context = job?.context ?? job;
+            const approval = await stmbJobsApi.awaitStmbJobApproval(context, {
+                kind: 'coverageReport',
+                title: 'Coverage Audit',
+                detail: `${report.summary.flagged} item${report.summary.flagged === 1 ? '' : 's'} need attention.`,
+                open: async () => {
+                    const result = await showCoverage(report, { popupShim: input.popupShim ?? null });
+                    return result?.decision === 'cancel'
+                        ? { decision: 'cancel' }
+                        : { decision: 'accept', generateKeys: result?.generateKeys ?? [], dismissKeys: result?.dismissKeys ?? [] };
+                },
+            });
+            return { ok: true, report, decision: approval?.decision ?? 'cancel' };
+        }
+        return { ok: true, report };
+    });
+
+    // Entry regeneration
+    stmbJobsApi.registerStmbJobExecutor('stmbc-audit-regenerate', async (job) => {
         const input = job?.input ?? job?.payload ?? {};
         const lorebookData = input.lorebookData ?? input.lorebook ?? null;
         const chatSlice = input.chatSlice ?? null;
         const options = input.options ?? {};
-        const result = runAuditorJobs(lorebookData, chatSlice, options);
-        return {
-            ok: true,
-            technical: result.technical,
-            claimReverification: result.claimReverification,
-        };
+        const report = runEntryRegeneration(lorebookData, chatSlice, options);
+        if (typeof showRegen === 'function' && typeof stmbJobsApi.awaitStmbJobApproval === 'function') {
+            const context = job?.context ?? job;
+            const approval = await stmbJobsApi.awaitStmbJobApproval(context, {
+                kind: 'regenerationReport',
+                title: 'Entry Regeneration',
+                detail: `${report.summary.changed} drifted entr${report.summary.changed === 1 ? 'y' : 'ies'}.`,
+                open: async () => {
+                    const result = await showRegen(report, { popupShim: input.popupShim ?? null });
+                    return result?.decision === 'cancel'
+                        ? { decision: 'cancel' }
+                        : { decision: 'accept', accepted: result?.accepted ?? [], rejected: result?.rejected ?? [] };
+                },
+            });
+            return { ok: true, report, decision: approval?.decision ?? 'cancel' };
+        }
+        return { ok: true, report };
+    });
+
+    // Technical pass (existing P5.3 path)
+    stmbJobsApi.registerStmbJobExecutor('stmbc-audit-technical', async (job) => {
+        const input = job?.input ?? job?.payload ?? {};
+        const lorebookData = input.lorebookData ?? input.lorebook ?? null;
+        const chatSlice = input.chatSlice ?? null;
+        const options = input.options ?? {};
+        const report = runTechnicalPass(lorebookData, options);
+        if (typeof showTechnical === 'function' && typeof stmbJobsApi.awaitStmbJobApproval === 'function') {
+            const context = job?.context ?? job;
+            const approval = await stmbJobsApi.awaitStmbJobApproval(context, {
+                kind: 'technicalReport',
+                title: 'Technical Pass',
+                detail: `${report.summary.flaggedEntries} flagged entr${report.summary.flaggedEntries === 1 ? 'y' : 'ies'}.`,
+                open: async () => {
+                    const result = await showTechnical(report, { popupShim: input.popupShim ?? null });
+                    return result?.decision === 'cancel'
+                        ? { decision: 'cancel' }
+                        : { decision: 'accept', fixes: result?.fixes ?? [], dismissed: result?.dismissed ?? [] };
+                },
+            });
+            return { ok: true, report, decision: approval?.decision ?? 'cancel' };
+        }
+        return { ok: true, report };
+    });
+
+    // Claim re-verification
+    stmbJobsApi.registerStmbJobExecutor('stmbc-audit-claims', async (job) => {
+        const input = job?.input ?? job?.payload ?? {};
+        const lorebookData = input.lorebookData ?? input.lorebook ?? null;
+        const chatSlice = input.chatSlice ?? null;
+        const options = input.options ?? {};
+        const report = runClaimReverification(lorebookData, chatSlice, options);
+        if (typeof showClaims === 'function' && typeof stmbJobsApi.awaitStmbJobApproval === 'function') {
+            const context = job?.context ?? job;
+            const approval = await stmbJobsApi.awaitStmbJobApproval(context, {
+                kind: 'claimReport',
+                title: 'Claim Re-verification',
+                detail: `${report.summary.flagged ?? 0} claim${(report.summary.flagged ?? 0) === 1 ? '' : 's'} flagged.`,
+                open: async () => {
+                    const result = await showClaims(report, { popupShim: input.popupShim ?? null });
+                    return result?.decision === 'cancel'
+                        ? { decision: 'cancel' }
+                        : { decision: 'accept', flagged: result?.flagged ?? [], dismissed: result?.dismissed ?? [] };
+                },
+            });
+            return { ok: true, report, decision: approval?.decision ?? 'cancel' };
+        }
+        return { ok: true, report };
     });
 
     return true;
+}
+
+/**
+ * Plan §4.3 cadence helper. Pure: returns `{ shouldOffer, reason, suggestedJobType }`.
+ * Caller decides whether to surface the offer (toast / popup / silent). Never
+ * auto-runs the job — the user must accept the offer.
+ *
+ * @param {object|null} settings - { moduleSettings: { autoModule: { ... } } }
+ * @param {number} currentSceneMemoryCount - total scene memories in this chat
+ * @param {number} [lastOfferAtCount=0] - the count at which the last offer fired
+ * @returns {{ shouldOffer: boolean, reason: string, suggestedJobType: string, everyNScenes: number }}
+ */
+export function maybeOfferAuditorJob(settings, currentSceneMemoryCount, lastOfferAtCount = 0) {
+    const everyN = Number.isInteger(settings?.moduleSettings?.autoModule?.auditorEveryNScenes)
+        ? settings.moduleSettings.autoModule.auditorEveryNScenes
+        : 15;
+    const enabled = settings?.moduleSettings?.autoModule?.auditorOfferEnabled !== false;
+    const count = Math.max(0, Number(currentSceneMemoryCount) || 0);
+    const last = Math.max(0, Number(lastOfferAtCount) || 0);
+    const delta = count - last;
+
+    if (!enabled) {
+        return { shouldOffer: false, reason: 'disabled', suggestedJobType: 'stmbc-audit-coverage', everyNScenes: everyN };
+    }
+    if (count === 0) {
+        return { shouldOffer: false, reason: 'no-memories', suggestedJobType: 'stmbc-audit-coverage', everyNScenes: everyN };
+    }
+    if (delta < everyN) {
+        return { shouldOffer: false, reason: 'below-threshold', suggestedJobType: 'stmbc-audit-coverage', everyNScenes: everyN };
+    }
+
+    // Pick the suggested job type based on the largest existing issue category
+    // (cheap heuristic: default to coverage; richer logic deferred to a
+    // follow-up issue once report UIs are observed in practice).
+    return {
+        shouldOffer: true,
+        reason: 'every-N-scene-memories',
+        suggestedJobType: 'stmbc-audit-coverage',
+        everyNScenes: everyN,
+    };
 }

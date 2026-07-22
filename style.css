@@ -623,3 +623,113 @@
     justify-content: flex-start;
     margin-top: 4px;
 }
+
+/* ----------------------------------------------------------------------------
+   STMB audit report UIs (Phase 5 P5.4)
+   Shared styles for the four report popups: coverage, regeneration diff,
+   technical pass, claim re-verification.
+   ---------------------------------------------------------------------------- */
+
+.stmb-audit-card {
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 6px;
+}
+
+.stmb-audit-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.stmb-audit-card-note,
+.stmb-audit-card-message,
+.stmb-audit-card-suggestion {
+    margin: 4px 0;
+    padding: 4px 6px;
+    border-left: 3px solid var(--SmartThemeBorderColor, #888);
+    opacity: 0.9;
+}
+
+.stmb-audit-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.stmb-audit-kind-badge,
+.stmb-audit-severity-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.85em;
+    font-weight: 600;
+    border: 1px solid currentColor;
+}
+
+.stmb-audit-kind-badge {
+    background: color-mix(in srgb, currentColor 12%, transparent);
+    opacity: 0.85;
+}
+
+.stmb-audit-severity-error {
+    color: var(--SmartThemeRedColor, #ff6b6b);
+}
+
+.stmb-audit-severity-warn {
+    color: #f0c36d;
+}
+
+.stmb-audit-severity-info {
+    color: var(--SmartThemeQuoteColor, #4f8cff);
+}
+
+.stmb-audit-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: min(60vh, 520px);
+    overflow-y: auto;
+}
+
+.stmb-audit-diff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.stmb-audit-diff-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stmb-audit-diff-pane h4 {
+    margin: 0;
+    font-size: 0.95em;
+    opacity: 0.85;
+}
+
+.stmb-audit-diff-current,
+.stmb-audit-diff-derived {
+    background: var(--SmartThemeChatTintColor, #222);
+    padding: 6px 8px;
+    border-radius: 4px;
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    margin: 0;
+}
+
+@media screen and (max-width: 600px) {
+    .stmb-audit-diff {
+        grid-template-columns: 1fr;
+    }
+}

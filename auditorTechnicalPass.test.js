@@ -15,6 +15,9 @@ import {
     extractProvenanceRanges,
     runClaimReverification,
     runAuditorJobs,
+    runCoverageAudit,
+    runEntryRegeneration,
+    maybeOfferAuditorJob,
     registerAuditorJobs,
 } from './auditorTechnicalPass.js';
 
@@ -478,7 +481,7 @@ test('registerAuditorJobs: registers the technical pass executor', () => {
     assert.equal(typeof registered.get('stmbc-audit-technical'), 'function');
 });
 
-test('registerAuditorJobs: the registered executor returns a technical + claimReverification report', async () => {
+test('registerAuditorJobs: the technical executor returns a technical pass report', async () => {
     const registered = new Map();
     const api = { registerStmbJobExecutor: (type, fn) => registered.set(type, fn) };
     registerAuditorJobs(api);
@@ -486,7 +489,224 @@ test('registerAuditorJobs: the registered executor returns a technical + claimRe
     const lb = { entries: { 1: makeEntry({ key: ['button'] }) } };
     const result = await executor({ input: { lorebookData: lb, chatSlice: [] } });
     assert.equal(result.ok, true);
-    assert.ok(result.technical);
-    assert.ok(result.claimReverification);
-    assert.equal(result.technical.summary.flaggedEntries, 1);
+    assert.ok(result.report);
+    assert.ok(Array.isArray(result.report.issues));
+    assert.equal(result.report.summary.flaggedEntries, 1);
+});
+// ----------------------------------------------------------------------------
+// Phase 5 P5.4 — runCoverageAudit
+// ----------------------------------------------------------------------------
+
+test('runCoverageAudit: flags notes without matching entry keys as missing', () => {
+    const lb = { entries: { 1: makeEntry({ key: ['Alice'], comment: 'Alice' }) } };
+    const notes = { items: [{ key: 'Bob', kind: 'character', sightings: 5, note: 'appears in ch3' }] };
+    const r = runCoverageAudit(notes, lb);
+    assert.equal(r.summary.total, 1);
+    assert.equal(r.items[0].key, 'Bob');
+    assert.equal(r.items[0].severity, 'missing');
+});
+
+test('runCoverageAudit: marks low-sighting entries as thin', () => {
+    const lb = { entries: {} };
+    const notes = { items: [{ key: 'Ghost', kind: 'character', sightings: 2 }] };
+    const r = runCoverageAudit(notes, lb);
+    assert.equal(r.items[0].severity, 'thin');
+});
+
+test('runCoverageAudit: marks high-sighting-but-missing entries as stale', () => {
+    const lb = { entries: {} };
+    const notes = { items: [{ key: 'King', kind: 'character', sightings: 20 }] };
+    const r = runCoverageAudit(notes, lb);
+    assert.equal(r.items[0].severity, 'stale');
+});
+
+test('runCoverageAudit: does not flag notes that match existing entry keys', () => {
+    const lb = { entries: { 1: makeEntry({ key: ['Alice'], comment: 'Alice' }) } };
+    const notes = { items: [{ key: 'Alice', kind: 'character', sightings: 5 }] };
+    const r = runCoverageAudit(notes, lb);
+    assert.equal(r.summary.total, 0);
+    assert.deepEqual(r.items, []);
+});
+
+test('runCoverageAudit: dedupes notes by key (case-insensitive)', () => {
+    const lb = { entries: {} };
+    const notes = { items: [
+        { key: 'Bob', sightings: 3 },
+        { key: 'bob', sightings: 7 },
+        { key: ' BOB ', sightings: 1 },
+    ]};
+    const r = runCoverageAudit(notes, lb);
+    assert.equal(r.items.length, 1);
+    assert.equal(r.items[0].sightings, 3); // first wins
+});
+
+test('runCoverageAudit: returns empty report on empty notes', () => {
+    const r = runCoverageAudit({ items: [] }, { entries: {} });
+    assert.deepEqual(r.items, []);
+    assert.equal(r.summary.total, 0);
+});
+
+test('runCoverageAudit: handles null / malformed inputs without throwing', () => {
+    assert.deepEqual(runCoverageAudit(null, null).items, []);
+    assert.deepEqual(runCoverageAudit(undefined, undefined).items, []);
+    assert.deepEqual(runCoverageAudit({}, null).items, []);
+});
+
+// ----------------------------------------------------------------------------
+// Phase 5 P5.4 — runEntryRegeneration
+// ----------------------------------------------------------------------------
+
+test('runEntryRegeneration: surfaces entries whose content drifted from source', () => {
+    const slice = [
+        { mesid: 0, name: 'A', mes: 'padding message zero' },
+        { mesid: 1, name: 'A', mes: 'The ancient vault lay beneath the mountain.' },
+        { mesid: 2, name: 'A', mes: 'Its doors were sealed centuries ago.' },
+        { mesid: 3, name: 'A', mes: 'Only the chosen could enter.' },
+    ];
+    const lb = { entries: { 1: makeEntry({
+        key: ['Vault'],
+        comment: 'Vault',
+        content: 'The vault is a modern bank with a vault that holds money. src: msgs 1-3',
+    }) } };
+    const r = runEntryRegeneration(lb, slice);
+    assert.equal(r.summary.total, 1);
+    assert.equal(r.candidates[0].entryUid, 1);
+    assert.ok(r.candidates[0].derivedContent.includes('ancient vault'));
+    assert.ok(r.candidates[0].similarity < 0.7);
+});
+
+test('runEntryRegeneration: skips entries without provenance ranges', () => {
+    const slice = [{ mesid: 0, name: 'A', mes: 'foo bar baz' }];
+    const lb = { entries: { 1: makeEntry({
+        content: 'No provenance here.',
+    }) } };
+    const r = runEntryRegeneration(lb, slice);
+    assert.equal(r.candidates.length, 0);
+});
+
+test('runEntryRegeneration: skips entries whose content already matches source', () => {
+    const slice = [{ mesid: 0, name: 'A', mes: 'ancient vault lies beneath the mountain src: msgs 1-1' }];
+    const lb = { entries: { 1: makeEntry({
+        content: 'ancient vault lies beneath the mountain src: msgs 1-1',
+    }) } };
+    const r = runEntryRegeneration(lb, slice);
+    assert.equal(r.candidates.length, 0);
+});
+
+test('runEntryRegeneration: returns empty report on empty lorebook', () => {
+    const r = runEntryRegeneration({ entries: {} }, []);
+    assert.equal(r.candidates.length, 0);
+});
+
+test('runEntryRegeneration: handles null / malformed inputs without throwing', () => {
+    assert.deepEqual(runEntryRegeneration(null, null).candidates, []);
+    assert.deepEqual(runEntryRegeneration(undefined, []).candidates, []);
+    assert.deepEqual(runEntryRegeneration({}, null).candidates, []);
+});
+
+// ----------------------------------------------------------------------------
+// Phase 5 P5.4 — maybeOfferAuditorJob (cadence gate, plan §4.3)
+// ----------------------------------------------------------------------------
+
+test('maybeOfferAuditorJob: returns no-offer when below threshold', () => {
+    const r = maybeOfferAuditorJob({ moduleSettings: { autoModule: { auditorEveryNScenes: 15 } } }, 10, 0);
+    assert.equal(r.shouldOffer, false);
+    assert.equal(r.reason, 'below-threshold');
+});
+
+test('maybeOfferAuditorJob: returns offer when count crosses N threshold', () => {
+    const r = maybeOfferAuditorJob({ moduleSettings: { autoModule: { auditorEveryNScenes: 15 } } }, 15, 0);
+    assert.equal(r.shouldOffer, true);
+    assert.equal(r.reason, 'every-N-scene-memories');
+    assert.equal(r.suggestedJobType, 'stmbc-audit-coverage');
+});
+
+test('maybeOfferAuditorJob: defaults to 15 when no setting present', () => {
+    const r = maybeOfferAuditorJob({ moduleSettings: { autoModule: {} } }, 15, 0);
+    assert.equal(r.shouldOffer, true);
+    assert.equal(r.everyNScenes, 15);
+});
+
+test('maybeOfferAuditorJob: returns no-offer when explicitly disabled', () => {
+    const r = maybeOfferAuditorJob({ moduleSettings: { autoModule: { auditorOfferEnabled: false, auditorEveryNScenes: 5 } } }, 100, 0);
+    assert.equal(r.shouldOffer, false);
+    assert.equal(r.reason, 'disabled');
+});
+
+test('maybeOfferAuditorJob: returns no-offer when count is 0', () => {
+    const r = maybeOfferAuditorJob({ moduleSettings: { autoModule: { auditorEveryNScenes: 5 } } }, 0, 0);
+    assert.equal(r.shouldOffer, false);
+    assert.equal(r.reason, 'no-memories');
+});
+
+test('maybeOfferAuditorJob: handles null settings without throwing', () => {
+    const r = maybeOfferAuditorJob(null, 15, 0);
+    assert.equal(r.shouldOffer, true);
+    assert.equal(r.everyNScenes, 15);
+});
+
+// ----------------------------------------------------------------------------
+// Phase 5 P5.4 — registerAuditorJobs (4 executors)
+// ----------------------------------------------------------------------------
+
+test('registerAuditorJobs: registers all four job executors', () => {
+    const registered = new Map();
+    const api = { registerStmbJobExecutor: (type, fn) => registered.set(type, fn) };
+    assert.equal(registerAuditorJobs(api), true);
+    assert.equal(registered.size, 4);
+    for (const t of [
+        'stmbc-audit-coverage',
+        'stmbc-audit-regenerate',
+        'stmbc-audit-technical',
+        'stmbc-audit-claims',
+    ]) {
+        assert.ok(registered.has(t), `missing ${t}`);
+        assert.equal(typeof registered.get(t), 'function');
+    }
+});
+
+test('registerAuditorJobs: coverage executor returns a coverage report', async () => {
+    const registered = new Map();
+    const api = { registerStmbJobExecutor: (type, fn) => registered.set(type, fn) };
+    registerAuditorJobs(api);
+    const lb = { entries: {} };
+    const notes = { items: [{ key: 'Bob', kind: 'character', sightings: 5 }] };
+    const result = await registered.get('stmbc-audit-coverage')({ input: { lorebookData: lb, notes } });
+    assert.equal(result.ok, true);
+    assert.equal(result.report.summary.flagged, 1);
+    assert.equal(result.report.items[0].key, 'Bob');
+});
+
+test('registerAuditorJobs: regeneration executor returns a regeneration report', async () => {
+    const registered = new Map();
+    const api = { registerStmbJobExecutor: (type, fn) => registered.set(type, fn) };
+    registerAuditorJobs(api);
+    const slice = [{ mesid: 0, name: 'A', mes: 'ancient vault lies beneath the mountain sealed src: msgs 1-1' }];
+    const lb = { entries: { 1: makeEntry({
+        content: 'The vault is a modern bank. src: msgs 1-1',
+    }) } };
+    const result = await registered.get('stmbc-audit-regenerate')({ input: { lorebookData: lb, chatSlice: slice } });
+    assert.equal(result.ok, true);
+    assert.ok(result.report);
+    assert.ok(Array.isArray(result.report.candidates));
+});
+
+test('registerAuditorJobs: claims executor returns a claim re-verification report', async () => {
+    const registered = new Map();
+    const api = { registerStmbJobExecutor: (type, fn) => registered.set(type, fn) };
+    registerAuditorJobs(api);
+    const slice = [{ mesid: 0, name: 'A', mes: 'Bob is alive and well' }];
+    const lb = { entries: { 1: makeEntry({
+        content: 'Bob was dead. src: msgs 1-1',
+    }) } };
+    const result = await registered.get('stmbc-audit-claims')({ input: { lorebookData: lb, chatSlice: slice } });
+    assert.equal(result.ok, true);
+    assert.ok(result.report);
+    assert.ok(Array.isArray(result.report.rangeVerdicts));
+});
+
+test('registerAuditorJobs: no-op when stmbJobsApi is missing', () => {
+    assert.equal(registerAuditorJobs(null), false);
+    assert.equal(registerAuditorJobs(undefined), false);
+    assert.equal(registerAuditorJobs({}), false);
 });

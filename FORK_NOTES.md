@@ -52,7 +52,8 @@ eval/                          Phase 0 eval harness (offline; no SillyTavern nee
   materials/stmb-auto/         plan doc at the path referenced by PHA-1416
 autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (global + per-chat), defaults, validation, get/set, resolver helpers
 sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
-auditorTechnicalPass.js + .test.js Phase 5 (P5.3) — technical pass + claim re-verification jobs (auditor)
+auditorTechnicalPass.js + .test.js Phase 5 (P5.3/P5.4) — technical pass + claim re-verification jobs, coverage audit (runCoverageAudit) + entry regeneration (runEntryRegeneration) pure functions, cadence gate (maybeOfferAuditorJob), 4-job registerAuditorJobs
+auditorReportUIs.js + .test.js Phase 5 (P5.4) — report UI renderers + popup adapters for the four audit jobs (coverage, regeneration diff, technical, claims)
 eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
 autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
 FORK_NOTES.md                  this file
@@ -121,7 +122,11 @@ artifacts are committed; never hand-edit them.
 | Phase 6 — Merge drill, hardening, release | P6.2 release tag v0.1.0 + clean-install verification | PHA-1466 | done |
 | `addlore.js` (P4.4) | `populateLorebookEntry` (the entry-populator that already attaches STMB_start/STMB_end metadata) gains a provenance append call with an inline fallback; respects `memoryResult.metadata.skipProvenance` opt-out | Phase 4 (P4.4) provenance lines | Yes — additive; existing entry structure preserved. The inline fallback mirrors nudgeHelpers exactly (4 structural tests pin parity). |
 | Phase 4 — Living-lorebook orchestration | P4.4 event-template preset + consolidation/compaction nudges | PHA-1467 | done |
-| Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs | PHA-1459 | done |
+| Phase 5 — Auditor | P5.1 chunk walker (checkpoint/resume/halt) | PHA-1468 | done |
+| Phase 5 — Auditor | P5.2 coverage audit + entry regeneration jobs | PHA-1469 | done |
+| Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs (current implementation in `auditorTechnicalPass.js`; 4-job `registerAuditorJobs`; cadence gate via `maybeOfferAuditorJob`) | PHA-1470 | done |
+| Phase 5 — Auditor | P5.4 report UIs for the four audit jobs (`auditorReportUIs.js`) | PHA-1471 | done |
+| Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs (legacy implementation; superseded by PHA-1470) | PHA-1459 | done |
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 1 — Fork setup | P1.4 merge drill | (open) | todo |

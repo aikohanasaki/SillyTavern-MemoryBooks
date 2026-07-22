@@ -216,6 +216,16 @@ import {
   withStmbWriteLane,
 } from "./stmbJobs.js";
 import {
+  registerAuditorJobs,
+  maybeOfferAuditorJob,
+} from "./auditorTechnicalPass.js";
+import {
+  showCoverageReportPopup,
+  showRegenerationDiffPopup,
+  showTechnicalPassPopup,
+  showClaimReverificationPopup,
+} from "./auditorReportUIs.js";
+import {
   buildSidePromptMacroSuggestion,
   collectTemplateRuntimeMacros,
   formatQuotedSidePromptName,
@@ -11220,6 +11230,20 @@ async function init() {
   registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
   subscribeToStmbJobs(handleStmbJobStateChanged);
   initStmbJobsIfTopInfoBarEnabled();
+
+  // Phase 5 P5.4: register the four auditor job executors with the STMB jobs
+  // dashboard. Each routes through awaitStmbJobApproval so the report UI
+  // surfaces in the existing jobs panel + review flow. Never auto-runs; the
+  // cadence offer is gated by `maybeOfferAuditorJob` (per plan §4.3).
+  registerAuditorJobs({
+    registerStmbJobExecutor,
+    awaitStmbJobApproval,
+  }, {
+    showCoverageReportPopup,
+    showRegenerationDiffPopup,
+    showTechnicalPassPopup,
+    showClaimReverificationPopup,
+  });
 
   // Preload side prompt names cache for autocomplete
   await refreshSidePromptCache();
