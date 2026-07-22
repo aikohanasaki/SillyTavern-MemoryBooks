@@ -42,28 +42,48 @@ The explicit goal: **substantial upstream changes must remain mergeable.** Upstr
 
 ---
 
-## 2. Upstream codebase map (verified July 2026 — re-verify against current main before Phase 1)
+## 2. Upstream codebase map (re-verified 2026-07-21 against current upstream main — P1.2)
 
 Repo: https://github.com/aikohanasaki/SillyTavern-MemoryBooks — AGPL-3.0-only. ~38K lines source. Key modules:
 
-| File | Role | Fork touches it? |
+> **P1.2 audit result (2026-07-21).** Upstream `main` HEAD = `617cfbf` ("docs: add explicit copyright and AGPL notices", authored by aikohanasaki, **2026-07-18**). The fork is based directly on this commit; upstream has **not moved** since fork creation (its version branches `6.7.0`/`6.9.2`/`6.10.0` are older release tags, not ahead of main). Our working tree has **zero source-file diff** vs. upstream main — the Phase-0 eval commits only added `eval/`. So the line numbers below are exact for both the fork and current upstream main **as of `617cfbf`** (manifest version 8.2.2). Re-run this audit only after the next `git merge upstream/main`. Corrections vs. the original July-2026 map are marked **[FIX]**.
+
+| File | Role (verified line #s @ `617cfbf`) | Fork touches it? |
 |---|---|---|
-| `index.js` (~11K lines) | Init, settings UI, slash commands (`registerSlashCommands()` ~line 9670), scene commands (`handleSceneMemoryCommand` → `runSceneMemoryRange(start,end)`) | **Yes** — init hook for our modules; register our slash commands; settings panel section |
-| `autosummary.js` | Native fixed-interval auto-summary (popup-heavy counter) | **Superseded** — sentinel replaces it; force-disabled via settings, module left intact for mergeability |
-| `stmemory.js` | Memory generation pipeline (prompt assembly, JSON validation) | **Yes** — one hook where prompt context is assembled, calling our `injection.js` (living-entry context, delta-not-rehash instructions, error-control rules) |
-| `clipManager.js` (~111K) | Clip selection UI, `[STMB Clip]` entries, topical clips, compaction popups. Exports `openClipModalFromSelection`, `makeClipEntryTitle`, `createClipEntryContent`, marker helpers; tracks selection's `mesid` | **Yes** — one hook in the clip-save path calling `clipperPlus.js` to generate + write the paired context entry |
-| `sidePrompts.js` / `sidePromptsManager.js` | Updatable tracker entries; can auto-run after memory creation; sets | **Yes** — hook or config so per-scene runs are filtered to characters present in the scene (via `stloCharacterFilters.js` if sufficient — check first) |
-| `profileManager.js` | Connection/model/temperature/prompt profiles | No — **reused**: sentinel/auditor get their own profile pickers pointing at STMB profiles (detection wants a cheap model) |
-| `stmbJobs.js` | Job queue + dashboard (active/failed/review) | Minimal — register our job types (sentinel cycle, audit chunks, review queue) |
-| `sceneManager.js` | Scene marker state (chevrons) | No — sentinel bypasses markers, calls `runSceneMemoryRange` directly |
+| `index.js` (11,181 lines) | Init (`init()` @ **10891**, wired to `APP_READY` @ **11175**); UI build (`createUI()` @ **9914**, called @ 10945); slash commands (`registerSlashCommands()` @ **9673**, called @ **11013**); scene commands (`handleSceneMemoryCommand` @ **1263**). **[FIX]** `runSceneMemoryRange(startId, endId, options={})` lives **here @ 1132** (not `sceneManager.js`) and is **NOT exported** (index.js exports only `isMemoryProcessing`, `currentProfile`, `validateLorebook`) | **Yes** — init hook for our modules (beside STMB's own `registerStmbJobExecutor(...)` @ ~11007); register our slash commands; settings-panel section (extend `createUI`/`settingsTemplate`). **P1.3:** export `runSceneMemoryRange` (1-line) or pass it into sentinel via init wiring |
+| `autosummary.js` (254 lines) | Native fixed-interval auto-summary. Entry `handleAutoSummaryMessageReceived()` @ **210**, `checkAutoSummaryTrigger()` @ **114**. **[FIX]** triggers on **`MESSAGE_RECEIVED`**, not `GENERATION_ENDED` (no `GENERATION_ENDED` subscriber exists anywhere in STMB) | **Superseded** — sentinel replaces it; force-disabled via settings, module left intact for mergeability |
+| `stmemory.js` (1,514 lines) | Memory generation pipeline. `createMemory()` @ **1196** → `buildPrompt(compiledScene, profile)` @ **1458**; previous-memories context assembled @ **1414–1420**; system prompt @ 1466–1470 | **Yes** — one hook inside `buildPrompt` (~1458/1414) calling our `injection.js` (living-entry context, delta-not-rehash instructions, error-control rules) |
+| `clipManager.js` (2,467 lines) | Clip selection UI, `[STMB Clip]` entries, topical clips, compaction popups. Exports `openClipModalFromSelection` @ **753**, `makeClipEntryTitle` @ **183**, `createClipEntryContent` @ **215**, marker helpers `makeClipStartMarker`/`makeClipEndMarker` @ **188/192**; tracks selection `mesid` @ **337–338**. Save path: `saveNewClip()` @ **714** (writes via `createWorldInfoEntry` @ 733 + `saveLorebook`/`saveWorldInfo`), `saveExistingClip()` @ **686** | **Yes** — one hook in the clip-save path (`saveNewClip` @ 714) calling `clipperPlus.js` to generate + write the paired context entry |
+| `sidePrompts.js` (2,085 lines) / `sidePromptsManager.js` | Updatable tracker entries; auto-run after memory creation via `runAfterMemory(compiledScene, profile, options)` @ **sidePrompts.js:1356** (called from index.js @ **3872, 4483, 10253**) | **Yes** — hook at `runAfterMemory` (or its 3 call sites) so per-scene runs are filtered to characters present in the scene. `stloCharacterFilters.js` is **sufficient** (see below) |
+| `stloCharacterFilters.js` (141 lines) | Character-scene filtering primitives, already integrated (used by index.js, addlore.js, utils.js, arcanalysis.js). Exports `applyStloCharacterFilters(lorebookData, characterNames)` @ **43**, `collectStloCharacterFilterTargets(members, bindings, options)` @ **111** | No new file — **reused** for the per-scene side-prompt filter (§4.4); no cheap name-scan fallback needed |
+| `profileManager.js` (1,491 lines) | Connection/model/temperature/prompt profiles | No — **reused**: sentinel/auditor get their own profile pickers pointing at STMB profiles (detection wants a cheap model) |
+| `stmbJobs.js` (1,088 lines) | Job queue + dashboard (needs Chat Top Bar ext). API: `enqueueStmbJob(input)` @ **483**, `registerStmbJobExecutor(type, executor)` @ **495**, `subscribeToStmbJobs` @ **500**, `cancelAllStmbJobs(reason)` @ **536**, `hasActiveStmbJobs` @ 505, `updateHighestMemoryProcessedForChatRef(ref, sceneEnd)` @ **1060** (watermark writer), `patchStmbMetadataForChatRef` @ 988 | Minimal — `registerStmbJobExecutor("sentinel"/"audit"/"review", …)` beside STMB's own registrations @ ~11007; `/stmbc-stop` → `cancelAllStmbJobs`; sentinel watermark via `updateHighestMemoryProcessedForChatRef` |
+| `sceneManager.js` (668 lines) | Scene marker state (chevrons) only. **[FIX]** does **not** contain `runSceneMemoryRange` (that's index.js:1132) | No — sentinel bypasses markers, calls `runSceneMemoryRange` (index.js) directly |
 | `summaryPromptManager.js`, `templates*.js` | Built-in prompt presets | No — we add presets via the existing preset mechanism if possible |
 | `addlore.js`, `lorebookValidation.js`, `utils.js` | Lorebook entry writing/validation | No — reused as-is |
 
-Slash commands (kept, still useful for scripting): `/creatememory`, `/scenememory X-Y`, `/nextmemory`, `/stmb-catchup interval start end`, `/stmb-highest`, `/stmb-stop`, side-prompt commands. **New commands the fork adds:** `/stmbc-detect` (force a sentinel cycle), `/stmbc-audit [job]`, `/stmbc-stop` (halt our jobs; also wired into `/stmb-stop`).
+Slash commands (kept, still useful for scripting) — **verified full set = 12, all registered in `registerSlashCommands()` (index.js 9673–11013), added via `SlashCommandParser.addCommandObject` @ 9897+**: `/creatememory` (9675), `/scenememory` (9684), `/nextmemory` (9703), `/stmb-catchup interval start end` (9712), `/sideprompt` (9750), `/sideprompt-set` (9771), `/sideprompt-macroset` (9792), `/sideprompt-on` (9814), `/sideprompt-off` (9837), `/stmb-highest` (9860), **[FIX] `/stmb-set-highest` (9870)** — new since the July map, and `/stmb-stop` (9889, → `handleStmbStopCommand`). **New commands the fork adds:** `/stmbc-detect` (force a sentinel cycle), `/stmbc-audit [job]`, `/stmbc-stop` (halt our jobs; also wired into `handleStmbStopCommand` / `cancelAllStmbJobs`).
 
 Core STMB facts to preserve: memories are lorebook entries flagged `stmemorybooks` with auto-numbering and title templates; generation prompts **must return strict JSON** `{"title","content","keywords"}`; lorebook binding modes auto/auto-create/manual; up to 7 previous memories injectable as context; consolidation tiers (Arc/Chapter/Book…) and compaction with review popups.
 
 Build/dev workflow: Bun (`bun run build` → `index.build.js`); install repo pre-commit hook; manifest loads the bundle. SillyTavern extension docs: https://docs.sillytavern.app/for-contributors/writing-extensions/ · World Info docs: https://docs.sillytavern.app/usage/core-concepts/worldinfo/
+
+### 2.1 Verified `STMBC-HOOK` sites (for P1.3 — line #s @ upstream `617cfbf`)
+
+P1.3 places empty single-line `// STMBC-HOOK:` call sites at exactly these locations. Line numbers drift with any upstream merge — re-anchor by the symbol, not the number.
+
+| # | Hook | File:line | Anchor symbol | New file called | Notes |
+|---|---|---|---|---|---|
+| H1 | Module init | `index.js:~11007` (inside `init()` @ 10891, after STMB's `registerStmbJobExecutor("consolidation", …)`, before `registerSlashCommands()` @ 11013) | `init()` | `autoSettings.js` + all module `init()`s | Wire sentinel/clipperPlus/auditor/injection; pass `runSceneMemoryRange` reference here if not exporting it |
+| H2 | Job-type registration | `index.js:~11007` | `registerStmbJobExecutor` | `stmbJobs.js` API (no edit) | `registerStmbJobExecutor("sentinel"|"audit"|"review", executor)` — same call, added lines |
+| H3 | New slash commands | `index.js:9673–11013` | `registerSlashCommands()` | — | Add `/stmbc-detect`, `/stmbc-audit`, `/stmbc-stop`; extend `handleStmbStopCommand` (9889 cb) to call `cancelAllStmbJobs` |
+| H4 | Settings-panel section | `index.js:9914` (`createUI`) / `settingsTemplate` (import @ 84) | `createUI()` | `autoSettings.js` | Add the `autoModule` settings UI section |
+| H5 | Injection (context assembly) | `stmemory.js:1458` (or 1414 previous-mem block) | `buildPrompt(compiledScene, profile)` | `injection.js` | Prepend living-entry context + delta/error-control instructions |
+| H6 | Clip-save path | `clipManager.js:714` | `saveNewClip()` | `clipperPlus.js` | After the `[STMB Clip]` entry is written (`createWorldInfoEntry` @ 733), generate + write the paired context entry |
+| H7 | Side-prompt scene filter | `sidePrompts.js:1356` **or** index.js call sites 3872/4483/10253 | `runAfterMemory(...)` | reuse `stloCharacterFilters.js` (`collectStloCharacterFilterTargets` / `applyStloCharacterFilters`) | Filter per-scene runs to present characters |
+| H8 | Sentinel cadence | `index.js` `init()` event wiring (9943–9978 block) | `eventSource.on(...)` | `sentinel.js` | Subscribe to `MESSAGE_RECEIVED` (STMB's proven trigger; `GENERATION_ENDED` is **not** used by STMB — confirm it exists in ST `event_types` before relying on it) |
+
+Config-only (no hook, §1.2 rule 4): force-disable native `autosummary.js` via `extension_settings.STMemoryBooks.moduleSettings` + hide its UI row. `profileManager.js` reused via its own pickers (no edit).
 
 ---
 
@@ -100,7 +120,7 @@ Caveats: one transcript, one genre, Claude-family detector. Treat numbers as "ap
 - Messages truncated to 500 chars, formatted `[id] SpeakerName: text…`.
 - Baseline prompt: Appendix A. Per-chat override supported.
 - Guard: never emit a boundary within the final 4 messages (scene may be incomplete; detection intentionally runs one scene behind).
-- Cadence: run after `GENERATION_ENDED` when ≥N new messages since last cycle (default 8) and no STMB job in flight.
+- Cadence: run when ≥N new messages since last cycle (default 8) and no STMB job in flight. **Trigger event (P1.2 note):** STMB's native auto-summary fires on `MESSAGE_RECEIVED` (`autosummary.js:210`); reuse that proven event for the sentinel counter. `GENERATION_ENDED` was assumed in the original draft but STMB subscribes to no such event — confirm it exists in ST's `event_types` before preferring it over `MESSAGE_RECEIVED`.
 - On confirmed boundary B with watermark W: run memory for `W+1 … B-1` via `runSceneMemoryRange`; multiple boundaries fire sequentially oldest-first, awaited.
 - JSON discipline: parse strict array; one retry with "JSON only" reprimand; on second failure skip the cycle — never guess.
 - Optional per-chat **structure hint**: user-supplied regex (e.g. header stamps like the fixture's) as a free deterministic boundary source; LLM remains fallback/tiebreaker. Auto-suggest when a repeating bracket pattern is detected in narrator messages.
@@ -218,6 +238,6 @@ incomplete). Reply with ONLY a JSON array of integers, e.g. [12, 27], or [].
 
 ## Appendix C — Links & materials
 
-- Upstream: https://github.com/aikohanasaki/SillyTavern-MemoryBooks (AGPL-3.0-only; re-verify §2's code map against current main in Phase 1)
+- Upstream: https://github.com/aikohanasaki/SillyTavern-MemoryBooks (AGPL-3.0-only; §2 code map re-verified 2026-07-21 against `main`@`617cfbf` — P1.2; re-run after each `git merge upstream/main`)
 - SillyTavern: https://github.com/SillyTavern/SillyTavern · extension docs: https://docs.sillytavern.app/for-contributors/writing-extensions/ · World Info: https://docs.sillytavern.app/usage/core-concepts/worldinfo/
 - Eval fixture: full "Satire Fantasy Isekai" transcript, supplied with this plan (328 messages; headers = free ground-truth labels; strip before detection)
