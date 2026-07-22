@@ -97,6 +97,7 @@ import {
   initializeChatAutoSettings,
   resolveSentinelEnabled,
   resolveDetectionPrompt,
+  resolveAutoSummaryEnabled,
 } from "./autoSettings.js";
 import {
   showConfirmationPopup,
@@ -8575,7 +8576,8 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     defaultGroupSidePromptSetOptions: buildDefaultSidePromptSetOptions(
       settings.moduleSettings.defaultGroupSidePromptSetKey,
     ),
-    autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
+    autoSummaryEnabled: resolveAutoSummaryEnabled(settings, chat_metadata),
+    autoSummaryForceDisabledBySentinel: resolveSentinelEnabled(settings, chat_metadata),
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
     autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
     autoConsolidationPromptEnabled:
@@ -9342,7 +9344,23 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
     }
 
     if (e.target.matches("#stmb-auto-summary-enabled")) {
-      settings.moduleSettings.autoSummaryEnabled = e.target.checked;
+      // STMBC-HOOK-PHASE2: refuse to enable native auto-summary while sentinel
+      // is on (plan §4.1). The stored value is forced to false; the checkbox
+      // is also disabled in the template. autosummary.js is left intact.
+      const wantOn = e.target.checked;
+      const sentinelOn = resolveSentinelEnabled(settings, chat_metadata);
+      if (wantOn && sentinelOn) {
+        e.target.checked = false;
+        toastr.warning(
+          translate(
+            "Native Auto-Summary is force-disabled while Sentinel is enabled. Disable Sentinel first.",
+            "STMemoryBooks_AutoSummaryBlockedBySentinel",
+          ),
+          "STMemoryBooks",
+        );
+        return;
+      }
+      settings.moduleSettings.autoSummaryEnabled = wantOn;
       saveSettingsDebounced();
       return;
     }

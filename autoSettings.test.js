@@ -6,6 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    resolveAutoSummaryEnabled,
     AUTO_MODULE_DEFAULTS,
     CHAT_AUTO_DEFAULTS,
     validateAutoPatch,
@@ -227,4 +228,48 @@ test('resolveDetectionPrompt: returns null when nothing set (use bundled baselin
 test('resolveDetectionPrompt: whitespace-only is treated as empty', () => {
     const settings = { autoModule: { detectionPrompt: '   \n  ' } };
     assert.equal(resolveDetectionPrompt(settings, {}), null);
+});
+// ----------------------------------------------------------------------------
+// resolveAutoSummaryEnabled (P2.4 / plan §4.1)
+// ----------------------------------------------------------------------------
+
+test('resolveAutoSummaryEnabled returns the stored value when sentinel is OFF', () => {
+    const settings = { moduleSettings: { autoSummaryEnabled: true } };
+    const meta = { stmbc: { enabled: false } };
+    assert.equal(resolveAutoSummaryEnabled(settings, meta), true);
+
+    const settings2 = { moduleSettings: { autoSummaryEnabled: false } };
+    assert.equal(resolveAutoSummaryEnabled(settings2, meta), false);
+});
+
+test('resolveAutoSummaryEnabled returns false when sentinel is enabled (global)', () => {
+    const settings = {
+        autoModule: { sentinelEnabled: true },
+        moduleSettings: { autoSummaryEnabled: true }, // user thinks it's on
+    };
+    // sentinel on, even though autoSummaryEnabled=true → force false
+    assert.equal(resolveAutoSummaryEnabled(settings, {}), false);
+});
+
+test('resolveAutoSummaryEnabled respects per-chat sentinel override', () => {
+    // global sentinel on, per-chat disabled → sentinel is OFF for this chat
+    const settings = {
+        autoModule: { sentinelEnabled: true },
+        moduleSettings: { autoSummaryEnabled: true },
+    };
+    const meta = { stmbc: { enabled: false } };
+    assert.equal(resolveAutoSummaryEnabled(settings, meta), true);
+});
+
+test('resolveAutoSummaryEnabled handles missing settings gracefully', () => {
+    assert.equal(resolveAutoSummaryEnabled(null, {}), false);
+    assert.equal(resolveAutoSummaryEnabled({}, {}), false);
+    assert.equal(resolveAutoSummaryEnabled({ moduleSettings: {} }, {}), false);
+});
+
+test('resolveAutoSummaryEnabled coerces non-boolean stored value', () => {
+    const settings = { moduleSettings: { autoSummaryEnabled: 'yes' } };
+    const meta = { stmbc: { enabled: false } };
+    // Non-boolean stored value with sentinel off returns false (only === true counts)
+    assert.equal(resolveAutoSummaryEnabled(settings, meta), false);
 });

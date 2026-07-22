@@ -304,6 +304,30 @@ export function resolveSentinelEnabled(settings, chatMeta = getDefaultChatMeta()
 }
 
 /**
+ * Resolve the effective autoSummaryEnabled flag for the current chat.
+ *
+ * Phase 2 (P2.4) — plan §4.1 + §1.2.4: native auto-summary is force-disabled
+ * while sentinel is enabled for a chat. We don't mutate the stored setting —
+ * we just return false when sentinel is on, so all callers (runtime + UI)
+ * agree on the same effective value. The setting key stays unchanged
+ * (`extension_settings.STMemoryBooks.moduleSettings.autoSummaryEnabled`)
+ * for data compatibility; we just never honor a `true` value while sentinel
+ * is on.
+ *
+ * Note: per plan §1.2.4 we use configuration (this resolver) instead of
+ * modifying autosummary.js. autosummary.js stays untouched for mergeability.
+ *
+ * @param {object} settings - global extension_settings
+ * @param {object} [chatMeta] - chat_metadata; defaults to current
+ * @returns {boolean}
+ */
+export function resolveAutoSummaryEnabled(settings, chatMeta = getDefaultChatMeta()) {
+    if (resolveSentinelEnabled(settings, chatMeta)) return false;
+    const stored = settings?.moduleSettings?.autoSummaryEnabled;
+    return stored === true;
+}
+
+/**
  * Resolve the effective detection prompt for the current chat.
  * Per-chat promptOverride (when non-empty) wins; otherwise global detectionPrompt.
  * Empty global detectionPrompt means "use bundled baseline" (signaled by returning null).

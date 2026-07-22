@@ -323,9 +323,16 @@ export const generalSettingsTemplate = Handlebars.compile(`
 export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoMemory">Automatic Memories</h3>
 
+    {{#if autoSummaryForceDisabledBySentinel}}
+    <div class="info-block warning">
+        <strong data-i18n="STMemoryBooks_AutoSummaryForceDisabledTitle">Native Auto-Summary is disabled</strong>
+        <p data-i18n="STMemoryBooks_AutoSummaryForceDisabledDesc">Sentinel is enabled (per plan §4.1). The native auto-summary runtime is force-disabled so it never races the sentinel's own memory pipeline. The settings below are preserved but ignored until sentinel is disabled. autosummary.js is intentionally left intact for mergeability (§1.2 rule 4).</p>
+    </div>
+    {{/if}}
+
     <div class="world_entry_form_control">
-        <label class="checkbox_label">
-            <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
+        <label class="checkbox_label {{#if autoSummaryForceDisabledBySentinel}}stmb-disabled-row{{/if}}">
+            <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}} {{#if autoSummaryForceDisabledBySentinel}}disabled{{/if}}>
             <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
         </label>
         <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc;[title]STMemoryBooks_AutoSummaryWarnTooltip" title="Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest &lt;N|none&gt; to control the baseline.">Automatically run /nextmemory after a specified number of messages.</small>
@@ -337,7 +344,7 @@ export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryIntervalDesc">Number of messages after which to automatically create a memory summary.</small>
             <input type="number" id="stmb-auto-summary-interval" class="text_pole"
                 value="{{autoSummaryInterval}}" min="10" max="200" step="1"
-                placeholder="50">
+                placeholder="50" {{#if autoSummaryForceDisabledBySentinel}}disabled{{/if}}>
         </label>
     </div>
 
@@ -346,7 +353,7 @@ export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
             <h4 data-i18n="STMemoryBooks_AutoSummaryBuffer">Auto-Summary Buffer:</h4>
             <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryBufferDesc">Delay auto-summary by X messages (belated generation). Default 2, max 50.</small>
             <input type="number" id="stmb-auto-summary-buffer" class="text_pole"
-                value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0">
+                value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0" {{#if autoSummaryForceDisabledBySentinel}}disabled{{/if}}>
         </label>
     </div>
 

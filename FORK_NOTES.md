@@ -53,6 +53,7 @@ eval/                          Phase 0 eval harness (offline; no SillyTavern nee
 autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (global + per-chat), defaults, validation, get/set, resolver helpers
 sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
 eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
+autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
 FORK_NOTES.md                  this file
 ```
 
@@ -72,6 +73,10 @@ on SillyTavern at all; it runs offline against JSONL exports.
 | `sidePrompts.js:1404` | +12 (filter call between set/trigger filter and the runItems.length===0 early return) | Phase 4 (P4.2) per-scene side-prompt filtering | Yes — additive; reuses `compiledScene.metadata.characterFilterNames` from chatcompile.js; non-character-scoped items pass through unfiltered; gated by `filterRunItemsByScenePresence` from the new module. |
 | `utils.js` (P4.2) | +new entry in `getBuiltInPresetPrompts`, `getPresetNames`, `isValidPreset` | Phase 4 (P4.2) event-template preset | Yes — additive key (`event`) into existing maps/lists. No existing function bodies modified. |
 | `constants.js` (P4.2) | +2 entries (`event` in `DISPLAY_NAME_DEFAULTS`, `DISPLAY_NAME_I18N_KEYS`) | Phase 4 (P4.2) event-template preset display | Yes — additive map entries. |
+| `autoSettings.js` (P2.4) | +new `resolveAutoSummaryEnabled(settings, chatMeta)` export | Phase 2 (P2.4) — sentinel-aware auto-summary resolver | Yes — additive export alongside the existing resolvers. |
+| `index.js` (P2.4) | change handler for `#stmb-auto-summary-enabled` (~12 lines) refuses to enable while sentinel is on; `buildSettingsTemplateData` switched to read `resolveAutoSummaryEnabled` and expose `autoSummaryForceDisabledBySentinel` for the template | Phase 2 (P2.4) — UI gate | Yes — additive guard inside existing handler; one-line read in template data. |
+| `templates.js` (P2.4) | `automaticMemoriesSettingsTemplate` gains a warning block + `disabled` attributes on the auto-summary rows when sentinel is on | Phase 2 (P2.4) — UI hide | Yes — additive conditional blocks; existing rows preserved. |
+| `autosummary.js` (P2.4) | +`isAutoSummaryBlockedBySentinel` helper + `resolveSentinelEnabled` import from autoSettings.js; `handleAutoSummaryMessageReceived` and `clearAutoSummaryState` early-return when sentinel is on | Phase 2 (P2.4) — runtime gate | Yes — additive guard clauses only; module structure preserved for mergeability (per plan §1.2 rule 4). |
 | `index.js` (P2.2) | +~197 (imports, menu button, popup, event delegation, init backfill) | Phase 2 P2.2 — Auto-module settings panel + detection profile picker | Yes — additive; reuses existing patterns (`automaticMemoriesSettingsTemplate`, `setupSettingsEventListeners`, `initializeSettings`, `validateSettings`, `saveSettingsDebounced`); no upstream function bodies changed. New menu item is appended to `promptManagerButtons`. |
 | `templates.js` (P2.2) | +~133 (one new Handlebars template: `autoModuleSettingsTemplate`) | Phase 2 P2.2 — auto-module settings UI | Yes — additive; new export at the bottom of the file. |
 | `.gitignore` | +2 (`eval/reports/`, `eval/predictions*.json`) | Don't commit generated reports. | Yes — gitignore merges trivially. |
@@ -110,6 +115,7 @@ artifacts are committed; never hand-edit them.
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 2 — Sentinel | P2.2 auto settings panel + detection profile picker | PHA-1436 | done |
 | Phase 4 — Living-lorebook orchestration | P4.2 per-scene side-prompt filtering + event-template preset | PHA-1450 | done |
+| Phase 2 — Sentinel | P2.4 force-disable native auto-summary (config, not deletion) | PHA-1456 | done |
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 1 — Fork setup | P1.4 merge drill | (open) | todo |

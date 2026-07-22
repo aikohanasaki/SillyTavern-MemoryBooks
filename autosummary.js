@@ -6,6 +6,7 @@ import { chat, chat_metadata } from '../../../../script.js';
 import { METADATA_KEY } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
 import { showLorebookSelectionPopup, clampInt } from './utils.js';
+import { resolveSentinelEnabled } from './autoSettings.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
@@ -13,6 +14,21 @@ import { validateLorebookRequirement } from './lorebookValidation.js';
 
 let autoSummarySkippedForProcessing = false;
 let autoSummarySkippedMarkersRef = null;
+
+// STMBC-HOOK-PHASE2-P2.4: defense-in-depth gate for native auto-summary.
+// Per plan §4.1 + §1.2.4, native auto-summary is force-disabled while sentinel
+// is enabled for the current chat. autosummary.js is left intact for
+// mergeability; `resolveSentinelEnabled` (from utils.js) is the single source
+// of truth for "is sentinel on?". This gate makes the runtime a no-op even
+// if a stale stored `autoSummaryEnabled=true` survives a sentinel-enable
+// transition (e.g. user enables sentinel after turning auto-summary on).
+function isAutoSummaryBlockedBySentinel() {
+    try {
+        return !!resolveSentinelEnabled(extension_settings?.STMemoryBooks, chat_metadata);
+    } catch (_e) {
+        return false;
+    }
+}
 
 /**
  * i18n helper: translate with Mustache-style {{var}} interpolation
@@ -209,6 +225,13 @@ async function checkAutoSummaryTrigger() {
  */
 export async function handleAutoSummaryMessageReceived() {
     try {
+        if (isAutoSummaryBlockedBySentinel()) {
+            // Native auto-summary is force-disabled while sentinel is on (P2.4).
+            // Belt-and-braces: even if the stored autoSummaryEnabled=true leaked
+            // through the UI gate (e.g. via direct settings edit), the runtime
+            // is a no-op here. autosummary.js stays intact for mergeability.
+            return;
+        }
         if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
             const currentMessageCount = chat.length;
             console.log(i18n('autosummary.log.messageReceivedSingle', 'STMemoryBooks: Message received - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
@@ -247,6 +270,7 @@ export async function retryAutoSummaryAfterJobIdle() {
  * @returns {void}
  */
 export function clearAutoSummaryState() {
+    if (isAutoSummaryBlockedBySentinel()) return;
     if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
         // Clear scene markers; baseline is updated upon successful memory creation
         clearScene();
