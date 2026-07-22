@@ -119,20 +119,30 @@ const { boundaries, raw, dropped, sceneLengths } = deriveGroundTruth(messages, {
 ### `detect.js`
 
 ```js
-import { HeaderOracleDetector, buildDetectionWindows, BASELINE_PROMPT } from './eval/detect.js';
+import { HeaderOracleDetector, OpenAIDetector, buildDetectionWindows } from './eval/detect.js';
+import { runDetection } from './eval/runDetection.js';
 
-const det = new HeaderOracleDetector({ timeJumpMinutes: 90 });
-const { boundaries, rawResponses } = await det.detectBoundaries({ messages });
+// Deterministic stub (header oracle — sanity test).
+const oracle = new HeaderOracleDetector({ timeJumpMinutes: 90 });
+const oracleResult = await oracle.detectBoundaries({ messages });
 
-const windows = buildDetectionWindows(messages, {
-    windowSize: 26, overlap: 8, guardSize: 4, truncateChars: 500,
+// Real LLM detector against any OpenAI-compatible /chat/completions endpoint.
+const llm = new OpenAIDetector({
+    baseUrl: 'http://10.0.0.100:4000', // LiteLLM, OpenAI, llama.cpp, etc.
+    model:   'claude-3-5-sonnet-20241022',
+    apiKey:  process.env.STMB_API_KEY,
 });
-// windows[i].formatted is ready to drop into a detection prompt.
+
+// runDetection builds windows, runs the detector per window with strict-JSON
+// retry/skip, and dedupes boundaries across the 8-message overlap.
+const result = await runDetection(messages, { detector: llm });
+console.log(result.boundaries); // deduped, sorted 1-based message IDs
+console.log(result.skipped);    // windows skipped after JSON-parse failure
 ```
 
-The real LLM detector should export the same `detectBoundaries({ messages })`
-shape. The CLI accepts it via a future `--detector llm` option (or replace
-`eval/run.js` directly once the runner is implemented).
+The CLI accepts the OpenAI-compatible detector via `--detector openai`. The
+oracle is `--detector oracle` (default); `--detector stub` reads from a
+predictions file for offline re-runs.
 
 ## Definition of precision / recall (matches §3.1–3.2)
 
@@ -160,10 +170,51 @@ or stamp emojis are tolerated without regex updates. Internal-thought blocks
 | --- | --- | --- | --- |
 | P0.1 — Fixture ingest + SillyTavern JSONL parser | ✅ landed | Ledger | `eval/parser.js` + tests |
 | P0.2 — Header ground-truth derivation | ✅ landed | Ledger | `eval/groundTruth.js` + tests |
-| P0.3 — Window builder + detection runner | 🟡 interface only | Van Dam | `eval/detect.js` exports window builder + oracle/stub; real LLM call not yet wired |
+| P0.3 — Window builder + detection runner (OpenAI-compatible) | ✅ landed | Van Dam | `eval/detect.js` (window builder + `OpenAIDetector` + strict-JSON retry/skip + oracle/stub), `eval/runDetection.js` (dedup orchestration), `eval/config.js` (env / .env loader), `eval/prompts/baseline.txt` (editable Appendix A). Tests in `eval/detect.openai.test.js`, `eval/runDetection.test.js`, `eval/config.test.js`. Wire-up: `--detector openai` in `eval/run.js`. |
 | P0.4 — Scoring, report + one-command re-score | ✅ landed | Ledger | `eval/score.js` + `eval/run.js` |
 | P0.5 — Harness docs, .env.example, run guide | ✅ landed | Ledger | this README + `run.sh` |
 
-The full Phase 0 acceptance run is reachable by **replacing the detector**
-inside `eval/run.js` with the real LLM call when P0.3 ships; the rest of the
-pipeline is in place.
+### Using `--detector openai` (PHA-1427)
+
+1. Copy `eval/.env.example` to `eval/.env` and set `STMB_BASE_URL`,
+   `STMB_MODEL`, `STMB_API_KEY` (LiteLLM, OpenAI, Anthropic-via-proxy,
+   llama.cpp server — anything OpenAI-compatible).
+2. Run the same Phase 0 pipeline:
+
+   ```bash
+   node eval/run.js --detector openai
+   ```
+
+   The runner builds the 18 detection windows, posts each one to
+   `<baseUrl>/chat/completions` with the Appendix A system prompt, parses
+   the reply as a strict JSON array of integers, retries once with a
+   "JSON only" reprimand on parse failure, and skips the window on second
+   failure (never guesses). Boundaries are deduped across the 8-message
+   overlap before scoring. Config knobs (`STMB_TEMPERATURE`,
+   `STMB_TIMEOUT_MS`, `STMB_PROMPT_FILE`, `STMB_MAX_RETRIES`) are documented
+   in `eval/.env.example`.
+
+3. Swap model or endpoint — **only config changes**:
+
+   ```bash
+   STMB_MODEL=claude-3-5-sonnet-20241022 STMB_BASE_URL=http://10.0.0.100:4000 \
+     node eval/run.js --detector openai --out eval/reports/sonnet
+   ```
+
+### Programmatic use
+
+```js
+import { OpenAIDetector } from './eval/detect.js';
+import { runDetection } from './eval/runDetection.js';
+import { parseJsonlFile } from './eval/parser.js';
+
+const { messages } = await parseJsonlFile('eval/fixtures/transcript.jsonl');
+const detector = new OpenAIDetector({
+    baseUrl: process.env.STMB_BASE_URL,
+    model:   process.env.STMB_MODEL,
+    apiKey:  process.env.STMB_API_KEY,
+});
+const result = await runDetection(messages, { detector });
+console.log(result.boundaries); // deduped, sorted
+console.log(result.skipped);    // windows skipped after JSON-parse failure
+```

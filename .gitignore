@@ -9,3 +9,5 @@ node_modules/
 AGENTS.md
 eval/reports/
 eval/predictions*.json
+eval/.env
+.env

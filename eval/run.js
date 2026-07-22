@@ -30,7 +30,9 @@ import { fileURLToPath } from 'node:url';
 
 import { parseJsonlFile } from './parser.js';
 import { deriveGroundTruth } from './groundTruth.js';
-import { HeaderOracleDetector, StubDetector, buildDetectionWindows, BASELINE_PROMPT } from './detect.js';
+import { HeaderOracleDetector, StubDetector, OpenAIDetector, buildDetectionWindows, BASELINE_PROMPT, loadBaselinePrompt } from './detect.js';
+import { runDetection } from './runDetection.js';
+import { resolveConfig } from './config.js';
 import { scoreAtTolerances, formatScoreLine, formatMarkdownReport } from './score.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,6 +52,7 @@ function parseArgs(argv) {
         timeJump: 90,
         minScene: 6,
         prompt: BASELINE_PROMPT,
+        promptFile: null, // resolved later when --detector openai is used
         windowSize: 26,
         windowOverlap: 8,
         truncateChars: 500,
@@ -71,6 +74,7 @@ function parseArgs(argv) {
             case '--window-overlap': args.windowOverlap = parseInt(next(), 10); break;
             case '--truncate-chars': args.truncateChars = parseInt(next(), 10); break;
             case '--guard-size': args.guardSize = parseInt(next(), 10); break;
+            case '--prompt-file': args.promptFile = resolve(next()); break;
             case '--help':
             case '-h':
                 printHelp();
@@ -93,7 +97,7 @@ Usage:
 
 Options:
   --transcript <path>     JSONL chat file (default: eval/fixtures/transcript.jsonl)
-  --detector <name>       oracle | stub (default: oracle)
+  --detector <name>       oracle | stub | openai (default: oracle)
   --predictions <path>    predictions file (when --detector stub)
   --out <dir>             output directory (default: eval/reports/latest)
   --tolerances <list>     comma-separated (default: 1,2)
@@ -103,11 +107,21 @@ Options:
   --window-overlap <msgs> detection window overlap (default: 8)
   --truncate-chars <n>    truncate each message to N chars (default: 500)
   --guard-size <msgs>     trailing guard (default: 4)
-  --prompt <text>         baseline detection prompt (default: built-in)
-  -h, --help              show this help`);
+  --prompt <text>         baseline detection prompt (default: eval/prompts/baseline.txt via loadBaselinePrompt)
+  --prompt-file <path>    override the baseline prompt file (used by --detector openai)
+  -h, --help              show this help
+
+OpenAI-compatible detector (--detector openai):
+  Reads STMB_BASE_URL / STMB_MODEL / STMB_API_KEY from env or eval/.env.
+  Optional: STMB_TEMPERATURE (0), STMB_TIMEOUT_MS (60000),
+  STMB_PROMPT_FILE (eval/prompts/baseline.txt).
+  Runs the LLM per detection window (plan §3.1), strict-JSON parses the
+  array, retries ONCE on parse failure with a JSON-only reprimand, and
+  skips the window on second failure. Boundaries are deduped across the
+  8-message overlap before scoring.`);
 }
 
-function makeDetector(args) {
+async function makeDetector(args) {
     switch (args.detector) {
         case 'oracle':
             return new HeaderOracleDetector({ timeJumpMinutes: args.timeJump });
@@ -116,9 +130,29 @@ function makeDetector(args) {
                 throw new Error('--detector stub requires --predictions <path>');
             }
             return new StubDetector(args.predictions);
+        case 'openai':
+            return await makeOpenAIDetector(args);
         default:
-            throw new Error(`unknown detector: ${args.detector} (use oracle | stub)`);
+            throw new Error(`unknown detector: ${args.detector} (use oracle | stub | openai)`);
     }
+}
+
+async function makeOpenAIDetector(args) {
+    const cfg = await resolveConfig();
+    if (!cfg.isConfigured) {
+        throw new Error(`--detector openai: missing env vars: ${cfg.missing.join(', ')}. Set them in env or eval/.env (see eval/.env.example).`);
+    }
+    const promptFile = args.promptFile ?? cfg.promptFile;
+    const prompt = await loadBaselinePrompt(promptFile);
+    return new OpenAIDetector({
+        baseUrl: cfg.baseUrl,
+        model: cfg.model,
+        apiKey: cfg.apiKey,
+        temperature: cfg.temperature,
+        timeoutMs: cfg.timeoutMs,
+        maxJsonRetries: cfg.maxJsonRetries,
+        prompt,
+    });
 }
 
 // ----------------------------------------------------------------------------
@@ -142,19 +176,37 @@ async function main() {
     console.log(`        Scene lengths: min=${Math.min(...gt.sceneLengths)} max=${Math.max(...gt.sceneLengths)} avg=${(gt.sceneLengths.reduce((a,b)=>a+b,0)/gt.sceneLengths.length).toFixed(1)}`);
 
     console.log(`[3/4] Running detector "${args.detector}"…`);
-    const detector = makeDetector(args);
-    const det = await detector.detectBoundaries({ messages });
-    console.log(`        ${det.boundaries.length} predicted boundaries.`);
+    const detector = await makeDetector(args);
 
-    // Optional: build detection windows for inspection. The real LLM detector
-    // would consume these.
-    const windows = buildDetectionWindows(messages, {
-        windowSize: args.windowSize,
-        overlap: args.windowOverlap,
-        truncateChars: args.truncateChars,
-        guardSize: args.guardSize,
-    });
-    console.log(`        ${windows.length} detection windows built (size=${args.windowSize}, overlap=${args.windowOverlap}, guard=${args.guardSize}, truncate=${args.truncateChars}).`);
+    let det;
+    let windowCount;
+    if (args.detector === 'openai') {
+        // OpenAIDetector runs per window with strict-JSON retry/skip and
+        // dedup across overlap. runDetection() owns that orchestration.
+        det = await runDetection(messages, {
+            detector,
+            windowSize: args.windowSize,
+            overlap: args.windowOverlap,
+            truncateChars: args.truncateChars,
+            guardSize: args.guardSize,
+        });
+        windowCount = det.windows.length;
+        console.log(`        ${windowCount} detection windows built (size=${args.windowSize}, overlap=${args.windowOverlap}, guard=${args.guardSize}, truncate=${args.truncateChars}).`);
+        console.log(`        ${det.boundaries.length} predicted boundaries (deduped across ${windowCount} windows; ${det.skipped} skipped).`);
+    } else {
+        det = await detector.detectBoundaries({ messages });
+        windowCount = buildDetectionWindows(messages, {
+            windowSize: args.windowSize,
+            overlap: args.windowOverlap,
+            truncateChars: args.truncateChars,
+            guardSize: args.guardSize,
+        }).length;
+        console.log(`        ${windowCount} detection windows built (size=${args.windowSize}, overlap=${args.windowOverlap}, guard=${args.guardSize}, truncate=${args.truncateChars}).`);
+        console.log(`        ${det.boundaries.length} predicted boundaries.`);
+    }
+    // Ensure both shapes expose boundaries / rawResponses downstream.
+    const predictedBoundaries = det.boundaries;
+    const rawResponses = det.rawResponses;
 
     console.log(`[4/4] Scoring at ±{${args.tolerances.join(',')}} tolerance…`);
     const results = scoreAtTolerances({
@@ -189,9 +241,9 @@ async function main() {
         groundTruthCount: gt.boundaries.length,
         rawGroundTruthCount: gt.raw.length,
         droppedGroundTruth: gt.dropped,
-        predictedCount: det.boundaries.length,
+        predictedCount: predictedBoundaries.length,
         results,
-        predictions: det.boundaries,
+        predictions: predictedBoundaries,
         groundTruth: gt.boundaries,
         sceneLengths: gt.sceneLengths,
     };
@@ -203,7 +255,7 @@ async function main() {
     });
     await writeFile(resolve(args.out, 'report.json'), JSON.stringify(jsonReport, null, 2));
     await writeFile(resolve(args.out, 'report.md'), mdReport);
-    await writeFile(resolve(args.out, 'predictions.json'), JSON.stringify({ boundaries: det.boundaries, rawResponses: det.rawResponses }, null, 2));
+    await writeFile(resolve(args.out, 'predictions.json'), JSON.stringify({ boundaries: predictedBoundaries, rawResponses }, null, 2));
     await writeFile(resolve(args.out, 'ground-truth.json'), JSON.stringify({
         boundaries: gt.boundaries,
         raw: gt.raw,
