@@ -59,6 +59,9 @@ import {
 import { handleSentinelMessageReceived } from "./sentinel.js";
 // STMBC-HOOK(auditor): resumable full-chat audit chunk-walker (fork; plan §4.3).
 import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./auditor.js";
+// STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
+// running notes (fork; plan §4.3 jobs 1–2).
+import { handleCoverageCommand, handleRegenCommand } from "./auditorJobs.js";
 import {
   editProfile,
   newProfile,
@@ -9933,6 +9936,38 @@ function registerSlashCommands() {
     ),
   });
 
+  // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the audit
+  // running notes (fork; plan §4.3 jobs 1–2).
+  const stmbcCoverageCmd = SlashCommand.fromProps({
+    name: "stmbc-coverage",
+    callback: handleCoverageCommand,
+    helpString: translate(
+      "Coverage audit: compare the STMB-Auto running notes against the bound lorebook and report missing/thin entries with one-click generate. Run /stmbc-audit first. Usage: /stmbc-coverage",
+      "STMemoryBooks_Slash_CoverageHelp",
+    ),
+    returns: "Coverage summary string.",
+  });
+
+  const stmbcRegenCmd = SlashCommand.fromProps({
+    name: "stmbc-regen",
+    callback: handleRegenCommand,
+    helpString: translate(
+      "Regenerate a living lorebook entry from the source chunks where its name appears (anti-drift), with a diff to approve. Run /stmbc-audit first. Usage: /stmbc-regen <entry name>",
+      "STMemoryBooks_Slash_RegenHelp",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          "the entry name to re-derive (a character or location seen in the audit notes)",
+          "STMemoryBooks_Slash_RegenArgDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: true,
+      }),
+    ],
+    returns: "Regeneration status string.",
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -9947,6 +9982,8 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(stmbStopCmd);
   SlashCommandParser.addCommandObject(stmbcAuditCmd);
   SlashCommandParser.addCommandObject(stmbcStopCmd);
+  SlashCommandParser.addCommandObject(stmbcCoverageCmd);
+  SlashCommandParser.addCommandObject(stmbcRegenCmd);
 }
 
 /**

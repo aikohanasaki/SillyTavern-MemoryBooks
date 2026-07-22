@@ -79,6 +79,27 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
    checkpoint intact for resume. Additive; the upstream `/stmb-stop` command
    (which already calls `cancelAllStmbJobs`) is unchanged.
 
+### `index.js` — Phase 5 / P5.2 (Auditor jobs 1–2)
+
+1. **Import the auditor-jobs bindings** (immediately after the P5.1 auditor import).
+   ```js
+   // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
+   // running notes (fork; plan §4.3 jobs 1–2).
+   import { handleCoverageCommand, handleRegenCommand } from "./auditorJobs.js";
+   ```
+   *Why:* the two auditor jobs are on-demand slash commands (no new job type — they
+   read the checkpoint the P5.1 walker wrote and finish in one interaction).
+
+2. **Register `/stmbc-coverage` and `/stmbc-regen`** (inside `registerSlashCommands()`,
+   right after the P5.1 `stmbcStopCmd`; two `SlashCommand.fromProps({…})` tagged
+   `// STMBC-HOOK(auditor-jobs):` plus their two `addCommandObject(...)` lines).
+   *Why:* `/stmbc-coverage` compares the audit running notes against the bound
+   lorebook and shows a missing/thin report popup with one-click generate;
+   `/stmbc-regen <name>` re-derives one living entry from the source chunks where its
+   name appears (anti-drift) with a diff to approve. Both require a prior
+   `/stmbc-audit`. Additive; no upstream behavior changed. They write through STMB's
+   own `addlore.upsertLorebookEntryByTitle`, never the memory-creation path.
+
 ### `clipManager.js` — Phase 3 / P3.1 (Clipper+)
 
 1. **Import the clip-save hook** (immediately after the `./stmbJobs.js` import).
@@ -176,6 +197,22 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
   and an inline fallback for when the jobs dashboard is unavailable.
 - `auditor.test.js` — `node auditor.test.js` (30 cases; the core is fully exercised
   without SillyTavern — including checkpoint, mid-walk resume, halt, and restart).
+- `auditorJobsCore.js` — pure, SillyTavern-free core for the two P5.2 auditor jobs
+  (DI): the coverage classifier (running notes vs. lorebook entries → missing/thin,
+  memory-entry-aware, salience-gated + salience-sorted), name→chunk provenance
+  lookup, budget-bounded source-excerpt reconstruction (name-mention priority), the
+  re-derivation prompt/parse/retry (JSON-first, plain-text fallback), and an LCS
+  line diff for the diff view.
+- `auditorJobs.js` — SillyTavern binding layer for `/stmbc-coverage` and
+  `/stmbc-regen`. Resolves the bound lorebook (`chat_metadata[METADATA_KEY]` +
+  `loadWorldInfo`), reads the audit notes via `auditor.getAuditNotes`, reproduces the
+  walker's chunk plan (`auditorCore.planChunks` with `resolveAuditConfig`) to line up
+  provenance, calls `requestCompletion` to re-derive, renders the coverage report /
+  diff popups, and writes via `addlore.upsertLorebookEntryByTitle`. On-demand only;
+  new entries get keys, existing entries keep theirs.
+- `auditorJobs.test.js` — `node --test auditorJobs.test.js` (20 cases; the core is
+  fully exercised without SillyTavern — coverage classification, source selection,
+  parse/retry, and diff).
 
 ## New settings / metadata namespaces (clean; no upstream collision)
 
@@ -217,6 +254,19 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
   `notes` is the running-notes object (characters/locations keyed maps + events/
   claims/collisions lists with chunk provenance). It survives a reload; re-running
   `/stmbc-audit` resumes from `nextChunk`, `/stmbc-audit restart` discards it.
+- Global: `extension_settings.STMemoryBooks.autoModule.coverage` (plan §4.3 job 1) —
+  coverage-audit `thinContentChars` (default 240 — a matched living entry shorter than
+  this is "thin"), `minChunks` (default 2 — only report names seen in ≥ this many
+  distinct chunks, cutting one-off noise), `includeLocations` (default true). Per-chat
+  overrides at `chat_metadata.stmbc.coverage`. On-demand only; no `enabled` gate.
+- Global: `extension_settings.STMemoryBooks.autoModule.regen` (plan §4.3 job 2) —
+  entry-regeneration `tokenBudget` (default 12000 — cap on the source excerpt sent to
+  the re-derivation call), `truncate` (default 0 ⇒ full text), `prioritizeNameMatches`
+  (default true), `autoApprove` (default false — skip the diff popup and write
+  directly), `profile` (derivation profile index; null ⇒ STMB default), `regenPrompt`
+  (re-derivation-prompt override). Per-chat overrides at `chat_metadata.stmbc.regen`.
+  Re-derived entries are written via `upsertLorebookEntryByTitle` (not marked as STMB
+  memories — they are living lore). On-demand only; no `enabled` gate.
 - Watermark source of truth remains upstream's
   `chat_metadata.STMemoryBooks.highestMemoryProcessed` via
   `getHighestMemoryProcessed()`; `chat_metadata.stmbc.watermark` is only a
