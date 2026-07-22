@@ -57,6 +57,8 @@ import {
 } from "./autosummary.js";
 // STMBC-HOOK(sentinel): autonomous scene-boundary detection cycle (fork; plan §4.1).
 import { handleSentinelMessageReceived } from "./sentinel.js";
+// STMBC-HOOK(auditor): resumable full-chat audit chunk-walker (fork; plan §4.3).
+import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./auditor.js";
 import {
   editProfile,
   newProfile,
@@ -9901,6 +9903,36 @@ function registerSlashCommands() {
     ),
   });
 
+  // STMBC-HOOK(auditor): fork slash commands — resumable full-chat audit + halt (plan §4.3, §2.1 H3).
+  const stmbcAuditCmd = SlashCommand.fromProps({
+    name: "stmbc-audit",
+    callback: handleAuditCommand,
+    helpString: translate(
+      "Run (or resume) the STMB-Auto full-chat audit walk. Usage: /stmbc-audit [restart]",
+      "STMemoryBooks_Slash_AuditHelp",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          '"restart" to discard the checkpoint and start fresh; omit to resume',
+          "STMemoryBooks_Slash_AuditArgDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: false,
+      }),
+    ],
+    returns: "Audit status message as a string.",
+  });
+
+  const stmbcStopCmd = SlashCommand.fromProps({
+    name: "stmbc-stop",
+    callback: handleStmbcStopCommand,
+    helpString: translate(
+      "Halt STMB-Auto jobs (auditor/sentinel); the audit checkpoint is kept for resume. Usage: /stmbc-stop",
+      "STMemoryBooks_Slash_StopcHelp",
+    ),
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -9913,6 +9945,8 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(highestMemCmd);
   SlashCommandParser.addCommandObject(setHighestMemCmd);
   SlashCommandParser.addCommandObject(stmbStopCmd);
+  SlashCommandParser.addCommandObject(stmbcAuditCmd);
+  SlashCommandParser.addCommandObject(stmbcStopCmd);
 }
 
 /**
@@ -11010,6 +11044,9 @@ async function init() {
   await refreshMemoryTierMacroCache();
   registerStmbJobExecutor("memory", executeQueuedMemoryJob);
   registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
+  // STMBC-HOOK(auditor): register the resumable audit chunk-walker job type so the
+  // dashboard shows it and /stmbc-stop halts it (fork; plan §4.3).
+  registerStmbJobExecutor("audit", executeAuditJob);
   subscribeToStmbJobs(handleStmbJobStateChanged);
   initStmbJobsIfTopInfoBarEnabled();
 

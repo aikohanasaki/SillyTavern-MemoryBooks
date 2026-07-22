@@ -49,6 +49,36 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
    counter. The handler self-gates on `autoModule.enabled` / `chat_metadata.stmbc`
    and is a no-op when the sentinel is off, so stock behavior is unchanged.
 
+### `index.js` — Phase 5 / P5.1 (Auditor)
+
+1. **Import the auditor bindings** (immediately after the sentinel import).
+   ```js
+   // STMBC-HOOK(auditor): resumable full-chat audit chunk-walker (fork; plan §4.3).
+   import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./auditor.js";
+   ```
+   *Why:* the auditor is a registered job executor plus two slash commands.
+
+2. **Register the `audit` job type** (inside `init()`, right after STMB's own
+   `registerStmbJobExecutor("consolidation", …)`, plan §2.1 site **H1/H2**).
+   ```js
+   // STMBC-HOOK(auditor): register the resumable audit chunk-walker job type so the
+   // dashboard shows it and /stmbc-stop halts it (fork; plan §4.3).
+   registerStmbJobExecutor("audit", executeAuditJob);
+   ```
+   *Why:* the chunk walker runs as an `audit` job so it appears in the jobs
+   dashboard and is halted cooperatively by the shared abort signal
+   (`cancelAllStmbJobs`). Same call the two upstream executors use; added lines
+   only, no upstream behavior changed.
+
+3. **Register the `/stmbc-audit` and `/stmbc-stop` slash commands** (inside
+   `registerSlashCommands()`, beside the upstream command objects; plan §2.1 site
+   **H3**). Two `SlashCommand.fromProps({…})` definitions tagged
+   `// STMBC-HOOK(auditor):` plus their two `addCommandObject(...)` lines.
+   *Why:* `/stmbc-audit [restart]` starts or resumes the audit walk (H3);
+   `/stmbc-stop` halts the fork's jobs via `cancelAllStmbJobs` and leaves the
+   checkpoint intact for resume. Additive; the upstream `/stmb-stop` command
+   (which already calls `cancelAllStmbJobs`) is unchanged.
+
 ### `clipManager.js` — Phase 3 / P3.1 (Clipper+)
 
 1. **Import the clip-save hook** (immediately after the `./stmbJobs.js` import).
@@ -134,6 +164,18 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
   off) and never throws.
 - `injection.test.js` — `node injection.test.js` (27 cases; the core is fully
   exercised without SillyTavern).
+- `auditorCore.js` — pure, SillyTavern-free Auditor walker (DI core): audit-message
+  extraction, deterministic chunk planning (40 msgs/chunk within a ~20K-token cap),
+  strict-JSON per-chunk notes parser (one retry), map-reduce into a running-notes
+  object, checkpoint/resume decision, and cooperative halt. `runAuditWalk` is pure
+  of any SillyTavern import.
+- `auditor.js` — SillyTavern binding layer that wires real chat / chat_metadata
+  (checkpoint at `chat_metadata.stmbc.audit`) / profile / LLM (`requestCompletion`)
+  / job-context functions into `auditorCore.runAuditWalk`. Owns the `audit` job
+  executor, the `/stmbc-audit` (start/resume/restart) and `/stmbc-stop` handlers,
+  and an inline fallback for when the jobs dashboard is unavailable.
+- `auditor.test.js` — `node auditor.test.js` (30 cases; the core is fully exercised
+  without SillyTavern — including checkpoint, mid-walk resume, halt, and restart).
 
 ## New settings / metadata namespaces (clean; no upstream collision)
 
@@ -164,6 +206,17 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
   by headline yet are never matched by `clipManager.isClipEntryTitle` (compaction /
   clip lists ignore them). They are keyword-activated, non-constant, and
   `preventRecursion` + `excludeRecursion` (plan §4.2, Appendix B).
+- Global: `extension_settings.STMemoryBooks.autoModule.audit` (plan §4.3, §4.5) —
+  Auditor `chunkSize` (default 40), `tokenCap` (default 20000), `truncate` (default
+  0 ⇒ read full text), `profile` (extraction profile index; null ⇒ STMB default
+  profile), `mapPrompt` (per-chunk extraction-prompt override). Per-chat overrides
+  at `chat_metadata.stmbc.audit` (same keys; per-chat wins). The audit is
+  on-demand only (never auto-runs in P5.1), so there is no `enabled` gate.
+- Per-chat: `chat_metadata.stmbc.audit` also holds the resumable **checkpoint**
+  written after each chunk — `{ nextChunk, total, notes, chatLen, status, updatedAt }`.
+  `notes` is the running-notes object (characters/locations keyed maps + events/
+  claims/collisions lists with chunk provenance). It survives a reload; re-running
+  `/stmbc-audit` resumes from `nextChunk`, `/stmbc-audit restart` discards it.
 - Watermark source of truth remains upstream's
   `chat_metadata.STMemoryBooks.highestMemoryProcessed` via
   `getHighestMemoryProcessed()`; `chat_metadata.stmbc.watermark` is only a
