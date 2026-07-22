@@ -196,18 +196,23 @@ async function runAuditInline(restart) {
     }
     const controller = new AbortController();
     inlineAbort = controller;
+    // No jobs dashboard to carry per-chunk detail here, so mid-job extraction
+    // errors must be tallied and surfaced in the final message instead of
+    // vanishing silently (plan §6 P6.1: no silent poisoning).
+    let erroredChunks = 0;
     try {
         const deps = buildAuditDeps({
             restart,
             shouldHalt: () => controller.signal.aborted,
-            onProgress: () => {},
+            onProgress: (info) => { if (info?.error) erroredChunks++; },
         });
         const result = await runAuditWalk(deps);
-        if (result.status === 'halted') return `Audit halted at chunk ${result.nextChunk}/${result.plan.chunks} (resumable).`;
+        const errNote = erroredChunks > 0 ? ` (${erroredChunks} chunk${erroredChunks === 1 ? '' : 's'} had extraction errors and were skipped)` : '';
+        if (result.status === 'halted') return `Audit halted at chunk ${result.nextChunk}/${result.plan.chunks} (resumable).${errNote}`;
         const s = summarizeNotes(result.notes);
         return result.status === 'empty'
             ? 'Nothing to audit (empty chat).'
-            : `Audit complete: ${result.plan.chunks} chunks · ${s.characters} characters, ${s.locations} locations, ${s.events} events, ${s.claims} claims.`;
+            : `Audit complete: ${result.plan.chunks} chunks · ${s.characters} characters, ${s.locations} locations, ${s.events} events, ${s.claims} claims.${errNote}`;
     } finally {
         inlineAbort = null;
     }
@@ -263,7 +268,7 @@ export async function handleAuditCommand(namedArgs, unnamedArgs) {
         // No dashboard — run inline.
         try { toastr.info(`Running audit${resumeNote}…`, 'STMemoryBooks'); } catch { /* toastr optional */ }
         const msg = await runAuditInline(restart);
-        try { toastr.success(msg, 'STMemoryBooks'); } catch { /* toastr optional */ }
+        try { toastr[msg.includes('extraction errors') ? 'warning' : 'success'](msg, 'STMemoryBooks'); } catch { /* toastr optional */ }
         return msg;
     } catch (err) {
         console.error(`${LOG}: /stmbc-audit failed`, err);

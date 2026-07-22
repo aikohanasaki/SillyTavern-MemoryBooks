@@ -271,3 +271,52 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
   `chat_metadata.STMemoryBooks.highestMemoryProcessed` via
   `getHighestMemoryProcessed()`; `chat_metadata.stmbc.watermark` is only a
   fallback.
+
+## Phase 6 / P6.1 — merge drill, full acceptance re-run, hardening
+
+- **Upstream merge check:** `upstream/main` is `617cfbf` (same commit P1.2
+  audited §2 against) and is an ancestor of this branch's `HEAD` — upstream has
+  not moved since the fork point, so no real `git merge upstream/main` was
+  needed this pass. Re-check this before every release; the trial-merge
+  acceptance (Phase 1) still applies once upstream does move.
+- **Group-chat safety (by architecture, re-verified P6.1):** every message
+  extractor (`sentinelCore.extractWindowMessages`, `auditorCore.extractAuditMessages`,
+  `clipperPlusCore.buildContextWindow`) reads `m.name`/`m.is_user` per message —
+  never a fixed `name2`/`this_chid` — so multi-character group chats are handled
+  without special-casing. Regression tests added (P6.1): a 3-distinct-character
+  chat is exercised through each extractor. Sentinel memory writes delegate to
+  upstream's own `runSceneMemoryRange` → `compileScene`, which already computes
+  group `characterFilterNames`; Auditor/Clipper+/Injection intentionally write
+  un-filtered keyword-activated living lore (persistent facts aren't scoped to
+  "who's currently in the scene"), so no fork-side group filtering was added
+  there — this is a deliberate design choice, not a gap.
+- **Mid-job API-failure surfacing (no silent poisoning):** audited every
+  fork subsystem's error path.
+  - Sentinel: fixed prior to this pass (commit `e4103e6`) — a mid-cycle
+    `runSceneMemoryRange` failure now toasts.
+  - Auditor dashboard job (`executeAuditJob`): already surfaced via
+    `context.setDetail("...extraction error, continuing")` per chunk.
+  - Auditor **inline fallback** (`runAuditInline`, used when the jobs dashboard
+    is unavailable): **was a real gap** — `onProgress` was wired to a no-op, so
+    per-chunk extraction errors vanished with no console line and no toast.
+    Fixed: tallies errored chunks and appends an
+    `"(N chunks had extraction errors and were skipped)"` note to the final
+    toast/return message (warning severity, not success, when any occurred).
+  - Auditor jobs (`/stmbc-coverage`, `/stmbc-regen`): already toast on failure.
+  - Clipper+ (`maybeGeneratePairedContextEntry`): **was a real gap** — every
+    "never guess" skip path (`§5.2`) already `return`s before the outer
+    `catch`, so that catch is exclusively the genuine-API-error path, yet it
+    only did `console.error`. Fixed: now also `toastr.warning`s (the clip
+    itself was already saved either way, so severity stays a warning, not an
+    error).
+  - Injection (`buildLivingContextPreamble`): intentionally left silent
+    (`console.warn` + fall back to the base prompt). This runs on *every*
+    generation, not as a discrete job — toasting on every failed injection
+    would be UX spam, not hardening. Documented here so it isn't mistaken for
+    an oversight on a future pass.
+  - Bundle rebuilt (`bun run build.ts`) after the Clipper+/Auditor fixes.
+- **Full acceptance re-run:** all `*.test.js` suites green (151 cases across
+  sentinel/auditor/auditorJobs/clipperPlus/injection/sidePromptSetDefaults/
+  stloCharacterFilters, including the 3 new P6.1 group-chat cases). Phase 0
+  eval (P0.4) re-run against the fixture via the claude-cli shim; see
+  `eval/README.md` for the refreshed result.

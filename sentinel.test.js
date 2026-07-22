@@ -267,6 +267,26 @@ test('cycle uses the per-chat structure hint as a deterministic boundary source'
     assert.deepEqual(calls.ranges, [[5, 13]]);
 });
 
+test('group chat: extraction preserves each distinct character speaker (no collapse to Narrator)', () => {
+    // A group chat has >1 non-user character; each message carries its own
+    // `name` (plan §6 P6.1 group-chat testing). Detection is speaker-agnostic —
+    // it only needs true per-message names, not a fixed name2.
+    const chat = makeChat(6, {
+        0: { name: 'Alice', is_user: false },
+        1: { name: 'Brandon', is_user: true },
+        2: { name: 'Bob', is_user: false },
+        3: { name: 'Brandon', is_user: true },
+        4: { name: 'Carol', is_user: false },
+        5: { name: 'Brandon', is_user: true },
+    });
+    const msgs = extractWindowMessages(chat, 0, 5);
+    assert.deepEqual(msgs.map(m => m.speaker), ['Alice', 'Brandon', 'Bob', 'Brandon', 'Carol', 'Brandon']);
+    const text = formatDetectionWindow(msgs, 500);
+    assert.match(text, /\[0\] Alice:/);
+    assert.match(text, /\[2\] Bob:/);
+    assert.match(text, /\[4\] Carol:/);
+});
+
 test('SENTINEL_DEFAULTS match the validated production config (plan §3.3)', () => {
     assert.equal(SENTINEL_DEFAULTS.cadenceN, 8);
     assert.equal(SENTINEL_DEFAULTS.window, 26);

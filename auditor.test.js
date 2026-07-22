@@ -98,6 +98,23 @@ test('extractAuditMessages: non-array yields []', () => {
     assert.deepEqual(extractAuditMessages(undefined), []);
 });
 
+test('group chat: distinct character speakers survive extraction and chunk planning (plan §6 P6.1)', () => {
+    const chat = makeChat(6, {
+        0: { name: 'Alice', is_user: false },
+        1: { name: 'Brandon', is_user: true },
+        2: { name: 'Bob', is_user: false },
+        3: { name: 'Brandon', is_user: true },
+        4: { name: 'Carol', is_user: false },
+        5: { name: 'Brandon', is_user: true },
+    });
+    const msgs = extractAuditMessages(chat);
+    assert.deepEqual(msgs.map(m => m.speaker), ['Alice', 'Brandon', 'Bob', 'Brandon', 'Carol', 'Brandon']);
+    // chunking is a plain message-count split; it must not group or filter by speaker
+    const plan = planChunks(msgs, { chunkSize: 4, tokenCap: 1e9, estimateTokens: () => 1 });
+    assert.equal(plan.reduce((sum, c) => sum + c.count, 0), 6);
+    assert.deepEqual(plan.map(c => c.count), [4, 2]);
+});
+
 test('truncateForAudit: no truncation when limit<=0, else clip + ellipsis', () => {
     assert.equal(truncateForAudit('a   b\n c', 0), 'a b c');
     assert.equal(truncateForAudit('abcdef', 3), 'abc…');

@@ -158,6 +158,18 @@ test('buildContextWindow: speaker fallback', () => {
     assert.equal(win.messages[1].speaker, 'User');
 });
 
+test('buildContextWindow: group chat keeps each distinct character speaker (plan §6 P6.1)', () => {
+    const chat = makeChat(5, {
+        0: { name: 'Alice', is_user: false },
+        1: { name: 'Brandon', is_user: true },
+        2: { name: 'Bob', is_user: false },
+        3: { name: 'Brandon', is_user: true },
+        4: { name: 'Carol', is_user: false },
+    });
+    const win = buildContextWindow(chat, 2, 5);
+    assert.deepEqual(win.messages.map(m => m.speaker), ['Alice', 'Brandon', 'Bob', 'Brandon', 'Carol']);
+});
+
 // ---------------------------------------------------------------- formatting
 
 test('truncateMessage: collapses whitespace and caps length', () => {

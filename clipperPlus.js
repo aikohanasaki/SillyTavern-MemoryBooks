@@ -229,7 +229,16 @@ export async function maybeGeneratePairedContextEntry({ lorebookName, lorebookDa
         } catch { /* toastr may be absent in some contexts */ }
         console.debug(`${LOG}: wrote paired context entry "${built.title}" (keys: ${built.keywords.join(', ')})`);
     } catch (err) {
-        // Never break the clip save — the quote is already persisted.
+        // Never break the clip save — the quote is already persisted. Every
+        // "never guess" skip path above already `return`s before this catch,
+        // so reaching here always means a genuine mid-job failure (API call,
+        // lorebook write, …) — surface it (plan §6 P6.1: no silent poisoning).
         console.error(`${LOG}: paired context entry failed`, err);
+        try {
+            toastr.warning(
+                `Clipper+: paired context entry failed (${err?.message || err}). The clip itself was still saved.`,
+                'STMemoryBooks',
+            );
+        } catch { /* toastr may be absent in some contexts */ }
     }
 }
