@@ -2550,7 +2550,8 @@ function getStloExtensionState() {
     window?.SillyTavernLorebookOrdering ||
     window?.LorebookOrdering ||
     window?.STLorebookOrdering ||
-    window?.STLO,
+    window?.STLO ||
+    document?.getElementById?.("lorebook_ordering_button"),
   );
   const installed = candidates.length > 0 || globalInstalled;
   if (!installed) {
