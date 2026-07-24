@@ -238,6 +238,12 @@
 
 }
 
+.stmb-group-participants-list {
+    max-height: min(50vh, 30rem);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
 #stmb-profile-summary pre {
     text-align: left !important;
 }
