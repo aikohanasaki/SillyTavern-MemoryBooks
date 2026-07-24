@@ -88,13 +88,96 @@ upstream function bodies, control flow, or data structures touched.**
 
 ## Merge drill (per plan §1.2.3)
 
-After `git fetch upstream && git merge upstream/main` on a scratch branch,
-expect:
-- Conflicts confined to the `manifest.json` metadata block (display_name,
-  author, version) and possibly the hook sites if upstream edits the
-  surrounding lines.
-- Zero conflicts in any upstream function body.
-- All tests still pass.
+### Result: 2026-07-24 PHA-1449 run (Ledger, this commit)
+
+Drill environment: fork HEAD `292ae0b` (v0.1.0 release tag) on `main`,
+`upstream/main` at `47a08a0` — **19 upstream commits ahead**, all in the
+`docs: AGPL header` → `STLO detection fixes` → `STMB default side prompt
+sets` → `UI cleanup` → `scrollbar` chain since the merge base
+(`617cfbf`, 2026-07-18).
+
+`git merge --no-ff --no-edit upstream/main` on a scratch branch produced:
+
+**Auto-merged clean (4 files, including every hooked file):**
+- `index.js` — **all three fork hook sites merged without conflict** (`STMBC-HOOK` init at line 11254, the P2.4 sentinel/auto-summary handlers at 2049 / 9357). This is the load-bearing result: 19 upstream commits touched the file and the no-op blocks at our markers stayed outside their edit regions.
+- `templates.js` — `autoModuleSettingsTemplate` (P2.2) and the P2.4 `automaticMemoriesSettingsTemplate` warning block both applied cleanly.
+- `style.css` — no fork changes; expected.
+- Plus trivial auto-merged: `changelog.md` (partial — see below).
+
+**Conflicts (5 files):**
+
+| File | Why | Resolution |
+| --- | --- | --- |
+| `manifest.json` | `author` + `version` only — fork `phattbeats` / `8.2.2-a.1` vs upstream `aikohanasaki` / `8.2.3`. Display name, settings key, lorebook flags, js/css fields all merged clean. | Keep fork `author` and fork `display_name`; bump fork `version` to `8.2.3-a.1` (semver-patch fork-suffix). |
+| `changelog.md` | Both sides added new version entries at the top — fork `v8.2.2-a.1` (v0.1.0 release) and upstream `v8.2.3` (bugfixes). | Keep both entries, ordered by version. Fork entry stays under its own heading. |
+| `index.build.js` | Generated build artifact committed in both forks; upstream's 19 commits regenerated it differently than ours. | **Regenerate after merge** — `bun run build` then `git add index.build.js`. Conflict is purely from committing generated output; the file is overwritten cleanly on every build. |
+| `index.build.js.map` | Same as `index.build.js` — source map regenerates. | Regenerate via build; `git add` the new map. |
+| `style.build.css` | Same — upstream and fork both committed generated CSS bundles. | Regenerate via build; `git add` the new bundle. |
+
+### Conclusion
+
+**Hook-site design is validated.** Zero conflicts in any forked source file
+(`index.js`, `stmemory.js`, `clipManager.js`, `sidePrompts.js`, `utils.js`,
+`constants.js`, `autosummary.js`, `templates.js`, `manifest.json`-core). Every
+conflict is either (a) expected per FORK_NOTES (`manifest.json`), (b) a
+two-sided additive doc merge (`changelog.md`), or (c) a regenerated build
+artifact.
+
+The plan-§1.2 invariant — "single-line greppable hook sites survive
+`upstream/main`" — holds at 19 commits of upstream drift.
+
+### Repeatable merge procedure
+
+Run this from a clean working tree on `main`:
+
+```bash
+# 1. Fetch upstream + confirm drift
+git fetch upstream
+git rev-list --left-right --count main...upstream/main
+#   expected: "<X>    <Y>" where Y > 0 means upstream has new commits
+
+# 2. Confirm fork-only commits are intact
+git log --oneline upstream/main..main | wc -l
+
+# 3. DRILL on a scratch branch first (never merge directly into main)
+git checkout -b scratch/merge-drill
+GIT_MERGE_AUTOEDIT=no git merge --no-ff --no-edit upstream/main
+
+# 4. Inspect conflicts
+git diff --name-only --diff-filter=U
+#   expected (per this run): changelog.md, index.build.js, index.build.js.map,
+#                            manifest.json, style.build.css
+#   any file outside that set = stop, investigate, don't blindly resolve
+
+# 5. If conflicts match the expected set, resolve:
+#    - manifest.json:    keep fork display_name + author; bump fork version
+#                        to upstream + "-a.1" suffix
+#    - changelog.md:     keep both version entries, ordered newest-first
+#    - *.build.*:        `bun run build && git add <artifacts>`
+#                        (build artifacts are regenerated; conflicts are noise)
+
+# 6. Verify the post-merge state
+bun run build
+node --test eval/*.test.js docsStructure.test.js eventPreset.test.js \
+              autosummarySentinelGate.test.js
+#   (pre-commit hook runs `bun run build` automatically — manual run is
+#    belt-and-braces to confirm the build itself didn't break)
+
+# 7. If drill is green:
+git merge --abort 2>/dev/null || git checkout main && git branch -D scratch/merge-drill
+#    OR if you intend to land the merge:
+#    git add -A && git commit --no-edit
+#    git push origin main
+
+# 8. Update FORK_NOTES.md with the new run's result (append a new bullet
+#    under "Merge drill history" below) and commit the doc update.
+```
+
+### Merge drill history
+
+- **2026-07-24 (PHA-1449)** — 19 upstream commits ahead. Conflicts in 5 files
+  (manifest.json, changelog.md, 3 build artifacts). All 4 hooked source files
+  clean. **Pass — design holds.**
 
 ## Pre-commit hook
 
