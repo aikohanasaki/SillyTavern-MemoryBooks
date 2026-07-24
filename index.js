@@ -2434,7 +2434,7 @@ async function confirmGroupMemoryParticipants(compiledScene, settings, manualGro
   const content = `
     <h3>${escapeHtml(translate("Confirm memory participants", "STMemoryBooks_GroupParticipants_Title"))}</h3>
     <p>${escapeHtml(translate("Select the characters this memory applies to. If none are selected, it will apply to every group character.", "STMemoryBooks_GroupParticipants_Desc"))}</p>
-    <div class="world_entry_form_control">
+    <div class="world_entry_form_control stmb-group-participants-list">
       <div class="flex-container flexFlowColumn">${rows}</div>
     </div>
     <label class="checkbox_label">

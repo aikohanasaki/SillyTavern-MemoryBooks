@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 ## v8.2.3 (July 24, 2026)
 - Bugfix: Fix STLO detection.
 - Bugfix: Expose GC checkbox.
+- Various small tweak bugfixes.
 
 ## v8.2.2 (July 16, 2026)
 - Bugfix: Fix STLO metadata writes.
