@@ -175,6 +175,10 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
         </label>
         <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-accept-group-participants" {{#if autoAcceptGroupParticipants}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_GroupParticipants_AutoAccept">Automatically accept detected participants in future</span>
+        </label>
+        <label class="checkbox_label">
             <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_ShowMemoryPreviews;[title]STMemoryBooks_ShowMemoryPreviewsTooltip" title="Shows previews for memories and side prompts returned from the AI.">Show memory previews</span>
         </label>

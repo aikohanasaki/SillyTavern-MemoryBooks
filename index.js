@@ -8520,6 +8520,8 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     highestMemoryProcessedManuallySet:
       !!sceneMarkers?.highestMemoryProcessedManuallySet,
     alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
+    autoAcceptGroupParticipants:
+      settings.moduleSettings.autoAcceptGroupParticipants === true,
     showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
     showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
@@ -8816,6 +8818,12 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
 
     if (e.target.matches("#stmb-always-use-default")) {
       settings.moduleSettings.alwaysUseDefault = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-auto-accept-group-participants")) {
+      settings.moduleSettings.autoAcceptGroupParticipants = e.target.checked;
       saveSettingsDebounced();
       return;
     }
@@ -9291,6 +9299,9 @@ function persistMainPopupSettings(popupElement) {
   const alwaysUseDefault =
     popupElement.querySelector("#stmb-always-use-default")?.checked ??
     settings.moduleSettings.alwaysUseDefault;
+  const autoAcceptGroupParticipants =
+    popupElement.querySelector("#stmb-auto-accept-group-participants")?.checked ??
+    settings.moduleSettings.autoAcceptGroupParticipants;
   const showMemoryPreviews =
     popupElement.querySelector("#stmb-show-memory-previews")?.checked ??
     settings.moduleSettings.showMemoryPreviews;
@@ -9393,6 +9404,15 @@ function persistMainPopupSettings(popupElement) {
 
   if (alwaysUseDefault !== settings.moduleSettings.alwaysUseDefault) {
     settings.moduleSettings.alwaysUseDefault = alwaysUseDefault;
+    hasChanges = true;
+  }
+
+  if (
+    autoAcceptGroupParticipants !==
+    settings.moduleSettings.autoAcceptGroupParticipants
+  ) {
+    settings.moduleSettings.autoAcceptGroupParticipants =
+      autoAcceptGroupParticipants;
     hasChanges = true;
   }
 
