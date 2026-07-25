@@ -15,6 +15,11 @@ import { moment } from '../../../../lib.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { i18n } from './i18nHelpers.js';
+import {
+    incrementSceneMemoryCount,
+    maybeEnqueueAuditorOnOffer,
+} from './auditorCadence.js';
+import { maybeOfferAuditorJob } from './auditorTechnicalPass.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
@@ -1218,8 +1223,12 @@ export async function getLorebookStats() {
 /**
  * Update the highest memory processed tracking for the current chat
  * @param {Object} memoryResult - The memory result containing metadata
+ * @param {Object} [opts] - injection seam for tests
+ * @param {Function} [opts.maybeOfferAuditorJob] - gate from auditorTechnicalPass.js
+ * @param {Function} [opts.enqueueStmbJob] - jobs dashboard enqueue (lazy-imported lazily in browser)
+ * @param {Object} [opts.chatMetaForTest] - explicit chat metadata (tests)
  */
-function updateHighestMemoryProcessed(memoryResult) {
+function updateHighestMemoryProcessed(memoryResult, opts = {}) {
     try {
         console.log(i18n('addlore.log.updateHighestCalled', `${MODULE_NAME}: updateHighestMemoryProcessed called with:`), memoryResult);
 
@@ -1258,11 +1267,63 @@ function updateHighestMemoryProcessed(memoryResult) {
         // Save the metadata (works for both group chats and single-character chats)
         saveMetadataForCurrentContext();
 
-        console.log(i18n('addlore.log.setHighest', `${MODULE_NAME}: Set highest memory processed to message {{endMessage}}`, { endMessage }));
+        // P5.5 — cadence caller. After bumping the highest processed pointer,
+        // increment the per-chat memory counter and, if the gate says we should
+        // offer, enqueue the suggested audit job. The counter and the
+        // `lastOfferAtCount` are persisted to chat_metadata so the cadence
+        // threshold is honored across reloads.
+        try {
+            const settings = extension_settings?.STMemoryBooks || {};
+            const chatMeta = opts.chatMetaForTest || (() => {
+                try {
+                    const ctx = getContext();
+                    return ctx?.chatMetadata || null;
+                } catch (_e) { return null; }
+            })();
+            if (chatMeta) {
+                incrementSceneMemoryCount(chatMeta, 1);
+                const gate = opts.maybeOfferAuditorJob || maybeOfferAuditorJob;
+                const enqueue = opts.enqueueStmbJob || loadEnqueueStmbJob();
+                maybeEnqueueAuditorOnOffer({
+                    settings,
+                    chatMeta,
+                    maybeOfferAuditorJob: gate,
+                    enqueueStmbJob: enqueue,
+                });
+            }
+        } catch (cadenceError) {
+            console.warn(i18n('addlore.warn.cadenceError', `${MODULE_NAME}: Cadence gate error (non-fatal):`), cadenceError);
+        }
+
+        console.log(i18n('addlore.log.setHighest', `${MODULE_NAME}: Set highest memory processed to message {{endMessage}}`), { endMessage });
 
     } catch (error) {
         console.error(i18n('addlore.log.updateHighestError', `${MODULE_NAME}: Error updating highest memory processed:`), error);
     }
+}
+
+// Lazy loader for stmbJobs.enqueueStmbJob. The browser bundle exposes the
+// module via the global STMB namespace; in tests we pass it explicitly.
+// We avoid a static import here so tests of addlore.js don't pull in
+// the full stmbJobs.js dependency graph (popup, DOMPurify, fetch, etc.).
+let _enqueueStmbJobRef = undefined;
+function loadEnqueueStmbJob() {
+    if (_enqueueStmbJobRef !== undefined) return _enqueueStmbJobRef;
+    try {
+        // Browser bundle path: STMB namespace is on globalThis.
+        const ns = (typeof globalThis !== 'undefined') ? globalThis.STMB : null;
+        if (ns && typeof ns.enqueueStmbJob === 'function') {
+            _enqueueStmbJobRef = ns.enqueueStmbJob.bind(ns);
+            return _enqueueStmbJobRef;
+        }
+    } catch (_e) { /* fall through */ }
+    _enqueueStmbJobRef = null;
+    return _enqueueStmbJobRef;
+}
+
+// Allow tests to pre-load the lazy ref (avoids hitting globalThis.STMB).
+export function _setAuditorCadenceDeps({ enqueueStmbJob } = {}) {
+    if (enqueueStmbJob !== undefined) _enqueueStmbJobRef = enqueueStmbJob;
 }
 
 /**

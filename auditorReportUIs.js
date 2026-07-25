@@ -315,6 +315,37 @@ function makePopupWrapper({ render, popupShim, okLabel, cancelLabel, collectDeci
             wide: true,
             large: true,
         });
+        // P5.5 — decision capture fix. Install a delegated click handler on the
+        // popup so that pressing any `.stmb-audit-action` button stamps the
+        // surrounding card's dataset BEFORE the OK click resolves. The
+        // `:focus` heuristic is unreliable in many popups (focus is lost
+        // when the user releases the mouse over the OK button), so we
+        // prefer the dataset flag and fall back to `:focus` only when the
+        // dataset flag is unset.
+        try {
+            const dlg = popup?.dlg;
+            if (dlg && typeof dlg.addEventListener === 'function') {
+                dlg.addEventListener('click', (ev) => {
+                    const t = ev?.target;
+                    if (!t || typeof t.closest !== 'function') return;
+                    const btn = t.closest('.stmb-audit-action');
+                    if (!btn) return;
+                    const card = btn.closest('.stmb-audit-card');
+                    if (!card) return;
+                    const action = String(btn.dataset?.action || '').trim();
+                    switch (action) {
+                        case 'dismiss': card.dataset.dismissed = 'true'; break;
+                        case 'accept': card.dataset.accepted = 'true'; break;
+                        case 'reject': card.dataset.rejected = 'true'; break;
+                        case 'fix': card.dataset.fixed = 'true'; break;
+                        case 'flag': card.dataset.flagged = 'true'; break;
+                        case 'generate': card.dataset.generated = 'true'; break;
+                        default: break;
+                    }
+                });
+            }
+        } catch (_e) { /* non-fatal: collectDecisions can still run */ }
+
         const result = await popup.show();
         if (!popup.dlg) {
             return { decision: 'cancel' };
@@ -351,11 +382,10 @@ export function showCoverageReportPopup(report, opts = {}) {
             for (const card of Array.from(dlg.querySelectorAll('.stmb-audit-card'))) {
                 const key = String(card?.dataset?.key ?? '').trim();
                 if (!key) continue;
-                // Buttons may be inside the card; if the user didn't click per-item,
-                // we fall back to "apply Generate" as the bulk action: any card with
-                // no explicit dismiss button click gets generated.
-                const dismissed = card.querySelector('.stmb-audit-action[data-action="dismiss"]:focus')
-                    || card.dataset.dismissed === 'true';
+                // P5.5 — prefer dataset.dismissed (set by the click handler
+                // before OK resolves) over the `:focus` heuristic.
+                const dismissed = card.dataset.dismissed === 'true'
+                    || card.querySelector('.stmb-audit-action[data-action="dismiss"]:focus') !== null;
                 if (dismissed) {
                     dismissKeys.push(key);
                 } else {
@@ -393,8 +423,10 @@ export function showRegenerationDiffPopup(report, opts = {}) {
             for (const card of Array.from(dlg.querySelectorAll('.stmb-audit-card'))) {
                 const uid = Number(card?.dataset?.uid);
                 if (!Number.isFinite(uid)) continue;
-                const rejectedBtn = card.querySelector('.stmb-audit-action[data-action="reject"]:focus');
-                if (rejectedBtn) {
+                // P5.5 — dataset flags set by the click handler win over `:focus`.
+                const rejectedFlag = card.dataset.rejected === 'true'
+                    || card.querySelector('.stmb-audit-action[data-action="reject"]:focus') !== null;
+                if (rejectedFlag) {
                     rejected.push(uid);
                 } else {
                     accepted.push(uid);
@@ -432,8 +464,10 @@ export function showTechnicalPassPopup(report, opts = {}) {
                 const uid = Number(card?.dataset?.uid);
                 const code = String(card?.dataset?.code ?? '');
                 if (!Number.isFinite(uid) || !code) continue;
-                const dismissBtn = card.querySelector('.stmb-audit-action[data-action="dismiss"]:focus');
-                if (dismissBtn) {
+                // P5.5 — dataset flag wins over `:focus`.
+                const dismiss = card.dataset.dismissed === 'true'
+                    || card.querySelector('.stmb-audit-action[data-action="dismiss"]:focus') !== null;
+                if (dismiss) {
                     dismissed.push({ uid, code });
                 } else {
                     fixes.push({ uid, code });
@@ -471,8 +505,10 @@ export function showClaimReverificationPopup(report, opts = {}) {
                 const uid = Number(card?.dataset?.uid);
                 const range = String(card?.dataset?.range ?? '');
                 if (!Number.isFinite(uid)) continue;
-                const dismissBtn = card.querySelector('.stmb-audit-action[data-action="dismiss"]:focus');
-                if (dismissBtn) {
+                // P5.5 — dataset flag wins over `:focus`.
+                const dismiss = card.dataset.dismissed === 'true'
+                    || card.querySelector('.stmb-audit-action[data-action="dismiss"]:focus') !== null;
+                if (dismiss) {
                     dismissed.push({ uid, range });
                 } else {
                     flagged.push({ uid, range });

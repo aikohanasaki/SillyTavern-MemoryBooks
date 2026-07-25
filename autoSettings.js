@@ -130,6 +130,12 @@ export function validateAutoPatch(patch) {
     if ('debugLogging' in patch) {
         out.debugLogging = !!patch.debugLogging;
     }
+    if ('auditorOfferEnabled' in patch) {
+        out.auditorOfferEnabled = !!patch.auditorOfferEnabled;
+    }
+    if ('auditorEveryNScenes' in patch) {
+        out.auditorEveryNScenes = clampInt(patch.auditorEveryNScenes, CLAMPS.auditorEveryNScenes);
+    }
     return out;
 }
 

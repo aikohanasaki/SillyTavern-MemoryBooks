@@ -741,6 +741,26 @@ export const autoModuleSettingsTemplate = Handlebars.compile(`
         <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_DebugLoggingDesc">Logs detection cycles to a chat_metadata ring buffer for inspection. Off by default; can balloon in long chats.</small>
     </div>
 
+    <h4 class="stmb-section-subtitle" data-i18n="STMemoryBooks_AutoModule_AuditorHeading">🛡️ Auditor cadence</h4>
+    <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_AuditorHeadingDesc">Plan §4.3: offer (never auto-run) an audit job every N scene memories. The user must accept the offer or invoke the &lt;/audit&gt; slash command.</small>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-auditor-offer-enabled" {{#if auto.auditorOfferEnabled}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoModule_AuditorOfferEnabled">Offer audit jobs every N scene memories</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_AuditorOfferEnabledDesc">When enabled, the cadence caller fires a non-blocking offer after every N scene memories. The audit job never runs automatically.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-auditor-every-n-scenes">
+            <h4 data-i18n="STMemoryBooks_AutoModule_AuditorEveryNScenes">Audit cadence (scene memories):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_AuditorEveryNScenesDesc">Offer an audit job every N scene memories. Range 1–1000. Default 15.</small>
+            <input type="number" id="stmb-auto-auditor-every-n-scenes" class="text_pole"
+                value="{{auto.auditorEveryNScenes}}" min="1" max="1000" step="1" placeholder="15">
+        </label>
+    </div>
+
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoModule_PerChat">🛰️ Auto Module — Per-chat overrides</h3>
     <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_PerChatDesc">Stored on the current chat's metadata. Empty = inherit from global.</small>
 

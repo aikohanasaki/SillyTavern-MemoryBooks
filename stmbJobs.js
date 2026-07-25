@@ -697,9 +697,15 @@ function renderStmbJobsUi() {
     topBarBadge.textContent = totalBadge > 99 ? '99+' : String(totalBadge);
     topBarBadge.classList.toggle('stmb-jobs-badge-failed', activeCount === 0 && failureCount > 0);
 
-    jobsActions.innerHTML = rows.some(row => TERMINAL_STATES.has(String(row.state)))
-        ? `<button type="button" class="menu_button stmb-jobs-action-link" data-action="dismiss-terminal">${escapeHtml(tr('STMemoryBooks_Jobs_DismissCompleted', 'Dismiss completed'))}</button>`
-        : '';
+    jobsActions.innerHTML = [
+        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-coverage">${escapeHtml(tr('STMemoryBooks_Jobs_RunCoverage', 'Run coverage audit'))}</button>`,
+        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-regenerate">${escapeHtml(tr('STMemoryBooks_Jobs_RunRegenerate', 'Run regeneration'))}</button>`,
+        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-technical">${escapeHtml(tr('STMemoryBooks_Jobs_RunTechnical', 'Run technical pass'))}</button>`,
+        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-claims">${escapeHtml(tr('STMemoryBooks_Jobs_RunClaims', 'Run claim re-verification'))}</button>`,
+        rows.some(row => TERMINAL_STATES.has(String(row.state)))
+            ? `<button type="button" class="menu_button stmb-jobs-action-link" data-action="dismiss-terminal">${escapeHtml(tr('STMemoryBooks_Jobs_DismissCompleted', 'Dismiss completed'))}</button>`
+            : '',
+    ].filter(Boolean).join(' ');
 
     if (rows.length === 0) {
         jobsRows.innerHTML = `<div class="stmb-jobs-empty">${escapeHtml(tr('STMemoryBooks_Jobs_Empty', 'No Memory Books jobs.'))}</div>`;
@@ -780,6 +786,24 @@ function handlePanelClick(event) {
         if (store) {
             store.recentHistory = store.recentHistory.filter(job => !TERMINAL_STATES.has(String(job.state || '')));
             touchStore(store);
+        }
+        return;
+    }
+    if (action === 'run-audit') {
+        // P5.5 — on-demand audit trigger from the jobs panel. Imported
+        // dynamically so tests can stub enqueueStmbJob.
+        const jobType = String(target.dataset.auditJob || 'stmbc-audit-coverage');
+        try {
+            import('./auditorCadence.js').then(({ enqueueAuditorJobByType }) => {
+                const result = enqueueAuditorJobByType({ jobType, enqueueStmbJob });
+                if (!result?.ok) {
+                    console.warn(`${MODULE_NAME}: audit enqueue failed (${result?.reason || 'unknown'})`);
+                }
+            }).catch(err => {
+                console.warn(`${MODULE_NAME}: dynamic import of auditorCadence.js failed`, err);
+            });
+        } catch (err) {
+            console.warn(`${MODULE_NAME}: failed to launch audit job`, err);
         }
         return;
     }

@@ -71,6 +71,40 @@ test('validateAutoPatch drops unknown fields', () => {
 });
 
 // ----------------------------------------------------------------------------
+// P5.5 — auditor cadence validation
+// ----------------------------------------------------------------------------
+
+test('validateAutoPatch: auditorOfferEnabled coerces to boolean', () => {
+    assert.equal(validateAutoPatch({ auditorOfferEnabled: 1 }).auditorOfferEnabled, true);
+    assert.equal(validateAutoPatch({ auditorOfferEnabled: 0 }).auditorOfferEnabled, false);
+    assert.equal(validateAutoPatch({ auditorOfferEnabled: 'yes' }).auditorOfferEnabled, true);
+});
+
+test('validateAutoPatch: auditorEveryNScenes clamps to 1..1000', () => {
+    assert.equal(validateAutoPatch({ auditorEveryNScenes: 15 }).auditorEveryNScenes, 15);
+    assert.equal(validateAutoPatch({ auditorEveryNScenes: 0 }).auditorEveryNScenes, 1);
+    assert.equal(validateAutoPatch({ auditorEveryNScenes: -5 }).auditorEveryNScenes, 1);
+    assert.equal(validateAutoPatch({ auditorEveryNScenes: 9999 }).auditorEveryNScenes, 1000);
+    assert.equal(validateAutoPatch({ auditorEveryNScenes: 'abc' }).auditorEveryNScenes, AUTO_MODULE_DEFAULTS.auditorEveryNScenes);
+});
+
+test('AUTO_MODULE_DEFAULTS: contains auditor fields', () => {
+    assert.equal(AUTO_MODULE_DEFAULTS.auditorOfferEnabled, true);
+    assert.equal(AUTO_MODULE_DEFAULTS.auditorEveryNScenes, 15);
+});
+
+test('validateAutoPatch: full round-trip combined with other fields', () => {
+    const out = validateAutoPatch({
+        sentinelEnabled: true,
+        auditorOfferEnabled: false,
+        auditorEveryNScenes: 50,
+    });
+    assert.equal(out.sentinelEnabled, true);
+    assert.equal(out.auditorOfferEnabled, false);
+    assert.equal(out.auditorEveryNScenes, 50);
+});
+
+// ----------------------------------------------------------------------------
 // validateChatAutoPatch — per-chat
 // ----------------------------------------------------------------------------
 

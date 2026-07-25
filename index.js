@@ -1627,6 +1627,86 @@ async function handleStmbStopCommand(namedArgs, unnamedArgs) {
 }
 
 /**
+ * Slash: /audit [coverage|regenerate|technical|claims]
+ * P5.5 — on-demand surface for the four audit jobs (plan §4.3).
+ * Enqueues the named audit job via the STMB jobs dashboard.
+ */
+async function handleAuditCommand(namedArgs, unnamedArgs) {
+  const raw = String(unnamedArgs || "").trim().toLowerCase();
+  let jobType = 'stmbc-audit-coverage';
+  switch (raw) {
+    case '':
+    case 'coverage':
+      jobType = 'stmbc-audit-coverage';
+      break;
+    case 'regenerate':
+    case 'regen':
+      jobType = 'stmbc-audit-regenerate';
+      break;
+    case 'technical':
+    case 'tech':
+      jobType = 'stmbc-audit-technical';
+      break;
+    case 'claims':
+    case 'claim':
+      jobType = 'stmbc-audit-claims';
+      break;
+    default:
+      toastr.error(
+        translate(
+          'Unknown audit job type: "{{type}}". Use coverage, regenerate, technical, or claims.',
+          'STMemoryBooks_Audit_UnknownType',
+        ).replace('{{type}}', raw),
+        translate('STMemoryBooks', 'index.toast.title'),
+      );
+      return '';
+  }
+
+  try {
+    const { enqueueAuditorJobByType } = await import('./auditorCadence.js');
+    const ns = (typeof globalThis !== 'undefined') ? globalThis.STMB : null;
+    const enqueue = (ns && typeof ns.enqueueStmbJob === 'function')
+      ? ns.enqueueStmbJob.bind(ns)
+      : null;
+    const result = enqueueAuditorJobByType({ jobType, enqueueStmbJob: enqueue });
+    if (!result.ok) {
+      toastr.error(
+        translate(
+          'Failed to enqueue audit job: {{reason}}',
+          'STMemoryBooks_Audit_EnqueueFailed',
+        ).replace('{{reason}}', String(result.reason || 'unknown')),
+        translate('STMemoryBooks', 'index.toast.title'),
+      );
+      return '';
+    }
+    const titleMap = {
+      'stmbc-audit-coverage': 'Coverage Audit',
+      'stmbc-audit-regenerate': 'Entry Regeneration',
+      'stmbc-audit-technical': 'Technical Pass',
+      'stmbc-audit-claims': 'Claim Re-verification',
+    };
+    toastr.info(
+      translate(
+        'Audit job "Audit" queued.',
+        'STMemoryBooks_Audit_Queued',
+      ).replace('Audit', String(titleMap[result.jobType] || result.jobType)),
+      translate('STMemoryBooks', 'index.toast.title'),
+    );
+    return '';
+  } catch (err) {
+    console.error('STMemoryBooks: /audit failed:', err);
+    toastr.error(
+      translate(
+        'Failed to run audit command.',
+        'STMemoryBooks_Audit_Failed',
+      ),
+      translate('STMemoryBooks', 'index.toast.title'),
+    );
+    return '';
+  }
+}
+
+/**
  * Slash: /sideprompt (with optional name/range)
  * If no args, open a picker for discoverability.
  */
@@ -8956,6 +9036,17 @@ function setupAutoModuleEventListeners(popupInstance) {
       saveSettingsDebounced();
       return;
     }
+    if (t.matches('#stmb-auto-auditor-offer-enabled')) {
+      setAutoSettings(settings, validateAutoPatch({ auditorOfferEnabled: t.checked }));
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-auditor-every-n-scenes')) {
+      const v = parseInt(t.value, 10);
+      setAutoSettings(settings, validateAutoPatch({ auditorEveryNScenes: v }));
+      saveSettingsDebounced();
+      return;
+    }
 
     // --- Per-chat overrides ---
     if (t.matches('#stmb-auto-chat-enabled')) {
@@ -10119,6 +10210,31 @@ function registerSlashCommands() {
     ),
   });
 
+  const auditCmd = SlashCommand.fromProps({
+    name: "audit",
+    callback: handleAuditCommand,
+    helpString: translate(
+      "Run an audit job on demand. Usage: /audit [coverage|regenerate|technical|claims] (default: coverage)",
+      "STMemoryBooks_Slash_Audit_Help",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          "Audit job type: coverage | regenerate | technical | claims (default: coverage)",
+          "STMemoryBooks_Slash_Audit_ArgTypeDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: false,
+        enumProvider: () => [
+          new SlashCommandEnumValue("coverage"),
+          new SlashCommandEnumValue("regenerate"),
+          new SlashCommandEnumValue("technical"),
+          new SlashCommandEnumValue("claims"),
+        ],
+      }),
+    ],
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -10131,6 +10247,7 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(highestMemCmd);
   SlashCommandParser.addCommandObject(setHighestMemCmd);
   SlashCommandParser.addCommandObject(stmbStopCmd);
+  SlashCommandParser.addCommandObject(auditCmd);
 }
 
 /**
