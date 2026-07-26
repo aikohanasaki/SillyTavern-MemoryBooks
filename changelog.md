@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ## v8.3.0 (July 25, 2026)
 - Enhancement: Added ability to regenerate memories with one click.
+- Tweak: Update arc keywords.
 
 ## v8.2.3 (July 24, 2026)
 - Bugfix: Fix STLO detection.
