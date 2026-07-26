@@ -62,14 +62,11 @@ import {
   handleSentinelMessageReceived,
   runSentinelDetectionForJob,
 } from "./sentinel.js";
-// STMBC-HOOK(review): P4.3 review queue (fork; plan §4.4). `recordReviewFlagsForJob`
-// writes the durable per-chat record; the two core helpers decide *whether* there
-// is anything to flag. Consumed by exactly one call site, post-save, below.
-import {
-  recordReviewFlagsForJob,
-  resolveReviewConfigForCurrentChat,
-} from "./review.js";
-import { buildReviewReasons, detectSelfFlags } from "./reviewCore.js";
+// STMBC-HOOK(clipper): paired keyword-activated context entry on clip save
+// (fork; plan §4.2). The module registers itself as `globalThis.STMBC.onClipSave`
+// at import time, filling the hook that upstream clipManager.js:saveNewClip
+// (Phase 1 call site) already awaits — no upstream file modification needed.
+import "./clipperPlus.js";
 import {
   editProfile,
   newProfile,
@@ -114,8 +111,6 @@ import {
   resolveDetectionPrompt,
   resolveAutoSummaryEnabled,
 } from "./autoSettings.js";
-// Clipper+ settings live in the nested autoModule.clipper sub-object (plan §4.2/§4.5).
-import { resolveClipperConfig, setClipperConfig } from "./clipperPlusCore.js";
 import {
   showConfirmationPopup,
   fetchPreviousSummaries,
@@ -4720,38 +4715,6 @@ async function executeQueuedMemoryJob(job, jobContext) {
     entryTitle: addResult?.entryTitle || "",
   });
 
-  // STMBC-HOOK(review): P4.3 post-save review flagging (fork; plan §4.4).
-  // The memory is already saved and the watermark already advanced — this only
-  // files a NON-BLOCKING flag when the generation needed a JSON retry (marker
-  // set by the STMBC-HOOK(review) in stmemory.js, read-and-cleared here) or the
-  // model self-flagged with injectionCore's error-control vocabulary. It
-  // self-gates on the resolved review config and swallows every error, so with
-  // the feature off — or if anything here fails — the job completes exactly as
-  // it does upstream.
-  try {
-    const jsonRetried = globalThis.STMBC?.memoryJsonRetried === true;
-    if (globalThis.STMBC) globalThis.STMBC.memoryJsonRetried = false;
-    if (resolveReviewConfigForCurrentChat().enabled) {
-      const reasons = buildReviewReasons({
-        jsonRetried,
-        selfFlags: detectSelfFlags(finalMemoryResult?.content),
-      });
-      const recorded =
-        reasons.length > 0 &&
-        recordReviewFlagsForJob(job, {
-          lorebookName,
-          entryTitle: addResult?.entryTitle || "",
-          range: { start: sceneData.sceneStart, end: sceneData.sceneEnd },
-          reasons,
-        });
-      if (recorded) {
-        jobContext.patch({ reviewPending: true, reviewReasons: reasons });
-      }
-    }
-  } catch (error) {
-    console.warn("STMemoryBooks: review-queue flagging failed:", error);
-  }
-
   try {
     jobContext.setState("post_save", { detail: "Running after-memory side prompts" });
     await runAfterMemory(compiledScene, profileSettings, {
@@ -9122,29 +9085,10 @@ async function buildAutoModuleTemplateData() {
     });
   }
 
-  // Clipper+ (plan §4.2) lives in a NESTED sub-object (autoModule.clipper), so it
-  // is resolved by its own defaults-merging resolver rather than getAutoSettings'
-  // shallow spread. Its profile picker offers the same list as detection, but
-  // defaults to the main STMB profile — blurb writing is generative, not cheap.
-  const clipper = resolveClipperConfig(settings.autoModule, chat_metadata?.stmbc);
-  const clipperProfileOptions = [
-    { value: 'null', label: translate('Use default STMB profile', 'STMemoryBooks_AutoModule_UseDefaultProfile'), isSelected: clipper.profile == null },
-  ];
-  if (Array.isArray(settings.profiles)) {
-    settings.profiles.forEach((profile, index) => {
-      clipperProfileOptions.push({
-        value: String(index),
-        label: profile?.name || translate('Untitled profile', 'STMemoryBooks_UntitledProfile'),
-        isSelected: clipper.profile === index,
-      });
-    });
-  }
-
   return {
     auto: {
       ...auto,
       detectionProfileOptions: profileOptions,
-      clipper: { ...clipper, profileOptions: clipperProfileOptions },
     },
     chatAuto: {
       enabled: chatAutoRaw.enabled,
@@ -9225,29 +9169,6 @@ function setupAutoModuleEventListeners(popupInstance) {
     if (t.matches('#stmb-auto-auditor-every-n-scenes')) {
       const v = parseInt(t.value, 10);
       setAutoSettings(settings, validateAutoPatch({ auditorEveryNScenes: v }));
-      saveSettingsDebounced();
-      return;
-    }
-
-    // --- Clipper+ (nested autoModule.clipper — validateAutoPatch's allow-list is
-    //     flat and would drop these, so they go through setClipperConfig) ---
-    if (t.matches('#stmb-auto-clipper-enabled')) {
-      setClipperConfig(settings, { enabled: t.checked });
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-clipper-auto-accept')) {
-      setClipperConfig(settings, { autoAccept: t.checked });
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-clipper-surrounding-k')) {
-      setClipperConfig(settings, { surroundingK: parseInt(t.value, 10) });
-      saveSettingsDebounced();
-      return;
-    }
-    if (t.matches('#stmb-auto-clipper-profile')) {
-      setClipperConfig(settings, { profile: t.value });
       saveSettingsDebounced();
       return;
     }

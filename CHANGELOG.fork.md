@@ -113,54 +113,82 @@ are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
   comment expanded to note that the upstream `/stmb-stop` panic button also covers
   the new `stmbc-sentinel-cycle` jobs via `cancelAllStmbJobs`.
 
-### Phase 3 — Clipper+ (PHA-1420, PHA-1443, PHA-1460)
-Paired keyword-activated context entry alongside each verbatim clip (plan §4.2).
-The upstream `[STMB Clip]` entry is never touched — human taste stays in the
-quote; the *explanation* becomes a second, keyword-activated entry so it costs
-tokens only when its keywords fire.
-- `clipperPlusCore.js` — the pure, SillyTavern-free core (Node-testable):
-  `resolveClipperConfig` (defaults ← global `autoModule.clipper` ← per-chat
-  `chat_metadata.stmbc.clipper`), `findSourceMessageIndex` (normalized unique
-  match; ambiguity returns -1 and the entry is skipped rather than given wrong
-  provenance), `buildContextWindow` (K surrounding messages, true chat indices
-  preserved), `parseBlurbResponse` (strict JSON / fenced / embedded object),
-  `sanitizeKeywords`, `clampBlurb`, `buildPairedEntry`, and `buildEntryOverrides`
-  — the world-info contract: `constant: false`, `preventRecursion: true`,
-  `excludeRecursion: true`, keyword-activated on the generated keywords, empty
-  `keysecondary`. A blurb naming several characters must not cascade half the
-  cast (plan §4.2, Appendix B).
-- `clipperPlus.js` — the SillyTavern binding layer: generation-profile
-  resolution, the LLM call with one JSON-only retry, an editable confirm dialog
-  (skippable via auto-accept), and the write through
-  `addlore.upsertLorebookEntryByTitle`.
-- `clipManager.js` — the `STMBC-HOOK(clipper)` call site moved to the end of
-  `saveNewClip`, **after** `await saveLorebook(...)`. The Phase-1
-  `globalThis.STMBC?.onClipSave` placeholder it replaces ran before the
-  duplicate-title check and before the quote text was read from the DOM, and its
-  result was never consumed. See FORK_NOTES.md for why wired hooks use a direct
-  ESM import.
-- `index.js` + `templates.js` — Clipper+ rows in the Auto-module settings popup
-  (enable, auto-accept, K surrounding messages, generation profile). These write
-  the *nested* `autoModule.clipper` object via `setClipperConfig`;
-  `validateAutoPatch`'s allow-list is flat and would drop them.
-- `clipperPlus.test.js` (40 cases) + `clipperPlusHook.test.js` (13 cases) — the
-  core's behavior, plus the two acceptance claims that live in the
-  un-Node-testable binding layer, asserted structurally: the hook fires after the
-  upstream entry is persisted, the enabled gate is the hook's first statement,
-  the upstream clip shaping is unchanged, and the context entry's title is never
-  matched by `isClipEntryTitle` (so compaction still lists the quote entry).
-- `eval/phase3Acceptance.js` + `.test.js` — the Phase 3 accept clause, offline.
-  The plan says "verify with ST world-info debug", but what that verifies is a
-  pure property of the entry's world-info fields under ST's activation
-  algorithm, so it is asserted against a model of that algorithm instead of once
-  by hand: the context entry stays silent when its keywords are absent, fires on
-  each of its own keywords, and cascades **nothing** even though its blurb names
-  four other entries by name. The harness carries a CONTROL entry — same content
-  and keywords, no recursion flags — which must cascade; if it doesn't, the model
-  is too weak to prove anything and the harness fails rather than passing
-  silently. Mutation-checked: flipping `preventRecursion`, `excludeRecursion`, or
-  `constant` in `buildEntryOverrides` fails 4, 5, and 6 assertions respectively.
-- Off by default. With Clipper+ disabled the clip path is stock STMB.
+### Phase 3 — Clipper+ (PHA-1445)
+- `clipperPlusCore.js` — pure, dependency-injected Clipper+ core (plan §4.2):
+  - `resolveClipperConfig(global, perChat)` — merge `CLIPPER_DEFAULTS` over
+    `extension_settings.STMemoryBooks.autoModule.clipper` + per-chat
+    `chat_metadata.stmbc.clipper`; per-chat wins for `enabled`/`autoAccept`/`prompt`.
+  - `findSourceMessageIndex(chat, quote)` — unique normalized substring match
+    (precision-over-recall per plan §5.2); returns -1 on 0 or >1 match.
+  - `buildContextWindow(chat, sourceIdx, K)` — centered K-surrounding window,
+    skipping `is_system`, retaining true chat indices.
+  - `formatContextWindow` + `buildBlurbPrompt` — `[id] Speaker: text` lines + the
+    bundled `CLIPPER_PROMPT` baseline.
+  - `parseBlurbResponse(reply)` — strict JSON / single fence / embedded-object
+    parser with one "JSON only" retry (`JSON_ONLY_REPRIMAND`); null on parse failure.
+  - `sanitizeKeywords`, `clampBlurb` — dedupe/cap and ≤N-word clamp.
+  - `buildPairedEntry` — produces the exact entry shape: `title = <headline> [STMB Clip Context]`,
+    content = blurb + `Context for clip: <quoteTitle>` + provenance `src: msgs X–Y`,
+    keywords = sanitized proper nouns.
+  - 36 offline `node:test` cases; all green.
+- `clipperPlus.test.js` — 36 node:test cases over the pure core. The pure core is
+  SillyTavern-free and fully Node-testable.
+- `clipperPlus.js` — SillyTavern binding layer (registers at module load):
+  - `globalThis.STMBC.onClipSave = onClipSave` — fills the Phase 1 upstream hook
+    at `clipManager.js:saveNewClip` (no upstream file modification; merge discipline preserved).
+  - Adapts the Phase 1 payload `{lorebookName, lorebookData, dlg, headline, title}`
+    into the existing pure-core entry by deriving `quote` from
+    `dlg.querySelector('#stmb-clip-text').value` and using `title` as `quoteTitle`.
+  - Self-gates on `extension_settings.STMemoryBooks.autoModule.clipper.enabled`
+    (default **off** ⇒ upstream clip save is byte-identical when Clipper+ is disabled).
+  - Editable confirm dialog (`Popup` + `DOMPurify`) skippable via `autoAccept`.
+  - Writes via `addlore.upsertLorebookEntryByTitle` with `constant:false`,
+    `selective:true`, `vectorized:true`, `key:built.keywords`,
+    `preventRecursion:true`, `excludeRecursion:true` — keyword-activated,
+    recursion-proof (a blurb naming several characters must not cascade half
+    the cast; plan Appendix B).
+  - Self-contained try/catch — every failure surfaces a warning toast and logs
+    to console; the clip save itself is **never** thrown from (Phase 3 acceptance:
+    toggled off = byte-identical upstream behaviour).
+- `autoSettings.js` (additive) — nested `clipper` defaults on
+  `AUTO_MODULE_DEFAULTS` (sibling to the existing flat sentinel fields) +
+  nested `clipper` overrides on `CHAT_AUTO_DEFAULTS` (per-chat can toggle
+  on/off, override `autoAccept`, or substitute the prompt; numeric + profile
+  fields stay global). `initializeAutoSettings` / `initializeChatAutoSettings`
+  backfill missing fields via the existing `Object.entries` loop, so older
+  settings objects gain the defaults on first read. 35/35 existing tests
+  still pass.
+- `index.js` (additive) — `import "./clipperPlus.js"` next to the sentinel
+  import, with `STMBC-HOOK(clipper)` comment. Side-effect import; the module
+  only registers `globalThis.STMBC.onClipSave` at top level.
+- `FORK_NOTES.md` — `clipManager.js:718` row now marked "Wired in P3.2"; new
+  files listed in the additive section; new `autoSettings.js` (P3.2) and
+  `index.js` (P3.2) rows in the merge map; total bumped 10→12 files modified.
+- `index.build.js` regenerated via `bun run build`; `index.build.js.map`
+  regenerated. Both committed.
+
+**Phase 3 acceptance (plan §4.2):**
+- Keyword-activated: yes, entry.key = built.keywords.
+- preventRecursion + excludeRecursion: yes, both set on entryOverrides.
+- Content = blurb + provenance `src: msgs X–Y`: yes, `buildContextEntryContent`
+  produces this exactly.
+- Title cross-references quote entry, never constant:
+  `<headline> [STMB Clip Context]` shares headline (cross-ref) but uses a
+  distinct suffix so `isClipEntryTitle` / compaction / clip lists ignore the
+  context entry — the quote entry stays the compaction target.
+- Fires only on its keywords: keyword-activated + `constant:false`.
+- Cascades nothing: `preventRecursion:true` + `excludeRecursion:true`.
+- Compaction still lists the quote entry: the distinct `[STMB Clip Context]`
+  suffix (vs. upstream's `[STMB Clip]`) keeps the context entry out of
+  compaction / clip lists.
+- Toggled off = byte-identical: hook gated on `autoModule.clipper.enabled`
+  (default **false**); self-contained try/catch swallows every error so the
+  clip save path is never broken.
+
+The remaining Phase 3 acceptance criterion ("verify with ST world-info debug")
+requires a live SillyTavern install with the fork dropped in and Clipper+
+toggled on — tracked under the parent Phase 3 issue (PHA-1420) integration
+testing, not headless-runnable here.
 
 ### Phase 4 — Living-lorebook orchestration (PHA-1450)
 - `sceneCharacterFilter.js` — per-scene character presence filter:
@@ -183,7 +211,6 @@ tokens only when its keywords fire.
 Every new file ships with the AGPL-3.0-only SPDX header:
 - `eval/*` (all files)
 - `autoSettings.js`, `sceneCharacterFilter.js`
-- `clipperPlusCore.js`, `clipperPlus.js`
 - All new test files (`*.test.js`)
 
 Upstream files were modified only via greppable single-line `STMBC-HOOK` markers
@@ -207,8 +234,9 @@ autosummarySentinelGate 5 = 121 total.)
 - **Sentinel runtime** (Plan §4.1, Phase 2 P2.1) — the consumer that reads
   `autoSettings.js`'s `autoModule` settings and runs detection cycles on
   `GENERATION_ENDED`. Marked separately; out of scope for v0.1.0-a.1.
-- **Clipper+ runtime** (Plan §4.2, Phase 3 P3.1) — the paired-context-entry
-  writer hooked at `clipManager.js:718`. Marked separately; out of scope.
+- **Clipper+ runtime** (Plan §4.2, Phase 3 P3.2, PHA-1445) — the paired-context-entry
+  writer hooked at `clipManager.js:718`. **Done** (see Phase 3 section above); live-ST
+  world-info-debug verification tracked under PHA-1420 integration testing.
 - **Auditor** (Plan §4.3, Phase 5) — chunked full-chat re-read + four jobs.
   Marked separately; out of scope for v0.1.0-a.1.
 - **Live SillyTavern verification** — the Phase 1/6 acceptance criterion

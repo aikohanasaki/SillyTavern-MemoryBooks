@@ -41,7 +41,7 @@ function getDefaultChatMeta() {
 // Defaults
 // ----------------------------------------------------------------------------
 
-/** @type {Readonly<{sentinelEnabled: boolean, cadenceMessages: number, windowSize: number, windowOverlap: number, truncateChars: number, guardSize: number, detectionProfileIndex: number|null, detectionPrompt: string, debugLogging: boolean, auditorOfferEnabled: boolean, auditorEveryNScenes: number}>} */
+/** @type {Readonly<{sentinelEnabled: boolean, cadenceMessages: number, windowSize: number, windowOverlap: number, truncateChars: number, guardSize: number, detectionProfileIndex: number|null, detectionPrompt: string, debugLogging: boolean, auditorOfferEnabled: boolean, auditorEveryNScenes: number, clipper: Readonly<{enabled:boolean, surroundingK:number, truncate:number, autoAccept:boolean, maxBlurbWords:number, minKeywords:number, maxKeywords:number, profile:number|null, prompt:string|null}>}>} */
 export const AUTO_MODULE_DEFAULTS = Object.freeze({
     sentinelEnabled: false,
     cadenceMessages: 8,
@@ -54,14 +54,37 @@ export const AUTO_MODULE_DEFAULTS = Object.freeze({
     debugLogging: false,
     auditorOfferEnabled: true,
     auditorEveryNScenes: 15,
+    // Phase 3 (P3.2): Clipper+ paired-context-entry settings. Defaults below
+    // are matched by clipperPlusCore.js CLIPPER_DEFAULTS — when editing one,
+    // edit the other.
+    clipper: Object.freeze({
+        enabled: false,         // off by default => upstream clip save is byte-identical
+        surroundingK: 6,        // total messages of surrounding context captured (centered on the quote)
+        truncate: 500,          // per-message character cap for the context window
+        autoAccept: false,      // skip the editable confirm dialog and write directly
+        maxBlurbWords: 50,      // hard cap on blurb length (plan: "<=50-word blurb")
+        minKeywords: 3,         // preferred lower bound (plan: 3–6 proper nouns)
+        maxKeywords: 6,         // hard cap on keyword count
+        profile: null,          // generation profile index; null => STMB default profile
+        prompt: null,           // override for the bundled blurb-generation prompt
+    }),
 });
 
-/** @type {Readonly<{enabled: boolean|null, watermarkFallback: number|null, structureHintRegex: string, promptOverride: string}>} */
+/** @type {Readonly<{enabled: boolean|null, watermarkFallback: number|null, structureHintRegex: string, promptOverride: string, clipper: Readonly<{enabled: boolean|null, autoAccept: boolean|null, prompt: string}>}>} */
 export const CHAT_AUTO_DEFAULTS = Object.freeze({
     enabled: null, // null = inherit from global sentinelEnabled
     watermarkFallback: null, // null = no fallback; integer = override message index
     structureHintRegex: '', // empty = no hint
     promptOverride: '', // empty = no override
+    // Phase 3 (P3.2): per-chat Clipper+ overrides. `null` = inherit from
+    // global autoModule.clipper; non-null wins. Per-chat can toggle on/off,
+    // override autoAccept, or substitute the blurb prompt, but not the
+    // numeric/generation-profile fields (those stay global).
+    clipper: Object.freeze({
+        enabled: null,
+        autoAccept: null,
+        prompt: '',
+    }),
 });
 
 // ----------------------------------------------------------------------------
