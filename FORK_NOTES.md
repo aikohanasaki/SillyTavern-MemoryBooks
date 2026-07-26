@@ -179,6 +179,58 @@ git merge --abort 2>/dev/null || git checkout main && git branch -D scratch/merg
   (manifest.json, changelog.md, 3 build artifacts). All 4 hooked source files
   clean. **Pass — design holds.**
 
+- **2026-07-26 (PHA-1432, Van Dam re-drill)** — fork HEAD `16bc969` (post-P5.5),
+  `upstream/main` at `9fc9abb` — **7 new upstream commits ahead** of the prior
+  drill base (47a08a0 → 9fc9abb: `regenerate memories` ×2, `update arc keywords`
+  ×2, plus the 3 already absorbed in PHA-1449). 21 fork-only commits since the
+  prior drill (P0.3, P0.5, P2.2, P2.4, P4.2, P4.4, P5.3, P5.4, P5.5, plus the
+  drill-result commit itself).
+
+  `git merge --no-ff --no-edit upstream/main` on scratch branch
+  `scratch/p1.4-drill-20260726-1413` produced:
+
+  **Auto-merged clean (every hook-site file):**
+  - `index.js` — P2.2 init backfill + P2.4 sentinel handler + P2.4 force-disable
+    handler + Phase 2 init hook all clean. Three hook sites stable through
+    upstream drift.
+  - `stmemory.js:1461` — clean.
+  - `clipManager.js:718` — clean.
+  - `sidePrompts.js` — both P4.2 filter (line 1404) and Phase 4 filter (1671)
+    clean.
+  - `templates.js` — both P2.2 and P2.4 additive blocks clean.
+  - `utils.js` (P4.2 event preset), `constants.js` (P4.2 event display) —
+    additive map entries, clean.
+  - `autosummary.js` (P2.4 gate helper) — clean.
+
+  **Conflicts (8 files):**
+
+  | File | Why | Resolution | Hook-site clean? |
+  | --- | --- | --- | --- |
+  | `manifest.json` | `author` + `version` only — fork `phattbeats` / `8.2.2-a.1` vs upstream `aikohanasaki` / `8.3.0`. | Keep fork `author` and `display_name`; bump fork `version` to `8.3.0-a.1`. | ✓ (core metadata already merged in PHA-1449) |
+  | `changelog.md` | Both sides added new version entries. | Keep both, ordered newest-first. | n/a |
+  | `index.build.js` + `.map` | Generated build artifact committed in both forks. | Regenerate via `bun run build` and `git add`. | n/a |
+  | `style.build.css` | Generated CSS bundle committed in both forks. | Regenerate via build. | n/a |
+  | `style.css` | **NEW.** Fork appended 113 lines (P5.4 audit UI styles at EOF); upstream appended different lines (scrollbar/STLO/regenerate styles at EOF). Both appends collide at EOF. | Take upstream's append, then re-append the fork's P5.4 block. No semantic overlap (different selectors: `.stmb-audit-*` vs upstream scrollbar/STLO). | ✓ — fork never modified the body of style.css |
+  | `addlore.js` | **NEW.** Two conflict regions: (a) imports at line 18-22 (fork added `auditorCadence` + `auditorTechnicalPass` imports; upstream added `memoryRegeneration` imports); (b) `populateLorebookEntry` body at line 648-705 (fork added STMBC-HOOK-PHASE4 + 30-line inline fallback; upstream added `STMB_chatId` field). Both sides added NEW lines in adjacent context; auto-merge refuses because of context shift, not actual semantic overlap. | Merge both import blocks (preserve all four imports). For `populateLorebookEntry`: keep fork's hook block, insert upstream's `STMB_chatId` block BEFORE the fork's hook (the order doesn't matter functionally; STMB_chatId is a metadata write, hook is content transformation). | ✓ — STMBC-HOOK-PHASE4 lines themselves are untouched by upstream; conflict is from BOTH sides adding adjacent lines |
+
+  **Conclusion — hook-site design holds at 7 further upstream commits.**
+  Every STMBC-HOOK anchor survived the merge; every conflict is either (a)
+  expected per FORK_NOTES (`manifest.json`, build artifacts, changelog), (b)
+  additive-from-both-sides noise (`style.css`, `addlore.js`), or (c) regenerable
+  output. The §1.2.3 invariant holds.
+
+  **Phase 1 §1.2.1 rule violation found in `addlore.js`:** the STMBC-HOOK-PHASE4
+  block includes a 30-line inline `appendProvenanceLineInline` helper that
+  duplicates `nudgeHelpers.appendProvenanceLine` (the same file the lazy
+  `require` points at). Plan §1.2.1 says upstream files get "single-line call
+  sites only, each tagged with a greppable comment" — the inline fallback is
+  non-trivial fork code living in an upstream file. The fallback is dead code
+  in the common path (the lazy `require` resolves `nudgeHelpers.js` under
+  `bun run build`). Resolution: move the fallback into `nudgeHelpers.js` (or
+  just delete it — the lazy require already covers the uncommon case) and
+  reduce the hook block to a single greppable call. **Follow-up issue:**
+  created as PHA-1434.
+
 ## Pre-commit hook
 
 `hooks/pre-commit` runs `bun run build` and stages `index.build.js` +
