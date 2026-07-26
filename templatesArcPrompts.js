@@ -70,10 +70,107 @@ Time period: ...
 ## Outcome & Continuity
 - 4-8 bullets covering decisions, promises, unresolved threads, permanent consequences, and foreshadowed next steps
 
-Keywords must be concrete nouns, objects, places, proper nouns, or distinctive actions.
-Do not use abstract emotions, themes, or plot-summary phrases.
+The \`summary\` field must use this structure:
 
-Return only the JSON object. No markdown fences. No commentary.`, 'STMemoryBooks_SummaryPrompt_Default'),
+# [Scene Title]
+
+**Timeline**: [Most specific date and time supported by the source entries; if unspecified, state unspecified or use relative time.]
+
+## Story Beats
+
+* Present the major actions, revelations, decisions, and emotional or magical shifts in chronological order.
+* Explain what triggered each development, why characters acted, how others reacted, and what resulted.
+* Include plot-affecting interactions, meaningful shared experiences, and events that changed relationships or future continuity.
+* Omit repeated gestures, room dressing, background objects, and logistical detail unless they directly affected events.
+
+## Character Dynamics
+
+* Explain how motives, emotions, relationships, and power dynamics changed during the summarized period.
+* Capture consequential subtext, tension, vulnerability, trust, conflict, avoidance, affection, resentment, or loyalty.
+* Include small or domestic experiences only when they meaningfully shaped relationship history.
+* Do not repeat plot events unless needed to explain the interpersonal change they caused.
+
+## Important Facts
+
+* Record newly established facts likely to matter later, including plans, risks, abilities, limitations, preferences, promises, secrets, debts, injuries, magical effects, discoveries, and obligations.
+* Exclude casual preferences, scenery, errands, paperwork, clothing, furniture, weather, and other incidental details unless they became continuity-relevant.
+
+## Key Exchanges
+
+* Include only dialogue that defined a revelation, decision, conflict, emotional shift, or relationship change.
+* Attribute each quotation by speaker name.
+* Include a direct quotation only when the source entries preserve its exact wording. Never reconstruct quoted dialogue from a paraphrase.
+* Preserve distinctive phrases or identifiers, such as “pack for forever” or “dick-measuring contest,” only when they are memorable or relationship-relevant.
+* Include no more than 8 quotations.
+
+## Outcome & Continuity
+
+* State the final narrative, emotional, relational, physical, or magical condition produced by the events.
+* Record resulting decisions, plans, risks, promises, secrets, injuries, knowledge, and obligations that affect what happens next.
+* Identify unresolved threads, pending conflicts, future consequences, and foreshadowed developments.
+* Do not recap the full sequence of events again.
+
+For the \`keywords\` field:
+
+Generate **12–20 natural retrieval keywords when the material supports them**. Use fewer rather than padding the list with weak terms. Keywords are search hooks, not miniature summaries or evidence notes.
+
+Prioritize:
+
+1. **Stable named entities**: people other than {{char}} or {{user}}, places, organizations, events, documents, factions, spells, or distinctive objects.
+2. **Major continuity anchors**: plans, threats, secrets, discoveries, investigations, conflicts, injuries, promises, relationship changes, and unresolved threads.
+3. **Memorable moments**: meaningful shared activities, gifts, food, rituals, jokes, care-taking, arguments, or domestic events.
+4. **Independent secondary hooks** that retrieve a separate part of the summarized material.
+
+### Keyword construction
+
+Use the shortest distinctive wording likely to remain recognizable under paraphrasing or reversed word order.
+
+Examples:
+
+* \`Gala of the Silver Rose\` or \`Silver Rose Gala\` → \`Silver Rose\`
+* \`Bromet Response SA\` → \`Bromet\`
+* \`Château D’Aramitz\`, Comte D’Aramitz, or a plan involving him → \`D’Aramitz\`
+* Keep \`Althof Ledger\` when both words are required to identify the object.
+
+Prefer one central named entity when it already covers several related events:
+
+* \`D’Aramitz rescue plan\` → \`D’Aramitz\`
+* \`Bromet hidden contractors\` → \`Bromet\`
+* \`Althof Ledger substitution\` → \`Althof Ledger\`
+
+Retain a modified phrase only when it provides an independent retrieval route not covered by the central entity:
+
+* \`fake caterers\`
+* \`ledger facsimile\`
+* \`safehouse breakfast\`
+* \`counter-surveillance camera\`
+
+When several clues establish one conclusion, usually tag the resulting finding rather than each supporting clue:
+
+* Uniforms, badges, and vehicle access → \`fake caterers\`
+* Payments and company records → \`Bromet\`
+* A covert tactical team at the gala → \`suspected assassination\`
+* A rental used for equipment and disguises → \`staging villa\`
+
+A supporting clue may remain only when it is memorable, likely to recur, or independently useful for retrieval.
+
+Keywords should normally:
+
+* Contain 1–4 words.
+* Use ordinary noun phrases.
+* Identify genuinely distinct parts of the summary.
+* Remain stable if later descriptions use different wording.
+
+Exclude:
+
+* Incidental scenery or props.
+* Exact times, quantities, card digits, invoice wording, or administrative details.
+* Generic themes such as \`danger\`, \`romance\`, or \`conversation\`.
+* Unsupported conclusions.
+* Sentence-like evidence descriptions.
+* Multiple keywords that merely restate or narrow the same named entity.
+
+Before returning the JSON, silently verify that each keyword is natural to search, continuity-relevant, stable under paraphrasing, independently useful, and no longer than necessary.`, 'STMemoryBooks_SummaryPrompt_Default'),
 
         arc_alternate: translate(`You are an expert narrative analyst and memory-engine assistant.
 Your task is to combine multiple {{stmbchildtier}} entries into a single coherent {{stmbtier}} summary.
@@ -92,6 +189,108 @@ Return JSON only:
     { "id": "item-id", "reason": "Why this item does not fit." }
   ]
 }
+
+The \`summary\` field must use this structure:
+
+# [Scene Title]
+
+**Timeline**: [Most specific date and time supported by the source entries; if unspecified, state unspecified or use relative time.]
+
+## Story Beats
+
+* Present the major actions, revelations, decisions, and emotional or magical shifts in chronological order.
+* Explain what triggered each development, why characters acted, how others reacted, and what resulted.
+* Include plot-affecting interactions, meaningful shared experiences, and events that changed relationships or future continuity.
+* Omit repeated gestures, room dressing, background objects, and logistical detail unless they directly affected events.
+
+## Character Dynamics
+
+* Explain how motives, emotions, relationships, and power dynamics changed during the summarized period.
+* Capture consequential subtext, tension, vulnerability, trust, conflict, avoidance, affection, resentment, or loyalty.
+* Include small or domestic experiences only when they meaningfully shaped relationship history.
+* Do not repeat plot events unless needed to explain the interpersonal change they caused.
+
+## Important Facts
+
+* Record newly established facts likely to matter later, including plans, risks, abilities, limitations, preferences, promises, secrets, debts, injuries, magical effects, discoveries, and obligations.
+* Exclude casual preferences, scenery, errands, paperwork, clothing, furniture, weather, and other incidental details unless they became continuity-relevant.
+
+## Key Exchanges
+
+* Include only dialogue that defined a revelation, decision, conflict, emotional shift, or relationship change.
+* Attribute each quotation by speaker name.
+* Include a direct quotation only when the source entries preserve its exact wording. Never reconstruct quoted dialogue from a paraphrase.
+* Preserve distinctive phrases or identifiers, such as “pack for forever” or “dick-measuring contest,” only when they are memorable or relationship-relevant.
+* Include no more than 8 quotations.
+
+## Outcome & Continuity
+
+* State the final narrative, emotional, relational, physical, or magical condition produced by the events.
+* Record resulting decisions, plans, risks, promises, secrets, injuries, knowledge, and obligations that affect what happens next.
+* Identify unresolved threads, pending conflicts, future consequences, and foreshadowed developments.
+* Do not recap the full sequence of events again.
+
+For the \`keywords\` field:
+
+Generate **12–20 natural retrieval keywords when the material supports them**. Use fewer rather than padding the list with weak terms. Keywords are search hooks, not miniature summaries or evidence notes.
+
+Prioritize:
+
+1. **Stable named entities**: people other than {{char}} or {{user}}, places, organizations, events, documents, factions, spells, or distinctive objects.
+2. **Major continuity anchors**: plans, threats, secrets, discoveries, investigations, conflicts, injuries, promises, relationship changes, and unresolved threads.
+3. **Memorable moments**: meaningful shared activities, gifts, food, rituals, jokes, care-taking, arguments, or domestic events.
+4. **Independent secondary hooks** that retrieve a separate part of the summarized material.
+
+### Keyword construction
+
+Use the shortest distinctive wording likely to remain recognizable under paraphrasing or reversed word order.
+
+Examples:
+
+* \`Gala of the Silver Rose\` or \`Silver Rose Gala\` → \`Silver Rose\`
+* \`Bromet Response SA\` → \`Bromet\`
+* \`Château D’Aramitz\`, Comte D’Aramitz, or a plan involving him → \`D’Aramitz\`
+* Keep \`Althof Ledger\` when both words are required to identify the object.
+
+Prefer one central named entity when it already covers several related events:
+
+* \`D’Aramitz rescue plan\` → \`D’Aramitz\`
+* \`Bromet hidden contractors\` → \`Bromet\`
+* \`Althof Ledger substitution\` → \`Althof Ledger\`
+
+Retain a modified phrase only when it provides an independent retrieval route not covered by the central entity:
+
+* \`fake caterers\`
+* \`ledger facsimile\`
+* \`safehouse breakfast\`
+* \`counter-surveillance camera\`
+
+When several clues establish one conclusion, usually tag the resulting finding rather than each supporting clue:
+
+* Uniforms, badges, and vehicle access → \`fake caterers\`
+* Payments and company records → \`Bromet\`
+* A covert tactical team at the gala → \`suspected assassination\`
+* A rental used for equipment and disguises → \`staging villa\`
+
+A supporting clue may remain only when it is memorable, likely to recur, or independently useful for retrieval.
+
+Keywords should normally:
+
+* Contain 1–4 words.
+* Use ordinary noun phrases.
+* Identify genuinely distinct parts of the summary.
+* Remain stable if later descriptions use different wording.
+
+Exclude:
+
+* Incidental scenery or props.
+* Exact times, quantities, card digits, invoice wording, or administrative details.
+* Generic themes such as \`danger\`, \`romance\`, or \`conversation\`.
+* Unsupported conclusions.
+* Sentence-like evidence descriptions.
+* Multiple keywords that merely restate or narrow the same named entity.
+
+Before returning the JSON, silently verify that each keyword is natural to search, continuity-relevant, stable under paraphrasing, independently useful, and no longer than necessary.
 
 Requirements:
 - Respect chronology.
