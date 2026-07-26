@@ -7,7 +7,14 @@ node_modules/
 *.build.*.map
 .vscode/
 AGENTS.md
-eval/reports/
+# Ignore generated eval reports — but not the directory itself, otherwise git
+# won't descend into it and the negations below can't take effect.
+eval/reports/*
+# …except the Phase 2 acceptance evidence, which is a committed deliverable
+# rather than a throwaway generated report.
+!eval/reports/phase2/
+eval/reports/phase2/*
+!eval/reports/phase2/evidence.md
 eval/predictions*.json
 eval/.env
 .env
