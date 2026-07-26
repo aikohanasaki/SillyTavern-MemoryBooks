@@ -231,6 +231,20 @@ git merge --abort 2>/dev/null || git checkout main && git branch -D scratch/merg
   reduce the hook block to a single greppable call. **Follow-up issue:**
   created as PHA-1434.
 
+- **PHA-1533 (2026-07-26) — fix landed.** `nudgeHelpers.js` now exports
+  `safeAppendProvenanceLine(content, sceneRange)` that resolves
+  `globalThis.STMBC?.provenanceHelpers?.appendProvenanceLine` first (the
+  injected-override path used by tests / plugins) and falls back to the
+  canonical `appendProvenanceLine` here. `addlore.js` STMBC-HOOK-PHASE4 block
+  collapsed from ~30 lines (call site + try/catch + 30-line inline duplicate)
+  to 4 lines of code (skipProvenance guard + lazy `require` of `safeAppendProvenanceLine`
+  + single call). The `appendProvenanceLineInline` function and its 4
+  structural parity tests are gone. `provenanceFallback.test.js` rewritten
+  to assert the new structural invariants (no inline helper in `addlore.js`,
+  hook block ≤8 lines, `nudgeHelpers.js` exports the wrapper) plus
+  functional parity + globalThis override coverage for `safeAppendProvenanceLine`.
+  Re-run PHA-1432-style merge drill against current upstream to confirm.
+
 ## Pre-commit hook
 
 `hooks/pre-commit` runs `bun run build` and stages `index.build.js` +

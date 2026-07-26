@@ -17,15 +17,20 @@
 //     appends a `src: msgs X–Y` provenance line to a memory entry's content,
 //     only if the range is valid and the line is not already present.
 //     Used by memory generators (scene summaries, character side prompts).
-//   2. `shouldNudgeConsolidation(state, opts)` — pure decision function:
+//   2. `safeAppendProvenanceLine(content, sceneRange)` — wrapper that resolves
+//     the canonical implementation: it prefers an injected globalThis hook
+//     (used by tests / fork plugins to override behavior) and falls back to
+//     `appendProvenanceLine` here. Keeps the lazy-resolution logic out of
+//     upstream files so plan §1.2.1's "single-line call site only" rule holds.
+//   3. `shouldNudgeConsolidation(state, opts)` — pure decision function:
 //     returns `{ nudge: true|false, reason, tier, eligible, required }` for the
 //     "you have N eligible memories in tier T-1; consolidate up to T" prompt.
 //     Default threshold = 20 eligible entries per tier (plan §4.4).
-//   3. `shouldNudgeCompaction(entry, opts)` — pure decision function:
+//   4. `shouldNudgeCompaction(entry, opts)` — pure decision function:
 //     returns `{ nudge: true|false, reason, contentTokens, threshold }` for the
 //     "this entry is too long; run compaction" prompt. Default threshold =
 //     4000 tokens (covers ≈16K characters; tune via opts).
-//   4. `summarizeMemoryCount(state)` — count of memories already in the chat's
+//   5. `summarizeMemoryCount(state)` — count of memories already in the chat's
 //     lorebook, used by the prompt to tell the user "you're at N".
 //
 // These helpers are **pure functions**: no ST runtime imports, no side effects.
@@ -61,6 +66,36 @@ export function appendProvenanceLine(content, sceneRange) {
     // Don't double-append if some other src: line already mentions this exact
     // start-end (rare, but the function is idempotent).
     return `${text.replace(/\s*$/, '')}${line}\n`;
+}
+
+/**
+ * Resolve and invoke the canonical provenance-line appender.
+ *
+ * Resolution order:
+ *   1. `globalThis.STMBC?.provenanceHelpers?.appendProvenanceLine` — an
+ *      injected override used by fork plugins / tests to swap behavior
+ *      without re-bundling. Matches the lazy hook the upstream call site
+ *      historically used.
+ *   2. `appendProvenanceLine` (this module) — the single canonical
+ *      implementation. Same fallback path as the upstream call site so
+ *      callers never need to inline a duplicate.
+ *
+ * Exists so that upstream call sites (e.g. `addlore.js`) can stay at a
+ * single greppable line per plan §1.2.1 ("upstream files get single-line
+ * call sites only"). Without this wrapper, the lazy `globalThis` check +
+ * fallback had to live in the upstream file as ~30 lines of inline code.
+ *
+ * @param {string} content
+ * @param {string|{start:number,end:number}|null|undefined} sceneRange
+ * @returns {string} content with a provenance line appended, or `content`
+ *                    unchanged when the range is invalid / already present.
+ */
+export function safeAppendProvenanceLine(content, sceneRange) {
+    const impl = globalThis?.STMBC?.provenanceHelpers?.appendProvenanceLine;
+    if (typeof impl === 'function') {
+        return impl(content, sceneRange);
+    }
+    return appendProvenanceLine(content, sceneRange);
 }
 
 /**

@@ -1,69 +1,100 @@
 // Copyright (C) 2024–2026 Aiko Hanasaki
 // SPDX-License-Identifier: AGPL-3.0-only
 //
-// provenanceFallback.test.js — Structural tests verifying that the inline
-// fallback for appendProvenanceLine in addlore.js (used when the lazy import
-// path in populateLorebookEntry fails) matches the canonical nudgeHelpers
-// implementation. Catches regressions where the two diverge.
+// provenanceFallback.test.js — Structural + functional tests verifying the
+// fork's provenance-line fallback path. After PHA-1533, the canonical
+// implementation lives in nudgeHelpers.js (export `safeAppendProvenanceLine`
+// and `appendProvenanceLine`); addlore.js carries only a single-line call
+// site per plan §1.2.1. These tests pin that invariant.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { appendProvenanceLine } from './nudgeHelpers.js';
+import {
+    appendProvenanceLine,
+    safeAppendProvenanceLine,
+    parseSceneRange,
+} from './nudgeHelpers.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-// Pull the inline fallback out of addlore.js by string match.
 const addloreSrc = readFileSync(resolve(__dirname, 'addlore.js'), 'utf8');
+const nudgeHelpersSrc = readFileSync(resolve(__dirname, 'nudgeHelpers.js'), 'utf8');
 
-test('addlore.js contains the inline provenance fallback', () => {
-    assert.match(addloreSrc, /function\s+appendProvenanceLineInline\s*\(/);
-    assert.match(addloreSrc, /src: msgs/, 'inline fallback should mention src: msgs');
+// ----------------------------------------------------------------------------
+// Plan §1.2.1 invariants — upstream files only carry a single-line call site.
+// ----------------------------------------------------------------------------
+
+test('addlore.js does NOT inline the appendProvenanceLine helper (plan §1.2.1)', () => {
+    // The legacy 30-line inline helper must be gone. The only implementation
+    // now lives in nudgeHelpers.js.
+    assert.doesNotMatch(
+        addloreSrc,
+        /function\s+appendProvenanceLineInline\s*\(/,
+        'addlore.js still carries the inline appendProvenanceLineInline helper — should be moved to nudgeHelpers.js',
+    );
+    assert.doesNotMatch(
+        addloreSrc,
+        /appendProvenanceLineInline\s*\(/,
+        'addlore.js still references appendProvenanceLineInline — call site should use safeAppendProvenanceLine',
+    );
 });
 
-test('addlore.js invokes appendProvenanceLine via lazy globalThis.STMBC?.provenanceHelpers OR inline fallback', () => {
-    // The populateLorebookEntry function should call either the globalThis hook
-    // (canonical path) OR the inline fallback. Both must be present.
-    assert.match(addloreSrc, /globalThis\.STMBC\?\.provenanceHelpers\s*\?\?/, 'should try the globalThis hook first');
-    assert.match(addloreSrc, /appendProvenanceLineInline/, 'should fall back to inline implementation');
+test('addlore.js calls safeAppendProvenanceLine via single-line call site', () => {
+    // The hook block must reference the canonical wrapper from nudgeHelpers.
+    assert.match(
+        addloreSrc,
+        /safeAppendProvenanceLine/,
+        'addlore.js should call safeAppendProvenanceLine from nudgeHelpers.js',
+    );
+    // Sanity: the hook block is bounded (≤8 lines of code per the issue's
+    // acceptance criterion, excluding comment lines and the surrounding
+    // skipProvenance guard).
+    const hookMatch = addloreSrc.match(
+        /\/\/ STMBC-HOOK-PHASE4[\s\S]*?\n\s*\}\n/
+    );
+    assert.ok(hookMatch, 'expected to find the STMBC-HOOK-PHASE4 block');
+    const block = hookMatch[0];
+    const codeLines = block
+        .split('\n')
+        .filter((line) => line.trim().length > 0 && !line.trim().startsWith('//'));
+    assert.ok(
+        codeLines.length <= 8,
+        `STMBC-HOOK-PHASE4 code block should be ≤8 lines, got ${codeLines.length}:\n${codeLines.join('\n')}`,
+    );
 });
 
-// Functional parity: the inline fallback matches nudgeHelpers.appendProvenanceLine
-// for the inputs the fork actually generates. We test this by running both on a
-// battery of cases and asserting identical output.
-test('inline fallback matches nudgeHelpers.appendProvenanceLine on the fork\'s inputs', async () => {
-    // Extract the inline fallback by re-importing it indirectly: we know
-    // populateLorebookEntry uses it via the require path, but for testing
-    // we recreate the same logic here and compare against nudgeHelpers.
-    const inline = (content, sceneRange) => {
-        if (typeof sceneRange !== 'string' && !(sceneRange && typeof sceneRange === 'object')) return String(content ?? '');
-        let start, end;
-        if (typeof sceneRange === 'string') {
-            const m = sceneRange.trim().match(/^(\d+)\s*[-–—]\s*(\d+)$/);
-            if (!m) return String(content ?? '');
-            start = parseInt(m[1], 10);
-            end = parseInt(m[2], 10);
-        } else {
-            if (!Number.isInteger(sceneRange.start) || !Number.isInteger(sceneRange.end)) return String(content ?? '');
-            if (sceneRange.start < 1 || sceneRange.end < sceneRange.start) return String(content ?? '');
-            start = sceneRange.start;
-            end = sceneRange.end;
-        }
-        if (start < 1 || end < start) return String(content ?? '');
-        const line = `\nsrc: msgs ${start}–${end}`;
-        const text = String(content ?? '');
-        if (text.includes(line)) return text;
-        return `${text.replace(/\s*$/, '')}${line}\n`;
-    };
+test('nudgeHelpers.js exports the canonical wrapper', () => {
+    assert.match(
+        nudgeHelpersSrc,
+        /export\s+function\s+safeAppendProvenanceLine\s*\(/,
+        'nudgeHelpers.js should export safeAppendProvenanceLine',
+    );
+    assert.match(
+        nudgeHelpersSrc,
+        /export\s+function\s+appendProvenanceLine\s*\(/,
+        'nudgeHelpers.js should still export appendProvenanceLine',
+    );
+    assert.match(
+        nudgeHelpersSrc,
+        /globalThis\.STMBC\?\.provenanceHelpers/,
+        'safeAppendProvenanceLine should honour the globalThis.STMBC?.provenanceHelpers override',
+    );
+});
 
+// ----------------------------------------------------------------------------
+// Functional parity: safeAppendProvenanceLine matches appendProvenanceLine
+// when no globalThis override is registered (the common case).
+// ----------------------------------------------------------------------------
+
+test('safeAppendProvenanceLine matches appendProvenanceLine with no globalThis override', () => {
     const cases = [
-        // [content, sceneRange]
         ['', '3-5'],
         ['Some memory content.', '3-5'],
         ['Some memory content.\nsrc: msgs 3–5', '3-5'], // already present (idempotent)
-        ['Memory A.', '7-9'], // different range
+        ['Memory A.', '7-9'],
         [null, '3-5'],
         ['Content.', null],
         ['Content.', ''],
@@ -73,13 +104,52 @@ test('inline fallback matches nudgeHelpers.appendProvenanceLine on the fork\'s i
         ['Content.', { start: 'x', end: 5 }],
         ['Content.', { start: 0, end: 5 }],
     ];
-
     for (const [content, range] of cases) {
         assert.equal(
-            inline(content, range),
+            safeAppendProvenanceLine(content, range),
             appendProvenanceLine(content, range),
-            `mismatch for content=${JSON.stringify(content)}, range=${JSON.stringify(range)}`
+            `mismatch for content=${JSON.stringify(content)}, range=${JSON.stringify(range)}`,
         );
+    }
+});
+
+test('safeAppendProvenanceLine honours globalThis.STMBC.provenanceHelpers override', () => {
+    const previous = globalThis.STMBC;
+    try {
+        let captured = null;
+        globalThis.STMBC = {
+            provenanceHelpers: {
+                appendProvenanceLine: (content, sceneRange) => {
+                    captured = { content, sceneRange };
+                    return `${String(content ?? '')} [OVERRIDE:${sceneRange}]`;
+                },
+            },
+        };
+        const out = safeAppendProvenanceLine('hello', '9-12');
+        assert.equal(out, 'hello [OVERRIDE:9-12]');
+        assert.deepEqual(captured, { content: 'hello', sceneRange: '9-12' });
+    } finally {
+        if (previous === undefined) {
+            delete globalThis.STMBC;
+        } else {
+            globalThis.STMBC = previous;
+        }
+    }
+});
+
+test('safeAppendProvenanceLine tolerates a malformed globalThis override (falls back)', () => {
+    const previous = globalThis.STMBC;
+    try {
+        // Override missing the function — should fall back without throwing.
+        globalThis.STMBC = { provenanceHelpers: { /* no appendProvenanceLine */ } };
+        const out = safeAppendProvenanceLine('x', '3-5');
+        assert.equal(out, 'x\nsrc: msgs 3–5\n');
+    } finally {
+        if (previous === undefined) {
+            delete globalThis.STMBC;
+        } else {
+            globalThis.STMBC = previous;
+        }
     }
 });
 
@@ -98,4 +168,13 @@ test('real fixture: appendProvenanceLine on a Satire Fantasy Isekai scene summar
     const out = appendProvenanceLine(summary, '3-7');
     assert.match(out, /cult dissolved\./);
     assert.match(out, /src: msgs 3\u20137/);
+});
+
+// ----------------------------------------------------------------------------
+// parseSceneRange still exported (consumers downstream of nudgeHelpers rely
+// on it; surfaced here so a future refactor doesn't drop it silently).
+// ----------------------------------------------------------------------------
+
+test('parseSceneRange is still exported and parses "3-5"', () => {
+    assert.deepEqual(parseSceneRange('3-5'), { start: 3, end: 5 });
 });

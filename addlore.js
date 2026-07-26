@@ -650,51 +650,15 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
         }
     }
 
-    // STMBC-HOOK-PHASE4: append provenance line per plan §4.4. The line is
-    // idempotent (no-op if already present) and respects an opt-out via
-    // memoryResult.metadata?.skipProvenance for callers that pre-stamp the
-    // entry (the Auditor phase may set this when re-deriving from chunks).
+    // STMBC-HOOK-PHASE4: append provenance line per plan §4.4.
+    // safeAppendProvenanceLine encapsulates the globalThis.STMBC?.provenanceHelpers
+    // override + canonical nudgeHelpers.appendProvenanceLine fallback so the hook
+    // stays a single-line call site (plan §1.2.1). Respects skipProvenance opt-out
+    // for callers that pre-stamp the entry (the Auditor phase may set this).
     if (memoryResult.metadata?.skipProvenance !== true) {
-        try {
-            // Lazy import to keep addlore.js runtime-light and avoid a hard
-            // dep cycle (nudgeHelpers doesn't import addlore).
-            const { appendProvenanceLine } = globalThis.STMBC?.provenanceHelpers ?? require('./nudgeHelpers.js');
-            entry.content = appendProvenanceLine(entry.content, memoryResult.metadata?.sceneRange);
-        } catch (_e) {
-            // Fallback: inline appendProvenanceLine so the hook never breaks
-            // the entry-population path. nudgeHelpers is a sibling module;
-            // the lazy require resolves to a relative path under most
-            // bundlers (bun), and the static import below is the common case.
-            entry.content = appendProvenanceLineInline(entry.content, memoryResult.metadata?.sceneRange);
-        }
+        const { safeAppendProvenanceLine } = require('./nudgeHelpers.js');
+        entry.content = safeAppendProvenanceLine(entry.content, memoryResult.metadata?.sceneRange);
     }
-
-}
-
-/**
- * Inline provenance helper used as a fallback when the lazy import path in
- * populateLorebookEntry fails. Mirrors nudgeHelpers.appendProvenanceLine
- * exactly (kept in sync via structural tests in nudgeHelpers.test.js).
- */
-function appendProvenanceLineInline(content, sceneRange) {
-    if (typeof sceneRange !== 'string' && !(sceneRange && typeof sceneRange === 'object')) return String(content ?? '');
-    let start, end;
-    if (typeof sceneRange === 'string') {
-        const m = sceneRange.trim().match(/^(\d+)\s*[-–—]\s*(\d+)$/);
-        if (!m) return String(content ?? '');
-        start = parseInt(m[1], 10);
-        end = parseInt(m[2], 10);
-    } else {
-        if (!Number.isInteger(sceneRange.start) || !Number.isInteger(sceneRange.end)) return String(content ?? '');
-        if (sceneRange.start < 1 || sceneRange.end < sceneRange.start) return String(content ?? '');
-        start = sceneRange.start;
-        end = sceneRange.end;
-    }
-    if (start < 1 || end < start) return String(content ?? '');
-    const line = `\nsrc: msgs ${start}–${end}`;
-    const text = String(content ?? '');
-    if (text.includes(line)) return text;
-    return `${text.replace(/\s*$/, '')}${line}\n`;
 }
 
 function applyMemoryCharacterFilter(entry, memoryResult) {
