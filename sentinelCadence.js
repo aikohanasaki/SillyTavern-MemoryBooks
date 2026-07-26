@@ -150,6 +150,132 @@ export function clearSentinelCycleLog(chatMeta) {
 }
 
 // ----------------------------------------------------------------------------
+// Cadence floor — chat_metadata.stmbc.cadenceFloor  (PHA-1547)
+// ----------------------------------------------------------------------------
+//
+// The cadence gate used to measure "messages since" from the watermark alone,
+// which made it a LEVEL trigger: once the backlog passed `cadenceMessages` it
+// stayed true on every subsequent message until a memory moved the watermark.
+// A single 34-message scene therefore cost ~26 detection calls to find one
+// boundary — 279 cycles for 22 memories on the Phase 2 fixture, 257 of them
+// returning `no-boundary`, every one a real LLM call in production.
+//
+// The floor is the edge: the highest chat index a *completed* detection call
+// has already examined. `sentinelCore.isCadenceReached` measures from
+// `max(watermark, cadenceFloor)`, so after the detector has looked at the tail
+// and committed to what it found there, the gate waits a full cadence before
+// paying for another look.
+//
+// This module owns the field for the same reason it owns the ring buffer: it is
+// the only writer of `chat_metadata.stmbc`, and it is the one place that sees
+// every cycle record. The engine (sentinelCore.js) stays free of chat metadata
+// and free of the floor — which is also what keeps `/stmbc-detect` able to
+// force a real cycle at any time. The floor only ever gates the *automatic*
+// MESSAGE_RECEIVED path.
+
+/** chat_metadata.stmbc key where the cadence floor lives. */
+export const SENTINEL_CADENCE_FLOOR_KEY = 'cadenceFloor';
+
+/**
+ * Cycle actions that mean "a detection call completed and the sentinel has now
+ * committed to what it saw in that window". These — and only these — advance
+ * the floor:
+ *
+ *   processed          boundaries found and memorized; the messages after the
+ *                      last boundary were still examined and rejected, so the
+ *                      tail is genuinely covered past the new watermark.
+ *   no-boundary        the whole window was examined and rejected.
+ *   skip:unparseable   the detector answered garbage twice; re-asking one
+ *                      message later will not produce a different answer.
+ *   skip:detect-error  the API failed; hammering it every message is the worst
+ *                      possible response.
+ *
+ * Deliberately absent: `abort:*` (a cancel must not suppress the next cycle)
+ * and the pre-detect skips `skip:cadence` / `skip:empty-chat` /
+ * `skip:job-in-flight` / `skip:empty-window`, which cost nothing and examined
+ * nothing.
+ */
+export const CADENCE_FLOOR_ADVANCING_ACTIONS = Object.freeze(new Set([
+    'processed',
+    'no-boundary',
+    'skip:unparseable',
+    'skip:detect-error',
+]));
+
+/**
+ * Read the cadence floor from chat metadata.
+ *
+ * @param {object|null|undefined} chatMeta
+ * @returns {number} the floor, or -1 when unset/malformed
+ */
+export function getSentinelCadenceFloor(chatMeta) {
+    if (!chatMeta || typeof chatMeta !== 'object') return -1;
+    const stmbc = chatMeta.stmbc;
+    if (!stmbc || typeof stmbc !== 'object') return -1;
+    const v = Number(stmbc[SENTINEL_CADENCE_FLOOR_KEY]);
+    return Number.isInteger(v) && v >= 0 ? v : -1;
+}
+
+/**
+ * Set the cadence floor. Monotonic by default — a cycle that examined less than
+ * a previous one must not walk the floor backwards and re-open the waste.
+ * Pass `-1` to clear it outright (`force`d, used when the chat changes under
+ * us); `clearSentinelCadenceFloor` is the readable spelling of that.
+ *
+ * @param {object} chatMeta
+ * @param {number} value - chat index examined, or -1 to clear
+ * @returns {number} the floor now stored
+ */
+export function setSentinelCadenceFloor(chatMeta, value) {
+    if (!chatMeta || typeof chatMeta !== 'object') {
+        throw new TypeError('setSentinelCadenceFloor: chatMeta must be an object');
+    }
+    if (!chatMeta.stmbc || typeof chatMeta.stmbc !== 'object') chatMeta.stmbc = {};
+    const next = Number(value);
+    if (!Number.isInteger(next) || next < 0) {
+        delete chatMeta.stmbc[SENTINEL_CADENCE_FLOOR_KEY];
+        return -1;
+    }
+    const current = getSentinelCadenceFloor(chatMeta);
+    const floor = Math.max(current, next);
+    chatMeta.stmbc[SENTINEL_CADENCE_FLOOR_KEY] = floor;
+    return floor;
+}
+
+/**
+ * Clear the cadence floor, so the very next message re-opens the gate. Used
+ * when the sentinel can no longer trust that "already examined" means anything
+ * — e.g. a manual `/stmbc-detect` reset or a chat switch.
+ *
+ * @param {object} chatMeta
+ * @returns {number} -1
+ */
+export function clearSentinelCadenceFloor(chatMeta) {
+    if (!chatMeta || typeof chatMeta !== 'object') return -1;
+    if (!chatMeta.stmbc || typeof chatMeta.stmbc !== 'object') return -1;
+    delete chatMeta.stmbc[SENTINEL_CADENCE_FLOOR_KEY];
+    return -1;
+}
+
+/**
+ * Derive the new cadence floor from an engine cycle record. Returns `null` when
+ * the cycle should not move the floor at all.
+ *
+ * The floor is the window's `end`, which is `chat.length - 1` at the moment the
+ * engine built the window — i.e. exactly "how far the sentinel has looked".
+ *
+ * @param {object} cycle - record from runSentinelDetectionCycle (or the
+ *        flattened ring-buffer entry, which preserves `action` and `window`)
+ * @returns {number|null}
+ */
+export function cadenceFloorFromCycle(cycle) {
+    if (!cycle || typeof cycle !== 'object') return null;
+    if (!CADENCE_FLOOR_ADVANCING_ACTIONS.has(String(cycle.action || ''))) return null;
+    const end = Number(cycle.window && cycle.window.end);
+    return Number.isInteger(end) && end >= 0 ? end : null;
+}
+
+// ----------------------------------------------------------------------------
 // Factory
 // ----------------------------------------------------------------------------
 
@@ -436,6 +562,14 @@ export async function runSentinelCycle(job, context) {
     }
 
     if (chatMeta && typeof chatMeta === 'object') {
+        // Advance the cadence floor before logging, so a ring-buffer failure
+        // cannot leave the gate re-firing on every message (PHA-1547).
+        try {
+            const floor = cadenceFloorFromCycle(entry);
+            if (floor !== null) setSentinelCadenceFloor(chatMeta, floor);
+        } catch (_e) {
+            /* non-fatal — worst case is the pre-PHA-1547 level-trigger cadence */
+        }
         try {
             appendSentinelCycleLog(chatMeta, entry);
         } catch (err) {

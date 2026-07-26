@@ -64,6 +64,7 @@ import {
 } from './autoSettings.js';
 import {
     enqueueSentinelCycle,
+    getSentinelCadenceFloor,
     SENTINEL_CYCLE_TRIGGERS,
 } from './sentinelCadence.js';
 import {
@@ -238,8 +239,14 @@ export async function handleSentinelMessageReceived() {
         // cycle already queued for this chat, and the memory jobs one spawns).
         if (hasActiveStmbJobs(getStmbChatKey())) return;
 
+        // The cadence floor makes this an edge trigger rather than a level one
+        // (PHA-1547): without it the gate stays true on every message once the
+        // backlog exceeds cadenceN, costing ~26 real LLM calls per boundary.
+        // sentinelCadence.js owns the field and advances it after each cycle
+        // that actually reached the detector.
         const watermark = resolveSentinelWatermark(chatAuto);
-        if (!isCadenceReached(chat.length, watermark, cfg.cadenceN)) return;
+        const cadenceFloor = getSentinelCadenceFloor(chat_metadata);
+        if (!isCadenceReached(chat.length, watermark, cfg.cadenceN, cadenceFloor)) return;
 
         const result = enqueueSentinelCycle({
             enqueueStmbJob,

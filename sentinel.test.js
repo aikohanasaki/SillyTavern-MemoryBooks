@@ -16,6 +16,8 @@ import {
     formatDetectionWindow,
     buildDetectionWindow,
     isCadenceReached,
+    effectiveCadence,
+    sentinelConfigFromAutoSettings,
     parseIdArray,
     compileStructureHint,
     structureHintBoundaries,
@@ -313,6 +315,69 @@ test('isCadenceReached is the shared gate predicate', () => {
     assert.equal(isCadenceReached(12, 4, 8), false);   // lastIndex 11 - 4 = 7
     assert.equal(isCadenceReached(8, -1, 8), true);    // fresh chat, nothing memorized
     assert.equal(isCadenceReached(0, -1, 8), false);   // empty chat
+});
+
+// -------------------------------------------- cadence floor / edge trigger (PHA-1547)
+
+test('isCadenceReached measures from the cadence floor when it is ahead of the watermark', () => {
+    // Watermark 4, floor 20: a cycle already examined up to index 20 and found
+    // nothing, so nothing before index 28 should re-fire the gate.
+    assert.equal(isCadenceReached(30, 4, 8, 20), true);    // lastIndex 29 - 20 = 9
+    assert.equal(isCadenceReached(29, 4, 8, 20), true);    // lastIndex 28 - 20 = 8
+    assert.equal(isCadenceReached(28, 4, 8, 20), false);   // lastIndex 27 - 20 = 7
+    assert.equal(isCadenceReached(25, 4, 8, 20), false);   // the level trigger said true here
+});
+
+test('isCadenceReached ignores a floor behind the watermark', () => {
+    // A memory advanced the watermark past a stale floor — the watermark wins.
+    assert.equal(isCadenceReached(30, 25, 8, 4), false);   // lastIndex 29 - 25 = 4
+    assert.equal(isCadenceReached(40, 25, 8, 4), true);
+});
+
+test('isCadenceReached ignores a floor ahead of the chat (deleted messages / branch swap)', () => {
+    // A floor past the end of the chat would otherwise deadlock the gate forever.
+    assert.equal(isCadenceReached(30, 4, 8, 500), true);
+    assert.equal(isCadenceReached(30, 4, 8, NaN), true);
+});
+
+test('isCadenceReached defaults to the pre-floor behavior', () => {
+    // The engine calls it with three arguments, deliberately: a queued job must
+    // never be rejected by a floor that its own gate already cleared.
+    assert.equal(isCadenceReached(30, 4, 8), isCadenceReached(30, 4, 8, -1));
+    assert.equal(isCadenceReached(30, 4, 8), true);
+});
+
+// ------------------------------ cadence vs window invariant (PHA-1547 guard)
+
+test('effectiveCadence never lets the cadence outrun the window', () => {
+    // cadenceN <= window - guard, or messages fall between two looks and are
+    // never re-examined once the gate is an edge trigger.
+    assert.equal(effectiveCadence(8, 26, 4), 8);      // the shipped defaults, untouched
+    assert.equal(effectiveCadence(22, 26, 4), 22);    // exactly at the limit
+    assert.equal(effectiveCadence(24, 26, 4), 22);    // clamped
+    assert.equal(effectiveCadence(200, 26, 4), 22);
+    assert.equal(effectiveCadence(24, 16, 4), 12);
+    assert.equal(effectiveCadence(1, 26, 4), 1);      // below the limit is always fine
+});
+
+test('effectiveCadence never returns less than 1', () => {
+    // window == guard leaves nothing cuttable; the cadence still has to be a
+    // positive step or the gate would fire on a zero-length interval forever.
+    assert.equal(effectiveCadence(8, 4, 4), 1);
+    assert.equal(effectiveCadence(8, 2, 8), 1);
+    assert.equal(effectiveCadence(0, 26, 4), 8);      // garbage cadence -> the default
+    assert.equal(effectiveCadence(NaN, 26, 4), 8);
+    assert.equal(effectiveCadence(NaN, NaN, NaN), 1);
+});
+
+test('sentinelConfigFromAutoSettings applies the cadence/window invariant', () => {
+    const clamped = sentinelConfigFromAutoSettings({ cadenceMessages: 60, windowSize: 26, guardSize: 4 });
+    assert.equal(clamped.cadenceN, 22);
+    assert.equal(clamped.window, 26);
+    assert.equal(clamped.guard, 4);
+
+    const untouched = sentinelConfigFromAutoSettings({ cadenceMessages: 8, windowSize: 26, guardSize: 4 });
+    assert.equal(untouched.cadenceN, 8);
 });
 
 test('isCadenceReached agrees with the engine at the boundary', async () => {

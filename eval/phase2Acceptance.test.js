@@ -176,6 +176,53 @@ test('CRITERION 1: the run leaves no gaps in the covered span', async () => {
     assert.equal(run.processedRanges[0][0], 0, 'starts at the first message');
 });
 
+test('CRITERION 1: the run does not burn a detection call per message (PHA-1547)', async () => {
+    // The cadence gate used to be a LEVEL trigger: true on every message once
+    // the backlog passed cadenceN, so the fixture cost 279 cycles for 22
+    // memories — 257 of them fruitless. Offline that is just a counter; in
+    // production every one is a real LLM call on the detection profile.
+    //
+    // The cadence floor makes it an edge trigger. The bound below is the
+    // physical one: you cannot walk 329 messages at a cadence of 8 in fewer
+    // than ~329/8 cycles, so anything near it is as cheap as the design allows.
+    const fx = await loadFixture();
+    const run = await runIncremental({ chat: fx.chat, boundaries: fx.boundaries });
+    const cadence = productionConfig().cadenceN;
+    const costFloor = Math.floor(fx.chat.length / cadence);
+
+    assert.ok(
+        run.cycles.length <= 2 * costFloor,
+        `cycle count regressed to ${run.cycles.length} (level-trigger territory); `
+        + `expected at most ${2 * costFloor} for ${fx.chat.length} messages at cadence ${cadence}`,
+    );
+    // And the waste specifically: fruitless cycles must not dominate the run.
+    const fruitless = run.cycles.filter((c) => c.action === 'no-boundary').length;
+    assert.ok(
+        fruitless <= 2 * run.processedRanges.length,
+        `${fruitless} fruitless cycles for ${run.processedRanges.length} memories`,
+    );
+});
+
+test('CRITERION 1: backing off never starves coverage, at any settable cadence', async () => {
+    // The opposite failure the edge trigger could cause: back off further than
+    // the window can look back and messages fall between two looks, never to be
+    // re-examined. Unclamped, cadence 24 / window 16 drops this fixture to 8/19
+    // and cadence 200 / window 26 to 1/13. `effectiveCadence` is what holds the
+    // line, so sweep the settings panel's own range against it.
+    const fx = await loadFixture();
+    for (const [cadenceMessages, windowSize] of [[8, 26], [16, 16], [24, 16], [50, 26], [200, 26]]) {
+        const config = productionConfig({ cadenceMessages, windowSize });
+        const run = await runIncremental({ chat: fx.chat, boundaries: fx.boundaries, config });
+        const cov = scoreBoundaryCoverage(run.processedRanges, fx.boundaries);
+        assert.equal(
+            cov.missed.length, 0,
+            `cadence ${cadenceMessages} / window ${windowSize} (effective cadence ${config.cadenceN}) `
+            + `missed ${cov.missed}`,
+        );
+        assert.ok(config.cadenceN <= config.window - config.guard, 'the invariant itself must hold');
+    }
+});
+
 test('CRITERION 2: zero mid-scene cuts', async () => {
     const fx = await loadFixture();
     const run = await runIncremental({ chat: fx.chat, boundaries: fx.boundaries });

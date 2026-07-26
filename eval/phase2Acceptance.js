@@ -46,6 +46,7 @@ import {
 } from '../sentinelCore.js';
 import {
     enqueueSentinelCycle,
+    getSentinelCadenceFloor,
     runSentinelCycle,
     setSentinelDetectionRunner,
     getSentinelDetectionRunner,
@@ -306,8 +307,16 @@ export async function runIncremental({
     try {
         while (visible <= chat.length && !stopped) {
             // --- the MESSAGE_RECEIVED cadence gate (sentinel.js) -------------
+            // Mirrors handleSentinelMessageReceived exactly, including the
+            // PHA-1547 cadence floor that sentinelCadence.js persists into
+            // chatMeta after each cycle that reached the detector.
             const gateFires = !queue.hasPending()
-                && isCadenceReached(visible, watermarks.get(), config.cadenceN);
+                && isCadenceReached(
+                    visible,
+                    watermarks.get(),
+                    config.cadenceN,
+                    getSentinelCadenceFloor(chatMeta),
+                );
 
             if (gateFires) {
                 const enq = enqueueSentinelCycle({
