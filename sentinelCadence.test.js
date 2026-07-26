@@ -38,6 +38,7 @@ import {
     setSentinelDetectionRunner,
     getSentinelDetectionRunner,
     cycleStatusForAction,
+    cycleNeedsReview,
     summarizeCycleRecord,
     NO_ENGINE_DETAIL,
 } from './sentinelCadence.js';
@@ -642,6 +643,138 @@ test('runSentinelCycle: a non-abort engine throw is recorded as a failed cycle',
         assert.match(result.cycle.error, /detector exploded/);
     });
     assert.equal(meta.stmbc.cycleLog[0].status, 'failed');
+});
+
+// ----------------------------------------------------------------------------
+// P4.6 — low-confidence detection routes to needs_review on the LIVE path
+// ----------------------------------------------------------------------------
+//
+// Before P4.6 the only producer of StmbJobNeedsReview for *detection* was
+// eval/detect.js:assertHighConfidence, which nothing in the extension runtime
+// imports — so a low-confidence live cycle finished as a silent green no-op.
+// These tests pin the live chain: engine record -> cycleNeedsReview -> throw ->
+// stmbJobs' `blocked` / "Needs review" state.
+
+test('P4.6: cycleNeedsReview routes low and failed, never high', () => {
+    assert.equal(cycleNeedsReview({ action: 'processed', confidence: 'high' }), false);
+    assert.equal(cycleNeedsReview({ action: 'processed', confidence: 'low' }), true);
+    assert.equal(cycleNeedsReview({ action: 'skip:unparseable', confidence: 'failed' }), true);
+    // No detection call happened -> nothing to review.
+    assert.equal(cycleNeedsReview({ action: 'skip:cadence' }), false);
+    // A cancel is the user's doing, not a quality signal.
+    assert.equal(cycleNeedsReview({ action: 'abort:cancelled', confidence: 'low' }), false);
+    assert.equal(cycleNeedsReview(null), false);
+});
+
+test('P4.6: a low-confidence cycle throws StmbJobNeedsReview with provenance', async () => {
+    const meta = {};
+    const cycle = {
+        action: 'processed',
+        confidence: 'low',
+        watermark: 4,
+        window: { start: 1, end: 29 },
+        boundaries: [12],
+        ranges: [[5, 11]],
+        processed: [[5, 11]],
+        rawAttempts: ['prose', '[12]'],
+    };
+    await withRunner(async () => cycle, async () => {
+        await assert.rejects(
+            runSentinelCycle({ id: 'p46-1', payload: {} }, { chatMeta: meta, saveMetadata: () => {} }),
+            (err) => {
+                // stmbJobs.js matches on the NAME — that is the whole contract.
+                assert.equal(err.name, 'StmbJobNeedsReview');
+                assert.equal(err.lowConfidence, true);
+                assert.equal(err.provenance.confidence, 'low');
+                assert.equal(err.provenance.action, 'processed');
+                assert.deepEqual(err.provenance.window, { start: 1, end: 29 });
+                assert.equal(err.provenance.attempts, 2);
+                return true;
+            },
+        );
+    });
+    // The evidence is persisted BEFORE the throw — a blocked job the user opens
+    // must still have its cycle in the ring buffer.
+    const log = getSentinelCycleLog(meta);
+    assert.equal(log.length, 1);
+    assert.equal(log[0].action, 'processed');
+    assert.equal(log[0].confidence, 'low');
+    assert.equal(log[0].needsReview, true);
+    assert.match(log[0].detail, /low confidence: low/);
+});
+
+test('P4.6 control: a high-confidence cycle completes normally (no review)', async () => {
+    // Mutation check: this is the same cycle record with confidence flipped to
+    // 'high'. If routing ever fired unconditionally, this test fails.
+    const meta = {};
+    const cycle = {
+        action: 'processed',
+        confidence: 'high',
+        watermark: 4,
+        ranges: [[5, 11]],
+        processed: [[5, 11]],
+        rawAttempts: ['[12]'],
+    };
+    await withRunner(async () => cycle, async () => {
+        const result = await runSentinelCycle({ id: 'p46-2', payload: {} }, { chatMeta: meta, saveMetadata: () => {} });
+        assert.equal(result.ok, true);
+        assert.equal(result.cycle.status, 'completed');
+        assert.equal(result.cycle.needsReview, undefined);
+    });
+    assert.equal(getSentinelCycleLog(meta)[0].confidence, 'high');
+});
+
+test('P4.6: an unparseable cycle routes to review instead of finishing green', async () => {
+    const meta = {};
+    await withRunner(
+        async () => ({ action: 'skip:unparseable', confidence: 'failed', watermark: 4, rawAttempts: ['a', 'b'] }),
+        async () => {
+            await assert.rejects(
+                runSentinelCycle({ id: 'p46-3', payload: {} }, { chatMeta: meta, saveMetadata: () => {} }),
+                (err) => err.name === 'StmbJobNeedsReview' && err.provenance.confidence === 'failed',
+            );
+        },
+    );
+    assert.equal(getSentinelCycleLog(meta)[0].needsReview, true);
+});
+
+test('P4.6: a runner that raises StmbJobNeedsReview itself is not swallowed as "failed"', async () => {
+    // eval callers reach the same state via assertHighConfidence; the executor
+    // must forward that rather than flattening it into a plain failure.
+    const meta = {};
+    await withRunner(async () => {
+        const err = new Error('StmbJobNeedsReview: low-confidence detection — 1 of 2 window(s)');
+        err.name = 'StmbJobNeedsReview';
+        err.provenance = { confidence: 'low', offenders: [] };
+        throw err;
+    }, async () => {
+        await assert.rejects(
+            runSentinelCycle({ id: 'p46-4', payload: {} }, { chatMeta: meta, saveMetadata: () => {} }),
+            (err) => err.name === 'StmbJobNeedsReview',
+        );
+    });
+    const log = getSentinelCycleLog(meta);
+    assert.equal(log[0].needsReview, true);
+    assert.notEqual(log[0].status, 'failed');
+});
+
+test('P4.6: stmbJobs.js maps StmbJobNeedsReview onto the blocked/"Needs review" state', () => {
+    // The other half of the live chain. stmbJobs.js is not Node-importable
+    // (SillyTavern runtime imports), so this is a source-level pin on the
+    // executor's catch — the exact code path our throw lands in.
+    const src = readFileSync(resolve(__dirname, 'stmbJobs.js'), 'utf8');
+    assert.match(src, /=== 'StmbJobNeedsReview'/, 'stmbJobs matches the error by name');
+    assert.match(src, /needsReview \? 'blocked'/, 'a needs-review error finishes the job as blocked');
+    assert.match(src, /needsReview \? 'Needs review'/, 'and the detail reads "Needs review"');
+});
+
+test('P4.6: sentinelCore does not throw for low confidence (engine contract preserved)', () => {
+    const src = readFileSync(resolve(__dirname, 'sentinelCore.js'), 'utf8');
+    assert.doesNotMatch(
+        src,
+        /StmbJobNeedsReview/,
+        'the engine signals confidence with a record field; the job boundary owns the throw',
+    );
 });
 
 test('registerSentinelCadence: installs the engine when one is supplied', async () => {

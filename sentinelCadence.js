@@ -275,11 +275,66 @@ export function summarizeCycleRecord(cycle) {
     if (Array.isArray(cycle.ranges)) out.ranges = cycle.ranges;
     if (Array.isArray(cycle.processed)) out.processed = cycle.processed;
     if (cycle.error) out.error = String(cycle.error);
+    // P4.6: 'high' | 'low' | 'failed', absent when the cycle never called the
+    // detector (skip:cadence, skip:empty-window, …).
+    if (cycle.confidence) out.confidence = String(cycle.confidence);
     if (Array.isArray(cycle.rawAttempts) && cycle.rawAttempts.length) {
         out.attempts = cycle.rawAttempts.length;
         out.rawHead = String(cycle.rawAttempts[0] ?? '').slice(0, 200);
     }
     return out;
+}
+
+// ----------------------------------------------------------------------------
+// Low-confidence routing (P4.6, plan §4.4)
+// ----------------------------------------------------------------------------
+
+/**
+ * Does this cycle belong in the review queue?
+ *
+ * The engine deliberately never throws (it returns `skip:*` records instead),
+ * so the *policy* decision lives here, at the job boundary, where a throw can
+ * become the job's `blocked` / "Needs review" state. This is the live-path twin
+ * of `eval/detect.js:assertHighConfidence`, which does the same job for the
+ * offline detector.
+ *
+ * A cancelled cycle is never routed: an abort is the user's own doing, and the
+ * detection may simply not have finished.
+ *
+ * @param {object} cycle - record from runSentinelDetectionCycle
+ * @returns {boolean}
+ */
+export function cycleNeedsReview(cycle) {
+    if (!cycle || typeof cycle !== 'object') return false;
+    if (String(cycle.action || '').startsWith('abort:')) return false;
+    const confidence = cycle.confidence;
+    return !!confidence && confidence !== 'high';
+}
+
+/**
+ * Build the error stmbJobs.js recognizes by name and finishes as `blocked`
+ * (rendered "Needs review"). Carries the summarized ring-buffer entry as
+ * provenance so the review surface can show the offending window.
+ *
+ * @param {object} entry - the summarized cycle entry
+ * @returns {Error}
+ */
+function makeSentinelNeedsReviewError(entry) {
+    const err = new Error(
+        `StmbJobNeedsReview: low-confidence sentinel detection (${entry.confidence}) — ${entry.action}`,
+    );
+    err.name = 'StmbJobNeedsReview';
+    err.lowConfidence = true;
+    err.provenance = {
+        reason: `sentinel cycle '${entry.action}' parsed at confidence '${entry.confidence}'`,
+        action: entry.action,
+        confidence: entry.confidence,
+        watermark: entry.watermark ?? null,
+        window: entry.window ?? null,
+        attempts: entry.attempts ?? null,
+    };
+    err.cycle = entry;
+    return err;
 }
 
 // ----------------------------------------------------------------------------
@@ -296,7 +351,13 @@ export function summarizeCycleRecord(cycle) {
  *      engine checks between scenes and before the detection call).
  *   3. Appends a ring-buffer entry to chat_metadata so the dashboard +
  *      debugging surface agree on what the cycle did.
- *   4. Returns a structured result so the caller can show a toast / detail.
+ *   4. Routes a low-confidence cycle to the review queue (P4.6) by throwing
+ *      `StmbJobNeedsReview` — AFTER the ring-buffer write, so the evidence
+ *      survives. stmbJobs.js turns that into the job's `blocked` state.
+ *   5. Returns a structured result so the caller can show a toast / detail.
+ *
+ * @throws {Error} name='StmbJobNeedsReview' when `cycleNeedsReview(cycle)`
+ *   holds; name='AbortError' when the job was cancelled.
  *
  * With no runner installed (fork module missing, or a build where P2.1 is not
  * loaded) this degrades to the P2.3 wiring-only behavior: a clean, logged,
@@ -337,6 +398,10 @@ export async function runSentinelCycle(job, context) {
     };
 
     // --- P2.1 engine ---------------------------------------------------------
+    // P4.6: a low-confidence cycle must still land in the ring buffer before we
+    // route the job to review, so the throw is deferred to the end of the
+    // executor rather than raised the moment we notice.
+    let needsReviewError = null;
     const runner = detectionRunner;
     if (typeof runner === 'function') {
         let cycle = null;
@@ -344,14 +409,29 @@ export async function runSentinelCycle(job, context) {
             cycle = await runner(job, context);
         } catch (err) {
             if (err && err.name === 'AbortError') throw err;
-            entry.status = 'failed';
-            entry.detail = `Sentinel detection cycle threw: ${err?.message || err}`;
-            entry.error = String(err?.message || err);
+            // A runner that raises the review signal itself (e.g. an eval caller
+            // using assertHighConfidence) converges on the same path instead of
+            // being swallowed into a plain 'failed'.
+            if (err && err.name === 'StmbJobNeedsReview') {
+                needsReviewError = err;
+                entry.needsReview = true;
+                entry.confidence = err.provenance?.confidence || 'failed';
+                entry.detail = `Sentinel cycle needs review: ${err?.message || err}`;
+            } else {
+                entry.status = 'failed';
+                entry.detail = `Sentinel detection cycle threw: ${err?.message || err}`;
+                entry.error = String(err?.message || err);
+            }
         }
         if (cycle) {
             Object.assign(entry, summarizeCycleRecord(cycle));
             entry.status = cycleStatusForAction(cycle.action);
             entry.detail = `Sentinel cycle: ${entry.action}`;
+            if (cycleNeedsReview(cycle)) {
+                entry.needsReview = true;
+                entry.detail = `${entry.detail} (low confidence: ${entry.confidence})`;
+                needsReviewError = makeSentinelNeedsReviewError(entry);
+            }
         }
     }
 
@@ -372,6 +452,11 @@ export async function runSentinelCycle(job, context) {
     // `settings` is resolved for the runner's benefit (and for future gates);
     // the executor itself does not branch on it.
     void settings;
+
+    // P4.6: the cycle is fully logged and persisted at this point, so raising
+    // here loses nothing — stmbJobs.js finishes the job as `blocked` ("Needs
+    // review", retryable from the dashboard) instead of a silent green no-op.
+    if (needsReviewError) throw needsReviewError;
 
     return { ok: entry.status !== 'failed', cycle: entry };
 }

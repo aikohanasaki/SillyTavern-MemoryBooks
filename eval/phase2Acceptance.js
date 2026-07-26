@@ -273,6 +273,8 @@ export async function runIncremental({
     const chatMeta = { stmbc: {} };
     const settings = { autoModule: { ...AUTO_MODULE_DEFAULTS, sentinelEnabled } };
     const refusals = [];
+    /** P4.6: cycles the executor routed to the review queue (low confidence). */
+    const needsReview = [];
 
     const processedRanges = [];
     const cycles = [];
@@ -331,7 +333,20 @@ export async function runIncremental({
                         ? !!cancelDuringCycle(state())
                         : false,
                 };
-                const result = await runSentinelCycle(job, context);
+                // P4.6: the executor now throws StmbJobNeedsReview for a
+                // low-confidence cycle (the live path turns that into a
+                // `blocked`/"Needs review" job). The harness must keep its
+                // skip-and-continue behavior, so record the cycle — the error
+                // carries the same ring-buffer entry the success path returns —
+                // and keep stepping. Anything else still propagates.
+                let result;
+                try {
+                    result = await runSentinelCycle(job, context);
+                } catch (err) {
+                    if (err?.name !== 'StmbJobNeedsReview') throw err;
+                    result = { ok: false, cycle: err.cycle || { action: 'unknown', needsReview: true } };
+                    needsReview.push({ visible, cycle: result.cycle });
+                }
                 cycles.push(result.cycle);
                 if (result.cycle.status === 'cancelled') cancelled = true;
                 if (typeof stopAfterCycle === 'function' && stopAfterCycle(state())) {
@@ -350,6 +365,7 @@ export async function runIncremental({
         processedRanges,
         cycles,
         refusals,
+        needsReview,
         detectorCalls,
         chatMeta,
         cycleLog: (chatMeta.stmbc && chatMeta.stmbc.cycleLog) || [],

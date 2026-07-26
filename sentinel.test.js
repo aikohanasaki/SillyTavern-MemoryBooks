@@ -22,6 +22,7 @@ import {
     snapAndGuardBoundaries,
     planSceneRanges,
     detectBoundaries,
+    classifyDetectionConfidence,
     runSentinelDetectionCycle,
 } from './sentinelCore.js';
 
@@ -175,6 +176,34 @@ test('detectBoundaries returns null ids after a second failure', async () => {
     });
     assert.equal(det.ids, null);
     assert.equal(det.attempts.length, 2);
+});
+
+// ------------------------------------------- P4.6 confidence classification
+
+test('P4.6: classifyDetectionConfidence mirrors eval/detect.js labels', () => {
+    assert.equal(classifyDetectionConfidence({ ids: [3], attempts: ['[3]'] }), 'high');
+    assert.equal(classifyDetectionConfidence({ ids: [3], attempts: ['prose', '[3]'] }), 'low');
+    assert.equal(classifyDetectionConfidence({ ids: null, attempts: ['prose', 'more prose'] }), 'failed');
+    // Defensive: an aggregated/unknown round is never silently "high".
+    assert.equal(classifyDetectionConfidence(), 'failed');
+});
+
+test('P4.6: detectBoundaries labels a clean first parse "high"', async () => {
+    const det = await detectBoundaries({
+        detect: async () => '[7]', systemPrompt: 'P', windowText: 'W',
+    });
+    assert.equal(det.confidence, 'high');
+});
+
+test('P4.6: detectBoundaries labels a reprimand-rescued parse "low"', async () => {
+    let n = 0;
+    const det = await detectBoundaries({
+        detect: async () => (++n === 1 ? 'Sure! Here you go:' : '[7]'),
+        systemPrompt: 'P',
+        windowText: 'W',
+    });
+    assert.equal(det.ids.length, 1);
+    assert.equal(det.confidence, 'low');
 });
 
 // ---------------------------------------------------------------- full cycle
@@ -342,4 +371,68 @@ test('an uncancelled cycle never consults an absent isCancelled dep', async () =
     delete deps.isCancelled;
     const r = await runSentinelDetectionCycle(deps);
     assert.equal(r.action, 'processed');
+});
+
+// -------------------------------------------------- P4.6 confidence on the record
+//
+// The engine's contract is "never throws for expected conditions", so the
+// low-confidence signal is a FIELD, not an exception. sentinelCadence.js does
+// the routing. These tests pin both halves of that: the field is present and
+// correct, AND the engine still returns normally in every case.
+
+test('P4.6: a clean cycle carries confidence "high"', async () => {
+    const { deps } = cycleDeps({ detect: async () => '[12, 20]' });
+    const r = await runSentinelDetectionCycle(deps);
+    assert.equal(r.action, 'processed');
+    assert.equal(r.confidence, 'high');
+});
+
+test('P4.6: a reprimand-rescued cycle carries confidence "low" and still processes', async () => {
+    let n = 0;
+    const { deps, calls } = cycleDeps({
+        detect: async () => (++n === 1 ? 'Well, I think scene 12 and 20...' : '[12, 20]'),
+    });
+    const r = await runSentinelDetectionCycle(deps);
+    assert.equal(r.action, 'processed');
+    assert.equal(r.confidence, 'low');
+    // Skip-and-continue is untouched: the memories still committed.
+    assert.deepEqual(calls.ranges, [[5, 11], [12, 19]]);
+});
+
+test('P4.6: skip:unparseable carries confidence "failed"', async () => {
+    const { deps } = cycleDeps({ detect: async () => 'prose only' });
+    const r = await runSentinelDetectionCycle(deps);
+    assert.equal(r.action, 'skip:unparseable');
+    assert.equal(r.confidence, 'failed');
+});
+
+test('P4.6: skip:detect-error carries confidence "failed"', async () => {
+    const { deps } = cycleDeps({ detect: async () => { throw new Error('503'); } });
+    const r = await runSentinelDetectionCycle(deps);
+    assert.equal(r.action, 'skip:detect-error');
+    assert.equal(r.confidence, 'failed');
+});
+
+test('P4.6: a structure-hint rescue is still labelled "failed" (the model output was unusable)', async () => {
+    const chat = makeChat(30, {
+        14: { mes: '[ 🕰️ 15:00 | 📍 Forest | dusk ] They pressed on.' },
+    });
+    const { deps } = cycleDeps({
+        getChat: () => chat,
+        detect: async () => 'no json here',
+        config: { structureHintRegex: '^\\[.*\\|.*\\]' },
+    });
+    const r = await runSentinelDetectionCycle(deps);
+    assert.equal(r.action, 'processed');
+    assert.deepEqual(r.boundaries, [14]);
+    assert.equal(r.confidence, 'failed');
+});
+
+test('P4.6 control: a cycle that never calls the detector carries no confidence', async () => {
+    // Only detection quality is routable — a cadence/window skip has nothing to
+    // review, and must not be able to block a job.
+    const { deps } = cycleDeps({ getChat: () => makeChat(10), getWatermark: () => 4 });
+    const r = await runSentinelDetectionCycle(deps);
+    assert.equal(r.action, 'skip:cadence');
+    assert.equal(r.confidence, undefined);
 });

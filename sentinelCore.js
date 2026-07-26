@@ -307,9 +307,33 @@ export function planSceneRanges(watermark, boundaries) {
 }
 
 /**
+ * How clean the parse actually was, for one detection round (P4.6). Mirrors the
+ * per-window `confidence` field the eval detector produces
+ * (eval/detect.js, PHA-1511) so the offline harness and the live sentinel label
+ * the same thing the same way:
+ *
+ *   'high'   — the first attempt parsed cleanly (no reprimand needed)
+ *   'low'    — the first attempt failed; the JSON-only retry parsed
+ *   'failed' — no attempt parsed (or the detection call threw)
+ *
+ * Anything other than 'high' is low-confidence and belongs in the review queue.
+ * The classification lives here (pure) but the *routing* decision is the job
+ * boundary's — see `cycleNeedsReview` in sentinelCadence.js.
+ *
+ * @param {{ids: Array<number>|null, attempts: Array<string>}} round
+ * @returns {'high'|'low'|'failed'}
+ */
+export function classifyDetectionConfidence(round = {}) {
+    if (round.ids == null) return 'failed';
+    const attempts = Array.isArray(round.attempts) ? round.attempts.length : 0;
+    return attempts <= 1 ? 'high' : 'low';
+}
+
+/**
  * One detection round for a window: single call, then a single "JSON only"
- * retry on parse failure. Returns { ids, attempts } with ids === null when the
- * window is unparseable after the retry (skip — never guess, §3.3).
+ * retry on parse failure. Returns { ids, attempts, confidence } with
+ * ids === null when the window is unparseable after the retry (skip — never
+ * guess, §3.3).
  * `detect(prompt) => Promise<string>` is the injected single-shot LLM call; it
  * may throw (API error) — the caller treats that as a skipped cycle.
  * @param {{detect:(prompt:string)=>Promise<string>, systemPrompt:string, windowText:string}} p
@@ -329,7 +353,7 @@ export async function detectBoundaries({ detect, systemPrompt, windowText }) {
         attempts.push(reply);
         ids = parseIdArray(reply);
     }
-    return { ids, attempts };
+    return { ids, attempts, confidence: classifyDetectionConfidence({ ids, attempts }) };
 }
 
 /**
@@ -337,7 +361,11 @@ export async function detectBoundaries({ detect, systemPrompt, windowText }) {
  * any SillyTavern import — the binding layer supplies real functions; tests
  * supply stubs. Returns (and logs) a structured record describing the cycle for
  * the debug ring buffer. Never throws for expected conditions; only truly
- * unexpected programmer errors propagate.
+ * unexpected programmer errors propagate. That contract is load-bearing for the
+ * offline harness, so P4.6's low-confidence signal is a `confidence` FIELD on
+ * the record ('high'|'low'|'failed', absent when no detection call was made) —
+ * the throw that routes a job to `needs_review` happens one layer up, at the
+ * job boundary in sentinelCadence.js (`cycleNeedsReview`).
  *
  * NAME (P2.1↔P2.3 integration): this is the *engine*. It is deliberately NOT
  * called `runSentinelCycle` — that name belongs to the job executor in
@@ -415,6 +443,7 @@ export async function runSentinelDetectionCycle(deps) {
             watermark,
             window: { start: win.start, end: win.end },
             error: String(err?.message || err),
+            confidence: 'failed',
         });
     }
 
@@ -424,6 +453,7 @@ export async function runSentinelDetectionCycle(deps) {
             watermark,
             window: { start: win.start, end: win.end },
             rawAttempts: det.attempts,
+            confidence: det.confidence,
         });
     }
 
@@ -445,6 +475,12 @@ export async function runSentinelDetectionCycle(deps) {
         structureIds,
         boundaries,
         ranges,
+        // P4.6: how clean the parse was. Note the structure-hint fallback case —
+        // `det.ids === null` with deterministic `structureIds` still reaches here
+        // and is honestly labelled 'failed': the model's answer was unusable even
+        // though the regex saved the cycle. That is exactly a case a human should
+        // look at, so it routes to review like any other low-confidence cycle.
+        confidence: det.confidence,
     };
 
     if (ranges.length === 0) return record('no-boundary', base);
