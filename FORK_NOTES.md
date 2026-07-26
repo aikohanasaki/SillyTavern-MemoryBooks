@@ -69,6 +69,28 @@ These files are **entirely additive** — they live alongside the upstream code
 without touching any upstream file. The eval harness has no runtime dependency
 on SillyTavern at all; it runs offline against JSONL exports.
 
+### §1.2 reserved slots (created in P1.3 — filled by later phases)
+
+Plan §1.2 rule 1 names five files that must live alongside upstream so the
+fork owns those names from day one. The slots below had stub-only headers
+in P1.3; the bullet list above shows what they contain *today*.
+
+| File | Plan § | Phase that fills it | Stub created by |
+| --- | --- | --- | --- |
+| `sentinel.js` | §4.1 | Phase 2 (P2.1) | P1.3 (PHA-1430) |
+| `clipperPlus.js` | §4.2 | Phase 3 (P3.2) | P1.3 (PHA-1430) |
+| `auditor.js` | §4.3 | Phase 5 (P5.1) | P1.3 (PHA-1430) — *slot reserved; P5.1 implementation lives on `feat/p5.1-auditor` and replaces the stub wholesale on merge* |
+| `injection.js` | §4.4 | Phase 4 (P4.1) | P1.3 (PHA-1430) — *slot reserved; P4.1 implementation lives on `feat/p4.1-injection` and replaces the stub wholesale on merge* |
+| `autoSettings.js` | §4.5 | Phase 2 (P2.2) | P1.3 (PHA-1430) |
+
+The stub-body convention: a copyright header (matching the existing
+`autoSettings.js` / `sentinel.js` headers), a paragraph locating the file in
+the plan, a paragraph naming the integration point, and a paragraph
+explaining why the slot is reserved. **No exports, no runtime side effects.**
+The P4.1/P5.1 implementation branches overwrite the stub wholesale on merge
+(no `git mv`, no `git rm`; the merge outcome is "stub deleted, real file
+added" because the implementation branch never carried the stub).
+
 ## Files the fork modifies (upstream files, single-line call sites only)
 
 | File | Lines | Reason | Verified-mergeable? |
