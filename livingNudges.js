@@ -35,6 +35,10 @@ import {
     formatConsolidationNudge,
     formatCompactionNudge,
 } from './nudgeHelpers.js';
+// P4.5 repetition gating. reviewCore.js is pure (no SillyTavern imports), so it
+// is safe to import statically here — unlike its runtime binding review.js,
+// whose gating helpers are injected through `opts` in runNudgeSweep.
+import { shouldOfferConsolidationNudge } from './reviewCore.js';
 
 const DEFAULT_CONSOLIDATION_THRESHOLD = 20;
 const DEFAULT_COMPACTION_TOKENS = 4000;
@@ -231,34 +235,86 @@ export async function maybePromptCompaction(entry, opts = {}) {
  * Run all nudges over a lorebook in one pass. Returns a structured summary
  * suitable for logging or a future jobs-dashboard status entry.
  *
+ * P4.5 — repetition gating. Both underlying decisions are *stateless*: a tier
+ * that has crossed 20 eligible entries stays eligible, and an oversized entry
+ * stays oversized, until the user actually acts. Called once per committed scene
+ * memory, that means the raw sweep re-nudges the same thing on every single
+ * scene. The persistence needed to fix that lives in review.js (chat_metadata),
+ * which this module deliberately does not import — so the three gating helpers
+ * are INJECTED through `opts`, exactly like `validateLorebook`. Omit them and
+ * the sweep behaves as before (that is what the pure unit tests do).
+ *
+ * Consolidation: `bumpScenesSinceConsolidationNudge()` counts scenes since the
+ * last nudge and the nudge is withheld until that count reaches the interval,
+ * then the counter resets. The first nudge is not meaningfully delayed — the
+ * counter and the eligible-entry count both advance one per committed scene
+ * memory, so they cross their (identical, 20) thresholds together; the gate only
+ * bites on *repeats*.
+ *
+ * Compaction: uids already offered are skipped via `wasCompactionNudged` and
+ * recorded via `markCompactionNudged`. Suppressed uids are reported in
+ * `compactionsSuppressed` rather than silently dropped (plan §4.3 "no silent caps").
+ *
  * @param {object} settings
  * @param {object} lorebookValidation
  * @param {Object} [opts]
+ * @param {Function} [opts.bumpScenesSinceConsolidationNudge] - review.js; (reset?) => count
+ * @param {Function} [opts.wasCompactionNudged] - review.js; (uid) => boolean
+ * @param {Function} [opts.markCompactionNudged] - review.js; (uid) => void
+ * @param {number} [opts.consolidationNudgeInterval] - scenes between repeat nudges (default 20)
  * @returns {Promise<{
  *   consolidation: object | null,
  *   compactions: Array<object>,
+ *   compactionsSuppressed: number,
  *   memoryCount: number,
+ *   scenesSinceConsolidationNudge: number | null,
  * }>}
  */
 export async function runNudgeSweep(settings, lorebookValidation, opts = {}) {
-    const consolidation = await maybePromptConsolidation(settings, lorebookValidation, opts);
+    const bumpScenes = typeof opts.bumpScenesSinceConsolidationNudge === 'function'
+        ? opts.bumpScenesSinceConsolidationNudge
+        : null;
+    const wasNudged = typeof opts.wasCompactionNudged === 'function' ? opts.wasCompactionNudged : null;
+    const markNudged = typeof opts.markCompactionNudged === 'function' ? opts.markCompactionNudged : null;
+
+    // Count this scene first, so the interval measures scenes, not sweeps that
+    // happened to find something.
+    const scenesSinceConsolidationNudge = bumpScenes ? Number(bumpScenes()) : null;
+    const intervalReady = !bumpScenes || shouldOfferConsolidationNudge({
+        scenesSinceNudge: scenesSinceConsolidationNudge,
+        threshold: opts.consolidationNudgeInterval,
+    });
+
+    const consolidation = intervalReady
+        ? await maybePromptConsolidation(settings, lorebookValidation, opts)
+        : { prompted: false, reason: 'nudge-interval-not-reached' };
+    // Only a nudge the user actually saw resets the interval.
+    if (consolidation?.prompted && bumpScenes) bumpScenes(true);
+
     const data = lorebookValidation?.valid ? lorebookValidation.data : null;
     const memoryCount = summarizeMemoryCount(data);
     const compactions = [];
+    let compactionsSuppressed = 0;
     if (data && data.entries) {
         for (const entry of Object.values(data.entries)) {
             if (!entry?.stmemorybooks) continue;
             const result = shouldShowCompactionPrompt(entry, opts);
-            if (result.nudge) compactions.push({
+            if (!result.nudge) continue;
+            if (wasNudged && wasNudged(entry.uid)) {
+                compactionsSuppressed++;
+                continue;
+            }
+            compactions.push({
                 uid: entry.uid,
                 title: entry.comment ?? entry.title,
                 contentTokens: result.contentTokens,
                 threshold: result.threshold,
                 line: result.line,
             });
+            if (markNudged) markNudged(entry.uid);
         }
     }
-    return { consolidation, compactions, memoryCount };
+    return { consolidation, compactions, compactionsSuppressed, memoryCount, scenesSinceConsolidationNudge };
 }
 
 /**

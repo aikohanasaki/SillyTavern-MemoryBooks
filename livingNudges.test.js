@@ -223,3 +223,88 @@ test('runNudgeSweepForCurrentChat sweeps a valid lorebook and reports compaction
     assert.equal(out.compactions.length, 1, 'only the oversized entry should be nudged');
     assert.equal(out.compactions[0].uid, 2);
 });
+
+// ----------------------------------------------------------------------------
+// P4.5 — repetition gating (review.js helpers injected through opts)
+// ----------------------------------------------------------------------------
+
+const BLOATED = 'x'.repeat(40000); // ~10K tokens, well over the 4K default
+
+/** A lorebook with `readyCount` tier-1 entries, one of which is oversized. */
+function makeLorebook(readyCount = 0) {
+    const entries = { '2': { uid: 2, stmemorybooks: true, tier: 1, comment: 'Bloated', content: BLOATED } };
+    for (let i = 0; i < readyCount; i++) {
+        entries[`1${i}`] = { uid: 100 + i, stmemorybooks: true, tier: 1, comment: `M${i}`, content: 'short' };
+    }
+    return async () => ({ valid: true, name: 'Test Book', data: { entries } });
+}
+
+/** In-memory stand-in for review.js's chat_metadata-backed gating state. */
+function makeGate() {
+    const state = { scenes: 0, nudged: new Set() };
+    return {
+        state,
+        opts: {
+            bumpScenesSinceConsolidationNudge: (reset = false) => (state.scenes = reset ? 0 : state.scenes + 1),
+            wasCompactionNudged: (uid) => state.nudged.has(String(uid)),
+            markCompactionNudged: (uid) => state.nudged.add(String(uid)),
+        },
+    };
+}
+
+test('P4.5: compaction nudge fires once per uid, then is suppressed (not silently dropped)', async () => {
+    const gate = makeGate();
+    const validateLorebook = makeLorebook();
+
+    const first = await runNudgeSweepForCurrentChat({}, { validateLorebook, ...gate.opts });
+    assert.equal(first.compactions.length, 1, 'first sweep should surface the oversized entry');
+    assert.equal(first.compactionsSuppressed, 0);
+    assert.ok(gate.state.nudged.has('2'), 'markCompactionNudged should have recorded the uid');
+
+    const second = await runNudgeSweepForCurrentChat({}, { validateLorebook, ...gate.opts });
+    assert.equal(second.compactions.length, 0, 'the same uid must not re-nudge on the next scene');
+    assert.equal(second.compactionsSuppressed, 1, 'the suppressed uid must still be reported');
+});
+
+test('P4.5: without the injected gate, compaction re-nudges every sweep (back-compat)', async () => {
+    const validateLorebook = makeLorebook();
+    const a = await runNudgeSweepForCurrentChat({}, { validateLorebook });
+    const b = await runNudgeSweepForCurrentChat({}, { validateLorebook });
+    assert.equal(a.compactions.length, 1);
+    assert.equal(b.compactions.length, 1, 'ungated behavior is unchanged');
+    assert.equal(b.compactionsSuppressed, 0);
+});
+
+test('P4.5: consolidation nudge is withheld until the scene interval is reached, then resets', async () => {
+    const gate = makeGate();
+    // 20 eligible tier-1 entries: the eligibility check is satisfied from sweep 1,
+    // so only the scene interval can hold the nudge back.
+    const validateLorebook = makeLorebook(20);
+    const opts = { validateLorebook, ...gate.opts, consolidationNudgeInterval: 3 };
+
+    const s1 = await runNudgeSweepForCurrentChat({}, opts);
+    assert.equal(s1.scenesSinceConsolidationNudge, 1);
+    assert.equal(s1.consolidation.prompted, false, 'scene 1 of 3 must not nudge');
+    assert.equal(s1.consolidation.reason, 'nudge-interval-not-reached');
+
+    await runNudgeSweepForCurrentChat({}, opts); // scene 2
+
+    const s3 = await runNudgeSweepForCurrentChat({}, opts);
+    assert.equal(s3.consolidation.prompted, true, 'the interval is reached at scene 3');
+    assert.equal(gate.state.scenes, 0, 'a delivered nudge resets the counter');
+
+    const s4 = await runNudgeSweepForCurrentChat({}, opts);
+    assert.equal(s4.consolidation.prompted, false, 'the very next scene must not re-nudge');
+});
+
+test('P4.5: a withheld consolidation nudge does not reset the counter', async () => {
+    const gate = makeGate();
+    // No eligible entries, so maybePromptConsolidation would decline anyway;
+    // the counter must keep climbing rather than resetting on a non-nudge.
+    const opts = { validateLorebook: makeLorebook(0), ...gate.opts, consolidationNudgeInterval: 2 };
+    await runNudgeSweepForCurrentChat({}, opts);
+    await runNudgeSweepForCurrentChat({}, opts);
+    const s3 = await runNudgeSweepForCurrentChat({}, opts);
+    assert.equal(s3.consolidation.prompted, false);
+    assert.equal(gate.state.scenes, 3, 'counter keeps climbing while nothing is offered');
+});

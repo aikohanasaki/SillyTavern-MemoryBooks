@@ -47,6 +47,14 @@ import { isMemoryProcessing, runSceneMemoryRange, validateLorebook } from './ind
 // STMBC-HOOK(nudges): P4.4 consolidation/compaction nudges, fired after a sentinel
 // scene memory commits (fork; plan §4.4).
 import { runNudgeSweepForCurrentChat } from './livingNudges.js';
+// P4.5: the chat_metadata-backed gating that keeps those nudges from re-firing on
+// every scene. Injected into the sweep — livingNudges.js stays SillyTavern-free.
+import {
+    bumpScenesSinceConsolidationNudge,
+    markCompactionNudged,
+    resolveReviewConfigForCurrentChat,
+    wasCompactionNudged,
+} from './review.js';
 import { enqueueStmbJob, getStmbChatKey, hasActiveStmbJobs } from './stmbJobs.js';
 import {
     getAutoSettings,
@@ -174,7 +182,17 @@ function buildSentinelDeps(context) {
             // COMMITTED, offer consolidation/compaction via STMB's own review UIs (plan
             // §4.4: "the fork prompts, the user approves"). Advisory and never-throws, so
             // it cannot fail a memory that already succeeded.
-            await runNudgeSweepForCurrentChat(settings, { validateLorebook });
+            //
+            // P4.5: the three review.js helpers make the nudges non-repeating —
+            // without them both underlying decisions are stateless and re-fire
+            // on every scene. See runNudgeSweep's doc comment.
+            await runNudgeSweepForCurrentChat(settings, {
+                validateLorebook,
+                bumpScenesSinceConsolidationNudge,
+                wasCompactionNudged,
+                markCompactionNudged,
+                consolidationNudgeInterval: resolveReviewConfigForCurrentChat().consolidationThreshold,
+            });
         },
         // Console only. Persistence to chat_metadata.stmbc.cycleLog is the job
         // executor's business — sentinelCadence.js owns the ring buffer.

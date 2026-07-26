@@ -297,6 +297,11 @@ function cloneJobForView(job = {}) {
         lorebookName: String(job.lorebookName || job.payload?.lorebookName || ''),
         range: job.range ? { ...job.range } : null,
         approvalRequest: job.approvalRequest ? safeClone(job.approvalRequest) : null,
+        // P4.5: set by the post-save STMBC-HOOK(review) in index.js. Kept
+        // domain-agnostic (plain flag + reason list) like approvalRequest above,
+        // so this module never has to import review.js to render it.
+        reviewPending: job.reviewPending === true,
+        reviewReasons: Array.isArray(job.reviewReasons) ? safeClone(job.reviewReasons) : [],
     };
 }
 
@@ -731,14 +736,73 @@ function getCurrentStoreRows() {
     ].map(cloneJobForView);
 }
 
+/**
+ * P4.5 read side of the P4.3 review queue.
+ *
+ * The durable record lives in chat_metadata.stmbc.reviewQueue (written by
+ * review.js recordReviewFlagsForJob) and therefore survives a reload, unlike
+ * the in-memory job.reviewPending flag. Read directly from chat_metadata — the
+ * same convention the rest of this module uses — rather than importing
+ * review.js, which imports getStmbChatKey from *this* module (import cycle).
+ *
+ * Entries are filtered to the currently open chat: the queue is per-chat
+ * metadata, but a stale chatKey can survive a rename, and showing another
+ * chat's flagged memory would be worse than showing nothing.
+ */
+function getCurrentReviewQueueEntries() {
+    const queue = chat_metadata?.stmbc?.reviewQueue;
+    if (!Array.isArray(queue)) return [];
+    const chatKey = getStmbChatKey();
+    return queue.filter(entry => entry && !entry.dismissed && (!entry.chatKey || entry.chatKey === chatKey));
+}
+
+function formatReviewRange(range) {
+    if (!range || !Number.isFinite(range.start) || !Number.isFinite(range.end)) return '';
+    return tr('STMemoryBooks_Jobs_ReviewRange', 'Messages {{start}}-{{end}}', { start: range.start, end: range.end });
+}
+
+function renderReviewQueueSection(entries) {
+    if (entries.length === 0) return '';
+    const items = entries.map(entry => {
+        const title = String(entry.entryTitle || '').trim() || tr('STMemoryBooks_Jobs_ReviewUntitled', '(untitled memory)');
+        const range = formatReviewRange(entry.range);
+        const reasons = (Array.isArray(entry.reasons) ? entry.reasons : [])
+            .map(reason => `<li>${escapeHtml(String(reason?.detail || reason?.type || ''))}</li>`)
+            .join('');
+        return `
+            <div class="stmb-jobs-row stmb-jobs-tone-awaiting stmb-jobs-review-entry">
+                <div class="stmb-jobs-row-main">
+                    <div class="stmb-jobs-row-header">
+                        <span class="stmb-jobs-row-icon"></span>
+                        <strong>${escapeHtml(title)}</strong>
+                        <span class="stmb-jobs-row-status">${escapeHtml(tr('STMemoryBooks_Jobs_NeedsReview', 'Needs review'))}</span>
+                    </div>
+                    ${range ? `<div class="stmb-jobs-row-meta">${escapeHtml(range)}</div>` : ''}
+                    ${entry.lorebookName ? `<div class="stmb-jobs-row-meta">${escapeHtml(tr('STMemoryBooks_Jobs_Lorebook', 'Lorebook'))}: ${escapeHtml(entry.lorebookName)}</div>` : ''}
+                    ${reasons ? `<ul class="stmb-jobs-review-reasons">${reasons}</ul>` : ''}
+                </div>
+                <button type="button" class="menu_button stmb-jobs-row-action" data-action="dismiss-review" data-review-job-id="${escapeHtml(String(entry.jobId || ''))}">${escapeHtml(tr('STMemoryBooks_Jobs_Dismiss', 'Dismiss'))}</button>
+            </div>`;
+    }).join('');
+    return `
+        <div class="stmb-jobs-review-queue">
+            <div class="stmb-jobs-section-title">${escapeHtml(tr('STMemoryBooks_Jobs_ReviewQueue', 'Flagged for review ({{count}})', { count: entries.length }))}</div>
+            ${items}
+        </div>`;
+}
+
 function renderStmbJobsUi() {
     if (!jobsUiInitialized || !jobsRows || !jobsSummary || !topBarButton || !topBarBadge || !jobsActions) {
         return;
     }
     const rows = getCurrentStoreRows();
     const activeCount = rows.filter(row => ACTIVE_STATES.has(String(row.state))).length;
-    const reviewCount = rows.filter(row => row.state === 'needs_review' || row.state === 'awaiting_approval').length;
+    const jobReviewCount = rows.filter(row => row.state === 'needs_review' || row.state === 'awaiting_approval').length;
     const failureCount = rows.filter(row => ['failed', 'blocked'].includes(String(row.state))).length;
+    // P4.5: the durable queue counts toward the badge too, so a flagged memory
+    // is still visible after a reload has cleared the in-memory job rows.
+    const queuedReviews = getCurrentReviewQueueEntries();
+    const reviewCount = jobReviewCount + queuedReviews.length;
     const totalBadge = activeCount + reviewCount + failureCount;
     const summary = activeCount > 0
         ? tr('STMemoryBooks_Jobs_ActiveSummary', '{{count}} active job(s)', { count: activeCount })
@@ -763,12 +827,14 @@ function renderStmbJobsUi() {
             : '',
     ].filter(Boolean).join(' ');
 
+    const reviewQueueHtml = renderReviewQueueSection(queuedReviews);
+
     if (rows.length === 0) {
-        jobsRows.innerHTML = `<div class="stmb-jobs-empty">${escapeHtml(tr('STMemoryBooks_Jobs_Empty', 'No Memory Books jobs.'))}</div>`;
+        jobsRows.innerHTML = `${reviewQueueHtml}<div class="stmb-jobs-empty">${escapeHtml(tr('STMemoryBooks_Jobs_Empty', 'No Memory Books jobs.'))}</div>`;
         return;
     }
 
-    jobsRows.innerHTML = rows.map(job => {
+    jobsRows.innerHTML = reviewQueueHtml + rows.map(job => {
         const canReview = job.state === 'needs_review' || job.state === 'awaiting_approval';
         const canCancel = ACTIVE_STATES.has(String(job.state)) && job.state !== 'needs_review';
         const canRetry = ['failed', 'blocked', 'canceled'].includes(String(job.state));
@@ -789,6 +855,7 @@ function renderStmbJobsUi() {
                     ${job.detail ? `<div class="stmb-jobs-row-detail">${escapeHtml(job.detail)}</div>` : ''}
                     ${job.lorebookName ? `<div class="stmb-jobs-row-meta">${escapeHtml(tr('STMemoryBooks_Jobs_Lorebook', 'Lorebook'))}: ${escapeHtml(job.lorebookName)}</div>` : ''}
                     ${formatElapsed(job) ? `<div class="stmb-jobs-row-meta">${escapeHtml(formatElapsed(job))}</div>` : ''}
+                    ${job.reviewPending ? `<div class="stmb-jobs-row-meta stmb-jobs-review-flag">${escapeHtml(tr('STMemoryBooks_Jobs_ReviewFlagged', 'Flagged for review'))}${job.reviewReasons.length ? `: ${escapeHtml(job.reviewReasons.map(reason => String(reason?.detail || reason?.type || '')).join(' • '))}` : ''}</div>` : ''}
                     ${job.error?.message ? `<div class="stmb-jobs-row-error">${escapeHtml(job.error.message)}</div>` : ''}
                 </div>
                 ${action}
@@ -861,6 +928,28 @@ function handlePanelClick(event) {
         } catch (err) {
             console.warn(`${MODULE_NAME}: failed to launch audit job`, err);
         }
+        return;
+    }
+    if (action === 'dismiss-review') {
+        // P4.5 — clear the durable review-queue record. Handled BEFORE the
+        // findMutableJob() gate below: the queue lives in chat_metadata and
+        // survives a reload, so its job is usually long gone from the store.
+        // review.js is imported dynamically because it imports getStmbChatKey
+        // from this module (static import would be a cycle) — same reasoning as
+        // the auditorCadence.js import above.
+        const reviewJobId = String(target.dataset.reviewJobId || '');
+        if (!reviewJobId) return;
+        import('./review.js').then(({ dismissReviewQueueEntry }) => {
+            dismissReviewQueueEntry(reviewJobId);
+            const record = findMutableJob(reviewJobId);
+            if (record?.job) {
+                record.job.reviewPending = false;
+                record.job.reviewReasons = [];
+            }
+            renderStmbJobsUi();
+        }).catch(err => {
+            console.warn(`${MODULE_NAME}: dynamic import of review.js failed`, err);
+        });
         return;
     }
     const jobId = target.dataset.jobId || target.closest?.('[data-job-id]')?.dataset?.jobId;

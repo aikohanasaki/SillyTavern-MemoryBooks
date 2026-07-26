@@ -583,6 +583,37 @@
     background: color-mix(in srgb, currentColor 10%, rgba(255, 255, 255, 0.03));
 }
 
+/* P4.5 — durable review queue (chat_metadata.stmbc.reviewQueue) rendered above
+   the live job rows. Reuses .stmb-jobs-row so a flagged memory reads as the same
+   kind of object as the job it came from. */
+.stmb-jobs-review-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stmb-jobs-section-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+}
+
+.stmb-jobs-review-entry {
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #e0a72c) 45%, transparent);
+}
+
+.stmb-jobs-review-reasons {
+    margin: 4px 0 0;
+    padding-left: 18px;
+    font-size: 12px;
+    opacity: 0.82;
+}
+
+.stmb-jobs-review-flag {
+    color: var(--SmartThemeQuoteColor, #e0a72c);
+}
+
 .stmb-jobs-action-link {
     width: auto;
     max-width: none;
