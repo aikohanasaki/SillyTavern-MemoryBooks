@@ -112,6 +112,38 @@ export async function loadLocaleJson(lang) {
  * English (default) locale data
  */
 export const localeData_en = {
+    'STMemoryBooks_Regeneration_Button': 'Regenerate memory',
+    'STMemoryBooks_Regeneration_ButtonTooltip': 'Generate a replacement using current settings. Approval is always required.',
+    'STMemoryBooks_Regeneration_BlockedByParent': 'Delete the parent consolidation before regenerating this entry.',
+    'STMemoryBooks_Regeneration_MissingSources': 'The complete set of source entries cannot be recovered.',
+    'STMemoryBooks_Regeneration_MissingNumber': 'The original memory number cannot be determined.',
+    'STMemoryBooks_Regeneration_MissingRange': 'The original chat range is missing or invalid.',
+    'STMemoryBooks_Regeneration_Unavailable': 'This entry cannot be regenerated.',
+    'STMemoryBooks_Regeneration_UnhideSettingPath': 'Memory Books → General Settings → Token Saving (Hide/Unhide Messages) → "Unhide hidden messages for memory generation (runs /unhide X-Y)"',
+    'STMemoryBooks_Regeneration_NoVisibleTitle': 'No visible messages in the original range',
+    'STMemoryBooks_Regeneration_NoVisibleBody': 'Messages {{start}}-{{end}} are all hidden. Restore their visibility manually, or enable this setting: {{path}}. Then click Regenerate memory again.',
+    'STMemoryBooks_Regeneration_OpenGeneralSettings': 'Open General Settings',
+    'STMemoryBooks_Regeneration_WrongChat': 'This memory does not belong to the current chat. Open its source chat before regenerating it.',
+    'STMemoryBooks_Regeneration_Working': 'Regenerating memory...',
+    'STMemoryBooks_Regeneration_WorkingConsolidation': 'Regenerating consolidation...',
+    'STMemoryBooks_Regeneration_SingleResultRequired': 'Single Consolidation Analysis must generate exactly one consolidation.',
+    'STMemoryBooks_Regeneration_TargetChanged': 'The target entry changed while regeneration was running. Nothing was overwritten.',
+    'STMemoryBooks_Regeneration_SourceChanged': 'A source entry changed while regeneration was running. Nothing was overwritten.',
+    'STMemoryBooks_Regeneration_ChatChanged': 'The source chat messages changed while regeneration was running. Nothing was overwritten.',
+    'STMemoryBooks_Regeneration_Success': 'Memory regenerated successfully.',
+    'STMemoryBooks_Regeneration_Failed': 'Memory regeneration failed.',
+    'STMemoryBooks_Regeneration_LinkedWarningTitle': 'Linked copies will not be updated',
+    'STMemoryBooks_Regeneration_LinkedWarningBody': 'Approval replaces only the clicked entry. The following linked lorebooks are unchanged:',
+    'STMemoryBooks_Regeneration_ReviewDescription': 'Review the original and regenerated entry. Approval is required before anything is overwritten.',
+    'STMemoryBooks_Regeneration_Before': 'Before',
+    'STMemoryBooks_Regeneration_After': 'After',
+    'STMemoryBooks_Regeneration_Title': 'Title',
+    'STMemoryBooks_Regeneration_Content': 'Content',
+    'STMemoryBooks_Regeneration_Keywords': 'Keywords',
+    'STMemoryBooks_Regeneration_SemanticTitle': 'Semantic title',
+    'STMemoryBooks_Regeneration_FinalTitle': 'Final formatted title',
+    'STMemoryBooks_Regeneration_Approve': 'Approve replacement',
+
     // Main Settings Header
     'STMemoryBooks_Settings': '📕 Memory Books',
 
@@ -1175,6 +1207,8 @@ export const localeData_en = {
     'STMemoryBooks_ArcPrompt_DisplayName_Default': 'Multi-Consolidation Analysis',
     'STMemoryBooks_ArcPrompt_DisplayName_Alternate': 'Single Consolidation Analysis',
     'STMemoryBooks_ArcPrompt_DisplayName_Tiny': 'Tiny Consolidation Analysis',
+    'STMemoryBooks_ArcPrompt_DisplayName_Regenerate': 'Regenerate Consolidation',
+    'STMemoryBooks_ArcPromptManager_RegenerationOnlyNote': 'Regeneration only. Cannot be used for ordinary consolidation or set as the default.',
     'STMemoryBooks_Arc_RebuildBuiltins': 'Rebuild from built-ins',
     'STMemoryBooks_Arc_MaxPerPass': 'Maximum number of {{stmbchildtier}} entries to process in each pass',
     'STMemoryBooks_Arc_MaxPasses': 'Number of automatic summary attempts',
@@ -1300,6 +1334,128 @@ Requirements:
 - Ignore OOC and flavor-only detail unless it affects future events.
 - Use member_ids whenever possible.
 - Return only valid JSON.`,
+
+    'STMemoryBooks_SummaryPrompt_Regenerate': `You are an expert narrative analyst and memory-engine assistant. Combine and condense all included {{stmbchildtier}} entries into one coherent {{stmbtier}} summary.
+
+Reconstruct the events chronologically, with a clear beginning, development, and conclusion. Exercise judgment: preserve major plot, character, relationship, and continuity developments while omitting scenery, filler, banter, repeated actions, and throwaway logistics.
+
+Write in **past tense** and **third person**. Exclude all [OOC], meta discussion, and information unsupported by the source entries. Ensure the entire response is valid JSON. Within all string values, escape double quotation marks, backslashes, and line breaks as required by JSON. Represent line breaks in the content field with \`\\n\`; do not place literal unescaped newlines inside the string.
+
+Use specific nouns and proper nouns when they aid continuity or retrieval, such as “rice cooker” rather than “appliance,” but omit objects that serve only as scenery or flavor.
+
+Use adjectives and adverbs only when they materially affect tone, emotion, characterization, danger, or continuity.
+
+Organize events through **cause → intention → reaction → consequence**. Consolidate repeated actions and dialogue into unified narrative beats. Every sentence should contribute new information. Favor compression over exhaustive coverage.
+
+Return **only valid JSON**, with no commentary or code fences, in this structure:
+
+{
+"title": "Short descriptive title of 3–6 words",
+"content": "Markdown-formatted synopsis",
+"keywords": ["keyword1", "keyword2", "keyword3"]
+}
+
+The \`content\` field must use this structure:
+
+# [Scene Title]
+
+**Timeline**: [Most specific date and time supported by the source entries; if unspecified, state unspecified or use relative time.]
+
+## Story Beats
+
+* Present the major actions, revelations, decisions, and emotional or magical shifts in chronological order.
+* Explain what triggered each development, why characters acted, how others reacted, and what resulted.
+* Include plot-affecting interactions, meaningful shared experiences, and events that changed relationships or future continuity.
+* Omit repeated gestures, room dressing, background objects, and logistical detail unless they directly affected events.
+
+## Character Dynamics
+
+* Explain how motives, emotions, relationships, and power dynamics changed during the summarized period.
+* Capture consequential subtext, tension, vulnerability, trust, conflict, avoidance, affection, resentment, or loyalty.
+* Include small or domestic experiences only when they meaningfully shaped relationship history.
+* Do not repeat plot events unless needed to explain the interpersonal change they caused.
+
+## Important Facts
+
+* Record newly established facts likely to matter later, including plans, risks, abilities, limitations, preferences, promises, secrets, debts, injuries, magical effects, discoveries, and obligations.
+* Exclude casual preferences, scenery, errands, paperwork, clothing, furniture, weather, and other incidental details unless they became continuity-relevant.
+
+## Key Exchanges
+
+* Include only dialogue that defined a revelation, decision, conflict, emotional shift, or relationship change.
+* Attribute each quotation by speaker name.
+* Include a direct quotation only when the source entries preserve its exact wording. Never reconstruct quoted dialogue from a paraphrase.
+* Preserve distinctive phrases or identifiers, such as “pack for forever” or “dick-measuring contest,” only when they are memorable or relationship-relevant.
+* Include no more than 8 quotations.
+
+## Outcome & Continuity
+
+* State the final narrative, emotional, relational, physical, or magical condition produced by the events.
+* Record resulting decisions, plans, risks, promises, secrets, injuries, knowledge, and obligations that affect what happens next.
+* Identify unresolved threads, pending conflicts, future consequences, and foreshadowed developments.
+* Do not recap the full sequence of events again.
+
+For the \`keywords\` field:
+
+Generate **12–20 natural retrieval keywords when the material supports them**. Use fewer rather than padding the list with weak terms. Keywords are search hooks, not miniature summaries or evidence notes.
+
+Prioritize:
+
+1. **Stable named entities**: people other than {{char}} or {{user}}, places, organizations, events, documents, factions, spells, or distinctive objects.
+2. **Major continuity anchors**: plans, threats, secrets, discoveries, investigations, conflicts, injuries, promises, relationship changes, and unresolved threads.
+3. **Memorable moments**: meaningful shared activities, gifts, food, rituals, jokes, care-taking, arguments, or domestic events.
+4. **Independent secondary hooks** that retrieve a separate part of the summarized material.
+
+### Keyword construction
+
+Use the shortest distinctive wording likely to remain recognizable under paraphrasing or reversed word order.
+
+Examples:
+
+* \`Gala of the Silver Rose\` or \`Silver Rose Gala\` → \`Silver Rose\`
+* \`Bromet Response SA\` → \`Bromet\`
+* \`Château D’Aramitz\`, Comte D’Aramitz, or a plan involving him → \`D’Aramitz\`
+* Keep \`Althof Ledger\` when both words are required to identify the object.
+
+Prefer one central named entity when it already covers several related events:
+
+* \`D’Aramitz rescue plan\` → \`D’Aramitz\`
+* \`Bromet hidden contractors\` → \`Bromet\`
+* \`Althof Ledger substitution\` → \`Althof Ledger\`
+
+Retain a modified phrase only when it provides an independent retrieval route not covered by the central entity:
+
+* \`fake caterers\`
+* \`ledger facsimile\`
+* \`safehouse breakfast\`
+* \`counter-surveillance camera\`
+
+When several clues establish one conclusion, usually tag the resulting finding rather than each supporting clue:
+
+* Uniforms, badges, and vehicle access → \`fake caterers\`
+* Payments and company records → \`Bromet\`
+* A covert tactical team at the gala → \`suspected assassination\`
+* A rental used for equipment and disguises → \`staging villa\`
+
+A supporting clue may remain only when it is memorable, likely to recur, or independently useful for retrieval.
+
+Keywords should normally:
+
+* Contain 1–4 words.
+* Use ordinary noun phrases.
+* Identify genuinely distinct parts of the summary.
+* Remain stable if later descriptions use different wording.
+
+Exclude:
+
+* Incidental scenery or props.
+* Exact times, quantities, card digits, invoice wording, or administrative details.
+* Generic themes such as \`danger\`, \`romance\`, or \`conversation\`.
+* Unsupported conclusions.
+* Sentence-like evidence descriptions.
+* Multiple keywords that merely restate or narrow the same named entity.
+
+Before returning the JSON, silently verify that each keyword is natural to search, continuity-relevant, stable under paraphrasing, independently useful, and no longer than necessary.`,
 
     'STMemoryBooks_SummaryPrompt_Tiny': `You specialize in compressing many small {{stmbchildtier}} entries into compact, coherent {{stmbtier}} summaries.
 
@@ -1726,7 +1882,7 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_PromptManager_RecreateBuiltins': '♻️ Recreate Built-in Prompts',
     'STMemoryBooks_RecreateBuiltinsTitle': 'Recreate Built-in Prompts',
     'STMemoryBooks_RecreateBuiltinsWarning': 'This will remove overrides for all built‑in presets (summary, summarize, synopsis, sumup, minimal, northgate, aelemar, comprehensive). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
-    'STMemoryBooks_RecreateArcBuiltinsWarning': 'This will remove overrides for all built‑in presets (multi-arc, single, tiny). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
+    'STMemoryBooks_RecreateArcBuiltinsWarning': 'This will remove overrides for all built‑in presets (multi-arc, single, tiny, regenerate). Any customizations to these built-ins will be lost. After this, built-ins will follow the current app locale.',
     'STMemoryBooks_RecreateBuiltinsDoesNotAffectCustom': 'This does not affect your other custom presets.',
     'STMemoryBooks_RecreateBuiltinsOverwrite': 'Overwrite',
     'STMemoryBooks_RegexSelection_Title': '📐 Regex selection',
