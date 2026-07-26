@@ -253,6 +253,18 @@ git merge --abort 2>/dev/null || git checkout main && git branch -D scratch/merg
   (manifest.json, changelog.md, 3 build artifacts). All 4 hooked source files
   clean. **Pass — design holds.**
 
+- **2026-07-26 (PHA-1534, P5.5 regen-consolidation-eligibility)** — added
+  `memoryRegeneration.js` + `memoryRegeneration.test.js` from upstream
+  `9fc9abb` (verbatim, 447 + 466 lines) and gated `runEntryRegeneration` on
+  upstream's `getRegenerationEligibility`. Entries that fail with
+  `reason: 'active-parent'` now land in `r.skipped` with their parent
+  uids rather than being silently re-derived. Two new acceptance tests
+  cover the eligible + ineligible branch (`auditorTechnicalPass.test.js`).
+  Import-only: the upstream file is unchanged, the fork change is
+  isolated to `runEntryRegeneration` + the gate + the new tests.
+  `node --test *.test.js` 515/515, `node --test eval/*.test.js` 147/147,
+  `bun run build` clean. PR open on `feat/p5.5-regen-consolidation-eligibility-rebased`.
+
 - **2026-07-26 (PHA-1432, Van Dam re-drill)** — fork HEAD `16bc969` (post-P5.5),
   `upstream/main` at `9fc9abb` — **7 new upstream commits ahead** of the prior
   drill base (47a08a0 → 9fc9abb: `regenerate memories` ×2, `update arc keywords`

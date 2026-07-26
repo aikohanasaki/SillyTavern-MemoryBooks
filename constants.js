@@ -36,6 +36,12 @@ export const UI_SETTINGS = {
 
 export const MEMORY_TIER_CACHE_REFRESH_EVENT = 'stmb_memory_tier_cache_refresh';
 
+// Consolidation regeneration: arc-level one-pass preset key used as the
+// default option set for regenerating consolidation entries (memoryRegeneration.js).
+// Fork-added in PHA-1534 alongside the upstream `memoryRegeneration.js` import; the
+// value matches upstream `9fc9abb` so the fork stays merge-clean.
+export const CONSOLIDATION_REGENERATION_PRESET_KEY = 'arc_regenerate';
+
 // File names
 export const FILE_NAMES = {
     PROMPTS_FILE: 'stmb-summary-prompts.json',

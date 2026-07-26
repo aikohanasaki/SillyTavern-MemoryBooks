@@ -605,6 +605,110 @@ test('runEntryRegeneration: handles null / malformed inputs without throwing', (
 });
 
 // ----------------------------------------------------------------------------
+// Phase 5 P5.5 (PHA-1534) — upstream consolidation eligibility gate
+// ----------------------------------------------------------------------------
+//
+// runEntryRegeneration must call upstream's getRegenerationEligibility and
+// surface `active-parent` skips in `r.skipped` so the user can see that an
+// absorbed base memory was deliberately not re-derived. The acceptance is
+// dual-branch: an active consolidation absorbs a base memory (ineligible
+// branch) and a sibling base memory is left untouched (eligible branch).
+
+test('runEntryRegeneration: skips (and reports) base memory absorbed by an active consolidation', () => {
+    const slice = [
+        { mesid: 0, name: 'A', mes: 'padding message zero' },
+        { mesid: 1, name: 'A', mes: 'The ancient vault lay beneath the mountain.' },
+        { mesid: 2, name: 'A', mes: 'Its doors were sealed centuries ago.' },
+        { mesid: 3, name: 'A', mes: 'Only the chosen could enter.' },
+    ];
+    // Base memory with provenance — the kind of entry the existing drift
+    // logic would have flagged as a candidate in pre-P5.5. It now has an
+    // active consolidation parent, so the eligibility gate must skip it.
+    // `uid` is required because upstream's getEntryUid reads `entry.uid`,
+    // not the lorebook map key.
+    const absorbed = makeEntry({
+        uid: 1,
+        key: ['Vault'],
+        comment: '[001] - The Vault',
+        content: 'The vault is a modern bank with a vault that holds money. src: msgs 1-3',
+    });
+    // Active consolidation: tier 1, sourced from the base memory above.
+    const parent = {
+        uid: 99,
+        stmemorybooks: true,
+        stmbSummary: true,
+        stmbSummaryTier: 1,
+        stmbSourceEntryUids: ['1'],
+        comment: '[ARC 001] - Arc',
+        content: 'Arc summary',
+        key: ['Arc'],
+    };
+    const lb = { entries: { 1: absorbed, 99: parent } };
+    const r = runEntryRegeneration(lb, slice);
+
+    // The absorbed base memory must NOT appear in candidates.
+    const absorbedCandidate = r.candidates.find((c) => String(c.entryUid) === '1');
+    assert.equal(absorbedCandidate, undefined, 'absorbed base memory must not be a candidate');
+
+    // It MUST appear in skipped with reason 'active-parent' and the parent's uid.
+    const skip = r.skipped.find((s) => String(s.entryUid) === '1');
+    assert.ok(skip, 'absorbed base memory must be in r.skipped');
+    assert.equal(skip.reason, 'active-parent');
+    assert.deepEqual(skip.parentUids, ['99']);
+    assert.match(skip.title, /Vault/);
+    assert.equal(r.summary.skipped, 1);
+    assert.equal(r.summary.changed, 0);
+});
+
+test('runEntryRegeneration: keeps the eligible sibling of an absorbed entry in the diff', () => {
+    const slice = [
+        { mesid: 0, name: 'A', mes: 'padding message zero' },
+        { mesid: 1, name: 'A', mes: 'The ancient vault lay beneath the mountain.' },
+        { mesid: 2, name: 'A', mes: 'Its doors were sealed centuries ago.' },
+        { mesid: 3, name: 'A', mes: 'Only the chosen could enter.' },
+        { mesid: 4, name: 'A', mes: 'A lonely road winds through the hills.' },
+        { mesid: 5, name: 'A', mes: 'Dust rose where the wagon had passed.' },
+    ];
+    // Base memory #1 — absorbed by a parent consolidation. Must be skipped.
+    const absorbed = makeEntry({
+        uid: 1,
+        key: ['Vault'],
+        comment: '[001] - The Vault',
+        content: 'The vault is a modern bank with a vault that holds money. src: msgs 1-3',
+    });
+    // Base memory #2 — eligible sibling, NOT absorbed. Must surface as a
+    // candidate because its current content has drifted from the source.
+    const eligible = makeEntry({
+        uid: 2,
+        key: ['Road'],
+        comment: '[002] - The Road',
+        content: 'A road exists. src: msgs 4-5',
+    });
+    const parent = {
+        uid: 99,
+        stmemorybooks: true,
+        stmbSummary: true,
+        stmbSummaryTier: 1,
+        stmbSourceEntryUids: ['1'],
+        comment: '[ARC 001] - Arc',
+        content: 'Arc summary',
+        key: ['Arc'],
+    };
+    const lb = { entries: { 1: absorbed, 2: eligible, 99: parent } };
+    const r = runEntryRegeneration(lb, slice);
+
+    // Eligible sibling should be a candidate (its content drifted).
+    const eligibleCandidate = r.candidates.find((c) => String(c.entryUid) === '2');
+    assert.ok(eligibleCandidate, 'eligible sibling must remain a candidate');
+    assert.equal(r.summary.changed, 1);
+
+    // Absorbed entry must still be in skipped.
+    const skip = r.skipped.find((s) => String(s.entryUid) === '1');
+    assert.ok(skip, 'absorbed entry must still be reported as skipped');
+    assert.equal(r.summary.skipped, 1);
+});
+
+// ----------------------------------------------------------------------------
 // Phase 5 P5.4 — maybeOfferAuditorJob (cadence gate, plan §4.3)
 // ----------------------------------------------------------------------------
 

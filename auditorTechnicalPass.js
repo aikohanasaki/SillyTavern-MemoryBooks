@@ -60,6 +60,8 @@
  * function words. The user can extend the list via settings
  * (extension_settings.STMemoryBooks.autoModule.technicalPassCommonWords).
  */
+import { buildRegenerationIndexes, getRegenerationEligibility } from './memoryRegeneration.js';
+
 export const DEFAULT_COMMON_WORDS = Object.freeze([
     'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by',
     'for', 'from', 'has', 'have', 'he', 'her', 'his', 'in',
@@ -744,7 +746,8 @@ function jaccardSimilarity(a, b) {
  * @param {number} [opts.contextAfter=2]  - messages of context after the range
  * @returns {{
  *   candidates: Array<{entryUid: number, title: string, currentContent: string, derivedContent: string, sourceRanges: string[], similarity: number}>,
- *   summary: { total: number, changed: number },
+ *   skipped: Array<{entryUid: string, title: string, reason: 'active-parent', parentUids: string[]}>,
+ *   summary: { total: number, changed: number, skipped: number },
  * }}
  */
 export function runEntryRegeneration(lorebookData, chatSlice, opts = {}) {
@@ -755,10 +758,43 @@ export function runEntryRegeneration(lorebookData, chatSlice, opts = {}) {
     const ctxBefore = Number.isInteger(opts.contextBefore) ? opts.contextBefore : 2;
     const ctxAfter = Number.isInteger(opts.contextAfter) ? opts.contextAfter : 2;
 
+    // P5.5 (PHA-1534) — gate regeneration on upstream's eligibility rules.
+    // We call `getRegenerationEligibility` per entry so a base memory that an
+    // active consolidation has already absorbed is *not* re-derived from chat
+    // chunks — that would silently desync the consolidation from its sources
+    // (the user would see a summarized memory whose cited entries no longer
+    // match what was summarized). The fork imports the upstream helper rather
+    // than reimplementing the rule, which keeps the next upstream merge clean.
+    //
+    // Note: we honor only the `active-parent` skip here. Other ineligibility
+    // reasons (`missing-number`, `missing-range`) flag the entry as
+    // mis-configured, not a silent desync; the existing drift logic still
+    // runs so manually-edited entries without canonical numbering remain
+    // reportable. The full upstream eligibility surface is exposed via the
+    // imported module — future passes can tighten this if needed.
+    const indexes = buildRegenerationIndexes(lorebookData);
+
     const candidates = [];
+    const skipped = [];
     for (const uid of Object.keys(entries)) {
         const raw = entries[uid];
         if (!isMemoryEntry(raw)) continue;
+
+        // Upstream gate: skip entries an active consolidation has absorbed.
+        const eligibility = getRegenerationEligibility(raw, lorebookData, indexes);
+        if (!eligibility.eligible && eligibility.reason === 'active-parent') {
+            const parents = Array.isArray(eligibility.activeParents) ? eligibility.activeParents : [];
+            skipped.push({
+                entryUid: uid,
+                title: String(raw?.comment ?? `Entry ${uid}`),
+                reason: 'active-parent',
+                parentUids: parents
+                    .map((p) => (p && p.uid !== undefined && p.uid !== null ? String(p.uid) : null))
+                    .filter((v) => v !== null),
+            });
+            continue;
+        }
+
         const e = normalizeEntry(raw, uid);
         const ranges = extractProvenanceRanges(e.content);
         if (ranges.length === 0) continue;
@@ -800,7 +836,12 @@ export function runEntryRegeneration(lorebookData, chatSlice, opts = {}) {
 
     return {
         candidates,
-        summary: { total: candidates.length, changed: candidates.length },
+        skipped,
+        summary: {
+            total: candidates.length,
+            changed: candidates.length,
+            skipped: skipped.length,
+        },
     };
 }
 
