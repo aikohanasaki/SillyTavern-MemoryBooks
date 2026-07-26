@@ -35,6 +35,11 @@ import {
     enqueueSentinelCycle,
     runSentinelCycle,
     registerSentinelCadence,
+    setSentinelDetectionRunner,
+    getSentinelDetectionRunner,
+    cycleStatusForAction,
+    summarizeCycleRecord,
+    NO_ENGINE_DETAIL,
 } from './sentinelCadence.js';
 import { AUTO_MODULE_DEFAULTS, CHAT_AUTO_DEFAULTS } from './autoSettings.js';
 
@@ -533,4 +538,205 @@ test('index.js: imports cancelStmbcJobs from stmbJobs.js', () => {
         /import\s*{[^}]*\bcancelStmbcJobs\b[^}]*}\s*from\s*['"]\.\/stmbJobs\.js['"]/s,
         'cancelStmbcJobs must be imported from stmbJobs.js',
     );
+});
+
+// ----------------------------------------------------------------------------
+// P2.1 detection-runner seam (P2.1 ↔ P2.3 integration)
+// ----------------------------------------------------------------------------
+
+/** Run `fn` with `runner` installed, always restoring the previous runner. */
+async function withRunner(runner, fn) {
+    const prev = getSentinelDetectionRunner();
+    setSentinelDetectionRunner(runner);
+    try {
+        return await fn();
+    } finally {
+        setSentinelDetectionRunner(prev);
+    }
+}
+
+test('setSentinelDetectionRunner installs and clears the runner', () => {
+    assert.equal(getSentinelDetectionRunner(), null, 'no runner by default');
+    const fn = async () => ({ action: 'no-boundary' });
+    assert.equal(setSentinelDetectionRunner(fn), true);
+    assert.equal(getSentinelDetectionRunner(), fn);
+    assert.equal(setSentinelDetectionRunner(null), false);
+    assert.equal(getSentinelDetectionRunner(), null);
+    assert.equal(setSentinelDetectionRunner('not a function'), false);
+});
+
+test('runSentinelCycle: no runner installed = wiring-only no-op cycle', async () => {
+    const meta = {};
+    const job = { id: 'seam-0', payload: { trigger: 'manual', forced: true } };
+    const result = await runSentinelCycle(job, { chatMeta: meta, saveMetadata: () => {} });
+    assert.equal(result.ok, true);
+    assert.equal(result.cycle.status, 'completed');
+    assert.equal(result.cycle.detail, NO_ENGINE_DETAIL);
+});
+
+test('runSentinelCycle: delegates to the registered engine and records its result', async () => {
+    const meta = {};
+    const seen = [];
+    const cycle = {
+        action: 'processed',
+        watermark: 4,
+        window: { start: 1, end: 29 },
+        boundaries: [12, 20],
+        ranges: [[5, 11], [12, 19]],
+        processed: [[5, 11], [12, 19]],
+        rawAttempts: ['[12, 20]'],
+        error: null,
+    };
+    await withRunner(async (job, ctx) => { seen.push([job, ctx]); return cycle; }, async () => {
+        const job = { id: 'seam-1', payload: { trigger: 'auto', forced: false } };
+        const ctx = { chatMeta: meta, saveMetadata: () => {} };
+        const result = await runSentinelCycle(job, ctx);
+        assert.equal(result.ok, true);
+        assert.equal(result.cycle.status, 'completed');
+        assert.equal(result.cycle.action, 'processed');
+        assert.deepEqual(result.cycle.ranges, [[5, 11], [12, 19]]);
+        assert.deepEqual(result.cycle.processed, [[5, 11], [12, 19]]);
+        // The job + context are threaded through verbatim so the engine can
+        // read the abort signal.
+        assert.equal(seen.length, 1);
+        assert.equal(seen[0][0], job);
+        assert.equal(seen[0][1], ctx);
+    });
+    assert.equal(meta.stmbc.cycleLog.length, 1);
+    assert.equal(meta.stmbc.cycleLog[0].action, 'processed');
+});
+
+test('runSentinelCycle: an aborted engine cycle is recorded as cancelled', async () => {
+    const meta = {};
+    await withRunner(async () => ({ action: 'abort:cancelled', at: 'during-memorize', processed: [[5, 11]] }), async () => {
+        const job = { id: 'seam-2', payload: { trigger: 'auto' } };
+        const result = await runSentinelCycle(job, { chatMeta: meta, saveMetadata: () => {} });
+        assert.equal(result.cycle.status, 'cancelled');
+        assert.deepEqual(result.cycle.processed, [[5, 11]]);
+    });
+    assert.equal(meta.stmbc.cycleLog[0].status, 'cancelled');
+});
+
+test('runSentinelCycle: an AbortError from the engine propagates (job is cancelled, not failed)', async () => {
+    const meta = {};
+    await withRunner(async () => {
+        const err = new Error('Cancelled');
+        err.name = 'AbortError';
+        throw err;
+    }, async () => {
+        await assert.rejects(
+            runSentinelCycle({ id: 'seam-3', payload: {} }, { chatMeta: meta, saveMetadata: () => {} }),
+            (err) => err.name === 'AbortError',
+        );
+    });
+    // Nothing recorded — an aborted job must not pollute the ring buffer.
+    assert.equal(getSentinelCycleLog(meta).length, 0);
+});
+
+test('runSentinelCycle: a non-abort engine throw is recorded as a failed cycle', async () => {
+    const meta = {};
+    await withRunner(async () => { throw new Error('detector exploded'); }, async () => {
+        const result = await runSentinelCycle({ id: 'seam-4', payload: {} }, { chatMeta: meta, saveMetadata: () => {} });
+        assert.equal(result.ok, false);
+        assert.equal(result.cycle.status, 'failed');
+        assert.match(result.cycle.error, /detector exploded/);
+    });
+    assert.equal(meta.stmbc.cycleLog[0].status, 'failed');
+});
+
+test('registerSentinelCadence: installs the engine when one is supplied', async () => {
+    const prev = getSentinelDetectionRunner();
+    try {
+        const engine = async () => ({ action: 'no-boundary' });
+        const api = { registerStmbJobExecutor: () => {} };
+        assert.equal(registerSentinelCadence(api, { runDetectionCycle: engine }), true);
+        assert.equal(getSentinelDetectionRunner(), engine);
+        // Omitting the option leaves the existing runner untouched (no clobber).
+        assert.equal(registerSentinelCadence(api), true);
+        assert.equal(getSentinelDetectionRunner(), engine);
+    } finally {
+        setSentinelDetectionRunner(prev);
+    }
+});
+
+test('cycleStatusForAction maps engine actions onto job statuses', () => {
+    assert.equal(cycleStatusForAction('processed'), 'completed');
+    assert.equal(cycleStatusForAction('no-boundary'), 'completed');
+    assert.equal(cycleStatusForAction('skip:cadence'), 'completed');
+    assert.equal(cycleStatusForAction('abort:cancelled'), 'cancelled');
+    assert.equal(cycleStatusForAction(undefined), 'completed');
+});
+
+test('summarizeCycleRecord keeps raw LLM replies out of chat metadata', () => {
+    const out = summarizeCycleRecord({
+        action: 'skip:unparseable',
+        watermark: 4,
+        rawAttempts: ['x'.repeat(5000), 'y'.repeat(5000)],
+    });
+    assert.equal(out.action, 'skip:unparseable');
+    assert.equal(out.attempts, 2);
+    assert.equal(out.rawHead.length, 200, 'only a short head of the first reply is persisted');
+    assert.equal(out.rawAttempts, undefined, 'full replies must never reach chat metadata');
+});
+
+test('index.js: wires the P2.1 engine into registerSentinelCadence', () => {
+    assert.match(
+        indexSrc,
+        /registerSentinelCadence\([\s\S]{0,200}runDetectionCycle:\s*runSentinelDetectionForJob/,
+        'index.js must pass the sentinel.js engine runner to registerSentinelCadence',
+    );
+    assert.match(
+        indexSrc,
+        /import\s*{[^}]*\brunSentinelDetectionForJob\b[^}]*}\s*from\s*['"]\.\/sentinel\.js['"]/s,
+        'runSentinelDetectionForJob must come from sentinel.js',
+    );
+});
+
+test('index.js: the MESSAGE_RECEIVED cadence gate is wired exactly once', () => {
+    const calls = indexSrc.match(/\bhandleSentinelMessageReceived\(\)/g) || [];
+    assert.equal(calls.length, 1, 'exactly one cadence-gate invocation (no double-firing)');
+    const fnMatch = indexSrc.match(/async function handleMessageReceived\s*\([^)]*\)\s*{([\s\S]*?)^\}/m);
+    assert.ok(fnMatch, 'handleMessageReceived must be defined');
+    assert.match(fnMatch[1], /handleSentinelMessageReceived\(\)/, 'the gate lives in handleMessageReceived');
+});
+
+test('sentinel.js: the gate enqueues a job — it never runs detection inline', () => {
+    const sentinelSrc = readFileSync(resolve(__dirname, 'sentinel.js'), 'utf8');
+    const gate = sentinelSrc.match(/export async function handleSentinelMessageReceived\s*\([^)]*\)\s*{([\s\S]*?)\n\}/);
+    assert.ok(gate, 'handleSentinelMessageReceived must be defined');
+    assert.match(gate[1], /enqueueSentinelCycle\(/, 'the gate must go through the P2.3 factory');
+    assert.doesNotMatch(
+        gate[1],
+        /runSentinelDetectionCycle\(/,
+        'the gate must NOT call the engine directly (that would bypass the job queue and double-fire)',
+    );
+});
+
+test('sentinel.js: on/off is resolved only via autoSettings.resolveSentinelEnabled', () => {
+    const sentinelSrc = readFileSync(resolve(__dirname, 'sentinel.js'), 'utf8');
+    assert.match(
+        sentinelSrc,
+        /import\s*{[^}]*\bresolveSentinelEnabled\b[^}]*}\s*from\s*['"]\.\/autoSettings\.js['"]/s,
+        'resolveSentinelEnabled must come from autoSettings.js (single source of truth)',
+    );
+    // No second, independent enable check reading the raw settings shape.
+    assert.doesNotMatch(sentinelSrc, /autoModule\s*(\?\.|\.)\s*enabled/);
+    assert.doesNotMatch(sentinelSrc, /perChat\.enabled/);
+});
+
+test('sentinelCore.js: does not carry a second ring buffer', () => {
+    const coreSrc = readFileSync(resolve(__dirname, 'sentinelCore.js'), 'utf8');
+    // Strip comments first: the doc comments explaining WHY the core owns no
+    // ring buffer necessarily name the things they say it must not have.
+    const code = coreSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(code, /SENTINEL_RING_SIZE/, 'the ring buffer belongs to sentinelCadence.js');
+    assert.doesNotMatch(code, /\bcycleLog\b/, 'sentinelCore.js must not touch chat_metadata.stmbc.cycleLog');
+    assert.doesNotMatch(code, /\bstmbc\b/, 'sentinelCore.js must not touch chat_metadata.stmbc at all');
+    assert.doesNotMatch(code, /chat_metadata/, 'sentinelCore.js must stay free of SillyTavern state');
+});
+
+test('sentinelCore.js: the engine is not named runSentinelCycle (no collision)', () => {
+    const coreSrc = readFileSync(resolve(__dirname, 'sentinelCore.js'), 'utf8');
+    assert.match(coreSrc, /export async function runSentinelDetectionCycle\s*\(/);
+    assert.doesNotMatch(coreSrc, /export async function runSentinelCycle\s*\(/);
 });

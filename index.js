@@ -55,6 +55,13 @@ import {
   clearAutoSummaryState,
   retryAutoSummaryAfterJobIdle,
 } from "./autosummary.js";
+// STMBC-HOOK(sentinel): autonomous scene-boundary detection (fork; plan §4.1).
+// `handleSentinelMessageReceived` is the cadence gate (enqueues a cycle job);
+// `runSentinelDetectionForJob` is the engine runner the P2.3 job executor calls.
+import {
+  handleSentinelMessageReceived,
+  runSentinelDetectionForJob,
+} from "./sentinel.js";
 import {
   editProfile,
   newProfile,
@@ -1055,6 +1062,10 @@ async function handleMessageReceived() {
     setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     setTimeout(refreshMemoryBoundaryUi, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     await handleAutoSummaryMessageReceived();
+    // STMBC-HOOK(sentinel): cadence gate on the same proven cadence event.
+    // Enqueues at most one sentinel cycle job; no-ops unless the sentinel is
+    // enabled for this chat (plan §3.3). Detection itself runs in the job.
+    await handleSentinelMessageReceived();
     await evaluateTrackers();
   } catch (error) {
     console.error(
@@ -1160,7 +1171,9 @@ function validateSceneMemoryRange(startId, endId) {
   return true;
 }
 
-async function runSceneMemoryRange(startId, endId, options = {}) {
+// STMBC-HOOK(sentinel): exported so sentinel.js can memorize a detected scene
+// range via a direct in-extension call (plan §4.1). Signature unchanged.
+export async function runSceneMemoryRange(startId, endId, options = {}) {
   const { showSceneToast = true } = options;
 
   if (!validateSceneMemoryRange(startId, endId)) {
@@ -1734,9 +1747,14 @@ async function handleStmbcDetectCommand(namedArgs, unnamedArgs) {
     // Force a manual cycle, regardless of the global on/off. Users run
     // /stmbc-detect precisely when they want a cycle now; the per-chat
     // opt-out still applies (resolver keeps the gate honest).
+    // NOTE: autoSettings.js resolvers take the fork's *slice* of the settings
+    // (`extension_settings.STMemoryBooks`), not the whole object — P2.3 passed
+    // the whole object here, which would have made the resolver read an absent
+    // `autoModule` and always report "disabled". Latent today (force: true
+    // bypasses the resolver), fixed on P2.1 integration.
     const result = enqueueSentinelCycle({
       enqueueStmbJob,
-      settings: extension_settings,
+      settings: extension_settings[MODULE_NAME],
       chatMeta: chat_metadata,
       trigger: 'manual',
       force: true,
@@ -11492,13 +11510,17 @@ async function init() {
     showClaimReverificationPopup,
   });
 
-  // Phase 2 P2.3: register the sentinel cycle job type with the STMB jobs
-  // dashboard. The cycle executor (per plan §4.1) is a P2.1 deliverable that
-  // plugs into the registered type; today the executor logs the cycle to
-  // `chat_metadata.stmbc.cycleLog` so the wiring is observable from the
-  // dashboard + debug surface. /stmbc-detect and the cadence gate (P2.1)
-  // both funnel through `enqueueSentinelCycle` for a unified job record.
-  registerSentinelCadence({ registerStmbJobExecutor });
+  // Phase 2 P2.3 + P2.1: register the sentinel cycle job type with the STMB
+  // jobs dashboard AND install the P2.1 detection engine behind it. The
+  // executor owns the job contract (abort, ring buffer in
+  // `chat_metadata.stmbc.cycleLog`, metadata save); the injected runner does
+  // the detection. /stmbc-detect and the MESSAGE_RECEIVED cadence gate
+  // (sentinel.js) both funnel through `enqueueSentinelCycle`, so there is
+  // exactly one code path and one job per cycle.
+  registerSentinelCadence(
+    { registerStmbJobExecutor },
+    { runDetectionCycle: runSentinelDetectionForJob },
+  );
 
   // Preload side prompt names cache for autocomplete
   await refreshSidePromptCache();

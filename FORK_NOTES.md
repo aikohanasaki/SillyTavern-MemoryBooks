@@ -54,7 +54,10 @@ autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (
 sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
 auditorTechnicalPass.js + .test.js Phase 5 (P5.3/P5.4) — technical pass + claim re-verification jobs, coverage audit (runCoverageAudit) + entry regeneration (runEntryRegeneration) pure functions, cadence gate (maybeOfferAuditorJob), 4-job registerAuditorJobs
 auditorReportUIs.js + .test.js Phase 5 (P5.4) — report UI renderers + popup adapters for the four audit jobs (coverage, regeneration diff, technical, claims)
-sentinelCadence.js + .test.js Phase 2 (P2.3) — sentinel cycle job type + ring buffer cycle log in chat_metadata.stmbc.cycleLog + factory (enqueueSentinelCycle) + executor stub (runSentinelCycle) + /stmbc-detect and /stmbc-stop on-demand surface. Pure ESM, no SillyTavern runtime imports (Node-testable).
+sentinelCadence.js + .test.js Phase 2 (P2.3) — sentinel cycle job type + ring buffer cycle log in chat_metadata.stmbc.cycleLog + factory (enqueueSentinelCycle) + job executor (runSentinelCycle) + the injected P2.1 engine seam (registerSentinelCadence/setSentinelDetectionRunner) + /stmbc-detect and /stmbc-stop on-demand surface. Pure ESM, no SillyTavern runtime imports (Node-testable).
+sentinelCore.js + sentinel.test.js Phase 2 (P2.1) — the detection engine (runSentinelDetectionCycle) + its pure helpers: cadence predicate, window builder, strict-JSON parse/retry, snap/guard, scene-range planning, settings→config mapping. No SillyTavern imports; Node-testable.
+sentinel.js                    Phase 2 (P2.1) — SillyTavern binding layer: the MESSAGE_RECEIVED cadence gate (enqueues a cycle job) + the engine runner installed into the P2.3 executor. Imports the ST runtime, so it is NOT Node-testable; covered structurally from sentinelCadence.test.js.
+eval/phase2Acceptance.js + .test.js + runPhase2Acceptance.js Phase 2 (P2.4) — offline acceptance harness driving the real gate→factory→executor→engine path over the bundled fixture with a reference detector. Evidence: eval/reports/phase2/evidence.md
 eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
 autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
 FORK_NOTES.md                  this file
@@ -86,8 +89,47 @@ on SillyTavern at all; it runs offline against JSONL exports.
 | `stmbJobs.js` (P2.3) | +new `cancelStmbcJobs(reason)` export filtering by the `stmbc-` type prefix; mirrors `cancelAllStmbJobs` but only halts fork cycle jobs (sentinel + audit) | Phase 2 (P2.3) — /stmbc-stop on-demand cancel | Yes — additive export; `cancelAllStmbJobs` unchanged. |
 | `index.js` (P2.3) | +~85 (imports, `registerSentinelCadence` call at init, `handleStmbcDetectCommand` + `handleStmbcStopCommand` handlers, two `SlashCommand.fromProps` definitions, two `addCommandObject` calls, comment block on `handleStmbStopCommand` noting the `stmbc-` job coverage) | Phase 2 (P2.3) — jobs/commands wiring | Yes — additive; reuses the existing `registerStmbJobExecutor` / `cancelStmbcJobs` / `enqueueSentinelCycle` exports; no upstream function bodies changed. The two new slash commands are appended to the parser alongside `stmbStopCmd` + `auditCmd`. |
 
-**Total: 10 files modified, ~415 lines added (most additive), 6 lines changed in metadata. No
+| `index.js` (P2.1) | +3 edit sites, all tagged `STMBC-HOOK(sentinel)`: (a) import `handleSentinelMessageReceived` + `runSentinelDetectionForJob` from `./sentinel.js` next to the `autosummary.js` import block; (b) `await handleSentinelMessageReceived()` inside `handleMessageReceived`, right after `handleAutoSummaryMessageReceived()`; (c) `runSceneMemoryRange` gains `export` (signature and body unchanged) | Phase 2 (P2.1) — cadence gate + scene memorization entry point | Yes — purely additive. (a) is a new import; (b) is one awaited call that no-ops unless the sentinel is enabled for the chat; (c) adds the `export` keyword only — existing callers (`/scenememory`, `/stmb-catchup`) are untouched. SillyTavern exposes no `GENERATION_ENDED` event (verified against upstream `617cfbf`), so the cadence reuses the proven `MESSAGE_RECEIVED` path. |
+| `index.js` (P2.1 integration) | `registerSentinelCadence({ registerStmbJobExecutor })` gains a second argument `{ runDetectionCycle: runSentinelDetectionForJob }`; `/stmbc-detect` passes `extension_settings[MODULE_NAME]` instead of `extension_settings` to `enqueueSentinelCycle` | Phase 2 — install the P2.1 engine behind the P2.3 job executor; fix the settings scope the `autoSettings.js` resolvers expect | Yes — additive argument on a fork-only function; the settings-scope change is a one-token fix to a fork-only call site. |
+
+**Total: 10 files modified, ~430 lines added (most additive), 6 lines changed in metadata. No
 upstream function bodies, control flow, or data structures touched.**
+
+### Phase 2 P2.1 ↔ P2.3 integration notes
+
+P2.1 (`sentinel.js` / `sentinelCore.js`) and P2.3 (`sentinelCadence.js`) were
+built on divergent branches and had never coexisted. They are complementary —
+P2.3 is the wiring, P2.1 is the engine — but three collisions had to be resolved
+before they could ship together:
+
+1. **`runSentinelCycle` name collision.** Both modules exported that name with
+   different signatures. Resolved by renaming the P2.1 engine to
+   `sentinelCore.runSentinelDetectionCycle(deps)`. `sentinelCadence.runSentinelCycle(job, context)`
+   remains the one job-executor entry point, and now calls into the engine.
+2. **Duplicate ring buffer.** Both wrote `chat_metadata.stmbc.cycleLog` with a
+   cap of 20 but different record shapes. P2.1's writer (`SENTINEL_RING_SIZE`)
+   was deleted; `sentinelCadence.appendSentinelCycleLog` is the only writer, and
+   `sentinelCore.js` now has no chat-metadata access at all (enforced by test).
+3. **Cadence-gate ownership / double-firing.** P2.1 ran detection inline from
+   MESSAGE_RECEIVED while P2.3 expected the gate to enqueue a job. Resolved in
+   P2.3's favour: `handleSentinelMessageReceived` only *enqueues*
+   (`enqueueSentinelCycle`, trigger `auto`) and never runs detection inline, so
+   there is exactly one path, one job per cadence trigger, and every cycle is
+   under the jobs dashboard's abort control. Enforced by test.
+
+Also folded in: the sentinel's on/off decision now goes through
+`autoSettings.resolveSentinelEnabled` only (P2.1 carried a second, independent
+enable check), and the stored P2.2 setting names (`cadenceMessages`,
+`windowSize`, …) are mapped onto the engine's internal names by
+`sentinelCore.sentinelConfigFromAutoSettings` — P2.1 read its own names straight
+out of `extension_settings`, which would have left the P2.2 settings panel with
+no effect on the sentinel at all.
+
+The engine is *injected*, not imported: `sentinelCadence.js` must stay free of
+SillyTavern imports to remain Node-testable, so `index.js` pushes the runner in
+at init via `registerSentinelCadence(api, { runDetectionCycle })`. With no
+runner installed the executor degrades to a clean logged no-op, so the wiring
+never fails because the engine is absent.
 
 ## Merge drill (per plan §1.2.3)
 

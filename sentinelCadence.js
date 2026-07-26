@@ -18,10 +18,24 @@
 //   3. A factory (`enqueueSentinelCycle`) that the cadence gate (P2.1) and
 //      the `/stmbc-detect` slash command both call. It respects the sentinel
 //      on/off resolver and produces a unified job record.
-//   4. An executor (`runSentinelCycle`) that today logs the cycle and exits
-//      cleanly — Phase 2.1 will replace the body with the actual detection
-//      call + boundary dispatch, but the contract (job payload, ring buffer,
-//      metadata save) is stable from P2.3 on.
+//   4. An executor (`runSentinelCycle`) that owns the job contract (payload,
+//      ring buffer, metadata save, abort) and delegates the actual detection
+//      to the P2.1 engine.
+//
+// P2.1↔P2.3 integration (this commit). P2.1 and P2.3 were built on divergent
+// branches and had never coexisted. The seam is now closed:
+//
+//   * `runSentinelCycle(job, context)` (here) stays the ONE job-executor entry
+//     point. The P2.1 engine is `runSentinelDetectionCycle(deps)` in
+//     `sentinelCore.js` — renamed on integration so the two no longer collide.
+//   * The engine is injected, not imported: `registerSentinelCadence(api,
+//     { runDetectionCycle })` installs a runner (supplied by `sentinel.js`,
+//     which does import SillyTavern). That keeps THIS module free of any ST
+//     import so it stays Node-testable, and keeps the executor working as a
+//     clean no-op when no engine is registered.
+//   * This module owns the ring buffer outright. P2.1 shipped a second,
+//     independent writer to the same `chat_metadata.stmbc.cycleLog` key; it was
+//     deleted. `appendSentinelCycleLog` below is the only writer.
 //
 // Mergeability (plan §1.2): this module is additive — it lives alongside
 // upstream code without touching any upstream file. The wiring into
@@ -46,6 +60,11 @@ export const SENTINEL_CYCLE_LOG_LIMIT = 20;
 
 /** chat_metadata.stmbc key where the ring buffer lives. */
 export const SENTINEL_CYCLE_LOG_KEY = 'cycleLog';
+
+/** Detail recorded when no P2.1 engine is installed (wiring-only cycle). */
+export const NO_ENGINE_DETAIL =
+    'Sentinel cycle wiring ran, but no detection engine is registered '
+    + '(sentinel.js not loaded). Recorded as a successful no-op cycle.';
 
 /** Trigger labels accepted by the factory. Used by the dashboard + cycle log. */
 export const SENTINEL_CYCLE_TRIGGERS = Object.freeze({
@@ -194,21 +213,95 @@ function normalizeTrigger(t) {
 }
 
 // ----------------------------------------------------------------------------
-// Executor (P2.3 stub — P2.1 will replace the body)
+// Detection runner registry (the P2.1 seam)
 // ----------------------------------------------------------------------------
 
 /**
- * The sentinel cycle executor. Wired into the STMB jobs dashboard via
- * `registerSentinelCadence`. Today this is a placeholder that:
- *   1. Honors the abort signal (so `/stmb-stop` and `/stmbc-stop` actually cancel).
- *   2. Appends a ring-buffer entry to chat_metadata so the dashboard +
- *      debugging surface agree on the cycle having run.
- *   3. Returns a structured result so the caller can show a toast / detail.
+ * The registered P2.1 detection runner, or null.
  *
- * Phase 2.1 (sentinel.js) will replace the body with:
- *   counter check → watermark → build truncated window → detection call →
- *   snap/guard boundaries → runSceneMemoryRange per boundary → side-prompt
- *   pass. The job payload + ring buffer contract stays the same.
+ * This module must not import `sentinel.js` — that file pulls in the
+ * SillyTavern runtime (`script.js`, `extensions.js`) and would make
+ * sentinelCadence.js un-loadable under `node --test`. So the engine is pushed
+ * in from index.js at init instead of pulled in here.
+ *
+ * @type {null | ((job: object, context: object) => Promise<object>)}
+ */
+let detectionRunner = null;
+
+/**
+ * Install (or clear, with `null`) the P2.1 detection runner used by
+ * `runSentinelCycle`. Normally called via `registerSentinelCadence`.
+ *
+ * @param {Function|null} runner - `(job, context) => Promise<cycleRecord>`
+ * @returns {boolean} true if a runner is now installed
+ */
+export function setSentinelDetectionRunner(runner) {
+    detectionRunner = typeof runner === 'function' ? runner : null;
+    return detectionRunner !== null;
+}
+
+/** @returns {Function|null} the installed detection runner (for tests/introspection). */
+export function getSentinelDetectionRunner() {
+    return detectionRunner;
+}
+
+/**
+ * Map an engine cycle record's `action` onto the job status shown in the
+ * dashboard. `abort:*` records mean the cycle was cancelled mid-flight; every
+ * other action (`processed`, `no-boundary`, `skip:*`) is a clean completion.
+ *
+ * @param {string} action
+ * @returns {'completed'|'cancelled'}
+ */
+export function cycleStatusForAction(action) {
+    return String(action || '').startsWith('abort:') ? 'cancelled' : 'completed';
+}
+
+/**
+ * Flatten an engine cycle record into a compact, metadata-safe ring-buffer
+ * entry. The raw record carries `rawAttempts` (whole LLM replies) which must
+ * NOT be persisted verbatim into chat metadata for every cycle — long chats
+ * would balloon. We keep a length + a short head of the first attempt.
+ *
+ * @param {object} cycle - record from runSentinelDetectionCycle
+ * @returns {object}
+ */
+export function summarizeCycleRecord(cycle) {
+    if (!cycle || typeof cycle !== 'object') return {};
+    const out = { action: String(cycle.action || 'unknown') };
+    if (cycle.watermark != null) out.watermark = cycle.watermark;
+    if (cycle.window) out.window = cycle.window;
+    if (Array.isArray(cycle.boundaries)) out.boundaries = cycle.boundaries;
+    if (Array.isArray(cycle.ranges)) out.ranges = cycle.ranges;
+    if (Array.isArray(cycle.processed)) out.processed = cycle.processed;
+    if (cycle.error) out.error = String(cycle.error);
+    if (Array.isArray(cycle.rawAttempts) && cycle.rawAttempts.length) {
+        out.attempts = cycle.rawAttempts.length;
+        out.rawHead = String(cycle.rawAttempts[0] ?? '').slice(0, 200);
+    }
+    return out;
+}
+
+// ----------------------------------------------------------------------------
+// Executor
+// ----------------------------------------------------------------------------
+
+/**
+ * The sentinel cycle executor — the single entry point the jobs dashboard
+ * calls for a `stmbc-sentinel-cycle` job. It:
+ *   1. Honors the abort signal (so `/stmb-stop` and `/stmbc-stop` actually
+ *      cancel) BEFORE touching chat metadata.
+ *   2. Runs the registered P2.1 detection engine, threading the job's abort
+ *      signal into it so a cancel interrupts a real cycle mid-flight (the
+ *      engine checks between scenes and before the detection call).
+ *   3. Appends a ring-buffer entry to chat_metadata so the dashboard +
+ *      debugging surface agree on what the cycle did.
+ *   4. Returns a structured result so the caller can show a toast / detail.
+ *
+ * With no runner installed (fork module missing, or a build where P2.1 is not
+ * loaded) this degrades to the P2.3 wiring-only behavior: a clean, logged,
+ * successful no-op cycle. That is deliberate — the wiring must never fail
+ * because the engine is absent.
  *
  * @param {object} job - from stmbJobs.js; shape: { id, payload, chatKey, ... }
  * @param {object} [context] - per-job context from buildContext; optional
@@ -227,10 +320,9 @@ export async function runSentinelCycle(job, context) {
         throw err;
     }
 
-    // Resolve chat metadata + save callback. Prefer the injected context
-    // (Phase 2.1 will thread these in via the factory/deps pattern); fall
-    // back to SillyTavern globals so the executor is runnable in either
-    // shape and is testable in Node.
+    // Resolve chat metadata + save callback. Prefer the injected context; fall
+    // back to SillyTavern globals so the executor is runnable in either shape
+    // and is testable in Node.
     const resolved = resolveCycleContext(job, context);
     const settings = resolved.settings || null;
     const chatMeta = resolved.chatMeta || null;
@@ -240,9 +332,28 @@ export async function runSentinelCycle(job, context) {
         trigger,
         forced,
         status: 'completed',
-        detail: 'Sentinel cycle wired (P2.3). Detection runner lands in P2.1; until then this records a successful wiring cycle so the dashboard + ring buffer prove the path.',
+        detail: NO_ENGINE_DETAIL,
         jobId: job?.id || null,
     };
+
+    // --- P2.1 engine ---------------------------------------------------------
+    const runner = detectionRunner;
+    if (typeof runner === 'function') {
+        let cycle = null;
+        try {
+            cycle = await runner(job, context);
+        } catch (err) {
+            if (err && err.name === 'AbortError') throw err;
+            entry.status = 'failed';
+            entry.detail = `Sentinel detection cycle threw: ${err?.message || err}`;
+            entry.error = String(err?.message || err);
+        }
+        if (cycle) {
+            Object.assign(entry, summarizeCycleRecord(cycle));
+            entry.status = cycleStatusForAction(cycle.action);
+            entry.detail = `Sentinel cycle: ${entry.action}`;
+        }
+    }
 
     if (chatMeta && typeof chatMeta === 'object') {
         try {
@@ -258,11 +369,11 @@ export async function runSentinelCycle(job, context) {
         }
     }
 
-    // Note: we don't read `settings` here (P2.3 leaves the resolver call to
-    // the factory + future P2.1 cadence gate). Keep the parameter for clarity.
+    // `settings` is resolved for the runner's benefit (and for future gates);
+    // the executor itself does not branch on it.
     void settings;
 
-    return { ok: true, cycle: entry };
+    return { ok: entry.status !== 'failed', cycle: entry };
 }
 
 /**
@@ -292,16 +403,25 @@ function resolveCycleContext(job, context) {
 // ----------------------------------------------------------------------------
 
 /**
- * Register the sentinel cycle executor with the STMB jobs dashboard.
- * Convenience wrapper around `registerStmbJobExecutor` so the index.js
- * init stays a single line.
+ * Register the sentinel cycle executor with the STMB jobs dashboard, and
+ * (optionally) install the P2.1 detection engine behind it.
+ *
+ * The executor registered is always `runSentinelCycle` itself — never a
+ * wrapper — so the dashboard, retries, and cancellation all address one stable
+ * function. The engine is a separate, injected concern.
  *
  * @param {object} stmbJobsApi - { registerStmbJobExecutor }
+ * @param {object} [options]
+ * @param {Function} [options.runDetectionCycle] - P2.1 engine runner
+ *        `(job, context) => Promise<cycleRecord>`; from sentinel.js.
  * @returns {boolean} true if registered
  */
-export function registerSentinelCadence(stmbJobsApi) {
+export function registerSentinelCadence(stmbJobsApi, options = {}) {
     if (!stmbJobsApi || typeof stmbJobsApi.registerStmbJobExecutor !== 'function') {
         return false;
+    }
+    if (options && typeof options.runDetectionCycle === 'function') {
+        setSentinelDetectionRunner(options.runDetectionCycle);
     }
     stmbJobsApi.registerStmbJobExecutor(SENTINEL_CYCLE_JOB_TYPE, runSentinelCycle);
     return true;
