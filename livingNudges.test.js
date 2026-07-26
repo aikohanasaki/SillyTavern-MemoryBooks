@@ -11,6 +11,7 @@ import {
     summarizeConsolidationEligibility,
     shouldShowConsolidationPrompt,
     shouldShowCompactionPrompt,
+    runNudgeSweepForCurrentChat,
 } from './livingNudges.js';
 
 // ----------------------------------------------------------------------------
@@ -170,4 +171,55 @@ test('shouldShowCompactionPrompt honors opts.thresholdTokens override', () => {
     );
     assert.equal(out.nudge, true);
     assert.equal(out.threshold, 5);
+});
+
+// ----------------------------------------------------------------------------
+// runNudgeSweepForCurrentChat — the P4.4 sentinel wire point (DI validator)
+// ----------------------------------------------------------------------------
+
+test('runNudgeSweepForCurrentChat returns null without an injected validator', async () => {
+    assert.equal(await runNudgeSweepForCurrentChat({}, {}), null);
+    assert.equal(await runNudgeSweepForCurrentChat({}, { validateLorebook: 'nope' }), null);
+});
+
+test('runNudgeSweepForCurrentChat passes skipAutoCreate=true (a nudge never creates a lorebook)', async () => {
+    const calls = [];
+    await runNudgeSweepForCurrentChat({}, {
+        validateLorebook: async (skipAutoCreate) => { calls.push(skipAutoCreate); return { valid: false }; },
+    });
+    assert.deepEqual(calls, [true]);
+});
+
+test('runNudgeSweepForCurrentChat returns null for an invalid lorebook', async () => {
+    const out = await runNudgeSweepForCurrentChat({}, {
+        validateLorebook: async () => ({ valid: false }),
+    });
+    assert.equal(out, null);
+});
+
+test('runNudgeSweepForCurrentChat never throws when the validator rejects', async () => {
+    const out = await runNudgeSweepForCurrentChat({}, {
+        validateLorebook: async () => { throw new Error('lorebook exploded'); },
+    });
+    assert.equal(out, null, 'an advisory nudge must not propagate a failure');
+});
+
+test('runNudgeSweepForCurrentChat sweeps a valid lorebook and reports compaction candidates', async () => {
+    const bloated = 'x'.repeat(40000); // ~10K tokens, well over the 4K default
+    const out = await runNudgeSweepForCurrentChat({}, {
+        validateLorebook: async () => ({
+            valid: true,
+            name: 'Test Book',
+            data: {
+                entries: {
+                    '1': { uid: 1, stmemorybooks: true, tier: 1, comment: 'Small', content: 'short' },
+                    '2': { uid: 2, stmemorybooks: true, tier: 1, comment: 'Bloated', content: bloated },
+                },
+            },
+        }),
+    });
+    assert.ok(out, 'expected a sweep result for a valid lorebook');
+    assert.equal(out.memoryCount, 2);
+    assert.equal(out.compactions.length, 1, 'only the oversized entry should be nudged');
+    assert.equal(out.compactions[0].uid, 2);
 });

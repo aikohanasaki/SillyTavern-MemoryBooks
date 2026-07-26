@@ -60,11 +60,14 @@ async function ensureStmbApisLoaded() {
     try {
         const mod = await import('./addlore.js');
         _populateLorebookEntriesBatch = mod?.populateLorebookEntriesBatch ?? null;
-        _validateLorebook = mod?.validateLorebook ?? null;
     } catch (_e) {
         _populateLorebookEntriesBatch = null;
-        _validateLorebook = null;
     }
+    // NOTE: `validateLorebook` lives in index.js, NOT addlore.js. Importing
+    // index.js from here would add a second circular edge (sentinel.js already
+    // carries the intentional one), so callers inject it instead — see
+    // runNudgeSweepForCurrentChat's `validateLorebook` option.
+    _validateLorebook = null;
     return Boolean(_showConsolidationPreviewPopup);
 }
 
@@ -256,4 +259,34 @@ export async function runNudgeSweep(settings, lorebookValidation, opts = {}) {
         }
     }
     return { consolidation, compactions, memoryCount };
+}
+
+/**
+ * Resolve the current chat's lorebook and run the full nudge sweep over it.
+ *
+ * This is the entry point the auto-module runtime calls after a sentinel scene
+ * memory commits (the "right moment" referenced at the top of this file). The
+ * lorebook validator is INJECTED rather than imported because it lives in
+ * index.js; see the note in ensureStmbApisLoaded.
+ *
+ * Never throws — a nudge is advisory, and must not be able to fail a memory
+ * that already committed successfully.
+ *
+ * @param {object} settings - global extension_settings.STMemoryBooks
+ * @param {Object} opts
+ * @param {Function} opts.validateLorebook - `index.js` validateLorebook(skipAutoCreate)
+ * @returns {Promise<{consolidation:object|null, compactions:Array<object>, memoryCount:number}|null>}
+ *          null when the sweep could not run (no validator, no valid lorebook, or an error).
+ */
+export async function runNudgeSweepForCurrentChat(settings, opts = {}) {
+    const { validateLorebook, ...rest } = opts;
+    if (typeof validateLorebook !== 'function') return null;
+    try {
+        // skipAutoCreate=true: a passive nudge must never create a lorebook.
+        const lorebookValidation = await validateLorebook(true);
+        if (!lorebookValidation?.valid) return null;
+        return await runNudgeSweep(settings, lorebookValidation, rest);
+    } catch (_e) {
+        return null;
+    }
 }

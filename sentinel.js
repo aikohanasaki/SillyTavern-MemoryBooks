@@ -43,7 +43,10 @@ import { chat, chat_metadata } from '../../../../script.js';
 import { getHighestMemoryProcessed } from './sceneManager.js';
 import { requestCompletion } from './stmemory.js';
 import { resolveEffectiveConnectionFromProfile } from './utils.js';
-import { isMemoryProcessing, runSceneMemoryRange } from './index.js';
+import { isMemoryProcessing, runSceneMemoryRange, validateLorebook } from './index.js';
+// STMBC-HOOK(nudges): P4.4 consolidation/compaction nudges, fired after a sentinel
+// scene memory commits (fork; plan §4.4).
+import { runNudgeSweepForCurrentChat } from './livingNudges.js';
 import { enqueueStmbJob, getStmbChatKey, hasActiveStmbJobs } from './stmbJobs.js';
 import {
     getAutoSettings,
@@ -167,6 +170,11 @@ function buildSentinelDeps(context) {
         runSceneMemoryRange: async (start, end) => {
             const ok = await runSceneMemoryRange(start, end, { showSceneToast: false });
             if (ok === false) throw new Error(`runSceneMemoryRange(${start}, ${end}) failed`);
+            // STMBC-HOOK(nudges): P4.4 temperature gradient — once the scene memory has
+            // COMMITTED, offer consolidation/compaction via STMB's own review UIs (plan
+            // §4.4: "the fork prompts, the user approves"). Advisory and never-throws, so
+            // it cannot fail a memory that already succeeded.
+            await runNudgeSweepForCurrentChat(settings, { validateLorebook });
         },
         // Console only. Persistence to chat_metadata.stmbc.cycleLog is the job
         // executor's business — sentinelCadence.js owns the ring buffer.

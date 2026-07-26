@@ -227,8 +227,16 @@ export function strictParseBoundaryArray(text) {
  * detectBoundaries returns:
  *   { boundaries, rawResponses, perWindow: Array<{
  *       startIndex, endIndex, boundaries, status: 'ok'|'skipped'|'error',
- *       attempts: number, rawResponse?: object, error?: string
+ *       attempts: number, confidence: 'high'|'low'|'failed',
+ *       rawResponse?: object, error?: string
  *     }> }
+ *
+ * `confidence` (PHA-1511): how clean the parse actually was.
+ *   - 'high'   first attempt parsed cleanly (no reprimand needed)
+ *   - 'low'    first attempt failed to parse, retry succeeded with reprimand
+ *   - 'failed' both attempts failed parsing (or transport error)
+ * Anything other than 'high' is low-confidence and must be routed to a
+ * review queue (see assertHighConfidence below).
  *
  * The caller (runDetection) dedupes boundaries across windows.
  */
@@ -283,6 +291,7 @@ export class OpenAIDetector {
             return {
                 ...baseRecord,
                 status: 'skipped',
+                confidence: 'failed',
                 error: `transport error: ${err && err.message ? err.message : String(err)}`,
             };
         }
@@ -292,6 +301,7 @@ export class OpenAIDetector {
             return {
                 ...baseRecord,
                 status: 'ok',
+                confidence: 'high',
                 boundaries: first.boundaries,
                 rawResponse: r,
             };
@@ -300,6 +310,7 @@ export class OpenAIDetector {
             return {
                 ...baseRecord,
                 status: 'skipped',
+                confidence: 'failed',
                 error: first.error,
                 rawResponse: r,
             };
@@ -317,6 +328,7 @@ export class OpenAIDetector {
             return {
                 ...baseRecord,
                 status: 'skipped',
+                confidence: 'failed',
                 error: `transport error on retry: ${err && err.message ? err.message : String(err)}`,
                 rawResponse: r,
             };
@@ -324,9 +336,13 @@ export class OpenAIDetector {
         baseRecord.attempts = 2;
         const retry = strictParseBoundaryArray(second.content);
         if (retry.ok) {
+            // Retry succeeded after a reprimand — the parse is correct but the
+            // model needed coaching. Route to the review queue rather than
+            // silently trusting the output.
             return {
                 ...baseRecord,
                 status: 'ok',
+                confidence: 'low',
                 boundaries: retry.boundaries,
                 rawResponse: second,
             };
@@ -334,6 +350,7 @@ export class OpenAIDetector {
         return {
             ...baseRecord,
             status: 'skipped',
+            confidence: 'failed',
             error: retry.error,
             rawResponse: second,
         };
@@ -380,4 +397,61 @@ async function safeReadBody(resp) {
 
 function stripTrailingSlash(s) {
     return s.endsWith('/') ? s.slice(0, -1) : s;
+}
+
+// ----------------------------------------------------------------------------
+// Low-confidence routing (PHA-1511, plan §4.4)
+// ----------------------------------------------------------------------------
+
+/**
+ * Sentinel gate for low-confidence detection results. Accepts the
+ * `detectBoundaries` result (or an array of per-window records) and
+ * throws `Error` whose `name === 'StmbJobNeedsReview'` if any window has
+ * `confidence !== 'high'`. The error carries full provenance so the
+ * review queue can render the offending window(s).
+ *
+ * The matching catch is in stmbJobs.js:412 — it converts a thrown
+ * StmbJobNeedsReview into the job's `blocked` state, which the dashboard
+ * shows as `needs_review`.
+ *
+ * @param {{ perWindow?: Array<object> } | Array<object>} result
+ * @returns {void} returns silently when every window is 'high' or unknown
+ * @throws {Error} name='StmbJobNeedsReview' when any window is low/failed
+ */
+export function assertHighConfidence(result) {
+    const perWindow = Array.isArray(result)
+        ? result
+        : (result && Array.isArray(result.perWindow) ? result.perWindow : null);
+    if (!perWindow) {
+        // No per-window records (e.g. a programmatic input that already
+        // aggregated). Treat as unverified — bail with provenance only.
+        throw makeNeedsReviewError({
+            reason: 'no per-window records available',
+            offenders: [],
+        });
+    }
+    const offenders = perWindow
+        .filter((w) => w && w.confidence && w.confidence !== 'high')
+        .map((w) => ({
+            startIndex: w.startIndex,
+            endIndex: w.endIndex,
+            confidence: w.confidence,
+            attempts: w.attempts,
+            error: w.error || null,
+        }));
+    if (offenders.length === 0) return;
+    throw makeNeedsReviewError({
+        reason: `${offenders.length} of ${perWindow.length} window(s) low-confidence`,
+        offenders,
+    });
+}
+
+function makeNeedsReviewError({ reason, offenders }) {
+    const err = new Error(
+        `StmbJobNeedsReview: low-confidence detection — ${reason}`,
+    );
+    err.name = 'StmbJobNeedsReview';
+    err.provenance = { reason, offenders };
+    err.lowConfidence = true;
+    return err;
 }

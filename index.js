@@ -62,6 +62,14 @@ import {
   handleSentinelMessageReceived,
   runSentinelDetectionForJob,
 } from "./sentinel.js";
+// STMBC-HOOK(review): P4.3 review queue (fork; plan §4.4). `recordReviewFlagsForJob`
+// writes the durable per-chat record; the two core helpers decide *whether* there
+// is anything to flag. Consumed by exactly one call site, post-save, below.
+import {
+  recordReviewFlagsForJob,
+  resolveReviewConfigForCurrentChat,
+} from "./review.js";
+import { buildReviewReasons, detectSelfFlags } from "./reviewCore.js";
 import {
   editProfile,
   newProfile,
@@ -4711,6 +4719,38 @@ async function executeQueuedMemoryJob(job, jobContext) {
     lorebookName,
     entryTitle: addResult?.entryTitle || "",
   });
+
+  // STMBC-HOOK(review): P4.3 post-save review flagging (fork; plan §4.4).
+  // The memory is already saved and the watermark already advanced — this only
+  // files a NON-BLOCKING flag when the generation needed a JSON retry (marker
+  // set by the STMBC-HOOK(review) in stmemory.js, read-and-cleared here) or the
+  // model self-flagged with injectionCore's error-control vocabulary. It
+  // self-gates on the resolved review config and swallows every error, so with
+  // the feature off — or if anything here fails — the job completes exactly as
+  // it does upstream.
+  try {
+    const jsonRetried = globalThis.STMBC?.memoryJsonRetried === true;
+    if (globalThis.STMBC) globalThis.STMBC.memoryJsonRetried = false;
+    if (resolveReviewConfigForCurrentChat().enabled) {
+      const reasons = buildReviewReasons({
+        jsonRetried,
+        selfFlags: detectSelfFlags(finalMemoryResult?.content),
+      });
+      const recorded =
+        reasons.length > 0 &&
+        recordReviewFlagsForJob(job, {
+          lorebookName,
+          entryTitle: addResult?.entryTitle || "",
+          range: { start: sceneData.sceneStart, end: sceneData.sceneEnd },
+          reasons,
+        });
+      if (recorded) {
+        jobContext.patch({ reviewPending: true, reviewReasons: reasons });
+      }
+    }
+  } catch (error) {
+    console.warn("STMemoryBooks: review-queue flagging failed:", error);
+  }
 
   try {
     jobContext.setState("post_save", { detail: "Running after-memory side prompts" });

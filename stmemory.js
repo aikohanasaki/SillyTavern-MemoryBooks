@@ -17,6 +17,8 @@ import {
     resolveContextSettingEntries,
     resolveContextSettingEntriesFromRefs,
 } from './contextSettingsManager.js';
+// STMBC-HOOK(injection): living-lorebook context injection + error-control rules (fork; plan §4.4, §5).
+import { buildLivingContextPreamble } from './injection.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -1094,6 +1096,12 @@ function assertProviderDidNotTruncate(providerResponse, rawText) {
  * @throws {AIResponseError} If the AI generation fails or doesn't return valid JSON
  */
 async function generateMemoryWithAI(promptString, profile, options = {}) {
+    // STMBC-HOOK(review): clear the P4.3 JSON-retry marker at the START of every
+    // generation. The post-save reader in index.js only runs when a job reaches
+    // its save step, so a job that retried and then failed downstream would
+    // otherwise leave the marker set and falsely flag the NEXT memory for review.
+    try { if (globalThis.STMBC) globalThis.STMBC.memoryJsonRetried = false; } catch { /* best-effort */ }
+
     const signal = options?.signal || null;
     const characterDataReady = await waitForCharacterData({ signal });
     if (!characterDataReady) {
@@ -1155,7 +1163,38 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
         const aiFull = aiResponse.full;
         assertProviderDidNotTruncate(aiFull, aiResponseText);
 
-        const jsonResult = parseAIJsonResponse(aiResponseText);
+        // STMBC-HOOK(review): P4.3 JSON retry + review marker (fork; plan §4.4, §5.2).
+        // Upstream fails the whole generation when the model answers with prose
+        // instead of a JSON object. The fork spends ONE more call on a reprimand
+        // first, and only for the single *recoverable* failure mode
+        // (NO_JSON_BLOCK) — every other parse failure still throws untouched, so
+        // we never guess at malformed/truncated content. If anything in the retry
+        // path fails, the ORIGINAL parse error is rethrown, so the worst case is
+        // exactly upstream behavior plus one wasted call. A successful retry sets
+        // the fork's globalThis.STMBC marker (read-and-cleared by the post-save
+        // STMBC-HOOK(review) in index.js) so the memory gets filed in the review
+        // queue. reviewCore.js is imported dynamically, like utils.js elsewhere in
+        // this file, to keep this a single self-contained call site.
+        let jsonResult;
+        try {
+            jsonResult = parseAIJsonResponse(aiResponseText);
+        } catch (parseError) {
+            try {
+                const { isRecoverableJsonError, buildJsonRetryPrompt } = await import('./reviewCore.js');
+                if (!isRecoverableJsonError(parseError)) throw parseError;
+                console.warn(`${MODULE_NAME}: memory response contained no JSON; retrying once with a JSON-only reprimand.`);
+                const retryResponse = await sendRawCompletionRequest({
+                    ...requestOptions,
+                    prompt: buildJsonRetryPrompt(promptString),
+                });
+                jsonResult = parseAIJsonResponse(retryResponse.text);
+            } catch {
+                throw parseError;
+            }
+            try {
+                (globalThis.STMBC || (globalThis.STMBC = {})).memoryJsonRetried = true;
+            } catch { /* the marker is best-effort; never fail a saved memory over it */ }
+        }
 
         return {
             content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',
@@ -1458,13 +1497,6 @@ async function estimateTokenUsage(promptString) {
 async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
 
-    // STMBC-HOOK: prompt assembly — inject living-entry context, delta-not-rehash
-    // instructions, and error-control rules (per plan §4.4). Phase 1 lands the
-    // empty call site; Phase 4 (living-lorebook orchestration) wires it up.
-    const livingContext = await globalThis.STMBC?.buildPromptContext?.({
-        compiledScene, profile, metadata, messages, previousSummariesContext,
-    }).catch?.(() => null) ?? null;
-
     // Use utils.js to get the effective prompt (now designed for JSON output)
     const promptProfile = {
         ...(profile || {}),
@@ -1480,9 +1512,27 @@ async function buildPrompt(compiledScene, profile) {
     // Build scene text for user prompt
     const additionalContext = await resolveAdditionalContextEntries(profile, compiledScene);
     const sceneText = formatSceneForAI(messages, metadata, previousSummariesContext, additionalContext.entries);
-    
+
+    // STMBC-HOOK(injection): prepend token-capped living-lorebook entries (delta-not-rehash)
+    // + error-control rules between the system prompt and the scene (fork; plan §4.4, §5).
+    // Self-gating (default OFF) and never-throws => byte-identical upstream prompt when disabled.
+    let injectionPreamble = '';
+    try {
+        injectionPreamble = await buildLivingContextPreamble({
+            compiledScene,
+            profile,
+            sceneText,
+            systemPrompt: processedSystemPrompt,
+        });
+    } catch (e) {
+        console.warn(`${MODULE_NAME}: living-context injection failed; using base prompt`, e);
+        injectionPreamble = '';
+    }
+
     // Combine system prompt and scene
-    const finalPrompt = `${processedSystemPrompt}\n\n${sceneText}`;
+    const finalPrompt = injectionPreamble
+        ? `${processedSystemPrompt}\n\n${injectionPreamble}\n\n${sceneText}`
+        : `${processedSystemPrompt}\n\n${sceneText}`;
 
     // Apply user-selected outgoing regex scripts (bypass engine gating)
     try {

@@ -25,7 +25,10 @@
 //     windows: Array<{...}>,       // the windows actually sent (echoed back)
 //   }
 
-import { buildDetectionWindows } from './detect.js';
+// STMBC-HOOK(review): PHA-1511 low-confidence routing (plan §4.4). This module is
+// the only caller of a detector's detectBoundaries(), so the confidence gate that
+// detect.js publishes belongs here.
+import { assertHighConfidence, buildDetectionWindows } from './detect.js';
 
 export async function runDetection(messages, cfg = {}) {
     const detector = cfg.detector;
@@ -55,6 +58,17 @@ export async function runDetection(messages, cfg = {}) {
         status: 'ok',
         boundaries: [],
     }));
+    // STMBC-HOOK(review): PHA-1511 low-confidence routing (plan §4.4). Opt-in via
+    // cfg.requireHighConfidence: a caller running detection inside an STMB job
+    // sets it, and any window that only parsed after a reprimand ('low') or never
+    // parsed at all ('failed') aborts with a StmbJobNeedsReview error, which
+    // stmbJobs.js turns into a needs-review job instead of silently trusting the
+    // boundaries. Default off, so the offline eval harness keeps its existing
+    // skip-and-continue behavior and every detector without a `confidence` field
+    // is unaffected.
+    if (cfg.requireHighConfidence) {
+        assertHighConfidence(perWindow);
+    }
     const seen = new Set();
     for (const b of result.boundaries ?? []) {
         if (Number.isInteger(b) && b > 0) seen.add(b);

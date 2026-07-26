@@ -15,6 +15,7 @@ import {
     JSON_RETRY_PROMPT,
     loadBaselinePrompt,
     buildDetectionWindows,
+    assertHighConfidence,
 } from './detect.js';
 import { parseJsonlText } from './parser.js';
 
@@ -163,6 +164,8 @@ test('OpenAIDetector: happy path returns boundaries for each window', async () =
     for (const w of out.perWindow) {
         assert.equal(w.status, 'ok');
         assert.equal(w.attempts, 1);
+        // PHA-1511: clean first attempt → high confidence.
+        assert.equal(w.confidence, 'high');
     }
     assert.equal(calls.length, windows.length);
     // All calls POST to <base>/chat/completions.
@@ -198,6 +201,9 @@ test('OpenAIDetector: retries once on bad JSON, accepts second attempt', async (
     assert.equal(out.perWindow[0].status, 'ok');
     assert.equal(out.perWindow[0].attempts, 2);
     assert.deepEqual(out.perWindow[0].boundaries, [5, 14]);
+    // PHA-1511: retry succeeded after a reprimand → low confidence.
+    // The sentinel must NOT advance on this; it routes to the review queue.
+    assert.equal(out.perWindow[0].confidence, 'low');
 });
 
 test('OpenAIDetector: skips window after second JSON failure (never guesses)', async () => {
@@ -213,6 +219,8 @@ test('OpenAIDetector: skips window after second JSON failure (never guesses)', a
     assert.equal(out.perWindow[0].attempts, 2);
     assert.ok(out.perWindow[0].error && out.perWindow[0].error.length > 0,
         'a non-empty error must be recorded on skip');
+    // PHA-1511: both attempts failed → failed confidence.
+    assert.equal(out.perWindow[0].confidence, 'failed');
     // boundaries excludes the skipped window.
     assert.deepEqual(out.boundaries, []);
 });
@@ -227,6 +235,8 @@ test('OpenAIDetector: surfaces transport errors as skipped (no crash)', async ()
     const out = await det.detectBoundaries({ messages, windows });
     assert.equal(out.perWindow[0].status, 'skipped');
     assert.match(out.perWindow[0].error, /ECONNREFUSED/);
+    // PHA-1511: no JSON ever parsed → failed confidence.
+    assert.equal(out.perWindow[0].confidence, 'failed');
 });
 
 test('OpenAIDetector: surfaces non-200 HTTP responses as skipped', async () => {
@@ -237,6 +247,7 @@ test('OpenAIDetector: surfaces non-200 HTTP responses as skipped', async () => {
     const out = await det.detectBoundaries({ messages, windows });
     assert.equal(out.perWindow[0].status, 'skipped');
     assert.match(out.perWindow[0].error, /HTTP 502/);
+    assert.equal(out.perWindow[0].confidence, 'failed');
 });
 
 test('OpenAIDetector: partial success — one window ok, one window skipped', async () => {
@@ -260,6 +271,112 @@ test('OpenAIDetector: honors maxJsonRetries=0 (no retry on failure)', async () =
     const out = await det.detectBoundaries({ messages, windows });
     assert.equal(calls.length, 1);
     assert.equal(out.perWindow[0].status, 'skipped');
+    assert.equal(out.perWindow[0].confidence, 'failed');
+});
+
+// ----------------------------------------------------------------------------
+// PHA-1511 — confidence field + assertHighConfidence
+// ----------------------------------------------------------------------------
+
+test('PHA-1511: first attempt fails parse, retry succeeds → confidence equals "low"', async () => {
+    // Same fixture pattern as the retry test, but asserts the new field
+    // explicitly. This is the regression test for the trust decision:
+    // a parse that only succeeded after a reprimand is NOT clean.
+    const messages = buildMessages(30);
+    const windows = [buildDetectionWindows(messages)[0]];
+    const { fetch: f } = fakeFetch([
+        'Hmm, give me a moment... I think the boundaries are 7 and 21.',
+        '[7, 21]',
+    ]);
+    const det = new OpenAIDetector({ baseUrl: 'http://llm', model: 'm', apiKey: 'k', fetch: f });
+    const out = await det.detectBoundaries({ messages, windows });
+    const w = out.perWindow[0];
+    assert.equal(w.status, 'ok');
+    assert.equal(w.attempts, 2);
+    assert.equal(w.confidence, 'low', 'low-confidence generations must be flagged, not silently trusted');
+    assert.deepEqual(w.boundaries, [7, 21]);
+});
+
+test('PHA-1511: assertHighConfidence returns silently when every window is "high"', () => {
+    const result = {
+        perWindow: [
+            { startIndex: 1, endIndex: 22, confidence: 'high', boundaries: [5] },
+            { startIndex: 19, endIndex: 40, confidence: 'high', boundaries: [] },
+        ],
+    };
+    assert.doesNotThrow(() => assertHighConfidence(result));
+});
+
+test('PHA-1511: assertHighConfidence throws StmbJobNeedsReview when any window is "low"', () => {
+    const result = {
+        perWindow: [
+            { startIndex: 1, endIndex: 22, confidence: 'high', boundaries: [5] },
+            { startIndex: 19, endIndex: 40, confidence: 'low', boundaries: [25], attempts: 2, error: 'JSON parse error: …' },
+        ],
+    };
+    assert.throws(
+        () => assertHighConfidence(result),
+        (err) => {
+            return err.name === 'StmbJobNeedsReview'
+                && err.lowConfidence === true
+                && Array.isArray(err.provenance && err.provenance.offenders)
+                && err.provenance.offenders.length === 1
+                && err.provenance.offenders[0].confidence === 'low'
+                && err.provenance.offenders[0].startIndex === 19
+                && err.provenance.offenders[0].endIndex === 40;
+        },
+    );
+});
+
+test('PHA-1511: assertHighConfidence throws StmbJobNeedsReview when any window is "failed"', () => {
+    const result = {
+        perWindow: [
+            { startIndex: 1, endIndex: 22, confidence: 'failed', boundaries: [], attempts: 2, error: 'JSON parse error: garbage' },
+        ],
+    };
+    assert.throws(
+        () => assertHighConfidence(result),
+        (err) => err.name === 'StmbJobNeedsReview' && err.provenance.offenders[0].confidence === 'failed',
+    );
+});
+
+test('PHA-1511: assertHighConfidence includes all offending windows in provenance', () => {
+    const result = {
+        perWindow: [
+            { startIndex: 1, endIndex: 22, confidence: 'high', boundaries: [] },
+            { startIndex: 19, endIndex: 40, confidence: 'low', boundaries: [25], attempts: 2 },
+            { startIndex: 37, endIndex: 58, confidence: 'failed', boundaries: [], attempts: 2, error: '…' },
+            { startIndex: 55, endIndex: 76, confidence: 'high', boundaries: [60] },
+        ],
+    };
+    assert.throws(
+        () => assertHighConfidence(result),
+        (err) => {
+            const offs = err.provenance.offenders;
+            return err.name === 'StmbJobNeedsReview'
+                && offs.length === 2
+                && offs[0].confidence === 'low'
+                && offs[1].confidence === 'failed';
+        },
+    );
+});
+
+test('PHA-1511: assertHighConfidence accepts a bare array of per-window records', () => {
+    const perWindow = [
+        { startIndex: 1, endIndex: 22, confidence: 'low', boundaries: [5], attempts: 2 },
+    ];
+    assert.throws(
+        () => assertHighConfidence(perWindow),
+        (err) => err.name === 'StmbJobNeedsReview' && err.provenance.offenders.length === 1,
+    );
+});
+
+test('PHA-1511: assertHighConfidence throws on missing perWindow (no verification possible)', () => {
+    // Sentinel must never silently advance on an unverifiable result.
+    assert.throws(
+        () => assertHighConfidence({}),
+        (err) => err.name === 'StmbJobNeedsReview',
+    );
 });
 
 // ----------------------------------------------------------------------------
