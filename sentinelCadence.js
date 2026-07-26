@@ -1,0 +1,308 @@
+// Copyright (C) 2024–2026 Aiko Hanasaki
+// SPDX-License-Identifier: AGPL-3.0-only
+//
+// sentinelCadence.js — Phase 2 (P2.3): sentinel cycle job shape + ring-buffer
+// cycle log + the on-demand surface (`/stmbc-detect`, `/stmbc-stop`).
+//
+// Per plan §4.1, the sentinel watches the chat, emits scene boundaries, and
+// drives STMB's memory pipeline. The detection runner itself is the P2.1
+// deliverable (file: `sentinel.js`, plan §4.1). P2.3 lands the *wiring* the
+// detection runner plugs into:
+//
+//   1. A stable job type (`stmbc-sentinel-cycle`) registered with the STMB
+//      jobs dashboard so cycle progress, retries, and cancellation surface
+//      in the same panel as memory + audit jobs.
+//   2. A ring-buffer cycle log persisted in `chat_metadata.stmbc.cycleLog`
+//      for debugging (window, raw output, action). Capped at
+//      SENTINEL_CYCLE_LOG_LIMIT to keep chat metadata small in long chats.
+//   3. A factory (`enqueueSentinelCycle`) that the cadence gate (P2.1) and
+//      the `/stmbc-detect` slash command both call. It respects the sentinel
+//      on/off resolver and produces a unified job record.
+//   4. An executor (`runSentinelCycle`) that today logs the cycle and exits
+//      cleanly — Phase 2.1 will replace the body with the actual detection
+//      call + boundary dispatch, but the contract (job payload, ring buffer,
+//      metadata save) is stable from P2.3 on.
+//
+// Mergeability (plan §1.2): this module is additive — it lives alongside
+// upstream code without touching any upstream file. The wiring into
+// `index.js` is gated behind `registerSentinelCadence` so a missing fork
+// module is a clean no-op (same pattern as `auditorCadence.js`).
+
+import { resolveSentinelEnabled } from './autoSettings.js';
+
+// ----------------------------------------------------------------------------
+// Constants
+// ----------------------------------------------------------------------------
+
+/** Stable job type id for sentinel cycles. Mirrors `stmbc-audit-*` naming. */
+export const SENTINEL_CYCLE_JOB_TYPE = 'stmbc-sentinel-cycle';
+
+/** Default cycle log title shown in the jobs dashboard. */
+export const SENTINEL_CYCLE_JOB_TITLE = 'Sentinel Cycle';
+
+/** Ring-buffer cap. Long chats can otherwise blow up metadata; 20 is enough
+ *  to debug recent cycles without bloating saves. */
+export const SENTINEL_CYCLE_LOG_LIMIT = 20;
+
+/** chat_metadata.stmbc key where the ring buffer lives. */
+export const SENTINEL_CYCLE_LOG_KEY = 'cycleLog';
+
+/** Trigger labels accepted by the factory. Used by the dashboard + cycle log. */
+export const SENTINEL_CYCLE_TRIGGERS = Object.freeze({
+    AUTO: 'auto',          // cadence gate fired (P2.1)
+    MANUAL: 'manual',      // /stmbc-detect manual force
+    AUDIT: 'audit-after',  // mid-run re-cycle after an audit job (future)
+    RECOVERY: 'recovery',  // mid-cycle reload recovery (plan §4.1)
+});
+
+// ----------------------------------------------------------------------------
+// Ring buffer — chat_metadata.stmbc.cycleLog
+// ----------------------------------------------------------------------------
+
+/**
+ * Read the cycle log from chat metadata. Returns an empty array (NOT a copy of
+ * the stored array) when the field is missing or malformed — call sites
+ * always treat it as readonly.
+ *
+ * @param {object|null|undefined} chatMeta
+ * @returns {Array<object>}
+ */
+export function getSentinelCycleLog(chatMeta) {
+    if (!chatMeta || typeof chatMeta !== 'object') return [];
+    const stmbc = chatMeta.stmbc;
+    if (!stmbc || typeof stmbc !== 'object') return [];
+    const log = stmbc[SENTINEL_CYCLE_LOG_KEY];
+    return Array.isArray(log) ? log : [];
+}
+
+/**
+ * Append a cycle entry to the ring buffer. Caps the buffer at
+ * SENTINEL_CYCLE_LOG_LIMIT. Returns the new length.
+ *
+ * The `entry` object is sanitized: at minimum it gets `at` (timestamp),
+ * `trigger`, and any extra fields passed in. Mutates chatMeta in place.
+ *
+ * @param {object} chatMeta
+ * @param {object} entry
+ * @returns {number} new length of the log
+ */
+export function appendSentinelCycleLog(chatMeta, entry) {
+    if (!chatMeta || typeof chatMeta !== 'object') {
+        throw new TypeError('appendSentinelCycleLog: chatMeta must be an object');
+    }
+    if (!chatMeta.stmbc || typeof chatMeta.stmbc !== 'object') {
+        chatMeta.stmbc = {};
+    }
+    if (!Array.isArray(chatMeta.stmbc[SENTINEL_CYCLE_LOG_KEY])) {
+        chatMeta.stmbc[SENTINEL_CYCLE_LOG_KEY] = [];
+    }
+    const log = chatMeta.stmbc[SENTINEL_CYCLE_LOG_KEY];
+
+    const safe = (entry && typeof entry === 'object')
+        ? entry
+        : { detail: typeof entry === 'string' ? entry : String(entry ?? '') };
+    const record = {
+        at: Number.isFinite(safe.at) ? safe.at : Date.now(),
+        trigger: typeof safe.trigger === 'string' ? safe.trigger : SENTINEL_CYCLE_TRIGGERS.AUTO,
+        ...safe,
+    };
+    log.push(record);
+
+    if (log.length > SENTINEL_CYCLE_LOG_LIMIT) {
+        log.splice(0, log.length - SENTINEL_CYCLE_LOG_LIMIT);
+    }
+    return log.length;
+}
+
+/**
+ * Clear the cycle log. Returns the number of entries removed.
+ *
+ * @param {object} chatMeta
+ * @returns {number}
+ */
+export function clearSentinelCycleLog(chatMeta) {
+    if (!chatMeta || typeof chatMeta !== 'object') return 0;
+    if (!chatMeta.stmbc || typeof chatMeta.stmbc !== 'object') return 0;
+    const log = chatMeta.stmbc[SENTINEL_CYCLE_LOG_KEY];
+    if (!Array.isArray(log)) return 0;
+    const n = log.length;
+    chatMeta.stmbc[SENTINEL_CYCLE_LOG_KEY] = [];
+    return n;
+}
+
+// ----------------------------------------------------------------------------
+// Factory
+// ----------------------------------------------------------------------------
+
+/**
+ * Enqueue a sentinel cycle. The cadence gate (P2.1), audit jobs, and the
+ * `/stmbc-detect` slash command all funnel through this factory so the
+ * dashboard, ring buffer, and metadata persistence see a single shape.
+ *
+ * Refuses to enqueue if the sentinel is disabled for the chat (unless
+ * `force: true`, used by `/stmbc-detect` to apply a manual cycle even when
+ * the global default is off — useful for testing/benchmarking).
+ *
+ * @param {object} opts
+ * @param {Function} opts.enqueueStmbJob - the jobs dashboard enqueue (required)
+ * @param {object} [opts.settings] - extension_settings; uses the sentinel resolver
+ * @param {object} [opts.chatMeta] - chat_metadata; uses the sentinel resolver
+ * @param {string} [opts.trigger] - one of SENTINEL_CYCLE_TRIGGERS; default 'manual'
+ * @param {boolean} [opts.force] - bypass the resolver gate (manual force)
+ * @param {string} [opts.title] - dashboard title override
+ * @returns {{ok: boolean, jobId?: string, reason?: string, jobType?: string}}
+ */
+export function enqueueSentinelCycle({
+    enqueueStmbJob,
+    settings,
+    chatMeta,
+    trigger = SENTINEL_CYCLE_TRIGGERS.MANUAL,
+    force = false,
+    title = SENTINEL_CYCLE_JOB_TITLE,
+} = {}) {
+    if (typeof enqueueStmbJob !== 'function') {
+        return { ok: false, reason: 'enqueueStmbJob not provided' };
+    }
+    if (!force && !resolveSentinelEnabled(settings, chatMeta)) {
+        return { ok: false, reason: 'sentinel disabled for this chat' };
+    }
+    let job = null;
+    try {
+        job = enqueueStmbJob({
+            type: SENTINEL_CYCLE_JOB_TYPE,
+            title,
+            payload: {
+                trigger: normalizeTrigger(trigger),
+                forced: !!force,
+            },
+        });
+    } catch (err) {
+        return { ok: false, reason: `enqueueStmbJob threw: ${err?.message || err}` };
+    }
+    if (!job) {
+        return { ok: false, reason: 'enqueueStmbJob returned null (jobs disabled?)' };
+    }
+    return { ok: true, jobId: job.id, jobType: SENTINEL_CYCLE_JOB_TYPE };
+}
+
+function normalizeTrigger(t) {
+    const set = SENTINEL_CYCLE_TRIGGERS;
+    if (t === set.AUTO || t === set.MANUAL || t === set.AUDIT || t === set.RECOVERY) {
+        return t;
+    }
+    return SENTINEL_CYCLE_TRIGGERS.MANUAL;
+}
+
+// ----------------------------------------------------------------------------
+// Executor (P2.3 stub — P2.1 will replace the body)
+// ----------------------------------------------------------------------------
+
+/**
+ * The sentinel cycle executor. Wired into the STMB jobs dashboard via
+ * `registerSentinelCadence`. Today this is a placeholder that:
+ *   1. Honors the abort signal (so `/stmb-stop` and `/stmbc-stop` actually cancel).
+ *   2. Appends a ring-buffer entry to chat_metadata so the dashboard +
+ *      debugging surface agree on the cycle having run.
+ *   3. Returns a structured result so the caller can show a toast / detail.
+ *
+ * Phase 2.1 (sentinel.js) will replace the body with:
+ *   counter check → watermark → build truncated window → detection call →
+ *   snap/guard boundaries → runSceneMemoryRange per boundary → side-prompt
+ *   pass. The job payload + ring buffer contract stays the same.
+ *
+ * @param {object} job - from stmbJobs.js; shape: { id, payload, chatKey, ... }
+ * @param {object} [context] - per-job context from buildContext; optional
+ * @returns {Promise<{ok: boolean, cycle: object}>}
+ */
+export async function runSentinelCycle(job, context) {
+    const payload = (job && typeof job === 'object' && job.payload) || {};
+    const trigger = normalizeTrigger(payload.trigger);
+    const forced = !!payload.forced;
+
+    // Abort check — done first so a cancelled job never touches the ring buffer.
+    const signal = context && context.signal;
+    if (signal && signal.aborted) {
+        const err = new Error('Cancelled');
+        err.name = 'AbortError';
+        throw err;
+    }
+
+    // Resolve chat metadata + save callback. Prefer the injected context
+    // (Phase 2.1 will thread these in via the factory/deps pattern); fall
+    // back to SillyTavern globals so the executor is runnable in either
+    // shape and is testable in Node.
+    const resolved = resolveCycleContext(job, context);
+    const settings = resolved.settings || null;
+    const chatMeta = resolved.chatMeta || null;
+    const saveMetadata = resolved.saveMetadata || (() => {});
+
+    const entry = {
+        trigger,
+        forced,
+        status: 'completed',
+        detail: 'Sentinel cycle wired (P2.3). Detection runner lands in P2.1; until then this records a successful wiring cycle so the dashboard + ring buffer prove the path.',
+        jobId: job?.id || null,
+    };
+
+    if (chatMeta && typeof chatMeta === 'object') {
+        try {
+            appendSentinelCycleLog(chatMeta, entry);
+        } catch (err) {
+            // Ring buffer failure is non-fatal — the cycle still completed.
+            entry.detail = `${entry.detail} (ring buffer: ${err?.message || err})`;
+        }
+        try {
+            saveMetadata(chatMeta);
+        } catch (_e) {
+            /* non-fatal */
+        }
+    }
+
+    // Note: we don't read `settings` here (P2.3 leaves the resolver call to
+    // the factory + future P2.1 cadence gate). Keep the parameter for clarity.
+    void settings;
+
+    return { ok: true, cycle: entry };
+}
+
+/**
+ * Pull the cycle context out of the job + per-job context. The factory
+ * encodes `chatKey` and the cadence gate's settings via the runtime; the
+ * per-job context may also carry them. Falls back to globals for the
+ * SillyTavern runtime path.
+ *
+ * Exposed for tests so they can inject a context without touching globals.
+ */
+function resolveCycleContext(job, context) {
+    const ctx = (context && typeof context === 'object') ? context : {};
+    const settings = ctx.settings
+        || (typeof globalThis !== 'undefined' && globalThis.extension_settings)
+        || null;
+    const chatMeta = ctx.chatMeta
+        || (typeof globalThis !== 'undefined' && globalThis.chat_metadata)
+        || null;
+    const saveMetadata = (typeof ctx.saveMetadata === 'function')
+        ? ctx.saveMetadata
+        : (() => {});
+    return { settings, chatMeta, saveMetadata };
+}
+
+// ----------------------------------------------------------------------------
+// Wiring
+// ----------------------------------------------------------------------------
+
+/**
+ * Register the sentinel cycle executor with the STMB jobs dashboard.
+ * Convenience wrapper around `registerStmbJobExecutor` so the index.js
+ * init stays a single line.
+ *
+ * @param {object} stmbJobsApi - { registerStmbJobExecutor }
+ * @returns {boolean} true if registered
+ */
+export function registerSentinelCadence(stmbJobsApi) {
+    if (!stmbJobsApi || typeof stmbJobsApi.registerStmbJobExecutor !== 'function') {
+        return false;
+    }
+    stmbJobsApi.registerStmbJobExecutor(SENTINEL_CYCLE_JOB_TYPE, runSentinelCycle);
+    return true;
+}

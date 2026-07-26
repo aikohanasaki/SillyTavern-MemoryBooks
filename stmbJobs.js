@@ -560,6 +560,62 @@ export function cancelAllStmbJobs(reason = 'stmb-stop') {
     return count;
 }
 
+/**
+ * Cancel only the fork's "cycle" jobs (sentinel cycles + audit jobs).
+ *
+ * Aligned with the `stmbc-` job-type prefix shared by the fork's cycle/fork
+ * jobs (`stmbc-sentinel-cycle`, `stmbc-audit-*`). Unlike `cancelAllStmbJobs`,
+ * this stops the fork's long-running work without touching the upstream
+ * memory/consolidation/sidePrompt jobs those callers may still want to ride
+ * out. Wired to `/stmbc-stop` (the fork's "halt our jobs" command); the
+ * upstream `/stmb-stop` panic button still calls `cancelAllStmbJobs` so the
+ * fork jobs are covered by both paths.
+ *
+ * @param {string} [reason='stmbc-stop'] - abort reason recorded on the AbortController
+ * @returns {{count: number, types: string[]}} how many jobs were cancelled and the types seen
+ */
+export function cancelStmbcJobs(reason = 'stmbc-stop') {
+    const prefix = 'stmbc-';
+    let count = 0;
+    const types = new Set();
+    for (const store of jobStores.values()) {
+        for (const job of getRunningJobs(store)) {
+            if (String(job.type || '').startsWith(prefix)) {
+                count++;
+                types.add(String(job.type));
+                job.cancelled = true;
+                try {
+                    job.abortController.abort(reason);
+                } catch {}
+            }
+        }
+        const remaining = [];
+        for (const job of store.queue) {
+            if (String(job.type || '').startsWith(prefix)) {
+                count++;
+                types.add(String(job.type));
+                job.cancelled = true;
+                job.state = 'canceled';
+                job.finishedAt = Date.now();
+                store.recentHistory.unshift(job);
+            } else {
+                remaining.push(job);
+            }
+        }
+        store.queue = remaining;
+        touchStore(store);
+    }
+    for (const [jobId, approval] of pendingApprovals.entries()) {
+        // The approval map doesn't carry the job type directly; reject all
+        // pending approvals on the principle that a /stmbc-stop is an
+        // explicit user action. The executor sees the AbortError from the
+        // signal it owns, so this is belt-and-braces.
+        pendingApprovals.delete(jobId);
+        approval.resolve({ decision: 'cancel' });
+    }
+    return { count, types: Array.from(types) };
+}
+
 function isCurrentJobChat(job) {
     return isSameChatRef(job?.chatRef, getCurrentStmbChatRef());
 }

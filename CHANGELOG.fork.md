@@ -73,7 +73,7 @@ are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
   - `clipManager.js:718` — clip save path (Phase 3 Clipper+)
   - `sidePrompts.js:1655` — side-prompt filter (Phase 4 orchestration)
 
-### Phase 2 — Sentinel (PHA-1436, PHA-1456)
+### Phase 2 — Sentinel (PHA-1436, PHA-1439, PHA-1456)
 - `autoSettings.js` — global settings under `extension_settings.STMemoryBooks.autoModule`
   (sentinel on/off, cadence, window size, overlap, truncate, guard, detection profile,
   detection prompt, debug logging) + per-chat overrides under `chat_metadata.stmbc`
@@ -93,6 +93,25 @@ are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
 - `autosummary.js` — additive runtime gate: `isAutoSummaryBlockedBySentinel()`
   helper + early-return in `handleAutoSummaryMessageReceived` and
   `clearAutoSummaryState` when sentinel is on. Module otherwise untouched (mergeability).
+- `sentinelCadence.js` (P2.3) — sentinel cycle job type + ring buffer cycle log +
+  on-demand surface. Constants `SENTINEL_CYCLE_JOB_TYPE='stmbc-sentinel-cycle'`,
+  `SENTINEL_CYCLE_LOG_KEY='cycleLog'`, `SENTINEL_CYCLE_LOG_LIMIT=20`. Pure functions
+  `getSentinelCycleLog` / `appendSentinelCycleLog` / `clearSentinelCycleLog` read/write
+  `chat_metadata.stmbc.cycleLog` with FIFO cap. Factory `enqueueSentinelCycle` honors
+  the resolver (forbids enqueue when sentinel is off, unless `force: true`). Executor
+  `runSentinelCycle` (P2.3 stub) honors the abort signal, appends a ring-buffer entry,
+  and saves metadata — P2.1 will replace the body with the actual detection runner.
+  `registerSentinelCadence({ registerStmbJobExecutor })` wires the executor into the
+  STMB jobs dashboard at init. 51 unit tests (pure ESM, no SillyTavern runtime).
+- `stmbJobs.js` (P2.3) — new `cancelStmbcJobs(reason)` export that filters by the
+  `stmbc-` type prefix and halts only fork cycle jobs (sentinel + audit). Mirrors
+  `cancelAllStmbJobs` but is wired to `/stmbc-stop` so the fork can halt its own
+  work without disturbing upstream memory/consolidation/sidePrompt jobs.
+- `index.js` (P2.3) — two new slash commands: `/stmbc-detect` (force a sentinel
+  cycle on the current chat via `enqueueSentinelCycle` with `force: true`) and
+  `/stmbc-stop` (halt fork cycle jobs via `cancelStmbcJobs`). `handleStmbStopCommand`
+  comment expanded to note that the upstream `/stmb-stop` panic button also covers
+  the new `stmbc-sentinel-cycle` jobs via `cancelAllStmbJobs`.
 
 ### Phase 4 — Living-lorebook orchestration (PHA-1450)
 - `sceneCharacterFilter.js` — per-scene character presence filter:

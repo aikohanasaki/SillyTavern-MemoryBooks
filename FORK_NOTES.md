@@ -54,6 +54,7 @@ autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (
 sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
 auditorTechnicalPass.js + .test.js Phase 5 (P5.3/P5.4) — technical pass + claim re-verification jobs, coverage audit (runCoverageAudit) + entry regeneration (runEntryRegeneration) pure functions, cadence gate (maybeOfferAuditorJob), 4-job registerAuditorJobs
 auditorReportUIs.js + .test.js Phase 5 (P5.4) — report UI renderers + popup adapters for the four audit jobs (coverage, regeneration diff, technical, claims)
+sentinelCadence.js + .test.js Phase 2 (P2.3) — sentinel cycle job type + ring buffer cycle log in chat_metadata.stmbc.cycleLog + factory (enqueueSentinelCycle) + executor stub (runSentinelCycle) + /stmbc-detect and /stmbc-stop on-demand surface. Pure ESM, no SillyTavern runtime imports (Node-testable).
 eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
 autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
 FORK_NOTES.md                  this file
@@ -82,8 +83,10 @@ on SillyTavern at all; it runs offline against JSONL exports.
 | `index.js` (P2.2) | +~197 (imports, menu button, popup, event delegation, init backfill) | Phase 2 P2.2 — Auto-module settings panel + detection profile picker | Yes — additive; reuses existing patterns (`automaticMemoriesSettingsTemplate`, `setupSettingsEventListeners`, `initializeSettings`, `validateSettings`, `saveSettingsDebounced`); no upstream function bodies changed. New menu item is appended to `promptManagerButtons`. |
 | `templates.js` (P2.2) | +~133 (one new Handlebars template: `autoModuleSettingsTemplate`) | Phase 2 P2.2 — auto-module settings UI | Yes — additive; new export at the bottom of the file. |
 | `.gitignore` | +2 (`eval/reports/`, `eval/predictions*.json`) | Don't commit generated reports. | Yes — gitignore merges trivially. |
+| `stmbJobs.js` (P2.3) | +new `cancelStmbcJobs(reason)` export filtering by the `stmbc-` type prefix; mirrors `cancelAllStmbJobs` but only halts fork cycle jobs (sentinel + audit) | Phase 2 (P2.3) — /stmbc-stop on-demand cancel | Yes — additive export; `cancelAllStmbJobs` unchanged. |
+| `index.js` (P2.3) | +~85 (imports, `registerSentinelCadence` call at init, `handleStmbcDetectCommand` + `handleStmbcStopCommand` handlers, two `SlashCommand.fromProps` definitions, two `addCommandObject` calls, comment block on `handleStmbStopCommand` noting the `stmbc-` job coverage) | Phase 2 (P2.3) — jobs/commands wiring | Yes — additive; reuses the existing `registerStmbJobExecutor` / `cancelStmbcJobs` / `enqueueSentinelCycle` exports; no upstream function bodies changed. The two new slash commands are appended to the parser alongside `stmbStopCmd` + `auditCmd`. |
 
-**Total: 8 files modified, ~330 lines added (most additive), 6 lines changed in metadata. No
+**Total: 10 files modified, ~415 lines added (most additive), 6 lines changed in metadata. No
 upstream function bodies, control flow, or data structures touched.**
 
 ## Merge drill (per plan §1.2.3)
@@ -311,6 +314,7 @@ branched from current upstream/main and only added additive lines.
 | Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
 | Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
 | Phase 2 — Sentinel | P2.2 auto settings panel + detection profile picker | PHA-1436 | done |
+| Phase 2 — Sentinel | P2.3 jobs/commands wiring + auto-summary force-disable (per-issue) | PHA-1439 | done (sentinelCadence.js + /stmbc-detect + /stmbc-stop + ring buffer; auto-summary force-disable already covered by P2.4) |
 | Phase 4 — Living-lorebook orchestration | P4.2 per-scene side-prompt filtering + event-template preset | PHA-1450 | done |
 | Phase 2 — Sentinel | P2.4 force-disable native auto-summary (config, not deletion) | PHA-1456 | done |
 | Phase 6 — Merge drill, hardening, release | P6.2 README + CHANGELOG + AGPL headers | PHA-1473 | done |

@@ -205,6 +205,7 @@ import {
   areStmbJobsEnabled,
   awaitStmbJobApproval,
   cancelAllStmbJobs,
+  cancelStmbcJobs,
   enqueueStmbJob,
   getCurrentStmbChatRef,
   getStmbChatKey,
@@ -219,6 +220,10 @@ import {
   registerAuditorJobs,
   maybeOfferAuditorJob,
 } from "./auditorTechnicalPass.js";
+import {
+  enqueueSentinelCycle,
+  registerSentinelCadence,
+} from "./sentinelCadence.js";
 import {
   showCoverageReportPopup,
   showRegenerationDiffPopup,
@@ -1588,10 +1593,18 @@ async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
 /**
  * Slash: /stmb-stop
  * Panic button: stop all in-flight STMB generation everywhere.
+ *
+ * Covers the upstream STMB work (`stmbStopAllInFlight`) AND every dashboard
+ * job — `cancelAllStmbJobs` halts all `stmbc-*` (sentinel cycle + audit) jobs
+ * alongside the upstream `memory`/`consolidation`/`sidePrompt` jobs. The
+ * fork's narrower /stmbc-stop calls `cancelStmbcJobs` instead so users can
+ * halt fork-only work without disturbing upstream generation.
  */
 async function handleStmbStopCommand(namedArgs, unnamedArgs) {
   const before = getStmbInFlightCount();
   const { stoppedCount } = stmbStopAllInFlight();
+  // cancelAllStmbJobs halts every job in the STMB jobs dashboard, including
+  // the fork's `stmbc-sentinel-cycle` and the four `stmbc-audit-*` jobs.
   const canceledJobs = cancelAllStmbJobs();
 
   // Force-reset local "busy" flags so STMB returns to idle immediately.
@@ -1704,6 +1717,95 @@ async function handleAuditCommand(namedArgs, unnamedArgs) {
     );
     return '';
   }
+}
+
+/**
+ * Slash: /stmbc-detect
+ * P2.3 — force a sentinel cycle on the current chat (plan §4.1).
+ *
+ * Funnels through `enqueueSentinelCycle` so the dashboard + ring buffer
+ * (/stmbc-sentinel-cycle job type) see the same shape as the cadence gate
+ * (P2.1) — the only difference is the trigger label ('manual' vs 'auto').
+ * The cycle runs even when the global default would queue it, because the
+ * user explicitly asked for it.
+ */
+async function handleStmbcDetectCommand(namedArgs, unnamedArgs) {
+  try {
+    // Force a manual cycle, regardless of the global on/off. Users run
+    // /stmbc-detect precisely when they want a cycle now; the per-chat
+    // opt-out still applies (resolver keeps the gate honest).
+    const result = enqueueSentinelCycle({
+      enqueueStmbJob,
+      settings: extension_settings,
+      chatMeta: chat_metadata,
+      trigger: 'manual',
+      force: true,
+    });
+    if (!result.ok) {
+      toastr.error(
+        translate(
+          'Failed to enqueue sentinel cycle: {{reason}}',
+          'STMemoryBooks_SentinelCycle_EnqueueFailed',
+        ).replace('{{reason}}', String(result.reason || 'unknown')),
+        translate('STMemoryBooks', 'index.toast.title'),
+      );
+      return '';
+    }
+    toastr.info(
+      translate(
+        'Sentinel cycle queued (job id {{id}}).',
+        'STMemoryBooks_SentinelCycle_Queued',
+      ).replace('{{id}}', String(result.jobId || '')),
+      translate('STMemoryBooks', 'index.toast.title'),
+    );
+    return '';
+  } catch (err) {
+    console.error('STMemoryBooks: /stmbc-detect failed:', err);
+    toastr.error(
+      translate(
+        'Failed to run /stmbc-detect.',
+        'STMemoryBooks_SentinelCycle_Failed',
+      ),
+      translate('STMemoryBooks', 'index.toast.title'),
+    );
+    return '';
+  }
+}
+
+/**
+ * Slash: /stmbc-stop
+ * P2.3 — halt every fork cycle job (sentinel cycles + audit jobs).
+ *
+ * Distinct from /stmb-stop (the upstream panic button, which also halts
+ * memory + consolidation + sidePrompt jobs). The fork's slash command lets
+ * a user stop fork-only work without disturbing upstream generation.
+ * The shared `cancelStmbcJobs` helper matches the `stmbc-` prefix so
+ * adding new fork job types is automatic — no command list to maintain.
+ */
+async function handleStmbcStopCommand(namedArgs, unnamedArgs) {
+  const result = cancelStmbcJobs();
+  const count = (result && typeof result.count === 'number') ? result.count : 0;
+  const types = (result && Array.isArray(result.types)) ? result.types : [];
+  if (count === 0) {
+    toastr.info(
+      translate(
+        'No fork jobs to stop.',
+        'STMemoryBooks_SentinelCycle_StopNone',
+      ),
+      translate('STMemoryBooks', 'index.toast.title'),
+    );
+    return '';
+  }
+  const detail = types.length > 0 ? ` (${types.join(', ')})` : '';
+  toastr.info(
+    translate(
+      'Stopped {{count}} fork job(s){{detail}}.',
+      'STMemoryBooks_SentinelCycle_Stopped',
+    ).replace('{{count}}', String(count)).replace('{{detail}}', detail),
+    translate('STMemoryBooks', 'index.toast.title'),
+  );
+  console.log(`STMemoryBooks: /stmbc-stop cancelled ${count} fork job(s): ${types.join(', ')}`);
+  return '';
 }
 
 /**
@@ -10235,6 +10337,32 @@ function registerSlashCommands() {
     ],
   });
 
+  // Phase 2 P2.3: on-demand surface for the sentinel cycle (plan §4.1).
+  // Forces a cycle even when the global default is off, so the user can
+  // run ad-hoc detection from any chat. The cycle appears in the jobs
+  // dashboard as `stmbc-sentinel-cycle` and is logged to
+  // `chat_metadata.stmbc.cycleLog` for debugging.
+  const stmbcDetectCmd = SlashCommand.fromProps({
+    name: "stmbc-detect",
+    callback: handleStmbcDetectCommand,
+    helpString: translate(
+      "Force a sentinel cycle on the current chat (plan §4.1). Usage: /stmbc-detect",
+      "STMemoryBooks_Slash_SentinelDetect_Help",
+    ),
+  });
+
+  // Phase 2 P2.3: halt the fork's cycle jobs (sentinel + audit) without
+  // touching upstream memory/consolidation/sidePrompt jobs. Matches the
+  // `stmbc-` job-type prefix so new fork job types are auto-covered.
+  const stmbcStopCmd = SlashCommand.fromProps({
+    name: "stmbc-stop",
+    callback: handleStmbcStopCommand,
+    helpString: translate(
+      "Stop all fork cycle jobs (sentinel cycles + audit jobs) for the current chat. Usage: /stmbc-stop",
+      "STMemoryBooks_Slash_SentinelStop_Help",
+    ),
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -10248,6 +10376,8 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(setHighestMemCmd);
   SlashCommandParser.addCommandObject(stmbStopCmd);
   SlashCommandParser.addCommandObject(auditCmd);
+  SlashCommandParser.addCommandObject(stmbcDetectCmd);
+  SlashCommandParser.addCommandObject(stmbcStopCmd);
 }
 
 /**
@@ -11361,6 +11491,14 @@ async function init() {
     showTechnicalPassPopup,
     showClaimReverificationPopup,
   });
+
+  // Phase 2 P2.3: register the sentinel cycle job type with the STMB jobs
+  // dashboard. The cycle executor (per plan §4.1) is a P2.1 deliverable that
+  // plugs into the registered type; today the executor logs the cycle to
+  // `chat_metadata.stmbc.cycleLog` so the wiring is observable from the
+  // dashboard + debug surface. /stmbc-detect and the cadence gate (P2.1)
+  // both funnel through `enqueueSentinelCycle` for a unified job record.
+  registerSentinelCadence({ registerStmbJobExecutor });
 
   // Preload side prompt names cache for autocomplete
   await refreshSidePromptCache();
