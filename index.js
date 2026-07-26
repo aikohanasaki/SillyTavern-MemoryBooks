@@ -106,6 +106,8 @@ import {
   resolveDetectionPrompt,
   resolveAutoSummaryEnabled,
 } from "./autoSettings.js";
+// Clipper+ settings live in the nested autoModule.clipper sub-object (plan §4.2/§4.5).
+import { resolveClipperConfig, setClipperConfig } from "./clipperPlusCore.js";
 import {
   showConfirmationPopup,
   fetchPreviousSummaries,
@@ -9080,10 +9082,29 @@ async function buildAutoModuleTemplateData() {
     });
   }
 
+  // Clipper+ (plan §4.2) lives in a NESTED sub-object (autoModule.clipper), so it
+  // is resolved by its own defaults-merging resolver rather than getAutoSettings'
+  // shallow spread. Its profile picker offers the same list as detection, but
+  // defaults to the main STMB profile — blurb writing is generative, not cheap.
+  const clipper = resolveClipperConfig(settings.autoModule, chat_metadata?.stmbc);
+  const clipperProfileOptions = [
+    { value: 'null', label: translate('Use default STMB profile', 'STMemoryBooks_AutoModule_UseDefaultProfile'), isSelected: clipper.profile == null },
+  ];
+  if (Array.isArray(settings.profiles)) {
+    settings.profiles.forEach((profile, index) => {
+      clipperProfileOptions.push({
+        value: String(index),
+        label: profile?.name || translate('Untitled profile', 'STMemoryBooks_UntitledProfile'),
+        isSelected: clipper.profile === index,
+      });
+    });
+  }
+
   return {
     auto: {
       ...auto,
       detectionProfileOptions: profileOptions,
+      clipper: { ...clipper, profileOptions: clipperProfileOptions },
     },
     chatAuto: {
       enabled: chatAutoRaw.enabled,
@@ -9164,6 +9185,29 @@ function setupAutoModuleEventListeners(popupInstance) {
     if (t.matches('#stmb-auto-auditor-every-n-scenes')) {
       const v = parseInt(t.value, 10);
       setAutoSettings(settings, validateAutoPatch({ auditorEveryNScenes: v }));
+      saveSettingsDebounced();
+      return;
+    }
+
+    // --- Clipper+ (nested autoModule.clipper — validateAutoPatch's allow-list is
+    //     flat and would drop these, so they go through setClipperConfig) ---
+    if (t.matches('#stmb-auto-clipper-enabled')) {
+      setClipperConfig(settings, { enabled: t.checked });
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-clipper-auto-accept')) {
+      setClipperConfig(settings, { autoAccept: t.checked });
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-clipper-surrounding-k')) {
+      setClipperConfig(settings, { surroundingK: parseInt(t.value, 10) });
+      saveSettingsDebounced();
+      return;
+    }
+    if (t.matches('#stmb-auto-clipper-profile')) {
+      setClipperConfig(settings, { profile: t.value });
       saveSettingsDebounced();
       return;
     }

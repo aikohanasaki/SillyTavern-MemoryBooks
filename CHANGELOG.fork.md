@@ -113,6 +113,55 @@ are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
   comment expanded to note that the upstream `/stmb-stop` panic button also covers
   the new `stmbc-sentinel-cycle` jobs via `cancelAllStmbJobs`.
 
+### Phase 3 — Clipper+ (PHA-1420, PHA-1443, PHA-1460)
+Paired keyword-activated context entry alongside each verbatim clip (plan §4.2).
+The upstream `[STMB Clip]` entry is never touched — human taste stays in the
+quote; the *explanation* becomes a second, keyword-activated entry so it costs
+tokens only when its keywords fire.
+- `clipperPlusCore.js` — the pure, SillyTavern-free core (Node-testable):
+  `resolveClipperConfig` (defaults ← global `autoModule.clipper` ← per-chat
+  `chat_metadata.stmbc.clipper`), `findSourceMessageIndex` (normalized unique
+  match; ambiguity returns -1 and the entry is skipped rather than given wrong
+  provenance), `buildContextWindow` (K surrounding messages, true chat indices
+  preserved), `parseBlurbResponse` (strict JSON / fenced / embedded object),
+  `sanitizeKeywords`, `clampBlurb`, `buildPairedEntry`, and `buildEntryOverrides`
+  — the world-info contract: `constant: false`, `preventRecursion: true`,
+  `excludeRecursion: true`, keyword-activated on the generated keywords, empty
+  `keysecondary`. A blurb naming several characters must not cascade half the
+  cast (plan §4.2, Appendix B).
+- `clipperPlus.js` — the SillyTavern binding layer: generation-profile
+  resolution, the LLM call with one JSON-only retry, an editable confirm dialog
+  (skippable via auto-accept), and the write through
+  `addlore.upsertLorebookEntryByTitle`.
+- `clipManager.js` — the `STMBC-HOOK(clipper)` call site moved to the end of
+  `saveNewClip`, **after** `await saveLorebook(...)`. The Phase-1
+  `globalThis.STMBC?.onClipSave` placeholder it replaces ran before the
+  duplicate-title check and before the quote text was read from the DOM, and its
+  result was never consumed. See FORK_NOTES.md for why wired hooks use a direct
+  ESM import.
+- `index.js` + `templates.js` — Clipper+ rows in the Auto-module settings popup
+  (enable, auto-accept, K surrounding messages, generation profile). These write
+  the *nested* `autoModule.clipper` object via `setClipperConfig`;
+  `validateAutoPatch`'s allow-list is flat and would drop them.
+- `clipperPlus.test.js` (40 cases) + `clipperPlusHook.test.js` (13 cases) — the
+  core's behavior, plus the two acceptance claims that live in the
+  un-Node-testable binding layer, asserted structurally: the hook fires after the
+  upstream entry is persisted, the enabled gate is the hook's first statement,
+  the upstream clip shaping is unchanged, and the context entry's title is never
+  matched by `isClipEntryTitle` (so compaction still lists the quote entry).
+- `eval/phase3Acceptance.js` + `.test.js` — the Phase 3 accept clause, offline.
+  The plan says "verify with ST world-info debug", but what that verifies is a
+  pure property of the entry's world-info fields under ST's activation
+  algorithm, so it is asserted against a model of that algorithm instead of once
+  by hand: the context entry stays silent when its keywords are absent, fires on
+  each of its own keywords, and cascades **nothing** even though its blurb names
+  four other entries by name. The harness carries a CONTROL entry — same content
+  and keywords, no recursion flags — which must cascade; if it doesn't, the model
+  is too weak to prove anything and the harness fails rather than passing
+  silently. Mutation-checked: flipping `preventRecursion`, `excludeRecursion`, or
+  `constant` in `buildEntryOverrides` fails 4, 5, and 6 assertions respectively.
+- Off by default. With Clipper+ disabled the clip path is stock STMB.
+
 ### Phase 4 — Living-lorebook orchestration (PHA-1450)
 - `sceneCharacterFilter.js` — per-scene character presence filter:
   `getPresentCharacterNames` (prefers `compiledScene.metadata.characterFilterNames`
@@ -134,6 +183,7 @@ are untouched. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
 Every new file ships with the AGPL-3.0-only SPDX header:
 - `eval/*` (all files)
 - `autoSettings.js`, `sceneCharacterFilter.js`
+- `clipperPlusCore.js`, `clipperPlus.js`
 - All new test files (`*.test.js`)
 
 Upstream files were modified only via greppable single-line `STMBC-HOOK` markers

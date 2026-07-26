@@ -761,6 +761,46 @@ export const autoModuleSettingsTemplate = Handlebars.compile(`
         </label>
     </div>
 
+    <h4 class="stmb-section-subtitle" data-i18n="STMemoryBooks_AutoModule_ClipperHeading">📎 Clipper+ (paired context entries)</h4>
+    <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ClipperHeadingDesc">Plan §4.2: when you save a clip, also write a PAIRED context entry — a ≤50-word blurb plus 3–6 keywords. The clip itself is never changed. The context entry is keyword-activated and recursion-proof, so it costs tokens only when its keywords fire. Off = stock clip behavior.</small>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-clipper-enabled" {{#if auto.clipper.enabled}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoModule_ClipperEnabled">Enable Clipper+ (paired context entry on clip save)</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ClipperEnabledDesc">Off by default. When off, saving a clip does exactly what stock STMB does.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-clipper-auto-accept" {{#if auto.clipper.autoAccept}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_AutoModule_ClipperAutoAccept">Auto-accept (skip the editable confirm dialog)</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ClipperAutoAcceptDesc">When off, the generated blurb/keywords are shown for editing before the entry is written.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-clipper-surrounding-k">
+            <h4 data-i18n="STMemoryBooks_AutoModule_ClipperSurroundingK">Surrounding messages (K):</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ClipperSurroundingKDesc">Messages captured around the quote to ground the blurb. Default 6.</small>
+            <input type="number" id="stmb-auto-clipper-surrounding-k" class="text_pole"
+                value="{{auto.clipper.surroundingK}}" min="2" max="40" step="1" placeholder="6">
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-clipper-profile">
+            <h4 data-i18n="STMemoryBooks_AutoModule_ClipperProfile">Clipper+ generation profile:</h4>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_ClipperProfileDesc">Blurb writing is generative, so this defaults to your main STMB profile rather than the cheap detection profile.</small>
+            <select id="stmb-auto-clipper-profile" class="text_pole">
+                {{#each auto.clipper.profileOptions}}
+                <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{label}}</option>
+                {{/each}}
+            </select>
+        </label>
+    </div>
+
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoModule_PerChat">🛰️ Auto Module — Per-chat overrides</h3>
     <small class="opacity50p" data-i18n="STMemoryBooks_AutoModule_PerChatDesc">Stored on the current chat's metadata. Empty = inherit from global.</small>
 

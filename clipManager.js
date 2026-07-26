@@ -17,6 +17,8 @@ import { oai_settings } from '../../../openai.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
 import { getEntryByTitle, isMemoryEntry } from './addlore.js';
+// STMBC-HOOK(clipper): paired keyword-activated context entry on clip save (fork; plan §4.2).
+import { maybeGeneratePairedContextEntry } from './clipperPlus.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
@@ -715,12 +717,6 @@ async function saveNewClip(lorebookName, lorebookData, dlg) {
     const headline = validateClipHeadline(dlg.querySelector('#stmb-clip-headline')?.value || '');
     const title = makeClipEntryTitle(headline);
 
-    // STMBC-HOOK: clip save path — fork's Clipper+ generates a paired context
-    // entry (≤50-word blurb + 3-6 keywords) on top of the upstream clip.
-    // Phase 1 lands the empty call site; Phase 3 (Clipper+) wires it up.
-    const clipperPlus = await globalThis.STMBC?.onClipSave?.({
-        lorebookName, lorebookData, dlg, headline, title,
-    }).catch?.(() => null) ?? null;
     if (getClipEntryByFinalTitle(lorebookData, title)) {
         throw new Error(tr('STMemoryBooks_Clip_ErrorDuplicateTitle', 'A clip entry with this title already exists.'));
     }
@@ -754,6 +750,17 @@ async function saveNewClip(lorebookName, lorebookData, dlg) {
     newEntry.order = typeof newEntry.order === 'number' ? newEntry.order : 100;
 
     await saveLorebook(lorebookName, lorebookData);
+
+    // STMBC-HOOK(clipper): clip save path — after the upstream [STMB Clip] entry
+    // is written and persisted, the fork's Clipper+ generates a PAIRED context
+    // entry (≤50-word blurb + 3-6 keywords, keyword-activated, recursion-proof)
+    // alongside it (plan §4.2). The upstream entry above is never touched, and
+    // this call self-gates on autoModule.clipper.enabled (default off) and
+    // swallows every error, so stock clip save is unaffected either way.
+    await maybeGeneratePairedContextEntry({
+        lorebookName, lorebookData, quote: bulletText, headline, quoteTitle: title,
+    });
+
     return true;
 }
 

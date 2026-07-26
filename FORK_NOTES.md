@@ -30,13 +30,29 @@ greppable markers. Each is a no-op until the corresponding phase wires it up.
 | --- | --- | --- | --- |
 | `index.js:11015` | `STMBC-HOOK: extension init` | Phase 2 (sentinel) | Init sentinel/clipper+/auditor after upstream extension init |
 | `stmemory.js:1461` | `STMBC-HOOK: prompt assembly` | Phase 4 (living-lorebook orchestration) | Inject living-entry context, delta-not-rehash instructions, error-control rules before memory generation |
-| `clipManager.js:718` | `STMBC-HOOK: clip save path` | Phase 3 (Clipper+) | Generate paired context entry (≤50-word blurb + 3-6 keywords) on top of the upstream clip |
+| `clipManager.js` (end of `saveNewClip`) | `STMBC-HOOK(clipper)` | Phase 3 (Clipper+) — **wired** | Generate paired context entry (≤50-word blurb + 3-6 keywords) on top of the upstream clip |
 | `sidePrompts.js:1655` | `STMBC-HOOK: side-prompt filtering` | Phase 4 (living-lorebook orchestration) | Filter per-scene runs to characters present in the just-processed scene |
 
-All four call sites use `globalThis.STMBC?.{method}?.(...)` with `.catch?.(() => null)`
-so a missing hook module is a clean no-op — the upstream behavior is byte-identical
-when the fork modules aren't loaded. Confirmed: a no-op fork (`globalThis.STMBC`
-undefined) passes through all four hooks unchanged.
+The still-unwired call sites use `globalThis.STMBC?.{method}?.(...)` with
+`.catch?.(() => null)` so a missing hook module is a clean no-op — the upstream
+behavior is byte-identical when the fork modules aren't loaded.
+
+**Wired hooks switch to a direct ESM import** — the convention every shipped phase
+settled on (see `sentinel.js`, `sceneCharacterFilter.js`). `globalThis.STMBC` is
+never actually assembled anywhere, so a placeholder left beside a real hook is
+dead code, and a module reached only through that global would not be reachable
+from the single `index.js` build entrypoint at all. Phase 3 therefore *replaced*
+the `onClipSave` placeholder rather than adding beside it:
+
+- The placeholder sat at the **top** of `saveNewClip`, before the duplicate-title
+  check and before the quote text was read from the DOM — it could not have been
+  handed the quote, and its result was never consumed.
+- The real hook sits **after** `await saveLorebook(...)`, so the user's clip is
+  already persisted before Clipper+ does anything. Byte-identical-when-off is held
+  by the enabled gate being the first statement in the hook, and by the hook's
+  whole body sitting inside a `try`/`catch`.
+- Both properties are asserted structurally in `clipperPlusHook.test.js`, so a
+  future edit that reorders them fails the suite.
 
 ## Files the fork adds (no upstream edits — additive only)
 
@@ -58,6 +74,11 @@ sentinelCadence.js + .test.js Phase 2 (P2.3) — sentinel cycle job type + ring 
 sentinelCore.js + sentinel.test.js Phase 2 (P2.1) — the detection engine (runSentinelDetectionCycle) + its pure helpers: cadence predicate, window builder, strict-JSON parse/retry, snap/guard, scene-range planning, settings→config mapping. No SillyTavern imports; Node-testable.
 sentinel.js                    Phase 2 (P2.1) — SillyTavern binding layer: the MESSAGE_RECEIVED cadence gate (enqueues a cycle job) + the engine runner installed into the P2.3 executor. Imports the ST runtime, so it is NOT Node-testable; covered structurally from sentinelCadence.test.js.
 eval/phase2Acceptance.js + .test.js + runPhase2Acceptance.js Phase 2 (P2.4) — offline acceptance harness driving the real gate→factory→executor→engine path over the bundled fixture with a reference detector. Evidence: eval/reports/phase2/evidence.md
+clipperPlusCore.js            Phase 3 (P3.1/P3.2) — Clipper+ pure core: config merge/validation (nested `autoModule.clipper`), unique source-message locator, K-surrounding window builder, strict blurb-JSON parse + retry, keyword sanitizer, ≤50-word clamp, paired-entry title/content shaping, and `buildEntryOverrides` (the recursion-proof / never-constant world-info contract). No SillyTavern imports; Node-testable.
+clipperPlus.js                Phase 3 (P3.1) — SillyTavern binding layer: generation-profile resolution, LLM call, editable confirm dialog (skippable via auto-accept), write via `addlore.upsertLorebookEntryByTitle`. Imports the ST runtime, so it is NOT Node-testable; covered structurally from clipperPlusHook.test.js.
+clipperPlus.test.js           Phase 3 (P3.1/P3.2) — 40 offline cases over the pure core
+clipperPlusHook.test.js       Phase 3 (P3.2) — hook-site + toggle-off parity: the hook fires after the upstream entry is persisted, the enabled gate is first, the upstream clip shaping is untouched, and the context title is never matched by `isClipEntryTitle` (so compaction still lists the quote entry)
+eval/phase3Acceptance.js + .test.js Phase 3 — offline acceptance harness: drives the real Clipper+ core over a fixture chat with a stub LLM reply, then asserts the plan's accept clause against a model of ST's world-info activation (constant / keyword match / `selective`+`keysecondary` / the recursion loop). Replaces the manual "verify with ST world-info debug" step. Carries a CONTROL entry without the recursion flags that MUST cascade, so a model too weak to prove anything fails loudly instead of passing silently.
 eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
 autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
 FORK_NOTES.md                  this file
