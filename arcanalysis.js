@@ -28,6 +28,11 @@ import {
   getSummaryTypeKey,
   isSummaryEntry,
 } from "./summaryTiers.js";
+import { CONSOLIDATION_REGENERATION_PRESET_KEY } from "./constants.js";
+import {
+  applyFixedSequenceNumber,
+  normalizeConsolidationRegenerationResponse,
+} from "./memoryRegeneration.js";
 
 /**
  * Arc Analysis pipeline (stateless wrt model; stateful in controller).
@@ -508,13 +513,15 @@ export function buildArcAnalysisPrompt({
 
 /**
  * Parse arc JSON response with repair attempts.
- * Expected shape:
+ * Standard expected shape:
  * {
  *   "arcs": [ { "title": string, "summary": string, "keywords": string[] } ],
  *   "unassigned_memories": [ { "id": string, "reason": string } ]
  * }
+ * Regeneration shape:
+ * { "title": string, "content": string, "keywords": string[] }
  */
-export function parseSummaryJsonResponse(text) {
+export function parseSummaryJsonResponse(text, options = {}) {
   if (!text || typeof text !== "string") {
     throw new Error(translate("Empty AI response", "STMemoryBooks_ArcAnalysis_EmptyResponse"));
   }
@@ -538,6 +545,12 @@ export function parseSummaryJsonResponse(text) {
       s = stripTrailingCommas(s);
       const obj = JSON.parse(s);
       if (!obj || typeof obj !== "object") continue;
+      if (options.responseShape === "regeneration") {
+        const normalizedRegeneration =
+          normalizeConsolidationRegenerationResponse(obj);
+        if (normalizedRegeneration) return normalizedRegeneration;
+        continue;
+      }
       const hasSummaries = "summaries" in obj || "arcs" in obj;
       const hasUnassigned =
         "unassigned_items" in obj || "unassigned_memories" in obj;
@@ -829,7 +842,12 @@ export async function runSummaryAnalysisSequential(
     // Parse response
     let parsed;
     try {
-      parsed = parseSummaryJsonResponse(text);
+      parsed = parseSummaryJsonResponse(text, {
+        responseShape:
+          effectivePresetKey === CONSOLIDATION_REGENERATION_PRESET_KEY
+            ? "regeneration"
+            : "standard",
+      });
     } catch (e) {
       // Single retry with a minimal "return JSON only" reminder
       const repairPrompt = `${prompt}\n\nReturn ONLY the JSON object, nothing else. Ensure arrays and commas are valid.`;
@@ -857,7 +875,12 @@ export async function runSummaryAnalysisSequential(
       })();
       lastRetryRawText = String(retry?.text ?? "");
       try {
-        parsed = parseSummaryJsonResponse(retry.text);
+        parsed = parseSummaryJsonResponse(retry.text, {
+          responseShape:
+            effectivePresetKey === CONSOLIDATION_REGENERATION_PRESET_KEY
+              ? "regeneration"
+              : "standard",
+        });
       } catch (e2) {
         const err = new Error(
           String(e2?.message || e?.message || "Model did not return valid arc JSON"),
@@ -1196,6 +1219,11 @@ export function formatSummaryTitle(targetTier, format, baseTitle, seq) {
     return t.replace(m[0], replaced);
   }
 
+  const fixedNumberTitle = applyFixedSequenceNumber(t, seq);
+  if (fixedNumberTitle !== t) {
+    return fixedNumberTitle;
+  }
+
   const typeKey = String(getSummaryTypeKey(targetTier) || "tier").toUpperCase();
   const fallback = `[${typeKey} ${String(seq).padStart(3, "0")}] ${safeTitle}`;
   return fallback;
@@ -1300,6 +1328,9 @@ export async function commitSummaryEntries({
         stmbSummary: true,
         stmbSummaryTier: Number(targetTier),
         type: getSummaryTypeKey(targetTier),
+        stmbSourceEntryUids: Array.from(
+          new Set((summary.memberIds || []).map(String).filter(Boolean)),
+        ),
         key: Array.isArray(keywords) ? keywords : [],
         disable: false,
       };

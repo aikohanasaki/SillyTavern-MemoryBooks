@@ -20,13 +20,18 @@ export const summaryPromptsTableTemplate = Handlebars.compile(`
               <button class="stmb-action stmb-action-edit" title="Edit" aria-label="Edit" data-i18n="[title]STMemoryBooks_Edit;[aria-label]STMemoryBooks_Edit" style="background:none;border:none;cursor:pointer;">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button class="stmb-action stmb-action-duplicate" title="Duplicate" aria-label="Duplicate" data-i18n="[title]STMemoryBooks_Duplicate;[aria-label]STMemoryBooks_Duplicate" style="background:none;border:none;cursor:pointer;">
-                <i class="fa-solid fa-copy"></i>
-              </button>
+              {{#unless disableDuplicate}}
+                <button class="stmb-action stmb-action-duplicate" title="Duplicate" aria-label="Duplicate" data-i18n="[title]STMemoryBooks_Duplicate;[aria-label]STMemoryBooks_Duplicate" style="background:none;border:none;cursor:pointer;">
+                  <i class="fa-solid fa-copy"></i>
+                </button>
+              {{/unless}}
               <button class="stmb-action stmb-action-delete" title="Delete" aria-label="Delete" data-i18n="[title]STMemoryBooks_Delete;[aria-label]STMemoryBooks_Delete" style="background:none;border:none;cursor:pointer;">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </span>
+            {{#if usageNote}}
+              <small class="opacity70p" style="display: block; margin-top: 4px;">{{usageNote}}</small>
+            {{/if}}
           </td>
         </tr>
       {{/each}}

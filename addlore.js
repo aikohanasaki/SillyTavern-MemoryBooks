@@ -15,6 +15,10 @@ import { moment } from '../../../../lib.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { i18n } from './i18nHelpers.js';
+import {
+    applyFixedSequenceNumber,
+    hasSequenceNumberPlaceholder,
+} from './memoryRegeneration.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
@@ -644,6 +648,13 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
             entry.STMB_end = parseInt(rangeParts[1], 10);
         }
     }
+    if (
+        memoryResult.metadata?.chatId !== undefined &&
+        memoryResult.metadata?.chatId !== null &&
+        memoryResult.metadata?.chatId !== ''
+    ) {
+        entry.STMB_chatId = String(memoryResult.metadata.chatId);
+    }
     
 }
 
@@ -703,43 +714,26 @@ export function isMemoryEntry(entry) {
  * @returns {string} The generated title
  */
 function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
-    let title = titleFormat;
+    const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
+    return generateEntryTitleAtNumber(titleFormat, memoryResult, nextNumber);
+}
 
-    // Auto-numbering: [0], [00], [000], ([0]), ({0}), #[0], etc.
-    const allNumberingPatterns = [
-        { pattern: /\[\[0+\]\]/g, prefix: '[', suffix: ']' }, // [[000]] -> [001]
-        { pattern: /\[0+\]/g, prefix: '', suffix: '' },       // [000] -> just number
-        { pattern: /\(\[0+\]\)/g, prefix: '(', suffix: ')' }, // ([000]) -> (001)
-        { pattern: /\{\[0+\]\}/g, prefix: '{', suffix: '}' }, // {[000]} -> {001}
-        { pattern: /#\[0+\]/g, prefix: '#', suffix: '' }      // #[000] -> #001
-    ];
-
-    for (const { pattern, prefix, suffix } of allNumberingPatterns) {
-        const matches = title.match(pattern);
-        if (matches) {
-            const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
-
-            matches.forEach(match => {
-                let digits;
-                if (pattern.source.includes('\\[\\[')) {
-                    digits = match.length - 4; // [[000]] -> remove [[ and ]]
-                } else if (pattern.source.includes('\\(\\[') || pattern.source.includes('\\{\\[')) {
-                    digits = match.length - 4; // ([000]) or {[000]} -> remove outer delimiters and [ ]
-                } else if (pattern.source.includes('#\\[')) {
-                    digits = match.length - 3; // #[000] -> remove # and [ ]
-                } else if (pattern.source.includes('\\[')) {
-                    digits = match.length - 2; // [000] -> remove [ and ]
-                } else {
-                    digits = match.length - 2; // fallback
-                }
-                const paddedNumber = nextNumber.toString().padStart(digits, '0');
-                const replacement = prefix + paddedNumber + suffix;
-                title = title.replace(match, replacement);
-            });
-            break; // Only process the first pattern type found
-        }
+/**
+ * Generates a lorebook title while forcing an existing sequence number.
+ *
+ * @param {string} titleFormat - The title format template
+ * @param {Object} memoryResult - The memory generation result
+ * @param {number} sequenceNumber - The sequence number to preserve
+ * @param {Object} [options] - Replacement-specific formatting options
+ * @param {boolean} [options.forceNumber=false] - Prefix the number if the format has no number token
+ * @returns {string} The generated title
+ */
+export function generateEntryTitleAtNumber(titleFormat, memoryResult, sequenceNumber, options = {}) {
+    let title = applyFixedSequenceNumber(titleFormat, sequenceNumber);
+    if (options.forceNumber && !hasSequenceNumberPlaceholder(titleFormat)) {
+        title = `[${String(sequenceNumber).padStart(3, '0')}] ${title}`;
     }
-    
+
     // Template substitutions
     const metadata = memoryResult.metadata || {};
     const substitutions = {

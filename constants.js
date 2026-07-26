@@ -35,6 +35,7 @@ export const UI_SETTINGS = {
 };
 
 export const MEMORY_TIER_CACHE_REFRESH_EVENT = 'stmb_memory_tier_cache_refresh';
+export const CONSOLIDATION_REGENERATION_PRESET_KEY = 'arc_regenerate';
 
 // File names
 export const FILE_NAMES = {
