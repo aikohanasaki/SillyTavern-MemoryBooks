@@ -311,3 +311,81 @@ export function buildPairedEntry({ parsed, cfg, quoteHeadline, quoteTitle, srcSt
     const content = buildContextEntryContent(blurb, srcStart, srcEnd, quoteTitle);
     return { title, content, keywords, blurb, headline };
 }
+
+/**
+ * World-info field overrides for the paired context entry (plan §4.2, Appendix B
+ * "Technical defaults"). Pulled out as its own pure function — rather than an
+ * object literal inlined at the write call site — so the recursion-proof /
+ * never-constant contract is unit-testable (P3.2) without a live SillyTavern
+ * world-info debug session: `constant` is hardcoded `false` (never derived from
+ * generated content, so it can never accidentally become always-on) and
+ * `preventRecursion`/`excludeRecursion` are hardcoded `true` (a blurb naming
+ * several characters must not cascade half the cast). `keysecondary` stays
+ * empty so `selective` doesn't require a second match — the entry activates on
+ * any one of `keywords` alone.
+ */
+export function buildEntryOverrides(keywords) {
+    return {
+        constant: false,
+        selective: true,
+        vectorized: true,
+        key: Array.isArray(keywords) ? keywords.slice() : [],
+        keysecondary: [],
+        preventRecursion: true,
+        excludeRecursion: true,
+        disable: false,
+    };
+}
+
+// ---------------------------------------------------------------- settings patch
+
+/** Numeric clamps for the user-tunable Clipper+ fields (mirrors autoSettings CLAMPS). */
+const CLIPPER_CLAMPS = Object.freeze({
+    surroundingK: { min: 2, max: 40, def: CLIPPER_DEFAULTS.surroundingK },
+    truncate:     { min: 50, max: 5000, def: CLIPPER_DEFAULTS.truncate },
+});
+
+function clampInt(value, { min, max, def }) {
+    if (value == null || value === '') return def;
+    const n = Number.isInteger(value) ? value : parseInt(value, 10);
+    if (!Number.isFinite(n)) return def;
+    if (n < min) return min;
+    if (n > max) return max;
+    return n;
+}
+
+/**
+ * Validate a partial Clipper+ patch, dropping unknown keys and clamping numerics
+ * (same contract as autoSettings.validateAutoPatch, but for the nested
+ * `autoModule.clipper` sub-object — validateAutoPatch's allow-list is flat and
+ * would silently drop the whole thing).
+ */
+export function validateClipperPatch(patch) {
+    if (!patch || typeof patch !== 'object') return {};
+    const out = {};
+    if ('enabled' in patch) out.enabled = !!patch.enabled;
+    if ('autoAccept' in patch) out.autoAccept = !!patch.autoAccept;
+    if ('surroundingK' in patch) out.surroundingK = clampInt(patch.surroundingK, CLIPPER_CLAMPS.surroundingK);
+    if ('truncate' in patch) out.truncate = clampInt(patch.truncate, CLIPPER_CLAMPS.truncate);
+    if ('profile' in patch) {
+        const v = patch.profile;
+        out.profile = (v == null || v === '' || v === 'null') ? null : clampInt(v, { min: 0, max: 1000, def: 0 });
+    }
+    return out;
+}
+
+/**
+ * Apply a validated patch to `settings.autoModule.clipper`, creating the nested
+ * objects on first write. `initializeAutoSettings` only backfills the flat
+ * auto-module keys, so this (plus `resolveClipperConfig`'s defaults) is the whole
+ * migration story for Clipper+ — an absent `clipper` key reads as disabled.
+ * Kept in the pure core so it stays node-testable; caller persists.
+ */
+export function setClipperConfig(settings, patch) {
+    if (!settings || typeof settings !== 'object') return {};
+    const clean = validateClipperPatch(patch);
+    if (!settings.autoModule || typeof settings.autoModule !== 'object') settings.autoModule = {};
+    if (!settings.autoModule.clipper || typeof settings.autoModule.clipper !== 'object') settings.autoModule.clipper = {};
+    Object.assign(settings.autoModule.clipper, clean);
+    return settings.autoModule.clipper;
+}

@@ -31,6 +31,7 @@ import {
     buildBlurbPrompt,
     parseBlurbResponse,
     buildPairedEntry,
+    buildEntryOverrides,
     sanitizeKeywords,
     JSON_ONLY_REPRIMAND,
 } from './clipperPlusCore.js';
@@ -209,19 +210,11 @@ export async function maybeGeneratePairedContextEntry({ lorebookName, lorebookDa
 
         // Write the paired context entry: keyword-activated, non-constant,
         // recursion-proof (a blurb naming several characters must not cascade
-        // half the cast — plan §4.2, Appendix B).
+        // half the cast — plan §4.2, Appendix B). buildEntryOverrides() is the
+        // unit-tested source of truth for these flags (P3.2).
         await upsertLorebookEntryByTitle(lorebookName, lorebookData, built.title, built.content, {
             defaults: { vectorized: true, selective: true, order: 100, position: 0 },
-            entryOverrides: {
-                constant: false,
-                selective: true,
-                vectorized: true,
-                key: built.keywords,
-                keysecondary: [],
-                preventRecursion: true,
-                excludeRecursion: true,
-                disable: false,
-            },
+            entryOverrides: buildEntryOverrides(built.keywords),
         });
 
         try {
