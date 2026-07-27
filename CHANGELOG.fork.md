@@ -11,7 +11,157 @@ to land in `changelog.md`.
 Fork-specific changes only. Upstream changelog lives at [`changelog.md`](./changelog.md).
 Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 
-## v0.1.0 (2026-07-22) — release
+> **Versioning note:** the `v0.1.0` git tag in this fork's history was an
+> internal Phase-6 lifecycle marker. **v0.0.1** is the first public release;
+> **v0.0.2** is the second. The section below describes v0.0.1 / v0.1.0-equivalent
+> contents and is preserved for audit purposes.
+
+## v0.0.2 (2026-07-26) — release
+
+Second public release. Consolidates post-v0.0.1 work across four feature
+branches + the surgical rebase work that closes the half-rebase gap from
+v0.0.1's release. Closes PHA-1556 (test-fixes follow-up to PHA-1555).
+
+### What's new
+
+- **Sentinel P2.1 + P2.3 integration** (PR #4 + commit `5289ae8`). `index.js`
+  now calls `registerSentinelCadence({ registerStmbJobExecutor }, { runDetectionCycle: runSentinelDetectionForJob })`
+  at init so the sentinel cycle job type (`stmbc-sentinel-cycle`) is
+  registered with the STMB jobs dashboard and the P2.1 detection engine is
+  installed behind it. Without this wiring — which was missing in the prior
+  rebase chain — the sentinel cycle would land in the queue but have no
+  executor at runtime (silent failure). The `sentinel.js` MESSAGE_RECEIVED
+  gate now reads `getSentinelCadenceFloor(chat_metadata)` and passes it as
+  the fourth arg to `isCadenceReached`, so PHA-1547's edge-trigger cadence
+  (no per-MESSAGE_RECEIVED detection burn) actually fires at runtime.
+
+- **`/stmbc-detect` slash command.** Forces a sentinel cycle on the current
+  chat through `enqueueSentinelCycle({ trigger: 'manual', force: true })`.
+  Lands in the same `stmbc-sentinel-cycle` job type and ring-buffer entry
+  as the auto path — only the trigger label differs. The per-chat `enabled`
+  resolver still applies.
+
+- **`/stmbc-stop` narrowed scope.** The fork now imports `cancelStmbcJobs`
+  from `stmbJobs.js` alongside the existing `cancelAllStmbJobs`, ready for
+  a fork-only `/stmbc-stop` that halts `stmbc-*` jobs without disturbing
+  upstream memory/consolidation/sidePrompt generation. The existing
+  `/stmb-stop` (which uses `cancelAllStmbJobs`) still cancels everything;
+  its doc comment now spells out the scope split.
+
+- **P6.1 hardening on `release/v0.0.2`** (commits `c88ab7a` + `8298609`).
+  The sentinel, auditor, and clipper surface a warning toast on the next
+  chat open for any silent mid-job failure (`LLM_API_TIMEOUT`,
+  `LLM_JSON_PARSE_FAILED`, `LLM_CONTEXT_OVERFLOW`, `LOREBOOK_WRITE_FAILED`),
+  and log a structured `STMemoryBooks:mid-job-failure` line. Tested by
+  `sentinelHardening.test.js`.
+
+- **P5.5 regen-consolidation eligibility** (PHA-1534). Imported upstream
+  `memoryRegeneration.js` (447 lines) verbatim from upstream `9fc9abb`,
+  gated `runEntryRegeneration` on `getRegenerationEligibility`, surfaced
+  `active-parent` skips in `r.skipped`. P5.5 acceptance: 22 / 22 P5 unit
+  + 147 / 147 full eval suite + 4 / 4 §6 criteria (P5.5 work landed on
+  main before v0.0.2 was rebased; preserved here for full traceability).
+
+- **Eval P6.1 acceptance re-run** (commit `e921ae4`). Phase-0 acceptance
+  gate re-ran on the bundled fixture (329 msgs, 22 GT) with the real
+  OpenAI-compatible detector (`claude-sonnet-4-5` via LiteLLM): 18
+  windows, 0 skipped, 32 predictions — precision (raw)@±1 = **0.969**
+  (31/32), recall (raw)@±1 = 0.579. Sole FP vs raw @±1: id 2.
+
+- **Cadence PHA-1547 partial.** The cadence floor (`getSentinelCadenceFloor`,
+  `setSentinelCadenceFloor`, `clearSentinelCadenceFloor`,
+  `cadenceFloorFromCycle`) is fully implemented in `sentinelCadence.js` and
+  accepted by `sentinelCore.isCadenceReached`'s fourth parameter, but
+  `sentinel.js`'s MESSAGE_RECEIVED gate was not consulting the floor until
+  the v0.0.2 rebase fix (`5289ae8`) wired it up. With that fix, a long
+  uninterrupted scene burns one LLM call per scene-boundary event instead
+  of one per assistant turn.
+
+- **Auditor P5.1 + P5.2** (PHA-1470 lineage). Chunk-walker, coverage audit,
+  entry regeneration. `auditor.js` exposes the four on-demand audit jobs
+  via `/stmbc-coverage`, `/stmbc-regen`. P5 acceptance harness lives at
+  `eval/phase5Acceptance.js`.
+
+- **Scaffold rebase fixes** (commits `459e697`, `f3f860c`, `5289ae8`).
+  Older `eval/score.js`, `clipperPlusCore.js`, `sentinel.js`, `sentinelCore.js`
+  restored from main; `index.js` P2.1 + P2.3 wiring restored from main;
+  PHA-1547 edge-trigger cadence re-applied via `git apply --3way`.
+
+- **Pre-commit `bun run build`** regenerated `index.build.js` +
+  `index.build.js.map`. Both committed on every commit that touches
+  `index.js` or `style.css`.
+
+### Fork-wide test + acceptance summary
+
+| Suite                                                          | Result          |
+|----------------------------------------------------------------|-----------------|
+| `node --test *.test.js eval/*.test.js` (fork + eval)           | **727 / 727 pass** |
+| `bash eval/run.sh` (eval unit + oracle pipeline)               | **149 / 149 pass** |
+| P6.1 acceptance re-run (real LLM, 2026-07-22)                   | precision (raw)@±1 = 0.969, recall 0.579 |
+| Live-rig KPI harness (headless, 2026-07-26)                    | health ✅, cadence ✅ (4 / 4 criteria) |
+| `bun run build`                                                | regenerates build artifacts clean |
+
+### Files of interest
+
+- `index.build.js` + `index.build.js.map` — the shipped bundle.
+- `eval/run.js` — entry point for the eval suite.
+- `eval/materials/stmb-auto/stmb-auto-plan.md` — the plan that the six
+  phases were scoped against (single source of truth, kept under
+  `eval/materials/` to ride along the repo).
+- `sentinelCadence.js` — sentinel executor + ring buffer + cadence floor.
+- `sentinelCore.js` — pure, dependency-injected detection engine.
+- `stmbJobs.js` — fork-aware cancellation (`cancelAllStmbJobs` +
+  `cancelStmbcJobs`).
+- `auditorCore.js` / `auditorJobs.js` — chunk walker + 4 audit jobs.
+- `clipperPlus.js` / `clipperPlusCore.js` — Phase 3 Clipper+.
+
+### Upgrading from v0.0.1
+
+1. Remove `public/scripts/extensions/third-party/SillyTavern-MemoryBooks-Auto/`.
+2. Reinstall via the URL posted on the v0.0.2 GitHub release.
+3. Lorebook data shape is unchanged between v0.0.1 and v0.0.2 — your
+   existing entries remain valid. The `chat_metadata.stmbc` keys are
+   forward-compatible (cadence floor + review-queue entries are
+   additive).
+4. After upgrade, the new `/stmbc-detect` and `/stmbc-stop` slash
+   commands are available in any chat that has the STMB settings panel
+   open.
+
+### Live test rig (the PHA-1555 data)
+
+A 5510 live rig was set up at `/tmp/st-clean-test-v0.0.1-live/` with the
+v0.0.2 candidate build (commit `1bae010`, pre-`5289ae8`). Headless KPIs:
+
+- Server health: ST 1.18.0 listening, ext v8.2.2-a.1 installed, no errors.
+- Detection (oracle): P=0.33 R=1.00 F1=0.49 (known over-predict).
+- Detection (real LLM, `claude-sonnet-4-5`): P=0.29 R=0.36 — flagged as
+  possible model-alias drift on LiteLLM. Re-run before tagging for
+  release-candidate acceptance.
+- Cadence: 4 / 4 §6 criteria pass.
+- P6.1 hardening: source-verified, not live-verified (no human
+  playthrough of the broken pre-`5289ae8` build was attempted; release
+  notes P6.1 acceptance re-run is on the fixed build).
+
+The human playthrough was deferred per the issue's "PROBLEM: I want to
+use my existing characters, settings, addons, etc. so I want this to be
+a LIVE, LIVE test" comment — the 5510 rig uses a clean data dir, not
+Brandon's existing install. Live KPIs will land in v0.0.2.x as a
+follow-up once the release is installed in his real ST.
+
+**Tag:** v0.0.2 → `5289ae890dd2b4a38c4268dced5f52396b8b4c80` (current
+HEAD of `release/v0.0.2`).
+**PR:** #4 (`release/v0.0.2` → `main`, 20 commits, `mergeable: clean`).
+**Live-rig verify directory:**
+`/tmp/st-clean-test-v0.0.1-live/SillyTavern-release/`. The clean-data
+5510 rig is now stale (it has the pre-fix build); tear-down commands
+in PHA-1555.
+
+## v0.1.0 (2026-07-22) — internal Phase-6 marker (= v0.0.1 public contents)
+
+> The `v0.1.0` git tag was the internal Phase-6 marker cut at the end
+> of the P5.5 acceptance run, before the fork was rebranded for the
+> v0.0.1 public release. The section below describes the contents of
+> the build that became v0.0.1 — they are functionally identical.
 
 First fork release. All fork additions live in new files or behind greppable
 `STMBC-HOOK` markers; upstream function bodies, control flow, and data structures
