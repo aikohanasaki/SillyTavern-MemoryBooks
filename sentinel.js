@@ -64,6 +64,7 @@ import {
 } from './autoSettings.js';
 import {
     enqueueSentinelCycle,
+    getSentinelCadenceFloor,
     SENTINEL_CYCLE_TRIGGERS,
 } from './sentinelCadence.js';
 import {
@@ -239,7 +240,12 @@ export async function handleSentinelMessageReceived() {
         if (hasActiveStmbJobs(getStmbChatKey())) return;
 
         const watermark = resolveSentinelWatermark(chatAuto);
-        if (!isCadenceReached(chat.length, watermark, cfg.cadenceN)) return;
+        // PHA-1547: pass the cadence floor so the gate is an edge trigger, not a
+        // level trigger. The floor is the highest chat index already examined by a
+        // completed detection call; it's stored in chat_metadata.stmbc.cadenceFloor
+        // by sentinelCadence.runSentinelCycle, and `-1` on a fresh chat.
+        const cadenceFloor = getSentinelCadenceFloor(chat_metadata);
+        if (!isCadenceReached(chat.length, watermark, cfg.cadenceN, cadenceFloor)) return;
 
         const result = enqueueSentinelCycle({
             enqueueStmbJob,

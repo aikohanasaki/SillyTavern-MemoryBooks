@@ -1,0 +1,7 @@
+{
+  "endpoint": "https://api.openai.com/v1/chat/completions",
+  "model": "gpt-4o-mini",
+  "apiKey": "${DETECT_API_KEY}",
+  "temperature": 0,
+  "maxTokens": 300
+}

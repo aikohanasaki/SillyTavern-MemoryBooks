@@ -1,459 +1,322 @@
-# FORK_NOTES.md — SillyTavern-MemoryBooks-Auto (fork of STMB)
-
-This file is the **merge map** for keeping the fork in sync with upstream
-`aikohanasaki/SillyTavern-MemoryBooks`. After every `git merge upstream/main`,
-walk this list. Every line touched by the fork is documented here; everything
-else should merge clean.
-
-## Remotes
-
-- **`origin`** — this fork: `phattbeats/SillyTavern-MemoryBooks-Auto`
-- **`upstream`** — original: `aikohanasaki/SillyTavern-MemoryBooks`
-
-## Identity rules (plan §1.2.6)
-
-- **Settings key** `STMemoryBooks` — **unchanged** (existing user data keeps working)
-- **Lorebook flags** `stmemorybooks`, `[STMB Clip]` — **unchanged**
-- **Display name** in `manifest.json` — `MemoryBooks Auto` (fork-only)
-- **Repo name** — `SillyTavern-MemoryBooks-Auto` (fork-only)
-- **Banner, README header** — fork-flavored
-
-If upstream renames any of the preserved items (settings key or lorebook
-flags), this fork follows; we never rename them ourselves in either direction.
-
-## Hook call sites
-
-Every fork-specific code path enters upstream through one of these single-line
-greppable markers. Each is a no-op until the corresponding phase wires it up.
-
-| File | Marker | Phase | What the hook will do |
-| --- | --- | --- | --- |
-| `index.js:11015` | `STMBC-HOOK: extension init` | Phase 2 (sentinel) | Init sentinel/clipper+/auditor after upstream extension init |
-| `stmemory.js` (in `buildPrompt()`) | `STMBC-HOOK(injection)` | Phase 4 (P4.1) — **wired** | Inject living-entry context, delta-not-rehash instruction, error-control rules before memory generation |
-| `clipManager.js` (end of `saveNewClip`) | `STMBC-HOOK(clipper)` | Phase 3 (Clipper+) — **wired** | Generate paired context entry (≤50-word blurb + 3-6 keywords) on top of the upstream clip |
-| `sidePrompts.js:1404` | `STMBC-HOOK` (per-scene filter) | Phase 4 (P4.2) — **wired** | Filter per-scene runs to characters present in the just-processed scene |
-| `sentinel.js` (in `buildSentinelDeps().runSceneMemoryRange`) | `STMBC-HOOK(nudges)` | Phase 4 (P4.4) — **wired** | After a scene memory commits, offer consolidation/compaction via STMB's own review UIs |
-| `sidePrompts.js:1671` | `STMBC-HOOK: side-prompt filtering` | Phase 4 — **superseded, still a no-op** | The manual `/sideprompt` path. P4.2 filters at the run-item layer in `runAfterMemory` instead; this placeholder is retained but nothing assigns `globalThis.STMBC` |
-
-The still-unwired call sites use `globalThis.STMBC?.{method}?.(...)` with
-`.catch?.(() => null)` so a missing hook module is a clean no-op — the upstream
-behavior is byte-identical when the fork modules aren't loaded.
-
-**Wired hooks switch to a direct ESM import** — the convention every shipped phase
-settled on (see `sentinel.js`, `sceneCharacterFilter.js`). `globalThis.STMBC` is
-never actually assembled anywhere, so a placeholder left beside a real hook is
-dead code, and a module reached only through that global would not be reachable
-from the single `index.js` build entrypoint at all. Phase 3 therefore *replaced*
-the `onClipSave` placeholder rather than adding beside it:
-
-- The placeholder sat at the **top** of `saveNewClip`, before the duplicate-title
-  check and before the quote text was read from the DOM — it could not have been
-  handed the quote, and its result was never consumed.
-- The real hook sits **after** `await saveLorebook(...)`, so the user's clip is
-  already persisted before Clipper+ does anything. Byte-identical-when-off is held
-  by the enabled gate being the first statement in the hook, and by the hook's
-  whole body sitting inside a `try`/`catch`.
-- Both properties are asserted structurally in `clipperPlusHook.test.js`, so a
-  future edit that reorders them fails the suite.
-
-## Files the fork adds (no upstream edits — additive only)
-
-```
-eval/                          Phase 0 eval harness (offline; no SillyTavern needed)
-  parser.js + parser.test.js   SillyTavern JSONL parser
-  groundTruth.js + .test.js    header-derived ground truth
-  score.js + .test.js          scoring + report formatters
-  detect.js + detect.test.js   detection runner interface (oracles + window builder)
-  run.js + run.sh              one-command CLI runner with acceptance gate
-  README.md                    run guide
-  fixtures/                    bundled Satire Fantasy Isekai JSONL + worldbook + plan
-  materials/stmb-auto/         plan doc at the path referenced by PHA-1416
-autoSettings.js + .test.js     Phase 2 (P2.2) — Auto-module settings storage (global + per-chat), defaults, validation, get/set, resolver helpers
-sceneCharacterFilter.js + .test.js Phase 4 (P4.2) — per-scene character presence filter for character-scoped side-prompt runs
-auditorTechnicalPass.js + .test.js Phase 5 (P5.3/P5.4) — technical pass + claim re-verification jobs, coverage audit (runCoverageAudit) + entry regeneration (runEntryRegeneration) pure functions, cadence gate (maybeOfferAuditorJob), 4-job registerAuditorJobs
-auditorReportUIs.js + .test.js Phase 5 (P5.4) — report UI renderers + popup adapters for the four audit jobs (coverage, regeneration diff, technical, claims)
-sentinelCadence.js + .test.js Phase 2 (P2.3) — sentinel cycle job type + ring buffer cycle log in chat_metadata.stmbc.cycleLog + factory (enqueueSentinelCycle) + job executor (runSentinelCycle) + the injected P2.1 engine seam (registerSentinelCadence/setSentinelDetectionRunner) + /stmbc-detect and /stmbc-stop on-demand surface. Pure ESM, no SillyTavern runtime imports (Node-testable).
-sentinelCore.js + sentinel.test.js Phase 2 (P2.1) — the detection engine (runSentinelDetectionCycle) + its pure helpers: cadence predicate, window builder, strict-JSON parse/retry, snap/guard, scene-range planning, settings→config mapping. No SillyTavern imports; Node-testable.
-sentinel.js                    Phase 2 (P2.1) — SillyTavern binding layer: the MESSAGE_RECEIVED cadence gate (enqueues a cycle job) + the engine runner installed into the P2.3 executor. Imports the ST runtime, so it is NOT Node-testable; covered structurally from sentinelCadence.test.js.
-eval/phase2Acceptance.js + .test.js + runPhase2Acceptance.js Phase 2 (P2.4) — offline acceptance harness driving the real gate→factory→executor→engine path over the bundled fixture with a reference detector. Evidence: eval/reports/phase2/evidence.md
-clipperPlusCore.js            Phase 3 (P3.1/P3.2) — Clipper+ pure core: config merge/validation (nested `autoModule.clipper`), unique source-message locator, K-surrounding window builder, strict blurb-JSON parse + retry, keyword sanitizer, ≤50-word clamp, paired-entry title/content shaping, and `buildEntryOverrides` (the recursion-proof / never-constant world-info contract). No SillyTavern imports; Node-testable.
-clipperPlus.js                Phase 3 (P3.1) — SillyTavern binding layer: generation-profile resolution, LLM call, editable confirm dialog (skippable via auto-accept), write via `addlore.upsertLorebookEntryByTitle`. Imports the ST runtime, so it is NOT Node-testable; covered structurally from clipperPlusHook.test.js.
-clipperPlus.test.js           Phase 3 (P3.1/P3.2) — 40 offline cases over the pure core
-clipperPlusHook.test.js       Phase 3 (P3.2) — hook-site + toggle-off parity: the hook fires after the upstream entry is persisted, the enabled gate is first, the upstream clip shaping is untouched, and the context title is never matched by `isClipEntryTitle` (so compaction still lists the quote entry)
-eval/phase3Acceptance.js + .test.js Phase 3 — offline acceptance harness: drives the real Clipper+ core over a fixture chat with a stub LLM reply, then asserts the plan's accept clause against a model of ST's world-info activation (constant / keyword match / `selective`+`keysecondary` / the recursion loop). Replaces the manual "verify with ST world-info debug" step. Carries a CONTROL entry without the recursion flags that MUST cascade, so a model too weak to prove anything fails loudly instead of passing silently.
-eventPreset.test.js           Phase 4 (P4.2) — structural tests asserting the new `event` preset (plan Appendix B) is registered in utils.js + constants.js
-injectionCore.js              Phase 4 (P4.1) — living-lorebook injection pure core (DI): config merge (nested `autoModule.injection`), keyword matching vs. the scene transcript, hard ~50K-token budget selection with explicit drop reporting (plan §4.3 "no silent caps"), the delta-not-rehash instruction, and the error-control rules block. No SillyTavern imports; Node-testable.
-injection.js                  Phase 4 (P4.1) — SillyTavern binding: resolves the bound lorebook via `METADATA_KEY`/`loadWorldInfo`, filters to living (non-memory, non-disabled) entries, budgets against the real base prompt. Self-gates on `autoModule.injection.enabled` (default **off**) and never throws → returns `''` so the upstream prompt is byte-identical.
-injection.test.js             Phase 4 (P4.1) — 27 offline cases over the pure core
-phase4Acceptance.test.js      Phase 4 — offline acceptance harness for the plan's three Phase 4 accept clauses: 5 sentinel scenes accumulate non-duplicated updates with `src: msgs X–Y` provenance; injected context references established facts; a forced-low-confidence memory lands in the review queue. The simulated model dedupes ONLY against what the injected preamble surfaces, so a regressed injection hook rehashes and fails the gate. Carries CONTROLS (injection-off must duplicate; a clean memory must NOT be queued) so a harness too weak to prove anything fails loudly instead of passing silently — same discipline as the Phase 3 harness.
-autosummarySentinelGate.test.js Phase 2 (P2.4) — structural tests asserting the sentinel-aware gate is present in autosummary.js (mergeability preserved)
-FORK_NOTES.md                  this file
-```
-
-These files are **entirely additive** — they live alongside the upstream code
-without touching any upstream file. The eval harness has no runtime dependency
-on SillyTavern at all; it runs offline against JSONL exports.
-
-## Files the fork modifies (upstream files, single-line call sites only)
-
-| File | Lines | Reason | Verified-mergeable? |
-| --- | --- | --- | --- |
-| `manifest.json` | 1-13 (display_name, author, homePage, version, description) | Fork identity. Settings key and lorebook flags unchanged. | Yes — additive metadata; upstream merges the file cleanly if the lines don't conflict. |
-| `index.js:11015` | +3 (the hook line + closing brace) | Phase 2 init | Yes — appends a single no-op block at the end of the init flow. |
-| `stmemory.js` (P4.1) | +2 import lines; the `const finalPrompt = …` line becomes a guarded ternary fed by an 11-line `try`/`catch` that calls `buildLivingContextPreamble`. **Replaces** the Phase-1 `globalThis.STMBC?.buildPromptContext` placeholder, which assigned `livingContext` and then never read it (nothing ever assigned `globalThis.STMBC`, so it was dead in every configuration). | Phase 4 (P4.1) — prompt assembly | Yes — one import + one contiguous block immediately before `finalPrompt`. `buildLivingContextPreamble` self-gates on `autoModule.injection.enabled` (default off) and swallows all errors returning `''`, so `finalPrompt` is the byte-identical upstream string when disabled or on any failure. The outgoing-regex block below is unchanged. |
-| `clipManager.js:718` | +6 (the hook line + variable) | Phase 3 clip save path | Yes — appends at the top of `saveNewClip`, before any validation. |
-| `sidePrompts.js:1655` | +6 (the hook line + early-return guard) | Phase 4 side-prompt filtering | Yes — appends at the top of `runSidePrompt`. |
-| `sidePrompts.js:1404` | +12 (filter call between set/trigger filter and the runItems.length===0 early return) | Phase 4 (P4.2) per-scene side-prompt filtering | Yes — additive; reuses `compiledScene.metadata.characterFilterNames` from chatcompile.js; non-character-scoped items pass through unfiltered; gated by `filterRunItemsByScenePresence` from the new module. |
-| `utils.js` (P4.2) | +new entry in `getBuiltInPresetPrompts`, `getPresetNames`, `isValidPreset` | Phase 4 (P4.2) event-template preset | Yes — additive key (`event`) into existing maps/lists. No existing function bodies modified. |
-| `constants.js` (P4.2) | +2 entries (`event` in `DISPLAY_NAME_DEFAULTS`, `DISPLAY_NAME_I18N_KEYS`) | Phase 4 (P4.2) event-template preset display | Yes — additive map entries. |
-| `autoSettings.js` (P2.4) | +new `resolveAutoSummaryEnabled(settings, chatMeta)` export | Phase 2 (P2.4) — sentinel-aware auto-summary resolver | Yes — additive export alongside the existing resolvers. |
-| `index.js` (P2.4) | change handler for `#stmb-auto-summary-enabled` (~12 lines) refuses to enable while sentinel is on; `buildSettingsTemplateData` switched to read `resolveAutoSummaryEnabled` and expose `autoSummaryForceDisabledBySentinel` for the template | Phase 2 (P2.4) — UI gate | Yes — additive guard inside existing handler; one-line read in template data. |
-| `templates.js` (P2.4) | `automaticMemoriesSettingsTemplate` gains a warning block + `disabled` attributes on the auto-summary rows when sentinel is on | Phase 2 (P2.4) — UI hide | Yes — additive conditional blocks; existing rows preserved. |
-| `autosummary.js` (P2.4) | +`isAutoSummaryBlockedBySentinel` helper + `resolveSentinelEnabled` import from autoSettings.js; `handleAutoSummaryMessageReceived` and `clearAutoSummaryState` early-return when sentinel is on | Phase 2 (P2.4) — runtime gate | Yes — additive guard clauses only; module structure preserved for mergeability (per plan §1.2 rule 4). |
-| `index.js` (P2.2) | +~197 (imports, menu button, popup, event delegation, init backfill) | Phase 2 P2.2 — Auto-module settings panel + detection profile picker | Yes — additive; reuses existing patterns (`automaticMemoriesSettingsTemplate`, `setupSettingsEventListeners`, `initializeSettings`, `validateSettings`, `saveSettingsDebounced`); no upstream function bodies changed. New menu item is appended to `promptManagerButtons`. |
-| `templates.js` (P2.2) | +~133 (one new Handlebars template: `autoModuleSettingsTemplate`) | Phase 2 P2.2 — auto-module settings UI | Yes — additive; new export at the bottom of the file. |
-| `sentinel.js` (P4.4) | +1 import of `runNudgeSweepForCurrentChat` + `validateLorebook` added to the existing `./index.js` import; +1 awaited call tagged `STMBC-HOOK(nudges)` at the end of the `runSceneMemoryRange` dep, after the commit succeeds | Phase 4 (P4.4) — consolidation/compaction nudges | Fork-only file. The sweep never throws (returns `null`), so an advisory nudge cannot fail a memory that already committed. |
-| `livingNudges.js` (P4.4) | +`runNudgeSweepForCurrentChat(settings, { validateLorebook })`; removed the broken lazy resolution of `validateLorebook` from `addlore.js` | Phase 4 (P4.4) — sentinel wire point | Fork-only file. **Bug fixed:** `validateLorebook` is exported from `index.js`, not `addlore.js`, so the old lazy import always resolved `undefined` and the sweep could never have run. The validator is now injected by the caller rather than imported, to avoid adding a second circular edge to `index.js` (`sentinel.js` already carries the intentional one). |
-| `.gitignore` | +2 (`eval/reports/`, `eval/predictions*.json`) | Don't commit generated reports. | Yes — gitignore merges trivially. |
-| `stmbJobs.js` (P2.3) | +new `cancelStmbcJobs(reason)` export filtering by the `stmbc-` type prefix; mirrors `cancelAllStmbJobs` but only halts fork cycle jobs (sentinel + audit) | Phase 2 (P2.3) — /stmbc-stop on-demand cancel | Yes — additive export; `cancelAllStmbJobs` unchanged. |
-| `index.js` (P2.3) | +~85 (imports, `registerSentinelCadence` call at init, `handleStmbcDetectCommand` + `handleStmbcStopCommand` handlers, two `SlashCommand.fromProps` definitions, two `addCommandObject` calls, comment block on `handleStmbStopCommand` noting the `stmbc-` job coverage) | Phase 2 (P2.3) — jobs/commands wiring | Yes — additive; reuses the existing `registerStmbJobExecutor` / `cancelStmbcJobs` / `enqueueSentinelCycle` exports; no upstream function bodies changed. The two new slash commands are appended to the parser alongside `stmbStopCmd` + `auditCmd`. |
-
-| `index.js` (P2.1) | +3 edit sites, all tagged `STMBC-HOOK(sentinel)`: (a) import `handleSentinelMessageReceived` + `runSentinelDetectionForJob` from `./sentinel.js` next to the `autosummary.js` import block; (b) `await handleSentinelMessageReceived()` inside `handleMessageReceived`, right after `handleAutoSummaryMessageReceived()`; (c) `runSceneMemoryRange` gains `export` (signature and body unchanged) | Phase 2 (P2.1) — cadence gate + scene memorization entry point | Yes — purely additive. (a) is a new import; (b) is one awaited call that no-ops unless the sentinel is enabled for the chat; (c) adds the `export` keyword only — existing callers (`/scenememory`, `/stmb-catchup`) are untouched. SillyTavern exposes no `GENERATION_ENDED` event (verified against upstream `617cfbf`), so the cadence reuses the proven `MESSAGE_RECEIVED` path. |
-| `index.js` (P2.1 integration) | `registerSentinelCadence({ registerStmbJobExecutor })` gains a second argument `{ runDetectionCycle: runSentinelDetectionForJob }`; `/stmbc-detect` passes `extension_settings[MODULE_NAME]` instead of `extension_settings` to `enqueueSentinelCycle` | Phase 2 — install the P2.1 engine behind the P2.3 job executor; fix the settings scope the `autoSettings.js` resolvers expect | Yes — additive argument on a fork-only function; the settings-scope change is a one-token fix to a fork-only call site. |
-
-**Total: 10 files modified, ~430 lines added (most additive), 6 lines changed in metadata. No
-upstream function bodies, control flow, or data structures touched.**
-
-### Phase 2 P2.1 ↔ P2.3 integration notes
-
-P2.1 (`sentinel.js` / `sentinelCore.js`) and P2.3 (`sentinelCadence.js`) were
-built on divergent branches and had never coexisted. They are complementary —
-P2.3 is the wiring, P2.1 is the engine — but three collisions had to be resolved
-before they could ship together:
-
-1. **`runSentinelCycle` name collision.** Both modules exported that name with
-   different signatures. Resolved by renaming the P2.1 engine to
-   `sentinelCore.runSentinelDetectionCycle(deps)`. `sentinelCadence.runSentinelCycle(job, context)`
-   remains the one job-executor entry point, and now calls into the engine.
-2. **Duplicate ring buffer.** Both wrote `chat_metadata.stmbc.cycleLog` with a
-   cap of 20 but different record shapes. P2.1's writer (`SENTINEL_RING_SIZE`)
-   was deleted; `sentinelCadence.appendSentinelCycleLog` is the only writer, and
-   `sentinelCore.js` now has no chat-metadata access at all (enforced by test).
-3. **Cadence-gate ownership / double-firing.** P2.1 ran detection inline from
-   MESSAGE_RECEIVED while P2.3 expected the gate to enqueue a job. Resolved in
-   P2.3's favour: `handleSentinelMessageReceived` only *enqueues*
-   (`enqueueSentinelCycle`, trigger `auto`) and never runs detection inline, so
-   there is exactly one path, one job per cadence trigger, and every cycle is
-   under the jobs dashboard's abort control. Enforced by test.
-
-Also folded in: the sentinel's on/off decision now goes through
-`autoSettings.resolveSentinelEnabled` only (P2.1 carried a second, independent
-enable check), and the stored P2.2 setting names (`cadenceMessages`,
-`windowSize`, …) are mapped onto the engine's internal names by
-`sentinelCore.sentinelConfigFromAutoSettings` — P2.1 read its own names straight
-out of `extension_settings`, which would have left the P2.2 settings panel with
-no effect on the sentinel at all.
-
-The engine is *injected*, not imported: `sentinelCadence.js` must stay free of
-SillyTavern imports to remain Node-testable, so `index.js` pushes the runner in
-at init via `registerSentinelCadence(api, { runDetectionCycle })`. With no
-runner installed the executor degrades to a clean logged no-op, so the wiring
-never fails because the engine is absent.
-
-## Merge drill (per plan §1.2.3)
-
-### Result: 2026-07-24 PHA-1449 run (Ledger, this commit)
-
-Drill environment: fork HEAD `292ae0b` (v0.1.0 release tag) on `main`,
-`upstream/main` at `47a08a0` — **19 upstream commits ahead**, all in the
-`docs: AGPL header` → `STLO detection fixes` → `STMB default side prompt
-sets` → `UI cleanup` → `scrollbar` chain since the merge base
-(`617cfbf`, 2026-07-18).
-
-`git merge --no-ff --no-edit upstream/main` on a scratch branch produced:
-
-**Auto-merged clean (4 files, including every hooked file):**
-- `index.js` — **all three fork hook sites merged without conflict** (`STMBC-HOOK` init at line 11254, the P2.4 sentinel/auto-summary handlers at 2049 / 9357). This is the load-bearing result: 19 upstream commits touched the file and the no-op blocks at our markers stayed outside their edit regions.
-- `templates.js` — `autoModuleSettingsTemplate` (P2.2) and the P2.4 `automaticMemoriesSettingsTemplate` warning block both applied cleanly.
-- `style.css` — no fork changes; expected.
-- Plus trivial auto-merged: `changelog.md` (partial — see below).
-
-**Conflicts (5 files):**
-
-| File | Why | Resolution |
-| --- | --- | --- |
-| `manifest.json` | `author` + `version` only — fork `phattbeats` / `8.2.2-a.1` vs upstream `aikohanasaki` / `8.2.3`. Display name, settings key, lorebook flags, js/css fields all merged clean. | Keep fork `author` and fork `display_name`; bump fork `version` to `8.2.3-a.1` (semver-patch fork-suffix). |
-| `changelog.md` | Both sides added new version entries at the top — fork `v8.2.2-a.1` (v0.1.0 release) and upstream `v8.2.3` (bugfixes). | Keep both entries, ordered by version. Fork entry stays under its own heading. |
-| `index.build.js` | Generated build artifact committed in both forks; upstream's 19 commits regenerated it differently than ours. | **Regenerate after merge** — `bun run build` then `git add index.build.js`. Conflict is purely from committing generated output; the file is overwritten cleanly on every build. |
-| `index.build.js.map` | Same as `index.build.js` — source map regenerates. | Regenerate via build; `git add` the new map. |
-| `style.build.css` | Same — upstream and fork both committed generated CSS bundles. | Regenerate via build; `git add` the new bundle. |
-
-### Conclusion
-
-**Hook-site design is validated.** Zero conflicts in any forked source file
-(`index.js`, `stmemory.js`, `clipManager.js`, `sidePrompts.js`, `utils.js`,
-`constants.js`, `autosummary.js`, `templates.js`, `manifest.json`-core). Every
-conflict is either (a) expected per FORK_NOTES (`manifest.json`), (b) a
-two-sided additive doc merge (`changelog.md`), or (c) a regenerated build
-artifact.
-
-The plan-§1.2 invariant — "single-line greppable hook sites survive
-`upstream/main`" — holds at 19 commits of upstream drift.
-
-### Repeatable merge procedure
-
-Run this from a clean working tree on `main`:
-
-```bash
-# 1. Fetch upstream + confirm drift
-git fetch upstream
-git rev-list --left-right --count main...upstream/main
-#   expected: "<X>    <Y>" where Y > 0 means upstream has new commits
-
-# 2. Confirm fork-only commits are intact
-git log --oneline upstream/main..main | wc -l
-
-# 3. DRILL on a scratch branch first (never merge directly into main)
-git checkout -b scratch/merge-drill
-GIT_MERGE_AUTOEDIT=no git merge --no-ff --no-edit upstream/main
-
-# 4. Inspect conflicts
-git diff --name-only --diff-filter=U
-#   expected (per this run): changelog.md, index.build.js, index.build.js.map,
-#                            manifest.json, style.build.css
-#   any file outside that set = stop, investigate, don't blindly resolve
-
-# 5. If conflicts match the expected set, resolve:
-#    - manifest.json:    keep fork display_name + author; bump fork version
-#                        to upstream + "-a.1" suffix
-#    - changelog.md:     keep both version entries, ordered newest-first
-#    - *.build.*:        `bun run build && git add <artifacts>`
-#                        (build artifacts are regenerated; conflicts are noise)
-
-# 6. Verify the post-merge state
-bun run build
-node --test eval/*.test.js docsStructure.test.js eventPreset.test.js \
-              autosummarySentinelGate.test.js
-#   (pre-commit hook runs `bun run build` automatically — manual run is
-#    belt-and-braces to confirm the build itself didn't break)
-
-# 7. If drill is green:
-git merge --abort 2>/dev/null || git checkout main && git branch -D scratch/merge-drill
-#    OR if you intend to land the merge:
-#    git add -A && git commit --no-edit
-#    git push origin main
-
-# 8. Update FORK_NOTES.md with the new run's result (append a new bullet
-#    under "Merge drill history" below) and commit the doc update.
-```
-
-### Merge drill history
-
-- **2026-07-24 (PHA-1449)** — 19 upstream commits ahead. Conflicts in 5 files
-  (manifest.json, changelog.md, 3 build artifacts). All 4 hooked source files
-  clean. **Pass — design holds.**
-
-- **2026-07-26 (PHA-1534, P5.5 regen-consolidation-eligibility)** — added
-  `memoryRegeneration.js` + `memoryRegeneration.test.js` from upstream
-  `9fc9abb` (verbatim, 447 + 466 lines) and gated `runEntryRegeneration` on
-  upstream's `getRegenerationEligibility`. Entries that fail with
-  `reason: 'active-parent'` now land in `r.skipped` with their parent
-  uids rather than being silently re-derived. Two new acceptance tests
-  cover the eligible + ineligible branch (`auditorTechnicalPass.test.js`).
-  Import-only: the upstream file is unchanged, the fork change is
-  isolated to `runEntryRegeneration` + the gate + the new tests.
-  `node --test *.test.js` 515/515, `node --test eval/*.test.js` 147/147,
-  `bun run build` clean. PR open on `feat/p5.5-regen-consolidation-eligibility-rebased`.
-
-- **2026-07-26 (PHA-1432, Van Dam re-drill)** — fork HEAD `16bc969` (post-P5.5),
-  `upstream/main` at `9fc9abb` — **7 new upstream commits ahead** of the prior
-  drill base (47a08a0 → 9fc9abb: `regenerate memories` ×2, `update arc keywords`
-  ×2, plus the 3 already absorbed in PHA-1449). 21 fork-only commits since the
-  prior drill (P0.3, P0.5, P2.2, P2.4, P4.2, P4.4, P5.3, P5.4, P5.5, plus the
-  drill-result commit itself).
-
-  `git merge --no-ff --no-edit upstream/main` on scratch branch
-  `scratch/p1.4-drill-20260726-1413` produced:
-
-  **Auto-merged clean (every hook-site file):**
-  - `index.js` — P2.2 init backfill + P2.4 sentinel handler + P2.4 force-disable
-    handler + Phase 2 init hook all clean. Three hook sites stable through
-    upstream drift.
-  - `stmemory.js:1461` — clean.
-  - `clipManager.js:718` — clean.
-  - `sidePrompts.js` — both P4.2 filter (line 1404) and Phase 4 filter (1671)
-    clean.
-  - `templates.js` — both P2.2 and P2.4 additive blocks clean.
-  - `utils.js` (P4.2 event preset), `constants.js` (P4.2 event display) —
-    additive map entries, clean.
-  - `autosummary.js` (P2.4 gate helper) — clean.
-
-  **Conflicts (8 files):**
-
-  | File | Why | Resolution | Hook-site clean? |
-  | --- | --- | --- | --- |
-  | `manifest.json` | `author` + `version` only — fork `phattbeats` / `8.2.2-a.1` vs upstream `aikohanasaki` / `8.3.0`. | Keep fork `author` and `display_name`; bump fork `version` to `8.3.0-a.1`. | ✓ (core metadata already merged in PHA-1449) |
-  | `changelog.md` | Both sides added new version entries. | Keep both, ordered newest-first. | n/a |
-  | `index.build.js` + `.map` | Generated build artifact committed in both forks. | Regenerate via `bun run build` and `git add`. | n/a |
-  | `style.build.css` | Generated CSS bundle committed in both forks. | Regenerate via build. | n/a |
-  | `style.css` | **NEW.** Fork appended 113 lines (P5.4 audit UI styles at EOF); upstream appended different lines (scrollbar/STLO/regenerate styles at EOF). Both appends collide at EOF. | Take upstream's append, then re-append the fork's P5.4 block. No semantic overlap (different selectors: `.stmb-audit-*` vs upstream scrollbar/STLO). | ✓ — fork never modified the body of style.css |
-  | `addlore.js` | **NEW.** Two conflict regions: (a) imports at line 18-22 (fork added `auditorCadence` + `auditorTechnicalPass` imports; upstream added `memoryRegeneration` imports); (b) `populateLorebookEntry` body at line 648-705 (fork added STMBC-HOOK-PHASE4 + 30-line inline fallback; upstream added `STMB_chatId` field). Both sides added NEW lines in adjacent context; auto-merge refuses because of context shift, not actual semantic overlap. | Merge both import blocks (preserve all four imports). For `populateLorebookEntry`: keep fork's hook block, insert upstream's `STMB_chatId` block BEFORE the fork's hook (the order doesn't matter functionally; STMB_chatId is a metadata write, hook is content transformation). | ✓ — STMBC-HOOK-PHASE4 lines themselves are untouched by upstream; conflict is from BOTH sides adding adjacent lines |
-
-  **Conclusion — hook-site design holds at 7 further upstream commits.**
-  Every STMBC-HOOK anchor survived the merge; every conflict is either (a)
-  expected per FORK_NOTES (`manifest.json`, build artifacts, changelog), (b)
-  additive-from-both-sides noise (`style.css`, `addlore.js`), or (c) regenerable
-  output. The §1.2.3 invariant holds.
-
-  **Phase 1 §1.2.1 rule violation found in `addlore.js`:** the STMBC-HOOK-PHASE4
-  block includes a 30-line inline `appendProvenanceLineInline` helper that
-  duplicates `nudgeHelpers.appendProvenanceLine` (the same file the lazy
-  `require` points at). Plan §1.2.1 says upstream files get "single-line call
-  sites only, each tagged with a greppable comment" — the inline fallback is
-  non-trivial fork code living in an upstream file. The fallback is dead code
-  in the common path (the lazy `require` resolves `nudgeHelpers.js` under
-  `bun run build`). Resolution: move the fallback into `nudgeHelpers.js` (or
-  just delete it — the lazy require already covers the uncommon case) and
-  reduce the hook block to a single greppable call. **Follow-up issue:**
-  created as PHA-1434.
-
-- **PHA-1533 (2026-07-26) — fix landed.** `nudgeHelpers.js` now exports
-  `safeAppendProvenanceLine(content, sceneRange)` that resolves
-  `globalThis.STMBC?.provenanceHelpers?.appendProvenanceLine` first (the
-  injected-override path used by tests / plugins) and falls back to the
-  canonical `appendProvenanceLine` here. `addlore.js` STMBC-HOOK-PHASE4 block
-  collapsed from ~30 lines (call site + try/catch + 30-line inline duplicate)
-  to 4 lines of code (skipProvenance guard + lazy `require` of `safeAppendProvenanceLine`
-  + single call). The `appendProvenanceLineInline` function and its 4
-  structural parity tests are gone. `provenanceFallback.test.js` rewritten
-  to assert the new structural invariants (no inline helper in `addlore.js`,
-  hook block ≤8 lines, `nudgeHelpers.js` exports the wrapper) plus
-  functional parity + globalThis override coverage for `safeAppendProvenanceLine`.
-  Re-run PHA-1432-style merge drill against current upstream to confirm.
-
-## Pre-commit hook
-
-`hooks/pre-commit` runs `bun run build` and stages `index.build.js` +
-`style.build.css`. Installed via `bun run install-hooks` (or manually copy
-`hooks/pre-commit` to `.git/hooks/pre-commit` on hosts without bun). The build
-artifacts are committed; never hand-edit them.
-
-
-## §2 audit (re-verified 2026-07-22 — PHA-1433)
-
-Plan §2 was "verified July 2026" but the upstream map is from an earlier snapshot.
-Re-verified against the current `upstream/main` (merge base 617cfbf, 2026-07-18):
-
-| File | Plan §2 claim | Current (upstream/main 617cfbf) | Drift |
-| --- | --- | --- | --- |
-| `index.js` | ~11K lines | 11,424 lines | +424 |
-| `index.js` | `registerSlashCommands()` ~9670 | function at 9898, invocation at 11252 | function +228, invocation same anchor (after `handleSceneMemoryCommand` block grew) |
-| `index.js` | `handleSceneMemoryCommand` location | 1289 | (plan didn't pin) |
-| `index.js` | `runSceneMemoryRange` location | 1158 | (plan didn't pin) |
-| `stmemory.js` | (no size given) | 1,521 lines | (added) |
-| `clipManager.js` | ~111K lines (typo — should be ~1.1K) | 2,474 lines | +~1.4K |
-| `sidePrompts.js` | (no size given) | 2,109 lines | (added) |
-| `sidePromptsManager.js` | (no size given) | 1,092 lines | (added) |
-
-**Hook site stability:** the fork's `STMBC-HOOK` call sites land at lines that are
-in the *current* upstream code (verified by `grep -n` against HEAD which is
-upstream-merge-base + fork-only commits). Since the fork was branched from the
-current upstream/main, no upstream-side drift has touched the hook anchors.
-
-| Hook | Plan §2 (Phase reference) | Fork line | Valid against upstream? |
-| --- | --- | --- | --- |
-| `STMBC-HOOK: extension init` (Phase 2) | `index.js` extension init | `index.js:11254` (after `registerSlashCommands()` invocation at 11252) | ✓ |
-| `STMBC-HOOK: prompt assembly` (Phase 4) | `stmemory.js` prompt assembly | `stmemory.js:1461` (in `buildPrompt()`) | ✓ |
-| `STMBC-HOOK: clip save path` (Phase 3) | `clipManager.js` clip save path | `clipManager.js:718` (in clip save dialog handler) | ✓ |
-| `STMBC-HOOK: side-prompt filtering` (Phase 4) | `sidePrompts.js` | `sidePrompts.js:1671` (in `runSidePrompt()`) | ✓ |
-| `STMBC-HOOK: per-scene filter` (Phase 4, P4.2) | (added in P4.2) | `sidePrompts.js:1404` (post-P4.2) | ✓ |
-
-**Build verification (P1.3):** `bun run build` was verified clean by the v0.1.0
-release clean-install smoke test (PHA-1466, `docs/release/v0.1.0/report.md`).
-`hooks/pre-commit` runs `bun run build` and stages `index.build.js` +
-`style.build.css`. Build artifacts present at HEAD.
-
-**Merge drill (Phase 1 acceptance bullet 3):** `git fetch upstream && git merge
-upstream/main` on a scratch branch → `Already up to date`. The fork's main is
-already at the current upstream/main HEAD; no new upstream commits to merge.
-This is the cleanest possible merge outcome: zero conflicts, zero divergence
-on upstream-side code.
-
-**Conclusion:** the §2 map's high-level file inventory is correct; the line
-numbers cited have drifted slightly (+228 on `index.js`, +1.4K on
-`clipManager.js`) but the fork's hook anchors are stable because the fork was
-branched from current upstream/main and only added additive lines.
-
-## Phase status (live; update as work lands)
-
-| Phase | Sub | Issue | Status |
-| --- | --- | --- | --- |
-| Phase 0 — Eval harness | P0.1 parser | PHA-1423 | done |
-| Phase 0 — Eval harness | P0.2 ground truth | PHA-1425 | blocked (Vision Quest, behind P0.1 — note: my Phase 0 scaffolding built `eval/groundTruth.js` as a functional impl, flagging for review) |
-| Phase 0 — Eval harness | P0.3 detection runner | PHA-1427 | blocked (Van Dam, behind P0.1+P0.2; interface in `eval/detect.js`) |
-| Phase 0 — Eval harness | P0.3 scorer + CLI | PHA-1416 | done |
-| Phase 0 — Eval harness | P0.5 docs | PHA-1431 | done (in `eval/README.md` + `eval/run.sh`) |
-| Phase 1 — Fork setup | P1.1 plumbing | PHA-1426 | done (this file) |
-| Phase 1 — Fork setup | P1.2 upstream-map audit | (open) | todo |
-| Phase 1 — Fork setup | P1.3 build/hook verification | (open) | todo |
-| Phase 2 — Sentinel | P2.2 auto settings panel + detection profile picker | PHA-1436 | done |
-| Phase 2 — Sentinel | P2.3 jobs/commands wiring + auto-summary force-disable (per-issue) | PHA-1439 | done (sentinelCadence.js + /stmbc-detect + /stmbc-stop + ring buffer; auto-summary force-disable already covered by P2.4) |
-| Phase 4 — Living-lorebook orchestration | P4.2 per-scene side-prompt filtering + event-template preset | PHA-1450 | done |
-| Phase 2 — Sentinel | P2.4 force-disable native auto-summary (config, not deletion) | PHA-1456 | done |
-| Phase 6 — Merge drill, hardening, release | P6.2 README + CHANGELOG + AGPL headers | PHA-1473 | done |
-| Phase 6 — Merge drill, hardening, release | P6.2 release tag v0.1.0 + clean-install verification | PHA-1466 | done (initial tag + verification at f09b25b / 1dfc263) |
-| Phase 6 — Merge drill, hardening, release | P6.3 post-merge clean-install re-verification + tag v0.1.0 moved to HEAD | PHA-1474 | done (390/390 tests pass, 19 ESM imports resolve, tag moved to 7107ac0; see `docs/release/v0.1.0/report.md`) |
-| `addlore.js` (P4.4) | `populateLorebookEntry` (the entry-populator that already attaches STMB_start/STMB_end metadata) gains a provenance append call with an inline fallback; respects `memoryResult.metadata.skipProvenance` opt-out | Phase 4 (P4.4) provenance lines | Yes — additive; existing entry structure preserved. The inline fallback mirrors nudgeHelpers exactly (4 structural tests pin parity). |
-| Phase 4 — Living-lorebook orchestration | P4.4 event-template preset + consolidation/compaction nudges | PHA-1467 | done — **but see the P4 integration note below**: `livingNudges.js` shipped orphaned (no caller) and is only actually reachable as of the Phase 4 integration commit |
-| Phase 4 — Living-lorebook orchestration | P4.1 living-lorebook context injection + error-control rules | PHA-1448 | done — **landed in `main` only at the Phase 4 integration commit** (previously only on `feat/p2.1-sentinel-core-cycle` @ `add317d`) |
-| Phase 4 — Living-lorebook orchestration | P4.3 review queue + JSON-retry + low-confidence routing | PHA-1452 | done — **landed in `main` only at the Phase 4 integration commit** (`review.js`/`reviewCore.js` were untracked; the `assertHighConfidence` producer was on `origin/pha-1511-low-confidence-routing`) |
-| Phase 4 — Living-lorebook orchestration | Phase 4 acceptance harness (`phase4Acceptance.test.js`) | PHA-1421 | done |
-| Phase 5 — Auditor | P5.1 chunk walker (checkpoint/resume/halt) | PHA-1468 | done |
-| Phase 5 — Auditor | P5.2 coverage audit + entry regeneration jobs | PHA-1469 | done |
-| Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs (current implementation in `auditorTechnicalPass.js`; 4-job `registerAuditorJobs`; cadence gate via `maybeOfferAuditorJob`) | PHA-1470 | done |
-| Phase 5 — Auditor | P5.4 report UIs for the four audit jobs (`auditorReportUIs.js`) | PHA-1471 | done |
-| Phase 5 — Auditor | P5.3 technical pass + claim re-verification jobs (legacy implementation; superseded by PHA-1470) | PHA-1459 | done |
-| Phase 1 — Fork setup | P1.2 upstream-map audit | PHA-1433 | done (§2 audit appended above) |
-| Phase 1 — Fork setup | P1.3 build/hook verification | PHA-1433 | done (v0.1.0 clean-install smoke test, PHA-1466) |
-| Phase 1 — Fork setup | P1.4 merge drill | PHA-1433 | done (already in sync with upstream/main; zero-conflict merge) |
-## Phase 4 integration note (2026-07-26)
-
-Phase 4 was reported complete by its sub-issues, but most of it was **not in
-`main`**. Audited at `04be0d6` before doing any work:
-
-| Deliverable | Reported | Actually |
-| --- | --- | --- |
-| P4.1 injection (`injection.js`, `injectionCore.js`, 27 tests) | done @ `add317d` | commit existed only on `feat/p2.1-sentinel-core-cycle`; **0% in `main`** |
-| P4.3 review queue (`review.js`, `reviewCore.js`, 29 tests) | done | **untracked working-tree files**, never committed, zero importers |
-| P4.3 low-confidence producer (`assertHighConfidence`) | done | on `origin/pha-1511-low-confidence-routing`, unmerged |
-| P4.4 nudges (`livingNudges.js`) | done | in `main` but **orphan** — absent from the bundle sourcemap; only its own test referenced it |
-| P4.2 per-scene filtering | done | genuinely in `main` and wired ✓ |
-
-The sharpest example: `stmemory.js` carried the Phase-1 placeholder
-
-```js
-const livingContext = await globalThis.STMBC?.buildPromptContext?.({ … }) ?? null;
-```
-
-whose result was **never read**, and nothing anywhere in the repo ever assigned
-`globalThis.STMBC`. The Phase 4 injection hook was a dead call site in every
-configuration, so acceptance criteria 1 and 2 could not have passed.
-
-**Two rules this establishes for later phases:**
-
-1. **A commit SHA is not evidence.** Before closing a phase, verify each claimed
-   artifact with `git merge-base --is-ancestor <sha> origin/main` and confirm the
-   module appears in `index.build.js.map` — a tracked file with green tests can
-   still be unreachable from the entry point.
-2. **A test suite passing is not evidence that a feature runs.** `livingNudges.js`
-   and `reviewCore.js` were both fully green while being completely unreachable.
-   Orphan detection (is there a caller? is it in the bundle?) is a separate check
-   from `node --test`.
-
-`ffa037f` (P4.2, on the same stale branch) was deliberately **not** cherry-picked.
-It implements per-scene filtering at a different layer — mutating the written
-lorebook's STLO character-filter metadata — whereas `main` already filters which
-side-prompt run items execute at all. Both solve the plan's P4.2 goal; taking
-both would mean two competing filters. `main`'s version is wired and tested, so
-it stands. The STLO write-side variant is left on the branch as a possible future
-enhancement, not lost work.
+<!--
+Copyright (C) 2024–2026 Aiko Hanasaki
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+# FORK_NOTES
+
+Merge discipline for the **STMB-Auto** fork (plan §1.2, §5.5): every edit to an
+upstream-tracked file must be listed here with its justification, so an
+`upstream/main` merge only ever conflicts at these documented sites. Fork-only
+files (new modules) are listed separately — they can never conflict.
+
+All hook comments in upstream files are tagged `STMBC-HOOK(<subsystem>)` so they
+are greppable: `grep -rn 'STMBC-HOOK' --include='*.js' .`
+
+Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
+
+## Upstream-file edits
+
+### `index.js` — Phase 2 / P2.1 (Sentinel)
+
+1. **Import the sentinel handler** (near the `autosummary.js` import block).
+   ```js
+   // STMBC-HOOK(sentinel): autonomous scene-boundary detection cycle (fork; plan §4.1).
+   import { handleSentinelMessageReceived } from "./sentinel.js";
+   ```
+   *Why:* the sentinel runs on the same cadence event STMB already uses.
+
+2. **Export `runSceneMemoryRange`** (was a module-local `async function`).
+   ```js
+   // STMBC-HOOK(sentinel): exported so sentinel.js can memorize a detected scene
+   // range via a direct in-extension call (plan §4.1). Signature unchanged.
+   export async function runSceneMemoryRange(startId, endId, options = {}) { … }
+   ```
+   *Why:* the sentinel memorizes each detected scene by calling this proven
+   entry point directly (indices, not a compiled scene). Adding `export` only;
+   behavior and callers (`/scenememory`, `/stmb-catchup`) are unchanged.
+
+3. **Invoke the cycle inside `handleMessageReceived`** (right after
+   `handleAutoSummaryMessageReceived()`).
+   ```js
+   // STMBC-HOOK(sentinel): run one detection cycle on the same proven cadence
+   // event. No-ops unless the sentinel is enabled for this chat (plan §3.3).
+   await handleSentinelMessageReceived();
+   ```
+   *Why:* SillyTavern exposes no `GENERATION_ENDED` event and STMB subscribes to
+   none (verified against upstream `617cfbf`; plan P1.2 note). We reuse the
+   proven `MESSAGE_RECEIVED` → `handleMessageReceived` path for the cadence
+   counter. The handler self-gates on `autoModule.enabled` / `chat_metadata.stmbc`
+   and is a no-op when the sentinel is off, so stock behavior is unchanged.
+
+### `index.js` — Phase 5 / P5.1 (Auditor)
+
+1. **Import the auditor bindings** (immediately after the sentinel import).
+   ```js
+   // STMBC-HOOK(auditor): resumable full-chat audit chunk-walker (fork; plan §4.3).
+   import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./auditor.js";
+   ```
+   *Why:* the auditor is a registered job executor plus two slash commands.
+
+2. **Register the `audit` job type** (inside `init()`, right after STMB's own
+   `registerStmbJobExecutor("consolidation", …)`, plan §2.1 site **H1/H2**).
+   ```js
+   // STMBC-HOOK(auditor): register the resumable audit chunk-walker job type so the
+   // dashboard shows it and /stmbc-stop halts it (fork; plan §4.3).
+   registerStmbJobExecutor("audit", executeAuditJob);
+   ```
+   *Why:* the chunk walker runs as an `audit` job so it appears in the jobs
+   dashboard and is halted cooperatively by the shared abort signal
+   (`cancelAllStmbJobs`). Same call the two upstream executors use; added lines
+   only, no upstream behavior changed.
+
+3. **Register the `/stmbc-audit` and `/stmbc-stop` slash commands** (inside
+   `registerSlashCommands()`, beside the upstream command objects; plan §2.1 site
+   **H3**). Two `SlashCommand.fromProps({…})` definitions tagged
+   `// STMBC-HOOK(auditor):` plus their two `addCommandObject(...)` lines.
+   *Why:* `/stmbc-audit [restart]` starts or resumes the audit walk (H3);
+   `/stmbc-stop` halts the fork's jobs via `cancelAllStmbJobs` and leaves the
+   checkpoint intact for resume. Additive; the upstream `/stmb-stop` command
+   (which already calls `cancelAllStmbJobs`) is unchanged.
+
+### `index.js` — Phase 5 / P5.2 (Auditor jobs 1–2)
+
+1. **Import the auditor-jobs bindings** (immediately after the P5.1 auditor import).
+   ```js
+   // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
+   // running notes (fork; plan §4.3 jobs 1–2).
+   import { handleCoverageCommand, handleRegenCommand } from "./auditorJobs.js";
+   ```
+   *Why:* the two auditor jobs are on-demand slash commands (no new job type — they
+   read the checkpoint the P5.1 walker wrote and finish in one interaction).
+
+2. **Register `/stmbc-coverage` and `/stmbc-regen`** (inside `registerSlashCommands()`,
+   right after the P5.1 `stmbcStopCmd`; two `SlashCommand.fromProps({…})` tagged
+   `// STMBC-HOOK(auditor-jobs):` plus their two `addCommandObject(...)` lines).
+   *Why:* `/stmbc-coverage` compares the audit running notes against the bound
+   lorebook and shows a missing/thin report popup with one-click generate;
+   `/stmbc-regen <name>` re-derives one living entry from the source chunks where its
+   name appears (anti-drift) with a diff to approve. Both require a prior
+   `/stmbc-audit`. Additive; no upstream behavior changed. They write through STMB's
+   own `addlore.upsertLorebookEntryByTitle`, never the memory-creation path.
+
+### `clipManager.js` — Phase 3 / P3.1 (Clipper+)
+
+1. **Import the clip-save hook** (immediately after the `./stmbJobs.js` import).
+   ```js
+   // STMBC-HOOK(clipper): paired keyword-activated context entry on clip save (fork; plan §4.2).
+   import { maybeGeneratePairedContextEntry } from "./clipperPlus.js";
+   ```
+   *Why:* Clipper+ generates the paired context entry from the clip-save path.
+
+2. **Invoke the hook inside `saveNewClip()`** (right after the clip entry's
+   `saveLorebook(lorebookName, lorebookData)`, before `return true`).
+   ```js
+   // STMBC-HOOK(clipper): after the upstream [STMB Clip] entry is written, generate +
+   // write the paired context entry (fork; plan §4.2). No-op unless Clipper+ is enabled;
+   // self-contained (never throws), so the clip above is unaffected either way.
+   await maybeGeneratePairedContextEntry({ lorebookName, lorebookData, quote: bulletText, headline, quoteTitle: title });
+   ```
+   *Why:* single hook in the clip-save path (plan §2.1 site **H6**), placed after
+   the `[STMB Clip]` entry is persisted. `maybeGeneratePairedContextEntry`
+   self-gates on `autoModule.clipper.enabled` (default **off**) and swallows all
+   errors, so with the feature off — or on failure — the upstream clip save is
+   byte-identical (Phase 3 acceptance). Anchored to `saveNewClip` only;
+   `saveExistingClip` (bullet-append) is intentionally untouched.
+
+### `stmemory.js` — Phase 4 / P4.1 (Living-lorebook injection)
+
+1. **Import the injection binding** (immediately after the
+   `contextSettingsManager.js` import block).
+   ```js
+   // STMBC-HOOK(injection): living-lorebook context injection + error-control rules (fork; plan §4.4, §5).
+   import { buildLivingContextPreamble } from './injection.js';
+   ```
+   *Why:* injection gathers the token-capped living entries the book already knows
+   and the error-control rules that must ride on every generation prompt.
+
+2. **Prepend the preamble inside `buildPrompt()`** (right after `sceneText` is
+   built, replacing the single `const finalPrompt = …` line).
+   ```js
+   // STMBC-HOOK(injection): prepend token-capped living-lorebook entries (delta-not-rehash)
+   // + error-control rules between the system prompt and the scene (fork; plan §4.4, §5).
+   let injectionPreamble = '';
+   try {
+       injectionPreamble = await buildLivingContextPreamble({ compiledScene, profile, sceneText, systemPrompt: processedSystemPrompt });
+   } catch (e) { console.warn(`${MODULE_NAME}: living-context injection failed; using base prompt`, e); injectionPreamble = ''; }
+   const finalPrompt = injectionPreamble
+       ? `${processedSystemPrompt}\n\n${injectionPreamble}\n\n${sceneText}`
+       : `${processedSystemPrompt}\n\n${sceneText}`;
+   ```
+   *Why:* single hook in the prompt-assembly path (plan §2.1 site for the
+   stmemory prompt). `buildLivingContextPreamble` self-gates on
+   `autoModule.injection.enabled` (default **off**) and swallows all errors,
+   returning `''`, so with the feature off — or on any failure — `finalPrompt` is
+   the byte-identical upstream string. The outgoing-regex block below is
+   unchanged and still applies to whatever `finalPrompt` becomes.
+
+> `index.build.js` / `index.build.js.map` are generated by `bun run build`
+> (pre-commit hook) — never hand-edit; they are not merge sites.
+
+## Fork-only files (no merge conflicts possible)
+
+- `sentinelCore.js` — pure, SillyTavern-free sentinel cycle logic (DI core);
+  unit-tested offline under `node:test`.
+- `sentinel.js` — SillyTavern binding layer that wires real
+  chat/settings/profile/memory functions into `sentinelCore.runSentinelCycle`.
+- `sentinel.test.js` — `node --test sentinel.test.js` (23 cases; the core is
+  fully exercised without SillyTavern).
+- `clipperPlusCore.js` — pure, SillyTavern-free Clipper+ logic (DI core): config
+  merge, source-message locator, K-surrounding window builder, blurb-JSON parser,
+  keyword sanitizer, blurb clamp, paired-entry title/content shaping.
+- `clipperPlus.js` — SillyTavern binding layer that wires real
+  chat/settings/profile/LLM/world-info functions; owns the LLM call, the editable
+  confirm dialog, and the paired-entry write via `addlore.upsertLorebookEntryByTitle`.
+- `clipperPlus.test.js` — `node clipperPlus.test.js` (35 cases; the core is fully
+  exercised without SillyTavern).
+- `injectionCore.js` — pure, SillyTavern-free living-lorebook injection logic (DI
+  core): config merge, keyword matching (constant + keyword-matched vs. scene
+  text), hard ~50K-token budget selection with drop reporting, delta-not-rehash
+  preamble + error-control rules assembly.
+- `injection.js` — SillyTavern binding layer that resolves the bound lorebook
+  (`chat_metadata[METADATA_KEY]` + `loadWorldInfo`), filters to living entries
+  (skips disabled and — by default — memory entries), computes base tokens, and
+  returns the preamble. Self-gates on `autoModule.injection.enabled` (default
+  off) and never throws.
+- `injection.test.js` — `node injection.test.js` (27 cases; the core is fully
+  exercised without SillyTavern).
+- `auditorCore.js` — pure, SillyTavern-free Auditor walker (DI core): audit-message
+  extraction, deterministic chunk planning (40 msgs/chunk within a ~20K-token cap),
+  strict-JSON per-chunk notes parser (one retry), map-reduce into a running-notes
+  object, checkpoint/resume decision, and cooperative halt. `runAuditWalk` is pure
+  of any SillyTavern import.
+- `auditor.js` — SillyTavern binding layer that wires real chat / chat_metadata
+  (checkpoint at `chat_metadata.stmbc.audit`) / profile / LLM (`requestCompletion`)
+  / job-context functions into `auditorCore.runAuditWalk`. Owns the `audit` job
+  executor, the `/stmbc-audit` (start/resume/restart) and `/stmbc-stop` handlers,
+  and an inline fallback for when the jobs dashboard is unavailable.
+- `auditor.test.js` — `node auditor.test.js` (30 cases; the core is fully exercised
+  without SillyTavern — including checkpoint, mid-walk resume, halt, and restart).
+- `auditorJobsCore.js` — pure, SillyTavern-free core for the two P5.2 auditor jobs
+  (DI): the coverage classifier (running notes vs. lorebook entries → missing/thin,
+  memory-entry-aware, salience-gated + salience-sorted), name→chunk provenance
+  lookup, budget-bounded source-excerpt reconstruction (name-mention priority), the
+  re-derivation prompt/parse/retry (JSON-first, plain-text fallback), and an LCS
+  line diff for the diff view.
+- `auditorJobs.js` — SillyTavern binding layer for `/stmbc-coverage` and
+  `/stmbc-regen`. Resolves the bound lorebook (`chat_metadata[METADATA_KEY]` +
+  `loadWorldInfo`), reads the audit notes via `auditor.getAuditNotes`, reproduces the
+  walker's chunk plan (`auditorCore.planChunks` with `resolveAuditConfig`) to line up
+  provenance, calls `requestCompletion` to re-derive, renders the coverage report /
+  diff popups, and writes via `addlore.upsertLorebookEntryByTitle`. On-demand only;
+  new entries get keys, existing entries keep theirs.
+- `auditorJobs.test.js` — `node --test auditorJobs.test.js` (20 cases; the core is
+  fully exercised without SillyTavern — coverage classification, source selection,
+  parse/retry, and diff).
+
+## New settings / metadata namespaces (clean; no upstream collision)
+
+- Global: `extension_settings.STMemoryBooks.autoModule` (plan §4.5) — sentinel
+  `enabled`, `cadenceN`, `window`, `overlap`, `truncate`, `guard`,
+  `detectionProfile`, `detectionPrompt`.
+- Global: `extension_settings.STMemoryBooks.autoModule.clipper` (plan §4.2, §4.5)
+  — Clipper+ `enabled` (default `false`), `surroundingK` (default 6), `truncate`,
+  `autoAccept`, `maxBlurbWords` (50), `minKeywords`/`maxKeywords` (3–6),
+  `profile` (generation profile index; null ⇒ STMB default profile), `prompt`
+  (blurb-prompt override). Enable for testing: set
+  `extension_settings.STMemoryBooks.autoModule.clipper = { enabled: true }`.
+- Per-chat: `chat_metadata.stmbc` — `enabled`, `watermark` (fallback for chats
+  with no memories yet), `structureHintRegex`, `detectionPrompt`, `cycleLog`
+  (debug ring buffer); `clipper` sub-object (`enabled`, `autoAccept`, `prompt`)
+  overriding the global Clipper+ settings per chat.
+- Global: `extension_settings.STMemoryBooks.autoModule.injection` (plan §4.4,
+  §4.5, §5.1) — living-lorebook injection `enabled` (default `false`), `budget`
+  (default 50000, the hard total context cap), `reserveForOutput` (1000),
+  `maxEntries` (60), `perEntryChars` (1500), `includeConstant` (true),
+  `includeMemoryEntries` (false — recent memories are already injected by
+  upstream `previousSummariesContext`), `errorControl` (true), `prompt`
+  (delta-instruction override). Per-chat overrides at
+  `chat_metadata.stmbc.injection` (same keys; per-chat wins). Enable for testing:
+  `extension_settings.STMemoryBooks.autoModule.injection = { enabled: true }`.
+- Paired context entries are titled `<headline> [STMB Clip Context]` — a distinct
+  suffix from the clip `<headline> [STMB Clip]`, so they cross-reference the quote
+  by headline yet are never matched by `clipManager.isClipEntryTitle` (compaction /
+  clip lists ignore them). They are keyword-activated, non-constant, and
+  `preventRecursion` + `excludeRecursion` (plan §4.2, Appendix B).
+- Global: `extension_settings.STMemoryBooks.autoModule.audit` (plan §4.3, §4.5) —
+  Auditor `chunkSize` (default 40), `tokenCap` (default 20000), `truncate` (default
+  0 ⇒ read full text), `profile` (extraction profile index; null ⇒ STMB default
+  profile), `mapPrompt` (per-chunk extraction-prompt override). Per-chat overrides
+  at `chat_metadata.stmbc.audit` (same keys; per-chat wins). The audit is
+  on-demand only (never auto-runs in P5.1), so there is no `enabled` gate.
+- Per-chat: `chat_metadata.stmbc.audit` also holds the resumable **checkpoint**
+  written after each chunk — `{ nextChunk, total, notes, chatLen, status, updatedAt }`.
+  `notes` is the running-notes object (characters/locations keyed maps + events/
+  claims/collisions lists with chunk provenance). It survives a reload; re-running
+  `/stmbc-audit` resumes from `nextChunk`, `/stmbc-audit restart` discards it.
+- Global: `extension_settings.STMemoryBooks.autoModule.coverage` (plan §4.3 job 1) —
+  coverage-audit `thinContentChars` (default 240 — a matched living entry shorter than
+  this is "thin"), `minChunks` (default 2 — only report names seen in ≥ this many
+  distinct chunks, cutting one-off noise), `includeLocations` (default true). Per-chat
+  overrides at `chat_metadata.stmbc.coverage`. On-demand only; no `enabled` gate.
+- Global: `extension_settings.STMemoryBooks.autoModule.regen` (plan §4.3 job 2) —
+  entry-regeneration `tokenBudget` (default 12000 — cap on the source excerpt sent to
+  the re-derivation call), `truncate` (default 0 ⇒ full text), `prioritizeNameMatches`
+  (default true), `autoApprove` (default false — skip the diff popup and write
+  directly), `profile` (derivation profile index; null ⇒ STMB default), `regenPrompt`
+  (re-derivation-prompt override). Per-chat overrides at `chat_metadata.stmbc.regen`.
+  Re-derived entries are written via `upsertLorebookEntryByTitle` (not marked as STMB
+  memories — they are living lore). On-demand only; no `enabled` gate.
+- Watermark source of truth remains upstream's
+  `chat_metadata.STMemoryBooks.highestMemoryProcessed` via
+  `getHighestMemoryProcessed()`; `chat_metadata.stmbc.watermark` is only a
+  fallback.
+
+## Phase 6 / P6.1 — merge drill, full acceptance re-run, hardening
+
+- **Upstream merge check:** `upstream/main` is `617cfbf` (same commit P1.2
+  audited §2 against) and is an ancestor of this branch's `HEAD` — upstream has
+  not moved since the fork point, so no real `git merge upstream/main` was
+  needed this pass. Re-check this before every release; the trial-merge
+  acceptance (Phase 1) still applies once upstream does move.
+- **Group-chat safety (by architecture, re-verified P6.1):** every message
+  extractor (`sentinelCore.extractWindowMessages`, `auditorCore.extractAuditMessages`,
+  `clipperPlusCore.buildContextWindow`) reads `m.name`/`m.is_user` per message —
+  never a fixed `name2`/`this_chid` — so multi-character group chats are handled
+  without special-casing. Regression tests added (P6.1): a 3-distinct-character
+  chat is exercised through each extractor. Sentinel memory writes delegate to
+  upstream's own `runSceneMemoryRange` → `compileScene`, which already computes
+  group `characterFilterNames`; Auditor/Clipper+/Injection intentionally write
+  un-filtered keyword-activated living lore (persistent facts aren't scoped to
+  "who's currently in the scene"), so no fork-side group filtering was added
+  there — this is a deliberate design choice, not a gap.
+- **Mid-job API-failure surfacing (no silent poisoning):** audited every
+  fork subsystem's error path.
+  - Sentinel: fixed prior to this pass (commit `e4103e6`) — a mid-cycle
+    `runSceneMemoryRange` failure now toasts.
+  - Auditor dashboard job (`executeAuditJob`): already surfaced via
+    `context.setDetail("...extraction error, continuing")` per chunk.
+  - Auditor **inline fallback** (`runAuditInline`, used when the jobs dashboard
+    is unavailable): **was a real gap** — `onProgress` was wired to a no-op, so
+    per-chunk extraction errors vanished with no console line and no toast.
+    Fixed: tallies errored chunks and appends an
+    `"(N chunks had extraction errors and were skipped)"` note to the final
+    toast/return message (warning severity, not success, when any occurred).
+  - Auditor jobs (`/stmbc-coverage`, `/stmbc-regen`): already toast on failure.
+  - Clipper+ (`maybeGeneratePairedContextEntry`): **was a real gap** — every
+    "never guess" skip path (`§5.2`) already `return`s before the outer
+    `catch`, so that catch is exclusively the genuine-API-error path, yet it
+    only did `console.error`. Fixed: now also `toastr.warning`s (the clip
+    itself was already saved either way, so severity stays a warning, not an
+    error).
+  - Injection (`buildLivingContextPreamble`): intentionally left silent
+    (`console.warn` + fall back to the base prompt). This runs on *every*
+    generation, not as a discrete job — toasting on every failed injection
+    would be UX spam, not hardening. Documented here so it isn't mistaken for
+    an oversight on a future pass.
+  - Bundle rebuilt (`bun run build.ts`) after the Clipper+/Auditor fixes.
+- **Full acceptance re-run:** all `*.test.js` suites green (151 cases across
+  sentinel/auditor/auditorJobs/clipperPlus/injection/sidePromptSetDefaults/
+  stloCharacterFilters, including the 3 new P6.1 group-chat cases). Phase 0
+  eval (P0.4) re-run against the fixture via the claude-cli shim; see
+  `eval/README.md` for the refreshed result.

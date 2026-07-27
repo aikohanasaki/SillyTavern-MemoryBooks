@@ -170,13 +170,15 @@ export function buildDetectionWindow(chat, { watermark, window: windowSize, over
 export function sentinelConfigFromAutoSettings(globalAuto, chatAuto = {}, detectionPrompt = null) {
     const g = globalAuto || {};
     const c = chatAuto || {};
+    const window = g.windowSize ?? SENTINEL_DEFAULTS.window;
+    const guard = g.guardSize ?? SENTINEL_DEFAULTS.guard;
     return {
         ...SENTINEL_DEFAULTS,
-        cadenceN: g.cadenceMessages ?? SENTINEL_DEFAULTS.cadenceN,
-        window: g.windowSize ?? SENTINEL_DEFAULTS.window,
+        cadenceN: effectiveCadence(g.cadenceMessages ?? SENTINEL_DEFAULTS.cadenceN, window, guard),
+        window,
         overlap: g.windowOverlap ?? SENTINEL_DEFAULTS.overlap,
         truncate: g.truncateChars ?? SENTINEL_DEFAULTS.truncate,
-        guard: g.guardSize ?? SENTINEL_DEFAULTS.guard,
+        guard,
         detectionProfile: g.detectionProfileIndex ?? SENTINEL_DEFAULTS.detectionProfile,
         detectionPrompt: detectionPrompt ?? null,
         structureHintRegex: c.structureHintRegex || null,
@@ -184,8 +186,43 @@ export function sentinelConfigFromAutoSettings(globalAuto, chatAuto = {}, detect
 }
 
 /**
+ * Clamp the configured cadence to what the detection window can actually cover.
+ *
+ * Once the cadence is an edge trigger (PHA-1547) the sentinel looks at the tail
+ * once and then waits `cadenceN` messages before looking again. Between those
+ * two looks the window must still reach back over everything the first look saw
+ * but was forbidden to cut — the final `guard` messages. The next window spans
+ * `[end + cadenceN - window + 1 .. end + cadenceN]`, so covering `end - guard + 1`
+ * requires:
+ *
+ *     cadenceN <= window - guard
+ *
+ * Violate it and messages fall between two looks and are never re-examined:
+ * on the Phase 2 fixture, cadence 24 / window 16 drops boundary coverage from
+ * 22/22 to 8/19, and cadence 200 / window 26 to 1/13. The settings panel allows
+ * cadence up to 200 and windows as small as 4, so this is reachable by a user
+ * turning one knob — and the old level trigger hid it by re-looking on every
+ * single message, at ~12x the LLM cost.
+ *
+ * Clamping errs toward looking MORE often than asked, never less, and the
+ * shipped defaults (cadence 8, window 26, guard 4 => limit 22) are untouched.
+ *
+ * @param {number} cadenceN
+ * @param {number} window
+ * @param {number} guard
+ * @returns {number} the cadence the sentinel will actually use (>= 1)
+ */
+export function effectiveCadence(cadenceN, window, guard) {
+    const requested = Number(cadenceN);
+    const limit = Number(window) - Number(guard);
+    const safe = Number.isFinite(limit) ? Math.max(1, limit) : 1;
+    if (!Number.isFinite(requested) || requested < 1) return Math.min(SENTINEL_DEFAULTS.cadenceN, safe);
+    return Math.min(requested, safe);
+}
+
+/**
  * The cadence predicate: has the chat grown by at least `cadenceN` messages
- * since the watermark? (plan §3.3)
+ * since the last point the sentinel is known to have looked at? (plan §3.3)
  *
  * P2.1↔P2.3 integration: this is the single source of truth for "should a
  * cycle happen now". It is consulted twice, deliberately and idempotently:
@@ -194,15 +231,42 @@ export function sentinelConfigFromAutoSettings(globalAuto, chatAuto = {}, detect
  *   2. inside the engine itself — because a queued job may run much later,
  *      by which time the watermark may have moved.
  *
+ * EDGE, NOT LEVEL (PHA-1547). Measuring purely from the watermark makes this a
+ * *level* trigger: once the backlog exceeds `cadenceN` the predicate stays true
+ * on every subsequent message until a memory advances the watermark, so a
+ * 34-message scene burns ~26 detection calls to find its one boundary (279
+ * cycles / 22 memories on the Phase 2 fixture, 257 of them fruitless). Offline
+ * that is only a cycle count; in production every one is a real LLM call.
+ *
+ * `cadenceFloor` is the fix: the highest chat index a completed detection call
+ * has already examined (`window.end` of the last cycle that actually reached
+ * the detector). Measuring from `max(watermark, cadenceFloor)` turns this into
+ * an edge trigger — after a cycle looks at the tail and commits to what it
+ * found there, we wait a full `cadenceN` before paying for another look.
+ *
+ * Re-examination is not lost: the window (26) is far wider than the cadence
+ * step (8) plus the guard (4), so the next cycle still re-covers everything the
+ * previous one could legally have cut, minus what it already memorized.
+ *
+ * A floor ahead of `lastIndex` is stale (messages deleted, branch swap, chat
+ * reload onto a shorter history) and is ignored rather than deadlocking the
+ * gate forever.
+ *
  * @param {number} chatLength
  * @param {number} watermark - highest already-memorized chat index (-1 = none)
  * @param {number} cadenceN
+ * @param {number} [cadenceFloor=-1] - highest chat index already examined by a
+ *        completed detection call (-1 = none); see sentinelCadence.js, which
+ *        owns its persistence in chat metadata.
  * @returns {boolean}
  */
-export function isCadenceReached(chatLength, watermark, cadenceN) {
+export function isCadenceReached(chatLength, watermark, cadenceN, cadenceFloor = -1) {
     const lastIndex = Number(chatLength) - 1;
     if (!Number.isFinite(lastIndex) || lastIndex < 0) return false;
-    return (lastIndex - Number(watermark)) >= Number(cadenceN);
+    const floor = Number(cadenceFloor);
+    const usableFloor = (Number.isFinite(floor) && floor <= lastIndex) ? floor : -1;
+    const since = Math.max(Number(watermark), usableFloor);
+    return (lastIndex - since) >= Number(cadenceN);
 }
 
 /**

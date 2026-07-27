@@ -59,10 +59,11 @@ test('CHANGELOG.fork.md exists and has AGPL header', () => {
     assert.match(changelogFork, /^<!--[\s\S]*?AGPL-3\.0-only[\s\S]*?-->/m, 'CHANGELOG.fork.md needs AGPL header');
 });
 
-test('CHANGELOG.fork.md: documents Phase 0 / 1 / 2 / 4 with commit references', () => {
+test('CHANGELOG.fork.md: documents Phase 0 / 1 / 2 / 3 / 4 with commit references', () => {
     assert.match(changelogFork, /Phase 0/, 'must document Phase 0');
     assert.match(changelogFork, /Phase 1/, 'must document Phase 1');
     assert.match(changelogFork, /Phase 2/, 'must document Phase 2');
+    assert.match(changelogFork, /Phase 3/, 'must document Phase 3');
     assert.match(changelogFork, /Phase 4/, 'must document Phase 4');
 });
 
@@ -75,6 +76,9 @@ test('CHANGELOG.fork.md: lists every new file', () => {
         'eval/run.js',
         'autoSettings.js',
         'sceneCharacterFilter.js',
+        'clipperPlus.js',
+        'clipperPlusCore.js',
+        'clipperPlus.test.js',
     ]) {
         assert.match(changelogFork, new RegExp(f.replace(/\./g, '\\.')), `CHANGELOG.fork.md must mention ${f}`);
     }

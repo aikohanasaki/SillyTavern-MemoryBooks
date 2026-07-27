@@ -1,0 +1,6 @@
+{
+  "endpoint": "http://127.0.0.1:8787/v1/chat/completions",
+  "model": "claude-haiku-4-5-20251001",
+  "temperature": 0,
+  "maxTokens": 300
+}

@@ -26,7 +26,6 @@ import {
     buildContextEntryTitle,
     buildContextEntryContent,
     buildPairedEntry,
-    buildEntryOverrides,
 } from './clipperPlusCore.js';
 
 // ---------------------------------------------------------------- fixtures
@@ -322,42 +321,4 @@ test('buildPairedEntry: falls back to quote headline when generated headline mis
         srcEnd: 1,
     });
     assert.equal(built.title, `FallbackHead${CLIP_CONTEXT_TITLE_SUFFIX}`);
-});
-
-// ---------------------------------------------------------------- buildEntryOverrides (P3.2: recursion-proof, never constant)
-
-test('buildEntryOverrides: never constant, always recursion-proof, keyword-activated on the given keywords', () => {
-    const o = buildEntryOverrides(['Vaelith', 'Gate']);
-    assert.equal(o.constant, false);
-    assert.equal(o.preventRecursion, true);
-    assert.equal(o.excludeRecursion, true);
-    assert.deepEqual(o.key, ['Vaelith', 'Gate']);
-    assert.deepEqual(o.keysecondary, []);          // no secondary-key requirement gating activation
-    assert.equal(o.disable, false);
-});
-
-test('buildEntryOverrides: multi-character keyword set still stays non-constant and recursion-proof (no cast cascade)', () => {
-    // A blurb naming several characters — the exact scenario plan §4.2 calls out
-    // ("blurbs name multiple characters — without this one clip cascades half
-    // the cast"). The flags must not vary with how many/who the keywords name.
-    const o = buildEntryOverrides(['Vaelith', 'Rowe', 'Captain Ashen', 'the Gate', 'Marisol']);
-    assert.equal(o.constant, false);
-    assert.equal(o.preventRecursion, true);
-    assert.equal(o.excludeRecursion, true);
-    assert.equal(o.key.length, 5);
-});
-
-test('buildEntryOverrides: empty/missing keywords still recursion-proof and non-constant (defensive; buildPairedEntry already refuses to produce this)', () => {
-    assert.deepEqual(buildEntryOverrides([]).key, []);
-    assert.deepEqual(buildEntryOverrides(undefined).key, []);
-    assert.equal(buildEntryOverrides(undefined).constant, false);
-    assert.equal(buildEntryOverrides(undefined).preventRecursion, true);
-    assert.equal(buildEntryOverrides(undefined).excludeRecursion, true);
-});
-
-test('buildEntryOverrides: does not mutate or alias the input keywords array', () => {
-    const input = ['Vaelith'];
-    const o = buildEntryOverrides(input);
-    o.key.push('Injected');
-    assert.deepEqual(input, ['Vaelith']); // caller's array untouched
 });

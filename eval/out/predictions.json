@@ -1,0 +1,367 @@
+{
+  "fixture": "fixture.json",
+  "config": {
+    "endpoint": "http://127.0.0.1:8787/v1/chat/completions",
+    "model": "claude-haiku-4-5-20251001",
+    "temperature": 0,
+    "window": 26,
+    "overlap": 8,
+    "truncate": 500,
+    "guard": 4,
+    "prompt": "You are a scene-boundary detector for long-form fiction. Below are numbered\nmessages in the form \"[id] Speaker: text\" (truncated). Identify every message\nID that BEGINS a new scene. Mark EVERY change of location however small (room\nto room, indoors to outdoors), any time skip of an hour or more, dream\nsequences, cutaways, and interludes. Be sensitive rather than conservative.\nContinuous action in one place is ONE scene even if the topic shifts.\nDo NOT mark any boundary within the final 4 messages (that scene may be\nincomplete). Reply with ONLY a JSON array of integers, e.g. [12, 27], or []."
+  },
+  "stats": {
+    "windows": 18,
+    "skippedWindows": 0,
+    "predictions": 36
+  },
+  "predictions": [
+    2,
+    25,
+    29,
+    36,
+    53,
+    54,
+    55,
+    57,
+    69,
+    73,
+    85,
+    104,
+    110,
+    114,
+    123,
+    126,
+    133,
+    172,
+    174,
+    180,
+    182,
+    195,
+    218,
+    226,
+    228,
+    241,
+    251,
+    252,
+    257,
+    267,
+    273,
+    283,
+    287,
+    304,
+    305,
+    306
+  ],
+  "windows": [
+    {
+      "window": 0,
+      "start": 0,
+      "end": 25,
+      "guardStart": 22,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking through the text for scene boundaries (location changes, time skips, setting shifts):\n\n**Scene Analysis:**\n\n- **[0-1]**: White void → continuous\n- **[2]**: ✓ **NEW SCENE** — Location change from abstract void to physical crypt (\"cold, wet stone,\" \"thick and sour\" air)\n- **[3-22]**: All continuous action within the crypt/underground chamber and its entrance/stairs\n- **[23-25]**: Outside at the farm (within final 4 messages, excluded per instructions)\n\n[2]",
+        "[2]"
+      ],
+      "accepted": [
+        2
+      ],
+      "dropped": []
+    },
+    {
+      "window": 1,
+      "start": 18,
+      "end": 43,
+      "guardStart": 40,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[25, 29, 36]\n```\n\n**Reasoning:**\n- **[25]** Starts a new scene: Brandon moves from the church/sanctuary location to a moonlit field alone outside the farmhouse (\"I wait until they all head inside and i am alone in the swaying moonlit field outside of the farm house\").\n- **[29]** Starts a new scene: Brandon moves indoors into the farmhouse kitchen (\"I walk inside... Heat wraps around you the moment you cross the threshold...\").\n- **[36]** Starts a new scene: The group moves from inside the kitchen to outside the fence perimeter around the farm (\"The kitchen empties like a tipped bucket. Cultists pour out the front door into the moonlight...\").",
+        "[25, 29, 36]"
+      ],
+      "accepted": [
+        25,
+        29,
+        36
+      ],
+      "dropped": []
+    },
+    {
+      "window": 2,
+      "start": 36,
+      "end": 61,
+      "guardStart": 58,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at this passage, I need to identify scene boundaries while avoiding the final 4 messages (58-61).\n\nLet me trace through:\n\n**[36-52]**: Farm location during battle. Despite multiple speakers and shifts in dialogue topic, this is continuous action in one place (farm perimeter, barn area).\n\n**[53]**: Brandon dreams - explicitly begins a dream sequence. This is a boundary.\n\n**[54]**: Dream continues (Earth pedestrian crossing). Same dream scene as [53].\n\n**[55]**: Brandon wakes up (\"I rise and stretch\"). This marks the end of the dream interlude and return to the farm. Time has passed (characters slept), and there's a clear break from the dream sequence. This is a boundary.\n\n**[56]**: Still indoors, conversing with Pemberly. Same scene as [55].\n\n**[57]**: \"I walk out and up the road to meet the rider\" - Location change from indoors to outdoors on the road. This is a boundary.\n\n**[58-61]**: Within the final 4 messages, so no boundaries marked here.\n\n```json\n[53, 55, 57]\n```",
+        "[53, 55, 57]"
+      ],
+      "accepted": [
+        53,
+        55,
+        57
+      ],
+      "dropped": []
+    },
+    {
+      "window": 3,
+      "start": 54,
+      "end": 79,
+      "guardStart": 76,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[54, 57, 69, 73]\n```\n\n**Reasoning:**\n\n- **[54]**: Dream sequence explicitly marked (\"The dream begins with home\"), distinct narrative mode before waking\n- **[57]**: Location change from building/farm indoors to outdoor road (\"I walk out and up the road\")\n- **[69]**: Location change from outdoor/yard area to inside building (\"I walk back inside and join the crew\")\n- **[73]**: Time skip to new day (\"Thursday morning\") plus location change to journey/farmer's market",
+        "[54, 57, 69, 73]"
+      ],
+      "accepted": [
+        54,
+        57,
+        69,
+        73
+      ],
+      "dropped": []
+    },
+    {
+      "window": 4,
+      "start": 72,
+      "end": 97,
+      "guardStart": 94,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at the narrative progression:\n\n**[72]** - Kitchen scene at Bramblehold, discussion about the levy\n\n**[73]** - \"Thursday morning. Button is wearing his new outfit...\" \n- **NEW SCENE**: Clear time skip (from previous scenes to Thursday morning) and location change (kitchen → heading to farmer's market)\n\n**[74-84]** - Continuous progression: traveling the county road → encounter at Guild outpost → in Millbrook gathering supplies and recruiting soldiers. All one location/action complex.\n\n**[85]** - \"I step the man and clear my throat. 'I have a better and much simpler offer...'\"\n- **NEW SCENE**: Clear location shift. They were marching out of Millbrook on the road (end of [84]); now they're at the fort confronting Vane. New location, new tactical moment.\n\n**[86-97]** - Continuous action at the fort: duel with Vane, confrontation in courtyard, negotiation with Baron, strategic orders. Same scene despite moving from slope to courtyard (unified military operation).\n\n**Answer: [73, 85]**",
+        "[73, 85]"
+      ],
+      "accepted": [
+        73,
+        85
+      ],
+      "dropped": []
+    },
+    {
+      "window": 5,
+      "start": 90,
+      "end": 115,
+      "guardStart": 112,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at the messages [90] through [115], I need to identify scene boundaries based on location changes, time skips, and other transitions.\n\n**Analysis:**\n\n- **[90-103]**: All continuous action in the **courtyard** at the keep. Despite shifts in conversation (from Reeve Fenn, to Baron Wexley negotiations, to Pemberly's window, to Assessor Wimble's invitation), it's the same physical location with no time breaks.\n\n- **[104]**: Clear **location change** — the narrative moves from the courtyard/gate to **the interior great hall** (\"The great hall of Bramblehold turns out to be a long timber room...\"). This is a new scene.\n\n- **[104-112]**: All happening inside the great hall in the same continuous moment—negotiating with Wimble, the Dread Lord registration, the parting gift preparation.\n\n- **[113-115]**: Within the final 4 messages, so per instructions, I cannot mark boundaries here (even though [114] has \"by early afternoon,\" indicating a time skip).\n\n```json\n[104]\n```",
+        "```json\n[104]\n```"
+      ],
+      "accepted": [
+        104
+      ],
+      "dropped": []
+    },
+    {
+      "window": 6,
+      "start": 108,
+      "end": 133,
+      "guardStart": 130,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[110, 114, 123, 126]\n```"
+      ],
+      "accepted": [
+        110,
+        114,
+        123,
+        126
+      ],
+      "dropped": []
+    },
+    {
+      "window": 7,
+      "start": 126,
+      "end": 151,
+      "guardStart": 148,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at these messages, I need to identify scene boundaries—changes in location, time skips of an hour or more, or other structural breaks.\n\nLet me trace through:\n\n- **[126-132]**: Continuous action in the courtyard/gatehouse area during the pig dispute confrontation. All dialogue and description stay in this same location and moment.\n\n- **[133]**: \"In a few hours the Dreadhold had begin to fill with wagons...\" — This is an explicit **time jump of several hours**. This begins a new scene.\n\n- **[134-146]**: Continuous action during the formal meeting in the great hall. Same location (the hall/courtyard, now set up for the meeting), continuous sequence of events with no location or significant time changes.\n\n- **[147-151]**: Still within the meeting, same location and event. (Also within the final 4 messages, so I don't mark boundaries here regardless.)\n\n**Answer: [133]**",
+        "```json\n[133]\n```"
+      ],
+      "accepted": [
+        133
+      ],
+      "dropped": []
+    },
+    {
+      "window": 8,
+      "start": 144,
+      "end": 169,
+      "guardStart": 166,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[]\n```\n\nThe entire passage (messages 144-165, excluding the protected final 4) represents continuous action in a single location: the hall during an official proceeding. While the topic shifts from the fishwife's appointment to questioning Bramwick to addressing casualties to making proclamations, this is unbroken continuous dialogue and action in one place. There are no location changes, no time skips of an hour or more, no cutaways or interludes—just the natural flow of a formal gathering as different matters are discussed in sequence.",
+        "[]"
+      ],
+      "accepted": [],
+      "dropped": []
+    },
+    {
+      "window": 9,
+      "start": 162,
+      "end": 187,
+      "guardStart": 184,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking through the messages for scene boundaries:\n\n- **[162-170]**: All in the hall with continuous action\n- **[171]**: Narrative summary bridge (16-hour skip mentioned)\n- **[172]**: NEW SCENE - Location shift to locked room; Tobbin working late into the night\n- **[173-179]**: Road/journey; discussing and then marching the column\n- **[174]**: NEW SCENE - \"The column stops\" clearly establishes active travel/journey (distinct from [172]'s interior location)\n- **[180]**: NEW SCENE - \"Two hours of marching\" + time skip + specific location change (Bramwick's south pasture; world draining of color)\n- **[181-182]**: Approaching/entering corrupted area\n- **[182]**: NEW SCENE - Crosses moss line into the miasma; dramatic shift into corrupted space\n- **[183-187]**: Final 4 messages (cannot mark these per instructions)\n\n```json\n[172, 174, 180, 182]\n```",
+        "[172, 174, 180, 182]"
+      ],
+      "accepted": [
+        172,
+        174,
+        180,
+        182
+      ],
+      "dropped": []
+    },
+    {
+      "window": 10,
+      "start": 180,
+      "end": 205,
+      "guardStart": 202,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[180, 195]\n```"
+      ],
+      "accepted": [
+        180,
+        195
+      ],
+      "dropped": []
+    },
+    {
+      "window": 11,
+      "start": 198,
+      "end": 223,
+      "guardStart": 220,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking through this text for scene boundaries—changes in location, significant time skips, or transitions:\n\n- **Messages 198-217**: All occur at the mire. The action is continuous despite shifts in topic (negotiating with the Drinker, striking it down, celebrating). Message 216's brief divine-system interlude is a cutaway but doesn't move the physical location. Message 217 expresses the *desire* to go to the village but they're still at the mire.\n\n- **Message 218**: \"Mosshaven sits an hour north-west of the mire, and the column walks it in a quiet...\" — This is a **clear scene boundary**. They physically travel from the mire to Mosshaven village, with an hour-long time skip during the journey.\n\n- **Messages 219-223**: The final 4 messages are excluded per instructions.\n\n**[218]**",
+        "[218]"
+      ],
+      "accepted": [
+        218
+      ],
+      "dropped": []
+    },
+    {
+      "window": 12,
+      "start": 216,
+      "end": 241,
+      "guardStart": 238,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking through the messages for scene boundaries (location changes, time skips of 1+ hours, cutaways):\n\n- **[216-217]**: Ethereal/bureaucratic space, continuous conversation\n- **[218]**: BOUNDARY - Location change to Mosshaven village: \"Mosshaven sits an hour north-west of the mire, and the column walks it in a quiet...\" - explicit travel to new location\n- **[219-225]**: Continuous action at Mosshaven (planning, planting the seed, conversation with the sapling)\n- **[226]**: BOUNDARY - Travel and location change from Mosshaven: \"The column marches home through a county turning green behind it... At the ford, two Coldwater farmers stand in the shallows...\" - journey and arrival at new location\n- **[227]**: Continues from 226, still traveling\n- **[228]**: BOUNDARY - New location with \"the crowd\": \"Clarissa's chalk snaps in half... she glances at the crowd\" - shifts to what appears to be an audience chamber or public space, different from the journey\n- **[229-237]**: Continuous action in the hall with Corvin, single location\n- **[238-241]**: Final 4 messages (excluded per instructions)\n\n```json\n[218, 226, 228]\n```",
+        "[218, 226, 228]"
+      ],
+      "accepted": [
+        218,
+        226,
+        228
+      ],
+      "dropped": []
+    },
+    {
+      "window": 13,
+      "start": 234,
+      "end": 259,
+      "guardStart": 256,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at the messages for scene boundaries, I need to identify changes in location, time skips, dream sequences, and other transition markers while excluding the final 4 messages ([256-259]).\n\nLet me trace through:\n\n**[234-240]**: Herald scene - formal conversation with Ashe (the Herald) in an implied formal court/meeting location. Brandon delivers a message via geas. Continuous action in one location.\n\n**[241]**: Scene shift begins here. Brandon addresses his party with \"We're all going to be summarily executed by the king.\" This is a clear location change from the Herald's formal setting.\n\n**[241-250]**: Courtyard scene - Brandon gathers his party, discusses the royal summons, makes a roster of who will attend, and receives instructions about formal wear. All continuous action in the courtyard despite topic shifts.\n\n**[251]**: **NEW SCENE** - \"That night, I have another vision laden dream.\" This explicitly marks:\n- Time skip (to night time)\n- Location change (to divine dream space)\n- Dream sequence\n\n**[252-259]**: Dream sequence continues, then transitions to waking/morning. [256-259] are the final 4 messages, so no boundaries can be marked there.\n\n```json\n[241, 251]\n```",
+        "[241, 251]"
+      ],
+      "accepted": [
+        241,
+        251
+      ],
+      "dropped": []
+    },
+    {
+      "window": 14,
+      "start": 252,
+      "end": 277,
+      "guardStart": 274,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[252, 257, 267, 273]\n```"
+      ],
+      "accepted": [
+        252,
+        257,
+        267,
+        273
+      ],
+      "dropped": []
+    },
+    {
+      "window": 15,
+      "start": 270,
+      "end": 295,
+      "guardStart": 292,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "```json\n[273, 283, 287]\n```\n\n**Reasoning:**\n\n- **[273]** – Brandon \"push the door open\" transitions from the breakfast table/hall to the east room where the Baron is pacing. Clear location change (indoors, room-to-room).\n\n- **[283]** – \"—-the morning we are set to depart—\" marks a significant time skip from the previous night's conversation with the Baron to departure morning. Overnight jump of many hours.\n\n- **[287]** – \"We're passing by there anyway\" begins the road/travel scene at a crossroads meeting point, distinct from the courtyard departure in [286]. Confirmed by [288-290]'s references to being at a crossroads where a trough and armed column are present. Clear location change from stationary courtyard.",
+        "[273, 283, 287]"
+      ],
+      "accepted": [
+        273,
+        283,
+        287
+      ],
+      "dropped": []
+    },
+    {
+      "window": 16,
+      "start": 288,
+      "end": 313,
+      "guardStart": 310,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at the text provided, I'll identify scene boundaries by tracking location and time changes:\n\n**[288-303]**: Continuous scene at the camp/crossroads where they receive the letter and make plans. Different topics discussed but same location.\n\n**[304]**: NEW SCENE - \"The day passes at a canter...\" describes a full day of travel with significant time skip (hour+) and multiple location changes (farmland → hill country → river plain toward Thornwall).\n\n**[305]**: NEW SCENE - \"Then let's not be the spark. Let's fall in with the morning crowd...\" Brandon speaks as they arrive at Thornwall in the morning. Time shift (end of day travel → next morning) and location shift (on the road → at Thornwall's approach).\n\n**[306]**: NEW SCENE - \"Incognito, for the record, consists of...\" They're now inside Thornwall town itself. Clear location shift (outside/approaching → inside gates and streets).\n\n**[307-309]**: Same scene as [306] - continuous action in Thornwall town, moving toward and infiltrating the office.\n\n**[310-313]**: Final four messages - per instructions, no scene boundaries marked here even though [310] shows a crossing of River Street.\n\n```json\n[304, 305, 306]\n```",
+        "[304, 305, 306]"
+      ],
+      "accepted": [
+        304,
+        305,
+        306
+      ],
+      "dropped": []
+    },
+    {
+      "window": 17,
+      "start": 303,
+      "end": 328,
+      "guardStart": 325,
+      "skipped": false,
+      "error": null,
+      "rawAttempts": [
+        "Looking at this narrative passage, I need to identify scene boundaries based on location changes, time skips, and other transitions.\n\nLet me trace through:\n\n- **[303-304]**: [303] Brandon initiates action with \"And... we ride.\" [304] describes **the day passing** with geographic progression (farmland → hill country → river plain). This is a clear time skip of several hours and represents a travel scene. **[304] BEGINS A NEW SCENE**.\n\n- **[305-306]**: [305] Brandon speaks about entering incognito as they approach. [306] describes arrival at Thornwall's gate. These are continuous moments of approach/entry. **[306] BEGINS A NEW SCENE** (location change: road → town/gate).\n\n- **[307-324]**: All action remains in Thornwall - walking through streets (River Street), confrontation on the street, resolution at the office wall. **Same continuous scene despite topic shifts**.\n\n- **[325-328]**: These are in the final 4 messages, so per instructions I do not mark boundaries here.\n\n```json\n[304, 306]\n```",
+        "[304, 306]"
+      ],
+      "accepted": [
+        304,
+        306
+      ],
+      "dropped": []
+    }
+  ]
+}

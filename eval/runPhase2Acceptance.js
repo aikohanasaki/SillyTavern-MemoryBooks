@@ -186,6 +186,12 @@ async function main() {
     log(`  memorized ranges       ${base.processedRanges.length}`);
     log(`  gaps in coverage       ${gaps.length}`);
     log(`  cycles run             ${base.cycles.length}  (${Object.entries(cycleActions).map(([k, v]) => `${k}=${v}`).join(', ')})`);
+    // Every cycle that reaches the detector is a real LLM call in production,
+    // so this is a cost line, not a curiosity (PHA-1547). The floor is what an
+    // edge trigger can achieve: one look per cadence step across the chat.
+    log(`  detection cost         ${(base.cycles.length / Math.max(1, base.processedRanges.length)).toFixed(1)}`
+        + ` cycles per memory (cheapest possible: ${Math.ceil(fx.chat.length / config.cadenceN)} cycles total`
+        + ` at cadence ${config.cadenceN})`);
     log(`  final watermark        ${base.finalWatermark} of ${fx.chat.length - 1}`);
     log('');
     log('Criterion 2 — zero mid-scene cuts');
