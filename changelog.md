@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 **← [Back to README](readme.md)**
 
+## v8.3.2 (July 28, 2026)
+- Tweak: Treat group chat overall consolidation as timeline rather than summary.
+
 ## v8.3.1 (July 27, 2026)
 - Enhancement: Added ability to designate custom connection profiles.
 
