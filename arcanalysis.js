@@ -335,6 +335,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
     api: conn.api,
     endpoint: conn.endpoint,
     apiKey: conn.apiKey,
+    connectionProfileId: conn.connectionProfileId,
     extra,
     reverseProxy: !!conn.reverseProxy,
     signal,
@@ -364,6 +365,7 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
       api: conn.api,
       endpoint: conn.endpoint,
       apiKey: conn.apiKey,
+      connectionProfileId: conn.connectionProfileId,
       extra,
       reverseProxy: !!conn.reverseProxy,
       signal,
@@ -612,7 +614,7 @@ export function parseArcJsonResponse(text) {
  *   minAssigned?: number (default 2),
  *   tokenTarget?: number (estimated input tokens; default ~2000)
  * }
- * profileOrConnection: profile object with effectiveConnection, or a direct connection object { api, model, temperature, endpoint?, apiKey? }
+ * profileOrConnection: profile object with effectiveConnection, or a direct connection object { api, model, temperature, endpoint?, apiKey?, connectionProfileId? }
  */
 export async function runSummaryAnalysisSequential(
   selectedEntries,
@@ -824,6 +826,7 @@ export async function runSummaryAnalysisSequential(
           api: conn.api,
           endpoint: conn.endpoint,
           apiKey: conn.apiKey,
+          connectionProfileId: conn.connectionProfileId,
           extra,
           reverseProxy: !!conn.reverseProxy,
           signal: task.signal,
@@ -861,6 +864,7 @@ export async function runSummaryAnalysisSequential(
             api: conn.api,
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
+            connectionProfileId: conn.connectionProfileId,
             extra,
             reverseProxy: !!conn.reverseProxy,
             signal: task.signal,
@@ -1101,6 +1105,7 @@ function resolveConnection(profileOrConnection) {
             : getUIModelSettings().temperature ?? 0.2,
       endpoint: c.endpoint,
       apiKey: c.apiKey,
+      connectionProfileId: c.connectionProfileId,
       reverseProxy: !!c.reverseProxy,
       useChatCompletionService: !!profileOrConnection.useChatCompletionService && api !== "full-manual",
       chatCompletionPreset:

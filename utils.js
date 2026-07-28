@@ -569,13 +569,13 @@ export async function estimateTokens(text, options = {}) {
 
 /**
  * Resolve a profile's effective connection into a normalized shape
- * { api, model, temperature, endpoint, apiKey, reverseProxy }.
+ * { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy }.
  * - Applies normalizeCompletionSource to api
  * - Clamps temperature to [0, 2] with default 0.7
- * - Passes through endpoint/apiKey/reverseProxy if provided on the profile connection
+ * - Passes through endpoint/apiKey/connectionProfileId/reverseProxy if provided on the profile connection
  *
  * @param {Object} profile
- * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string, reverseProxy?: boolean }}
+ * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string, connectionProfileId?: string, reverseProxy?: boolean }}
  */
 export function resolveEffectiveConnectionFromProfile(profile) {
     const conn = (profile?.effectiveConnection || profile?.connection || {});
@@ -587,9 +587,10 @@ export function resolveEffectiveConnectionFromProfile(profile) {
     }
     const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
     const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
+    const connectionProfileId = conn.connectionProfileId ? String(conn.connectionProfileId) : undefined;
     const reverseProxy = !!conn.reverseProxy;
 
-    return { api, model, temperature, endpoint, apiKey, reverseProxy };
+    return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy };
 }
 
 export function createGroupParticipantResolver() {
@@ -1364,6 +1365,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {boolean} [data.skipStructuredOutput=false] - Whether to skip provider structured-output requests.
  * @param {boolean} [data.useChatCompletionService=false] - Whether to use SillyTavern's ChatCompletionService for eligible requests.
  * @param {string} [data.chatCompletionPreset=''] - Optional SillyTavern chat completion preset for ChatCompletionService.processRequest.
+ * @param {string} [data.connectionProfileId=''] - Optional SillyTavern Custom connection profile ID.
  * @param {boolean} [data.reverseProxy=false] - Whether this profile should use reverse proxy settings.
  * @returns {Object} A structured and validated profile object.
  */
@@ -1433,6 +1435,13 @@ export function createProfileObject(data = {}) {
     const model = (data.model ?? inputConn.model ?? '').trim();
     if (model) {
         profile.connection.model = model;
+    }
+
+    const connectionProfileId = String(
+        data.connectionProfileId ?? inputConn.connectionProfileId ?? '',
+    ).trim();
+    if (profile.connection.api === 'custom' && connectionProfileId) {
+        profile.connection.connectionProfileId = connectionProfileId;
     }
 
     // Add endpoint and apiKey for full-manual configuration
