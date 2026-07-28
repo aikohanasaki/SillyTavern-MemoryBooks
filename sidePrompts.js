@@ -322,7 +322,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  */
 async function runLLM(prompt, overrides = null, options = {}) {
     // Determine connection
-    let api, model, temperature, endpoint, apiKey, reverseProxy, useChatCompletionService, chatCompletionPreset;
+    let api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, useChatCompletionService, chatCompletionPreset;
 
     if (overrides && (overrides.api || overrides.model)) {
         api = normalizeCompletionSource(overrides.api || 'openai');
@@ -330,6 +330,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         temperature = typeof overrides.temperature === 'number' ? overrides.temperature : 0.7;
         endpoint = overrides.endpoint || null;
         apiKey = overrides.apiKey || null;
+        connectionProfileId = overrides.connectionProfileId || null;
         reverseProxy = !!overrides.reverseProxy;
         useChatCompletionService = !!overrides.useChatCompletionService && api !== 'full-manual';
         chatCompletionPreset = useChatCompletionService ? String(overrides.chatCompletionPreset || '').trim() : '';
@@ -366,6 +367,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         temperature,
         endpoint,
         apiKey,
+        connectionProfileId,
         extra,
         reverseProxy,
         signal: options?.signal || null,
@@ -394,7 +396,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
  *   - If default is dynamic "Current SillyTavern Settings", mirror current UI settings.
  *   - Else use the stored connection of that profile.
  * Fallback to UI settings only if settings are missing/invalid.
- * @returns {{api: string, model: string, temperature: number, endpoint?: string|null, apiKey?: string|null, extra?: Record<string,any>|undefined}} The resolved connection object.
+ * @returns {{api: string, model: string, temperature: number, endpoint?: string|null, apiKey?: string|null, connectionProfileId?: string|null, extra?: Record<string,any>|undefined}} The resolved connection object.
  */
 function resolveSidePromptConnection(profile = null, options = {}) {
     try {
@@ -402,12 +404,12 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         if (profile && (profile.effectiveConnection || profile.connection)) {
             const rawConn = profile.effectiveConnection || profile.connection || {};
             const conn = resolveEffectiveConnectionFromProfile(profile);
-            const { api, model, temperature, endpoint, apiKey, reverseProxy } = conn;
+            const { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy } = conn;
             const extra = rawConn && typeof rawConn.extra === 'object' && rawConn.extra ? rawConn.extra : undefined;
             const useChatCompletionService = !!profile.useChatCompletionService && api !== 'full-manual';
             const chatCompletionPreset = useChatCompletionService ? String(profile.chatCompletionPreset || '').trim() : '';
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
+            return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
         }
 
         const settings = extension_settings?.STMemoryBooks;
@@ -437,12 +439,13 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
                 const endpoint = conn.endpoint || null;
                 const apiKey = conn.apiKey || null;
+                const connectionProfileId = conn.connectionProfileId || null;
                 const reverseProxy = !!conn.reverseProxy;
                 const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
                 const useChatCompletionService = !!over?.useChatCompletionService && api !== 'full-manual';
                 const chatCompletionPreset = useChatCompletionService ? String(over?.chatCompletionPreset || '').trim() : '';
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
+                return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
             }
         }
 
@@ -480,12 +483,13 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
             const endpoint = conn.endpoint || null;
             const apiKey = conn.apiKey || null;
+            const connectionProfileId = conn.connectionProfileId || null;
             const reverseProxy = !!conn.reverseProxy;
             const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
             const useChatCompletionService = !!def?.useChatCompletionService && api !== 'full-manual';
             const chatCompletionPreset = useChatCompletionService ? String(def?.chatCompletionPreset || '').trim() : '';
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
+            return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
         }
     } catch (err) {
         // Ultimate fallback: UI

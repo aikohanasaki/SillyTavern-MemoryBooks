@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 **← [Back to README](readme.md)**
 
+## v8.3.1 (July 27, 2026)
+- Enhancement: Added ability to designate custom connection profiles.
+
 ## v8.3.0 (July 25, 2026)
 - Enhancement: Added ability to regenerate memories with one click.
 - Tweak: Update arc keywords.

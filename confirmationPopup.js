@@ -260,6 +260,7 @@ async function handleAdvancedConfirmation(popup, settings) {
     const currentSettings = getUIModelSettings();
     const currentApiInfo = getCurrentApiInfo();
 
+    delete profileSettings.effectiveConnection.connectionProfileId;
     if (currentApiInfo.api) {
       profileSettings.effectiveConnection.api = currentApiInfo.api; // Override API
     }
@@ -458,6 +459,7 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
     api: baseProfile.connection?.api,
     model: baseProfile.connection?.model,
     temperature: baseProfile.connection?.temperature,
+    connectionProfileId: baseProfile.connection?.connectionProfileId,
     preset: baseProfile.preset,
     titleFormat: baseProfile.titleFormat || settings.titleFormat,
   };
@@ -468,6 +470,7 @@ async function saveNewProfileFromAdvancedSettings(popupElement, settings, profil
     const currentSettings = getUIModelSettings();
     const currentApiInfo = getCurrentApiInfo();
 
+    data.connectionProfileId = '';
     data.api = currentApiInfo.api;
     data.model = currentSettings.model;
     data.temperature = currentSettings.temperature;

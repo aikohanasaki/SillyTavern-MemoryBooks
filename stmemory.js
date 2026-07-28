@@ -17,6 +17,7 @@ import {
     resolveContextSettingEntries,
     resolveContextSettingEntriesFromRefs,
 } from './contextSettingsManager.js';
+import { resolveCustomConnectionProfile } from './customConnectionProfiles.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -412,7 +413,9 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
 *@param {string} opts.prompt*
 *@param {number} [opts.temperature]*
 *@param {string} [opts.api] - 'openai', 'claude', 'makersuite', 'custom', etc. (Note: ST uses 'makersuite' as the canonical provider key; avoid other aliases).*
-*@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
+*@param {string} [opts.endpoint] - Direct endpoint URL for Full Manual Configuration*
+*@param {string} [opts.apiKey] - Direct API key for Full Manual Configuration*
+*@param {string} [opts.connectionProfileId] - SillyTavern Custom connection profile ID used to select its URL and secret*
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
 *@param {boolean} [opts.reverseProxy] - Whether to forward SillyTavern reverse proxy settings for supported providers*
 *@param {Object|null} [opts.jsonSchema] - Optional SillyTavern structured-output schema*
@@ -427,6 +430,7 @@ export async function sendRawCompletionRequest({
     api = 'openai',
     endpoint = null,
     apiKey = null,
+    connectionProfileId = null,
     extra = {},
     reverseProxy = false,
     signal = null,
@@ -436,7 +440,28 @@ export async function sendRawCompletionRequest({
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
-    const modelId = (typeof model === 'string' ? model.toLowerCase() : '');
+    const selectedCustomConnection = api === 'custom' && connectionProfileId
+        ? resolveCustomConnectionProfile(
+            extension_settings?.connectionManager?.profiles,
+            connectionProfileId,
+        )
+        : null;
+    if (api === 'custom' && connectionProfileId && !selectedCustomConnection) {
+        throw new InvalidProfileError(translate(
+            'The selected SillyTavern Custom connection profile is missing or is no longer a Custom Chat Completion profile.',
+            'STMemoryBooks_SelectedCustomConnectionMissing',
+        ));
+    }
+    if (selectedCustomConnection && !selectedCustomConnection.customUrl) {
+        throw new InvalidProfileError(translate(
+            'The selected SillyTavern Custom connection profile "{{name}}" has no API URL.',
+            'STMemoryBooks_SelectedCustomConnectionNoUrl',
+        ).replace('{{name}}', selectedCustomConnection.name));
+    }
+    const effectiveModel = api === 'custom'
+        ? String(model || selectedCustomConnection?.model || '').trim()
+        : model;
+    const modelId = (typeof effectiveModel === 'string' ? effectiveModel.toLowerCase() : '');
 
     // Compute desired max tokens:
     // - STMB override wins if set (>0)
@@ -491,7 +516,7 @@ export async function sendRawCompletionRequest({
         messages: [
             { role: 'user', content: prompt }
         ],
-        model,
+        model: effectiveModel,
         temperature,
         chat_completion_source: api,
         stream: false,
@@ -516,7 +541,7 @@ export async function sendRawCompletionRequest({
         }
         // For direct endpoint calls, use standard OpenAI-compatible format
         body = {
-            model,
+            model: effectiveModel,
             messages: [
                 { role: 'user', content: prompt }
             ],
@@ -524,9 +549,20 @@ export async function sendRawCompletionRequest({
             stream: false,
             ...extra,
         };
-    } else if (api === 'custom' && model) {
-        body.custom_model_id = model;
-        body.custom_url = oai_settings.custom_url || '';
+    } else if (api === 'custom') {
+        if (!effectiveModel) {
+            throw new InvalidProfileError(translate(
+                'Custom API requires a model ID in either the STMB profile or the selected SillyTavern connection profile.',
+                'STMemoryBooks_CustomConnectionModelRequired',
+            ));
+        }
+        body.custom_model_id = effectiveModel;
+        body.custom_url = selectedCustomConnection?.customUrl || oai_settings.custom_url || '';
+        if (selectedCustomConnection) {
+            // A truthy non-secret sentinel makes ST resolve keyless profiles to no
+            // key instead of silently falling back to the globally active Custom key.
+            body.secret_id = selectedCustomConnection.secretId || `stmb-keyless:${selectedCustomConnection.id}`;
+        }
     } else if (api === 'deepseek') {
         body.custom_url = `https://api.deepseek.com/chat/completions`; // use primary Deepseek endpoint
     } else if (api === 'zai') {
@@ -586,7 +622,7 @@ export async function sendRawCompletionRequest({
 /**
  * Unified request wrapper for side prompts and memory generation.
  * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
- * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean, chatCompletionPreset?: string }} opts
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, connectionProfileId?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean, chatCompletionPreset?: string }} opts
  * @returns {Promise<{ text: string, full: object }>}
  */
 export async function requestCompletion({
@@ -596,6 +632,7 @@ export async function requestCompletion({
     temperature = 0.7,
     endpoint = null,
     apiKey = null,
+    connectionProfileId = null,
     extra = {},
     reverseProxy = false,
     signal = null,
@@ -612,6 +649,7 @@ export async function requestCompletion({
         api,
         endpoint,
         apiKey,
+        connectionProfileId,
         extra,
         reverseProxy,
         signal,
@@ -1128,6 +1166,7 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             api: apiType,
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
+            connectionProfileId: conn.connectionProfileId,
             extra: extra,
             reverseProxy: !!conn.reverseProxy,
             signal,
