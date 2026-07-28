@@ -114,11 +114,16 @@ import {
 } from "./utils.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
+  GROUP_CHAT_CONSOLIDATION_PRESET_KEY,
   MEMORY_TIER_CACHE_REFRESH_EVENT,
   MEMORY_GENERATION,
   SCENE_MANAGEMENT,
   UI_SETTINGS,
 } from "./constants.js";
+import {
+  buildConsolidationWorkItemOptions,
+  hasGroupAndCharacterConsolidationTopology,
+} from "./consolidationWorkItemPolicy.js";
 import {
   evaluateTrackers,
   runAfterMemory,
@@ -7033,7 +7038,9 @@ async function showArcPromptManagerPopup() {
     content += '<div class="world_entry_form_control">';
     content += `<label for="stmb-apm-default"><strong>${escapeHtml(translate("Set Default", "STMemoryBooks_ArcPromptManager_SetDefault"))}:</strong> `;
     content += '<select id="stmb-apm-default" class="text_pole">';
-    for (const p of presets.filter((preset) => !preset.regenerationOnly)) {
+    for (const p of presets.filter(
+      (preset) => !preset.regenerationOnly && !preset.groupChatOnly,
+    )) {
       const key = String(p.key || "");
       const name = String(p.displayName || key);
       const selected = key === defaultPresetKey ? " selected" : "";
@@ -7090,7 +7097,12 @@ async function showArcPromptManagerPopup() {
               "Regeneration only. Cannot be used for ordinary consolidation or set as the default.",
               "STMemoryBooks_ArcPromptManager_RegenerationOnlyNote",
             )
-          : "",
+          : p.groupChatOnly
+            ? translate(
+                "Automatically used only for the group Memory Book when character Memory Books are also configured. Cannot be selected for ordinary consolidation or set as the default.",
+                "STMemoryBooks_ArcPromptManager_GroupChatOnlyNote",
+              )
+            : "",
         disableDuplicate: !!p.regenerationOnly,
       }));
       listEl.innerHTML = DOMPurify.sanitize(
@@ -7816,7 +7828,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     // Presets for Arc Analysis
     await ArcPrompts.firstRunInitIfMissing(extension_settings?.STMemoryBooks);
     const presets = (await ArcPrompts.listPresets())
-      .filter((preset) => !preset.regenerationOnly);
+      .filter((preset) => !preset.regenerationOnly && !preset.groupChatOnly);
     const defaultPresetKey = await ArcPrompts.getDefaultPresetKey();
 
     // Defaults from settings
@@ -8271,7 +8283,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
           // Reload presets and repopulate selector
           const newPresets = (await ArcPrompts.listPresets())
-            .filter((preset) => !preset.regenerationOnly);
+            .filter((preset) => !preset.regenerationOnly && !preset.groupChatOnly);
           const selEl = dlg.querySelector("#stmb-arc-preset");
           if (selEl) {
             const selectedBefore = selEl.value || defaultPresetKey;
@@ -8442,9 +8454,11 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       requiredMin,
       role: "group",
     }];
+    let useGroupChatPrompt = false;
 
     try {
       const boundLorebooks = await getManualGroupConsolidationLorebooks(lorebookName, lorebookData);
+      useGroupChatPrompt = hasGroupAndCharacterConsolidationTopology(boundLorebooks);
       if (boundLorebooks.length > 1) {
         const readyItems = [];
         const skippedItems = [];
@@ -8490,6 +8504,31 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       return;
     }
 
+    const selectedPromptText = await ArcPrompts.getPrompt(presetKey);
+    const groupChatPromptText = useGroupChatPrompt
+      ? await ArcPrompts.getPrompt(GROUP_CHAT_CONSOLIDATION_PRESET_KEY)
+      : "";
+    consolidationWorkItems = consolidationWorkItems.map((workItem) => ({
+      ...workItem,
+      analysisOptions: buildConsolidationWorkItemOptions(
+        workItem,
+        options,
+        {
+          useGroupChatPrompt,
+          selectedPromptText,
+          groupChatPromptText,
+        },
+      ),
+    }));
+    const primaryWorkItem =
+      consolidationWorkItems.find((workItem) => workItem.lorebookName === lorebookName)
+      || consolidationWorkItems[0];
+    const primarySelectedEntries = primaryWorkItem?.selectedEntries || selectedEntries;
+    const primaryAnalysisOptions = primaryWorkItem?.analysisOptions || {
+      ...options,
+      promptText: selectedPromptText,
+    };
+
     if (areStmbJobsEnabled()) {
       const chatRef = getCurrentStmbChatRef();
       const profileSettings = await snapshotProfilePrompts(settings.profiles?.[settings.defaultProfile] || null);
@@ -8498,8 +8537,8 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           ? { ...profileSettings.connection }
           : profileSettings.effectiveConnection;
       }
-      const promptText = await ArcPrompts.getPrompt(presetKey);
       for (const workItem of consolidationWorkItems) {
+        const analysisOptions = workItem.analysisOptions || primaryAnalysisOptions;
         enqueueStmbJob({
           type: "consolidation",
           title: targetLabel,
@@ -8512,13 +8551,13 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
             targetTier,
             selectedEntries: deepClone(workItem.selectedEntries),
             sourceFingerprints: workItem.sourceFingerprints,
-            presetKey,
-            promptText,
+            presetKey: analysisOptions.presetKey,
+            promptText: analysisOptions.promptText,
             profileSettings,
-            maxItemsPerPass: options.maxItemsPerPass,
-            maxPasses: options.maxPasses,
+            maxItemsPerPass: analysisOptions.maxItemsPerPass,
+            maxPasses: analysisOptions.maxPasses,
             minAssigned: requiredMin,
-            tokenTarget: options.tokenTarget,
+            tokenTarget: analysisOptions.tokenTarget,
             disableOriginals,
             summaryEntrySettings: chosenSummaryEntrySettings,
             summaryOrderMode: normalizedArcOrderMode,
@@ -8549,7 +8588,11 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       for (const workItem of consolidationWorkItems) {
         let itemAnalysis = null;
         try {
-          itemAnalysis = await runSummaryAnalysisSequential(workItem.selectedEntries, options, null);
+          itemAnalysis = await runSummaryAnalysisSequential(
+            workItem.selectedEntries,
+            workItem.analysisOptions,
+            null,
+          );
         } catch (e) {
           if (isStmbStopError(e)) return;
           toastr.error(__st_t_tag`Summary analysis failed for "${workItem.lorebookName}": ${e.message}`, "STMemoryBooks");
@@ -8607,7 +8650,11 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       for (const workItem of consolidationWorkItems) {
         let itemAnalysis;
         try {
-          itemAnalysis = await runSummaryAnalysisSequential(workItem.selectedEntries, options, null);
+          itemAnalysis = await runSummaryAnalysisSequential(
+            workItem.selectedEntries,
+            workItem.analysisOptions,
+            null,
+          );
         } catch (e) {
           if (isStmbStopError(e)) return;
           toastr.error(__st_t_tag`Summary analysis failed for "${workItem.lorebookName}": ${e.message}`, "STMemoryBooks");
@@ -8634,7 +8681,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
               return await runSummaryAnalysisSequential(
                 entries,
                 {
-                  ...options,
+                  ...workItem.analysisOptions,
                   lockedSummaries,
                 },
                 null,
@@ -8697,7 +8744,11 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
     let analysis;
     try {
-      analysis = await runSummaryAnalysisSequential(selectedEntries, options, null);
+      analysis = await runSummaryAnalysisSequential(
+        primarySelectedEntries,
+        primaryAnalysisOptions,
+        null,
+      );
     } catch (e) {
       if (isStmbStopError(e)) {
         return;
@@ -8709,8 +8760,8 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       lastFailedArcContext = {
         lorebookName,
         lorebookData,
-        selectedEntries,
-        options,
+        selectedEntries: primarySelectedEntries,
+        options: primaryAnalysisOptions,
         disableOriginals,
         targetTier,
         summaryEntrySettings: chosenSummaryEntrySettings,
@@ -8765,8 +8816,8 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       lastFailedArcContext = {
         lorebookName,
         lorebookData,
-        selectedEntries,
-        options,
+        selectedEntries: primarySelectedEntries,
+        options: primaryAnalysisOptions,
         disableOriginals,
         targetTier,
         summaryEntrySettings: chosenSummaryEntrySettings,
@@ -8807,7 +8858,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         let latestCommittedLorebookData = null;
         const previewResult = await runConsolidationPreviewWorkflow({
           initialAnalysis: analysis,
-          selectedEntries,
+          selectedEntries: primarySelectedEntries,
           targetTier,
           sourceLabel,
           targetLabel,
@@ -8816,7 +8867,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
             return await runSummaryAnalysisSequential(
               entries,
               {
-                ...options,
+                ...primaryAnalysisOptions,
                 lockedSummaries,
               },
               null,

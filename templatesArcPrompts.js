@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { translate } from '../../../i18n.js';
-import { CONSOLIDATION_REGENERATION_PRESET_KEY } from './constants.js';
+import {
+    CONSOLIDATION_REGENERATION_PRESET_KEY,
+    GROUP_CHAT_CONSOLIDATION_PRESET_KEY,
+} from './constants.js';
 
 /**
  * Built-in Arc Analysis prompts (default + alternates).
@@ -298,6 +301,176 @@ Requirements:
 - Ignore OOC and flavor-only detail unless it affects future events.
 - Use member_ids whenever possible.
 - Return only valid JSON.`, 'STMemoryBooks_SummaryPrompt_Alternate'),
+
+        [GROUP_CHAT_CONSOLIDATION_PRESET_KEY]: translate(`You specialize in building omniscient narrative timelines and maintaining chronological story continuity.
+
+Your task is to combine multiple {{stmbchildtier}}-bounded chronologies into the smallest coherent number of {{stmbtier}}-bounded chronologies.
+
+These summaries record what objectively happened across the story. They do not imply that every character knows, witnessed, remembers, or correctly understands every included fact. Preserve distinctions between objective events and individual character knowledge whenever the source establishes them.
+
+You will receive:
+
+* An optional \`PREVIOUS {{stmbtier}}\` block. It is established canon and may be used for continuity, but it must not be summarized, rewritten, or repeated.
+* A set of {{stmbchildtier}} entries presented in chronological order. Each entry has a source ID.
+
+Return only valid JSON, with no commentary or code fences:
+
+{
+	"summaries": [
+		{
+			"title": "Short descriptive {{stmbtier}} title",
+			"summary": "Structured omniscient {{stmbtier}} chronology as a single JSON string.",
+			"keywords": ["keyword1", "keyword2"],
+			"member_ids": ["source-id-1", "source-id-2"]
+		}
+	],
+	"unassigned_items": [
+		{
+			"id": "source-id",
+			"reason": "Short explanation of why this item could not be assigned."
+		}
+	]
+}
+
+## Assignment rules
+
+* Respect the supplied chronology.
+* Produce the smallest coherent number of {{stmbtier}} summaries supported by the content.
+* Do not create separate summaries merely for different characters, points of view, memory owners, or knowledge scopes.
+* Split the material only when it contains genuinely distinct chronological or narrative units that should not form one coherent {{stmbtier}}.
+* Assign every source entry ID exactly once:
+  * either to one summary’s \`member_ids\`;
+  * or to \`unassigned_items\`.
+* Preserve the order of IDs within each summary.
+* If an entry cannot be placed coherently, put it in \`unassigned_items\` with a short, specific reason.
+* Use the \`PREVIOUS {{stmbtier}}\` only to maintain continuity and avoid repetition. Do not include it in \`member_ids\`.
+
+## Content rules
+
+Each summary must:
+
+* Trace cause, intention, reaction, and consequence clearly.
+* Preserve chronology, plot accuracy, and continuity.
+* Record important actions, revelations, decisions, conflicts, consequences, and lasting changes.
+* Preserve who knew, witnessed, concealed, misunderstood, or remained unaware of important information when supported by the source.
+* Treat the chronology as omniscient story history, not as proof that every character knows its contents.
+* Omit OOC discussion, repeated information, scenery, flavor, and routine logistics unless they materially affect continuity.
+* Be token-efficient without becoming vague.
+* Use past tense and third person.
+* Use specific names and nouns when they improve continuity or retrieval.
+* Include no information unsupported by the supplied entries.
+
+## Required \`summary\` structure
+
+The \`summary\` field must contain the following Markdown structure as one properly escaped JSON string:
+
+# [Title]
+
+**Timeline**: [Use the most specific date and time supported by the source entries. If no date or time is established, state that it is unspecified or use a supported relative period.]
+
+## Story Beats
+
+* Present the major actions, revelations, decisions, conflicts, and emotional, relational, physical, or magical changes in chronological order.
+* Explain what triggered each significant development, why the characters acted, how others reacted, and what resulted.
+* Include plot-affecting interactions, meaningful shared experiences, and events that altered relationships or future continuity.
+* Preserve distinctions between objective events and what individual characters knew or believed.
+* Omit repeated gestures, room dressing, background objects, and routine logistical details unless they directly affected events.
+
+## Character Dynamics
+
+* Explain how motives, emotions, relationships, loyalties, and power dynamics changed during the summarized period.
+* Capture consequential tension, vulnerability, trust, conflict, avoidance, affection, resentment, dependence, suspicion, or loyalty.
+* Include small or domestic experiences only when they meaningfully changed relationship history.
+* Do not repeat plot events unless needed to explain the interpersonal change they caused.
+
+## Important Facts
+
+* Record newly established facts likely to matter later, including plans, risks, abilities, limitations, promises, secrets, debts, injuries, magical effects, discoveries, knowledge, misunderstandings, and obligations.
+* State which characters know or do not know a fact when that distinction affects continuity.
+* Exclude casual preferences, scenery, errands, paperwork, clothing, furniture, weather, and other incidental details unless they became continuity-relevant.
+
+## Key Exchanges
+
+* Include only dialogue that established a revelation, decision, conflict, emotional shift, relationship change, promise, threat, or memorable identifier.
+* Attribute every quotation by speaker name.
+* Include a direct quotation only when the source preserves its exact wording.
+* Never convert paraphrased dialogue into a quotation.
+* Preserve distinctive phrases when they are narratively or relationship-relevant.
+* Include no more than eight short quotations.
+* Escape all quotation marks correctly so the final output remains valid JSON.
+
+## Outcome & Continuity
+
+* State the final narrative, emotional, relational, physical, or magical condition produced by the events.
+* Record resulting decisions, plans, risks, promises, secrets, injuries, knowledge changes, and obligations that affect what happens next.
+* Identify unresolved threads, pending conflicts, future consequences, and foreshadowed developments.
+* Do not repeat the entire event sequence.
+
+(OOC note: This is an omniscient narrative chronology maintained for story cohesion. Individual characters may know only part of it or may be entirely unaware of some events and facts.)
+
+
+
+For the \`keywords\` field:
+
+Generate **12–20 natural retrieval keywords when the material supports them**. Use fewer rather than padding the list with weak terms. Keywords are search hooks, not miniature summaries or evidence notes.
+
+Prioritize:
+
+1. **Stable named entities**: people other than {{char}} or {{user}}, places, organizations, events, documents, factions, spells, or distinctive objects.
+2. **Major continuity anchors**: plans, threats, secrets, discoveries, investigations, conflicts, injuries, promises, relationship changes, and unresolved threads.
+3. **Memorable moments**: meaningful shared activities, gifts, food, rituals, jokes, care-taking, arguments, or domestic events.
+4. **Independent secondary hooks** that retrieve a separate part of the summarized material.
+
+### Keyword construction
+
+Use the shortest distinctive wording likely to remain recognizable under paraphrasing or reversed word order.
+
+Examples:
+
+* \`Gala of the Silver Rose\` or \`Silver Rose Gala\` → \`Silver Rose\`
+* \`Bromet Response SA\` → \`Bromet\`
+* \`Château D’Aramitz\`, Comte D’Aramitz, or a plan involving him → \`D’Aramitz\`
+* Keep \`Althof Ledger\` when both words are required to identify the object.
+
+Prefer one central named entity when it already covers several related events:
+
+* \`D’Aramitz rescue plan\` → \`D’Aramitz\`
+* \`Bromet hidden contractors\` → \`Bromet\`
+* \`Althof Ledger substitution\` → \`Althof Ledger\`
+
+Retain a modified phrase only when it provides an independent retrieval route not covered by the central entity:
+
+* \`fake caterers\`
+* \`ledger facsimile\`
+* \`safehouse breakfast\`
+* \`counter-surveillance camera\`
+
+When several clues establish one conclusion, usually tag the resulting finding rather than each supporting clue:
+
+* Uniforms, badges, and vehicle access → \`fake caterers\`
+* Payments and company records → \`Bromet\`
+* A covert tactical team at the gala → \`suspected assassination\`
+* A rental used for equipment and disguises → \`staging villa\`
+
+A supporting clue may remain only when it is memorable, likely to recur, or independently useful for retrieval.
+
+Keywords should normally:
+
+* Contain 1–4 words.
+* Use ordinary noun phrases.
+* Identify genuinely distinct parts of the summary.
+* Remain stable if later descriptions use different wording.
+
+Exclude:
+
+* Incidental scenery or props.
+* Exact times, quantities, card digits, invoice wording, or administrative details.
+* Generic themes such as \`danger\`, \`romance\`, or \`conversation\`.
+* Unsupported conclusions.
+* Sentence-like evidence descriptions.
+* Multiple keywords that merely restate or narrow the same named entity.
+
+Before returning the JSON, silently verify that each keyword is natural to search, continuity-relevant, stable under paraphrasing, independently useful, and no longer than necessary.`, 'STMemoryBooks_SummaryPrompt_GroupChatConsolidation'),
 
         [CONSOLIDATION_REGENERATION_PRESET_KEY]: translate(`You are an expert narrative analyst and memory-engine assistant. Combine and condense all included {{stmbchildtier}} entries into one coherent {{stmbtier}} summary.
 

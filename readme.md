@@ -416,6 +416,8 @@ Manual Lorebook Mode can maintain a main group Memory Book plus a designated Mem
 
 STMB saves the canonical memory to the group Memory Book and copies it to the selected participants' designated Memory Books. The related entries are linked internally so group and character consolidation can keep their timelines aligned. If any required character lorebook is missing or deleted, STMB stops instead of leaving a partial set of memories.
 
+When this group-and-character Memory Book setup is consolidated, the canonical group Memory Book automatically uses the editable **Group Chat Consolidation Analysis (Automatic)** prompt. It builds an omniscient group chronology while preserving differences between objective events and individual character knowledge. Character Memory Books continue using the consolidation preset selected in the **Consolidate Memories** popup. If several characters share one character Memory Book, the same routing still applies.
+
 Selecting a character Memory Book also updates that lorebook's root-level STLO metadata. STMB adds the character's avatar basename to `stlo.characterOverrides` and enables `stlo.onlyWhenSpeaking`, while preserving existing STLO priorities, budgets, and character overrides. Existing manual assignments are repaired automatically when the Memory Books panel opens or before memory generation.
 
 STLO filters use merge-only behavior: clearing or changing an STMB assignment does not delete the old lorebook's STLO character override. Remove that retained filter in STLO if the lorebook should no longer activate for that character.

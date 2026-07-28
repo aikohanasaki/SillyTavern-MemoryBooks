@@ -197,6 +197,8 @@ Want the group to have one shared history while each character also keeps their 
 
 The main version goes into the group Memory Book. Copies go only to the selected participants' assigned Memory Books. If you leave every participant unchecked, STMB treats the memory as applying to the whole group.
 
+During Summary Consolidation, this advanced setup automatically uses **Group Chat Consolidation Analysis (Automatic)** for the main group Memory Book. That prompt maintains an omniscient group timeline without treating every fact as shared character knowledge. Each character Memory Book still uses the consolidation preset you selected in the consolidation popup. This remains true when several characters share one assigned character Memory Book.
+
 When you assign a character Memory Book, STMB also adds that character to the lorebook's STLO `characterOverrides` metadata and enables **Only activate for specific characters**. Existing STLO priority, budget, order, and character settings are preserved. Older assignments are updated automatically when you open Memory Books or create a memory.
 
 Clearing or changing the assignment does not remove the old STLO character filter. If that lorebook should no longer activate for the character, open STLO and remove the retained override there.
