@@ -154,7 +154,7 @@
       "key": "body-position-tracker",
       "name": "身體位置追蹤器",
       "enabled": true,
-      "prompt": "查看場景，然後填寫或更新{{char}}的身體位置追蹤器。如果{{char}}代表多人，請為每個人分別填寫。保持簡潔並節省權杖，但應優先確保準確性和位置關係的合理性。不要違反物理定律。",
+      "prompt": "查看場景，然後填寫或更新{{char}}的身體位置追蹤器。如果{{char}}代表多人，請為每個人分別填寫。保持簡潔並節省 token，但應優先確保準確性和位置關係的合理性。不要違反物理定律。",
       "responseFormat": "==={{char}}身體位置追蹤器===\n整體位置與衣著狀態：\n頭部：\n左臂/左手：\n右臂/右手：\n軀幹/胸部/背部：\n左腿/左腳：\n右腿/右腳：\n===結束：{{char}}身體位置追蹤器===",
       "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
       "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},

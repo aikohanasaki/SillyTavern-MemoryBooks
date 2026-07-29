@@ -4910,7 +4910,7 @@ async function completeQueuedMemoryPostSave({
 }) {
   if (payload.skipAfterMemoryJobs !== true) {
     try {
-      jobContext.setState("post_save", { detail: "Running after-memory side prompts" });
+      jobContext.setState("post_save", { detail: translate("Running after-memory side prompts", "STMemoryBooks_Jobs_PostSaveRunningSidePrompts") });
       await runAfterMemory(compiledScene, profileSettings, {
         chatRef: job.chatRef,
         chatKey: job.chatKey,

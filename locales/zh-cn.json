@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "需要审核",
   "STMemoryBooks_Jobs_Saving": "正在保存",
   "STMemoryBooks_Jobs_PostSave": "保存后处理",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "正在运行记忆后的侧边提示",
   "STMemoryBooks_Jobs_Completed": "已完成",
   "STMemoryBooks_Jobs_Failed": "失败",
   "STMemoryBooks_Jobs_Blocked": "已阻塞",
