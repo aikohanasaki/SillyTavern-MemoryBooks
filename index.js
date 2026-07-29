@@ -2963,13 +2963,15 @@ function formatManualGroupMemberNames(members, fallback = "{{char}}") {
   if (names.length === 0) {
     return fallback;
   }
-  if (names.length === 1) {
-    return names[0];
+  if (names.length === 1) return names[0];
+  try {
+    return new Intl.ListFormat(getCurrentLocale?.() || "en", {
+      style: "long",
+      type: "conjunction",
+    }).format(names);
+  } catch {
+    return names.join(", ");
   }
-  if (names.length === 2) {
-    return `${names[0]} and ${names[1]}`;
-  }
-  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
 async function getManualGroupConsolidationLorebooks(primaryLorebookName, lorebookData, manualGroupLorebooks = null) {
@@ -3098,8 +3100,11 @@ function withCharacterGapMarkers(entries, groupLorebookData, memberOrMembers) {
   }
 
   const characterName = formatManualGroupMemberNames(members);
-  const contextOwner = members.length === 1 ? characterName : "they";
-  const markerText = `Some summaries are omitted here because ${characterName} did not participate in them; treat this as a chronological gap, not missing context ${contextOwner} should know.`;
+  const markerText = tr(
+    "STMemoryBooks_GroupConsolidation_GapPrompt",
+    "Some summaries are omitted because {{characterName}} did not participate in them. Treat each omission as a chronological gap, not as context the listed character or characters should know.",
+    { characterName },
+  );
   const markerKey = members
     .map((member) => String(member?.key || member?.characterFilterName || member?.name || "").trim())
     .filter(Boolean)
@@ -3108,7 +3113,11 @@ function withCharacterGapMarkers(entries, groupLorebookData, memberOrMembers) {
     __stmbGapMarker: true,
     id: `gap-${markerKey || characterName}-${number}`,
     order: number - 0.5,
-    title: `Skipped summaries before ${String(number).padStart(3, "0")}`,
+    title: tr(
+      "STMemoryBooks_GroupConsolidation_GapTitle",
+      "Skipped summaries before {{number}}",
+      { number: String(number).padStart(3, "0") },
+    ),
     content: markerText,
   }));
 

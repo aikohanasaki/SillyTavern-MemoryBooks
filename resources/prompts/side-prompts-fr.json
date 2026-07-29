@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Développement du personnage",
+      "enabled": false,
+      "prompt": "Étapes :\n1. Examinez les scènes fournies.\n2. Identifiez et décrivez les changements de personnalité de {{char}} dus à ses expériences.\n3. Décrivez brièvement comment {{char}} a changé et à la suite de quels événements.",
+      "responseFormat": "===Évolution du personnage de {{char}}===\n(brève description des changements principaux)\n===FIN de l’évolution du personnage de {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Humeur et atmosphère",
+      "enabled": true,
+      "prompt": "Examinez la scène jointe et décrivez l’humeur et l’atmosphère actuelles.",
+      "responseFormat": "===HUMEUR ACTUELLE===\n(brève description de l’humeur et de l’atmosphère actuelles)\n===FIN DE L’HUMEUR ACTUELLE===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Construction du monde",
+      "enabled": true,
+      "prompt": "Décrivez l’état actuel du monde, en particulier les changements dus à l’intrigue ou à la scène.",
+      "responseFormat": "===NOTES SUR LE MONDE===\n(note courte mais dense)\n===FIN DES NOTES SUR LE MONDE===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Suivi de la position du corps",
+      "enabled": true,
+      "prompt": "Examinez la scène, puis complétez ou mettez à jour le Suivi de la position du corps de {{char}}. Si {{char}} désigne plusieurs personnes, remplissez-en un pour chacune. Soyez concis et économe en jetons, mais privilégiez la précision et la cohérence logistique. Ne violez pas les lois de la physique.",
+      "responseFormat": "===Suivi de la position du corps de {{char}}===\nPosition générale et état des vêtements :\nTête :\nBras/main gauche :\nBras/main droite :\nTorse/poitrine/dos :\nJambe/pied gauche :\nJambe/pied droit :\n===FIN du Suivi de la position du corps de {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }
