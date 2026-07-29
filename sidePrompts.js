@@ -834,7 +834,7 @@ function getAutomaticSetSkippedItems(skipped = [], trigger) {
     ));
 }
 
-function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros = {}, trigger = 'manual', setMeta = null, chatRef: providedChatRef = null, chatKey: providedChatKey = null }) {
+function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros = {}, trigger = 'manual', setMeta = null, chatRef: providedChatRef = null, chatKey: providedChatKey = null, parentJobId = '', parentJobOrder = null }) {
     const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
     const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runtimeMacros);
     const chatRef = providedChatRef || getCurrentStmbChatRef();
@@ -844,6 +844,8 @@ function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros 
         detail: compiledScene?.metadata ? `Messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}` : '',
         chatRef,
         chatKey: providedChatKey || getStmbChatKey(chatRef),
+        parentJobId,
+        parentJobOrder,
         lorebookName: lore?.name || '',
         range: compiledScene?.metadata ? {
             sceneStart: compiledScene.metadata.sceneStart,
@@ -1388,6 +1390,32 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
     const parentTask = createStmbInFlightTask('SidePrompts:onAfterMemory');
     const runEpoch = parentTask.epoch;
     try {
+        const retryJobSnapshots = Array.isArray(options.retryJobSnapshots)
+            ? options.retryJobSnapshots
+            : [];
+        if (areStmbJobsEnabled() && retryJobSnapshots.length > 0) {
+            ensureSidePromptJobExecutorRegistered();
+            let queued = 0;
+            for (let index = 0; index < retryJobSnapshots.length; index++) {
+                const snapshot = retryJobSnapshots[index];
+                if (!snapshot || !['sidePrompt', 'sidePromptBatch'].includes(String(snapshot.type || ''))) {
+                    continue;
+                }
+                const queuedJob = enqueueStmbJob({
+                    ...structuredClone(snapshot),
+                    chatRef: options.chatRef || snapshot.chatRef || null,
+                    chatKey: options.chatKey || snapshot.chatKey || null,
+                    parentJobId: options.parentJobId || '',
+                    parentJobOrder: index,
+                });
+                if (queuedJob) queued++;
+            }
+            if (queued > 0 && extension_settings?.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
+                toastr.info(__st_t_tag`Side Prompts after memory queued: ${queued}.`, 'STMemoryBooks');
+            }
+            return queued;
+        }
+
         const sceneContext = options.sceneContext || getCurrentMemoryBooksContext();
         const sceneMarkers = options.sceneMarkers || getSceneMarkers() || {};
         const moduleSettings = options.settings?.moduleSettings
@@ -1474,7 +1502,8 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     setMeta: runItem.set ? { setKey: runItem.set.key, setName: runItem.set.name, itemId: runItem.item?.id || '' } : null,
                 });
             }
-            for (const item of preparedItems) {
+            for (let index = 0; index < preparedItems.length; index++) {
+                const item = preparedItems[index];
                 enqueueStmbJob(buildSidePromptJob({
                     tpl: item.tpl,
                     lore: item.lore,
@@ -1485,6 +1514,8 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     setMeta: item.setMeta,
                     chatRef: options.chatRef || null,
                     chatKey: options.chatKey || null,
+                    parentJobId: options.parentJobId || '',
+                    parentJobOrder: index,
                 }));
                 queued++;
             }

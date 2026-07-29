@@ -1181,6 +1181,8 @@
   "STMemoryBooks_Jobs_Empty": "没有记忆书任务。",
   "STMemoryBooks_Jobs_Cancel": "取消",
   "STMemoryBooks_Jobs_Retry": "重试",
+  "STMemoryBooks_Jobs_RetryAll": "全部重试",
+  "STMemoryBooks_Jobs_RetryMemory": "仅重试记忆",
   "STMemoryBooks_Jobs_Lorebook": "故事书",
   "STMemoryBooks_Jobs_MemoryQueued": "记忆任务已排队。",
   "STMemoryBooks_Jobs_ConsolidationQueued": "合并任务已排队。",

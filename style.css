@@ -563,6 +563,14 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
+.stmb-jobs-row-actions {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+}
+
 .stmb-jobs-row-header {
     align-items: center;
     gap: 8px;

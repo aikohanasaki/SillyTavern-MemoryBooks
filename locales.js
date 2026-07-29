@@ -347,6 +347,8 @@ export const localeData_en = {
     'STMemoryBooks_Jobs_Empty': 'No Memory Books jobs.',
     'STMemoryBooks_Jobs_Cancel': 'Cancel',
     'STMemoryBooks_Jobs_Retry': 'Retry',
+    'STMemoryBooks_Jobs_RetryAll': 'Retry All',
+    'STMemoryBooks_Jobs_RetryMemory': 'Retry Memory',
     'STMemoryBooks_Jobs_Lorebook': 'Lorebook',
     'STMemoryBooks_Jobs_MemoryQueued': 'Memory job queued.',
     'STMemoryBooks_Jobs_ConsolidationQueued': 'Consolidation job queued.',

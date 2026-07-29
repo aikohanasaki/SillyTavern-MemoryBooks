@@ -4897,6 +4897,49 @@ async function applyQueuedMemoryAutoHide(job, memoryResult, settings) {
   await applyQueuedAutoHideRanges(job.chatRef, autoHidePlan.ranges);
 }
 
+async function completeQueuedMemoryPostSave({
+  job,
+  jobContext,
+  payload,
+  compiledScene,
+  profileSettings,
+  settings,
+  lorebookName,
+  queuedContext,
+  latestLorebookData,
+}) {
+  if (payload.skipAfterMemoryJobs !== true) {
+    try {
+      jobContext.setState("post_save", { detail: "Running after-memory side prompts" });
+      await runAfterMemory(compiledScene, profileSettings, {
+        chatRef: job.chatRef,
+        chatKey: job.chatKey,
+        lorebookName,
+        sceneContext: queuedContext,
+        sceneMarkers: payload.sceneMarkers || {},
+        settings,
+        parentJobId: job.id,
+        retryJobSnapshots: payload.retryAfterMemoryJobs || [],
+      });
+    } catch (error) {
+      console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
+    }
+  }
+
+  jobContext.throwIfCancelled();
+  if (isStmbJobChatCurrent(job.chatRef)) {
+    clearAutoSummaryState();
+    await maybePromptSelectedAutoConsolidation({
+      minTargetTier: 1,
+      lorebookValidation: {
+        valid: true,
+        name: lorebookName,
+        data: latestLorebookData,
+      },
+    });
+  }
+}
+
 async function executeQueuedMemoryJob(job, jobContext) {
   const payload = job?.payload || {};
   const sceneData = payload.sceneData;
@@ -4906,6 +4949,33 @@ async function executeQueuedMemoryJob(job, jobContext) {
   const lorebookName = String(payload.lorebookName || job.lorebookName || "").trim();
   if (!sceneData || !compiledScene || !profileSettings || !lorebookName) {
     throw new Error("Memory job snapshot is incomplete.");
+  }
+  const queuedContext = {
+    ...(payload.memoryBooksContext || getCurrentMemoryBooksContext()),
+    manualGroupLorebookBindings: payload.manualGroupLorebookBindings || null,
+  };
+
+  if (payload.resumeSavedMemory === true) {
+    const latestLorebookData = await loadWorldInfo(lorebookName);
+    if (!latestLorebookData?.entries) {
+      throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
+    }
+    jobContext.setResult(payload.retryMemoryResult || {
+      lorebookName,
+      entryTitle: "",
+    });
+    await completeQueuedMemoryPostSave({
+      job,
+      jobContext,
+      payload,
+      compiledScene,
+      profileSettings,
+      settings,
+      lorebookName,
+      queuedContext,
+      latestLorebookData,
+    });
+    return;
   }
 
   jobContext.setState("generating", { detail: profileSettings.name || "Memory" });
@@ -4949,10 +5019,6 @@ async function executeQueuedMemoryJob(job, jobContext) {
   jobContext.setState("saving", { detail: lorebookName });
   let addResult = null;
   let latestLorebookData = null;
-  const queuedContext = {
-    ...(payload.memoryBooksContext || getCurrentMemoryBooksContext()),
-    manualGroupLorebookBindings: payload.manualGroupLorebookBindings || null,
-  };
   const manualGroupLorebooks = await validateManualGroupLorebookBindingsForMemory(
     settings,
     queuedContext,
@@ -5044,32 +5110,17 @@ async function executeQueuedMemoryJob(job, jobContext) {
     entryTitle: addResult?.entryTitle || "",
   });
 
-  try {
-    jobContext.setState("post_save", { detail: "Running after-memory side prompts" });
-    await runAfterMemory(compiledScene, profileSettings, {
-      chatRef: job.chatRef,
-      chatKey: job.chatKey,
-      lorebookName,
-      sceneContext: queuedContext,
-      sceneMarkers: payload.sceneMarkers || {},
-      settings,
-    });
-  } catch (error) {
-    console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
-  }
-
-  jobContext.throwIfCancelled();
-  if (isStmbJobChatCurrent(job.chatRef)) {
-    clearAutoSummaryState();
-    await maybePromptSelectedAutoConsolidation({
-      minTargetTier: 1,
-      lorebookValidation: {
-        valid: true,
-        name: lorebookName,
-        data: latestLorebookData,
-      },
-    });
-  }
+  await completeQueuedMemoryPostSave({
+    job,
+    jobContext,
+    payload,
+    compiledScene,
+    profileSettings,
+    settings,
+    lorebookName,
+    queuedContext,
+    latestLorebookData,
+  });
 }
 
 function fingerprintLorebookEntry(entry) {

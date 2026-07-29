@@ -1181,6 +1181,8 @@
   "STMemoryBooks_Jobs_Empty": "Tiada tugas Buku Memori.",
   "STMemoryBooks_Jobs_Cancel": "Batal",
   "STMemoryBooks_Jobs_Retry": "Cuba lagi",
+  "STMemoryBooks_Jobs_RetryAll": "Cuba semula semua",
+  "STMemoryBooks_Jobs_RetryMemory": "Cuba semula memori",
   "STMemoryBooks_Jobs_Lorebook": "Buku Legenda",
   "STMemoryBooks_Jobs_MemoryQueued": "Tugas memori dimasukkan ke baris gilir.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Tugas penyatuan dimasukkan ke baris gilir.",

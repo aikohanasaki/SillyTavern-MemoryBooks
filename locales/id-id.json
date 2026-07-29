@@ -1181,6 +1181,8 @@
   "STMemoryBooks_Jobs_Empty": "Tidak ada tugas Buku Memori.",
   "STMemoryBooks_Jobs_Cancel": "Batalkan",
   "STMemoryBooks_Jobs_Retry": "Coba lagi",
+  "STMemoryBooks_Jobs_RetryAll": "Coba ulang semua",
+  "STMemoryBooks_Jobs_RetryMemory": "Coba ulang memori",
   "STMemoryBooks_Jobs_Lorebook": "Buku Latar",
   "STMemoryBooks_Jobs_MemoryQueued": "Tugas memori masuk antrean.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Tugas konsolidasi masuk antrean.",

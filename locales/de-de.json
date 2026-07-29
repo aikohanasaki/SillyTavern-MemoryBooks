@@ -1186,6 +1186,8 @@
   "STMemoryBooks_Jobs_Empty": "Keine Memory-Book-Jobs.",
   "STMemoryBooks_Jobs_Cancel": "Abbrechen",
   "STMemoryBooks_Jobs_Retry": "Erneut versuchen",
+  "STMemoryBooks_Jobs_RetryAll": "Alles erneut versuchen",
+  "STMemoryBooks_Jobs_RetryMemory": "Erinnerung erneut versuchen",
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
   "STMemoryBooks_Jobs_MemoryQueued": "Erinnerungs-Job eingereiht.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Konsolidierungs-Job eingereiht.",

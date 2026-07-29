@@ -18,6 +18,12 @@ import {
 import { loadWorldInfo } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
+import {
+    buildJobRetryPlan,
+    buildMemoryOnlyRetryPlan,
+    buildRetryJobInput,
+    collectCanceledAfterMemoryJobs,
+} from './stmbJobRetryPolicy.js';
 
 const MODULE_NAME = 'STMemoryBooks-Jobs';
 const TOP_INFO_BAR_ID = 'extensionTopBar';
@@ -152,6 +158,12 @@ function safeClone(value) {
     } catch {
         return JSON.parse(JSON.stringify(value));
     }
+}
+
+function normalizeParentJobOrder(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const order = Number(value);
+    return Number.isFinite(order) ? order : null;
 }
 
 function escapeHtml(value) {
@@ -297,6 +309,8 @@ function cloneJobForView(job = {}) {
         lorebookName: String(job.lorebookName || job.payload?.lorebookName || ''),
         range: job.range ? { ...job.range } : null,
         approvalRequest: job.approvalRequest ? safeClone(job.approvalRequest) : null,
+        parentJobId: String(job.parentJobId || ''),
+        parentJobOrder: normalizeParentJobOrder(job.parentJobOrder),
     };
 }
 
@@ -475,6 +489,8 @@ function normalizeJobInput(input = {}) {
         error: null,
         result: null,
         approvalRequest: input.approvalRequest ? safeClone(input.approvalRequest) : null,
+        parentJobId: String(input.parentJobId || ''),
+        parentJobOrder: normalizeParentJobOrder(input.parentJobOrder),
         abortController: new AbortController(),
         cancelled: false,
     };
@@ -513,6 +529,40 @@ export function hasActiveStmbJobs(chatKey = null) {
     return false;
 }
 
+function captureCanceledAfterMemoryJobsForRetry(memoryJob, jobs) {
+    const canceledAfterMemoryJobs = collectCanceledAfterMemoryJobs(memoryJob, jobs);
+    if (canceledAfterMemoryJobs.length === 0) return;
+    if (Array.isArray(memoryJob.payload?.retryAfterMemoryJobs)
+        && memoryJob.payload.retryAfterMemoryJobs.length > 0) {
+        return;
+    }
+    memoryJob.payload = {
+        ...(memoryJob.payload || {}),
+        retryAfterMemoryJobs: canceledAfterMemoryJobs.map(buildRetryJobInput),
+    };
+}
+
+function cancelQueuedAfterMemoryJobs(store, memoryJob) {
+    if (String(memoryJob?.type || '') !== 'memory') return;
+    const parentJobId = String(memoryJob.id || '');
+    const canceledChildren = store.queue.filter(job => (
+        String(job?.parentJobId || '') === parentJobId
+        && ['sidePrompt', 'sidePromptBatch'].includes(String(job?.type || ''))
+        && String(job?.payload?.trigger || '') === 'onAfterMemory'
+    ));
+    if (canceledChildren.length === 0) return;
+
+    const canceledIds = new Set(canceledChildren.map(job => job.id));
+    for (const child of canceledChildren) {
+        child.cancelled = true;
+        child.state = 'canceled';
+        child.finishedAt = Date.now();
+        store.recentHistory.unshift(child);
+    }
+    captureCanceledAfterMemoryJobsForRetry(memoryJob, canceledChildren);
+    store.queue = store.queue.filter(job => !canceledIds.has(job.id));
+}
+
 export function cancelActiveStmbJob(chatKey = null, jobId = null) {
     const key = String(chatKey || getStmbChatKey()).trim();
     const store = jobStores.get(key);
@@ -524,6 +574,7 @@ export function cancelActiveStmbJob(chatKey = null, jobId = null) {
     try {
         job.abortController.abort('stmb-job-cancel');
     } catch {}
+    cancelQueuedAfterMemoryJobs(store, job);
     const approval = pendingApprovals.get(job.id);
     if (approval) {
         pendingApprovals.delete(job.id);
@@ -536,7 +587,8 @@ export function cancelActiveStmbJob(chatKey = null, jobId = null) {
 export function cancelAllStmbJobs(reason = 'stmb-stop') {
     let count = 0;
     for (const store of jobStores.values()) {
-        for (const job of getRunningJobs(store)) {
+        const runningJobs = getRunningJobs(store);
+        for (const job of runningJobs) {
             count++;
             job.cancelled = true;
             try {
@@ -549,6 +601,9 @@ export function cancelAllStmbJobs(reason = 'stmb-stop') {
             job.state = 'canceled';
             job.finishedAt = Date.now();
             store.recentHistory.unshift(job);
+        }
+        for (const memoryJob of runningJobs.filter(job => String(job.type || '') === 'memory')) {
+            captureCanceledAfterMemoryJobsForRetry(memoryJob, store.queue);
         }
         store.queue = [];
         touchStore(store);
@@ -714,7 +769,10 @@ function renderStmbJobsUi() {
         const action = canCancel
             ? `<button type="button" class="menu_button stmb-jobs-row-action" data-action="cancel-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Cancel', 'Cancel'))}</button>`
             : canRetry
-                ? `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Retry', 'Retry'))}</button>`
+                ? String(job.type || '') === 'memory'
+                    ? `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-all" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_RetryAll', 'Retry All'))}</button>
+                       <button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-memory" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_RetryMemory', 'Retry Memory'))}</button>`
+                    : `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Retry', 'Retry'))}</button>`
                 : '';
         return `
             <div class="stmb-jobs-row ${getStateToneClass(job)}"${attrs}>
@@ -729,7 +787,7 @@ function renderStmbJobsUi() {
                     ${formatElapsed(job) ? `<div class="stmb-jobs-row-meta">${escapeHtml(formatElapsed(job))}</div>` : ''}
                     ${job.error?.message ? `<div class="stmb-jobs-row-error">${escapeHtml(job.error.message)}</div>` : ''}
                 </div>
-                ${action}
+                ${action ? `<div class="stmb-jobs-row-actions">${action}</div>` : ''}
             </div>`;
     }).join('');
 
@@ -799,17 +857,14 @@ function handlePanelClick(event) {
         }
         return;
     }
-    if (action === 'retry-job') {
-        const retryInput = safeClone(record.job);
-        delete retryInput.id;
-        delete retryInput.abortController;
-        delete retryInput.error;
-        delete retryInput.result;
-        delete retryInput.startedAt;
-        delete retryInput.finishedAt;
-        record.store.recentHistory = record.store.recentHistory.filter(job => job.id !== record.job.id);
+    if (action === 'retry-job' || action === 'retry-all' || action === 'retry-memory') {
+        const retryPlan = action === 'retry-memory'
+            ? buildMemoryOnlyRetryPlan(record.job)
+            : buildJobRetryPlan(record.job, record.store.recentHistory);
+        const consumedIds = new Set(retryPlan.consumedJobIds);
+        record.store.recentHistory = record.store.recentHistory.filter(job => !consumedIds.has(job.id));
         enqueueStmbJob({
-            ...retryInput,
+            ...retryPlan.retryInput,
             state: 'queued',
             detail: record.job.detail,
         });
