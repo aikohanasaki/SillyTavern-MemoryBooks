@@ -1168,6 +1168,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "Révision requise",
   "STMemoryBooks_Jobs_Saving": "Sauvegarde",
   "STMemoryBooks_Jobs_PostSave": "Après sauvegarde",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "Exécution des side prompts après mémoire",
   "STMemoryBooks_Jobs_Completed": "Terminée",
   "STMemoryBooks_Jobs_Failed": "Échouée",
   "STMemoryBooks_Jobs_Blocked": "Bloquée",

@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "Требует проверки",
   "STMemoryBooks_Jobs_Saving": "Сохранение",
   "STMemoryBooks_Jobs_PostSave": "После сохранения",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "Выполняются Боковые Промпты после памяти",
   "STMemoryBooks_Jobs_Completed": "Завершено",
   "STMemoryBooks_Jobs_Failed": "Ошибка",
   "STMemoryBooks_Jobs_Blocked": "Заблокировано",

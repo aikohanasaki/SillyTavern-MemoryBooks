@@ -1174,6 +1174,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "Überprüfung erforderlich",
   "STMemoryBooks_Jobs_Saving": "Wird gespeichert",
   "STMemoryBooks_Jobs_PostSave": "Nach dem Speichern",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "Side-Prompts nach der Erinnerung werden ausgeführt",
   "STMemoryBooks_Jobs_Completed": "Abgeschlossen",
   "STMemoryBooks_Jobs_Failed": "Fehlgeschlagen",
   "STMemoryBooks_Jobs_Blocked": "Blockiert",

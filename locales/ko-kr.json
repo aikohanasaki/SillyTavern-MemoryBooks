@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "검토 필요",
   "STMemoryBooks_Jobs_Saving": "저장 중",
   "STMemoryBooks_Jobs_PostSave": "저장 후 처리",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "메모리 후 사이드 프롬프트 실행 중",
   "STMemoryBooks_Jobs_Completed": "완료됨",
   "STMemoryBooks_Jobs_Failed": "실패함",
   "STMemoryBooks_Jobs_Blocked": "차단됨",

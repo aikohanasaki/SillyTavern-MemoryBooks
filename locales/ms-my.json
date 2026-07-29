@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "Perlu semakan",
   "STMemoryBooks_Jobs_Saving": "Menyimpan",
   "STMemoryBooks_Jobs_PostSave": "Selepas simpan",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "Menjalankan prom sampingan selepas memori",
   "STMemoryBooks_Jobs_Completed": "Selesai",
   "STMemoryBooks_Jobs_Failed": "Gagal",
   "STMemoryBooks_Jobs_Blocked": "Disekat",

@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "レビューが必要",
   "STMemoryBooks_Jobs_Saving": "保存中",
   "STMemoryBooks_Jobs_PostSave": "保存後処理",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "メモリ後のサイドプロンプトを実行中",
   "STMemoryBooks_Jobs_Completed": "完了",
   "STMemoryBooks_Jobs_Failed": "失敗",
   "STMemoryBooks_Jobs_Blocked": "ブロック中",

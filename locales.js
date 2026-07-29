@@ -335,6 +335,7 @@ export const localeData_en = {
     'STMemoryBooks_Jobs_NeedsReview': 'Needs review',
     'STMemoryBooks_Jobs_Saving': 'Saving',
     'STMemoryBooks_Jobs_PostSave': 'Post-save',
+    'STMemoryBooks_Jobs_PostSaveRunningSidePrompts': 'Running after-memory side prompts',
     'STMemoryBooks_Jobs_Completed': 'Completed',
     'STMemoryBooks_Jobs_Failed': 'Failed',
     'STMemoryBooks_Jobs_Blocked': 'Blocked',

@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "Perlu ditinjau",
   "STMemoryBooks_Jobs_Saving": "Menyimpan",
   "STMemoryBooks_Jobs_PostSave": "Pasca-simpan",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "Menjalankan prompt sampingan setelah memori",
   "STMemoryBooks_Jobs_Completed": "Selesai",
   "STMemoryBooks_Jobs_Failed": "Gagal",
   "STMemoryBooks_Jobs_Blocked": "Diblokir",

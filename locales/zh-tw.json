@@ -1169,6 +1169,7 @@
   "STMemoryBooks_Jobs_NeedsReview": "需要審核",
   "STMemoryBooks_Jobs_Saving": "正在儲存",
   "STMemoryBooks_Jobs_PostSave": "儲存後處理",
+  "STMemoryBooks_Jobs_PostSaveRunningSidePrompts": "正在執行記憶後的側邊提示",
   "STMemoryBooks_Jobs_Completed": "已完成",
   "STMemoryBooks_Jobs_Failed": "失敗",
   "STMemoryBooks_Jobs_Blocked": "已阻擋",
