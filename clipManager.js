@@ -31,6 +31,15 @@ import {
     withGoBackButton,
 } from './utils.js';
 import { withStmbWriteLane } from './stmbJobs.js';
+import {
+    DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+    DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
+} from './clipPromptDefaults.js';
+
+export {
+    DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+    DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
+} from './clipPromptDefaults.js';
 
 const MODULE_NAME = 'STMemoryBooks-ClipManager';
 const CREATE_NEW_VALUE = '__stmb_create_new_clip_entry__';
@@ -38,73 +47,6 @@ const TOKEN_WARNING_THRESHOLD = 500;
 const FLOATING_CLIP_X_OFFSET = 6;
 const FLOATING_CLIP_Y_OFFSET = -4;
 const FLOATING_CLIP_VIEWPORT_PADDING = 8;
-
-export const DEFAULT_COMPACTION_PROMPT_TEMPLATE = `Please aggressively make this lorebook entry more token-efficient while retaining as much useful information as possible.
-
-Rules:
-- Preserve all important facts, preferences, relationships, names, unresolved plot points, promises, secrets, constraints, and character-specific details.
-- Remove redundancy, filler, repeated phrasing, and low-value wording.
-- Merge overlapping bullets where possible.
-- Keep the entry readable as a lorebook entry.
-- Do not add new facts.
-- Do not invent explanations.
-- Do not change names, pronouns, macros, or proper nouns.
-- Preserve wrapper headings and end markers exactly if present.
-- Return only the revised entry content.
-
-Entry type:
-{{ENTRY_KIND}}
-
-Entry title:
-{{ENTRY_TITLE}}
-
-Entry content:
-{{ENTRY_CONTENT}}`;
-
-export const DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE = `SYSTEM: You are a memory compiler. You do not converse. You do not ask questions.
-You do not offer options. You execute the task below and return only the output. You are writing a focused memory entry (lorebook/Clip) about a SINGLE topic.
-
-Mode: {{MODE}}
-Topic: {{TOPIC}}
-Keywords: {{KEYWORDS}}
-
-Existing Clip content (if updating):
-{{EXISTING_CLIP}}
-
-Source memories:
-{{SOURCE_MEMORIES}}
-
----
-
-TASK:
-Produce a finished memory entry containing ONLY information directly relevant to {{TOPIC}}.
-Organize the output by sub-topic or attribute — NOT by chronology or narrative order.
-Each piece of information should stand on its own as a discrete, retrievable fact.
-
-OUTPUT FORMAT:
-Write in tight, factual prose, bullet points, or labeled attribute blocks (your choice, whichever is denser).
-
-CONTENT RULES:
-- Include: concrete facts, names, relationships, preferences, places, constraints, promises, secrets, unresolved issues, and meaningful changes over time.
-- Exclude: events, context, or details unrelated to {{TOPIC}} even if they appear in the source memories.
-- Conflicts: if source memories contradict each other, note the conflict explicitly (e.g. "Claimed X in one account, Y in another") rather than silently picking one.
-- No invention: do not infer or fill gaps with plausible-sounding details.
-
-IF UPDATING AN EXISTING CLIP:
-- Preserve useful existing content unless source memories clearly correct or supersede it.
-- Merge in new relevant details; remove redundancy.
-- Do not regress — the result should be strictly more useful than the existing Clip.
-
-Return only the finished entry content. No JSON, no title field, no keyword field, no wrapper markers.
-
-CRITICAL:
-- Do not greet the user.
-- Do not ask clarifying questions.
-- Do not offer alternative directions or options.
-- Do not explain what you are about to do.
-- Begin your response with the first word of the memory entry itself.
-- If the source memories contain insufficient information to write an entry, return only: [INSUFFICIENT DATA: <one sentence reason>]
-- Any response that is not the finished entry or the insufficient-data marker is a failure.`;
 
 export const STMB_CLIP_TITLE_SUFFIX = ' [STMB Clip]';
 
@@ -941,11 +883,22 @@ function getModuleSettings() {
     return extension_settings.STMemoryBooks.moduleSettings;
 }
 
+function getDefaultCompactionPromptTemplate() {
+    return tr('STMemoryBooks_Compaction_DefaultPrompt', DEFAULT_COMPACTION_PROMPT_TEMPLATE);
+}
+
+function hasCustomPromptTemplate(saved, englishDefault) {
+    if (typeof saved !== 'string' || !saved.trim()) return false;
+    const normalizedSaved = saved.replace(/\r\n?/g, '\n');
+    const normalizedDefault = String(englishDefault || '').replace(/\r\n?/g, '\n');
+    return normalizedSaved !== normalizedDefault;
+}
+
 function getCompactionPromptTemplate() {
     const saved = getModuleSettings().compactionPromptTemplate;
-    return typeof saved === 'string' && saved.trim()
+    return hasCustomPromptTemplate(saved, DEFAULT_COMPACTION_PROMPT_TEMPLATE)
         ? saved
-        : DEFAULT_COMPACTION_PROMPT_TEMPLATE;
+        : getDefaultCompactionPromptTemplate();
 }
 
 function setCompactionPromptTemplate(template) {
@@ -1089,11 +1042,11 @@ function validateCompactionPromptTemplate(template) {
 function buildCompactionPrompt(entry, entryKind, template = getCompactionPromptTemplate()) {
     const replacements = {
         ENTRY_CONTENT: String(entry?.content || ''),
-        ENTRY_KIND: String(entryKind || ''),
+        ENTRY_KIND: getCompactionEntryKindLabel(entryKind),
         ENTRY_TITLE: String(entry?.comment || ''),
     };
 
-    return String(template || DEFAULT_COMPACTION_PROMPT_TEMPLATE).replace(
+    return String(template || getDefaultCompactionPromptTemplate()).replace(
         /\{\{(ENTRY_CONTENT|ENTRY_KIND|ENTRY_TITLE)\}\}/g,
         (_match, token) => replacements[token] ?? '',
     );
@@ -1152,6 +1105,10 @@ async function requestCompaction(entry, entryKind, template = getCompactionPromp
 }
 
 async function showCompactionPromptEditorPopup() {
+    let useDefaultPrompt = !hasCustomPromptTemplate(
+        getModuleSettings().compactionPromptTemplate,
+        DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+    );
     const content = DOMPurify.sanitize(`
         <h3>${escapeHtml(tr('STMemoryBooks_Compaction_PromptTitle', 'Compaction Prompt'))}</h3>
         <div class="world_entry_form_control">
@@ -1172,6 +1129,9 @@ async function showCompactionPromptEditorPopup() {
     });
     const showPromise = popup.show();
     const textarea = popup.dlg?.querySelector('#stmb-compaction-prompt-template');
+    textarea?.addEventListener('input', () => {
+        useDefaultPrompt = false;
+    });
 
     popup.dlg?.querySelector('#stmb-compaction-save-prompt')?.addEventListener('click', () => {
         const nextTemplate = textarea?.value || '';
@@ -1180,12 +1140,13 @@ async function showCompactionPromptEditorPopup() {
             toastr.error(error, 'STMemoryBooks');
             return;
         }
-        setCompactionPromptTemplate(nextTemplate);
+        setCompactionPromptTemplate(useDefaultPrompt ? '' : nextTemplate);
         popup.completeAffirmative();
     });
     popup.dlg?.querySelector('#stmb-compaction-reset-prompt')?.addEventListener('click', () => {
         if (textarea) {
-            textarea.value = DEFAULT_COMPACTION_PROMPT_TEMPLATE;
+            useDefaultPrompt = true;
+            textarea.value = getDefaultCompactionPromptTemplate();
             textarea.focus();
         }
     });
@@ -1395,9 +1356,13 @@ function notifyCompactionRequestSettled(options) {
 
 function getTopicalClipPromptTemplate() {
     const saved = getModuleSettings().topicalClipPromptTemplate;
-    return typeof saved === 'string' && saved.trim()
+    return hasCustomPromptTemplate(saved, DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE)
         ? saved
-        : DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE;
+        : getDefaultTopicalClipPromptTemplate();
+}
+
+function getDefaultTopicalClipPromptTemplate() {
+    return tr('STMemoryBooks_TopicalClip_DefaultPrompt', DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE);
 }
 
 function setTopicalClipPromptTemplate(template) {
@@ -1582,13 +1547,13 @@ function formatSourceMemoriesForPrompt(entries) {
         const keys = getEntryKeys(entry).join(', ');
         const content = String(entry?.content || '').trim();
         return [
-            `=== SOURCE MEMORY ${number} ===`,
-            `UID: ${entry?.uid ?? entry?.id ?? ''}`,
-            `Title: ${title}`,
-            `Keywords: ${keys}`,
-            `Content:`,
+            tr('STMemoryBooks_TopicalClip_SourceMemoryStart', '=== SOURCE MEMORY {{number}} ===', { number }),
+            `${tr('STMemoryBooks_TopicalClip_SourceUid', 'UID')}: ${entry?.uid ?? entry?.id ?? ''}`,
+            `${tr('STMemoryBooks_TopicalClip_SourceTitle', 'Title')}: ${title}`,
+            `${tr('STMemoryBooks_TopicalClip_SourceKeywords', 'Keywords')}: ${keys}`,
+            `${tr('STMemoryBooks_TopicalClip_SourceContent', 'Content')}:`,
             content,
-            `=== END SOURCE MEMORY ${number} ===`,
+            tr('STMemoryBooks_TopicalClip_SourceMemoryEnd', '=== END SOURCE MEMORY {{number}} ===', { number }),
         ].join('\n');
     }).join('\n\n');
 }
@@ -1608,14 +1573,18 @@ function extractClipInnerContent(entry) {
 
 function buildTopicalClipPrompt({ mode, topic, keywords, sourceEntries, existingClip, template = getTopicalClipPromptTemplate() }) {
     const replacements = {
-        MODE: String(mode || ''),
+        MODE: mode === 'update'
+            ? tr('STMemoryBooks_TopicalClip_ModeUpdate', 'update')
+            : mode === 'create'
+                ? tr('STMemoryBooks_TopicalClip_ModeCreate', 'create')
+                : String(mode || ''),
         TOPIC: String(topic || ''),
         KEYWORDS: (keywords || []).join(', '),
         SOURCE_MEMORIES: formatSourceMemoriesForPrompt(sourceEntries),
         EXISTING_CLIP: String(existingClip || ''),
         EXISTING_ENTRY_CONTENT: String(existingClip || ''),
     };
-    return String(template || DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE).replace(
+    return String(template || getDefaultTopicalClipPromptTemplate()).replace(
         /\{\{(MODE|TOPIC|KEYWORDS|SOURCE_MEMORIES|EXISTING_CLIP|EXISTING_ENTRY_CONTENT)\}\}/g,
         (_match, token) => replacements[token] ?? '',
     );
@@ -1651,6 +1620,10 @@ async function requestTopicalClipDraft(prompt, profileIndex) {
 }
 
 async function showTopicalClipPromptEditorPopup() {
+    let useDefaultPrompt = !hasCustomPromptTemplate(
+        getModuleSettings().topicalClipPromptTemplate,
+        DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
+    );
     const content = DOMPurify.sanitize(`
         <h3>${escapeHtml(tr('STMemoryBooks_TopicalClip_PromptTitle', 'Topical Clip Prompt'))}</h3>
         <div class="world_entry_form_control">
@@ -1672,6 +1645,9 @@ async function showTopicalClipPromptEditorPopup() {
     markStmbPopup(popup);
     const showPromise = popup.show();
     const textarea = popup.dlg?.querySelector('#stmb-topical-clip-prompt-template');
+    textarea?.addEventListener('input', () => {
+        useDefaultPrompt = false;
+    });
 
     popup.dlg?.querySelector('#stmb-topical-clip-save-prompt')?.addEventListener('click', () => {
         const nextTemplate = textarea?.value || '';
@@ -1680,12 +1656,13 @@ async function showTopicalClipPromptEditorPopup() {
             toastr.error(error, 'STMemoryBooks');
             return;
         }
-        setTopicalClipPromptTemplate(nextTemplate);
+        setTopicalClipPromptTemplate(useDefaultPrompt ? '' : nextTemplate);
         popup.completeAffirmative();
     });
     popup.dlg?.querySelector('#stmb-topical-clip-reset-prompt')?.addEventListener('click', () => {
         if (textarea) {
-            textarea.value = DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE;
+            useDefaultPrompt = true;
+            textarea.value = getDefaultTopicalClipPromptTemplate();
             textarea.focus();
         }
     });

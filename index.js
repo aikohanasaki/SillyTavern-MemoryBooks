@@ -131,13 +131,16 @@ import {
   runSidePromptSet,
 } from "./sidePrompts.js";
 import {
-  DEFAULT_COMPACTION_PROMPT_TEMPLATE,
   hideFloatingClipButton,
   initializeFloatingClipButton,
   refreshFloatingClipButtonSetting,
   showStmbEntryReviewPopup,
   showTopicalClipPopup,
 } from "./clipManager.js";
+import {
+  DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+  DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
+} from "./clipPromptDefaults.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
@@ -482,7 +485,8 @@ const defaultSettings = {
     autoCreateLorebook: false,
     autoAcceptGroupParticipants: false,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
-    compactionPromptTemplate: DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+    compactionPromptTemplate: "",
+    topicalClipPromptTemplate: "",
     compactionProfileIndex: 0,
     useRegex: false,
     selectedRegexOutgoing: [],
@@ -2153,9 +2157,17 @@ function validateSettings(settings) {
 
   if (
     typeof settings.moduleSettings.compactionPromptTemplate !== "string" ||
-    !settings.moduleSettings.compactionPromptTemplate.trim()
+    settings.moduleSettings.compactionPromptTemplate.replace(/\r\n?/g, "\n") ===
+      DEFAULT_COMPACTION_PROMPT_TEMPLATE.replace(/\r\n?/g, "\n")
   ) {
-    settings.moduleSettings.compactionPromptTemplate = DEFAULT_COMPACTION_PROMPT_TEMPLATE;
+    settings.moduleSettings.compactionPromptTemplate = "";
+  }
+  if (
+    typeof settings.moduleSettings.topicalClipPromptTemplate !== "string" ||
+    settings.moduleSettings.topicalClipPromptTemplate.replace(/\r\n?/g, "\n") ===
+      DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE.replace(/\r\n?/g, "\n")
+  ) {
+    settings.moduleSettings.topicalClipPromptTemplate = "";
   }
 
   settings.moduleSettings.compactionProfileIndex = clampInt(
