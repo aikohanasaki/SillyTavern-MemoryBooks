@@ -8,6 +8,11 @@
  * Usage: Import this and call addLocaleData() during extension initialization
  */
 
+import {
+    DEFAULT_COMPACTION_PROMPT_TEMPLATE,
+    DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
+} from './clipPromptDefaults.js';
+
 /**
  * Runtime JSON loader for locales that don't support JSON import assertions
  */
@@ -202,6 +207,7 @@ export const localeData_en = {
     'STMemoryBooks_Compaction_Compacting': 'Compacting…',
     'STMemoryBooks_Compaction_EditPrompt': 'Edit Compaction Prompt',
     'STMemoryBooks_Compaction_PromptTitle': 'Compaction Prompt',
+    'STMemoryBooks_Compaction_DefaultPrompt': DEFAULT_COMPACTION_PROMPT_TEMPLATE,
     'STMemoryBooks_Compaction_ResetPrompt': 'Reset to Default',
     'STMemoryBooks_Compaction_SavePrompt': 'Save Prompt',
     'STMemoryBooks_Compaction_SelectMemoryBook': 'Select a Memory Book...',
@@ -236,6 +242,15 @@ export const localeData_en = {
     'STMemoryBooks_TopicalClip_Profile': 'Generation Profile',
     'STMemoryBooks_TopicalClip_EditPrompt': 'Edit Topical Clip Prompt',
     'STMemoryBooks_TopicalClip_PromptTitle': 'Topical Clip Prompt',
+    'STMemoryBooks_TopicalClip_DefaultPrompt': DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
+    'STMemoryBooks_TopicalClip_ModeCreate': 'create',
+    'STMemoryBooks_TopicalClip_ModeUpdate': 'update',
+    'STMemoryBooks_TopicalClip_SourceMemoryStart': '=== SOURCE MEMORY {{number}} ===',
+    'STMemoryBooks_TopicalClip_SourceMemoryEnd': '=== END SOURCE MEMORY {{number}} ===',
+    'STMemoryBooks_TopicalClip_SourceUid': 'UID',
+    'STMemoryBooks_TopicalClip_SourceTitle': 'Title',
+    'STMemoryBooks_TopicalClip_SourceKeywords': 'Keywords',
+    'STMemoryBooks_TopicalClip_SourceContent': 'Content',
     'STMemoryBooks_TopicalClip_PromptMissingSourceMemories': 'The Topical Clip prompt must include {{SOURCE_MEMORIES}}.',
     'STMemoryBooks_TopicalClip_GenerateDraft': 'Generate Draft',
     'STMemoryBooks_TopicalClip_Save': 'Save Topical Clip',
