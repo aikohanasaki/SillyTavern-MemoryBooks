@@ -1181,6 +1181,8 @@
   "STMemoryBooks_Jobs_Empty": "メモリーブックのジョブはありません。",
   "STMemoryBooks_Jobs_Cancel": "キャンセル",
   "STMemoryBooks_Jobs_Retry": "再試行",
+  "STMemoryBooks_Jobs_RetryAll": "すべて再試行",
+  "STMemoryBooks_Jobs_RetryMemory": "メモリのみ再試行",
   "STMemoryBooks_Jobs_Lorebook": "ロアブック",
   "STMemoryBooks_Jobs_MemoryQueued": "メモリジョブをキューに追加しました。",
   "STMemoryBooks_Jobs_ConsolidationQueued": "統合ジョブをキューに追加しました。",

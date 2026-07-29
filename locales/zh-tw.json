@@ -1181,6 +1181,8 @@
   "STMemoryBooks_Jobs_Empty": "沒有記憶書任務。",
   "STMemoryBooks_Jobs_Cancel": "取消",
   "STMemoryBooks_Jobs_Retry": "重試",
+  "STMemoryBooks_Jobs_RetryAll": "全部重試",
+  "STMemoryBooks_Jobs_RetryMemory": "僅重試記憶",
   "STMemoryBooks_Jobs_Lorebook": "故事書",
   "STMemoryBooks_Jobs_MemoryQueued": "記憶任務已排入佇列。",
   "STMemoryBooks_Jobs_ConsolidationQueued": "合併任務已排入佇列。",

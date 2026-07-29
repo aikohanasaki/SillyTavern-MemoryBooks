@@ -1186,6 +1186,8 @@
   "STMemoryBooks_Jobs_Empty": "No hay trabajos de Libros de Memoria.",
   "STMemoryBooks_Jobs_Cancel": "Cancelar",
   "STMemoryBooks_Jobs_Retry": "Reintentar",
+  "STMemoryBooks_Jobs_RetryAll": "Reintentar todo",
+  "STMemoryBooks_Jobs_RetryMemory": "Reintentar memoria",
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
   "STMemoryBooks_Jobs_MemoryQueued": "Trabajo de memoria en cola.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Trabajo de consolidación en cola.",
