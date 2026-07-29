@@ -18,6 +18,7 @@ import {
     resolveContextSettingEntriesFromRefs,
 } from './contextSettingsManager.js';
 import { resolveCustomConnectionProfile } from './customConnectionProfiles.js';
+import { tr } from './i18nHelpers.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -1418,13 +1419,23 @@ export function appendAdditionalContextSection(sceneHeader, additionalContextEnt
     const usableEntries = additionalContextEntries.filter(entry => entry.content);
     if (usableEntries.length === 0) return;
 
-    sceneHeader.push("=== ADDITIONAL CONTEXT FOR REFERENCE ===");
+    sceneHeader.push(translate(
+        "=== ADDITIONAL CONTEXT FOR REFERENCE ===",
+        "STMemoryBooks_PromptFrame_AdditionalContextStart",
+    ));
     usableEntries.forEach((entry, index) => {
-        sceneHeader.push(`Reference ${index + 1} - ${entry.title}:`);
+        sceneHeader.push(tr(
+            "STMemoryBooks_PromptFrame_ReferenceLabel",
+            "Reference {{number}} - {{title}}:",
+            { number: index + 1, title: entry.title },
+        ));
         sceneHeader.push(entry.content);
         sceneHeader.push("");
     });
-    sceneHeader.push("=== END ADDITIONAL CONTEXT FOR REFERENCE ===");
+    sceneHeader.push(translate(
+        "=== END ADDITIONAL CONTEXT FOR REFERENCE ===",
+        "STMemoryBooks_PromptFrame_AdditionalContextEnd",
+    ));
     sceneHeader.push("");
 }
 
@@ -1439,7 +1450,10 @@ export function appendAdditionalContextSection(sceneHeader, additionalContextEnt
  */
 function formatSceneForAI(messages, metadata, previousSummariesContext = [], additionalContextEntries = []) {
     const messageLines = messages.map(message => {
-        const speaker = message.name || 'Unknown';
+        const speaker = message.name || translate(
+            'Unknown',
+            'STMemoryBooks_PromptFrame_UnknownSpeaker',
+        );
         const content = (message.mes || '').trim();
         return content ? `${speaker}: ${content}` : null;
     }).filter(Boolean); // Filter out any empty/null messages
@@ -1452,27 +1466,48 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = [], add
 
     // Add previous memories context if available
     if (previousSummariesContext && previousSummariesContext.length > 0) {
-        sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===");
-        sceneHeader.push("These are previous memories for context only. Do NOT include them in your new memory:");
+        sceneHeader.push(translate(
+            "=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===",
+            "STMemoryBooks_PromptFrame_PreviousMemoryContextStart",
+        ));
+        sceneHeader.push(translate(
+            "These are previous memories for context only. Do NOT include them in your new memory:",
+            "STMemoryBooks_PromptFrame_PreviousMemoryContextInstruction",
+        ));
         sceneHeader.push("");
         
         previousSummariesContext.forEach((memory, index) => {
-            sceneHeader.push(`Context ${index + 1} - ${memory.title}:`);
+            sceneHeader.push(tr(
+                "STMemoryBooks_PromptFrame_ContextLabel",
+                "Context {{number}} - {{title}}:",
+                { number: index + 1, title: memory.title },
+            ));
             sceneHeader.push(memory.content);
             if (memory.keywords && memory.keywords.length > 0) {
-                sceneHeader.push(`Keywords: ${memory.keywords.join(', ')}`);
+                sceneHeader.push(
+                    `${translate("Keywords", "STMemoryBooks_PromptFrame_KeywordsLabel")}: ${memory.keywords.join(', ')}`,
+                );
             }
             sceneHeader.push("");
         });
         
-        sceneHeader.push("=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===");
+        sceneHeader.push(translate(
+            "=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===",
+            "STMemoryBooks_PromptFrame_PreviousMemoryContextEnd",
+        ));
         sceneHeader.push("");
     }
 
-    sceneHeader.push("=== SCENE TRANSCRIPT ===");
+    sceneHeader.push(translate(
+        "=== SCENE TRANSCRIPT ===",
+        "STMemoryBooks_PromptFrame_SceneTranscriptStart",
+    ));
     sceneHeader.push(...messageLines);
     sceneHeader.push("");
-    sceneHeader.push("=== END SCENE ===");
+    sceneHeader.push(translate(
+        "=== END SCENE ===",
+        "STMemoryBooks_PromptFrame_SceneTranscriptEnd",
+    ));
     
     return sceneHeader.join('\n');
 }

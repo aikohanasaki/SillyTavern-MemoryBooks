@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "キャラクターの成長",
+      "enabled": false,
+      "prompt": "手順：\n1. 提供されたシーンを確認します。\n2. 経験によって生じた{{char}}の性格の変化を特定し、説明します。\n3. どの出来事によって{{char}}がどのように変化したかを短く説明します。",
+      "responseFormat": "==={{char}}のキャラクター成長===\n（主な変化の短い説明）\n===終了：{{char}}のキャラクター成長===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "ムードと雰囲気",
+      "enabled": true,
+      "prompt": "添付されたシーンを確認し、現在のムードと雰囲気を説明してください。",
+      "responseFormat": "===現在のムード===\n（現在のムードと雰囲気の短い説明）\n===現在のムード終了===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "世界設定",
+      "enabled": true,
+      "prompt": "世界の現在の状態、特にプロットやシーンによって生じた変化を説明してください。",
+      "responseFormat": "===世界についてのメモ===\n（短く密度の高いメモ）\n===世界についてのメモ終了===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "身体位置トラッカー",
+      "enabled": true,
+      "prompt": "シーンを確認してから、{{char}}の身体位置トラッカーを記入または更新してください。{{char}}が複数人の場合は、一人ずつ記入してください。簡潔でトークン効率よく記述しつつ、正確性と位置関係の整合性を優先してください。物理法則に反しないでください。",
+      "responseFormat": "==={{char}} 身体位置トラッカー===\n全体の位置と衣服の状態：\n頭：\n左腕／左手：\n右腕／右手：\n胴体／胸／背中：\n左脚／左足：\n右脚／右足：\n===終了：{{char}} 身体位置トラッカー===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

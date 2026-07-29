@@ -274,29 +274,56 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
     const parts = [];
     parts.push(applySidePromptMacros(templatePrompt, runtimeMacros));
     if (priorContent && String(priorContent).trim()) {
-        parts.push('\n=== PRIOR ENTRY ===\n');
+        parts.push(`\n${translate(
+            '=== PRIOR ENTRY ===',
+            'STMemoryBooks_PromptFrame_SidePriorEntryStart',
+        )}\n`);
         parts.push(String(priorContent));
     }
     if (Array.isArray(previousSummaries) && previousSummaries.length > 0) {
-        parts.push('\n=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===\n');
-        parts.push('These are previous memories for context only. Do NOT include them in your new output.\n\n');
+        parts.push(`\n${translate(
+            '=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===',
+            'STMemoryBooks_PromptFrame_SidePreviousContextStart',
+        )}\n`);
+        parts.push(`${translate(
+            'These are previous memories for context only. Do NOT include them in your new output.',
+            'STMemoryBooks_PromptFrame_SidePreviousContextInstruction',
+        )}\n\n`);
         previousSummaries.forEach((m, i) => {
-            parts.push(`Context ${i + 1} - ${m.title || 'Memory'}:\n`);
+            parts.push(`${tr(
+                'STMemoryBooks_PromptFrame_ContextLabel',
+                'Context {{number}} - {{title}}:',
+                {
+                    number: i + 1,
+                    title: m.title || translate('Memory', 'STMemoryBooks_Compaction_TypeMemory'),
+                },
+            )}\n`);
             parts.push(`${m.content || ''}\n`);
             if (Array.isArray(m.keywords) && m.keywords.length) {
-                parts.push(`Keywords: ${m.keywords.join(', ')}\n`);
+                parts.push(
+                    `${translate('Keywords', 'STMemoryBooks_PromptFrame_KeywordsLabel')}: ${m.keywords.join(', ')}\n`,
+                );
             }
             parts.push('\n');
         });
-        parts.push('=== END PREVIOUS SCENE CONTEXT ===\n');
+        parts.push(`${translate(
+            '=== END PREVIOUS SCENE CONTEXT ===',
+            'STMemoryBooks_PromptFrame_SidePreviousContextEnd',
+        )}\n`);
     }
     appendSidePromptAdditionalContext(parts, additionalContextEntries);
     // Derive scene text from the compiled scene here to keep a single source of truth
     const sceneText = compiledScene ? toReadableText(compiledScene) : '';
-    parts.push('\n=== SCENE TEXT ===\n');
+    parts.push(`\n${translate(
+        '=== SCENE TEXT ===',
+        'STMemoryBooks_PromptFrame_SideSceneTextStart',
+    )}\n`);
     parts.push(sceneText);
     if (responseFormat && String(responseFormat).trim()) {
-        parts.push('\n=== RESPONSE FORMAT ===\n');
+        parts.push(`\n${translate(
+            '=== RESPONSE FORMAT ===',
+            'STMemoryBooks_PromptFrame_SideResponseFormatStart',
+        )}\n`);
         parts.push(applySidePromptMacros(responseFormat, runtimeMacros).trim());
     }
     const finalPrompt = parts.join('');

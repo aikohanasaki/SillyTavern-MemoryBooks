@@ -33,6 +33,8 @@ import {
   applyFixedSequenceNumber,
   normalizeConsolidationRegenerationResponse,
 } from "./memoryRegeneration.js";
+import { tr } from "./i18nHelpers.js";
+import { DEFAULT_CONSOLIDATION_KEYWORD_PROMPT } from "./consolidationPromptDefaults.js";
 
 /**
  * Arc Analysis pipeline (stateless wrt model; stateful in controller).
@@ -45,30 +47,6 @@ import {
  */
 
 const MODULE_NAME = "STMemoryBooks-ArcAnalysis";
-
-const KEYWORD_PROMPT = `Based on this {{stmbtier}} summary, generate 15–30 standalone topical keywords that function as retrieval tags, not micro-summaries.
-Keywords must be:
-- Concrete and scene-specific (locations, objects, proper nouns, unique actions, repeated motifs).
-- One concept per keyword — do NOT combine multiple ideas into one keyword.
-- Useful for retrieval if the user later mentions that noun or action alone, not only in a specific context.
-- Not {{char}}'s or {{user}}'s names.
-- Not thematic, emotional, or abstract. Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
-
-Avoid:
-- Overly specific compound keywords (“David Tokyo marriage”).
-- Narrative or plot-summary style keywords (“art dealer date fail”).
-- Keywords that contain multiple facts or descriptors.
-- Keywords that only make sense when the whole scene is remembered.
-
-Prefer:
-- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
-- Specific physical objects ("CPAP machine", "chocolate chip cookies").
-- Distinctive actions ("cookie baking", "piano apology").
-- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
-
-Your goal: keywords should fire when the noun/action is mentioned alone, not only when paired with a specific person or backstory.
-
-Return ONLY a JSON array of 15-30 strings. No commentary, no explanations.`;
 
 // Utility: normalize text
 function normalizeText(s) {
@@ -324,10 +302,28 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
     ? Math.trunc(Number(options.targetTier))
     : 1;
   const base = String(summary || "").trim();
-  const keywordPrompt = resolveSummaryPromptPlaceholders(KEYWORD_PROMPT, {
-    targetTier,
-  });
-  const prompt = `${keywordPrompt}\n\n=== ${getSummaryTierLabel(targetTier).toUpperCase()} SUMMARY ===\n${base}\n=== END SUMMARY ===`;
+  const keywordPrompt = resolveSummaryPromptPlaceholders(
+    translate(
+      DEFAULT_CONSOLIDATION_KEYWORD_PROMPT,
+      "STMemoryBooks_Consolidation_KeywordPrompt",
+    ),
+    { targetTier },
+  );
+  const tier = getSummaryTierLabel(targetTier).toUpperCase();
+  const prompt = [
+    keywordPrompt,
+    "",
+    tr(
+      "STMemoryBooks_Consolidation_KeywordSummaryStart",
+      "=== {{tier}} SUMMARY ===",
+      { tier },
+    ),
+    base,
+    tr(
+      "STMemoryBooks_Consolidation_KeywordSummaryEnd",
+      "=== END SUMMARY ===",
+    ),
+  ].join("\n");
   const { text } = await sendRawCompletionRequest({
     model: conn.model,
     prompt,
@@ -356,7 +352,10 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
   } catch {}
   if (!Array.isArray(kw) || kw.length === 0) {
     // Retry with explicit JSON-only constraint
-    const repairPrompt = `${prompt}\n\nReturn ONLY a JSON array of 15-30 strings.`;
+    const repairPrompt = `${prompt}\n\n${translate(
+      "Return ONLY a JSON array of 15-30 strings.",
+      "STMemoryBooks_Consolidation_KeywordRepair",
+    )}`;
     const retry = await sendRawCompletionRequest({
       model: conn.model,
       prompt: repairPrompt,
@@ -397,7 +396,13 @@ export function buildBriefsFromEntries(entries) {
         id: String(e.id || `gap-${briefs.length + 1}`),
         order: Number.isFinite(Number(e.order)) ? Number(e.order) : 0,
         content: String(e.content || "").trim(),
-        title: String(e.title || "Chronology gap").trim(),
+        title: String(
+          e.title ||
+            translate(
+              "Chronology gap",
+              "STMemoryBooks_Consolidation_ChronologyGap",
+            ),
+        ).trim(),
         gapMarker: true,
       });
       continue;
@@ -405,7 +410,11 @@ export function buildBriefsFromEntries(entries) {
     const id = String(e.uid ?? "");
     const order = extractNumberFromTitle(e.comment ?? "") ?? 0;
     const content = String(e.content ?? "").trim();
-    const title = (e.comment || "Untitled").toString().trim(); // preserve the memory title
+    const title = (
+      e.comment || translate("Untitled", "STMemoryBooks_Untitled")
+    )
+      .toString()
+      .trim(); // preserve the memory title
     briefs.push({
       id,
       order,
@@ -445,7 +454,6 @@ export function buildSummaryAnalysisPrompt({
   );
   const targetLabel = getSummaryTierLabel(targetTier).toUpperCase();
   const childTierLabel = getSummaryTierLabel(getSourceTierForTarget(targetTier));
-  const childLabel = childTierLabel.toUpperCase();
   const childPlural =
     /y$/i.test(childTierLabel) ? `${childTierLabel.slice(0, -1)}ies` : `${childTierLabel}s`;
   const childPluralLabel = childPlural.toUpperCase();
@@ -453,7 +461,11 @@ export function buildSummaryAnalysisPrompt({
   const locked = Array.isArray(lockedSummaries) ? lockedSummaries : [];
   if (locked.length > 0) {
     lines.push(
-      `=== ACCEPTED ${targetLabel} SUMMARIES (CANON — DO NOT REWRITE, DO NOT DUPLICATE) ===`,
+      tr(
+        "STMemoryBooks_Consolidation_AcceptedSummariesStart",
+        "=== ACCEPTED {{tier}} SUMMARIES (CANON — DO NOT REWRITE, DO NOT DUPLICATE) ===",
+        { tier: targetLabel },
+      ),
     );
     locked.forEach((item, idx) => {
       const title = String(item?.title || `${getSummaryTierLabel(targetTier)} ${idx + 1}`).trim();
@@ -463,34 +475,74 @@ export function buildSummaryAnalysisPrompt({
       lines.push(summary);
       lines.push("");
     });
-    lines.push(`=== END ACCEPTED ${targetLabel} SUMMARIES ===`);
+    lines.push(
+      tr(
+        "STMemoryBooks_Consolidation_AcceptedSummariesEnd",
+        "=== END ACCEPTED {{tier}} SUMMARIES ===",
+        { tier: targetLabel },
+      ),
+    );
     lines.push("");
   }
   if (previousSummary) {
     lines.push(
-      `=== PREVIOUS ${targetLabel} (CANON — DO NOT REWRITE, DO NOT INCLUDE IN YOUR NEW SUMMARY) ===`,
+      tr(
+        "STMemoryBooks_Consolidation_PreviousSummaryStart",
+        "=== PREVIOUS {{tier}} (CANON — DO NOT REWRITE, DO NOT INCLUDE IN YOUR NEW SUMMARY) ===",
+        { tier: targetLabel },
+      ),
     );
     if (typeof previousOrder !== "undefined" && previousOrder !== null) {
       lines.push(`${getSummaryTierLabel(targetTier)} ${previousOrder}`);
     }
     lines.push(previousSummary.trim());
-    lines.push(`=== END PREVIOUS ${targetLabel} ===`);
+    lines.push(
+      tr(
+        "STMemoryBooks_Consolidation_PreviousSummaryEnd",
+        "=== END PREVIOUS {{tier}} ===",
+        { tier: targetLabel },
+      ),
+    );
     lines.push("");
   }
 
-  lines.push(`=== ${childPluralLabel} ===`);
+  lines.push(
+    tr(
+      "STMemoryBooks_Consolidation_SourceEntriesStart",
+      "=== {{tier}} ===",
+      { tier: childPluralLabel },
+    ),
+  );
   briefs.forEach((b, idx) => {
     const memNo = String(idx + 1).padStart(3, "0"); // 001, 002, ...
     const title = (b.title || "").toString().trim();
     const content = (b.content || "").toString().trim();
 
     lines.push(`=== ${childTierLabel} ${memNo} ===`);
-    lines.push(`Title: ${title}`);
-    lines.push(b.gapMarker ? `Note: ${content}` : `Contents: ${content}`);
-    lines.push(`=== end ${childTierLabel} ${memNo} ===`);
+    lines.push(
+      `${translate("Title", "STMemoryBooks_Consolidation_TitleLabel")}: ${title}`,
+    );
+    lines.push(
+      b.gapMarker
+        ? `${translate("Note", "STMemoryBooks_Consolidation_NoteLabel")}: ${content}`
+        : `${translate("Contents", "STMemoryBooks_Consolidation_ContentsLabel")}: ${content}`,
+    );
+    lines.push(
+      tr(
+        "STMemoryBooks_Consolidation_SourceEntryEnd",
+        "=== end {{tier}} {{number}} ===",
+        { tier: childTierLabel, number: memNo },
+      ),
+    );
     lines.push("");
   });
-  lines.push(`=== END ${childPluralLabel} ===`);
+  lines.push(
+    tr(
+      "STMemoryBooks_Consolidation_SourceEntriesEnd",
+      "=== END {{tier}} ===",
+      { tier: childPluralLabel },
+    ),
+  );
   lines.push("");
 
   return `${header}\n\n${lines.join("\n")}`;
@@ -853,7 +905,10 @@ export async function runSummaryAnalysisSequential(
       });
     } catch (e) {
       // Single retry with a minimal "return JSON only" reminder
-      const repairPrompt = `${prompt}\n\nReturn ONLY the JSON object, nothing else. Ensure arrays and commas are valid.`;
+      const repairPrompt = `${prompt}\n\n${translate(
+        "Return ONLY the JSON object, nothing else. Ensure arrays and commas are valid.",
+        "STMemoryBooks_Consolidation_JsonRepair",
+      )}`;
       const retry = await (async () => {
         const task = createStmbInFlightTask(`ArcAnalysis:pass:${pass}:retry`);
         try {
