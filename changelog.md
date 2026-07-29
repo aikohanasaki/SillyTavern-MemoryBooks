@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ## v8.3.3 (July 29, 2026)
 - Enhancement: Added "retry run" to job queue.
+- Add Portugese localization.
 
 ## v8.3.2 (July 28, 2026)
 - Tweak: Treat group chat overall consolidation as timeline rather than summary.
