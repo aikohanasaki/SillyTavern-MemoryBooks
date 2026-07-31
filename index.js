@@ -6,6 +6,8 @@ import {
   event_types,
   chat,
   chat_metadata,
+  getCurrentChatId,
+  saveMetadata,
   saveSettingsDebounced,
   characters,
   this_chid,
@@ -29,6 +31,7 @@ import {
   world_names,
   loadWorldInfo,
   saveWorldInfo,
+  updateWorldInfoList,
   reloadEditor,
 } from "../../../world-info.js";
 import { lodash, Handlebars, DOMPurify } from "../../../../lib.js";
@@ -51,6 +54,7 @@ import {
   normalizeLorebookEntrySettings,
 } from "./addlore.js";
 import { autoCreateLorebook } from "./autocreate.js";
+import { createBranchLorebookController } from "./branchLorebooks.js";
 import {
   handleAutoSummaryMessageReceived,
   clearAutoSummaryState,
@@ -406,6 +410,7 @@ export { currentProfile };
 const MODULE_NAME = "STMemoryBooks";
 
 let hasBeenInitialized = false;
+let branchLorebookController = null;
 const deferredQueuedAutoHideRanges = new Map();
 let autoSummaryJobRetryInFlight = false;
 
@@ -483,6 +488,7 @@ const defaultSettings = {
     autoConsolidationPromptEnabled: false,
     autoConsolidationTargetTiers: [1],
     autoCreateLorebook: false,
+    copyMemoryBooksOnBranch: true,
     autoAcceptGroupParticipants: false,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     compactionPromptTemplate: "",
@@ -517,6 +523,35 @@ const defaultSettings = {
   defaultProfile: 0,
   migrationVersion: 4,
 };
+
+function getBranchLorebookController() {
+  if (branchLorebookController) return branchLorebookController;
+
+  branchLorebookController = createBranchLorebookController({
+    getCurrentChatId,
+    getChatMessages: () => chat,
+    getChatMetadata: () => chat_metadata,
+    getSettings: initializeSettings,
+    isGroupChat: () => !!getCurrentMemoryBooksContext()?.isGroupChat,
+    getWorldNames: () => world_names || [],
+    loadWorldInfo,
+    saveWorldInfo,
+    updateWorldInfoList,
+    saveMetadata,
+    translate,
+    notify: (level, message) => {
+      const method = level === "error"
+        ? toastr.error
+        : level === "warning"
+          ? toastr.warning
+          : toastr.success;
+      method(message, translate("STMemoryBooks", "index.toast.title"));
+    },
+    afterSuccess: () => eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT),
+    logger: console,
+  });
+  return branchLorebookController;
+}
 
 // Current state variables
 let currentPopupInstance = null;
@@ -983,7 +1018,8 @@ async function maybePromptContextSettingForChatOpen() {
   }
 }
 
-function handleChatChanged() {
+async function handleChatChanged(chatId) {
+  await getBranchLorebookController().handleChatChanged(chatId);
   console.log(
     translate(
       "STMemoryBooks: Chat changed - updating scene state",
@@ -2140,6 +2176,9 @@ function validateSettings(settings) {
   // Validate auto-create lorebook setting - always defaults to false
   if (settings.moduleSettings.autoCreateLorebook === undefined) {
     settings.moduleSettings.autoCreateLorebook = false;
+  }
+  if (settings.moduleSettings.copyMemoryBooksOnBranch === undefined) {
+    settings.moduleSettings.copyMemoryBooksOnBranch = true;
   }
   if (settings.moduleSettings.autoAcceptGroupParticipants === undefined) {
     settings.moduleSettings.autoAcceptGroupParticipants = false;
@@ -9230,6 +9269,8 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
       settings.moduleSettings.autoConsolidationPromptEnabled ?? false,
     autoConsolidationTargetTiers,
     autoCreateLorebook: settings.moduleSettings.autoCreateLorebook ?? false,
+    copyMemoryBooksOnBranch:
+      settings.moduleSettings.copyMemoryBooksOnBranch !== false,
     lorebookNameTemplate:
       settings.moduleSettings.lorebookNameTemplate ||
       "LTM - {{char}} - {{chat}}",
@@ -9627,6 +9668,12 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       return;
     }
 
+    if (e.target.matches("#stmb-copy-memory-books-on-branch")) {
+      settings.moduleSettings.copyMemoryBooksOnBranch = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
     if (e.target.matches("#stmb-manual-mode-enabled")) {
       const isEnabling = e.target.checked;
 
@@ -10020,6 +10067,9 @@ function persistMainPopupSettings(popupElement) {
   const autoCreateLorebook =
     popupElement.querySelector("#stmb-auto-create-lorebook")?.checked ??
     settings.moduleSettings.autoCreateLorebook;
+  const copyMemoryBooksOnBranch =
+    popupElement.querySelector("#stmb-copy-memory-books-on-branch")?.checked ??
+    (settings.moduleSettings.copyMemoryBooksOnBranch !== false);
   const autoHideMode =
     popupElement.querySelector("#stmb-auto-hide-mode")?.value ??
     getAutoHideMode(settings.moduleSettings);
@@ -10168,6 +10218,14 @@ function persistMainPopupSettings(popupElement) {
 
   if (autoCreateLorebook !== settings.moduleSettings.autoCreateLorebook) {
     settings.moduleSettings.autoCreateLorebook = autoCreateLorebook;
+    hasChanges = true;
+  }
+
+  if (
+    copyMemoryBooksOnBranch !==
+    (settings.moduleSettings.copyMemoryBooksOnBranch !== false)
+  ) {
+    settings.moduleSettings.copyMemoryBooksOnBranch = copyMemoryBooksOnBranch;
     hasChanges = true;
   }
 
@@ -10642,6 +10700,7 @@ function setupEventListeners() {
     void handleLorebookEntryRegeneration(this);
   });
 
+  getBranchLorebookController().initialize();
   eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
   eventSource.on(MEMORY_TIER_CACHE_REFRESH_EVENT, refreshMemoryTierMacroCache);
   eventSource.on(event_types.WORLDINFO_UPDATED, (name, data) => {
