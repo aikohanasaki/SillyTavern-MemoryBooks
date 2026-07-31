@@ -65,6 +65,15 @@ import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./a
 // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
 // running notes (fork; plan §4.3 jobs 1–2).
 import { handleCoverageCommand, handleRegenCommand } from "./auditorJobs.js";
+// STMBC-HOOK(librarian): P7.2 pre-turn lore retrieval (fork; PHA-1633 §Architecture
+// 2 + 4). `registerLibrarianHooks` installs the GENERATION_STARTED gate and the
+// world-info force-activation handoff; both are inert while the librarian is
+// disabled (the shipped default), so the narrator prompt stays byte-identical.
+import {
+  registerLibrarianHooks,
+  runLibrarianForCurrentChat,
+  setLibrarianEnabledForCurrentChat,
+} from "./librarian.js";
 // STMBC-HOOK(sentinel-cadence): P2.3 jobs-framework wiring for the sentinel cycle
 // (fork; plan §4.1). `registerSentinelCadence` installs the P2.1 engine behind
 // the STMB jobs executor and registers the `stmbc-sentinel-cycle` job type;
@@ -332,6 +341,58 @@ async function handleStmbcDetectCommand(namedArgs, unnamedArgs) {
       translate('STMemoryBooks', 'index.toast.title'),
     );
     return '';
+  }
+}
+
+/**
+ * Slash: /stmbc-librarian
+ * P7.2 — run the pre-turn librarian retrieval on demand and report what it
+ * selected, dropped and spent.
+ *
+ * This is the manual-verification seam the phase gate needs: the automatic path
+ * runs inside GENERATION_STARTED where nothing is observable, so this command
+ * drives the *same* function (`runLibrarianForCurrentChat`) and prints the
+ * record. The injection it leaves behind is the one the next turn would have
+ * used, which is exactly what makes a live prompt-diff possible.
+ */
+async function handleStmbcLibrarianCommand(namedArgs, unnamedArgs) {
+  try {
+    const arg = String(unnamedArgs || "").trim().toLowerCase();
+    if (arg === "on" || arg === "off") {
+      const enabled = setLibrarianEnabledForCurrentChat(arg === "on");
+      const msg = enabled
+        ? translate(
+            "Librarian ON for this chat. The next turn adds retrieved entries on top of keyword activation.",
+            "STMemoryBooks_Librarian_On",
+          )
+        : translate(
+            "Librarian OFF for this chat. Prompts are back to stock.",
+            "STMemoryBooks_Librarian_Off",
+          );
+      toastr.info(msg, translate("STMemoryBooks", "index.toast.title"));
+      return enabled ? "on" : "off";
+    }
+
+    const record = await runLibrarianForCurrentChat();
+    const included = Array.isArray(record.included) ? record.included : [];
+    const dropped = Array.isArray(record.dropped) ? record.dropped : [];
+    const summary =
+      `${record.action}` +
+      ` | injected ${included.length}` +
+      (included.length ? ` (${included.map((e) => `#${e.uid} ${e.title}`).join('; ')})` : '') +
+      ` | ${record.usedTokens || 0}/${record.budget || 0} tokens` +
+      (dropped.length ? ` | dropped ${dropped.map((d) => `#${d.uid}:${d.reason}`).join(', ')}` : '') +
+      (record.mechanism ? ` | via ${record.mechanism}` : '') +
+      (Number.isFinite(record.ms) ? ` | ${record.ms}ms` : '');
+
+    console.debug('STMemoryBooks: /stmbc-librarian', record);
+    toastr.info(summary, translate('STMemoryBooks', 'index.toast.title'));
+    return summary;
+  } catch (err) {
+    // runLibrarianForCurrentChat is already total; this is the belt-and-braces
+    // layer so a slash command can never surface as an unhandled rejection.
+    console.error('STMemoryBooks: /stmbc-librarian failed:', err);
+    return `error: ${String(err?.message || err)}`;
   }
 }
 
@@ -10052,6 +10113,28 @@ function registerSlashCommands() {
     returns: "Regeneration status string.",
   });
 
+  // STMBC-HOOK(librarian): P7.2 manual retrieval + verification seam.
+  const stmbcLibrarianCmd = SlashCommand.fromProps({
+    name: "stmbc-librarian",
+    callback: handleStmbcLibrarianCommand,
+    helpString: translate(
+      "Run the librarian's pre-turn lore retrieval now and report which entries it would add, what it dropped and what it spent. Pass on/off to switch it for this chat (PHA-1633 §Architecture 2). Usage: /stmbc-librarian [on|off]",
+      "STMemoryBooks_Slash_LibrarianHelp",
+    ),
+    unnamedArgumentList: [
+      SlashCommandArgument.fromProps({
+        description: translate(
+          "on or off to switch the librarian for this chat; omit to run one retrieval now",
+          "STMemoryBooks_Slash_LibrarianArgDesc",
+        ),
+        typeList: [ARGUMENT_TYPE.STRING],
+        isRequired: false,
+        enumList: ["on", "off"].map((v) => new SlashCommandEnumValue(v)),
+      }),
+    ],
+    returns: "Retrieval summary string.",
+  });
+
   SlashCommandParser.addCommandObject(createMemoryCmd);
   SlashCommandParser.addCommandObject(sceneMemoryCmd);
   SlashCommandParser.addCommandObject(nextMemoryCmd);
@@ -10069,6 +10152,7 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(stmbcStopCmd);
   SlashCommandParser.addCommandObject(stmbcCoverageCmd);
   SlashCommandParser.addCommandObject(stmbcRegenCmd);
+  SlashCommandParser.addCommandObject(stmbcLibrarianCmd);
 }
 
 /**
@@ -10114,6 +10198,12 @@ function setupEventListeners() {
     refreshMemoryBoundaryUi();
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+
+  // STMBC-HOOK(librarian): P7.2 — ONE pre-turn retrieval call, then an additive
+  // world-info/extension-prompt injection. Registered here (not inside the
+  // GENERATION_STARTED listener below) because it owns its own dry-run and
+  // quiet-generation gating; see librarian.js "The one path".
+  registerLibrarianHooks();
 
   // Track dry-run state for generation events
   eventSource.on(event_types.GENERATION_STARTED, (type, options, dryRun) => {
