@@ -821,6 +821,7 @@ export async function showRegenerationReviewPopup({
   generatedKeywords,
   formatTitle,
   linkedLorebooks = [],
+  contentOnly = false,
 } = {}) {
   let popup = null;
   try {
@@ -842,6 +843,18 @@ export async function showRegenerationReviewPopup({
           <div>${escapeReviewValue(linkedNames.join(', '))}</div>
         </div>`
       : '';
+    const afterIdentityFields = contentOnly
+      ? ''
+      : `
+            <label for="stmb-regeneration-title">${escapeReviewValue(translate('Semantic title', 'STMemoryBooks_Regeneration_SemanticTitle'))}</label>
+            <input id="stmb-regeneration-title" class="text_pole" value="${escapeReviewValue(generatedTitle)}">
+            <label for="stmb-regeneration-final-title">${escapeReviewValue(translate('Final formatted title', 'STMemoryBooks_Regeneration_FinalTitle'))}</label>
+            <input id="stmb-regeneration-final-title" class="text_pole" value="${escapeReviewValue(initialFinalTitle)}" readonly>`;
+    const afterKeywordField = contentOnly
+      ? ''
+      : `
+            <label for="stmb-regeneration-keywords">${escapeReviewValue(translate('Keywords', 'STMemoryBooks_Regeneration_Keywords'))}</label>
+            <input id="stmb-regeneration-keywords" class="text_pole" value="${escapeReviewValue(afterKeywords)}">`;
     const content = DOMPurify.sanitize(`
       <div class="stmb-regeneration-review">
         <p>${escapeReviewValue(translate('Review the original and regenerated entry. Approval is required before anything is overwritten.', 'STMemoryBooks_Regeneration_ReviewDescription'))}</p>
@@ -858,14 +871,10 @@ export async function showRegenerationReviewPopup({
           </section>
           <section class="stmb-regeneration-column">
             <h3>${escapeReviewValue(translate('After', 'STMemoryBooks_Regeneration_After'))}</h3>
-            <label for="stmb-regeneration-title">${escapeReviewValue(translate('Semantic title', 'STMemoryBooks_Regeneration_SemanticTitle'))}</label>
-            <input id="stmb-regeneration-title" class="text_pole" value="${escapeReviewValue(generatedTitle)}">
-            <label for="stmb-regeneration-final-title">${escapeReviewValue(translate('Final formatted title', 'STMemoryBooks_Regeneration_FinalTitle'))}</label>
-            <input id="stmb-regeneration-final-title" class="text_pole" value="${escapeReviewValue(initialFinalTitle)}" readonly>
+            ${afterIdentityFields}
             <label for="stmb-regeneration-content">${escapeReviewValue(translate('Content', 'STMemoryBooks_Regeneration_Content'))}</label>
             <textarea id="stmb-regeneration-content" class="text_pole stmb-regeneration-content">${escapeReviewValue(generatedContent)}</textarea>
-            <label for="stmb-regeneration-keywords">${escapeReviewValue(translate('Keywords', 'STMemoryBooks_Regeneration_Keywords'))}</label>
-            <input id="stmb-regeneration-keywords" class="text_pole" value="${escapeReviewValue(afterKeywords)}">
+            ${afterKeywordField}
           </section>
         </div>
       </div>
@@ -885,7 +894,7 @@ export async function showRegenerationReviewPopup({
     const finalTitleInput = popup.dlg?.querySelector('#stmb-regeneration-final-title');
     const contentInput = popup.dlg?.querySelector('#stmb-regeneration-content');
     const validateReview = () => {
-      const hasTitle = Boolean(titleInput?.value?.trim());
+      const hasTitle = contentOnly || Boolean(titleInput?.value?.trim());
       const hasContent = Boolean(contentInput?.value?.trim());
       const isValid = hasTitle && hasContent;
 
@@ -934,9 +943,13 @@ export async function showRegenerationReviewPopup({
       return { action: 'cancel' };
     }
 
-    const semanticTitle = popup.dlg.querySelector('#stmb-regeneration-title')?.value?.trim() || '';
+    const semanticTitle = contentOnly
+      ? String(originalEntry?.comment || '').trim()
+      : popup.dlg.querySelector('#stmb-regeneration-title')?.value?.trim() || '';
     const editedContent = popup.dlg.querySelector('#stmb-regeneration-content')?.value?.trim() || '';
-    const keywordsText = popup.dlg.querySelector('#stmb-regeneration-keywords')?.value?.trim() || '';
+    const keywordsText = contentOnly
+      ? originalKeywords
+      : popup.dlg.querySelector('#stmb-regeneration-keywords')?.value?.trim() || '';
     if (!semanticTitle) {
       toastr.error(translate('Memory title cannot be empty', 'STMemoryBooks_Toast_TitleCannotBeEmpty'), 'STMemoryBooks');
       return { action: 'cancel' };

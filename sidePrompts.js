@@ -8,7 +8,7 @@ import { executeSlashCommands } from '../../../slash-commands.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { appendAdditionalContextSection, applySelectedRegex, requestCompletion } from './stmemory.js';
-import { findSetByName, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
+import { findSetByName, getTemplate, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
@@ -32,6 +32,10 @@ import {
     withStmbWriteLane,
 } from './stmbJobs.js';
 import { filterAutomaticSidePromptSetItems, resolveAutomaticSidePromptSet } from './sidePromptSetDefaults.js';
+import {
+    buildSidePromptRegenerationSnapshot,
+    SIDE_PROMPT_REGENERATION_METADATA_KEY,
+} from './memoryRegeneration.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -686,10 +690,20 @@ function getSidePromptLastMessageId(tpl, existingEntry) {
     return getHighestProcessedMessageBaseline();
 }
 
-async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverrides = null, fallbackKinds = [], runtimeMacros = {} }) {
+async function prepareSidePromptRun({
+    tpl,
+    loreData,
+    compiledScene,
+    defaultOverrides = null,
+    fallbackKinds = [],
+    runtimeMacros = {},
+    priorContentOverride = undefined,
+}) {
     const unifiedTitle = getUnifiedSidePromptTitle(tpl, runtimeMacros);
     const existing = findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, runtimeMacros, fallbackKinds));
-    const prior = existing?.content || '';
+    const prior = priorContentOverride === undefined
+        ? existing?.content || ''
+        : String(priorContentOverride || '');
 
     let prevSummaries = [];
     const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount ?? 0);
@@ -710,6 +724,43 @@ async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverr
         : (defaultOverrides || resolveSidePromptConnection(null));
 
     return { unifiedTitle, existing, prior, finalPrompt, conn };
+}
+
+function getSidePromptRegenerationMetadata(tpl, priorContent, compiledScene, runtimeMacros = {}) {
+    return {
+        [SIDE_PROMPT_REGENERATION_METADATA_KEY]: buildSidePromptRegenerationSnapshot({
+            templateKey: tpl?.key,
+            priorContent,
+            compiledScene,
+            runtimeMacros,
+        }),
+    };
+}
+
+/**
+ * Regenerate a persisted side-prompt run with the current template and settings.
+ */
+export async function generateSidePromptFromSnapshot({ snapshot, compiledScene, signal = null } = {}) {
+    const tpl = await getTemplate(snapshot?.templateKey);
+    if (!tpl) {
+        const error = new Error('The side-prompt template used for this run no longer exists.');
+        error.code = 'STMB_SIDE_PROMPT_TEMPLATE_MISSING';
+        throw error;
+    }
+    const prepared = await prepareSidePromptRun({
+        tpl,
+        loreData: null,
+        compiledScene,
+        runtimeMacros: snapshot.runtimeMacros,
+        priorContentOverride: snapshot.priorContent,
+    });
+    const content = await runLLM(prepared.finalPrompt, prepared.conn, { signal });
+    if (!content || !String(content).trim()) {
+        const error = new Error('The regenerated side prompt was blank.');
+        error.code = 'STMB_SIDE_PROMPT_REGENERATION_BLANK';
+        throw error;
+    }
+    return { content: String(content).trim(), template: tpl };
 }
 
 async function runSidePromptAttempt({ taskLabel, finalPrompt, conn, runEpoch }) {
@@ -857,6 +908,7 @@ function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros 
             lorebookName: lore?.name || '',
             compiledScene: structuredClone(compiledScene),
             finalPrompt: prepared.finalPrompt,
+            priorContent: prepared.prior,
             conn: structuredClone(prepared.conn),
             unifiedTitle: prepared.unifiedTitle,
             runtimeMacros: structuredClone(runtimeMacros || {}),
@@ -873,6 +925,7 @@ function buildSidePromptBatchJob({ items, compiledScene, trigger = 'onAfterMemor
         tpl: structuredClone(item.tpl),
         lorebookName: item.lore?.name || '',
         finalPrompt: item.prepared.finalPrompt,
+        priorContent: item.prepared.prior,
         conn: structuredClone(item.prepared.conn),
         unifiedTitle: item.prepared.unifiedTitle,
         runtimeMacros: structuredClone(item.runtimeMacros || {}),
@@ -972,6 +1025,12 @@ async function executeQueuedSidePromptJob(job, context) {
                 defaults: payload.defaults,
                 entryOverrides: payload.entryOverrides,
                 metadataUpdates: {
+                    ...getSidePromptRegenerationMetadata(
+                        tpl,
+                        payload.priorContent,
+                        payload.compiledScene,
+                        payload.runtimeMacros,
+                    ),
                     [`STMB_sp_${tpl.key}_lastMsgId`]: payload.compiledScene?.metadata?.sceneEnd ?? null,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                     STMB_tracker_lastMsgId: payload.compiledScene?.metadata?.sceneEnd ?? null,
@@ -1101,6 +1160,12 @@ async function executeQueuedSidePromptBatchJob(job, context) {
             defaults: item.defaults,
             entryOverrides: item.entryOverrides,
             metadataUpdates: {
+                ...getSidePromptRegenerationMetadata(
+                    tpl,
+                    item.priorContent,
+                    compiledScene,
+                    item.runtimeMacros,
+                ),
                 [`STMB_sp_${tpl.key}_lastMsgId`]: compiledScene?.metadata?.sceneEnd ?? null,
                 [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                 STMB_tracker_lastMsgId: compiledScene?.metadata?.sceneEnd ?? null,
@@ -1354,6 +1419,7 @@ export async function evaluateTrackers() {
                     defaults,
                     entryOverrides,
                     metadataUpdates: {
+                        ...getSidePromptRegenerationMetadata(tpl, prepared.prior, compiled, runtimeMacros),
                         [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                         [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         STMB_tracker_lastMsgId: endId,
@@ -1559,7 +1625,17 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                         conn: prepared.conn,
                         runEpoch,
                     });
-                    return { ok: true, runItem, tpl, lore, text, unifiedTitle: prepared.unifiedTitle, finalPrompt: prepared.finalPrompt, conn: prepared.conn };
+                    return {
+                        ok: true,
+                        runItem,
+                        tpl,
+                        lore,
+                        text,
+                        unifiedTitle: prepared.unifiedTitle,
+                        finalPrompt: prepared.finalPrompt,
+                        priorContent: prepared.prior,
+                        conn: prepared.conn,
+                    };
                 } catch (e) {
                     if (!isStmbStopError(e)) {
                         console.error(`${MODULE_NAME}: Wave LLM failed for "${tpl.name}":`, e);
@@ -1635,6 +1711,12 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                         defaults,
                         entryOverrides,
                         metadataUpdates: {
+                            ...getSidePromptRegenerationMetadata(
+                                tpl,
+                                r.priorContent,
+                                compiledScene,
+                                r.runItem?.runtimeMacros || {},
+                            ),
                             [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         },
                     });
@@ -1866,6 +1948,7 @@ export async function runSidePrompt(args) {
                 defaults,
                 entryOverrides,
                 metadataUpdates: {
+                    ...getSidePromptRegenerationMetadata(tpl, prepared.prior, compiled, runtimeMacros),
                     [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                     STMB_tracker_lastMsgId: endId,
@@ -2109,6 +2192,12 @@ export async function runSidePromptSet(args, options = {}) {
                     defaults,
                     entryOverrides,
                     metadataUpdates: {
+                        ...getSidePromptRegenerationMetadata(
+                            tpl,
+                            prepared.prior,
+                            compiled,
+                            runItem.runtimeMacros,
+                        ),
                         [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                         [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         STMB_tracker_lastMsgId: endId,

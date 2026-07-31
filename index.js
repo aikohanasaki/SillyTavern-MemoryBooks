@@ -130,6 +130,8 @@ import {
 } from "./consolidationWorkItemPolicy.js";
 import {
   evaluateTrackers,
+  generateSidePromptFromSnapshot,
+  isSidePromptEntryTitle,
   runAfterMemory,
   runSidePrompt,
   runSidePromptSet,
@@ -196,6 +198,7 @@ import {
   hasLinkedManualGroupMetadata,
   isRegenerationSourceChatCurrent,
   preflightRegenerationVisibility,
+  SIDE_PROMPT_REGENERATION_METADATA_KEY,
   selectPreviousMemoryContext,
 } from "./memoryRegeneration.js";
 import {
@@ -538,15 +541,19 @@ function getBranchLorebookController() {
     saveWorldInfo,
     updateWorldInfoList,
     saveMetadata,
+    getEffectiveLorebookName,
     translate,
-    notify: (level, message) => {
+    notify: (level, message, options) => {
       const method = level === "error"
         ? toastr.error
         : level === "warning"
           ? toastr.warning
-          : toastr.success;
-      method(message, translate("STMemoryBooks", "index.toast.title"));
+          : level === "info"
+            ? toastr.info
+            : toastr.success;
+      return method(message, translate("STMemoryBooks", "index.toast.title"), options);
     },
+    clearNotification: notification => toastr.clear(notification),
     afterSuccess: () => eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT),
     logger: console,
   });
@@ -3531,6 +3538,16 @@ function getRegenerationDisabledMessage(eligibility) {
         "The original chat range is missing or invalid.",
         "STMemoryBooks_Regeneration_MissingRange",
       );
+    case "invalid-sideprompt-snapshot":
+      return translate(
+        "The saved side-prompt run snapshot is invalid. Run the side prompt again to replace it.",
+        "STMemoryBooks_SidePromptRegeneration_InvalidSnapshot",
+      );
+    case "missing-sideprompt-snapshot":
+      return translate(
+        "Run this side prompt once to enable regeneration.",
+        "STMemoryBooks_SidePromptRegeneration_MissingSnapshot",
+      );
     default:
       return translate(
         "This entry cannot be regenerated.",
@@ -3564,19 +3581,32 @@ async function refreshLorebookRegenerationActions() {
     const uid = row.dataset.uid ?? row.getAttribute("uid");
     const entry = getEntryByUid(lorebookData, uid, regenerationIndexes);
     const uidDisplay = row.querySelector(".world_entry_form_uid_value");
-    if (!entry || entry.stmemorybooks !== true || !uidDisplay) continue;
+    if (!entry || !uidDisplay) continue;
+    let eligibility = getRegenerationEligibility(entry, lorebookData, regenerationIndexes);
+    const isSidePrompt = eligibility.kind === "sidePrompt" || isSidePromptEntryTitle(entry.comment);
+    if (entry.stmemorybooks !== true && !isSidePrompt) continue;
+    if (isSidePrompt && !Object.hasOwn(entry, SIDE_PROMPT_REGENERATION_METADATA_KEY)) {
+      eligibility = { eligible: false, reason: "missing-sideprompt-snapshot" };
+    }
 
     let button = row.querySelector(".stmb-regenerate-entry");
     if (!button) {
       button = document.createElement("button");
       button.type = "button";
       button.className = "menu_button stmb-regenerate-entry";
-      button.innerHTML = `<i class="fa-solid fa-rotate-right"></i> <span>${escapeHtml(translate("Regenerate memory", "STMemoryBooks_Regeneration_Button"))}</span>`;
+      button.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span></span>';
       uidDisplay.insertAdjacentElement("afterend", button);
     }
     button.dataset.lorebookName = lorebookName;
     button.dataset.entryUid = String(uid);
-    const eligibility = getRegenerationEligibility(entry, lorebookData, regenerationIndexes);
+    button.dataset.entryKind = isSidePrompt ? "sidePrompt" : "memory";
+    const buttonText = isSidePrompt
+      ? translate("Regenerate side prompt", "STMemoryBooks_SidePromptRegeneration_Button")
+      : translate("Regenerate memory", "STMemoryBooks_Regeneration_Button");
+    const buttonLabel = button.querySelector("span");
+    if (buttonLabel && buttonLabel.textContent !== buttonText) {
+      buttonLabel.textContent = buttonText;
+    }
     button.disabled = !eligibility.eligible;
     button.title = eligibility.eligible
       ? translate(
@@ -3614,18 +3644,25 @@ function fingerprintChatRange(start, end) {
   );
 }
 
-async function showRegenerationVisibilityGuidance(start, end) {
+async function showRegenerationVisibilityGuidance(start, end, entryKind = "memory") {
   const path = translate(
     'Memory Books → General Settings → Token Saving (Hide/Unhide Messages) → "Unhide hidden messages for memory generation (runs /unhide X-Y)"',
     "STMemoryBooks_Regeneration_UnhideSettingPath",
   );
+  const noVisibleBody = entryKind === "sidePrompt"
+    ? tr(
+        "STMemoryBooks_SidePromptRegeneration_NoVisibleBody",
+        "Messages {{start}}-{{end}} are all hidden. Restore their visibility manually, or enable this setting: {{path}}. Then click Regenerate side prompt again.",
+        { start, end, path },
+      )
+    : tr(
+        "STMemoryBooks_Regeneration_NoVisibleBody",
+        "Messages {{start}}-{{end}} are all hidden. Restore their visibility manually, or enable this setting: {{path}}. Then click Regenerate memory again.",
+        { start, end, path },
+      );
   const content = DOMPurify.sanitize(`
     <h3>${escapeHtml(translate("No visible messages in the original range", "STMemoryBooks_Regeneration_NoVisibleTitle"))}</h3>
-    <p>${escapeHtml(tr(
-      "STMemoryBooks_Regeneration_NoVisibleBody",
-      "Messages {{start}}-{{end}} are all hidden. Restore their visibility manually, or enable this setting: {{path}}. Then click Regenerate memory again.",
-      { start, end, path },
-    ))}</p>
+    <p>${escapeHtml(noVisibleBody)}</p>
   `);
   const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
     okButton: false,
@@ -3864,6 +3901,77 @@ async function buildConsolidationRegenerationDraft(lorebookData, eligibility) {
   };
 }
 
+async function buildSidePromptRegenerationDraft(entry, eligibility, task) {
+  const settings = initializeSettings();
+  const currentSceneRequest = createSceneRequest(eligibility.sceneStart, eligibility.sceneEnd);
+  if (String(eligibility.snapshot.chatId) !== String(currentSceneRequest.chatId || "")) {
+    throw new Error(translate(
+      "This side prompt does not belong to the current chat. Open its source chat before regenerating it.",
+      "STMemoryBooks_SidePromptRegeneration_WrongChat",
+    ));
+  }
+  if (!validateSceneMemoryRange(eligibility.sceneStart, eligibility.sceneEnd)) return null;
+
+  const visibility = await preflightRegenerationVisibility({
+    messages: chat,
+    start: eligibility.sceneStart,
+    end: eligibility.sceneEnd,
+    unhideBeforeMemory: !!settings.moduleSettings?.unhideBeforeMemory,
+    executeUnhide: async (start, end) => {
+      await executeSlashCommands(`/unhide ${start}-${end}`);
+    },
+  });
+  if (!visibility.ok) {
+    if (visibility.error) {
+      console.warn("STMemoryBooks: side-prompt regeneration /unhide failed:", visibility.error);
+    }
+    await showRegenerationVisibilityGuidance(
+      eligibility.sceneStart,
+      eligibility.sceneEnd,
+      "sidePrompt",
+    );
+    return null;
+  }
+
+  const compiledScene = compileScene(currentSceneRequest);
+  const sceneValidation = validateCompiledScene(compiledScene);
+  if (!sceneValidation.valid) {
+    throw new Error(`Scene compilation failed: ${sceneValidation.errors.join(", ")}`);
+  }
+  const sourceChatFingerprint = fingerprintChatRange(
+    eligibility.sceneStart,
+    eligibility.sceneEnd,
+  );
+  toastr.info(
+    translate(
+      "Regenerating side prompt...",
+      "STMemoryBooks_SidePromptRegeneration_Working",
+    ),
+    "STMemoryBooks",
+    { timeOut: 0 },
+  );
+  const generated = await generateSidePromptFromSnapshot({
+    snapshot: eligibility.snapshot,
+    compiledScene,
+    signal: task.signal,
+  });
+  task.throwIfStopped();
+  return {
+    generatedTitle: String(entry.comment || ""),
+    generatedContent: generated.content,
+    generatedKeywords: Array.isArray(entry.key) ? [...entry.key] : [],
+    formatTitle: () => String(entry.comment || ""),
+    sourceUids: [],
+    sourceFingerprints: {},
+    sourceChatRange: {
+      start: eligibility.sceneStart,
+      end: eligibility.sceneEnd,
+    },
+    sourceChatFingerprint,
+    contentOnly: true,
+  };
+}
+
 async function commitRegeneratedLorebookEntry({
   lorebookName,
   entryUid,
@@ -3873,6 +3981,7 @@ async function commitRegeneratedLorebookEntry({
   sourceChatRange,
   sourceChatFingerprint,
   review,
+  contentOnly = false,
 }) {
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
     if (
@@ -3918,6 +4027,7 @@ async function commitRegeneratedLorebookEntry({
     applyRegenerationReplacement(freshEntry, review, {
       sourceUids,
       lorebookData: freshData,
+      contentOnly,
     });
     await saveWorldInfo(lorebookName, freshData, true);
     try {
@@ -3945,11 +4055,17 @@ async function handleLorebookEntryRegeneration(button) {
   isProcessingArc = true;
   button.disabled = true;
   const buttonLabel = button.querySelector("span");
+  let entryKind = button?.dataset?.entryKind === "sidePrompt" ? "sidePrompt" : "memory";
   if (buttonLabel) {
-    buttonLabel.textContent = translate(
-      "Regenerating memory...",
-      "STMemoryBooks_Regeneration_Working",
-    );
+    buttonLabel.textContent = entryKind === "sidePrompt"
+      ? translate(
+          "Regenerating side prompt...",
+          "STMemoryBooks_SidePromptRegeneration_Working",
+        )
+      : translate(
+          "Regenerating memory...",
+          "STMemoryBooks_Regeneration_Working",
+        );
   }
   try {
     const lorebookData = await loadWorldInfo(lorebookName);
@@ -3958,11 +4074,14 @@ async function handleLorebookEntryRegeneration(button) {
     if (!eligibility.eligible) {
       throw new Error(getRegenerationDisabledMessage(eligibility));
     }
+    entryKind = eligibility.kind;
     const targetFingerprint = fingerprintRegenerationEntry(entry);
     const linkedLorebooks = await findLinkedManualGroupLorebooks(lorebookName, entry);
     const draft = eligibility.kind === "memory"
       ? await buildBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, task)
-      : await buildConsolidationRegenerationDraft(lorebookData, eligibility);
+      : eligibility.kind === "sidePrompt"
+        ? await buildSidePromptRegenerationDraft(entry, eligibility, task)
+        : await buildConsolidationRegenerationDraft(lorebookData, eligibility);
     if (!draft) return;
     task.throwIfStopped();
     toastr.clear();
@@ -3974,6 +4093,7 @@ async function handleLorebookEntryRegeneration(button) {
       generatedKeywords: draft.generatedKeywords,
       formatTitle: draft.formatTitle,
       linkedLorebooks,
+      contentOnly: draft.contentOnly === true,
     });
     if (review.action !== "replace") return;
     task.throwIfStopped();
@@ -3987,17 +4107,39 @@ async function handleLorebookEntryRegeneration(button) {
       sourceChatRange: draft.sourceChatRange,
       sourceChatFingerprint: draft.sourceChatFingerprint,
       review,
+      contentOnly: draft.contentOnly === true,
     });
     toastr.success(
-      translate("Memory regenerated successfully.", "STMemoryBooks_Regeneration_Success"),
+      entryKind === "sidePrompt"
+        ? translate(
+            "Side prompt regenerated successfully.",
+            "STMemoryBooks_SidePromptRegeneration_Success",
+          )
+        : translate("Memory regenerated successfully.", "STMemoryBooks_Regeneration_Success"),
       "STMemoryBooks",
     );
   } catch (error) {
     if (!isStmbStopError(error)) {
       toastr.clear();
       console.error("STMemoryBooks: entry regeneration failed:", error);
+      const sidePromptError = error?.code === "STMB_SIDE_PROMPT_TEMPLATE_MISSING"
+        ? translate(
+            "The side-prompt template used for this run no longer exists.",
+            "STMemoryBooks_SidePromptRegeneration_MissingTemplate",
+          )
+        : error?.code === "STMB_SIDE_PROMPT_REGENERATION_BLANK"
+          ? translate(
+              "The regenerated side prompt was blank. Nothing was overwritten.",
+              "STMemoryBooks_SidePromptRegeneration_Blank",
+            )
+          : null;
       toastr.error(
-        error?.message || translate("Memory regeneration failed.", "STMemoryBooks_Regeneration_Failed"),
+        sidePromptError || error?.message || (entryKind === "sidePrompt"
+          ? translate(
+              "Side-prompt regeneration failed.",
+              "STMemoryBooks_SidePromptRegeneration_Failed",
+            )
+          : translate("Memory regeneration failed.", "STMemoryBooks_Regeneration_Failed")),
         "STMemoryBooks",
       );
     }
@@ -4008,10 +4150,15 @@ async function handleLorebookEntryRegeneration(button) {
     task.finish();
     button.disabled = false;
     if (buttonLabel) {
-      buttonLabel.textContent = translate(
-        "Regenerate memory",
-        "STMemoryBooks_Regeneration_Button",
-      );
+      buttonLabel.textContent = entryKind === "sidePrompt"
+        ? translate(
+            "Regenerate side prompt",
+            "STMemoryBooks_SidePromptRegeneration_Button",
+          )
+        : translate(
+            "Regenerate memory",
+            "STMemoryBooks_Regeneration_Button",
+          );
     }
     scheduleLorebookRegenerationActionsRefresh();
   }

@@ -118,6 +118,16 @@ export async function loadLocaleJson(lang) {
  * English (default) locale data
  */
 export const localeData_en = {
+    'STMemoryBooks_SidePromptRegeneration_Button': 'Regenerate side prompt',
+    'STMemoryBooks_SidePromptRegeneration_InvalidSnapshot': 'The saved side-prompt run snapshot is invalid. Run the side prompt again to replace it.',
+    'STMemoryBooks_SidePromptRegeneration_MissingSnapshot': 'Run this side prompt once to enable regeneration.',
+    'STMemoryBooks_SidePromptRegeneration_NoVisibleBody': 'Messages {{start}}-{{end}} are all hidden. Restore their visibility manually, or enable this setting: {{path}}. Then click Regenerate side prompt again.',
+    'STMemoryBooks_SidePromptRegeneration_WrongChat': 'This side prompt does not belong to the current chat. Open its source chat before regenerating it.',
+    'STMemoryBooks_SidePromptRegeneration_Working': 'Regenerating side prompt...',
+    'STMemoryBooks_SidePromptRegeneration_Success': 'Side prompt regenerated successfully.',
+    'STMemoryBooks_SidePromptRegeneration_MissingTemplate': 'The side-prompt template used for this run no longer exists.',
+    'STMemoryBooks_SidePromptRegeneration_Blank': 'The regenerated side prompt was blank. Nothing was overwritten.',
+    'STMemoryBooks_SidePromptRegeneration_Failed': 'Side-prompt regeneration failed.',
     'STMemoryBooks_Regeneration_Button': 'Regenerate memory',
     'STMemoryBooks_Regeneration_ButtonTooltip': 'Generate a replacement using current settings. Approval is always required.',
     'STMemoryBooks_Regeneration_BlockedByParent': 'Delete the parent consolidation before regenerating this entry.',
@@ -430,6 +440,8 @@ export const localeData_en = {
     'STMemoryBooks_BranchCopyFailed': 'Could not copy Memory Books for the new branch. Its Memory Book bindings were cleared to protect the originals: {{message}}',
     'STMemoryBooks_BranchCopyLoadFailed': 'Memory Book "{{name}}" could not be loaded.',
     'STMemoryBooks_BranchCopyCreateFailed': 'Memory Book copy "{{name}}" was not created.',
+    'STMemoryBooks_BranchCopyWorking': 'Copying branch Memory Books. Please do not switch chats until this finishes.',
+    'STMemoryBooks_BranchCopyChatChanged': 'Branch Memory Book copying stopped because the active chat changed.',
     'STMemoryBooks_LorebookNameTemplate': 'Lorebook Name Template:',
     'STMemoryBooks_LorebookNameTemplateDesc': 'Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.',
     'STMemoryBooks_LorebookNameTemplatePlaceholder': 'LTM - {{char}} - {{chat}}',

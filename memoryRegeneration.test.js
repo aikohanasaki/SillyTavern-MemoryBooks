@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
     applyFixedSequenceNumber,
     applyRegenerationReplacement,
+    buildSidePromptRegenerationSnapshot,
     buildConsolidationRegenerationOptions,
     buildRegenerationIndexes,
     findActiveParentConsolidations,
@@ -13,12 +14,72 @@ import {
     getConsolidationSourceUids,
     getEntryByUid,
     getRegenerationEligibility,
+    getSidePromptRegenerationSnapshot,
     hasLinkedManualGroupMetadata,
     isRegenerationSourceChatCurrent,
     normalizeConsolidationRegenerationResponse,
     preflightRegenerationVisibility,
     selectPreviousMemoryContext,
 } from './memoryRegeneration.js';
+
+test('builds a compact side-prompt regeneration snapshot from the exact run inputs', () => {
+    const runtimeMacros = { npc: 'Alice', score: 4 };
+    const snapshot = buildSidePromptRegenerationSnapshot({
+        templateKey: 'relationship-tracker',
+        priorContent: 'Previous tracker output',
+        compiledScene: {
+            metadata: { sceneStart: 12, sceneEnd: 19, chatId: 'chat-1' },
+        },
+        runtimeMacros,
+    });
+
+    assert.deepEqual(snapshot, {
+        version: 1,
+        templateKey: 'relationship-tracker',
+        priorContent: 'Previous tracker output',
+        sceneStart: 12,
+        sceneEnd: 19,
+        chatId: 'chat-1',
+        runtimeMacros: { npc: 'Alice', score: '4' },
+    });
+    runtimeMacros.npc = 'Changed';
+    assert.equal(snapshot.runtimeMacros.npc, 'Alice');
+});
+
+test('accepts an empty first-run side-prompt prior and rejects malformed snapshots', () => {
+    const entry = {
+        STMB_sidePromptRegeneration: buildSidePromptRegenerationSnapshot({
+            templateKey: 'plot-points',
+            compiledScene: { metadata: { sceneStart: 0, sceneEnd: 4, chatId: 'chat-1' } },
+        }),
+    };
+    assert.equal(getSidePromptRegenerationSnapshot(entry)?.priorContent, '');
+
+    entry.STMB_sidePromptRegeneration.sceneEnd = -1;
+    assert.equal(getSidePromptRegenerationSnapshot(entry), null);
+    assert.deepEqual(getRegenerationEligibility(entry, { entries: {} }), {
+        eligible: false,
+        reason: 'invalid-sideprompt-snapshot',
+    });
+});
+
+test('side-prompt snapshot enables regeneration without memory numbering', () => {
+    const snapshot = buildSidePromptRegenerationSnapshot({
+        templateKey: 'scoreboard',
+        priorContent: 'Old scoreboard',
+        compiledScene: { metadata: { sceneStart: 30, sceneEnd: 40, chatId: 'chat-2' } },
+        runtimeMacros: { team: 'Blue' },
+    });
+    const result = getRegenerationEligibility(
+        { uid: 8, comment: 'Scoreboard (STMB SidePrompt)', STMB_sidePromptRegeneration: snapshot },
+        { entries: {} },
+    );
+    assert.equal(result.eligible, true);
+    assert.equal(result.kind, 'sidePrompt');
+    assert.equal(result.sceneStart, 30);
+    assert.equal(result.sceneEnd, 40);
+    assert.equal(result.snapshot, snapshot);
+});
 
 function memory(uid, number, extra = {}) {
     return {
@@ -446,6 +507,37 @@ test('replacement changes only approved fields, source metadata, and stale disab
     assert.equal(entry.order, 321);
     assert.equal(entry.position, 4);
     assert.deepEqual(entry.characterFilter.names, ['Alice']);
+});
+
+test('content-only replacement preserves side-prompt identity, settings, and snapshot', () => {
+    const snapshot = buildSidePromptRegenerationSnapshot({
+        templateKey: 'relationship-tracker',
+        priorContent: 'Prior output',
+        compiledScene: { metadata: { sceneStart: 10, sceneEnd: 20, chatId: 'chat-a' } },
+        runtimeMacros: { npc: 'Alice' },
+    });
+    const entry = {
+        uid: 50,
+        comment: 'Relationships (STMB SidePrompt)',
+        content: 'Current output',
+        key: ['relationship'],
+        order: 222,
+        STMB_tracker_lastMsgId: 20,
+        STMB_sidePromptRegeneration: snapshot,
+    };
+
+    applyRegenerationReplacement(entry, {
+        formattedTitle: 'Should not replace title',
+        content: 'Regenerated output',
+        keywords: ['should-not-replace'],
+    }, { contentOnly: true });
+
+    assert.equal(entry.content, 'Regenerated output');
+    assert.equal(entry.comment, 'Relationships (STMB SidePrompt)');
+    assert.deepEqual(entry.key, ['relationship']);
+    assert.equal(entry.order, 222);
+    assert.equal(entry.STMB_tracker_lastMsgId, 20);
+    assert.equal(entry.STMB_sidePromptRegeneration, snapshot);
 });
 
 test('source-chat validation requires the current lorebook and honors stored chat IDs', () => {
