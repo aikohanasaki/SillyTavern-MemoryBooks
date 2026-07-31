@@ -72,16 +72,18 @@ export function shouldCopyForChatChange(previous, current) {
     return true;
 }
 
-export function resolveActiveLorebookBindings(snapshot) {
+export function resolveActiveLorebookBindings(snapshot, resolvedPrimary = undefined) {
     if (!snapshot) return null;
     if (!snapshot.manualModeEnabled) {
-        const primary = String(snapshot.chatBoundLorebook || '').trim();
+        const primaryValue = resolvedPrimary === undefined ? snapshot.chatBoundLorebook : resolvedPrimary;
+        const primary = String(primaryValue || '').trim();
         return primary
             ? { mode: 'chat-bound', primary, characterBindings: {}, sourceNames: [primary] }
             : null;
     }
 
-    const primary = String(snapshot.manualLorebook || '').trim();
+    const primaryValue = resolvedPrimary === undefined ? snapshot.manualLorebook : resolvedPrimary;
+    const primary = String(primaryValue || '').trim();
     if (!primary) return null;
 
     const characterBindings = snapshot.isGroupChat && snapshot.manualCharacterLorebooks
@@ -161,6 +163,8 @@ export function applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySo
                 copyNameBySource.get(String(sourceName || '').trim()) || sourceName,
             ]),
         );
+    } else if (stmbData.manualCharacterLorebooks) {
+        stmbData.manualCharacterLorebooks = {};
     }
 }
 
@@ -186,8 +190,30 @@ export function createBranchLorebookController(dependencies) {
         return typeof deps.translate === 'function' ? deps.translate(fallback, key) : fallback;
     }
 
-    function notify(level, message) {
-        deps.notify?.(level, message);
+    function notify(level, message, options = undefined) {
+        return deps.notify?.(level, message, options);
+    }
+
+    function clearNotification(notification) {
+        if (notification) deps.clearNotification?.(notification);
+    }
+
+    function isActiveChat(current) {
+        const activeChatId = String(deps.getCurrentChatId?.() || '').trim();
+        return !activeChatId || activeChatId === String(current?.chatId || '').trim();
+    }
+
+    function createActiveChatChangedError() {
+        const error = new Error(translate(
+            'Branch Memory Book copying stopped because the active chat changed.',
+            'STMemoryBooks_BranchCopyChatChanged',
+        ));
+        error.code = 'STMB_BRANCH_CHAT_CHANGED';
+        return error;
+    }
+
+    function assertActiveChat(current) {
+        if (!isActiveChat(current)) throw createActiveChatChangedError();
     }
 
     function capture(chatIdOverride = null) {
@@ -219,6 +245,7 @@ export function createBranchLorebookController(dependencies) {
     }
 
     async function saveFailureState(previous, current, bindings, error, partialMappings) {
+        if (!isActiveChat(current)) return false;
         const chatMetadata = deps.getChatMetadata?.() || {};
         clearActiveBranchLorebookBindings(chatMetadata, bindings);
         setMarker(chatMetadata, {
@@ -241,100 +268,130 @@ export function createBranchLorebookController(dependencies) {
             { message: error?.message || String(error) },
         );
         notify('error', message);
+        return true;
     }
 
     async function processBranch(previous, current) {
-        // SillyTavern copies the parent's latest metadata into the child before
-        // CHAT_CHANGED. Use that fresh inherited state so manual-mode or binding
-        // changes made since the parent snapshot are not missed.
-        const bindings = resolveActiveLorebookBindings(current);
-        if (!bindings) {
-            notify(
-                'warning',
-                translate(
-                    'Branch created, but no active Memory Book was bound, so nothing was copied.',
-                    'STMemoryBooks_BranchCopyNoBinding',
-                ),
-            );
-            return;
-        }
-
-        let mappings = [];
+        const progressNotification = notify(
+            'info',
+            translate(
+                'Copying branch Memory Books. Please do not switch chats until this finishes.',
+                'STMemoryBooks_BranchCopyWorking',
+            ),
+            { timeOut: 0, extendedTimeOut: 0 },
+        );
         try {
-            const sourceDataByName = new Map();
-            for (const sourceName of bindings.sourceNames) {
-                const data = await deps.loadWorldInfo?.(sourceName);
-                if (!data) {
+            // Resolve the primary book through STMB's established manual/chat-bound
+            // selection path. Recapture afterward because manual selection may update
+            // the child chat's metadata before returning.
+            const resolvedPrimary = typeof deps.getEffectiveLorebookName === 'function'
+                ? await deps.getEffectiveLorebookName()
+                : undefined;
+            assertActiveChat(current);
+            const bindingSnapshot = capture(current.chatId);
+            const bindings = resolveActiveLorebookBindings(bindingSnapshot, resolvedPrimary);
+            if (!bindings) {
+                notify(
+                    'warning',
+                    translate(
+                        'Branch created, but no active Memory Book was bound, so nothing was copied.',
+                        'STMemoryBooks_BranchCopyNoBinding',
+                    ),
+                );
+                return;
+            }
+
+            let mappings = [];
+            try {
+                const sourceDataByName = new Map();
+                for (const sourceName of bindings.sourceNames) {
+                    const data = await deps.loadWorldInfo?.(sourceName);
+                    if (!data) {
+                        throw new Error(formatText(
+                            translate('Memory Book "{{name}}" could not be loaded.', 'STMemoryBooks_BranchCopyLoadFailed'),
+                            { name: sourceName },
+                        ));
+                    }
+                    sourceDataByName.set(sourceName, data);
+                }
+
+                const plan = planBranchLorebookCopies(
+                    bindings.sourceNames,
+                    current.branchMarker,
+                    deps.getWorldNames?.() || [],
+                );
+                mappings = plan.mappings;
+                const copyNameBySource = new Map(mappings.map(item => [item.sourceName, item.copyName]));
+
+                for (const mapping of mappings) {
+                    const copy = cloneLorebookForBranch(sourceDataByName.get(mapping.sourceName), {
+                        parentChatId: previous.chatId,
+                        branchChatId: current.chatId,
+                        copyNameBySource,
+                    });
+                    await deps.saveWorldInfo?.(mapping.copyName, copy, true);
+                }
+
+                await deps.updateWorldInfoList?.();
+                const refreshedNames = deps.getWorldNames?.() || [];
+                const refreshedSet = new Set(refreshedNames.map(normalizeName));
+                const missingCopies = mappings.filter(item => !refreshedSet.has(normalizeName(item.copyName)));
+                if (missingCopies.length > 0) {
                     throw new Error(formatText(
-                        translate('Memory Book "{{name}}" could not be loaded.', 'STMemoryBooks_BranchCopyLoadFailed'),
-                        { name: sourceName },
+                        translate('Memory Book copy "{{name}}" was not created.', 'STMemoryBooks_BranchCopyCreateFailed'),
+                        { name: missingCopies[0].copyName },
                     ));
                 }
-                sourceDataByName.set(sourceName, data);
-            }
 
-            const plan = planBranchLorebookCopies(
-                bindings.sourceNames,
-                current.branchMarker,
-                deps.getWorldNames?.() || [],
-            );
-            mappings = plan.mappings;
-            const copyNameBySource = new Map(mappings.map(item => [item.sourceName, item.copyName]));
-
-            for (const mapping of mappings) {
-                const copy = cloneLorebookForBranch(sourceDataByName.get(mapping.sourceName), {
+                assertActiveChat(current);
+                const chatMetadata = deps.getChatMetadata?.() || {};
+                applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySource);
+                setMarker(chatMetadata, {
+                    status: 'completed',
                     parentChatId: previous.chatId,
                     branchChatId: current.chatId,
-                    copyNameBySource,
+                    branchNumber: plan.branchNumber,
+                    completedAt: new Date().toISOString(),
+                    mappings: cloneValue(mappings),
                 });
-                await deps.saveWorldInfo?.(mapping.copyName, copy, true);
-            }
+                await deps.saveMetadata?.();
+                await deps.afterSuccess?.();
 
-            await deps.updateWorldInfoList?.();
-            const refreshedNames = deps.getWorldNames?.() || [];
-            const refreshedSet = new Set(refreshedNames.map(normalizeName));
-            const missingCopies = mappings.filter(item => !refreshedSet.has(normalizeName(item.copyName)));
-            if (missingCopies.length > 0) {
-                throw new Error(formatText(
-                    translate('Memory Book copy "{{name}}" was not created.', 'STMemoryBooks_BranchCopyCreateFailed'),
-                    { name: missingCopies[0].copyName },
-                ));
+                if (mappings.length === 1) {
+                    notify('success', formatText(
+                        translate(
+                            'Created and bound branch Memory Book "{{name}}".',
+                            'STMemoryBooks_BranchCopySuccess',
+                        ),
+                        { name: mappings[0].copyName },
+                    ));
+                } else {
+                    notify('success', formatText(
+                        translate(
+                            'Created and bound {{count}} branch Memory Books for "{{chat}}".',
+                            'STMemoryBooks_BranchCopySuccessMultiple',
+                        ),
+                        { count: mappings.length, chat: current.chatId },
+                    ));
+                }
+                deps.logger?.info?.('STMemoryBooks: Branch Memory Books copied and rebound:', mappings);
+            } catch (error) {
+                if (error?.code === 'STMB_BRANCH_CHAT_CHANGED') {
+                    notify('warning', error.message);
+                    return;
+                }
+                deps.logger?.error?.('STMemoryBooks: Failed to copy branch Memory Books:', error);
+                const failureSaved = await saveFailureState(previous, current, bindings, error, mappings);
+                if (!failureSaved) notify('warning', createActiveChatChangedError().message);
             }
-
-            const chatMetadata = deps.getChatMetadata?.() || {};
-            applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySource);
-            setMarker(chatMetadata, {
-                status: 'completed',
-                parentChatId: previous.chatId,
-                branchChatId: current.chatId,
-                branchNumber: plan.branchNumber,
-                completedAt: new Date().toISOString(),
-                mappings: cloneValue(mappings),
-            });
-            await deps.saveMetadata?.();
-            await deps.afterSuccess?.();
-
-            if (mappings.length === 1) {
-                notify('success', formatText(
-                    translate(
-                        'Created and bound branch Memory Book "{{name}}".',
-                        'STMemoryBooks_BranchCopySuccess',
-                    ),
-                    { name: mappings[0].copyName },
-                ));
-            } else {
-                notify('success', formatText(
-                    translate(
-                        'Created and bound {{count}} branch Memory Books for "{{chat}}".',
-                        'STMemoryBooks_BranchCopySuccessMultiple',
-                    ),
-                    { count: mappings.length, chat: current.chatId },
-                ));
-            }
-            deps.logger?.info?.('STMemoryBooks: Branch Memory Books copied and rebound:', mappings);
         } catch (error) {
-            deps.logger?.error?.('STMemoryBooks: Failed to copy branch Memory Books:', error);
-            await saveFailureState(previous, current, bindings, error, mappings);
+            if (error?.code === 'STMB_BRANCH_CHAT_CHANGED') {
+                notify('warning', error.message);
+                return;
+            }
+            throw error;
+        } finally {
+            clearNotification(progressNotification);
         }
     }
 
@@ -351,7 +408,7 @@ export function createBranchLorebookController(dependencies) {
             previousSnapshot = current;
             if (!shouldCopyForChatChange(previous, current)) return false;
             await processBranch(previous, current);
-            previousSnapshot = capture(chatId);
+            previousSnapshot = capture();
             return true;
         },
     };
