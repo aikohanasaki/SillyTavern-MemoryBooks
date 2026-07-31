@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ## v8.4.0 (July 31, 2026)
 - Enhancement: When branching, STMB now copies and binds fresh copies of the active chat-bound or manual Memory Books. Manual group chats copy all unique bound books. This can be disabled in general settings. 
+- Enhancement: One previous version of sideprompts is saved in metadata. Sideprompts can now be regenerated. 
 
 ## v8.3.3 (July 29, 2026)
 - Enhancement: Added "retry run" to job queue.
