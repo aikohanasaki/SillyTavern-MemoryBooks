@@ -77,3 +77,13 @@ rerunning.
   both sides; labels count 57 raw / 31 merged after that exclusion (58/32
   before).
 - Gate satisfied ⇒ Phase 1 work may open (PHA-1408 tree).
+- **2026-07-31 (PHA-1637):** `eval/groundTruth.js` merged the fine-grained
+  boundary rules incorrectly — it dropped a boundary whenever that scene's own
+  length was under 6, collapsing runs of short scenes wholesale (67 raw → 22
+  merged, the over-merged key condemned in comment `083e4488` on PHA-1555). The
+  default is now `mergeMode: 'accumulate'`, matching `parse-transcript.js` (the
+  harness that produced the 58/32 figures above): 67 raw → **35 merged**. The
+  legacy rule is still reachable as `mergeMode: 'own'`.
+  **This table is unaffected** — the Phase 0 gate metric is precision against
+  the *raw* set, and raw did not move. The `merged` rows are informational and
+  are restated the next time the real-LLM detection KPI is run.

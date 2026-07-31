@@ -109,16 +109,43 @@ test('mergeShortScenes keeps long scenes intact', () => {
     assert.deepEqual(merged.dropped, [20]);
 });
 
-test('mergeShortScenes drops multiple short scenes in a row', () => {
+test('mergeShortScenes (accumulate) drops the fewest boundaries that satisfy the minimum', () => {
     const raw = [1, 5, 7, 9, 20];
     const messages = [...Array(20).keys()].map((i) => ({ index: i + 1 }));
     const merged = mergeShortScenes(messages, raw, { minSceneMessages: 6 });
-    // scene lengths: [4, 2, 2, 11, 1]. The middle three (lengths 2, 2, 11)
-    // are processed left to right: scenes 1 and 2 (length 2 each) drop and
-    // extend scene 0; scene 3 (length 11) is kept; scene 4 (length 1) drops
-    // and extends scene 3.
+    // raw scene lengths: [4, 2, 2, 11, 1].
+    // Scene 0 is 4 long, so boundary 5 is dropped and it grows to 6 — now long
+    // enough, so boundary 7 SURVIVES. Scene [7,8] is 2 long, so boundary 9 is
+    // dropped and it grows to 13. Boundary 20 survives the walk but its scene
+    // is only 1 message and nothing follows it, so the trailing fold-back
+    // removes it. Kept scene lengths: [6, 14].
+    assert.deepEqual(merged.merged, [1, 7]);
+    assert.deepEqual(merged.dropped, [5, 9, 20]);
+    assert.deepEqual(merged.sceneLengths, [6, 14]);
+});
+
+test("mergeShortScenes (legacy 'own') collapses runs of short scenes wholesale", () => {
+    const raw = [1, 5, 7, 9, 20];
+    const messages = [...Array(20).keys()].map((i) => ({ index: i + 1 }));
+    const merged = mergeShortScenes(messages, raw, { minSceneMessages: 6, mergeMode: 'own' });
+    // Same input, the pre-PHA-1555 rule: every scene whose OWN length is < 6
+    // loses its boundary regardless of how long the scene it merges into is.
+    // Two boundaries survive here instead of accumulate's two, but on the real
+    // fixture this is what turns 67 raw boundaries into 22 instead of 36.
     assert.deepEqual(merged.merged, [1, 9]);
     assert.deepEqual(merged.dropped, [5, 7, 20]);
+});
+
+test('mergeShortScenes leaves no kept scene below the minimum, in either mode', () => {
+    const raw = [1, 3, 6, 8, 14, 16];
+    const messages = [...Array(20).keys()].map((i) => ({ index: i + 1 }));
+    for (const mergeMode of ['accumulate', 'own']) {
+        const merged = mergeShortScenes(messages, raw, { minSceneMessages: 6, mergeMode });
+        for (const len of merged.sceneLengths) {
+            assert.ok(len >= 6, `${mergeMode}: scene of length ${len} survived the merge`);
+        }
+        assert.equal(merged.merged.length, merged.sceneLengths.length);
+    }
 });
 
 test('mergeShortScenes handles empty input', () => {

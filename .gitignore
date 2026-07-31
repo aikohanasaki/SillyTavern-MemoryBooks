@@ -15,6 +15,10 @@ eval/reports/*
 !eval/reports/phase2/
 eval/reports/phase2/*
 !eval/reports/phase2/evidence.md
+# …and the Phase 7 acceptance evidence, same deal.
+!eval/reports/phase7/
+eval/reports/phase7/*
+!eval/reports/phase7/evidence.md
 eval/predictions*.json
 eval/.env
 .env

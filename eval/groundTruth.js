@@ -120,10 +120,33 @@ export function computeRawBoundaries(messages, opts = {}) {
  * The plan's §3.1 says 32 ground-truth boundaries come from merging
  * micro-scenes shorter than 6 messages.
  *
+ * MERGE SEMANTICS (`opts.mergeMode`)
+ * ---------------------------------
+ * Both modes end with "no kept scene is shorter than minSceneMessages", but
+ * they drop wildly different numbers of boundaries, and the difference is the
+ * bug behind the phantom P=0.29 detection "regression" (PHA-1555 comment
+ * 083e4488):
+ *
+ *   'accumulate' (DEFAULT) — walk the raw boundaries and cut a new scene as
+ *       soon as the scene being accumulated has reached the minimum. This drops
+ *       the FEWEST boundaries that satisfy the constraint. On the Satire Isekai
+ *       fixture: 67 raw -> 36 merged, matching the original Phase-0 eval's
+ *       58 raw -> 32 merged ratio and the "32 ground-truth boundaries" this
+ *       function's own docstring has always claimed.
+ *
+ *   'own' (LEGACY) — drop a boundary iff that raw scene's OWN length is below
+ *       the minimum, regardless of how long the scene it merges into already
+ *       is. A run of short raw scenes therefore collapses wholesale. On the
+ *       same fixture: 67 raw -> 22 merged. That 22 is the coarse key an oracle
+ *       detector could only score P=0.33 against, and no detector can ever pass
+ *       a >=0.90 precision gate measured against it. Kept only so the historical
+ *       numbers can be reproduced on demand — never as the default.
+ *
  * @param {object[]} messages
  * @param {number[]} rawBoundaries
  * @param {Object} [opts]
  * @param {number} [opts.minSceneMessages=6]
+ * @param {'accumulate'|'own'} [opts.mergeMode='accumulate']
  * @returns {{ merged: number[], dropped: number[], sceneLengths: number[] }}
  *   merged: sorted list of boundaries after merging.
  *   dropped: raw boundaries that were dropped because their scene was too short.
@@ -131,8 +154,11 @@ export function computeRawBoundaries(messages, opts = {}) {
  */
 export function mergeShortScenes(messages, rawBoundaries, opts = {}) {
     const minSceneMessages = opts.minSceneMessages ?? 6;
+    const mergeMode = opts.mergeMode ?? 'accumulate';
     assert.ok(Number.isInteger(minSceneMessages) && minSceneMessages >= 1,
         `minSceneMessages must be a positive integer`);
+    assert.ok(mergeMode === 'accumulate' || mergeMode === 'own',
+        `mergeMode must be 'accumulate' or 'own', got ${mergeMode}`);
 
     if (rawBoundaries.length === 0) {
         return { merged: [], dropped: [], sceneLengths: [] };
@@ -147,33 +173,41 @@ export function mergeShortScenes(messages, rawBoundaries, opts = {}) {
         return { start, end, length: end - start + 1 };
     });
 
-    // Walk from the second scene forward. If a scene is shorter than
-    // minSceneMessages, drop its starting boundary (it merges into the prior
-    // scene). Repeat until every remaining scene meets the threshold.
     const merged = [scenes[0].start];
     const dropped = [];
-    const keptScenes = [scenes[0]];
+    const keptScenes = [{ ...scenes[0] }];
+
+    const extendLast = (scene) => {
+        const last = keptScenes[keptScenes.length - 1];
+        last.end = scene.end;
+        last.length = last.end - last.start + 1;
+    };
 
     for (let i = 1; i < scenes.length; i++) {
-        const prevSceneEnd = keptScenes[keptScenes.length - 1].end;
-        // Tentative length if we keep this boundary: previous scene's range
-        // grows to include this scene's messages.
-        const tentativeLength = (scenes[i].end - prevSceneEnd + 1);
-        // Actually we want: if THIS scene's own length is below threshold,
-        // and merging it into the prior scene keeps the prior scene at a
-        // reasonable size, drop it. The plan's wording is "scenes shorter than
-        // 6 messages" — that is, drop the boundary iff the scene's own length
-        // is below 6, regardless of what the merge produces.
-        if (scenes[i].length < minSceneMessages) {
+        // 'accumulate' asks about the scene being BUILT; 'own' asks about the
+        // candidate scene in isolation. That one word is the whole difference.
+        const tooShort = mergeMode === 'accumulate'
+            ? keptScenes[keptScenes.length - 1].length < minSceneMessages
+            : scenes[i].length < minSceneMessages;
+
+        if (tooShort) {
             dropped.push(scenes[i].start);
-            // Extend the previous scene to include this one.
-            keptScenes[keptScenes.length - 1].end = scenes[i].end;
-            keptScenes[keptScenes.length - 1].length = keptScenes[keptScenes.length - 1].end - keptScenes[keptScenes.length - 1].start + 1;
+            extendLast(scenes[i]);
         } else {
             merged.push(scenes[i].start);
-            keptScenes.push(scenes[i]);
+            keptScenes.push({ ...scenes[i] });
         }
     }
+
+    // A trailing scene can still fall short — nothing follows it to trigger the
+    // check above. Fold it back so the postcondition holds for every scene, not
+    // for every scene but the last.
+    while (keptScenes.length > 1 && keptScenes[keptScenes.length - 1].length < minSceneMessages) {
+        const tail = keptScenes.pop();
+        dropped.push(merged.pop());
+        extendLast(tail);
+    }
+    dropped.sort((a, b) => a - b);
 
     return {
         merged,
@@ -189,6 +223,7 @@ export function mergeShortScenes(messages, rawBoundaries, opts = {}) {
  * @param {Object} [opts]
  * @param {number} [opts.timeJumpMinutes=90]
  * @param {number} [opts.minSceneMessages=6]
+ * @param {'accumulate'|'own'} [opts.mergeMode='accumulate'] - see mergeShortScenes
  * @returns {{ boundaries: number[], detail: object[], raw: number[], dropped: number[], sceneLengths: number[] }}
  */
 export function deriveGroundTruth(messages, opts = {}) {

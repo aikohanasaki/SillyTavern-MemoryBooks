@@ -147,11 +147,16 @@ test('the production cadence is 8, as Phase 2 specifies', () => {
 // The fixture
 // ----------------------------------------------------------------------------
 
-test('the bundled fixture parses to ~329 messages with 22 ground-truth boundaries', async () => {
+// The count moved 22 -> 35 when eval/groundTruth.js switched to the
+// fine-grained merge (PHA-1555 comment 083e4488, applied in PHA-1637). 22 was
+// the over-merged key an oracle detector could only score P=0.33 against; 35 is
+// the key the original Phase-0 eval's 0.969 was measured on. Criterion 1 below
+// still holds at full coverage — it now holds against 13 more boundaries.
+test('the bundled fixture parses to ~329 messages with 35 ground-truth boundaries', async () => {
     const fx = await loadFixture(DEFAULT_FIXTURE);
     assert.equal(fx.chat.length, 329);
-    assert.equal(fx.evalBoundaries.length, 22, 'Phase 0 merged ground truth');
-    assert.equal(fx.boundaries.length, 22);
+    assert.equal(fx.evalBoundaries.length, 35, 'fine-grained merged ground truth');
+    assert.equal(fx.boundaries.length, 35);
     assert.ok(fx.boundaries.every((b) => Number.isInteger(b) && b > 0 && b < fx.chat.length));
 });
 
@@ -165,8 +170,8 @@ test('CRITERION 1: scene memories reproduce every Phase 0 ground-truth boundary'
     const cov = scoreBoundaryCoverage(run.processedRanges, fx.boundaries);
     assert.equal(cov.missed.length, 0, `missed boundaries: ${cov.missed}`);
     assert.equal(cov.coverage, 1);
-    assert.equal(cov.expected.length, 22);
-    assert.equal(run.processedRanges.length, 22);
+    assert.equal(cov.expected.length, 35);
+    assert.equal(run.processedRanges.length, 35);
 });
 
 test('CRITERION 1: the run leaves no gaps in the covered span', async () => {
