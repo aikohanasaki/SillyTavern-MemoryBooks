@@ -174,6 +174,13 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
   confirm dialog, and the paired-entry write via `addlore.upsertLorebookEntryByTitle`.
 - `clipperPlus.test.js` — `node clipperPlus.test.js` (35 cases; the core is fully
   exercised without SillyTavern).
+- `catalogCore.js` — pure, SillyTavern-free entry-catalog logic (DI core):
+  entry classification, deterministic 1-line summaries, change fingerprints,
+  budget fitting with explicit drop accounting, staleness diffing.
+- `catalog.js` — SillyTavern binding layer that reads the bound lorebook and
+  stores the catalog at `chat_metadata.stmbc.catalog`; never throws into a caller.
+- `catalogCore.test.js` — `node --test catalogCore.test.js` (41 cases, including
+  the fixture-lorebook serialization gate).
 - `injectionCore.js` — pure, SillyTavern-free living-lorebook injection logic (DI
   core): config merge, keyword matching (constant + keyword-matched vs. scene
   text), hard ~50K-token budget selection with drop reporting, delta-not-rehash
@@ -213,6 +220,70 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
 - `auditorJobs.test.js` — `node --test auditorJobs.test.js` (20 cases; the core is
   fully exercised without SillyTavern — coverage classification, source selection,
   parse/retry, and diff).
+
+## P7.1 — entry catalog / retrieval index (2026-07-31, PHA-1634)
+
+The compact per-entry index the librarian (P7.2) selects from. `catalogCore.js`
+is pure (node:test, no ST imports); `catalog.js` is the chat_metadata binding.
+
+**Shape.** `chat_metadata.stmbc.catalog` =
+`{v, lorebook, builtAt, reason, rows[], dropped[], truncated, stats}`, one row
+per entry: `{uid, kind, title, n[], s, t, fp}` — entity names, 1-line summary,
+estimated tokens, change fingerprint. Field names are short because every one
+is paid for on every entry inside chat_metadata.
+
+**Two refresh triggers**, both non-blocking and both fail-open:
+
+| Trigger | Site |
+| --- | --- |
+| entry write | `STMBC-HOOK(catalog)` at the three `saveWorldInfo` sites in `addlore.js` (`addMemoryToLorebook`, `upsertLorebookEntriesBatch`, `upsertLorebookEntryByTitle`) — those three cover memories, side prompts, Clipper+ context entries and consolidations |
+| Auditor coverage run | `STMBC-HOOK(catalog)` inside `handleCoverageCommand` in `auditorJobs.js`, right after `buildCoverageIndex` |
+
+**The hook is on the LIVE coverage path, deliberately.** `auditorTechnicalPass.js`
+also exports a `registerAuditorJobs` with a `stmbc-audit-coverage` executor, but
+as of the v0.0.2 release `index.js` no longer imports it — the reachable coverage
+job is `/stmbc-coverage` → `handleCoverageCommand` → `auditorJobsCore.auditCoverage`.
+Hooking `registerAuditorJobs` would have produced exactly the orphaned-hook
+failure the Phase 4 integration note above describes. Re-check this before
+moving the hook.
+
+**Decisions worth knowing before touching this:**
+
+- **Every entry is catalogued, not just STMB-managed ones.** The acceptance
+  criterion is that every `stmemorybooks`/side-prompt/clip entry is present —
+  it is — but the librarian selects across the *whole* bound lorebook, so
+  hand-authored world entries are indexed too and tagged `kind: 'manual'`.
+  Filter on `kind` if you want the pipeline-owned subset. Disabled entries are
+  kept and flagged `off: true` for the same reason: P7.3 is the layer that
+  knows whether a disabled entry may fire.
+- **No LLM at read time.** Summaries are deterministic string surgery over the
+  entry's own content, done once at write/refresh time. A structural test
+  asserts `catalogCore.js` imports nothing that can make a call.
+- **Entity extraction has ONE definition.** `extractEntryEntityNames` lives in
+  `auditorJobsCore.js` next to `buildCoverageIndex`, which now normalizes its
+  output into the coverage handle map; the catalog carries the same output as
+  `row.n`. A second extractor would let coverage and retrieval disagree about
+  which entities exist.
+- **Budget overflow is never silent** (plan §4.3). Over the
+  `maxSerializedBytes` budget (default 64 KiB) it shrinks summaries first, then
+  drops rows lowest-retrieval-priority first (`manual` -> `sideprompt` ->
+  `clip` -> `clip-context` -> `memory`), recording every dropped uid in
+  `catalog.dropped`, setting `truncated`, and warning at the console. Dropped
+  entries still fire on keywords — only librarian retrieval is affected.
+- **`stats.bytes` is a fixed point, not one measurement.** The number lives
+  inside the object it measures, so writing it changes the length; a single
+  pass under-reports by the width of its own digits. `measureCatalog` iterates
+  (2 passes in practice). Pinned by a test.
+- **The clip suffix is duplicated on purpose.** `catalogCore.CLIP_TITLE_SUFFIX`
+  mirrors `clipManager.STMB_CLIP_TITLE_SUFFIX` as a literal because clipManager
+  pulls in the ST runtime and would break the core's node:test purity. Keep the
+  two in sync.
+
+**Measured on the 328-msg fixture lorebook** (`eval/materials/stmb-auto/Magisa-_satire_fantasy_isekai_world.json`,
+52 entries, committed with this work as the gate's ground truth): **15,245 B —
+23.3% of the 64 KiB budget**, against a 139,926 B lorebook (9.2x smaller),
+nothing truncated, and the catalog round-trips through
+`JSON.parse(JSON.stringify(...))` byte-identical and non-stale.
 
 ## New settings / metadata namespaces (clean; no upstream collision)
 

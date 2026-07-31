@@ -81,6 +81,39 @@ function escapeRegExp(s) {
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * The entity names an entry claims: its keywords first (the lorebook's own
+ * activation vocabulary), then its title. Deduped case-insensitively with the
+ * first-seen casing kept, order preserved — keywords lead because they are
+ * what the entry was actually written to match on.
+ *
+ * Single source of truth for "what is this entry about, by name". The coverage
+ * audit normalizes these into `buildCoverageIndex`'s handle map; the Phase 7
+ * catalog (catalogCore.js) carries them as the `n` field on a row so the
+ * librarian can select by entity without reading entry content. Keep it that
+ * way — a second extractor would let coverage and retrieval disagree about
+ * which entities exist.
+ *
+ * @param {object|null|undefined} entry raw or coverage-shaped lorebook entry
+ * @returns {string[]} display-cased names, deduped
+ */
+export function extractEntryEntityNames(entry) {
+    const out = [];
+    const seen = new Set();
+    const push = (value) => {
+        const name = String(value ?? '').trim();
+        if (!name) return;
+        const key = normalizeName(name);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        out.push(name);
+    };
+    const keys = Array.isArray(entry?.keys) ? entry.keys : (Array.isArray(entry?.key) ? entry.key : []);
+    for (const key of keys) push(key);
+    push(entry?.title ?? entry?.comment);
+    return out;
+}
+
 /** Does this audit message name the entry (whole-word, case-insensitive)? */
 export function messageMentions(message, name) {
     const n = normalizeName(name);
@@ -118,13 +151,8 @@ export function buildCoverageIndex(entries) {
             isMemory: !!e.isMemory,
         };
         list.push(ref);
-        const handles = new Set();
-        const t = normalizeName(ref.title);
-        if (t) handles.add(t);
-        for (const k of ref.keys) {
-            const nk = normalizeName(k);
-            if (nk) handles.add(nk);
-        }
+        // Same extractor the Phase 7 catalog uses, normalized into handles.
+        const handles = new Set(extractEntryEntityNames(ref).map(normalizeName).filter(Boolean));
         for (const h of handles) {
             const arr = byHandle.get(h);
             if (arr) arr.push(ref); else byHandle.set(h, [ref]);

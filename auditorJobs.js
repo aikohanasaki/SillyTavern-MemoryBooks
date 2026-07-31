@@ -51,6 +51,7 @@ import {
     regenerateOnce,
     diffLines,
 } from './auditorJobsCore.js';
+import { refreshCatalogForCoverageRun } from './catalog.js';
 
 const LOG = 'STMemoryBooks: AuditorJobs';
 
@@ -270,6 +271,13 @@ export async function handleCoverageCommand() {
         const report = auditCoverage(notes, entries, coverageCfg);
         const coverageIndex = buildCoverageIndex(entries);
         const conn = resolveJobsConnection(regenCfg.profile);
+
+        // STMBC-HOOK(catalog): P7.1 — the coverage run is the librarian
+        // catalog's scheduled refresh point (PHA-1633: "built/refreshed as a
+        // byproduct of the Auditor coverage job"). Awaited so a later bulk
+        // generate rebuilds on top of it rather than racing it, but it never
+        // throws: a stale index degrades retrieval, it must not fail the audit.
+        await refreshCatalogForCoverageRun({ lorebookName: lorebook.name, lorebookData: lorebook.data });
 
         const summary = `Coverage: ${report.missing.length} missing, ${report.thin.length} thin, ${report.covered} covered (of ${report.total} salient names).`;
 

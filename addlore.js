@@ -20,6 +20,7 @@ import {
     maybeEnqueueAuditorOnOffer,
 } from './auditorCadence.js';
 import { maybeOfferAuditorJob } from './auditorTechnicalPass.js';
+import { noteCatalogEntryWrite } from './catalog.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
@@ -553,6 +554,12 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
             }
         }
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
+
+        // STMBC-HOOK(catalog): P7.1 — refresh the librarian's retrieval index
+        // after the write lands. Fire-and-forget: `noteCatalogEntryWrite`
+        // swallows its own failures, so the memory add is never reported as
+        // failed because the index could not be rebuilt.
+        void noteCatalogEntryWrite(lorebookValidation.name, lorebookValidation.data);
 
         if (options.showNotification !== false && settings.moduleSettings?.showNotifications !== false) {
             toastr.success(
@@ -1382,6 +1389,10 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
     // Single save for the whole batch
     await saveWorldInfo(lorebookName, lorebookData, true);
 
+    // STMBC-HOOK(catalog): P7.1 — one index refresh for the whole batch, to
+    // match the one save.
+    void noteCatalogEntryWrite(lorebookName, lorebookData);
+
     if (refreshEditor) {
         await Promise.resolve(reloadEditor(lorebookName));
     }
@@ -1458,6 +1469,11 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
     }
 
     await saveWorldInfo(lorebookName, lorebookData, true);
+
+    // STMBC-HOOK(catalog): P7.1 — this is the write path side prompts and
+    // Clipper+ context entries both take, so the index picks them up here.
+    void noteCatalogEntryWrite(lorebookName, lorebookData);
+
     if (refreshEditor) {
         await Promise.resolve(reloadEditor(lorebookName));
     }
