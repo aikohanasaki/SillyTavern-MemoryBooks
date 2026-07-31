@@ -50,7 +50,7 @@ import { METADATA_KEY, loadWorldInfo } from '../../../world-info.js';
 import { requestCompletion } from './stmemory.js';
 import { resolveEffectiveConnectionFromProfile } from './utils.js';
 import { getChatCatalog, getChatCatalogLines } from './catalog.js';
-import { saveMetadataForCurrentContext } from './sceneManager.js';
+import { saveMetadataForCurrentContext, getHighestMemoryProcessed } from './sceneManager.js';
 import { getAutoSettings } from './autoSettings.js';
 import {
     LIBRARIAN_DEFAULTS,
@@ -58,6 +58,10 @@ import {
     runLibrarianRetrieval,
     renderInjection,
 } from './librarianCore.js';
+import {
+    LIBRARIAN_CACHE_KEY,
+    makeLibrarianCacheSeam,
+} from './librarianCacheCore.js';
 
 const LOG = 'STMemoryBooks-Librarian';
 
@@ -111,7 +115,15 @@ export function setLibrarianEnabledForCurrentChat(enabled) {
         stmbc.librarian = { ...(stmbc.librarian || {}), enabled: on };
         saveMetadataForCurrentContext();
     }
-    if (!on) clearLibrarianInjection();
+    // Switching off drops the stored selection too. The config fingerprint does
+    // not cover `enabled` on purpose (it does not change WHICH entries a model
+    // would pick), so without this an off→on A/B inside one scene would come
+    // back on a cached answer instead of a fresh call — and the phase gate's
+    // A/B is exactly that sequence.
+    if (!on) {
+        clearLibrarianInjection();
+        clearLibrarianCache();
+    }
     return on;
 }
 
@@ -252,6 +264,59 @@ function makeSelect(cfg, conn) {
     };
 }
 
+// ---------------------------------------------------------------- cache (P7.3)
+
+/**
+ * Read the stored scene cache for the chat currently open.
+ * A record is per-chat by construction — it lives in that chat's metadata — so
+ * nothing extra is needed to keep one chat's selection out of another's.
+ */
+export function readLibrarianCache() {
+    const stmbc = chat_metadata?.stmbc;
+    const record = stmbc && stmbc[LIBRARIAN_CACHE_KEY];
+    return (record && typeof record === 'object') ? record : null;
+}
+
+/**
+ * Persist a cache record.
+ *
+ * The metadata save is deliberately NOT awaited: this runs on the blocking
+ * pre-generation path, and the record we just wrote is already live in
+ * `chat_metadata` for the next turn to read. Waiting on the round trip would
+ * spend the cached turn's whole latency budget on durability we do not need
+ * within the session — and if the save loses the race with a reload, the worst
+ * outcome is one extra retrieval call.
+ */
+export function writeLibrarianCache(record) {
+    try {
+        if (typeof chat_metadata !== 'object' || !chat_metadata) return;
+        const stmbc = chat_metadata.stmbc || (chat_metadata.stmbc = {});
+        stmbc[LIBRARIAN_CACHE_KEY] = record;
+        saveMetadataForCurrentContext();
+    } catch (err) {
+        console.warn(`${LOG}: could not persist the scene cache; next turn re-asks`, err);
+    }
+}
+
+/**
+ * Drop the stored selection so the next turn makes a fresh call.
+ *
+ * Nothing on the automatic path needs this — the watermark and catalog stamps
+ * invalidate on their own — but `/stmbc-librarian refresh` and any future
+ * "something changed and I cannot describe it" case want one honest lever.
+ */
+export function clearLibrarianCache() {
+    try {
+        const stmbc = chat_metadata?.stmbc;
+        if (stmbc && stmbc[LIBRARIAN_CACHE_KEY]) {
+            delete stmbc[LIBRARIAN_CACHE_KEY];
+            saveMetadataForCurrentContext();
+        }
+    } catch (err) {
+        console.warn(`${LOG}: could not clear the scene cache`, err);
+    }
+}
+
 /**
  * Build the engine's dependency bundle for the chat currently open, or null when
  * the librarian is off / has nothing to work with.
@@ -265,8 +330,27 @@ function buildLibrarianDeps(cfg) {
         if (Number.isFinite(uid)) rowsByUid.set(uid, row);
     }
 
+    // P7.3: the scene cache. `getWatermark` is the boundary signal — the same
+    // `getHighestMemoryProcessed()` the sentinel resolves its own watermark from,
+    // so "the sentinel declared a boundary" and "the librarian re-retrieves" are
+    // the same fact read twice, not two heuristics that have to agree.
+    const cacheSeam = makeLibrarianCacheSeam({
+        cfg,
+        readCache: readLibrarianCache,
+        writeCache: writeLibrarianCache,
+        getWatermark: () => {
+            const wm = getHighestMemoryProcessed();
+            return Number.isFinite(wm) ? wm : -1;
+        },
+        getCatalogBuiltAt: () => Number(getChatCatalog()?.builtAt) || 0,
+        getRows: () => catalog?.rows || [],
+        now: () => Date.now(),
+    });
+
     return {
         config: cfg,
+        getCachedIds: cacheSeam.getCachedIds,
+        onSelected: cacheSeam.onSelected,
         // `chat` is a live binding from script.js — read fresh each call.
         getChat: () => chat,
         getCatalogLines: () => getChatCatalogLines({ kinds: cfg.kinds }),

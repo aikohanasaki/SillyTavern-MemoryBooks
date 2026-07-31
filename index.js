@@ -73,6 +73,7 @@ import {
   registerLibrarianHooks,
   runLibrarianForCurrentChat,
   setLibrarianEnabledForCurrentChat,
+  clearLibrarianCache,
 } from "./librarian.js";
 // STMBC-HOOK(sentinel-cadence): P2.3 jobs-framework wiring for the sentinel cycle
 // (fork; plan §4.1). `registerSentinelCadence` installs the P2.1 engine behind
@@ -373,6 +374,12 @@ async function handleStmbcLibrarianCommand(namedArgs, unnamedArgs) {
       return enabled ? "on" : "off";
     }
 
+    // P7.3: `refresh` drops the scene cache first, so this command can force the
+    // model to answer again without waiting for a boundary. Plain invocation
+    // deliberately does NOT — the point of the command is to show what the next
+    // turn would really do, cache and all.
+    if (arg === 'refresh') clearLibrarianCache();
+
     const record = await runLibrarianForCurrentChat();
     const included = Array.isArray(record.included) ? record.included : [];
     const dropped = Array.isArray(record.dropped) ? record.dropped : [];
@@ -383,6 +390,9 @@ async function handleStmbcLibrarianCommand(namedArgs, unnamedArgs) {
       ` | ${record.usedTokens || 0}/${record.budget || 0} tokens` +
       (dropped.length ? ` | dropped ${dropped.map((d) => `#${d.uid}:${d.reason}`).join(', ')}` : '') +
       (record.mechanism ? ` | via ${record.mechanism}` : '') +
+      // P7.3: the two numbers that make the cost profile auditable at a glance.
+      (record.source ? ` | ${record.source} (${record.cacheReason})` : '') +
+      (record.toppedUp?.length ? ` | topped up ${record.toppedUp.map((u) => `#${u}`).join(',')}` : '') +
       (Number.isFinite(record.ms) ? ` | ${record.ms}ms` : '');
 
     console.debug('STMemoryBooks: /stmbc-librarian', record);
@@ -10118,7 +10128,7 @@ function registerSlashCommands() {
     name: "stmbc-librarian",
     callback: handleStmbcLibrarianCommand,
     helpString: translate(
-      "Run the librarian's pre-turn lore retrieval now and report which entries it would add, what it dropped and what it spent. Pass on/off to switch it for this chat (PHA-1633 §Architecture 2). Usage: /stmbc-librarian [on|off]",
+      "Run the librarian's pre-turn lore retrieval now and report which entries it would add, what it dropped, what it spent, and whether the answer came from the scene cache or a fresh call. Pass on/off to switch it for this chat; pass refresh to drop the scene cache and force a new call (PHA-1633 §Architecture 2). Usage: /stmbc-librarian [on|off|refresh]",
       "STMemoryBooks_Slash_LibrarianHelp",
     ),
     unnamedArgumentList: [

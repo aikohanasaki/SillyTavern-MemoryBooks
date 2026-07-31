@@ -86,6 +86,17 @@ export const LIBRARIAN_DEFAULTS = Object.freeze({
     prompt: '',
     /** Skip entries a keyword/constant activation is already going to inject. */
     skipLikelyActive: true,
+    /**
+     * P7.3 scene-aware caching. `cache: true` reuses the last selection for
+     * every turn inside the same scene and only re-asks the model when the
+     * sentinel's boundary lands; `topUp` adds the cheap name-scan that catches
+     * an entity walking into the middle of a scene. Both default ON — caching
+     * is the cost-collapse mechanism, not an opt-in optimisation.
+     */
+    cache: true,
+    topUp: true,
+    /** Safety valve: re-ask anyway after this many turns without a boundary. */
+    cacheMaxTurns: 30,
     debug: false,
 });
 
@@ -98,6 +109,7 @@ const RANGES = Object.freeze({
     timeoutMs: { min: 500, max: 120000 },
     depth: { min: 0, max: 100 },
     role: { min: 0, max: 2 },
+    cacheMaxTurns: { min: 0, max: 10000 },
 });
 
 /**
@@ -158,7 +170,7 @@ export function resolveLibrarianConfig(global, perChat) {
             if (Number.isFinite(v) && v >= range.min && v <= range.max) cfg[key] = Math.floor(v);
         }
     }
-    for (const key of ['enabled', 'skipLikelyActive', 'debug']) {
+    for (const key of ['enabled', 'skipLikelyActive', 'cache', 'topUp', 'debug']) {
         for (const src of [g, p]) {
             if (typeof src[key] === 'boolean') cfg[key] = src[key];
         }
@@ -308,6 +320,57 @@ function escapeRegExp(str) {
 }
 
 /**
+ * Compiled matchers, keyed by term.
+ *
+ * Both scans that use `termAppearsIn` run on the blocking pre-generation path,
+ * over the same handful of terms, on every single turn: a 52-entry lorebook is
+ * ~250 recompilations per turn. Measured on the Satire Isekai fixture this is
+ * worth ~6% of p50 and ~9% of p90 on a cached turn — modest, because the actual
+ * cost is the matching itself, not the compile. Kept because it is free and it
+ * is on the one path where the fork blocks the user's generation.
+ *
+ * The terms come from the lorebook, so the key space is bounded by its size;
+ * `MATCHER_CACHE_LIMIT` is a backstop against a pathological book rather than an
+ * expected condition.
+ *
+ * `null` is a cached decision too — "this term is not wordy, use includes()".
+ */
+const matcherCache = new Map();
+const MATCHER_CACHE_LIMIT = 4096;
+
+/**
+ * Does `term` occur in already-lowercased `haystack`?
+ *
+ * Word-boundary match for plain terms; substring for terms that carry
+ * punctuation (where a boundary assertion would not fire). SillyTavern's own
+ * matcher is whole-word by default, so this is the closer approximation.
+ *
+ * Exported because P7.3's name-scan top-up (librarianCacheCore) must use the
+ * SAME matcher as the keyword floor below. Two matchers would drift, and the
+ * drift would show up as the top-up adding entries ST was already going to
+ * activate — paid for out of the token budget.
+ *
+ * @param {string} haystack - lowercased text
+ * @param {string} term - raw term (lowercased here)
+ * @returns {boolean}
+ */
+export function termAppearsIn(haystack, term) {
+    const k = String(term ?? '').trim().toLowerCase();
+    if (!k || !haystack) return false;
+
+    let re = matcherCache.get(k);
+    if (re === undefined) {
+        const isWordy = /^[\p{L}\p{N}][\p{L}\p{N}\s'’-]*$/u.test(k);
+        re = isWordy
+            ? new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(k)}($|[^\\p{L}\\p{N}])`, 'u')
+            : null;
+        if (matcherCache.size >= MATCHER_CACHE_LIMIT) matcherCache.clear();
+        matcherCache.set(k, re);
+    }
+    return re ? re.test(haystack) : haystack.includes(k);
+}
+
+/**
  * Best-effort guess at which entries SillyTavern's own activation is already
  * going to inject: constants, plus entries whose primary keys appear in the
  * scanned text.
@@ -339,16 +402,7 @@ export function scanLikelyActiveUids(entries, text) {
         if (!haystack) continue;
         const keys = Array.isArray(entry.key) ? entry.key : [];
         for (const key of keys) {
-            const k = String(key ?? '').trim().toLowerCase();
-            if (!k) continue;
-            // Word-boundary match for plain keys; substring for keys that carry
-            // punctuation (where \b would not fire). ST's own matcher is
-            // whole-word by default, so this is the closer approximation.
-            const isWordy = /^[\p{L}\p{N}][\p{L}\p{N}\s'’-]*$/u.test(k);
-            const hit = isWordy
-                ? new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(k)}($|[^\\p{L}\\p{N}])`, 'u').test(haystack)
-                : haystack.includes(k);
-            if (hit) {
+            if (termAppearsIn(haystack, key)) {
                 active.add(uid);
                 break;
             }
@@ -529,27 +583,51 @@ export async function runLibrarianRetrieval(deps) {
         const window = buildLibrarianWindow(chat, cfg);
         if (!window.text) return finish({ action: 'skip:no-window' });
 
-        const catalog = typeof deps.getCatalogLines === 'function' ? deps.getCatalogLines() : null;
-        const catalogLines = Array.isArray(catalog?.lines) ? catalog.lines : [];
-        if (catalogLines.length === 0) return finish({ action: 'skip:no-catalog', window });
-
-        let ids;
+        // P7.3 cache seam. Consulted BEFORE the catalog is formatted, because on
+        // a cached turn there is no prompt to build and formatting rows we will
+        // never send is exactly the wasted work the 50ms budget is about.
+        //
+        // The seam is deliberately narrow: this file owns the cycle, and
+        // librarianCacheCore owns the policy (what counts as the same scene,
+        // what the name-scan may add). `getCachedIds` returns either
+        // `{ids: number[]}` — reuse these, make no call — or `{ids: null,
+        // reason}` — the model has to answer this turn.
+        const cached = typeof deps.getCachedIds === 'function' ? deps.getCachedIds(window) : null;
+        let ids = Array.isArray(cached?.ids) ? cached.ids : null;
         let attempts;
-        try {
-            ({ ids, attempts } = await selectEntries({
-                select: deps.select,
-                systemPrompt: cfg.prompt,
-                catalogLines,
-                windowText: window.text,
-                maxEntries: cfg.maxEntries,
-            }));
-        } catch (err) {
-            // API error, abort, or timeout — the single most likely failure in
-            // production, and the one the fail-open test kills the API to force.
-            return finish({ action: 'skip:call-failed', error: String(err?.message || err) });
+        const source = ids ? 'cache' : 'call';
+        const cacheReason = String(cached?.reason ?? 'miss:no-cache');
+        const toppedUp = Array.isArray(cached?.added) ? cached.added : [];
+
+        if (source === 'call') {
+            const catalog = typeof deps.getCatalogLines === 'function' ? deps.getCatalogLines() : null;
+            const catalogLines = Array.isArray(catalog?.lines) ? catalog.lines : [];
+            if (catalogLines.length === 0) return finish({ action: 'skip:no-catalog', window, cacheReason });
+
+            try {
+                ({ ids, attempts } = await selectEntries({
+                    select: deps.select,
+                    systemPrompt: cfg.prompt,
+                    catalogLines,
+                    windowText: window.text,
+                    maxEntries: cfg.maxEntries,
+                }));
+            } catch (err) {
+                // API error, abort, or timeout — the single most likely failure in
+                // production, and the one the fail-open test kills the API to force.
+                return finish({ action: 'skip:call-failed', error: String(err?.message || err), cacheReason });
+            }
+            if (ids === null) return finish({ action: 'skip:bad-json', attempts: attempts?.length ?? 0, cacheReason });
+            if (isCancelled()) return finish({ action: 'skip:cancelled' });
+
+            // Store the model's answer BEFORE planning. What is cached is the
+            // SELECTION, never the injection: caps, the keyword floor and the
+            // token budget are re-applied from scratch on every cached turn, so
+            // a stale plan can never outlive the state it was planned against.
+            if (typeof deps.onSelected === 'function') {
+                try { deps.onSelected(ids, window); } catch { /* caching must never break a turn */ }
+            }
         }
-        if (ids === null) return finish({ action: 'skip:bad-json', attempts: attempts?.length ?? 0 });
-        if (isCancelled()) return finish({ action: 'skip:cancelled' });
 
         const entries = typeof deps.getEntries === 'function' ? await deps.getEntries() : [];
         const entryList = Array.isArray(entries) ? entries : [];
@@ -579,6 +657,13 @@ export async function runLibrarianRetrieval(deps) {
             usedTokens: plan.usedTokens,
             budget: plan.budget,
             attempts: attempts?.length ?? 0,
+            // P7.3 telemetry — the fields the latency/cost gate reads. `calls`
+            // is the one that proves the cost collapse: it is 1 on a
+            // scene-change turn and 0 on every turn inside the scene.
+            source,
+            calls: source === 'call' ? (attempts?.length ?? 1) : 0,
+            cacheReason,
+            toppedUp,
             window: { start: window.start, end: window.end, messages: window.messages.length },
         });
     } catch (err) {
