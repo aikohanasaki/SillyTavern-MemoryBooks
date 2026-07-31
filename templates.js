@@ -94,6 +94,14 @@ export const settingsTemplate = Handlebars.compile(`
         </div>
 
         <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-copy-memory-books-on-branch" {{#if copyMemoryBooksOnBranch}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_CopyMemoryBooksOnBranch">Copy Memory Books when branching</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_CopyMemoryBooksOnBranchDesc">When enabled, new chat branches receive independent copies of their active chat-bound or manual Memory Books.</small>
+        </div>
+
+        <div class="world_entry_form_control">
             <label for="stmb-lorebook-name-template">
                 <h4 data-i18n="STMemoryBooks_LorebookNameTemplate">Lorebook Name Template:</h4>
                 <small class="opacity50p" data-i18n="STMemoryBooks_LorebookNameTemplateDesc">Template for auto-created lorebook names. Supports {{char}}, {{user}}, {{chat}} placeholders.</small>
