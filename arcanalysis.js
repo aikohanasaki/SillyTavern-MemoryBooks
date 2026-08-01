@@ -35,6 +35,7 @@ import {
 } from "./memoryRegeneration.js";
 import { tr } from "./i18nHelpers.js";
 import { DEFAULT_CONSOLIDATION_KEYWORD_PROMPT } from "./consolidationPromptDefaults.js";
+import { collectNarratorSourceMetadata } from "./narratorMode.js";
 
 /**
  * Arc Analysis pipeline (stateless wrt model; stateful in controller).
@@ -1399,6 +1400,10 @@ export async function commitSummaryEntries({
         ),
         key: Array.isArray(keywords) ? keywords : [],
         disable: false,
+        ...collectNarratorSourceMetadata(
+          Object.values(lorebookData?.entries || {}),
+          summary.memberIds || [],
+        ),
       };
       const characterFilter = summary.characterFilterNames
         ? makeCharacterFilter(false, summary.characterFilterNames)

@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
     BRANCH_LOREBOOK_METADATA_KEY,
     BRANCH_LOREBOOK_METADATA_VERSION,
+    applyBranchLorebookBindings,
     cloneLorebookForBranch,
     createBranchLorebookController,
     planBranchLorebookCopies,
@@ -112,6 +113,45 @@ test('does not branch-copy a persistent solo character lock', () => {
         manualLorebook: 'Chat Manual Book',
         lockedLorebookName: 'Global Character Book',
     }, 'Global Character Book'), null);
+});
+
+test('copies narrator canonical and declared cast bindings without native group state', () => {
+    const bindings = resolveActiveLorebookBindings({
+        isNarratorMode: true,
+        manualModeEnabled: false,
+        chatBoundLorebook: 'Omniscient Book',
+        narratorCharacterLorebooks: { alice: 'Alice Book', bob: 'Bob Book' },
+    });
+    assert.deepEqual(bindings, {
+        mode: 'narrator',
+        primaryMode: 'chat-bound',
+        primary: 'Omniscient Book',
+        characterBindings: { alice: 'Alice Book', bob: 'Bob Book' },
+        preservedCharacterBindings: {},
+        sourceNames: ['Omniscient Book', 'Alice Book', 'Bob Book'],
+    });
+    const metadata = {
+        world_info: 'Omniscient Book',
+        STMemoryBooks: {
+            narratorMode: {
+                members: [
+                    { id: 'alice', lorebookName: 'Alice Book' },
+                    { id: 'bob', lorebookName: 'Bob Book' },
+                ],
+            },
+        },
+    };
+    applyBranchLorebookBindings(metadata, bindings, new Map([
+        ['Omniscient Book', 'Omniscient Book Branch 1'],
+        ['Alice Book', 'Alice Book Branch 1'],
+        ['Bob Book', 'Bob Book Branch 1'],
+    ]));
+    assert.equal(metadata.world_info, 'Omniscient Book Branch 1');
+    assert.deepEqual(metadata.STMemoryBooks.narratorMode.members.map(member => member.lorebookName), [
+        'Alice Book Branch 1',
+        'Bob Book Branch 1',
+    ]);
+    assert.equal(metadata.STMemoryBooks.manualCharacterLorebooks, undefined);
 });
 
 test('separates locked group locals from branch-copy sources', () => {
