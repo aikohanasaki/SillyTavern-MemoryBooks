@@ -474,6 +474,11 @@ export const localeData_en = {
 
     // Automatic Memories
     'STMemoryBooks_AutoMemory': 'Automatic Memories',
+    // Auto Module (PHA-1651) — Sentinel + Clipper+ unified settings panel
+    'STMemoryBooks_AutoModule': 'Auto Module',
+    'STMemoryBooks_AutoModule_UseDefaultProfile': 'Use default STMB profile',
+    'STMemoryBooks_FailedToOpenAutoModuleSettings': 'Failed to open Auto Module settings',
+    'STMemoryBooks_NoChatOpen': 'No chat is open',
 
     // Token Warning
     'STMemoryBooks_TokenWarning': 'Token Warning Threshold:',

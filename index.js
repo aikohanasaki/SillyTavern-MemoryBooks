@@ -60,6 +60,14 @@ import {
 // `runSentinelDetectionForJob` is the engine runner the P2.3 job executor calls
 // (installed via `registerSentinelCadence` further down).
 import { handleSentinelMessageReceived, runSentinelDetectionForJob } from "./sentinel.js";
+import {
+  getAutoSettings,
+  getChatAutoSettings,
+  validateAutoPatch,
+  validateChatAutoPatch,
+  AUTO_MODULE_DEFAULTS,
+} from "./autoSettings.js";
+import { CLIPPER_DEFAULTS } from "./clipperPlusCore.js";
 // STMBC-HOOK(auditor): resumable full-chat audit chunk-walker (fork; plan §4.3).
 import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./auditor.js";
 // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
@@ -106,6 +114,7 @@ import {
 } from "./sceneManager.js";
 import {
   automaticMemoriesSettingsTemplate,
+  autoModuleSettingsTemplate,
   generalSettingsTemplate,
   settingsTemplate,
 } from "./templates.js";
@@ -625,7 +634,11 @@ const defaultSettings = {
   titleFormat: DEFAULT_TITLE_FORMAT,
   profiles: [], // Will be populated dynamically with current ST settings
   defaultProfile: 0,
-  migrationVersion: 4,
+  // STMBC-HOOK(auto-module): empty container; readers (autoSettings.js) merge
+  // AUTO_MODULE_DEFAULTS on read so missing fields stay backwards-compatible.
+  // Initialize on a fresh install so the UI panel has a place to write to.
+  autoModule: {},
+  migrationVersion: 5,
 };
 
 // Current state variables
@@ -2131,6 +2144,19 @@ function initializeSettings() {
 
     // Update migration version
     extension_settings.STMemoryBooks.migrationVersion = 4;
+    saveSettingsDebounced();
+  }
+
+  // Migration to v5 (PHA-1651): add autoModule container for the Sentinel/Clipper+
+  // auto-module settings. Readers (autoSettings.js) merge AUTO_MODULE_DEFAULTS on
+  // read, so this just gives the UI a place to write. Existing v0.0.x installs
+  // are unaffected functionally; the migration makes the "🛰️ Auto Module"
+  // settings panel reachable from the extension menu (see FORK_NOTES §index.js).
+  if (currentVersion < 5) {
+    if (!extension_settings.STMemoryBooks.autoModule || typeof extension_settings.STMemoryBooks.autoModule !== "object") {
+      extension_settings.STMemoryBooks.autoModule = {};
+    }
+    extension_settings.STMemoryBooks.migrationVersion = 5;
     saveSettingsDebounced();
   }
 
@@ -5815,6 +5841,13 @@ function populateInlineButtons() {
       action: showAutomaticMemoriesSettingsPopup,
     },
     {
+      // PHA-1651 — Sentinel toggle (auto-module) lives here. The template was
+      // authored but never wired to a button until v0.0.4.
+      text: "🛰️ " + translate("Auto Module", "STMemoryBooks_AutoModule"),
+      id: "stmb-auto-module-settings",
+      action: showAutoModuleSettingsPopup,
+    },
+    {
       text:
         "🧩 " +
         translate(
@@ -8935,6 +8968,285 @@ async function showAutomaticMemoriesSettingsPopup() {
       "STMemoryBooks",
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Auto Module (Sentinel + Clipper+) — PHA-1651 fix
+// ---------------------------------------------------------------------------
+// The autoModuleSettingsTemplate was exported but never rendered prior to v0.0.4
+// (PHA-1651). This block wires it up: buildAutoModuleTemplateData feeds the
+// template, showAutoModuleSettingsPopup renders it, and setupAutoModuleEventListeners
+// persists edits to extension_settings.STMemoryBooks.autoModule and the per-chat
+// chat_metadata.stmbc container.
+
+function buildAutoModuleTemplateData() {
+  const settings = initializeSettings();
+
+  // Global autoModule (read with AUTO_MODULE_DEFAULTS merged in)
+  const storedAuto = (settings && settings.autoModule && typeof settings.autoModule === "object")
+    ? settings.autoModule
+    : {};
+  const auto = { ...AUTO_MODULE_DEFAULTS, ...storedAuto };
+
+  // Clipper+ is a sub-object; merge with CLIPPER_DEFAULTS so missing fields are safe
+  const storedClipper = (storedAuto && storedAuto.clipper && typeof storedAuto.clipper === "object")
+    ? storedAuto.clipper
+    : {};
+  const clipper = { ...CLIPPER_DEFAULTS, ...storedClipper };
+  auto.clipper = clipper;
+
+  // Build profile options for the detection + clipper selects. We surface every
+  // profile (including the dynamic ST one); null = "use default STMB profile".
+  const profileOptions = [
+    {
+      value: "",
+      label: translate("Use default STMB profile", "STMemoryBooks_AutoModule_UseDefaultProfile"),
+      isSelected: auto.detectionProfileIndex == null || auto.detectionProfileIndex === "",
+    },
+    ...((settings.profiles || []).map((p, i) => ({
+      value: String(i),
+      label: p?.name || `Profile ${i}`,
+      isSelected: auto.detectionProfileIndex === i,
+    }))),
+  ];
+  auto.detectionProfileOptions = profileOptions;
+  auto.clipper.profileOptions = [
+    {
+      value: "",
+      label: translate("Use default STMB profile", "STMemoryBooks_AutoModule_UseDefaultProfile"),
+      isSelected: clipper.profile == null || clipper.profile === "",
+    },
+    ...((settings.profiles || []).map((p, i) => ({
+      value: String(i),
+      label: p?.name || `Profile ${i}`,
+      isSelected: clipper.profile === i,
+    }))),
+  ];
+
+  // Per-chat overrides (stored on chat_metadata.stmbc)
+  const chatMeta = (typeof chat_metadata !== "undefined" && chat_metadata) ? chat_metadata : {};
+  const storedChatAuto = (chatMeta && chatMeta.stmbc && typeof chatMeta.stmbc === "object")
+    ? chatMeta.stmbc
+    : {};
+  const chatAuto = {
+    enabled: storedChatAuto.enabled ?? null,
+    watermarkFallback: storedChatAuto.watermarkFallback ?? null,
+    structureHintRegex: storedChatAuto.structureHintRegex || "",
+    promptOverride: storedChatAuto.promptOverride || "",
+  };
+  // Per-chat sentinel `enabled` is a tri-state (null/true/false). The current
+  // template uses a checkbox (boolean), so we render `null` as "use global"
+  // (unchecked) — per the desc string in templates.js.
+  chatAuto.enabledDisplay = chatAuto.enabled === true;
+  // Empty number input rendering — Handlebars treats null as the literal string "null"
+  // unless we explicitly use a display field.
+  chatAuto.watermarkFallbackDisplay = (chatAuto.watermarkFallback == null) ? "" : chatAuto.watermarkFallback;
+
+  return { auto, chatAuto };
+}
+
+async function showAutoModuleSettingsPopup() {
+  try {
+    const templateData = buildAutoModuleTemplateData();
+    const content = DOMPurify.sanitize(autoModuleSettingsTemplate(templateData));
+    const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+      wide: true,
+      large: true,
+      allowVerticalScrolling: true,
+      cancelButton: translate("Close", "STMemoryBooks_Close"),
+      okButton: false,
+      onClose: handleSettingsFormPopupClose,
+    });
+    markStmbPopup(popup);
+    setupAutoModuleEventListeners(popup);
+    await popup.show();
+  } catch (error) {
+    console.error("STMemoryBooks: Error showing auto module settings popup:", error);
+    toastr.error(
+      translate(
+        "Failed to open Auto Module settings",
+        "STMemoryBooks_FailedToOpenAutoModuleSettings",
+      ),
+      "STMemoryBooks",
+    );
+  }
+}
+
+function setupAutoModuleEventListeners(popupInstance) {
+  if (!popupInstance?.dlg) return;
+  const popupElement = popupInstance.dlg;
+
+  // ---------- helpers ----------
+  const persistAutoPatch = (patch) => {
+    const settings = initializeSettings();
+    if (!settings.autoModule || typeof settings.autoModule !== "object") {
+      settings.autoModule = {};
+    }
+    const sanitized = validateAutoPatch(patch);
+    Object.assign(settings.autoModule, sanitized);
+    saveSettingsDebounced();
+    // Re-render the main settings popup (if open) so the warning banner
+    // (P2.4 native auto-summary force-disabled) updates if the sentinel was
+    // just toggled on. refreshPopupContent is defined further down in this file.
+    if (typeof refreshPopupContent === "function" && currentPopupInstance?.dlg?.hasAttribute?.("open")) {
+      try { refreshPopupContent(); } catch (_e) { /* noop */ }
+    }
+  };
+
+  const persistChatAutoPatch = (patch) => {
+    const sanitized = validateChatAutoPatch(patch);
+    if (!chat_metadata || typeof chat_metadata !== "object") {
+      toastr.warning(
+        translate("No chat is open", "STMemoryBooks_NoChatOpen"),
+        "STMemoryBooks",
+      );
+      return false;
+    }
+    if (!chat_metadata.stmbc || typeof chat_metadata.stmbc !== "object") {
+      chat_metadata.stmbc = {};
+    }
+    Object.assign(chat_metadata.stmbc, sanitized);
+    if (typeof saveMetadataDebounced === "function") {
+      saveMetadataDebounced();
+    }
+    return true;
+  };
+
+  // ---------- change handlers ----------
+  popupElement.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    const id = t.id;
+
+    // Sentinel enable (global)
+    if (id === "stmb-auto-sentinel-enabled") {
+      persistAutoPatch({ sentinelEnabled: t.checked });
+      return;
+    }
+
+    // Numeric cadence / window fields
+    const intFields = {
+      "stmb-auto-cadence-messages": "cadenceMessages",
+      "stmb-auto-window-size": "windowSize",
+      "stmb-auto-window-overlap": "windowOverlap",
+      "stmb-auto-truncate-chars": "truncateChars",
+      "stmb-auto-guard-size": "guardSize",
+      "stmb-auto-auditor-every-n-scenes": "auditorEveryNScenes",
+    };
+    if (Object.prototype.hasOwnProperty.call(intFields, id)) {
+      persistAutoPatch({ [intFields[id]]: t.value });
+      return;
+    }
+
+    // Detection profile select (empty value => null = use default)
+    if (id === "stmb-auto-detection-profile") {
+      const v = t.value;
+      persistAutoPatch({ detectionProfileIndex: v === "" ? null : parseInt(v, 10) });
+      return;
+    }
+
+    // Detection prompt override
+    if (id === "stmb-auto-detection-prompt") {
+      persistAutoPatch({ detectionPrompt: t.value });
+      return;
+    }
+
+    // Debug logging
+    if (id === "stmb-auto-debug-logging") {
+      persistAutoPatch({ debugLogging: t.checked });
+      return;
+    }
+
+    // Auditor offer
+    if (id === "stmb-auto-auditor-offer-enabled") {
+      persistAutoPatch({ auditorOfferEnabled: t.checked });
+      return;
+    }
+
+    // Clipper+ section
+    if (id === "stmb-auto-clipper-enabled") {
+      const settings = initializeSettings();
+      if (!settings.autoModule || typeof settings.autoModule !== "object") settings.autoModule = {};
+      if (!settings.autoModule.clipper || typeof settings.autoModule.clipper !== "object") {
+        settings.autoModule.clipper = {};
+      }
+      settings.autoModule.clipper.enabled = t.checked;
+      saveSettingsDebounced();
+      return;
+    }
+    if (id === "stmb-auto-clipper-auto-accept") {
+      const settings = initializeSettings();
+      if (!settings.autoModule) settings.autoModule = {};
+      if (!settings.autoModule.clipper) settings.autoModule.clipper = {};
+      settings.autoModule.clipper.autoAccept = t.checked;
+      saveSettingsDebounced();
+      return;
+    }
+    if (id === "stmb-auto-clipper-surrounding-k") {
+      const settings = initializeSettings();
+      if (!settings.autoModule) settings.autoModule = {};
+      if (!settings.autoModule.clipper) settings.autoModule.clipper = {};
+      settings.autoModule.clipper.surroundingK = parseInt(t.value, 10);
+    if (!Number.isFinite(settings.autoModule.clipper.surroundingK)) {
+      settings.autoModule.clipper.surroundingK = CLIPPER_DEFAULTS.surroundingK;
+    } else if (settings.autoModule.clipper.surroundingK < 2) {
+      settings.autoModule.clipper.surroundingK = 2;
+    } else if (settings.autoModule.clipper.surroundingK > 40) {
+      settings.autoModule.clipper.surroundingK = 40;
+    }
+      saveSettingsDebounced();
+      return;
+    }
+    if (id === "stmb-auto-clipper-profile") {
+      const settings = initializeSettings();
+      if (!settings.autoModule) settings.autoModule = {};
+      if (!settings.autoModule.clipper) settings.autoModule.clipper = {};
+      settings.autoModule.clipper.profile = t.value === "" ? null : parseInt(t.value, 10);
+      saveSettingsDebounced();
+      return;
+    }
+
+    // Per-chat overrides
+    if (id === "stmb-auto-chat-enabled") {
+      // Checked = forced on; unchecked = "use global" (null).
+      persistChatAutoPatch({ enabled: t.checked ? true : null });
+      return;
+    }
+    if (id === "stmb-auto-chat-watermark-fallback") {
+      const v = (t.value === "" || t.value == null) ? null : t.value;
+      persistChatAutoPatch({ watermarkFallback: v });
+      return;
+    }
+    if (id === "stmb-auto-chat-structure-hint") {
+      persistChatAutoPatch({ structureHintRegex: t.value });
+      return;
+    }
+    if (id === "stmb-auto-chat-prompt-override") {
+      persistChatAutoPatch({ promptOverride: t.value });
+      return;
+    }
+  });
+
+  // ---------- input handlers (live persistence for textareas/numbers) ----------
+  popupElement.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    const id = t.id;
+
+    // Use debounced save for textarea fields so editing doesn't thrash
+    if (id === "stmb-auto-detection-prompt") {
+      persistAutoPatch({ detectionPrompt: t.value });
+      return;
+    }
+    if (id === "stmb-auto-chat-prompt-override") {
+      persistChatAutoPatch({ promptOverride: t.value });
+      return;
+    }
+    if (id === "stmb-auto-chat-structure-hint") {
+      persistChatAutoPatch({ structureHintRegex: t.value });
+      return;
+    }
+  });
 }
 
 /**
