@@ -333,6 +333,8 @@ export const localeData_en = {
     'STMemoryBooks_ShowMemoryPreviewsTooltip': 'Shows previews for memories and side prompts returned from the AI.',
     'STMemoryBooks_ShowNotifications': 'Show notifications',
     'STMemoryBooks_ShowFloatingClipButton': 'Show floating Clip button when text is highlighted',
+    'STMemoryBooks_ShowSceneMarkerButtons': 'Show scene marker buttons on each chat message',
+    'STMemoryBooks_ShowSceneMarkerButtonsDesc': 'Adds the caret-right / caret-left icons (Mark Scene Start / Mark Scene End) to every message hover toolbar. Off by default — most users prefer the slash commands or the Auto Module panel for scene marking.',
     'STMemoryBooks_MemoryBoundaryMode': 'Memory boundary indicator',
     'STMemoryBooks_MemoryBoundaryModeDesc': 'Show a chat divider, a jump button, or both at the Memory Books processed boundary.',
     'STMemoryBooks_MemoryBoundaryModeOff': 'Off',

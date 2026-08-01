@@ -16,6 +16,32 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > **v0.0.2** is the second. The section below describes v0.0.1 / v0.1.0-equivalent
 > contents and is preserved for audit purposes.
 
+## v0.0.6 (2026-08-01) — release
+
+Sixth public release. Closes the third half of PHA-1651 follow-up: Brandon opened the freshly-installed v0.0.5 and didn't want the per-message `Mark Scene Start / Mark Scene End` caret icons cluttering every chat message. They've been in the extension since v0.0.1; v0.0.6 flips the default to hidden and gates `createSceneButtons()` on `moduleSettings.showSceneMarkerButtons` (true = show, false = hide). v6 migration backfills the setting on existing installs so the change takes effect immediately on next ST boot.
+
+### What's new
+
+- **`showSceneMarkerButtons` setting (default: `false`).** Adds the opt-in to the General Settings popup (`⚙️ General Settings → Show scene marker buttons on each chat message`). When OFF, the per-message `Mark Scene Start / End` caret icons are not added. When ON, they appear as in v0.0.x.
+- **v6 migration.** Backfills `showSceneMarkerButtons = false` on existing installs whose `moduleSettings` doesn't already pin a value (doesn't overwrite explicit user choices).
+- **`sceneMarkerButtonsOptIn.test.js` (NEW, 10 tests).** Static-source assertions locking the default + the gate + the UI toggle + the i18n keys + the bundle inclusion. Same shape as the other wiring-regression tests.
+
+### How to verify
+
+1. After install, open a chat and hover over any message.
+2. The two STMB caret icons (`►` and `◄`) should NOT be in the hover toolbar.
+3. If you want them back: Memory Books → ⚙️ General Settings → check "Show scene marker buttons on each chat message" → the icons appear immediately on all visible messages.
+
+### Test status
+
+- **921 pass, 0 fail** (894 pre-existing + 11 v0.0.4 wiring + 6 v0.0.5 wiring + 10 v0.0.6 wiring)
+
+### Reference
+
+- Branch: `main` @ the v0.0.6 release commit
+- Closes the third half of [PHA-1651](https://paperclip.phatt.vip/issues/1651) follow-up
+- GitHub Release: see the latest `v0.0.6` Release on the `phattbeats/SillyTavern-MemoryBooks-Auto` repo
+
 ## v0.0.5 (2026-08-01) — release
 
 Fifth public release. Closes the second half of PHA-1651 follow-up: the four Phase-5 audit-job executors (`stmbc-audit-coverage`, `stmbc-audit-regenerate`, `stmbc-audit-technical`, `stmbc-audit-claims`) were defined + tested in `auditorTechnicalPass.js` but never wired into `index.js` init — Brandon's screenshot showed all four audit jobs failing with "No executor registered for stmbc-audit-*". Same architectural pattern as the v0.0.4 bug (code exists, tests pass, wiring missing).

@@ -190,6 +190,11 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
         </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-show-scene-marker-buttons" {{#if showSceneMarkerButtons}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ShowSceneMarkerButtons">Show scene marker buttons on each chat message</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_ShowSceneMarkerButtonsDesc">Adds the caret-right / caret-left icons (Mark Scene Start / Mark Scene End) to every message's hover toolbar. Off by default — most users prefer the slash commands or the Auto Module panel for scene marking.</small>
         <label for="stmb-memory-boundary-mode">
             <span data-i18n="STMemoryBooks_MemoryBoundaryMode">Memory boundary indicator</span>
             <small class="opacity50p" data-i18n="STMemoryBooks_MemoryBoundaryModeDesc">Show a chat divider, a jump button, or both at the Memory Books processed boundary.</small>

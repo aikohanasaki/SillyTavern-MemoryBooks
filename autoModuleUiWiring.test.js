@@ -72,8 +72,8 @@ test('defaultSettings declares autoModule as an empty container (so writes are s
     );
     assert.match(
         src,
-        /const\s+defaultSettings\s*=\s*\{[\s\S]*?autoModule\s*:\s*\{[\s\S]*?migrationVersion\s*:\s*5/,
-        'expected migrationVersion to be 5',
+        /const\s+defaultSettings\s*=\s*\{[\s\S]*?autoModule\s*:\s*\{[\s\S]*?migrationVersion\s*:\s*6/,
+        'expected migrationVersion to be 6 (v6 supersedes v5; v6 adds the showSceneMarkerButtons opt-in)',
     );
 });
 

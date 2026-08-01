@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { chat, chat_metadata } from '../../../../script.js';
-import { saveMetadataDebounced, getContext } from '../../../extensions.js';
+import { saveMetadataDebounced, getContext, extension_settings } from '../../../extensions.js';
 import { createSceneRequest, estimateTokenCount, compileScene } from './chatcompile.js';
 import { SCENE_MANAGEMENT } from './constants.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
@@ -519,6 +519,18 @@ export function handleMessageDeletion(deletedId, settings) {
  * Create message action buttons with consistent styling
  */
 export function createSceneButtons(messageElement) {
+    // PHA-1651 follow-up (v0.0.6): opt-in the per-message Mark Scene Start / End
+    // icons via `moduleSettings.showSceneMarkerButtons`. Default is false (hidden)
+    // so a fresh install doesn't clutter every chat message with caret icons.
+    // Setting lives in extension_settings.STMemoryBooks.moduleSettings and is
+    // backfilled to false on existing installs by the v6 migration in index.js.
+    try {
+        const ms = extension_settings?.STMemoryBooks?.moduleSettings;
+        if (ms && ms.showSceneMarkerButtons === false) {
+            return false;
+        }
+    } catch (_e) { /* fall through and create the buttons */ }
+
     const getCurrentMessageId = () => parseInt(messageElement.getAttribute('mesid'));
     let extraButtonsContainer = messageElement.querySelector('.extraMesButtons');
     let addedButton = false;

@@ -592,6 +592,12 @@ const defaultSettings = {
     showConsolidationPreviews: false,
     showNotifications: true,
     showFloatingClipButton: true,
+    // PHA-1651 follow-up (v0.0.6): hide the per-message Mark Scene Start / End
+    // icons by default. Brandon opened the freshly-installed v0.0.5 and saw
+    // them on every chat message and didn't want them. They were always there
+    // in v0.0.x — they're opt-in now via this setting (true to show them,
+    // false to hide). Setting is checked in sceneManager.js:createSceneButtons.
+    showSceneMarkerButtons: false,
     memoryBoundaryMode: DEFAULT_MEMORY_BOUNDARY_MODE,
     memoryBoundaryButtonPosition: null,
     unhideBeforeMemory: false,
@@ -645,7 +651,7 @@ const defaultSettings = {
   // AUTO_MODULE_DEFAULTS on read so missing fields stay backwards-compatible.
   // Initialize on a fresh install so the UI panel has a place to write to.
   autoModule: {},
-  migrationVersion: 5,
+  migrationVersion: 6,
 };
 
 // Current state variables
@@ -2164,6 +2170,23 @@ function initializeSettings() {
       extension_settings.STMemoryBooks.autoModule = {};
     }
     extension_settings.STMemoryBooks.migrationVersion = 5;
+    saveSettingsDebounced();
+  }
+
+  // Migration to v6 (PHA-1651 follow-up): opt-in the per-message "Mark Scene
+  // Start / End" icons. They were always-on in v0.0.x; Brandon opened the
+  // fresh v0.0.5 install and didn't want them on every chat message. We don't
+  // actively remove them from existing settings objects (truthful: the
+  // default is what the user got) — we just flip the default to false for
+  // everyone whose moduleSettings doesn't already pin a value.
+  if (currentVersion < 6) {
+    if (
+      extension_settings.STMemoryBooks.moduleSettings &&
+      extension_settings.STMemoryBooks.moduleSettings.showSceneMarkerButtons === undefined
+    ) {
+      extension_settings.STMemoryBooks.moduleSettings.showSceneMarkerButtons = false;
+    }
+    extension_settings.STMemoryBooks.migrationVersion = 6;
     saveSettingsDebounced();
   }
 
@@ -8717,6 +8740,9 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
     showFloatingClipButton: settings.moduleSettings.showFloatingClipButton !== false,
+    // PHA-1651 follow-up (v0.0.6): default false (hidden). Brandon didn't want
+    // these icons cluttering every chat message after the fresh v0.0.5 install.
+    showSceneMarkerButtons: settings.moduleSettings.showSceneMarkerButtons === true,
     memoryBoundaryMode: normalizeMemoryBoundaryMode(settings.moduleSettings.memoryBoundaryMode),
     memoryBoundaryModeOptions: getMemoryBoundaryModeOptions(settings.moduleSettings.memoryBoundaryMode),
     unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
@@ -9314,6 +9340,29 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       settings.moduleSettings.showFloatingClipButton = e.target.checked;
       saveSettingsDebounced();
       refreshFloatingClipButtonSetting();
+      return;
+    }
+
+    // PHA-1651 follow-up (v0.0.6): scene-marker icons per message.
+    // When toggled on we re-run createSceneButtons across visible messages so
+    // the icons appear immediately; when toggled off we remove them.
+    if (e.target.matches("#stmb-show-scene-marker-buttons")) {
+      settings.moduleSettings.showSceneMarkerButtons = e.target.checked;
+      saveSettingsDebounced();
+      const nodes = document.querySelectorAll("#chat .mes[mesid]");
+      nodes.forEach((n) => {
+        if (e.target.checked) {
+          // Re-add by removing existing then calling createSceneButtons.
+          n.querySelectorAll(".mes_stmb_start, .mes_stmb_end").forEach((el) => el.remove());
+          // Dynamic import to avoid a cycle (sceneManager doesn't depend on index.js).
+          import("./sceneManager.js").then(({ createSceneButtons }) => {
+            createSceneButtons(n);
+            updateAllButtonStates();
+          }).catch(() => { /* no-op */ });
+        } else {
+          n.querySelectorAll(".mes_stmb_start, .mes_stmb_end").forEach((el) => el.remove());
+        }
+      });
       return;
     }
 
