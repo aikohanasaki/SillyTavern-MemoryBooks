@@ -16,7 +16,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Quick Start](#-quick-start-5-minutes-to-your-first-memory)
 - [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
 - [Choose Your Style](#-choose-your-style)
-- [Group Chats](#-group-chats)
+- [Group Chat Mode](#-group-chat-mode)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
 - [Topical Clip](#-topical-clip)
 - [Clips, Topical Clips, and Side Prompts](#clips-topical-clips-and-side-prompts)
@@ -159,69 +159,241 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 ---
 
-## 👥 Group Chats
+## 👥 Group Chat Mode
 
-Yes, ST Memory Books works with group chats! You can mark scenes, make memories manually, use automatic summaries, and run slash commands just like you would in a one-on-one chat.
+Group Chat support is for **real SillyTavern group chats made from two or more character cards**.
 
-You do **not** need to find a hidden “group mode” switch. Open your group chat and use STMB normally.
+For example, a group containing separate Alice, Bob, and Clara character cards is supported. STMB can identify those cards, see which character produced each message, and connect memories to the appropriate group members.
 
-### What happens to a group memory?
+This is **not Narrator Mode**. A single Narrator character card may write dialogue and actions for several fictional characters, but SillyTavern still sees every message as coming from that one Narrator card. Narrator Mode will provide separate cast and memory handling for that setup, but it is still under development.
 
-STMB pays attention to who spoke during the scene. When it can identify the participants, it adds those characters to the memory's character filter. In plain English: the memory stays connected to the people who were actually there instead of treating the whole group like one giant character.
+You do not need to enable a separate Group Chat switch. Open a SillyTavern group chat and use Memory Books normally.
 
-The summary prompt is also written to keep names and knowledge separate. If Alice made a promise and Bob learned a secret, the memory should say exactly that—not blur everything into “they knew and felt the same things.”
+### What STMB does differently in a group chat
 
-### The easy setup: one Memory Book for the group
+When STMB reads a group scene, it keeps track of which character card spoke each message. The resulting memory should preserve clear attribution:
 
-This is the setup I recommend starting with.
+* who performed an action;
+* who said something;
+* who learned a fact;
+* who made a decision;
+* who felt or believed something.
 
-1. Bind a lorebook to the group chat.
-2. Create memories normally.
-3. That's it! STMB saves the memories to the group Memory Book and adds participant filters when it can identify the speakers.
+STMB also records the characters who participated in the scene. How that participant information is used depends on whether you choose **one group Memory Book** or **multiple Memory Books**.
 
-If **Auto-create lorebook if none exists** is enabled, STMB can make and bind the group Memory Book for you.
+---
 
-This setup is best when everyone shares the same general story history and you do not need to maintain separate versions of each memory.
+## Option 1: One Memory Book for the Entire Group
 
-### The advanced setup: separate character Memory Books
+This is the simplest setup and the best starting point for most group chats.
 
-Want the group to have one shared history while each character also keeps their own relevant memories? You can do that with **Manual Lorebook Mode** and [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering).
+All memories are stored in one lorebook used as the group's Memory Book.
+
+```text
+Group Memory Book
+├── Memory 001: Alice Meets Bob
+├── Memory 002: The Warehouse Fight
+├── Memory 003: Clara Reveals the Truth
+└── Memory 004: The Group Leaves Town
+```
+
+### How to set it up
+
+Use either:
+
+* **Automatic Mode**, with a lorebook bound to the group chat; or
+* **Auto-create lorebook if none exists**, which allows STMB to create and bind one for you.
+
+You can then create memories manually, automatically, or through slash commands exactly as you would in a one-on-one chat.
+
+### What happens when a memory is saved
+
+STMB saves one memory entry in the group Memory Book. When it can identify the speakers, it also adds an inclusive character filter for the participating character cards.
+
+For example, if Alice and Bob spoke during a scene but Clara did not, the memory may be filtered for Alice and Bob.
+
+This helps SillyTavern activate the memory when one of those characters is active. It does **not** create separate Alice and Bob versions of the memory.
+
+### What one group Memory Book is good at
+
+Use one group Memory Book when:
+
+* the characters mostly share the same continuing story;
+* you want the easiest setup;
+* you do not need separate character histories;
+* one group-oriented summary is sufficient;
+* you do not want duplicate memory entries across several lorebooks.
+
+The memory text can still explain that Alice knew something Bob did not. Keeping everything in one lorebook does not require the summary to pretend that every character shared the same knowledge.
+
+However, the participant filter represents **scene relevance**, not a perfect model of individual knowledge. If your story depends heavily on secrets, private experiences, or character-specific emotional continuity, multiple Memory Books may be more appropriate.
+
+### Do I need STLO for one group Memory Book?
+
+No. A single group Memory Book works without STLO.
+
+You may still use [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering) to control the group Memory Book's priority, position, token budget, and other activation settings, but STLO is not required for this layout.
+
+---
+
+## Option 2: One Group Memory Book Plus Character Memory Books
+
+The advanced layout uses:
+
+* one main **group Memory Book**; and
+* a designated **character Memory Book** for each group member.
+
+```text
+Group Memory Book
+├── Canonical Memory 001
+├── Canonical Memory 002
+└── Canonical Memory 003
+
+Alice Memory Book
+├── Alice's copy of Memory 001
+└── Alice's copy of Memory 003
+
+Bob Memory Book
+├── Bob's copy of Memory 001
+└── Bob's copy of Memory 002
+
+Clara Memory Book
+└── Clara's copy of Memory 003
+```
+
+This layout requires:
+
+* **Manual Lorebook Mode**; and
+* **SillyTavern-LorebookOrdering (STLO)** installed and enabled.
+
+### How to set it up
 
 1. Install and enable STLO.
-2. Open the group chat.
-3. Turn on **Manual Lorebook Mode** in Memory Books.
-4. Select the main group Memory Book.
-5. Under **Group Character Lorebooks**, choose a Memory Book for every group member. The main group Memory Book cannot also be selected as a character Memory Book.
-6. Create your memory.
-7. Check the participant list before generation. STMB will preselect the characters it found in the scene.
+2. Open the SillyTavern group chat.
+3. Open Memory Books.
+4. Enable **Manual Lorebook Mode**.
+5. Select the main manual lorebook. This becomes the canonical group Memory Book.
+6. Under **Group Character Lorebooks**, select a Memory Book for each group member.
+7. Create memories normally.
 
-The main version goes into the group Memory Book. Copies go only to the selected participants' assigned Memory Books. If you leave every participant unchecked, STMB treats the memory as applying to the whole group.
+Every group member must have a valid character Memory Book assignment before STMB can save a distributed group memory.
 
-During Summary Consolidation, this advanced setup automatically uses **Group Chat Consolidation Analysis (Automatic)** for the main group Memory Book. That prompt maintains an omniscient group timeline without treating every fact as shared character knowledge. Each character Memory Book still uses the consolidation preset you selected in the consolidation popup. This remains true when several characters share one assigned character Memory Book.
+You may assign the same character Memory Book to more than one group member. For example, Alice and Bob could share one Memory Book. STMB will create one copy in that shared book rather than adding duplicate copies.
 
-When you assign a character Memory Book, STMB also adds that character to the lorebook's STLO `characterOverrides` metadata and enables **Only activate for specific characters**. Existing STLO priority, budget, order, and character settings are preserved. Older assignments are updated automatically when you open Memory Books or create a memory.
+The main group Memory Book cannot also be selected as a character Memory Book.
 
-Clearing or changing the assignment does not remove the old STLO character filter. If that lorebook should no longer activate for the character, open STLO and remove the retained override there.
+### What happens when a memory is created
 
-If you are happy with STMB's participant detection, check **Automatically accept detected participants in future** so you do not have to confirm the list every time.
+STMB first creates the canonical memory in the main group Memory Book.
 
-### Optional: write a shared version and a character-focused version
+Before generation, it shows the detected participants. You can correct the selection if necessary.
 
-Open **Profile Manager**, edit your memory profile, and enable **Use separate group and character prompts in group chats**.
+Copies are then added only to the Memory Books assigned to the confirmed participants.
 
-- **Group Summary Prompt** writes the shared group memory.
-- **Character Summary Prompt** writes a character-focused version for an individually assigned character Memory Book when using the advanced Manual Mode + STLO setup. If several members share one assigned Memory Book, STMB keeps one shared copy there instead.
+For example:
 
-This can be wonderful when characters know different things, care about different parts of the scene, or need their own emotional continuity. It also makes extra AI requests, so I would leave it off unless you actually want those separate versions.
+```text
+Scene participants: Alice and Clara
 
-### A few things to remember
+Group Memory Book:
+✓ Receives the canonical memory
 
-- Group-chat settings and progress belong to the current chat. Switching to another group or chat does not carry the scene markers or processed-message baseline with you.
-- In Manual Mode, every group member needs a valid assigned lorebook before STMB can save the distributed memory.
-- You can assign the same character Memory Book to more than one group member.
-- If speaker names are unusual or duplicated, review the participant list instead of automatically accepting it.
+Alice Memory Book:
+✓ Receives a copy
 
-**My recommendation:** begin with one group Memory Book. Move to separate character Memory Books only when your story genuinely needs private knowledge or individual continuity. Simple is good until it stops being enough.
+Bob Memory Book:
+✗ Receives nothing
+
+Clara Memory Book:
+✓ Receives a copy
+```
+
+If you leave every participant unchecked, STMB treats the memory as applying to every current group member.
+
+If STMB consistently detects participants correctly, you can enable **Automatically accept detected participants in future**.
+
+### Group summaries versus character-focused summaries
+
+By default, STMB generates one group-oriented memory and copies that version into the relevant character Memory Books.
+
+This is efficient and keeps all copies synchronized, but the copied text remains a group summary.
+
+For more individualized memories, open the Profile Manager and enable:
+
+**Use separate group and character prompts in group chats**
+
+With this option enabled:
+
+* the **Group Summary Prompt** creates the canonical group version;
+* the **Character Summary Prompt** creates a character-focused version for an individually assigned character Memory Book.
+
+This can preserve a character's personal knowledge, reactions, priorities, and emotional continuity more precisely.
+
+It also requires additional AI requests. Leave it disabled unless the separate versions provide a real benefit to your story.
+
+---
+
+## What STLO Does
+
+Memory Books creates and stores the memories. STLO controls **when and how the relevant lorebooks are sent to the roleplay model**.
+
+When you assign a character Memory Book, STMB adds that character to the lorebook's STLO character overrides and enables activation only when an assigned character is speaking.
+
+This prevents every character Memory Book from being loaded for every group member.
+
+For example:
+
+```text
+Alice is speaking:
+- Group Memory Book may activate
+- Alice Memory Book may activate
+- Bob Memory Book does not activate
+
+Bob is speaking:
+- Group Memory Book may activate
+- Bob Memory Book may activate
+- Alice Memory Book does not activate
+```
+
+STMB preserves existing STLO settings such as:
+
+* priority;
+* order adjustment;
+* token budget;
+* existing character overrides.
+
+You can use STLO to place character memories at a different priority or prompt position from the main group history.
+
+### Important: clearing an assignment
+
+Clearing or changing a character's Memory Book assignment in STMB does not automatically remove the old character override from STLO.
+
+This is deliberate: STMB does not know whether you still use that lorebook with the character elsewhere.
+
+If the old lorebook should no longer activate for that character, open STLO and remove the retained character override manually.
+
+---
+
+## Which Layout Should I Choose?
+
+### Use one group Memory Book when:
+
+* you are setting up Group Chat support for the first time;
+* the group follows one mostly shared story;
+* separate character continuity is unnecessary;
+* you want fewer entries and less configuration;
+* you want Group Chat memory to work without STLO.
+
+### Use multiple Memory Books when:
+
+* characters frequently have private experiences or secrets;
+* each character needs an independent history;
+* different characters should receive different memory context;
+* you want character-focused summaries;
+* you already use STLO and understand its activation controls.
+
+**Recommended starting point:** use one group Memory Book. Move to separate character Memory Books only when one shared history is no longer precise enough for the story.
+
 
 ---
 
