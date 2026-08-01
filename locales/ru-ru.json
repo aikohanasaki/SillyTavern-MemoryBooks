@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "Выберите персонажа и Книгу памяти.",
   "STMemoryBooks_SelectMemoryBook": "Выбрать Книгу памяти"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup не может обработать старые сообщения рассказчика без метаданных персонажей. Один раз откройте сцену вручную и подтвердите её персонажей."
+  ,"STMemoryBooks_CharacterName": "Имя персонажа"
+  ,"STMemoryBooks_EnterCharacterAndBook": "Введите имя персонажа и выберите Книгу памяти."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "Включите ручной режим Лора перед включением режима рассказчика. Автоматические Лорбуки, привязанные к чату, в режиме рассказчика не поддерживаются."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "Отключите режим рассказчика перед отключением ручного режима Лора."
 }

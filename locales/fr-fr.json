@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "Sélectionnez un personnage et un Livre de mémoire.",
   "STMemoryBooks_SelectMemoryBook": "Sélectionner un Livre de mémoire"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup ne peut pas traiter les anciens messages du Narrateur sans métadonnées de distribution. Ouvrez la scène manuellement une fois pour confirmer sa distribution."
+  ,"STMemoryBooks_CharacterName": "Nom du personnage"
+  ,"STMemoryBooks_EnterCharacterAndBook": "Saisissez un nom de personnage et sélectionnez un Livre de mémoire."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "Activez le mode lorebook manuel avant d’activer le Mode Narrateur. Les lorebooks automatiques liés au chat ne sont pas pris en charge en Mode Narrateur."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "Désactivez le Mode Narrateur avant de désactiver le mode lorebook manuel."
 }

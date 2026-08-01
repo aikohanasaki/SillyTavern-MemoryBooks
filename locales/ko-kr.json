@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "캐릭터와 메모리 북을 선택하세요.",
   "STMemoryBooks_SelectMemoryBook": "메모리 북 선택"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup은 배역 메타데이터가 없는 이전 내레이터 메시지를 처리할 수 없습니다. 장면을 한 번 수동으로 열어 배역을 확인하세요."
+  ,"STMemoryBooks_CharacterName": "캐릭터 이름"
+  ,"STMemoryBooks_EnterCharacterAndBook": "캐릭터 이름을 입력하고 메모리 북을 선택하세요."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "내레이터 모드를 활성화하기 전에 수동 로어북 모드를 활성화하세요. 자동 채팅 연결 로어북은 내레이터 모드에서 지원되지 않습니다."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "수동 로어북 모드를 비활성화하기 전에 내레이터 모드를 비활성화하세요."
 }

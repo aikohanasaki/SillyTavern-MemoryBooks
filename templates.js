@@ -92,8 +92,8 @@ export const settingsTemplate = Handlebars.compile(`
                 <span data-i18n="STMemoryBooks_NarratorMode">Narrator Mode</span>
             </label>
             <small class="opacity50p" data-i18n="STMemoryBooks_NarratorModeDesc">Use one omniscient Memory Book plus separate Memory Books for a manually selected cast.</small>
-            <div class="buttons_block marginTop5">
-                <button type="button" id="stmb-manage-narrator-cast" class="menu_button">
+            <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+                <button type="button" id="stmb-manage-narrator-cast" class="menu_button interactable whitespacenowrap">
                     <i class="fa-solid fa-users"></i>
                     <span data-i18n="STMemoryBooks_ManageNarratorCast">Manage Narrator Cast</span>
                     {{#if narratorMemberCount}} ({{narratorMemberCount}}){{/if}}

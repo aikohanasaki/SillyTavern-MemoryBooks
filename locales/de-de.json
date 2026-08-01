@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "Wähle einen Charakter und ein Memory-Book aus.",
   "STMemoryBooks_SelectMemoryBook": "Memory-Book auswählen"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup kann ältere Erzähler-Nachrichten ohne Besetzungsmetadaten nicht verarbeiten. Öffne die Szene einmal manuell, um ihre Besetzung zu bestätigen."
+  ,"STMemoryBooks_CharacterName": "Charaktername"
+  ,"STMemoryBooks_EnterCharacterAndBook": "Gib einen Charakternamen ein und wähle ein Memory-Book aus."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "Aktiviere den manuellen Lorebook-Modus, bevor du den Erzählermodus aktivierst. Automatische chatgebundene Lorebooks werden im Erzählermodus nicht unterstützt."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "Deaktiviere den Erzählermodus, bevor du den manuellen Lorebook-Modus deaktivierst."
 }

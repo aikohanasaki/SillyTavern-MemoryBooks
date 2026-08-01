@@ -23,6 +23,10 @@ function isObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+export function isNarratorModeActive({ isGroupChat = false, manualModeEnabled = false, enabled = false } = {}) {
+    return !isGroupChat && manualModeEnabled === true && enabled === true;
+}
+
 export function createNarratorMember({ id, avatar, name, lorebookName }, createId = () => crypto.randomUUID()) {
     return {
         id: cleanString(id) || cleanString(createId()),
@@ -35,7 +39,6 @@ export function createNarratorMember({ id, avatar, name, lorebookName }, createI
 
 export function normalizeNarratorConfig(value, options = {}) {
     const source = isObject(value) ? value : {};
-    const knownAvatars = options.knownAvatars instanceof Set ? options.knownAvatars : null;
     const members = [];
     const seenIds = new Set();
     let changed = !isObject(value) || source.version !== NARRATOR_MODE_VERSION;
@@ -52,12 +55,9 @@ export function normalizeNarratorConfig(value, options = {}) {
             lorebookName: cleanString(raw.lorebookName),
             retired: raw.retired === true,
         };
-        if (!member.id || !member.avatar || !member.name || !member.lorebookName || seenIds.has(member.id)) {
+        if (!member.id || !member.name || !member.lorebookName || seenIds.has(member.id)) {
             changed = true;
             continue;
-        }
-        if (knownAvatars && !knownAvatars.has(member.avatar)) {
-            member.missing = true;
         }
         seenIds.add(member.id);
         members.push(member);
@@ -120,7 +120,6 @@ export function validateNarratorBindings(config, canonicalLorebookName, availabl
         } else {
             used.set(book, member);
         }
-        if (member.missing && !member.retired) issues.push({ type: 'missing-character', member });
     }
     return { valid: issues.length === 0, issues };
 }

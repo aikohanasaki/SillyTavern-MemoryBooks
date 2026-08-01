@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "Selecciona un personaje y un Libro de Memoria.",
   "STMemoryBooks_SelectMemoryBook": "Seleccionar Libro de Memoria"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup no puede procesar mensajes antiguos del Narrador sin metadatos del reparto. Abre la escena manualmente una vez para confirmar su reparto."
+  ,"STMemoryBooks_CharacterName": "Nombre del personaje"
+  ,"STMemoryBooks_EnterCharacterAndBook": "Introduce un nombre de personaje y selecciona un Libro de Memoria."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "Activa el Modo de Lorebook Manual antes de activar el Modo Narrador. Los lorebooks automáticos vinculados al chat no son compatibles con el Modo Narrador."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "Desactiva el Modo Narrador antes de desactivar el Modo de Lorebook Manual."
 }
