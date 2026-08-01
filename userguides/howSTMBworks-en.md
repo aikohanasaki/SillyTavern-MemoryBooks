@@ -9,6 +9,182 @@ This is a high-level explanation of how STMB works. It is not meant to explain t
 
 Use this document to help you write or edit prompts for STMB.
 
+## Lorebooks and Memory Books
+
+To understand how STMB works, it helps to first understand the role of lorebooks.
+
+A **lorebook** is a collection of entries that SillyTavern can add to the model’s context during chat generation. Lorebooks are also called **World Info** in parts of SillyTavern.
+
+A lorebook entry normally contains:
+
+* A title or comment used to identify the entry
+* The actual text that may be sent to the model
+* Keywords or other activation rules
+* Settings that control when and how the entry is inserted
+
+Lorebooks are often used for character information, locations, setting details, rules, and other facts that should become available when relevant.
+
+STMB uses the same system to store information derived from the chat.
+
+### What Is a Memory Book?
+
+A **Memory Book** is a SillyTavern lorebook being used by STMB to store memories and related entries.
+
+It is not a separate file format or a different kind of database. It is an ordinary lorebook whose entries are created and managed through STMB workflows.
+
+Depending on the features you use, a Memory Book may contain:
+
+* Scene memories
+* Consolidated Arc, Chapter, or Book summaries
+* Side prompt trackers
+* Clips
+* Topical Clips
+* Other STMB-managed entries
+
+This means STMB does not create a separate hidden memory system outside SillyTavern. It produces lorebook entries that can be inspected, edited, activated, reordered, exported, or deleted through the normal SillyTavern lorebook tools.
+
+### Generation and Retrieval Are Separate Steps
+
+There are two distinct parts to the memory process:
+
+1. **STMB generates and saves an entry.**
+2. **SillyTavern decides whether that entry should be added to a later chat request.**
+
+During memory generation, STMB sends the selected scene and instructions to a model. The model returns a title, memory text, and keywords. STMB then saves that result as a lorebook entry.
+
+Later, when SillyTavern prepares a normal chat-generation request, the lorebook system evaluates the saved entry. If its activation conditions are met, SillyTavern inserts the entry into the model’s context.
+
+Very roughly:
+
+```text
+Chat scene
+    ↓
+STMB memory-generation prompt
+    ↓
+Model returns memory JSON
+    ↓
+STMB saves a lorebook entry
+    ↓
+A later chat mentions a matching subject
+    ↓
+SillyTavern activates the entry
+    ↓
+The saved memory is sent to the chat model
+```
+
+This distinction is important when troubleshooting.
+
+If an entry does not exist in the Memory Book, the problem occurred during generation or saving.
+
+If the entry exists but is not being sent during chat generation, the problem is more likely related to lorebook activation, keywords, entry settings, context budget, recursion, or lorebook assignment.
+
+If the entry is being sent but the model does not use it correctly, the issue is model behavior rather than memory creation or retrieval.
+
+### Memory Entries Are Compressed Context
+
+A Memory Book entry is not the original chat transcript. It is a compressed representation of information from that transcript.
+
+For a scene memory, the model is normally asked to preserve information such as:
+
+* What happened
+* Who was involved
+* What decisions were made
+* What changed
+* What was discovered
+* What consequences followed
+* Which details may matter later
+
+The generated memory allows important information to remain available without requiring the entire original scene to stay inside every future chat request.
+
+STMB can optionally hide chat messages that have already been processed into memories. Hiding does not delete those messages. It prevents them from continuing to consume the active chat-history context while the Memory Book carries forward the information that should remain relevant.
+
+### Keywords Control Retrieval
+
+Scene memories normally include activation keywords.
+
+These keywords help SillyTavern recognize when the memory may be relevant to the current conversation.
+
+Useful keywords are generally concrete and distinctive:
+
+* Character names
+* Location names
+* Organizations
+* Important objects
+* Event names
+* Aliases
+* Specific actions or discoveries
+
+For example, a memory about Alice finding a coded letter in the Silver Rose Hotel might use keywords such as:
+
+```json
+[
+  "Alice",
+  "Silver Rose Hotel",
+  "coded letter",
+  "room 417"
+]
+```
+
+Keywords such as `important event`, `conversation`, or `secret` are usually less useful because they are too broad and may activate in unrelated situations.
+
+The summary text determines what the model learns when the entry activates. The keywords help determine when SillyTavern should retrieve it.
+
+### Different STMB Entries Serve Different Purposes
+
+Not every entry in a Memory Book is a scene memory.
+
+A scene memory records what happened during one selected range of messages.
+
+A Side Prompt usually maintains a changing reference entry, such as a cast list, relationship tracker, inventory, or unresolved plot-thread report.
+
+A Consolidation entry combines several lower-level memories into a larger chronological summary.
+
+A Clip preserves a specific fact or selected piece of chat information.
+
+A Topical Clip gathers information about one subject from existing memories.
+
+All of these features ultimately produce lorebook entries, but they differ in:
+
+* What source material they process
+* What instructions are sent to the model
+* What response format STMB expects
+* Whether the entry is created once or repeatedly updated
+* How the resulting entry is expected to activate
+
+### The Important Mental Model
+
+Do not think of STMB as giving the model a permanent internal memory.
+
+Think of it as maintaining an external reference system:
+
+```text
+Chat history
+    ↓
+STMB extracts and organizes important information
+    ↓
+The information is stored in lorebook entries
+    ↓
+SillyTavern retrieves relevant entries
+    ↓
+The model receives those entries as context
+```
+
+The model does not remember the information between requests on its own. It knows the information again when SillyTavern includes the appropriate Memory Book entries in the current request.
+
+The quality of the final result therefore depends on three separate things:
+
+1. **Generation quality**
+   Did the STMB prompt produce an accurate and useful entry?
+
+2. **Storage and configuration**
+   Was the entry saved in the correct Memory Book with appropriate settings?
+
+3. **Retrieval and model use**
+   Did SillyTavern activate the entry, and did the chat model use the supplied information correctly?
+
+The prompt flows described below mainly concern the first step: what STMB sends to the model when creating or updating those lorebook entries.
+
+
 ## The 3 Main STMB Prompt Flows
 
 STMB has three main workflows:
