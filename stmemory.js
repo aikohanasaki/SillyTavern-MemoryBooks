@@ -1262,6 +1262,10 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 characterFilterNames: Array.isArray(compiledScene.metadata.characterFilterNames)
                     ? [...compiledScene.metadata.characterFilterNames]
                     : undefined,
+                narratorParticipantIds: Array.isArray(compiledScene.metadata.narratorParticipantIds)
+                    ? [...compiledScene.metadata.narratorParticipantIds]
+                    : undefined,
+                narratorHasUntaggedMessages: compiledScene.metadata.narratorHasUntaggedMessages === true,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',

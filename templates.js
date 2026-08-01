@@ -85,6 +85,23 @@ export const settingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_ManualModeDesc">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
         </div>
 
+        {{#unless isGroupChat}}
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-narrator-mode-enabled" {{#if narratorModeEnabled}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_NarratorMode">Narrator Mode</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_NarratorModeDesc">Use one omniscient Memory Book plus separate Memory Books for a manually selected cast.</small>
+            <div class="buttons_block marginTop5">
+                <button type="button" id="stmb-manage-narrator-cast" class="menu_button">
+                    <i class="fa-solid fa-users"></i>
+                    <span data-i18n="STMemoryBooks_ManageNarratorCast">Manage Narrator Cast</span>
+                    {{#if narratorMemberCount}} ({{narratorMemberCount}}){{/if}}
+                </button>
+            </div>
+        </div>
+        {{/unless}}
+
         <div class="world_entry_form_control">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-auto-create-lorebook" {{#if autoCreateLorebook}}checked{{/if}} {{#if manualModeEnabled}}disabled{{/if}}>

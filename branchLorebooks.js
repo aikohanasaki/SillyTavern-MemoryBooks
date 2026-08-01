@@ -74,6 +74,31 @@ export function shouldCopyForChatChange(previous, current) {
 
 export function resolveActiveLorebookBindings(snapshot, resolvedPrimary = undefined) {
     if (!snapshot) return null;
+    if (snapshot.isNarratorMode) {
+        const primaryValue = resolvedPrimary === undefined
+            ? (snapshot.manualModeEnabled ? snapshot.manualLorebook : snapshot.chatBoundLorebook)
+            : resolvedPrimary;
+        const primary = String(primaryValue || '').trim();
+        if (!primary) return null;
+        const characterBindings = snapshot.narratorCharacterLorebooks
+            && typeof snapshot.narratorCharacterLorebooks === 'object'
+            && !Array.isArray(snapshot.narratorCharacterLorebooks)
+            ? cloneValue(snapshot.narratorCharacterLorebooks)
+            : {};
+        const sourceNames = [primary];
+        for (const value of Object.values(characterBindings)) {
+            const name = String(value || '').trim();
+            if (name && !sourceNames.includes(name)) sourceNames.push(name);
+        }
+        return {
+            mode: 'narrator',
+            primaryMode: snapshot.manualModeEnabled ? 'manual' : 'chat-bound',
+            primary,
+            characterBindings,
+            preservedCharacterBindings: {},
+            sourceNames,
+        };
+    }
     if (!snapshot.manualModeEnabled) {
         const primaryValue = resolvedPrimary === undefined ? snapshot.chatBoundLorebook : resolvedPrimary;
         const primary = String(primaryValue || '').trim();
@@ -179,6 +204,21 @@ export function applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySo
     }
 
     const stmbData = getStmbMetadata(chatMetadata, { create: true });
+    if (bindings.mode === 'narrator') {
+        if (bindings.primaryMode === 'chat-bound') {
+            chatMetadata.world_info = copyNameBySource.get(bindings.primary);
+        } else {
+            stmbData.manualLorebook = copyNameBySource.get(bindings.primary);
+        }
+        const mapped = new Map(Object.entries(bindings.characterBindings || {}).map(([id, sourceName]) => [
+            id,
+            copyNameBySource.get(String(sourceName || '').trim()) || sourceName,
+        ]));
+        for (const member of stmbData.narratorMode?.members || []) {
+            if (mapped.has(member.id)) member.lorebookName = mapped.get(member.id);
+        }
+        return;
+    }
     stmbData.manualLorebook = copyNameBySource.get(bindings.primary);
     const copiedCharacterBindings = Object.keys(bindings.characterBindings || {}).length > 0
         ? Object.fromEntries(
@@ -207,6 +247,12 @@ export function clearActiveBranchLorebookBindings(chatMetadata, bindings) {
     }
 
     const stmbData = getStmbMetadata(chatMetadata, { create: true });
+    if (bindings.mode === 'narrator') {
+        if (bindings.primaryMode === 'chat-bound') delete chatMetadata.world_info;
+        else delete stmbData.manualLorebook;
+        if (stmbData.narratorMode) stmbData.narratorMode.enabled = false;
+        return;
+    }
     delete stmbData.manualLorebook;
     if (
         Object.keys(bindings.characterBindings || {}).length > 0 ||
@@ -265,6 +311,7 @@ export function createBranchLorebookController(dependencies) {
             copyEnabled: moduleSettings.copyMemoryBooksOnBranch !== false,
             manualModeEnabled: !!moduleSettings.manualModeEnabled,
             isGroupChat: !!deps.isGroupChat?.(),
+            isNarratorMode: !!deps.isNarratorMode?.(),
             chatBoundLorebook: String(chatMetadata.world_info || '').trim(),
             manualLorebook: String(stmbData.manualLorebook || '').trim(),
             lockedLorebookName: String(deps.getLockedLorebookName?.() || '').trim(),
@@ -272,6 +319,7 @@ export function createBranchLorebookController(dependencies) {
                 deps.getLockedCharacterBindingKeys?.() || [],
             ),
             manualCharacterLorebooks: cloneValue(stmbData.manualCharacterLorebooks || {}),
+            narratorCharacterLorebooks: cloneValue(deps.getNarratorCharacterLorebooks?.() || {}),
             branchMarker: cloneValue(stmbData[BRANCH_LOREBOOK_METADATA_KEY] || null),
         };
     }

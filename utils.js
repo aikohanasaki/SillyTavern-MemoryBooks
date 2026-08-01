@@ -215,6 +215,7 @@ export function getCurrentMemoryBooksContext() {
 
         // Check if we're in a group chat (following group-chats.js pattern)
         const isGroupChat = !!selected_group;
+        const isNarratorMode = !isGroupChat && chat_metadata?.STMemoryBooks?.narratorMode?.enabled === true;
         const groupId = selected_group || null;
         let groupName = null;
 
@@ -312,6 +313,10 @@ export function getCurrentMemoryBooksContext() {
             chatName,
             groupId,
             isGroupChat,
+            isNarratorMode,
+            isMultiCharacter: isGroupChat || isNarratorMode,
+            chatMode: isGroupChat ? 'group' : isNarratorMode ? 'narrator' : 'solo',
+            supportsNativeCharacterFilters: isGroupChat,
             lorebookName,
             modelSettings
         };
@@ -330,7 +335,11 @@ export function getCurrentMemoryBooksContext() {
             chatName: null,
             groupId: null,
             groupName: null,
-            isGroupChat: false
+            isGroupChat: false,
+            isNarratorMode: false,
+            isMultiCharacter: false,
+            chatMode: 'solo',
+            supportsNativeCharacterFilters: false,
         };
     }
 }
