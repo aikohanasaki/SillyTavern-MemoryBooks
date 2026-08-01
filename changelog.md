@@ -7,11 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 **← [Back to README](readme.md)**
 
-## v8.4.0 (July 31, 2026)
-* **Branching:** Optionally copy and bind independent Memory Books when creating a chat branch. Locked character Memory Books remain shared.
-* **Side Prompt Regeneration:** Side Prompt entries can now be regenerated from the lorebook editor using their saved run information.
-* **Character Memory Book Locks:** Lock a character to one Memory Book across compatible Manual Mode chats.
+## v8.5.0 (August 1, 2026)
+- New Feature: Narrator Mode Group Chat feature now added.
 
+## v8.4.0 (July 31, 2026)
+- **Branching:** Optionally copy and bind independent Memory Books when creating a chat branch. Locked character Memory Books remain shared.
+- **Side Prompt Regeneration:** Side Prompt entries can now be regenerated from the lorebook editor using their saved run information.
+- **Character Memory Book Locks:** Lock a character to one Memory Book across compatible Manual Mode chats.
 
 ## v8.3.3 (July 29, 2026)
 - Enhancement: Added job-queue retry controls. Non-memory jobs can be retried directly; memory jobs provide **Retry All** and **Retry Memory** so canceled after-memory Side Prompt work can be included or skipped deliberately.
