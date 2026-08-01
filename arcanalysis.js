@@ -53,8 +53,14 @@ function normalizeText(s) {
   return String(s || "")
     .replace(/\r\n/g, "\n")
     .replace(/^\uFEFF/, "")
-    .replace(/[\u200B-\u200D\u2060]/g, "");
-}
+    .replace(/[\u200B-\u200D\u2060]/g, "")
+   // Strip stray C0 control characters (e.g. SOH, STX) that some models
+   // occasionally emit as decoding artifacts. These are invalid unescaped
+   // inside JSON strings and currently cause JSON.parse to fail with no
+   // indication of the actual cause. Matches the stripping already done
+   // in stmemory.js's normalizeText for consistency between pipelines.
+    .replace(/[\u0000-\u001F\u200B-\u200D\u2060]/g, "");
+  }
 
 function extractFencedBlocks(s) {
   const re = /```([\w+-]*)\s*([\s\S]*?)```/g;
