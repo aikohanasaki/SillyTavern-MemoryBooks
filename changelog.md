@@ -8,8 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 **← [Back to README](readme.md)**
 
 ## v8.4.0 (July 31, 2026)
-- Enhancement: When branching, STMB now copies and binds fresh copies of the active chat-bound or manual Memory Books. Manual group chats copy all unique bound books. This can be disabled in general settings. 
-- Enhancement: One previous version of sideprompts is saved in metadata. Sideprompts can now be regenerated. 
+Various enhancements: 
+- When branching, STMB now copies and binds fresh copies of the active chat-bound or manual Memory Books. Manual group chats copy all unique bound books. This can be disabled in general settings. 
+- One previous version of sideprompts is saved in metadata. Sideprompts can now be regenerated. 
+- Characters now have per-character memory book locks so that no matter what the chat, memories always go to that specific bound lorebook. Memory book locks are saved in settings.json.
 
 ## v8.3.3 (July 29, 2026)
 - Enhancement: Added "retry run" to job queue.
