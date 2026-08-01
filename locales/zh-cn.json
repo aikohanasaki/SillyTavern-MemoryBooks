@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "请选择角色和记忆书。",
   "STMemoryBooks_SelectMemoryBook": "选择记忆书"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup 无法处理没有角色元数据的旧旁白消息。请手动打开一次该场景并确认出场角色。"
+  ,"STMemoryBooks_CharacterName": "角色名称"
+  ,"STMemoryBooks_EnterCharacterAndBook": "请输入角色名称并选择一本记忆书。"
+  ,"STMemoryBooks_NarratorRequiresManualMode": "请先启用手动故事书模式，再启用旁白模式。旁白模式不支持自动绑定到聊天的故事书。"
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "请先禁用旁白模式，再禁用手动故事书模式。"
 }

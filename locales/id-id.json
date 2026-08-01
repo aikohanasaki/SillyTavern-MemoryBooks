@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "Pilih karakter dan Buku Memori.",
   "STMemoryBooks_SelectMemoryBook": "Pilih Buku Memori"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup tidak dapat memproses pesan Narator lama tanpa metadata pemeran. Buka adegan secara manual sekali untuk mengonfirmasi pemerannya."
+  ,"STMemoryBooks_CharacterName": "Nama karakter"
+  ,"STMemoryBooks_EnterCharacterAndBook": "Masukkan nama karakter dan pilih Buku Memori."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "Aktifkan Mode Buku Latar Manual sebelum mengaktifkan Mode Narator. Buku Latar otomatis yang terikat ke obrolan tidak didukung dalam Mode Narator."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "Nonaktifkan Mode Narator sebelum menonaktifkan Mode Buku Latar Manual."
 }

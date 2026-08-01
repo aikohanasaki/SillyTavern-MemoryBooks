@@ -755,8 +755,7 @@ function saveMemoryBoundaryButtonPosition(position) {
 
 function getCurrentNarratorConfig() {
   const stmbData = getSceneMarkers() || {};
-  const knownAvatars = new Set((characters || []).map(character => String(character?.avatar || "").trim()).filter(Boolean));
-  const { config, changed } = ensureNarratorConfig(stmbData, { knownAvatars });
+  const { config, changed } = ensureNarratorConfig(stmbData);
   if (changed) saveMetadataForCurrentContext();
   return config;
 }
@@ -853,7 +852,7 @@ function refreshNarratorCastDrawer() {
   narratorCastDrawer.classList.toggle("collapsed", collapsed);
   narratorCastDrawer.innerHTML = collapsed
     ? `<button type="button" class="stmb-narrator-cast-expand interactable" title="${escapeHtml(translate("Active Cast", "STMemoryBooks_ActiveCast"))}"><i class="fa-solid fa-users"></i><span>${active.size}</span></button>`
-    : `<header class="stmb-narrator-cast-header"><strong>${escapeHtml(translate("Active Cast", "STMemoryBooks_ActiveCast"))} (${active.size})</strong><button type="button" class="menu_button stmb-narrator-cast-collapse" title="${escapeHtml(translate("Collapse", "STMemoryBooks_Collapse"))}"><i class="fa-solid fa-chevron-down"></i></button></header><div class="stmb-narrator-cast-list">${members.length ? members.map(member => `<label class="checkbox_label"><input type="checkbox" data-narrator-member-id="${escapeHtml(member.id)}"${active.has(member.id) ? " checked" : ""}${member.missing ? " disabled" : ""}><span>${escapeHtml(member.name)}</span></label>`).join("") : `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div><button type="button" class="menu_button stmb-narrator-manage"><i class="fa-solid fa-gear"></i> ${escapeHtml(translate("Manage Cast", "STMemoryBooks_ManageCast"))}</button>`;
+    : `<header class="stmb-narrator-cast-header"><strong>${escapeHtml(translate("Active Cast", "STMemoryBooks_ActiveCast"))} (${active.size})</strong><button type="button" class="menu_button stmb-narrator-cast-collapse" title="${escapeHtml(translate("Collapse", "STMemoryBooks_Collapse"))}"><i class="fa-solid fa-chevron-down"></i></button></header><div class="stmb-narrator-cast-list">${members.length ? members.map(member => `<label class="checkbox_label"><input type="checkbox" data-narrator-member-id="${escapeHtml(member.id)}"${active.has(member.id) ? " checked" : ""}><span>${escapeHtml(member.name)}</span></label>`).join("") : `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div><button type="button" class="menu_button stmb-narrator-manage"><i class="fa-solid fa-gear"></i> ${escapeHtml(translate("Manage Cast", "STMemoryBooks_ManageCast"))}</button>`;
   narratorCastDrawer.querySelector(".stmb-narrator-cast-expand, .stmb-narrator-cast-collapse")?.addEventListener("click", event => {
     event.stopPropagation();
     if (narratorCastDrawer.dataset.dragged === "true") {
@@ -898,37 +897,18 @@ function formatNarratorBindingIssue(issue) {
   if (!issue) return translate("Invalid Narrator cast configuration.", "STMemoryBooks_NarratorInvalidConfig");
   if (issue.type === "canonical") return translate("A cast member cannot use the omniscient Memory Book.", "STMemoryBooks_NarratorCanonicalConflict");
   if (issue.type === "duplicate") return translate("Every cast member must use a different Memory Book.", "STMemoryBooks_NarratorDuplicateBook");
-  if (issue.type === "missing-character") return translate("A declared cast character card is missing.", "STMemoryBooks_NarratorMissingCharacter");
   return translate("A declared cast Memory Book is missing.", "STMemoryBooks_NarratorMissingBook");
 }
 
 async function showNarratorCastManager() {
   const config = getCurrentNarratorConfig();
-  const narratorAvatar = String(characters?.[this_chid]?.avatar || "");
   const canonical = getCurrentCanonicalLorebookName();
-  const characterOptions = (characters || []).filter(character => character?.avatar && character.avatar !== narratorAvatar).map(character => `<option value="${escapeHtml(character.avatar)}">${escapeHtml(character.name || character.avatar)}</option>`).join("");
   const bookOptions = (world_names || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
-  const rows = config.members.map(member => `<div class="stmb-narrator-manager-row"><span>${escapeHtml(member.name)}${member.missing ? ` <small>(${escapeHtml(translate("missing card", "STMemoryBooks_NarratorMissingCardLabel"))})</small>` : ""}</span><span>${escapeHtml(member.lorebookName)}</span>${member.missing ? `<button type="button" class="menu_button" data-repair-narrator-member="${escapeHtml(member.id)}">${escapeHtml(translate("Repair", "STMemoryBooks_Repair"))}</button>` : ""}<button type="button" class="menu_button" data-retire-narrator-member="${escapeHtml(member.id)}">${escapeHtml(translate(member.retired ? "Restore" : "Remove", member.retired ? "STMemoryBooks_Restore" : "STMemoryBooks_Remove"))}</button></div>`).join("");
-  const content = DOMPurify.sanitize(`<h3>${escapeHtml(translate("Narrator Cast", "STMemoryBooks_NarratorCast"))}</h3><p class="opacity50p">${escapeHtml(translate("Each declared character must use a unique Memory Book separate from the omniscient book.", "STMemoryBooks_NarratorCastDesc"))}</p><div class="stmb-narrator-manager-add"><select id="stmb-narrator-character" class="text_pole"><option value="">${escapeHtml(translate("Select character", "STMemoryBooks_SelectCharacter"))}</option>${characterOptions}</select><select id="stmb-narrator-book" class="text_pole"><option value="">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</option>${bookOptions}</select><button type="button" id="stmb-narrator-add" class="menu_button">${escapeHtml(translate("Add", "STMemoryBooks_Add"))}</button></div><div class="stmb-narrator-manager-list">${rows || `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div>`);
+  const rows = config.members.map(member => `<div class="stmb-narrator-manager-row"><span>${escapeHtml(member.name)}</span><span>${escapeHtml(member.lorebookName)}</span><button type="button" class="menu_button" data-retire-narrator-member="${escapeHtml(member.id)}">${escapeHtml(translate(member.retired ? "Restore" : "Remove", member.retired ? "STMemoryBooks_Restore" : "STMemoryBooks_Remove"))}</button></div>`).join("");
+  const content = DOMPurify.sanitize(`<h3>${escapeHtml(translate("Narrator Cast", "STMemoryBooks_NarratorCast"))}</h3><p class="opacity50p">${escapeHtml(translate("Each declared character must use a unique Memory Book separate from the omniscient book.", "STMemoryBooks_NarratorCastDesc"))}</p><div class="stmb-narrator-manager-add"><input id="stmb-narrator-character-name" class="text_pole" type="text" placeholder="${escapeHtml(translate("Character name", "STMemoryBooks_CharacterName"))}"><select id="stmb-narrator-book" class="text_pole"><option value="">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</option>${bookOptions}</select><button type="button" id="stmb-narrator-add" class="menu_button">${escapeHtml(translate("Add", "STMemoryBooks_Add"))}</button></div><div class="stmb-narrator-manager-list">${rows || `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div>`);
   const popup = new Popup(content, POPUP_TYPE.TEXT, "", { wide: true, cancelButton: translate("Close", "STMemoryBooks_Close"), okButton: false });
   markStmbPopup(popup);
   popup.dlg.addEventListener("click", async event => {
-    const repairButton = event.target.closest("[data-repair-narrator-member]");
-    if (repairButton) {
-      const avatar = String(popup.dlg.querySelector("#stmb-narrator-character")?.value || "").trim();
-      const character = characters?.find(item => item?.avatar === avatar);
-      const member = config.members.find(item => item.id === repairButton.dataset.repairNarratorMember);
-      if (!member || !character) return toastr.error(translate("Select the replacement character card first.", "STMemoryBooks_NarratorSelectRepairCard"), "STMemoryBooks");
-      if (config.members.some(item => item.id !== member.id && !item.retired && item.avatar === avatar)) return toastr.error(translate("That character is already declared.", "STMemoryBooks_NarratorCharacterExists"), "STMemoryBooks");
-      member.avatar = avatar;
-      member.name = character.name || member.name;
-      delete member.missing;
-      saveMetadataForCurrentContext();
-      await popup.complete(POPUP_RESULT.CANCELLED);
-      await showNarratorCastManager();
-      refreshNarratorCastDrawer();
-      return;
-    }
     const retireButton = event.target.closest("[data-retire-narrator-member]");
     if (retireButton) {
       const member = config.members.find(item => item.id === retireButton.dataset.retireNarratorMember);
@@ -943,12 +923,11 @@ async function showNarratorCastManager() {
       return;
     }
     if (!event.target.closest("#stmb-narrator-add")) return;
-    const avatar = String(popup.dlg.querySelector("#stmb-narrator-character")?.value || "").trim();
+    const name = String(popup.dlg.querySelector("#stmb-narrator-character-name")?.value || "").trim();
     const lorebookName = String(popup.dlg.querySelector("#stmb-narrator-book")?.value || "").trim();
-    const character = characters?.find(item => item?.avatar === avatar);
-    if (!character || !lorebookName) return toastr.error(translate("Select both a character and a Memory Book.", "STMemoryBooks_SelectCharacterAndBook"), "STMemoryBooks");
-    if (config.members.some(member => member.avatar === avatar)) return toastr.error(translate("That character is already declared.", "STMemoryBooks_NarratorCharacterExists"), "STMemoryBooks");
-    const candidate = createNarratorMember({ avatar, name: character.name, lorebookName });
+    if (!name || !lorebookName) return toastr.error(translate("Enter a character name and select a Memory Book.", "STMemoryBooks_EnterCharacterAndBook"), "STMemoryBooks");
+    if (config.members.some(member => member.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) return toastr.error(translate("That character is already declared.", "STMemoryBooks_NarratorCharacterExists"), "STMemoryBooks");
+    const candidate = createNarratorMember({ name, lorebookName });
     const validation = validateNarratorBindings({ ...config, members: [...config.members, candidate] }, canonical, world_names);
     if (!validation.valid) return toastr.error(formatNarratorBindingIssue(validation.issues[0]), "STMemoryBooks");
     config.members.push(candidate);
@@ -9978,6 +9957,10 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
   }).lorebookName;
   const memoryBooksContext = getCurrentMemoryBooksContext();
   const narratorConfig = !memoryBooksContext.isGroupChat ? getCurrentNarratorConfig() : null;
+  if (!isManualMode && narratorConfig?.enabled) {
+    narratorConfig.enabled = false;
+    saveMetadataForCurrentContext();
+  }
   const autoConsolidationTargetTiers = normalizeAutoConsolidationTargetTiers(
     settings.moduleSettings.autoConsolidationTargetTiers ??
       settings.moduleSettings.autoConsolidationTargetTier,
@@ -10037,7 +10020,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
     manualModeEnabled: settings.moduleSettings.manualModeEnabled,
     isGroupChat: memoryBooksContext.isGroupChat,
-    narratorModeEnabled: narratorConfig?.enabled === true,
+    narratorModeEnabled: isManualMode && narratorConfig?.enabled === true,
     narratorMemberCount: narratorConfig?.members?.filter(member => !member.retired).length || 0,
     maxTokens:
       settings.moduleSettings.maxTokens ?? DEFAULT_MAX_TOKENS,
@@ -10342,6 +10325,17 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
         e.target.checked = false;
         return;
       }
+      if (e.target.checked && !settings.moduleSettings.manualModeEnabled) {
+        e.target.checked = false;
+        toastr.error(
+          translate(
+            "Enable Manual Lorebook Mode before enabling Narrator Mode. Automatic chat-bound lorebooks are not supported in Narrator Mode.",
+            "STMemoryBooks_NarratorRequiresManualMode",
+          ),
+          "STMemoryBooks",
+        );
+        return;
+      }
       if (e.target.checked && !getCurrentCanonicalLorebookName()) {
         e.target.checked = false;
         toastr.error(translate("Select an omniscient Memory Book before enabling Narrator Mode.", "STMemoryBooks_NarratorNeedsCanonical"), "STMemoryBooks");
@@ -10497,6 +10491,22 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
 
     if (e.target.matches("#stmb-manual-mode-enabled")) {
       const isEnabling = e.target.checked;
+
+      if (
+        !isEnabling &&
+        !getCurrentMemoryBooksContext().isGroupChat &&
+        getCurrentNarratorConfig().enabled
+      ) {
+        e.target.checked = true;
+        toastr.error(
+          translate(
+            "Disable Narrator Mode before disabling Manual Lorebook Mode.",
+            "STMemoryBooks_DisableNarratorBeforeManualMode",
+          ),
+          "STMemoryBooks",
+        );
+        return;
+      }
 
       // Mutual exclusion: If enabling manual mode, disable auto-create
       if (isEnabling) {
@@ -10712,6 +10722,18 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
 
     if (e.target.matches("#stmb-auto-create-lorebook")) {
       const isEnabling = e.target.checked;
+
+      if (isEnabling && getCurrentNarratorConfig().enabled) {
+        e.target.checked = false;
+        toastr.error(
+          translate(
+            "Disable Narrator Mode before disabling Manual Lorebook Mode.",
+            "STMemoryBooks_DisableNarratorBeforeManualMode",
+          ),
+          "STMemoryBooks",
+        );
+        return;
+      }
 
       // Mutual exclusion: If enabling auto-create, disable manual mode
       if (isEnabling) {
@@ -11552,14 +11574,6 @@ function setupEventListeners() {
       saveSettingsDebounced();
       populateInlineButtons();
     }
-    const narratorConfig = getCurrentMemoryBooksContext().isNarratorMode ? getCurrentNarratorConfig() : null;
-    const narratorMember = narratorConfig?.members.find(member => member.avatar === oldAvatar);
-    if (narratorMember) {
-      narratorMember.avatar = newAvatar;
-      narratorMember.name = renamedCharacter?.name || narratorMember.name;
-      saveMetadataForCurrentContext();
-      refreshNarratorCastDrawer();
-    }
   });
   eventSource.on(event_types.CHARACTER_EDITED, (payload) => {
     const character = payload?.detail?.character || payload?.character;
@@ -11572,13 +11586,6 @@ function setupEventListeners() {
     )) {
       saveSettingsDebounced();
       populateInlineButtons();
-    }
-    const narratorConfig = getCurrentMemoryBooksContext().isNarratorMode ? getCurrentNarratorConfig() : null;
-    const narratorMember = narratorConfig?.members.find(member => member.avatar === character.avatar);
-    if (narratorMember && character.name && narratorMember.name !== character.name) {
-      narratorMember.name = character.name;
-      saveMetadataForCurrentContext();
-      refreshNarratorCastDrawer();
     }
   });
   eventSource.on(event_types.CHARACTER_DELETED, (payload) => {

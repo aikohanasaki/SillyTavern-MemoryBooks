@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "キャラクターとメモリーブックを選択してください。",
   "STMemoryBooks_SelectMemoryBook": "メモリーブックを選択"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup はキャストメタデータのない旧形式のナレーターメッセージを処理できません。シーンを一度手動で開き、キャストを確認してください。"
+  ,"STMemoryBooks_CharacterName": "キャラクター名"
+  ,"STMemoryBooks_EnterCharacterAndBook": "キャラクター名を入力し、メモリーブックを選択してください。"
+  ,"STMemoryBooks_NarratorRequiresManualMode": "ナレーターモードを有効にする前に手動ロアブックモードを有効にしてください。自動のチャット連携ロアブックはナレーターモードでは使用できません。"
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "手動ロアブックモードを無効にする前にナレーターモードを無効にしてください。"
 }

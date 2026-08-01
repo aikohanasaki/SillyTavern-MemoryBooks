@@ -1341,4 +1341,8 @@
   "STMemoryBooks_SelectCharacterAndBook": "Pilih watak dan Buku Memori.",
   "STMemoryBooks_SelectMemoryBook": "Pilih Buku Memori"
   ,"STMemoryBooks_NarratorCatchupUntagged": "/stmb-catchup tidak dapat memproses mesej Pencerita lama tanpa metadata watak. Buka adegan secara manual sekali untuk mengesahkan wataknya."
+  ,"STMemoryBooks_CharacterName": "Nama watak"
+  ,"STMemoryBooks_EnterCharacterAndBook": "Masukkan nama watak dan pilih Buku Memori."
+  ,"STMemoryBooks_NarratorRequiresManualMode": "Dayakan Mod Buku Legenda Manual sebelum mendayakan Mod Pencerita. Buku Legenda automatik yang terikat pada sembang tidak disokong dalam Mod Pencerita."
+  ,"STMemoryBooks_DisableNarratorBeforeManualMode": "Nyahdayakan Mod Pencerita sebelum menyahdayakan Mod Buku Legenda Manual."
 }

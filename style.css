@@ -243,7 +243,7 @@
 .stmb-narrator-manager-add,
 .stmb-narrator-manager-row {
     display: grid;
-    grid-template-columns: minmax(120px, 1fr) minmax(160px, 1fr) auto auto;
+    grid-template-columns: minmax(120px, 1fr) minmax(160px, 1fr) auto;
     align-items: center;
     gap: 8px;
 }

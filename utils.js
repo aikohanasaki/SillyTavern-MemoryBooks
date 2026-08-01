@@ -12,6 +12,7 @@ import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS, MEMORY_TIER_CACHE_REFRES
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
 import { tr } from './i18nHelpers.js';
+import { isNarratorModeActive } from './narratorMode.js';
 import {
     getCharacterMemoryBookLock,
     resolveManualLorebookForCharacter,
@@ -215,7 +216,12 @@ export function getCurrentMemoryBooksContext() {
 
         // Check if we're in a group chat (following group-chats.js pattern)
         const isGroupChat = !!selected_group;
-        const isNarratorMode = !isGroupChat && chat_metadata?.STMemoryBooks?.narratorMode?.enabled === true;
+        const isManualMode = extension_settings?.STMemoryBooks?.moduleSettings?.manualModeEnabled === true;
+        const isNarratorMode = isNarratorModeActive({
+            isGroupChat,
+            manualModeEnabled: isManualMode,
+            enabled: chat_metadata?.STMemoryBooks?.narratorMode?.enabled === true,
+        });
         const groupId = selected_group || null;
         let groupName = null;
 

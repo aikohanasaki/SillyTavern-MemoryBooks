@@ -8,6 +8,7 @@ import {
     createNarratorMember,
     getNarratorCastFromMessage,
     getNarratorSceneParticipants,
+    isNarratorModeActive,
     mergeNarratorLorebookEntries,
     normalizeNarratorConfig,
     setNarratorActiveCast,
@@ -26,6 +27,12 @@ test('normalizes active cast and preserves stable member ids', () => {
     assert.equal(changed, true);
     assert.deepEqual(config.activeCastIds, ['alice-id']);
     assert.equal(config.members[0].id, 'alice-id');
+});
+
+test('requires manual mode before narrator mode becomes active', () => {
+    assert.equal(isNarratorModeActive({ enabled: true, manualModeEnabled: false }), false);
+    assert.equal(isNarratorModeActive({ enabled: true, manualModeEnabled: true }), true);
+    assert.equal(isNarratorModeActive({ enabled: true, manualModeEnabled: true, isGroupChat: true }), false);
 });
 
 test('creates ids and rejects duplicate or canonical books', () => {
@@ -61,15 +68,16 @@ test('retirement preserves identity and does not permit lorebook reuse', () => {
     assert.equal(validateNarratorBindings({ members: [retired, replacement] }, 'Canonical', ['Old Book']).issues[0].type, 'duplicate');
 });
 
-test('marks a missing character card without changing its stable declaration id', () => {
+test('accepts write-in characters without character-card avatars', () => {
     const source = {
         version: 1,
-        members: [{ id: 'alice-id', avatar: 'old.png', name: 'Alice', lorebookName: 'Alice Book' }],
+        members: [{ id: 'alice-id', name: 'Alice', lorebookName: 'Alice Book' }],
         activeCastIds: [],
     };
-    const { config } = normalizeNarratorConfig(source, { knownAvatars: new Set(['new.png']) });
+    const { config } = normalizeNarratorConfig(source);
     assert.equal(config.members[0].id, 'alice-id');
-    assert.equal(config.members[0].missing, true);
+    assert.equal(config.members[0].name, 'Alice');
+    assert.equal(config.members[0].avatar, '');
 });
 
 test('stores independent cast metadata in active swipe and merges continuations', () => {
