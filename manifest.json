@@ -6,7 +6,7 @@
     "js": "index.build.js",
     "css": "style.build.css",
     "author": "phattbeats",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "license": "AGPL-3.0",
     "homePage": "https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto",
     "auto_update": true,

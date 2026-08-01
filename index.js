@@ -73,6 +73,13 @@ import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./a
 // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
 // running notes (fork; plan §4.3 jobs 1–2).
 import { handleCoverageCommand, handleRegenCommand } from "./auditorJobs.js";
+import { registerAuditorJobs } from "./auditorTechnicalPass.js";
+import {
+  showCoverageReportPopup,
+  showRegenerationDiffPopup,
+  showTechnicalPassPopup,
+  showClaimReverificationPopup,
+} from "./auditorReportUIs.js";
 // STMBC-HOOK(librarian): P7.2 pre-turn lore retrieval (fork; PHA-1633 §Architecture
 // 2 + 4). `registerLibrarianHooks` installs the GENERATION_STARTED gate and the
 // world-info force-activation handoff; both are inert while the librarian is
@@ -11581,6 +11588,21 @@ async function init() {
   // STMBC-HOOK(auditor): register the resumable audit chunk-walker job type so the
   // dashboard shows it and /stmbc-stop halts it (fork; plan §4.3).
   registerStmbJobExecutor("audit", executeAuditJob);
+  // STMBC-HOOK(auditor-jobs-registration): P5.4 — register the four Phase-5 audit
+  // job executors (coverage / regenerate / technical / claims) so the dashboard
+  // buttons and /stmbc-audit-* slash commands actually find a handler. Without
+  // this call every audit job fails with "No executor registered for
+  // stmbc-audit-*". The function and tests live in auditorTechnicalPass.js; the
+  // report-popup callbacks live in auditorReportUIs.js. (PHA-1651 follow-up.)
+  registerAuditorJobs(
+    { registerStmbJobExecutor, awaitStmbJobApproval },
+    {
+      showCoverageReportPopup,
+      showRegenerationDiffPopup,
+      showTechnicalPassPopup,
+      showClaimReverificationPopup,
+    },
+  );
   // STMBC-HOOK(sentinel): P2.1 + P2.3 integration — register the sentinel cycle job
   // type with the STMB jobs dashboard AND install the P2.1 detection engine behind
   // it. The executor owns the job contract (abort, ring buffer in

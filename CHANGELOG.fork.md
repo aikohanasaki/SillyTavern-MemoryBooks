@@ -16,6 +16,32 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > **v0.0.2** is the second. The section below describes v0.0.1 / v0.1.0-equivalent
 > contents and is preserved for audit purposes.
 
+## v0.0.5 (2026-08-01) — release
+
+Fifth public release. Closes the second half of PHA-1651 follow-up: the four Phase-5 audit-job executors (`stmbc-audit-coverage`, `stmbc-audit-regenerate`, `stmbc-audit-technical`, `stmbc-audit-claims`) were defined + tested in `auditorTechnicalPass.js` but never wired into `index.js` init — Brandon's screenshot showed all four audit jobs failing with "No executor registered for stmbc-audit-*". Same architectural pattern as the v0.0.4 bug (code exists, tests pass, wiring missing).
+
+### What's new
+
+- **`registerAuditorJobs()` wired into `index.js` init.** Calls `registerStmbJobExecutor` for all four audit job types right after the existing `audit` chunk-walker registration. Report popups (`showCoverageReportPopup`, `showRegenerationDiffPopup`, `showTechnicalPassPopup`, `showClaimReverificationPopup`) are passed as opts so the post-execution report popup flow is intact.
+- **`auditorJobsRegistration.test.js` (NEW, 6 tests).** Static-source assertions that lock down the wiring surface (imports, call site shape, popup-functions opts, adjacency to the existing audit registration, bundle inclusion). Same shape as `autoModuleUiWiring.test.js`.
+
+### How to verify (after install)
+
+1. Open SillyTavern → Extensions menu → Memory Books → 🛰️ Auto Module.
+2. Scroll to **🛡️ Auditor cadence**.
+3. Click **"Run coverage audit"** (or any of the four "Run ..." buttons).
+4. The job should no longer fail instantly with "No executor registered" — it should run to completion and pop a report.
+
+### Test status
+
+- **911 pass, 0 fail** (894 pre-existing + 11 v0.0.4 wiring + 6 v0.0.5 wiring)
+
+### Reference
+
+- Branch: `fix/pha-1651-auto-module-ui` (PR #5 still open, head now at the v0.0.5 release commit)
+- Closes the second half of [PHA-1651](https://paperclip.phatt.vip/issues/1651) follow-up
+- No new issue created — this was the "make sure everything else is wired" half of Brandon's PHA-1651 comment thread
+
 ## v0.0.4 (2026-08-01) — release
 
 Fourth public release. Closes [PHA-1651](https://paperclip.phatt.vip/issues/1651) — the "Enable Sentinel" toggle was unreachable from the STMB-Auto UI. The template that renders the checkbox (`autoModuleSettingsTemplate` in `templates.js`) was authored but never wired to a popup button. FORK_NOTES.md §index.js documented the intended integration; it was never built. v0.0.4 wires it.
