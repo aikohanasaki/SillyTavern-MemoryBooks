@@ -34,7 +34,7 @@ I have loaded all the STMB documentation into Gemini and created an interactive 
 
 </details>
 
-For the longer explanation, see the [User Guide](USER_GUIDE.md#-clips-vs-side-prompts).
+For the longer explanation, see the [User Guide](USER_GUIDE.md#clips-topical-clips-and-side-prompts).
 
 ### Compaction vs Consolidation
 
@@ -81,39 +81,32 @@ Other links:
   - [Scene Memories (Default)](#-scene-memories-default)
   - [Summary Consolidation](#-summary-consolidation)
 - [Memory Generation](#-memory-generation)
-  - [JSON-Only Output](#json-only-output)
-  - [Built-in Presets](#built-in-presets)
-  - [Custom Prompts](#custom-prompts)
 - [Lorebook Integration](#-lorebook-integration)
+- [Branching Chats](#-branching-chats)
 - [Clip to Memory Book](#-clip-to-memory-book)
 - [Topical Clip](#-topical-clip)
 - [Slash Commands](#-slash-commands)
+  - [`/stmb-catchup`](#stmb-catchup)
 - [Group Chat Support](#-group-chat-support)
 - [Modes of Operation](#-modes-of-operation)
-  - [Automatic Mode (Default)](#automatic-mode-default)
-  - [Auto-Create Lorebook Mode](#auto-create-lorebook-mode)
-  - [Manual Lorebook Mode](#manual-lorebook-mode)
 - [Trackers & Side Prompts](#-trackers--side-prompts)
 - [Compaction](#-compaction)
+- [Regenerating Entries](#-regenerating-entries)
 - [Regex Integration for Advanced Customization](#-regex-integration-for-advanced-customization)
 - [Profile Management](#-profile-management)
 - [Settings & Configuration](#-settings--configuration)
-  - [Global Settings](#global-settings)
-  - [Profile Fields](#profile-fields)
 - [Title Formatting](#-title-formatting)
-- [Context Memories](#-context-memories)
+- [Context for Generation](#-context-for-generation)
+  - [Previous Memories](#previous-memories)
+  - [Additional Context and Context Settings](#additional-context-and-context-settings)
+  - [Memory Count Macros](#memory-count-macros)
 - [Optional Job Queue](#-optional-job-queue-chat-top-bar-required)
 - [Visual Feedback & Accessibility](#-visual-feedback--accessibility)
 - [FAQ](#faq)
-  - [Should I make a separate lorebook for memories, or can I use the same lorebook I'm already using for other things?](#should-i-make-a-separate-lorebook-for-memories-or-can-i-use-the-same-lorebook-im-already-using-for-other-things)
-  - [Do I need to run vectors?](#do-i-need-to-run-vectors)
-  - [Should I use 'Delay until recursion' if Memory Books is the only lorebook?](#should-i-use-delay-until-recursion-if-memory-books-is-the-only-lorebook)
 - [Troubleshooting](#troubleshooting)
 - [Power Up with Lorebook Ordering (STLO)](#-power-up-with-lorebook-ordering-stlo)
 - [Character Policy](#-character-policy-v451)
 - [For Developers](#-for-developers)
-  - [Building the Extension](#building-the-extension)
-  - [Git Hooks](#git-hooks)
 
 ---
 
@@ -122,7 +115,7 @@ Other links:
 - **SillyTavern:** 1.14.0+ (latest recommended)
 - **Optional Job Queue:** STMB works without the job queue. To use queueing, install and enable **Chat Top Bar** / **Chat Top Info Bar**, the official SillyTavern extension that adds a top bar to the chat window. STMB uses that top bar to show the Memory Books Jobs button and queue drawer.
 - **Chat Completion Support:** Full support for OpenAI, Claude, Anthropic, OpenRouter, or other chat completion API.
-- **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via a Chat Completion (OpenAI-compatible) API endpoint. I recommend setting up a Chat Completion API connection according to the KoboldCpp tips below (change as needed if you are Ollama or other software). After that, set up an STMB profile and use Custom (recommended) or full manual configuration (only if Custom fails or you have more than one custom connection).
+- **Text Completion Support:** Text completion APIs (Kobold, TextGen, etc.) are supported when connected via a Chat Completion (OpenAI-compatible) API endpoint. I recommend setting up a Chat Completion API connection according to the KoboldCpp tips below (change as needed if you are Ollama or other software). After that, set up an STMB profile and use Custom OpenAI-Compatible API. If you have more than one Custom connection, bind the profile to the intended named SillyTavern connection. Use Full Manual Configuration only for an exceptional endpoint that cannot be represented through SillyTavern.
 **NOTE**: Please note that if you use Text Completion, you must have a chat completion preset!
 
 ### KoboldCpp Tips to using 📕 ST Memory Books
@@ -136,7 +129,7 @@ Set this up in ST (you can change back to Text Completion AFTER you get STMB wor
 - change the max response length on the chat completion preset so that it is at least 2048; 4096 is recommended. (Smaller means you run the risk of getting cut off.)
 
 ### Llama.cpp Tips to using 📕 ST Memory Books
-Just like Kobold, set the following up as a _Chat Completion API_ in ST (you can change back to Chat Completion after you've verified STMB is working):
+Just like Kobold, set the following up as a _Chat Completion API_ in ST (you can change back to Text Completion after you've verified STMB is working):
 - Create a new connection profile for a Chat Completion API
 - Completion Source: `Custom (Open-AI Compatible)`
 - Endpoint URL: `http://host.docker.internal:8080/v1` if running ST in docker, else `http://localhost:8080/v1`
@@ -286,6 +279,23 @@ All prompts and presets **must** instruct the AI to return only valid JSON, e.g.
 ---
 
 
+## 🌿 Branching Chats
+
+By default, **Copy Memory Books when branching** is enabled. When SillyTavern creates a native chat branch, STMB gives the new branch independent copies of the Memory Books it was using at the moment of branching.
+
+- In Automatic Mode, STMB copies and binds the active chat-bound Memory Book.
+- In Manual Mode, STMB copies the main manual Memory Book.
+- In a Manual Mode group chat, STMB also copies each unique **unlocked** character Memory Book used by the group.
+- Persistent character Memory Book locks are preserved instead of copied. A locked character continues using the locked book.
+- All books copied for the same branch use the same branch number, such as `Investigation Memories Branch 1` and `Alice Memories Branch 1`.
+- STMB updates branch-specific chat IDs and links between canonical group entries and character copies inside the new books.
+
+While the copies are being created, do not switch chats. If copying fails, STMB clears the new branch's inherited Memory Book bindings so the branch cannot accidentally write into the originals.
+
+Disable **Copy Memory Books when branching** in the main Memory Books panel when you intentionally want a branch to keep using the inherited books instead of receiving independent copies.
+
+---
+
 ## ✂️ Clip to Memory Book
 
 ![Clip text](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/clip.png)
@@ -355,7 +365,7 @@ Topical Clip saves entries as normal Clip entries marked with `[STMB Clip]`. New
 
 ```txt
 About Elliott [STMB Clip]
-````
+```
 
 #### Updating existing Topical Clips
 
@@ -389,9 +399,29 @@ If you want to rebuild the whole entry from all eligible memories, enable **Rebu
 
 ### `/stmb-catchup`
 
-Use `/stmb-catchup` when converting an existing long chat into STMB memories. Syntax: `/stmb-catchup interval=x start=y end=y`
+Use `/stmb-catchup` when converting an existing long chat into STMB memories.
 
-Example: `/stmb-catchup interval=30 start=0 end=300`
+```txt
+/stmb-catchup interval=<chunk size> start=<first message id> end=<last message id>
+```
+
+Example:
+
+```txt
+/stmb-catchup interval=30 start=0 end=300
+```
+
+The start and end IDs are inclusive. STMB processes the range in consecutive chunks of the requested size; the final chunk may be smaller. The example above creates memories for `0-29`, `30-59`, and so on, ending with `300-300`.
+
+Catch-up is deliberately non-interactive. Before running it:
+
+- enable **Always use default profile**;
+- disable **Show memory previews**;
+- make sure the effective Memory Book already exists, or enable Auto-Create in Automatic Mode;
+- make sure every Manual Mode group member has a valid required assignment; and
+- use an interval small enough that every chunk stays below the token warning threshold.
+
+STMB preflights every chunk before it starts. It then processes the chunks in order and stops on the first failure or stop request. Memories completed before that point remain saved; run catch-up again only for the unfinished range.
 
 ---
 
@@ -508,7 +538,9 @@ Use Side Prompts for things like:
 - Side Prompts are usually updated/overwritten; memories are saved sequentially.
 - Manual syntax is `/sideprompt "Name" {{macro}}="value" [X-Y]`.
 - Use Side Prompt Sets when a chat needs an ordered bundle of trackers.
-- A selected after-memory Side Prompt Set replaces individually-enabled after-memory Side Prompts for that chat.
+- A selected Side Prompt Set replaces individually-enabled automatic Side Prompts for that chat; rows still run only when their own after-memory or interval trigger is enabled.
+- General Settings can define separate default Side Prompt Sets for solo and group chats. Each chat may inherit that default, explicitly use individual prompts, or choose another set.
+- Side Prompts can save to the effective Memory Book or to a template-level/per-chat lorebook override.
 - Additional Side Prompts Template Library [JSON file](resources/SidePromptTemplateLibrary.json) - just import to use.
 
 --- 
@@ -573,6 +605,42 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 ---
 
+## ♻️ Regenerating Entries
+
+STMB adds regeneration controls to eligible entries in SillyTavern's lorebook editor.
+
+1. Open the Memory Book in the normal lorebook editor.
+2. Find the STMB entry.
+3. Click **Regenerate memory** or **Regenerate side prompt**.
+4. Review the replacement draft.
+5. Approve it only if it is better than the current entry.
+
+Regeneration never overwrites an entry without approval.
+
+### Scene memories
+
+A scene memory is regenerated from its original chat range. Open the source chat first. The regeneration window lets you choose the current profile, prompt, previous-memory context, and Additional Context just like an ordinary memory run.
+
+If every message in the original range is hidden, either reveal the messages manually or enable **Unhide hidden messages for memory generation** before trying again.
+
+### Consolidated summaries
+
+A consolidated Arc, Chapter, Book, Legend, Series, or Epic is regenerated from the exact lower-tier source entries linked to it. STMB uses the dedicated **Regenerate Consolidation** preset, which is reserved for this workflow.
+
+A source entry cannot be regenerated while an active higher-tier consolidation depends on it. Delete the parent consolidation first if you intentionally want to rebuild the lower-tier entry.
+
+### Side Prompts
+
+A Side Prompt entry can be regenerated after it has been run at least once with regeneration support enabled. STMB stores the latest run's source range, prior entry content, template key, and runtime macro values. Regeneration uses that snapshot with the **current** version of the Side Prompt template and its current connection/context settings.
+
+### Safety rules
+
+- If the source chat, target entry, or consolidation sources change while generation is running, STMB refuses to overwrite anything.
+- If a Side Prompt template was deleted, its entry cannot be regenerated from the snapshot.
+- Linked group and character copies are not live-synchronized. Regenerating one copy does not regenerate the others; STMB warns when linked copies exist.
+
+---
+
 ### 🧠 Regex Integration for Advanced Customization
 
 ![Configure regex](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/regex.png)
@@ -590,11 +658,28 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 ![Profile Management](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/profiles.png)
 
-- **Profiles:** Each profile includes API, model, temperature, prompt/preset, title format, and lorebook settings.
-- **Import/Export:** Share profiles as JSON.
-- **Profile Creation:** Use the advanced options popup to save new profiles.
-- **Per-Profile Overrides:** Temporarily switch API/model/temp for memory creation, then restore your original settings.
-- **Built-in Provider/Profile:** STMB includes a required `Current SillyTavern Settings` option that uses your active SillyTavern connection/settings directly.
+A profile controls the connection and generation behavior used for memories.
+
+- **Current SillyTavern Settings:** Uses the provider, model, temperature, and connection currently active in SillyTavern.
+- **Saved STMB profiles:** Can use a different provider, model, temperature, prompt preset, title format, and lorebook-entry settings.
+- **Import/Export:** Profiles can be shared or backed up as JSON.
+- **Per-run overrides:** The confirmation window can temporarily change the profile, prompt, previous-memory count, and connection behavior for one memory.
+
+### Custom OpenAI-compatible connections
+
+For a profile using **Custom OpenAI-Compatible API**, you can either:
+
+- use the currently active SillyTavern Custom connection; or
+- bind the STMB profile to one named Custom connection profile from SillyTavern's Connection Manager.
+
+A named connection supplies its saved URL and secret. The model entered in the STMB profile remains the model override. If the named connection is deleted or stops being a Custom Chat Completion profile, STMB blocks the request and asks you to repair the profile.
+
+### Advanced routing controls
+
+- **Skip structured output and use plain-text completion:** Avoids sending a structured-output schema to providers that reject it. The model must still return the valid JSON required by the selected memory prompt.
+- **Use ST's ChatCompletionService:** Routes non-Full-Manual requests through SillyTavern's request helper. You may optionally apply a SillyTavern Chat Completion preset.
+- **Use reverse proxy:** Forwards SillyTavern's configured reverse-proxy settings for supported providers.
+- **Full Manual Configuration:** Sends directly to a separately entered endpoint and key. This is an exceptional setup; configure and test the connection in SillyTavern first whenever possible.
 
 ---
 
@@ -609,11 +694,13 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 - **Manual Lorebook Mode:** Enable to select lorebooks per chat.
 - **Auto-create lorebook if none exists:** ⭐ *New in v4.2.0* - Automatically create and bind lorebooks using your naming template.
-- **Lorebook Name Template:** ⭐ *New in v4.2.0* - Customize auto-created lorebook names with {{char}}, {{user}}, {{chat}} placeholders.
+- **Lorebook Name Template:** Customize auto-created lorebook names with `{{char}}`, `{{user}}`, and `{{chat}}` placeholders.
+- **Copy Memory Books when branching:** Give native chat branches independent copies of active unlocked Memory Books.
 - **Allow Scene Overlap:** Permit or prevent overlapping memory ranges.
 - **Always Use Default Profile:** Skip confirmation popups.
 - **Show memory previews:** Enable preview popup to review and edit memories before adding to lorebook.
 - **Show Notifications:** Toggle toast messages.
+- **Memory boundary indicator:** Show a processed-boundary divider, a draggable jump button, both, or neither.
 - **Refresh Editor:** Auto-refresh lorebook editor after memory creation.
 - **Max Response Tokens:** Set the maximum generation length for memory summaries.
 - **Token Warning Threshold:** Set warning level for large scenes.
@@ -623,6 +710,7 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 - **Auto-Summary Buffer:** Delay auto-summary by a configurable number of messages.
 - **Prompt for consolidation when a tier is ready:** Shows a yes/later confirmation when a selected summary tier has enough eligible source entries to consolidate.
 - **Auto-Consolidation Tiers:** Choose one or more summary tiers that should trigger the confirmation prompt when ready. Currently supports Arc through Series.
+- **Default After-Memory Side Prompt Sets:** Choose separate defaults for solo and group chats. Chats without an explicit override inherit the matching default; an empty default uses individually enabled Side Prompts.
 - **Unhide hidden messages before memory generation:** Can run `/unhide X-Y` before creating a memory.
 - **Auto-hide messages after adding memory:** Optionally hide all processed messages or just the most recent memory range.
 - **Use regex (advanced):** Enables the STMB regex selection popup for outgoing/incoming processing.
@@ -632,17 +720,23 @@ Use **Reset to Default** in the prompt editor if you want to restore the built-i
 
 ### **Profile Fields**
 - **Name:** Display name.
-- **API/Provider:** `Current SillyTavern Settings`, openai, claude, custom, full manual, and other supported providers.
-- **Model:** Model name (e.g., gpt-4, claude-3-opus).
+- **API/Provider:** `Current SillyTavern Settings`, a supported provider, Custom OpenAI-compatible API, or Full Manual Configuration.
+- **Custom Connection Profile:** For Custom API profiles, use the active ST connection or bind a named SillyTavern Custom connection profile.
+- **Model:** Model ID. For a named Custom connection, this field remains the model override.
 - **Temperature:** 0.0–2.0.
-- **Prompt or Preset:** Custom or built-in.
+- **Prompt or Preset:** Built-in or custom Summary Prompt Manager preset.
+- **Group Prompt Routing:** Optionally use separate group and character prompts in group chats.
+- **Structured Output:** Normally enabled; disable schema use only for providers that reject structured-output requests.
+- **ChatCompletionService / Preset:** Optional SillyTavern request routing and Chat Completion preset.
+- **Reverse Proxy:** Use SillyTavern's configured reverse proxy for supported providers.
 - **Title Format:** Per-profile template.
 - **Activation Mode:** Vectorized, Constant, Normal.
 - **Position:** ↑Char, ↓Char, ↑EM, ↓EM, ↑AN, ↓AN, Outlet (and field name).
 - **Order Mode:** Auto/manual.
-- **Recursion:** Prevent/delay until recursion.
+- **Recursion:** Prevent recursion and delay until recursion.
 
 ---
+
 
 ## 🏷️ Title Formatting
 
@@ -664,13 +758,53 @@ Customize the titles of your lorebook entries using a powerful template system.
 
 ---
 
-## 🧵 Context Memories
+## 🧵 Context for Generation
 
-- **Include up to 7 previous memories** as context for better continuity.
-- **Token estimation** includes context memories for accuracy.
-- **Advanced options** let you temporarily override prompt/profile behavior for a single memory run.
+STMB can provide two different forms of reference material when generating a new memory. They are not the same thing.
 
-![Memory generation with context](https://github.com/aikohanasaki/imagehost/blob/main/STMemoryBooks/context.png)
+### Previous Memories
+
+Previous memories are earlier STMB scene memories from the effective Memory Book.
+
+- Include from 0 to 7 previous memories.
+- They are labeled as read-only continuity context.
+- The prompt explicitly tells the model not to summarize them again.
+- The global **Default Previous Memories** setting supplies the normal count, and the memory confirmation window can override it for one run.
+
+### Additional Context and Context Settings
+
+**Additional Context** consists of selected lorebook entries used as reference material. Use it when memory generation needs stable information that may not appear in the current scene, such as character rules, setting facts, campaign constraints, terminology, or a canonical timeline.
+
+Open **Context Settings** from Memory Books to create reusable named collections:
+
+1. Create or edit a Context Setting.
+2. Add entries from any available lorebook.
+3. Put the entries in the order you want them sent.
+4. Select that Context Setting for the current chat, or explicitly select **No Context**.
+
+The selected Context Setting is stored per chat and can be used with **Current SillyTavern Settings** as well as custom profiles. Older profile-based Additional Context is migrated into reusable Context Settings. If a selected lorebook or entry later disappears, STMB warns and continues without that stale reference.
+
+Additional Context appears before previous-memory context and the scene transcript. It is reference material, not another scene to summarize.
+
+Side Prompts can also use Additional Context. Each Side Prompt can either follow the current chat's Context Setting or use one fixed named Context Setting.
+
+### Memory Count Macros
+
+STMB registers standard SillyTavern macros that report counts from the **effective main Memory Book**: the chat-bound book in Automatic Mode or the resolved manual Memory Book in Manual Mode.
+
+| Macro | Count returned |
+|---|---|
+| `{{memtier0}}` | Scene Memories |
+| `{{memtier1}}` | Arcs |
+| `{{memtier2}}` | Chapters |
+| `{{memtier3}}` | Books |
+| `{{memtier4}}` | Legends |
+| `{{memtier5}}` | Series |
+| `{{memtier6}}` | Epics |
+| `{{memclips}}` | Clip entries |
+| `{{memside}}` | Side Prompt entries |
+
+These macros return integers and can be used in STMB prompts and fields that expand standard SillyTavern macros. In a multiple-book group setup, they count the effective main group book, not every assigned character book combined.
 
 ---
 
@@ -690,6 +824,12 @@ This is especially useful when you are:
 - working in long chats where you want clearer progress and review handling
 
 The queue can show job status, let you cancel active jobs, retry failed jobs, and dismiss completed jobs. If a queued job needs user review, STMB can mark it as **Needs review** instead of silently overwriting something unsafe.
+
+Retry controls depend on the job type:
+
+- **Retry** reruns a failed, blocked, or canceled non-memory job.
+- **Retry All** reruns a memory job together with after-memory Side Prompt work that was canceled with it. If the memory itself was already saved, STMB can resume from that saved result instead of creating a duplicate.
+- **Retry Memory** reruns or resumes only the memory and skips after-memory Side Prompts.
 
 If Chat Top Bar is not installed or enabled, STMB still works normally. You just will not have the job queue UI.
 
