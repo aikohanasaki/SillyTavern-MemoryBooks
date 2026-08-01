@@ -897,7 +897,7 @@ Use locks only when sharing that continuing history across branches is intention
 
 ### Disabling branch copies
 
-Disable **Copy Memory Books when branching** in the main Memory Books panel when you deliberately want the branch to keep the inherited bindings and write to the same books as its parent.
+Disable **Copy Memory Books when branching** in **Memory Books → General Settings** when you deliberately want the branch to keep the inherited bindings and write to the same books as its parent.
 
 When copying is enabled, do not switch chats while STMB is creating the books. If copying fails, STMB clears the new branch's inherited bindings to protect the originals from accidental writes.
 

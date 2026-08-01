@@ -92,7 +92,7 @@ export const settingsTemplate = Handlebars.compile(`
                 <span data-i18n="STMemoryBooks_NarratorMode">Narrator Mode</span>
             </label>
             <small class="opacity50p" data-i18n="STMemoryBooks_NarratorModeDesc">Use one omniscient Memory Book plus separate Memory Books for a manually selected cast.</small>
-            <div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap">
+            <div id="stmb-manage-narrator-cast-container" class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap {{#unless narratorModeEnabled}}displayNone{{/unless}}">
                 <button type="button" id="stmb-manage-narrator-cast" class="menu_button interactable whitespacenowrap">
                     <i class="fa-solid fa-users"></i>
                     <span data-i18n="STMemoryBooks_ManageNarratorCast">Manage Narrator Cast</span>
@@ -108,14 +108,6 @@ export const settingsTemplate = Handlebars.compile(`
                 <span data-i18n="STMemoryBooks_AutoCreateLorebook">Auto-create lorebook if none exists</span>
             </label>
             <small class="opacity50p" data-i18n="STMemoryBooks_AutoCreateLorebookDesc">When enabled, automatically creates and binds a lorebook to the chat if none exists.</small>
-        </div>
-
-        <div class="world_entry_form_control">
-            <label class="checkbox_label">
-                <input type="checkbox" id="stmb-copy-memory-books-on-branch" {{#if copyMemoryBooksOnBranch}}checked{{/if}}>
-                <span data-i18n="STMemoryBooks_CopyMemoryBooksOnBranch">Copy Memory Books when branching</span>
-            </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_CopyMemoryBooksOnBranchDesc">When enabled, new chat branches receive independent copies of their active chat-bound or manual Memory Books.</small>
         </div>
 
         <div class="world_entry_form_control">
@@ -237,6 +229,11 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_RefreshEditor">Refresh lorebook editor after adding memories</span>
         </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-copy-memory-books-on-branch" {{#if copyMemoryBooksOnBranch}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_CopyMemoryBooksOnBranch">Copy Memory Books when branching</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_CopyMemoryBooksOnBranchDesc">When enabled, new chat branches receive independent copies of their active chat-bound or manual Memory Books.</small>
     </div>
 
     <div class="world_entry_form_control">
