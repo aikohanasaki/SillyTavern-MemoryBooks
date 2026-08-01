@@ -16,6 +16,38 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > **v0.0.2** is the second. The section below describes v0.0.1 / v0.1.0-equivalent
 > contents and is preserved for audit purposes.
 
+## v0.0.4 (2026-08-01) — release
+
+Fourth public release. Closes [PHA-1651](https://paperclip.phatt.vip/issues/1651) — the "Enable Sentinel" toggle was unreachable from the STMB-Auto UI. The template that renders the checkbox (`autoModuleSettingsTemplate` in `templates.js`) was authored but never wired to a popup button. FORK_NOTES.md §index.js documented the intended integration; it was never built. v0.0.4 wires it.
+
+Branch: `fix/pha-1651-auto-module-ui` @ `c4235086`. PR: [#5](https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto/pull/5).
+
+### What's new
+
+- **PHA-1651 — Auto Module UI (commit `c4235086`).** New "🛰️ Auto Module" button in the Memory Books settings popup opens a panel with:
+  - **🛰️ Auto Module — Global**: "Enable Sentinel (auto scene-boundary detection)" checkbox + cadence / window / overlap / truncate / guard / detection-profile / detection-prompt / debug-logging controls + "🛡️ Auditor cadence" subsection + "📎 Clipper+ (paired context entries)" subsection (Clipper+ remains off by default — stock clip save is byte-identical when disabled).
+  - **🛰️ Auto Module — Per-chat overrides**: per-chat Sentinel enable / watermark fallback / structure-hint regex / prompt override.
+- **v5 migration.** Existing installs get `extension_settings.STMemoryBooks.autoModule = {}` backfilled on next boot so the UI has a writable surface. Reads still merge `AUTO_MODULE_DEFAULTS` on top, so missing fields stay backwards-compatible.
+- **`autoModuleUiWiring.test.js` (NEW, 11 tests).** Static-source assertions that lock down the wiring surface (imports, migration, popup function, template-data function, event-listener function, button entry, i18n, bundle inclusion). Any future refactor that drops any of those fails loudly.
+
+### How to turn the Sentinel on (after install)
+
+1. Open SillyTavern → Extensions menu → Memory Books.
+2. In the bottom row of buttons, click **🛰️ Auto Module**.
+3. Top checkbox: **"Enable Sentinel (auto scene-boundary detection)"** → check it.
+4. (Optional) check "Sentinel enabled for this chat" to force-on for the current chat.
+5. Drive 8+ messages — the Sentinel auto-fires `/stmbc-detect` every ~8 messages past the last memory.
+
+### Test status
+
+- **905 pass, 0 fail** (894 pre-existing + 11 new wiring-regression in `autoModuleUiWiring.test.js`)
+- `eval/phase2Acceptance.test.js`: 27/27 — runtime Sentinel gate unchanged (R=1.00 on the Magisa fixture at ±1, 35/35 boundary detection)
+
+### Known follow-ups (deferred to v0.0.5 or later)
+
+- `FORK_NOTES.md` §index.js still describes Clipper+ options that this release now exposes in the UI but don't yet have a complete i18n key set in locales/*.json (only `en-001`/fallback locale got the 4 new keys).
+- Clipper+ paired-entry writes are not yet exercised in `eval/phase3Acceptance.test.js` — only `clipperPlus.test.js` covers the unit math. End-to-end KPI on real clips deferred.
+
 ## v0.0.3 (2026-08-01) — release
 
 Third public release. Re-redirected from the v0.0.2 cycle (which never made

@@ -1,6 +1,6 @@
 {
   "name": "sillytavern-memorybooks-auto",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Fork of SillyTavern-MemoryBooks adding automatic scene-boundary detection (sentinel), smarter clips (Clipper+), and a living-lorebook auditor.",
   "type": "module",
   "scripts": {
