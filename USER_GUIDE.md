@@ -19,7 +19,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Group Chats](#-group-chats)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
 - [Topical Clip](#-topical-clip)
-- [Clips vs Side Prompts](#️-clips-vs-side-prompts)
+- [Clips, Topical Clips, and Side Prompts](#clips-topical-clips-and-side-prompts)
 - [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
 - [Compaction vs Consolidation](#-compaction-vs-consolidation)
 - [Summary Consolidation](#-summary-consolidation)
@@ -229,7 +229,7 @@ This can be wonderful when characters know different things, care about differen
 
 Use **Clip to Memory Book** when you want to save one important line or fact without creating a full scene memory. Highlight text in chat, click the floating scissors button, then choose an existing clip entry or create a new one.
 
-Not sure whether this should be a clip or a side prompt? See [Clips vs Side Prompts](#-clips-vs-side-prompts).
+Not sure whether to use a Clip, Topical Clip, or Side Prompt? See [Clips, Topical Clips, and Side Prompts](#clips-topical-clips-and-side-prompts).
 
 ### When should I use clips?
 
@@ -288,201 +288,184 @@ If a clip entry gets long, STMB may remind you to review it. You can edit it you
 
 ---
 
-## ✂️ Clips vs Side Prompts
-
-Clips and Side Prompts both save information into your Memory Book, but they are not for the same job.
-
-Plain rule: **Clips save a specific fact. Side Prompts maintain a living tracker.**
-
-| **Clips** | **Side Prompts** |
-|---|---|
-| Save selected chat text into a Memory Book entry. | Ask the AI to review chat and update a tracker entry. |
-| Best for one clear fact, line, promise, preference, item, or note. | Best for information that changes over time, like relationship status, quest progress, inventory, or unresolved plot threads. |
-| You choose the exact text. STMB saves what you selected. | The AI interprets the chat and writes or updates the tracker. |
-| Use when the fact is already obvious and does not need analysis. | Use when the AI needs to compare, summarize, or update state from multiple messages. |
-| Usually grows only when you manually add another clip. | Can update repeatedly as the story changes. |
-| Think: “pin this note.” | Think: “keep this section updated.” |
-
-Examples of good Clips:
-
-- `Aiko likes honey tea.`
-- `Andalino promised not to lie to her again.`
-- `Colt calls her Boss.`
-
-Examples of good Side Prompts:
-
-- relationship status
-- current quest progress
-- inventory and resources
-- NPC directory
-- unresolved plot threads
-
-If you only need one remembered detail, use a Clip. If you need an ongoing tracker, use a Side Prompt.
-
----
-
 ## 🔎 Topical Clip
 
-Topical Clip is for making one focused “about this topic” memory entry from memories you already created.
+Topical Clip creates a focused Memory Book entry about one subject by gathering relevant information from memories you have already saved.
 
-Think of it like asking STMB:
+Think of it as asking STMB:
 
-> “Read my saved memories and make one useful entry about this person, place, relationship, plot thread, item, secret, or topic.”
+> “Read my existing memories and collect everything useful about this person, relationship, place, object, mystery, or plot thread.”
 
-It is still a Clip-style entry, but you are not clipping highlighted chat text. Instead, STMB uses existing memory entries as the source.
+For example, your Memory Book may contain separate scene memories in which:
 
-Plain rule: **Clip saves selected text. Topical Clip gathers related details from saved memories. Side Prompts maintain trackers over time.**
+* Seraphina first demonstrated healing magic
+* Seraphina explained where she learned it
+* Seraphina healed `{{user}}`
+* someone later revealed that her magic has a hidden cost
+
+Those facts are scattered across several chronological memories. Topical Clip can gather them into one focused entry such as:
+
+```txt
+About Seraphina's Healing Magic [STMB Clip]
+```
+
+The resulting entry is organized around the topic rather than around the order in which events happened.
+
+### Clip vs. Topical Clip
+
+The simplest distinction is:
+
+> **A Clip saves text from the chat. A Topical Clip gathers information from saved memories.**
+
+| **Clip to Memory Book**                                      | **Topical Clip**                                                           |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Starts with text you highlight in the current chat.          | Starts with STMB memory entries already saved in a Memory Book.            |
+| Saves the wording you selected.                              | Uses an AI to find, combine, and reorganize relevant details.              |
+| Best for one clear fact, line, promise, preference, or note. | Best when information about one subject is spread across several memories. |
+| Does not need the AI to interpret the information.           | Uses the selected Generation Profile because the AI writes the draft.             |
+| Think: “Save this.”                                          | Think: “Gather everything about this.”                                     |
+
+Both are saved as normal lorebook entries marked with `[STMB Clip]`, but they are created in different ways.
 
 ### When to use Topical Clip
 
-Use Topical Clip when your Memory Book already has several memories and you want one easier-to-trigger entry about a specific subject.
+Use Topical Clip when you want one easily retrieved entry about:
 
-Good examples:
+* a recurring character or NPC
+* a relationship between characters
+* a location or faction
+* a mystery or investigation
+* a character’s powers, injuries, preferences, promises, or secrets
+* an important object
+* an unresolved plot thread
+* any subject that appears across multiple scenes
 
-- A recurring NPC
-- A relationship between two characters
-- A mystery or investigation
-- A location
-- A faction
-- A character’s powers, injuries, promises, secrets, or preferences
-- A plot thread that appears across many scenes
-
-Example topics:
+Example topics include:
 
 ```txt
 Seraphina
-{{user}}'s magic
+Seraphina's healing magic
 Alex and Mira's relationship
 The Black Harbor investigation
 The silver key
-````
+What Elliott knows about the conspiracy
+```
+
+Choose a reasonably specific topic. `Seraphina` may produce a broad character reference, while `Seraphina's healing magic` will produce a much narrower entry.
 
 ### When not to use Topical Clip
 
-Do not use Topical Clip when:
+Use another feature when:
 
-* you only want to save one highlighted line from chat — use **Clip to Memory Book**
-* you want a tracker that updates automatically during future memory runs — use **Side Prompts**
-* you want to shorten one long entry — use **Compaction**
-* you want to combine several memories into a higher-level recap — use **Summary Consolidation**
+* **You are looking directly at the fact you want to save:** use **Clip to Memory Book**.
+* **You want to summarize one scene:** create a normal **Memory**.
+* **You want an entry to be maintained as the story continues:** use a **Side Prompt**.
+* **You want to shorten one long entry:** use **Compaction**.
+* **You want to combine several memories into a chronological higher-level recap:** use **Summary Consolidation**.
 
-### How to use Topical Clip
+Topical Clip is not another form of consolidation. Consolidation summarizes a sequence of memories into a larger narrative recap. Topical Clip searches across memories for information about one subject and reorganizes it into an “about this” reference entry.
 
-1. Open the Memory Books popup.
+### How to create a Topical Clip
+
+1. Open the **Memory Books** popup.
 2. Click **🔎 Topical Clip**.
 3. Choose the **Source Memory Book**.
-4. Enter the **Topic**.
+4. Enter the **Topic** you want the entry to cover.
+5. Enter the lorebook activation **Keywords**.
 
-   * This is the subject the AI should focus on.
-   * Keep it specific.
-5. Enter **Keywords**.
-
-   * These become the lorebook activation keywords.
-   * If you leave keywords empty, STMB uses the topic.
-6. Choose a mode:
-
-   * **Create new Topical Clip** makes a new `[STMB Clip]` entry.
-   * **Update existing entry** updates an existing Clip entry.
-7. Choose a **Generation Profile**.
-
-   * This controls which AI connection/model writes the draft.
-8. Optional: click **Edit Topical Clip Prompt** if you want to change the instructions sent to the AI.
+   * If you leave this field empty, STMB uses the topic as the keyword.
+6. Choose **Create new Topical Clip**.
+7. Optional: enable **Use only selected memories** if you do not want the AI to read every eligible memory in the book.
+8. Choose a **Generation Profile**.
 9. Click **Generate Draft**.
-10. Review the generated draft.
-11. Edit the draft if needed.
-12. Click **Save Topical Clip**.
+10. Review and edit the generated draft.
+11. Click **Save Topical Clip** when the entry contains what you want.
 
-STMB does not save the draft automatically. The lorebook only changes after you click **Save Topical Clip**.
+STMB does not save the AI response automatically. You can edit the draft before anything is written to the Memory Book.
 
-### Creating a new Topical Clip
-
-When you create a new Topical Clip, STMB creates a Clip-style lorebook entry.
-
-For example, if your topic is:
-
-```txt
-Seraphina
-```
-
-The entry title will look like:
+A new entry is normally given a title such as:
 
 ```txt
 About Seraphina [STMB Clip]
 ```
 
-The visible section inside the entry uses the same Clip wrapper style as normal Clip entries.
+It is saved as a keyword-triggered Clip-style entry using the keywords you supplied.
 
 ### Updating an existing Topical Clip
 
-Topical Clip can also update an existing `[STMB Clip]` entry.
+You can update an existing Topical Clip after new memories are created.
 
-This is useful when you already have an entry like:
+1. Open **Topical Clip**.
+2. Choose **Update existing entry**.
+3. Select the `[STMB Clip]` entry you want to update.
+4. Confirm the topic and activation keywords.
+5. Generate and review the new draft.
+6. Save it only after checking the result.
 
-```txt
-About Seraphina [STMB Clip]
-```
+After a successful Topical Clip run, STMB records which source memories were used. During the next update, it normally sends only source memories that are new or have changed.
 
-and new memories have been added since the last time you updated it.
+This allows the AI to merge new information into the existing entry without rereading the entire Memory Book every time.
 
-When a Topical Clip update saves successfully, STMB stores a small run history on that entry. This includes the source memories used during the run. On the next update, STMB can use that history to find only new or changed source memories instead of rereading everything.
+Enable **Rebuild from all source memories** when:
 
-This keeps updates smaller and helps avoid repeatedly feeding the same old memories back into the AI.
-
-### Rebuild from all source memories
-
-When updating an existing Topical Clip, you may see **Rebuild from all source memories**.
-
-Leave this off for normal updates. STMB will use only new or changed source memories when it can.
-
-Turn it on when:
-
-* the existing Topical Clip is badly outdated
+* the existing entry is incomplete
 * you changed the Topical Clip prompt
-* you changed the topic or keywords significantly
-* you want the AI to reconsider all saved memories for that topic
-* the entry has no useful run history yet
+* earlier memories were substantially edited
+* the entry has become disorganized
+* you want the AI to reconsider the entire topic from scratch
 
-### What source entries does it use?
+A rebuild includes all eligible source memories instead of only new or changed ones.
 
-Topical Clip uses confirmed STMB memory entries from the selected Memory Book.
+### Choosing source memories manually
+
+Enable **Use only selected memories** when the Memory Book is large or when you already know which memories contain the relevant material.
+
+This can help when:
+
+* the topic appears only during one part of the story
+* unrelated memories would make the request unnecessarily large
+* two people or places have similar names
+* you want to build an entry from a carefully controlled set of sources
+
+Without this option, STMB automatically uses all eligible source memories—or only new and changed memories when updating an existing Topical Clip.
+
+### Large requests and token warnings
+
+Topical Clip estimates the size of the request before generation. The popup shows how many memories are eligible, how many will be used, and the configured token warning threshold.
+
+If the request exceeds that threshold, STMB warns you before sending it. You can:
+
+- select fewer source memories
+- raise the token warning threshold in settings
+- choose **Run Once Anyway** for that request
+
+### What Topical Clip uses as source material
+
+Topical Clip reads confirmed STMB memory entries from the selected Memory Book.
 
 It does not use:
 
-* normal Clip entries
-* Side Prompt tracker entries
-* ordinary lorebook entries that are not managed by STMB
+* raw chat messages
+* ordinary Clip entries
+* Side Prompt entries
+* unrelated ordinary lorebook entries
 
-This keeps Topical Clip focused on memories STMB already knows how to identify safely.
+This prevents existing notes and trackers from being mistaken for original memory evidence.
 
-### Good Topical Clip habits
+### Review the draft
 
-Use focused topics.
+Topical Clip uses an AI to select and reorganize information. Always review the generated draft before saving it.
 
-Better:
+Check that it:
 
-```txt
-Alex and Mira's relationship
-```
+* stayed focused on the requested topic
+* preserved names and important facts correctly
+* did not omit a major detail
+* did not include unrelated events
+* clearly notes contradictions instead of silently choosing one version
+* did not invent explanations unsupported by the source memories
 
-Less useful:
-
-```txt
-Everything about the story
-```
-
-Better:
-
-```txt
-The silver key
-```
-
-Less useful:
-
-```txt
-Important items
-```
-
-Topical Clip works best when the topic is narrow enough that the AI can tell what belongs and what does not.
+You may freely edit the draft before saving.
 
 ### Prompt editing
 
@@ -517,6 +500,24 @@ Other supported placeholders include:
 ```
 
 Use **Reset to Default** if your custom prompt stops working well.
+
+
+## Clips, Topical Clips, and Side Prompts
+
+| **Clip**                                | **Topical Clip**                                  | **Side Prompt**                                                        |
+| --------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| Saves selected chat text.               | Extracts one topic from saved memories.           | Maintains a specialized tracker.                                       |
+| Usually captures one fact or quotation. | Combines related facts from multiple memories.    | Reviews new story material and updates changing information.           |
+| You decide exactly what text is added.  | The AI prepares a focused draft for your review.  | The AI follows tracker instructions and rewrites or updates the entry. |
+| Updated manually by clipping more text. | Updated manually when you run Topical Clip again. | Can run repeatedly as part of your memory workflow.                    |
+| Think: “Save this note.”                | Think: “Gather everything about this.”            | Think: “Keep track of this.”                                           |
+
+A practical rule:
+
+* Use **Clip** when the information is already in front of you.
+* Use **Topical Clip** when the information is scattered across saved memories.
+* Use **Side Prompt** when the information needs to be actively maintained as the story changes.
+
 
 ---
 
