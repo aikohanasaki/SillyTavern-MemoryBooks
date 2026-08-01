@@ -7,6 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 A next-generation SillyTavern extension for automatic, structured, and reliable memory creation. Mark scenes in chat, generate JSON-based summaries with AI, and store them as entries in your lorebooks. Supports group chats, advanced profile management, side prompts/trackers, and multi-tier memory consolidation.
 
+---
+
+# 👋 NEW: Interactive Memory Books Guide
+I have loaded all the STMB documentation into Gemini and created an interactive guide! Now you can ask Gemini clear questions and it has STMB documentation to answer your questions properly. [Click here to use the Interactive Memory Books Guide.](https://gemini.google.com/gem/1XRy0GEu_iWmqdjMV1ZpD59rexoFDJo7B?usp=sharing) 
+
+---
+
 ### ❓ Vocabulary
 - Scene → Memory  
 - One saved fact → Clip  
