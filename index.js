@@ -104,6 +104,7 @@ import {
   SELECTORS,
   getCurrentMemoryBooksContext,
   getCurrentGroupLorebookMembers,
+  getCurrentManualLorebookResolution,
   getEffectiveLorebookName,
   showLorebookSelectionPopup,
   readIntInput,
@@ -242,6 +243,16 @@ import {
   applyStloCharacterFilters,
   collectStloCharacterFilterTargets,
 } from "./stloCharacterFilters.js";
+import {
+  ensureCharacterMemoryBookLocks,
+  getCharacterMemoryBookLock,
+  getCharacterMemoryBookLockStatus,
+  moveCharacterMemoryBookLock,
+  refreshCharacterMemoryBookLockName,
+  removeCharacterMemoryBookLock,
+  resolveManualGroupCharacterBindings,
+  setCharacterMemoryBookLock,
+} from "./characterMemoryBookLocks.js";
 import "../../../../lib/select2.min.js";
 
 /**
@@ -521,6 +532,7 @@ const defaultSettings = {
       6: 5,
     },
   },
+  characterMemoryBookLocks: {},
   titleFormat: DEFAULT_TITLE_FORMAT,
   profiles: [], // Will be populated dynamically with current ST settings
   defaultProfile: 0,
@@ -542,6 +554,25 @@ function getBranchLorebookController() {
     updateWorldInfoList,
     saveMetadata,
     getEffectiveLorebookName,
+    getLockedLorebookName: () => {
+      const resolution = getCurrentManualLorebookResolution({ settings: initializeSettings() });
+      return resolution.source === "character-lock" ? resolution.lorebookName : "";
+    },
+    getLockedCharacterBindingKeys: () => {
+      const settings = initializeSettings();
+      if (
+        !settings.moduleSettings?.manualModeEnabled ||
+        !getCurrentMemoryBooksContext()?.isGroupChat
+      ) {
+        return [];
+      }
+      return getValidManualGroupMembers()
+        .filter(member => getCharacterMemoryBookLock(
+          settings.characterMemoryBookLocks,
+          member.avatar || member.key,
+        ))
+        .map(member => member.key);
+    },
     translate,
     notify: (level, message, options) => {
       const method = level === "error"
@@ -1269,7 +1300,7 @@ async function validateStmbCatchupNonInteractive(settings, chunks) {
   const isManualMode = !!moduleSettings.manualModeEnabled;
   const stmbData = isManualMode ? getSceneMarkers() || {} : null;
   const lorebookName = isManualMode
-    ? stmbData?.manualLorebook ?? null
+    ? getCurrentManualLorebookResolution({ settings, markers: stmbData }).lorebookName
     : chat_metadata?.[METADATA_KEY] || null;
   const canAutoCreateLorebook =
     !isManualMode && !!moduleSettings.autoCreateLorebook;
@@ -2000,6 +2031,11 @@ function initializeSettings() {
   extension_settings.STMemoryBooks =
     extension_settings.STMemoryBooks || deepClone(defaultSettings);
 
+  const lockNormalization = ensureCharacterMemoryBookLocks(extension_settings.STMemoryBooks);
+  if (lockNormalization.changed) {
+    saveSettingsDebounced();
+  }
+
   // Migration logic for versions 3-4: Add dynamic profile and clean up titleFormat
   const currentVersion = extension_settings.STMemoryBooks.migrationVersion ?? 1;
   if (currentVersion < 4) {
@@ -2367,9 +2403,18 @@ function getValidManualGroupMembers() {
 
 function createManualGroupLorebookBindingSnapshot(stmbData = null) {
   const source = stmbData || getSceneMarkers() || {};
+  const members = getValidManualGroupMembers();
+  const localBindings = getManualCharacterLorebookBindings(source);
+  const resolved = resolveManualGroupCharacterBindings({
+    manualModeEnabled: true,
+    members,
+    chatBindings: localBindings,
+    locks: extension_settings.STMemoryBooks?.characterMemoryBookLocks,
+  });
   return {
-    members: deepClone(getValidManualGroupMembers()),
-    bindings: deepClone(getManualCharacterLorebookBindings(source)),
+    members: deepClone(members),
+    bindings: deepClone(resolved.bindings),
+    locksByMemberKey: deepClone(resolved.locksByMemberKey),
     canonicalLorebookName: String(source.manualLorebook || "").trim(),
   };
 }
@@ -2668,10 +2713,19 @@ function getManualGroupBindingIssues(stmbData = null, snapshot = null) {
   const members = Array.isArray(snapshot?.members)
     ? snapshot.members
     : getValidManualGroupMembers();
-  const bindings =
+  const snapshotBindings =
     snapshot?.bindings && typeof snapshot.bindings === "object" && !Array.isArray(snapshot.bindings)
       ? snapshot.bindings
-      : getManualCharacterLorebookBindings(stmbData);
+      : null;
+  const resolved = snapshotBindings
+    ? { bindings: snapshotBindings, locksByMemberKey: snapshot?.locksByMemberKey || {} }
+    : resolveManualGroupCharacterBindings({
+        manualModeEnabled: true,
+        members,
+        chatBindings: getManualCharacterLorebookBindings(stmbData),
+        locks: extension_settings.STMemoryBooks?.characterMemoryBookLocks,
+      });
+  const bindings = resolved.bindings;
   const canonicalLorebookName = String(
     snapshot?.canonicalLorebookName || stmbData?.manualLorebook || "",
   ).trim();
@@ -2679,16 +2733,28 @@ function getManualGroupBindingIssues(stmbData = null, snapshot = null) {
 
   for (const member of members) {
     const lorebookName = String(bindings[member.key] || "").trim();
+    const isLocked = !!resolved.locksByMemberKey?.[member.key];
     if (!lorebookName) {
       issues.push({ member, reason: "missing" });
     } else if (canonicalLorebookName && lorebookName === canonicalLorebookName) {
-      issues.push({ member, reason: "canonical", lorebookName });
+      issues.push({ member, reason: "canonical", lorebookName, locked: isLocked });
     } else if (!Array.isArray(world_names) || !world_names.includes(lorebookName)) {
-      issues.push({ member, reason: "deleted", lorebookName });
+      issues.push({
+        member,
+        reason: isLocked ? "locked-deleted" : "deleted",
+        lorebookName,
+        locked: isLocked,
+      });
     }
   }
 
-  return { members, bindings, canonicalLorebookName, issues };
+  return {
+    members,
+    bindings,
+    locksByMemberKey: resolved.locksByMemberKey,
+    canonicalLorebookName,
+    issues,
+  };
 }
 
 function formatManualGroupBindingIssue(issue) {
@@ -2704,6 +2770,14 @@ function formatManualGroupBindingIssue(issue) {
     return tr(
       "STMemoryBooks_GroupManualLorebookDeleted",
       '{{name}}: "{{lorebookName}}" not found',
+      { name: issue.member.name, lorebookName: issue.lorebookName },
+    );
+  }
+
+  if (issue.reason === "locked-deleted") {
+    return tr(
+      "STMemoryBooks_GroupLockedCharacterLorebookDeleted",
+      '{{name}}: locked Memory Book "{{lorebookName}}" not found; unlock and repair this assignment',
       { name: issue.member.name, lorebookName: issue.lorebookName },
     );
   }
@@ -2803,7 +2877,7 @@ async function validateManualGroupLorebookBindingsForMemory(settings, context) {
 
   const snapshot = context?.manualGroupLorebookBindings || null;
   const stmbData = snapshot ? null : getSceneMarkers() || {};
-  const { members, bindings, canonicalLorebookName, issues } =
+  const { members, bindings, locksByMemberKey, canonicalLorebookName, issues } =
     getManualGroupBindingIssues(stmbData, snapshot);
 
   if (members.length === 0) {
@@ -2848,9 +2922,11 @@ async function validateManualGroupLorebookBindingsForMemory(settings, context) {
     valid: true,
     members,
     bindings,
+    locksByMemberKey,
     manualGroupLorebookBindings: {
       members: deepClone(members),
       bindings: deepClone(bindings),
+      locksByMemberKey: deepClone(locksByMemberKey),
       canonicalLorebookName,
     },
     memoryBooksContext: deepClone(context),
@@ -3690,9 +3766,9 @@ function getCurrentChatLorebookNames(settings) {
   add(chat_metadata?.[METADATA_KEY]);
   const markers = getSceneMarkers() || {};
   if (settings?.moduleSettings?.manualModeEnabled) {
-    add(markers.manualLorebook);
-    const bindings = getManualCharacterLorebookBindings(markers);
-    Object.values(bindings || {}).forEach(add);
+    add(getCurrentManualLorebookResolution({ settings, markers }).lorebookName);
+    const groupSnapshot = createManualGroupLorebookBindingSnapshot(markers);
+    Object.values(groupSnapshot.bindings || {}).forEach(add);
   }
   return names;
 }
@@ -3701,10 +3777,11 @@ async function findLinkedManualGroupLorebooks(lorebookName, entry) {
   if (!hasLinkedManualGroupMetadata(entry)) return [];
 
   const markers = getSceneMarkers() || {};
+  const groupSnapshot = createManualGroupLorebookBindingSnapshot(markers);
   const candidates = new Set([
     String(entry?.STMB_canonicalLorebook || "").trim(),
     String(markers.manualLorebook || "").trim(),
-    ...Object.values(getManualCharacterLorebookBindings(markers) || {})
+    ...Object.values(groupSnapshot.bindings || {})
       .map(value => String(value || "").trim()),
   ]);
   candidates.delete("");
@@ -5902,7 +5979,7 @@ function updateLorebookStatusDisplay() {
   const activeLorebookSpan = document.querySelector("#stmb-active-lorebook");
   if (activeLorebookSpan) {
     const currentLorebook = isManualMode
-      ? stmbData.manualLorebook
+      ? getCurrentManualLorebookResolution({ settings, markers: stmbData }).lorebookName
       : chat_metadata?.[METADATA_KEY];
 
     activeLorebookSpan.textContent =
@@ -6011,9 +6088,101 @@ function appendLorebookSelectOptions(select, currentLorebook = null, options = {
   }
 }
 
+function createCharacterMemoryBookLockButton({
+  settings,
+  characterKey,
+  characterName,
+  selectedLorebook,
+  disabledReason = "",
+  onChanged,
+}) {
+  const lockStatus = getCharacterMemoryBookLockStatus(
+    settings?.characterMemoryBookLocks,
+    characterKey,
+    world_names,
+  );
+  const lock = lockStatus.lock;
+  const lockIsMissing = lockStatus.state === "broken";
+  const canCreateLock = !!selectedLorebook && (world_names || []).includes(selectedLorebook);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `menu_button menu_button_icon fa-solid ${lock ? "fa-lock" : "fa-lock-open"} stmb-character-memory-book-lock`;
+  button.setAttribute("aria-pressed", lock ? "true" : "false");
+
+  if (lockIsMissing) {
+    button.classList.add("stmb-character-memory-book-lock-broken");
+    button.title = tr(
+      "STMemoryBooks_CharacterMemoryBookLockBrokenTitle",
+      'Locked Memory Book "{{lorebookName}}" is missing. Unlock this character to repair the assignment.',
+      { lorebookName: lock.lorebookName },
+    );
+  } else if (lock) {
+    button.title = tr(
+      "STMemoryBooks_CharacterMemoryBookUnlockTitle",
+      'Unlock {{characterName}} from "{{lorebookName}}"',
+      { characterName, lorebookName: lock.lorebookName },
+    );
+  } else if (!canCreateLock) {
+    button.disabled = true;
+    button.title = disabledReason || translate(
+      "Select a valid character Memory Book before locking.",
+      "STMemoryBooks_CharacterMemoryBookLockNeedsSelection",
+    );
+  } else {
+    button.title = tr(
+      "STMemoryBooks_CharacterMemoryBookLockTitle",
+      'Always use "{{lorebookName}}" as {{characterName}}\'s Memory Book',
+      { characterName, lorebookName: selectedLorebook },
+    );
+  }
+  button.setAttribute("aria-label", button.title);
+
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (button.disabled) return;
+
+    const liveSettings = initializeSettings();
+    const liveLocks = liveSettings.characterMemoryBookLocks;
+    const liveLock = getCharacterMemoryBookLock(liveLocks, characterKey);
+    if (liveLock) {
+      removeCharacterMemoryBookLock(liveLocks, characterKey);
+      toastr.success(
+        tr(
+          "STMemoryBooks_CharacterMemoryBookUnlocked",
+          "{{characterName}} no longer has a locked Memory Book.",
+          { characterName },
+        ),
+        "STMemoryBooks",
+      );
+    } else if (canCreateLock) {
+      setCharacterMemoryBookLock(
+        liveLocks,
+        characterKey,
+        characterName,
+        selectedLorebook,
+      );
+      toastr.success(
+        tr(
+          "STMemoryBooks_CharacterMemoryBookLocked",
+          '{{characterName}} will always use "{{lorebookName}}" as their Memory Book in manual mode.',
+          { characterName, lorebookName: selectedLorebook },
+        ),
+        "STMemoryBooks",
+      );
+    }
+
+    saveSettingsDebounced();
+    void refreshMemoryTierMacroCache();
+    await onChanged?.();
+  });
+  return button;
+}
+
 function renderManualGroupLorebookBindings(container, stmbData) {
   container.innerHTML = "";
 
+  const settings = initializeSettings();
   const context = getCurrentMemoryBooksContext();
   if (!context.isGroupChat) {
     return;
@@ -6060,7 +6229,12 @@ function renderManualGroupLorebookBindings(container, stmbData) {
   rows.className = "stmb-manual-group-lorebook-list";
 
   for (const member of members) {
-    const currentLorebook = String(bindings[member.key] || "").trim();
+    const lock = getCharacterMemoryBookLock(
+      settings.characterMemoryBookLocks,
+      member.avatar || member.key,
+    );
+    const localLorebook = String(bindings[member.key] || "").trim();
+    const currentLorebook = lock?.lorebookName || localLorebook;
     const row = document.createElement("div");
     row.className = "stmb-manual-group-lorebook-row";
     if (!stloAvailable) {
@@ -6076,8 +6250,13 @@ function renderManualGroupLorebookBindings(container, stmbData) {
     const select = document.createElement("select");
     select.className = "text_pole stmb-manual-group-lorebook-select";
     select.dataset.memberKey = member.key;
-    select.disabled = !stloAvailable;
-    select.title = stloAvailable ? "" : stloRequiredText;
+    select.disabled = !stloAvailable || !!lock;
+    select.title = lock
+      ? translate(
+          "Unlock this character before changing their manual Memory Book.",
+          "STMemoryBooks_CharacterMemoryBookUnlockBeforeChange",
+        )
+      : stloAvailable ? "" : stloRequiredText;
     appendLorebookSelectOptions(select, currentLorebook, {
       excludedLorebookNames: canonicalLorebookName ? [canonicalLorebookName] : [],
     });
@@ -6142,8 +6321,8 @@ function renderManualGroupLorebookBindings(container, stmbData) {
         }
       } finally {
         row.classList.remove("stmb-processing");
-        select.disabled = !stloAvailable;
-        clearButton.disabled = !stloAvailable || !assignedLorebook;
+        select.disabled = !stloAvailable || !!lock;
+        clearButton.disabled = !stloAvailable || !!lock || !assignedLorebook;
       }
     });
     row.appendChild(select);
@@ -6152,8 +6331,13 @@ function renderManualGroupLorebookBindings(container, stmbData) {
     clearButton.type = "button";
     clearButton.className = "menu_button stmb-nowrap-button";
     clearButton.textContent = translate("Clear", "STMemoryBooks_Clear");
-    clearButton.disabled = !stloAvailable || !currentLorebook;
-    clearButton.title = stloAvailable ? "" : stloRequiredText;
+    clearButton.disabled = !stloAvailable || !!lock || !localLorebook;
+    clearButton.title = lock
+      ? translate(
+          "Unlock this character before changing their manual Memory Book.",
+          "STMemoryBooks_CharacterMemoryBookUnlockBeforeChange",
+        )
+      : stloAvailable ? "" : stloRequiredText;
     clearButton.addEventListener("click", () => {
       if (!stloAvailable) {
         return;
@@ -6174,6 +6358,21 @@ function renderManualGroupLorebookBindings(container, stmbData) {
       refreshPopupContent();
     });
     row.appendChild(clearButton);
+
+    const lockButton = createCharacterMemoryBookLockButton({
+      settings,
+      characterKey: member.avatar || member.key,
+      characterName: member.name,
+      selectedLorebook: localLorebook,
+      disabledReason: stloAvailable ? "" : stloRequiredText,
+      onChanged: refreshPopupContent,
+    });
+    if (!stloAvailable && !lock) {
+      lockButton.disabled = true;
+      lockButton.title = stloRequiredText;
+      lockButton.setAttribute("aria-label", stloRequiredText);
+    }
+    row.appendChild(lockButton);
 
     rows.appendChild(row);
   }
@@ -6210,6 +6409,12 @@ function populateInlineButtons() {
   // Populate manual lorebook buttons if container exists and manual mode is enabled
   if (manualLorebookContainer && settings.moduleSettings.manualModeEnabled) {
     const hasManualLorebook = stmbData.manualLorebook ?? null;
+    const context = getCurrentMemoryBooksContext();
+    const character = !context.isGroupChat ? characters?.[this_chid] : null;
+    const characterLock = getCharacterMemoryBookLock(
+      settings.characterMemoryBookLocks,
+      character?.avatar,
+    );
 
     const manualLorebookButtons = [
       {
@@ -6217,6 +6422,7 @@ function populateInlineButtons() {
           `📕 ${hasManualLorebook ? translate("Change", "STMemoryBooks_ChangeManualLorebook") : translate("Select", "STMemoryBooks_SelectManualLorebook")} ` +
           translate("Manual Lorebook", "STMemoryBooks_ManualLorebook"),
         id: "stmb-select-manual-lorebook",
+        disabled: !!characterLock,
         action: async () => {
           try {
             // Use the dedicated selection popup that always shows options
@@ -6254,6 +6460,7 @@ function populateInlineButtons() {
             "STMemoryBooks_ClearManualLorebook",
           ),
         id: "stmb-clear-manual-lorebook",
+        disabled: !!characterLock,
         action: () => {
           try {
             const stmbData = getSceneMarkers() || {};
@@ -6294,9 +6501,28 @@ function populateInlineButtons() {
       button.className = "menu_button interactable whitespacenowrap";
       button.id = buttonConfig.id;
       button.textContent = buttonConfig.text;
-      button.addEventListener("click", buttonConfig.action);
+      if (buttonConfig.disabled) {
+        button.classList.add("disabled");
+        button.setAttribute("aria-disabled", "true");
+        button.title = translate(
+          "Unlock this character before changing their manual Memory Book.",
+          "STMemoryBooks_CharacterMemoryBookUnlockBeforeChange",
+        );
+      } else {
+        button.addEventListener("click", buttonConfig.action);
+      }
       manualLorebookContainer.appendChild(button);
     });
+
+    if (character?.avatar) {
+      manualLorebookContainer.appendChild(createCharacterMemoryBookLockButton({
+        settings,
+        characterKey: character.avatar,
+        characterName: character.name,
+        selectedLorebook: String(hasManualLorebook || "").trim(),
+        onChanged: refreshPopupContent,
+      }));
+    }
 
     if (manualGroupLorebookContainer) {
       renderManualGroupLorebookBindings(manualGroupLorebookContainer, stmbData);
@@ -9330,7 +9556,10 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
   const isCustomTitleFormat = !getDefaultTitleFormats().includes(defaultProfileTitleFormat);
   const isManualMode = settings.moduleSettings.manualModeEnabled;
   const chatBoundLorebook = chat_metadata?.[METADATA_KEY] ?? null;
-  const manualLorebook = sceneMarkers?.manualLorebook ?? null;
+  const manualLorebook = getCurrentManualLorebookResolution({
+    settings,
+    markers: sceneMarkers || {},
+  }).lorebookName;
   const autoConsolidationTargetTiers = normalizeAutoConsolidationTargetTiers(
     settings.moduleSettings.autoConsolidationTargetTiers ??
       settings.moduleSettings.autoConsolidationTargetTier,
@@ -9842,7 +10071,14 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
         const context = getCurrentMemoryBooksContext();
 
         // If switching to manual mode and no manual lorebook is set
-        if (!stmbData.manualLorebook) {
+        const soloCharacterLock = !context.isGroupChat
+          ? getCharacterMemoryBookLock(
+              settings.characterMemoryBookLocks,
+              characters?.[this_chid]?.avatar,
+            )
+          : null;
+
+        if (!stmbData.manualLorebook && !soloCharacterLock) {
           if (context.isGroupChat) {
             toastr.info(
               translate(
@@ -10853,6 +11089,45 @@ function setupEventListeners() {
   eventSource.on(event_types.WORLDINFO_UPDATED, (name, data) => {
     updateMemoryTierMacroCache(name, data);
     scheduleLorebookRegenerationActionsRefresh();
+    populateInlineButtons();
+  });
+  eventSource.on(event_types.CHARACTER_RENAMED, (oldAvatar, newAvatar) => {
+    const settings = initializeSettings();
+    const renamedCharacter = characters?.find(character => character?.avatar === newAvatar);
+    if (moveCharacterMemoryBookLock(
+      settings.characterMemoryBookLocks,
+      oldAvatar,
+      newAvatar,
+      renamedCharacter?.name,
+    )) {
+      saveSettingsDebounced();
+      populateInlineButtons();
+    }
+  });
+  eventSource.on(event_types.CHARACTER_EDITED, (payload) => {
+    const character = payload?.detail?.character || payload?.character;
+    if (!character?.avatar) return;
+    const settings = initializeSettings();
+    if (refreshCharacterMemoryBookLockName(
+      settings.characterMemoryBookLocks,
+      character.avatar,
+      character.name,
+    )) {
+      saveSettingsDebounced();
+      populateInlineButtons();
+    }
+  });
+  eventSource.on(event_types.CHARACTER_DELETED, (payload) => {
+    const character = payload?.detail?.character || payload?.character;
+    if (!character?.avatar) return;
+    const settings = initializeSettings();
+    if (removeCharacterMemoryBookLock(
+      settings.characterMemoryBookLocks,
+      character.avatar,
+    )) {
+      saveSettingsDebounced();
+      populateInlineButtons();
+    }
   });
   eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
     const settings = initializeSettings();

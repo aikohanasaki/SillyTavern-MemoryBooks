@@ -296,9 +296,17 @@
 
 .stmb-manual-group-lorebook-row {
     display: grid;
-    grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto;
+    grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto auto;
     gap: 8px;
     align-items: center;
+}
+
+.stmb-character-memory-book-lock {
+    min-width: 2.25em;
+}
+
+.stmb-character-memory-book-lock-broken {
+    color: var(--warning-color, #e6a23c);
 }
 
 .stmb-manual-group-lorebook-label {

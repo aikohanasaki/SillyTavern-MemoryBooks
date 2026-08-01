@@ -11,6 +11,11 @@ import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
 import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS, MEMORY_TIER_CACHE_REFRESH_EVENT } from './constants.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
+import { tr } from './i18nHelpers.js';
+import {
+    getCharacterMemoryBookLock,
+    resolveManualLorebookForCharacter,
+} from './characterMemoryBookLocks.js';
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
@@ -330,6 +335,20 @@ export function getCurrentMemoryBooksContext() {
     }
 }
 
+export function getCurrentManualLorebookResolution(options = {}) {
+    const settings = options.settings || extension_settings.STMemoryBooks || {};
+    const markers = options.markers || getSceneMarkers() || {};
+    const context = options.context || getCurrentMemoryBooksContext();
+    const character = options.character || characters?.[this_chid] || null;
+    return resolveManualLorebookForCharacter({
+        manualModeEnabled: !!settings?.moduleSettings?.manualModeEnabled,
+        isGroupChat: !!context?.isGroupChat,
+        characterKey: character?.avatar,
+        manualLorebook: markers.manualLorebook,
+        locks: settings.characterMemoryBookLocks,
+    });
+}
+
 /**
  * Determines which lorebook to use based on settings and chat metadata.
  * If in manual mode and no lorebook is set, it will trigger a selection popup.
@@ -352,14 +371,22 @@ export async function getEffectiveLorebookName() {
         return chat_metadata?.[METADATA_KEY] || null;
     }
 
-    // Manual mode is ON. Check if a manual lorebook has already been designated for this chat.
-    const stmbData = getSceneMarkers(); // This function already gets the right metadata object
-    if (stmbData.manualLorebook ?? null) {
+    // Manual mode is ON. A solo character lock overrides this chat's manual selection.
+    const stmbData = getSceneMarkers() || {}; // This function already gets the right metadata object
+    const resolution = getCurrentManualLorebookResolution({ settings, markers: stmbData });
+    if (resolution.lorebookName) {
         // Ensure the designated lorebook still exists
-        if (world_names.includes(stmbData.manualLorebook)) {
-            return stmbData.manualLorebook;
+        if (world_names.includes(resolution.lorebookName)) {
+            return resolution.lorebookName;
+        } else if (resolution.source === 'character-lock') {
+            toastr.error(tr(
+                'STMemoryBooks_CharacterMemoryBookLockMissing',
+                'The locked Memory Book "{{lorebookName}}" no longer exists. Unlock this character and choose a valid Memory Book.',
+                { lorebookName: resolution.lorebookName },
+            ));
+            return null;
         } else {
-            toastr.error(`The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`);
+            toastr.error(`The designated manual lorebook "${resolution.lorebookName}" no longer exists. Please select a new one.`);
             delete stmbData.manualLorebook; // Clear the invalid entry
         }
     }
@@ -416,8 +443,15 @@ export async function showLorebookSelectionPopup(currentLorebook = null, options
         && !Array.isArray(markers.manualCharacterLorebooks)
         ? Object.values(markers.manualCharacterLorebooks)
         : [];
+    const lockedGroupLorebooks = getCurrentGroupLorebookMembers()
+        .map(member => getCharacterMemoryBookLock(
+            extension_settings.STMemoryBooks?.characterMemoryBookLocks,
+            member?.avatar || member?.key,
+        )?.lorebookName)
+        .filter(Boolean);
     const excludedLorebooks = new Set([
         ...currentCharacterLorebooks,
+        ...lockedGroupLorebooks,
         ...(Array.isArray(options.excludedLorebookNames) ? options.excludedLorebookNames : []),
     ].map(name => String(name || '').trim()).filter(Boolean));
     const availableLorebooks = world_names.filter(name => !excludedLorebooks.has(name));
