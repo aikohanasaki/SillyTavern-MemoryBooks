@@ -105,9 +105,39 @@ test('treats a cancelled effective-lorebook resolution as unbound', () => {
     }, null), null);
 });
 
+test('does not branch-copy a persistent solo character lock', () => {
+    assert.equal(resolveActiveLorebookBindings({
+        manualModeEnabled: true,
+        isGroupChat: false,
+        manualLorebook: 'Chat Manual Book',
+        lockedLorebookName: 'Global Character Book',
+    }, 'Global Character Book'), null);
+});
+
+test('separates locked group locals from branch-copy sources', () => {
+    assert.deepEqual(resolveActiveLorebookBindings({
+        manualModeEnabled: true,
+        isGroupChat: true,
+        manualLorebook: 'Group Book',
+        manualCharacterLorebooks: {
+            alice: 'Global Alice Book',
+            bob: 'Bob Local Book',
+        },
+        lockedCharacterBindingKeys: ['alice'],
+    }), {
+        mode: 'manual',
+        primary: 'Group Book',
+        characterBindings: { bob: 'Bob Local Book' },
+        preservedCharacterBindings: { alice: 'Global Alice Book' },
+        sourceNames: ['Group Book', 'Bob Local Book'],
+    });
+});
+
 function createHarness({
     manualMode = false,
     isGroup = false,
+    lockedLorebookName = '',
+    lockedCharacterBindingKeys = [],
     parentMetadata,
     worlds,
     getEffectiveLorebookName = null,
@@ -147,6 +177,8 @@ function createHarness({
         getEffectiveLorebookName: typeof getEffectiveLorebookName === 'function'
             ? () => getEffectiveLorebookName(state)
             : undefined,
+        getLockedLorebookName: () => lockedLorebookName,
+        getLockedCharacterBindingKeys: () => lockedCharacterBindingKeys,
         saveMetadata: async () => { metadataSaveCount++; },
         translate: fallback => fallback,
         notify: (level, message, options) => {
@@ -219,6 +251,26 @@ test('uses bindings inherited at branch time rather than a stale parent snapshot
     assert.equal(harness.state.metadata.world_info, 'Chat Book');
     assert.equal(harness.state.metadata.STMemoryBooks.manualLorebook, 'Manual Book Branch 1');
     assert.equal(harness.books.has('Chat Book Branch 1'), false);
+});
+
+test('leaves a persistent locked solo book untouched when branching', async () => {
+    const harness = createHarness({
+        manualMode: true,
+        lockedLorebookName: 'Global Character Book',
+        parentMetadata: { STMemoryBooks: { manualLorebook: 'Chat Manual Book' } },
+        worlds: {
+            'Global Character Book': { entries: {} },
+            'Chat Manual Book': { entries: {} },
+        },
+        getEffectiveLorebookName: () => 'Global Character Book',
+    });
+    harness.setBranch();
+
+    await harness.controller.handleChatChanged('Parent - Branch #1');
+    assert.equal(harness.books.has('Global Character Book Branch 1'), false);
+    assert.equal(harness.books.has('Chat Manual Book Branch 1'), false);
+    assert.equal(harness.state.metadata.STMemoryBooks.manualLorebook, 'Chat Manual Book');
+    assert.equal(harness.notifications.at(-1).level, 'warning');
 });
 
 test('resolves the primary binding through the existing effective-lorebook helper', async () => {
@@ -306,6 +358,37 @@ test('copies every unique manual group binding with one shared number', async ()
     });
     assert.equal(harness.books.get('Alice Book Branch 1').entries[2].STMB_canonicalLorebook, 'Group Book Branch 1');
     assert.equal(markers[BRANCH_LOREBOOK_METADATA_KEY].mappings.length, 2);
+});
+
+test('copies unlocked group bindings while preserving locked local fallbacks', async () => {
+    const harness = createHarness({
+        manualMode: true,
+        isGroup: true,
+        lockedCharacterBindingKeys: ['alice'],
+        parentMetadata: {
+            STMemoryBooks: {
+                manualLorebook: 'Group Book',
+                manualCharacterLorebooks: {
+                    alice: 'Global Alice Book',
+                    bob: 'Bob Local Book',
+                },
+            },
+        },
+        worlds: {
+            'Group Book': { entries: {} },
+            'Global Alice Book': { entries: {} },
+            'Bob Local Book': { entries: {} },
+        },
+    });
+    harness.setBranch();
+
+    await harness.controller.handleChatChanged('Parent - Branch #1');
+    assert.equal(harness.books.has('Global Alice Book Branch 1'), false);
+    assert.equal(harness.books.has('Bob Local Book Branch 1'), true);
+    assert.deepEqual(harness.state.metadata.STMemoryBooks.manualCharacterLorebooks, {
+        alice: 'Global Alice Book',
+        bob: 'Bob Local Book Branch 1',
+    });
 });
 
 test('clears active child bindings when a required manual book cannot be loaded', async () => {

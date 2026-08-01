@@ -28,7 +28,12 @@ import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { showStmbEntryReviewPopup } from './clipManager.js';
-import { getCurrentMemoryBooksContext, markStmbPopup, withGoBackButton } from './utils.js';
+import {
+    getCurrentManualLorebookResolution,
+    getCurrentMemoryBooksContext,
+    markStmbPopup,
+    withGoBackButton,
+} from './utils.js';
 import { listContextSettings } from './contextSettingsManager.js';
 import {
     SIDE_PROMPT_AFTER_MEMORY_SET_KEY,
@@ -181,9 +186,8 @@ function validateKeywordsMacroConfig({ prompt, responseFormat, keywordsTemplate 
 
 function getMemoryLorebookName() {
     const settings = extension_settings?.STMemoryBooks;
-    const markers = getSceneMarkers() || {};
     return settings?.moduleSettings?.manualModeEnabled
-        ? (markers.manualLorebook || null)
+        ? getCurrentManualLorebookResolution({ settings }).lorebookName
         : (chat_metadata?.[METADATA_KEY] || null);
 }
 

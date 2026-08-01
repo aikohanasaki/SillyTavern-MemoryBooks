@@ -82,21 +82,45 @@ export function resolveActiveLorebookBindings(snapshot, resolvedPrimary = undefi
             : null;
     }
 
+    if (!snapshot.isGroupChat && String(snapshot.lockedLorebookName || '').trim()) {
+        return null;
+    }
+
     const primaryValue = resolvedPrimary === undefined ? snapshot.manualLorebook : resolvedPrimary;
     const primary = String(primaryValue || '').trim();
     if (!primary) return null;
 
-    const characterBindings = snapshot.isGroupChat && snapshot.manualCharacterLorebooks
+    const allCharacterBindings = snapshot.isGroupChat && snapshot.manualCharacterLorebooks
         && typeof snapshot.manualCharacterLorebooks === 'object'
         && !Array.isArray(snapshot.manualCharacterLorebooks)
         ? cloneValue(snapshot.manualCharacterLorebooks)
         : {};
+    const lockedCharacterBindingKeys = new Set(
+        (snapshot.lockedCharacterBindingKeys || []).map(key => String(key || '').trim()).filter(Boolean),
+    );
+    const characterBindingEntries = [];
+    const preservedCharacterBindingEntries = [];
+    for (const [key, value] of Object.entries(allCharacterBindings)) {
+        if (lockedCharacterBindingKeys.has(key)) {
+            preservedCharacterBindingEntries.push([key, value]);
+        } else {
+            characterBindingEntries.push([key, value]);
+        }
+    }
+    const characterBindings = Object.fromEntries(characterBindingEntries);
+    const preservedCharacterBindings = Object.fromEntries(preservedCharacterBindingEntries);
     const sourceNames = [primary];
     for (const value of Object.values(characterBindings)) {
         const name = String(value || '').trim();
         if (name && !sourceNames.includes(name)) sourceNames.push(name);
     }
-    return { mode: 'manual', primary, characterBindings, sourceNames };
+    return {
+        mode: 'manual',
+        primary,
+        characterBindings,
+        preservedCharacterBindings,
+        sourceNames,
+    };
 }
 
 function getLineageRoot(sourceName, marker) {
@@ -156,13 +180,20 @@ export function applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySo
 
     const stmbData = getStmbMetadata(chatMetadata, { create: true });
     stmbData.manualLorebook = copyNameBySource.get(bindings.primary);
-    if (Object.keys(bindings.characterBindings || {}).length > 0) {
-        stmbData.manualCharacterLorebooks = Object.fromEntries(
+    const copiedCharacterBindings = Object.keys(bindings.characterBindings || {}).length > 0
+        ? Object.fromEntries(
             Object.entries(bindings.characterBindings).map(([key, sourceName]) => [
                 key,
                 copyNameBySource.get(String(sourceName || '').trim()) || sourceName,
             ]),
-        );
+        )
+        : {};
+    const effectiveCharacterBindings = {
+        ...(bindings.preservedCharacterBindings || {}),
+        ...copiedCharacterBindings,
+    };
+    if (Object.keys(effectiveCharacterBindings).length > 0) {
+        stmbData.manualCharacterLorebooks = effectiveCharacterBindings;
     } else if (stmbData.manualCharacterLorebooks) {
         stmbData.manualCharacterLorebooks = {};
     }
@@ -177,8 +208,13 @@ export function clearActiveBranchLorebookBindings(chatMetadata, bindings) {
 
     const stmbData = getStmbMetadata(chatMetadata, { create: true });
     delete stmbData.manualLorebook;
-    if (Object.keys(bindings.characterBindings || {}).length > 0) {
-        stmbData.manualCharacterLorebooks = {};
+    if (
+        Object.keys(bindings.characterBindings || {}).length > 0 ||
+        Object.keys(bindings.preservedCharacterBindings || {}).length > 0
+    ) {
+        stmbData.manualCharacterLorebooks = cloneValue(
+            bindings.preservedCharacterBindings || {},
+        );
     }
 }
 
@@ -231,6 +267,10 @@ export function createBranchLorebookController(dependencies) {
             isGroupChat: !!deps.isGroupChat?.(),
             chatBoundLorebook: String(chatMetadata.world_info || '').trim(),
             manualLorebook: String(stmbData.manualLorebook || '').trim(),
+            lockedLorebookName: String(deps.getLockedLorebookName?.() || '').trim(),
+            lockedCharacterBindingKeys: cloneValue(
+                deps.getLockedCharacterBindingKeys?.() || [],
+            ),
             manualCharacterLorebooks: cloneValue(stmbData.manualCharacterLorebooks || {}),
             branchMarker: cloneValue(stmbData[BRANCH_LOREBOOK_METADATA_KEY] || null),
         };

@@ -23,6 +23,7 @@ import { isSidePromptEntryTitle } from './sidePrompts.js';
 import { requestCompletion } from './stmemory.js';
 import {
     getCurrentApiInfo,
+    getCurrentManualLorebookResolution,
     getUIModelSettings,
     markStmbPopup,
     normalizeCompletionSource,
@@ -1271,7 +1272,7 @@ async function getDefaultCompactionLorebookName() {
     const settings = extension_settings?.STMemoryBooks;
     const manualMode = !!settings?.moduleSettings?.manualModeEnabled;
     const lorebookName = manualMode
-        ? getSceneMarkers()?.manualLorebook
+        ? getCurrentManualLorebookResolution().lorebookName
         : chat_metadata?.[METADATA_KEY];
 
     return lorebookName && Array.isArray(world_names) && world_names.includes(lorebookName)
