@@ -700,7 +700,9 @@ async function prepareSidePromptRun({
     priorContentOverride = undefined,
 }) {
     const unifiedTitle = getUnifiedSidePromptTitle(tpl, runtimeMacros);
-    const existing = findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, runtimeMacros, fallbackKinds));
+    const existing = priorContentOverride === undefined
+        ? findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, runtimeMacros, fallbackKinds))
+        : null;
     const prior = priorContentOverride === undefined
         ? existing?.content || ''
         : String(priorContentOverride || '');
