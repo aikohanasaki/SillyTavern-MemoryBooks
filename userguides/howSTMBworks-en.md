@@ -36,12 +36,22 @@ Depending on the features you use, a Memory Book may contain:
 
 * Scene memories
 * Consolidated Arc, Chapter, or Book summaries
-* Side prompt trackers
+* Side Prompt trackers
 * Clips
 * Topical Clips
 * Other STMB-managed entries
 
 This means STMB does not create a separate hidden memory system outside SillyTavern. It produces lorebook entries that can be inspected, edited, activated, reordered, exported, or deleted through the normal SillyTavern lorebook tools.
+
+### Branching and Memory Book Independence
+
+When **Copy Memory Books when branching** is enabled, a newly created native SillyTavern branch receives copies of its active unlocked Memory Books.
+
+This matters because a branch is usually a new continuity. If both chats continued writing into the same book, later memories from the parent and branch could contradict each other inside one timeline.
+
+STMB copies the chat-bound or main manual book and, for a Manual Mode group, each unique unlocked character book. Persistent character locks are preserved instead of copied because a lock explicitly means that the character should keep using one continuing book.
+
+Branch copying changes storage and internal links. It does not regenerate the contents. Existing entries are cloned, branch-specific chat IDs are rewritten, and canonical group/character lorebook links are redirected when both books were copied.
 
 ### Generation and Retrieval Are Separate Steps
 
@@ -185,9 +195,22 @@ The quality of the final result therefore depends on three separate things:
 The prompt flows described below mainly concern the first step: what STMB sends to the model when creating or updating those lorebook entries.
 
 
+## Context Sources Are Not Interchangeable
+
+Several kinds of text may appear in an STMB request. They have different jobs:
+
+- **Current scene:** the messages being processed now.
+- **Previous memories:** earlier STMB memories supplied only for continuity.
+- **Additional Context:** selected lorebook reference entries from a reusable Context Setting.
+- **Prior Side Prompt entry:** the current tracker text that should be revised.
+- **Consolidation sources:** lower-tier memories or summaries that are the actual material being grouped and compressed.
+- **Previous higher-tier summary:** canon carried forward during consolidation, not a source to rewrite.
+
+A prompt should identify which material is the target and which material is reference-only. Many bad outputs come from treating previous memories or Additional Context as if they were part of the current scene.
+
 ## The 3 Main STMB Prompt Flows
 
-STMB has three main workflows:
+STMB has three main structured generation workflows:
 
 1. Memory generation
 2. Side prompts
@@ -196,8 +219,8 @@ STMB has three main workflows:
 They are related, but they do not expect the same kind of output.
 
 - Memory generation expects strict JSON.
-- Side prompts usually expect clean plain text (can use Markdown or other lorebook entry formats, DO NOT USE JSON in side prompts).
-- Consolidation expects strict JSON but in a different schema than memories.
+- Side prompts usually expect clean plain text or Markdown. Do not use JSON unless your own tracker format deliberately needs JSON text.
+- Consolidation expects strict JSON but in a different schema from memories.
 
 ## I. Memory Generation
 
@@ -206,13 +229,18 @@ When you create a memory, STMB sends one assembled prompt that usually contains 
 1. The selected memory prompt or preset text
    - This is the instruction block from the Summary Prompt Manager.
    - It tells the model what kind of summary to write and what JSON shape to return.
-   - Macros like `{{user}}` and `{{char}}` are resolved before send.
+   - Macros such as `{{user}}`, `{{char}}`, and the STMB count macros are resolved before send.
 
-2. Optional previous-memory context
-   - If the run was configured to include previous memories, they are inserted as read-only context.
+2. Optional Additional Context
+   - The current chat may select a reusable Context Setting containing ordered lorebook entries.
+   - These entries are clearly labeled as reference material.
+   - They may provide rules, canon, terminology, or stable facts that are not present in the scene.
+
+3. Optional previous-memory context
+   - If the run was configured to include previous memories, they are inserted as read-only continuity context.
    - They are clearly marked as context and not the thing to summarize again.
 
-3. The current scene transcript
+4. The current scene transcript
    - The selected chat range is formatted line by line as `Speaker: message`.
    - This is the actual scene the model is supposed to turn into a memory.
 
@@ -220,6 +248,10 @@ Very rough shape:
 
 ```text
 [memory prompt / preset instructions]
+
+=== ADDITIONAL CONTEXT FOR REFERENCE ===
+[zero or more ordered lorebook entries]
+=== END ADDITIONAL CONTEXT FOR REFERENCE ===
 
 === PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [zero or more earlier memories]
@@ -295,31 +327,36 @@ Weak prompts usually fail in one of these ways:
 - If you want short memories, constrain the body, not the JSON schema.
 - If you want strong retrieval, spend prompt space on keyword quality, not just summary style.
 - Treat previous memories as continuity context, not source material to rewrite.
+- Treat Additional Context as authoritative reference only to the extent your selected entries are authoritative; do not ask the model to summarize the reference block.
 
 ## II. Side Prompts
 
 Side prompts are NOT memories. They are tracker/update prompts that usually write or overwrite a separate lorebook entry. This is a very different concept from a memory and is extremely important to keep in mind. 
 
-When a side prompt runs, STMB usually assembles these parts in this order:
+When a Side Prompt runs, STMB usually assembles these parts in this order:
 
-1. The side prompt's main instruction text
+1. The Side Prompt's main instruction text
    - This is the actual task prompt for that tracker.
-   - ST standard macros like `{{user}}` and `{{char}}` are resolved.
-   - Custom runtime macros can also be inserted for manual runs.
+   - Standard macros such as `{{user}}`, `{{char}}`, and STMB count macros are resolved.
+   - Custom runtime macros can be supplied by a manual command or stored in a Side Prompt Set row.
 
 2. Optional prior entry
-   - If that side prompt already has saved content, STMB can include the current version first.
+   - If that Side Prompt already has saved content, STMB includes the current version.
    - This lets the model update an existing tracker instead of writing from scratch every time.
 
 3. Optional previous-memory context
-   - If the template asks for previous memories, STMB inserts them as read-only context.
+   - If the template asks for previous memories, STMB inserts up to seven as read-only continuity context.
 
-4. The compiled scene text
+4. Optional Additional Context
+   - The Side Prompt can follow the chat's Context Setting or select a fixed Context Setting.
+   - The entries are supplied as ordered reference material.
+
+5. The compiled scene text
    - This is the current scene material the tracker should react to.
 
-5. Optional response-format guidance
+6. Optional Response Format guidance
    - This is not enforced as a parser schema.
-   - It is just additional instruction about the output format you want.
+   - It is additional instruction about the final text layout.
 
 Very rough shape:
 
@@ -332,6 +369,10 @@ Very rough shape:
 === PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===
 [optional previous memories]
 === END PREVIOUS SCENE CONTEXT ===
+
+=== ADDITIONAL CONTEXT FOR REFERENCE ===
+[optional ordered lorebook entries]
+=== END ADDITIONAL CONTEXT FOR REFERENCE ===
 
 === SCENE TEXT ===
 [compiled scene text]
@@ -398,6 +439,8 @@ The best side prompt wording usually does this:
 - Assume the model may see the current tracker first, then the new scene.
 - Keep each tracker focused on one job.
 - Use the Response Format field to control layout, section names, and ordering.
+- Decide whether the Side Prompt should use the current Memory Book, a template-level target, or a per-chat target override. Storage destination affects later retrieval but does not change the prompt text itself.
+- Automatic set selection and generation triggers are separate: a selected set chooses candidate rows, then STMB filters those rows for after-memory or interval eligibility.
 
 ## III. Consolidation
 
@@ -511,12 +554,91 @@ The best consolidation prompts also tell the model what to preserve:
 - It asks for freeform prose instead of the consolidation JSON object.
 - It over-focuses on style and under-specifies selection and grouping.
 
+### Group-chat consolidation routing
+
+In a Manual Mode group with a canonical group book and character books, the canonical group book uses **Group Chat Consolidation Analysis (Automatic)**. Its goal is an omniscient group chronology that distinguishes objective events from individual knowledge.
+
+Character books use the consolidation preset selected in the consolidation popup. A character book may have fewer source entries than the group book; missing entries are chronology gaps, not proof that the character was absent or ignorant.
+
 ### Practical prompt-writing advice for consolidation
 
 - Tell the model whether you want one coherent recap or the smallest coherent number of recaps.
 - Require chronology.
 - Require explicit handling of leftovers.
 - Keep keywords concrete here too; higher-tier summaries still need retrieval value.
+
+## Other STMB Generation Flows
+
+The three workflows above are the main prompt-authoring systems, but several other features also send focused requests.
+
+### Clip
+
+A normal Clip does not call the model. It saves the text selected in chat into a `[STMB Clip]` entry.
+
+### Topical Clip
+
+Topical Clip reads confirmed STMB memory entries from one selected Memory Book and asks the model to gather information about one topic.
+
+It does not use raw chat, ordinary Clip entries, Side Prompt entries, or unrelated lorebook entries as evidence. When updating an existing Topical Clip, it can provide the existing Clip text and only new or changed source memories, or rebuild from all eligible memories.
+
+The result is a reviewable draft. STMB saves nothing until the user approves it.
+
+### Compaction
+
+Compaction sends one selected STMB-managed entry to the model with its kind and title. The editable prompt receives:
+
+- `{{ENTRY_CONTENT}}`
+- `{{ENTRY_KIND}}`
+- `{{ENTRY_TITLE}}`
+
+The model should shorten and clean the existing entry without adding unsupported facts. The original remains unchanged until the user approves replacement.
+
+## Regeneration Flows
+
+Regeneration rebuilds an existing entry instead of creating another entry.
+
+### Scene-memory regeneration
+
+STMB reopens the original source chat range and runs the current memory-generation workflow. The user can choose the current profile, prompt, previous-memory count, and Additional Context. The original sequence number is retained when the title is reformatted.
+
+### Consolidation regeneration
+
+STMB reloads the exact linked lower-tier source entries and uses the dedicated **Regenerate Consolidation** preset. This preset expects one replacement summary, not the ordinary multi-summary consolidation schema.
+
+### Side Prompt regeneration
+
+Each compatible Side Prompt save records a compact snapshot containing the template key, prior entry content, source chat/range, and runtime macro values. Regeneration combines that snapshot with the current Side Prompt template and current settings.
+
+### Regeneration safety
+
+Before saving, STMB verifies that:
+
+- the target entry is unchanged;
+- the source chat range is unchanged;
+- every consolidation source is unchanged; and
+- the entry is still eligible.
+
+If any check fails, nothing is overwritten. Review is always required.
+
+## Memory Count Macros
+
+STMB registers these standard SillyTavern macros:
+
+```text
+{{memtier0}}  scene Memory count
+{{memtier1}}  Arc count
+{{memtier2}}  Chapter count
+{{memtier3}}  Book count
+{{memtier4}}  Legend count
+{{memtier5}}  Series count
+{{memtier6}}  Epic count
+{{memclips}}  Clip count
+{{memside}}   Side Prompt entry count
+```
+
+They read the effective main Memory Book: chat-bound in Automatic Mode or the resolved manual Memory Book in Manual Mode. They are cached and return integer text.
+
+These macros can help prompts adapt to the current state, but do not make prompts over-engineer their own workflow. A count tells the model how many entries exist; it does not provide those entries' contents.
 
 ## The Real Prompt-Writing Rule
 
@@ -535,7 +657,7 @@ If your prompt answers those five questions clearly, it will usually work well w
 ## FAQ-Style Notes
 
 - "Can I see what was actually sent to the AI?"
-  Yes. Check your terminal/log output if you want to inspect the assembled prompt.
+  Yes. Check the terminal/log output for the assembled request. Remember that provider routing through ChatCompletionService or a proxy may change which network layer is visible.
 
 - "Does STMB force good output if my prompt is weak?"
   Not really. STMB can sometimes rescue malformed JSON, but it cannot fix a vague prompt that asked for the wrong thing.
