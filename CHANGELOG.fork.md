@@ -16,6 +16,75 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > **v0.0.2** is the second. The section below describes v0.0.1 / v0.1.0-equivalent
 > contents and is preserved for audit purposes.
 
+## v0.0.3 (2026-08-01) — release
+
+Third public release. Re-redirected from the v0.0.2 cycle (which never made
+it to a live install in Brandon's prod ST). Adds the Phase 5/6/7 librarian
+work (P5.1/P5.2 auditor + P7.1/P7.2/P7.3/P7.4 librarian) and the PHA-1638
+ground-truth correction.
+
+### What's new
+
+- **P7.4 — Phase 7 acceptance gate (commit `7430ac8`).** Adds
+  `eval/phase7Acceptance.test.js` and fixes the over-merged ground-truth
+  key in `eval/materials/stmb-auto/`. The corrected 35-boundary GT key
+  replaces the previously-published 22-boundary one.
+
+- **P7.3 — scene-aware caching via sentinel boundaries (commit `f6e13d2`).**
+  `librarianCacheCore` keys cache entries by sentinel boundaries, not raw
+  message offsets. Cache invalidation now respects scene boundaries, so a
+  cached librarian response stays valid across minor message edits within a
+  scene and only re-keys when a boundary shifts.
+
+- **P7.2 — pre-turn retrieval + additive injection (fail-open)
+  (commit `1cc5b15`).** `librarianCore` exposes a `retrieve()` call that
+  runs before each LLM turn and returns candidate lorebook entries.
+  `injection.js` consumes those entries additively (never overwriting user
+  lorebook state). Fail-open: if the LLM call fails the chat continues
+  with the user's prior context, no error surfaced.
+
+- **P7.1 — entry catalog/index builder (Auditor byproduct)
+  (commit `b1bac7e`).** The Auditor's coverage pass now writes a catalog
+  file (`<lorebook-name>.catalog.json`) into the lorebook directory that
+  the librarian can read without re-walking the lorebook.
+
+- **PHA-1638 — detection KPI re-run against corrected 35-boundary GT key
+  (commit `e21607a`).** Re-runs the Phase-0 detection acceptance gate with
+  the corrected key. See "Known-unverified" below.
+
+### Known-unverified
+
+- **Detection precision regression against the corrected GT key.** Against
+  the corrected 35-boundary GT key, real-LLM detection scores **P=0.842 at
+  ±1** (below the 0.90 gate), passing only at ±2 (0.921), across three
+  byte-identical temp-0 runs. The prior PASS (P=0.969 at ±1) was scored
+  against a since-proven-wrong key (the `mergeShortScenes` bug over-merged
+  67 raw → 22 instead of the corrected 35), so it is not a valid promotion.
+  Tracked separately; **do not fix in this release**. Will be filed under
+  PHA-1553 if it needs its own tracker.
+
+- **Phase-7 acceptance test for the 328-message Magisa fixture.** The
+  fixture file (`Satire Fantasy Isekai - 2026-07-12@10h18m29s211ms.jsonl`)
+  is not committed to `main` (the test that consumes it,
+  `librarianCacheCore.test.js`, was added with the Phase-7 librarian but
+  the fixture only lives in the Phase-7 dev environment). 882 of 883 tests
+  pass; the one failure is this missing-fixture assertion and is unrelated
+  to the v0.0.3 deliverables. Filed separately for the fixture-check-in
+  follow-up.
+
+### Install
+
+This release is the installable artifact for [PHA-1555](#). The exact
+installer URL (paste into ST's extension installer) is the source archive at
+this tag:
+
+```
+https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto/archive/refs/tags/v0.0.3.zip
+```
+
+Manifest `display_name` remains `MemoryBooks Auto`; ST renders the
+Extensions panel entry as `MemoryBooks Auto (0.0.3)` after install.
+
 ## v0.0.2 (2026-07-26) — release
 
 Second public release. Consolidates post-v0.0.1 work across four feature
