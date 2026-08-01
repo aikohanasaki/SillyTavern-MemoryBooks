@@ -852,7 +852,7 @@ function refreshNarratorCastDrawer() {
   narratorCastDrawer.classList.toggle("collapsed", collapsed);
   narratorCastDrawer.innerHTML = collapsed
     ? `<button type="button" class="stmb-narrator-cast-expand interactable" title="${escapeHtml(translate("Active Cast", "STMemoryBooks_ActiveCast"))}"><i class="fa-solid fa-users"></i><span>${active.size}</span></button>`
-    : `<header class="stmb-narrator-cast-header"><strong>${escapeHtml(translate("Active Cast", "STMemoryBooks_ActiveCast"))} (${active.size})</strong><button type="button" class="menu_button stmb-narrator-cast-collapse" title="${escapeHtml(translate("Collapse", "STMemoryBooks_Collapse"))}"><i class="fa-solid fa-chevron-down"></i></button></header><div class="stmb-narrator-cast-list">${members.length ? members.map(member => `<label class="checkbox_label"><input type="checkbox" data-narrator-member-id="${escapeHtml(member.id)}"${active.has(member.id) ? " checked" : ""}><span>${escapeHtml(member.name)}</span></label>`).join("") : `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div><button type="button" class="menu_button stmb-narrator-manage"><i class="fa-solid fa-gear"></i> ${escapeHtml(translate("Manage Cast", "STMemoryBooks_ManageCast"))}</button>`;
+    : `<header class="stmb-narrator-cast-header"><strong>${escapeHtml(translate("Active Cast", "STMemoryBooks_ActiveCast"))} (${active.size})</strong><button type="button" class="menu_button stmb-narrator-cast-collapse" title="${escapeHtml(translate("Collapse", "STMemoryBooks_Collapse"))}"><i class="fa-solid fa-chevron-down"></i></button></header><div class="stmb-narrator-cast-list">${members.length ? members.map(member => `<label class="checkbox_label"><input type="checkbox" data-narrator-member-id="${escapeHtml(member.id)}"${active.has(member.id) ? " checked" : ""}><span>${escapeHtml(member.name)}</span></label>`).join("") : `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div><div class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap"><button type="button" class="menu_button interactable whitespacenowrap stmb-narrator-manage"><i class="fa-solid fa-gear"></i> ${escapeHtml(translate("Manage Cast", "STMemoryBooks_ManageCast"))}</button></div>`;
   narratorCastDrawer.querySelector(".stmb-narrator-cast-expand, .stmb-narrator-cast-collapse")?.addEventListener("click", event => {
     event.stopPropagation();
     if (narratorCastDrawer.dataset.dragged === "true") {
@@ -10344,6 +10344,9 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       const config = getCurrentNarratorConfig();
       config.enabled = e.target.checked;
       saveMetadataForCurrentContext();
+      popupElement
+        .querySelector("#stmb-manage-narrator-cast-container")
+        ?.classList.toggle("displayNone", !config.enabled);
       refreshNarratorCastDrawer();
       return;
     }

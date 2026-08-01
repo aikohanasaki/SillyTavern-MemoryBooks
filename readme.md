@@ -292,7 +292,7 @@ By default, **Copy Memory Books when branching** is enabled. When SillyTavern cr
 
 While the copies are being created, do not switch chats. If copying fails, STMB clears the new branch's inherited Memory Book bindings so the branch cannot accidentally write into the originals.
 
-Disable **Copy Memory Books when branching** in the main Memory Books panel when you intentionally want a branch to keep using the inherited books instead of receiving independent copies.
+Disable **Copy Memory Books when branching** in **Memory Books → General Settings** when you intentionally want a branch to keep using the inherited books instead of receiving independent copies.
 
 ---
 
