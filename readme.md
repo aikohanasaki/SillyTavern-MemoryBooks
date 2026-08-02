@@ -88,6 +88,7 @@ Other links:
 - [Slash Commands](#-slash-commands)
   - [`/stmb-catchup`](#stmb-catchup)
 - [Group Chat Support](#-group-chat-support)
+- [Narrator Mode](#-narrator-mode)
 - [Modes of Operation](#-modes-of-operation)
 - [Trackers & Side Prompts](#-trackers--side-prompts)
 - [Compaction](#-compaction)
@@ -286,6 +287,7 @@ By default, **Copy Memory Books when branching** is enabled. When SillyTavern cr
 - In Automatic Mode, STMB copies and binds the active chat-bound Memory Book.
 - In Manual Mode, STMB copies the main manual Memory Book.
 - In a Manual Mode group chat, STMB also copies each unique **unlocked** character Memory Book used by the group.
+- In Narrator Mode, STMB copies the omniscient Memory Book and every declared cast Memory Book, then rewrites the branch cast assignments to the copies.
 - Persistent character Memory Book locks are preserved instead of copied. A locked character continues using the locked book.
 - All books copied for the same branch use the same branch number, such as `Investigation Memories Branch 1` and `Alice Memories Branch 1`.
 - STMB updates branch-specific chat IDs and links between canonical group entries and character copies inside the new books.
@@ -475,6 +477,25 @@ The group prompt writes the shared version for the main group Memory Book. In Ma
 
 ---
 
+## 🎭 Narrator Mode
+
+Narrator Mode is for a normal one-on-one chat where one Narrator character card writes several fictional characters. Unlike native Group Chat Mode, SillyTavern does not identify those fictional characters as separate message authors, so STMB uses an explicit **Active Cast** selection and message metadata instead.
+
+Narrator Mode requires:
+
+- **Manual Lorebook Mode**;
+- one omniscient manual Memory Book;
+- one unique Memory Book for each declared fictional character; and
+- a user-maintained cast configured through **Manage Narrator Cast**.
+
+Before each Narrator generation, select the participating characters in the movable Active Cast drawer. STMB snapshots that selection, makes the selected character Memory Books available to the generation, and stamps the completed message with stable cast-member IDs. Later memory creation uses those IDs to save one canonical entry to the omniscient book and linked copies to the participating character books.
+
+Narrator Mode does not infer characters from names in prose, does not use native character filters, and does not require STLO. The profile option for separate group and character prompts can produce an omniscient version plus character-focused versions.
+
+See the [Narrator Mode Technical Guide](userguides/narrator-mode-en.md) for setup, metadata flow, legacy-message handling, branching, regeneration, consolidation, and troubleshooting.
+
+---
+
 ## 🧭 Modes of Operation
 
 ### **Automatic Mode (Default)**
@@ -503,6 +524,12 @@ The group prompt writes the shared version for the main group Memory Book. In Ma
   2. The first time you create a memory in a chat, you will be prompted to choose a lorebook.
   3. This choice is saved for that specific chat until you clear it or switch back to Automatic Mode.
 - **Note:** Cannot be used simultaneously with Auto-Create Lorebook Mode.
+
+### **Narrator Mode**
+- **How it works:** Extends Manual Lorebook Mode for a normal chat whose Narrator card writes multiple fictional characters. Uses one omniscient Memory Book and one unique book per declared cast member.
+- **Best for:** Narrator-card roleplay where individual fictional characters need separate continuity.
+- **Requires:** Manual Lorebook Mode and a selected omniscient Memory Book.
+- **Does not require:** Native group chat cards or STLO.
 
 ---
 
@@ -693,6 +720,7 @@ A named connection supplies its saved URL and secret. The model entered in the S
 [Short video overview on Youtube](https://youtu.be/mG2eRH_EhHs)
 
 - **Manual Lorebook Mode:** Enable to select lorebooks per chat.
+- **Narrator Mode:** In a normal non-group chat, use one omniscient manual Memory Book plus one unique Memory Book per declared fictional character. Requires Manual Lorebook Mode.
 - **Auto-create lorebook if none exists:** ⭐ *New in v4.2.0* - Automatically create and bind lorebooks using your naming template.
 - **Lorebook Name Template:** Customize auto-created lorebook names with `{{char}}`, `{{user}}`, and `{{chat}}` placeholders.
 - **Copy Memory Books when branching:** Give native chat branches independent copies of active unlocked Memory Books.
@@ -725,7 +753,7 @@ A named connection supplies its saved URL and secret. The model entered in the S
 - **Model:** Model ID. For a named Custom connection, this field remains the model override.
 - **Temperature:** 0.0–2.0.
 - **Prompt or Preset:** Built-in or custom Summary Prompt Manager preset.
-- **Group Prompt Routing:** Optionally use separate group and character prompts in group chats.
+- **Group Prompt Routing:** Optionally use separate group and character prompts in native group chats and Narrator Mode.
 - **Structured Output:** Normally enabled; disable schema use only for providers that reject structured-output requests.
 - **ChatCompletionService / Preset:** Optional SillyTavern request routing and Chat Completion preset.
 - **Reverse Proxy:** Use SillyTavern's configured reverse proxy for supported providers.

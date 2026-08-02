@@ -8,7 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 **← [Back to README](readme.md)**
 
 ## v8.5.0 (August 1, 2026)
-- New Feature: Narrator Mode Group Chat feature now added.
+- **Narrator Mode:** Added multi-character memory routing for normal chats where one Narrator card writes several fictional characters.
+- **Active Cast:** Added a movable per-chat cast selector. STMB snapshots the selected cast at generation start, stores stable cast-member IDs on messages and swipes, merges cast metadata across continuations, and restores the selector from the active timeline.
+- **Narrator Memory Books:** Narrator Mode requires one omniscient manual Memory Book plus one unique Memory Book per declared character. Selected character books are made available during Narrator generation, while scene memories save canonically to the omniscient book and copy only to participating character books.
+- **Narrator Prompt Routing:** Existing separate group/character prompt support now produces omniscient and character-focused Narrator memories. Narrator ownership and participant metadata are preserved through regeneration and consolidation.
+- **Narrator Branching:** Native chat branches copy the omniscient book and all declared cast books, then rewrite the child chat's Narrator bindings and canonical links to the copies.
+- **Legacy Safety:** Scenes containing Narrator messages without cast metadata require participant review; non-interactive catch-up refuses those ranges.
 
 ## v8.4.0 (July 31, 2026)
 - **Branching:** Optionally copy and bind independent Memory Books when creating a chat branch. Locked character Memory Books remain shared.
