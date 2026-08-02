@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 **← [Back to README](readme.md)**
 
-## v8.5.1 (August 1, 2026)
+## v8.5.1 (August 2, 2026)
 - Tweak: Added on/off toggle in side prompt manager to make enable/disable easy and fast.
 
 ## v8.5.0 (August 1, 2026)
