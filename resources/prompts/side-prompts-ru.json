@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Развитие персонажа",
+      "enabled": false,
+      "prompt": "Шаги:\n1. Изучите предоставленные сцены.\n2. Определите и опишите изменения личности {{char}}, вызванные пережитым опытом.\n3. Кратко опишите, как изменился {{char}} и какие события привели к этим изменениям.",
+      "responseFormat": "===Развитие персонажа {{char}}===\n(краткое описание ключевых изменений)\n===КОНЕЦ развития персонажа {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Настроение и атмосфера",
+      "enabled": true,
+      "prompt": "Изучите приложенную сцену и опишите текущие настроение и атмосферу.",
+      "responseFormat": "===ТЕКУЩЕЕ НАСТРОЕНИЕ===\n(краткое описание текущих настроения и атмосферы)\n===КОНЕЦ ТЕКУЩЕГО НАСТРОЕНИЯ===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Мироустройство",
+      "enabled": true,
+      "prompt": "Опишите текущее состояние мира, особенно изменения, вызванные сюжетом или сценой.",
+      "responseFormat": "===ЗАМЕТКИ О МИРЕ===\n(краткая, но насыщенная заметка)\n===КОНЕЦ ЗАМЕТОК О МИРЕ===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Отслеживание положения тела",
+      "enabled": true,
+      "prompt": "Изучите сцену, затем заполните или обновите трекер положения тела для {{char}}. Если {{char}} обозначает нескольких людей, заполните отдельный трекер для каждого. Пишите кратко и экономно по токенам, но отдавайте приоритет точности и логистической корректности. Не нарушайте законы физики.",
+      "responseFormat": "===Положение тела {{char}}===\nОбщее положение и состояние одежды:\nГолова:\nЛевая рука/кисть:\nПравая рука/кисть:\nТорс/грудь/спина:\nЛевая нога/стопа:\nПравая нога/стопа:\n===КОНЕЦ положения тела {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

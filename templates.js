@@ -85,6 +85,23 @@ export const settingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_ManualModeDesc">When enabled, you must specify a lorebook for memories instead of using the one bound to the chat.</small>
         </div>
 
+        {{#unless isGroupChat}}
+        <div class="world_entry_form_control">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-narrator-mode-enabled" {{#if narratorModeEnabled}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_NarratorMode">Narrator Mode</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_NarratorModeDesc">Use one omniscient Memory Book plus separate Memory Books for a manually selected cast.</small>
+            <div id="stmb-manage-narrator-cast-container" class="buttons_block marginTop5 justifyCenter gap10px whitespacenowrap {{#unless narratorModeEnabled}}displayNone{{/unless}}">
+                <button type="button" id="stmb-manage-narrator-cast" class="menu_button interactable whitespacenowrap">
+                    <i class="fa-solid fa-users"></i>
+                    <span data-i18n="STMemoryBooks_ManageNarratorCast">Manage Narrator Cast</span>
+                    {{#if narratorMemberCount}} ({{narratorMemberCount}}){{/if}}
+                </button>
+            </div>
+        </div>
+        {{/unless}}
+
         <div class="world_entry_form_control">
             <label class="checkbox_label">
                 <input type="checkbox" id="stmb-auto-create-lorebook" {{#if autoCreateLorebook}}checked{{/if}} {{#if manualModeEnabled}}disabled{{/if}}>
@@ -175,6 +192,10 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
         </label>
         <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-accept-group-participants" {{#if autoAcceptGroupParticipants}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_GroupParticipants_AutoAccept">Automatically accept detected participants in future</span>
+        </label>
+        <label class="checkbox_label">
             <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_ShowMemoryPreviews;[title]STMemoryBooks_ShowMemoryPreviewsTooltip" title="Shows previews for memories and side prompts returned from the AI.">Show memory previews</span>
         </label>
@@ -187,14 +208,14 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_ShowNotifications">Show notifications</span>
         </label>
         <label class="checkbox_label">
-            <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
-            <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
-        </label>
-        <label class="checkbox_label">
             <input type="checkbox" id="stmb-show-scene-marker-buttons" {{#if showSceneMarkerButtons}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_ShowSceneMarkerButtons">Show scene marker buttons on each chat message</span>
         </label>
         <small class="opacity50p" data-i18n="STMemoryBooks_ShowSceneMarkerButtonsDesc">Adds the caret-right / caret-left icons (Mark Scene Start / Mark Scene End) to every message's hover toolbar. Off by default — most users prefer the slash commands or the Auto Module panel for scene marking.</small>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-show-floating-clip-button" {{#if showFloatingClipButton}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_ShowFloatingClipButton">Show floating Clip button when text is highlighted</span>
+        </label>
         <label for="stmb-memory-boundary-mode">
             <span data-i18n="STMemoryBooks_MemoryBoundaryMode">Memory boundary indicator</span>
             <small class="opacity50p" data-i18n="STMemoryBooks_MemoryBoundaryModeDesc">Show a chat divider, a jump button, or both at the Memory Books processed boundary.</small>
@@ -213,6 +234,11 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <input type="checkbox" id="stmb-refresh-editor" {{#if refreshEditor}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_RefreshEditor">Refresh lorebook editor after adding memories</span>
         </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-copy-memory-books-on-branch" {{#if copyMemoryBooksOnBranch}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_CopyMemoryBooksOnBranch">Copy Memory Books when branching</span>
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_CopyMemoryBooksOnBranchDesc">When enabled, new chat branches receive independent copies of their active chat-bound or manual Memory Books.</small>
     </div>
 
     <div class="world_entry_form_control">
@@ -328,16 +354,9 @@ export const generalSettingsTemplate = Handlebars.compile(`
 export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoMemory">Automatic Memories</h3>
 
-    {{#if autoSummaryForceDisabledBySentinel}}
-    <div class="info-block warning">
-        <strong data-i18n="STMemoryBooks_AutoSummaryForceDisabledTitle">Native Auto-Summary is disabled</strong>
-        <p data-i18n="STMemoryBooks_AutoSummaryForceDisabledDesc">Sentinel is enabled (per plan §4.1). The native auto-summary runtime is force-disabled so it never races the sentinel's own memory pipeline. The settings below are preserved but ignored until sentinel is disabled. autosummary.js is intentionally left intact for mergeability (§1.2 rule 4).</p>
-    </div>
-    {{/if}}
-
     <div class="world_entry_form_control">
-        <label class="checkbox_label {{#if autoSummaryForceDisabledBySentinel}}stmb-disabled-row{{/if}}">
-            <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}} {{#if autoSummaryForceDisabledBySentinel}}disabled{{/if}}>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-summary-enabled" {{#if autoSummaryEnabled}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
         </label>
         <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc;[title]STMemoryBooks_AutoSummaryWarnTooltip" title="Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest &lt;N|none&gt; to control the baseline.">Automatically run /nextmemory after a specified number of messages.</small>
@@ -349,7 +368,7 @@ export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryIntervalDesc">Number of messages after which to automatically create a memory summary.</small>
             <input type="number" id="stmb-auto-summary-interval" class="text_pole"
                 value="{{autoSummaryInterval}}" min="10" max="200" step="1"
-                placeholder="50" {{#if autoSummaryForceDisabledBySentinel}}disabled{{/if}}>
+                placeholder="50">
         </label>
     </div>
 
@@ -358,7 +377,7 @@ export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
             <h4 data-i18n="STMemoryBooks_AutoSummaryBuffer">Auto-Summary Buffer:</h4>
             <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryBufferDesc">Delay auto-summary by X messages (belated generation). Default 2, max 50.</small>
             <input type="number" id="stmb-auto-summary-buffer" class="text_pole"
-                value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0" {{#if autoSummaryForceDisabledBySentinel}}disabled{{/if}}>
+                value="{{autoSummaryBuffer}}" min="0" max="50" step="1" placeholder="0">
         </label>
     </div>
 
@@ -651,16 +670,6 @@ export const consolidationPreviewTemplate = Handlebars.compile(`
     </div>
     {{/if}}
 `);
-
-/**
- * STMB-Auto (Phase 2): settings panel for the Auto module.
- *
- * Renders the global settings under extension_settings.STMemoryBooks.autoModule
- * (sentinel on/off, cadence, window size, truncation, guard, detection profile,
- * detection prompt, debug logging) and the per-chat overrides under
- * chat_metadata.stmbc (enabled, watermark fallback, structure-hint regex,
- * prompt override). Plan §4.5.
- */
 export const autoModuleSettingsTemplate = Handlebars.compile(`
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoModule_Global">🛰️ Auto Module — Global</h3>
 

@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "캐릭터 성장",
+      "enabled": false,
+      "prompt": "단계:\n1. 제공된 장면을 검토하세요.\n2. 경험으로 인해 달라진 {{char}}의 성격을 파악하고 설명하세요.\n3. 어떤 사건으로 인해 {{char}}이(가) 어떻게 변했는지 짧게 설명하세요.",
+      "responseFormat": "==={{char}}의 캐릭터 성장===\n(주요 변화에 대한 짧은 설명)\n===끝: {{char}}의 캐릭터 성장===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "분위기와 정서",
+      "enabled": true,
+      "prompt": "함께 제공된 장면을 검토하고 현재의 정서와 분위기를 설명하세요.",
+      "responseFormat": "===현재 분위기===\n(현재 정서와 분위기에 대한 짧은 설명)\n===현재 분위기 끝===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "세계관 구축",
+      "enabled": true,
+      "prompt": "현재 세계의 상태, 특히 줄거리나 장면으로 인해 생긴 변화를 설명하세요.",
+      "responseFormat": "===세계관 메모===\n(짧지만 밀도 높은 메모)\n===세계관 메모 끝===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "신체 위치 추적기",
+      "enabled": true,
+      "prompt": "장면을 검토한 다음 {{char}}의 신체 위치 추적기를 작성하거나 업데이트하세요. {{char}}이(가) 여러 사람이라면 각 사람별로 하나씩 작성하세요. 간결하고 토큰 효율적으로 쓰되 정확성과 위치 관계의 논리성을 우선하세요. 물리 법칙을 위반하지 마세요.",
+      "responseFormat": "==={{char}} 신체 위치 추적기===\n전체 위치 및 의복 상태:\n머리:\n왼팔/손:\n오른팔/손:\n몸통/가슴/등:\n왼쪽 다리/발:\n오른쪽 다리/발:\n===끝: {{char}} 신체 위치 추적기===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

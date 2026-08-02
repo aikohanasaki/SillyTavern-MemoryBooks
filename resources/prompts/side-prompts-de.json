@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Charakterentwicklung",
+      "enabled": false,
+      "prompt": "Schritte:\n1. Prüfe die bereitgestellten Szenen.\n2. Erkenne und beschreibe Veränderungen in {{char}}s Persönlichkeit aufgrund der gemachten Erfahrungen.\n3. Beschreibe kurz, durch welche Ereignisse sich {{char}} wie verändert hat.",
+      "responseFormat": "===Charakterentwicklung von {{char}}===\n(kurze Beschreibung der wichtigsten Veränderungen)\n===ENDE der Charakterentwicklung von {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Stimmung und Atmosphäre",
+      "enabled": true,
+      "prompt": "Prüfe die zugehörige Szene und beschreibe ihre aktuelle Stimmung und Atmosphäre.",
+      "responseFormat": "===AKTUELLE STIMMUNG===\n(kurze Beschreibung der aktuellen Stimmung und Atmosphäre)\n===ENDE DER AKTUELLEN STIMMUNG===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Weltenbau",
+      "enabled": true,
+      "prompt": "Beschreibe den aktuellen Zustand der Welt, insbesondere Veränderungen durch die Handlung oder Szene.",
+      "responseFormat": "===WELTENNOTIZEN===\n(kurze, aber informationsreiche Notiz)\n===ENDE DER WELTENNOTIZEN===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Körperpositions-Tracker",
+      "enabled": true,
+      "prompt": "Prüfe die Szene und fülle dann den Körperpositions-Tracker für {{char}} aus oder aktualisiere ihn. Wenn {{char}} mehrere Personen umfasst, fülle für jede Person einen aus. Fasse dich kurz und token-effizient, aber priorisiere Genauigkeit und logistische Korrektheit. Verstoße nicht gegen die Gesetze der Physik.",
+      "responseFormat": "===Körperpositions-Tracker für {{char}}===\nGesamtposition und Zustand der Kleidung:\nKopf:\nLinker Arm/linke Hand:\nRechter Arm/rechte Hand:\nRumpf/Brust/Rücken:\nLinkes Bein/linker Fuß:\nRechtes Bein/rechter Fuß:\n===ENDE des Körperpositions-Trackers für {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

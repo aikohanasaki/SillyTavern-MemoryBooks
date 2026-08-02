@@ -7,7 +7,8 @@ node_modules/
 *.build.*.map
 .vscode/
 AGENTS.md
-# Ignore generated eval reports — but not the directory itself, otherwise git
+
+# Fork-specific — ignore generated eval reports — but not the directory itself, otherwise git
 # won't descend into it and the negations below can't take effect.
 eval/reports/*
 # …except the Phase 2 acceptance evidence, which is a committed deliverable

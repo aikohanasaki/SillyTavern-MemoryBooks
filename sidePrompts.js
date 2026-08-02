@@ -8,7 +8,7 @@ import { executeSlashCommands } from '../../../slash-commands.js';
 import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
 import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { appendAdditionalContextSection, applySelectedRegex, requestCompletion } from './stmemory.js';
-import { findSetByName, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
+import { findSetByName, getTemplate, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
@@ -32,7 +32,10 @@ import {
     withStmbWriteLane,
 } from './stmbJobs.js';
 import { filterAutomaticSidePromptSetItems, resolveAutomaticSidePromptSet } from './sidePromptSetDefaults.js';
-import { filterRunItemsByScenePresence, formatSkippedScenePresenceLog } from './sceneCharacterFilter.js';
+import {
+    buildSidePromptRegenerationSnapshot,
+    SIDE_PROMPT_REGENERATION_METADATA_KEY,
+} from './memoryRegeneration.js';
 
 
 const MODULE_NAME = 'STMemoryBooks-SidePrompts';
@@ -275,29 +278,56 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
     const parts = [];
     parts.push(applySidePromptMacros(templatePrompt, runtimeMacros));
     if (priorContent && String(priorContent).trim()) {
-        parts.push('\n=== PRIOR ENTRY ===\n');
+        parts.push(`\n${translate(
+            '=== PRIOR ENTRY ===',
+            'STMemoryBooks_PromptFrame_SidePriorEntryStart',
+        )}\n`);
         parts.push(String(priorContent));
     }
     if (Array.isArray(previousSummaries) && previousSummaries.length > 0) {
-        parts.push('\n=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===\n');
-        parts.push('These are previous memories for context only. Do NOT include them in your new output.\n\n');
+        parts.push(`\n${translate(
+            '=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===',
+            'STMemoryBooks_PromptFrame_SidePreviousContextStart',
+        )}\n`);
+        parts.push(`${translate(
+            'These are previous memories for context only. Do NOT include them in your new output.',
+            'STMemoryBooks_PromptFrame_SidePreviousContextInstruction',
+        )}\n\n`);
         previousSummaries.forEach((m, i) => {
-            parts.push(`Context ${i + 1} - ${m.title || 'Memory'}:\n`);
+            parts.push(`${tr(
+                'STMemoryBooks_PromptFrame_ContextLabel',
+                'Context {{number}} - {{title}}:',
+                {
+                    number: i + 1,
+                    title: m.title || translate('Memory', 'STMemoryBooks_Compaction_TypeMemory'),
+                },
+            )}\n`);
             parts.push(`${m.content || ''}\n`);
             if (Array.isArray(m.keywords) && m.keywords.length) {
-                parts.push(`Keywords: ${m.keywords.join(', ')}\n`);
+                parts.push(
+                    `${translate('Keywords', 'STMemoryBooks_PromptFrame_KeywordsLabel')}: ${m.keywords.join(', ')}\n`,
+                );
             }
             parts.push('\n');
         });
-        parts.push('=== END PREVIOUS SCENE CONTEXT ===\n');
+        parts.push(`${translate(
+            '=== END PREVIOUS SCENE CONTEXT ===',
+            'STMemoryBooks_PromptFrame_SidePreviousContextEnd',
+        )}\n`);
     }
     appendSidePromptAdditionalContext(parts, additionalContextEntries);
     // Derive scene text from the compiled scene here to keep a single source of truth
     const sceneText = compiledScene ? toReadableText(compiledScene) : '';
-    parts.push('\n=== SCENE TEXT ===\n');
+    parts.push(`\n${translate(
+        '=== SCENE TEXT ===',
+        'STMemoryBooks_PromptFrame_SideSceneTextStart',
+    )}\n`);
     parts.push(sceneText);
     if (responseFormat && String(responseFormat).trim()) {
-        parts.push('\n=== RESPONSE FORMAT ===\n');
+        parts.push(`\n${translate(
+            '=== RESPONSE FORMAT ===',
+            'STMemoryBooks_PromptFrame_SideResponseFormatStart',
+        )}\n`);
         parts.push(applySidePromptMacros(responseFormat, runtimeMacros).trim());
     }
     const finalPrompt = parts.join('');
@@ -323,7 +353,7 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
  */
 async function runLLM(prompt, overrides = null, options = {}) {
     // Determine connection
-    let api, model, temperature, endpoint, apiKey, reverseProxy, useChatCompletionService, chatCompletionPreset;
+    let api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, useChatCompletionService, chatCompletionPreset;
 
     if (overrides && (overrides.api || overrides.model)) {
         api = normalizeCompletionSource(overrides.api || 'openai');
@@ -331,6 +361,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         temperature = typeof overrides.temperature === 'number' ? overrides.temperature : 0.7;
         endpoint = overrides.endpoint || null;
         apiKey = overrides.apiKey || null;
+        connectionProfileId = overrides.connectionProfileId || null;
         reverseProxy = !!overrides.reverseProxy;
         useChatCompletionService = !!overrides.useChatCompletionService && api !== 'full-manual';
         chatCompletionPreset = useChatCompletionService ? String(overrides.chatCompletionPreset || '').trim() : '';
@@ -367,6 +398,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         temperature,
         endpoint,
         apiKey,
+        connectionProfileId,
         extra,
         reverseProxy,
         signal: options?.signal || null,
@@ -395,7 +427,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
  *   - If default is dynamic "Current SillyTavern Settings", mirror current UI settings.
  *   - Else use the stored connection of that profile.
  * Fallback to UI settings only if settings are missing/invalid.
- * @returns {{api: string, model: string, temperature: number, endpoint?: string|null, apiKey?: string|null, extra?: Record<string,any>|undefined}} The resolved connection object.
+ * @returns {{api: string, model: string, temperature: number, endpoint?: string|null, apiKey?: string|null, connectionProfileId?: string|null, extra?: Record<string,any>|undefined}} The resolved connection object.
  */
 function resolveSidePromptConnection(profile = null, options = {}) {
     try {
@@ -403,12 +435,12 @@ function resolveSidePromptConnection(profile = null, options = {}) {
         if (profile && (profile.effectiveConnection || profile.connection)) {
             const rawConn = profile.effectiveConnection || profile.connection || {};
             const conn = resolveEffectiveConnectionFromProfile(profile);
-            const { api, model, temperature, endpoint, apiKey, reverseProxy } = conn;
+            const { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy } = conn;
             const extra = rawConn && typeof rawConn.extra === 'object' && rawConn.extra ? rawConn.extra : undefined;
             const useChatCompletionService = !!profile.useChatCompletionService && api !== 'full-manual';
             const chatCompletionPreset = useChatCompletionService ? String(profile.chatCompletionPreset || '').trim() : '';
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using provided profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
+            return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
         }
 
         const settings = extension_settings?.STMemoryBooks;
@@ -438,12 +470,13 @@ function resolveSidePromptConnection(profile = null, options = {}) {
                 const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
                 const endpoint = conn.endpoint || null;
                 const apiKey = conn.apiKey || null;
+                const connectionProfileId = conn.connectionProfileId || null;
                 const reverseProxy = !!conn.reverseProxy;
                 const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
                 const useChatCompletionService = !!over?.useChatCompletionService && api !== 'full-manual';
                 const chatCompletionPreset = useChatCompletionService ? String(over?.chatCompletionPreset || '').trim() : '';
                 console.debug(`${MODULE_NAME}: resolveSidePromptConnection using template override profile index=${idxOverride} api=${api} model=${model} temp=${temperature}`);
-                return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
+                return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
             }
         }
 
@@ -481,12 +514,13 @@ function resolveSidePromptConnection(profile = null, options = {}) {
             const temperature = typeof conn.temperature === 'number' ? conn.temperature : 0.7;
             const endpoint = conn.endpoint || null;
             const apiKey = conn.apiKey || null;
+            const connectionProfileId = conn.connectionProfileId || null;
             const reverseProxy = !!conn.reverseProxy;
             const extra = conn && typeof conn.extra === 'object' && conn.extra ? conn.extra : undefined;
             const useChatCompletionService = !!def?.useChatCompletionService && api !== 'full-manual';
             const chatCompletionPreset = useChatCompletionService ? String(def?.chatCompletionPreset || '').trim() : '';
             console.debug(`${MODULE_NAME}: resolveSidePromptConnection using default profile api=${api} model=${model} temp=${temperature}`);
-            return { api, model, temperature, endpoint, apiKey, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
+            return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy, extra, useChatCompletionService, chatCompletionPreset };
         }
     } catch (err) {
         // Ultimate fallback: UI
@@ -656,10 +690,22 @@ function getSidePromptLastMessageId(tpl, existingEntry) {
     return getHighestProcessedMessageBaseline();
 }
 
-async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverrides = null, fallbackKinds = [], runtimeMacros = {} }) {
+async function prepareSidePromptRun({
+    tpl,
+    loreData,
+    compiledScene,
+    defaultOverrides = null,
+    fallbackKinds = [],
+    runtimeMacros = {},
+    priorContentOverride = undefined,
+}) {
     const unifiedTitle = getUnifiedSidePromptTitle(tpl, runtimeMacros);
-    const existing = findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, runtimeMacros, fallbackKinds));
-    const prior = existing?.content || '';
+    const existing = priorContentOverride === undefined
+        ? findFirstLoreEntryByTitle(loreData, getSidePromptLookupTitles(tpl, runtimeMacros, fallbackKinds))
+        : null;
+    const prior = priorContentOverride === undefined
+        ? existing?.content || ''
+        : String(priorContentOverride || '');
 
     let prevSummaries = [];
     const pmCountRaw = Number(tpl?.settings?.previousMemoriesCount ?? 0);
@@ -680,6 +726,43 @@ async function prepareSidePromptRun({ tpl, loreData, compiledScene, defaultOverr
         : (defaultOverrides || resolveSidePromptConnection(null));
 
     return { unifiedTitle, existing, prior, finalPrompt, conn };
+}
+
+function getSidePromptRegenerationMetadata(tpl, priorContent, compiledScene, runtimeMacros = {}) {
+    return {
+        [SIDE_PROMPT_REGENERATION_METADATA_KEY]: buildSidePromptRegenerationSnapshot({
+            templateKey: tpl?.key,
+            priorContent,
+            compiledScene,
+            runtimeMacros,
+        }),
+    };
+}
+
+/**
+ * Regenerate a persisted side-prompt run with the current template and settings.
+ */
+export async function generateSidePromptFromSnapshot({ snapshot, compiledScene, signal = null } = {}) {
+    const tpl = await getTemplate(snapshot?.templateKey);
+    if (!tpl) {
+        const error = new Error('The side-prompt template used for this run no longer exists.');
+        error.code = 'STMB_SIDE_PROMPT_TEMPLATE_MISSING';
+        throw error;
+    }
+    const prepared = await prepareSidePromptRun({
+        tpl,
+        loreData: null,
+        compiledScene,
+        runtimeMacros: snapshot.runtimeMacros,
+        priorContentOverride: snapshot.priorContent,
+    });
+    const content = await runLLM(prepared.finalPrompt, prepared.conn, { signal });
+    if (!content || !String(content).trim()) {
+        const error = new Error('The regenerated side prompt was blank.');
+        error.code = 'STMB_SIDE_PROMPT_REGENERATION_BLANK';
+        throw error;
+    }
+    return { content: String(content).trim(), template: tpl };
 }
 
 async function runSidePromptAttempt({ taskLabel, finalPrompt, conn, runEpoch }) {
@@ -804,7 +887,7 @@ function getAutomaticSetSkippedItems(skipped = [], trigger) {
     ));
 }
 
-function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros = {}, trigger = 'manual', setMeta = null, chatRef: providedChatRef = null, chatKey: providedChatKey = null }) {
+function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros = {}, trigger = 'manual', setMeta = null, chatRef: providedChatRef = null, chatKey: providedChatKey = null, parentJobId = '', parentJobOrder = null }) {
     const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
     const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runtimeMacros);
     const chatRef = providedChatRef || getCurrentStmbChatRef();
@@ -814,6 +897,8 @@ function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros 
         detail: compiledScene?.metadata ? `Messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}` : '',
         chatRef,
         chatKey: providedChatKey || getStmbChatKey(chatRef),
+        parentJobId,
+        parentJobOrder,
         lorebookName: lore?.name || '',
         range: compiledScene?.metadata ? {
             sceneStart: compiledScene.metadata.sceneStart,
@@ -825,6 +910,7 @@ function buildSidePromptJob({ tpl, lore, compiledScene, prepared, runtimeMacros 
             lorebookName: lore?.name || '',
             compiledScene: structuredClone(compiledScene),
             finalPrompt: prepared.finalPrompt,
+            priorContent: prepared.prior,
             conn: structuredClone(prepared.conn),
             unifiedTitle: prepared.unifiedTitle,
             runtimeMacros: structuredClone(runtimeMacros || {}),
@@ -841,6 +927,7 @@ function buildSidePromptBatchJob({ items, compiledScene, trigger = 'onAfterMemor
         tpl: structuredClone(item.tpl),
         lorebookName: item.lore?.name || '',
         finalPrompt: item.prepared.finalPrompt,
+        priorContent: item.prepared.prior,
         conn: structuredClone(item.prepared.conn),
         unifiedTitle: item.prepared.unifiedTitle,
         runtimeMacros: structuredClone(item.runtimeMacros || {}),
@@ -940,6 +1027,12 @@ async function executeQueuedSidePromptJob(job, context) {
                 defaults: payload.defaults,
                 entryOverrides: payload.entryOverrides,
                 metadataUpdates: {
+                    ...getSidePromptRegenerationMetadata(
+                        tpl,
+                        payload.priorContent,
+                        payload.compiledScene,
+                        payload.runtimeMacros,
+                    ),
                     [`STMB_sp_${tpl.key}_lastMsgId`]: payload.compiledScene?.metadata?.sceneEnd ?? null,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                     STMB_tracker_lastMsgId: payload.compiledScene?.metadata?.sceneEnd ?? null,
@@ -1069,6 +1162,12 @@ async function executeQueuedSidePromptBatchJob(job, context) {
             defaults: item.defaults,
             entryOverrides: item.entryOverrides,
             metadataUpdates: {
+                ...getSidePromptRegenerationMetadata(
+                    tpl,
+                    item.priorContent,
+                    compiledScene,
+                    item.runtimeMacros,
+                ),
                 [`STMB_sp_${tpl.key}_lastMsgId`]: compiledScene?.metadata?.sceneEnd ?? null,
                 [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                 STMB_tracker_lastMsgId: compiledScene?.metadata?.sceneEnd ?? null,
@@ -1322,6 +1421,7 @@ export async function evaluateTrackers() {
                     defaults,
                     entryOverrides,
                     metadataUpdates: {
+                        ...getSidePromptRegenerationMetadata(tpl, prepared.prior, compiled, runtimeMacros),
                         [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                         [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         STMB_tracker_lastMsgId: endId,
@@ -1357,7 +1457,42 @@ export async function evaluateTrackers() {
 export async function runAfterMemory(compiledScene, profile = null, options = {}) {
     const parentTask = createStmbInFlightTask('SidePrompts:onAfterMemory');
     const runEpoch = parentTask.epoch;
+
+    // STMBC-HOOK: side-prompt filtering — fork filters per-scene runs to
+    // characters present in the just-processed scene (per plan §4.4). Phase 1
+    // lands the empty call site; Phase 4 (living-lorebook orchestration) wires it up.
+    const filtered = await globalThis.STMBC?.filterSidePromptRun?.({
+        args, parentTask, runEpoch,
+    }).catch?.(() => null) ?? null;
+    if (filtered?.skip) return filtered.result ?? '';
+
     try {
+        const retryJobSnapshots = Array.isArray(options.retryJobSnapshots)
+            ? options.retryJobSnapshots
+            : [];
+        if (areStmbJobsEnabled() && retryJobSnapshots.length > 0) {
+            ensureSidePromptJobExecutorRegistered();
+            let queued = 0;
+            for (let index = 0; index < retryJobSnapshots.length; index++) {
+                const snapshot = retryJobSnapshots[index];
+                if (!snapshot || !['sidePrompt', 'sidePromptBatch'].includes(String(snapshot.type || ''))) {
+                    continue;
+                }
+                const queuedJob = enqueueStmbJob({
+                    ...structuredClone(snapshot),
+                    chatRef: options.chatRef || snapshot.chatRef || null,
+                    chatKey: options.chatKey || snapshot.chatKey || null,
+                    parentJobId: options.parentJobId || '',
+                    parentJobOrder: index,
+                });
+                if (queuedJob) queued++;
+            }
+            if (queued > 0 && extension_settings?.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
+                toastr.info(__st_t_tag`Side Prompts after memory queued: ${queued}.`, 'STMemoryBooks');
+            }
+            return queued;
+        }
+
         const sceneContext = options.sceneContext || getCurrentMemoryBooksContext();
         const sceneMarkers = options.sceneMarkers || getSceneMarkers() || {};
         const moduleSettings = options.settings?.moduleSettings
@@ -1388,7 +1523,7 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     'STMemoryBooks',
                 );
             }
-runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemory');
+            runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemory');
         } else {
             const enabledAfter = await listByTrigger('onAfterMemory');
             runItems = (enabledAfter || []).map(tpl => ({
@@ -1400,6 +1535,9 @@ runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemor
                 item: null,
             }));
         }
+
+        if (!runItems || runItems.length === 0) return;
+
 
         // STMBC-HOOK: per-scene side-prompt filtering — restrict character-scoped
         // run items ({{char}} runtime macro binding) to characters present in the
@@ -1415,9 +1553,6 @@ runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemor
             }
             runItems = runnable;
         }
-
-        if (!runItems || runItems.length === 0) return;
-
 
         // Determine default connection to use for side prompts
         const defaultOverrides = resolveSidePromptConnection(profile);
@@ -1459,7 +1594,8 @@ runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemor
                     setMeta: runItem.set ? { setKey: runItem.set.key, setName: runItem.set.name, itemId: runItem.item?.id || '' } : null,
                 });
             }
-            for (const item of preparedItems) {
+            for (let index = 0; index < preparedItems.length; index++) {
+                const item = preparedItems[index];
                 enqueueStmbJob(buildSidePromptJob({
                     tpl: item.tpl,
                     lore: item.lore,
@@ -1470,6 +1606,8 @@ runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemor
                     setMeta: item.setMeta,
                     chatRef: options.chatRef || null,
                     chatKey: options.chatKey || null,
+                    parentJobId: options.parentJobId || '',
+                    parentJobOrder: index,
                 }));
                 queued++;
             }
@@ -1513,7 +1651,17 @@ runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemor
                         conn: prepared.conn,
                         runEpoch,
                     });
-                    return { ok: true, runItem, tpl, lore, text, unifiedTitle: prepared.unifiedTitle, finalPrompt: prepared.finalPrompt, conn: prepared.conn };
+                    return {
+                        ok: true,
+                        runItem,
+                        tpl,
+                        lore,
+                        text,
+                        unifiedTitle: prepared.unifiedTitle,
+                        finalPrompt: prepared.finalPrompt,
+                        priorContent: prepared.prior,
+                        conn: prepared.conn,
+                    };
                 } catch (e) {
                     if (!isStmbStopError(e)) {
                         console.error(`${MODULE_NAME}: Wave LLM failed for "${tpl.name}":`, e);
@@ -1589,6 +1737,12 @@ runItems = filterAutomaticSidePromptSetItems(resolvedSet.runnable, 'onAfterMemor
                         defaults,
                         entryOverrides,
                         metadataUpdates: {
+                            ...getSidePromptRegenerationMetadata(
+                                tpl,
+                                r.priorContent,
+                                compiledScene,
+                                r.runItem?.runtimeMacros || {},
+                            ),
                             [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         },
                     });
@@ -1675,6 +1829,7 @@ export async function runSidePrompt(args) {
         args, parentTask, runEpoch,
     }).catch?.(() => null) ?? null;
     if (filtered?.skip) return filtered.result ?? '';
+
     try {
         const parsed = parseSidePromptCommandInput(args);
         if (parsed.error || !parsed.name) {
@@ -1828,6 +1983,7 @@ export async function runSidePrompt(args) {
                 defaults,
                 entryOverrides,
                 metadataUpdates: {
+                    ...getSidePromptRegenerationMetadata(tpl, prepared.prior, compiled, runtimeMacros),
                     [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                     [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                     STMB_tracker_lastMsgId: endId,
@@ -1868,6 +2024,15 @@ export async function runSidePrompt(args) {
 export async function runSidePromptSet(args, options = {}) {
     const parentTask = createStmbInFlightTask(options?.macroMode ? 'SidePrompts:macroset' : 'SidePrompts:set');
     const runEpoch = parentTask.epoch;
+
+    // STMBC-HOOK: side-prompt filtering — fork filters per-scene runs to
+    // characters present in the just-processed scene (per plan §4.4). Phase 1
+    // lands the empty call site; Phase 4 (living-lorebook orchestration) wires it up.
+    const filtered = await globalThis.STMBC?.filterSidePromptRun?.({
+        args, parentTask, runEpoch,
+    }).catch?.(() => null) ?? null;
+    if (filtered?.skip) return filtered.result ?? '';
+
     try {
         const parsed = parseSidePromptCommandInput(args);
         if (parsed.error || !parsed.name) {
@@ -2071,6 +2236,12 @@ export async function runSidePromptSet(args, options = {}) {
                     defaults,
                     entryOverrides,
                     metadataUpdates: {
+                        ...getSidePromptRegenerationMetadata(
+                            tpl,
+                            prepared.prior,
+                            compiled,
+                            runItem.runtimeMacros,
+                        ),
                         [`STMB_sp_${tpl.key}_lastMsgId`]: endId,
                         [`STMB_sp_${tpl.key}_lastRunAt`]: new Date().toISOString(),
                         STMB_tracker_lastMsgId: endId,

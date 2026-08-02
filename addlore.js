@@ -15,12 +15,11 @@ import { moment } from '../../../../lib.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { i18n } from './i18nHelpers.js';
+import * as safeAppendProvenanceLineModule from './nudgeHelpers.js';
 import {
-    incrementSceneMemoryCount,
-    maybeEnqueueAuditorOnOffer,
-} from './auditorCadence.js';
-import { maybeOfferAuditorJob } from './auditorTechnicalPass.js';
-import { noteCatalogEntryWrite } from './catalog.js';
+    applyFixedSequenceNumber,
+    hasSequenceNumberPlaceholder,
+} from './memoryRegeneration.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
@@ -640,7 +639,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     entry.content = memoryResult.content;
     entry.key = memoryResult.suggestedKeys || [];
     entry.comment = entryTitle;
-
+    
     // Extract order number from title for auto-numbering
     const orderNumber = extractNumberFromTitle(entryTitle) || 1;
     applyLorebookEntrySettings(entry, lorebookSettings, {
@@ -656,6 +655,13 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
             entry.STMB_end = parseInt(rangeParts[1], 10);
         }
     }
+    if (
+        memoryResult.metadata?.chatId !== undefined &&
+        memoryResult.metadata?.chatId !== null &&
+        memoryResult.metadata?.chatId !== ''
+    ) {
+        entry.STMB_chatId = String(memoryResult.metadata.chatId);
+    }
 
     // STMBC-HOOK-PHASE4: append provenance line per plan §4.4.
     // safeAppendProvenanceLine encapsulates the globalThis.STMBC?.provenanceHelpers
@@ -663,7 +669,7 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
     // stays a single-line call site (plan §1.2.1). Respects skipProvenance opt-out
     // for callers that pre-stamp the entry (the Auditor phase may set this).
     if (memoryResult.metadata?.skipProvenance !== true) {
-        const { safeAppendProvenanceLine } = require('./nudgeHelpers.js');
+        const { safeAppendProvenanceLine } = safeAppendProvenanceLineModule;
         entry.content = safeAppendProvenanceLine(entry.content, memoryResult.metadata?.sceneRange);
     }
 }
@@ -724,43 +730,26 @@ export function isMemoryEntry(entry) {
  * @returns {string} The generated title
  */
 function generateEntryTitle(titleFormat, memoryResult, lorebookData) {
-    let title = titleFormat;
+    const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
+    return generateEntryTitleAtNumber(titleFormat, memoryResult, nextNumber);
+}
 
-    // Auto-numbering: [0], [00], [000], ([0]), ({0}), #[0], etc.
-    const allNumberingPatterns = [
-        { pattern: /\[\[0+\]\]/g, prefix: '[', suffix: ']' }, // [[000]] -> [001]
-        { pattern: /\[0+\]/g, prefix: '', suffix: '' },       // [000] -> just number
-        { pattern: /\(\[0+\]\)/g, prefix: '(', suffix: ')' }, // ([000]) -> (001)
-        { pattern: /\{\[0+\]\}/g, prefix: '{', suffix: '}' }, // {[000]} -> {001}
-        { pattern: /#\[0+\]/g, prefix: '#', suffix: '' }      // #[000] -> #001
-    ];
-
-    for (const { pattern, prefix, suffix } of allNumberingPatterns) {
-        const matches = title.match(pattern);
-        if (matches) {
-            const nextNumber = getNextEntryNumber(lorebookData, titleFormat);
-
-            matches.forEach(match => {
-                let digits;
-                if (pattern.source.includes('\\[\\[')) {
-                    digits = match.length - 4; // [[000]] -> remove [[ and ]]
-                } else if (pattern.source.includes('\\(\\[') || pattern.source.includes('\\{\\[')) {
-                    digits = match.length - 4; // ([000]) or {[000]} -> remove outer delimiters and [ ]
-                } else if (pattern.source.includes('#\\[')) {
-                    digits = match.length - 3; // #[000] -> remove # and [ ]
-                } else if (pattern.source.includes('\\[')) {
-                    digits = match.length - 2; // [000] -> remove [ and ]
-                } else {
-                    digits = match.length - 2; // fallback
-                }
-                const paddedNumber = nextNumber.toString().padStart(digits, '0');
-                const replacement = prefix + paddedNumber + suffix;
-                title = title.replace(match, replacement);
-            });
-            break; // Only process the first pattern type found
-        }
+/**
+ * Generates a lorebook title while forcing an existing sequence number.
+ *
+ * @param {string} titleFormat - The title format template
+ * @param {Object} memoryResult - The memory generation result
+ * @param {number} sequenceNumber - The sequence number to preserve
+ * @param {Object} [options] - Replacement-specific formatting options
+ * @param {boolean} [options.forceNumber=false] - Prefix the number if the format has no number token
+ * @returns {string} The generated title
+ */
+export function generateEntryTitleAtNumber(titleFormat, memoryResult, sequenceNumber, options = {}) {
+    let title = applyFixedSequenceNumber(titleFormat, sequenceNumber);
+    if (options.forceNumber && !hasSequenceNumberPlaceholder(titleFormat)) {
+        title = `[${String(sequenceNumber).padStart(3, '0')}] ${title}`;
     }
-    
+
     // Template substitutions
     const metadata = memoryResult.metadata || {};
     const substitutions = {
@@ -1194,12 +1183,8 @@ export async function getLorebookStats() {
 /**
  * Update the highest memory processed tracking for the current chat
  * @param {Object} memoryResult - The memory result containing metadata
- * @param {Object} [opts] - injection seam for tests
- * @param {Function} [opts.maybeOfferAuditorJob] - gate from auditorTechnicalPass.js
- * @param {Function} [opts.enqueueStmbJob] - jobs dashboard enqueue (lazy-imported lazily in browser)
- * @param {Object} [opts.chatMetaForTest] - explicit chat metadata (tests)
  */
-function updateHighestMemoryProcessed(memoryResult, opts = {}) {
+function updateHighestMemoryProcessed(memoryResult) {
     try {
         console.log(i18n('addlore.log.updateHighestCalled', `${MODULE_NAME}: updateHighestMemoryProcessed called with:`), memoryResult);
 
@@ -1238,63 +1223,11 @@ function updateHighestMemoryProcessed(memoryResult, opts = {}) {
         // Save the metadata (works for both group chats and single-character chats)
         saveMetadataForCurrentContext();
 
-        // P5.5 — cadence caller. After bumping the highest processed pointer,
-        // increment the per-chat memory counter and, if the gate says we should
-        // offer, enqueue the suggested audit job. The counter and the
-        // `lastOfferAtCount` are persisted to chat_metadata so the cadence
-        // threshold is honored across reloads.
-        try {
-            const settings = extension_settings?.STMemoryBooks || {};
-            const chatMeta = opts.chatMetaForTest || (() => {
-                try {
-                    const ctx = getContext();
-                    return ctx?.chatMetadata || null;
-                } catch (_e) { return null; }
-            })();
-            if (chatMeta) {
-                incrementSceneMemoryCount(chatMeta, 1);
-                const gate = opts.maybeOfferAuditorJob || maybeOfferAuditorJob;
-                const enqueue = opts.enqueueStmbJob || loadEnqueueStmbJob();
-                maybeEnqueueAuditorOnOffer({
-                    settings,
-                    chatMeta,
-                    maybeOfferAuditorJob: gate,
-                    enqueueStmbJob: enqueue,
-                });
-            }
-        } catch (cadenceError) {
-            console.warn(i18n('addlore.warn.cadenceError', `${MODULE_NAME}: Cadence gate error (non-fatal):`), cadenceError);
-        }
-
-        console.log(i18n('addlore.log.setHighest', `${MODULE_NAME}: Set highest memory processed to message {{endMessage}}`), { endMessage });
+        console.log(i18n('addlore.log.setHighest', `${MODULE_NAME}: Set highest memory processed to message {{endMessage}}`, { endMessage }));
 
     } catch (error) {
         console.error(i18n('addlore.log.updateHighestError', `${MODULE_NAME}: Error updating highest memory processed:`), error);
     }
-}
-
-// Lazy loader for stmbJobs.enqueueStmbJob. The browser bundle exposes the
-// module via the global STMB namespace; in tests we pass it explicitly.
-// We avoid a static import here so tests of addlore.js don't pull in
-// the full stmbJobs.js dependency graph (popup, DOMPurify, fetch, etc.).
-let _enqueueStmbJobRef = undefined;
-function loadEnqueueStmbJob() {
-    if (_enqueueStmbJobRef !== undefined) return _enqueueStmbJobRef;
-    try {
-        // Browser bundle path: STMB namespace is on globalThis.
-        const ns = (typeof globalThis !== 'undefined') ? globalThis.STMB : null;
-        if (ns && typeof ns.enqueueStmbJob === 'function') {
-            _enqueueStmbJobRef = ns.enqueueStmbJob.bind(ns);
-            return _enqueueStmbJobRef;
-        }
-    } catch (_e) { /* fall through */ }
-    _enqueueStmbJobRef = null;
-    return _enqueueStmbJobRef;
-}
-
-// Allow tests to pre-load the lazy ref (avoids hitting globalThis.STMB).
-export function _setAuditorCadenceDeps({ enqueueStmbJob } = {}) {
-    if (enqueueStmbJob !== undefined) _enqueueStmbJobRef = enqueueStmbJob;
 }
 
 /**

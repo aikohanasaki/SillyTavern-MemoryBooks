@@ -14,8 +14,13 @@ import { DOMPurify } from "../../../../lib.js";
 import { translate } from "../../../i18n.js";
 import { autoCreateLorebook } from "./autocreate.js";
 import { getSceneMarkers } from "./sceneManager.js";
-import { markStmbPopup, showLorebookSelectionPopup } from "./utils.js";
+import {
+  getCurrentManualLorebookResolution,
+  markStmbPopup,
+  showLorebookSelectionPopup,
+} from "./utils.js";
 import { escapeHtml } from "../../../utils.js";
+import { tr } from "./i18nHelpers.js";
 
 function getDefaultRetryText(manualMode) {
   return manualMode
@@ -216,12 +221,17 @@ export async function validateLorebookRequirement(options = {}) {
     !resolvedManualMode &&
     !!settings?.moduleSettings?.autoCreateLorebook;
   const stmbData = resolvedManualMode ? getSceneMarkers() || {} : null;
+  const manualResolution = resolvedManualMode
+    ? getCurrentManualLorebookResolution({ settings, markers: stmbData })
+    : null;
+  const usesCharacterLock =
+    lorebookNameOverride === undefined && manualResolution?.source === "character-lock";
   const resolvedRetryText = retryText || getDefaultRetryText(resolvedManualMode);
   let lorebookName =
     lorebookNameOverride !== undefined
       ? lorebookNameOverride
       : resolvedManualMode
-        ? stmbData?.manualLorebook ?? null
+        ? manualResolution?.lorebookName ?? null
         : chat_metadata?.[METADATA_KEY] || null;
   let attempts = 0;
 
@@ -235,6 +245,17 @@ export async function validateLorebookRequirement(options = {}) {
     }
 
     if (recoveryReason) {
+      if (usesCharacterLock) {
+        return {
+          valid: false,
+          locked: true,
+          error: tr(
+            "STMemoryBooks_CharacterMemoryBookLockUnavailable",
+            'The locked Memory Book "{{lorebookName}}" is unavailable. Unlock this character, select a valid Memory Book, and lock it again.',
+            { lorebookName: escapeHtml(lorebookName) },
+          ),
+        };
+      }
       const recovery = await showLorebookRecoveryPopup({
         manualMode: resolvedManualMode,
         lorebookName,
@@ -264,8 +285,24 @@ export async function validateLorebookRequirement(options = {}) {
         throw new Error("Failed to load the selected lorebook.");
       }
 
-      return { valid: true, data: lorebookData, name: lorebookName };
+      return {
+        valid: true,
+        data: lorebookData,
+        name: lorebookName,
+        source: usesCharacterLock ? "character-lock" : undefined,
+      };
     } catch (error) {
+      if (usesCharacterLock) {
+        return {
+          valid: false,
+          locked: true,
+          error: tr(
+            "STMemoryBooks_CharacterMemoryBookLockLoadFailed",
+            'The locked Memory Book "{{lorebookName}}" could not be loaded. Unlock this character, select a valid Memory Book, and lock it again.',
+            { lorebookName: escapeHtml(lorebookName) },
+          ),
+        };
+      }
       const recovery = await showLorebookRecoveryPopup({
         manualMode: resolvedManualMode,
         lorebookName,

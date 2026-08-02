@@ -11,6 +11,12 @@ import { getPrompt as getCustomPresetPrompt } from './summaryPromptManager.js';
 import { DISPLAY_NAME_DEFAULTS, DISPLAY_NAME_I18N_KEYS, MEMORY_TIER_CACHE_REFRESH_EVENT } from './constants.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
+import { tr } from './i18nHelpers.js';
+import { isNarratorModeActive } from './narratorMode.js';
+import {
+    getCharacterMemoryBookLock,
+    resolveManualLorebookForCharacter,
+} from './characterMemoryBookLocks.js';
 
 const MODULE_NAME = 'STMemoryBooks-Utils';
 const $ = window.jQuery;
@@ -210,6 +216,12 @@ export function getCurrentMemoryBooksContext() {
 
         // Check if we're in a group chat (following group-chats.js pattern)
         const isGroupChat = !!selected_group;
+        const isManualMode = extension_settings?.STMemoryBooks?.moduleSettings?.manualModeEnabled === true;
+        const isNarratorMode = isNarratorModeActive({
+            isGroupChat,
+            manualModeEnabled: isManualMode,
+            enabled: chat_metadata?.STMemoryBooks?.narratorMode?.enabled === true,
+        });
         const groupId = selected_group || null;
         let groupName = null;
 
@@ -307,6 +319,10 @@ export function getCurrentMemoryBooksContext() {
             chatName,
             groupId,
             isGroupChat,
+            isNarratorMode,
+            isMultiCharacter: isGroupChat || isNarratorMode,
+            chatMode: isGroupChat ? 'group' : isNarratorMode ? 'narrator' : 'solo',
+            supportsNativeCharacterFilters: isGroupChat,
             lorebookName,
             modelSettings
         };
@@ -325,9 +341,27 @@ export function getCurrentMemoryBooksContext() {
             chatName: null,
             groupId: null,
             groupName: null,
-            isGroupChat: false
+            isGroupChat: false,
+            isNarratorMode: false,
+            isMultiCharacter: false,
+            chatMode: 'solo',
+            supportsNativeCharacterFilters: false,
         };
     }
+}
+
+export function getCurrentManualLorebookResolution(options = {}) {
+    const settings = options.settings || extension_settings.STMemoryBooks || {};
+    const markers = options.markers || getSceneMarkers() || {};
+    const context = options.context || getCurrentMemoryBooksContext();
+    const character = options.character || characters?.[this_chid] || null;
+    return resolveManualLorebookForCharacter({
+        manualModeEnabled: !!settings?.moduleSettings?.manualModeEnabled,
+        isGroupChat: !!context?.isGroupChat,
+        characterKey: character?.avatar,
+        manualLorebook: markers.manualLorebook,
+        locks: settings.characterMemoryBookLocks,
+    });
 }
 
 /**
@@ -352,14 +386,22 @@ export async function getEffectiveLorebookName() {
         return chat_metadata?.[METADATA_KEY] || null;
     }
 
-    // Manual mode is ON. Check if a manual lorebook has already been designated for this chat.
-    const stmbData = getSceneMarkers(); // This function already gets the right metadata object
-    if (stmbData.manualLorebook ?? null) {
+    // Manual mode is ON. A solo character lock overrides this chat's manual selection.
+    const stmbData = getSceneMarkers() || {}; // This function already gets the right metadata object
+    const resolution = getCurrentManualLorebookResolution({ settings, markers: stmbData });
+    if (resolution.lorebookName) {
         // Ensure the designated lorebook still exists
-        if (world_names.includes(stmbData.manualLorebook)) {
-            return stmbData.manualLorebook;
+        if (world_names.includes(resolution.lorebookName)) {
+            return resolution.lorebookName;
+        } else if (resolution.source === 'character-lock') {
+            toastr.error(tr(
+                'STMemoryBooks_CharacterMemoryBookLockMissing',
+                'The locked Memory Book "{{lorebookName}}" no longer exists. Unlock this character and choose a valid Memory Book.',
+                { lorebookName: resolution.lorebookName },
+            ));
+            return null;
         } else {
-            toastr.error(`The designated manual lorebook "${stmbData.manualLorebook}" no longer exists. Please select a new one.`);
+            toastr.error(`The designated manual lorebook "${resolution.lorebookName}" no longer exists. Please select a new one.`);
             delete stmbData.manualLorebook; // Clear the invalid entry
         }
     }
@@ -416,8 +458,15 @@ export async function showLorebookSelectionPopup(currentLorebook = null, options
         && !Array.isArray(markers.manualCharacterLorebooks)
         ? Object.values(markers.manualCharacterLorebooks)
         : [];
+    const lockedGroupLorebooks = getCurrentGroupLorebookMembers()
+        .map(member => getCharacterMemoryBookLock(
+            extension_settings.STMemoryBooks?.characterMemoryBookLocks,
+            member?.avatar || member?.key,
+        )?.lorebookName)
+        .filter(Boolean);
     const excludedLorebooks = new Set([
         ...currentCharacterLorebooks,
+        ...lockedGroupLorebooks,
         ...(Array.isArray(options.excludedLorebookNames) ? options.excludedLorebookNames : []),
     ].map(name => String(name || '').trim()).filter(Boolean));
     const availableLorebooks = world_names.filter(name => !excludedLorebooks.has(name));
@@ -569,13 +618,13 @@ export async function estimateTokens(text, options = {}) {
 
 /**
  * Resolve a profile's effective connection into a normalized shape
- * { api, model, temperature, endpoint, apiKey, reverseProxy }.
+ * { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy }.
  * - Applies normalizeCompletionSource to api
  * - Clamps temperature to [0, 2] with default 0.7
- * - Passes through endpoint/apiKey/reverseProxy if provided on the profile connection
+ * - Passes through endpoint/apiKey/connectionProfileId/reverseProxy if provided on the profile connection
  *
  * @param {Object} profile
- * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string, reverseProxy?: boolean }}
+ * @returns {{ api: string, model: string, temperature: number, endpoint?: string, apiKey?: string, connectionProfileId?: string, reverseProxy?: boolean }}
  */
 export function resolveEffectiveConnectionFromProfile(profile) {
     const conn = (profile?.effectiveConnection || profile?.connection || {});
@@ -587,9 +636,10 @@ export function resolveEffectiveConnectionFromProfile(profile) {
     }
     const endpoint = conn.endpoint ? String(conn.endpoint) : undefined;
     const apiKey = conn.apiKey ? String(conn.apiKey) : undefined;
+    const connectionProfileId = conn.connectionProfileId ? String(conn.connectionProfileId) : undefined;
     const reverseProxy = !!conn.reverseProxy;
 
-    return { api, model, temperature, endpoint, apiKey, reverseProxy };
+    return { api, model, temperature, endpoint, apiKey, connectionProfileId, reverseProxy };
 }
 
 export function createGroupParticipantResolver() {
@@ -959,56 +1009,107 @@ Use concrete nouns (e.g., “rice cooker” > “appliance”).
 Only use adjectives/adverbs when they materially affect tone, emotion, or characterization.  
 Focus on **cause → intention → reaction → consequence** chains for clarity and compression.
 
+The \`content\` field must use this structure:
+
 # [Scene Title]
-**Timeline**: (day/time)
+
+**Timeline**: [Most specific date and time supported by the source entries; if unspecified, state unspecified or use relative time.]
 
 ## Story Beats
-- Present all major actions, revelations, and emotional or magical shifts in order.
-- Capture clear cause–effect logic: what triggered what, and why it mattered.
-- Only include plot-affecting interactions and do not capture flavor-only beats.
+
+* Present the major actions, revelations, decisions, and emotional or magical shifts in chronological order.
+* Explain what triggered each development, why characters acted, how others reacted, and what resulted.
+* Include plot-affecting interactions, meaningful shared experiences, and events that changed relationships or future continuity.
+* Omit repeated gestures, room dressing, background objects, and logistical detail unless they directly affected events.
 
 ## Character Dynamics
-- Summarize how each character’s **motives, emotions, and relationships** evolved.
-- Include subtext, tension, or silent implications.
-- Highlight key beats of conflict, vulnerability, trust, or power shifts.
+
+* Explain how motives, emotions, relationships, and power dynamics changed during the summarized period.
+* Capture consequential subtext, tension, vulnerability, trust, conflict, avoidance, affection, resentment, or loyalty.
+* Include small or domestic experiences only when they meaningfully shaped relationship history.
+* Do not repeat plot events unless needed to explain the interpersonal change they caused.
+
+## Important Facts
+
+* Record newly established facts likely to matter later, including plans, risks, abilities, limitations, preferences, promises, secrets, debts, injuries, magical effects, discoveries, and obligations.
+* Exclude casual preferences, scenery, errands, paperwork, clothing, furniture, weather, and other incidental details unless they became continuity-relevant.
 
 ## Key Exchanges
-- Include only pivotal dialogue that defines tone, emotion, or change.
-- Attribute speakers by name; keep quotes short but exact.
-- BE SELECTIVE. Maximum of 8 quotes.
+
+* Include only dialogue that defined a revelation, decision, conflict, emotional shift, or relationship change.
+* Attribute each quotation by speaker name.
+* Include a direct quotation only when the source entries preserve its exact wording. Never reconstruct quoted dialogue from a paraphrase.
+* Preserve distinctive phrases or identifiers, such as “pack for forever” or “dick-measuring contest,” only when they are memorable or relationship-relevant.
+* Include no more than 8 quotations.
 
 ## Outcome & Continuity
-- Detail resulting **decisions, emotional states, physical/magical effects, or narrative consequences**.
-- Include all elements that influence future continuity (knowledge, relationships, injuries, promises, etc.).
-- Note any unresolved threads or foreshadowed elements.
 
-Write compactly but completely — every line should add new information or insight.  
-Synthesize redundant actions or dialogue into unified cause–effect–emotion beats.
-Favor compression over coverage whenever the two conflict; omit anything that can be inferred from context or established characterization.
+* State the final narrative, emotional, relational, physical, or magical condition produced by the events.
+* Record resulting decisions, plans, risks, promises, secrets, injuries, knowledge, and obligations that affect what happens next.
+* Identify unresolved threads, pending conflicts, future consequences, and foreshadowed developments.
+* Do not recap the full sequence of events again.
 
-For the keywords field:
+For the \`keywords\` field:
 
-Generate **15–30 standalone topical keywords** that function as retrieval tags, not micro-summaries. 
-Keywords must be:
-- **Concrete and scene-specific** (locations, objects, proper nouns, unique actions, repeated motifs).
-- **One concept per keyword** — do NOT combine multiple ideas into one keyword.
-- **Useful for retrieval if the user later mentions that noun or action alone**, not only in a specific context.
-- Not {{char}}'s or {{user}}'s names.
-- **Not thematic, emotional, or abstract.** Stop-list: intimacy, vulnerability, trust, dominance, submission, power dynamics, boundaries, jealousy, aftercare, longing, consent, emotional connection.
+Generate **12–20 natural retrieval keywords when the material supports them**. Use fewer rather than padding the list with weak terms. Keywords are search hooks, not miniature summaries or evidence notes.
 
-Avoid:
-- Overly specific compound keywords (“David Tokyo marriage”).
-- Narrative or plot-summary style keywords (“art dealer date fail”).
-- Keywords that contain multiple facts or descriptors.
-- Keywords that only make sense when the whole scene is remembered.
+Prioritize:
 
-Prefer:
-- Proper nouns (e.g., "Chinatown", "Ritz-Carlton bar").
-- Specific physical objects ("CPAP machine", "chocolate chip cookies").
-- Distinctive actions ("cookie baking", "piano apology").
-- Unique phrases or identifiers from the scene used by characters ("pack for forever", "dick-measuring contest").
+1. **Stable named entities**: people other than {{char}} or {{user}}, places, organizations, events, documents, factions, spells, or distinctive objects.
+2. **Major continuity anchors**: plans, threats, secrets, discoveries, investigations, conflicts, injuries, promises, relationship changes, and unresolved threads.
+3. **Memorable moments**: meaningful shared activities, gifts, food, rituals, jokes, care-taking, arguments, or domestic events.
+4. **Independent secondary hooks** that retrieve a separate part of the summarized material.
 
-Your goal: **keywords should fire when the noun/action is mentioned alone**, not only when paired with a specific person or backstory.
+### Keyword construction
+
+Use the shortest distinctive wording likely to remain recognizable under paraphrasing or reversed word order.
+
+Examples:
+
+* \`Gala of the Silver Rose\` or \`Silver Rose Gala\` → \`Silver Rose\`
+* \`Bromet Response SA\` → \`Bromet\`
+* \`Château D’Aramitz\`, Comte D’Aramitz, or a plan involving him → \`D’Aramitz\`
+* Keep \`Althof Ledger\` when both words are required to identify the object.
+
+Prefer one central named entity when it already covers several related events:
+
+* \`D’Aramitz rescue plan\` → \`D’Aramitz\`
+* \`Bromet hidden contractors\` → \`Bromet\`
+* \`Althof Ledger substitution\` → \`Althof Ledger\`
+
+Retain a modified phrase only when it provides an independent retrieval route not covered by the central entity:
+
+* \`fake caterers\`
+* \`ledger facsimile\`
+* \`safehouse breakfast\`
+* \`counter-surveillance camera\`
+
+When several clues establish one conclusion, usually tag the resulting finding rather than each supporting clue:
+
+* Uniforms, badges, and vehicle access → \`fake caterers\`
+* Payments and company records → \`Bromet\`
+* A covert tactical team at the gala → \`suspected assassination\`
+* A rental used for equipment and disguises → \`staging villa\`
+
+A supporting clue may remain only when it is memorable, likely to recur, or independently useful for retrieval.
+
+Keywords should normally:
+
+* Contain 1–4 words.
+* Use ordinary noun phrases.
+* Identify genuinely distinct parts of the summary.
+* Remain stable if later descriptions use different wording.
+
+Exclude:
+
+* Incidental scenery or props.
+* Exact times, quantities, card digits, invoice wording, or administrative details.
+* Generic themes such as \`danger\`, \`romance\`, or \`conversation\`.
+* Unsupported conclusions.
+* Sentence-like evidence descriptions.
+* Multiple keywords that merely restate or narrow the same named entity.
+
+Before returning the JSON, silently verify that each keyword is natural to search, continuity-relevant, stable under paraphrasing, independently useful, and no longer than necessary.
 
 Return ONLY the JSON — no additional text.`,
             'STMemoryBooks_Prompt_comprehensive'
@@ -1066,7 +1167,7 @@ For the keywords field, generate 15-30 specific, descriptive, highly relevant ke
 
 Return ONLY the JSON, no additional text.`,
             'STMemoryBooks_Prompt_event'
-        )
+        ),
     };
 }
 
@@ -1367,6 +1468,7 @@ export function formatPresetDisplayName(presetName) {
  * @param {boolean} [data.skipStructuredOutput=false] - Whether to skip provider structured-output requests.
  * @param {boolean} [data.useChatCompletionService=false] - Whether to use SillyTavern's ChatCompletionService for eligible requests.
  * @param {string} [data.chatCompletionPreset=''] - Optional SillyTavern chat completion preset for ChatCompletionService.processRequest.
+ * @param {string} [data.connectionProfileId=''] - Optional SillyTavern Custom connection profile ID.
  * @param {boolean} [data.reverseProxy=false] - Whether this profile should use reverse proxy settings.
  * @returns {Object} A structured and validated profile object.
  */
@@ -1436,6 +1538,13 @@ export function createProfileObject(data = {}) {
     const model = (data.model ?? inputConn.model ?? '').trim();
     if (model) {
         profile.connection.model = model;
+    }
+
+    const connectionProfileId = String(
+        data.connectionProfileId ?? inputConn.connectionProfileId ?? '',
+    ).trim();
+    if (profile.connection.api === 'custom' && connectionProfileId) {
+        profile.connection.connectionProfileId = connectionProfileId;
     }
 
     // Add endpoint and apiKey for full-manual configuration

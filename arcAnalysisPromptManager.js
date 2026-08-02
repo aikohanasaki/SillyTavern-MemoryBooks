@@ -2,9 +2,27 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { getRequestHeaders } from '../../../../script.js';
-import { FILE_NAMES, SCHEMA } from './constants.js';
+import {
+  CONSOLIDATION_REGENERATION_PRESET_KEY,
+  FILE_NAMES,
+  GROUP_CHAT_CONSOLIDATION_PRESET_KEY,
+  SCHEMA,
+} from './constants.js';
 import { translate } from '../../../i18n.js';
 import { getBuiltInArcPrompts, getDefaultArcPrompt } from './templatesArcPrompts.js';
+import {
+  buildConsolidationPromptsExportData,
+  isGroupChatOnlyPreset,
+  isOrdinaryConsolidationPreset,
+  isRegenerationOnlyPreset,
+  selectConsolidationDefaultPresetKey,
+} from './consolidationPromptPolicy.js';
+
+export {
+  isGroupChatOnlyPreset,
+  isOrdinaryConsolidationPreset,
+  isRegenerationOnlyPreset,
+};
 
 const MODULE_NAME = 'STMemoryBooks-ArcAnalysisPromptManager';
 const PROMPTS_FILE = FILE_NAMES.ARC_PROMPTS_FILE;
@@ -22,6 +40,14 @@ const BUILTIN_DISPLAY_NAMES = {
   arc_tiny: {
     fallback: 'Tiny Consolidation Analysis',
     key: 'STMemoryBooks_ArcPrompt_DisplayName_Tiny',
+  },
+  [GROUP_CHAT_CONSOLIDATION_PRESET_KEY]: {
+    fallback: 'Group Chat Consolidation Analysis (Automatic)',
+    key: 'STMemoryBooks_ArcPrompt_DisplayName_GroupChat',
+  },
+  [CONSOLIDATION_REGENERATION_PRESET_KEY]: {
+    fallback: 'Regenerate Consolidation',
+    key: 'STMemoryBooks_ArcPrompt_DisplayName_Regenerate',
   },
 };
 
@@ -119,11 +145,7 @@ function validatePromptsFile(data) {
 
 function getFallbackDefaultPresetKey(data = null) {
   const builtIns = getBuiltInArcPrompts() || {};
-  const overrides = data?.overrides && typeof data.overrides === 'object' ? data.overrides : {};
-  const preferred = String(data?.defaultPresetKey || '').trim();
-  if (preferred && (overrides[preferred] || builtIns[preferred])) return preferred;
-  if (overrides.arc_default || builtIns.arc_default) return 'arc_default';
-  return Object.keys(overrides)[0] || Object.keys(builtIns)[0] || 'arc_default';
+  return selectConsolidationDefaultPresetKey(data, builtIns);
 }
 
 /**
@@ -222,7 +244,13 @@ export async function firstRunInitIfMissing(settings) {
 
 /**
  * List presets
- * @returns {Promise<Array<{key:string, displayName:string, createdAt:string|null}>>}
+ * @returns {Promise<Array<{
+ *   key:string,
+ *   displayName:string,
+ *   createdAt:string|null,
+ *   groupChatOnly:boolean,
+ *   regenerationOnly:boolean
+ * }>>}
  */
 export async function listPresets(settings = null) {
   const data = await loadOverrides(settings);
@@ -234,6 +262,8 @@ export async function listPresets(settings = null) {
       key,
       displayName: preset.displayName || toTitleCase(key),
       createdAt: preset.createdAt || null,
+      groupChatOnly: isGroupChatOnlyPreset(key),
+      regenerationOnly: isRegenerationOnlyPreset(key),
     });
   }
 
@@ -245,6 +275,8 @@ export async function listPresets(settings = null) {
         key,
         displayName: getBuiltInDisplayName(key, builtIns[key]),
         createdAt: null,
+        groupChatOnly: isGroupChatOnlyPreset(key),
+        regenerationOnly: isRegenerationOnlyPreset(key),
       });
     }
   }
@@ -291,6 +323,9 @@ export async function setDefaultPresetKey(key) {
   const data = await loadOverrides();
   const normalizedKey = String(key || '').trim();
   const builtIns = getBuiltInArcPrompts() || {};
+  if (!isOrdinaryConsolidationPreset(normalizedKey)) {
+    throw new Error('Reserved consolidation presets cannot be set as the default.');
+  }
   if (!normalizedKey || !(data.overrides[normalizedKey] || builtIns[normalizedKey])) {
     throw new Error(`Arc preset "${normalizedKey}" not found`);
   }
@@ -361,8 +396,20 @@ export async function upsertPreset(key, prompt, displayName) {
  * @returns {Promise<string>}
  */
 export async function duplicatePreset(sourceKey) {
+  if (isRegenerationOnlyPreset(sourceKey)) {
+    throw new Error('The consolidation regeneration preset cannot be duplicated.');
+  }
   const data = await loadOverrides();
-  const src = data.overrides[sourceKey];
+  const builtIns = getBuiltInArcPrompts() || {};
+  const builtInPrompt = builtIns[sourceKey];
+  const src = data.overrides[sourceKey] || (
+    typeof builtInPrompt === 'string' && builtInPrompt.trim()
+      ? {
+          displayName: getBuiltInDisplayName(sourceKey, builtInPrompt),
+          prompt: builtInPrompt,
+        }
+      : null
+  );
   if (!src) throw new Error(`Arc preset "${sourceKey}" not found`);
   const newDisplayName = `${src.displayName || toTitleCase(sourceKey)} (Copy)`;
   const newKey = generateUniqueKey(newDisplayName, data.overrides);
@@ -383,9 +430,12 @@ export async function duplicatePreset(sourceKey) {
  */
 export async function removePreset(key) {
   const data = await loadOverrides();
-  if (!data.overrides[key]) throw new Error(`Arc preset "${key}" not found`);
-  delete data.overrides[key];
   const builtIns = getBuiltInArcPrompts() || {};
+  if (!data.overrides[key]) {
+    if (builtIns[key]) return;
+    throw new Error(`Arc preset "${key}" not found`);
+  }
+  delete data.overrides[key];
   if (data.defaultPresetKey === key && !builtIns[key]) {
     data.defaultPresetKey = getFallbackDefaultPresetKey(data);
   }
@@ -398,7 +448,12 @@ export async function removePreset(key) {
  */
 export async function exportToJSON() {
   const data = await loadOverrides();
-  return JSON.stringify(data, null, 2);
+  const exportData = buildConsolidationPromptsExportData(
+    data,
+    getBuiltInArcPrompts(),
+    getBuiltInDisplayName,
+  );
+  return JSON.stringify(exportData, null, 2);
 }
 
 /**

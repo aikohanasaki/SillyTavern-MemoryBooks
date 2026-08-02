@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Desarrollo del personaje",
+      "enabled": false,
+      "prompt": "Pasos:\n1. Revisa las escenas proporcionadas.\n2. Identifica y describe los cambios en la personalidad de {{char}} debidos a sus experiencias.\n3. Escribe una breve descripción de cómo ha cambiado {{char}} y a causa de qué acontecimientos.",
+      "responseFormat": "===Desarrollo del personaje de {{char}}===\n(breve descripción de los cambios principales)\n===FIN del desarrollo del personaje de {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Estado de ánimo y atmósfera",
+      "enabled": true,
+      "prompt": "Revisa la escena adjunta y describe cómo son el estado de ánimo y la atmósfera actuales.",
+      "responseFormat": "===ESTADO DE ÁNIMO ACTUAL===\n(descripción rápida del estado de ánimo y la atmósfera actuales)\n===FIN DEL ESTADO DE ÁNIMO ACTUAL===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Construcción del mundo",
+      "enabled": true,
+      "prompt": "Describe el estado actual del mundo, especialmente los cambios debidos a la trama o la escena.",
+      "responseFormat": "===NOTAS DEL MUNDO===\n(nota breve pero densa)\n===FIN DE LAS NOTAS DEL MUNDO===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Rastreador de posición corporal",
+      "enabled": true,
+      "prompt": "Revisa la escena y después completa o actualiza el Rastreador de posición corporal de {{char}}. Si {{char}} representa a varias personas, completa uno para cada persona. Sé conciso y eficiente en tokens, pero prioriza la precisión y la corrección logística. No infrinjas las leyes de la física.",
+      "responseFormat": "===Rastreador de posición corporal de {{char}}===\nPosición general y estado de la ropa:\nCabeza:\nBrazo/mano izquierdos:\nBrazo/mano derechos:\nTorso/pecho/espalda:\nPierna/pie izquierdos:\nPierna/pie derechos:\n===FIN del Rastreador de posición corporal de {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

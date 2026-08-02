@@ -18,6 +18,12 @@ import {
 import { loadWorldInfo } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
+import {
+    buildJobRetryPlan,
+    buildMemoryOnlyRetryPlan,
+    buildRetryJobInput,
+    collectCanceledAfterMemoryJobs,
+} from './stmbJobRetryPolicy.js';
 
 const MODULE_NAME = 'STMemoryBooks-Jobs';
 const TOP_INFO_BAR_ID = 'extensionTopBar';
@@ -152,6 +158,12 @@ function safeClone(value) {
     } catch {
         return JSON.parse(JSON.stringify(value));
     }
+}
+
+function normalizeParentJobOrder(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const order = Number(value);
+    return Number.isFinite(order) ? order : null;
 }
 
 function escapeHtml(value) {
@@ -302,6 +314,8 @@ function cloneJobForView(job = {}) {
         // so this module never has to import review.js to render it.
         reviewPending: job.reviewPending === true,
         reviewReasons: Array.isArray(job.reviewReasons) ? safeClone(job.reviewReasons) : [],
+        parentJobId: String(job.parentJobId || ''),
+        parentJobOrder: normalizeParentJobOrder(job.parentJobOrder),
     };
 }
 
@@ -480,6 +494,8 @@ function normalizeJobInput(input = {}) {
         error: null,
         result: null,
         approvalRequest: input.approvalRequest ? safeClone(input.approvalRequest) : null,
+        parentJobId: String(input.parentJobId || ''),
+        parentJobOrder: normalizeParentJobOrder(input.parentJobOrder),
         abortController: new AbortController(),
         cancelled: false,
     };
@@ -518,6 +534,40 @@ export function hasActiveStmbJobs(chatKey = null) {
     return false;
 }
 
+function captureCanceledAfterMemoryJobsForRetry(memoryJob, jobs) {
+    const canceledAfterMemoryJobs = collectCanceledAfterMemoryJobs(memoryJob, jobs);
+    if (canceledAfterMemoryJobs.length === 0) return;
+    if (Array.isArray(memoryJob.payload?.retryAfterMemoryJobs)
+        && memoryJob.payload.retryAfterMemoryJobs.length > 0) {
+        return;
+    }
+    memoryJob.payload = {
+        ...(memoryJob.payload || {}),
+        retryAfterMemoryJobs: canceledAfterMemoryJobs.map(buildRetryJobInput),
+    };
+}
+
+function cancelQueuedAfterMemoryJobs(store, memoryJob) {
+    if (String(memoryJob?.type || '') !== 'memory') return;
+    const parentJobId = String(memoryJob.id || '');
+    const canceledChildren = store.queue.filter(job => (
+        String(job?.parentJobId || '') === parentJobId
+        && ['sidePrompt', 'sidePromptBatch'].includes(String(job?.type || ''))
+        && String(job?.payload?.trigger || '') === 'onAfterMemory'
+    ));
+    if (canceledChildren.length === 0) return;
+
+    const canceledIds = new Set(canceledChildren.map(job => job.id));
+    for (const child of canceledChildren) {
+        child.cancelled = true;
+        child.state = 'canceled';
+        child.finishedAt = Date.now();
+        store.recentHistory.unshift(child);
+    }
+    captureCanceledAfterMemoryJobsForRetry(memoryJob, canceledChildren);
+    store.queue = store.queue.filter(job => !canceledIds.has(job.id));
+}
+
 export function cancelActiveStmbJob(chatKey = null, jobId = null) {
     const key = String(chatKey || getStmbChatKey()).trim();
     const store = jobStores.get(key);
@@ -529,6 +579,7 @@ export function cancelActiveStmbJob(chatKey = null, jobId = null) {
     try {
         job.abortController.abort('stmb-job-cancel');
     } catch {}
+    cancelQueuedAfterMemoryJobs(store, job);
     const approval = pendingApprovals.get(job.id);
     if (approval) {
         pendingApprovals.delete(job.id);
@@ -541,7 +592,8 @@ export function cancelActiveStmbJob(chatKey = null, jobId = null) {
 export function cancelAllStmbJobs(reason = 'stmb-stop') {
     let count = 0;
     for (const store of jobStores.values()) {
-        for (const job of getRunningJobs(store)) {
+        const runningJobs = getRunningJobs(store);
+        for (const job of runningJobs) {
             count++;
             job.cancelled = true;
             try {
@@ -555,6 +607,9 @@ export function cancelAllStmbJobs(reason = 'stmb-stop') {
             job.finishedAt = Date.now();
             store.recentHistory.unshift(job);
         }
+        for (const memoryJob of runningJobs.filter(job => String(job.type || '') === 'memory')) {
+            captureCanceledAfterMemoryJobsForRetry(memoryJob, store.queue);
+        }
         store.queue = [];
         touchStore(store);
     }
@@ -563,62 +618,6 @@ export function cancelAllStmbJobs(reason = 'stmb-stop') {
         approval.resolve({ decision: 'cancel' });
     }
     return count;
-}
-
-/**
- * Cancel only the fork's "cycle" jobs (sentinel cycles + audit jobs).
- *
- * Aligned with the `stmbc-` job-type prefix shared by the fork's cycle/fork
- * jobs (`stmbc-sentinel-cycle`, `stmbc-audit-*`). Unlike `cancelAllStmbJobs`,
- * this stops the fork's long-running work without touching the upstream
- * memory/consolidation/sidePrompt jobs those callers may still want to ride
- * out. Wired to `/stmbc-stop` (the fork's "halt our jobs" command); the
- * upstream `/stmb-stop` panic button still calls `cancelAllStmbJobs` so the
- * fork jobs are covered by both paths.
- *
- * @param {string} [reason='stmbc-stop'] - abort reason recorded on the AbortController
- * @returns {{count: number, types: string[]}} how many jobs were cancelled and the types seen
- */
-export function cancelStmbcJobs(reason = 'stmbc-stop') {
-    const prefix = 'stmbc-';
-    let count = 0;
-    const types = new Set();
-    for (const store of jobStores.values()) {
-        for (const job of getRunningJobs(store)) {
-            if (String(job.type || '').startsWith(prefix)) {
-                count++;
-                types.add(String(job.type));
-                job.cancelled = true;
-                try {
-                    job.abortController.abort(reason);
-                } catch {}
-            }
-        }
-        const remaining = [];
-        for (const job of store.queue) {
-            if (String(job.type || '').startsWith(prefix)) {
-                count++;
-                types.add(String(job.type));
-                job.cancelled = true;
-                job.state = 'canceled';
-                job.finishedAt = Date.now();
-                store.recentHistory.unshift(job);
-            } else {
-                remaining.push(job);
-            }
-        }
-        store.queue = remaining;
-        touchStore(store);
-    }
-    for (const [jobId, approval] of pendingApprovals.entries()) {
-        // The approval map doesn't carry the job type directly; reject all
-        // pending approvals on the principle that a /stmbc-stop is an
-        // explicit user action. The executor sees the AbortError from the
-        // signal it owns, so this is belt-and-braces.
-        pendingApprovals.delete(jobId);
-        approval.resolve({ decision: 'cancel' });
-    }
-    return { count, types: Array.from(types) };
 }
 
 function isCurrentJobChat(job) {
@@ -736,73 +735,14 @@ function getCurrentStoreRows() {
     ].map(cloneJobForView);
 }
 
-/**
- * P4.5 read side of the P4.3 review queue.
- *
- * The durable record lives in chat_metadata.stmbc.reviewQueue (written by
- * review.js recordReviewFlagsForJob) and therefore survives a reload, unlike
- * the in-memory job.reviewPending flag. Read directly from chat_metadata — the
- * same convention the rest of this module uses — rather than importing
- * review.js, which imports getStmbChatKey from *this* module (import cycle).
- *
- * Entries are filtered to the currently open chat: the queue is per-chat
- * metadata, but a stale chatKey can survive a rename, and showing another
- * chat's flagged memory would be worse than showing nothing.
- */
-function getCurrentReviewQueueEntries() {
-    const queue = chat_metadata?.stmbc?.reviewQueue;
-    if (!Array.isArray(queue)) return [];
-    const chatKey = getStmbChatKey();
-    return queue.filter(entry => entry && !entry.dismissed && (!entry.chatKey || entry.chatKey === chatKey));
-}
-
-function formatReviewRange(range) {
-    if (!range || !Number.isFinite(range.start) || !Number.isFinite(range.end)) return '';
-    return tr('STMemoryBooks_Jobs_ReviewRange', 'Messages {{start}}-{{end}}', { start: range.start, end: range.end });
-}
-
-function renderReviewQueueSection(entries) {
-    if (entries.length === 0) return '';
-    const items = entries.map(entry => {
-        const title = String(entry.entryTitle || '').trim() || tr('STMemoryBooks_Jobs_ReviewUntitled', '(untitled memory)');
-        const range = formatReviewRange(entry.range);
-        const reasons = (Array.isArray(entry.reasons) ? entry.reasons : [])
-            .map(reason => `<li>${escapeHtml(String(reason?.detail || reason?.type || ''))}</li>`)
-            .join('');
-        return `
-            <div class="stmb-jobs-row stmb-jobs-tone-awaiting stmb-jobs-review-entry">
-                <div class="stmb-jobs-row-main">
-                    <div class="stmb-jobs-row-header">
-                        <span class="stmb-jobs-row-icon"></span>
-                        <strong>${escapeHtml(title)}</strong>
-                        <span class="stmb-jobs-row-status">${escapeHtml(tr('STMemoryBooks_Jobs_NeedsReview', 'Needs review'))}</span>
-                    </div>
-                    ${range ? `<div class="stmb-jobs-row-meta">${escapeHtml(range)}</div>` : ''}
-                    ${entry.lorebookName ? `<div class="stmb-jobs-row-meta">${escapeHtml(tr('STMemoryBooks_Jobs_Lorebook', 'Lorebook'))}: ${escapeHtml(entry.lorebookName)}</div>` : ''}
-                    ${reasons ? `<ul class="stmb-jobs-review-reasons">${reasons}</ul>` : ''}
-                </div>
-                <button type="button" class="menu_button stmb-jobs-row-action" data-action="dismiss-review" data-review-job-id="${escapeHtml(String(entry.jobId || ''))}">${escapeHtml(tr('STMemoryBooks_Jobs_Dismiss', 'Dismiss'))}</button>
-            </div>`;
-    }).join('');
-    return `
-        <div class="stmb-jobs-review-queue">
-            <div class="stmb-jobs-section-title">${escapeHtml(tr('STMemoryBooks_Jobs_ReviewQueue', 'Flagged for review ({{count}})', { count: entries.length }))}</div>
-            ${items}
-        </div>`;
-}
-
 function renderStmbJobsUi() {
     if (!jobsUiInitialized || !jobsRows || !jobsSummary || !topBarButton || !topBarBadge || !jobsActions) {
         return;
     }
     const rows = getCurrentStoreRows();
     const activeCount = rows.filter(row => ACTIVE_STATES.has(String(row.state))).length;
-    const jobReviewCount = rows.filter(row => row.state === 'needs_review' || row.state === 'awaiting_approval').length;
+    const reviewCount = rows.filter(row => row.state === 'needs_review' || row.state === 'awaiting_approval').length;
     const failureCount = rows.filter(row => ['failed', 'blocked'].includes(String(row.state))).length;
-    // P4.5: the durable queue counts toward the badge too, so a flagged memory
-    // is still visible after a reload has cleared the in-memory job rows.
-    const queuedReviews = getCurrentReviewQueueEntries();
-    const reviewCount = jobReviewCount + queuedReviews.length;
     const totalBadge = activeCount + reviewCount + failureCount;
     const summary = activeCount > 0
         ? tr('STMemoryBooks_Jobs_ActiveSummary', '{{count}} active job(s)', { count: activeCount })
@@ -817,24 +757,16 @@ function renderStmbJobsUi() {
     topBarBadge.textContent = totalBadge > 99 ? '99+' : String(totalBadge);
     topBarBadge.classList.toggle('stmb-jobs-badge-failed', activeCount === 0 && failureCount > 0);
 
-    jobsActions.innerHTML = [
-        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-coverage">${escapeHtml(tr('STMemoryBooks_Jobs_RunCoverage', 'Run coverage audit'))}</button>`,
-        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-regenerate">${escapeHtml(tr('STMemoryBooks_Jobs_RunRegenerate', 'Run regeneration'))}</button>`,
-        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-technical">${escapeHtml(tr('STMemoryBooks_Jobs_RunTechnical', 'Run technical pass'))}</button>`,
-        `<button type="button" class="menu_button stmb-jobs-action-link" data-action="run-audit" data-audit-job="stmbc-audit-claims">${escapeHtml(tr('STMemoryBooks_Jobs_RunClaims', 'Run claim re-verification'))}</button>`,
-        rows.some(row => TERMINAL_STATES.has(String(row.state)))
-            ? `<button type="button" class="menu_button stmb-jobs-action-link" data-action="dismiss-terminal">${escapeHtml(tr('STMemoryBooks_Jobs_DismissCompleted', 'Dismiss completed'))}</button>`
-            : '',
-    ].filter(Boolean).join(' ');
-
-    const reviewQueueHtml = renderReviewQueueSection(queuedReviews);
+    jobsActions.innerHTML = rows.some(row => TERMINAL_STATES.has(String(row.state)))
+        ? `<button type="button" class="menu_button stmb-jobs-action-link" data-action="dismiss-terminal">${escapeHtml(tr('STMemoryBooks_Jobs_DismissCompleted', 'Dismiss completed'))}</button>`
+        : '';
 
     if (rows.length === 0) {
-        jobsRows.innerHTML = `${reviewQueueHtml}<div class="stmb-jobs-empty">${escapeHtml(tr('STMemoryBooks_Jobs_Empty', 'No Memory Books jobs.'))}</div>`;
+        jobsRows.innerHTML = `<div class="stmb-jobs-empty">${escapeHtml(tr('STMemoryBooks_Jobs_Empty', 'No Memory Books jobs.'))}</div>`;
         return;
     }
 
-    jobsRows.innerHTML = reviewQueueHtml + rows.map(job => {
+    jobsRows.innerHTML = rows.map(job => {
         const canReview = job.state === 'needs_review' || job.state === 'awaiting_approval';
         const canCancel = ACTIVE_STATES.has(String(job.state)) && job.state !== 'needs_review';
         const canRetry = ['failed', 'blocked', 'canceled'].includes(String(job.state));
@@ -842,7 +774,10 @@ function renderStmbJobsUi() {
         const action = canCancel
             ? `<button type="button" class="menu_button stmb-jobs-row-action" data-action="cancel-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Cancel', 'Cancel'))}</button>`
             : canRetry
-                ? `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Retry', 'Retry'))}</button>`
+                ? String(job.type || '') === 'memory'
+                    ? `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-all" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_RetryAll', 'Retry All'))}</button>
+                       <button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-memory" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_RetryMemory', 'Retry Memory'))}</button>`
+                    : `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Retry', 'Retry'))}</button>`
                 : '';
         return `
             <div class="stmb-jobs-row ${getStateToneClass(job)}"${attrs}>
@@ -855,10 +790,9 @@ function renderStmbJobsUi() {
                     ${job.detail ? `<div class="stmb-jobs-row-detail">${escapeHtml(job.detail)}</div>` : ''}
                     ${job.lorebookName ? `<div class="stmb-jobs-row-meta">${escapeHtml(tr('STMemoryBooks_Jobs_Lorebook', 'Lorebook'))}: ${escapeHtml(job.lorebookName)}</div>` : ''}
                     ${formatElapsed(job) ? `<div class="stmb-jobs-row-meta">${escapeHtml(formatElapsed(job))}</div>` : ''}
-                    ${job.reviewPending ? `<div class="stmb-jobs-row-meta stmb-jobs-review-flag">${escapeHtml(tr('STMemoryBooks_Jobs_ReviewFlagged', 'Flagged for review'))}${job.reviewReasons.length ? `: ${escapeHtml(job.reviewReasons.map(reason => String(reason?.detail || reason?.type || '')).join(' • '))}` : ''}</div>` : ''}
                     ${job.error?.message ? `<div class="stmb-jobs-row-error">${escapeHtml(job.error.message)}</div>` : ''}
                 </div>
-                ${action}
+                ${action ? `<div class="stmb-jobs-row-actions">${action}</div>` : ''}
             </div>`;
     }).join('');
 
@@ -912,46 +846,6 @@ function handlePanelClick(event) {
         }
         return;
     }
-    if (action === 'run-audit') {
-        // P5.5 — on-demand audit trigger from the jobs panel. Imported
-        // dynamically so tests can stub enqueueStmbJob.
-        const jobType = String(target.dataset.auditJob || 'stmbc-audit-coverage');
-        try {
-            import('./auditorCadence.js').then(({ enqueueAuditorJobByType }) => {
-                const result = enqueueAuditorJobByType({ jobType, enqueueStmbJob });
-                if (!result?.ok) {
-                    console.warn(`${MODULE_NAME}: audit enqueue failed (${result?.reason || 'unknown'})`);
-                }
-            }).catch(err => {
-                console.warn(`${MODULE_NAME}: dynamic import of auditorCadence.js failed`, err);
-            });
-        } catch (err) {
-            console.warn(`${MODULE_NAME}: failed to launch audit job`, err);
-        }
-        return;
-    }
-    if (action === 'dismiss-review') {
-        // P4.5 — clear the durable review-queue record. Handled BEFORE the
-        // findMutableJob() gate below: the queue lives in chat_metadata and
-        // survives a reload, so its job is usually long gone from the store.
-        // review.js is imported dynamically because it imports getStmbChatKey
-        // from this module (static import would be a cycle) — same reasoning as
-        // the auditorCadence.js import above.
-        const reviewJobId = String(target.dataset.reviewJobId || '');
-        if (!reviewJobId) return;
-        import('./review.js').then(({ dismissReviewQueueEntry }) => {
-            dismissReviewQueueEntry(reviewJobId);
-            const record = findMutableJob(reviewJobId);
-            if (record?.job) {
-                record.job.reviewPending = false;
-                record.job.reviewReasons = [];
-            }
-            renderStmbJobsUi();
-        }).catch(err => {
-            console.warn(`${MODULE_NAME}: dynamic import of review.js failed`, err);
-        });
-        return;
-    }
     const jobId = target.dataset.jobId || target.closest?.('[data-job-id]')?.dataset?.jobId;
     const record = findMutableJob(jobId);
     if (!record) return;
@@ -968,17 +862,14 @@ function handlePanelClick(event) {
         }
         return;
     }
-    if (action === 'retry-job') {
-        const retryInput = safeClone(record.job);
-        delete retryInput.id;
-        delete retryInput.abortController;
-        delete retryInput.error;
-        delete retryInput.result;
-        delete retryInput.startedAt;
-        delete retryInput.finishedAt;
-        record.store.recentHistory = record.store.recentHistory.filter(job => job.id !== record.job.id);
+    if (action === 'retry-job' || action === 'retry-all' || action === 'retry-memory') {
+        const retryPlan = action === 'retry-memory'
+            ? buildMemoryOnlyRetryPlan(record.job)
+            : buildJobRetryPlan(record.job, record.store.recentHistory);
+        const consumedIds = new Set(retryPlan.consumedJobIds);
+        record.store.recentHistory = record.store.recentHistory.filter(job => !consumedIds.has(job.id));
         enqueueStmbJob({
-            ...retryInput,
+            ...retryPlan.retryInput,
             state: 'queued',
             detail: record.job.detail,
         });
@@ -1254,4 +1145,39 @@ export async function loadLatestLorebookForJob(lorebookName) {
         }
         return data;
     });
+}
+
+// STMBC-HOOK(review): fork-only helper — cancel only stmbc-* prefixed jobs (fork's sentinel cycle + audit jobs).
+// Distinct from upstream's `cancelAllStmbJobs` which cancels EVERY STMB job; this one preserves
+// upstream memory/consolidation/sidePrompt jobs that may be running.
+export function cancelStmbcJobs(reason = 'stmbc-stop') {
+    const prefix = 'stmbc-';
+    let count = 0;
+    const types = new Set();
+    for (const store of jobStores.values()) {
+        for (const job of getRunningJobs(store)) {
+            if (String(job.type || '').startsWith(prefix)) {
+                count++;
+                types.add(String(job.type));
+                job.cancelled = true;
+                try {
+                    job.abortController.abort(reason);
+                } catch {}
+            }
+        }
+        const remaining = [];
+        for (const job of getQueue(store)) {
+            if (String(job.type || '').startsWith(prefix)) {
+                count++;
+                types.add(String(job.type));
+            } else {
+                remaining.push(job);
+            }
+        }
+        setQueue(store, remaining);
+    }
+    if (count > 0) {
+        console.log(`STMB: cancelStmbcJobs cancelled ${count} stmbc-* job(s): ${Array.from(types).join(', ')}`);
+    }
+    return { count, types: Array.from(types) };
 }

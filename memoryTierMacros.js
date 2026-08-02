@@ -5,10 +5,10 @@ import { chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import { macros, MacroCategory, MacroValueType } from '../../../macros/macro-system.js';
 import { METADATA_KEY, loadWorldInfo, world_names } from '../../../world-info.js';
-import { getSceneMarkers } from './sceneManager.js';
 import { getEntrySummaryTier, STMB_SUMMARY_TIERS } from './summaryTiers.js';
 import { isClipEntryTitle } from './clipManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
+import { getCurrentManualLorebookResolution } from './utils.js';
 
 const EMPTY_TIER_COUNTS = Object.freeze(
     Object.fromEntries(STMB_SUMMARY_TIERS.map(({ tier }) => [tier, 0])),
@@ -25,7 +25,7 @@ function getEffectiveLorebookNameNonInteractive() {
         return chat_metadata?.[METADATA_KEY] || null;
     }
 
-    const manualLorebook = getSceneMarkers()?.manualLorebook || null;
+    const manualLorebook = getCurrentManualLorebookResolution().lorebookName;
     return manualLorebook && world_names.includes(manualLorebook)
         ? manualLorebook
         : null;

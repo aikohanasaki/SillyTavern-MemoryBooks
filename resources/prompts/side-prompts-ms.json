@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Perkembangan Watak",
+      "enabled": false,
+      "prompt": "Langkah:\n1. Semak babak yang diberikan.\n2. Kenal pasti dan huraikan perubahan dalam personaliti {{char}} akibat pengalaman mereka.\n3. Tulis huraian ringkas tentang bagaimana {{char}} telah berubah dan peristiwa yang menyebabkannya.",
+      "responseFormat": "===Perkembangan Watak {{char}}===\n(huraian ringkas tentang perubahan utama)\n===AKHIR Perkembangan Watak {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Suasana dan Atmosfera",
+      "enabled": true,
+      "prompt": "Semak babak yang disertakan dan huraikan suasana serta atmosfera semasa.",
+      "responseFormat": "===SUASANA SEMASA===\n(huraian ringkas tentang suasana dan atmosfera semasa)\n===AKHIR SUASANA SEMASA===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Pembinaan Dunia",
+      "enabled": true,
+      "prompt": "Huraikan keadaan dunia semasa, terutamanya perubahan akibat plot atau babak.",
+      "responseFormat": "===NOTA DUNIA===\n(nota ringkas tetapi padat)\n===AKHIR NOTA DUNIA===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Penjejak Kedudukan Badan",
+      "enabled": true,
+      "prompt": "Semak babak, kemudian isi atau kemas kini Penjejak Kedudukan Badan untuk {{char}}. Jika {{char}} terdiri daripada beberapa orang, isi satu untuk setiap orang. Ringkaskan dan jimat token, tetapi utamakan ketepatan serta kewajaran logistik. Jangan langgar hukum fizik.",
+      "responseFormat": "===Penjejak Kedudukan Badan {{char}}===\nKedudukan keseluruhan dan keadaan pakaian:\nKepala:\nLengan/tangan kiri:\nLengan/tangan kanan:\nTorso/dada/belakang:\nKaki kiri:\nKaki kanan:\n===AKHIR Penjejak Kedudukan Badan {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

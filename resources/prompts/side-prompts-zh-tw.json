@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "角色成長",
+      "enabled": false,
+      "prompt": "步驟：\n1. 查看提供的場景。\n2. 找出並描述{{char}}因其經歷而產生的性格變化。\n3. 簡要說明哪些事件使{{char}}發生了怎樣的變化。",
+      "responseFormat": "==={{char}}的角色成長===\n（主要變化的簡短說明）\n===結束：{{char}}的角色成長===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "情緒與氛圍",
+      "enabled": true,
+      "prompt": "查看隨附的場景，並描述目前的情緒和氛圍。",
+      "responseFormat": "===目前氛圍===\n（目前情緒和氛圍的簡短說明）\n===目前氛圍結束===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "世界構建",
+      "enabled": true,
+      "prompt": "描述世界的目前狀態，尤其是由情節或場景引起的變化。",
+      "responseFormat": "===世界筆記===\n（簡短但資訊密集的筆記）\n===世界筆記結束===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "身體位置追蹤器",
+      "enabled": true,
+      "prompt": "查看場景，然後填寫或更新{{char}}的身體位置追蹤器。如果{{char}}代表多人，請為每個人分別填寫。保持簡潔並節省 token，但應優先確保準確性和位置關係的合理性。不要違反物理定律。",
+      "responseFormat": "==={{char}}身體位置追蹤器===\n整體位置與衣著狀態：\n頭部：\n左臂/左手：\n右臂/右手：\n軀幹/胸部/背部：\n左腿/左腳：\n右腿/右腳：\n===結束：{{char}}身體位置追蹤器===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

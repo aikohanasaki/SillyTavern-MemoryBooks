@@ -5,7 +5,11 @@ import { extension_settings } from '../../../extensions.js';
 import { chat, chat_metadata } from '../../../../script.js';
 import { METADATA_KEY } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
-import { showLorebookSelectionPopup, clampInt } from './utils.js';
+import {
+    clampInt,
+    getCurrentManualLorebookResolution,
+    showLorebookSelectionPopup,
+} from './utils.js';
 import { resolveSentinelEnabled } from './autoSettings.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
@@ -13,8 +17,6 @@ import { translate } from '../../../i18n.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 
 let autoSummarySkippedForProcessing = false;
-let autoSummarySkippedMarkersRef = null;
-
 // STMBC-HOOK-PHASE2-P2.4: defense-in-depth gate for native auto-summary.
 // Per plan §4.1 + §1.2.4, native auto-summary is force-disabled while sentinel
 // is enabled for the current chat. autosummary.js is left intact for
@@ -29,6 +31,8 @@ function isAutoSummaryBlockedBySentinel() {
         return false;
     }
 }
+
+let autoSummarySkippedMarkersRef = null;
 
 /**
  * i18n helper: translate with Mustache-style {{var}} interpolation
@@ -54,7 +58,7 @@ async function validateLorebookForAutoSummary() {
     if (manualMode) {
         // Manual mode - check if a lorebook is already selected
         const stmbData = getSceneMarkers() || {};
-        let lorebookName = stmbData.manualLorebook ?? null;
+        let lorebookName = getCurrentManualLorebookResolution({ settings, markers: stmbData }).lorebookName;
 
         // If no lorebook is selected, ask user what to do
         if (!lorebookName) {
@@ -110,7 +114,6 @@ async function validateLorebookForAutoSummary() {
         return await validateLorebookRequirement({
             createContext: 'auto-summary',
             manualMode: true,
-            lorebookName,
             retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, try again.'),
         });
     }
@@ -248,6 +251,7 @@ export async function handleAutoSummaryMessageReceived() {
  * @returns {Promise<void>}
  */
 export async function retryAutoSummaryAfterJobIdle() {
+    if (isAutoSummaryBlockedBySentinel()) return;
     if (!autoSummarySkippedForProcessing) {
         return;
     }
@@ -271,6 +275,7 @@ export async function retryAutoSummaryAfterJobIdle() {
  */
 export function clearAutoSummaryState() {
     if (isAutoSummaryBlockedBySentinel()) return;
+
     if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
         // Clear scene markers; baseline is updated upon successful memory creation
         clearScene();

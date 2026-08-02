@@ -4,6 +4,7 @@
 import { saveSettingsDebounced } from '../../../../script.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { moment, Handlebars, DOMPurify } from '../../../../lib.js';
+import { extension_settings } from '../../../extensions.js';
 import {
     validateProfile,
     generateSafeProfileName,
@@ -23,6 +24,7 @@ import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { getPresetManager } from '../../../preset-manager.js';
 import { loadWorldInfo, world_names } from '../../../world-info.js';
 import { escapeHtml, getSortableDelay } from '../../../utils.js';
+import { listCustomConnectionProfiles } from './customConnectionProfiles.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 const BUILTIN_CURRENT_ST_NAME = 'Current SillyTavern Settings';
@@ -61,6 +63,29 @@ function getChatCompletionPresetOptions(selectedPreset = '') {
             value: selected,
             displayName: selected,
             selected: true,
+        });
+    }
+
+    return options;
+}
+
+function getCustomConnectionProfileOptions(selectedProfileId = '') {
+    const selected = String(selectedProfileId || '').trim();
+    const profiles = listCustomConnectionProfiles(
+        extension_settings?.connectionManager?.profiles,
+    );
+    const options = profiles.map(profile => ({
+        value: String(profile.id),
+        displayName: String(profile.name || profile.id),
+        selected: String(profile.id) === selected,
+    }));
+
+    if (selected && !options.some(option => option.value === selected)) {
+        options.push({
+            value: selected,
+            displayName: translate('Missing connection profile', 'STMemoryBooks_MissingConnectionProfile'),
+            selected: true,
+            disabled: true,
         });
     }
 
@@ -120,8 +145,21 @@ const profileEditTemplate = Handlebars.compile(`
             </select>
         </label>
 
+        <div id="stmb-custom-connection-profile-section" class="{{#unless (eq connection.api 'custom')}}displayNone{{/unless}}">
+            <label for="stmb-profile-custom-connection-profile">
+                <h4 data-i18n="STMemoryBooks_UseThisConnectionProfile">Use this connection profile:</h4>
+                <select id="stmb-profile-custom-connection-profile" class="text_pole">
+                    <option value="" {{#unless connection.connectionProfileId}}selected{{/unless}} data-i18n="STMemoryBooks_UseActiveCustomConnection">Use active SillyTavern Custom connection</option>
+                    {{#each customConnectionProfileOptions}}
+                    <option value="{{value}}" {{#if selected}}selected{{/if}} {{#if disabled}}disabled{{/if}}>{{displayName}}</option>
+                    {{/each}}
+                </select>
+                <small class="opacity50p" data-i18n="STMemoryBooks_CustomConnectionProfileDesc">Uses the selected SillyTavern connection profile's URL and secret. The model entered below remains the model override.</small>
+            </label>
+        </div>
+
         <div class="info-block hint marginBot10">
-            <small data-i18n="STMemoryBooks_APIProfileConfigHint">💡 Profile Setup Hint: STMB automatically reads API info and keys from your ST config. First, configure and test your connection in ST using Test Message. Then select it from the dropdown above to use those settings for memory generation. Only use Full Manual Configuration if you need two different Custom OpenAI-Compatible setups; otherwise, just create two connection profiles in ST—one for roleplay and one for Memory Books.</small>
+            <small data-i18n="STMemoryBooks_APIProfileConfigHint">💡 Profile Setup Hint: Configure and test connections in SillyTavern first. Custom API profiles can use the active Custom connection or bind a specific Custom connection profile above. Full Manual Configuration is only for exceptional direct-browser connections.</small>
         </div>
 
         <label class="checkbox_label marginTop5">
@@ -396,6 +434,7 @@ export async function editProfile(settings, profileIndex, refreshCallback) {
             skipStructuredOutput: Boolean(profile.skipStructuredOutput),
             useChatCompletionService: Boolean(profile.useChatCompletionService) && connection.api !== 'full-manual',
             chatCompletionPresetOptions: getChatCompletionPresetOptions(profile.chatCompletionPreset || ''),
+            customConnectionProfileOptions: getCustomConnectionProfileOptions(connection.connectionProfileId),
             outletName: profile.outletName || '',
             hasLegacyCustomPrompt: (profile.prompt && profile.prompt.trim()) ? true : false,
             canUseAdditionalContext: false,
@@ -509,6 +548,7 @@ export async function newProfile(settings, refreshCallback) {
             skipStructuredOutput: false,
             useChatCompletionService: false,
             chatCompletionPresetOptions: getChatCompletionPresetOptions(''),
+            customConnectionProfileOptions: getCustomConnectionProfileOptions(''),
             outletName: '',
             canUseAdditionalContext: false,
         };
@@ -1106,6 +1146,7 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
 
     popupElement.querySelector('#stmb-profile-api')?.addEventListener('change', (e) => {
         const fullManualSection = popupElement.querySelector('#stmb-full-manual-section');
+        const customConnectionProfileSection = popupElement.querySelector('#stmb-custom-connection-profile-section');
         const chatCompletionServiceContainer = popupElement.querySelector('#stmb-profile-chat-completion-service-container');
         const chatCompletionServiceInput = popupElement.querySelector('#stmb-profile-use-chat-completion-service');
         const modelInput = popupElement.querySelector('#stmb-profile-model');
@@ -1120,6 +1161,7 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
             fullManualSection.classList.add('displayNone');
             chatCompletionServiceContainer?.classList.remove('displayNone');
         }
+        customConnectionProfileSection?.classList.toggle('displayNone', e.target.value !== 'custom');
         syncChatCompletionPresetFields();
         // Disable model/temp when using Current SillyTavern Settings provider
         const isCurrentST = e.target.value === 'current_st';
@@ -1235,6 +1277,7 @@ function buildProfileFromForm(popupElement, fallbackName, existingProfile = {}) 
         temperature: popupElement.querySelector('#stmb-profile-temperature')?.value,
         endpoint: popupElement.querySelector('#stmb-profile-endpoint')?.value,
         apiKey: popupElement.querySelector('#stmb-profile-apikey')?.value,
+        connectionProfileId: popupElement.querySelector('#stmb-profile-custom-connection-profile')?.value,
         reverseProxy: popupElement.querySelector('#stmb-profile-reverse-proxy')?.checked,
         constVectMode: popupElement.querySelector('#stmb-profile-const-vect')?.value,
         position: popupElement.querySelector('#stmb-profile-position')?.value,
@@ -1398,6 +1441,17 @@ export function validateAndFixProfiles(settings) {
                 delete profile.additionalContextEntries;
                 fixes.push(`Removed 'additionalContextEntries' from builtin profile "${profile.name}"`);
             }
+        }
+
+        const connectionProfileId = String(profile?.connection?.connectionProfileId || '').trim();
+        if (profile?.connection?.api === 'custom' && connectionProfileId) {
+            if (profile.connection.connectionProfileId !== connectionProfileId) {
+                profile.connection.connectionProfileId = connectionProfileId;
+                fixes.push(`Normalized Custom connection profile ID for profile "${profile.name}"`);
+            }
+        } else if (profile?.connection && 'connectionProfileId' in profile.connection) {
+            delete profile.connection.connectionProfileId;
+            fixes.push(`Removed inactive Custom connection profile ID from profile "${profile.name}"`);
         }
 
         // For each profile, we check if the new settings exist. If not, we add the defaults.

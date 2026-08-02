@@ -177,6 +177,93 @@
     pointer-events: none;
 }
 
+.stmb_narrator_cast_drawer {
+    position: fixed;
+    z-index: 10001;
+    width: min(280px, calc(100vw - 24px));
+    max-height: min(420px, calc(100vh - 24px));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    background: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
+    box-shadow: 0 2px 10px var(--SmartThemeShadowColor);
+    user-select: none;
+}
+
+.stmb_narrator_cast_drawer.collapsed {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 999px;
+}
+
+.stmb-narrator-cast-expand {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: var(--SmartThemeQuoteColor);
+    cursor: grab;
+}
+
+.stmb-narrator-cast-expand span {
+    position: absolute;
+    right: 2px;
+    top: 1px;
+    min-width: 17px;
+    padding: 1px 4px;
+    border-radius: 999px;
+    background: var(--SmartThemeQuoteColor);
+    color: var(--SmartThemeBlurTintColor);
+    font-size: 0.7em;
+}
+
+.stmb-narrator-cast-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: grab;
+}
+
+.stmb-narrator-cast-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.stmb-narrator-manager-add,
+.stmb-narrator-manager-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(160px, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.stmb-narrator-manager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    max-height: min(50vh, 30rem);
+    overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+    .stmb-narrator-manager-add,
+    .stmb-narrator-manager-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* --- ANIMATIONS --- */
 
 /* Pulse animation for valid selection points */
@@ -238,6 +325,12 @@
 
 }
 
+.stmb-group-participants-list {
+    max-height: min(50vh, 30rem);
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
 #stmb-profile-summary pre {
     text-align: left !important;
 }
@@ -290,9 +383,17 @@
 
 .stmb-manual-group-lorebook-row {
     display: grid;
-    grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto;
+    grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr) auto auto;
     gap: 8px;
     align-items: center;
+}
+
+.stmb-character-memory-book-lock {
+    min-width: 2.25em;
+}
+
+.stmb-character-memory-book-lock-broken {
+    color: var(--warning-color, #e6a23c);
 }
 
 .stmb-manual-group-lorebook-label {
@@ -557,6 +658,14 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
+.stmb-jobs-row-actions {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+}
+
 .stmb-jobs-row-header {
     align-items: center;
     gap: 8px;
@@ -581,37 +690,6 @@
 .stmb-jobs-row[data-action="open-approval"]:hover,
 .stmb-jobs-row[data-action="open-approval"]:focus-visible {
     background: color-mix(in srgb, currentColor 10%, rgba(255, 255, 255, 0.03));
-}
-
-/* P4.5 — durable review queue (chat_metadata.stmbc.reviewQueue) rendered above
-   the live job rows. Reuses .stmb-jobs-row so a flagged memory reads as the same
-   kind of object as the job it came from. */
-.stmb-jobs-review-queue {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.stmb-jobs-section-title {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    opacity: 0.7;
-}
-
-.stmb-jobs-review-entry {
-    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor, #e0a72c) 45%, transparent);
-}
-
-.stmb-jobs-review-reasons {
-    margin: 4px 0 0;
-    padding-left: 18px;
-    font-size: 12px;
-    opacity: 0.82;
-}
-
-.stmb-jobs-review-flag {
-    color: var(--SmartThemeQuoteColor, #e0a72c);
 }
 
 .stmb-jobs-action-link {
@@ -655,112 +733,50 @@
     margin-top: 4px;
 }
 
-/* ----------------------------------------------------------------------------
-   STMB audit report UIs (Phase 5 P5.4)
-   Shared styles for the four report popups: coverage, regeneration diff,
-   technical pass, claim re-verification.
-   ---------------------------------------------------------------------------- */
-
-.stmb-audit-card {
-    margin-bottom: 8px;
-    padding: 8px;
-    border: 1px solid var(--SmartThemeBorderColor, #555);
-    border-radius: 6px;
-}
-
-.stmb-audit-card-header {
-    display: flex;
+.stmb-regenerate-entry {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-    flex-wrap: wrap;
-}
-
-.stmb-audit-card-note,
-.stmb-audit-card-message,
-.stmb-audit-card-suggestion {
-    margin: 4px 0;
-    padding: 4px 6px;
-    border-left: 3px solid var(--SmartThemeBorderColor, #888);
-    opacity: 0.9;
-}
-
-.stmb-audit-card-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-}
-
-.stmb-audit-kind-badge,
-.stmb-audit-severity-badge {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 999px;
+    gap: 0.35em;
+    width: auto;
+    margin-inline-start: 0.5em;
+    padding: 0.2em 0.55em;
     font-size: 0.85em;
-    font-weight: 600;
-    border: 1px solid currentColor;
 }
 
-.stmb-audit-kind-badge {
-    background: color-mix(in srgb, currentColor 12%, transparent);
-    opacity: 0.85;
-}
-
-.stmb-audit-severity-error {
-    color: var(--SmartThemeRedColor, #ff6b6b);
-}
-
-.stmb-audit-severity-warn {
-    color: #f0c36d;
-}
-
-.stmb-audit-severity-info {
-    color: var(--SmartThemeQuoteColor, #4f8cff);
-}
-
-.stmb-audit-card-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: min(60vh, 520px);
-    overflow-y: auto;
-}
-
-.stmb-audit-diff {
+.stmb-regeneration-columns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin: 8px 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
 }
 
-.stmb-audit-diff-pane {
+.stmb-regeneration-column {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.4rem;
+    min-width: 0;
 }
 
-.stmb-audit-diff-pane h4 {
-    margin: 0;
-    font-size: 0.95em;
-    opacity: 0.85;
+.stmb-regeneration-content {
+    min-height: min(34vh, 320px);
+    resize: vertical;
 }
 
-.stmb-audit-diff-current,
-.stmb-audit-diff-derived {
-    background: var(--SmartThemeChatTintColor, #222);
-    padding: 6px 8px;
-    border-radius: 4px;
-    max-height: 240px;
-    overflow: auto;
-    white-space: pre-wrap;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.9em;
-    margin: 0;
+.stmb-regeneration-linked-warning {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    border: 1px solid var(--SmartThemeEmColor, #f0c36d);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--SmartThemeEmColor, #f0c36d) 12%, transparent);
 }
 
-@media screen and (max-width: 600px) {
-    .stmb-audit-diff {
+.stmb-setting-focus-highlight {
+    border-radius: 6px;
+    outline: 2px solid var(--SmartThemeQuoteColor, #4f8cff);
+    outline-offset: 4px;
+}
+
+@media (max-width: 700px) {
+    .stmb-regeneration-columns {
         grid-template-columns: 1fr;
     }
 }
