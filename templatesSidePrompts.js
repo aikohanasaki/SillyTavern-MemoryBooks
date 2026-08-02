@@ -28,6 +28,9 @@ export const sidePromptsTableTemplate = Handlebars.compile(`
           </td>
           <td style="padding: 8px; text-align:right;">
             <span class="stmb-sp-inline-actions" style="display: inline-flex; gap: 10px;">
+              <button class="stmb-sp-action stmb-sp-action-toggle{{#unless enabled}} opacity50p{{/unless}}" title="{{#if enabled}}Disable side prompt{{else}}Enable side prompt{{/if}}" aria-label="{{#if enabled}}Disable side prompt{{else}}Enable side prompt{{/if}}" aria-pressed="{{#if enabled}}true{{else}}false{{/if}}" data-i18n="[title]{{#if enabled}}STMemoryBooks_DisableSidePrompt{{else}}STMemoryBooks_EnableSidePrompt{{/if}};[aria-label]{{#if enabled}}STMemoryBooks_DisableSidePrompt{{else}}STMemoryBooks_EnableSidePrompt{{/if}}" style="background:none;border:none;cursor:pointer;{{#if enabled}}color:var(--active);{{/if}}">
+                <i class="fa-solid fa-power-off"></i>
+              </button>
               <button class="stmb-sp-action stmb-sp-action-edit" title="Edit" aria-label="Edit" data-i18n="[title]STMemoryBooks_Edit;[aria-label]STMemoryBooks_Edit" style="background:none;border:none;cursor:pointer;">
                 <i class="fa-solid fa-pen"></i>
               </button>
