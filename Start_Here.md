@@ -863,6 +863,21 @@ This setup generally involves:
 
 Begin with one group Memory Book. Add separate books only when the story requires them.
 
+## Narrator Chats
+
+Narrator Mode is a separate advanced setup for a normal chat where one Narrator character card writes several fictional characters.
+
+It requires:
+
+* Manual Lorebook Mode
+* One omniscient Memory Book
+* One different Memory Book for each declared fictional character
+* A manually maintained Active Cast selection
+
+Narrator Mode does not detect characters by reading names in the Narrator's prose. Select the active fictional cast before each generation. STMB stores that cast on the message and later uses it to decide which character Memory Books receive copies of the scene memory.
+
+Do not use Narrator Mode as a beginner substitute for an ordinary one-character Memory Book. Set up normal memory creation first, then follow the [Narrator Mode Technical Guide](userguides/narrator-mode-en.md).
+
 ---
 
 # Part 15: Common First-Run Problems
@@ -1144,7 +1159,9 @@ Use delayed recursion only when you understand your lorebook activation chain an
 
 Start with one Memory Book for each continuing chat or story.
 
-Use several only when you need:
+Narrator Mode is the main exception: it requires one omniscient Memory Book plus one unique book for every declared fictional character.
+
+Outside Narrator Mode, use several only when you need:
 
 * Separate private character knowledge
 * Different Memory Books for different group members

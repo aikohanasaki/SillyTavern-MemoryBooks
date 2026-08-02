@@ -49,9 +49,57 @@ When **Copy Memory Books when branching** is enabled, a newly created native Sil
 
 This matters because a branch is usually a new continuity. If both chats continued writing into the same book, later memories from the parent and branch could contradict each other inside one timeline.
 
-STMB copies the chat-bound or main manual book and, for a Manual Mode group, each unique unlocked character book. Persistent character locks are preserved instead of copied because a lock explicitly means that the character should keep using one continuing book.
+STMB copies the chat-bound or main manual book and, for a Manual Mode group, each unique unlocked character book. In Narrator Mode it copies the omniscient book and every declared cast book, then rewrites the branch cast assignments to the copies. Persistent character locks are preserved instead of copied because a lock explicitly means that the character should keep using one continuing book.
 
 Branch copying changes storage and internal links. It does not regenerate the contents. Existing entries are cloned, branch-specific chat IDs are rewritten, and canonical group/character lorebook links are redirected when both books were copied.
+
+## Native Group Chats and Narrator Chats
+
+STMB supports two different multi-character architectures.
+
+### Native Group Chat Mode
+
+A native SillyTavern group contains separate character cards. Each assistant message identifies the character card that authored it. STMB can use those message authors as participant identities and can write native character filters.
+
+### Narrator Mode
+
+Narrator Mode is for a normal one-on-one chat where one Narrator card writes several fictional characters inside its prose. SillyTavern identifies only the Narrator card, so STMB cannot derive the fictional cast from message authors.
+
+Narrator Mode therefore uses explicit metadata:
+
+1. The user declares fictional cast members and assigns one unique Memory Book to each.
+2. The user selects the Active Cast before generation.
+3. STMB snapshots that selection at generation start.
+4. The selected character Memory Books join the generation's character-lore candidate collection.
+5. STMB stamps the completed Narrator message with stable cast-member IDs.
+6. Memory creation reads those IDs to determine which character books receive linked copies.
+
+Narrator Mode requires Manual Lorebook Mode and one omniscient Memory Book. It does not use native character filters and does not require STLO.
+
+### Narrator message metadata
+
+The logical message metadata is:
+
+```json
+{
+  "extra": {
+    "STMemoryBooks": {
+      "narratorCast": {
+        "version": 1,
+        "memberIds": ["stable-member-id"]
+      }
+    }
+  }
+}
+```
+
+The IDs refer to the current chat's declared Narrator cast. They are not character names parsed from text.
+
+If every Narrator response in a scene has this metadata, the Narrator responses are authoritative and their member IDs are unioned into the scene participant list. If any Narrator response is untagged, STMB treats the range as legacy data, uses available message snapshots as hints, and requires a participant confirmation.
+
+The canonical entry receives `STMB_narratorParticipantIds`. Individual copies receive `STMB_narratorOwnerIds`. These fields replace native character filters for Narrator routing and allow regeneration and consolidation to preserve the target type.
+
+For the complete behavior, see [Narrator Mode: Technical Guide](narrator-mode-en.md).
 
 ### Generation and Retrieval Are Separate Steps
 
@@ -554,11 +602,11 @@ The best consolidation prompts also tell the model what to preserve:
 - It asks for freeform prose instead of the consolidation JSON object.
 - It over-focuses on style and under-specifies selection and grouping.
 
-### Group-chat consolidation routing
+### Group-chat and Narrator consolidation routing
 
-In a Manual Mode group with a canonical group book and character books, the canonical group book uses **Group Chat Consolidation Analysis (Automatic)**. Its goal is an omniscient group chronology that distinguishes objective events from individual knowledge.
+In a Manual Mode multi-book group, the canonical group book uses **Group Chat Consolidation Analysis (Automatic)**. Its goal is an omniscient group chronology that distinguishes objective events from individual knowledge. Narrator Mode uses the same canonical-versus-character topology: the omniscient book is the canonical chronology, while declared character books contain only their owned copies.
 
-Character books use the consolidation preset selected in the consolidation popup. A character book may have fewer source entries than the group book; missing entries are chronology gaps, not proof that the character was absent or ignorant.
+Character books use the consolidation preset selected in the consolidation popup. A character book may have fewer source entries than the canonical book; missing entries are chronology gaps, not proof that the character was absent or ignorant. Narrator ownership and participant metadata are collected from the selected source entries and carried into the new summary.
 
 ### Practical prompt-writing advice for consolidation
 

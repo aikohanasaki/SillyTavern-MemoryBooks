@@ -18,6 +18,7 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Choose Your Style](#-choose-your-style)
 - [Catch-Up for Existing Chats](#-catch-up-for-existing-chats)
 - [Group Chat Mode](#-group-chat-mode)
+- [Narrator Mode](#-narrator-mode)
 - [Branching Chats](#-branching-chats)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
 - [Topical Clip](#-topical-clip)
@@ -221,36 +222,9 @@ You do not need to enable a separate Group Chat Mode switch. Open a SillyTavern 
 
 > **Group Chat Mode is not Narrator Mode.**
 >
-> Narrator Mode is intended for chats where one Narrator character card writes several fictional characters. Narrator Mode is still under development.
+> Group Chat Mode reads real SillyTavern character-card authors. Narrator Mode is a separate advanced workflow for a normal chat where one Narrator card writes several fictional characters. Narrator Mode uses a manually declared cast and an Active Cast selector; it does not discover characters by reading prose.
 
----
-
-## Group Chats and Narrator Chats Are Different
-
-### Supported by Group Chat Mode
-
-```text
-SillyTavern Group
-├── Alice card writes Alice
-├── Bob card writes Bob
-└── Clara card writes Clara
-```
-
-Memory Books can identify Alice, Bob, and Clara as separate characters because SillyTavern identifies the card that produced each message.
-
-### Not yet separated into individual characters
-
-```text
-Normal SillyTavern Chat
-└── Narrator card
-    ├── writes Alice
-    ├── writes Bob
-    └── writes Clara
-```
-
-SillyTavern sees every response in this chat as coming from the Narrator card. Memory Books cannot currently treat Alice, Bob, and Clara as separate group members merely because their names appear inside the Narrator’s prose.
-
-That functionality belongs to the upcoming Narrator Mode.
+For the full Narrator workflow, see [Narrator Mode](#-narrator-mode) and the [Narrator Mode Technical Guide](userguides/narrator-mode-en.md).
 
 ---
 
@@ -857,6 +831,93 @@ It does not create duplicate consolidated entries for every assigned character.
 
 ---
 
+## 🎭 Narrator Mode
+
+Narrator Mode supports a **normal one-on-one SillyTavern chat where one Narrator character card writes several fictional characters**.
+
+```text
+Normal SillyTavern chat
+└── Narrator card
+    ├── writes Alice
+    ├── writes Bob
+    └── writes Clara
+```
+
+SillyTavern records all three fictional characters as part of the Narrator card's response. STMB therefore cannot use message-author character cards as it does in Group Chat Mode. Narrator Mode solves this with a user-declared cast and per-message cast metadata.
+
+### Required layout
+
+Narrator Mode always uses:
+
+* one **omniscient Memory Book** for the complete canonical history; and
+* one unique **character Memory Book** for every declared fictional character.
+
+It requires Manual Lorebook Mode. Automatic chat-bound and Auto-Create routing are not supported while Narrator Mode is active.
+
+Unlike the advanced native-group layout, Narrator Mode does not require STLO. It also does not allow two declared characters to share the same character Memory Book.
+
+### Setup
+
+1. Open the normal chat using the Narrator card.
+2. Create or choose the omniscient Memory Book and one separate book per fictional character.
+3. Open Memory Books and enable **Manual Lorebook Mode**.
+4. Select the omniscient book as the manual Memory Book.
+5. Enable **Narrator Mode**.
+6. Open **Manage Narrator Cast**.
+7. Add each fictional character by name and assign that character's unique Memory Book.
+8. Use the movable **Active Cast** drawer to select who participates before each Narrator generation.
+
+Characters are write-in cast members. They do not need SillyTavern character cards.
+
+### Active Cast behavior
+
+STMB snapshots the Active Cast when generation begins. The completed Narrator response is stamped with those cast-member IDs. A continuation merges its cast into the existing response metadata. Swipes retain their own cast metadata, and selecting a swipe restores the drawer to that swipe's cast.
+
+Narrator Mode does not search the prose for names and decide who participated. The explicit Active Cast selection is the source of truth.
+
+### Creating memories
+
+When a Narrator scene becomes a memory:
+
+1. the canonical version is saved to the omniscient Memory Book;
+2. linked copies are saved only to the Memory Books owned by the scene participants; and
+3. no individual copy is created for an unselected cast member.
+
+If the participant list is empty, STMB saves only the omniscient entry.
+
+For fully tagged messages, STMB derives participants from the Narrator responses in the scene. If a scene contains older untagged Narrator messages, STMB opens **Confirm Narrator scene cast**. In that popup, selecting nobody means no individual cast member was present; it does not mean everyone.
+
+### Character-focused memories
+
+The profile option **Use separate group and character prompts in group chats** also applies to Narrator Mode.
+
+When enabled:
+
+* the Group Summary Prompt creates the omniscient version; and
+* the Character Summary Prompt runs separately for each participating character book.
+
+This supports individual knowledge, mistaken beliefs, private reactions, and character-specific continuity. It also adds one generation request per participating character.
+
+### Loading character memories during roleplay
+
+Before a Narrator reply, STMB adds the selected active characters' Memory Books to the generation's character-lore processing. Alice's and Clara's books can therefore participate when Alice and Clara are active without adding Bob's book.
+
+The omniscient manual Memory Book is the canonical STMB storage target. Manual selection alone does not bind it to ordinary chat generation. Bind or activate the omniscient lorebook through normal SillyTavern lorebook controls if the Narrator should receive it during roleplay.
+
+### Removing cast members
+
+**Remove** retires a cast member rather than deleting their identity. Retired members disappear from the Active Cast drawer but retain their internal ID and Memory Book assignment so old linked memories remain interpretable. The name and book remain reserved and the member can be restored.
+
+### Catch-up, branching, and linked edits
+
+* `/stmb-catchup` works only for Narrator ranges that already have complete cast metadata. Legacy untagged ranges must be processed manually.
+* Branching copies the omniscient book and every declared cast book, then rewrites the branch's cast bindings to the copies.
+* Regeneration, Compaction, manual edits, and deletion affect only the selected entry. Linked copies are not live-synchronized.
+
+See the [Narrator Mode Technical Guide](userguides/narrator-mode-en.md) for the exact metadata model, participant-resolution rules, prompt routing, consolidation behavior, and troubleshooting.
+
+---
+
 ## 🌿 Branching Chats
 
 SillyTavern can create a new branch from an earlier point in a chat. A branch may develop into a different continuity, so sharing the same writable Memory Book with its parent can mix two timelines.
@@ -870,6 +931,7 @@ When STMB detects a newly created native branch:
 - Automatic Mode copies the active chat-bound Memory Book.
 - Manual Mode copies the main manual Memory Book.
 - A Manual Mode group also copies every unique **unlocked** character Memory Book currently assigned.
+- Narrator Mode copies the omniscient Memory Book and every declared cast Memory Book.
 - Locked character Memory Books are not copied. Their persistent assignment remains in place.
 
 Every book copied for one branch receives the same available branch number:
