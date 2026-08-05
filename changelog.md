@@ -22,6 +22,9 @@ and [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
 - Single merge of `upstream/main` (`35c8d21`, v8.5.0, 2026-08-01) into the fork's main, bringing upstream's v3.x → v8.x refactors into `SillyTavern-MemoryBooks-Auto` (PHA-1663 / sync-decisions.md §Decision 1). Diff stat: 196 files / +19,088 / -49,514 lines.
 - All STMBC-HOOK sites (Sentinel, Auditor, Librarian, Clipper+, Living-lorebook injection, Auto Module) intact on the merged tree — see `FORK_NOTES.md`. Tests pass; this entry refreshes the bundled changelog per Decision 3 in the same merge commit.
 
+## v8.5.1 (August 2, 2026)
+- Tweak: Added on/off toggle in side prompt manager to make enable/disable easy and fast.
+
 ## v8.5.0 (August 1, 2026)
 - **Narrator Mode:** Added multi-character memory routing for normal chats where one Narrator card writes several fictional characters.
 - **Active Cast:** Added a movable per-chat cast selector. STMB snapshots the selected cast at generation start, stores stable cast-member IDs on messages and swipes, merges cast metadata across continuations, and restores the selector from the active timeline.
