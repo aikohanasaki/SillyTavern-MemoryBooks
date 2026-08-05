@@ -62,6 +62,13 @@ import {
     resolveDetectionPrompt,
     resolveSentinelEnabled,
 } from './autoSettings.js';
+// PHA-1664: autosummary scene markers → Sentinel signal. We project the
+// upstream autosummary.js `sceneEnd` (the message ID where the most recent
+// auto-summary-detected scene ends) into the detection window. The boundary
+// candidate for Sentinel is `sceneEnd + 1` (the first message of the new
+// scene), which matches Sentinel's "messages that BEGIN a new scene" model
+// (see APPENDIX_A_PROMPT).
+import { getSceneMarkers } from './sceneManager.js';
 import {
     enqueueSentinelCycle,
     getSentinelCadenceFloor,
@@ -158,6 +165,25 @@ function buildSentinelDeps(context) {
         // `chat` is a live binding from script.js — read fresh each call.
         getChat: () => chat,
         getWatermark: () => resolveSentinelWatermark(chatAuto),
+        // PHA-1664: peer upstream signal source — autosummary.js scene markers.
+        // Returns an array of boundary candidate IDs (typically zero or one)
+        // that fall inside the current detection window. Respects the
+        // `autoSummaryAsSentinelSignal` flag (default ON).
+        getAutosummaryIds: (windowMessages) => {
+            const flag = getAutoSettings(settings).autoSummaryAsSentinelSignal;
+            if (!flag) return [];
+            const markers = getSceneMarkers();
+            if (!markers) return [];
+            const sceneEnd = markers.sceneEnd;
+            if (!Number.isInteger(sceneEnd)) return [];
+            // Sentinel's boundary model: a boundary ID B means "new scene
+            // starts at B". autosummary's sceneEnd marks where the prior scene
+            // ends, so the equivalent boundary candidate is sceneEnd + 1.
+            const candidate = sceneEnd + 1;
+            if (!Number.isInteger(candidate)) return [];
+            const windowIds = new Set(windowMessages.map((m) => m.id));
+            return windowIds.has(candidate) ? [candidate] : [];
+        },
         // NOTE: this is the *memory generation* flag, not the jobs queue. The
         // engine runs inside a queued job, so consulting hasActiveStmbJobs here
         // would deadlock the sentinel against its own job.

@@ -1,16 +1,25 @@
 // Copyright (C) 2024–2026 Aiko Hanasaki
 // SPDX-License-Identifier: AGPL-3.0-only
 //
-// autosummarySentinelGate.test.js — Structural tests verifying the P2.4 gate
-// in autosummary.js. We can't import autosummary.js directly in Node (it pulls
-// in SillyTavern runtime imports), so we read the source and assert the gate
-// is wired correctly.
+// autosummarySentinelGate.test.js — Structural tests verifying the PHA-1664
+// no-op gate in autosummary.js. Per PHA-1656/sync-decisions.md §2.a, the
+// previous P2.4 BLOCK behavior is inverted: autosummary runs regardless of
+// Sentinel's enable state, and its cadence-detected scene markers become
+// upstream signal input for Sentinel (consumed via getSceneMarkers()).
 //
-// The gate has two parts (per plan §4.1 + §1.2.4):
-//   1. `isAutoSummaryBlockedBySentinel` helper exists and uses resolveSentinelEnabled
-//      from autoSettings.js (the single source of truth).
-//   2. The helper is invoked at both runtime entry points: handleAutoSummaryMessageReceived
-//      and clearAutoSummaryState. autosummary.js is otherwise untouched (mergeability).
+// We can't import autosummary.js directly in Node (it pulls in SillyTavern
+// runtime imports), so we read the source and assert the gate is wired
+// correctly.
+//
+// New contract (PHA-1664):
+//   1. `isAutoSummaryBlockedBySentinel` helper still exists (for mergeability
+//      with any third-party callers) but always returns false.
+//   2. The three runtime entry points (handleAutoSummaryMessageReceived,
+//      retryAutoSummaryAfterJobIdle, clearAutoSummaryState) no longer
+//      early-return when the helper would have been true.
+//   3. autosummary.js no longer imports resolveSentinelEnabled — Sentinel
+//      reads its own enable state via autoSettings.js.
+//   4. autosummary.js is otherwise intact (mergeability sanity).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,39 +30,64 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const src = readFileSync(resolve(__dirname, 'autosummary.js'), 'utf8');
 
-test('autosummary.js: defines isAutoSummaryBlockedBySentinel helper', () => {
+test('autosummary.js: still defines isAutoSummaryBlockedBySentinel helper (mergeability)', () => {
     assert.match(
         src,
-        /function\s+isAutoSummaryBlockedBySentinel\s*\(\s*\)\s*{[\s\S]{0,500}resolveSentinelEnabled/,
-        'helper should call resolveSentinelEnabled'
+        /function\s+isAutoSummaryBlockedBySentinel\s*\(\s*\)\s*{/,
+        'helper must still be defined for mergeability'
     );
 });
 
-test('autosummary.js: imports resolveSentinelEnabled from autoSettings.js', () => {
+test('autosummary.js: isAutoSummaryBlockedBySentinel is now a permanent no-op returning false', () => {
+    const fnMatch = src.match(/function\s+isAutoSummaryBlockedBySentinel\s*\(\s*\)\s*{([\s\S]*?)^\}/m);
+    assert.ok(fnMatch, 'helper must be defined');
     assert.match(
+        fnMatch[1],
+        /return\s+false\s*;?/,
+        'helper must return false (autosummary is never blocked by sentinel)'
+    );
+});
+
+test('autosummary.js: no longer imports resolveSentinelEnabled (PHA-1664)', () => {
+    // Sentinel reads its own enable state from autoSettings.js, not autosummary.
+    assert.doesNotMatch(
         src,
         /import\s*{\s*resolveSentinelEnabled\s*}\s*from\s*['"]\.\/autoSettings\.js['"]/,
-        'resolveSentinelEnabled must come from autoSettings.js (single source of truth)'
+        'autosummary.js must NOT import resolveSentinelEnabled anymore'
     );
 });
 
-test('autosummary.js: handleAutoSummaryMessageReceived bails when sentinel is on', () => {
+test('autosummary.js: handleAutoSummaryMessageReceived no longer early-returns on the BLOCK', () => {
     const fnMatch = src.match(/export\s+async\s+function\s+handleAutoSummaryMessageReceived\s*\([^)]*\)\s*{([\s\S]*?)^\}/m);
     assert.ok(fnMatch, 'handleAutoSummaryMessageReceived must be defined');
-    assert.match(
+    // The early-return pattern was:
+    //     if (isAutoSummaryBlockedBySentinel()) { ... return; }
+    // After PHA-1664, the BLOCK guard is removed; the function should not
+    // bail at the top with a sentinel-block comment.
+    assert.doesNotMatch(
         fnMatch[1],
-        /isAutoSummaryBlockedBySentinel\(\)/,
-        'handleAutoSummaryMessageReceived must consult isAutoSummaryBlockedBySentinel'
+        /if\s*\(\s*isAutoSummaryBlockedBySentinel\s*\(\s*\)\s*\)\s*{[^}]*return\s*;?/,
+        'handleAutoSummaryMessageReceived must not bail on the BLOCK guard'
     );
 });
 
-test('autosummary.js: clearAutoSummaryState bails when sentinel is on', () => {
+test('autosummary.js: retryAutoSummaryAfterJobIdle no longer early-returns on the BLOCK', () => {
+    const fnMatch = src.match(/export\s+async\s+function\s+retryAutoSummaryAfterJobIdle\s*\([^)]*\)\s*{([\s\S]*?)\n\}/m);
+    assert.ok(fnMatch, 'retryAutoSummaryAfterJobIdle must be defined');
+    assert.doesNotMatch(
+        fnMatch[1],
+        /if\s*\(\s*isAutoSummaryBlockedBySentinel\s*\(\s*\)\s*\)\s*return\s*;?/,
+        'retryAutoSummaryAfterJobIdle must not bail on the BLOCK guard'
+    );
+});
+
+test('autosummary.js: clearAutoSummaryState no longer early-returns on the BLOCK', () => {
     const fnMatch = src.match(/export\s+function\s+clearAutoSummaryState\s*\([^)]*\)\s*{([\s\S]*?)\n\}/m);
     assert.ok(fnMatch, 'clearAutoSummaryState must be defined');
-    assert.match(
+    assert.doesNotMatch(
         fnMatch[1],
-        /isAutoSummaryBlockedBySentinel\(\)/,
-        'clearAutoSummaryState must consult isAutoSummaryBlockedBySentinel'
+        /if\s*\(\s*isAutoSummaryBlockedBySentinel\s*\(\s*\)\s*\)\s*return\s*;?/,
+        'clearAutoSummaryState must not bail on the BLOCK guard'
     );
 });
 

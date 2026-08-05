@@ -6,29 +6,26 @@ import { chat, chat_metadata } from '../../../../script.js';
 import { METADATA_KEY } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
 import { showLorebookSelectionPopup, clampInt } from './utils.js';
-import { resolveSentinelEnabled } from './autoSettings.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 
 let autoSummarySkippedForProcessing = false;
-let autoSummarySkippedMarkersRef = null;
-
-// STMBC-HOOK-PHASE2-P2.4: defense-in-depth gate for native auto-summary.
-// Per plan §4.1 + §1.2.4, native auto-summary is force-disabled while sentinel
-// is enabled for the current chat. autosummary.js is left intact for
-// mergeability; `resolveSentinelEnabled` (from utils.js) is the single source
-// of truth for "is sentinel on?". This gate makes the runtime a no-op even
-// if a stale stored `autoSummaryEnabled=true` survives a sentinel-enable
-// transition (e.g. user enables sentinel after turning auto-summary on).
+// STMBC-HOOK-PHASE2-P2.4 + PHA-1664: autosummary is NO LONGER blocked when
+// Sentinel is on. Per PHA-1656/sync-decisions.md §2.a, upstream autosummary
+// runs as usual and its cadence-detected scene markers are exposed to Sentinel
+// as an additional upstream signal (read by Sentinel via getSceneMarkers()).
+//
+// The helper is preserved for mergeability (and any third-party callers that
+// may import it), but it is now a permanent no-op returning false. Sentinel's
+// own enable state is consulted by Sentinel itself via resolveSentinelEnabled
+// from autoSettings.js — autosummary does not make that decision.
 function isAutoSummaryBlockedBySentinel() {
-    try {
-        return !!resolveSentinelEnabled(extension_settings?.STMemoryBooks, chat_metadata);
-    } catch (_e) {
-        return false;
-    }
+    return false;
 }
+
+let autoSummarySkippedMarkersRef = null;
 
 /**
  * i18n helper: translate with Mustache-style {{var}} interpolation
@@ -225,13 +222,10 @@ async function checkAutoSummaryTrigger() {
  */
 export async function handleAutoSummaryMessageReceived() {
     try {
-        if (isAutoSummaryBlockedBySentinel()) {
-            // Native auto-summary is force-disabled while sentinel is on (P2.4).
-            // Belt-and-braces: even if the stored autoSummaryEnabled=true leaked
-            // through the UI gate (e.g. via direct settings edit), the runtime
-            // is a no-op here. autosummary.js stays intact for mergeability.
-            return;
-        }
+        // PHA-1664: the previous P2.4 BLOCK was inverted — autosummary runs
+        // when Sentinel is on so its cadence-detected scene markers become
+        // upstream signal input for Sentinel (see isAutoSummaryBlockedBySentinel
+        // and the new sentinelCore signal-merge in sentinelCore.js).
         if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
             const currentMessageCount = chat.length;
             console.log(i18n('autosummary.log.messageReceivedSingle', 'STMemoryBooks: Message received - auto-summary enabled, current count: {{count}}', { count: currentMessageCount }));
@@ -270,7 +264,10 @@ export async function retryAutoSummaryAfterJobIdle() {
  * @returns {void}
  */
 export function clearAutoSummaryState() {
-    if (isAutoSummaryBlockedBySentinel()) return;
+    // PHA-1664: the previous P2.4 BLOCK was inverted (no longer consults
+    // isAutoSummaryBlockedBySentinel). clearScene() still runs as before —
+    // Sentinel reads scene markers separately and is not affected by this
+    // autosummary-internal cleanup.
     if (extension_settings.STMemoryBooks?.moduleSettings?.autoSummaryEnabled) {
         // Clear scene markers; baseline is updated upon successful memory creation
         clearScene();
