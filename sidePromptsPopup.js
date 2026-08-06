@@ -28,7 +28,12 @@ import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { showStmbEntryReviewPopup } from './clipManager.js';
-import { getCurrentMemoryBooksContext, markStmbPopup, withGoBackButton } from './utils.js';
+import {
+    getCurrentManualLorebookResolution,
+    getCurrentMemoryBooksContext,
+    markStmbPopup,
+    withGoBackButton,
+} from './utils.js';
 import { listContextSettings } from './contextSettingsManager.js';
 import {
     SIDE_PROMPT_AFTER_MEMORY_SET_KEY,
@@ -181,9 +186,8 @@ function validateKeywordsMacroConfig({ prompt, responseFormat, keywordsTemplate 
 
 function getMemoryLorebookName() {
     const settings = extension_settings?.STMemoryBooks;
-    const markers = getSceneMarkers() || {};
     return settings?.moduleSettings?.manualModeEnabled
-        ? (markers.manualLorebook || null)
+        ? getCurrentManualLorebookResolution({ settings }).lorebookName
         : (chat_metadata?.[METADATA_KEY] || null);
 }
 
@@ -445,6 +449,7 @@ function renderTemplatesTable(templates) {
     const items = (templates || []).map(t => ({
         key: String(t.key || ''),
         name: String(t.name || ''),
+        enabled: t.enabled === true,
         badges: getTriggersSummary(t),
     }));
     return sidePromptsTableTemplate({ items });
@@ -1709,7 +1714,23 @@ export async function showSidePromptsPopup() {
                     e.preventDefault();
                     e.stopPropagation();
 
-                    if (actionBtn.classList.contains('stmb-sp-action-edit')) {
+                    if (actionBtn.classList.contains('stmb-sp-action-toggle')) {
+                        if (actionBtn.dataset.pending === 'true') return;
+                        actionBtn.dataset.pending = 'true';
+                        actionBtn.disabled = true;
+                        try {
+                            const tpl = await getTemplate(tplKey);
+                            if (!tpl) throw new Error(`Template "${tplKey}" not found`);
+                            await upsertTemplate({ key: tpl.key, enabled: !tpl.enabled });
+                            window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
+                            await refreshList(popup, tplKey);
+                        } catch (err) {
+                            actionBtn.disabled = false;
+                            delete actionBtn.dataset.pending;
+                            console.error('STMemoryBooks: Error toggling side prompt:', err);
+                            toastr.error(translate('Failed to change Side Prompt enabled state.', 'STMemoryBooks_FailedToToggleSidePrompt'), translate('STMemoryBooks', 'index.toast.title'));
+                        }
+                    } else if (actionBtn.classList.contains('stmb-sp-action-edit')) {
                         await openEditTemplate(popup, tplKey);
                     } else if (actionBtn.classList.contains('stmb-sp-action-duplicate')) {
                         try {

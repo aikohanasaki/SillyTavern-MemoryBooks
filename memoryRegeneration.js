@@ -3,6 +3,9 @@
 
 import { CONSOLIDATION_REGENERATION_PRESET_KEY } from './constants.js';
 
+export const SIDE_PROMPT_REGENERATION_METADATA_KEY = 'STMB_sidePromptRegeneration';
+export const SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION = 1;
+
 const CONSOLIDATION_TYPE_TIERS = Object.freeze({
     arc: 1,
     chapter: 2,
@@ -15,6 +18,47 @@ const CONSOLIDATION_TYPE_TIERS = Object.freeze({
 export function getEntryUid(entry) {
     const uid = entry?.uid;
     return uid === undefined || uid === null ? null : String(uid);
+}
+
+/**
+ * Capture the compact inputs needed to rebuild one side-prompt run.
+ */
+export function buildSidePromptRegenerationSnapshot({
+    templateKey,
+    priorContent = '',
+    compiledScene,
+    runtimeMacros = {},
+} = {}) {
+    const metadata = compiledScene?.metadata || {};
+    const normalizedRuntimeMacros = Object.fromEntries(
+        Object.entries(runtimeMacros || {}).map(([key, value]) => [String(key), String(value ?? '')]),
+    );
+    return {
+        version: SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION,
+        templateKey: String(templateKey || '').trim(),
+        priorContent: String(priorContent || ''),
+        sceneStart: Number(metadata.sceneStart),
+        sceneEnd: Number(metadata.sceneEnd),
+        chatId: String(metadata.chatId || ''),
+        runtimeMacros: structuredClone(normalizedRuntimeMacros),
+    };
+}
+
+/**
+ * Return a valid persisted side-prompt run snapshot, or null.
+ */
+export function getSidePromptRegenerationSnapshot(entry) {
+    const snapshot = entry?.[SIDE_PROMPT_REGENERATION_METADATA_KEY];
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return null;
+    if (snapshot.version !== SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION) return null;
+    if (typeof snapshot.templateKey !== 'string' || !snapshot.templateKey.trim()) return null;
+    if (typeof snapshot.priorContent !== 'string') return null;
+    if (!Number.isInteger(snapshot.sceneStart) || snapshot.sceneStart < 0) return null;
+    if (!Number.isInteger(snapshot.sceneEnd) || snapshot.sceneEnd < snapshot.sceneStart) return null;
+    if (typeof snapshot.chatId !== 'string' || !snapshot.chatId.trim()) return null;
+    if (!snapshot.runtimeMacros || typeof snapshot.runtimeMacros !== 'object' || Array.isArray(snapshot.runtimeMacros)) return null;
+    if (Object.values(snapshot.runtimeMacros).some(value => typeof value !== 'string')) return null;
+    return snapshot;
 }
 
 export function buildRegenerationIndexes(lorebookData) {
@@ -216,6 +260,20 @@ export function findActiveParentConsolidations(entry, lorebookData, indexes = nu
 }
 
 export function getRegenerationEligibility(entry, lorebookData, indexes = null) {
+    if (entry && Object.hasOwn(entry, SIDE_PROMPT_REGENERATION_METADATA_KEY)) {
+        const snapshot = getSidePromptRegenerationSnapshot(entry);
+        if (!snapshot) {
+            return { eligible: false, reason: 'invalid-sideprompt-snapshot' };
+        }
+        return {
+            eligible: true,
+            kind: 'sidePrompt',
+            sceneStart: snapshot.sceneStart,
+            sceneEnd: snapshot.sceneEnd,
+            templateKey: snapshot.templateKey,
+            snapshot,
+        };
+    }
     if (!entry || entry.stmemorybooks !== true) {
         return { eligible: false, reason: 'not-memory' };
     }
@@ -411,6 +469,10 @@ export function clearStaleParentDisableState(entry, lorebookData) {
 }
 
 export function applyRegenerationReplacement(entry, review, options = {}) {
+    if (options.contentOnly === true) {
+        entry.content = review.content;
+        return entry;
+    }
     entry.comment = review.formattedTitle;
     entry.content = review.content;
     entry.key = Array.isArray(review.keywords) ? [...review.keywords] : [];

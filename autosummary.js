@@ -5,7 +5,11 @@ import { extension_settings } from '../../../extensions.js';
 import { chat, chat_metadata } from '../../../../script.js';
 import { METADATA_KEY } from '../../../world-info.js';
 import { getSceneMarkers, saveMetadataForCurrentContext, clearScene } from './sceneManager.js';
-import { showLorebookSelectionPopup, clampInt } from './utils.js';
+import {
+    clampInt,
+    getCurrentManualLorebookResolution,
+    showLorebookSelectionPopup,
+} from './utils.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
@@ -51,7 +55,7 @@ async function validateLorebookForAutoSummary() {
     if (manualMode) {
         // Manual mode - check if a lorebook is already selected
         const stmbData = getSceneMarkers() || {};
-        let lorebookName = stmbData.manualLorebook ?? null;
+        let lorebookName = getCurrentManualLorebookResolution({ settings, markers: stmbData }).lorebookName;
 
         // If no lorebook is selected, ask user what to do
         if (!lorebookName) {
@@ -107,7 +111,6 @@ async function validateLorebookForAutoSummary() {
         return await validateLorebookRequirement({
             createContext: 'auto-summary',
             manualMode: true,
-            lorebookName,
             retryText: i18n('STMemoryBooks_AutoSummaryRetryAfterSelection', 'After selecting a lorebook, try again.'),
         });
     }

@@ -18,6 +18,45 @@ pass. Settings key `STMemoryBooks` and lorebook flags `stmemorybooks` /
 SillyTavern release branch — see [`docs/release/v0.1.0/report.md`](./docs/release/v0.1.0/report.md)
 and [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
 
+## v8.5.0-sync (fork — 2026-08-02) — UPSTREAM v8.5.0 MERGE
+- Single merge of `upstream/main` (`35c8d21`, v8.5.0, 2026-08-01) into the fork's main, bringing upstream's v3.x → v8.x refactors into `SillyTavern-MemoryBooks-Auto` (PHA-1663 / sync-decisions.md §Decision 1). Diff stat: 196 files / +19,088 / -49,514 lines.
+- All STMBC-HOOK sites (Sentinel, Auditor, Librarian, Clipper+, Living-lorebook injection, Auto Module) intact on the merged tree — see `FORK_NOTES.md`. Tests pass; this entry refreshes the bundled changelog per Decision 3 in the same merge commit.
+
+## v8.5.1 (August 2, 2026)
+- Tweak: Added on/off toggle in side prompt manager to make enable/disable easy and fast.
+
+## v8.5.0 (August 1, 2026)
+- **Narrator Mode:** Added multi-character memory routing for normal chats where one Narrator card writes several fictional characters.
+- **Active Cast:** Added a movable per-chat cast selector. STMB snapshots the selected cast at generation start, stores stable cast-member IDs on messages and swipes, merges cast metadata across continuations, and restores the selector from the active timeline.
+- **Narrator Memory Books:** Narrator Mode requires one omniscient manual Memory Book plus one unique Memory Book per declared character. Selected character books are made available during Narrator generation, while scene memories save canonically to the omniscient book and copy only to participating character books.
+- **Narrator Prompt Routing:** Existing separate group/character prompt support now produces omniscient and character-focused Narrator memories. Narrator ownership and participant metadata are preserved through regeneration and consolidation.
+- **Narrator Branching:** Native chat branches copy the omniscient book and all declared cast books, then rewrite the child chat's Narrator bindings and canonical links to the copies.
+- **Legacy Safety:** Scenes containing Narrator messages without cast metadata require participant review; non-interactive catch-up refuses those ranges.
+
+## v8.4.0 (July 31, 2026)
+- **Branching:** Optionally copy and bind independent Memory Books when creating a chat branch. Locked character Memory Books remain shared.
+- **Side Prompt Regeneration:** Side Prompt entries can now be regenerated from the lorebook editor using their saved run information.
+- **Character Memory Book Locks:** Lock a character to one Memory Book across compatible Manual Mode chats.
+
+## v8.3.3 (July 29, 2026)
+- Enhancement: Added job-queue retry controls. Non-memory jobs can be retried directly; memory jobs provide **Retry All** and **Retry Memory** so canceled after-memory Side Prompt work can be included or skipped deliberately.
+- Added Portuguese localization.
+
+## v8.3.2 (July 28, 2026)
+- Tweak: Treat group chat overall consolidation as timeline rather than summary.
+
+## v8.3.1 (July 27, 2026)
+- Enhancement: Custom OpenAI-compatible STMB profiles can now bind a specific SillyTavern Custom connection profile instead of relying only on the active Custom connection.
+
+## v8.3.0 (July 25, 2026)
+- Enhancement: Added review-first regeneration for eligible scene memories and consolidated summaries from the lorebook editor.
+- Tweak: Update arc keywords.
+
+## v8.2.3 (July 24, 2026)
+- Bugfix: Fix STLO detection.
+- Bugfix: Expose GC checkbox.
+- Various small tweak bugfixes.
+
 ## v8.2.2 (July 16, 2026)
 - Bugfix: Fix STLO metadata writes.
 
@@ -25,12 +64,11 @@ and [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
 - Bugfix: Fix re-setting scene markers after message deletion.
 
 ## v8.2.0 (July 14, 2026)
-- Enhancement: Now you ca## v8.2.0 (July 14, 2026)
 - Enhancement: Now you can set default Side Prompt sets for groups and solo chats in Memory Books > General Settings. 
-- Bugfix: Side prompts outside of the set should NOT trigger when the set is selected. This includes interval side prompts. 
+- Bugfix: Side Prompts outside the selected set no longer trigger when a set is active, including interval-triggered Side Prompts. 
 
 ## v8.1.0 (July 12, 2026)
-- Enhancement: Added `{{memtier0}}` (Memory), `{{memtier1}}` (Arc), `{{memtier2}}` (Chapter), `{{memtier3}}` (Book), `{{memtier4}}` (Legend), `{{memtier5}}` (Series), `{{memtier6}}` (Epic), `{{memclips}}` (Clips), `{{memside}}` (Side Prompts) macros that will return the number of entries in the current chat-bound lorebook. 
+- Enhancement: Added `{{memtier0}}` (Memory), `{{memtier1}}` (Arc), `{{memtier2}}` (Chapter), `{{memtier3}}` (Book), `{{memtier4}}` (Legend), `{{memtier5}}` (Series), `{{memtier6}}` (Epic), `{{memclips}}` (Clips), and `{{memside}}` (Side Prompts) macros. They return entry counts from the effective main Memory Book: chat-bound in Automatic Mode or the resolved manual Memory Book in Manual Mode.
 
 ## v8.0.0 (July 8, 2026)
 - MAJOR NEW FEATURE: Multi-character memories in group chats.
@@ -73,7 +111,7 @@ and [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
 - Bugfix: Consolidation manual lorebook fix.
 
 ## v6.10.0 (May 29, 2026)
-- NEW FEATURE: Topical Clip extracts and creates topical entries from existing STMB memories/Clips.
+- NEW FEATURE: Topical Clip extracts and creates topical entries from existing confirmed STMB memory entries. Clip and Side Prompt entries are not source memories.
 - Tweak: json_schema request toggle per profile.
 - Bugfix: auto-prompting with job queue.
 
@@ -90,12 +128,12 @@ and [`CHANGELOG.fork.md`](./CHANGELOG.fork.md) for full details.
 
 ## v6.9.0 (May 20, 2026)
 - Enhancement: Added consolidation previews. 
-- Bugfix: Sideprompt batch processing fixed.
+- Bugfix: Side Prompt batch processing fixed.
 
 ## v6.8.1 (May 18, 2026)
 - Tweak: Added back button. :D 
 - Tweak: Added default consolidation prompt selector.
-- Bugfix: Sideprompt batching with job queue.
+- Bugfix: Side Prompt batching with job queue.
 - Bugfix: Autohide with job queue.
 
 ## v6.8.0 (May 17, 2026)
@@ -134,27 +172,25 @@ Clip entries and Side Prompt entries can grow over time. Compaction sends the se
 - Bugfix: Max tokens ignored 0. Now fixed.
 
 ## v6.3.3 (April 8, 2026)
-- Bugfix: Sideprompt interval runs now use message range correctly.
+- Bugfix: Side Prompt interval runs now use message range correctly.
 
 ## v6.3.2 (April 6, 2026)
 - Bugfix: Custom title formats save properly on edit.
 
 ## v6.3.1 (March 31, 2026)
 - `/sideprompt` autocomplete now only suggests side prompts with manual run enabled.
-- Bugfix: sideprompt manual enable setting bug fixed
-- Bugfix: sideprompt regex path fixed
+- Bugfix: Side Prompt manual enable setting bug fixed
+- Bugfix: Side Prompt regex path fixed
 
 ## v6.3.0 (March 29, 2026)
 - Consolidated summaries can now save their own lorebook entry settings, including insertion and recursion controls, with dedicated localization keys.
 
 ## v6.2.1 (March 27, 2026)
 - Changed wording in prompts from "vectorized database" to "keyworded database".
-
-## v6.2.1 (March 27, 2026)
-- if the chat-bound or manual lorebook was deleted or unbound and you try to make memories, STMB will prompt you for a lorebook instead of just erroring.
+- If the chat-bound or manual lorebook was deleted or unbound and you try to make memories, STMB now prompts for a lorebook instead of only returning an error.
 
 ## v6.1.1 (March 25, 2026)
-- Bugfix: fixed sideprompt interval run save path.
+- Bugfix: fixed Side Prompt interval run save path.
 
 ## v6.1.0 (March 23, 2026)
 - Improve auto-consolidation settings with multi-select target tiers.
@@ -233,7 +269,7 @@ Tweaks:
 - Fixed arc analysis profile information not being fetched from STMB settings.
 
 ## v4.16.6 (January 16, 2026)
-- Fixed `max_tokens` not passing to Anthropic during sideprompts.
+- Fixed `max_tokens` not passing to Anthropic during Side Prompts.
 
 ## v4.16.5 (January 13, 2026)
 - **Tweaks:** 
@@ -304,7 +340,7 @@ Tweaks:
   - Made various default settings changes (no effect on existing users, should affect new installs only)
 
 ## v4.13.3 (December 4, 2025)
-- **Tweak:** Popup buttom resize
+- **Tweak:** Popup button resize
 
 ## v4.13.2 (December 3, 2025)
 - **Bugfix:** Write exception for Deepseek connection URL.
@@ -772,12 +808,12 @@ Tweaks:
 - **v1.0:** Initial proof-of-concept and basic functionality
 
 ### Compatibility Notes
-- **SillyTavern 1.13.1+** required for all v3.x versions
-- **API Support:** OpenAI, Claude, Anthropic, OpenRouter, and other chat completion APIs
-- **Not Supported:** Text generation APIs (Kobold, TextGen, etc.)
+- **Current requirement:** SillyTavern 1.14.0 or later; the latest compatible release is recommended.
+- **API Support:** OpenAI, Anthropic/Claude, OpenRouter, Gemini/Google, Custom OpenAI-compatible endpoints, and other supported Chat Completion providers.
+- **Local/Text Completion backends:** KoboldCpp, llama.cpp, TextGen, Ollama, and similar backends can be used when exposed through an OpenAI-compatible Chat Completion endpoint. A SillyTavern Chat Completion preset must be available even if normal roleplay uses Text Completion.
 
 ### Migration Tools
-- [Lorebook Converter](lorebookconverter.html) available for upgrading from older versions
+- [Lorebook Converter](resources/lorebookconverter.html) available for upgrading from older versions
 - Automatic settings migration between major versions
 
 ---

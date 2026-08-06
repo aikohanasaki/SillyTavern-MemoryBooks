@@ -116,6 +116,50 @@
       },
       "createdAt": "2026-04-26T00:00:00.000Z",
       "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "character-development": {
+      "key": "character-development",
+      "name": "Perkembangan Karakter",
+      "enabled": false,
+      "prompt": "Langkah:\n1. Tinjau adegan yang diberikan.\n2. Identifikasi dan jelaskan perubahan kepribadian {{char}} akibat pengalaman mereka.\n3. Tulis deskripsi singkat tentang bagaimana {{char}} berubah dan peristiwa apa yang menyebabkannya.",
+      "responseFormat": "===Perkembangan Karakter {{char}}===\n(deskripsi singkat tentang perubahan utama)\n===AKHIR Perkembangan Karakter {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "mood-and-atmosphere": {
+      "key": "mood-and-atmosphere",
+      "name": "Suasana Hati dan Atmosfer",
+      "enabled": true,
+      "prompt": "Tinjau adegan yang menyertai dan jelaskan suasana hati serta atmosfer saat ini.",
+      "responseFormat": "===SUASANA HATI SAAT INI===\n(deskripsi singkat tentang suasana hati dan atmosfer saat ini)\n===AKHIR SUASANA HATI SAAT INI===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "worldbuilding": {
+      "key": "worldbuilding",
+      "name": "Pembangunan Dunia",
+      "enabled": true,
+      "prompt": "Jelaskan keadaan dunia saat ini, terutama perubahan akibat alur atau adegan.",
+      "responseFormat": "===CATATAN DUNIA===\n(catatan singkat tetapi padat)\n===AKHIR CATATAN DUNIA===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
+    },
+    "body-position-tracker": {
+      "key": "body-position-tracker",
+      "name": "Pelacak Posisi Tubuh",
+      "enabled": true,
+      "prompt": "Tinjau adegan, lalu isi atau perbarui Pelacak Posisi Tubuh untuk {{char}}. Jika {{char}} terdiri dari beberapa orang, isi satu untuk setiap orang. Buat ringkas dan hemat token, tetapi utamakan akurasi dan ketepatan logistik. Jangan melanggar hukum fisika.",
+      "responseFormat": "===Pelacak Posisi Tubuh {{char}}===\nPosisi keseluruhan dan keadaan pakaian:\nKepala:\nLengan/tangan kiri:\nLengan/tangan kanan:\nTorso/dada/punggung:\nTungkai/kaki kiri:\nTungkai/kaki kanan:\n===AKHIR Pelacak Posisi Tubuh {{char}}===",
+      "settings": {"overrideProfileEnabled": false, "previousMemoriesCount": 0, "lorebook": {"constVectMode": "link", "position": 0, "orderMode": "auto", "orderValue": 100, "preventRecursion": true, "delayUntilRecursion": false}},
+      "triggers": {"onInterval": {"visibleMessages": 4}, "commands": ["sideprompt"]},
+      "createdAt": "2026-04-26T00:00:00.000Z",
+      "updatedAt": "2026-04-26T00:00:00.000Z"
     }
   }
 }

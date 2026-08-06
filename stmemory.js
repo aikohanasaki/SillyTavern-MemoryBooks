@@ -19,6 +19,8 @@ import {
 } from './contextSettingsManager.js';
 // STMBC-HOOK(injection): living-lorebook context injection + error-control rules (fork; plan §4.4, §5).
 import { buildLivingContextPreamble } from './injection.js';
+import { resolveCustomConnectionProfile } from './customConnectionProfiles.js';
+import { tr } from './i18nHelpers.js';
 const $ = window.jQuery;
 
 const MODULE_NAME = 'STMemoryBooks-Memory';
@@ -414,7 +416,9 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
 *@param {string} opts.prompt*
 *@param {number} [opts.temperature]*
 *@param {string} [opts.api] - 'openai', 'claude', 'makersuite', 'custom', etc. (Note: ST uses 'makersuite' as the canonical provider key; avoid other aliases).*
-*@param {string} [opts.endpoint] - Custom endpoint URL for custom APIs*
+*@param {string} [opts.endpoint] - Direct endpoint URL for Full Manual Configuration*
+*@param {string} [opts.apiKey] - Direct API key for Full Manual Configuration*
+*@param {string} [opts.connectionProfileId] - SillyTavern Custom connection profile ID used to select its URL and secret*
 *@param {Object} [opts.extra] - Any extra params (max_tokens, etc)*
 *@param {boolean} [opts.reverseProxy] - Whether to forward SillyTavern reverse proxy settings for supported providers*
 *@param {Object|null} [opts.jsonSchema] - Optional SillyTavern structured-output schema*
@@ -429,6 +433,7 @@ export async function sendRawCompletionRequest({
     api = 'openai',
     endpoint = null,
     apiKey = null,
+    connectionProfileId = null,
     extra = {},
     reverseProxy = false,
     signal = null,
@@ -438,7 +443,28 @@ export async function sendRawCompletionRequest({
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
-    const modelId = (typeof model === 'string' ? model.toLowerCase() : '');
+    const selectedCustomConnection = api === 'custom' && connectionProfileId
+        ? resolveCustomConnectionProfile(
+            extension_settings?.connectionManager?.profiles,
+            connectionProfileId,
+        )
+        : null;
+    if (api === 'custom' && connectionProfileId && !selectedCustomConnection) {
+        throw new InvalidProfileError(translate(
+            'The selected SillyTavern Custom connection profile is missing or is no longer a Custom Chat Completion profile.',
+            'STMemoryBooks_SelectedCustomConnectionMissing',
+        ));
+    }
+    if (selectedCustomConnection && !selectedCustomConnection.customUrl) {
+        throw new InvalidProfileError(translate(
+            'The selected SillyTavern Custom connection profile "{{name}}" has no API URL.',
+            'STMemoryBooks_SelectedCustomConnectionNoUrl',
+        ).replace('{{name}}', selectedCustomConnection.name));
+    }
+    const effectiveModel = api === 'custom'
+        ? String(model || selectedCustomConnection?.model || '').trim()
+        : model;
+    const modelId = (typeof effectiveModel === 'string' ? effectiveModel.toLowerCase() : '');
 
     // Compute desired max tokens:
     // - STMB override wins if set (>0)
@@ -493,7 +519,7 @@ export async function sendRawCompletionRequest({
         messages: [
             { role: 'user', content: prompt }
         ],
-        model,
+        model: effectiveModel,
         temperature,
         chat_completion_source: api,
         stream: false,
@@ -518,7 +544,7 @@ export async function sendRawCompletionRequest({
         }
         // For direct endpoint calls, use standard OpenAI-compatible format
         body = {
-            model,
+            model: effectiveModel,
             messages: [
                 { role: 'user', content: prompt }
             ],
@@ -526,9 +552,20 @@ export async function sendRawCompletionRequest({
             stream: false,
             ...extra,
         };
-    } else if (api === 'custom' && model) {
-        body.custom_model_id = model;
-        body.custom_url = oai_settings.custom_url || '';
+    } else if (api === 'custom') {
+        if (!effectiveModel) {
+            throw new InvalidProfileError(translate(
+                'Custom API requires a model ID in either the STMB profile or the selected SillyTavern connection profile.',
+                'STMemoryBooks_CustomConnectionModelRequired',
+            ));
+        }
+        body.custom_model_id = effectiveModel;
+        body.custom_url = selectedCustomConnection?.customUrl || oai_settings.custom_url || '';
+        if (selectedCustomConnection) {
+            // A truthy non-secret sentinel makes ST resolve keyless profiles to no
+            // key instead of silently falling back to the globally active Custom key.
+            body.secret_id = selectedCustomConnection.secretId || `stmb-keyless:${selectedCustomConnection.id}`;
+        }
     } else if (api === 'deepseek') {
         body.custom_url = `https://api.deepseek.com/chat/completions`; // use primary Deepseek endpoint
     } else if (api === 'zai') {
@@ -588,7 +625,7 @@ export async function sendRawCompletionRequest({
 /**
  * Unified request wrapper for side prompts and memory generation.
  * Accepts normalized connection fields and forwards to sendRawCompletionRequest.
- * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean, chatCompletionPreset?: string }} opts
+ * @param {{ api: string, model: string, prompt: string, temperature?: number, endpoint?: string, apiKey?: string, connectionProfileId?: string, extra?: object, reverseProxy?: boolean, jsonSchema?: object, useChatCompletionService?: boolean, chatCompletionPreset?: string }} opts
  * @returns {Promise<{ text: string, full: object }>}
  */
 export async function requestCompletion({
@@ -598,6 +635,7 @@ export async function requestCompletion({
     temperature = 0.7,
     endpoint = null,
     apiKey = null,
+    connectionProfileId = null,
     extra = {},
     reverseProxy = false,
     signal = null,
@@ -614,6 +652,7 @@ export async function requestCompletion({
         api,
         endpoint,
         apiKey,
+        connectionProfileId,
         extra,
         reverseProxy,
         signal,
@@ -1136,6 +1175,7 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
             api: apiType,
             endpoint: conn.endpoint,
             apiKey: conn.apiKey,
+            connectionProfileId: conn.connectionProfileId,
             extra: extra,
             reverseProxy: !!conn.reverseProxy,
             signal,
@@ -1183,17 +1223,19 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
                 const { isRecoverableJsonError, buildJsonRetryPrompt } = await import('./reviewCore.js');
                 if (!isRecoverableJsonError(parseError)) throw parseError;
                 console.warn(`${MODULE_NAME}: memory response contained no JSON; retrying once with a JSON-only reprimand.`);
-                const retryResponse = await sendRawCompletionRequest({
-                    ...requestOptions,
-                    prompt: buildJsonRetryPrompt(promptString),
+                const retryPrompt = buildJsonRetryPrompt({ originalPrompt: promptString, rawResponse: aiResponseText, parseError });
+                const retryConn = conn;
+                const retryResponse = await generateChatCompletion({
+                    ...retryConn,
+                    prompt: [retryPrompt],
+                    jsonSchema: null,
                 });
-                jsonResult = parseAIJsonResponse(retryResponse.text);
-            } catch {
-                throw parseError;
+                const retryText = retryResponse?.text || '';
+                jsonResult = parseAIJsonResponse(retryText);
+                if (globalThis.STMBC) globalThis.STMBC.memoryJsonRetried = true;
+            } catch (retryErr) {
+                throw parseError; // Rethrow the original parse error, not the retry error
             }
-            try {
-                (globalThis.STMBC || (globalThis.STMBC = {})).memoryJsonRetried = true;
-            } catch { /* the marker is best-effort; never fail a saved memory over it */ }
         }
 
         return {
@@ -1261,6 +1303,10 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 characterFilterNames: Array.isArray(compiledScene.metadata.characterFilterNames)
                     ? [...compiledScene.metadata.characterFilterNames]
                     : undefined,
+                narratorParticipantIds: Array.isArray(compiledScene.metadata.narratorParticipantIds)
+                    ? [...compiledScene.metadata.narratorParticipantIds]
+                    : undefined,
+                narratorHasUntaggedMessages: compiledScene.metadata.narratorHasUntaggedMessages === true,
                 createdAt: new Date().toISOString(),
                 profileUsed: profile.name,
                 presetUsed: profile.preset || 'custom',
@@ -1418,13 +1464,23 @@ export function appendAdditionalContextSection(sceneHeader, additionalContextEnt
     const usableEntries = additionalContextEntries.filter(entry => entry.content);
     if (usableEntries.length === 0) return;
 
-    sceneHeader.push("=== ADDITIONAL CONTEXT FOR REFERENCE ===");
+    sceneHeader.push(translate(
+        "=== ADDITIONAL CONTEXT FOR REFERENCE ===",
+        "STMemoryBooks_PromptFrame_AdditionalContextStart",
+    ));
     usableEntries.forEach((entry, index) => {
-        sceneHeader.push(`Reference ${index + 1} - ${entry.title}:`);
+        sceneHeader.push(tr(
+            "STMemoryBooks_PromptFrame_ReferenceLabel",
+            "Reference {{number}} - {{title}}:",
+            { number: index + 1, title: entry.title },
+        ));
         sceneHeader.push(entry.content);
         sceneHeader.push("");
     });
-    sceneHeader.push("=== END ADDITIONAL CONTEXT FOR REFERENCE ===");
+    sceneHeader.push(translate(
+        "=== END ADDITIONAL CONTEXT FOR REFERENCE ===",
+        "STMemoryBooks_PromptFrame_AdditionalContextEnd",
+    ));
     sceneHeader.push("");
 }
 
@@ -1439,7 +1495,10 @@ export function appendAdditionalContextSection(sceneHeader, additionalContextEnt
  */
 function formatSceneForAI(messages, metadata, previousSummariesContext = [], additionalContextEntries = []) {
     const messageLines = messages.map(message => {
-        const speaker = message.name || 'Unknown';
+        const speaker = message.name || translate(
+            'Unknown',
+            'STMemoryBooks_PromptFrame_UnknownSpeaker',
+        );
         const content = (message.mes || '').trim();
         return content ? `${speaker}: ${content}` : null;
     }).filter(Boolean); // Filter out any empty/null messages
@@ -1452,27 +1511,48 @@ function formatSceneForAI(messages, metadata, previousSummariesContext = [], add
 
     // Add previous memories context if available
     if (previousSummariesContext && previousSummariesContext.length > 0) {
-        sceneHeader.push("=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===");
-        sceneHeader.push("These are previous memories for context only. Do NOT include them in your new memory:");
+        sceneHeader.push(translate(
+            "=== PREVIOUS SCENE CONTEXT (DO NOT PROCESS) ===",
+            "STMemoryBooks_PromptFrame_PreviousMemoryContextStart",
+        ));
+        sceneHeader.push(translate(
+            "These are previous memories for context only. Do NOT include them in your new memory:",
+            "STMemoryBooks_PromptFrame_PreviousMemoryContextInstruction",
+        ));
         sceneHeader.push("");
         
         previousSummariesContext.forEach((memory, index) => {
-            sceneHeader.push(`Context ${index + 1} - ${memory.title}:`);
+            sceneHeader.push(tr(
+                "STMemoryBooks_PromptFrame_ContextLabel",
+                "Context {{number}} - {{title}}:",
+                { number: index + 1, title: memory.title },
+            ));
             sceneHeader.push(memory.content);
             if (memory.keywords && memory.keywords.length > 0) {
-                sceneHeader.push(`Keywords: ${memory.keywords.join(', ')}`);
+                sceneHeader.push(
+                    `${translate("Keywords", "STMemoryBooks_PromptFrame_KeywordsLabel")}: ${memory.keywords.join(', ')}`,
+                );
             }
             sceneHeader.push("");
         });
         
-        sceneHeader.push("=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===");
+        sceneHeader.push(translate(
+            "=== END PREVIOUS SCENE CONTEXT - PROCESS ONLY THE SCENE BELOW ===",
+            "STMemoryBooks_PromptFrame_PreviousMemoryContextEnd",
+        ));
         sceneHeader.push("");
     }
 
-    sceneHeader.push("=== SCENE TRANSCRIPT ===");
+    sceneHeader.push(translate(
+        "=== SCENE TRANSCRIPT ===",
+        "STMemoryBooks_PromptFrame_SceneTranscriptStart",
+    ));
     sceneHeader.push(...messageLines);
     sceneHeader.push("");
-    sceneHeader.push("=== END SCENE ===");
+    sceneHeader.push(translate(
+        "=== END SCENE ===",
+        "STMemoryBooks_PromptFrame_SceneTranscriptEnd",
+    ));
     
     return sceneHeader.join('\n');
 }
@@ -1496,7 +1576,7 @@ async function estimateTokenUsage(promptString) {
  */
 async function buildPrompt(compiledScene, profile) {
     const { metadata, messages, previousSummariesContext } = compiledScene;
-
+    
     // Use utils.js to get the effective prompt (now designed for JSON output)
     const promptProfile = {
         ...(profile || {}),

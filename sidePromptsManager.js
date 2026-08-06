@@ -223,7 +223,9 @@ function migrateV1toV2(v1) {
             key,
             name: String(p.name || 'Side Prompt'),
             enabled: !!p.enabled,
-            prompt: String(p.prompt != null ? p.prompt : 'this is a placeholder prompt'),
+            prompt: String(p.prompt != null
+                ? p.prompt
+                : translate('This is a placeholder prompt.', 'STMemoryBooks_SidePrompt_PlaceholderPrompt')),
             responseFormat: String(p.responseFormat || ''),
             settings: { ...(p.settings || {}) },
             createdAt: p.createdAt || createdAt,
@@ -652,22 +654,35 @@ export async function upsertTemplate(input) {
     }
 
     const prev = data.prompts[key];
-    const next = {
-        key,
-        name: finalName,
-        enabled: typeof input.enabled === 'boolean' ? input.enabled : (prev?.enabled ?? false),
-        prompt: String(input.prompt != null ? input.prompt : (prev?.prompt || 'this is a placeholder prompt')),
-        responseFormat: String(input.responseFormat != null ? input.responseFormat : (prev?.responseFormat || '')),
-        settings: { ...(prev?.settings || {}), ...(input.settings || {}) },
-        triggers: input.triggers ? input.triggers : (prev?.triggers || { commands: ['sideprompt'] }),
-        createdAt: prev?.createdAt || ts,
-        updatedAt: ts,
-    };
+    const isEnabledOnlyUpdate = !!prev
+        && typeof input.enabled === 'boolean'
+        && Object.keys(input).every(field => field === 'key' || field === 'enabled');
+    const next = isEnabledOnlyUpdate
+        ? { ...prev, enabled: input.enabled, updatedAt: ts }
+        : {
+            key,
+            name: finalName,
+            enabled: typeof input.enabled === 'boolean' ? input.enabled : (prev?.enabled ?? false),
+            prompt: String(input.prompt != null
+                ? input.prompt
+                : (prev?.prompt || translate('This is a placeholder prompt.', 'STMemoryBooks_SidePrompt_PlaceholderPrompt'))),
+            responseFormat: String(input.responseFormat != null ? input.responseFormat : (prev?.responseFormat || '')),
+            settings: { ...(prev?.settings || {}), ...(input.settings || {}) },
+            triggers: input.triggers ? input.triggers : (prev?.triggers || { commands: ['sideprompt'] }),
+            createdAt: prev?.createdAt || ts,
+            updatedAt: ts,
+        };
 
-    normalizeTemplateTriggers(next);
+    if (!isEnabledOnlyUpdate) normalizeTemplateTriggers(next);
 
     data.prompts[key] = next;
-    await saveDoc(data);
+    try {
+        await saveDoc(data);
+    } catch (error) {
+        if (prev) data.prompts[key] = prev;
+        else delete data.prompts[key];
+        throw error;
+    }
     return key;
 }
 
@@ -960,7 +975,9 @@ export async function importFromJSON(jsonString) {
             key: finalKey,
             name: String(p.name || 'Side Prompt'),
             enabled: !!p.enabled,
-            prompt: String(p.prompt != null ? p.prompt : 'this is a placeholder prompt'),
+            prompt: String(p.prompt != null
+                ? p.prompt
+                : translate('This is a placeholder prompt.', 'STMemoryBooks_SidePrompt_PlaceholderPrompt')),
             responseFormat: String(p.responseFormat || ''),
             settings: { ...(p.settings || {}) },
             triggers: p.triggers ? { ...p.triggers } : { commands: ['sideprompt'] },

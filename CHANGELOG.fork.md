@@ -16,6 +16,55 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > **v0.0.2** is the second. The section below describes v0.0.1 / v0.1.0-equivalent
 > contents and is preserved for audit purposes.
 
+
+## v0.0.7-sync (2026-08-05) — bring-upstream-side-prompt-toggle
+
+Pulls upstream's two `update documentation & add side prompt toggle` commits (`98b1ca7`, `3f74062`) on top of `sync/upstream-v8.5.0` (v8.5.0, 2026-08-01). Brings the engine forward from `35c8d21` to `3f74062`. Closes [PHA-1733](/PHA/issues/PHA-1733).
+
+### What's new (upstream pull-through only)
+
+- **Side prompt toggle fast-path.** `upsertTemplate()` now skips `normalizeTemplateTriggers()` and the full object rebuild when only the `enabled` flag changes. A new try/catch around `saveDoc()` reverts the in-memory copy on save failure. Perf + correctness improvement — no fork-specific change required.
+- **Side prompt UI toggle.** The side prompt manager now exposes a checkbox to enable/disable individual prompts without touching the full edit dialog (the new `sidePromptsManager.js` / `sidePromptsPopup.js` source files are added in their own module, separate from the fork's hook site `sidePrompts.js`).
+- **Documentation refresh.** Bundled `readme.md` trimmed to a tighter intro with two learning paths (Interactive Guide / AI Reference Manual) and a single-source `userguides/1 Memory_Books_AI_Reference_Manual.md` (NEW, 2359 lines) plus `userguides/readme-EN.md` (NEW, 998 lines). Bundled `changelog.md` adds the upstream v8.5.1 entry adjacent to our fork's existing entries. All locale JSONs receive the new side-prompt-toggle translation key. `manifest.json` version is upstream's 8.5.1 → but our fork manifest is preserved at `version 0.0.7-sync / author phattbeats` (see "Merge policy" below).
+
+### Merge policy (per PHA-1733)
+
+Conflicts landed on five files; all five are non-hook artifacts:
+
+- `changelog.md` — merged: kept the fork's `v8.2.2-a.1` and `v8.5.0-sync` entries, appended upstream's `v8.5.1` ahead of the v8.5.0 entry.
+- `manifest.json` — kept fork (`author: phattbeats`, `version: 0.0.7-sync`). The upstream's `aikohanasaki` / `8.5.1` would conflict with our fork's product identity.
+- `readme.md` — kept fork's `## ❗ Read Me First!` block (customized for fork users); upstream's reference rewrite is preserved in the new `userguides/` directory.
+- `index.build.js` + `index.build.js.map` — accepted upstream's version verbatim, then regenerated from source via `bun run build` (Bun build marks `../` SillyTavern imports as external). The reconstructed bundle reflects the merged `index.js` plus the upstream's three new source files (`sidePromptsManager.js`, `sidePromptsPopup.js`, `templatesSidePrompts.js`).
+
+### Reconciliation with `main` (PHA-1664)
+
+While this branch was in review, [PHA-1664](/PHA/issues/PHA-1664) (`cc475f6` — *wire autosummary.js output as Sentinel signal input*) landed on `main`, leaving the sync branch one commit behind and the PR in a `CONFLICTING` state. `origin/main` was merged in; two files conflicted, both reconciled in favour of PHA-1664's newer intent:
+
+- `autosummary.js` — PHA-1664 **inverts** the old P2.4 gate: auto-summary is no longer blocked while Sentinel is on, so its cadence-detected scene markers can feed Sentinel as an upstream signal. Kept PHA-1664's comment block and its removal of every `isAutoSummaryBlockedBySentinel()` call site (the helper survives as a permanent `return false` for mergeability). The import hunk was resolved as a **union**, not a straight take-theirs: upstream v8.5.0's new call to `getCurrentManualLorebookResolution()` needs that symbol, which `main`'s import line does not carry. `resolveSentinelEnabled` was dropped — unused once the gate is inverted.
+- One stale `isAutoSummaryBlockedBySentinel()` guard in `retryAutoSummaryAfterJobIdle()` survived the automatic merge even though `main` had removed it; it was removed by hand so the merged file matches PHA-1664's intent exactly. Behaviourally inert (the helper returns `false`), but it was dead code contradicting the documented design.
+- `index.build.js` + `index.build.js.map` — regenerated from the merged source via `bun run build` rather than hand-resolved, as above.
+
+### What's NOT in this sync
+
+- **STMBC-HOOK sites** — all 11 monitored files (`sidePrompts.js`, `addlore.js`, `stmemory.js`, `auditor.js`, `sentinel.js`, `autosummary.js`, `clipManager.js`, `clipperPlus.js`, `injection.js`, `review.js`, `index.js`) keep their markers. Baseline (post-merge, non-test): 51 markers; with test files: 57 markers. Unchanged from `v0.0.6`.
+- **Fork hooks** — Sentinel, Auditor, Librarian, Clipper+, Living-lorebook injection, Auto Module. Untouched; not in the two upstream commits' diff.
+
+### Test status
+
+- **984 pass, 0 fail** after the `main` reconciliation above (977 before it; the extra 7 come with PHA-1664's `sentinel.test.js` / `autosummarySentinelGate.test.js` additions). Exceeds the 976 target called out in [PHA-1733](/PHA/issues/PHA-1733).
+
+### Branch / PR
+
+- Branch: `sync/upstream-v8.5.0` rebased (merge commit) to upstream `3f74062`.
+- PR target: `main`. Single PR, ready for Brandon review per [PHA-1733](/PHA/issues/PHA-1733).
+
+### Reference
+
+- [PHA-1733](/PHA/issues/PHA-1733) — Next upstream sync (this issue)
+- [PHA-1663](/PHA/issues/PHA-1663) — Git sync v8.5.0 merge sprint (parent strategy)
+- [PHA-1656](/PHA/issues/PHA-1656) — Upstream sync v8.5.0 sprint (grandparent)
+- [PHA-1667](/PHA/issues/PHA-1667) — Bundled changelog refresh + smoke test sweep (sister)
+
 ## v0.0.6 (2026-08-01) — release
 
 Sixth public release. Closes the third half of PHA-1651 follow-up: Brandon opened the freshly-installed v0.0.5 and didn't want the per-message `Mark Scene Start / Mark Scene End` caret icons cluttering every chat message. They've been in the extension since v0.0.1; v0.0.6 flips the default to hidden and gates `createSceneButtons()` on `moduleSettings.showSceneMarkerButtons` (true = show, false = hide). v6 migration backfills the setting on existing installs so the change takes effect immediately on next ST boot.

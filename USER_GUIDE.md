@@ -16,15 +16,24 @@ Need the bot to remember things, but the chat is too long for context? Want to a
 - [Quick Start](#-quick-start-5-minutes-to-your-first-memory)
 - [What ST Memory Books Actually Does](#-what-st-memory-books-actually-does)
 - [Choose Your Style](#-choose-your-style)
-- [Group Chats](#-group-chats)
+- [Catch-Up for Existing Chats](#-catch-up-for-existing-chats)
+- [Group Chat Mode](#-group-chat-mode)
+- [Narrator Mode](#-narrator-mode)
+- [Branching Chats](#-branching-chats)
 - [Clip to Memory Book](#%EF%B8%8F-clip-to-memory-book)
 - [Topical Clip](#-topical-clip)
-- [Clips vs Side Prompts](#️-clips-vs-side-prompts)
-- [Token Saving: Hide/Unhide Messages](#-token-saving-hide--unhide-messages)
+- [Clips, Topical Clips, and Side Prompts](#clips-topical-clips-and-side-prompts)
+- [Token Saving and the Memory Boundary](#-token-saving-and-the-memory-boundary)
+- [Previous Memories and Additional Context](#-previous-memories-and-additional-context)
+- [Memory Count Macros](#-memory-count-macros)
 - [Compaction vs Consolidation](#-compaction-vs-consolidation)
 - [Summary Consolidation](#-summary-consolidation)
 - [Trackers, Side Prompts, & Templates](#-trackers-side-prompts--templates-advanced-feature)
 - [Compaction](#-compaction)
+- [Regenerating Entries](#-regenerating-entries)
+- [Advanced Memory Profiles](#-advanced-memory-profiles)
+- [Prompt Managers and Previews](#-prompt-managers-and-previews)
+- [Job Queue and Retry Controls](#-job-queue-and-retry-controls)
 - [Settings That Matter First](#️-settings-that-matter-first)
 - [Troubleshooting](#-troubleshooting-when-things-dont-work)
 - [What ST Memory Books Doesn't Do](#-what-st-memory-books-doesnt-do)
@@ -80,7 +89,7 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 ### 📊 **Side Prompts & Smart Trackers** 
 *"I want to track relationships, plot threads, or stats"*
-- Reusable prompt snippets that enhance memory generation
+- Separate prompt runs that maintain support entries without changing the normal character reply
 - Template library with ready-to-use trackers
 - Custom AI prompts that track anything you want
 - Automatically update scoreboards, relationship status, plot summaries
@@ -159,67 +168,800 @@ Think of ST Memory Books as your **personal AI librarian** for chat conversation
 
 ---
 
-## 👥 Group Chats
+## 🧳 Catch-Up for Existing Chats
 
-Yes, ST Memory Books works with group chats! You can mark scenes, make memories manually, use automatic summaries, and run slash commands just like you would in a one-on-one chat.
+`/stmb-catchup` converts a long existing chat into a series of normal scene memories without requiring you to mark and approve every range manually.
 
-You do **not** need to find a hidden “group mode” switch. Open your group chat and use STMB normally.
+```txt
+/stmb-catchup interval=<chunk size> start=<first message id> end=<last message id>
+```
 
-### What happens to a group memory?
+Example:
 
-STMB pays attention to who spoke during the scene. When it can identify the participants, it adds those characters to the memory's character filter. In plain English: the memory stays connected to the people who were actually there instead of treating the whole group like one giant character.
+```txt
+/stmb-catchup interval=40 start=0 end=245
+```
 
-The summary prompt is also written to keep names and knowledge separate. If Alice made a promise and Bob learned a secret, the memory should say exactly that—not blur everything into “they knew and felt the same things.”
+The range is inclusive. This example processes `0-39`, `40-79`, and so on; the final chunk ends at `245` even if it contains fewer than 40 messages.
 
-### The easy setup: one Memory Book for the group
+### Prepare catch-up first
 
-This is the setup I recommend starting with.
+Catch-up is non-interactive, so STMB refuses to start if a chunk would need a confirmation window.
 
-1. Bind a lorebook to the group chat.
-2. Create memories normally.
-3. That's it! STMB saves the memories to the group Memory Book and adds participant filters when it can identify the speakers.
+Before running it:
 
-If **Auto-create lorebook if none exists** is enabled, STMB can make and bind the group Memory Book for you.
+1. Select and test the profile you want to use.
+2. Enable **Always use default profile**.
+3. Disable **Show memory previews**.
+4. Bind or select a valid Memory Book. Automatic Mode may use Auto-Create if no book exists yet.
+5. In a Manual Mode group, repair every required character Memory Book assignment.
+6. Choose an interval that keeps every chunk under the token warning threshold.
 
-This setup is best when everyone shares the same general story history and you do not need to maintain separate versions of each memory.
+STMB checks all chunks before beginning. It then processes them in order. If a chunk fails or you use `/stmb-stop`, catch-up stops there. Earlier completed memories remain saved, so restart with the first unfinished message rather than repeating the entire range.
 
-### The advanced setup: separate character Memory Books
+Use catch-up for broad conversion. For carefully chosen literary scene boundaries, manual scene marking is still better.
 
-Want the group to have one shared history while each character also keeps their own relevant memories? You can do that with **Manual Lorebook Mode** and [SillyTavern-LorebookOrdering (STLO)](https://github.com/aikohanasaki/SillyTavern-LorebookOrdering).
+---
+
+## 👥 Group Chat Mode
+
+Group Chat Mode supports **real SillyTavern group chats containing two or more separate character cards**.
+
+For example:
+
+```text
+SillyTavern Group
+├── Alice character card
+├── Bob character card
+└── Clara character card
+```
+
+Because Alice, Bob, and Clara are separate cards, SillyTavern records which character produced each message. Memory Books can use that information when creating, storing, and activating memories.
+
+You do not need to enable a separate Group Chat Mode switch. Open a SillyTavern group chat and use Memory Books normally.
+
+> **Group Chat Mode is not Narrator Mode.**
+>
+> Group Chat Mode reads real SillyTavern character-card authors. Narrator Mode is a separate advanced workflow for a normal chat where one Narrator card writes several fictional characters. Narrator Mode uses a manually declared cast and an Active Cast selector; it does not discover characters by reading prose.
+
+For the full Narrator workflow, see [Narrator Mode](#-narrator-mode) and the [Narrator Mode Technical Guide](userguides/narrator-mode-en.md).
+
+---
+
+## What Memory Books Does Differently in a Group Chat
+
+When Memory Books reads a group scene, it keeps track of which character card authored each message.
+
+The generated memory should clearly preserve:
+
+* who performed each important action;
+* who said something;
+* who learned or revealed information;
+* who made a decision;
+* who reacted emotionally;
+* who believed, suspected, or misunderstood something.
+
+Memory Books also identifies the character cards that participated in the selected scene.
+
+How that participant information is used depends on whether you use:
+
+1. **one Memory Book for the entire group**, or
+2. **one group Memory Book plus separate character Memory Books**.
+
+---
+
+## What Counts as a Participant?
+
+A participant is normally a **character card that authored at least one message inside the selected scene**.
+
+Memory Books detects participants from the actual SillyTavern message authors. It does not attempt to determine everyone who was physically present by interpreting the prose.
+
+For example:
+
+```text
+Alice speaks.
+Bob answers.
+Clara silently watches from the doorway.
+```
+
+Memory Books will normally detect Alice and Bob because their character cards produced messages.
+
+Clara may not be detected because Clara did not produce a message, even though the story says she was present. In the multiple-Memory-Book setup, you can manually select Clara if the memory should also be associated with her.
+
+Similarly:
+
+* A character who is only mentioned is not automatically a participant.
+* A silent observer may not be detected.
+* An absent character discussed by the group is not automatically selected.
+* The user is not treated as a group character with a separate character Memory Book.
+* Unusual or duplicate speaker names may require manual correction.
+
+The participant list therefore means:
+
+> **Which group characters should this memory be associated with?**
+
+It does not necessarily mean:
+
+* everyone physically present;
+* everyone mentioned;
+* everyone who knows every fact;
+* everyone who should receive identical knowledge.
+
+---
+
+# Option 1: One Memory Book for the Entire Group
+
+This is the simplest setup and the recommended starting point for most users.
+
+All group memories are stored in one lorebook used as the group’s Memory Book.
+
+```text
+Group Memory Book
+├── Memory 001: Alice Meets Bob
+├── Memory 002: The Warehouse Fight
+├── Memory 003: Clara Reveals the Truth
+└── Memory 004: The Group Leaves Town
+```
+
+## How to Set It Up
+
+Use either:
+
+* **Automatic Mode**, with a lorebook bound to the group chat; or
+* **Auto-create lorebook if none exists**, which allows Memory Books to create and bind one.
+
+You can then create memories manually, automatically, or through slash commands in the same way you would in a one-on-one chat.
+
+## What Happens When a Memory Is Saved
+
+Memory Books creates one memory entry in the group Memory Book.
+
+When it can identify the speakers, the entry may also receive an inclusive character filter containing the participating character cards.
+
+For example, if Alice and Bob spoke during the selected scene, but Clara did not, the entry may be filtered for Alice and Bob.
+
+This does not create separate copies for Alice and Bob.
+
+It remains one entry:
+
+```text
+Memory: The Warehouse Fight
+Character filter:
+- Alice
+- Bob
+```
+
+The filter is **inclusive**. It means the entry may activate when Alice **or** Bob is the currently active character.
+
+It does not mean:
+
+* Alice and Bob must both be active;
+* the entry belongs to a synthetic “Alice and Bob” character;
+* a separate Alice-and-Bob subset has been created;
+* Alice and Bob necessarily know exactly the same information.
+
+## What One Group Memory Book Is Good At
+
+Use one group Memory Book when:
+
+* the characters mostly share one continuing story;
+* you want the easiest setup;
+* one group-oriented summary is sufficient;
+* you do not need independent character histories;
+* you want to avoid duplicate entries;
+* you do not want to install or configure STLO.
+
+The memory text can still preserve differences between the characters.
+
+For example:
+
+> Alice discovered the hidden transmitter, but concealed it from Bob. Bob incorrectly believed that the room had been empty.
+
+Both facts can exist in one group memory without pretending that Bob knew what Alice knew.
+
+## Do I Need STLO?
+
+No.
+
+A single group Memory Book works without SillyTavern-LorebookOrdering.
+
+You may still use **SillyTavern-LorebookOrdering (STLO)** to control the group Memory Book’s priority, position, token budget, or other activation behavior, but it is optional for this layout.
+
+---
+
+# Option 2: One Group Memory Book Plus Character Memory Books
+
+The advanced layout uses:
+
+* one main **group Memory Book**; and
+* a designated **character Memory Book** for each group member.
+
+```text
+Group Memory Book
+├── Canonical Memory 001
+├── Canonical Memory 002
+└── Canonical Memory 003
+
+Alice Memory Book
+├── Alice copy of Memory 001
+└── Alice copy of Memory 003
+
+Bob Memory Book
+├── Bob copy of Memory 001
+└── Bob copy of Memory 002
+
+Clara Memory Book
+└── Clara copy of Memory 003
+```
+
+This layout requires:
+
+* **Manual Lorebook Mode**; and
+* **SillyTavern-LorebookOrdering (STLO)** installed and enabled.
+
+## How to Set It Up
 
 1. Install and enable STLO.
-2. Open the group chat.
-3. Turn on **Manual Lorebook Mode** in Memory Books.
-4. Select the main group Memory Book.
-5. Under **Group Character Lorebooks**, choose a Memory Book for every group member. The main group Memory Book cannot also be selected as a character Memory Book.
-6. Create your memory.
-7. Check the participant list before generation. STMB will preselect the characters it found in the scene.
+2. Open the SillyTavern group chat.
+3. Open Memory Books.
+4. Enable **Manual Lorebook Mode**.
+5. Select the main manual lorebook. This becomes the canonical group Memory Book.
+6. Under **Group Character Lorebooks**, select a Memory Book for each group member.
+7. Create memories normally.
 
-The main version goes into the group Memory Book. Copies go only to the selected participants' assigned Memory Books. If you leave every participant unchecked, STMB treats the memory as applying to the whole group.
+Every group member must have a valid character Memory Book assignment before Memory Books can save a distributed group memory.
 
-When you assign a character Memory Book, STMB also adds that character to the lorebook's STLO `characterOverrides` metadata and enables **Only activate for specific characters**. Existing STLO priority, budget, order, and character settings are preserved. Older assignments are updated automatically when you open Memory Books or create a memory.
+The main group Memory Book cannot also be assigned as one of the character Memory Books.
 
-Clearing or changing the assignment does not remove the old STLO character filter. If that lorebook should no longer activate for the character, open STLO and remove the retained override there.
+## Sharing One Character Memory Book
 
-If you are happy with STMB's participant detection, check **Automatically accept detected participants in future** so you do not have to confirm the list every time.
+More than one character may be assigned to the same character Memory Book.
 
-### Optional: write a shared version and a character-focused version
+For example:
 
-Open **Profile Manager**, edit your memory profile, and enable **Use separate group and character prompts in group chats**.
+```text
+Alice → Shared Investigation Memory Book
+Bob   → Shared Investigation Memory Book
+Clara → Clara Memory Book
+```
 
-- **Group Summary Prompt** writes the shared group memory.
-- **Character Summary Prompt** writes a character-focused version for an individually assigned character Memory Book when using the advanced Manual Mode + STLO setup. If several members share one assigned Memory Book, STMB keeps one shared copy there instead.
+If Alice and Bob both participate, Memory Books creates one copy in the shared book. It does not create two duplicate copies in the same lorebook.
 
-This can be wonderful when characters know different things, care about different parts of the scene, or need their own emotional continuity. It also makes extra AI requests, so I would leave it off unless you actually want those separate versions.
+This may be useful when two character cards are intended to share one continuing perspective or history.
 
-### A few things to remember
+---
 
-- Group-chat settings and progress belong to the current chat. Switching to another group or chat does not carry the scene markers or processed-message baseline with you.
-- In Manual Mode, every group member needs a valid assigned lorebook before STMB can save the distributed memory.
-- You can assign the same character Memory Book to more than one group member.
-- If speaker names are unusual or duplicated, review the participant list instead of automatically accepting it.
+## Confirming Participants
 
-**My recommendation:** begin with one group Memory Book. Move to separate character Memory Books only when your story genuinely needs private knowledge or individual continuity. Simple is good until it stops being enough.
+Before saving a distributed memory, Memory Books shows the detected group participants.
+
+You can correct the selection before continuing.
+
+For example:
+
+```text
+Detected participants:
+☑ Alice
+☐ Bob
+☑ Clara
+```
+
+The result would be:
+
+```text
+Group Memory Book:
+✓ Receives the canonical memory
+
+Alice Memory Book:
+✓ Receives a copy
+
+Bob Memory Book:
+✗ Receives nothing
+
+Clara Memory Book:
+✓ Receives a copy
+```
+
+Use this confirmation screen to correct cases such as:
+
+* a character who remained silent but should receive the memory;
+* a detected speaker whose book should not receive the memory;
+* a character who witnessed only part of the scene;
+* an event that should be treated as relevant to the entire group.
+
+If no individual participant is selected, Memory Books treats the memory as applying to all current group members.
+
+When participant detection is consistently correct for your chats, you can enable:
+
+**Automatically accept detected participants in future**
+
+Be aware that this is broader behavior, not merely a setting for one specific memory.
+
+---
+
+## Group Summaries and Character-Focused Summaries
+
+By default, Memory Books generates one group-oriented memory.
+
+That memory becomes the canonical entry in the group Memory Book, and copies of the same summary are placed in the selected character Memory Books.
+
+This is efficient and keeps the versions consistent.
+
+However, the copied text remains a group-oriented summary.
+
+For more individualized memories, open the Profile Manager and enable:
+
+**Use separate group and character prompts in group chats**
+
+With this option enabled:
+
+* the **Group Summary Prompt** creates the canonical group version;
+* the **Character Summary Prompt** creates a character-focused version for each individually assigned character Memory Book.
+
+For example:
+
+### Group version
+
+> Alice discovered the transmitter and concealed it from Bob. Clara noticed Alice’s hesitation but did not confront her. Bob remained unaware of the discovery.
+
+### Alice version
+
+> Alice discovered the hidden transmitter and deliberately concealed it from Bob. She noticed Clara watching her and suspected that Clara understood what she had done.
+
+### Bob version
+
+> Bob searched the room but found nothing suspicious. He accepted Alice’s claim that the room was empty and remained unaware of the hidden transmitter.
+
+### Clara version
+
+> Clara saw Alice discover and conceal the transmitter. She recognized that Bob had been deceived but chose not to intervene.
+
+Character-focused generation can better preserve:
+
+* individual knowledge;
+* mistaken beliefs;
+* private emotional reactions;
+* personal priorities;
+* relationship-specific continuity.
+
+It also requires additional AI requests.
+
+Leave it disabled unless the individualized versions provide a meaningful benefit to your story.
+
+---
+
+# What STLO Does
+
+Memory Books and STLO have different responsibilities.
+
+## Memory Books
+
+Memory Books decides:
+
+* which messages belong to the scene;
+* which character cards participated;
+* what the summary says;
+* which Memory Books receive copies;
+* whether group and character summaries are generated separately.
+
+## STLO
+
+STLO controls:
+
+* when a lorebook is active;
+* which character can activate it;
+* where it is inserted;
+* its priority;
+* its token budget;
+* its ordering relative to other lorebooks.
+
+STLO does not decide who participated in the scene or what a character knows.
+
+## Character Memory Book Activation
+
+When you assign a character Memory Book, Memory Books adds the appropriate character override in STLO and enables activation based on the character who is currently speaking.
+
+For example:
+
+```text
+Alice is speaking:
+- Group Memory Book may activate
+- Alice Memory Book may activate
+- Bob Memory Book does not activate
+
+Bob is speaking:
+- Group Memory Book may activate
+- Bob Memory Book may activate
+- Alice Memory Book does not activate
+```
+
+This prevents every character Memory Book from loading whenever any group member speaks.
+
+Memory Books preserves existing STLO settings such as:
+
+* priority;
+* order adjustment;
+* token budget;
+* existing character overrides.
+
+You can therefore use STLO to place character memories at a different priority or prompt position from the group’s canonical history.
+
+---
+
+# Character Filters Are Not Private Knowledge
+
+Character filters and separate Memory Books improve **relevance and routing**.
+
+They should not be treated as a strict privacy or access-control system.
+
+The multiple-book setup does not guarantee that:
+
+* one character can never receive information associated with another;
+* the roleplay model will never see the canonical group version;
+* previous-memory context contains only facts owned by one participant;
+* a character Memory Book perfectly represents what that character consciously knows.
+
+The canonical group Memory Book still contains the group version of the event.
+
+For example, a character-focused copy might correctly say that Bob did not know about the transmitter, while the canonical group summary still records the full event.
+
+Use separate character Memory Books when you want:
+
+* more relevant context;
+* individualized continuity;
+* character-focused summaries;
+* less unrelated history activated for each speaker.
+
+Do not use them as a security boundary.
+
+---
+
+# What Gets Copied Across Memory Books?
+
+Not every Memory Books feature automatically distributes its result across the group and character Memory Books.
+
+| Operation               | Multiple-Memory-Book behavior                                        |
+| ----------------------- | -------------------------------------------------------------------- |
+| Normal scene memory     | Creates a canonical group entry and copies for selected participants |
+| Automatic memory        | Uses the same group-memory distribution behavior                     |
+| Catch-up memory         | Uses normal memory-creation routing                                  |
+| Consolidation           | Can coordinate the group book and assigned character books           |
+| Clip                    | Saves to the selected or effective Memory Book only                  |
+| Topical Clip            | Operates on the selected Memory Book only                            |
+| Side Prompt             | Saves to its configured Memory Book or override only                 |
+| Compaction              | Replaces only the selected entry                                     |
+| Regeneration            | Replaces only the entry being regenerated                            |
+| Manual lorebook editing | Changes only that specific entry                                     |
+| Manual deletion         | Deletes only the selected entry                                      |
+
+## Linked Copies Are Not Live-Synchronized
+
+Entries created from the same group memory may be linked internally so Memory Books can recognize that they belong to the same original event.
+
+However, linked does not mean continuously synchronized.
+
+Editing, deleting, compacting, or regenerating one entry does not automatically apply the same change to every linked copy.
+
+For example:
+
+```text
+Group Memory Book:
+Memory 014 — regenerated
+
+Alice Memory Book:
+Memory 014 — unchanged
+
+Bob Memory Book:
+Memory 014 — unchanged
+```
+
+Regenerate or edit each version separately when all copies need to change.
+
+---
+
+# Character Memory Book Assignments and Locks
+
+An unlocked character Memory Book assignment normally belongs to the current group chat.
+
+This allows the same character card to use different Memory Books in different stories.
+
+For example:
+
+```text
+Fantasy Group:
+Alice → Alice Fantasy Memory Book
+
+Modern Group:
+Alice → Alice Modern Memory Book
+```
+
+## Locking an Assignment
+
+A locked assignment tells Memory Books to keep using the selected Memory Book for that character card across compatible Manual Mode chats.
+
+Use a lock when the character should maintain one continuing Memory Book across several groups or chats.
+
+For example:
+
+```text
+Alice character card
+└── Locked to Alice Canonical Memory Book
+```
+
+Once locked:
+
+* the assignment follows the character card;
+* other compatible group chats can reuse it;
+* the assignment must be unlocked before selecting a different Memory Book.
+
+If the locked lorebook is deleted or becomes unavailable, the assignment must be unlocked or repaired before it can be used again.
+
+Use locks carefully when the same character card appears in unrelated universes or alternate timelines.
+
+---
+
+# Which Settings Apply Where?
+
+Not every Group Chat setting has the same scope.
+
+| Setting or data                                 | Scope                             |
+| ----------------------------------------------- | --------------------------------- |
+| Manual Lorebook Mode                            | Extension-wide setting            |
+| Main group Memory Book selection                | Current chat                      |
+| Unlocked character Memory Book assignments      | Current group chat                |
+| Locked character Memory Book assignment         | Character card                    |
+| Scene boundaries and processed-message progress | Current chat                      |
+| Automatically accept detected participants      | General Group Chat behavior       |
+| Separate group and character prompts            | Current Memory Books profile      |
+| STLO priority, position, and token settings     | Individual lorebook configuration |
+
+This matters when switching between groups, profiles, or character cards.
+
+For example, changing the active Memory Books profile may also change whether separate character-focused prompts are used.
+
+---
+
+# Adding or Removing Group Members
+
+SillyTavern groups may change over time.
+
+## Adding a Character
+
+When a new character is added to a group:
+
+* assign that character a valid character Memory Book before creating another distributed memory;
+* existing memories are not automatically copied into the new character’s book;
+* old participant filters are not automatically rewritten;
+* the new character does not retroactively become a participant in previous scenes.
+
+Create or copy any historical context manually if the new character should begin with older knowledge.
+
+## Removing a Character
+
+When a character is removed from a group:
+
+* existing entries in their character Memory Book remain;
+* old character filters remain on existing group entries;
+* existing STLO character overrides may remain;
+* linked copies are not automatically deleted.
+
+This preserves history and avoids destructive cleanup when a character is only temporarily removed.
+
+If the character should no longer activate an old Memory Book, remove the retained override through STLO.
+
+## Changing a Character’s Assigned Memory Book
+
+Changing or clearing an assignment in Memory Books does not necessarily remove the character from the old lorebook’s STLO overrides.
+
+This is deliberate. The old lorebook may still be used with that character elsewhere.
+
+After changing an assignment, review the old lorebook in STLO and remove the character override manually when it is no longer needed.
+
+---
+
+# Consolidation in Group Chats
+
+Consolidation can coordinate the canonical group Memory Book and the assigned character Memory Books.
+
+The group book is consolidated using the group memories. Character books are consolidated from the related entries available in each assigned book.
+
+## Different Books May Have Different Amounts of Material
+
+A character Memory Book may contain fewer eligible memories than the group Memory Book.
+
+For example:
+
+```text
+Group Memory Book:
+12 eligible scene memories
+
+Alice Memory Book:
+10 eligible scene memories
+
+Bob Memory Book:
+3 eligible scene memories
+```
+
+If a character book does not contain enough eligible entries for the requested consolidation tier, Memory Books may skip that book and warn you before proceeding.
+
+The group and ready character books can still continue without the skipped book.
+
+## Missing Scenes Are Chronology Gaps
+
+A character’s Memory Book may not contain every group event.
+
+A missing scene means only that the scene was not included in that character book. It does not automatically prove that the character was absent, unconscious, or ignorant.
+
+Character-focused consolidation should treat missing material as a gap in the supplied chronology rather than inventing a reason for its absence.
+
+## Shared Character Books
+
+When several characters share one character Memory Book, Memory Books produces one consolidation for that shared book.
+
+It does not create duplicate consolidated entries for every assigned character.
+
+---
+
+# Which Layout Should I Choose?
+
+## Use One Group Memory Book When:
+
+* you are configuring Group Chat support for the first time;
+* the characters mostly follow one shared story;
+* separate character histories are unnecessary;
+* you want the least configuration;
+* you want fewer duplicate entries;
+* you do not want to use STLO;
+* group-oriented summaries are sufficient.
+
+## Use Multiple Memory Books When:
+
+* characters frequently have different experiences;
+* individual continuity matters;
+* different speakers should activate different context;
+* you want character-focused summaries;
+* unrelated group history should not load for every character;
+* you already understand STLO’s activation controls;
+* the extra setup and AI requests are worthwhile.
+
+> **Recommended starting point:** Use one group Memory Book.
+>
+> Move to separate character Memory Books only when one shared history no longer provides enough precision for the story.
+
+
+---
+
+## 🎭 Narrator Mode
+
+Narrator Mode supports a **normal one-on-one SillyTavern chat where one Narrator character card writes several fictional characters**.
+
+```text
+Normal SillyTavern chat
+└── Narrator card
+    ├── writes Alice
+    ├── writes Bob
+    └── writes Clara
+```
+
+SillyTavern records all three fictional characters as part of the Narrator card's response. STMB therefore cannot use message-author character cards as it does in Group Chat Mode. Narrator Mode solves this with a user-declared cast and per-message cast metadata.
+
+### Required layout
+
+Narrator Mode always uses:
+
+* one **omniscient Memory Book** for the complete canonical history; and
+* one unique **character Memory Book** for every declared fictional character.
+
+It requires Manual Lorebook Mode. Automatic chat-bound and Auto-Create routing are not supported while Narrator Mode is active.
+
+Unlike the advanced native-group layout, Narrator Mode does not require STLO. It also does not allow two declared characters to share the same character Memory Book.
+
+### Setup
+
+1. Open the normal chat using the Narrator card.
+2. Create or choose the omniscient Memory Book and one separate book per fictional character.
+3. Open Memory Books and enable **Manual Lorebook Mode**.
+4. Select the omniscient book as the manual Memory Book.
+5. Enable **Narrator Mode**.
+6. Open **Manage Narrator Cast**.
+7. Add each fictional character by name and assign that character's unique Memory Book.
+8. Use the movable **Active Cast** drawer to select who participates before each Narrator generation.
+
+Characters are write-in cast members. They do not need SillyTavern character cards.
+
+### Active Cast behavior
+
+STMB snapshots the Active Cast when generation begins. The completed Narrator response is stamped with those cast-member IDs. A continuation merges its cast into the existing response metadata. Swipes retain their own cast metadata, and selecting a swipe restores the drawer to that swipe's cast.
+
+Narrator Mode does not search the prose for names and decide who participated. The explicit Active Cast selection is the source of truth.
+
+### Creating memories
+
+When a Narrator scene becomes a memory:
+
+1. the canonical version is saved to the omniscient Memory Book;
+2. linked copies are saved only to the Memory Books owned by the scene participants; and
+3. no individual copy is created for an unselected cast member.
+
+If the participant list is empty, STMB saves only the omniscient entry.
+
+For fully tagged messages, STMB derives participants from the Narrator responses in the scene. If a scene contains older untagged Narrator messages, STMB opens **Confirm Narrator scene cast**. In that popup, selecting nobody means no individual cast member was present; it does not mean everyone.
+
+### Character-focused memories
+
+The profile option **Use separate group and character prompts in group chats** also applies to Narrator Mode.
+
+When enabled:
+
+* the Group Summary Prompt creates the omniscient version; and
+* the Character Summary Prompt runs separately for each participating character book.
+
+This supports individual knowledge, mistaken beliefs, private reactions, and character-specific continuity. It also adds one generation request per participating character.
+
+### Loading character memories during roleplay
+
+Before a Narrator reply, STMB adds the selected active characters' Memory Books to the generation's character-lore processing. Alice's and Clara's books can therefore participate when Alice and Clara are active without adding Bob's book.
+
+The omniscient manual Memory Book is the canonical STMB storage target. Manual selection alone does not bind it to ordinary chat generation. Bind or activate the omniscient lorebook through normal SillyTavern lorebook controls if the Narrator should receive it during roleplay.
+
+### Removing cast members
+
+**Remove** retires a cast member rather than deleting their identity. Retired members disappear from the Active Cast drawer but retain their internal ID and Memory Book assignment so old linked memories remain interpretable. The name and book remain reserved and the member can be restored.
+
+### Catch-up, branching, and linked edits
+
+* `/stmb-catchup` works only for Narrator ranges that already have complete cast metadata. Legacy untagged ranges must be processed manually.
+* Branching copies the omniscient book and every declared cast book, then rewrites the branch's cast bindings to the copies.
+* Regeneration, Compaction, manual edits, and deletion affect only the selected entry. Linked copies are not live-synchronized.
+
+See the [Narrator Mode Technical Guide](userguides/narrator-mode-en.md) for the exact metadata model, participant-resolution rules, prompt routing, consolidation behavior, and troubleshooting.
+
+---
+
+## 🌿 Branching Chats
+
+SillyTavern can create a new branch from an earlier point in a chat. A branch may develop into a different continuity, so sharing the same writable Memory Book with its parent can mix two timelines.
+
+Memory Books therefore enables **Copy Memory Books when branching** by default.
+
+### What is copied
+
+When STMB detects a newly created native branch:
+
+- Automatic Mode copies the active chat-bound Memory Book.
+- Manual Mode copies the main manual Memory Book.
+- A Manual Mode group also copies every unique **unlocked** character Memory Book currently assigned.
+- Narrator Mode copies the omniscient Memory Book and every declared cast Memory Book.
+- Locked character Memory Books are not copied. Their persistent assignment remains in place.
+
+Every book copied for one branch receives the same available branch number:
+
+```text
+Group Memories Branch 1
+Alice Memories Branch 1
+Bob Memories Branch 1
+```
+
+If you branch again from one of those branches, STMB keeps the original lineage name and chooses the next available branch number instead of producing names such as `Branch 1 Branch 1`.
+
+### What changes inside the copies
+
+STMB updates entries that belong to the parent chat so they refer to the new branch chat. It also rewrites internal canonical-lorebook links when both linked books were copied. This keeps group and character consolidation relationships inside the branch rather than pointing back to the parent books.
+
+### Locked books
+
+A lock means “this character always uses this Memory Book.” Copying that book for one branch would defeat the purpose of the lock.
+
+- In a solo chat using a persistent character lock, STMB leaves the locked book alone and does not create a branch copy for it.
+- In a Manual Mode group, unlocked books are copied while locked character assignments continue pointing to their locked books.
+
+Use locks only when sharing that continuing history across branches is intentional.
+
+### Disabling branch copies
+
+Disable **Copy Memory Books when branching** in **Memory Books → General Settings** when you deliberately want the branch to keep the inherited bindings and write to the same books as its parent.
+
+When copying is enabled, do not switch chats while STMB is creating the books. If copying fails, STMB clears the new branch's inherited bindings to protect the originals from accidental writes.
 
 ---
 
@@ -227,7 +969,7 @@ This can be wonderful when characters know different things, care about differen
 
 Use **Clip to Memory Book** when you want to save one important line or fact without creating a full scene memory. Highlight text in chat, click the floating scissors button, then choose an existing clip entry or create a new one.
 
-Not sure whether this should be a clip or a side prompt? See [Clips vs Side Prompts](#-clips-vs-side-prompts).
+Not sure whether to use a Clip, Topical Clip, or Side Prompt? See [Clips, Topical Clips, and Side Prompts](#clips-topical-clips-and-side-prompts).
 
 ### When should I use clips?
 
@@ -286,201 +1028,184 @@ If a clip entry gets long, STMB may remind you to review it. You can edit it you
 
 ---
 
-## ✂️ Clips vs Side Prompts
-
-Clips and Side Prompts both save information into your Memory Book, but they are not for the same job.
-
-Plain rule: **Clips save a specific fact. Side Prompts maintain a living tracker.**
-
-| **Clips** | **Side Prompts** |
-|---|---|
-| Save selected chat text into a Memory Book entry. | Ask the AI to review chat and update a tracker entry. |
-| Best for one clear fact, line, promise, preference, item, or note. | Best for information that changes over time, like relationship status, quest progress, inventory, or unresolved plot threads. |
-| You choose the exact text. STMB saves what you selected. | The AI interprets the chat and writes or updates the tracker. |
-| Use when the fact is already obvious and does not need analysis. | Use when the AI needs to compare, summarize, or update state from multiple messages. |
-| Usually grows only when you manually add another clip. | Can update repeatedly as the story changes. |
-| Think: “pin this note.” | Think: “keep this section updated.” |
-
-Examples of good Clips:
-
-- `Aiko likes honey tea.`
-- `Andalino promised not to lie to her again.`
-- `Colt calls her Boss.`
-
-Examples of good Side Prompts:
-
-- relationship status
-- current quest progress
-- inventory and resources
-- NPC directory
-- unresolved plot threads
-
-If you only need one remembered detail, use a Clip. If you need an ongoing tracker, use a Side Prompt.
-
----
-
 ## 🔎 Topical Clip
 
-Topical Clip is for making one focused “about this topic” memory entry from memories you already created.
+Topical Clip creates a focused Memory Book entry about one subject by gathering relevant information from memories you have already saved.
 
-Think of it like asking STMB:
+Think of it as asking STMB:
 
-> “Read my saved memories and make one useful entry about this person, place, relationship, plot thread, item, secret, or topic.”
+> “Read my existing memories and collect everything useful about this person, relationship, place, object, mystery, or plot thread.”
 
-It is still a Clip-style entry, but you are not clipping highlighted chat text. Instead, STMB uses existing memory entries as the source.
+For example, your Memory Book may contain separate scene memories in which:
 
-Plain rule: **Clip saves selected text. Topical Clip gathers related details from saved memories. Side Prompts maintain trackers over time.**
+* Seraphina first demonstrated healing magic
+* Seraphina explained where she learned it
+* Seraphina healed `{{user}}`
+* someone later revealed that her magic has a hidden cost
+
+Those facts are scattered across several chronological memories. Topical Clip can gather them into one focused entry such as:
+
+```txt
+About Seraphina's Healing Magic [STMB Clip]
+```
+
+The resulting entry is organized around the topic rather than around the order in which events happened.
+
+### Clip vs. Topical Clip
+
+The simplest distinction is:
+
+> **A Clip saves text from the chat. A Topical Clip gathers information from saved memories.**
+
+| **Clip to Memory Book**                                      | **Topical Clip**                                                           |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Starts with text you highlight in the current chat.          | Starts with STMB memory entries already saved in a Memory Book.            |
+| Saves the wording you selected.                              | Uses an AI to find, combine, and reorganize relevant details.              |
+| Best for one clear fact, line, promise, preference, or note. | Best when information about one subject is spread across several memories. |
+| Does not need the AI to interpret the information.           | Uses the selected Generation Profile because the AI writes the draft.             |
+| Think: “Save this.”                                          | Think: “Gather everything about this.”                                     |
+
+Both are saved as normal lorebook entries marked with `[STMB Clip]`, but they are created in different ways.
 
 ### When to use Topical Clip
 
-Use Topical Clip when your Memory Book already has several memories and you want one easier-to-trigger entry about a specific subject.
+Use Topical Clip when you want one easily retrieved entry about:
 
-Good examples:
+* a recurring character or NPC
+* a relationship between characters
+* a location or faction
+* a mystery or investigation
+* a character’s powers, injuries, preferences, promises, or secrets
+* an important object
+* an unresolved plot thread
+* any subject that appears across multiple scenes
 
-- A recurring NPC
-- A relationship between two characters
-- A mystery or investigation
-- A location
-- A faction
-- A character’s powers, injuries, promises, secrets, or preferences
-- A plot thread that appears across many scenes
-
-Example topics:
+Example topics include:
 
 ```txt
 Seraphina
-{{user}}'s magic
+Seraphina's healing magic
 Alex and Mira's relationship
 The Black Harbor investigation
 The silver key
-````
+What Elliott knows about the conspiracy
+```
+
+Choose a reasonably specific topic. `Seraphina` may produce a broad character reference, while `Seraphina's healing magic` will produce a much narrower entry.
 
 ### When not to use Topical Clip
 
-Do not use Topical Clip when:
+Use another feature when:
 
-* you only want to save one highlighted line from chat — use **Clip to Memory Book**
-* you want a tracker that updates automatically during future memory runs — use **Side Prompts**
-* you want to shorten one long entry — use **Compaction**
-* you want to combine several memories into a higher-level recap — use **Summary Consolidation**
+* **You are looking directly at the fact you want to save:** use **Clip to Memory Book**.
+* **You want to summarize one scene:** create a normal **Memory**.
+* **You want an entry to be maintained as the story continues:** use a **Side Prompt**.
+* **You want to shorten one long entry:** use **Compaction**.
+* **You want to combine several memories into a chronological higher-level recap:** use **Summary Consolidation**.
 
-### How to use Topical Clip
+Topical Clip is not another form of consolidation. Consolidation summarizes a sequence of memories into a larger narrative recap. Topical Clip searches across memories for information about one subject and reorganizes it into an “about this” reference entry.
 
-1. Open the Memory Books popup.
+### How to create a Topical Clip
+
+1. Open the **Memory Books** popup.
 2. Click **🔎 Topical Clip**.
 3. Choose the **Source Memory Book**.
-4. Enter the **Topic**.
+4. Enter the **Topic** you want the entry to cover.
+5. Enter the lorebook activation **Keywords**.
 
-   * This is the subject the AI should focus on.
-   * Keep it specific.
-5. Enter **Keywords**.
-
-   * These become the lorebook activation keywords.
-   * If you leave keywords empty, STMB uses the topic.
-6. Choose a mode:
-
-   * **Create new Topical Clip** makes a new `[STMB Clip]` entry.
-   * **Update existing entry** updates an existing Clip entry.
-7. Choose a **Generation Profile**.
-
-   * This controls which AI connection/model writes the draft.
-8. Optional: click **Edit Topical Clip Prompt** if you want to change the instructions sent to the AI.
+   * If you leave this field empty, STMB uses the topic as the keyword.
+6. Choose **Create new Topical Clip**.
+7. Optional: enable **Use only selected memories** if you do not want the AI to read every eligible memory in the book.
+8. Choose a **Generation Profile**.
 9. Click **Generate Draft**.
-10. Review the generated draft.
-11. Edit the draft if needed.
-12. Click **Save Topical Clip**.
+10. Review and edit the generated draft.
+11. Click **Save Topical Clip** when the entry contains what you want.
 
-STMB does not save the draft automatically. The lorebook only changes after you click **Save Topical Clip**.
+STMB does not save the AI response automatically. You can edit the draft before anything is written to the Memory Book.
 
-### Creating a new Topical Clip
-
-When you create a new Topical Clip, STMB creates a Clip-style lorebook entry.
-
-For example, if your topic is:
-
-```txt
-Seraphina
-```
-
-The entry title will look like:
+A new entry is normally given a title such as:
 
 ```txt
 About Seraphina [STMB Clip]
 ```
 
-The visible section inside the entry uses the same Clip wrapper style as normal Clip entries.
+It is saved as a keyword-triggered Clip-style entry using the keywords you supplied.
 
 ### Updating an existing Topical Clip
 
-Topical Clip can also update an existing `[STMB Clip]` entry.
+You can update an existing Topical Clip after new memories are created.
 
-This is useful when you already have an entry like:
+1. Open **Topical Clip**.
+2. Choose **Update existing entry**.
+3. Select the `[STMB Clip]` entry you want to update.
+4. Confirm the topic and activation keywords.
+5. Generate and review the new draft.
+6. Save it only after checking the result.
 
-```txt
-About Seraphina [STMB Clip]
-```
+After a successful Topical Clip run, STMB records which source memories were used. During the next update, it normally sends only source memories that are new or have changed.
 
-and new memories have been added since the last time you updated it.
+This allows the AI to merge new information into the existing entry without rereading the entire Memory Book every time.
 
-When a Topical Clip update saves successfully, STMB stores a small run history on that entry. This includes the source memories used during the run. On the next update, STMB can use that history to find only new or changed source memories instead of rereading everything.
+Enable **Rebuild from all source memories** when:
 
-This keeps updates smaller and helps avoid repeatedly feeding the same old memories back into the AI.
-
-### Rebuild from all source memories
-
-When updating an existing Topical Clip, you may see **Rebuild from all source memories**.
-
-Leave this off for normal updates. STMB will use only new or changed source memories when it can.
-
-Turn it on when:
-
-* the existing Topical Clip is badly outdated
+* the existing entry is incomplete
 * you changed the Topical Clip prompt
-* you changed the topic or keywords significantly
-* you want the AI to reconsider all saved memories for that topic
-* the entry has no useful run history yet
+* earlier memories were substantially edited
+* the entry has become disorganized
+* you want the AI to reconsider the entire topic from scratch
 
-### What source entries does it use?
+A rebuild includes all eligible source memories instead of only new or changed ones.
 
-Topical Clip uses confirmed STMB memory entries from the selected Memory Book.
+### Choosing source memories manually
+
+Enable **Use only selected memories** when the Memory Book is large or when you already know which memories contain the relevant material.
+
+This can help when:
+
+* the topic appears only during one part of the story
+* unrelated memories would make the request unnecessarily large
+* two people or places have similar names
+* you want to build an entry from a carefully controlled set of sources
+
+Without this option, STMB automatically uses all eligible source memories—or only new and changed memories when updating an existing Topical Clip.
+
+### Large requests and token warnings
+
+Topical Clip estimates the size of the request before generation. The popup shows how many memories are eligible, how many will be used, and the configured token warning threshold.
+
+If the request exceeds that threshold, STMB warns you before sending it. You can:
+
+- select fewer source memories
+- raise the token warning threshold in settings
+- choose **Run Once Anyway** for that request
+
+### What Topical Clip uses as source material
+
+Topical Clip reads confirmed STMB memory entries from the selected Memory Book.
 
 It does not use:
 
-* normal Clip entries
-* Side Prompt tracker entries
-* ordinary lorebook entries that are not managed by STMB
+* raw chat messages
+* ordinary Clip entries
+* Side Prompt entries
+* unrelated ordinary lorebook entries
 
-This keeps Topical Clip focused on memories STMB already knows how to identify safely.
+This prevents existing notes and trackers from being mistaken for original memory evidence.
 
-### Good Topical Clip habits
+### Review the draft
 
-Use focused topics.
+Topical Clip uses an AI to select and reorganize information. Always review the generated draft before saving it.
 
-Better:
+Check that it:
 
-```txt
-Alex and Mira's relationship
-```
+* stayed focused on the requested topic
+* preserved names and important facts correctly
+* did not omit a major detail
+* did not include unrelated events
+* clearly notes contradictions instead of silently choosing one version
+* did not invent explanations unsupported by the source memories
 
-Less useful:
-
-```txt
-Everything about the story
-```
-
-Better:
-
-```txt
-The silver key
-```
-
-Less useful:
-
-```txt
-Important items
-```
-
-Topical Clip works best when the topic is narrow enough that the AI can tell what belongs and what does not.
+You may freely edit the draft before saving.
 
 ### Prompt editing
 
@@ -516,9 +1241,27 @@ Other supported placeholders include:
 
 Use **Reset to Default** if your custom prompt stops working well.
 
+
+## Clips, Topical Clips, and Side Prompts
+
+| **Clip**                                | **Topical Clip**                                  | **Side Prompt**                                                        |
+| --------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| Saves selected chat text.               | Extracts one topic from saved memories.           | Maintains a specialized tracker.                                       |
+| Usually captures one fact or quotation. | Combines related facts from multiple memories.    | Reviews new story material and updates changing information.           |
+| You decide exactly what text is added.  | The AI prepares a focused draft for your review.  | The AI follows tracker instructions and rewrites or updates the entry. |
+| Updated manually by clipping more text. | Updated manually when you run Topical Clip again. | Can run repeatedly as part of your memory workflow.                    |
+| Think: “Save this note.”                | Think: “Gather everything about this.”            | Think: “Keep track of this.”                                           |
+
+A practical rule:
+
+* Use **Clip** when the information is already in front of you.
+* Use **Topical Clip** when the information is scattered across saved memories.
+* Use **Side Prompt** when the information needs to be actively maintained as the story changes.
+
+
 ---
 
-## 🙈 Token Saving: Hide / Unhide Messages
+## 🙈 Token Saving and the Memory Boundary
 
 One of the easiest ways to reduce clutter and save tokens in long chats is to hide messages after you have already turned them into memories.
 
@@ -546,12 +1289,110 @@ You can also choose how many recent messages stay visible with **Messages to lea
 
 The setting **Unhide hidden messages for memory generation** tells STMB to temporarily run `/unhide X-Y` for the selected range before generating the memory. Use this if you tend to re-do memories. 
 
+### Memory boundary indicator
+
+The **Memory boundary indicator** uses the chat's highest processed message to show where remembered history ends and unprocessed chat begins.
+
+The available modes are:
+
+- **Off**
+- **Memory boundary** — inserts a divider in the chat
+- **Jump button** — shows a draggable button that scrolls to the boundary
+- **Memory boundary + jump button**
+
+If no memory has been processed yet, there is no boundary to jump to. The button position is saved after you drag it.
+
 ### Good beginner setup
 
 Aiko's settings:
 - use **Auto-hide messages up to the last memory**
 - leave **2 messages unhidden**
 - turn on **Unhide hidden messages for memory generation**
+- show **Memory boundary + jump button** while learning the workflow
+
+---
+
+## 🧵 Previous Memories and Additional Context
+
+Memory generation can include two different kinds of reference material before the current scene.
+
+### Previous memories
+
+Previous memories are earlier STMB scene memories from the effective Memory Book.
+
+They help the model maintain continuity across adjacent scenes. STMB labels them as context only and tells the model not to rewrite them into the new memory.
+
+You can include up to seven. Set the normal amount through **Default Previous Memories**, then override it for one run in the memory confirmation window.
+
+### Additional Context
+
+Additional Context consists of selected lorebook entries that STMB supplies as reference material.
+
+Use it for stable information such as:
+
+- character or setting rules;
+- canonical names and terminology;
+- campaign constraints;
+- location references;
+- an authoritative timeline;
+- facts that the selected scene assumes but does not repeat.
+
+Additional Context is not treated as another scene. It appears in a clearly labeled reference block before previous memories and the scene transcript.
+
+### Context Settings
+
+Context Settings are reusable ordered collections of Additional Context entries.
+
+1. Open **Memory Books → Context Settings**.
+2. Create a named Context Setting.
+3. Choose a lorebook and entry, then add it.
+4. Add any other entries needed.
+5. Reorder them into the sequence you want the model to see.
+6. Select that Context Setting under **Additional Context for this chat**.
+
+The chat selector supports:
+
+- **Unset - prompt when needed** — primarily useful during migration from older profile-based context;
+- **No Context** — explicitly use no Additional Context in this chat; or
+- a named Context Setting.
+
+The selection is stored per chat. This means the same memory profile can use different reference collections in different stories. It also means **Current SillyTavern Settings** can use Additional Context even though the old profile-level implementation could not.
+
+If a referenced lorebook or entry is deleted, STMB warns, skips that stale reference, and continues. Deleting an entire Context Setting causes chats that reference it to continue without Additional Context until you choose another one.
+
+Context Settings can be duplicated, imported, and exported as `stmb-context-settings.json`.
+
+### Side Prompts and Additional Context
+
+Each Side Prompt may:
+
+- use no Additional Context;
+- **Follow chat**, using the current chat's selected Context Setting; or
+- use one **fixed** Context Setting regardless of the chat selection.
+
+This is separate from the Side Prompt's optional previous-memory count and existing prior tracker entry.
+
+---
+
+## 🔢 Memory Count Macros
+
+STMB registers count macros for the effective main Memory Book.
+
+| Macro | Returns |
+|---|---|
+| `{{memtier0}}` | Number of scene Memories |
+| `{{memtier1}}` | Number of Arcs |
+| `{{memtier2}}` | Number of Chapters |
+| `{{memtier3}}` | Number of Books |
+| `{{memtier4}}` | Number of Legends |
+| `{{memtier5}}` | Number of Series |
+| `{{memtier6}}` | Number of Epics |
+| `{{memclips}}` | Number of Clips |
+| `{{memside}}` | Number of Side Prompt entries |
+
+The effective book is the chat-bound Memory Book in Automatic Mode or the resolved manual Memory Book in Manual Mode. In a group with character books, these macros count the main group Memory Book and do not add every character book together.
+
+They return integers and can be used wherever the relevant STMB field expands normal SillyTavern macros. For example, a Side Prompt can use them to decide whether a tracker should recommend consolidation or compaction.
 
 ---
 
@@ -660,9 +1501,32 @@ If you only want to save one highlighted fact, use [Clip to Memory Book](#%EF%B8
 
 * **Side Prompts Manager**: Create, edit, duplicate, and organize trackers
 * **Enable / Disable**: Turn trackers on or off at any time
-* **Import / Export**: Share templates or back them up
+* **Import / Export**: Share templates or back them up. Import is additive: existing prompts stay in place and conflicting imported keys are renamed.
 * **Status View**: See which trackers are active in the current chat and when they run
 * **Safety Checks**: If a template contains custom runtime macros, STMB strips automatic triggers on save/import and shows a warning toast
+
+### Automatic Side Prompt selection
+
+General Settings can define one default Side Prompt Set for solo chats and another for group chats. Each chat can then choose:
+
+* **Inherit solo/group default**
+* **Use individually-enabled side prompts**
+* a specific named Side Prompt Set
+
+A selected set replaces individual automatic selection. The set is still filtered by trigger: an after-memory run uses rows whose Side Prompts have **Run automatically after memory** enabled, while an interval run uses rows whose Side Prompts have a visible-message interval.
+
+### Advanced Side Prompt inputs and destinations
+
+A Side Prompt can also configure:
+
+* up to seven previous memories for continuity;
+* Additional Context that follows the chat or uses a fixed Context Setting;
+* a different Memory Books profile/connection;
+* a template-level or per-chat target lorebook;
+* title and keyword templates;
+* activation mode, insertion position, order, recursion, Outlet name, and **Ignore Budget**.
+
+Use a lorebook override when the tracker belongs somewhere other than the current Memory Book. A per-chat override wins over the template-level destination; if neither is valid, STMB uses the effective Memory Book.
 
 ### 💡 **Template Examples**
 
@@ -820,6 +1684,131 @@ Compaction is a cleanup tool, not a memory-generation tool.
 
 ---
 
+## ♻️ Regenerating Entries
+
+Regeneration creates a replacement draft for an existing STMB entry. It does not make a second numbered entry and it never overwrites the original without approval.
+
+Open the Memory Book in SillyTavern's lorebook editor. Eligible entries receive **Regenerate memory** or **Regenerate side prompt** beside their UID.
+
+### Regenerating a scene memory
+
+A normal memory uses its saved scene range.
+
+- Open the chat that originally created it.
+- Make sure that Memory Book is active for the chat.
+- Click **Regenerate memory**.
+- Choose the current profile, prompt, previous-memory count, and Additional Context.
+- Review the title, content, and keywords before replacing the entry.
+
+If the entire original range is hidden, reveal it manually or enable **Unhide hidden messages for memory generation**.
+
+### Regenerating a consolidation
+
+A higher-tier summary uses the exact linked lower-tier source entries and the dedicated **Regenerate Consolidation** prompt. The complete source set must still exist at the correct tier.
+
+A source entry cannot be regenerated while an active parent consolidation depends on it. Delete the parent consolidation first if rebuilding the lower entry is intentional.
+
+### Regenerating a Side Prompt
+
+Side Prompt regeneration is available only after a compatible run has saved a snapshot. The snapshot records:
+
+- the Side Prompt template key;
+- the prior tracker content used for that run;
+- the source chat and message range; and
+- runtime macro values.
+
+The new generation uses those saved inputs with the **current** Side Prompt template, profile override, previous-memory setting, and Additional Context setting. If the template no longer exists, regeneration cannot proceed.
+
+### Replacement safety
+
+STMB compares the source and target again immediately before saving. If the chat range, target entry, or consolidation source entries changed while generation was running, nothing is overwritten.
+
+Linked group/character copies are independent after creation. Regenerating one does not update the other copies.
+
+---
+
+## 🔌 Advanced Memory Profiles
+
+Most users should begin with **Current SillyTavern Settings**. Create a separate profile only when memory generation needs different connection or entry behavior.
+
+### Named Custom connection profiles
+
+When **API/Provider** is **Custom OpenAI-Compatible API**, choose either:
+
+- **Use active SillyTavern Custom connection**; or
+- one named Custom connection profile from SillyTavern's Connection Manager.
+
+The named connection supplies its URL and saved secret. The model entered in the STMB profile remains the model override. If that SillyTavern connection is deleted or changed to a non-Custom provider, STMB blocks the request rather than silently using another endpoint.
+
+This is useful when you have several OpenAI-compatible services configured and do not want STMB to depend on whichever one is currently active.
+
+### Structured output fallback
+
+**Skip structured output and use plain-text completion** prevents STMB from sending a JSON schema. Use it only when a provider rejects structured-output requests.
+
+The selected memory prompt must still tell the model to return valid JSON. This setting changes how the request is sent, not what STMB must parse.
+
+### SillyTavern ChatCompletionService
+
+Enable **Use ST's ChatCompletionService** to send the profile through SillyTavern's built-in request helper. You may optionally select a SillyTavern Chat Completion preset for that request.
+
+If ChatCompletionService is unavailable or fails, STMB can fall back to its normal request path. Full Manual profiles do not use ChatCompletionService.
+
+### Reverse proxy and Full Manual Configuration
+
+**Use reverse proxy** forwards SillyTavern's configured reverse-proxy details for supported providers.
+
+**Full Manual Configuration** accepts a direct endpoint and key inside the STMB profile. It is intended for exceptional cases where the connection cannot be represented and tested in SillyTavern. Prefer a normal provider or named Custom connection whenever possible.
+
+---
+
+## 🧩 Prompt Managers and Previews
+
+### Summary Prompt Manager
+
+The Summary Prompt Manager controls the presets used for ordinary scene-memory generation.
+
+You can create, edit, duplicate, delete, import, and export presets. After saving one, assign it through a Memory Books profile. Built-in presets can be recreated from the current app locale; recreating them removes local edits to those built-ins but does not delete unrelated custom presets.
+
+Every memory preset must produce the required `title`, `content`, and `keywords` JSON object.
+
+### Consolidation Prompt Manager
+
+The Consolidation Prompt Manager controls how lower-tier entries are grouped and compressed into higher-tier summaries. It also lets you choose the normal default consolidation prompt.
+
+The built-in **Regenerate Consolidation** preset is regeneration-only. It cannot be selected for ordinary consolidation or made the default.
+
+### Preview settings
+
+- **Show memory previews** controls review windows for memories and Side Prompts.
+- **Show consolidation previews** controls the consolidation review workflow.
+
+In a consolidation preview you can edit a candidate, accept it, regenerate that candidate from the same assigned sources, or regenerate the pending batch. Review is especially useful when the model assigns a source to the wrong summary or leaves an item unassigned.
+
+---
+
+## 🧾 Job Queue and Retry Controls
+
+The optional Job Queue requires **Chat Top Bar / Chat Top Info Bar**. When installed, the **Memory Books Jobs** drawer shows queued, active, completed, failed, canceled, blocked, and review-needed work.
+
+Use it to:
+
+- cancel active work;
+- reopen approval-required jobs;
+- inspect failure details;
+- retry work; and
+- dismiss terminal history rows.
+
+Retry buttons have different scopes:
+
+- **Retry** — reruns one non-memory job, such as a Side Prompt or consolidation job.
+- **Retry All** — reruns a memory and any after-memory Side Prompt jobs that were canceled with it. If the memory had already been saved, STMB can resume from that result instead of saving a duplicate memory.
+- **Retry Memory** — reruns or resumes the memory only and deliberately skips after-memory Side Prompts.
+
+Use **Retry Memory** when the memory itself needs another attempt but the attached tracker workflow should not run. Use **Retry All** when the intended combined memory-plus-trackers workflow should be restored.
+
+---
+
 ## ⚙️ Settings That Matter First
 
 This guide is not the full settings reference. For the complete setting-by-setting list, use [readme.md](readme.md).
@@ -833,6 +1822,9 @@ The controls most users should learn first are:
 - **Auto-create memory summaries**: turns automatic memory generation on
 - **Auto-Summary Interval** and **Auto-Summary Buffer**: control when automatic memory generation runs
 - **Side Prompts**: enables trackers
+- **Copy Memory Books when branching**: keeps branched timelines from writing to the same unlocked books
+- **Context Settings**: supplies reusable ordered lorebook references during generation
+- **Memory boundary indicator**: shows or jumps to the processed boundary
 
 ---
 
@@ -848,6 +1840,9 @@ The fastest first checks are:
 - If memories aren't triggering, make sure "delay until recursion" is disabled.
 - If regex behavior seems wrong, check the selections inside **📐 Configure regex…** rather than only checking the Regex extension
 - If consolidation is not prompting, confirm that **Prompt for consolidation when a tier is ready** is enabled and that the target tier is included in **Auto-Consolidation Tiers**
+- If regeneration is disabled, hover the button: the original range, source entries, Side Prompt snapshot, or parent-consolidation relationship may be unavailable
+- If Additional Context is missing, check the chat's Context Setting and look for deleted lorebooks or entries
+- If a branch did not receive copies, verify **Copy Memory Books when branching** was enabled before creating the native branch and that the source books could be loaded
 
 ---
 
