@@ -329,13 +329,19 @@ export function structureHintBoundaries(messages, regex) {
  * @param {{llmIds?:number[], structureIds?:number[], watermark:number, lastIndex:number, guard:number, windowIds:Set<number>}} p
  * @returns {number[]}
  */
-export function snapAndGuardBoundaries({ llmIds = [], structureIds = [], watermark, lastIndex, guard, windowIds }) {
+export function snapAndGuardBoundaries({ llmIds = [], structureIds = [], autosummaryIds = [], watermark, lastIndex, guard, windowIds }) {
     const guardLimit = lastIndex - guard;   // accept id <= guardLimit
     const minB = watermark + 2;             // scene [W+1 .. B-1] must be non-empty
     const inRange = (id) => Number.isInteger(id) && windowIds.has(id) && id >= minB && id <= guardLimit;
 
     const struct = [...new Set(structureIds.filter(inRange))].sort((a, b) => a - b);
     const structSet = new Set(struct);
+
+    // PHA-1664: autosummary.js is a peer signal source, NOT a snap target.
+    // The LLM path may snap onto structure boundaries (one-off correction),
+    // but autosummary boundaries are independent cadence detections — we do
+    // NOT bias the LLM toward them. Filter only by in-range + dedupe.
+    const autosum = [...new Set(autosummaryIds.filter(inRange))].sort((a, b) => a - b);
 
     const snapped = [];
     for (const raw of llmIds) {
@@ -348,7 +354,9 @@ export function snapAndGuardBoundaries({ llmIds = [], structureIds = [], waterma
         if (inRange(id)) snapped.push(id);
     }
 
-    return [...new Set([...struct, ...snapped])].sort((a, b) => a - b);
+    // Union: structure (deterministic) + autosummary (peer upstream signal) +
+    // LLM (snapped). All three are kept on equal footing in the final list.
+    return [...new Set([...struct, ...autosum, ...snapped])].sort((a, b) => a - b);
 }
 
 /**
@@ -485,6 +493,20 @@ export async function runSentinelDetectionCycle(deps) {
     const regex = compileStructureHint(cfg.structureHintRegex);
     const structureIds = structureHintBoundaries(win.messages, regex);
 
+    // PHA-1664: peer upstream signal source — autosummary.js's scene markers,
+    // projected into the current detection window. The dep is a callback so
+    // this engine stays SillyTavern-free (the caller injects the scene-manager
+    // integration; tests inject a literal array). Returns an array of message
+    // IDs that BEGIN a new scene from autosummary's perspective — currently a
+    // single-element array derived from getSceneMarkers().sceneEnd + 1, or [].
+    let autosummaryIds = [];
+    if (typeof deps.getAutosummaryIds === 'function') {
+        try {
+            const result = deps.getAutosummaryIds(win.messages);
+            if (Array.isArray(result)) autosummaryIds = result.filter((n) => Number.isInteger(n));
+        } catch { /* autosummary must never break a sentinel cycle */ }
+    }
+
     // Detection call (strict JSON, one retry, then skip). API errors => skip.
     if (isCancelled()) {
         return record('abort:cancelled', {
@@ -524,6 +546,7 @@ export async function runSentinelDetectionCycle(deps) {
     const boundaries = snapAndGuardBoundaries({
         llmIds: det.ids ?? [],
         structureIds,
+        autosummaryIds,
         watermark,
         lastIndex,
         guard: cfg.guard,
@@ -537,6 +560,10 @@ export async function runSentinelDetectionCycle(deps) {
         rawAttempts: det.attempts,
         llmIds: det.ids ?? [],
         structureIds,
+        // PHA-1664: log the upstream autosummary signal alongside the LLM
+        // detection — operators reviewing the cycle log can see when
+        // autosummary contributed (or didn't) to the accepted boundaries.
+        autosummaryIds,
         boundaries,
         ranges,
         // P4.6: how clean the parse was. Note the structure-hint fallback case —

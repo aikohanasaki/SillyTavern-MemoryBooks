@@ -41,7 +41,7 @@ function getDefaultChatMeta() {
 // Defaults
 // ----------------------------------------------------------------------------
 
-/** @type {Readonly<{sentinelEnabled: boolean, cadenceMessages: number, windowSize: number, windowOverlap: number, truncateChars: number, guardSize: number, detectionProfileIndex: number|null, detectionPrompt: string, debugLogging: boolean, auditorOfferEnabled: boolean, auditorEveryNScenes: number}>} */
+/** @type {Readonly<{sentinelEnabled: boolean, cadenceMessages: number, windowSize: number, windowOverlap: number, truncateChars: number, guardSize: number, detectionProfileIndex: number|null, detectionPrompt: string, debugLogging: boolean, auditorOfferEnabled: boolean, auditorEveryNScenes: number, autoSummaryAsSentinelSignal: boolean}>} */
 export const AUTO_MODULE_DEFAULTS = Object.freeze({
     sentinelEnabled: false,
     cadenceMessages: 8,
@@ -54,6 +54,13 @@ export const AUTO_MODULE_DEFAULTS = Object.freeze({
     debugLogging: false,
     auditorOfferEnabled: true,
     auditorEveryNScenes: 15,
+    // PHA-1664: when true, Sentinel reads upstream autosummary.js scene
+    // markers (via getSceneMarkers().sceneEnd + 1, filtered to the current
+    // detection window) and treats them as a peer signal alongside its own
+    // LLM-detected boundaries. Disable this flag if autosummary's cadence
+    // detection starts to conflict with Sentinel's LLM path in practice
+    // (acceptance criterion 3 of PHA-1664).
+    autoSummaryAsSentinelSignal: true,
 });
 
 /** @type {Readonly<{enabled: boolean|null, watermarkFallback: number|null, structureHintRegex: string, promptOverride: string}>} */

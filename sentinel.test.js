@@ -145,6 +145,82 @@ test('snapAndGuardBoundaries snaps an LLM id onto a nearby structure boundary', 
     assert.deepEqual(out, [6]); // 7 snaps to 6; deduped with the structure boundary
 });
 
+// ---------------------------------------------------------------- PHA-1664: autosummary peer signal
+
+test('PHA-1664: snapAndGuardBoundaries accepts autosummaryIds as a peer signal', () => {
+    const windowIds = new Set([5, 6, 7, 8, 9, 10]);
+    const out = snapAndGuardBoundaries({
+        llmIds: [],                              // LLM detected nothing
+        structureIds: [],                        // no deterministic hint
+        autosummaryIds: [7],                     // upstream autosummary.js fired
+        watermark: 3,
+        lastIndex: 12,
+        guard: 4,                                // guardLimit = 8
+        windowIds,
+    });
+    assert.deepEqual(out, [7]); // autosummary ID survives in-range check
+});
+
+test('PHA-1664: autosummaryIds are unioned with LLM and structure IDs (deduped)', () => {
+    const windowIds = new Set([5, 6, 7, 8, 9, 10]);
+    const out = snapAndGuardBoundaries({
+        llmIds: [10],                           // far enough from struct=6 to NOT snap
+        structureIds: [6],
+        autosummaryIds: [8],                     // all three signals contribute
+        watermark: 3,                            // minB = 5
+        lastIndex: 14,                           // guardLimit = 10
+        guard: 4,
+        windowIds,
+    });
+    assert.deepEqual(out, [6, 8, 10]); // deduped + sorted union (LLM 10 stays since no struct snap)
+});
+
+test('PHA-1664: LLM does NOT snap onto autosummary (peer signal, not snap target)', () => {
+    const windowIds = new Set([5, 6, 7, 8, 9, 10, 11, 12]);
+    // LLM says 12, autosummary says 8. Without the peer rule, the LLM would
+    // snap onto the autosummary 8 and we lose the 12 boundary. With PHA-1664,
+    // autosummary is a peer — LLM does NOT snap onto it.
+    const out = snapAndGuardBoundaries({
+        llmIds: [12],
+        structureIds: [],                        // no structure (otherwise LLM snaps there)
+        autosummaryIds: [8],
+        watermark: 3,
+        lastIndex: 18,                           // guardLimit = 14
+        guard: 4,
+        windowIds,
+    });
+    assert.deepEqual(out, [8, 12]); // both 8 (autosummary) and 12 (LLM) survive
+});
+
+test('PHA-1664: autosummaryIds out-of-window / pre-watermark / guard-zone are dropped', () => {
+    const windowIds = new Set([5, 6, 7, 8, 9, 10]);
+    const out = snapAndGuardBoundaries({
+        llmIds: [],
+        structureIds: [],
+        autosummaryIds: [4, 6, 11, 99],         // 4<=watermark, 11 in guard, 99 oow
+        watermark: 4,                            // minB = 6
+        lastIndex: 12,
+        guard: 4,                                // guardLimit = 8
+        windowIds,
+    });
+    assert.deepEqual(out, [6]); // only 6 survives (>=6 and <=8 and in window)
+});
+
+test('PHA-1664: autosummaryIds default to [] when omitted (back-compat)', () => {
+    const windowIds = new Set([5, 6, 7, 8, 9, 10]);
+    // No structure (so LLM doesn't snap), no autosummary. With autosummaryIds
+    // omitted (defaulting to []), behavior is identical to pre-PHA-1664.
+    const out = snapAndGuardBoundaries({
+        llmIds: [7],
+        structureIds: [],
+        watermark: 3,
+        lastIndex: 12,
+        guard: 4,
+        windowIds,
+    });
+    assert.deepEqual(out, [7]); // LLM 7 survives (no snap target)
+});
+
 // ---------------------------------------------------------------- range planning
 
 test('planSceneRanges closes completed scenes and leaves the tail unprocessed', () => {

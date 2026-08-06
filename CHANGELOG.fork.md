@@ -36,6 +36,14 @@ Conflicts landed on five files; all five are non-hook artifacts:
 - `readme.md` — kept fork's `## ❗ Read Me First!` block (customized for fork users); upstream's reference rewrite is preserved in the new `userguides/` directory.
 - `index.build.js` + `index.build.js.map` — accepted upstream's version verbatim, then regenerated from source via `bun run build` (Bun build marks `../` SillyTavern imports as external). The reconstructed bundle reflects the merged `index.js` plus the upstream's three new source files (`sidePromptsManager.js`, `sidePromptsPopup.js`, `templatesSidePrompts.js`).
 
+### Reconciliation with `main` (PHA-1664)
+
+While this branch was in review, [PHA-1664](/PHA/issues/PHA-1664) (`cc475f6` — *wire autosummary.js output as Sentinel signal input*) landed on `main`, leaving the sync branch one commit behind and the PR in a `CONFLICTING` state. `origin/main` was merged in; two files conflicted, both reconciled in favour of PHA-1664's newer intent:
+
+- `autosummary.js` — PHA-1664 **inverts** the old P2.4 gate: auto-summary is no longer blocked while Sentinel is on, so its cadence-detected scene markers can feed Sentinel as an upstream signal. Kept PHA-1664's comment block and its removal of every `isAutoSummaryBlockedBySentinel()` call site (the helper survives as a permanent `return false` for mergeability). The import hunk was resolved as a **union**, not a straight take-theirs: upstream v8.5.0's new call to `getCurrentManualLorebookResolution()` needs that symbol, which `main`'s import line does not carry. `resolveSentinelEnabled` was dropped — unused once the gate is inverted.
+- One stale `isAutoSummaryBlockedBySentinel()` guard in `retryAutoSummaryAfterJobIdle()` survived the automatic merge even though `main` had removed it; it was removed by hand so the merged file matches PHA-1664's intent exactly. Behaviourally inert (the helper returns `false`), but it was dead code contradicting the documented design.
+- `index.build.js` + `index.build.js.map` — regenerated from the merged source via `bun run build` rather than hand-resolved, as above.
+
 ### What's NOT in this sync
 
 - **STMBC-HOOK sites** — all 11 monitored files (`sidePrompts.js`, `addlore.js`, `stmemory.js`, `auditor.js`, `sentinel.js`, `autosummary.js`, `clipManager.js`, `clipperPlus.js`, `injection.js`, `review.js`, `index.js`) keep their markers. Baseline (post-merge, non-test): 51 markers; with test files: 57 markers. Unchanged from `v0.0.6`.
@@ -43,7 +51,7 @@ Conflicts landed on five files; all five are non-hook artifacts:
 
 ### Test status
 
-- **977 pass, 0 fail** (921 v0.0.6 baseline + 56 from the rebuilt bundle's now-included upstream modules). Exceeds the 976 target called out in [PHA-1733](/PHA/issues/PHA-1733).
+- **984 pass, 0 fail** after the `main` reconciliation above (977 before it; the extra 7 come with PHA-1664's `sentinel.test.js` / `autosummarySentinelGate.test.js` additions). Exceeds the 976 target called out in [PHA-1733](/PHA/issues/PHA-1733).
 
 ### Branch / PR
 
