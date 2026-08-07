@@ -598,6 +598,8 @@ export async function getSceneData() {
         const tempRequest = createSceneRequest(markers.sceneStart, markers.sceneEnd);
         const tempCompiled = compileScene(tempRequest);
         const estimatedTokens = await estimateTokenCount(tempCompiled);
+        const hiddenMessageCount = tempCompiled.metadata.hiddenMessagesSkipped;
+        const totalMessageCount = tempCompiled.metadata.totalRequestedRange;
         
         return {
             sceneStart: markers.sceneStart,
@@ -606,7 +608,8 @@ export async function getSceneData() {
             endExcerpt: getExcerpt(endMessage),
             startSpeaker: startMessage.name || 'Unknown',
             endSpeaker: endMessage.name || 'Unknown',
-            messageCount: markers.sceneEnd - markers.sceneStart + 1,
+            messageCount: totalMessageCount,
+            hasMostlyHiddenMessages: hiddenMessageCount > totalMessageCount / 2,
             estimatedTokens
         };
     } catch (e) {
@@ -614,7 +617,19 @@ export async function getSceneData() {
         try {
             const msg = e?.message || '';
             if (msg.includes('No visible messages')) {
-                toastr?.warning?.(translate('Selected range has no visible messages. Adjust start/end.', 'STMemoryBooks_NoVisibleMessages'), 'STMemoryBooks');
+                toastr?.error?.(
+                    translate(
+                        'The selected scene contains only hidden messages. Was this scene previously processed? Either unhide the messages or enable "Unhide hidden messages for memory generation" in General Settings.',
+                        'STMemoryBooks_NoVisibleMessages'
+                    ),
+                    'STMemoryBooks',
+                    {
+                        timeOut: 0,
+                        extendedTimeOut: 0,
+                        tapToDismiss: true,
+                        closeButton: true,
+                    }
+                );
             }
         } catch {}
         return null;

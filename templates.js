@@ -19,6 +19,9 @@ export const settingsTemplate = Handlebars.compile(`
 {{sceneData.endExcerpt}}
 
 <span data-i18n="STMemoryBooks_Messages">Messages</span>: {{sceneData.messageCount}} | <span data-i18n="STMemoryBooks_EstimatedTokens">Estimated tokens</span>: {{sceneData.estimatedTokens}}</code></pre>
+                {{#if sceneData.hasMostlyHiddenMessages}}
+                <small class="warning">⚠️ <span data-i18n="STMemoryBooks_MostlyHiddenSceneWarning">More than 50% of the messages in this scene are hidden. Please ensure that the scene selection is correct.</span></small>
+                {{/if}}
             </div>
         </div>
         {{else}}

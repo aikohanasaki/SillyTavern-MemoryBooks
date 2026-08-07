@@ -6192,10 +6192,19 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
     const sceneData = await getSceneData();
     if (!sceneData) {
       console.error("STMemoryBooks: No scene selected for memory initiation");
-      toastr.error(
-        translate("No scene selected", "STMemoryBooks_NoSceneSelected"),
-        "STMemoryBooks",
-      );
+      const markers = getSceneMarkers() || {};
+      const selectedMessages = Number.isInteger(markers.sceneStart)
+        && Number.isInteger(markers.sceneEnd)
+        ? chat.slice(markers.sceneStart, markers.sceneEnd + 1).filter(Boolean)
+        : [];
+      const sceneOnlyContainsHiddenMessages = selectedMessages.length > 0
+        && selectedMessages.every(message => message.is_system);
+      if (!sceneOnlyContainsHiddenMessages) {
+        toastr.error(
+          translate("No scene selected", "STMemoryBooks_NoSceneSelected"),
+          "STMemoryBooks",
+        );
+      }
       isProcessingMemory = false;
       return false;
     }
