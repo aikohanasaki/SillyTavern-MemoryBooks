@@ -1,0 +1,104 @@
+# Authorship check (PHA-1750)
+#
+# Runs on PRs that target `main` (and on direct pushes to main from
+# branches like `sync/*` or `feat/*`). Mirrors the local
+# `.githooks/commit-msg` rule at PR-time: a PR is blocked if its HEAD
+# commit is not authored as `phattbeats <obiwouldjablowme@protonmail.com>`
+# or if the HEAD commit message contains any disallowed
+# `Co-Authored-By:` trailer.
+#
+# Branch protection on `main` must require this check to pass before
+# merge. The check is intentionally non-bypassable — it does not depend
+# on global git config or local-only hooks.
+
+name: authorship-check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+    paths:
+      - '.githooks/**'
+      - '.github/workflows/authorship-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  authorship:
+    name: "@phattbeats-only authorship check"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout PR head (tip of the source branch)
+        uses: actions/checkout@v4
+        with:
+          # Default `pull_request` checkout is the synthetic merge commit, whose
+          # author + message are derived from the base and not what we want to
+          # check. Force the checkout onto the actual PR head SHA so
+          # `git log -1` reports the real committer of the top commit.
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          # We must opt in to checking out the PR's head ref for a same-repo
+          # PR when GitHub Actions would otherwise default to the merge ref.
+          # This is the supported way to read the actual PR head commit. For
+          # this single-user fork the PR author is the repo owner, so the
+          # trust assumption is fine; if external contributors ever open a PR,
+          # revisit by setting this false again and switching to the merge ref.
+          allow-unsafe-pr-checkout: true
+
+      - name: Verify HEAD author is phattbeats
+        env:
+          ALLOWED_NAME: phattbeats
+          ALLOWED_EMAIL: obiwouldjablowme@protonmail.com
+        run: |
+          set -euo pipefail
+          HEAD_AUTHOR="$(git log -1 --format='%an <%ae>')"
+          echo "HEAD author: ${HEAD_AUTHOR}"
+          if [ "${HEAD_AUTHOR}" != "${ALLOWED_NAME} <${ALLOWED_EMAIL}>" ]; then
+            echo "::error::HEAD commit must be authored as '${ALLOWED_NAME} <${ALLOWED_EMAIL}>'."
+            echo "::error::Found: '${HEAD_AUTHOR}'."
+            echo "::error::See CONTRIBUTING.md and docs/AUTHORSHIP.md for the rule."
+            exit 1
+          fi
+
+      - name: Verify HEAD commit message has no disallowed Co-Authored-By trailers
+        env:
+          HEAD_MESSAGE_FILE: head-msg.txt
+        run: |
+          set -euo pipefail
+          git log -1 --format='%B' > "${HEAD_MESSAGE_FILE}"
+          echo "HEAD commit message:"
+          echo '----------------------------------------'
+          cat "${HEAD_MESSAGE_FILE}"
+          echo '----------------------------------------'
+
+          # Exact match: Paperclip trailer.
+          if grep -qiF 'Co-Authored-By: Paperclip <noreply@paperclip.ing>' "${HEAD_MESSAGE_FILE}"; then
+            echo "::error::Disallowed trailer: 'Co-Authored-By: Paperclip <noreply@paperclip.ing>'."
+            echo "::error::See .githooks/commit-msg and docs/AUTHORSHIP.md for the rule."
+            exit 1
+          fi
+
+          # Substring, case-insensitive: Claude Van Dam trailer anywhere in a Co-Authored-By line.
+          if grep -iE '^[[:space:]]*Co-Authored-By:.*Claude Van Dam' "${HEAD_MESSAGE_FILE}" >/dev/null; then
+            echo "::error::Disallowed trailer: any 'Co-Authored-By:' line containing 'Claude Van Dam'."
+            exit 1
+          fi
+
+          # Email-domain check: Co-Authored-By with <noreply@phatt.tech> on its own line.
+          if grep -iE '^[[:space:]]*Co-Authored-By:[[:space:]]*[^<]*<noreply@phatt\.tech>[[:space:]]*$' "${HEAD_MESSAGE_FILE}" >/dev/null; then
+            echo "::error::Disallowed trailer: a 'Co-Authored-By:' line lists '<noreply@phatt.tech>' (placeholder agent address)."
+            exit 1
+          fi
+
+          # Email-domain check: Co-Authored-By with <van-dam@phatt.tech> on its own line.
+          if grep -iE '^[[:space:]]*Co-Authored-By:[[:space:]]*[^<]*<van-dam@phatt\.tech>[[:space:]]*$' "${HEAD_MESSAGE_FILE}" >/dev/null; then
+            echo "::error::Disallowed trailer: a 'Co-Authored-By:' line lists '<van-dam@phatt.tech>' (placeholder agent address)."
+            exit 1
+          fi
+
+          echo "OK — HEAD commit message passes the @phattbeats-only authorship rule."

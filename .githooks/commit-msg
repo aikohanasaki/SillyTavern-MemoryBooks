@@ -1,0 +1,79 @@
+#!/bin/sh
+# Copyright (C) 2024–2026 Aiko Hanasaki
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Authorship rule — commit-msg hook (PHA-1750)
+#
+# The rule: this fork accepts commits and trailers only from
+#   phattbeats <obiwouldjablowme@protonmail.com>
+# Any `Co-Authored-By:` trailer that names the agent (Claude Van Dam) or
+# the agent's placeholder email domains (phatt.tech, paperclip.ing) is
+# rejected at commit time. Mirror rules are also enforced in CI via
+# `.github/workflows/authorship-check.yml`.
+
+set -u
+
+MSG_FILE="${1:-}"
+
+if [ -z "$MSG_FILE" ] || [ ! -f "$MSG_FILE" ]; then
+  echo "ERROR: commit-msg: no message file supplied (expected arg 1)" >&2
+  exit 1
+fi
+
+MSG=$(cat "$MSG_FILE")
+
+violations=""
+
+# Exact pattern: literal "Co-Authored-By: Paperclip <noreply@paperclip.ing>"
+if printf '%s' "$MSG" | grep -qiF 'Co-Authored-By: Paperclip <noreply@paperclip.ing>'; then
+  violations="${violations}
+  - 'Co-Authored-By: Paperclip <noreply@paperclip.ing>' is not allowed. The repo accepts commits only from @phattbeats."
+fi
+
+# Substring pattern (case-insensitive) — any Claude Van Dam co-author trailer.
+if printf '%s' "$MSG" | grep -qi 'Co-Authored-By:.*Claude Van Dam'; then
+  violations="${violations}
+  - 'Co-Authored-By: Claude Van Dam' is not allowed. The repo accepts commits only from @phattbeats."
+fi
+
+# Email-domain pattern: Co-Authored-By with <noreply@phatt.tech> on its own line.
+if printf '%s' "$MSG" | grep -iE '^[ \t]*Co-Authored-By:[ \t]*[^<]*<noreply@phatt\.tech>[ \t]*$' >/dev/null; then
+  violations="${violations}
+  - A 'Co-Authored-By:' line lists '<noreply@phatt.tech>', which is the agent's placeholder address. Remove it or replace with @phattbeats."
+fi
+
+# Email-domain pattern: Co-Authored-By with <van-dam@phatt.tech> on its own line.
+if printf '%s' "$MSG" | grep -iE '^[ \t]*Co-Authored-By:[ \t]*[^<]*<van-dam@phatt\.tech>[ \t]*$' >/dev/null; then
+  violations="${violations}
+  - A 'Co-Authored-By:' line lists '<van-dam@phatt.tech>', which is the agent's placeholder address. Remove it or replace with @phattbeats."
+fi
+
+if [ -n "$violations" ]; then
+  printf '%s\n' "=================================================================" >&2
+  printf '%s\n' "  COMMIT REJECTED -- @phattbeats-only authorship rule (PHA-1750)" >&2
+  printf '%s\n' "=================================================================" >&2
+  printf '%s\n' "" >&2
+  printf '%s\n' "This fork's policy:" >&2
+  printf '%s\n' "  - Commit author:        phattbeats <obiwouldjablowme@protonmail.com>" >&2
+  printf '%s\n' "  - Trailer identity:     only trailers crediting @phattbeats are allowed" >&2
+  printf '%s\n' "  - Disallowed trailers:  Claude Van Dam, noreply@phatt.tech," >&2
+  printf '%s\n' "                          van-dam@phatt.tech, Paperclip <noreply@paperclip.ing>" >&2
+  printf '%s\n' "" >&2
+  printf '%s\n' "Disallowed trailer(s) detected in this commit message:" >&2
+  printf '%s\n' "$violations" >&2
+  printf '%s\n' "" >&2
+  printf '%s\n' "To fix, edit the commit message file (or amend with 'git commit --amend')" >&2
+  printf '%s\n' "and remove the disallowed Co-Authored-By line(s). Then re-run git commit." >&2
+  printf '%s\n' "" >&2
+  printf '%s\n' "If you genuinely need a co-author credit for someone other than @phattbeats," >&2
+  printf '%s\n' "open a new governance issue rather than bypassing the hook." >&2
+  printf '%s\n' "" >&2
+  printf '%s\n' "Reference:" >&2
+  printf '%s\n' "  - CONTRIBUTING.md     (top-level policy + onboarding)" >&2
+  printf '%s\n' "  - docs/AUTHORSHIP.md  (rule details + on-hook rejection reasons)" >&2
+  printf '%s\n' "  - .github/workflows/authorship-check.yml  (PR-time mirror)" >&2
+  printf '%s\n' "=================================================================" >&2
+  exit 1
+fi
+
+exit 0
