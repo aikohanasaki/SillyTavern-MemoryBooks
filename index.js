@@ -1676,14 +1676,14 @@ async function handleStmbCatchupCommand(namedArgs) {
 // best-effort: a failure in one step is reported in the summary and does not
 // abort the rest, because the whole point is "run it and see what happened,"
 // not "stop at the first popup."
+//
+// PHA-1846 follow-up: this pipeline can run for minutes over a long chat, and
+// toasts fade — they're not a "is it still going?" readout. When the Jobs
+// panel (Chat Top Bar) is available we enqueue a `stmbAuto` job instead of
+// running inline, same pattern /stmbc-audit already uses, so the panel shows
+// live state instead of "No active jobs" the whole time. Falls back to the
+// old inline path when the panel isn't available.
 async function handleStmbAutoCommand() {
-  // The whole function is one try/catch, not just its named steps: config
-  // resolution, the lorebook-binding block, and the memory-chunk validator
-  // all run un-stepped between the toasts below, and an uncaught throw there
-  // used to kill the async function with zero user-facing feedback — "it
-  // says it's started but nothing after." Every path out of this function
-  // must produce a toast.
-  try {
   if (isProcessingMemory) {
     toastr.info(
       translate(
@@ -1730,9 +1730,45 @@ async function handleStmbAutoCommand() {
     return "";
   }
 
-  toastr.info(
+  if (areStmbJobsEnabled()) {
+    const job = enqueueStmbJob({
+      type: "stmbAuto",
+      title: translate("STMB Auto", "STMemoryBooks_AutoJobTitle"),
+      detail: translate(
+        "Queued — starting a full-story pass…",
+        "STMemoryBooks_AutoQueuedDetail",
+      ),
+    });
+    if (job) {
+      const msg = translate(
+        "STMB Auto queued — track progress in the Jobs panel.",
+        "STMemoryBooks_AutoQueuedMessage",
+      );
+      toastr.info(msg, translate("STMemoryBooks", "index.toast.title"));
+      return msg;
+    }
+  }
+
+  // No Jobs panel (Chat Top Bar not installed/enabled) — run inline, same as
+  // the pre-PHA-1846-follow-up behavior.
+  return await runStmbAutoPipeline(null);
+}
+
+// The actual /stmb-auto pipeline body, extracted so it can run either as a
+// queued `stmbAuto` job (jobContext set, Jobs panel reflects each phase) or
+// inline (jobContext null, toasts are the only feedback). Every path out of
+// this function must produce a toast, same contract as before the split —
+// an uncaught throw here used to kill the command with zero user-facing
+// feedback ("it says it's started but nothing after").
+async function runStmbAutoPipeline(jobContext) {
+  const reportPhase = (message) => {
+    toastr.info(message, translate("STMemoryBooks", "index.toast.title"));
+    jobContext?.setDetail(message);
+  };
+
+  try {
+  reportPhase(
     translate("STMB Auto: starting a full-story pass…", "STMemoryBooks_AutoStarting"),
-    translate("STMemoryBooks", "index.toast.title"),
   );
 
   const settings = initializeSettings();
@@ -1756,12 +1792,14 @@ async function handleStmbAutoCommand() {
         "STMemoryBooks_AutoManualLorebookRequired",
       );
       toastr.error(msg, translate("STMemoryBooks", "index.toast.title"));
+      jobContext?.setState("failed", { detail: msg });
       return msg;
     }
     const created = await autoCreateLorebook(moduleSettings.lorebookNameTemplate, "stmb-auto");
     if (!created.success) {
       const msg = `STMB Auto: ${created.error}`;
       toastr.error(msg, translate("STMemoryBooks", "index.toast.title"));
+      jobContext?.setState("failed", { detail: msg });
       return msg;
     }
     lorebookName = created.name;
@@ -1771,10 +1809,7 @@ async function handleStmbAutoCommand() {
   // Step 2: full-chat audit walk — the character/location/event ground truth
   // that step 4's coverage scan reads from. Resumes any existing checkpoint
   // rather than restarting, same default as a bare /stmbc-audit.
-  toastr.info(
-    translate("STMB Auto: reading the whole story…", "STMemoryBooks_AutoAuditing"),
-    translate("STMemoryBooks", "index.toast.title"),
-  );
+  reportPhase(translate("STMB Auto: reading the whole story…", "STMemoryBooks_AutoAuditing"));
   let auditMessage = "";
   try {
     auditMessage = await runAuditInline(false);
@@ -1793,15 +1828,13 @@ async function handleStmbAutoCommand() {
     if (blocker) {
       memorySkipReason = blocker;
     } else {
-      toastr.info(
+      reportPhase(
         __st_t_tag`STMB Auto: writing ${memoryChunks.length} scene memor${memoryChunks.length === 1 ? "y" : "ies"}…`,
-        translate("STMemoryBooks", "index.toast.title"),
       );
       for (let i = 0; i < memoryChunks.length; i++) {
         const chunk = memoryChunks[i];
-        toastr.info(
+        reportPhase(
           __st_t_tag`STMB Auto: scene memory ${i + 1}/${memoryChunks.length} (messages ${chunk.start}-${chunk.end})`,
-          translate("STMemoryBooks", "index.toast.title"),
         );
         let success = false;
         try {
@@ -1850,9 +1883,8 @@ async function handleStmbAutoCommand() {
         const targets = [...report.missing, ...report.thin];
         if (targets.length) {
           const conn = resolveJobsConnection(regenCfg.profile);
-          toastr.info(
+          reportPhase(
             __st_t_tag`STMB Auto: generating ${targets.length} character/location entr${targets.length === 1 ? "y" : "ies"}…`,
-            translate("STMemoryBooks", "index.toast.title"),
           );
           loreMessage = await bulkGenerate(
             targets,
@@ -1881,11 +1913,13 @@ async function handleStmbAutoCommand() {
     loreMessage,
   });
   toastr.success(summary, translate("STMemoryBooks", "index.toast.title"));
+  jobContext?.setResult({ summary });
   return summary;
   } catch (error) {
     console.error("STMemoryBooks: /stmb-auto failed:", error);
     const msg = `STMB Auto failed: ${error?.message || error}`;
     toastr.error(msg, translate("STMemoryBooks", "index.toast.title"));
+    jobContext?.setState("failed", { detail: msg });
     return msg;
   }
 }
@@ -11901,6 +11935,9 @@ async function init() {
   // STMBC-HOOK(auditor): register the resumable audit chunk-walker job type so the
   // dashboard shows it and /stmbc-stop halts it (fork; plan §4.3).
   registerStmbJobExecutor("audit", executeAuditJob);
+  // PHA-1846 follow-up: /stmb-auto now queues through the Jobs panel (same
+  // pattern as "audit" above) instead of running silently outside of it.
+  registerStmbJobExecutor("stmbAuto", async (job, context) => runStmbAutoPipeline(context));
   // STMBC-HOOK(auditor-jobs-registration): P5.4 — register the four Phase-5 audit
   // job executors (coverage / regenerate / technical / claims) so the dashboard
   // buttons and /stmbc-audit-* slash commands actually find a handler. Without
