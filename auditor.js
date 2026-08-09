@@ -214,6 +214,13 @@ export async function runAuditInline(restart) {
                     erroredChunks++;
                     if (!firstError) firstError = info.error;
                     console.warn(`${LOG}: chunk ${info.chunk}/${info.total} extraction failed — ${info.error}`);
+                    try { toastr.warning(`Audit chunk ${info.chunk}/${info.total} failed — ${info.error}`, 'STMemoryBooks'); } catch { /* toastr optional */ }
+                } else {
+                    // The inline path (no jobs dashboard) has no other progress UI, and a
+                    // real multi-chunk walk over a long chat can take minutes of silence
+                    // between the "reading the whole story" toast and the final summary —
+                    // indistinguishable from a hang. Surface each chunk as it lands.
+                    try { toastr.info(`Audit: chunk ${info.chunk}/${info.total} done`, 'STMemoryBooks'); } catch { /* toastr optional */ }
                 }
             },
         });
