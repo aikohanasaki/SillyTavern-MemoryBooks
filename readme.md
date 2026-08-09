@@ -18,7 +18,11 @@ Use Memory Books manually when you want precise control over scene boundaries, o
 
 ## 📖 Learn Memory Books
 
-STMB has a lot of features, and its documentation became too large to navigate comfortably as a traditional README. Choose whichever guide option works best for you.
+STMB has a lot of features, and its documentation became too large to navigate comfortably as a traditional README. Choose whichever guide option works best for you. 
+
+### Quickstart
+
+Just want to get STMB up and running? [Start here.](./Start_Here.md) (I highly recommend you come back for the interactive guide soon though!)
 
 ### Interactive Memory Books Guide
 
@@ -40,6 +44,6 @@ The manual is a dense, consolidated source of truth designed specifically for AI
 
 SillyTavern Memory Books is Copyright © 2024–2026 Aiko Hanasaki.
 
-The original code in this repository is licensed under the GNU Affero General Public License v3.0. Modified versions and forks must preserve applicable copyright and license notices, identify their modifications, and comply with the AGPL's source-availability requirements.
+The original code in this repository is licensed under the GNU Affero General Public License v3.0. Modified versions and forks must preserve applicable copyright and license notices, identify their modifications, and comply with the AGPL's source-availability requirements. 
 
 See [LICENSE](./LICENSE).
