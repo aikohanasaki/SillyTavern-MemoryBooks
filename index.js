@@ -150,6 +150,8 @@ import {
   DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
 } from "./clipPromptDefaults.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
+import { runClipReviewAfterMemory, showClipReviewSuggestionsPopup } from "./clipReview.js";
+import { CLIP_REVIEW_METADATA_KEY, normalizeMemoryAssistanceMode } from "./clipReviewPolicy.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
   normalizeDefaultSidePromptSetKeys,
@@ -521,6 +523,7 @@ const defaultSettings = {
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     compactionPromptTemplate: "",
     topicalClipPromptTemplate: "",
+    memoryAssistanceMode: "off",
     compactionProfileIndex: 0,
     useRegex: false,
     selectedRegexOutgoing: [],
@@ -1998,6 +2001,7 @@ async function handleSidePromptToggle(namedArgs, unnamedArgs, enabled) {
       const templates = await listTemplates();
       let changed = 0;
       for (const p of templates) {
+        if (p.specialKind === "clipReview") continue;
         if (p.enabled !== enabled) {
           await upsertTemplate({ key: p.key, enabled });
           changed++;
@@ -2019,6 +2023,16 @@ async function handleSidePromptToggle(namedArgs, unnamedArgs, enabled) {
     if (!tpl) {
       toastr.error(
         __st_t_tag`Side Prompt not found: ${raw}`,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+    if (tpl.specialKind === "clipReview") {
+      toastr.info(
+        translate(
+          'Memory Assistance uses its own Off, Update, Update and Suggest, and Automatic mode setting.',
+          "STMemoryBooks_ClipReview_SpecialToggleInfo",
+        ),
         translate("STMemoryBooks", "index.toast.title"),
       );
       return "";
@@ -2415,6 +2429,11 @@ function validateSettings(settings) {
   if (settings.moduleSettings.showFloatingClipButton === undefined) {
     settings.moduleSettings.showFloatingClipButton = true;
   }
+  settings.moduleSettings.memoryAssistanceMode = normalizeMemoryAssistanceMode(
+    settings.moduleSettings.memoryAssistanceMode,
+    settings.moduleSettings.clipReviewAlwaysAfterMemory === true,
+  );
+  settings.moduleSettings.clipReviewAlwaysAfterMemory = false;
   settings.moduleSettings.memoryBoundaryMode = normalizeMemoryBoundaryMode(
     settings.moduleSettings.memoryBoundaryMode,
   );
@@ -3329,6 +3348,15 @@ function getManualGroupTouchedLorebookNames(primaryLorebookName, copyTargets = [
   return Array.from(names);
 }
 
+function getMemoryWriteResultLorebookNames(addResult, fallbackName = '') {
+  return Array.from(new Set([
+    addResult?.lorebookName,
+    ...(Array.isArray(addResult?.lorebookNames) ? addResult.lorebookNames : []),
+    ...(Array.isArray(addResult?.copiedResults) ? addResult.copiedResults.map(result => result?.lorebookName) : []),
+    fallbackName,
+  ].map(name => String(name || '').trim()).filter(Boolean)));
+}
+
 function getManualGroupCopyTargetSpeakerNames(target, fallbackNames = []) {
   const names = normalizeCharacterFilterNamesForGroup([
     ...(Array.isArray(target?.speakerNames) ? target.speakerNames : []),
@@ -4022,6 +4050,7 @@ async function refreshLorebookRegenerationActions() {
     const entry = getEntryByUid(lorebookData, uid, regenerationIndexes);
     const uidDisplay = row.querySelector(".world_entry_form_uid_value");
     if (!entry || !uidDisplay) continue;
+    if (Object.hasOwn(entry, CLIP_REVIEW_METADATA_KEY)) continue;
     let eligibility = getRegenerationEligibility(entry, lorebookData, regenerationIndexes);
     const isSidePrompt = eligibility.kind === "sidePrompt" || isSidePromptEntryTitle(entry.comment);
     if (entry.stmemorybooks !== true && !isSidePrompt) continue;
@@ -5097,6 +5126,13 @@ async function executeMemoryGeneration(
     } catch (e) {
       console.warn("STMemoryBooks: runAfterMemory failed:", e);
     }
+    try {
+      await runClipReviewAfterMemory(compiledScene, profileSettings, {
+        lorebookNames: getMemoryWriteResultLorebookNames(addResult, lorebookValidation?.name),
+      });
+    } catch (e) {
+      console.warn("STMemoryBooks: Memory Assistance after memory failed:", e);
+    }
     throwIfStmbStopped(runEpoch);
 
     // Update auto-summary baseline so the next trigger starts after this scene
@@ -5566,6 +5602,7 @@ async function completeQueuedMemoryPostSave({
   lorebookName,
   queuedContext,
   latestLorebookData,
+  lorebookNames,
 }) {
   if (payload.skipAfterMemoryJobs !== true) {
     try {
@@ -5582,6 +5619,13 @@ async function completeQueuedMemoryPostSave({
       });
     } catch (error) {
       console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
+    }
+    try {
+      await runClipReviewAfterMemory(compiledScene, profileSettings, {
+        lorebookNames: Array.isArray(lorebookNames) && lorebookNames.length > 0 ? lorebookNames : [lorebookName],
+      });
+    } catch (error) {
+      console.warn("STMemoryBooks: queued Memory Assistance after memory failed:", error);
     }
   }
 
@@ -5633,6 +5677,7 @@ async function executeQueuedMemoryJob(job, jobContext) {
       lorebookName,
       queuedContext,
       latestLorebookData,
+      lorebookNames: getMemoryWriteResultLorebookNames(payload.retryMemoryResult, lorebookName),
     });
     return;
   }
@@ -5765,6 +5810,7 @@ async function executeQueuedMemoryJob(job, jobContext) {
   await updateHighestMemoryProcessedForChatRef(job.chatRef, sceneData.sceneEnd);
   jobContext.setResult({
     lorebookName,
+    lorebookNames: lorebookWriteLaneNames,
     entryTitle: addResult?.entryTitle || "",
   });
 
@@ -5778,6 +5824,7 @@ async function executeQueuedMemoryJob(job, jobContext) {
     lorebookName,
     queuedContext,
     latestLorebookData,
+    lorebookNames: lorebookWriteLaneNames,
   });
 }
 
@@ -7211,6 +7258,18 @@ function populateInlineButtons() {
             ),
             "STMemoryBooks",
           );
+        }
+      },
+    },
+    {
+      text: "🧭 " + translate("Memory Assistance Suggestions", "STMemoryBooks_ClipReview_SuggestionsTitle"),
+      id: "stmb-clip-review-suggestions",
+      action: async () => {
+        try {
+          await showClipReviewSuggestionsPopup({ showGoBack: true });
+        } catch (error) {
+          console.error(`${MODULE_NAME}: Error opening Memory Assistance Suggestions:`, error);
+          toastr.error(translate("Failed to open Memory Assistance Suggestions", "STMemoryBooks_ClipReview_OpenFailed"), "STMemoryBooks");
         }
       },
     },
@@ -11977,6 +12036,13 @@ async function applyManualFixedJson(correctedRaw) {
       });
     } catch (e) {
       console.warn("STMemoryBooks: runAfterMemory failed:", e);
+    }
+    try {
+      await runClipReviewAfterMemory(compiledScene, profile, {
+        lorebookNames: getMemoryWriteResultLorebookNames(addResult, context.lorebookValidation?.name),
+      });
+    } catch (e) {
+      console.warn("STMemoryBooks: Memory Assistance after memory failed:", e);
     }
     throwIfStmbStopped(runEpoch);
 

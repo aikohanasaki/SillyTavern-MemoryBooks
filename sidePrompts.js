@@ -4,8 +4,8 @@
 import { chat, chat_metadata } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import { loadWorldInfo, world_names } from '../../../world-info.js';
-import { executeSlashCommands } from '../../../slash-commands.js';
-import { createSceneRequest, compileScene, toReadableText } from './chatcompile.js';
+import { toReadableText } from './chatcompile.js';
+import { compileMessageRange } from './messageRange.js';
 import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { appendAdditionalContextSection, applySelectedRegex, requestCompletion } from './stmemory.js';
 import { findSetByName, getTemplate, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
@@ -148,68 +148,11 @@ function countVisibleMessagesSince(exclusiveStart, inclusiveEnd) {
 }
 
 /**
- * Capture contiguous hidden ranges so a temporary /unhide can be restored.
- */
-function collectHiddenRanges(start, end) {
-    const ranges = [];
-    let rangeStart = null;
-
-    for (let i = start; i <= end && i < chat.length; i++) {
-        const isHidden = !!chat[i]?.is_system;
-        if (isHidden) {
-            if (rangeStart === null) rangeStart = i;
-            continue;
-        }
-        if (rangeStart !== null) {
-            ranges.push({ start: rangeStart, end: i - 1 });
-            rangeStart = null;
-        }
-    }
-
-    if (rangeStart !== null) {
-        ranges.push({ start: rangeStart, end: end });
-    }
-
-    return ranges;
-}
-
-/**
- * Restore previously hidden ranges after a temporary /unhide.
- */
-async function restoreHiddenRanges(hiddenRanges) {
-    for (const range of hiddenRanges) {
-        try {
-            await executeSlashCommands(`/hide ${range.start}-${range.end}`);
-        } catch (err) {
-            console.warn(`${MODULE_NAME}: /hide command failed while restoring hidden range ${range.start}-${range.end}:`, err);
-        }
-    }
-}
-
-/**
  * Compile a scene safely for [start, end], optionally unhiding the range first
  * when the global unhide-before-memory setting is enabled.
  */
 async function compileRange(start, end) {
-    const shouldTemporarilyUnhide = !!extension_settings?.STMemoryBooks?.moduleSettings?.unhideBeforeMemory;
-    const hiddenRanges = shouldTemporarilyUnhide ? collectHiddenRanges(start, end) : [];
-
-    if (shouldTemporarilyUnhide && hiddenRanges.length > 0) {
-        try {
-            await executeSlashCommands(`/unhide ${start}-${end}`);
-        } catch (err) {
-            console.warn(`${MODULE_NAME}: /unhide command failed or unavailable:`, err);
-        }
-    }
-
-    try {
-        const req = createSceneRequest(start, end);
-        return compileScene(req);
-    } finally {
-        if (hiddenRanges.length > 0) {
-            await restoreHiddenRanges(hiddenRanges);
-        }
-    }
+    return compileMessageRange(start, end);
 }
 
 /**
@@ -429,7 +372,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
  * Fallback to UI settings only if settings are missing/invalid.
  * @returns {{api: string, model: string, temperature: number, endpoint?: string|null, apiKey?: string|null, connectionProfileId?: string|null, extra?: Record<string,any>|undefined}} The resolved connection object.
  */
-function resolveSidePromptConnection(profile = null, options = {}) {
+export function resolveSidePromptConnection(profile = null, options = {}) {
     try {
         // Highest priority: explicit profile object (e.g., memory generation profile)
         if (profile && (profile.effectiveConnection || profile.connection)) {

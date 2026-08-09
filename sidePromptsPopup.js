@@ -15,6 +15,7 @@ import {
     removeTemplate,
     exportToJSON as exportSidePromptsJSON,
     importFromJSON as importSidePromptsJSON,
+    recreateBuiltInSidePrompt,
     recreateBuiltInSidePrompts,
     listSets,
     getSet,
@@ -41,6 +42,7 @@ import {
     getDefaultSidePromptSetKey,
     normalizeSidePromptSetKey,
 } from './sidePromptSetDefaults.js';
+import { normalizeMemoryAssistanceMode } from './clipReviewPolicy.js';
 
 const SIDE_PROMPT_CONTEXT_FOLLOW_CHAT = '__follow_chat__';
 const SIDE_PROMPT_SET_MODE_INHERIT = 'mode:inherit';
@@ -53,6 +55,17 @@ const SIDE_PROMPT_SET_VALUE_PREFIX = 'set:';
  * @returns {string[]}
  */
 function getTriggersSummary(tpl) {
+    if (tpl?.specialKind === 'clipReview') {
+        const mode = getMemoryAssistanceMode();
+        const label = mode === 'automatic'
+            ? translate('Automatic', 'STMemoryBooks_ClipReview_ModeAutomatic')
+            : mode === 'update_and_suggest'
+                ? translate('Update and Suggest', 'STMemoryBooks_ClipReview_ModeUpdateAndSuggest')
+                : mode === 'update'
+                    ? translate('Update', 'STMemoryBooks_ClipReview_ModeUpdate')
+                    : translate('Off', 'STMemoryBooks_ClipReview_ModeOff');
+        return [`Memory Assistance: ${label}`];
+    }
     const badges = [];
     const trig = tpl?.triggers || {};
     if (trig.onInterval && Number(trig.onInterval.visibleMessages) >= 1) {
@@ -65,6 +78,18 @@ function getTriggersSummary(tpl) {
         badges.push(translate('Manual', 'STMemoryBooks_Manual'));
     }
     return badges;
+}
+
+function getMemoryAssistanceMode() {
+    const settings = extension_settings?.STMemoryBooks?.moduleSettings || {};
+    return normalizeMemoryAssistanceMode(settings.memoryAssistanceMode, settings.clipReviewAlwaysAfterMemory === true);
+}
+
+function setMemoryAssistanceMode(mode) {
+    const settings = extension_settings.STMemoryBooks.moduleSettings;
+    settings.memoryAssistanceMode = normalizeMemoryAssistanceMode(mode);
+    settings.clipReviewAlwaysAfterMemory = false;
+    saveSettingsDebounced();
 }
 
 function getMacroValidationToastOptions() {
@@ -450,9 +475,52 @@ function renderTemplatesTable(templates) {
         key: String(t.key || ''),
         name: String(t.name || ''),
         enabled: t.enabled === true,
+        special: t.specialKind === 'clipReview',
+        modeOff: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'off',
+        modeUpdate: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'update',
+        modeUpdateAndSuggest: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'update_and_suggest',
+        modeAutomatic: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'automatic',
         badges: getTriggersSummary(t),
     }));
     return sidePromptsTableTemplate({ items });
+}
+
+async function openEditClipReviewTemplate(parentPopup, tpl) {
+    const profiles = extension_settings?.STMemoryBooks?.profiles || [];
+    let profileIndex = Number(tpl?.settings?.overrideProfileIndex ?? extension_settings?.STMemoryBooks?.defaultProfile ?? 0);
+    if (!(profileIndex >= 0 && profileIndex < profiles.length)) profileIndex = 0;
+    const overrideEnabled = !!tpl?.settings?.overrideProfileEnabled;
+    const mode = getMemoryAssistanceMode();
+    const profileOptions = profiles.map((profile, index) => `<option value="${index}" ${index === profileIndex ? 'selected' : ''}>${escapeHtml(profile?.name || `Profile ${index + 1}`)}</option>`).join('');
+    const popup = new Popup(DOMPurify.sanitize(`
+        <h3>${escapeHtml(translate('Edit Memory Assistance', 'STMemoryBooks_ClipReview_EditTitle'))}</h3>
+        <label class="world_entry_form_control"><h4>${escapeHtml(translate('Mode', 'STMemoryBooks_ClipReview_Mode'))}</h4><select id="stmb-clip-review-mode" class="text_pole"><option value="off" ${mode === 'off' ? 'selected' : ''}>${escapeHtml(translate('Off', 'STMemoryBooks_ClipReview_ModeOff'))}</option><option value="update" ${mode === 'update' ? 'selected' : ''}>${escapeHtml(translate('Update', 'STMemoryBooks_ClipReview_ModeUpdate'))}</option><option value="update_and_suggest" ${mode === 'update_and_suggest' ? 'selected' : ''}>${escapeHtml(translate('Update and Suggest', 'STMemoryBooks_ClipReview_ModeUpdateAndSuggest'))}</option><option value="automatic" ${mode === 'automatic' ? 'selected' : ''}>${escapeHtml(translate('Automatic', 'STMemoryBooks_ClipReview_ModeAutomatic'))}</option></select></label>
+        <label class="world_entry_form_control"><h4>${escapeHtml(translate('Update Prompt', 'STMemoryBooks_ClipReview_UpdatePrompt'))}</h4><textarea id="stmb-clip-review-prompt" class="text_pole textarea_compact" rows="16">${escapeHtml(tpl.prompt || '')}</textarea></label>
+        <label class="world_entry_form_control"><h4>${escapeHtml(translate('Topic Suggestions Prompt', 'STMemoryBooks_ClipSuggestions_Prompt'))}</h4><textarea id="stmb-clip-suggestions-prompt" class="text_pole textarea_compact" rows="16">${escapeHtml(tpl.settings?.suggestionsPrompt || '')}</textarea></label>
+        <label class="checkbox_label"><input id="stmb-clip-review-override" type="checkbox" ${overrideEnabled ? 'checked' : ''}><span>${escapeHtml(translate('Use a connection profile override', 'STMemoryBooks_ClipReview_ProfileOverride'))}</span></label>
+        <div id="stmb-clip-review-profile-row" class="world_entry_form_control" ${overrideEnabled ? '' : 'hidden'}><select id="stmb-clip-review-profile" class="text_pole">${profileOptions}</select></div>
+        <div class="info_block">${escapeHtml(translate('Update saves existing-Clip changes for approval. Update and Suggest first discovers new Topical Clip topics, then performs the same update review. Automatic directly applies ordinary Clip additions and leaves Topical Clip replacements for approval. Both response contracts remain fixed for safe validation.', 'STMemoryBooks_ClipReview_FixedContractHelp'))}</div>
+    `), POPUP_TYPE.TEXT, '', withGoBackButton({ wide: true, large: true, allowVerticalScrolling: true, okButton: translate('Save', 'STMemoryBooks_Save'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }));
+    const showPromise = popup.show();
+    popup.dlg?.querySelector('#stmb-clip-review-override')?.addEventListener('change', event => {
+        const row = popup.dlg?.querySelector('#stmb-clip-review-profile-row');
+        if (row) row.hidden = !event.target.checked;
+    });
+    if (await showPromise !== POPUP_RESULT.AFFIRMATIVE) return;
+    const prompt = String(popup.dlg?.querySelector('#stmb-clip-review-prompt')?.value || '').trim();
+    const suggestionsPrompt = String(popup.dlg?.querySelector('#stmb-clip-suggestions-prompt')?.value || '').trim();
+    if (!prompt || !suggestionsPrompt) {
+        toastr.error(translate('Prompt cannot be empty', 'STMemoryBooks_PromptCannotBeEmpty'), 'STMemoryBooks');
+        return;
+    }
+    const selectedMode = popup.dlg?.querySelector('#stmb-clip-review-mode')?.value || 'off';
+    const useOverride = !!popup.dlg?.querySelector('#stmb-clip-review-override')?.checked;
+    const settings = { ...(tpl.settings || {}), overrideProfileEnabled: useOverride, suggestionsPrompt };
+    if (useOverride) settings.overrideProfileIndex = Number(popup.dlg?.querySelector('#stmb-clip-review-profile')?.value || 0);
+    else delete settings.overrideProfileIndex;
+    setMemoryAssistanceMode(selectedMode);
+    await upsertTemplate({ key: tpl.key, name: tpl.name, enabled: false, specialKind: 'clipReview', prompt, responseFormat: '', settings, triggers: {} });
+    await refreshList(parentPopup, tpl.key);
 }
 
 /**
@@ -652,7 +720,7 @@ function collectSetItemsFromDialog(dlg) {
 }
 
 async function openEditSet(parentPopup, key = null) {
-    const templates = await listTemplates();
+    const templates = (await listTemplates()).filter(template => template.specialKind !== 'clipReview');
     if (!templates.length) {
         toastr.error(translate('Create a side prompt before creating a set.', 'STMemoryBooks_CreateSidePromptBeforeSet'), translate('STMemoryBooks', 'index.toast.title'));
         return;
@@ -761,6 +829,10 @@ async function openEditTemplate(parentPopup, key) {
         const tpl = await getTemplate(key);
         if (!tpl) {
             toastr.error(tr('STMemoryBooks_TemplateNotFound', 'Template "{{key}}" not found', { key }), translate('STMemoryBooks', 'index.toast.title'));
+            return;
+        }
+        if (tpl.specialKind === 'clipReview') {
+            await openEditClipReviewTemplate(parentPopup, tpl);
             return;
         }
 
@@ -1623,7 +1695,7 @@ export async function showSidePromptsPopup() {
 
             // Recreate built-in side prompts (localized to current locale)
             dlg.querySelector('#stmb-sp-recreate-builtins')?.addEventListener('click', async () => {
-                const warning = `<div class="info_block">${escapeHtml(translate('This will overwrite the built-in Side Prompts (Plotpoints, Status, Cast of Characters, Assess) with the current locale versions. Custom/user-created prompts are not touched. This action cannot be undone.', 'STMemoryBooks_SidePrompts_RecreateWarning'))}</div>`;
+                const warning = `<div class="info_block">${escapeHtml(translate('This will overwrite the built-in Side Prompts (Plotpoints, Status, Cast of Characters, Assess, Memory Assistance) with the current versions. Custom/user-created prompts are not touched. This action cannot be undone.', 'STMemoryBooks_SidePrompts_RecreateWarning'))}</div>`;
                 const confirmPopup = new Popup(
                     `<h3>${escapeHtml(translate('Recreate Built-in Side Prompts', 'STMemoryBooks_SidePrompts_RecreateTitle'))}</h3>${warning}`,
                     POPUP_TYPE.CONFIRM,
@@ -1643,6 +1715,14 @@ export async function showSidePromptsPopup() {
                         toastr.error(translate('Failed to recreate built-in side prompts', 'STMemoryBooks_SidePrompts_RecreateFailed'), translate('STMemoryBooks', 'index.toast.title'));
                     }
                 }
+            });
+
+            dlg.addEventListener('change', async (e) => {
+                const modeSelect = e.target.closest('.stmb-sp-special-mode');
+                if (!modeSelect) return;
+                e.stopPropagation();
+                setMemoryAssistanceMode(modeSelect.value);
+                await refreshList(popup, modeSelect.closest('tr[data-tpl-key]')?.dataset.tplKey || null);
             });
 
             // Row selection and inline actions
@@ -1732,6 +1812,24 @@ export async function showSidePromptsPopup() {
                         }
                     } else if (actionBtn.classList.contains('stmb-sp-action-edit')) {
                         await openEditTemplate(popup, tplKey);
+                    } else if (actionBtn.classList.contains('stmb-sp-action-reset')) {
+                        const warning = `<div class="info_block">${escapeHtml(translate('This will reset only Memory Assistance to its built-in prompts and settings. Its current mode will not change. This action cannot be undone.', 'STMemoryBooks_ClipReview_ResetWarning'))}</div>`;
+                        const confirmPopup = new Popup(
+                            `<h3>${escapeHtml(translate('Reset Prompt', 'STMemoryBooks_ClipReview_ResetPrompt'))}</h3>${warning}`,
+                            POPUP_TYPE.CONFIRM,
+                            '',
+                            { okButton: translate('Reset Prompt', 'STMemoryBooks_ClipReview_ResetPrompt'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') },
+                        );
+                        if (await confirmPopup.show() !== POPUP_RESULT.AFFIRMATIVE) return;
+                        try {
+                            await recreateBuiltInSidePrompt(tplKey);
+                            toastr.success(tr('STMemoryBooks_SidePrompts_RecreateSuccess', 'Recreated {{count}} built-in side prompt from the current locale', { count: 1 }), translate('STMemoryBooks', 'index.toast.title'));
+                            window.dispatchEvent(new CustomEvent('stmb-sideprompts-updated'));
+                            await refreshList(popup, tplKey);
+                        } catch (err) {
+                            console.error('STMemoryBooks: Error resetting Memory Assistance:', err);
+                            toastr.error(translate('Failed to reset Memory Assistance', 'STMemoryBooks_SidePrompts_RecreateFailed'), translate('STMemoryBooks', 'index.toast.title'));
+                        }
                     } else if (actionBtn.classList.contains('stmb-sp-action-duplicate')) {
                         try {
                             const newKey = await duplicateTemplate(tplKey);

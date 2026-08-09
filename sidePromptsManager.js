@@ -5,6 +5,8 @@ import { getRequestHeaders } from '../../../../script.js';
 import { FILE_NAMES, SCHEMA } from './constants.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, hasTemplateRuntimeMacros } from './sidePromptMacros.js';
+import { DEFAULT_CLIP_REVIEW_PROMPT, DEFAULT_CLIP_SUGGESTIONS_PROMPT } from './clipPromptDefaults.js';
+import { CLIP_REVIEW_TEMPLATE_KEY } from './clipReviewPolicy.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePromptsManager';
 const SIDE_PROMPTS_FILE = FILE_NAMES.SIDE_PROMPTS_FILE;
@@ -83,6 +85,24 @@ function normalizeDoc(data) {
         normalizedSets[finalKey] = normalizeSet(set, finalKey, set?.updatedAt || nowIso());
     }
     data.sets = normalizedSets;
+    if (data.prompts && !data.prompts[CLIP_REVIEW_TEMPLATE_KEY]) {
+        data.prompts[CLIP_REVIEW_TEMPLATE_KEY] = getBuiltinTemplates()[CLIP_REVIEW_TEMPLATE_KEY];
+    } else if (data.prompts?.[CLIP_REVIEW_TEMPLATE_KEY]) {
+        const existing = data.prompts[CLIP_REVIEW_TEMPLATE_KEY];
+        data.prompts[CLIP_REVIEW_TEMPLATE_KEY] = {
+            ...existing,
+            key: CLIP_REVIEW_TEMPLATE_KEY,
+            name: translate('Memory Assistance', 'STMemoryBooks_ClipReview_Name'),
+            specialKind: 'clipReview',
+            enabled: false,
+            settings: {
+                ...(existing.settings || {}),
+                suggestionsPrompt: String(existing.settings?.suggestionsPrompt || '').trim()
+                    || translate(DEFAULT_CLIP_SUGGESTIONS_PROMPT, 'STMemoryBooks_ClipSuggestions_DefaultPrompt'),
+            },
+            triggers: {},
+        };
+    }
     return data;
 }
 
@@ -142,6 +162,7 @@ function validateSidePromptsFileV2(data) {
         if (typeof p.enabled !== 'boolean') return false;
         if (typeof p.prompt !== 'string') return false;
         if (!p.settings || typeof p.settings !== 'object') return false;
+        if (p.specialKind != null && typeof p.specialKind !== 'string') return false;
 
         // triggers must exist in v2
         if (!p.triggers || typeof p.triggers !== 'object') return false;
@@ -396,6 +417,21 @@ function getBuiltinTemplates() {
             updatedAt: createdAt,
         };
     }
+    prompts[CLIP_REVIEW_TEMPLATE_KEY] = {
+        key: CLIP_REVIEW_TEMPLATE_KEY,
+        name: translate('Memory Assistance', 'STMemoryBooks_ClipReview_Name'),
+        enabled: false,
+        specialKind: 'clipReview',
+        prompt: translate(DEFAULT_CLIP_REVIEW_PROMPT, 'STMemoryBooks_ClipReview_DefaultPrompt'),
+        responseFormat: '',
+        settings: {
+            overrideProfileEnabled: false,
+            suggestionsPrompt: translate(DEFAULT_CLIP_SUGGESTIONS_PROMPT, 'STMemoryBooks_ClipSuggestions_DefaultPrompt'),
+        },
+        triggers: {},
+        createdAt,
+        updatedAt: createdAt,
+    };
     return prompts;
 }
 
@@ -470,12 +506,13 @@ export async function loadSidePrompts() {
                     data = createBaseDoc();
                     await saveDoc(data);
                 } else {
+                    const beforeNormalize = JSON.stringify(parsed);
                     data = normalizeDoc(parsed);
                     // If version < 2 but passes V2 validation, bump version
                     if (Number(data.version || 1) < 2) {
                         data.version = 2;
-                        await saveDoc(data);
                     }
+                    if (JSON.stringify(data) !== beforeNormalize) await saveDoc(data);
                 }
             }
         }
@@ -667,6 +704,7 @@ export async function upsertTemplate(input) {
                 ? input.prompt
                 : (prev?.prompt || translate('This is a placeholder prompt.', 'STMemoryBooks_SidePrompt_PlaceholderPrompt'))),
             responseFormat: String(input.responseFormat != null ? input.responseFormat : (prev?.responseFormat || '')),
+            ...(input.specialKind || prev?.specialKind ? { specialKind: String(input.specialKind || prev.specialKind) } : {}),
             settings: { ...(prev?.settings || {}), ...(input.settings || {}) },
             triggers: input.triggers ? input.triggers : (prev?.triggers || { commands: ['sideprompt'] }),
             createdAt: prev?.createdAt || ts,
@@ -674,6 +712,11 @@ export async function upsertTemplate(input) {
         };
 
     if (!isEnabledOnlyUpdate) normalizeTemplateTriggers(next);
+    if (key === CLIP_REVIEW_TEMPLATE_KEY) {
+        next.specialKind = 'clipReview';
+        next.enabled = false;
+        next.triggers = {};
+    }
 
     data.prompts[key] = next;
     try {
@@ -772,6 +815,9 @@ export async function duplicateTemplate(sourceKey) {
     const data = await loadSidePrompts();
     const src = data.prompts[sourceKey];
     if (!src) throw new Error(__st_t_tag`Template "${sourceKey}" not found`);
+    if (sourceKey === CLIP_REVIEW_TEMPLATE_KEY || src.specialKind === 'clipReview') {
+        throw new Error(translate('Memory Assistance cannot be duplicated.', 'STMemoryBooks_ClipReview_CannotDuplicate'));
+    }
 
     let base = __st_t_tag`${src.name} (Copy)`;
     let key = safeSlug(base);
@@ -798,6 +844,9 @@ export async function duplicateTemplate(sourceKey) {
  */
 export async function removeTemplate(key) {
     const data = await loadSidePrompts();
+    if (key === CLIP_REVIEW_TEMPLATE_KEY) {
+        throw new Error(translate('Memory Assistance cannot be deleted.', 'STMemoryBooks_ClipReview_CannotDelete'));
+    }
     if (!data.prompts[key]) throw new Error(__st_t_tag`Template "${key}" not found`);
     delete data.prompts[key];
     await saveDoc(data);
@@ -1054,6 +1103,28 @@ export async function recreateBuiltInSidePrompts(mode = 'overwrite') {
     cachedDoc = doc;
     console.log(`${MODULE_NAME}: Recreated built-in side prompts (overwrote ${replaced} entries)`);
     return { replaced };
+}
+
+/**
+ * Recreate one built-in Side Prompt without changing any other template.
+ * @param {string} key Built-in template key to replace.
+ * @returns {Promise<{ replaced: number }>}
+ */
+export async function recreateBuiltInSidePrompt(key) {
+    const normalizedKey = String(key || '').trim();
+    const builtin = getBuiltinTemplates()[normalizedKey];
+    if (!builtin) {
+        throw new Error(__st_t_tag`Template "${normalizedKey}" not found`);
+    }
+
+    const doc = await loadSidePrompts();
+    if (!doc?.prompts || typeof doc.prompts !== 'object') {
+        throw new Error(translate('Invalid side prompts document', 'STMemoryBooks_InvalidSidePromptsJSON'));
+    }
+
+    doc.prompts[normalizedKey] = builtin;
+    await saveDoc(doc);
+    return { replaced: 1 };
 }
 
 /**

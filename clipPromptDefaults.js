@@ -23,8 +23,7 @@ Entry title:
 Entry content:
 {{ENTRY_CONTENT}}`;
 
-export const DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE = `SYSTEM: You are a memory compiler. You do not converse. You do not ask questions.
-You do not offer options. You execute the task below and return only the output. You are writing a focused memory entry (lorebook/Clip) about a SINGLE topic.
+export const DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE = `SYSTEM: You are a memory compiler. You are writing a focused memory entry (lorebook/Clip) about a SINGLE topic.
 
 Mode: {{MODE}}
 Topic: {{TOPIC}}
@@ -35,6 +34,9 @@ Existing Clip content (if updating):
 
 Source memories:
 {{SOURCE_MEMORIES}}
+
+Source chat messages:
+{{SOURCE_MESSAGES}}
 
 ---
 
@@ -47,10 +49,13 @@ OUTPUT FORMAT:
 Write in tight, factual prose, bullet points, or labeled attribute blocks (your choice, whichever is denser).
 
 CONTENT RULES:
-- Include: concrete facts, names, relationships, preferences, places, constraints, promises, secrets, unresolved issues, and meaningful changes over time.
+- Gather all facts concerning this topic.
+Include: concrete facts, names, relationships, preferences, places, constraints, promises, secrets, unresolved issues, and meaningful changes over time from either source section.
 - Exclude: events, context, or details unrelated to {{TOPIC}} even if they appear in the source memories.
-- Conflicts: if source memories contradict each other, note the conflict explicitly (e.g. "Claimed X in one account, Y in another") rather than silently picking one.
-- No invention: do not infer or fill gaps with plausible-sounding details.
+- Resolve later information against earlier information. Distinguish current state, completed events, decisions, unresolved issues, and future plans.
+- Conflicts: if source memories contradict each other, first review if it is a correction or a true contradiction. Corrections can be made directly. If contradictory information is found, note the conflict explicitly (e.g. "Claimed X in one account, Y in another") rather than silently picking one.
+- Preserve objective details where available.
+- Token-efficiency is important: prefer concise phrasing, avoid filler, and remove redundancy. Be as concise and informationally dense as possible.
 
 IF UPDATING AN EXISTING CLIP:
 - Preserve useful existing content unless source memories clearly correct or supersede it.
@@ -67,3 +72,29 @@ CRITICAL:
 - Begin your response with the first word of the memory entry itself.
 - If the source memories contain insufficient information to write an entry, return only: [INSUFFICIENT DATA: <one sentence reason>]
 - Any response that is not the finished entry or the insufficient-data marker is a failure.`;
+
+export const DEFAULT_CLIP_REVIEW_PROMPT = `SYSTEM: You review existing Memory Book Clips against one newly processed chat scene.
+
+For each supplied Clip, gather all facts concerning this topic. Resolve later information against earlier information. Distinguish current state, completed events, decisions, unresolved issues, and future plans. Preserve exact details where available.
+
+Rules:
+- Use only facts directly supported by the supplied scene.
+- For an ordinary Clip, suggest one exact excerpt from a single source message; never rewrite or remove its existing content.
+- For a Topical Clip, return a complete revised body that preserves useful existing information, merges relevant new facts, removes redundancy, and notes genuine conflicts.
+- Refer to entries only by their supplied UID.
+- Repetition, paraphrase, or merely related discussion does not require an update.
+- Omit entries that do not need an update.
+- Do not greet, explain the task, or return Markdown fences.`;
+
+export const DEFAULT_CLIP_SUGGESTIONS_PROMPT = `SYSTEM: Review the supplied chat scene and suggest new Topical Clips based on the scene.
+
+1. Review the scene and identify concrete topics at discussion. Concisely classify 0-5 topics identified in the scene.
+2. Compare the identified topics against the supplied existing Topical Clips list. ONLY suggest new Topical Clips if a topic is not already covered by an existing Topical Clip.
+3. Limit your suggestions to topics that are directly supported and substantially discussed. Do not suggest topics that are only tangentially related or not mentioned in the scene.
+
+Rules:
+- Use only facts directly supported by the supplied scene.
+- Prefer objective details over subjective impressions.
+- Repetition, paraphrase, or merely related discussion does not require an update.
+- Omit entries that do not need an update.
+- Do not greet, explain the task, or return Markdown fences.`;

@@ -1030,7 +1030,7 @@ Clips save only the chosen text. They do not add source attribution automaticall
 
 ## 15. Topical Clips
 
-A Topical Clip reads confirmed STMB Memory entries from one selected Memory Book and asks an AI to produce a focused “about this topic” entry. Eligible sources can include scene Memories and consolidated summaries; Clip and Side Prompt entries are excluded.
+A Topical Clip reads confirmed STMB Memory entries, an explicit range of messages from the current chat, or both, and asks an AI to produce a focused “about this topic” entry. Eligible Memory sources can include scene Memories and consolidated summaries; Clip and Side Prompt entries are excluded as sources.
 
 ### 15.1 Use Topical Clip when
 
@@ -1051,10 +1051,13 @@ Topical Clip is organized by subject, not by the chronology of every source Memo
 Topical Clip uses:
 
 - confirmed STMB Memory entries from the selected source book, including eligible consolidated summaries.
+- visible messages from an explicitly selected inclusive `X-Y` range in the current chat.
+
+The **Include saved Memories** and **Include chat messages** controls can be used separately or together. Message ranges follow the global unhide-before-memory setting and restore previously hidden messages after compilation.
 
 It does not use:
 
-- raw chat messages;
+- chat messages outside the selected range;
 - ordinary Clip entries;
 - Side Prompt entries;
 - unrelated ordinary lorebook entries.
@@ -1067,17 +1070,18 @@ It does not use:
 4. Enter the topic.
 5. Enter activation keywords, or leave them blank to use the topic.
 6. Choose a new entry or an existing `[STMB Clip]` update target.
-7. Optionally select only specific source Memories.
-8. Choose the generation profile.
-9. Generate the draft.
-10. review and edit it.
-11. Save only when correct.
+7. Choose saved Memories, chat messages, or both as sources.
+8. Optionally select only specific source Memories and/or enter an exact message range.
+9. Choose the generation profile.
+10. Generate the draft.
+11. Review and edit it.
+12. Save only when correct.
 
 The generated draft is never saved automatically.
 
 ### 15.4 Updating an existing Topical Clip
 
-After a successful run, STMB records which source Memories were used. A later update normally sends only new or changed source Memories together with the existing Clip content.
+After a successful run, STMB records which source Memories were used and, when applicable, the source chat, message range, message IDs, and hashes. A later Memory-based update normally sends only new or changed source Memories together with the existing Clip content. Message ranges are always chosen explicitly.
 
 Use **Rebuild from all source memories** when:
 
@@ -1105,10 +1109,13 @@ Check that the draft:
 
 ### 15.7 Prompt placeholders
 
-A custom Topical Clip prompt must include:
+A custom Topical Clip prompt must include `{{SOURCE_MEMORIES}}` when saved Memories are selected and `{{SOURCE_MESSAGES}}` when chat messages are selected.
+
+Source placeholders:
 
 ```text
 {{SOURCE_MEMORIES}}
+{{SOURCE_MESSAGES}}
 ```
 
 Supported placeholders include:
@@ -1120,6 +1127,7 @@ Supported placeholders include:
 {{EXISTING_CLIP}}
 {{EXISTING_ENTRY_CONTENT}}
 {{SOURCE_MEMORIES}}
+{{SOURCE_MESSAGES}}
 ```
 
 Reset to Default if a custom prompt stops producing useful output.
@@ -1186,6 +1194,32 @@ The chat then uses one of two automatic selection modes:
 - one selected Side Prompt Set.
 
 A selected set replaces individually enabled automatic prompts for that chat. It does not add to them.
+
+#### Memory Assistance Side Prompt
+
+**Memory Assistance** is a reserved Side Prompt with four independent modes. It runs after successfully saved Memories regardless of ordinary Side Prompt enablement or the selected Side Prompt Set. It does not run during Memory regeneration.
+
+Memory Assistance compares the raw processed scene with ordinary and Topical Clips in each Memory Book that received the Memory. It sends each reviewed Clip's title/topic, keywords, current content, stable ID, and type to the AI.
+
+- **Off** disables Memory Assistance.
+- **Update** reviews five or fewer Clips directly; more than five Clips open a selection list. Proposed changes wait for manual approval.
+- **Update and Suggest** first performs one topic-discovery request, then runs the same existing-Clip review workflow as Update.
+- **Automatic** reviews every Clip in token-based batches without asking which Clips to review. It directly applies valid ordinary Clip additions, while Topical Clip replacements remain pending for approval in **Memory Assistance Suggestions**.
+
+- In Update and Update and Suggest modes, the larger selection list provides **Query Selected** and **Query All**.
+- Query All and Automatic mode use token-based batches rather than forcing every Clip into one oversized request.
+- Each ordinary Clip receives at most one exact message excerpt proposed as an addition.
+- Topical Clips receive complete replacement drafts.
+- The AI response is a simple JSON object mapping each affected Clip UID directly to its suggested excerpt or replacement. An empty object means that no Clips need updating.
+- Update results are written to `Memory Assistance (STMB SidePrompt)` and remain unapplied until approved through **Memory Assistance Suggestions**.
+- Automatic-mode results record how many ordinary Clip additions were applied and retain Topical Clip replacements and any application failures for manual review.
+- Canceling the selection clears older suggestions so they cannot be mistaken for results from the latest scene.
+
+Update and Suggest uses a separate suggestion-only prompt before the existing-Clip review batches. The request contains the processed scene and a lightweight list of existing Topical Clip titles, topics, and keywords. It does not send ordinary Clips or existing Clip bodies during discovery. The AI returns zero to five new topics as JSON objects containing a topic and activation keywords; `{"topics":[]}` is a valid result.
+
+Suggested topics are saved in the Memory Assistance report and shown immediately as checked, editable rows. You can uncheck unwanted topics, edit topic names or keywords, or add additional topics. Confirmed topics open the standard Topical Clip draft workflow one at a time. A pending topic is removed only after its Topical Clip is saved; closing the draft leaves it available through **Memory Assistance Suggestions**.
+
+The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, placed in a Side Prompt Set, or run manually.
 
 ### 16.6 Automatic visible-message intervals
 
