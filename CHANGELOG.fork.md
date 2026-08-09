@@ -17,6 +17,26 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > contents and is preserved for audit purposes.
 
 
+## v0.0.10 (2026-08-09) — fix: Auditor/Librarian/Sentinel/Clipper+ silently failed on the default profile
+
+Closes [PHA-1846](/PHA/issues/PHA-1846). The user's own test screenshot showed
+`/stmbc-audit` (and thus `/stmb-auto`'s audit step) reporting "3 chunks had
+extraction errors and were skipped · 0 characters, 0 locations, 0 claims" —
+every chunk's LLM call was failing. Root cause: `resolveEffectiveConnectionFromProfile`
+(`utils.js`) passed the builtin "Current SillyTavern Settings" profile's literal
+`connection.api: "current_st"` sentinel straight through to `requestCompletion`
+instead of resolving it to ST's actual active API — `current_st` is not a real
+completion source, so `chat_completion_source: "current_st"` was rejected by
+every request. This is the *default and only* profile on a fresh install, so
+every auto-module feature that routes through this shared helper (Auditor,
+Librarian, Sentinel, Clipper+, jobs re-derivation, side prompts) was silently
+broken for anyone who hadn't manually configured a separate profile — exactly
+the install in the screenshot. `clipManager.js` and `sidePrompts.js` already
+special-cased `current_st` at their own call sites; `resolveEffectiveConnectionFromProfile`
+did not. Fixed by resolving `current_st`/`useDynamicSTSettings` inside the
+shared helper itself (mirroring the existing `clipManager.js` pattern), so
+every caller gets the fix at once.
+
 ## v0.0.9 (2026-08-09) — fix: every memory add crashed with `noteCatalogEntryWrite is not defined`
 
 Closes [PHA-1846](/PHA/issues/PHA-1846). `addlore.js` called

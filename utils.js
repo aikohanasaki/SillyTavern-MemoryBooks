@@ -628,6 +628,37 @@ export async function estimateTokens(text, options = {}) {
  */
 export function resolveEffectiveConnectionFromProfile(profile) {
     const conn = (profile?.effectiveConnection || profile?.connection || {});
+
+    // The builtin "Current SillyTavern Settings" profile stores the literal
+    // sentinel 'current_st' as its api (and no model — that field is disabled
+    // in the profile UI, "Managed by SillyTavern UI"). It is not a real
+    // completion source: passing it straight to requestCompletion sends
+    // chat_completion_source: 'current_st' to ST's backend, which rejects it,
+    // so every single call fails. Auto-module callers (auditor, librarian,
+    // sentinel, clipper+, jobs re-derivation) all route through this function
+    // and were silently broken for anyone on the default profile — resolve to
+    // whatever API/model ST's UI is actually pointed at instead, matching the
+    // pattern clipManager.js/sidePrompts.js already use for their own
+    // current_st handling.
+    if (conn.api === 'current_st' || profile?.useDynamicSTSettings) {
+        const apiInfo = getCurrentApiInfo();
+        const modelInfo = getUIModelSettings();
+        const api = normalizeCompletionSource(apiInfo.completionSource || apiInfo.api || 'openai');
+        let temperature = 0.7;
+        if (typeof modelInfo.temperature === 'number' && !Number.isNaN(modelInfo.temperature)) {
+            temperature = Math.max(0, Math.min(2, modelInfo.temperature));
+        }
+        return {
+            api,
+            model: modelInfo.model || '',
+            temperature,
+            endpoint: conn.endpoint ? String(conn.endpoint) : undefined,
+            apiKey: conn.apiKey ? String(conn.apiKey) : undefined,
+            connectionProfileId: conn.connectionProfileId ? String(conn.connectionProfileId) : undefined,
+            reverseProxy: !!conn.reverseProxy,
+        };
+    }
+
     const api = normalizeCompletionSource(conn.api || 'openai');
     const model = (conn.model || '').trim();
     let temperature = 0.7;
