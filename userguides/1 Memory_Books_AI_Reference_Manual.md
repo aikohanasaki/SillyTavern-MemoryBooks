@@ -33,13 +33,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [18. Compaction](#18-compaction)
 - [19. Regeneration](#19-regeneration)
 - [20. Context for Generation](#20-context-for-generation)
-- [21. Prompt Architecture and Authoring Rules](#21-prompt-architecture-and-authoring-rules)
+- [21. Prompt Architecture, Built-in Summary Prompts, and Authoring Rules](#21-prompt-architecture-built-in-summary-prompts-and-authoring-rules)
 - [22. Summary Prompt Manager and Consolidation Prompt Manager](#22-summary-prompt-manager-and-consolidation-prompt-manager)
 - [23. Regex Integration](#23-regex-integration)
 - [24. Lorebook Entry Titles and Character Policy](#24-lorebook-entry-titles-and-character-policy)
 - [25. Job Queue and Retry Controls](#25-job-queue-and-retry-controls)
 - [26. Visual Feedback and Accessibility](#26-visual-feedback-and-accessibility)
-- [27. Current Settings Reference](#27-current-settings-reference)
+- [27. Settings Map and Current Settings Reference](#27-settings-map-and-current-settings-reference)
 - [28. Slash Command Reference](#28-slash-command-reference)
 - [29. Troubleshooting by Stage](#29-troubleshooting-by-stage)
 - [30. FAQ](#30-faq)
@@ -570,7 +570,7 @@ Hidden messages remain in the chat file. They are omitted from active chat conte
 
 ### 9.3 Unhide before generation
 
-**Unhide hidden messages for memory generation** temporarily reveals a selected range before STMB compiles it. Use this when regenerating or reprocessing ranges that were previously hidden.
+**Unhide hidden messages for memory generation** reveals a selected range before STMB compiles it. Use this when regenerating or reprocessing ranges that were previously hidden. The selected auto-hide mode determines what is hidden again after a successful save.
 
 ### 9.4 Memory-boundary indicator
 
@@ -1701,7 +1701,7 @@ Prompts should label target material and reference-only material clearly.
 
 ---
 
-## 21. Prompt Architecture and Authoring Rules
+## 21. Prompt Architecture, Built-in Summary Prompts, and Authoring Rules
 
 STMB has three main structured generation systems plus several focused auxiliary workflows.
 
@@ -1738,20 +1738,33 @@ A strong Memory prompt states:
 
 Weak prompts specify style but not structure, ask for analysis instead of a final object, blur previous context with the current scene, or use abstract keywords.
 
-### 21.2 Built-in Memory prompt families
+### 21.2 Built-in Summary Prompts and choosing one
 
-The built-in presets include styles such as:
+These presets are for ordinary Memory generation only. They do not control Consolidation, Side Prompts, Topical Clips, or Compaction. A profile selects one under **Memory Creation Method**. **Summary** is the ordinary fallback/default when a profile does not specify another preset. Built-in means supplied by STMB; it does not mean every preset runs or that all of them are equally suitable for one chat.
 
-- Summary — detailed beat-by-beat summary;
-- Summarize — structured Markdown-oriented timeline/beats/interactions/outcome;
-- Synopsis — comprehensive structured synopsis;
-- Sum Up — concise beat summary with timeline;
-- Minimal — approximately one or two sentences;
-- Northgate — literary summary style for creative writing;
-- Aelemar — plot points and character-memory focus;
-- Comprehensive — broader synopsis and keyword extraction.
+There is no universal best prompt, because detail, readability, retrieval quality, and token cost pull in different directions. The practical short answer is:
 
-The exact built-in text may be recreated for the current SillyTavern locale. Recreating built-ins removes local edits to those built-ins but should not delete unrelated custom presets.
+- **Best starting default for most users: Summary.** It is balanced, general-purpose, and a good first test with a new model.
+- **Best for continuity-heavy long-running roleplay: Comprehensive.** It applies the strongest filtering, causality, continuity, and keyword guidance, but asks more of the model and can produce a larger structured Memory.
+- **Best when saving context tokens matters most: Minimal.** It is intentionally brief and will lose nuance.
+- **Best for separate real-group or Narrator character books: Group and Character.** Use them together through the profile's separate group/character prompt setting; they are targeting prompts, not competing general-purpose styles.
+
+| Built-in prompt | Best used for | Main trade-off |
+|---|---|---|
+| **Summary** | Most solo chats and first-time setup. Produces detailed chronological narrative prose with important events, interactions, developments, revelations, outcomes, and concrete retrieval keywords. | Preserves more detail than a token-minimal user may need, but is simpler and less demanding than the most structured presets. |
+| **Comprehensive** | Long-running, continuity-sensitive stories where causal chains, character dynamics, established facts, key exchanges, unresolved threads, and disciplined keywords all matter. It explicitly filters incidental detail and improves keyword construction. | Has the longest and most demanding instructions. Use a capable instruction-following model and allow enough response tokens. |
+| **Summarize** | Users who prefer a highly scannable Markdown record divided into Timeline, Story Beats, Key Interactions, Notable Details, and Outcome. | Bullet-heavy output can read more like reference notes than a natural memory and may repeat facts across headings. |
+| **Synopsis** | Scenes where preserving nearly every significant beat, interaction, detail, and outcome matters more than compactness. | Intentionally long and comprehensive; it is one of the least suitable choices when lorebook or context budget is tight. |
+| **Sum Up** | A chronological narrative beat record with a visible scene heading and timeline, but less sectional overhead than Summarize or Synopsis. | Provides less explicit separation between events, character dynamics, facts, and continuity state. |
+| **Minimal** | High-volume chats, inexpensive archival coverage, or setups where Memories must consume very little context. Produces a brief two-to-five-sentence Memory. | Important motives, emotional shifts, causality, and minor continuity details can be lost. |
+| **Northgate** | Creative-writing users who want a coherent third-person, past-tense literary record emphasizing actions, emotional shifts, development, and significant dialogue. This community style is credited to Northgate on the SillyTavern Discord. | Optimizes for readable narrative rather than maximum compression or clearly separated reference categories. Unlike most general presets, its built-in text does not explicitly exclude OOC material, so review it when OOC is common. |
+| **Aelemar** | Major plot scenes and emotionally consequential character moments that should remain understandable as a standalone record even if the source scene is unavailable. This community style is credited to Aelemar on the SillyTavern Discord. | Requires at least 300 words and is deliberately detailed, so it is unsuitable for aggressive token saving. Its built-in text also does not explicitly exclude OOC material. |
+| **Group** | The shared or omniscient Memory Book in a real group, or the omniscient target in a multi-book workflow. It preserves group decisions and state while keeping actions, emotions, and knowledge attributed to the correct member. | Do not use it as an individual character's Memory; it intentionally focuses on shared group continuity. |
+| **Character** | One character-focused Memory Book in a real-group or multi-character workflow. It records what that character did, knew, felt, learned, concealed, misunderstood, or was affected by. | It intentionally omits scene material that is irrelevant to the target character and restricts unsupported private knowledge. |
+
+For a new installation, use **Summary** until generation and retrieval are working reliably. Then change only the prompt and compare several Memories from similar scenes. Prefer **Comprehensive** when omitted causality, continuity state, or weak keywords are the problem; prefer **Minimal** when Memory size is the problem. Changing prompts cannot compensate for a weak model, truncated output, poor scene boundaries, or incorrect retrieval settings.
+
+The exact built-in text may be recreated for the current SillyTavern locale. Recreating built-ins removes local edits to those built-ins but should not delete unrelated custom presets. Duplicate or export a modified built-in before recreating it.
 
 ### 21.3 Multi-character prompt targeting
 
@@ -1816,6 +1829,8 @@ Return-format correctness comes before style.
 Can create, edit, duplicate, delete, import, and export ordinary Memory prompt presets. Assign a preset through a Memory Books profile.
 
 All ordinary Memory presets must preserve the required Memory JSON schema.
+
+See Section 21.2 for the built-in Summary Prompt selection guide and best-use cases.
 
 ### Consolidation Prompt Manager
 
@@ -1921,68 +1936,204 @@ When teaching from a screenshot, describe the visible icon and label rather than
 
 ---
 
-## 27. Current Settings Reference
+## 27. Settings Map and Current Settings Reference
 
-The precise layout can change between releases, but the following settings define current behavior.
+This section is the settings map. It identifies where each user-facing STMB configuration control is located and what it controls. It also lists the important saved and one-run controls in specialized interfaces. One-time content fields used only to create a particular Clip, Topical Clip, Compaction, or preview are documented in their workflow sections rather than repeated here.
 
-### General and interface
+The common starting path is:
 
-- **Always Use Default Profile:** skip normal confirmation windows unless another warning/review is required.
-- **Show memory previews:** review/edit Memories and applicable Side Prompt outputs before save.
-- **Show consolidation previews:** review consolidation candidates.
-- **Show notifications:** enable toast messages.
-- **Show floating Clip button:** show scissors after chat text selection.
-- **Refresh Editor:** refresh the lorebook editor after writes.
-- **Memory boundary indicator:** off, divider, jump button, or both.
-- **Allow Scene Overlap:** allow a selected range to overlap an existing Memory range.
-- **Max Response Tokens:** output-length override for STMB generation.
-- **Token Warning Threshold:** request-size threshold that triggers a warning.
-- **Default Previous Memories:** normally include 0–7 previous Memories.
+**magic-wand Extensions menu beside the chat input → Memory Books**
 
-### Storage and chat modes
+All paths below begin in the **Memory Books** main panel unless they explicitly say **SillyTavern**. A control may be hidden or disabled when it does not apply to the current chat, provider, profile, or storage mode.
 
-- **Manual Lorebook Mode:** use per-chat manual Memory Book selection.
-- **Auto-create lorebook if none exists:** create/bind a book in Automatic Mode.
-- **Lorebook Name Template:** name Auto-Created books with macros.
-- **Copy Memory Books when branching:** clone active unlocked books for native branches.
-- **Narrator Mode:** use one omniscient manual book plus unique declared-character books in a normal Narrator-card chat.
-- **Character Memory Book locks:** persist a character-card book assignment across compatible Manual Mode chats.
+Scopes used below:
 
-### Automatic Memories
+- **Global:** applies throughout STMB unless a narrower setting overrides it.
+- **Per chat:** stored for the current chat or group.
+- **Per character:** follows the character card across compatible chats.
+- **Per profile/template/setting:** stored in that reusable object.
+- **Per run:** affects only the operation currently being prepared.
 
-- **Auto-create memory summaries:** enable automatic scene Memories.
-- **Auto-Summary Interval:** messages per automatic Memory.
-- **Auto-Summary Buffer:** newest messages excluded from the current automatic range.
+### 27.1 Main panel: storage, chat mode, and active profile
 
-### Token saving
+| Setting | Location | Scope | What it does |
+|---|---|---|---|
+| **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Global mode; book choice is per chat | Stops using the normal chat-bound lorebook as STMB's automatic target and requires a Memory Book to be selected for the current chat. It cannot be enabled with Auto-Create Lorebook Mode. |
+| **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls**; visible in Manual Mode | Per chat | Chooses the main Memory Book that receives Memories for this chat. In Narrator Mode this is the omniscient book. |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; visible in a real group using Manual Mode | Per chat | Assigns a separate Memory Book to each real-group member. STLO is required to configure these assignments and provide the corresponding character-filtered retrieval behavior. |
+| **Character Memory Book lock** | Lock icon beside a character's Memory Book assignment | Per character | Keeps that character card assigned to the same Memory Book across compatible Manual Mode chats. Unlock before changing the assignment. |
+| **Narrator Mode** | **Current Lorebook Configuration**; normal non-group chats only | Per chat | Uses the selected manual book as an omniscient Memory Book and enables declared fictional cast members with their own unique books. Manual Mode and an omniscient book are required. |
+| **Manage Narrator Cast** | Under **Narrator Mode**; also available from the Active Cast drawer | Per chat | Adds, retires, restores, and assigns unique Memory Books to declared Narrator characters. |
+| **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | In Automatic Mode, creates and binds a lorebook when the chat has none. It cannot be enabled with Manual Mode. |
+| **Lorebook Name Template** | Directly below **Auto-create lorebook if none exists** | Global | Names auto-created books. Supports `{{char}}`, `{{user}}`, and `{{chat}}`. It is used only while Auto-Create Lorebook Mode is enabled. |
+| **Memory profile selection** | **Memory Profiles** selector | Per run | Chooses the profile for the next Memory and for the adjacent profile actions. This selection alone does not change the saved default. |
+| **Set as Default** | **Memory Profiles → Profile Actions** | Global default | Makes the selected profile the default used by automatic Memories and other workflows unless a confirmation, Side Prompt override, or workflow-specific choice selects another profile. |
+| **Memory Title Format** | **Memory Profiles → Memory Title Format**, or **Profile Actions → Edit Profile** | Per profile | Formats new Memory entry titles and optional numbering with the listed title macros. The main-panel control edits the default profile's format; **Edit Profile** changes the selected profile directly. |
 
-- **Unhide hidden messages before memory generation:** temporarily reveal source ranges.
-- **Auto-hide messages after adding memory:** none, all processed, or last range.
-- **Messages to leave unhidden:** recent overlap preserved near the boundary.
+### 27.2 General Settings
 
-### Consolidation
+Open **Settings → General Settings** in the main panel.
 
-- **Prompt for consolidation when a tier is ready:** show a yes/later readiness prompt.
-- **Auto-Consolidation Tiers:** tiers monitored for readiness; this does not perform silent consolidation.
+| Setting | Scope | What it does |
+|---|---|---|
+| **Always use default profile (no confirmation prompt)** | Global | Skips the normal pre-generation confirmation window. Required for non-interactive catch-up; independent warnings and enabled previews can still appear. |
+| **Automatically accept detected participants in future** | Global | Stops asking for real-group participant confirmation and accepts STMB's detected participant set for later Memories. |
+| **Show memory previews** | Global | Opens an editable review before saving generated Memories and applicable Side Prompt output. |
+| **Show consolidation previews** | Global | Opens review controls for generated consolidation candidates before they are committed. |
+| **Show notifications** | Global | Enables STMB toast notifications. |
+| **Show floating Clip button when text is highlighted** | Global | Shows the floating scissors control after selecting chat text. |
+| **Memory boundary indicator** | Global | Shows neither control, the processed-boundary divider, the draggable jump button, or both. |
+| **Allow scene overlap** | Global | Permits a selected scene range to overlap message IDs already represented by an existing Memory. |
+| **Refresh lorebook editor after adding memories** | Global | Refreshes an open lorebook editor after STMB writes entries so the new content appears immediately. |
+| **Copy Memory Books when branching** | Global | Gives a native chat branch independent copies of its active unlocked chat-bound or manual Memory Books. Character-locked books remain shared by design. |
+| **Default for solo chats** | Global | Selects the Side Prompt Set inherited by solo chats after a Memory. An empty selection uses individually enabled after-Memory Side Prompts. |
+| **Default for group chats** | Global | Selects the Side Prompt Set inherited by real group chats after a Memory. An empty selection uses individually enabled after-Memory Side Prompts. |
+| **Max Response Tokens** | Global | Overrides the maximum output length for STMB generation. Increase it when otherwise valid JSON is cut off; `0` leaves the normal provider/SillyTavern behavior available as the fallback. |
+| **Token Warning Threshold** | Global | Shows a confirmation warning when the estimated input request exceeds the threshold. It does not change the model's context limit. |
+| **Default Previous Memories Count** | Global | Sets the normal default of 0–7 prior Memories supplied as continuity context for a new Memory. A run can override it in **Advanced Memory Options**. |
+| **Use regex (advanced)** | Global | Enables STMB's own regex-processing selection. These selections are separate from whether the underlying SillyTavern regex script is generally enabled. |
+| **Configure regex… → Outgoing scripts** | Global | Selects scripts STMB runs on material before sending it to the generation provider. |
+| **Configure regex… → Incoming scripts** | Global | Selects scripts STMB runs on returned material before parsing and saving it. |
 
-### Side Prompts
+#### Token Saving inside General Settings
 
-- **Default After-Memory Side Prompt Set for solo chats.**
-- **Default After-Memory Side Prompt Set for group chats.**
-- Per-chat inheritance, individual mode, or named set selection is configured in the Side Prompts interface.
+These controls are lower in the same **General Settings** popup under **Token Saving (Hide/Unhide Messages)**.
 
-### Regex
+| Setting | Scope | What it does |
+|---|---|---|
+| **Auto-hide messages after adding memory** | Global | Chooses no automatic hiding, all processed messages through the latest Memory, or only the range used by the latest Memory. Hiding is reversible and does not delete messages. |
+| **Messages to leave unhidden** | Global | Keeps this many recent messages visible when auto-hiding, preserving overlap near the Memory boundary. `0` hides through the applicable scene end. |
+| **Unhide hidden messages for memory generation** | Global | Runs the equivalent of `/unhide X-Y` for the source range before STMB compiles it. The selected auto-hide mode determines what is hidden again after a successful save. |
 
-- **Use regex (advanced):** enable STMB-specific outgoing/incoming script selection.
+### 27.3 Automatic Memories and consolidation reminders
 
-### Profile-level lorebook entry settings
+Open **Settings → Automatic Memories** in the main panel.
 
-- title format;
-- activation mode;
-- position and Outlet;
-- order mode/value;
-- Prevent Recursion;
-- Delay Until Recursion.
+| Setting | Scope | What it does |
+|---|---|---|
+| **Auto-create memory summaries** | Global | Enables automatic `/nextmemory`-style Memory creation. With no processed baseline, current STMB can begin at message 0; a first manual Memory remains recommended for setup validation and a deliberate starting boundary. |
+| **Auto-Summary Interval** | Global | Sets how many messages make up the normal automatic cadence. |
+| **Auto-Summary Buffer** | Global | Excludes this many newest messages from an otherwise ready automatic range so generation happens slightly behind the live conversation. |
+| **Prompt for consolidation when a tier is ready** | Global | Shows a yes/later prompt when a monitored tier reaches its saved eligible-source minimum. It never silently performs consolidation. |
+| **Auto-Consolidation Tiers** | Global | Chooses which target tiers are monitored for readiness prompts. The minimum for each tier is saved in **Consolidate Memories**. |
+
+### 27.4 Profile editor
+
+Choose a profile under **Memory Profiles**, then open **Profile Actions → Edit Profile**. These settings are **per profile** unless noted otherwise. The built-in **Current SillyTavern Settings** profile intentionally locks fields that SillyTavern controls.
+
+| Setting | What it does |
+|---|---|
+| **Profile Name** | Names the reusable STMB profile. The built-in profile name is locked. |
+| **API/Provider** | Chooses current SillyTavern routing, a supported provider, a Custom OpenAI-compatible connection, or Full Manual Configuration. |
+| **Use this connection profile** | For **Custom OpenAI-Compatible API**, uses either the active SillyTavern Custom connection or one named Custom connection. Its saved URL and secret are used while the STMB **Model** remains the model override. |
+| **Skip structured output and use plain-text completion** | Stops sending a structured-output schema when a provider rejects it. The selected prompt must still make the model return STMB's required valid JSON. |
+| **Use ST's ChatCompletionService** | Routes supported requests through SillyTavern's built-in Chat Completion request helper. It is unavailable to Full Manual profiles. |
+| **Chat Completion Preset** | Optionally applies a SillyTavern Chat Completion preset through ChatCompletionService. |
+| **Model** | Supplies the exact model ID for this profile. **Current SillyTavern Settings** instead reads the model active in SillyTavern. |
+| **Temperature** | Sets generation randomness for this profile. **Current SillyTavern Settings** instead reads SillyTavern's active temperature. |
+| **Use reverse proxy** | Passes SillyTavern's configured reverse-proxy details for supported providers; in Full Manual Configuration the secret field is labeled as a proxy password. |
+| **API Endpoint URL / API Key** | Supplies a separate direct endpoint and credential only for **Full Manual Configuration**. Prefer a connection configured and tested in SillyTavern for normal use. |
+| **Memory Creation Method** | Selects the Summary Prompt preset used for ordinary Memory generation. Prompt content is managed in **Settings → Summary Prompt Manager**. |
+| **Use separate group and character prompts in group chats** | Uses distinct prompt presets for the group Memory Book and character-focused Memory Books. |
+| **Group Summary Prompt / Character Summary Prompt** | Selects the two presets used when separate group/character prompting is enabled. |
+| **Memory Title Format** | Controls title text, macros, and automatic numbering for Memories produced by this profile. |
+| **Activation Mode** | Saves new entries as **Normal** keyword activation, **Constant**, or **Vectorized**. |
+| **Insertion Position** | Chooses where a generated entry is inserted relative to Character, Example Messages, Author's Note, or a named Outlet. |
+| **Outlet Name** | Names the target Outlet and appears only when **Insertion Position** is **Outlet**. |
+| **Insertion Order** | **Auto** derives order from the Memory number; **Manual** uses a fixed value; **Reverse** counts down from a starting value and is intended only for Outlets. |
+| **Prevent Recursion** | Prevents the generated entry's content from triggering other lorebook entries during recursive scanning. |
+| **Delay Until Recursion** | Prevents the generated entry from activating in the first scan pass. Leave it off when nothing else can begin recursion. |
+| **Also include** | Legacy-profile compatibility only. Older profiles may show ordered lorebook references here; current configuration uses per-chat **Context Settings** instead. |
+
+The active SillyTavern provider, model, temperature, connection preset, and reverse proxy are configured in SillyTavern's own connection controls, not in STMB. The **Current SillyTavern Settings** profile reads those live values.
+
+### 27.5 Context Settings
+
+Open **Settings → Context Settings** in the main panel.
+
+| Setting | Scope | What it does |
+|---|---|---|
+| **Additional Context for this chat** | Per chat | Selects one named Context Setting, explicitly saves **No Context**, or leaves the choice unset so STMB can prompt when migrated context requires a decision. |
+| **Context Setting Name** | Per Context Setting | Names a reusable Additional Context collection. |
+| **Additional Context entries and order** | Per Context Setting | Selects lorebook entries to send as stable reference material and determines their order. Missing entries are warned about and skipped. |
+
+**New**, **Duplicate**, **Delete**, **Import JSON**, and **Export JSON** manage Context Settings; they do not change generation behavior until a setting is selected by a chat or Side Prompt.
+
+### 27.6 Trackers & Side Prompts
+
+Open **Settings → Trackers & Side Prompts** in the main panel.
+
+| Setting | Location and scope | What it does |
+|---|---|---|
+| **After-memory side prompt mode for this chat** | Manager main screen; per chat | Uses the matching solo/group default, explicitly uses individually enabled after-Memory prompts, or selects one named Side Prompt Set for this chat. |
+| **How many concurrent prompts to run at once** | Manager main screen; global | Limits simultaneous Side Prompt jobs to 1–5. |
+| **Side Prompt Set Name** | **New Set** or edit a set; per set | Names a reusable ordered group of Side Prompt runs. |
+| **Side Prompt / Row Label / Macro Values** | Side Prompt Set row; per set | Chooses the template for a row, gives the row an optional display/title label, supplies literal or set-level runtime macro values, and uses row order as execution order. |
+| **Enabled** | **New** or edit an ordinary Side Prompt; per template | Makes the template eligible when the chat uses individually enabled after-Memory prompts. Trigger settings still determine when it runs. |
+| **Run on visible message interval / Interval** | Side Prompt editor; per template | Runs after the configured number of visible messages. Automatic triggers are unavailable when the template requires unresolved runtime macros. |
+| **Run automatically after memory** | Side Prompt editor; per template | Runs the template after a successful Memory, subject to the chat's Side Prompt mode or selected set. |
+| **Allow manual run via `/sideprompt`** | Side Prompt editor; per template | Allows explicit manual execution. |
+| **Prompt / Response Format** | Side Prompt editor; per template | Defines the instruction and optional output structure. Both fields may use supported Side Prompt macros. |
+| **Previous memories for context** | Side Prompt editor; per template | Includes 0–7 previous Memory entries before the selected source messages. |
+| **Use additional context / Additional Context Source** | Side Prompt editor; per template | Includes Additional Context and either follows the current chat's Context Setting or always uses one fixed named setting. |
+| **Lorebook Target** | Side Prompt editor; per template or per chat | Saves output to the normal Memory Book or another chosen lorebook. When changed, STMB asks whether the choice applies only to this chat or to the template going forward. |
+| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | Optionally controls the upserted entry title template and comma-separated activation keywords. |
+| **Activation Mode / Insertion Position / Outlet Name** | Side Prompt editor; per template | Controls activation and placement for the Side Prompt's lorebook entry. |
+| **Insertion Order / Order Value** | Side Prompt editor; per template | Uses automatic Memory-number ordering or a fixed manual order value. |
+| **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Side Prompt editor; per template | Applies the corresponding SillyTavern lorebook-entry recursion and budget flags. |
+| **Override default memory profile / Connection Profile** | Side Prompt editor; per template | Routes this Side Prompt through a selected STMB profile instead of the current default profile. |
+| **Memory Assistance Mode** | Edit **Memory Assistance**; global | **Off** disables it; **Update** proposes changes to existing Clips; **Update and Suggest** also discovers Topical Clip topics; **Automatic** directly applies ordinary Clip additions while leaving Topical Clip replacements for approval. |
+| **Update Prompt / Topic Suggestions Prompt** | Edit **Memory Assistance**; per built-in template | Controls its two AI tasks. Their response contracts remain fixed. |
+| **Use a connection profile override** | Edit **Memory Assistance**; per built-in template | Uses the selected STMB profile for Memory Assistance instead of the default. |
+
+### 27.7 Prompt managers
+
+| Setting | Location | Scope | What it does |
+|---|---|---|---|
+| **Summary Prompt name and prompt text** | **Settings → Summary Prompt Manager → New Preset** or edit | Per preset | Defines a reusable ordinary-Memory prompt. A profile uses it only after its **Memory Creation Method** or group/character prompt selection points to that preset. |
+| **Default consolidation prompt** | **Settings → Consolidation Prompt Manager → Set Default** | Global | Selects the normal prompt preselected by **Consolidate Memories**. Regeneration-only and group-only presets cannot be selected. |
+| **Consolidation Prompt name and prompt text** | **Settings → Consolidation Prompt Manager → New Consolidation Preset** or edit | Per preset | Defines reusable consolidation instructions. The dedicated regeneration and group presets are restricted to those workflows. |
+
+### 27.8 Topical Clip and Compaction defaults
+
+Open **Settings → Topical Clip** or **Settings → Compaction** in the main panel.
+
+| Setting | Location | Scope | What it does |
+|---|---|---|---|
+| **Generation Profile / Compaction Profile** | **Topical Clip → Generation Profile**, or **Compaction → Compaction Profile** | Global shared default | Selects the STMB profile used for Topical Clip generation and Compaction. Changing it in either interface changes the shared selection used by both workflows. |
+| **Topical Clip Prompt** | **Topical Clip → Edit Topical Clip Prompt** | Global | Saves a custom prompt template for Topical Clip generation. **Reset to Default** returns to the current built-in prompt. Required source macros are validated before save or generation. |
+| **Compaction Prompt** | **Compaction → Edit Compaction Prompt** | Global | Saves a custom prompt template for shortening existing Memory, Clip, and Side Prompt entries. **Reset to Default** returns to the current built-in prompt. `{{ENTRY_CONTENT}}` is required. |
+
+The Memory Book, topic, keywords, source inclusion, source selection, message range, draft, and entry selected for Compaction are per-run workflow choices, not persistent settings.
+
+### 27.9 Consolidate Memories controls
+
+Open **Consolidate Memories** from the buttons at the bottom of the main panel. This interface mixes saved defaults with one-run choices.
+
+| Setting | Scope | What it does |
+|---|---|---|
+| **Target tier** | Per run | Chooses the higher tier to create and therefore the immediately lower eligible source tier. |
+| **Consolidation Prompt** | Per run | Selects the prompt for this consolidation; it initially uses the default from the Consolidation Prompt Manager. |
+| **Maximum entries per pass** | Per run | Limits how many lower-tier entries are sent in one analysis pass. |
+| **Token Budget** | Per run | Sets the approximate input budget used to batch this consolidation. |
+| **Number of automatic summary attempts** | Per run | Limits repeated analysis passes used to obtain usable assignments and summaries. |
+| **Saved minimum eligible entries** | Global, saved separately for each target tier | Sets when the chosen tier is considered ready. It also controls that tier's automatic readiness prompt. |
+| **Activation Mode / Insertion Position / Outlet / Insertion Order / Recursion Settings** | Global consolidation-entry defaults | Controls how newly consolidated entries are saved. These are separate from ordinary Memory profile entry settings. |
+| **Disable selected source entries after creating summaries** | Per run | Disables successfully consolidated sources after commit so higher-tier summaries can replace them in retrieval. It does not delete them. |
+| **Selected source entries** | Per run | Chooses which eligible lower-tier entries are processed. Unchecked entries are left untouched. |
+
+### 27.10 Related SillyTavern World Info settings
+
+These controls are outside STMB, in SillyTavern's World Info/lorebook settings, but they affect whether saved Memories are retrieved during ordinary chat generation.
+
+| Setting | What it does |
+|---|---|
+| **Match Whole Words** | Controls keyword boundary matching. Off is a common starting point for flexible Memory keywords. |
+| **Scan Depth** | Controls how much recent text is scanned for lorebook activation. A relatively high value such as 8 is a common starting point. |
+| **Max Recursion Steps** | Limits recursive World Info activation. Approximately 2 is a common starting point. |
+| **Context percentage / lorebook budget** | Limits how much context lorebook entries may occupy. Increase it only in balance with the model's total context and other prompt material. |
+
+These are recommendations, not hard requirements; see Section 10 for retrieval diagnosis.
 
 ---
 
