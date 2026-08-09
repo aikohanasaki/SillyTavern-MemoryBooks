@@ -201,12 +201,19 @@ async function deriveEntryFromSource({ name, notes, lorebook, coverageIndex, reg
     return { parsed, source, oldContent, targetTitle, isNew, kind: hit.kind, name: hit.name };
 }
 
-/** Write a (re-)derived entry through STMB's own upsert. New entries get keys; existing keep theirs. */
+/**
+ * Write a (re-)derived entry through STMB's own upsert. New entries get keys; existing
+ * keep theirs. preventRecursion is always forced on: these entries name each other in
+ * their own content (shared relationships, factions, locations), and without it one
+ * entry's content re-triggers every other entry that shares a keyword during recursive
+ * scanning — the constant co-firing cascade this coverage pass exists to avoid.
+ */
 async function writeEntry(lorebook, { targetTitle, isNew, parsed, name }) {
     const title = isNew ? (parsed.title || name) : targetTitle;
-    const entryOverrides = isNew
-        ? { key: (parsed.keywords && parsed.keywords.length) ? parsed.keywords : [name] }
-        : {};
+    const entryOverrides = { preventRecursion: true };
+    if (isNew) {
+        entryOverrides.key = (parsed.keywords && parsed.keywords.length) ? parsed.keywords : [name];
+    }
     const res = await upsertLorebookEntryByTitle(lorebook.name, lorebook.data, title, parsed.content, { entryOverrides });
     return { title, uid: res.uid, created: res.created };
 }
