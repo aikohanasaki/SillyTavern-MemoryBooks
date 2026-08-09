@@ -69,10 +69,35 @@ import {
 } from "./autoSettings.js";
 import { CLIPPER_DEFAULTS } from "./clipperPlusCore.js";
 // STMBC-HOOK(auditor): resumable full-chat audit chunk-walker (fork; plan §4.3).
-import { executeAuditJob, handleAuditCommand, handleStmbcStopCommand } from "./auditor.js";
+import {
+  executeAuditJob,
+  handleAuditCommand,
+  handleStmbcStopCommand,
+  runAuditInline,
+  getAuditNotes,
+  resolveAuditConfig,
+} from "./auditor.js";
 // STMBC-HOOK(auditor-jobs): coverage audit + entry regeneration over the walker's
 // running notes (fork; plan §4.3 jobs 1–2).
-import { handleCoverageCommand, handleRegenCommand } from "./auditorJobs.js";
+import {
+  handleCoverageCommand,
+  handleRegenCommand,
+  resolveCoverageConfig,
+  resolveRegenConfig,
+  loadBoundLorebook,
+  entriesForCoverage,
+  resolveJobsConnection,
+  bulkGenerate,
+} from "./auditorJobs.js";
+import { auditCoverage, buildCoverageIndex } from "./auditorJobsCore.js";
+// STMBC-HOOK(stmb-auto): PHA-1846 — the zero-argument "just run it" orchestrator.
+// Pure chunk-planning/summary logic lives in stmbAutoCore.js (DI, node:test).
+import {
+  resolveStmbAutoConfig,
+  planAutoMemoryChunks,
+  buildStmbAutoSummary,
+} from "./stmbAutoCore.js";
+import { refreshCatalogForCoverageRun } from "./catalog.js";
 import { registerAuditorJobs } from "./auditorTechnicalPass.js";
 import {
   showCoverageReportPopup,
@@ -1639,6 +1664,217 @@ async function handleStmbCatchupCommand(namedArgs) {
   }
 
   return "";
+}
+
+// STMBC-HOOK(stmb-auto): PHA-1846 — the zero-argument "just fix it, just run
+// it" button. Chains three existing pipelines over the WHOLE chat with no
+// user input: (1) auto-create/bind a lorebook if none is bound yet, (2) the
+// full-chat auditor walk (character/location/event ground truth), (3)
+// chunked scene-memory generation from the last processed message through
+// the end of the chat, (4) headless coverage-driven generation of
+// character/location lorebook entries from the audit notes. Every step is
+// best-effort: a failure in one step is reported in the summary and does not
+// abort the rest, because the whole point is "run it and see what happened,"
+// not "stop at the first popup."
+async function handleStmbAutoCommand() {
+  if (isProcessingMemory) {
+    toastr.info(
+      translate(
+        "Memory creation is already in progress",
+        "STMemoryBooks_MemoryAlreadyInProgress",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  const memoryContext = getCurrentMemoryBooksContext();
+  if (memoryContext.isGroupChat) {
+    if (!memoryContext.groupId || !memoryContext.groupName) {
+      toastr.error(
+        translate(
+          "Group chat data not available, please wait a few seconds and try again.",
+          "STMemoryBooks_GroupChatDataUnavailable",
+        ),
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      return "";
+    }
+  } else if (!characters || characters.length === 0 || !characters[this_chid]) {
+    toastr.error(
+      translate(
+        "This command can only be run in an active chat.",
+        "STMemoryBooks_CatchupRequiresChat",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  const lastIndex = chat.length - 1;
+  if (lastIndex < 0) {
+    toastr.error(
+      translate(
+        "There are no messages in this chat yet.",
+        "STMemoryBooks_SetHighest_NoMessages",
+      ),
+      translate("STMemoryBooks", "index.toast.title"),
+    );
+    return "";
+  }
+
+  toastr.info(
+    translate("STMB Auto: starting a full-story pass…", "STMemoryBooks_AutoStarting"),
+    translate("STMemoryBooks", "index.toast.title"),
+  );
+
+  const settings = initializeSettings();
+  const moduleSettings = settings.moduleSettings || {};
+  const autoModule = extension_settings?.STMemoryBooks?.autoModule;
+  const stmbAutoCfg = resolveStmbAutoConfig(autoModule, chat_metadata);
+
+  // Step 1: ensure a lorebook is bound. Manual mode still requires the user to
+  // have bound one themselves (there is no "current chat" default to invent);
+  // normal mode auto-creates headlessly instead of the interactive recovery
+  // popup, since a fresh test chat is the exact case this command targets.
+  const isManualMode = !!moduleSettings.manualModeEnabled;
+  let lorebookName = isManualMode
+    ? getSceneMarkers()?.manualLorebook ?? null
+    : chat_metadata?.[METADATA_KEY] || null;
+  let lorebookCreated = false;
+  if (!lorebookName) {
+    if (isManualMode) {
+      const msg = translate(
+        "STMB Auto: manual mode is on but no manual lorebook is bound. Bind one first.",
+        "STMemoryBooks_AutoManualLorebookRequired",
+      );
+      toastr.error(msg, translate("STMemoryBooks", "index.toast.title"));
+      return msg;
+    }
+    const created = await autoCreateLorebook(moduleSettings.lorebookNameTemplate, "stmb-auto");
+    if (!created.success) {
+      const msg = `STMB Auto: ${created.error}`;
+      toastr.error(msg, translate("STMemoryBooks", "index.toast.title"));
+      return msg;
+    }
+    lorebookName = created.name;
+    lorebookCreated = true;
+  }
+
+  // Step 2: full-chat audit walk — the character/location/event ground truth
+  // that step 4's coverage scan reads from. Resumes any existing checkpoint
+  // rather than restarting, same default as a bare /stmbc-audit.
+  toastr.info(
+    translate("STMB Auto: reading the whole story…", "STMemoryBooks_AutoAuditing"),
+    translate("STMemoryBooks", "index.toast.title"),
+  );
+  let auditMessage = "";
+  try {
+    auditMessage = await runAuditInline(false);
+  } catch (error) {
+    console.error("STMemoryBooks: /stmb-auto audit step failed:", error);
+    auditMessage = `Audit step failed: ${error?.message || error}`;
+  }
+
+  // Step 3: chunked scene memories for everything not yet summarized.
+  const highestProcessed = getHighestMemoryProcessed();
+  const memoryChunks = planAutoMemoryChunks(highestProcessed, lastIndex, stmbAutoCfg.memoryInterval);
+  let memoriesCreated = 0;
+  let memorySkipReason = null;
+  if (memoryChunks.length) {
+    const blocker = await validateStmbCatchupNonInteractive(settings, memoryChunks);
+    if (blocker) {
+      memorySkipReason = blocker;
+    } else {
+      toastr.info(
+        __st_t_tag`STMB Auto: writing ${memoryChunks.length} scene memor${memoryChunks.length === 1 ? "y" : "ies"}…`,
+        translate("STMemoryBooks", "index.toast.title"),
+      );
+      for (let i = 0; i < memoryChunks.length; i++) {
+        const chunk = memoryChunks[i];
+        toastr.info(
+          __st_t_tag`STMB Auto: scene memory ${i + 1}/${memoryChunks.length} (messages ${chunk.start}-${chunk.end})`,
+          translate("STMemoryBooks", "index.toast.title"),
+        );
+        let success = false;
+        try {
+          success = await runSceneMemoryRange(chunk.start, chunk.end, { showSceneToast: false });
+        } catch (error) {
+          console.error("STMemoryBooks: /stmb-auto scene memory step failed:", error);
+        }
+        if (success) {
+          memoriesCreated++;
+        } else {
+          memorySkipReason = `stopped at messages ${chunk.start}-${chunk.end} (${memoriesCreated}/${memoryChunks.length} written)`;
+          break;
+        }
+      }
+    }
+  }
+
+  // Step 4: coverage-driven, headless generation of character/location entries
+  // from the audit notes. minChunks is relaxed to stmbAutoCfg.coverageMinChunks
+  // (default 1, not the coverage job's own default of 2) — that gate is
+  // mathematically unsatisfiable on any chat small enough to fit in one audit
+  // chunk, and a from-scratch full-story run must still surface those names.
+  let loreMessage = "";
+  let loreGenerated = 0;
+  const auditNotes = getAuditNotes();
+  if (auditNotes) {
+    try {
+      const lorebook = await loadBoundLorebook();
+      if (lorebook) {
+        const coverageCfg = resolveCoverageConfig(autoModule, chat_metadata);
+        coverageCfg.minChunks = stmbAutoCfg.coverageMinChunks;
+        const regenCfg = resolveRegenConfig(autoModule, chat_metadata);
+        const auditCfg = resolveAuditConfig(autoModule, chat_metadata);
+        const entries = entriesForCoverage(lorebook.data);
+        const report = auditCoverage(auditNotes, entries, coverageCfg);
+        const coverageIndex = buildCoverageIndex(entries);
+
+        try {
+          // STMBC-HOOK(catalog): keep the librarian catalog fresh, same as a
+          // manual /stmbc-coverage run — never fatal to the auto run.
+          await refreshCatalogForCoverageRun({ lorebookName: lorebook.name, lorebookData: lorebook.data });
+        } catch (error) {
+          console.warn("STMemoryBooks: /stmb-auto catalog refresh failed (non-fatal):", error);
+        }
+
+        const targets = [...report.missing, ...report.thin];
+        if (targets.length) {
+          const conn = resolveJobsConnection(regenCfg.profile);
+          toastr.info(
+            __st_t_tag`STMB Auto: generating ${targets.length} character/location entr${targets.length === 1 ? "y" : "ies"}…`,
+            translate("STMemoryBooks", "index.toast.title"),
+          );
+          loreMessage = await bulkGenerate(
+            targets,
+            { notes: auditNotes, lorebook, coverageIndex, regenCfg, auditCfg, conn },
+            stmbAutoCfg.bulkGenerateCap,
+          );
+          loreGenerated = targets.length;
+        }
+      } else {
+        loreMessage = "Could not load the bound lorebook for the coverage step.";
+      }
+    } catch (error) {
+      console.error("STMemoryBooks: /stmb-auto coverage step failed:", error);
+      loreMessage = `Coverage step failed: ${error?.message || error}`;
+    }
+  }
+
+  const summary = buildStmbAutoSummary({
+    lorebookName,
+    lorebookCreated,
+    auditMessage,
+    memoriesPlanned: memoryChunks.length,
+    memoriesCreated,
+    memorySkipReason,
+    loreGenerated,
+    loreMessage,
+  });
+  toastr.success(summary, translate("STMemoryBooks", "index.toast.title"));
+  return summary;
 }
 
 async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
@@ -10416,6 +10652,20 @@ function registerSlashCommands() {
     ),
   });
 
+  // STMBC-HOOK(stmb-auto): PHA-1846 — the zero-argument "just run it" button.
+  // No required args on purpose: it auto-detects everything (lorebook, audit
+  // notes, watermark) so a brand-new test chat and a 300-message chat both
+  // "just work" the same way.
+  const stmbAutoCmd = SlashCommand.fromProps({
+    name: "stmb-auto",
+    callback: handleStmbAutoCommand,
+    helpString: translate(
+      "Run the whole STMB-Auto pipeline over this chat with no setup: audit the story, write scene memories for everything new, and generate/refresh character & location lorebook entries. Usage: /stmb-auto",
+      "STMemoryBooks_Slash_StmbAuto_Help",
+    ),
+    returns: "Run summary string.",
+  });
+
   // STMBC-HOOK(auditor): fork slash commands — resumable full-chat audit + halt (plan §4.3, §2.1 H3).
   const stmbcAuditCmd = SlashCommand.fromProps({
     name: "stmbc-audit",
@@ -10525,6 +10775,7 @@ function registerSlashCommands() {
   SlashCommandParser.addCommandObject(highestMemCmd);
   SlashCommandParser.addCommandObject(setHighestMemCmd);
   SlashCommandParser.addCommandObject(stmbStopCmd);
+  SlashCommandParser.addCommandObject(stmbAutoCmd);
   SlashCommandParser.addCommandObject(stmbcAuditCmd);
   SlashCommandParser.addCommandObject(stmbcDetectCmd);
   SlashCommandParser.addCommandObject(stmbcStopCmd);
