@@ -1894,7 +1894,7 @@ Lorebook filenames used by Auto-Create are separately sanitized for filesystem-r
 
 ## 25. Job Queue and Retry Controls
 
-The optional queue requires Chat Top Bar / Chat Top Info Bar.
+The optional queue requires Chat Top Bar / Chat Top Info Bar. When the queue is available, regenerating a Memory, consolidation, or Side Prompt creates a regeneration job; the replacement remains in review until you approve it.
 
 The **Memory Books Jobs** drawer can show:
 

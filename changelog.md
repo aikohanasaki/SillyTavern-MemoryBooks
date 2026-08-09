@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.1 (August 9, 2026)
+- Add interactive guide and download to UI.
+
 ## v8.6.0 (August 8, 2026)
 - Memory Assistance: Added an after-memory Clip review workflow with Off, Update, Update and Suggest, and Automatic modes. It can propose reviewable updates to existing Clips, automatically apply validated updates, and suggest new Topical Clip topics.
 - Topical Clip Sources: Topical Clips can now use saved Memories, a selected range of chat messages, or both. Temporarily unhidden messages are restored after compilation.

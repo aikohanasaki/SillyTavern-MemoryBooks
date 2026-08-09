@@ -120,6 +120,7 @@ import {
 } from "./utils.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
+  CONSOLIDATION_REGENERATION_PRESET_KEY,
   GROUP_CHAT_CONSOLIDATION_PRESET_KEY,
   MEMORY_TIER_CACHE_REFRESH_EVENT,
   MEMORY_GENERATION,
@@ -134,6 +135,7 @@ import {
   evaluateTrackers,
   generateSidePromptFromSnapshot,
   isSidePromptEntryTitle,
+  prepareSidePromptRegenerationRun,
   runAfterMemory,
   runSidePrompt,
   runSidePromptSet,
@@ -436,6 +438,10 @@ export function isMemoryProcessing() {
 export { currentProfile };
 
 const MODULE_NAME = "STMemoryBooks";
+const AI_REFERENCE_MANUAL_URL = new URL(
+  "./userguides/1 Memory_Books_AI_Reference_Manual.md",
+  import.meta.url,
+).href;
 
 let hasBeenInitialized = false;
 let branchLorebookController = null;
@@ -4213,7 +4219,7 @@ function getCurrentSummaryTitleFormat(tier) {
     : getDefaultSummaryTitleFormat(tier);
 }
 
-async function buildBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, task) {
+async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, options = {}) {
   const settings = initializeSettings();
   const currentSceneRequest = createSceneRequest(eligibility.sceneStart, eligibility.sceneEnd);
   if (!isRegenerationSourceChatCurrent(
@@ -4279,7 +4285,6 @@ async function buildBaseRegenerationDraft(lorebookName, lorebookData, entry, eli
   if (!effectiveSettings) return null;
 
   const { profileSettings, summaryCount, tokenThreshold } = effectiveSettings;
-  currentProfile = profileSettings;
   const context = getCurrentMemoryBooksContext();
   const characterNames = Array.isArray(entry?.characterFilter?.names)
     ? entry.characterFilter.names.filter(Boolean)
@@ -4310,29 +4315,15 @@ async function buildBaseRegenerationDraft(lorebookName, lorebookData, entry, eli
     summaryCount,
   ).summaries;
 
-  toastr.info(
-    translate("Regenerating memory...", "STMemoryBooks_Regeneration_Working"),
-    "STMemoryBooks",
-    { timeOut: 0 },
-  );
-  const memoryResult = await createMemory(compiledScene, profileSettings, {
-    tokenWarningThreshold: tokenThreshold,
-    signal: task.signal,
-  });
-  task.throwIfStopped();
-  const titleFormat = memoryResult.titleFormat ||
-    profileSettings.titleFormat ||
-    effectiveSettings.settings.titleFormat;
   return {
-    generatedTitle: String(memoryResult.extractedTitle || "").trim(),
-    generatedContent: String(memoryResult.content || "").trim(),
-    generatedKeywords: Array.isArray(memoryResult.suggestedKeys) ? memoryResult.suggestedKeys : [],
-    formatTitle: semanticTitle => generateEntryTitleAtNumber(
-      titleFormat,
-      { ...memoryResult, extractedTitle: semanticTitle },
-      eligibility.sequenceNumber,
-      { forceNumber: true },
-    ),
+    kind: "memory",
+    compiledScene,
+    profileSettings: options.snapshotProfile
+      ? await snapshotProfilePrompts(profileSettings)
+      : profileSettings,
+    tokenThreshold,
+    fallbackTitleFormat: effectiveSettings.settings.titleFormat,
+    sequenceNumber: eligibility.sequenceNumber,
     sourceUids: [],
     sourceFingerprints: {},
     sourceChatRange: {
@@ -4343,21 +4334,92 @@ async function buildBaseRegenerationDraft(lorebookName, lorebookData, entry, eli
   };
 }
 
-async function buildConsolidationRegenerationDraft(lorebookData, eligibility) {
+async function generateBaseRegenerationDraft(prepared, task) {
+  const isQueued = typeof task.throwIfCancelled === "function";
+  if (!isQueued) {
+    toastr.info(
+      translate("Regenerating memory...", "STMemoryBooks_Regeneration_Working"),
+      "STMemoryBooks",
+      { timeOut: 0 },
+    );
+  }
+  // Direct regeneration uses the legacy global profile hook. Queued generation
+  // follows the existing queued-memory path and relies on its captured profile.
+  if (!isQueued) {
+    currentProfile = prepared.profileSettings;
+  }
+  const memoryResult = await createMemory(prepared.compiledScene, prepared.profileSettings, {
+    tokenWarningThreshold: prepared.tokenThreshold,
+    signal: task.signal,
+  });
+  task.throwIfStopped?.();
+  task.throwIfCancelled?.();
+  const titleFormat = memoryResult.titleFormat ||
+    prepared.profileSettings.titleFormat ||
+    prepared.fallbackTitleFormat;
+  return {
+    generatedTitle: String(memoryResult.extractedTitle || "").trim(),
+    generatedContent: String(memoryResult.content || "").trim(),
+    generatedKeywords: Array.isArray(memoryResult.suggestedKeys) ? memoryResult.suggestedKeys : [],
+    formatTitle: semanticTitle => generateEntryTitleAtNumber(
+      titleFormat,
+      { ...memoryResult, extractedTitle: semanticTitle },
+      prepared.sequenceNumber,
+      { forceNumber: true },
+    ),
+    sourceUids: prepared.sourceUids,
+    sourceFingerprints: prepared.sourceFingerprints,
+    sourceChatRange: prepared.sourceChatRange,
+    sourceChatFingerprint: prepared.sourceChatFingerprint,
+  };
+}
+
+async function prepareConsolidationRegenerationDraft(lorebookData, eligibility, options = {}) {
   const sources = eligibility.sourceUids.map(uid => getEntryByUid(lorebookData, uid));
   const sourceFingerprints = Object.fromEntries(
     sources.map(source => [String(source.uid), fingerprintRegenerationEntry(source)]),
   );
-  toastr.info(
-    translate("Regenerating consolidation...", "STMemoryBooks_Regeneration_WorkingConsolidation"),
-    "STMemoryBooks",
-    { timeOut: 0 },
-  );
-  const analysis = await runSummaryAnalysisSequential(
+  const analysisOptions = buildConsolidationRegenerationOptions(sources.length, eligibility.tier);
+  let profileSettings = null;
+  if (options.snapshotProfile) {
+    const settings = initializeSettings();
+    profileSettings = await snapshotProfilePrompts(
+      settings.profiles?.[settings.defaultProfile] || null,
+    );
+    analysisOptions.promptText = await ArcPrompts.getPrompt(
+      CONSOLIDATION_REGENERATION_PRESET_KEY,
+    );
+  }
+  return {
+    kind: "consolidation",
     sources,
-    buildConsolidationRegenerationOptions(sources.length, eligibility.tier),
-    null,
+    tier: eligibility.tier,
+    sequenceNumber: eligibility.sequenceNumber,
+    titleFormat: getCurrentSummaryTitleFormat(eligibility.tier),
+    analysisOptions,
+    profileSettings,
+    sourceUids: [...eligibility.sourceUids],
+    sourceFingerprints,
+    sourceChatRange: null,
+    sourceChatFingerprint: null,
+  };
+}
+
+async function generateConsolidationRegenerationDraft(prepared, task) {
+  if (typeof task.throwIfCancelled !== "function") {
+    toastr.info(
+      translate("Regenerating consolidation...", "STMemoryBooks_Regeneration_WorkingConsolidation"),
+      "STMemoryBooks",
+      { timeOut: 0 },
+    );
+  }
+  const analysis = await runSummaryAnalysisSequential(
+    prepared.sources,
+    prepared.analysisOptions,
+    prepared.profileSettings,
   );
+  task.throwIfStopped?.();
+  task.throwIfCancelled?.();
   const candidates = Array.isArray(analysis?.summaryCandidates)
     ? analysis.summaryCandidates
     : [];
@@ -4368,25 +4430,25 @@ async function buildConsolidationRegenerationDraft(lorebookData, eligibility) {
     ));
   }
   const candidate = candidates[0];
-  const titleFormat = getCurrentSummaryTitleFormat(eligibility.tier);
+  const titleFormat = prepared.titleFormat;
   return {
     generatedTitle: String(candidate.title || "").trim(),
     generatedContent: String(candidate.summary || "").trim(),
     generatedKeywords: Array.isArray(candidate.keywords) ? candidate.keywords : [],
     formatTitle: semanticTitle => formatSummaryTitle(
-      eligibility.tier,
+      prepared.tier,
       titleFormat,
       semanticTitle,
-      eligibility.sequenceNumber,
+      prepared.sequenceNumber,
     ),
-    sourceUids: [...eligibility.sourceUids],
-    sourceFingerprints,
-    sourceChatRange: null,
-    sourceChatFingerprint: null,
+    sourceUids: prepared.sourceUids,
+    sourceFingerprints: prepared.sourceFingerprints,
+    sourceChatRange: prepared.sourceChatRange,
+    sourceChatFingerprint: prepared.sourceChatFingerprint,
   };
 }
 
-async function buildSidePromptRegenerationDraft(entry, eligibility, task) {
+async function prepareSidePromptRegenerationDraft(entry, eligibility, options = {}) {
   const settings = initializeSettings();
   const currentSceneRequest = createSceneRequest(eligibility.sceneStart, eligibility.sceneEnd);
   if (String(eligibility.snapshot.chatId) !== String(currentSceneRequest.chatId || "")) {
@@ -4427,25 +4489,19 @@ async function buildSidePromptRegenerationDraft(entry, eligibility, task) {
     eligibility.sceneStart,
     eligibility.sceneEnd,
   );
-  toastr.info(
-    translate(
-      "Regenerating side prompt...",
-      "STMemoryBooks_SidePromptRegeneration_Working",
-    ),
-    "STMemoryBooks",
-    { timeOut: 0 },
-  );
-  const generated = await generateSidePromptFromSnapshot({
+  const preparedRun = options.snapshotProfile
+    ? await prepareSidePromptRegenerationRun({
+        snapshot: eligibility.snapshot,
+        compiledScene,
+      })
+    : null;
+  return {
+    kind: "sidePrompt",
+    entryTitle: String(entry.comment || ""),
+    entryKeywords: Array.isArray(entry.key) ? [...entry.key] : [],
     snapshot: eligibility.snapshot,
     compiledScene,
-    signal: task.signal,
-  });
-  task.throwIfStopped();
-  return {
-    generatedTitle: String(entry.comment || ""),
-    generatedContent: generated.content,
-    generatedKeywords: Array.isArray(entry.key) ? [...entry.key] : [],
-    formatTitle: () => String(entry.comment || ""),
+    preparedRun,
     sourceUids: [],
     sourceFingerprints: {},
     sourceChatRange: {
@@ -4453,8 +4509,59 @@ async function buildSidePromptRegenerationDraft(entry, eligibility, task) {
       end: eligibility.sceneEnd,
     },
     sourceChatFingerprint,
+  };
+}
+
+async function generateSidePromptRegenerationDraft(prepared, task) {
+  if (typeof task.throwIfCancelled !== "function") {
+    toastr.info(
+      translate(
+        "Regenerating side prompt...",
+        "STMemoryBooks_SidePromptRegeneration_Working",
+      ),
+      "STMemoryBooks",
+      { timeOut: 0 },
+    );
+  }
+  const generated = await generateSidePromptFromSnapshot({
+    snapshot: prepared.snapshot,
+    compiledScene: prepared.compiledScene,
+    preparedRun: prepared.preparedRun,
+    signal: task.signal,
+  });
+  task.throwIfStopped?.();
+  task.throwIfCancelled?.();
+  return {
+    generatedTitle: prepared.entryTitle,
+    generatedContent: generated.content,
+    generatedKeywords: prepared.entryKeywords,
+    formatTitle: () => prepared.entryTitle,
+    sourceUids: prepared.sourceUids,
+    sourceFingerprints: prepared.sourceFingerprints,
+    sourceChatRange: prepared.sourceChatRange,
+    sourceChatFingerprint: prepared.sourceChatFingerprint,
     contentOnly: true,
   };
+}
+
+async function prepareLorebookRegenerationDraft(lorebookName, lorebookData, entry, eligibility, options = {}) {
+  if (eligibility.kind === "memory") {
+    return await prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, options);
+  }
+  if (eligibility.kind === "sidePrompt") {
+    return await prepareSidePromptRegenerationDraft(entry, eligibility, options);
+  }
+  return await prepareConsolidationRegenerationDraft(lorebookData, eligibility, options);
+}
+
+async function generateLorebookRegenerationDraft(prepared, task) {
+  if (prepared.kind === "memory") {
+    return await generateBaseRegenerationDraft(prepared, task);
+  }
+  if (prepared.kind === "sidePrompt") {
+    return await generateSidePromptRegenerationDraft(prepared, task);
+  }
+  return await generateConsolidationRegenerationDraft(prepared, task);
 }
 
 async function commitRegeneratedLorebookEntry({
@@ -4523,6 +4630,73 @@ async function commitRegeneratedLorebookEntry({
   });
 }
 
+async function executeQueuedLorebookRegenerationJob(job, jobContext) {
+  const payload = job?.payload || {};
+  const lorebookName = String(payload.lorebookName || job.lorebookName || "").trim();
+  const entryUid = String(payload.entryUid || "").trim();
+  const prepared = payload.prepared;
+  if (!lorebookName || !entryUid || !prepared?.kind || !payload.originalEntry) {
+    throw new Error("Regeneration job snapshot is incomplete.");
+  }
+
+  jobContext.setState("generating", { detail: job.detail });
+  const draft = await generateLorebookRegenerationDraft(prepared, jobContext);
+  jobContext.throwIfCancelled();
+
+  const approval = await awaitStmbJobApproval(
+    jobContext,
+    {
+      kind: "regenerationApproval",
+      title: job.title,
+      detail: job.detail,
+      open: async () => {
+        const review = await showRegenerationReviewPopup({
+          originalEntry: payload.originalEntry,
+          generatedTitle: draft.generatedTitle,
+          generatedContent: draft.generatedContent,
+          generatedKeywords: draft.generatedKeywords,
+          formatTitle: draft.formatTitle,
+          linkedLorebooks: payload.linkedLorebooks || [],
+          contentOnly: draft.contentOnly === true,
+        });
+        return review.action === "replace"
+          ? { decision: "accept", review }
+          : { decision: "cancel" };
+      },
+    },
+    { detail: job.detail },
+  );
+  if (approval?.decision === "cancel" || approval?.decision === "reject") {
+    jobContext.patch({ state: "canceled", detail: "Canceled in approval" });
+    return;
+  }
+  if (approval?.decision === "error") {
+    throw approval.error || new Error("Regeneration approval failed.");
+  }
+  if (!approval?.review) {
+    throw new Error("Regeneration approval did not include a replacement.");
+  }
+
+  jobContext.throwIfCancelled();
+  jobContext.setState("saving", { detail: lorebookName });
+  await commitRegeneratedLorebookEntry({
+    lorebookName,
+    entryUid,
+    targetFingerprint: payload.targetFingerprint,
+    sourceUids: draft.sourceUids,
+    sourceFingerprints: draft.sourceFingerprints,
+    sourceChatRange: draft.sourceChatRange,
+    sourceChatFingerprint: draft.sourceChatFingerprint,
+    review: approval.review,
+    contentOnly: draft.contentOnly === true,
+  });
+  jobContext.setResult({
+    lorebookName,
+    entryUid,
+    entryTitle: approval.review.formattedTitle || payload.originalEntry.comment || "",
+  });
+}
+
 async function handleLorebookEntryRegeneration(button) {
   if (isProcessingMemory || isProcessingArc) {
     toastr.warning(
@@ -4562,12 +4736,49 @@ async function handleLorebookEntryRegeneration(button) {
     entryKind = eligibility.kind;
     const targetFingerprint = fingerprintRegenerationEntry(entry);
     const linkedLorebooks = await findLinkedManualGroupLorebooks(lorebookName, entry);
-    const draft = eligibility.kind === "memory"
-      ? await buildBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, task)
-      : eligibility.kind === "sidePrompt"
-        ? await buildSidePromptRegenerationDraft(entry, eligibility, task)
-        : await buildConsolidationRegenerationDraft(lorebookData, eligibility);
-    if (!draft) return;
+    const prepared = await prepareLorebookRegenerationDraft(
+      lorebookName,
+      lorebookData,
+      entry,
+      eligibility,
+      { snapshotProfile: areStmbJobsEnabled() },
+    );
+    if (!prepared) return;
+
+    if (areStmbJobsEnabled()) {
+      const chatRef = getCurrentStmbChatRef();
+      enqueueStmbJob({
+        type: "regeneration",
+        title: entryKind === "sidePrompt"
+          ? translate("Regenerate side prompt", "STMemoryBooks_SidePromptRegeneration_Button")
+          : translate("Regenerate memory", "STMemoryBooks_Regeneration_Button"),
+        detail: String(entry.comment || ""),
+        chatRef,
+        chatKey: getStmbChatKey(chatRef),
+        lorebookName,
+        range: prepared.sourceChatRange
+          ? {
+              sceneStart: prepared.sourceChatRange.start,
+              sceneEnd: prepared.sourceChatRange.end,
+            }
+          : null,
+        payload: {
+          lorebookName,
+          entryUid,
+          targetFingerprint,
+          originalEntry: deepClone(entry),
+          linkedLorebooks,
+          prepared,
+        },
+      });
+      toastr.info(
+        translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
+        "STMemoryBooks",
+      );
+      return;
+    }
+
+    const draft = await generateLorebookRegenerationDraft(prepared, task);
     task.throwIfStopped();
     toastr.clear();
 
@@ -10068,6 +10279,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
   };
 
   return {
+    aiReferenceManualUrl: AI_REFERENCE_MANUAL_URL,
     hasScene: !!sceneData,
     sceneData: sceneData,
     highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,
@@ -12789,6 +13001,7 @@ async function init() {
   await refreshMemoryTierMacroCache();
   registerStmbJobExecutor("memory", executeQueuedMemoryJob);
   registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
+  registerStmbJobExecutor("regeneration", executeQueuedLorebookRegenerationJob);
   subscribeToStmbJobs(handleStmbJobStateChanged);
   initStmbJobsIfTopInfoBarEnabled();
 

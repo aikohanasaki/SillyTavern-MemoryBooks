@@ -8,6 +8,34 @@ import { Handlebars } from '../../../../lib.js';
  */
 export const settingsTemplate = Handlebars.compile(`
     <h2 data-i18n="STMemoryBooks_Settings">📕 Memory Books</h2>
+
+        <details class="stmb-help-drawer info-block hint">
+            <summary>
+                <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+                <span data-i18n="STMemoryBooks_InteractiveGuideSummary">Help &amp; Guides</span>
+            </summary>
+            <div class="stmb-help-drawer-content">
+                <div class="stmb-help-drawer-copy">
+                    <p data-i18n="STMemoryBooks_InteractiveGuideDescription">Ask the Interactive Memory Books Guide about setup, features, workflows, and troubleshooting.</p>
+                    <small class="opacity70p" data-i18n="STMemoryBooks_InteractiveGuideSignInNote">Opens Gemini in a new tab. Google sign-in required.</small>
+                </div>
+                <a class="menu_button menu_button_icon interactable stmb-help-drawer-link"
+                    href="https://gemini.google.com/gem/1XRy0GEu_iWmqdjMV1ZpD59rexoFDJo7B?usp=sharing"
+                    target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    <span data-i18n="STMemoryBooks_OpenInteractiveGuide">Open Interactive Guide</span>
+                </a>
+            </div>
+            <div class="stmb-help-drawer-content stmb-help-drawer-manual">
+                <p class="stmb-help-drawer-copy" data-i18n="STMemoryBooks_AIReferenceManualOption">Prefer another AI assistant? Download the Memory Books AI Reference Manual, upload it to your preferred assistant, and ask it questions about Memory Books.</p>
+                <a class="menu_button menu_button_icon interactable stmb-help-drawer-link"
+                    href="{{aiReferenceManualUrl}}" download="Memory_Books_AI_Reference_Manual.md">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i>
+                    <span data-i18n="STMemoryBooks_DownloadAIReferenceManual">Download AI Reference Manual (.md)</span>
+                </a>
+            </div>
+        </details>
+
         {{#if hasScene}}
         <div id="stmb-scene" class="padding10 marginBot10">
             <div class="marginBot5" data-i18n="STMemoryBooks_CurrentScene">Current Scene:</div>

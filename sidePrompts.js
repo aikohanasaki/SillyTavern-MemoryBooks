@@ -683,9 +683,9 @@ function getSidePromptRegenerationMetadata(tpl, priorContent, compiledScene, run
 }
 
 /**
- * Regenerate a persisted side-prompt run with the current template and settings.
+ * Resolve a persisted side-prompt run into queue-safe generation inputs.
  */
-export async function generateSidePromptFromSnapshot({ snapshot, compiledScene, signal = null } = {}) {
+export async function prepareSidePromptRegenerationRun({ snapshot, compiledScene } = {}) {
     const tpl = await getTemplate(snapshot?.templateKey);
     if (!tpl) {
         const error = new Error('The side-prompt template used for this run no longer exists.');
@@ -699,13 +699,25 @@ export async function generateSidePromptFromSnapshot({ snapshot, compiledScene, 
         runtimeMacros: snapshot.runtimeMacros,
         priorContentOverride: snapshot.priorContent,
     });
+    return {
+        finalPrompt: prepared.finalPrompt,
+        conn: prepared.conn,
+        template: tpl,
+    };
+}
+
+/**
+ * Regenerate a persisted side-prompt run with the current template and settings.
+ */
+export async function generateSidePromptFromSnapshot({ snapshot, compiledScene, preparedRun = null, signal = null } = {}) {
+    const prepared = preparedRun || await prepareSidePromptRegenerationRun({ snapshot, compiledScene });
     const content = await runLLM(prepared.finalPrompt, prepared.conn, { signal });
     if (!content || !String(content).trim()) {
         const error = new Error('The regenerated side prompt was blank.');
         error.code = 'STMB_SIDE_PROMPT_REGENERATION_BLANK';
         throw error;
     }
-    return { content: String(content).trim(), template: tpl };
+    return { content: String(content).trim(), template: prepared.template };
 }
 
 async function runSidePromptAttempt({ taskLabel, finalPrompt, conn, runEpoch }) {
