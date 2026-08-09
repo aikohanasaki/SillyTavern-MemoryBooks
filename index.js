@@ -1677,6 +1677,13 @@ async function handleStmbCatchupCommand(namedArgs) {
 // abort the rest, because the whole point is "run it and see what happened,"
 // not "stop at the first popup."
 async function handleStmbAutoCommand() {
+  // The whole function is one try/catch, not just its named steps: config
+  // resolution, the lorebook-binding block, and the memory-chunk validator
+  // all run un-stepped between the toasts below, and an uncaught throw there
+  // used to kill the async function with zero user-facing feedback — "it
+  // says it's started but nothing after." Every path out of this function
+  // must produce a toast.
+  try {
   if (isProcessingMemory) {
     toastr.info(
       translate(
@@ -1875,6 +1882,12 @@ async function handleStmbAutoCommand() {
   });
   toastr.success(summary, translate("STMemoryBooks", "index.toast.title"));
   return summary;
+  } catch (error) {
+    console.error("STMemoryBooks: /stmb-auto failed:", error);
+    const msg = `STMB Auto failed: ${error?.message || error}`;
+    toastr.error(msg, translate("STMemoryBooks", "index.toast.title"));
+    return msg;
+  }
 }
 
 async function handleNextMemoryCommand(namedArgs, unnamedArgs) {

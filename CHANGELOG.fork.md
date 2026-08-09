@@ -17,6 +17,27 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > contents and is preserved for audit purposes.
 
 
+## v0.0.12 (2026-08-09) — fix: /stmb-auto could die silently with no toast at all
+
+Closes [PHA-1846](/PHA/issues/PHA-1846). After v0.0.10/v0.0.11 the user reran
+`/stmb-auto` and reported: "it pops up and says its started... but nothing
+after." Root cause: `handleStmbAutoCommand` (`index.js`) had no top-level
+try/catch. Its own doc comment claims "every step is best-effort... a failure
+in one step does not abort the rest," but that was only true for the three
+explicitly-wrapped steps (audit, scene memory, coverage) — the code between
+them (config resolution, the lorebook auto-create/bind block, and the
+un-wrapped `await validateStmbCatchupNonInteractive(...)`, which itself has an
+un-wrapped `await validateManualGroupLorebookBindingsForMemory(...)` inside
+it) could throw and kill the whole async function after the initial "starting"
+toast, with zero further feedback — indistinguishable from a hang. The entire
+function body is now one try/catch that guarantees a final `toastr.error`
+with the real error message on any escaping throw. Also added per-chunk
+`toastr.info`/`toastr.warning` progress to the inline audit walk
+(`runAuditInline`, the no-jobs-dashboard path `/stmb-auto` actually uses) —
+previously the only inline-path feedback was a `console.warn` on error, so a
+real multi-chunk walk over a full chat had minutes of silence between the
+"reading the whole story" toast and the final summary.
+
 ## v0.0.11 (2026-08-09) — fix: Auditor extraction errors were never surfaced
 
 Closes [PHA-1846](/PHA/issues/PHA-1846). Per-chunk extraction failures inside
