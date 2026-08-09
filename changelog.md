@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ## v8.6.1 (August 9, 2026)
 - Add interactive guide and download to UI.
+- Fix regeneration skipping job queue.
 
 ## v8.6.0 (August 8, 2026)
 - Memory Assistance: Added an after-memory Clip review workflow with Off, Update, Update and Suggest, and Automatic modes. It can propose reviewable updates to existing Clips, automatically apply validated updates, and suggest new Topical Clip topics.
