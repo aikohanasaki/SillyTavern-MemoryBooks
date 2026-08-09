@@ -1819,7 +1819,13 @@ async function runStmbAutoPipeline(jobContext) {
   }
 
   // Step 3: chunked scene memories for everything not yet summarized.
+  // Recomputed here (not reused from the enqueueing caller) because this
+  // function runs as the deferred body of a queued job — by the time it
+  // executes, `chat` may have grown past whatever `lastIndex` was at
+  // enqueue time. `runStmbAutoPipeline` is a top-level function, not a
+  // closure over the caller, so there's nothing to reuse anyway.
   const highestProcessed = getHighestMemoryProcessed();
+  const lastIndex = chat.length - 1;
   const memoryChunks = planAutoMemoryChunks(highestProcessed, lastIndex, stmbAutoCfg.memoryInterval);
   let memoriesCreated = 0;
   let memorySkipReason = null;
