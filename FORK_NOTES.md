@@ -100,6 +100,55 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
    `/stmbc-audit`. Additive; no upstream behavior changed. They write through STMB's
    own `addlore.upsertLorebookEntryByTitle`, never the memory-creation path.
 
+### `index.js` — PHA-1846 (`/stmb-auto`)
+
+1. **Import the orchestrator's pure core, plus the auditor/auditor-jobs pieces
+   it reuses that were previously module-private** (immediately after the
+   P5.2 auditor-jobs import).
+   ```js
+   import {
+     executeAuditJob, handleAuditCommand, handleStmbcStopCommand,
+     runAuditInline, getAuditNotes, resolveAuditConfig,
+   } from "./auditor.js";
+   import {
+     handleCoverageCommand, handleRegenCommand,
+     resolveCoverageConfig, resolveRegenConfig,
+     loadBoundLorebook, entriesForCoverage, resolveJobsConnection, bulkGenerate,
+   } from "./auditorJobs.js";
+   import { auditCoverage, buildCoverageIndex } from "./auditorJobsCore.js";
+   // STMBC-HOOK(stmb-auto): PHA-1846 — the zero-argument "just run it" orchestrator.
+   import { resolveStmbAutoConfig, planAutoMemoryChunks, buildStmbAutoSummary } from "./stmbAutoCore.js";
+   import { refreshCatalogForCoverageRun } from "./catalog.js";
+   ```
+   *Why:* `handleStmbAutoCommand` (defined in `index.js` itself, not a separate
+   binding file — it needs deep access to `index.js`-local state:
+   `isProcessingMemory`, `chat`, `characters`, `this_chid`,
+   `getCurrentMemoryBooksContext`, `initializeSettings`,
+   `validateStmbCatchupNonInteractive`, `runSceneMemoryRange`) sequences
+   lorebook auto-create → full audit walk → chunked scene memories → headless
+   coverage bulk-generate. `runAuditInline`, `loadBoundLorebook`,
+   `entriesForCoverage`, `resolveJobsConnection`, and `bulkGenerate` (with a
+   new `cap` parameter) were module-private before this and are now exported
+   from their existing files rather than duplicated.
+
+2. **Define `handleStmbAutoCommand`** (right after `handleStmbCatchupCommand`,
+   before `handleNextMemoryCommand`). See the function's own header comment
+   in `index.js` for the four-step sequence and the `minChunks` relaxation.
+   *Why:* this is the command itself — a zero-argument, best-effort, no-popup
+   run over the whole chat. Every step failure is folded into the final
+   summary string rather than aborting the remaining steps.
+
+3. **Register the `/stmb-auto` slash command** (inside `registerSlashCommands()`,
+   immediately before the P5.1 `stmbcAuditCmd`; one `SlashCommand.fromProps({…})`
+   tagged `// STMBC-HOOK(stmb-auto):` plus its `addCommandObject(...)` line).
+   *Why:* no required args, unlike every other fork command in this family
+   (`/stmbc-audit [restart]`, `/stmbc-coverage`, `/stmb-catchup interval= start=
+   end=`) — that is the entire point of PHA-1846: those commands each have
+   their own precondition a first-time user hits as a silent-looking instant
+   failure (no bound lorebook, no prior audit notes, required args with no
+   defaults). Additive; no upstream behavior changed, and none of the three
+   pipelines it calls are modified — only three functions gained `export`.
+
 ### `clipManager.js` — Phase 3 / P3.1 (Clipper+)
 
 1. **Import the clip-save hook** (immediately after the `./stmbJobs.js` import).
@@ -220,6 +269,18 @@ Line numbers are indicative (pre-minified source `index.js`), not load-bearing.
 - `auditorJobs.test.js` — `node --test auditorJobs.test.js` (20 cases; the core is
   fully exercised without SillyTavern — coverage classification, source selection,
   parse/retry, and diff).
+- `stmbAutoCore.js` — pure, SillyTavern-free core for `/stmb-auto` (PHA-1846, DI):
+  merges the auto-run config (`memoryInterval`/`bulkGenerateCap`/`coverageMinChunks`,
+  defaults <- global <- per-chat, same shape as `resolveAuditConfig`), plans the
+  scene-memory chunks from the watermark to the end of the chat
+  (`planAutoMemoryChunks`), and formats the final run summary
+  (`buildStmbAutoSummary`). The command itself (`handleStmbAutoCommand`) is not a
+  separate binding file — it lives directly in `index.js` (see the PHA-1846 entry
+  above) because it orchestrates `index.js`-local state the auditor/auditor-jobs
+  binding layers don't have access to.
+- `stmbAutoCore.test.js` — `node --test stmbAutoCore.test.js` (22 cases: config
+  merge precedence, chunk-plan edge cases — unset/stale watermark, already caught
+  up, interval larger than the chat, last-chunk clipping — and summary formatting).
 
 ## P7.1 — entry catalog / retrieval index (2026-07-31, PHA-1634)
 

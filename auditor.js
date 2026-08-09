@@ -189,8 +189,11 @@ export async function executeAuditJob(job, context) {
  * Inline fallback walk when the jobs dashboard is unavailable. Uses a module
  * AbortController so /stmbc-stop can halt it; checkpoints exactly like the job
  * path, so a reload still resumes.
+ *
+ * Exported (not just used by handleAuditCommand) so /stmb-auto (PHA-1846) can
+ * drive the same walk-to-completion inline, without a dashboard dependency.
  */
-async function runAuditInline(restart) {
+export async function runAuditInline(restart) {
     if (inlineAbort) {
         return 'An audit is already running. Use /stmbc-stop to halt it.';
     }

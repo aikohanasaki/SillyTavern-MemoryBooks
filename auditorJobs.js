@@ -89,8 +89,11 @@ export function resolveRegenConfig(autoModule, chatMetadata) {
 /**
  * Resolve the extraction/derivation connection from a configured profile index, or the
  * STMB default profile. Same cheap-model rationale as the auditor walker.
+ *
+ * Exported so /stmb-auto (PHA-1846) can resolve the same connection headlessly
+ * instead of duplicating the profile-index-or-default lookup.
  */
-function resolveJobsConnection(profileIdx) {
+export function resolveJobsConnection(profileIdx) {
     const settings = extension_settings.STMemoryBooks || {};
     const profiles = Array.isArray(settings.profiles) ? settings.profiles : [];
     let idx = Number(profileIdx);
@@ -119,8 +122,12 @@ function makeDerive(conn) {
 
 // ---------------------------------------------------------------- bound lorebook
 
-/** Resolve the bound lorebook (name + loaded data), or null — same source of truth as injection/save. */
-async function loadBoundLorebook() {
+/**
+ * Resolve the bound lorebook (name + loaded data), or null — same source of truth as
+ * injection/save. Exported for /stmb-auto (PHA-1846), which needs the same lookup
+ * before it can run coverage headlessly.
+ */
+export async function loadBoundLorebook() {
     const name = (typeof chat_metadata === 'object' && chat_metadata) ? chat_metadata[METADATA_KEY] : null;
     if (!name) return null;
     try {
@@ -133,8 +140,11 @@ async function loadBoundLorebook() {
     }
 }
 
-/** Map the bound lorebook's entries into the shape auditCoverage / buildCoverageIndex expect. */
-function entriesForCoverage(lorebookData) {
+/**
+ * Map the bound lorebook's entries into the shape auditCoverage / buildCoverageIndex
+ * expect. Exported for /stmb-auto (PHA-1846), same reason as loadBoundLorebook above.
+ */
+export function entriesForCoverage(lorebookData) {
     const out = [];
     for (const entry of Object.values(lorebookData?.entries || {})) {
         if (!entry) continue;
@@ -226,9 +236,12 @@ function renderCoverageReport(report, lorebookName) {
 /**
  * Run a bulk one-click generate over report items (missing → create, thin → refresh). Sequential,
  * auto-approved (no per-item diff — use /stmbc-regen for a single reviewed regeneration). Capped.
+ *
+ * Exported (with a `cap` override) so /stmb-auto (PHA-1846) can run this headlessly — a
+ * full-story run can turn up more gaps than the interactive coverage popup's default cap.
  */
-async function bulkGenerate(items, { notes, lorebook, coverageIndex, regenCfg, auditCfg, conn }) {
-    const slice = items.slice(0, BULK_GENERATE_CAP);
+export async function bulkGenerate(items, { notes, lorebook, coverageIndex, regenCfg, auditCfg, conn }, cap = BULK_GENERATE_CAP) {
+    const slice = items.slice(0, cap);
     const dropped = items.length - slice.length;
     let ok = 0;
     const failures = [];
@@ -244,7 +257,7 @@ async function bulkGenerate(items, { notes, lorebook, coverageIndex, regenCfg, a
         }
     }
     let msg = `Generated ${ok}/${slice.length} entr${slice.length === 1 ? 'y' : 'ies'} into "${lorebook.name}".`;
-    if (dropped > 0) msg += ` ${dropped} more not processed (cap ${BULK_GENERATE_CAP}); re-run to continue.`;
+    if (dropped > 0) msg += ` ${dropped} more not processed (cap ${cap}); re-run to continue.`;
     if (failures.length) { msg += ` ${failures.length} failed.`; console.warn(`${LOG}: bulk generate failures`, failures); }
     return msg;
 }
