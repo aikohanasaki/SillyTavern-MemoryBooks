@@ -17,6 +17,46 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > contents and is preserved for audit purposes.
 
 
+## v0.0.8 (2026-08-09) — /stmb-auto: the zero-argument "just run it" button
+
+Closes [PHA-1846](/PHA/issues/PHA-1846). Adds a single command, `/stmb-auto`,
+that runs the whole STMB-Auto pipeline over the current chat with no
+arguments and no popups: audits the full story, writes scene memories for
+everything not yet summarized, and generates/refreshes character & location
+lorebook entries — the "North Star" UX the existing multi-command workflow
+(`/stmbc-audit` → `/stmbc-coverage` → `/stmb-catchup`) never delivered on its
+own, because each of those commands has its own preconditions (a bound
+lorebook, prior audit notes, required `interval`/`start`/`end` args) that a
+first-time user hits as an instant, silent-looking failure.
+
+- New `stmbAutoCore.js` (pure, DI, 22 `node:test` cases): chunk-planning from
+  the watermark to the end of the chat, and the run-summary formatter.
+- `/stmb-auto` (wired in `index.js`, `STMBC-HOOK(stmb-auto)`): auto-creates
+  and binds a lorebook headlessly when none is bound (`autoCreateLorebook`,
+  bypassing the interactive recovery popup `initiateMemoryCreation` would
+  otherwise show); runs the auditor walk to completion
+  (`auditor.runAuditInline`, now exported); plans and writes scene memories
+  for every message after the last processed one, reusing `/stmb-catchup`'s
+  own non-interactive preflight (`validateStmbCatchupNonInteractive`) and
+  `runSceneMemoryRange`; then runs the coverage scan and bulk-generates every
+  missing/thin character or location entry headlessly (no popup — the
+  interactive-only `bulkGenerate` in `auditorJobs.js` is now exported with a
+  configurable cap instead of the coverage popup's fixed 25).
+- **The coverage salience gate is relaxed for this command specifically**:
+  `minChunks` defaults to 1 here (not the coverage job's own default of 2).
+  `/stmbc-coverage`'s gate requires a name to appear in ≥2 audit chunks, which
+  is mathematically impossible on any chat that fits in a single audit chunk
+  (≤ `chunkSize`, default 40, messages) — exactly the short test-chat case
+  this command is meant to handle from a cold start.
+- Every step is best-effort and reported in the final summary rather than
+  aborting the run: an audit extraction error, a blocked memory chunk, or a
+  coverage/lore failure each show up as a line in the toast instead of
+  stopping the other steps.
+- `auditorJobs.js` also exports `loadBoundLorebook`, `entriesForCoverage`, and
+  `resolveJobsConnection` (previously private) so the orchestrator reuses the
+  exact coverage/connection-resolution logic `/stmbc-coverage` uses, instead
+  of a second implementation.
+
 ## v0.0.7-sync (2026-08-05) — bring-upstream-side-prompt-toggle
 
 Pulls upstream's two `update documentation & add side prompt toggle` commits (`98b1ca7`, `3f74062`) on top of `sync/upstream-v8.5.0` (v8.5.0, 2026-08-01). Brings the engine forward from `35c8d21` to `3f74062`. Closes [PHA-1733](/PHA/issues/PHA-1733).
