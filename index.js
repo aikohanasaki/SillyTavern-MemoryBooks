@@ -1323,7 +1323,7 @@ function validateSceneMemoryRange(startId, endId) {
 // STMBC-HOOK(sentinel): exported so sentinel.js can memorize a detected scene
 // range via a direct in-extension call (plan §4.1). Signature unchanged.
 export async function runSceneMemoryRange(startId, endId, options = {}) {
-  const { showSceneToast = true } = options;
+  const { showSceneToast = true, skipJobQueue = false } = options;
 
   if (!validateSceneMemoryRange(startId, endId)) {
     return false;
@@ -1343,7 +1343,7 @@ export async function runSceneMemoryRange(startId, endId, options = {}) {
     );
   }
 
-  return (await initiateMemoryCreation()) === true;
+  return (await initiateMemoryCreation(null, { skipJobQueue })) === true;
 }
 
 function compileSceneForCatchupPreflight(sceneRequest, unhideBeforeMemory) {
@@ -1838,7 +1838,19 @@ async function runStmbAutoPipeline(jobContext) {
         );
         let success = false;
         try {
-          success = await runSceneMemoryRange(chunk.start, chunk.end, { showSceneToast: false });
+          // skipJobQueue: this loop is already the body of the "stmbAuto" job
+          // itself. Without this, initiateMemoryCreation would enqueue each
+          // chunk as its own "memory" job instead of writing it — and since
+          // only one non-concurrent job can run at a time, every one of those
+          // jobs sits queued behind this still-running "stmbAuto" job. The
+          // loop would then report "N/N scene memories created" (success is
+          // `true` on enqueue, not on write) and finish almost immediately,
+          // while the real generation only starts after this job ends — and
+          // is lost entirely if the chat/session changes before it runs.
+          success = await runSceneMemoryRange(chunk.start, chunk.end, {
+            showSceneToast: false,
+            skipJobQueue: true,
+          });
         } catch (error) {
           console.error("STMemoryBooks: /stmb-auto scene memory step failed:", error);
         }
@@ -5349,7 +5361,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
   });
 }
 
-async function initiateMemoryCreation(selectedProfileIndex = null) {
+async function initiateMemoryCreation(selectedProfileIndex = null, { skipJobQueue = false } = {}) {
   // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
   const context = getCurrentMemoryBooksContext();
   const memoryOriginSnapshot = captureMemoryOriginSnapshot(context);
@@ -5506,7 +5518,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       currentPopupInstance = null;
     }
 
-    if (areStmbJobsEnabled()) {
+    if (areStmbJobsEnabled() && !skipJobQueue) {
       const job = await buildQueuedMemoryJob(
         sceneData,
         lorebookValidation,
@@ -11935,9 +11947,6 @@ async function init() {
   // STMBC-HOOK(auditor): register the resumable audit chunk-walker job type so the
   // dashboard shows it and /stmbc-stop halts it (fork; plan §4.3).
   registerStmbJobExecutor("audit", executeAuditJob);
-  // PHA-1846 follow-up: /stmb-auto now queues through the Jobs panel (same
-  // pattern as "audit" above) instead of running silently outside of it.
-  registerStmbJobExecutor("stmbAuto", async (job, context) => runStmbAutoPipeline(context));
   // STMBC-HOOK(auditor-jobs-registration): P5.4 — register the four Phase-5 audit
   // job executors (coverage / regenerate / technical / claims) so the dashboard
   // buttons and /stmbc-audit-* slash commands actually find a handler. Without
@@ -11953,6 +11962,9 @@ async function init() {
       showClaimReverificationPopup,
     },
   );
+  // PHA-1846 follow-up: /stmb-auto now queues through the Jobs panel (same
+  // pattern as "audit" above) instead of running silently outside of it.
+  registerStmbJobExecutor("stmbAuto", async (job, context) => runStmbAutoPipeline(context));
   // STMBC-HOOK(sentinel): P2.1 + P2.3 integration — register the sentinel cycle job
   // type with the STMB jobs dashboard AND install the P2.1 detection engine behind
   // it. The executor owns the job contract (abort, ring buffer in

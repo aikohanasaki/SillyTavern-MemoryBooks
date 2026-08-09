@@ -277,3 +277,8 @@ test('defaults and prompt template are present', () => {
     assert.match(REGEN_PROMPT, /\{\{SOURCE\}\}/);
     assert.match(REGEN_PROMPT, /FROM THE SOURCE EXCERPTS BELOW ONLY/);
 });
+
+test('regen prompt tells the model to scope keywords to the entity itself, not co-mentioned entities', () => {
+    assert.match(REGEN_PROMPT, /Do NOT\s*\ninclude other characters, factions, items, or locations/);
+    assert.match(REGEN_PROMPT, /keyword shared with\s*\nanother entry makes both fire together/);
+});

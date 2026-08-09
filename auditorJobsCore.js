@@ -57,6 +57,11 @@ rewrites. Write a concise, factual, self-contained entry grounded in the excerpt
 who/what they are, defining traits, key relationships, and notable events. Prefer
 specifics that appear in the text over generic description. Do NOT invent facts that
 are not supported by the excerpts.
+For "keywords", list ONLY names/aliases/nicknames/titles that refer to "{{NAME}}"
+itself (e.g. a nickname, surname-only form, or title) — typically 2-5 entries. Do NOT
+include other characters, factions, items, or locations that are merely mentioned in
+the content, even if they recur often in the source excerpts: a keyword shared with
+another entry makes both fire together on unrelated mentions.
 Reply with ONLY a JSON object of exactly this shape — no prose, no code fences:
 {"title":"","keywords":[],"content":""}
 
