@@ -159,7 +159,8 @@ export async function executeAuditJob(job, context) {
         shouldHalt: () => context.isCancelled(),
         onProgress: (info) => {
             if (info?.error) {
-                context.setDetail(`chunk ${info.chunk}/${info.total} — extraction error, continuing`);
+                console.warn(`${LOG}: chunk ${info.chunk}/${info.total} extraction failed — ${info.error}`);
+                context.setDetail(`chunk ${info.chunk}/${info.total} — extraction error: ${info.error}`);
             } else {
                 context.setDetail(`chunk ${info.chunk}/${info.total} · ${info.summary?.characters ?? 0} chars, ${info.summary?.claims ?? 0} claims`);
             }
@@ -203,14 +204,23 @@ export async function runAuditInline(restart) {
     // errors must be tallied and surfaced in the final message instead of
     // vanishing silently (plan §6 P6.1: no silent poisoning).
     let erroredChunks = 0;
+    let firstError = '';
     try {
         const deps = buildAuditDeps({
             restart,
             shouldHalt: () => controller.signal.aborted,
-            onProgress: (info) => { if (info?.error) erroredChunks++; },
+            onProgress: (info) => {
+                if (info?.error) {
+                    erroredChunks++;
+                    if (!firstError) firstError = info.error;
+                    console.warn(`${LOG}: chunk ${info.chunk}/${info.total} extraction failed — ${info.error}`);
+                }
+            },
         });
         const result = await runAuditWalk(deps);
-        const errNote = erroredChunks > 0 ? ` (${erroredChunks} chunk${erroredChunks === 1 ? '' : 's'} had extraction errors and were skipped)` : '';
+        const errNote = erroredChunks > 0
+            ? ` (${erroredChunks} chunk${erroredChunks === 1 ? '' : 's'} had extraction errors and were skipped: ${firstError})`
+            : '';
         if (result.status === 'halted') return `Audit halted at chunk ${result.nextChunk}/${result.plan.chunks} (resumable).${errNote}`;
         const s = summarizeNotes(result.notes);
         return result.status === 'empty'

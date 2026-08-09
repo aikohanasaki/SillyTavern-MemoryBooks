@@ -17,6 +17,21 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > contents and is preserved for audit purposes.
 
 
+## v0.0.11 (2026-08-09) — fix: Auditor extraction errors were never surfaced
+
+Closes [PHA-1846](/PHA/issues/PHA-1846). Per-chunk extraction failures inside
+the audit walk (`auditorCore.js`) already carried the real error message
+(`onProgress({ ..., error: String(err?.message || err) })`), but both
+SillyTavern-binding call sites in `auditor.js` discarded it: the job-panel
+path (`executeAuditJob`) showed only "extraction error, continuing" with no
+detail, and the no-dashboard path (`runAuditInline`, what `/stmb-auto` and
+`/stmbc-audit` use without the jobs dashboard) only tallied a count, dropping
+the message entirely — not even to the console. That silent-failure pattern is
+exactly what made the v0.0.10 `current_st` bug ("3 chunks had extraction
+errors and were skipped") impossible to diagnose from the UI alone. Both call
+sites now `console.warn` each chunk's real error and include the first error
+message in the detail/summary text shown to the user.
+
 ## v0.0.10 (2026-08-09) — fix: Auditor/Librarian/Sentinel/Clipper+ silently failed on the default profile
 
 Closes [PHA-1846](/PHA/issues/PHA-1846). The user's own test screenshot showed
