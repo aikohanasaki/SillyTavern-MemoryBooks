@@ -17,6 +17,18 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > contents and is preserved for audit purposes.
 
 
+## v0.0.9 (2026-08-09) — fix: every memory add crashed with `noteCatalogEntryWrite is not defined`
+
+Closes [PHA-1846](/PHA/issues/PHA-1846). `addlore.js` called
+`noteCatalogEntryWrite` (the catalog-refresh hook exported by `catalog.js`)
+at all three lorebook-write sites but never imported it, so every memory
+write — manual, `/stmb-auto`, or otherwise — threw a `ReferenceError`
+*after* the entry had already been saved to the lorebook. This is what made
+testing look like every job "instantly completed or instantly failed": the
+write succeeded, then the very next line crashed and reported failure.
+Fixed by importing `noteCatalogEntryWrite` from `./catalog.js` in
+`addlore.js`.
+
 ## v0.0.8 (2026-08-09) — /stmb-auto: the zero-argument "just run it" button
 
 Closes [PHA-1846](/PHA/issues/PHA-1846). Adds a single command, `/stmb-auto`,
