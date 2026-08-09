@@ -16,6 +16,7 @@ import { executeSlashCommands } from '../../../slash-commands.js';
 import { getSceneMarkers, saveMetadataForCurrentContext } from './sceneManager.js';
 import { i18n } from './i18nHelpers.js';
 import * as safeAppendProvenanceLineModule from './nudgeHelpers.js';
+import { noteCatalogEntryWrite } from './catalog.js';
 import {
     applyFixedSequenceNumber,
     hasSequenceNumberPlaceholder,
