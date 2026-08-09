@@ -268,7 +268,7 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <small class="opacity50p" data-i18n="STMemoryBooks_MaxTokensDesc">Maximum number of tokens to use for memory summaries.</small>
             <input type="number" id="stmb-max-tokens" class="text_pole"
                 value="{{maxTokens}}" min="0" step="1"
-                placeholder="4000">
+                placeholder="0">
         </label>
     </div>
 

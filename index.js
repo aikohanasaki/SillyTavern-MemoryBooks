@@ -589,7 +589,15 @@ const SUPPORTED_COMPLETION_SOURCES = [
   "siliconflow",
 ];
 
-const DEFAULT_MAX_TOKENS = 4000;
+// PHA-1846: was 4000 (v5.2.1 upstream). That silently overrode the user's own
+// Chat Completion preset's Max Response Length for every STMB request (see
+// stmemory.js sendRawCompletionRequest: "STMB override wins if set (>0)"),
+// which is exactly backwards for /stmb-auto — a headless, full-story pass
+// needs whatever budget the user already configured, not a small manual-mode
+// default. 0 already means "inherit the Chat Completion preset" throughout
+// this file (validateSettings, the settings-popup read path); make that the
+// out-of-the-box default instead of a value nobody chose.
+const DEFAULT_MAX_TOKENS = 0;
 const DEFAULT_TITLE_FORMAT = "[000] - {{title}}";
 const STLO_EXTENSION_KEYS = new Set([
   "sillytavern-lorebookordering",
