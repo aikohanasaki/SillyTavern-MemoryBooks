@@ -17,6 +17,24 @@ Fork home: https://github.com/phattbeats/SillyTavern-MemoryBooks-Auto.
 > contents and is preserved for audit purposes.
 
 
+## v0.0.14 (2026-08-09) — fix: /stmb-auto ReferenceError killed the run right after the audit step
+
+Closes [PHA-1846](/PHA/issues/PHA-1846). The user reran `/stmb-auto` on 0.0.13
+and got a job-panel toast `STMB Auto failed: lastIndex is not defined` right
+after "Audit: chunk 3/3 done" — the auto-created lorebook was left with 0
+entries because the run never reached the scene-memory or coverage-generation
+steps. Root cause: `runStmbAutoPipeline` (`index.js`) is a standalone
+top-level `async function`, registered directly as the `stmbAuto` job
+executor's body (`registerStmbJobExecutor("stmbAuto", (job, context) =>
+runStmbAutoPipeline(context))`). It referenced `lastIndex` at its Step 3
+(`planAutoMemoryChunks(highestProcessed, lastIndex, ...)`), but `lastIndex`
+was only ever declared inside the *caller*, `handleStmbAutoCommand` — a
+different, non-nested function, so there was nothing to close over. Any run
+through the Jobs panel (the only path a user hits once Chat Top Bar is
+installed) threw a `ReferenceError` the instant it reached that line, always
+right after the audit step finished. Fixed by computing `lastIndex` locally
+from the module-level `chat` import at the top of Step 3.
+
 ## v0.0.12 (2026-08-09) — fix: /stmb-auto could die silently with no toast at all
 
 Closes [PHA-1846](/PHA/issues/PHA-1846). After v0.0.10/v0.0.11 the user reran
