@@ -18,11 +18,12 @@ test('collects only canceled after-memory children from the retried memory', () 
         { id: 'other-parent', parentJobId: 'memory-2', type: 'sidePrompt', state: 'canceled', payload: { trigger: 'onAfterMemory' } },
         { id: 'second', parentJobId: 'memory-1', parentJobOrder: 1, type: 'sidePrompt', state: 'canceled', payload: { trigger: 'onAfterMemory' } },
         { id: 'first', parentJobId: 'memory-1', parentJobOrder: 0, type: 'sidePrompt', state: 'canceled', payload: { trigger: 'onAfterMemory' } },
+        { id: 'assistance', parentJobId: 'memory-1', parentJobOrder: 2, type: 'memoryAssistance', state: 'canceled', payload: { trigger: 'onAfterMemory' } },
     ];
 
     assert.deepEqual(
         collectCanceledAfterMemoryJobs(memory, history).map(job => job.id),
-        ['first', 'second'],
+        ['first', 'second', 'assistance'],
     );
 });
 

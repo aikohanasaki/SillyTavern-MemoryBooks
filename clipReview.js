@@ -25,6 +25,7 @@ import {
     MEMORY_ASSISTANCE_MODE_AUTOMATIC,
     MEMORY_ASSISTANCE_MODE_OFF,
     MEMORY_ASSISTANCE_MODE_UPDATE_AND_SUGGEST,
+    getMemoryAssistanceFailure,
     makeClipReviewRecord,
     normalizeMemoryAssistanceMode,
     packClipReviewBatches,
@@ -130,7 +131,7 @@ If no new topics are needed, return {"topics":[]}.
 Return only JSON. Do not return Markdown fences, reasons, message IDs, or explanations.`;
 }
 
-async function requestMemoryAssistanceCompletion(template, profile, prompt, temperature = 0.2) {
+async function requestMemoryAssistanceCompletion(template, profile, prompt, temperature = 0.2, signal = null) {
     const overrideIndex = template?.settings?.overrideProfileEnabled
         ? Number(template.settings.overrideProfileIndex)
         : null;
@@ -153,26 +154,31 @@ async function requestMemoryAssistanceCompletion(template, profile, prompt, temp
         extra,
         useChatCompletionService: !!conn.useChatCompletionService,
         chatCompletionPreset: conn.chatCompletionPreset || '',
+        signal,
     });
     return text;
 }
 
-async function requestClipReviewBatch(template, compiledScene, records, profile, finalPrompt = '') {
+async function requestClipReviewBatch(template, compiledScene, records, profile, finalPrompt = '', signal = null) {
     const text = await requestMemoryAssistanceCompletion(
         template,
         profile,
         finalPrompt || buildClipReviewPrompt(template.prompt, compiledScene, records),
+        0.2,
+        signal,
     );
     return parseClipReviewResponse(text, records, compiledScene.messages);
 }
 
-async function requestClipSuggestions(template, compiledScene, records, profile, finalPrompt = '') {
+async function requestClipSuggestions(template, compiledScene, records, profile, finalPrompt = '', signal = null) {
     const suggestionsPrompt = String(template?.settings?.suggestionsPrompt || '').trim();
     if (!suggestionsPrompt) throw new Error('The Memory Assistance topic suggestions prompt is missing.');
     const text = await requestMemoryAssistanceCompletion(
         template,
         profile,
         finalPrompt || buildClipSuggestionsPrompt(suggestionsPrompt, compiledScene, records),
+        0.2,
+        signal,
     );
     return parseClipSuggestionsResponse(text, records);
 }
@@ -223,7 +229,7 @@ async function saveClipReviewReport(lorebookName, compiledScene, candidates, sta
 export async function runClipReviewAfterMemory(compiledScene, profile = null, options = {}) {
     const moduleSettings = extension_settings?.STMemoryBooks?.moduleSettings || {};
     const mode = normalizeMemoryAssistanceMode(
-        moduleSettings.memoryAssistanceMode,
+        options.mode ?? moduleSettings.memoryAssistanceMode,
         moduleSettings.clipReviewAlwaysAfterMemory === true,
     );
     if (mode === MEMORY_ASSISTANCE_MODE_OFF) return [];
@@ -237,14 +243,23 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
     const results = [];
 
     for (const lorebookName of names) {
+        if (options.signal?.aborted) {
+            const error = new Error('Cancelled');
+            error.name = 'AbortError';
+            throw error;
+        }
         const lorebookData = await loadWorldInfo(lorebookName);
-        if (!lorebookData?.entries) continue;
+        if (!lorebookData?.entries) {
+            if (options.requireLorebook) throw new Error(`Lorebook "${lorebookName}" could not be loaded.`);
+            continue;
+        }
         const records = getClipEntries(lorebookData).map(makeClipReviewRecord);
         const shouldSuggestTopics = mode === MEMORY_ASSISTANCE_MODE_UPDATE_AND_SUGGEST;
         if (records.length === 0 && !shouldSuggestTopics) {
             if (getMemoryAssistanceReportEntry(lorebookData)) {
                 await saveClipReviewReport(lorebookName, compiledScene, [], 'complete');
             }
+            results.push({ lorebookName, status: 'complete', candidates: [] });
             continue;
         }
         const selection = mode === MEMORY_ASSISTANCE_MODE_AUTOMATIC
@@ -263,6 +278,7 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
         let suggestionPassFailed = false;
         let suggestionPassSucceeded = !shouldSuggestTopics;
         let suggestionPassCompleted = false;
+        const errors = [];
         if (shouldSuggestTopics) {
             try {
                 const finalPrompt = buildClipSuggestionsPrompt(template.settings?.suggestionsPrompt, compiledScene, records);
@@ -270,12 +286,14 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
                 if (estimatedTokens > tokenLimit && !await confirmOversizedBatch(estimatedTokens, tokenLimit)) {
                     suggestionPassFailed = true;
                 } else {
-                    topicSuggestions = await requestClipSuggestions(template, compiledScene, records, profile, finalPrompt);
+                    topicSuggestions = await requestClipSuggestions(template, compiledScene, records, profile, finalPrompt, options.signal);
                     suggestionPassSucceeded = true;
                     suggestionPassCompleted = true;
                 }
             } catch (error) {
+                if (options.signal?.aborted || error?.name === 'AbortError') throw error;
                 suggestionPassFailed = true;
+                errors.push(String(error?.message || error));
                 console.error(`${MODULE_NAME}: topic suggestion pass failed for "${lorebookName}":`, error);
                 toastr.error(error?.message || tr('STMemoryBooks_ClipSuggestions_Failed', 'Memory Assistance topic discovery failed.'), 'STMemoryBooks');
             }
@@ -285,6 +303,11 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
         let failedBatches = 0;
         for (const batch of batches) {
             try {
+                if (options.signal?.aborted) {
+                    const error = new Error('Cancelled');
+                    error.name = 'AbortError';
+                    throw error;
+                }
                 const finalPrompt = buildClipReviewPrompt(template.prompt, compiledScene, batch);
                 const estimatedTokens = Math.ceil(finalPrompt.length / 4) + 800;
                 if (mode !== MEMORY_ASSISTANCE_MODE_AUTOMATIC
@@ -293,9 +316,11 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
                     failedBatches++;
                     continue;
                 }
-                candidates.push(...await requestClipReviewBatch(template, compiledScene, batch, profile, finalPrompt));
+                candidates.push(...await requestClipReviewBatch(template, compiledScene, batch, profile, finalPrompt, options.signal));
             } catch (error) {
+                if (options.signal?.aborted || error?.name === 'AbortError') throw error;
                 failedBatches++;
+                errors.push(String(error?.message || error));
                 console.error(`${MODULE_NAME}: batch failed for "${lorebookName}":`, error);
                 toastr.error(error?.message || tr('STMemoryBooks_ClipReview_BatchFailed', 'A Memory Assistance batch failed.'), 'STMemoryBooks');
             }
@@ -313,7 +338,14 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
             suggestionPassSucceeded,
         })) {
             console.error(`${MODULE_NAME}: every batch failed for "${lorebookName}"; preserving the previous report.`);
-            results.push({ lorebookName, status: 'failed', candidates: [] });
+            results.push({
+                lorebookName,
+                status: 'failed',
+                candidates: [],
+                failedBatchCount: failedBatches,
+                suggestionPassFailed,
+                errors,
+            });
             continue;
         }
         if (mode === MEMORY_ASSISTANCE_MODE_AUTOMATIC) {
@@ -330,8 +362,10 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
                 try {
                     if (await applyClipReviewSuggestion(lorebookName, candidate, { skipLongEntryWarning: true })) appliedCount++;
                 } catch (error) {
+                    if (options.signal?.aborted || error?.name === 'AbortError') throw error;
                     console.error(`${MODULE_NAME}: automatic update failed for "${candidate.title}" in "${lorebookName}":`, error);
                     failedCount++;
+                    errors.push(String(error?.message || error));
                     pendingCandidates.push({ ...candidate, applyError: error?.message || 'Automatic update failed.' });
                 }
             }
@@ -343,6 +377,7 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
                 topicSuggestions: [],
                 suggestionPassCompleted: false,
                 suggestionPassFailed: false,
+                errors,
             };
             await saveClipReviewReport(lorebookName, compiledScene, pendingCandidates, 'automatic', details);
             results.push({ lorebookName, status: 'automatic', candidates: pendingCandidates, ...details });
@@ -360,10 +395,10 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
             continue;
         }
         const status = failedBatches > 0 || suggestionPassFailed ? 'partial' : 'complete';
-        const details = { failedBatchCount: failedBatches, topicSuggestions, suggestionPassCompleted, suggestionPassFailed };
+        const details = { failedBatchCount: failedBatches, topicSuggestions, suggestionPassCompleted, suggestionPassFailed, errors };
         await saveClipReviewReport(lorebookName, compiledScene, candidates, status, details);
         results.push({ lorebookName, status, candidates, ...details });
-        if (extension_settings?.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
+        if (status === 'complete' && extension_settings?.STMemoryBooks?.moduleSettings?.showNotifications !== false) {
             const updateMessage = candidates.length === 1
                 ? tr('STMemoryBooks_ClipReview_SuggestedUpdateOne', '1 suggested update')
                 : tr('STMemoryBooks_ClipReview_SuggestedUpdateMany', '{{count}} suggested updates', { count: candidates.length });
@@ -379,6 +414,67 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
         }
     }
     return results;
+}
+
+export function buildQueuedMemoryAssistanceJobs({ lorebookNames = [], compiledScene, profile = null, settings = null } = {}) {
+    const moduleSettings = settings?.moduleSettings
+        || extension_settings?.STMemoryBooks?.moduleSettings
+        || {};
+    const mode = normalizeMemoryAssistanceMode(
+        moduleSettings.memoryAssistanceMode,
+        moduleSettings.clipReviewAlwaysAfterMemory === true,
+    );
+    if (mode === MEMORY_ASSISTANCE_MODE_OFF) return [];
+    const names = Array.from(new Set((lorebookNames || [])
+        .map(name => String(name || '').trim())
+        .filter(Boolean)));
+    return names.map((lorebookName, index) => ({
+        type: 'memoryAssistance',
+        title: tr('STMemoryBooks_ClipReview_Name', 'Memory Assistance'),
+        detail: compiledScene?.metadata
+            ? `Messages ${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`
+            : '',
+        lorebookName,
+        range: compiledScene?.metadata ? {
+            sceneStart: compiledScene.metadata.sceneStart,
+            sceneEnd: compiledScene.metadata.sceneEnd,
+        } : null,
+        payload: {
+            trigger: 'onAfterMemory',
+            lorebookName,
+            compiledScene,
+            profile,
+            mode,
+            targetOrder: index,
+        },
+    }));
+}
+
+export async function executeQueuedMemoryAssistanceJob(job, context) {
+    const payload = job?.payload || {};
+    const lorebookName = String(payload.lorebookName || job?.lorebookName || '').trim();
+    if (!payload.compiledScene || !lorebookName) {
+        throw new Error('Memory Assistance job snapshot is incomplete.');
+    }
+    context.setState('assembling_prompt', { detail: tr('STMemoryBooks_ClipReview_Name', 'Memory Assistance') });
+    const results = await runClipReviewAfterMemory(payload.compiledScene, payload.profile || null, {
+        lorebookName,
+        mode: payload.mode,
+        signal: context.signal,
+        requireLorebook: true,
+    });
+    context.throwIfCancelled();
+    const result = results.find(item => item.lorebookName === lorebookName)
+        || { lorebookName, status: 'complete', candidates: [] };
+    context.setResult(result);
+    if (result.status === 'cancelled') {
+        context.patch({ state: 'canceled', detail: tr('STMemoryBooks_Cancel', 'Cancel') });
+        return;
+    }
+    const failure = getMemoryAssistanceFailure(result);
+    if (failure) {
+        throw new Error(failure.message);
+    }
 }
 
 function getDefaultReviewLorebookName() {

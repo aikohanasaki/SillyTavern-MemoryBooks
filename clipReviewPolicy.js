@@ -72,6 +72,27 @@ export function shouldPreserveClipReviewReport({ batchCount = 0, failedBatchCoun
     return everyReviewBatchFailed && noSuggestionResult;
 }
 
+export function getMemoryAssistanceFailure(result = {}) {
+    const status = String(result?.status || '');
+    const failedBatchCount = Number(result?.failedBatchCount || 0);
+    const failedCount = Number(result?.failedCount || 0);
+    const suggestionPassFailed = result?.suggestionPassFailed === true;
+    if (status !== 'failed' && failedBatchCount <= 0 && failedCount <= 0 && !suggestionPassFailed) {
+        return null;
+    }
+    const messages = Array.isArray(result?.errors)
+        ? result.errors.map(message => String(message || '').trim()).filter(Boolean)
+        : [];
+    return {
+        message: messages[0] || 'Memory Assistance failed.',
+        messages,
+        status,
+        failedBatchCount,
+        failedCount,
+        suggestionPassFailed,
+    };
+}
+
 function stripJsonFence(text) {
     const raw = String(text || '').trim();
     const fenced = raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);

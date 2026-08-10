@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { makeClipReviewRecord, normalizeMemoryAssistanceMode, packClipReviewBatches, parseClipReviewResponse, parseClipSuggestionsResponse, renderClipReviewReport, shouldPreserveClipReviewReport } from './clipReviewPolicy.js';
+import { getMemoryAssistanceFailure, makeClipReviewRecord, normalizeMemoryAssistanceMode, packClipReviewBatches, parseClipReviewResponse, parseClipSuggestionsResponse, renderClipReviewReport, shouldPreserveClipReviewReport } from './clipReviewPolicy.js';
 
 test('normalizes Memory Assistance modes and migrates the legacy checkbox', () => {
     assert.equal(normalizeMemoryAssistanceMode('off', true), 'off');
@@ -69,6 +69,15 @@ test('preserves the previous report when every requested operation fails', () =>
     assert.equal(shouldPreserveClipReviewReport({ batchCount: 2, failedBatchCount: 2, suggestionPassRequested: true, suggestionPassSucceeded: false }), true);
     assert.equal(shouldPreserveClipReviewReport({ batchCount: 2, failedBatchCount: 2, suggestionPassRequested: true, suggestionPassSucceeded: true }), false);
     assert.equal(shouldPreserveClipReviewReport({ batchCount: 2, failedBatchCount: 1 }), false);
+});
+
+test('surfaces every incomplete Memory Assistance result as a job failure', () => {
+    assert.equal(getMemoryAssistanceFailure({ status: 'complete' }), null);
+    assert.equal(getMemoryAssistanceFailure({ status: 'automatic', appliedCount: 2 }), null);
+    assert.equal(getMemoryAssistanceFailure({ status: 'failed', errors: ['Out of credit'] }).message, 'Out of credit');
+    assert.equal(getMemoryAssistanceFailure({ status: 'partial', failedBatchCount: 1 }).failedBatchCount, 1);
+    assert.equal(getMemoryAssistanceFailure({ status: 'partial', suggestionPassFailed: true }).suggestionPassFailed, true);
+    assert.equal(getMemoryAssistanceFailure({ status: 'automatic', failedCount: 1 }).failedCount, 1);
 });
 
 test('validates ordinary excerpts and topical replacement', () => {

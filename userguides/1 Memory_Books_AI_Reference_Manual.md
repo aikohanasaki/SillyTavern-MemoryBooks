@@ -1201,6 +1201,8 @@ A selected set replaces individually enabled automatic prompts for that chat. It
 
 Memory Assistance compares the raw processed scene with ordinary and Topical Clips in each Memory Book that received the Memory. It sends each reviewed Clip's title/topic, keywords, current content, stable ID, and type to the AI.
 
+When the job queue is available, each target Memory Book receives a separate **Memory Assistance** job after the Memory is saved. A request, response-validation, report-save, or automatic-application error marks that job **Failed** and exposes the error in the queue. The saved Memory remains **Completed**, and retrying Memory Assistance does not regenerate the Memory.
+
 - **Off** disables Memory Assistance.
 - **Update** reviews five or fewer Clips directly; more than five Clips open a selection list. Proposed changes wait for manual approval.
 - **Update and Suggest** first performs one topic-discovery request, then runs the same existing-Clip review workflow as Update.

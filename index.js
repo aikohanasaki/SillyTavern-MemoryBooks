@@ -152,7 +152,12 @@ import {
   DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
 } from "./clipPromptDefaults.js";
 import { showSidePromptsPopup } from "./sidePromptsPopup.js";
-import { runClipReviewAfterMemory, showClipReviewSuggestionsPopup } from "./clipReview.js";
+import {
+  buildQueuedMemoryAssistanceJobs,
+  executeQueuedMemoryAssistanceJob,
+  runClipReviewAfterMemory,
+  showClipReviewSuggestionsPopup,
+} from "./clipReview.js";
 import { CLIP_REVIEW_METADATA_KEY, normalizeMemoryAssistanceMode } from "./clipReviewPolicy.js";
 import { collectSetRuntimeMacros, listSets, listTemplates } from "./sidePromptsManager.js";
 import {
@@ -5816,6 +5821,30 @@ async function completeQueuedMemoryPostSave({
   lorebookNames,
 }) {
   if (payload.skipAfterMemoryJobs !== true) {
+    const retryJobSnapshots = Array.isArray(payload.retryAfterMemoryJobs)
+      ? payload.retryAfterMemoryJobs
+      : [];
+    const retryMemoryAssistanceJobs = retryJobSnapshots.filter(
+      (snapshot) => String(snapshot?.type || "") === "memoryAssistance",
+    );
+    const memoryAssistanceJobs = retryMemoryAssistanceJobs.length > 0
+      ? retryMemoryAssistanceJobs
+      : buildQueuedMemoryAssistanceJobs({
+          lorebookNames: Array.isArray(lorebookNames) && lorebookNames.length > 0 ? lorebookNames : [lorebookName],
+          compiledScene,
+          profile: profileSettings,
+          settings,
+        });
+    for (let index = 0; index < memoryAssistanceJobs.length; index++) {
+      const assistanceJob = memoryAssistanceJobs[index];
+      jobContext.enqueue({
+        ...structuredClone(assistanceJob),
+        parentJobId: job.id,
+        parentJobOrder: retryMemoryAssistanceJobs.length > 0
+          ? retryJobSnapshots.indexOf(assistanceJob)
+          : index,
+      });
+    }
     try {
       jobContext.setState("post_save", { detail: translate("Running after-memory side prompts", "STMemoryBooks_Jobs_PostSaveRunningSidePrompts") });
       await runAfterMemory(compiledScene, profileSettings, {
@@ -5826,17 +5855,11 @@ async function completeQueuedMemoryPostSave({
         sceneMarkers: payload.sceneMarkers || {},
         settings,
         parentJobId: job.id,
-        retryJobSnapshots: payload.retryAfterMemoryJobs || [],
+        parentJobOrderOffset: retryJobSnapshots.length > 0 ? 0 : memoryAssistanceJobs.length,
+        retryJobSnapshots,
       });
     } catch (error) {
       console.warn("STMemoryBooks: queued after-memory side prompts failed:", error);
-    }
-    try {
-      await runClipReviewAfterMemory(compiledScene, profileSettings, {
-        lorebookNames: Array.isArray(lorebookNames) && lorebookNames.length > 0 ? lorebookNames : [lorebookName],
-      });
-    } catch (error) {
-      console.warn("STMemoryBooks: queued Memory Assistance after memory failed:", error);
     }
   }
 
@@ -13000,6 +13023,7 @@ async function init() {
   registerMemoryTierMacros();
   await refreshMemoryTierMacroCache();
   registerStmbJobExecutor("memory", executeQueuedMemoryJob);
+  registerStmbJobExecutor("memoryAssistance", executeQueuedMemoryAssistanceJob);
   registerStmbJobExecutor("consolidation", executeQueuedConsolidationJob);
   registerStmbJobExecutor("regeneration", executeQueuedLorebookRegenerationJob);
   subscribeToStmbJobs(handleStmbJobStateChanged);

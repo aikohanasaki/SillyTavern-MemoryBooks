@@ -1538,7 +1538,7 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                     chatRef: options.chatRef || null,
                     chatKey: options.chatKey || null,
                     parentJobId: options.parentJobId || '',
-                    parentJobOrder: index,
+                    parentJobOrder: index + Math.max(0, Number(options.parentJobOrderOffset) || 0),
                 }));
                 queued++;
             }

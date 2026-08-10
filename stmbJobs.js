@@ -547,7 +547,7 @@ function cancelQueuedAfterMemoryJobs(store, memoryJob) {
     const parentJobId = String(memoryJob.id || '');
     const canceledChildren = store.queue.filter(job => (
         String(job?.parentJobId || '') === parentJobId
-        && ['sidePrompt', 'sidePromptBatch'].includes(String(job?.type || ''))
+        && ['sidePrompt', 'sidePromptBatch', 'memoryAssistance'].includes(String(job?.type || ''))
         && String(job?.payload?.trigger || '') === 'onAfterMemory'
     ));
     if (canceledChildren.length === 0) return;
@@ -676,6 +676,7 @@ function getJobLabel(job = {}) {
         case 'consolidation': return tr('STMemoryBooks_Jobs_Consolidation', 'Consolidation');
         case 'sidePrompt':
         case 'sidePromptBatch': return tr('STMemoryBooks_Jobs_SidePrompt', 'Side Prompt');
+        case 'memoryAssistance': return tr('STMemoryBooks_ClipReview_Name', 'Memory Assistance');
         case 'memory':
         default: return tr('STMemoryBooks_Jobs_Memory', 'Memory');
     }
