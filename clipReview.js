@@ -226,6 +226,23 @@ async function saveClipReviewReport(lorebookName, compiledScene, candidates, sta
     });
 }
 
+async function showClipReviewUpdatedPopup(lorebookName) {
+    const popup = new Popup(DOMPurify.sanitize(`
+        <h3>${escapeHtml(tr('STMemoryBooks_ClipReview_UpdatedTitle', 'Memory Suggestions Updated'))}</h3>
+        <p>${escapeHtml(tr('STMemoryBooks_ClipReview_UpdatedMessage', 'The Memory Assistance suggestions for “{{lorebookName}}” have been updated.', { lorebookName }))}</p>
+    `), POPUP_TYPE.TEXT, '', {
+        okButton: false,
+        cancelButton: tr('STMemoryBooks_ClipReview_UpdatedDismiss', 'Dismiss'),
+        customButtons: [
+            { text: tr('STMemoryBooks_ClipReview_GoToSuggestions', 'Go to Suggestions'), result: POPUP_RESULT.CUSTOM1, appendAtEnd: true },
+        ],
+    });
+    markStmbPopup(popup);
+    if (await popup.show() === POPUP_RESULT.CUSTOM1) {
+        await showClipReviewSuggestionsPopup({ lorebookName });
+    }
+}
+
 export async function runClipReviewAfterMemory(compiledScene, profile = null, options = {}) {
     const moduleSettings = extension_settings?.STMemoryBooks?.moduleSettings || {};
     const mode = normalizeMemoryAssistanceMode(
@@ -392,6 +409,9 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
                         : '';
                 toastr.info([appliedMessage, reviewMessage].filter(Boolean).join(' '), 'STMemoryBooks');
             }
+            if (pendingCandidates.length > 0) {
+                await showClipReviewUpdatedPopup(lorebookName);
+            }
             continue;
         }
         const status = failedBatches > 0 || suggestionPassFailed ? 'partial' : 'complete';
@@ -409,8 +429,8 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
                 ? tr('STMemoryBooks_ClipReview_FoundUpdatesAndTopics', 'Memory Assistance found {{updateMessage}} and {{topicMessage}}.', { updateMessage, topicMessage })
                 : tr('STMemoryBooks_ClipReview_FoundUpdates', 'Memory Assistance found {{updateMessage}}.', { updateMessage }), 'STMemoryBooks');
         }
-        if (suggestionPassCompleted) {
-            await showClipTopicSuggestionsPopup(lorebookName, { allowEmpty: true });
+        if (candidates.length > 0 || suggestionPassCompleted) {
+            await showClipReviewUpdatedPopup(lorebookName);
         }
     }
     return results;
@@ -478,8 +498,15 @@ export async function executeQueuedMemoryAssistanceJob(job, context) {
 }
 
 function getDefaultReviewLorebookName() {
-    const resolution = getCurrentManualLorebookResolution();
-    return resolution?.lorebookName || String(chat_metadata?.[METADATA_KEY] || '');
+    const settings = extension_settings?.STMemoryBooks;
+    const manualMode = !!settings?.moduleSettings?.manualModeEnabled;
+    const lorebookName = manualMode
+        ? getCurrentManualLorebookResolution().lorebookName
+        : chat_metadata?.[METADATA_KEY];
+
+    return lorebookName && Array.isArray(world_names) && world_names.includes(lorebookName)
+        ? lorebookName
+        : '';
 }
 
 function getClipReviewReportDetails(metadata) {
@@ -608,7 +635,10 @@ export async function showClipReviewSuggestionsPopup(options = {}) {
         toastr.error(tr('STMemoryBooks_Compaction_NoLorebooks', 'No Memory Books were found.'), 'STMemoryBooks');
         return;
     }
-    const defaultName = getDefaultReviewLorebookName();
+    const requestedName = String(options.lorebookName || '').trim();
+    const defaultName = requestedName && world_names.includes(requestedName)
+        ? requestedName
+        : getDefaultReviewLorebookName();
     const lorebookOptions = ['<option></option>', ...world_names.map(name => `<option value="${escapeHtml(name)}" ${name === defaultName ? 'selected' : ''}>${escapeHtml(name)}</option>`)].join('');
     const popup = new Popup(DOMPurify.sanitize(`
         <h3>${escapeHtml(tr('STMemoryBooks_ClipReview_SuggestionsTitle', 'Memory Assistance Suggestions'))}</h3>

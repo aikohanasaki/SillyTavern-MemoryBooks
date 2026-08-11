@@ -1219,7 +1219,9 @@ When the job queue is available, each target Memory Book receives a separate **M
 
 Update and Suggest uses a separate suggestion-only prompt before the existing-Clip review batches. The request contains the processed scene and a lightweight list of existing Topical Clip titles, topics, and keywords. It does not send ordinary Clips or existing Clip bodies during discovery. The AI returns zero to five new topics as JSON objects containing a topic and activation keywords; `{"topics":[]}` is a valid result.
 
-Suggested topics are saved in the Memory Assistance report and shown immediately as checked, editable rows. You can uncheck unwanted topics, edit topic names or keywords, or add additional topics. Confirmed topics open the standard Topical Clip draft workflow one at a time. A pending topic is removed only after its Topical Clip is saved; closing the draft leaves it available through **Memory Assistance Suggestions**.
+Suggested topics are saved in the Memory Assistance report. In **Memory Assistance Suggestions**, choose **Review Topics** to see them as checked, editable rows. You can uncheck unwanted topics, edit topic names or keywords, or add additional topics. Confirmed topics open the standard Topical Clip draft workflow one at a time. A pending topic is removed only after its Topical Clip is saved; closing the draft leaves it available through **Memory Assistance Suggestions**.
+
+When reviewable suggestions are ready, STMB opens a completion popup for the updated Memory Book. **Dismiss** closes the notice, while **Go to Suggestions** opens **Memory Assistance Suggestions** with that Memory Book already selected. Opening **Memory Assistance Suggestions** from the extension menu selects the current chat's effective Memory Book first (the chat-bound book in Automatic Mode or the resolved manual book in Manual Mode).
 
 The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, placed in a Side Prompt Set, or run manually.
 

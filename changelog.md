@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.2 (August 9, 2026)
+- Tweak memory assistance flow.
+
 ## v8.6.1 (August 9, 2026)
 - Add interactive guide and download to UI.
 - Fix regeneration skipping job queue.
