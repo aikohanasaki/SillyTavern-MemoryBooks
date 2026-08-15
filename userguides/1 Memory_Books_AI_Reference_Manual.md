@@ -413,7 +413,7 @@ The named connection supplies its saved URL and secret. The model field in the S
 
 ### 7.6 ChatCompletionService
 
-**Use ST’s ChatCompletionService** routes supported profile requests through SillyTavern’s request helper and can apply a selected SillyTavern Chat Completion preset. Full Manual profiles do not use this route.
+**Use ST’s ChatCompletionService** routes supported profile requests through SillyTavern’s request helper and can apply a selected SillyTavern Chat Completion preset. OpenRouter requests also inherit SillyTavern’s provider order, quantization filters, fallback controls, and middle-out routing setting. Full Manual profiles do not use this route.
 
 ### 7.7 Reverse proxy and Full Manual Configuration
 

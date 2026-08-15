@@ -18,6 +18,7 @@ import {
     resolveContextSettingEntriesFromRefs,
 } from './contextSettingsManager.js';
 import { resolveCustomConnectionProfile } from './customConnectionProfiles.js';
+import { applyOpenRouterRoutingSettings } from './openRouterRouting.js';
 import { tr } from './i18nHelpers.js';
 const $ = window.jQuery;
 
@@ -360,7 +361,8 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
             if (normalizedPresetName && typeof service.processRequest !== 'function') {
                 console.warn(`${MODULE_NAME}: ChatCompletionService.processRequest is unavailable; falling back to sendRequest.`);
             }
-            full = await service.sendRequest(serviceBody, false, signal);
+            const routedServiceBody = applyOpenRouterRoutingSettings(serviceBody, oai_settings);
+            full = await service.sendRequest(routedServiceBody, false, signal);
         }
 
         if (typeof full === 'function') {
