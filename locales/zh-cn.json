@@ -1276,6 +1276,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "跟随聊天会使用此聊天的额外上下文。选择命名的上下文设置会覆盖此侧边提示的该设置。",
   "STMemoryBooks_GroupParticipants_Title": "确认记忆参与者",
   "STMemoryBooks_GroupParticipants_Desc": "选择此记忆适用的角色。如果未选择任何角色，它将适用于所有群组角色。",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "无法自动检测此场景的参与者。继续之前，请确认当时在场的群组角色。",
   "STMemoryBooks_GroupParticipants_AutoAccept": "以后自动接受检测到的参与者",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "部分故事书低于阈值",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "部分已绑定故事书没有足够的合格条目来创建 {{targetLabel}}。是否继续处理已就绪的故事书？",

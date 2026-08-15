@@ -1276,6 +1276,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "채팅 따르기는 이 채팅의 추가 컨텍스트를 사용합니다. 이름이 있는 컨텍스트 설정을 선택하면 이 사이드 프롬프트에서 해당 설정이 우선됩니다.",
   "STMemoryBooks_GroupParticipants_Title": "메모리 참여자 확인",
   "STMemoryBooks_GroupParticipants_Desc": "이 메모리가 적용될 캐릭터를 선택하세요. 아무도 선택하지 않으면 모든 그룹 캐릭터에 적용됩니다.",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "이 장면의 참여자를 자동으로 감지하지 못했습니다. 계속하기 전에 어떤 그룹 캐릭터가 함께 있었는지 확인하세요.",
   "STMemoryBooks_GroupParticipants_AutoAccept": "앞으로 감지된 참여자를 자동으로 승인",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "일부 로어북이 임계값보다 낮습니다",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "일부 연결된 로어북에는 {{targetLabel}}을 만들 수 있는 적격 항목이 충분하지 않습니다. 준비된 로어북으로 계속할까요?",

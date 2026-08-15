@@ -1276,6 +1276,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "チャットに従うと、このチャットの追加コンテキストを使用します。名前付きコンテキスト設定を選ぶと、このサイドプロンプトではそれが優先されます。",
   "STMemoryBooks_GroupParticipants_Title": "メモリーの参加者を確認",
   "STMemoryBooks_GroupParticipants_Desc": "このメモリーが適用されるキャラクターを選択します。何も選択しない場合、グループ内の全キャラクターに適用されます。",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "このシーンでは参加者の自動検出に失敗しました。続行する前に、どのグループキャラクターがその場にいたか確認してください。",
   "STMemoryBooks_GroupParticipants_AutoAccept": "今後は検出された参加者を自動的に承認",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "一部の lorebook がしきい値未満です",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "一部の紐付け済み lorebook には {{targetLabel}} を作成するための対象エントリが足りません。準備できている lorebook で続行しますか？",

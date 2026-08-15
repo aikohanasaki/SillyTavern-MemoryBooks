@@ -681,6 +681,8 @@ STMB does not infer every person physically present from prose. Therefore:
 - the user is not treated as a separate group-character Memory Book target;
 - duplicate or unusual speaker identities may need correction.
 
+If automatic participant detection finds no group characters, STMB opens the participant confirmation even when automatic acceptance is enabled. The warning explains that detection failed and requires the user to review which group characters were present before proceeding.
+
 The participant prompt means: **Which group characters should this Memory be associated with?** It does not prove who knew every fact or who was physically present.
 
 ### 11.3 One group Memory Book

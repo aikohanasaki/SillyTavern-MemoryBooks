@@ -1276,6 +1276,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "Ikut chat menggunakan konteks tambahan chat ini. Memilih tetapan konteks bernama akan menggantikannya untuk side prompt ini.",
   "STMemoryBooks_GroupParticipants_Title": "Sahkan peserta memori",
   "STMemoryBooks_GroupParticipants_Desc": "Pilih watak yang memori ini terpakai. Jika tiada dipilih, ia akan terpakai kepada semua watak kumpulan.",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "Pengesanan peserta automatik gagal untuk adegan ini. Sahkan watak kumpulan yang hadir sebelum meneruskan.",
   "STMemoryBooks_GroupParticipants_AutoAccept": "Terima peserta yang dikesan secara automatik pada masa hadapan",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "Beberapa lorebook berada di bawah ambang",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "Beberapa lorebook terikat tidak mempunyai entri layak yang mencukupi untuk mencipta {{targetLabel}}. Teruskan dengan lorebook yang sedia?",

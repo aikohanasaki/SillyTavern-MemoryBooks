@@ -1281,6 +1281,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "Seguir chat usa el contexto adicional de este chat. Elegir un ajuste de contexto con nombre lo reemplaza para este side prompt.",
   "STMemoryBooks_GroupParticipants_Title": "Confirmar participantes de la memoria",
   "STMemoryBooks_GroupParticipants_Desc": "Selecciona los personajes a los que se aplica esta memoria. Si no seleccionas ninguno, se aplicará a todos los personajes del grupo.",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "La detección automática de participantes falló para esta escena. Confirma qué personajes del grupo estaban presentes antes de continuar.",
   "STMemoryBooks_GroupParticipants_AutoAccept": "Aceptar automáticamente los participantes detectados en el futuro",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "Algunos lorebooks están por debajo del umbral",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "Algunos lorebooks vinculados no tienen suficientes entradas elegibles para crear {{targetLabel}}. ¿Continuar con los lorebooks listos?",

@@ -131,6 +131,7 @@ import {
   buildConsolidationWorkItemOptions,
   hasGroupAndCharacterConsolidationTopology,
 } from "./consolidationWorkItemPolicy.js";
+import { getGroupParticipantConfirmationPolicy } from "./groupParticipantPolicy.js";
 import {
   evaluateTrackers,
   generateSidePromptFromSnapshot,
@@ -2804,9 +2805,14 @@ async function confirmGroupMemoryParticipants(compiledScene, settings, manualGro
   const detected = normalizeCharacterFilterNamesForGroup(
     compiledScene?.metadata?.characterFilterNames,
   ).filter((name) => allNames.includes(name));
-  const selected = new Set(detected.length > 0 ? detected : allNames);
+  const participantPolicy = getGroupParticipantConfirmationPolicy(
+    detected,
+    allNames,
+    settings.moduleSettings.autoAcceptGroupParticipants,
+  );
+  const selected = new Set(participantPolicy.selectedNames);
 
-  if (settings.moduleSettings.autoAcceptGroupParticipants) {
+  if (!participantPolicy.requiresConfirmation) {
     applyGroupMemoryParticipantFilters(compiledScene, Array.from(selected));
     return true;
   }
@@ -2819,16 +2825,27 @@ async function confirmGroupMemoryParticipants(compiledScene, settings, manualGro
     return `<label class="checkbox_label"><input type="checkbox" class="stmb-group-participant" value="${escapeHtml(name)}"${checked}> <span>${escapeHtml(label)}</span></label>`;
   }).join("");
 
+  const detectionWarning = participantPolicy.detectionFailed
+    ? `<div class="info-block warning">${escapeHtml(translate(
+        "Automatic participant detection failed for this scene. Confirm which group characters were present before proceeding.",
+        "STMemoryBooks_GroupParticipants_DetectionFailed",
+      ))}</div>`
+    : "";
+  const autoAcceptControl = settings.moduleSettings.autoAcceptGroupParticipants
+    ? ""
+    : `
+    <label class="checkbox_label">
+      <input type="checkbox" id="stmb-group-participants-auto">
+      <span>${escapeHtml(translate("Automatically accept detected participants in future", "STMemoryBooks_GroupParticipants_AutoAccept"))}</span>
+    </label>`;
   const content = `
     <h3>${escapeHtml(translate("Confirm memory participants", "STMemoryBooks_GroupParticipants_Title"))}</h3>
+    ${detectionWarning}
     <p>${escapeHtml(translate("Select the characters this memory applies to. If none are selected, it will apply to every group character.", "STMemoryBooks_GroupParticipants_Desc"))}</p>
     <div class="world_entry_form_control stmb-group-participants-list">
       <div class="flex-container flexFlowColumn">${rows}</div>
     </div>
-    <label class="checkbox_label">
-      <input type="checkbox" id="stmb-group-participants-auto">
-      <span>${escapeHtml(translate("Automatically accept detected participants in future", "STMemoryBooks_GroupParticipants_AutoAccept"))}</span>
-    </label>
+    ${autoAcceptControl}
   `;
 
   const popup = new Popup(DOMPurify.sanitize(content), POPUP_TYPE.CONFIRM, "", {

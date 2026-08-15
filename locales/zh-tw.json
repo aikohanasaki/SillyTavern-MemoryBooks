@@ -1276,6 +1276,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "跟隨聊天會使用此聊天的額外內容脈絡。選擇命名的內容脈絡設定會為此側邊提示覆蓋它。",
   "STMemoryBooks_GroupParticipants_Title": "確認記憶參與者",
   "STMemoryBooks_GroupParticipants_Desc": "選擇此記憶適用的角色。如果未選擇任何角色，它將適用於所有群組角色。",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "無法自動偵測此場景的參與者。繼續之前，請確認當時在場的群組角色。",
   "STMemoryBooks_GroupParticipants_AutoAccept": "以後自動接受偵測到的參與者",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "部分故事書低於閾值",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "部分已綁定故事書沒有足夠的合格條目來建立 {{targetLabel}}。是否繼續處理已就緒的故事書？",

@@ -489,6 +489,7 @@ export const localeData_en = {
     'STMemoryBooks_PleaseSelectGroupLorebookForManualMode': 'Please select a group lorebook for manual mode',
     'STMemoryBooks_GroupParticipants_Title': 'Confirm memory participants',
     'STMemoryBooks_GroupParticipants_Desc': 'Select the characters this memory applies to. If none are selected, it will apply to every group character.',
+    'STMemoryBooks_GroupParticipants_DetectionFailed': 'Automatic participant detection failed for this scene. Confirm which group characters were present before proceeding.',
     'STMemoryBooks_GroupParticipants_AutoAccept': 'Automatically accept detected participants in future',
     'STMemoryBooks_GroupConsolidation_PartialTitle': 'Some lorebooks are below the threshold',
     'STMemoryBooks_GroupConsolidation_PartialDesc': 'Some bound lorebooks do not have enough eligible entries to create a {{targetLabel}}. Continue with the ready lorebooks?',

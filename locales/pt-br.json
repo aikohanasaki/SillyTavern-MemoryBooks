@@ -365,6 +365,7 @@
   "STMemoryBooks_PleaseSelectGroupLorebookForManualMode": "Selecione um lorebook do grupo para o modo manual",
   "STMemoryBooks_GroupParticipants_Title": "Confirmar participantes da memória",
   "STMemoryBooks_GroupParticipants_Desc": "Selecione os personagens aos quais esta memória se aplica. Se nenhum for selecionado, ela será aplicada a todos os personagens do grupo.",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "A detecção automática de participantes falhou para esta cena. Confirme quais personagens do grupo estavam presentes antes de continuar.",
   "STMemoryBooks_GroupParticipants_AutoAccept": "Aceitar automaticamente os participantes detectados no futuro",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "Alguns lorebooks estão abaixo do limite",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "Alguns lorebooks vinculados não possuem entradas elegíveis suficientes para criar {{targetLabel}}. Continuar com os lorebooks prontos?",

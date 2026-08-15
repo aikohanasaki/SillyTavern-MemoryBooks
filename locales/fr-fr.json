@@ -1275,6 +1275,7 @@
   "STMemoryBooks_SidePromptAdditionalContextHelp": "Suivre le chat utilise le contexte supplémentaire de ce chat. Choisir un paramètre de contexte nommé le remplace pour ce side prompt.",
   "STMemoryBooks_GroupParticipants_Title": "Confirmer les participants de la mémoire",
   "STMemoryBooks_GroupParticipants_Desc": "Sélectionnez les personnages auxquels cette mémoire s’applique. Si aucun n’est sélectionné, elle s’appliquera à tous les personnages du groupe.",
+  "STMemoryBooks_GroupParticipants_DetectionFailed": "La détection automatique des participants a échoué pour cette scène. Confirmez quels personnages du groupe étaient présents avant de continuer.",
   "STMemoryBooks_GroupParticipants_AutoAccept": "Accepter automatiquement les participants détectés à l’avenir",
   "STMemoryBooks_GroupConsolidation_PartialTitle": "Certains lorebooks sont sous le seuil",
   "STMemoryBooks_GroupConsolidation_PartialDesc": "Certains lorebooks liés n’ont pas assez d’entrées éligibles pour créer {{targetLabel}}. Continuer avec les lorebooks prêts ?",
