@@ -12813,6 +12813,10 @@ function showFailedAIResponsePopup(error) {
     const raw = typeof error?.rawResponse === "string" ? error.rawResponse : "";
     const providerBody =
       typeof error?.providerBody === "string" ? error.providerBody : "";
+    const chatCompletionServiceError =
+      typeof error?.chatCompletionServiceError === "string"
+        ? error.chatCompletionServiceError
+        : "";
     const canManualFix =
       !!raw &&
       !!lastFailedAIContext?.compiledScene &&
@@ -12824,6 +12828,13 @@ function showFailedAIResponsePopup(error) {
     if (code)
       content += `<div><strong>${esc(translate("Code", "STMemoryBooks_ReviewFailedAI_CodeLabel"))}:</strong> ${code}</div>`;
     content += `</div>`;
+
+    if (chatCompletionServiceError) {
+      content += `<div class="world_entry_form_control">`;
+      content += `<h4>ChatCompletionService</h4>`;
+      content += `<div><strong>${esc(translate("Error", "STMemoryBooks_ReviewFailedAI_ErrorLabel"))}:</strong> ${esc(chatCompletionServiceError)}</div>`;
+      content += `</div>`;
+    }
 
     if (raw) {
       content += `<div class="world_entry_form_control">`;

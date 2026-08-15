@@ -19,6 +19,7 @@ import {
 } from './contextSettingsManager.js';
 import { resolveCustomConnectionProfile } from './customConnectionProfiles.js';
 import { applyOpenRouterRoutingSettings } from './openRouterRouting.js';
+import { attachChatCompletionServiceError } from './chatCompletionServiceError.js';
 import { tr } from './i18nHelpers.js';
 const $ = window.jQuery;
 
@@ -345,7 +346,10 @@ function getChatCompletionServiceOrNull() {
 async function sendViaChatCompletionService(body, signal, presetName = '') {
     const service = getChatCompletionServiceOrNull();
     if (!service) {
-        return null;
+        return {
+            result: null,
+            error: new Error('ChatCompletionService is unavailable.'),
+        };
     }
 
     const normalizedPresetName = typeof presetName === 'string' ? presetName.trim() : '';
@@ -375,23 +379,26 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
                 }
             }
             return {
-                text,
-                full: {
-                    choices: [
-                        {
-                            index: 0,
-                            message: {
-                                role: 'assistant',
-                                content: text,
+                result: {
+                    text,
+                    full: {
+                        choices: [
+                            {
+                                index: 0,
+                                message: {
+                                    role: 'assistant',
+                                    content: text,
+                                },
+                                finish_reason: null,
                             },
-                            finish_reason: null,
+                        ],
+                        stmb_streaming: {
+                            source: 'chat_completion_service',
+                            last_chunk: lastChunk || null,
                         },
-                    ],
-                    stmb_streaming: {
-                        source: 'chat_completion_service',
-                        last_chunk: lastChunk || null,
                     },
                 },
+                error: null,
             };
         }
     } catch (error) {
@@ -399,11 +406,14 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
             throw error;
         }
         console.warn(`${MODULE_NAME}: ChatCompletionService request failed; falling back to STMB request path.`, error);
-        return null;
+        return { result: null, error };
     }
     return {
-        text: extractCompletionText(full),
-        full,
+        result: {
+            text: extractCompletionText(full),
+            full,
+        },
+        error: null,
     };
 }
 
@@ -587,21 +597,28 @@ export async function sendRawCompletionRequest({
         body.vertexai_express_project_id = oai_settings?.vertexai_express_project_id || '';
     }
 
+    let chatCompletionServiceError = null;
     if (api !== 'full-manual' && useChatCompletionService) {
         const routedFallbackBody = applyOpenRouterRoutingSettings(body, oai_settings);
-        const serviceResult = await sendViaChatCompletionService(body, signal, chatCompletionPreset);
-        if (serviceResult) {
-            return serviceResult;
+        const serviceAttempt = await sendViaChatCompletionService(body, signal, chatCompletionPreset);
+        if (serviceAttempt.result) {
+            return serviceAttempt.result;
         }
+        chatCompletionServiceError = serviceAttempt.error;
         body = routedFallbackBody;
     }
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(body),
-        signal: signal || undefined,
-    });
+    let res;
+    try {
+        res = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body),
+            signal: signal || undefined,
+        });
+    } catch (error) {
+        throw attachChatCompletionServiceError(error, chatCompletionServiceError);
+    }
 
     if (!res.ok) {
         let providerBody = '';
@@ -615,10 +632,15 @@ export async function sendRawCompletionRequest({
         if (providerBody) {
             err.providerBody = providerBody;
         }
-        throw err;
+        throw attachChatCompletionServiceError(err, chatCompletionServiceError);
     }
 
-    const data = await parseCompletionResponse(res, api);
+    let data;
+    try {
+        data = await parseCompletionResponse(res, api);
+    } catch (error) {
+        throw attachChatCompletionServiceError(error, chatCompletionServiceError);
+    }
     const text = extractCompletionText(data);
 
     return { text, full: data };
@@ -1210,8 +1232,14 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
     } catch (error) {
         if (isStmbStopError(error)) throw error;
         if (error instanceof AIResponseError) throw error;
+        const chatCompletionServiceError = typeof error?.chatCompletionServiceError === 'string'
+            ? error.chatCompletionServiceError
+            : '';
         const e = new AIResponseError(`Memory generation failed: ${error.message || error}`);
         try {
+            if (chatCompletionServiceError) {
+                e.chatCompletionServiceError = chatCompletionServiceError;
+            }
             if (typeof error?.providerBody === 'string') {
                 e.providerBody = error.providerBody;
             }
