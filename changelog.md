@@ -8,9 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 ← [Back to README](readme.md)
 
 ## v8.6.3 (August 15, 2026)
-- Support OR routing order.
+- Support OpenRouter routing order.
 
-## v8.6.2 (August 9, 2026)
+## v8.6.2 (August 11, 2026)
 - Tweak memory assistance flow.
 
 ## v8.6.1 (August 9, 2026)
