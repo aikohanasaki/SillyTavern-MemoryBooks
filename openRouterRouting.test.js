@@ -31,6 +31,8 @@ test('adds SillyTavern OpenRouter routing controls to service payloads', () => {
     });
     assert.notEqual(result.provider, settings.openrouter_providers);
     assert.notEqual(result.quantizations, settings.openrouter_quantizations);
+    assert.equal(Object.hasOwn(body, 'provider'), false);
+    assert.equal(Object.hasOwn(body, 'allow_fallbacks'), false);
 });
 
 test('preserves explicit request routing overrides', () => {

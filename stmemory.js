@@ -588,10 +588,12 @@ export async function sendRawCompletionRequest({
     }
 
     if (api !== 'full-manual' && useChatCompletionService) {
+        const routedFallbackBody = applyOpenRouterRoutingSettings(body, oai_settings);
         const serviceResult = await sendViaChatCompletionService(body, signal, chatCompletionPreset);
         if (serviceResult) {
             return serviceResult;
         }
+        body = routedFallbackBody;
     }
 
     const res = await fetch(url, {
