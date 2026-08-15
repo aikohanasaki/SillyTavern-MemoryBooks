@@ -782,7 +782,7 @@ Use them as context-routing tools, not as security boundaries.
 
 Linked entries share metadata that lets STMB recognize the same original event, but later edits are independent.
 
-Editing, deleting, compacting, or regenerating one copy does not automatically change the others. Regenerate or edit each version separately when all copies need the same change.
+Editing, deleting, or compacting one copy does not automatically change the others. Regenerating a character copy also changes only that copy. When regenerating the canonical group entry, however, STMB asks whether to regenerate only that entry or regenerate it together with all linked character entries. Each selected entry receives its own generation and approval review, so character-focused prompts remain character-focused.
 
 ### 11.9 Adding, removing, or reassigning group members
 
@@ -1586,10 +1586,11 @@ Regeneration creates a reviewable replacement for an existing entry. It does not
 - open the source chat;
 - open the Memory Book in the lorebook editor;
 - click **Regenerate memory**;
+- for a canonical group entry with linked character entries, choose whether to regenerate only the clicked entry or all linked entries;
 - choose the current profile, prompt, previous-memory count, and Additional Context;
-- review title, content, and keywords.
+- review title, content, and keywords for every selected entry.
 
-The original scene range and sequence number are retained. If all source messages are hidden, reveal them or enable unhide-before-generation.
+The original scene range and sequence number are retained. Linked entries reuse the same selected regeneration settings but are generated against their own Memory Book context and group/character prompt target. STMB collects all approvals before it starts saving direct regenerations. If all source messages are hidden, reveal them or enable unhide-before-generation.
 
 ### 19.2 Consolidation regeneration
 

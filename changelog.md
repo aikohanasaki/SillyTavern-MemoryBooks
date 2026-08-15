@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ## v8.6.3 (August 15, 2026)
 - Support OpenRouter routing order.
+- Multiple group chat bugfixes.
 
 ## v8.6.2 (August 11, 2026)
 - Tweak memory assistance flow.

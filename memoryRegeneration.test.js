@@ -16,6 +16,8 @@ import {
     getRegenerationEligibility,
     getSidePromptRegenerationSnapshot,
     hasLinkedManualGroupMetadata,
+    isCanonicalLinkedGroupMemory,
+    isLinkedManualGroupEntry,
     isRegenerationSourceChatCurrent,
     normalizeConsolidationRegenerationResponse,
     preflightRegenerationVisibility,
@@ -476,6 +478,52 @@ test('detects linked manual-group copies from retry linkage metadata', () => {
         STMB_canonicalLorebook: 'Group Memory Book',
         STMB_canonicalEntryUid: 10,
     })), true);
+});
+
+test('recognizes only canonical group memories as linked regeneration roots', () => {
+    const canonical = memory(10, 1, {
+        STMB_canonical: true,
+        STMB_canonicalLorebook: 'Group Memory Book',
+        STMB_canonicalEntryUid: 10,
+        STMB_inclusionGroup: 'Group-Memory-001',
+    });
+    const characterCopy = memory(20, 1, {
+        STMB_canonical: false,
+        STMB_canonicalLorebook: 'Group Memory Book',
+        STMB_canonicalEntryUid: 10,
+        STMB_inclusionGroup: 'Group-Memory-001',
+    });
+
+    assert.equal(isCanonicalLinkedGroupMemory(canonical, 'Group Memory Book'), true);
+    assert.equal(isCanonicalLinkedGroupMemory(characterCopy, 'Alice Memory Book'), false);
+    assert.equal(isCanonicalLinkedGroupMemory(memory(30, 1), 'Group Memory Book'), false);
+});
+
+test('matches linked character entries by inclusion group or canonical identity', () => {
+    const canonical = memory(10, 1, {
+        STMB_canonical: true,
+        STMB_canonicalLorebook: 'Group Memory Book',
+        STMB_canonicalEntryUid: 10,
+        STMB_inclusionGroup: 'Group-Memory-001',
+    });
+
+    assert.equal(isLinkedManualGroupEntry(canonical, memory(20, 1, {
+        STMB_inclusionGroup: 'Group-Memory-001',
+    }), 'Group Memory Book'), true);
+    assert.equal(isLinkedManualGroupEntry(canonical, memory(21, 1, {
+        STMB_canonicalLorebook: 'Group Memory Book',
+        STMB_canonicalEntryUid: 10,
+    }), 'Group Memory Book'), true);
+    assert.equal(isLinkedManualGroupEntry(canonical, memory(22, 1, {
+        STMB_canonicalLorebook: 'Other Group',
+        STMB_canonicalEntryUid: 10,
+        STMB_inclusionGroup: 'Other-Memory-001',
+    }), 'Group Memory Book'), false);
+    assert.equal(isLinkedManualGroupEntry(canonical, memory(23, 1, {
+        STMB_canonicalLorebook: 'Other Group',
+        STMB_canonicalEntryUid: 10,
+        STMB_inclusionGroup: 'Group-Memory-001',
+    }), 'Group Memory Book'), false);
 });
 
 test('replacement changes only approved fields, source metadata, and stale disable state', () => {

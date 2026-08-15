@@ -208,6 +208,8 @@ import {
   getEntryByUid,
   getRegenerationEligibility,
   hasLinkedManualGroupMetadata,
+  isCanonicalLinkedGroupMemory,
+  isLinkedManualGroupEntry,
   isRegenerationSourceChatCurrent,
   preflightRegenerationVisibility,
   SIDE_PROMPT_REGENERATION_METADATA_KEY,
@@ -4198,7 +4200,7 @@ function getCurrentChatLorebookNames(settings) {
   return names;
 }
 
-async function findLinkedManualGroupLorebooks(lorebookName, entry) {
+async function findLinkedManualGroupEntries(lorebookName, entry) {
   if (!hasLinkedManualGroupMetadata(entry)) return [];
 
   const markers = getSceneMarkers() || {};
@@ -4220,19 +4222,57 @@ async function findLinkedManualGroupLorebooks(lorebookName, entry) {
   for (const candidateName of candidates) {
     try {
       const candidateData = await loadWorldInfo(candidateName);
-      const match = Object.values(candidateData?.entries || {}).some(candidate => {
-        if (entry.STMB_inclusionGroup && candidate?.STMB_inclusionGroup === entry.STMB_inclusionGroup) {
-          return true;
-        }
-        const canonicalUid = String(entry.STMB_canonicalEntryUid ?? entry.uid ?? "");
-        return canonicalUid &&
-          String(candidate?.STMB_canonicalEntryUid ?? "") === canonicalUid &&
-          String(candidate?.STMB_canonicalLorebook || "") === String(entry?.STMB_canonicalLorebook || lorebookName);
-      });
-      if (match) linked.push(candidateName);
+      const match = Object.entries(candidateData?.entries || {})
+        .find(([, candidate]) => isLinkedManualGroupEntry(entry, candidate, lorebookName));
+      if (match) {
+        const [entryKey, candidateEntry] = match;
+        linked.push({
+          lorebookName: candidateName,
+          entryUid: String(candidateEntry?.uid ?? entryKey),
+        });
+      }
     } catch {}
   }
   return linked;
+}
+
+async function showGroupRegenerationScopePopup(linkedEntries) {
+  const count = Array.isArray(linkedEntries) ? linkedEntries.length : 0;
+  const content = DOMPurify.sanitize(`
+    <h3>${escapeHtml(translate("Regenerate linked group memory", "STMemoryBooks_Regeneration_GroupChoiceTitle"))}</h3>
+    <p>${escapeHtml(tr(
+      "STMemoryBooks_Regeneration_GroupChoiceBody",
+      "This group-chat memory has {{count}} linked character entries. What should be regenerated?",
+      { count },
+    ))}</p>
+  `);
+  const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    okButton: false,
+    cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
+    customButtons: [
+      {
+        text: translate(
+          "Regenerate this entry only",
+          "STMemoryBooks_Regeneration_GroupChoiceEntryOnly",
+        ),
+        result: POPUP_RESULT.CUSTOM1,
+        classes: ["menu_button"],
+      },
+      {
+        text: translate(
+          "Regenerate this entry and the characters' entries",
+          "STMemoryBooks_Regeneration_GroupChoiceAll",
+        ),
+        result: POPUP_RESULT.CUSTOM2,
+        classes: ["menu_button"],
+      },
+    ],
+  });
+  markStmbPopup(popup);
+  const result = await popup.show();
+  if (result === POPUP_RESULT.CUSTOM1) return "entry";
+  if (result === POPUP_RESULT.CUSTOM2) return "all";
+  return "cancel";
 }
 
 function getCurrentSummaryTitleFormat(tier) {
@@ -4283,30 +4323,37 @@ async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, e
     eligibility.sceneStart,
     eligibility.sceneEnd,
   );
-  const sceneStats = await getSceneStats(compiledScene);
-  const sceneData = {
-    ...sceneStats,
-    sceneStart: eligibility.sceneStart,
-    sceneEnd: eligibility.sceneEnd,
-    messageCount: compiledScene.messages.length,
-  };
-  const availableContext = selectPreviousMemoryContext(
-    lorebookData,
-    entry.uid,
-    Number.MAX_SAFE_INTEGER,
-  ).actualCount;
-  const effectiveSettings = await showAndGetMemorySettings(
-    sceneData,
-    { valid: true, name: lorebookName, data: lorebookData },
-    null,
-    {
-      availableMemories: availableContext,
-      fetchPreviousSummaries: count => selectPreviousMemoryContext(lorebookData, entry.uid, count),
-    },
-  );
+  let effectiveSettings = options.regenerationSettings || null;
+  if (!effectiveSettings) {
+    const sceneStats = await getSceneStats(compiledScene);
+    const sceneData = {
+      ...sceneStats,
+      sceneStart: eligibility.sceneStart,
+      sceneEnd: eligibility.sceneEnd,
+      messageCount: compiledScene.messages.length,
+    };
+    const availableContext = selectPreviousMemoryContext(
+      lorebookData,
+      entry.uid,
+      Number.MAX_SAFE_INTEGER,
+    ).actualCount;
+    effectiveSettings = await showAndGetMemorySettings(
+      sceneData,
+      { valid: true, name: lorebookName, data: lorebookData },
+      null,
+      {
+        availableMemories: availableContext,
+        fetchPreviousSummaries: count => selectPreviousMemoryContext(lorebookData, entry.uid, count),
+      },
+    );
+  }
   if (!effectiveSettings) return null;
 
   const { profileSettings, summaryCount, tokenThreshold } = effectiveSettings;
+  const preparedProfileSettings = options.snapshotProfile && !options.regenerationSettings
+    ? await snapshotProfilePrompts(profileSettings)
+    : profileSettings;
+  const fallbackTitleFormat = effectiveSettings.titleFormat || effectiveSettings.settings?.titleFormat;
   const context = getCurrentMemoryBooksContext();
   const characterNames = Array.isArray(entry?.characterFilter?.names)
     ? entry.characterFilter.names.filter(Boolean)
@@ -4340,11 +4387,15 @@ async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, e
   return {
     kind: "memory",
     compiledScene,
-    profileSettings: options.snapshotProfile
-      ? await snapshotProfilePrompts(profileSettings)
-      : profileSettings,
+    profileSettings: preparedProfileSettings,
     tokenThreshold,
-    fallbackTitleFormat: effectiveSettings.settings.titleFormat,
+    fallbackTitleFormat,
+    regenerationSettings: {
+      profileSettings: preparedProfileSettings,
+      summaryCount,
+      tokenThreshold,
+      titleFormat: fallbackTitleFormat,
+    },
     sequenceNumber: eligibility.sequenceNumber,
     sourceUids: [],
     sourceFingerprints: {},
@@ -4596,6 +4647,7 @@ async function commitRegeneratedLorebookEntry({
   sourceChatFingerprint,
   review,
   contentOnly = false,
+  refreshEditor = true,
 }) {
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
     if (
@@ -4644,10 +4696,12 @@ async function commitRegeneratedLorebookEntry({
       contentOnly,
     });
     await saveWorldInfo(lorebookName, freshData, true);
-    try {
-      await Promise.resolve(reloadEditor(lorebookName));
-    } catch (error) {
-      console.warn("STMemoryBooks: regenerated entry was saved, but the lorebook editor did not refresh:", error);
+    if (refreshEditor) {
+      try {
+        await Promise.resolve(reloadEditor(lorebookName));
+      } catch (error) {
+        console.warn("STMemoryBooks: regenerated entry was saved, but the lorebook editor did not refresh:", error);
+      }
     }
   });
 }
@@ -4711,6 +4765,7 @@ async function executeQueuedLorebookRegenerationJob(job, jobContext) {
     sourceChatFingerprint: draft.sourceChatFingerprint,
     review: approval.review,
     contentOnly: draft.contentOnly === true,
+    refreshEditor: payload.refreshEditor !== false,
   });
   jobContext.setResult({
     lorebookName,
@@ -4737,17 +4792,6 @@ async function handleLorebookEntryRegeneration(button) {
   button.disabled = true;
   const buttonLabel = button.querySelector("span");
   let entryKind = button?.dataset?.entryKind === "sidePrompt" ? "sidePrompt" : "memory";
-  if (buttonLabel) {
-    buttonLabel.textContent = entryKind === "sidePrompt"
-      ? translate(
-          "Regenerating side prompt...",
-          "STMemoryBooks_SidePromptRegeneration_Working",
-        )
-      : translate(
-          "Regenerating memory...",
-          "STMemoryBooks_Regeneration_Working",
-        );
-  }
   try {
     const lorebookData = await loadWorldInfo(lorebookName);
     const entry = getEntryByUid(lorebookData, entryUid);
@@ -4756,79 +4800,165 @@ async function handleLorebookEntryRegeneration(button) {
       throw new Error(getRegenerationDisabledMessage(eligibility));
     }
     entryKind = eligibility.kind;
-    const targetFingerprint = fingerprintRegenerationEntry(entry);
-    const linkedLorebooks = await findLinkedManualGroupLorebooks(lorebookName, entry);
-    const prepared = await prepareLorebookRegenerationDraft(
-      lorebookName,
-      lorebookData,
-      entry,
-      eligibility,
-      { snapshotProfile: areStmbJobsEnabled() },
-    );
-    if (!prepared) return;
+
+    let linkedEntries = [];
+    let regenerationScope = "entry";
+    if (hasLinkedManualGroupMetadata(entry)) {
+      linkedEntries = await findLinkedManualGroupEntries(lorebookName, entry);
+      if (linkedEntries.length > 0 && isCanonicalLinkedGroupMemory(entry, lorebookName)) {
+        regenerationScope = await showGroupRegenerationScopePopup(linkedEntries);
+        if (regenerationScope === "cancel") return;
+      }
+    }
+
+    if (buttonLabel) {
+      buttonLabel.textContent = entryKind === "sidePrompt"
+        ? translate(
+            "Regenerating side prompt...",
+            "STMemoryBooks_SidePromptRegeneration_Working",
+          )
+        : translate(
+            "Regenerating memory...",
+            "STMemoryBooks_Regeneration_Working",
+          );
+    }
+
+    const requestedTargets = [{ lorebookName, entryUid, lorebookData, entry, eligibility }];
+    if (regenerationScope === "all") {
+      requestedTargets.push(...linkedEntries);
+    }
+
+    const preparedTargets = [];
+    let regenerationSettings = null;
+    for (const requestedTarget of requestedTargets) {
+      const targetLorebookName = requestedTarget.lorebookName;
+      const targetEntryUid = requestedTarget.entryUid;
+      const targetLorebookData = requestedTarget.lorebookData || await loadWorldInfo(targetLorebookName);
+      const targetEntry = requestedTarget.entry || getEntryByUid(targetLorebookData, targetEntryUid);
+      const targetEligibility = requestedTarget.eligibility ||
+        getRegenerationEligibility(targetEntry, targetLorebookData);
+      if (!targetEligibility.eligible) {
+        throw new Error(getRegenerationDisabledMessage(targetEligibility));
+      }
+      if (requestedTarget !== requestedTargets[0] && targetEligibility.kind !== "memory") {
+        throw new Error(getRegenerationDisabledMessage(targetEligibility));
+      }
+
+      const prepared = await prepareLorebookRegenerationDraft(
+        targetLorebookName,
+        targetLorebookData,
+        targetEntry,
+        targetEligibility,
+        {
+          snapshotProfile: areStmbJobsEnabled(),
+          regenerationSettings,
+        },
+      );
+      if (!prepared) return;
+      regenerationSettings ||= prepared.regenerationSettings || null;
+      preparedTargets.push({
+        lorebookName: targetLorebookName,
+        entryUid: targetEntryUid,
+        entry: targetEntry,
+        targetFingerprint: fingerprintRegenerationEntry(targetEntry),
+        linkedLorebooks: regenerationScope === "entry"
+          ? linkedEntries.map(linked => linked.lorebookName)
+          : [],
+        prepared,
+      });
+    }
 
     if (areStmbJobsEnabled()) {
       const chatRef = getCurrentStmbChatRef();
-      enqueueStmbJob({
-        type: "regeneration",
-        title: entryKind === "sidePrompt"
-          ? translate("Regenerate side prompt", "STMemoryBooks_SidePromptRegeneration_Button")
-          : translate("Regenerate memory", "STMemoryBooks_Regeneration_Button"),
-        detail: String(entry.comment || ""),
-        chatRef,
-        chatKey: getStmbChatKey(chatRef),
-        lorebookName,
-        range: prepared.sourceChatRange
-          ? {
-              sceneStart: prepared.sourceChatRange.start,
-              sceneEnd: prepared.sourceChatRange.end,
-            }
-          : null,
-        payload: {
-          lorebookName,
-          entryUid,
-          targetFingerprint,
-          originalEntry: deepClone(entry),
-          linkedLorebooks,
-          prepared,
-        },
-      });
+      for (const [targetIndex, target] of preparedTargets.entries()) {
+        enqueueStmbJob({
+          type: "regeneration",
+          title: entryKind === "sidePrompt"
+            ? translate("Regenerate side prompt", "STMemoryBooks_SidePromptRegeneration_Button")
+            : translate("Regenerate memory", "STMemoryBooks_Regeneration_Button"),
+          detail: String(target.entry.comment || ""),
+          chatRef,
+          chatKey: getStmbChatKey(chatRef),
+          lorebookName: target.lorebookName,
+          range: target.prepared.sourceChatRange
+            ? {
+                sceneStart: target.prepared.sourceChatRange.start,
+                sceneEnd: target.prepared.sourceChatRange.end,
+              }
+            : null,
+          payload: {
+            lorebookName: target.lorebookName,
+            entryUid: target.entryUid,
+            targetFingerprint: target.targetFingerprint,
+            originalEntry: deepClone(target.entry),
+            linkedLorebooks: target.linkedLorebooks,
+            refreshEditor: targetIndex === 0,
+            prepared: target.prepared,
+          },
+        });
+      }
       toastr.info(
-        translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
+        preparedTargets.length > 1
+          ? tr(
+              "STMemoryBooks_Regeneration_JobsQueuedMany",
+              "{{count}} linked memory regeneration jobs queued.",
+              { count: preparedTargets.length },
+            )
+          : translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
         "STMemoryBooks",
       );
       return;
     }
 
-    const draft = await generateLorebookRegenerationDraft(prepared, task);
-    task.throwIfStopped();
-    toastr.clear();
+    const approvedTargets = [];
+    for (const target of preparedTargets) {
+      const draft = await generateLorebookRegenerationDraft(target.prepared, task);
+      task.throwIfStopped();
+      toastr.clear();
 
-    const review = await showRegenerationReviewPopup({
-      originalEntry: entry,
-      generatedTitle: draft.generatedTitle,
-      generatedContent: draft.generatedContent,
-      generatedKeywords: draft.generatedKeywords,
-      formatTitle: draft.formatTitle,
-      linkedLorebooks,
-      contentOnly: draft.contentOnly === true,
-    });
-    if (review.action !== "replace") return;
-    task.throwIfStopped();
+      const review = await showRegenerationReviewPopup({
+        originalEntry: target.entry,
+        generatedTitle: draft.generatedTitle,
+        generatedContent: draft.generatedContent,
+        generatedKeywords: draft.generatedKeywords,
+        formatTitle: draft.formatTitle,
+        linkedLorebooks: target.linkedLorebooks,
+        contentOnly: draft.contentOnly === true,
+      });
+      if (review.action !== "replace") return;
+      task.throwIfStopped();
+      approvedTargets.push({ target, draft, review });
+    }
 
-    await commitRegeneratedLorebookEntry({
-      lorebookName,
-      entryUid,
-      targetFingerprint,
-      sourceUids: draft.sourceUids,
-      sourceFingerprints: draft.sourceFingerprints,
-      sourceChatRange: draft.sourceChatRange,
-      sourceChatFingerprint: draft.sourceChatFingerprint,
-      review,
-      contentOnly: draft.contentOnly === true,
-    });
+    for (const { target, draft, review } of approvedTargets) {
+      await commitRegeneratedLorebookEntry({
+        lorebookName: target.lorebookName,
+        entryUid: target.entryUid,
+        targetFingerprint: target.targetFingerprint,
+        sourceUids: draft.sourceUids,
+        sourceFingerprints: draft.sourceFingerprints,
+        sourceChatRange: draft.sourceChatRange,
+        sourceChatFingerprint: draft.sourceChatFingerprint,
+        review,
+        contentOnly: draft.contentOnly === true,
+        refreshEditor: approvedTargets.length === 1,
+      });
+    }
+    if (approvedTargets.length > 1) {
+      try {
+        await Promise.resolve(reloadEditor(lorebookName));
+      } catch (error) {
+        console.warn("STMemoryBooks: linked entries were saved, but the group lorebook editor did not refresh:", error);
+      }
+    }
     toastr.success(
-      entryKind === "sidePrompt"
+      approvedTargets.length > 1
+        ? tr(
+            "STMemoryBooks_Regeneration_SuccessMany",
+            "{{count}} linked memory entries regenerated successfully.",
+            { count: approvedTargets.length },
+          )
+        : entryKind === "sidePrompt"
         ? translate(
             "Side prompt regenerated successfully.",
             "STMemoryBooks_SidePromptRegeneration_Success",

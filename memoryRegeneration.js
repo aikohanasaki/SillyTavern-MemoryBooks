@@ -458,6 +458,38 @@ export function hasLinkedManualGroupMetadata(entry) {
     );
 }
 
+export function isCanonicalLinkedGroupMemory(entry, lorebookName) {
+    if (!isBaseMemoryEntry(entry) || !hasLinkedManualGroupMetadata(entry)) return false;
+    if (entry.STMB_canonical === true) return true;
+    if (entry.STMB_canonical === false) return false;
+
+    const canonicalLorebook = String(entry.STMB_canonicalLorebook || '').trim();
+    return !!canonicalLorebook && canonicalLorebook === String(lorebookName || '').trim();
+}
+
+export function isLinkedManualGroupEntry(sourceEntry, candidateEntry, sourceLorebookName) {
+    const inclusionGroup = String(sourceEntry?.STMB_inclusionGroup || '').trim();
+    const canonicalUid = String(sourceEntry?.STMB_canonicalEntryUid ?? sourceEntry?.uid ?? '').trim();
+    const canonicalLorebook = String(
+        sourceEntry?.STMB_canonicalLorebook || sourceLorebookName || '',
+    ).trim();
+    const candidateCanonicalUid = String(candidateEntry?.STMB_canonicalEntryUid ?? '').trim();
+    const candidateCanonicalLorebook = String(candidateEntry?.STMB_canonicalLorebook || '').trim();
+    const hasCanonicalIdentity = !!canonicalUid && !!canonicalLorebook &&
+        !!candidateCanonicalUid && !!candidateCanonicalLorebook;
+    const sameCanonicalIdentity = hasCanonicalIdentity &&
+        candidateCanonicalUid === canonicalUid &&
+        candidateCanonicalLorebook === canonicalLorebook;
+
+    if (
+        inclusionGroup &&
+        String(candidateEntry?.STMB_inclusionGroup || '').trim() === inclusionGroup
+    ) {
+        return hasCanonicalIdentity ? sameCanonicalIdentity : true;
+    }
+    return sameCanonicalIdentity;
+}
+
 export function clearStaleParentDisableState(entry, lorebookData) {
     const parentUid = entry?.disabledBySummaryId;
     if (parentUid === undefined || parentUid === null || getEntryByUid(lorebookData, parentUid)) {
