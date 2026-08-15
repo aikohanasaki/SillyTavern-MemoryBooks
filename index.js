@@ -10234,7 +10234,9 @@ function initializeSettingsPopupSelect2(popupInstance = currentPopupInstance) {
 async function buildSettingsTemplateData({ includeSidePromptSets = false } = {}) {
   const settings = initializeSettings();
   await SummaryPromptManager.firstRunInitIfMissing(settings);
-  const sceneData = await getSceneData();
+  const sceneData = await getSceneData({
+    includeHiddenMessages: !!settings.moduleSettings.unhideBeforeMemory,
+  });
   const sceneMarkers = getSceneMarkers();
 
   // Build Regex script options (Global, Scoped, Preset), include disabled too.

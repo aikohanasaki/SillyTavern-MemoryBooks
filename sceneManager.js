@@ -573,8 +573,10 @@ export function createSceneButtons(messageElement) {
 
 /**
  * Get scene data with message excerpts
+ * @param {Object} [options] - Scene preview options
+ * @param {boolean} [options.includeHiddenMessages=false] - Include hidden messages when estimating the post-unhide scene
  */
-export async function getSceneData() {
+export async function getSceneData({ includeHiddenMessages = false } = {}) {
     const markers = getSceneMarkers();
     
     if (markers.sceneStart === null || markers.sceneEnd === null) {
@@ -596,7 +598,7 @@ export async function getSceneData() {
     // Build a temporary compiled scene for consistent token estimation
     try {
         const tempRequest = createSceneRequest(markers.sceneStart, markers.sceneEnd);
-        const tempCompiled = compileScene(tempRequest);
+        const tempCompiled = compileScene(tempRequest, { includeHiddenMessages });
         const estimatedTokens = await estimateTokenCount(tempCompiled);
         const hiddenMessageCount = tempCompiled.metadata.hiddenMessagesSkipped;
         const totalMessageCount = tempCompiled.metadata.totalRequestedRange;

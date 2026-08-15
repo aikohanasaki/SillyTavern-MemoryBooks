@@ -19,9 +19,11 @@ const MODULE_NAME = 'STMemoryBooks-ChatCompile';
  * @param {number} sceneRequest.sceneEnd - End message ID  
  * @param {string} sceneRequest.chatId - Current chat ID
  * @param {string} sceneRequest.characterName - Character name
+ * @param {Object} [options] - Compilation options
+ * @param {boolean} [options.includeHiddenMessages=false] - Include messages that are currently hidden
  * @returns {Object} Compiled scene data
  */
-export function compileScene(sceneRequest) {
+export function compileScene(sceneRequest, { includeHiddenMessages = false } = {}) {
     const { sceneStart, sceneEnd, chatId, characterName } = sceneRequest;
     
     // Validate input parameters
@@ -41,7 +43,7 @@ export function compileScene(sceneRequest) {
     const sceneMessages = [];
     const participantFilterNames = new Set();
     const groupParticipantResolver = createGroupParticipantResolver();
-    let hiddenMessageCount = 0;
+    let hiddenMessagesSkipped = 0;
     let skippedMessageCount = 0;
     
     for (let i = sceneStart; i <= sceneEnd; i++) {
@@ -53,10 +55,13 @@ export function compileScene(sceneRequest) {
             continue;
         }
         
-        // Skip hidden messages - marked with is_system: true
+        // Hidden messages are marked with is_system: true. Preview callers can
+        // include them to model the scene after the configured /unhide step.
         if (message.is_system) {
-            hiddenMessageCount++;
-            continue;
+            if (!includeHiddenMessages) {
+                hiddenMessagesSkipped++;
+                continue;
+            }
         }
         
         // Create clean message object following JSONL structure
@@ -94,7 +99,7 @@ export function compileScene(sceneRequest) {
         characterName: characterName || name2 || translate('Unknown', 'common.unknown'),
         messageCount: sceneMessages.length,
         totalRequestedRange: sceneEnd - sceneStart + 1,
-        hiddenMessagesSkipped: hiddenMessageCount,
+        hiddenMessagesSkipped,
         messagesSkipped: skippedMessageCount,
         compiledAt: new Date().toISOString(),
         totalChatLength: chat.length,
