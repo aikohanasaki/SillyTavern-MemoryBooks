@@ -566,7 +566,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "{{count}} prompts laterais integrados foram recriados usando a localidade atual",
   "STMemoryBooks_SidePrompts_RecreateFailed": "Falha ao recriar os prompts laterais integrados",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Máximo de prompts laterais simultâneos",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Controla quantos prompts laterais podem ser executados ao mesmo tempo. Reduza este valor se sua conexão for lenta ou se você estiver atingindo limites de requisição. Padrão: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Controla quantos prompts laterais podem ser executados ao mesmo tempo. Reduza este valor se sua conexão for lenta ou se você estiver atingindo limites de requisição. Padrão: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Modo de prompts laterais após a memória para este chat",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Usar prompts laterais ativados individualmente",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Herdar o padrão de chats individuais",

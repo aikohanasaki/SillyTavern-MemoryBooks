@@ -1620,8 +1620,8 @@ export async function showSidePromptsPopup() {
         // Global setting: max concurrent side prompts
         content += '<div class="world_entry_form_control">';
         content += `<label for="stmb-sp-max-concurrent"><h4>${escapeHtml(translate('How many concurrent prompts to run at once', 'STMemoryBooks_SidePrompts_MaxConcurrentLabel'))}</h4></label>`;
-        content += '<input type="number" id="stmb-sp-max-concurrent" class="text_pole" min="1" max="5" step="1" value="2">';
-        content += `<small class="opacity70p">${escapeHtml(translate('Range 1–5. Defaults to 2.', 'STMemoryBooks_SidePrompts_MaxConcurrentHelp'))}</small>`;
+        content += '<input type="number" id="stmb-sp-max-concurrent" class="text_pole" min="1" max="10" step="1" value="2">';
+        content += `<small class="opacity70p">${escapeHtml(translate('Range 1–10. Defaults to 2.', 'STMemoryBooks_SidePrompts_MaxConcurrentHelp'))}</small>`;
         content += '</div>';
 
         // List container
@@ -1656,11 +1656,11 @@ export async function showSidePromptsPopup() {
             const spMaxInput = dlg.querySelector('#stmb-sp-max-concurrent');
             if (spMaxInput) {
                 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-                const current = clamp(Number(extension_settings?.STMemoryBooks?.moduleSettings?.sidePromptsMaxConcurrent ?? 2), 1, 5);
+                const current = clamp(Number(extension_settings?.STMemoryBooks?.moduleSettings?.sidePromptsMaxConcurrent ?? 2), 1, 10);
                 spMaxInput.value = String(current);
                 const persist = () => {
                     const raw = parseInt(spMaxInput.value, 10);
-                    const val = clamp(isNaN(raw) ? 2 : raw, 1, 5);
+                    const val = clamp(isNaN(raw) ? 2 : raw, 1, 10);
                     spMaxInput.value = String(val);
                     // Ensure settings objects exist
                     if (!extension_settings.STMemoryBooks) extension_settings.STMemoryBooks = { moduleSettings: {} };

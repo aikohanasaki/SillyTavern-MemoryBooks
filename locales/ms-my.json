@@ -491,7 +491,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "Berjaya mencipta semula {{count}} prom sampingan terbina dalam daripada tempatan semasa",
   "STMemoryBooks_SidePrompts_RecreateFailed": "Gagal mencipta semula prom sampingan terbina dalam",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Prom sampingan serentak maksimum",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Ini mengawal berapa banyak prom sampingan boleh berjalan pada satu masa. Turunkan nilai ini jika anda mempunyai sambungan yang perlahan atau menghadapi had kadar. Lalai: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Ini mengawal berapa banyak prom sampingan boleh berjalan pada satu masa. Turunkan nilai ini jika anda mempunyai sambungan yang perlahan atau menghadapi had kadar. Lalai: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Mod prom sampingan selepas memori untuk sembang ini",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Gunakan prom sampingan yang didayakan secara individu",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Warisi lalai sembang solo",

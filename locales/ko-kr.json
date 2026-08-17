@@ -487,7 +487,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "현재 로케일에서 {{count}}개의 내장 사이드 프롬프트를 다시 만들었습니다",
   "STMemoryBooks_SidePrompts_RecreateFailed": "내장 사이드 프롬프트를 다시 만들지 못했습니다",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "최대 동시 사이드 프롬프트",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "이것은 한 번에 실행할 수 있는 사이드 프롬프트의 수를 제어합니다. 연결이 느리거나 속도 제한에 걸리는 경우 이 값을 낮추세요. 기본값: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "이것은 한 번에 실행할 수 있는 사이드 프롬프트의 수를 제어합니다. 연결이 느리거나 속도 제한에 걸리는 경우 이 값을 낮추세요. 기본값: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "이 채팅의 메모리 후 사이드 프롬프트 모드",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "개별 활성화된 사이드 프롬프트 사용",
   "STMemoryBooks_InheritSoloSidePromptDefault": "개별 채팅 기본값 상속",

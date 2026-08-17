@@ -490,7 +490,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "Berhasil membuat ulang {{count}} prompt sampingan bawaan dari lokal saat ini",
   "STMemoryBooks_SidePrompts_RecreateFailed": "Gagal membuat ulang prompt sampingan bawaan",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Prompt sampingan serentak maksimum",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Ini mengontrol berapa banyak prompt sampingan yang dapat berjalan sekaligus. Turunkan nilai ini jika Anda memiliki koneksi yang lambat atau mengalami batas kecepatan. Default: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Ini mengontrol berapa banyak prompt sampingan yang dapat berjalan sekaligus. Turunkan nilai ini jika Anda memiliki koneksi yang lambat atau mengalami batas kecepatan. Default: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Mode prompt sampingan setelah memori untuk obrolan ini",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Gunakan prompt sampingan yang diaktifkan satu per satu",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Warisi default obrolan tunggal",

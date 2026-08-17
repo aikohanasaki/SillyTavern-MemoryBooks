@@ -2073,7 +2073,7 @@ Open **Settings → Trackers & Side Prompts** in the main panel.
 | Setting | Location and scope | What it does |
 |---|---|---|
 | **After-memory side prompt mode for this chat** | Manager main screen; per chat | Uses the matching solo/group default, explicitly uses individually enabled after-Memory prompts, or selects one named Side Prompt Set for this chat. |
-| **How many concurrent prompts to run at once** | Manager main screen; global | Limits simultaneous Side Prompt jobs to 1–5. |
+| **How many concurrent prompts to run at once** | Manager main screen; global | Limits simultaneous Side Prompt jobs to 1–10. |
 | **Side Prompt Set Name** | **New Set** or edit a set; per set | Names a reusable ordered group of Side Prompt runs. |
 | **Side Prompt / Row Label / Macro Values** | Side Prompt Set row; per set | Chooses the template for a row, gives the row an optional display/title label, supplies literal or set-level runtime macro values, and uses row order as execution order. |
 | **Enabled** | **New** or edit an ordinary Side Prompt; per template | Makes the template eligible when the chat uses individually enabled after-Memory prompts. Trigger settings still determine when it runs. |

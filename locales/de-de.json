@@ -491,7 +491,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "{{count}} integrierte Side-Prompts in aktueller Sprache wiederhergestellt",
   "STMemoryBooks_SidePrompts_RecreateFailed": "Wiederherstellung der integrierten Side-Prompts fehlgeschlagen",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Max. gleichzeitige Side-Prompts",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Steuert, wie viele Side-Prompts gleichzeitig laufen dürfen. Senke diesen Wert bei langsamer Verbindung oder Rate-Limits. Standard: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Steuert, wie viele Side-Prompts gleichzeitig laufen dürfen. Senke diesen Wert bei langsamer Verbindung oder Rate-Limits. Standard: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Side-Prompt-Modus nach Erinnerung für diesen Chat",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Einzeln aktivierte Side-Prompts verwenden",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Standard für Einzelchats übernehmen",

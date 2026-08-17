@@ -491,7 +491,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "現在のロケールから{{count}}個の組み込みサイドプロンプトを再作成しました",
   "STMemoryBooks_SidePrompts_RecreateFailed": "組み込みサイドプロンプトの再作成に失敗しました",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "最大同時サイドプロンプト数",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "これにより、一度に実行できるサイドプロンプトの数が制御されます。接続が遅い場合やレート制限に達している場合は、この値を下げてください。デフォルト: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "これにより、一度に実行できるサイドプロンプトの数が制御されます。接続が遅い場合やレート制限に達している場合は、この値を下げてください。デフォルト: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "このチャットのメモリ後サイドプロンプトモード",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "個別に有効化されたサイドプロンプトを使用",
   "STMemoryBooks_InheritSoloSidePromptDefault": "個別チャットのデフォルトを継承",

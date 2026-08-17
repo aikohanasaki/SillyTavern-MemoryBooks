@@ -487,7 +487,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "已從目前語言環境重新建立 {{count}} 個內建側邊提示",
   "STMemoryBooks_SidePrompts_RecreateFailed": "重新建立內建側邊提示失敗",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "最大並行側邊提示",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "這控制了一次可以執行多少個側邊提示。如果您的連線速度較慢或遇到速率限制，請降低此值。預設值：3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "這控制了一次可以執行多少個側邊提示。如果您的連線速度較慢或遇到速率限制，請降低此值。預設值：2",
   "STMemoryBooks_AfterMemorySidePromptMode": "此聊天的記憶後側邊提示模式",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "使用個別啟用的側邊提示",
   "STMemoryBooks_InheritSoloSidePromptDefault": "繼承單人聊天預設值",

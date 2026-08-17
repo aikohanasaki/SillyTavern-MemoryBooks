@@ -91,7 +91,7 @@ function clampInt(value, min, max) {
 
 function getSidePromptJobLimit() {
     const moduleSettings = getStmbModuleSettings();
-    return clampInt(moduleSettings.sidePromptsMaxConcurrent ?? 2, 1, 5);
+    return clampInt(moduleSettings.sidePromptsMaxConcurrent ?? 2, 1, 10);
 }
 
 function showMissingTopInfoBarNotice() {

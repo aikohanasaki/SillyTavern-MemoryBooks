@@ -491,7 +491,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "Se reconstruyeron {{count}} plantillas laterales integradas de la configuración regional actual",
   "STMemoryBooks_SidePrompts_RecreateFailed": "No se pudieron reconstruir las plantillas laterales integradas",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Máximo de prompts auxiliares concurrentes",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Esto controla cuántos prompts auxiliares pueden ejecutarse al mismo tiempo. Reduce este valor si tienes una conexión lenta o estás alcanzando los límites de velocidad. Predeterminado: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Esto controla cuántos prompts auxiliares pueden ejecutarse al mismo tiempo. Reduce este valor si tienes una conexión lenta o estás alcanzando los límites de velocidad. Predeterminado: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Modo de prompts laterales después de la memoria para este chat",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Usar prompts laterales activados individualmente",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Heredar el valor predeterminado de chats individuales",

@@ -1493,7 +1493,7 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
         const showNotifications = settings?.moduleSettings?.showNotifications !== false;
         const results = [];
 
-        const maxConcurrent = clampInt(Number(settings?.moduleSettings?.sidePromptsMaxConcurrent ?? 2),1,5);
+        const maxConcurrent = clampInt(Number(settings?.moduleSettings?.sidePromptsMaxConcurrent ?? 2),1,10);
         const lorebookResolveContext = {};
 
         if (areStmbJobsEnabled()) {

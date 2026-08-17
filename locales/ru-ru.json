@@ -491,7 +491,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "Воссоздано {{count}} встроенных боковых промптов из текущей локали",
   "STMemoryBooks_SidePrompts_RecreateFailed": "Не удалось воссоздать встроенные боковые промпты",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Максимальное количество одновременных боковых промптов",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Это контролирует, сколько боковых промптов может выполняться одновременно. Уменьшите это значение, если у вас медленное соединение или вы достигаете лимитов скорости. По умолчанию: 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Это контролирует, сколько боковых промптов может выполняться одновременно. Уменьшите это значение, если у вас медленное соединение или вы достигаете лимитов скорости. По умолчанию: 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Режим Боковых Промптов после памяти для этого чата",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Использовать отдельно включенные Боковые Промпты",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Наследовать стандарт для одиночных чатов",

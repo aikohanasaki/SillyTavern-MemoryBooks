@@ -491,7 +491,7 @@
   "STMemoryBooks_SidePrompts_RecreateSuccess": "{{count}} side prompts intégrés recréés",
   "STMemoryBooks_SidePrompts_RecreateFailed": "Échec de la recréation",
   "STMemoryBooks_SidePrompts_MaxConcurrentLabel": "Side prompts simultanés max",
-  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Contrôle combien peuvent tourner en même temps. Réduisez si vous avez des limites de débit. Défaut : 3",
+  "STMemoryBooks_SidePrompts_MaxConcurrentHelp": "Contrôle combien peuvent tourner en même temps. Réduisez si vous avez des limites de débit. Défaut : 2",
   "STMemoryBooks_AfterMemorySidePromptMode": "Mode de side prompts après mémoire pour ce chat",
   "STMemoryBooks_UseIndividuallyEnabledSidePrompts": "Utiliser les side prompts activés individuellement",
   "STMemoryBooks_InheritSoloSidePromptDefault": "Hériter du réglage par défaut des chats individuels",
