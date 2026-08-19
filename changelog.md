@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.4 (August 18, 2026)
+- Add raw response to empty/invalid error.
+
 ## v8.6.3 (August 15, 2026)
 - Support OpenRouter routing order.
 - Multiple group chat bugfixes.
