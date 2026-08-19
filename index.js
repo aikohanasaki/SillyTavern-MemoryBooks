@@ -5617,23 +5617,34 @@ async function executeMemoryGeneration(
             ? `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`
             : `${sceneData.sceneStart}-${sceneData.sceneEnd}`,
       };
+      const failureMessage =
+        __st_t_tag`AI failed to generate valid memory${codeTag}: ${error.message}${retryMsg}`;
+      const rawResponseLinkLabel = translate(
+        "Raw response from AI",
+        "STMemoryBooks_RawResponseFromAI",
+      );
       lastFailureToast = toastr.error(
-        __st_t_tag`AI failed to generate valid memory${codeTag}: ${error.message}${retryMsg}`,
+        `${escapeHtml(failureMessage)}<br><a href="#" class="stmb-raw-response-link">${escapeHtml(rawResponseLinkLabel)}</a>`,
         "STMemoryBooks",
         {
           timeOut: 0,
           extendedTimeOut: 0,
           closeButton: true,
           tapToDismiss: false,
-          onclick: () => {
-            try {
-              showFailedAIResponsePopup(lastFailedAIError);
-            } catch (e) {
-              console.error(e);
-            }
-          },
+          escapeHtml: false,
         },
       );
+      lastFailureToast
+        ?.find(".stmb-raw-response-link")
+        ?.on("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            showFailedAIResponsePopup(lastFailedAIError);
+          } catch (e) {
+            console.error(e);
+          }
+        });
     } else if (error.name === "InvalidProfileError") {
       toastr.error(
         __st_t_tag`Profile configuration error: ${error.message}${retryMsg}`,

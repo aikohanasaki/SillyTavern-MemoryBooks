@@ -1188,6 +1188,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "未擷取到原始回應。",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "提供者錯誤內容",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "AI 原始回應",
+  "STMemoryBooks_RawResponseFromAI": "來自 AI 的原始回應",
   "STMemoryBooks_ReviewFailedAI_Title": "檢查失敗的 AI 回應",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "代碼",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "複製原始回應",

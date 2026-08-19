@@ -2261,7 +2261,7 @@ Check in this order:
 6. provider supports the selected structured-output mode;
 7. try Skip Structured Output only if the provider rejects schemas;
 8. try a more instruction-following model before rewriting the prompt;
-9. use the raw response/manual JSON correction interface when available.
+9. click **Raw response from AI** in the persistent error notification to inspect the captured provider response and use the manual JSON correction interface when available.
 
 Common causes include code fences, commentary, a missing key, keywords not being an array, refusal text, or cut-off output.
 

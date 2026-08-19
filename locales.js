@@ -2290,6 +2290,7 @@ Return ONLY the JSON, no other text.`,
     'STMemoryBooks_ReviewFailedAI_ProviderBody': 'Provider Error Body',
     'STMemoryBooks_ReviewFailedAI_RawLabel': 'Raw AI Response',
     'STMemoryBooks_ReviewFailedAI_Title': 'Review Failed AI Response',
+    'STMemoryBooks_RawResponseFromAI': 'Raw response from AI',
 
     'STMemoryBooks_ReviewFailedArc_CodeLabel': 'Code',
     'STMemoryBooks_ReviewFailedArc_CopyRaw': 'Copy Raw',

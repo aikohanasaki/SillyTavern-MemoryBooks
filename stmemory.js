@@ -1221,7 +1221,26 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
         const aiFull = aiResponse.full;
         assertProviderDidNotTruncate(aiFull, aiResponseText);
 
-        const jsonResult = parseAIJsonResponse(aiResponseText);
+        let jsonResult;
+        try {
+            jsonResult = parseAIJsonResponse(aiResponseText);
+        } catch (error) {
+            if (
+                error instanceof AIResponseError
+                && error.code === 'EMPTY_OR_INVALID'
+                && !String(error.rawResponse || '').trim()
+            ) {
+                try {
+                    const serializedResponse = typeof aiFull === 'string'
+                        ? aiFull
+                        : JSON.stringify(aiFull, null, 2);
+                    if (typeof serializedResponse === 'string') {
+                        error.rawResponse = serializedResponse;
+                    }
+                } catch {}
+            }
+            throw error;
+        }
 
         return {
             content: jsonResult.content || jsonResult.summary || jsonResult.memory_content || '',

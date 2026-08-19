@@ -1188,6 +1188,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "Tiada respons mentah ditangkap.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "Isi Ralat Penyedia",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "Respons Mentah AI",
+  "STMemoryBooks_RawResponseFromAI": "Respons mentah daripada AI",
   "STMemoryBooks_ReviewFailedAI_Title": "Semak Respons AI yang Gagal",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "Kod",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "Salin Respons Mentah",

@@ -1188,6 +1188,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "Сырой ответ не был захвачен.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "Тело ошибки провайдера",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "Сырой ответ ИИ",
+  "STMemoryBooks_RawResponseFromAI": "Необработанный ответ от ИИ",
   "STMemoryBooks_ReviewFailedAI_Title": "Проверить неудачный ответ ИИ",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "Код",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "Копировать сырой ответ",

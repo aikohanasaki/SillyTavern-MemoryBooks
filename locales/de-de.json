@@ -1193,6 +1193,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "Es wurde keine Rohantwort erfasst.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "Provider-Fehler-Body",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "Rohantwort der KI",
+  "STMemoryBooks_RawResponseFromAI": "Rohantwort der KI",
   "STMemoryBooks_ReviewFailedAI_Title": "Fehlgeschlagene KI-Antwort überprüfen",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "Code",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "Rohantwort kopieren",

@@ -1188,6 +1188,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "캡처된 원시 응답이 없습니다.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "제공자 오류 본문",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "AI 원시 응답",
+  "STMemoryBooks_RawResponseFromAI": "AI의 원시 응답",
   "STMemoryBooks_ReviewFailedAI_Title": "실패한 AI 응답 검토",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "코드",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "원시 응답 복사",

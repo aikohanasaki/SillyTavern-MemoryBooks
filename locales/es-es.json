@@ -1193,6 +1193,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "No se capturó ninguna respuesta sin procesar.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "Cuerpo del error del proveedor",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "Respuesta sin procesar de la IA",
+  "STMemoryBooks_RawResponseFromAI": "Respuesta sin procesar de la IA",
   "STMemoryBooks_ReviewFailedAI_Title": "Revisar respuesta fallida de la IA",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "Código",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "Copiar respuesta sin procesar",

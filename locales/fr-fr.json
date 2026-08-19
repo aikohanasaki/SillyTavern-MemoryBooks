@@ -1187,6 +1187,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "Aucune réponse brute n’a été capturée.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "Corps d’erreur du fournisseur",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "Réponse brute de l’IA",
+  "STMemoryBooks_RawResponseFromAI": "Réponse brute de l’IA",
   "STMemoryBooks_ReviewFailedAI_Title": "Vérifier la réponse IA échouée",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "Code",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "Copier la réponse brute",

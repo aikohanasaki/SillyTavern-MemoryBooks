@@ -1188,6 +1188,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "生の応答はキャプチャされていません。",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "プロバイダーエラー本文",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "AIの生の応答",
+  "STMemoryBooks_RawResponseFromAI": "AIからの生の応答",
   "STMemoryBooks_ReviewFailedAI_Title": "失敗したAI応答を確認",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "コード",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "生の応答をコピー",

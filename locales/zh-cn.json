@@ -1188,6 +1188,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "未捕获原始响应。",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "提供商错误内容",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "AI 原始响应",
+  "STMemoryBooks_RawResponseFromAI": "来自 AI 的原始响应",
   "STMemoryBooks_ReviewFailedAI_Title": "检查失败的 AI 响应",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "代码",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "复制原始响应",

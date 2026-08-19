@@ -1312,6 +1312,7 @@
   "STMemoryBooks_ReviewFailedAI_NoRaw": "Nenhuma resposta bruta foi capturada.",
   "STMemoryBooks_ReviewFailedAI_ProviderBody": "Corpo do Erro do Provedor",
   "STMemoryBooks_ReviewFailedAI_RawLabel": "Resposta Bruta da IA",
+  "STMemoryBooks_RawResponseFromAI": "Resposta bruta da IA",
   "STMemoryBooks_ReviewFailedAI_Title": "Revisar Resposta da IA com Falha",
   "STMemoryBooks_ReviewFailedArc_CodeLabel": "Código",
   "STMemoryBooks_ReviewFailedArc_CopyRaw": "Copiar Resposta Bruta",
