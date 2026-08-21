@@ -1233,6 +1233,7 @@
   "STMemoryBooks_Jobs_RetryAll": "Coba ulang semua",
   "STMemoryBooks_Jobs_RetryMemory": "Coba ulang memori",
   "STMemoryBooks_Jobs_Lorebook": "Buku Latar",
+  "STMemoryBooks_Jobs_MessageRange": "Pesan — Awal: {{start}} · Akhir: {{end}}",
   "STMemoryBooks_Jobs_MemoryQueued": "Tugas memori masuk antrean.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Tugas konsolidasi masuk antrean.",
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Biarkan tugas Buku Memori selesai sebelum berpindah chat. Memori otomatis dan prompt konsolidasi otomatis hanya andal di chat saat ini.",

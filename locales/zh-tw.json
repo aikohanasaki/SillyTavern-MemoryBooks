@@ -1233,6 +1233,7 @@
   "STMemoryBooks_Jobs_RetryAll": "全部重試",
   "STMemoryBooks_Jobs_RetryMemory": "僅重試記憶",
   "STMemoryBooks_Jobs_Lorebook": "故事書",
+  "STMemoryBooks_Jobs_MessageRange": "訊息 — 開始：{{start}} · 結束：{{end}}",
   "STMemoryBooks_Jobs_MemoryQueued": "記憶任務已排入佇列。",
   "STMemoryBooks_Jobs_ConsolidationQueued": "合併任務已排入佇列。",
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "請先讓記憶書任務完成，再切換聊天。自動記憶和自動合併提示只在目前聊天中可靠。",

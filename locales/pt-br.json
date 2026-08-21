@@ -250,6 +250,7 @@
   "STMemoryBooks_Jobs_RetryAll": "Tentar Todas Novamente",
   "STMemoryBooks_Jobs_RetryMemory": "Tentar Memória Novamente",
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
+  "STMemoryBooks_Jobs_MessageRange": "Mensagens — Início: {{start}} · Fim: {{end}}",
   "STMemoryBooks_Jobs_MemoryQueued": "Tarefa de memória adicionada à fila.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Tarefa de consolidação adicionada à fila.",
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Deixe as tarefas dos Livros de Memória terminarem antes de trocar de chat. Os prompts de memória automática e consolidação automática só são confiáveis no chat atual.",

@@ -720,6 +720,21 @@ function formatElapsed(job = {}) {
     return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
+function formatMessageRange(job = {}) {
+    const rawStart = job.range?.sceneStart;
+    const rawEnd = job.range?.sceneEnd;
+    if (rawStart === null || rawStart === undefined || rawStart === ''
+        || rawEnd === null || rawEnd === undefined || rawEnd === '') return '';
+    const start = Number(rawStart);
+    const end = Number(rawEnd);
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) return '';
+    return tr(
+        'STMemoryBooks_Jobs_MessageRange',
+        'Messages — Start: {{start}} · End: {{end}}',
+        { start, end },
+    );
+}
+
 function getCurrentStoreRows() {
     const chatKey = getStmbChatKey();
     const store = jobStores.get(chatKey);
@@ -775,6 +790,7 @@ function renderStmbJobsUi() {
                        <button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-memory" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_RetryMemory', 'Retry Memory'))}</button>`
                     : `<button type="button" class="menu_button stmb-jobs-row-action" data-action="retry-job" data-job-id="${escapeHtml(job.id)}">${escapeHtml(tr('STMemoryBooks_Jobs_Retry', 'Retry'))}</button>`
                 : '';
+        const messageRange = formatMessageRange(job);
         return `
             <div class="stmb-jobs-row ${getStateToneClass(job)}"${attrs}>
                 <div class="stmb-jobs-row-main">
@@ -785,6 +801,7 @@ function renderStmbJobsUi() {
                     </div>
                     ${job.detail ? `<div class="stmb-jobs-row-detail">${escapeHtml(job.detail)}</div>` : ''}
                     ${job.lorebookName ? `<div class="stmb-jobs-row-meta">${escapeHtml(tr('STMemoryBooks_Jobs_Lorebook', 'Lorebook'))}: ${escapeHtml(job.lorebookName)}</div>` : ''}
+                    ${messageRange ? `<div class="stmb-jobs-row-meta">${escapeHtml(messageRange)}</div>` : ''}
                     ${formatElapsed(job) ? `<div class="stmb-jobs-row-meta">${escapeHtml(formatElapsed(job))}</div>` : ''}
                     ${job.error?.message ? `<div class="stmb-jobs-row-error">${escapeHtml(job.error.message)}</div>` : ''}
                 </div>

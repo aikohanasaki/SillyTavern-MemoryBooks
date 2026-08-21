@@ -1238,6 +1238,7 @@
   "STMemoryBooks_Jobs_RetryAll": "Reintentar todo",
   "STMemoryBooks_Jobs_RetryMemory": "Reintentar memoria",
   "STMemoryBooks_Jobs_Lorebook": "Lorebook",
+  "STMemoryBooks_Jobs_MessageRange": "Mensajes — Inicio: {{start}} · Fin: {{end}}",
   "STMemoryBooks_Jobs_MemoryQueued": "Trabajo de memoria en cola.",
   "STMemoryBooks_Jobs_ConsolidationQueued": "Trabajo de consolidación en cola.",
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "Deja que los trabajos de Libros de Memoria terminen antes de cambiar de chat. La memoria automática y los avisos de auto-consolidación solo son fiables en el chat actual.",

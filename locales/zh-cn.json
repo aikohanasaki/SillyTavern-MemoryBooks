@@ -1233,6 +1233,7 @@
   "STMemoryBooks_Jobs_RetryAll": "全部重试",
   "STMemoryBooks_Jobs_RetryMemory": "仅重试记忆",
   "STMemoryBooks_Jobs_Lorebook": "故事书",
+  "STMemoryBooks_Jobs_MessageRange": "消息 — 开始：{{start}} · 结束：{{end}}",
   "STMemoryBooks_Jobs_MemoryQueued": "记忆任务已排队。",
   "STMemoryBooks_Jobs_ConsolidationQueued": "合并任务已排队。",
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "请先让记忆书任务完成，再切换聊天。自动记忆和自动合并提示只在当前聊天中可靠。",

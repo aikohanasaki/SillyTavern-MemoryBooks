@@ -373,6 +373,7 @@ export const localeData_en = {
     'STMemoryBooks_Jobs_RetryAll': 'Retry All',
     'STMemoryBooks_Jobs_RetryMemory': 'Retry Memory',
     'STMemoryBooks_Jobs_Lorebook': 'Lorebook',
+    'STMemoryBooks_Jobs_MessageRange': 'Messages — Start: {{start}} · End: {{end}}',
     'STMemoryBooks_Jobs_MemoryQueued': 'Memory job queued.',
     'STMemoryBooks_Jobs_ConsolidationQueued': 'Consolidation job queued.',
     'STMemoryBooks_Jobs_FinishBeforeChatChangeWarning': 'Let Memory Books jobs finish before changing chats. Auto-memory and auto-consolidation prompts are only reliable in the current chat.',

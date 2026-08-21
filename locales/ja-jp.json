@@ -1233,6 +1233,7 @@
   "STMemoryBooks_Jobs_RetryAll": "すべて再試行",
   "STMemoryBooks_Jobs_RetryMemory": "メモリのみ再試行",
   "STMemoryBooks_Jobs_Lorebook": "ロアブック",
+  "STMemoryBooks_Jobs_MessageRange": "メッセージ — 開始: {{start}} · 終了: {{end}}",
   "STMemoryBooks_Jobs_MemoryQueued": "メモリジョブをキューに追加しました。",
   "STMemoryBooks_Jobs_ConsolidationQueued": "統合ジョブをキューに追加しました。",
   "STMemoryBooks_Jobs_FinishBeforeChatChangeWarning": "チャットを切り替える前に、メモリーブックのジョブの完了を待ってください。自動メモリと自動統合プロンプトは現在のチャットでのみ確実に動作します。",

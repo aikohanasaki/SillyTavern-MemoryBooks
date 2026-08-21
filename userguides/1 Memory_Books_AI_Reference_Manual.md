@@ -1913,7 +1913,7 @@ The **Memory Books Jobs** drawer can show:
 - blocked;
 - Needs Review.
 
-It can cancel active work, reopen review jobs, inspect failures, retry work, and dismiss terminal history rows.
+Jobs that process a chat range show the starting and ending message numbers in their queue rows. The drawer can also cancel active work, reopen review jobs, inspect failures, retry work, and dismiss terminal history rows.
 
 Retry scopes:
 
