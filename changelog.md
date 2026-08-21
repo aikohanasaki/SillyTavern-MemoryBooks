@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.5 (August 21, 2026)
+- Add message ranges to job queue display.
+
 ## v8.6.4 (August 18, 2026)
 - Add raw response to empty/invalid error.
 
