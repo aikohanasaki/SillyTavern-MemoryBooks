@@ -53,6 +53,7 @@
   "STMemoryBooks_InteractiveGuideSignInNote": "将在新标签页中打开 Gemini。需要登录 Google 账号。",
   "STMemoryBooks_AIReferenceManualOption": "更喜欢使用其他 AI 助手？下载记忆书 AI 参考手册，将其上传到您偏好的助手，然后询问有关记忆书的问题。",
   "STMemoryBooks_DownloadAIReferenceManual": "下载 AI 参考手册（.md）",
+  "STMemoryBooks_BrowseGuideLanguages": "浏览其他语言版本的指南",
   "STMemoryBooks_CurrentScene": "当前场景:",
   "STMemoryBooks_Start": "开始",
   "STMemoryBooks_End": "结束",

@@ -446,10 +446,41 @@ export function isMemoryProcessing() {
 export { currentProfile };
 
 const MODULE_NAME = "STMemoryBooks";
-const AI_REFERENCE_MANUAL_URL = new URL(
-  "./userguides/1 Memory_Books_AI_Reference_Manual.md",
-  import.meta.url,
-).href;
+const AI_REFERENCE_MANUAL_LOCALES = new Map([
+  ["de", "de-de"],
+  ["es", "es-es"],
+  ["fr", "fr-fr"],
+  ["id", "id-id"],
+  ["ja", "ja-jp"],
+  ["ko", "ko-kr"],
+  ["ms", "ms-my"],
+  ["pt", "pt-br"],
+  ["ru", "ru-ru"],
+  ["zh", "zh-cn"],
+  ["zh-cn", "zh-cn"],
+  ["zh-hans", "zh-cn"],
+  ["zh-tw", "zh-tw"],
+  ["zh-hant", "zh-tw"],
+]);
+
+function getAIReferenceManualLocale(locale = getCurrentLocale?.()) {
+  const normalizedLocale = String(locale || "en")
+    .trim()
+    .replaceAll("_", "-")
+    .toLowerCase();
+  return AI_REFERENCE_MANUAL_LOCALES.get(normalizedLocale)
+    ?? AI_REFERENCE_MANUAL_LOCALES.get(normalizedLocale.split("-")[0])
+    ?? "en";
+}
+
+function getAIReferenceManualData() {
+  const locale = getAIReferenceManualLocale();
+  const filename = `Memory_Books_AI_Reference_Manual_${locale}.md`;
+  return {
+    filename,
+    url: new URL(`./userguides/${filename}`, import.meta.url).href,
+  };
+}
 
 let hasBeenInitialized = false;
 let branchLorebookController = null;
@@ -10461,8 +10492,11 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     ];
   };
 
+  const aiReferenceManual = getAIReferenceManualData();
+
   return {
-    aiReferenceManualUrl: AI_REFERENCE_MANUAL_URL,
+    aiReferenceManualUrl: aiReferenceManual.url,
+    aiReferenceManualFilename: aiReferenceManual.filename,
     hasScene: !!sceneData,
     sceneData: sceneData,
     highestMemoryProcessed: sceneMarkers?.highestMemoryProcessed,

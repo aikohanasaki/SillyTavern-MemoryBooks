@@ -326,12 +326,22 @@ p.stmb-help-drawer-copy {
 }
 
 .stmb-help-drawer-manual {
+    flex-wrap: wrap;
     padding-top: 10px;
     border-top: 1px solid var(--SmartThemeBorderColor);
 }
 
 .stmb-help-drawer-link {
     flex: 0 0 auto;
+}
+
+.stmb-help-languages {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.stmb-help-languages a {
+    text-decoration: underline;
 }
 
 @media (max-width: 600px) {

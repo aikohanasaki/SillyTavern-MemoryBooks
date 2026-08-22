@@ -53,6 +53,7 @@
   "STMemoryBooks_InteractiveGuideSignInNote": "Gemini откроется в новой вкладке. Требуется вход в аккаунт Google.",
   "STMemoryBooks_AIReferenceManualOption": "Предпочитаете другого ИИ-ассистента? Скачайте справочное руководство по Книгам Памяти для ИИ, загрузите его в выбранный ассистент и задавайте ему вопросы о Книгах Памяти.",
   "STMemoryBooks_DownloadAIReferenceManual": "Скачать справочное руководство для ИИ (.md)",
+  "STMemoryBooks_BrowseGuideLanguages": "Посмотреть руководство на других языках",
   "STMemoryBooks_CurrentScene": "Текущая сцена:",
   "STMemoryBooks_Start": "Начало",
   "STMemoryBooks_End": "Конец",

@@ -53,6 +53,7 @@
   "STMemoryBooks_InteractiveGuideSignInNote": "Abre Gemini en una pestaña nueva. Es necesario iniciar sesión con Google.",
   "STMemoryBooks_AIReferenceManualOption": "¿Prefieres otro asistente de IA? Descarga el Manual de Referencia de IA de Libros de Memoria, súbelo al asistente que prefieras y hazle preguntas sobre Libros de Memoria.",
   "STMemoryBooks_DownloadAIReferenceManual": "Descargar Manual de Referencia de IA (.md)",
+  "STMemoryBooks_BrowseGuideLanguages": "Consultar la guía en otros idiomas",
   "STMemoryBooks_CurrentScene": "Escena actual:",
   "STMemoryBooks_Start": "Inicio",
   "STMemoryBooks_End": "Fin",

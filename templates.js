@@ -28,11 +28,16 @@ export const settingsTemplate = Handlebars.compile(`
             </div>
             <div class="stmb-help-drawer-content stmb-help-drawer-manual">
                 <p class="stmb-help-drawer-copy" data-i18n="STMemoryBooks_AIReferenceManualOption">Prefer another AI assistant? Download the Memory Books AI Reference Manual, upload it to your preferred assistant, and ask it questions about Memory Books.</p>
-                <a class="menu_button menu_button_icon interactable stmb-help-drawer-link"
-                    href="{{aiReferenceManualUrl}}" download="Memory_Books_AI_Reference_Manual.md">
+                <a class="menu_button menu_button_icon interactable stmb-help-drawer-link justifyCenter"
+                    href="{{aiReferenceManualUrl}}" download="{{aiReferenceManualFilename}}">
                     <i class="fa-solid fa-download" aria-hidden="true"></i>
                     <span data-i18n="STMemoryBooks_DownloadAIReferenceManual">Download AI Reference Manual (.md)</span>
                 </a>
+                <small class="stmb-help-languages">
+                    <a href="https://github.com/aikohanasaki/SillyTavern-MemoryBooks/tree/main/userguides"
+                        target="_blank" rel="noopener noreferrer"
+                        data-i18n="STMemoryBooks_BrowseGuideLanguages">Browse the guide in other languages</a>
+                </small>
             </div>
         </details>
 

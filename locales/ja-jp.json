@@ -53,6 +53,7 @@
   "STMemoryBooks_InteractiveGuideSignInNote": "Gemini が新しいタブで開きます。Google アカウントへのログインが必要です。",
   "STMemoryBooks_AIReferenceManualOption": "別のAIアシスタントを使いたい場合は、メモリーブックAIリファレンスマニュアルをダウンロードしてお好みのアシスタントにアップロードし、メモリーブックについて質問できます。",
   "STMemoryBooks_DownloadAIReferenceManual": "AIリファレンスマニュアルをダウンロード（.md）",
+  "STMemoryBooks_BrowseGuideLanguages": "他の言語のガイドを見る",
   "STMemoryBooks_CurrentScene": "現在のシーン:",
   "STMemoryBooks_Start": "開始",
   "STMemoryBooks_End": "終了",

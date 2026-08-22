@@ -53,6 +53,7 @@
   "STMemoryBooks_InteractiveGuideSignInNote": "Gemini가 새 탭에서 열립니다. Google 로그인이 필요합니다.",
   "STMemoryBooks_AIReferenceManualOption": "다른 AI 어시스턴트를 사용하고 싶으신가요? 메모리 북 AI 참조 설명서를 다운로드하여 원하는 어시스턴트에 업로드한 뒤 메모리 북에 관해 질문하세요.",
   "STMemoryBooks_DownloadAIReferenceManual": "AI 참조 설명서 다운로드 (.md)",
+  "STMemoryBooks_BrowseGuideLanguages": "다른 언어로 된 가이드 보기",
   "STMemoryBooks_CurrentScene": "현재 장면:",
   "STMemoryBooks_Start": "시작",
   "STMemoryBooks_End": "종료",

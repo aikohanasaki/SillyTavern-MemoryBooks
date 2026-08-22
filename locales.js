@@ -75,6 +75,12 @@ export async function loadLocaleJson(lang) {
         'id-ID': 'id-id',
         'id-id': 'id-id',
 
+        // Brazilian Portuguese -> pt-br
+        'pt': 'pt-br',
+        'pt_br': 'pt-br',
+        'pt-BR': 'pt-br',
+        'pt-br': 'pt-br',
+
         // English -> en (use built-in locales.js, no JSON file)
         'en': 'en',
         'en_us': 'en',
@@ -97,6 +103,7 @@ export async function loadLocaleJson(lang) {
         'ko-kr': './locales/ko-kr.json',
         'ms-my': './locales/ms-my.json',
         'id-id': './locales/id-id.json',
+        'pt-br': './locales/pt-br.json',
     };
 
     const rel = paths[normalized];
@@ -174,6 +181,7 @@ export const localeData_en = {
     'STMemoryBooks_InteractiveGuideSignInNote': 'Opens Gemini in a new tab. Google sign-in required.',
     'STMemoryBooks_AIReferenceManualOption': 'Prefer another AI assistant? Download the Memory Books AI Reference Manual, upload it to your preferred assistant, and ask it questions about Memory Books.',
     'STMemoryBooks_DownloadAIReferenceManual': 'Download AI Reference Manual (.md)',
+    'STMemoryBooks_BrowseGuideLanguages': 'Browse the guide in other languages',
 
     // Scene Display
     'STMemoryBooks_CurrentScene': 'Current Scene:',
