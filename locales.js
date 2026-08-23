@@ -175,11 +175,8 @@ export const localeData_en = {
 
     // Main Settings Header
     'STMemoryBooks_Settings': '📕 Memory Books',
-    'STMemoryBooks_InteractiveGuideSummary': 'Help & Guides',
-    'STMemoryBooks_InteractiveGuideDescription': 'Ask the Interactive Memory Books Guide about setup, features, workflows, and troubleshooting.',
-    'STMemoryBooks_OpenInteractiveGuide': 'Open Interactive Guide',
-    'STMemoryBooks_InteractiveGuideSignInNote': 'Opens Gemini in a new tab. Google sign-in required.',
-    'STMemoryBooks_AIReferenceManualOption': 'Prefer another AI assistant? Download the Memory Books AI Reference Manual, upload it to your preferred assistant, and ask it questions about Memory Books.',
+    'STMemoryBooks_HelpGuidesSummary': 'Help & Guides',
+    'STMemoryBooks_AIReferenceManualOption': 'Download the Memory Books AI Reference Manual, upload it to your preferred assistant, and ask it questions about Memory Books.',
     'STMemoryBooks_DownloadAIReferenceManual': 'Download AI Reference Manual (.md)',
     'STMemoryBooks_BrowseGuideLanguages': 'Browse the guide in other languages',
 

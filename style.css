@@ -317,18 +317,8 @@
     min-width: 0;
 }
 
-.stmb-help-drawer-copy p {
-    margin: 0 0 4px;
-}
-
 p.stmb-help-drawer-copy {
     margin: 0;
-}
-
-.stmb-help-drawer-manual {
-    flex-wrap: wrap;
-    padding-top: 10px;
-    border-top: 1px solid var(--SmartThemeBorderColor);
 }
 
 .stmb-help-drawer-link {

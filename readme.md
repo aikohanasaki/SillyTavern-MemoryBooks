@@ -22,23 +22,11 @@ STMB has a lot of features, and its documentation became too large to navigate c
 
 ### Quickstart
 
-Just want to get STMB up and running? [Start here.](./Start_Here.md) (I highly recommend you come back for the interactive guide soon though!)
-
-### Interactive Memory Books Guide
-
-**For users willing to sign in with a Google account:**
-
-Use the [Interactive Memory Books Guide](https://gemini.google.com/gem/1XRy0GEu_iWmqdjMV1ZpD59rexoFDJo7B?usp=sharing) to ask questions about installation, configuration, features, workflows, and troubleshooting.
-
-The guide has the Memory Books documentation available as reference and can walk you through the extension interactively.
+Just want to get STMB up and running? [Start here.](./Start_Here.md)
 
 ### AI Reference Manual
 
-**For users who do not use Google—or who prefer another AI assistant:**
-
-Download the [Memory Books AI Reference Manual](userguides/1%20Memory_Books_AI_Reference_Manual.md), upload it to the AI assistant of your choice, and ask it questions about Memory Books.
-
-The manual is a dense, consolidated source of truth designed specifically for AI reference. It covers installation, ordinary and advanced workflows, settings, terminology, troubleshooting, and current feature behavior.
+Download the [Memory Books AI Reference Manual](userguides/1%20Memory_Books_AI_Reference_Manual.md), upload it to your preferred assistant, and ask it questions about Memory Books.
 
 ## Copyright and License
 
