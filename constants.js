@@ -23,7 +23,7 @@ export const SCENE_MANAGEMENT = {
 
 // Auto-summary settings
 export const AUTO_SUMMARY = {
-    MIN_INTERVAL: 10,
+    MIN_INTERVAL: 5,
     DEFAULT_INTERVAL: 50,
     MAX_INTERVAL: 250,
 };

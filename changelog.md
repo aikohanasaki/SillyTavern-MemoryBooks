@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.7 (August 24, 2026)
+- change auto-summary minimum interval to 5.
+
 ## v8.6.6 (August 22, 2026)
 - Add traslated manuals.
 - Remove Gemini interactive guide link.
