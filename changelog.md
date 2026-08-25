@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.8 (August 25, 2026)
+- Consolidation UI lorebook info display/enhancements
+
 ## v8.6.7 (August 24, 2026)
 - change auto-summary minimum interval to 5.
 

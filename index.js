@@ -9181,7 +9181,8 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       await saveWorldInfo(lorebookName, lorebookData, true);
     }
 
-    const allEntries = Object.values(lorebookData.entries || {});
+    const configuredLorebookName = lorebookName;
+    let allEntries = Object.values(lorebookData.entries || {});
     const parseOrder = (t) => {
       if (typeof t !== "string") return 0;
       const m1 = t.match(/\[(\d+)\]/);
@@ -9229,6 +9230,22 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
     let content = "";
     content += `<h3>${escapeHtml(translate("Consolidate Memories", "STMemoryBooks_ConsolidateArcs_Title"))}</h3>`;
+
+    const selectableLorebooks = Array.from(new Set([
+      ...(Array.isArray(world_names) ? world_names : []),
+      lorebookName,
+    ].map((name) => String(name || "").trim()).filter(Boolean)));
+    content += '<div class="world_entry_form_control">';
+    content += `<label for="stmb-consolidation-lorebook"><strong>${escapeHtml(translate("Memory Book to consolidate", "STMemoryBooks_Consolidation_SourceMemoryBook"))}:</strong></label>`;
+    content += '<select id="stmb-consolidation-lorebook" class="text_pole">';
+    content += `<option value=""${lorebookName ? "" : " selected"} disabled>${escapeHtml(translate("Select a Memory Book...", "STMemoryBooks_Consolidation_SelectMemoryBook"))}</option>`;
+    for (const name of selectableLorebooks) {
+      const selected = name === lorebookName ? " selected" : "";
+      content += `<option value="${escapeHtml(name)}"${selected}>${escapeHtml(name)}</option>`;
+    }
+    content += "</select>";
+    content += `<small class="opacity70p">${escapeHtml(translate("Choose the Memory Book whose eligible entries should be consolidated. This choice applies only to this run.", "STMemoryBooks_Consolidation_SourceMemoryBookDesc"))}</small>`;
+    content += "</div>";
 
     content += '<div class="world_entry_form_control">';
     content += `<label><strong>${escapeHtml(translate("Summary Tier", "STMemoryBooks_SummaryTier_Label"))}:</strong> `;
@@ -9406,6 +9423,8 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
     // Attach handlers before show
     const dlg = popup.dlg;
+    let isSourceLorebookLoading = false;
+    let sourceLorebookLoadSequence = 0;
     try {
       applyLocale(dlg);
     } catch (e) {
@@ -9508,10 +9527,18 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       const locked = candidates.length < requiredMin;
       const statusEl = dlg.querySelector("#stmb-summary-lock-status");
       if (statusEl) {
-        statusEl.textContent = `Need ${requiredMin} eligible ${sourcePlural}, have ${candidates.length}.`;
-        statusEl.className = locked
-          ? "info-block warning marginBot5"
-          : "info-block marginBot5";
+        if (isSourceLorebookLoading) {
+          statusEl.textContent = translate(
+            "Loading Memory Book...",
+            "STMemoryBooks_Consolidation_LoadingMemoryBook",
+          );
+          statusEl.className = "info-block marginBot5";
+        } else {
+          statusEl.textContent = `Need ${requiredMin} eligible ${sourcePlural}, have ${candidates.length}.`;
+          statusEl.className = locked
+            ? "info-block warning marginBot5"
+            : "info-block marginBot5";
+        }
       }
       const tipEl = dlg.querySelector("#stmb-summary-tip");
       if (tipEl) {
@@ -9521,26 +9548,82 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       const listEl = dlg.querySelector("#stmb-arc-list");
       if (listEl) {
         listEl.innerHTML = "";
-        for (const e of candidates) {
-          const title = e.comment || "(untitled)";
-          const uid = String(e.uid);
-          const row = document.createElement("label");
-          row.className = "flex-container flexGap10";
-          row.style.alignItems = "center";
-          row.style.margin = "2px 0";
-          row.innerHTML = `<input type="checkbox" class="stmb-arc-item" value="${escapeHtml(uid)}" checked /> <span>${escapeHtml(title)}</span>`;
-          listEl.appendChild(row);
+        if (!isSourceLorebookLoading) {
+          for (const e of candidates) {
+            const title = e.comment || "(untitled)";
+            const uid = String(e.uid);
+            const row = document.createElement("label");
+            row.className = "flex-container flexGap10";
+            row.style.alignItems = "center";
+            row.style.margin = "2px 0";
+            row.innerHTML = `<input type="checkbox" class="stmb-arc-item" value="${escapeHtml(uid)}" checked /> <span>${escapeHtml(title)}</span>`;
+            listEl.appendChild(row);
+          }
         }
       }
 
       if (popup.okButton) {
-        popup.okButton.style.pointerEvents = locked ? "none" : "";
-        popup.okButton.style.opacity = locked ? "0.5" : "";
-        popup.okButton.title = locked
+        const runDisabled = isSourceLorebookLoading || !lorebookName || locked;
+        popup.okButton.disabled = runDisabled;
+        popup.okButton.style.pointerEvents = runDisabled ? "none" : "";
+        popup.okButton.style.opacity = runDisabled ? "0.5" : "";
+        popup.okButton.title = isSourceLorebookLoading
+          ? translate(
+              "Loading Memory Book...",
+              "STMemoryBooks_Consolidation_LoadingMemoryBook",
+            )
+          : locked
           ? `Need at least ${requiredMin} eligible ${sourcePlural.toLowerCase()}`
           : "";
       }
     };
+    dlg
+      .querySelector("#stmb-consolidation-lorebook")
+      ?.addEventListener("change", async (event) => {
+        const selectedLorebookName = String(event.target.value || "").trim();
+        if (!selectedLorebookName || selectedLorebookName === lorebookName) return;
+
+        const loadSequence = ++sourceLorebookLoadSequence;
+        isSourceLorebookLoading = true;
+        renderTierState();
+
+        try {
+          const selectedLorebookData = await loadWorldInfo(selectedLorebookName);
+          if (!selectedLorebookData?.entries) {
+            throw new Error("Failed to load the selected Memory Book.");
+          }
+          if (loadSequence !== sourceLorebookLoadSequence) return;
+
+          if (migrateLorebookSummarySchema(selectedLorebookData)) {
+            await saveWorldInfo(selectedLorebookName, selectedLorebookData, true);
+          }
+          if (loadSequence !== sourceLorebookLoadSequence) return;
+
+          lorebookName = selectedLorebookName;
+          lorebookData = selectedLorebookData;
+          allEntries = Object.values(lorebookData.entries || {});
+        } catch (error) {
+          if (loadSequence !== sourceLorebookLoadSequence) return;
+          console.error(
+            `STMemoryBooks: Failed to load consolidation Memory Book "${selectedLorebookName}":`,
+            error,
+          );
+          event.target.value = lorebookName || "";
+          toastr.error(
+            tr(
+              "STMemoryBooks_Consolidation_LoadFailed",
+              'Could not load Memory Book "{{name}}".',
+              { name: selectedLorebookName },
+            ),
+            "STMemoryBooks",
+          );
+        } finally {
+          if (loadSequence === sourceLorebookLoadSequence) {
+            isSourceLorebookLoading = false;
+            renderTierState();
+          }
+        }
+      });
     dlg
       .querySelector("#stmb-summary-tier")
       ?.addEventListener("change", renderTierState);
@@ -9827,7 +9910,9 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     let useGroupChatPrompt = false;
 
     try {
-      const boundLorebooks = await getManualGroupConsolidationLorebooks(lorebookName, lorebookData);
+      const boundLorebooks = lorebookName === configuredLorebookName
+        ? await getManualGroupConsolidationLorebooks(lorebookName, lorebookData)
+        : [{ role: "group", lorebookName, lorebookData, member: null, members: [] }];
       useGroupChatPrompt = hasGroupAndCharacterConsolidationTopology(boundLorebooks);
       if (boundLorebooks.length > 1) {
         const readyItems = [];

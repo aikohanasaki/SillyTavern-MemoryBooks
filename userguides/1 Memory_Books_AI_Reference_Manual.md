@@ -1466,12 +1466,13 @@ Consolidated entries should emphasize lasting changes, turning points, goals, co
 ### 17.3 Manual workflow
 
 1. Open **Consolidate Memories**.
-2. Choose the target tier.
-3. Select eligible source entries.
-4. Choose the consolidation prompt/profile settings.
-5. Decide whether source entries should be disabled after successful consolidation.
-6. Run and review the candidates.
-7. Approve the desired summaries.
+2. Confirm the displayed source Memory Book. Select a different book when the configured manual or chat-bound book is not the intended consolidation source. This selection applies only to the current run and does not change the chat's configured Memory Book.
+3. Choose the target tier.
+4. Select eligible source entries.
+5. Choose the consolidation prompt/profile settings.
+6. Decide whether source entries should be disabled after successful consolidation.
+7. Run and review the candidates.
+8. Approve the desired summaries.
 
 ### 17.4 Readiness prompts are not automatic consolidation
 
@@ -2119,6 +2120,7 @@ Open **Consolidate Memories** from the buttons at the bottom of the main panel. 
 
 | Setting | Scope | What it does |
 |---|---|---|
+| **Source Memory Book** | Per run | Shows the Memory Book currently being consolidated and lets you select a different available book. Changing it reloads the eligible-entry list without changing the chat's manual or chat-bound Memory Book configuration. |
 | **Target tier** | Per run | Chooses the higher tier to create and therefore the immediately lower eligible source tier. |
 | **Consolidation Prompt** | Per run | Selects the prompt for this consolidation; it initially uses the default from the Consolidation Prompt Manager. |
 | **Maximum entries per pass** | Per run | Limits how many lower-tier entries are sent in one analysis pass. |
