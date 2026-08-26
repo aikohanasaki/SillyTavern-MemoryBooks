@@ -7,7 +7,7 @@ import { loadWorldInfo, world_names } from '../../../world-info.js';
 import { toReadableText } from './chatcompile.js';
 import { compileMessageRange } from './messageRange.js';
 import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
-import { appendAdditionalContextSection, applySelectedRegex, requestCompletion } from './stmemory.js';
+import { appendAdditionalContextSection, applySelectedRegex, assertProviderDidNotTruncate, requestCompletion } from './stmemory.js';
 import { findSetByName, getTemplate, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
 import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
@@ -334,7 +334,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         }
     }
 
-    const { text } = await requestCompletion({
+    const { text, full } = await requestCompletion({
         api,
         model,
         prompt,
@@ -348,6 +348,7 @@ async function runLLM(prompt, overrides = null, options = {}) {
         useChatCompletionService,
         chatCompletionPreset,
     });
+    assertProviderDidNotTruncate(full, text);
     
     // Apply the same explicit incoming regex selection flow used by memories.
     try {

@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v8.6.9 (August 26, 2026)
+- Truncation guard for side prompts.
+
 ## v8.6.8 (August 25, 2026)
 - Consolidation UI lorebook info display/enhancements
 

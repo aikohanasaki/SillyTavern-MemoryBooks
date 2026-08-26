@@ -1133,7 +1133,7 @@ function shouldFallbackFromStructuredOutput(error) {
         || combinedText.includes('structured output');
 }
 
-function assertProviderDidNotTruncate(providerResponse, rawText) {
+export function assertProviderDidNotTruncate(providerResponse, rawText) {
     const finishReason = providerResponse?.choices?.[0]?.finish_reason || providerResponse?.finish_reason || providerResponse?.stop_reason;
     const fr = typeof finishReason === 'string' ? finishReason.toLowerCase() : '';
     if (fr.includes('length') || fr.includes('max')) {
