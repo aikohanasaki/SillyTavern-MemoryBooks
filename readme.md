@@ -5,8 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 # 📕 Memory Books
 
-**Keep the story. Lose the context bloat.**
-
 Memory Books is a SillyTavern extension for creating and managing long-term chat memory. It turns completed scenes or automatically selected portions of a chat into structured, editable lorebook entries that preserve important events, decisions, relationships, discoveries, promises, and unresolved threads.
 
 As your chat grows, older messages can be hidden from the active context while their important information remains available through the Memory Book. You keep a durable record of what actually happened without carrying the entire raw conversation inside every new request.
