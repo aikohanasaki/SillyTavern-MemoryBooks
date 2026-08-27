@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [20. 生成用コンテキスト](#20-生成用コンテキスト)
 - [21. Prompt構造、組み込みSummary Prompt、作成ルール](#21-prompt構造組み込みsummary-prompt作成ルール)
 - [22. Summary Prompt ManagerとConsolidation Prompt Manager](#22-summary-prompt-managerとconsolidation-prompt-manager)
-- [23. Regex連携](#23-regex連携)
+- [23. STMBと他の拡張機能](#23-stmbと他の拡張機能)
 - [24. Lorebookエントリのタイトルと文字ポリシー](#24-lorebookエントリのタイトルと文字ポリシー)
 - [25. Job QueueとRetry操作](#25-job-queueとretry操作)
 - [26. 視覚的フィードバックとアクセシビリティ](#26-視覚的フィードバックとアクセシビリティ)
@@ -507,6 +507,8 @@ chat fileに残り、active contextから除外されるだけ。
 - Auto-hide only messages in the last Memory.
 
 **Messages to leave unhidden**でrecent overlapを残す。
+
+> **Presence拡張機能を使用する場合:** PresenceとSTMBはどちらもSillyTavernで共有されるmessage visibility stateを変更するため、PresenceがSTMBによってhideされたmessageを後からunhideすることがある。設定方法は[STMBと他の拡張機能](#23-stmbと他の拡張機能)を参照。
 
 ### 9.3 Generation前にunhide
 
@@ -1370,7 +1372,25 @@ Built-insはlocaleでrecreate可能。custom editsはbackup。
 
 ---
 
-## 23. Regex連携
+## 23. STMBと他の拡張機能
+
+SillyTavernの拡張機能は並行して動作し、同じSillyTavern dataを読み取ったり変更したりすることがある。STMBが他の拡張機能をoverrideまたはdisableしたり、他の拡張機能より高いpriorityを持ったりすることはない。拡張機能の動作が重なる場合、最終結果は関係する各拡張機能の設定と実行タイミングによって決まる。
+
+### 23.1 共有されるmessage visibility
+
+Chat messageがhiddenかどうかは、SillyTavernで共有されるmessage stateの一部である。STMBだけが所有するstateではない。
+
+STMBの**Token Saving**設定は、Memoryの保存後に処理済みmessageをhideできる。別の拡張機能がそのmessageを後からunhideすることがあり、STMBはそれを阻止しない。同様に、**Unhide hidden messages for memory generation**は、STMBがselected rangeを処理またはregenerateしている間にmessageをunhideすることがある。
+
+### 23.2 Presence
+
+Presence拡張機能とSTMBはどちらも、chat messageのhidden/visible stateを変更できる。PresenceがSTMBによってhideされたmessageをunhideしても、STMBのToken Saving設定が消去または無視されたわけではない。Presenceの後続actionが、同じSillyTavern message stateを変更した結果である。
+
+Presenceを使用し、STMBによってhideされたmessageをhiddenのまま維持したい場合は、Presence自身のhidden-message lock機能を使用する。Presenceは現在、この目的のために`/presenceLockHiddenMessages` commandを提供している。対象message rangeに対して実行し、そのrangeが広がったら再度実行する。現在のcommand動作はPresenceのdocumentationを参照。
+
+STMBがPresenceを自動で設定または呼び出すことはない。また、STMBのgroup chat participant管理はToken Savingとは無関係である。
+
+### 23.3 Regex連携
 
 1. **Outgoing/User Input**: send前にassembled promptをtransform。
 2. **Incoming/AI Output**: parse/save前にraw responseをclean。

@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [20. Context untuk Penjanaan](#20-context-untuk-penjanaan)
 - [21. Arsitektur Prompt, Built-in Summary Prompt, dan Peraturan Penulisan](#21-arsitektur-prompt-summary-prompt-terbina-dalam-dan-peraturan-penulisan)
 - [22. Summary Prompt Manager dan Consolidation Prompt Manager](#22-summary-prompt-manager-dan-consolidation-prompt-manager)
-- [23. Integrasi Regex](#23-integrasi-regex)
+- [23. STMB dan Extension Lain](#23-stmb-dan-extension-lain)
 - [24. Tajuk Entri Lorebook dan Dasar Karakter](#24-tajuk-entri-lorebook-dan-dasar-karakter)
 - [25. Job Queue dan Kawalan Retry](#25-job-queue-dan-kawalan-retry)
 - [26. Maklum Balas Visual dan Kebolehcapaian](#26-maklum-balas-visual-dan-kebolehcapaian)
@@ -567,6 +567,8 @@ Hidden messages masih berada di chat file. Mereka hanya dikeluarkan dari active 
 - Auto-hide only messages in the last Memory.
 
 **Messages to leave unhidden** mengekalkan sedikit overlap terkini dekat boundary.
+
+> **Apabila menggunakan extension Presence:** Presence boleh memaparkan semula kemudian mesej yang disembunyikan oleh STMB kerana kedua-dua extension mengubah status keterlihatan mesej SillyTavern yang dikongsi. Lihat [STMB dan Extension Lain](#23-stmb-dan-extension-lain) untuk panduan konfigurasi.
 
 ### 9.3 Unhide sebelum generation
 
@@ -1851,7 +1853,25 @@ Built-in prompts boleh dicipta ulang dalam current app locale. Backup locally mo
 
 ---
 
-## 23. Integrasi Regex
+## 23. STMB dan Extension Lain
+
+Extension SillyTavern berjalan seiring dan boleh membaca atau mengubah data SillyTavern yang sama. STMB tidak mengatasi atau menyahdayakan extension lain, dan tidak menetapkan keutamaan atas extension tersebut. Apabila tingkah laku extension bertindih, hasil akhir bergantung pada tetapan dan masa tindakan setiap extension yang terlibat.
+
+### 23.1 Keterlihatan mesej yang dikongsi
+
+Sama ada sesuatu mesej chat disembunyikan ialah sebahagian daripada status mesej SillyTavern yang dikongsi. Status itu bukan milik STMB secara eksklusif.
+
+Tetapan **Token Saving** STMB boleh menyembunyikan mesej yang telah diproses selepas suatu Memory disimpan. Extension lain kemudiannya boleh memaparkan semula mesej tersebut, dan STMB tidak akan menghalangnya. Begitu juga, **Unhide hidden messages for memory generation** boleh memaparkan mesej semasa STMB memproses atau menjana semula selected range.
+
+### 23.2 Presence
+
+Extension Presence dan STMB kedua-duanya boleh mengubah status tersembunyi atau kelihatan bagi mesej chat. Jika Presence memaparkan mesej yang disembunyikan STMB, tetapan Token Saving STMB tidak dipadam atau diabaikan; tindakan Presence yang berlaku kemudian telah mengubah status mesej SillyTavern yang sama.
+
+Jika anda menggunakan Presence dan mahu mesej yang disembunyikan oleh STMB kekal tersembunyi, gunakan ciri penguncian mesej tersembunyi milik Presence. Presence kini menyediakan perintah `/presenceLockHiddenMessages` untuk tujuan ini. Jalankannya untuk range mesej yang berkaitan dan ulangi apabila range itu bertambah. Rujuk dokumentasi Presence untuk tingkah laku perintah semasa.
+
+STMB tidak mengkonfigurasi atau menjalankan Presence secara automatik, dan pengurusan peserta group chat oleh STMB tidak berkaitan dengan Token Saving.
+
+### 23.3 Integrasi Regex
 
 STMB terintegrasi dengan Regex extension SillyTavern pada dua tahap:
 

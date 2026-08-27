@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [20. 生成上下文](#20-生成上下文)
 - [21. Prompt 架构、内置摘要 Prompt 与编写规则](#21-prompt-架构内置摘要-prompt-与编写规则)
 - [22. Summary Prompt Manager 与 Consolidation Prompt Manager](#22-summary-prompt-manager-与-consolidation-prompt-manager)
-- [23. Regex 集成](#23-regex-集成)
+- [23. STMB 与其他扩展](#23-stmb-与其他扩展)
 - [24. 故事书条目标题与字元策略](#24-故事书条目标题与字元策略)
 - [25. Job Queue 与重试控制](#25-job-queue-与重试控制)
 - [26. 视觉反馈与无障碍](#26-视觉反馈与无障碍)
@@ -569,6 +569,8 @@ Catch-up 适合大范围转换；如果文学或事件边界很重要，手动�
 - Auto-hide only messages in the last Memory。
 
 **Messages to leave unhidden** 会在边界附近保留少量最近讯息作为重叠。
+
+> **使用 Presence 扩展时：** Presence 与 STMB 都会修改 SillyTavern 共享的消息可见性状态，因此 Presence 之后可能会重新显示被 STMB 隐藏的消息。配置说明请参阅 [STMB 与其他扩展](#23-stmb-与其他扩展)。
 
 ### 9.3 生成前取消隐藏
 
@@ -1853,7 +1855,25 @@ Built-in prompts 可以按照当前 app locale 重新建立。重新建立前请
 
 ---
 
-## 23. Regex 集成
+## 23. STMB 与其他扩展
+
+SillyTavern 扩展会同时运行，并且可能读取或修改相同的 SillyTavern 数据。STMB 不会覆盖或停用其他扩展，也不会取得高于其他扩展的优先级。当扩展的行为重叠时，最终结果取决于所有相关扩展的设置和操作时机。
+
+### 23.1 共享的消息可见性
+
+聊天消息是否隐藏属于 SillyTavern 共享的消息状态，并不是 STMB 独占的状态。
+
+STMB 的 **Token Saving** 设置可以在 Memory 保存后隐藏已处理的消息。其他扩展之后可以重新显示这些消息，STMB 不会阻止这种操作。同样，**Unhide hidden messages for memory generation** 可能会在 STMB 处理或重新生成所选范围时显示消息。
+
+### 23.2 Presence
+
+Presence 扩展和 STMB 都可以更改聊天消息的隐藏或可见状态。如果 Presence 重新显示 STMB 隐藏的消息，并不表示 STMB 的 Token Saving 设置已被清除或忽略；而是 Presence 后续的操作更改了相同的 SillyTavern 消息状态。
+
+如果您使用 Presence，并希望 STMB 隐藏的消息保持隐藏，请使用 Presence 自身的隐藏消息锁定功能。Presence 目前提供 `/presenceLockHiddenMessages` 命令来实现此目的。请针对适用的消息范围运行此命令，并在范围扩大时再次运行。有关命令当前行为的信息，请参阅 Presence 文档。
+
+STMB 不会自动配置或调用 Presence，而且 STMB 的群聊参与者管理与 Token Saving 无关。
+
+### 23.3 Regex 集成
 
 STMB 在两个阶段与 SillyTavern 的 Regex extension 集成：
 

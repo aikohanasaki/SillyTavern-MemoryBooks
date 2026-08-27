@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [20. Kontext für die Generierung](#20-kontext-für-die-generierung)
 - [21. Prompt-Architektur, integrierte Summary Prompts und Autorenregeln](#21-prompt-architektur-integrierte-summary-prompts-und-autorenregeln)
 - [22. Summary Prompt Manager und Consolidation Prompt Manager](#22-summary-prompt-manager-und-consolidation-prompt-manager)
-- [23. Regex-Integration](#23-regex-integration)
+- [23. STMB und andere Erweiterungen](#23-stmb-und-andere-erweiterungen)
 - [24. Lorebook-Eintragstitel und Zeichenrichtlinie](#24-lorebook-eintragstitel-und-zeichenrichtlinie)
 - [25. Job Queue und Retry-Steuerung](#25-job-queue-und-retry-steuerung)
 - [26. Visuelles Feedback und Barrierefreiheit](#26-visuelles-feedback-und-barrierefreiheit)
@@ -567,6 +567,8 @@ Ausgeblendete Nachrichten bleiben in der Chatdatei. Sie werden aus dem aktiven C
 - Auto-hide only messages in the last Memory.
 
 **Messages to leave unhidden** lässt eine kleine aktuelle Überlappung nahe der Grenze sichtbar.
+
+> **Bei Verwendung der Presence-Erweiterung:** Presence kann von STMB ausgeblendete Nachrichten später wieder einblenden, da beide Erweiterungen SillyTaverns gemeinsamen Sichtbarkeitsstatus für Nachrichten verändern. Konfigurationshinweise finden Sie unter [STMB und andere Erweiterungen](#23-stmb-und-andere-erweiterungen).
 
 ### 9.3 Vor der Generierung einblenden
 
@@ -1851,7 +1853,25 @@ Built-in Prompts können in der aktuellen App-Locale neu erstellt werden. Sicher
 
 ---
 
-## 23. Regex-Integration
+## 23. STMB und andere Erweiterungen
+
+SillyTavern-Erweiterungen laufen nebeneinander und können dieselben SillyTavern-Daten lesen oder verändern. STMB setzt sich nicht über andere Erweiterungen hinweg, deaktiviert sie nicht und beansprucht ihnen gegenüber keine Priorität. Wenn sich das Verhalten von Erweiterungen überschneidet, hängt das Endergebnis von den Einstellungen und dem Zeitpunkt der Aktionen aller beteiligten Erweiterungen ab.
+
+### 23.1 Gemeinsame Nachrichtensichtbarkeit
+
+Ob eine Chatnachricht ausgeblendet ist, gehört zu SillyTaverns gemeinsamem Nachrichtenstatus. Dieser Status gehört nicht ausschließlich STMB.
+
+STMBs **Token Saving**-Einstellungen können verarbeitete Nachrichten ausblenden, nachdem eine Memory gespeichert wurde. Eine andere Erweiterung kann diese Nachrichten anschließend wieder einblenden; STMB verhindert dies nicht. Ebenso kann **Unhide hidden messages for memory generation** Nachrichten einblenden, während STMB einen ausgewählten Bereich verarbeitet oder regeneriert.
+
+### 23.2 Presence
+
+Die Presence-Erweiterung und STMB können beide den ausgeblendeten oder sichtbaren Status von Chatnachrichten ändern. Wenn Presence Nachrichten wieder einblendet, die STMB ausgeblendet hat, wurde STMBs Token-Saving-Einstellung weder gelöscht noch ignoriert; eine spätere Aktion von Presence hat denselben SillyTavern-Nachrichtenstatus geändert.
+
+Wenn Sie Presence verwenden und von STMB ausgeblendete Nachrichten ausgeblendet bleiben sollen, verwenden Sie die Presence-eigene Sperrfunktion für ausgeblendete Nachrichten. Presence stellt dafür derzeit den Befehl `/presenceLockHiddenMessages` bereit. Führen Sie ihn für den betreffenden Nachrichtenbereich aus und wiederholen Sie dies, wenn der Bereich wächst. Aktuelle Angaben zum Verhalten des Befehls finden Sie in der Presence-Dokumentation.
+
+STMB konfiguriert oder startet Presence nicht automatisch. Auch STMBs Verwaltung von Gruppenchat-Teilnehmern steht nicht mit Token Saving in Zusammenhang.
+
+### 23.3 Regex-Integration
 
 STMB integriert SillyTaverns Regex-Erweiterung in zwei Stufen:
 

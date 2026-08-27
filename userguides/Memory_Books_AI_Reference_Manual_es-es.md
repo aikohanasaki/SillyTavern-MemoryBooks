@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [20. Contexto para la generación](#20-contexto-para-la-generación)
 - [21. Arquitectura de prompts, prompts de resumen integrados y reglas de autoría](#21-arquitectura-de-prompts-prompts-de-resumen-integrados-y-reglas-de-autoría)
 - [22. Summary Prompt Manager y Consolidation Prompt Manager](#22-summary-prompt-manager-y-consolidation-prompt-manager)
-- [23. Integración con Regex](#23-integración-con-regex)
+- [23. STMB y otras extensiones](#23-stmb-y-otras-extensiones)
 - [24. Títulos de entradas de lorebook y política de caracteres](#24-títulos-de-entradas-de-lorebook-y-política-de-caracteres)
 - [25. Cola de trabajos y controles de reintento](#25-cola-de-trabajos-y-controles-de-reintento)
 - [26. Retroalimentación visual y accesibilidad](#26-retroalimentación-visual-y-accesibilidad)
@@ -567,6 +567,8 @@ Los mensajes ocultos permanecen en el archivo de chat. Se omiten del contexto ac
 - Auto-hide only messages in the last Memory.
 
 **Messages to leave unhidden** conserva un pequeño solapamiento reciente cerca del límite.
+
+> **Si usa la extensión Presence:** Presence puede volver a mostrar posteriormente mensajes ocultados por STMB, ya que ambas extensiones modifican el estado compartido de visibilidad de mensajes de SillyTavern. Consulte [STMB y otras extensiones](#23-stmb-y-otras-extensiones) para obtener instrucciones de configuración.
 
 ### 9.3 Mostrar antes de la generación
 
@@ -1851,7 +1853,25 @@ Los prompts integrados pueden recrearse en el locale actual de la aplicación. H
 
 ---
 
-## 23. Integración con Regex
+## 23. STMB y otras extensiones
+
+Las extensiones de SillyTavern se ejecutan en paralelo y pueden leer o modificar los mismos datos de SillyTavern. STMB no anula ni deshabilita otras extensiones, ni establece prioridad sobre ellas. Cuando se solapa el comportamiento de varias extensiones, el resultado final depende de los ajustes y del momento de actuación de cada una.
+
+### 23.1 Visibilidad compartida de los mensajes
+
+Que un mensaje de chat esté oculto forma parte del estado compartido de mensajes de SillyTavern. No es un estado propiedad exclusiva de STMB.
+
+Los ajustes de **Token Saving** de STMB pueden ocultar mensajes procesados después de guardar una Memory. Otra extensión puede volver a mostrar esos mensajes posteriormente, y STMB no lo impedirá. Del mismo modo, **Unhide hidden messages for memory generation** puede mostrar mensajes mientras STMB procesa o regenera un rango seleccionado.
+
+### 23.2 Presence
+
+Tanto la extensión Presence como STMB pueden cambiar el estado oculto o visible de los mensajes de chat. Si Presence muestra mensajes que STMB había ocultado, el ajuste de Token Saving de STMB no se ha borrado ni ignorado; una acción posterior de Presence ha cambiado el mismo estado de mensajes de SillyTavern.
+
+Si usa Presence y quiere que los mensajes ocultados por STMB permanezcan ocultos, utilice la función de bloqueo de mensajes ocultos de Presence. Actualmente, Presence proporciona el comando `/presenceLockHiddenMessages` para este propósito. Ejecútelo para el rango de mensajes correspondiente y repítalo a medida que el rango aumente. Consulte la documentación de Presence para conocer el comportamiento actual del comando.
+
+STMB no configura ni invoca Presence automáticamente, y su gestión de participantes de chats grupales no está relacionada con Token Saving.
+
+### 23.3 Integración con Regex
 
 STMB se integra con la extensión Regex de SillyTavern en dos etapas:
 

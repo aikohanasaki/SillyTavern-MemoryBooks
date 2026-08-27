@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 - [20. 생성용 Context](#20-생성용-context)
 - [21. Prompt 구조, 내장 Summary Prompt 및 작성 규칙](#21-prompt-구조-내장-summary-prompt-및-작성-규칙)
 - [22. Summary Prompt Manager와 Consolidation Prompt Manager](#22-summary-prompt-manager와-consolidation-prompt-manager)
-- [23. Regex 연동](#23-regex-연동)
+- [23. STMB와 다른 확장 프로그램](#23-stmb와-다른-확장-프로그램)
 - [24. Lorebook Entry 제목 및 문자 정책](#24-lorebook-entry-제목-및-문자-정책)
 - [25. Job Queue 및 Retry 제어](#25-job-queue-및-retry-제어)
 - [26. 시각적 피드백과 접근성](#26-시각적-피드백과-접근성)
@@ -571,6 +571,8 @@ hidden message는 chat file에 남는다. 다시 표시하기 전까지 active c
 - Auto-hide only messages in the last Memory
 
 **Messages to leave unhidden**는 경계 근처의 최근 overlap을 남긴다.
+
+> **Presence 확장 프로그램 사용 시:** Presence와 STMB는 모두 SillyTavern의 공유 message visibility state를 변경하므로, Presence가 STMB가 숨긴 message를 나중에 다시 표시할 수 있다. 구성 지침은 [STMB와 다른 확장 프로그램](#23-stmb와-다른-확장-프로그램)을 참조한다.
 
 ### 9.3 Generation 전 unhide
 
@@ -1856,7 +1858,25 @@ Built-in prompts는 current app locale로 recreate할 수 있다. recreate 전�
 
 ---
 
-## 23. Regex 연동
+## 23. STMB와 다른 확장 프로그램
+
+SillyTavern 확장 프로그램은 나란히 실행되며 동일한 SillyTavern data를 읽거나 변경할 수 있다. STMB는 다른 확장 프로그램을 override하거나 disable하지 않으며, 다른 확장 프로그램보다 우선권을 갖지 않는다. 확장 프로그램의 동작이 겹치면 최종 결과는 관련된 각 확장 프로그램의 설정과 동작 시점에 따라 달라진다.
+
+### 23.1 공유 message visibility
+
+Chat message의 hidden 여부는 SillyTavern의 공유 message state에 속한다. STMB만 소유하는 state가 아니다.
+
+STMB의 **Token Saving** 설정은 Memory 저장 후 처리된 message를 숨길 수 있다. 다른 확장 프로그램이 나중에 그 message를 다시 표시할 수 있으며 STMB는 이를 막지 않는다. 마찬가지로 **Unhide hidden messages for memory generation**은 STMB가 selected range를 처리하거나 regenerate하는 동안 message를 다시 표시할 수 있다.
+
+### 23.2 Presence
+
+Presence 확장 프로그램과 STMB는 모두 chat message의 hidden/visible state를 변경할 수 있다. Presence가 STMB가 숨긴 message를 다시 표시해도 STMB의 Token Saving 설정이 지워지거나 무시된 것은 아니다. Presence의 이후 동작이 동일한 SillyTavern message state를 변경한 것이다.
+
+Presence를 사용하면서 STMB가 숨긴 message를 계속 숨겨 두려면 Presence 자체의 hidden-message 잠금 기능을 사용한다. Presence는 현재 이 용도로 `/presenceLockHiddenMessages` command를 제공한다. 해당 message range에 실행하고 range가 늘어나면 다시 실행한다. 현재 command 동작은 Presence 문서를 참조한다.
+
+STMB는 Presence를 자동으로 구성하거나 호출하지 않으며, STMB의 group chat participant 관리는 Token Saving과 관련이 없다.
+
+### 23.3 Regex 연동
 
 STMB는 SillyTavern Regex extension과 두 단계에서 연동한다.
 
