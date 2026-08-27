@@ -42,6 +42,7 @@ export function compileScene(sceneRequest, { includeHiddenMessages = false } = {
     // Extract and format messages in range
     const sceneMessages = [];
     const participantFilterNames = new Set();
+    const presentCharacterNames = new Set();
     const groupParticipantResolver = createGroupParticipantResolver();
     let hiddenMessagesSkipped = 0;
     let skippedMessageCount = 0;
@@ -86,6 +87,9 @@ export function compileScene(sceneRequest, { includeHiddenMessages = false } = {
             if (filterName) {
                 participantFilterNames.add(filterName);
             }
+            if (filterName || groupParticipantResolver.avatarsBySpeaker.has(compiledMessage.name)) {
+                presentCharacterNames.add(compiledMessage.name);
+            }
         }
         
         sceneMessages.push(compiledMessage);
@@ -108,6 +112,9 @@ export function compileScene(sceneRequest, { includeHiddenMessages = false } = {
 
     if (participantFilterNames.size > 0) {
         metadata.characterFilterNames = Array.from(participantFilterNames);
+    }
+    if (groupParticipantResolver) {
+        metadata.presentCharacterNames = Array.from(presentCharacterNames);
     }
     
     const compiledScene = {

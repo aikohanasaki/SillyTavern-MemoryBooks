@@ -373,7 +373,7 @@
   "STMemoryBooks_TitleFormat": "메모리 제목 형식:",
   "STMemoryBooks_CustomTitleFormat": "사용자 지정 제목 형식...",
   "STMemoryBooks_EnterCustomFormat": "사용자 지정 형식 입력",
-  "STMemoryBooks_TitleFormatDesc": "자동 번호 매기기를 위해 [0], [00], [000]을 사용하세요. 사용 가능: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "자동 번호 매기기를 위해 [0], [00], [000]을 사용하세요. 사용 가능: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{present}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "메모리 프로필:",
   "STMemoryBooks_Profile_CurrentST": "현재 SillyTavern 설정",
   "STMemoryBooks_Default": "(기본값)",

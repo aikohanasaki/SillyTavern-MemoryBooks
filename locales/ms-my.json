@@ -374,7 +374,7 @@
   "STMemoryBooks_TitleFormat": "Format Tajuk Memori:",
   "STMemoryBooks_CustomTitleFormat": "Format Tajuk Tersuai...",
   "STMemoryBooks_EnterCustomFormat": "Masukkan format tersuai",
-  "STMemoryBooks_TitleFormatDesc": "Gunakan [0], [00], [000] untuk penomboran automatik. Tersedia: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "Gunakan [0], [00], [000] untuk penomboran automatik. Tersedia: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{present}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "Profil Memori:",
   "STMemoryBooks_Profile_CurrentST": "Tetapan SillyTavern Semasa",
   "STMemoryBooks_Default": "(Lalai)",

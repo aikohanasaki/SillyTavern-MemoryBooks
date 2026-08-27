@@ -1314,6 +1314,9 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 characterFilterNames: Array.isArray(compiledScene.metadata.characterFilterNames)
                     ? [...compiledScene.metadata.characterFilterNames]
                     : undefined,
+                presentCharacterNames: Array.isArray(compiledScene.metadata.presentCharacterNames)
+                    ? [...compiledScene.metadata.presentCharacterNames]
+                    : undefined,
                 narratorParticipantIds: Array.isArray(compiledScene.metadata.narratorParticipantIds)
                     ? [...compiledScene.metadata.narratorParticipantIds]
                     : undefined,

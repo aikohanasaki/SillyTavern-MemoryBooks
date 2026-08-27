@@ -170,6 +170,15 @@ export function getNarratorSceneParticipants(messages) {
     return { memberIds, hasUntaggedMessages };
 }
 
+export function getNarratorParticipantNames(config, participantIds) {
+    const membersById = new Map(
+        (Array.isArray(config?.members) ? config.members : []).map(member => [member?.id, member]),
+    );
+    return uniqueStrings(participantIds)
+        .map(id => cleanString(membersById.get(id)?.name))
+        .filter(Boolean);
+}
+
 export function buildNarratorCopyTargets(config, participantIds) {
     const participants = new Set(uniqueStrings(participantIds));
     return (config?.members || [])

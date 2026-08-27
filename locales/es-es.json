@@ -374,7 +374,7 @@
   "STMemoryBooks_TitleFormat": "Formato del Título de la Memoria:",
   "STMemoryBooks_CustomTitleFormat": "Formato de Título Personalizado...",
   "STMemoryBooks_EnterCustomFormat": "Introducir formato personalizado",
-  "STMemoryBooks_TitleFormatDesc": "Usa [0], [00], [000] para numeración automática. Disponible: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "Usa [0], [00], [000] para numeración automática. Disponible: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{present}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "Perfiles de Memoria:",
   "STMemoryBooks_Profile_CurrentST": "Ajustes Actuales de SillyTavern",
   "STMemoryBooks_Default": "(Predeterminado)",

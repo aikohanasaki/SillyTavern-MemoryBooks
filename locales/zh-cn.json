@@ -373,7 +373,7 @@
   "STMemoryBooks_TitleFormat": "记忆标题格式:",
   "STMemoryBooks_CustomTitleFormat": "自定义标题格式...",
   "STMemoryBooks_EnterCustomFormat": "输入自定义格式",
-  "STMemoryBooks_TitleFormatDesc": "使用 [0], [00], [000] 进行自动编号。可用: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "使用 [0], [00], [000] 进行自动编号。可用: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{present}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "记忆配置文件:",
   "STMemoryBooks_Profile_CurrentST": "当前 SillyTavern 设置",
   "STMemoryBooks_Default": "(默认)",

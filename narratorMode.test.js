@@ -7,6 +7,7 @@ import {
     collectNarratorSourceMetadata,
     createNarratorMember,
     getNarratorCastFromMessage,
+    getNarratorParticipantNames,
     getNarratorSceneParticipants,
     isNarratorModeActive,
     mergeNarratorLorebookEntries,
@@ -111,6 +112,15 @@ test('uses user snapshots as continuity when a narrator message is untagged', ()
         memberIds: ['a'],
         hasUntaggedMessages: true,
     });
+});
+
+test('maps the selected Narrator cast to display names in selection order', () => {
+    const config = { members: [
+        { id: 'alice', name: 'Alice' },
+        { id: 'bob', name: 'Bob' },
+    ] };
+    assert.deepEqual(getNarratorParticipantNames(config, ['bob', 'missing', 'alice', 'bob']), ['Bob', 'Alice']);
+    assert.deepEqual(getNarratorParticipantNames(config, []), []);
 });
 
 test('builds copy targets only for selected members', () => {

@@ -271,6 +271,7 @@ import {
   createNarratorMember,
   ensureNarratorConfig,
   getNarratorCastFromMessage,
+  getNarratorParticipantNames,
   getNarratorSceneParticipants,
   mergeNarratorLorebookEntries,
   setNarratorActiveCast,
@@ -2915,10 +2916,12 @@ function applyNarratorSceneMetadata(compiledScene, context = getCurrentMemoryBoo
     ? chat.slice(Math.max(0, start), Math.min(chat.length, end + 1))
     : [];
   const participants = getNarratorSceneParticipants(sourceMessages);
+  const narratorConfig = context?.isNarratorMode ? getCurrentNarratorConfig() : null;
   compiledScene.metadata = {
     ...compiledScene.metadata,
     stmbPromptTarget: "group",
     narratorParticipantIds: participants.memberIds,
+    presentCharacterNames: getNarratorParticipantNames(narratorConfig, participants.memberIds),
     narratorHasUntaggedMessages: participants.hasUntaggedMessages,
   };
   return participants;
@@ -2947,6 +2950,10 @@ async function confirmNarratorSceneParticipants(compiledScene, narratorLorebooks
   compiledScene.metadata.narratorParticipantIds = Array.from(
     popup.dlg.querySelectorAll(".stmb-narrator-participant"),
   ).filter(input => input.checked).map(input => input.value);
+  compiledScene.metadata.presentCharacterNames = getNarratorParticipantNames(
+    { members },
+    compiledScene.metadata.narratorParticipantIds,
+  );
   return true;
 }
 
@@ -4395,6 +4402,7 @@ async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, e
   const narratorParticipantIds = narratorOwnerIds.length > 0
     ? narratorOwnerIds
     : (Array.isArray(entry?.STMB_narratorParticipantIds) ? entry.STMB_narratorParticipantIds.filter(Boolean) : []);
+  const narratorConfig = context?.isNarratorMode ? getCurrentNarratorConfig() : null;
   compiledScene.metadata = {
     ...(compiledScene.metadata || {}),
     groupName: context?.groupName || compiledScene.metadata?.groupName,
@@ -4403,6 +4411,9 @@ async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, e
       : context?.isMultiCharacter ? "group" : "character",
     characterFilterNames: characterNames,
     narratorParticipantIds,
+    ...(context?.isNarratorMode ? {
+      presentCharacterNames: getNarratorParticipantNames(narratorConfig, narratorParticipantIds),
+    } : {}),
   };
   const additionalContext = await resolveAdditionalContextSnapshot(profileSettings, {
     blockingPrompt: true,
@@ -12457,6 +12468,9 @@ async function applyManualFixedJson(correctedRaw) {
         chatId: compiledScene.metadata?.chatId,
         characterFilterNames: Array.isArray(compiledScene.metadata?.characterFilterNames)
           ? [...compiledScene.metadata.characterFilterNames]
+          : undefined,
+        presentCharacterNames: Array.isArray(compiledScene.metadata?.presentCharacterNames)
+          ? [...compiledScene.metadata.presentCharacterNames]
           : undefined,
         narratorParticipantIds: Array.isArray(compiledScene.metadata?.narratorParticipantIds)
           ? [...compiledScene.metadata.narratorParticipantIds]

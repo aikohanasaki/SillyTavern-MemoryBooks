@@ -374,7 +374,7 @@
   "STMemoryBooks_TitleFormat": "Формат заголовка памяти:",
   "STMemoryBooks_CustomTitleFormat": "Пользовательский формат заголовка...",
   "STMemoryBooks_EnterCustomFormat": "Введите пользовательский формат",
-  "STMemoryBooks_TitleFormatDesc": "Используйте [0], [00], [000] для автоматической нумерации. Доступно: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "Используйте [0], [00], [000] для автоматической нумерации. Доступно: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{present}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "Профили памяти:",
   "STMemoryBooks_Profile_CurrentST": "Текущие настройки SillyTavern",
   "STMemoryBooks_Default": "(По умолчанию)",

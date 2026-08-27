@@ -268,7 +268,7 @@ const profileEditTemplate = Handlebars.compile(`
 
     <div class="world_entry_form_control marginTop5">
         <h4 data-i18n="STMemoryBooks_TitleFormat">Memory Title Format:</h4>
-        <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], etc. for numbering. Available tags: \{{title}}, \{{scene}}, \{{char}}, \{{groupname}}, \{{user}}, \{{messages}}, \{{profile}}, \{{date}}, \{{time}}</small>
+        <small class="opacity50p" data-i18n="STMemoryBooks_TitleFormatDesc">Use [0], [00], etc. for numbering. Available tags: \{{title}}, \{{scene}}, \{{char}}, \{{groupname}}, \{{present}}, \{{user}}, \{{messages}}, \{{profile}}, \{{date}}, \{{time}}</small>
         <select id="stmb-profile-title-format-select" class="text_pole">
             {{#each titleFormats}}
             <option value="{{value}}" {{#if isSelected}}selected{{/if}}>{{value}}</option>

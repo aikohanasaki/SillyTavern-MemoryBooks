@@ -1897,6 +1897,7 @@ Profile title formats can use:
 - `{{scene}}` — source range;
 - `{{char}}` — character/group name;
 - `{{groupname}}` — the current group's display name; resolves to `Unknown` outside a group chat;
+- `{{present}}` — comma-separated characters present in the scene: individual speakers in a group chat, the scene's selected Active Cast in Narrator Mode, or the current character in a regular character chat;
 - `{{user}}` — user name;
 - `{{messages}}` — scene message count;
 - `{{profile}}` — profile name;

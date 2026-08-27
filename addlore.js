@@ -741,6 +741,9 @@ export function generateEntryTitleAtNumber(titleFormat, memoryResult, sequenceNu
         '{{scene}}': i18n('addlore.defaults.scene', 'Scene {{range}}', { range: metadata.sceneRange || i18n('common.unknown', 'Unknown') }),
         '{{char}}': metadata.characterName || i18n('common.unknown', 'Unknown'),
         '{{groupname}}': metadata.groupName || i18n('common.unknown', 'Unknown'),
+        '{{present}}': Array.isArray(metadata.presentCharacterNames)
+            ? metadata.presentCharacterNames.join(', ')
+            : (metadata.characterName || i18n('common.unknown', 'Unknown')),
         '{{user}}': metadata.userName || i18n('addlore.defaults.user', 'User'),
         '{{messages}}': metadata.messageCount || 0,
         '{{profile}}': metadata.profileUsed || i18n('common.unknown', 'Unknown'),
@@ -1039,7 +1042,7 @@ export function validateTitleFormat(format) {
     
     // Check for valid placeholder syntax
     const invalidPlaceholders = format.match(/\{\{[^}]*\}\}/g)?.filter(placeholder => {
-        const validPlaceholders = ['{{title}}', '{{scene}}', '{{char}}', '{{groupname}}', '{{user}}', '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'];
+        const validPlaceholders = ['{{title}}', '{{scene}}', '{{char}}', '{{groupname}}', '{{present}}', '{{user}}', '{{messages}}', '{{profile}}', '{{date}}', '{{time}}'];
         return !validPlaceholders.includes(placeholder);
     });
     
@@ -1090,6 +1093,7 @@ export function previewTitle(titleFormat, sampleData = {}) {
             sceneRange: '15-23',
             characterName: 'Alice',
             groupName: 'Example Group',
+            presentCharacterNames: ['Alice', 'Clara'],
             userName: 'Bob',
             messageCount: 9,
             profileUsed: i18n('addlore.preview.sampleProfile', 'Summary')

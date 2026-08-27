@@ -373,7 +373,7 @@
   "STMemoryBooks_TitleFormat": "記憶標題格式:",
   "STMemoryBooks_CustomTitleFormat": "自訂標題格式...",
   "STMemoryBooks_EnterCustomFormat": "輸入自訂格式",
-  "STMemoryBooks_TitleFormatDesc": "使用 [0], [00], [000] 進行自動編號。可用: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "使用 [0], [00], [000] 進行自動編號。可用: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{present}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "記憶設定檔:",
   "STMemoryBooks_Profile_CurrentST": "目前 SillyTavern 設定",
   "STMemoryBooks_Default": "(預設)",
