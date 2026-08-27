@@ -373,7 +373,7 @@
   "STMemoryBooks_TitleFormat": "Format Judul Memori:",
   "STMemoryBooks_CustomTitleFormat": "Format Judul Kustom...",
   "STMemoryBooks_EnterCustomFormat": "Masukkan format kustom",
-  "STMemoryBooks_TitleFormatDesc": "Gunakan [0], [00], [000] untuk penomoran otomatis. Tersedia: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
+  "STMemoryBooks_TitleFormatDesc": "Gunakan [0], [00], [000] untuk penomoran otomatis. Tersedia: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}",
   "STMemoryBooks_Profiles": "Profil Memori:",
   "STMemoryBooks_Profile_CurrentST": "Pengaturan SillyTavern Saat Ini",
   "STMemoryBooks_Default": "(Default)",

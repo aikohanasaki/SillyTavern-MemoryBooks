@@ -1308,6 +1308,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 sceneRange: `${compiledScene.metadata.sceneStart}-${compiledScene.metadata.sceneEnd}`,
                 messageCount: compiledScene.metadata.messageCount,
                 characterName: compiledScene.metadata.characterName,
+                groupName: compiledScene.metadata.groupName,
                 userName: compiledScene.metadata.userName,
                 chatId: compiledScene.metadata.chatId,
                 characterFilterNames: Array.isArray(compiledScene.metadata.characterFilterNames)

@@ -1876,6 +1876,7 @@ Profile title formats can use:
 - `{{title}}` — AI-generated title;
 - `{{scene}}` — source range;
 - `{{char}}` — character/group name;
+- `{{groupname}}` — the current group's display name; resolves to `Unknown` outside a group chat;
 - `{{user}}` — user name;
 - `{{messages}}` — scene message count;
 - `{{profile}}` — profile name;

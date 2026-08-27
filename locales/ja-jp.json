@@ -374,7 +374,7 @@
   "STMemoryBooks_TitleFormat": "メモリタイトル形式:",
   "STMemoryBooks_CustomTitleFormat": "カスタムタイトル形式...",
   "STMemoryBooks_EnterCustomFormat": "カスタム形式を入力",
-  "STMemoryBooks_TitleFormatDesc": "自動採番には[0]、[00]、[000]を使用します。利用可能: {{title}}、{{scene}}、{{char}}、{{user}}、{{messages}}、{{profile}}、{{date}}、{{time}}",
+  "STMemoryBooks_TitleFormatDesc": "自動採番には[0]、[00]、[000]を使用します。利用可能: {{title}}、{{scene}}、{{char}}、{{groupname}}、{{user}}、{{messages}}、{{profile}}、{{date}}、{{time}}",
   "STMemoryBooks_Profiles": "メモリプロファイル:",
   "STMemoryBooks_Profile_CurrentST": "現在のSillyTavern設定",
   "STMemoryBooks_Default": "（デフォルト）",

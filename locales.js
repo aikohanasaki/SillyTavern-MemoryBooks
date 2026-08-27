@@ -593,7 +593,7 @@ export const localeData_en = {
     'STMemoryBooks_TitleFormat': 'Memory Title Format:',
     'STMemoryBooks_CustomTitleFormat': 'Custom Title Format...',
     'STMemoryBooks_EnterCustomFormat': 'Enter custom format',
-    'STMemoryBooks_TitleFormatDesc': 'Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, {{char}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}',
+    'STMemoryBooks_TitleFormatDesc': 'Use [0], [00], [000] for auto-numbering. Available: {{title}}, {{scene}}, {{char}}, {{groupname}}, {{user}}, {{messages}}, {{profile}}, {{date}}, {{time}}',
 
     // Profiles
     'STMemoryBooks_Profiles': 'Memory Profiles:',
