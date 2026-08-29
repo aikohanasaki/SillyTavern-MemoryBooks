@@ -53,99 +53,99 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ## 1. AIアシスタントによる本マニュアルの使い方
 
-この文書を、現在のMemory Booksの運用リファレンスとして扱ってください。Start Hereガイド、README、User Guide、Side Promptsガイド、How STMB Works、過去のchangelogを個別の知識ファイルとして読み込む代わりになります。
+本書を Memory Books の現行運用リファレンスとして扱ってください。本書は、Start Here ガイド、README、User Guide、Side Prompts ガイド、How STMB Works ガイド、過去の changelog を別々の知識ファイルとして読み込む必要をなくすためのものです。
 
 用語:
 
-- STMB = SillyTavern=MemoryBooks（この拡張機能）
-- ST = SillyTavern（STMBが拡張する基盤コード）
+- STMB = SillyTavern=MemoryBooks（本拡張機能）
+- ST = SillyTavern（STMB が拡張するベースコード）
 
-ユーザーに回答するとき:
+ユーザーに回答するときは:
 
-1. Memory Booksの用語を正確に維持してください。**Memory Book**はSTMBが使うSillyTavernのlorebookであり、独立したデータベース形式ではありません。
-2. 現在の動作と過去の動作を区別してください。古いchangelogに出ていたというだけで、削除済み・置換済みの手順を案内しないでください。
-3. **Group Chat Mode**と**Narrator Mode**を区別してください。目的が異なります。
-4. Memoryの**生成**、lorebookの**保存/設定**、その後の**SillyTavernによる取得**を分けて考えてください。有効化/取得はST本体側の機能です。
-5. ここに記載のないコントロール、メニュー名、プロバイダ動作、設定を創作しないでください。
-6. スクリーンショットがある場合は、見えているコントロールだけを特定し、画面外の要素を仮定せず次の即時操作を示してください。
-7. トラブルシューティングでは最初に失敗した段階を特定・検証してから、Promptの書き換えを提案してください。
-8. 高度なルーティング、複数Book、カスタムPrompt、Regex、Side Prompt自動化より先に、単純な構成を動かしてください。
-9. Character Filterと別々のMemory Bookはルーティングと関連性を改善しますが、セキュリティ境界ではないと説明してください。
-10. インストール済みバージョン、SillyTavernバージョン、プロバイダ、カスタムPromptが異なる可能性があれば不確実性を明示してください。
+1. Memory Books の用語を正確に維持してください。**Memory Book** は STMB が使用する SillyTavern の lorebook であり、別個のデータベース形式ではありません。
+2. 現行の動作と過去の動作を区別してください。古い changelog に記載されていたという理由だけで、削除済みまたは置き換え済みの手順を教えないでください。
+3. **Group Chat Mode** と **Narrator Mode** を区別してください。両者は異なる問題を解決します。
+4. Memory の**生成**、lorebook の**保存・設定**、その後の **SillyTavern による取得**を区別してください。Activation/retrieval は base ST code の一部です。
+5. ここに記載されていない操作、メニュー名、provider 動作、設定を作り出さないでください。
+6. スクリーンショットが提示された場合は、表示されている操作だけを特定してください。画面外にあるかもしれない操作を仮定せず、次に行うべき直近の操作を案内してください。
+7. トラブルシューティングでは、最初に失敗している段階を特定して検証し、その前に prompt の書き換えを勧めないでください。
+8. 高度な routing、複数 book、custom prompt、Regex、Side Prompt automation より先に、単純で動作する構成を優先してください。
+9. character filter と別々の Memory Book は routing と relevance を改善しますが、security boundary ではないことを説明してください。
+10. ユーザーのインストール済みバージョン、SillyTavern バージョン、provider、custom prompt が異なる可能性がある場合は、不確実性を明示してください。
 
-### 現行文書に関する注意
+### 現行ドキュメントに関する注記
 
-Narrator Modeはv8.5.0で実装されています。
+Narrator Mode は v8.5.0 で実装済みです。
 
-旧初心者向け文書では、自動Memoryを開始する前に手動Memoryが技術的に必要だと説明していたものがあります。現在のSTMBはprocessed-message baselineがない場合、message 0から最初の自動Memoryを作成できます。それでも最初に手動Memoryを作ることを推奨します。接続、Memory Book、出力形式、開始境界を確認してから自動化できるためです。
+いくつかの初心者向けドキュメントでは、自動 Memory を開始する前に手動 Memory が技術的に必須と説明されていました。現在の STMB は processed-message baseline が存在しない場合、message 0 から最初の自動 Memory を作成できます。それでも最初の手動 Memory は推奨されます。automation を信頼する前に、connection、Memory Book、出力形式、希望する開始 boundary を確認できるためです。
 
 ---
 
 ## 2. 製品定義と基本的な考え方
 
-Memory Booksは、選択された、または自動的に選ばれたチャット範囲を構造化されたMemoryエントリに変換し、SillyTavern lorebookに保存する拡張機能です。
+Memory Books は、選択した、または自動的に選ばれた chat range を構造化 Memory entry に変換し、SillyTavern lorebook に保存する SillyTavern 拡張機能です。
 
-基本フロー:
+基本処理は次のとおりです:
 
 ```text
-チャットメッセージ
+Chat messages
     ↓
-STMBがメッセージ範囲を選択または受け取る
+STMB selects or receives a message range
     ↓
-STMBがAIリクエストを組み立てる
+STMB assembles an AI request
     ↓
-モデルが構造化Memoryを返す
+The model returns a structured memory
     ↓
-STMBがlorebookエントリとして保存
+STMB saves a lorebook entry
     ↓
-処理済みの古いチャットメッセージをactive contextから非表示にできる
+Old processed chat messages may be hidden from active context
     ↓
-後にSillyTavernが関連lorebookエントリを有効化
+SillyTavern later activates relevant lorebook entries
     ↓
-チャットモデルがそのエントリをcontextとして受け取る
+The chat model receives those entries as context
 ```
 
-STMBはモデル内部に永久Memoryを作りません。外部の参照システム（lorebookエントリ）を維持します。SillyTavernが関連エントリをAIへのPromptに含めたとき、モデルは「覚えている」ように動作します。
+STMB は model に永続的な内部 memory を与えるものではありません。外部参照システム（lorebook entry）を維持します。chat model が「覚えている」のは、SillyTavern が関連する lorebook entry を AI への prompt に含めたときです。
 
-### 3つの別段階
+### 3つの独立した段階
 
-1. **生成品質** — Memory生成モデルが正確で有用な結果を作ったか。
-2. **保存と設定** — 意図したMemory Bookに適切な有効化設定で保存されたか。
-3. **取得とモデル利用** — SillyTavernがそのエントリを有効化・送信し、チャットモデルが正しく利用したか。
+1. **Generation quality** — Memory-generation model は正確で有用な結果を生成したか。
+2. **Storage and configuration** — 結果は意図した Memory Book に、適切な activation settings で保存されたか。
+3. **Retrieval and model use** — SillyTavern は entry を activate して送信したか。また chat model はそれを正しく使用したか。
 
-別々に診断してください。
+これらの段階は別々にトラブルシューティングしてください。
 
-### LorebookとMemory Book
+### Lorebook と Memory Book
 
-**Lorebook**（SillyTavernの一部では**World Info**とも呼ばれる）は、SillyTavernが条件に応じてモデルリクエストへ追加できるエントリ集です。通常のエントリには:
+**lorebook**（SillyTavern の一部では **World Info** とも呼ばれます）は、SillyTavern が条件に応じて model request に追加できる entry の集合です。通常、lorebook entry には次のものがあります:
 
 - title/comment;
 - content;
-- activation keywordsまたは別のactivation mode;
-- insertion position/order;
-- recursion/budget controls;
-- optional character filtersとmetadata。
+- activation keywords または別の activation mode;
+- insertion position と order;
+- recursion と budget controls;
+- optional character filters とその他 metadata。
 
-**Memory Book**はSTMBが使う通常のSillyTavern lorebookです。通常のlorebookツールで開く、編集、並べ替え、export/import/deleteできます。機能によっては:
+**Memory Book** は STMB が使用する通常の SillyTavern lorebook です。通常の lorebook tools で開く、編集する、並べ替える、export/import する、削除することができます。使用する機能によっては、次のものを含みます:
 
-- Scene Memories;
-- Arc、Chapter、Book、Legend、Series、Epic summaries;
-- Clip/Topical Clip;
-- Side Prompt tracker entries;
-- その他STMB-managed entries。
+- scene Memories;
+- Arc、Chapter、Book、Legend、Series、Epic summary;
+- Clip と Topical Clip entry;
+- Side Prompt tracker entry;
+- その他の STMB-managed entry。
 
-### Memoryエントリは圧縮context
+### Memory entry は圧縮された context
 
-Scene Memoryは元のtranscriptではありません。連続性に重要な情報を残すための圧縮表現です:
+scene Memory は元の transcript そのものではありません。continuity に必要な情報を保持するための圧縮表現です。例:
 
-- events/consequences;
-- decisions/plans;
-- discoveries/reveals;
-- relationship/emotional changes;
-- 個別のknowledge/beliefs/misunderstandings;
-- 重要なobjects/locations/identities/promises/constraints。
+- events と consequences;
+- decisions と plans;
+- discoveries と reveals;
+- relationship または emotional changes;
+- 個々の knowledge、beliefs、misunderstandings;
+- 重要な objects、locations、identities、promises、constraints。
 
-処理済みメッセージをhideしても削除されません。AIへ送られなくなり、active chat-history contextを消費しなくなるだけです。
+processed message を hidden にしても削除されません。それらの message が AI に送信されなくなり、active chat-history context を消費し続けないようにするだけです。
 
 ---
 
@@ -153,21 +153,21 @@ Scene Memoryは元のtranscriptではありません。連続性に重要な情�
 
 | 必要なこと | 機能 | 意味 |
 |---|---|---|
-| 選択/自動範囲を要約 | **Memory** | 「このシーンで起きたことを覚える」 |
-| 選択した文言や1つの事実を保存 | **Clip** | 「このメモを保存」 |
-| 保存済みMemoriesから1テーマの情報を集約 | **Topical Clip** | 「この話題についてMemoryにある全情報を集める」 |
-| 複数実行にわたり変化する情報を維持 | **Side Prompt** | 「このtrackerを更新し続ける」 |
-| 複数のlower-tier Memory/summaryを統合 | **Consolidation** | 「これらを上位summaryへまとめる」 |
-| 既存STMB entryを1つ短縮 | **Compaction** | 「事実を失わず短くする」 |
-| 元sourceから既存entryを作り直す | **Regeneration** | 「再構築して置換をレビューする」 |
+| 選択した、または自動 chat range 1つを要約する | **Memory** | 「この scene で起きたことを覚える。」 |
+| 選択した chat wording または1つの fact を保存する | **Clip** | 「この note を保存する。」 |
+| 保存済み Memories から1つの subject に関する facts を集める | **Topical Clip** | 「Memories がこれについて何を言っているかすべて集める。」 |
+| 繰り返し実行し、変化する情報を維持する | **Side Prompt** | 「この tracker を更新し続ける。」 |
+| 複数の lower-tier Memory または summary をまとめる | **Consolidation** | 「これらの entry を higher-level recap にまとめる。」 |
+| 既存の STMB-managed entry 1つを短くする | **Compaction** | 「facts を失わずにこの entry を短くする。」 |
+| 元の source を使って既存 entry を置き換える | **Regeneration** | 「この entry を再構築し、replacement を review する。」 |
 
-### よく混同される違い
+### よく混同される機能の違い
 
-- **Clip vs Topical Clip:** Clipは現在のchatでhighlightしたtextから開始。Topical Clipは既に確認済みのSTMB Memoriesから開始。
-- **Topical Clip vs Side Prompt:** Topical Clipは手動でtopicを集約。Side Promptは変化するtrackerを継続更新可能。
-- **Compaction vs Consolidation:** Compactionは1 entryをrewite。Consolidationは複数entriesから新しいhigher-tier summaryを作成。
-- **Memory vs Side Prompt:** Memoryは通常、連続するscene record。Side Promptは1つの継続support documentを更新/上書き。
-- **生成 vs 取得:** entry作成だけでは後にSillyTavernがactivateする保証はない。
+- **Clip vs Topical Clip:** Clip は現在の chat で highlight した text から始まります。Topical Clip は既存の確認済み STMB Memories から始まります。
+- **Topical Clip vs Side Prompt:** Topical Clip は topic を集めるために手動実行します。Side Prompt は変化する tracker を繰り返し維持できます。
+- **Compaction vs Consolidation:** Compaction は entry 1つを書き換えます。Consolidation は複数 entry から新しい higher-tier summary を作成します。
+- **Memory vs Side Prompt:** Memory は通常 sequential scene record です。Side Prompt は通常、継続する support document 1つを update/overwrite します。
+- **Generation vs retrieval:** entry を作成しただけでは、SillyTavern が後でそれを activate する保証はありません。
 
 ---
 
@@ -175,84 +175,86 @@ Scene Memoryは元のtranscriptではありません。連続性に重要な情�
 
 ### 要件
 
-- SillyTavern 1.18.0以降。最新の互換版推奨。
-- 動作するAI接続。
-- 指示に従え、Memory/Consolidationではvalid JSONを返せるモデル。
-- third-party SillyTavern extensionsのinstall権限。
-- local/Text Completion backendをOpenAI-compatible Chat Completion endpoint経由で使う場合、SillyTavernにChat Completion preset。
+- SillyTavern 1.18.0 以降。最新の compatible release を推奨します。
+- 動作する AI connection。
+- instructions に従える model。Memory と Consolidation workflow では valid JSON を返せること。
+- third-party SillyTavern extension を install する permission。
+- local または Text Completion backend を OpenAI-compatible Chat Completion endpoint 経由で使う場合、SillyTavern に Chat Completion preset があること。
 
-### 通常のChat Completionユーザー
+### 通常の Chat Completion ユーザー
 
-OpenAI、Anthropic/Claude、OpenRouter、Gemini/Googleなどは通常、組み込み**Current SillyTavern Settings** profileを使用できます。
+OpenAI、Anthropic/Claude、OpenRouter、Gemini/Google、その他 Chat Completion connection は、通常 built-in **Current SillyTavern Settings** profile を使用できます。
 
-### Local/Text Completionユーザー
+### Local と Text Completion ユーザー
 
-KoboldCpp、llama.cpp、TextGen、Ollama等はOpenAI-compatible Chat Completion endpoint経由が一般に安定します。通常RPがText Completionでも、STMB用のChat Completion presetが必要です。
+KoboldCpp、llama.cpp、TextGen、Ollama などの backend は、OpenAI-compatible Chat Completion endpoint を通すのが最も安定します。通常の roleplay で Text Completion を使っていても、STMB 用に SillyTavern で Chat Completion preset が利用可能である必要があります。
 
-KoboldCpp例:
-
-- API type: Chat Completion;
-- source: Custom OpenAI-compatible;
-- endpoint `http://localhost:5001/v1` または `http://127.0.0.1:5000/v1`;
-- 必要ならnonblank API key;
-- endpointが期待するmodel ID、一般に`koboldcpp/modelname`、不要な`.gguf`なし;
-- Chat Completion preset;
-- response length最低2048 tokens、4096がより安全。
-
-llama.cpp例:
+典型的な KoboldCpp setup:
 
 - API type: Chat Completion;
 - source: Custom OpenAI-compatible;
-- endpoint `http://localhost:8080/v1`、Dockerなら`http://host.docker.internal:8080/v1`;
-- 必要ならnonblank key;
+- endpoint: `http://localhost:5001/v1` または `http://127.0.0.1:5000/v1` など;
+- SillyTavern が必要とする場合、空でない custom API key;
+- endpoint が期待する形式の model ID。一般には `koboldcpp/modelname`。不要な `.gguf` suffix は付けない;
+- Chat Completion preset を import;
+- response length は最低 2048 tokens、4096 がより安全な場合が多い。
+
+典型的な llama.cpp setup:
+
+- API type: Chat Completion;
+- source: Custom OpenAI-compatible;
+- endpoint `http://localhost:8080/v1`。SillyTavern が Docker 内なら `http://host.docker.internal:8080/v1`;
+- SillyTavern が必要とする場合、空でない API key;
 - served model ID;
-- endpointが要求しない限りprompt post-processingなし。
+- endpoint が要求しない限り prompt post-processing なし。
+
+server command の例:
 
 ```sh
 llama-server -m <model-path> -c <context-size> --port 8080
 ```
 
-### 任意のChat Top Bar
+### Optional Chat Top Bar
 
-なくてもSTMBは動作します。導入すると**Memory Books Jobs** queue UIでactive/completed/failed/canceled/blocked/review-needed jobを扱えます。
+STMB は Chat Top Bar / Chat Top Info Bar がなくても動作します。install すると、active、completed、failed、canceled、blocked、review-needed work を表示する **Memory Books Jobs** queue interface が追加されます。
 
 ### Installation
 
-1. SillyTavernを開く。
-2. **Extensions**を開く。
-3. **Install Extension**。
-4. 公式Memory Books repositoryをinstall。
-5. 必要ならreload。
-6. characterまたはgroup chatを開く。
-7. 数秒待つ。
+1. SillyTavern を開きます。
+2. main **Extensions** panel を開きます。
+3. **Install Extension** を選びます。
+4. official Memory Books repository を install します。
+5. 求められたら SillyTavern を reload します。
+6. character chat または group chat を開きます。
+7. STMB controls が initialize するまで数秒待ちます。
 
-SillyTavern Extrasは不要です。
+SillyTavern Extras は不要です。
 
-### 読み込み確認
+### STMB が読み込まれたことを確認する
 
-少なくとも以下の一方:
+次の少なくとも1つが表示されます:
 
-- chat input横のmagic-wand Extensions menuに**Memory Books**;
-- expanded message actionsに**►**/**◄**。
+- chat input の横にある magic-wand Extensions menu 内の **Memory Books**;
+- expanded message actions 内の scene chevrons **►** と **◄**。
 
-なければ:
+どちらも表示されない場合:
 
-1. 10秒程度待つ;
-2. refresh;
-3. install/enabled確認;
-4. chatを開き直す;
-5. それでもだめならbrowser console。
+1. 最大10秒待つ;
+2. page を refresh;
+3. extension が installed/enabled か確認;
+4. character または group chat を開き直す;
+5. basic checks が失敗した後でのみ browser console を確認。
 
 ---
 
 ## 5. Memory Booksを開き、メインパネルを理解する
 
-magic-wand Extensions menu → **Memory Books**。
+chat input 近くの magic-wand Extensions menu を開き、**Memory Books** を選びます。
 
-表示されうるもの:
+panel には次が表示される場合があります:
 
 - Current Scene;
-- Memory Status / highest processed;
+- Memory Status / highest processed message;
 - Current Lorebook Configuration;
 - Memory Profiles;
 - Profile Actions;
@@ -261,270 +263,338 @@ magic-wand Extensions menu → **Memory Books**。
 - General Settings;
 - Automatic Memories;
 - Token Saving;
-- relevantなgroup/Narrator controls。
+- relevant な場合の group-character または Narrator controls。
 
-最初のMemoryに必要なのは:
+最初の Memory に必要な決定は3つだけです:
 
-1. 保存先Memory Book。
-2. 生成profile/connection。
-3. sceneにするchat messages。
+1. どの Memory Book に entry を保存するか。
+2. どの profile/connection で生成するか。
+3. どの chat messages を scene にするか。
 
 ---
 
 ## 6. Memory Bookの保存モード
 
-### 6.1 Automatic Mode: chat-bound
+### 6.1 Automatic Mode: chat-bound Memory Book
 
-標準。SillyTavernでcurrent chatにboundされたlorebookを使用。
+Automatic Mode は通常の default です。STMB は SillyTavern を通じて現在の chat に bound された lorebook を使用します。
 
-向いている場合:
+次の場合に使います:
 
-- chatごとにprimary Memory Book 1冊;
-- 最小構成;
-- group characters別book不要。
+- 1 chat に primary Memory Book が1つ;
+- 最小限の設定を望む;
+- group characters に separate Memory Books が不要。
 
-bookがなければbindまたはAuto-Create。
+lorebook が bound されていない場合、SillyTavern で bind するか Auto-Create を使います。
 
 ### 6.2 Auto-Create Lorebook Mode
 
-**Auto-create lorebook if none exists**で、最初のMemory save時にbookを作成/bind。
+**Auto-create lorebook if none exists** を有効にすると、最初の Memory 保存時に STMB が lorebook を作成して bind できます。
 
-name template:
+default naming template は次を使用できます:
 
-- `{{char}}`;
-- `{{user}}`;
-- `{{chat}}`。
+- `{{char}}` — character または group name;
+- `{{user}}` — user name;
+- `{{chat}}` — chat ID/name。
 
-必要ならnumeric suffix。
+重複名を避ける必要がある場合、STMB は numeric suffix を追加します。
 
-Auto-CreateとManual Lorebook Modeは排他。
+Auto-Create と Manual Lorebook Mode は mutually exclusive です。
 
 ### 6.3 Manual Lorebook Mode
 
-chat-bound bookとは別にMemory Bookを選ぶ。
+**Manual Lorebook Mode** を有効にすると、chat に bound された lorebook とは独立して Memory Book を選べます。
 
-用途:
+次の場合に使います:
 
-- dedicated memory lorebook;
-- 複数chatが意図的に1 bookを共有;
-- group members別books;
-- Narrator Mode;
-- activation planを理解している。
+- memories を dedicated lorebook に保存したい;
+- 複数 chat が意図的に1つの Memory Book を共有する;
+- group members に separate books が必要;
+- Narrator Mode を使う;
+- resulting activation plan を理解している。
 
-main manual selectionはchatごと。ただしcompatible solo chatではpersistent character lockがoverride可能。
+main manual Memory Book の selection は current chat 用に保存されます。ただし compatible solo chat で persistent character lock が override する場合を除きます。
 
-### 6.4 Separate Memory Booksは通常わかりやすい
+### 6.4 Separate Memory Books の方が通常は明確
 
-- character/setting loreとmemoryを分離;
-- 独立budget/order;
-- history reuse/export;
-- STMB entriesだけinspect;
-- activation diagnosis。
+dedicated Memory Book には次の利点があります:
 
-推奨であり必須ではない。
+- memories を character definitions や setting lore から分離;
+- independent lorebook budget と order を設定;
+- memory history を再利用/export;
+- unrelated lore なしで STMB-managed entry を確認;
+- activation の診断が容易。
+
+これは推奨であり必須ではありません。
 
 ### 6.5 Character Memory Book locks
 
-Character Cardに紐づくpersistent Manual Mode assignment。
+character Memory Book lock は、character card に紐づく persistent Manual Mode assignment です。
 
-Solo:
+solo chat では:
 
-- unlocked manual bookはcurrent chat;
-- locked bookはcompatible chatsでcardについてくる;
-- unlockまで変更不可。
+- unlocked manual book は current chat に属する;
+- locked book は compatible Manual Mode chats 間で character card に追従する;
+- lock を解除するまで manual book は変更できない。
 
-Real group:
+real group chat では:
 
-- unlocked per-character assignmentはcurrent group chat;
-- locked assignmentはcompatible groupsへ継続;
-- locked book missingならbroken-lock state。
+- unlocked per-character assignment は current group chat に属する;
+- locked per-character assignment は compatible Manual Mode groups にその character card とともに移動する;
+- locked book が missing の場合、broken-lock state になり、unlock または repair が必要。
 
-同一characterが別storiesでも意図的に継続bookを共有する場合だけ使用。AU/別timelineでは危険。
+同じ character が複数 story で意図的に1つの continuing Memory Book を共有すべき場合だけ lock を使ってください。alternate universe や unrelated timeline では危険です。
 
-### 6.6 推奨start layout
+### 6.6 推奨開始レイアウト
 
-- Solo: chat-bound/auto-created book。
-- Real group: 1 group book。
-- Narrator: 1 omniscient + declared characterごとにunique book。
+- Solo chat: chat-bound または auto-created Memory Book 1つ。
+- Real group chat: group Memory Book 1つ。
+- Narrator chat: Narrator Mode の要件に従い、omniscient Memory Book 1つ + declared character ごとに unique book 1つ。
 
 ---
 
 ## 7. プロファイル、接続、生成ルーティング
 
-profileは生成と結果entry設定の両方を制御。
+Memory Books profile は generation と生成後の lorebook-entry settings の両方を制御します。
 
-### 7.1 最初の推奨profile
+### 7.1 推奨される最初の profile
 
-**Current SillyTavern Settings**。現在のprovider/model/temperatureを使用。
+まず **Current SillyTavern Settings** を使ってください。SillyTavern で現在 active な provider、model、temperature を使います。
 
-custom promptsやFull Manualより先に、1 Memoryのgenerate/saveを確認。
+最初から prompts を書き換えたり、Full Manual endpoint を構成したりしないでください。まず1つの Memory が生成・保存できることを確認します。
 
-### 7.2 Saved profileを作る理由
+### 7.2 保存済み STMB profile を作る理由
 
-- cheaper/reliable memory model;
-- RPと別provider;
-- named Custom connection;
-- custom Summary Prompt;
-- temperature/output違い;
-- title formatting;
-- activation/insertion/order/recursion;
-- separate group/character prompts。
+次の場合に separate profile を作ります:
+
+- memories 用に cheaper または more reliable model を使う;
+- roleplay と別 provider を使う;
+- named Custom connection を bind;
+- custom summary prompt を選ぶ;
+- temperature または maximum output behavior を変える;
+- title formatting を変える;
+- activation、insertion、order、recursion settings を変える;
+- separate group/omniscient と character-focused prompts を使う。
 
 ### 7.3 Profile fields
 
-display name、API/provider、model ID、temperature、Summary Prompt preset、separate multi-character prompts、structured output、ChatCompletionService、Chat Completion preset、reverse proxy、title format、Normal/Constant/Vectorized、insertion position/Outlet、order、Prevent Recursion、Delay Until Recursion。
+profile には次が含まれる場合があります:
 
-### 7.4 Named Custom connections
+- display name;
+- API/provider;
+- model ID;
+- temperature;
+- Summary Prompt preset;
+- optional separate multi-character prompts;
+- structured-output behavior;
+- optional SillyTavern ChatCompletionService routing;
+- optional Chat Completion preset;
+- reverse-proxy behavior;
+- title format;
+- activation mode: Normal、Constant、Vectorized;
+- insertion position（character、example-message、author’s-note、Outlet position を含む）;
+- Outlet name（applicable な場合）;
+- automatic または manual order value;
+- Prevent Recursion;
+- Delay Until Recursion。
 
-active Custom connectionまたはConnection Managerのnamed Custom connectionを使用。
+### 7.4 Named Custom OpenAI-compatible connections
 
-named connectionはURL/secretを供給し、STMB Modelはoverrideのまま。connection削除/種類変更時はSTMBがblockし、別routeへsilent fallbackしない。
+Custom OpenAI-compatible profile は:
 
-### 7.5 Structured output fallback
+- 現在 active な SillyTavern Custom connection を使う; または
+- SillyTavern Connection Manager から named Custom connection 1つを bind できます。
 
-**Skip structured output and use plain-text completion**はschema送信を止めるだけ。Promptが要求するvalid JSONは依然必要。
+named connection は saved URL と secret を提供します。STMB profile の model field は model override のままです。named connection が削除された、または Custom Chat Completion connection でなくなった場合、STMB は silently 別 route を使わず request を block します。
+
+### 7.5 Structured-output fallback
+
+**Skip structured output and use plain-text completion** は、structured-output schema を拒否する provider に STMB が schema を送らないようにします。それでも model は選択された Memory または Consolidation prompt が要求する valid JSON を返す必要があります。
 
 ### 7.6 ChatCompletionService
 
-**Use ST’s ChatCompletionService**でSillyTavern helper経由。Chat Completion preset適用可能。OpenRouter provider order、quantization filters、fallback、middle-outも継承。Service失敗時のSTMB fallbackでも設定維持。両方失敗時は両errorを保持。Full Manualは対象外。
+**Use ST’s ChatCompletionService** は、対応する profile request を SillyTavern request helper 経由で route し、選択した SillyTavern Chat Completion preset を適用できます。OpenRouter request は、SillyTavern の provider order、quantization filters、fallback controls、middle-out routing setting も継承します。これら OpenRouter controls は ChatCompletionService が失敗し、STMB が fallback request path で retry する場合も有効です。その retry も失敗すると、STMB は最初の ChatCompletionService error と fallback provider response の両方を保持して報告します。Full Manual profiles はこの route を使いません。
 
-### 7.7 Reverse proxy / Full Manual
+### 7.7 Reverse proxy と Full Manual Configuration
 
-**Use reverse proxy**はST設定を渡す。
+**Use reverse proxy** は対応 provider について SillyTavern の configured reverse-proxy details を forward します。
 
-**Full Manual Configuration**はprofileに別endpoint/keyを保存する例外的経路。可能ならSTで設定/テスト済み接続を使う。
+**Full Manual Configuration** は separate endpoint と key を STMB profile 内に保存します。これは exceptional path です。可能な限り、SillyTavern で設定・テスト済みの provider または Custom connection を優先してください。
 
 ### 7.8 Output length
 
-global STMB max response tokensが通常値をoverride可能。cut-off JSONはよくある失敗原因。Prompt/schemaを弱める前にoutputを増やす。
+global STMB maximum response-token setting は Memory Books work の通常の Chat Completion output length を override できます。途中で切れた JSON は generation failure の一般的な原因です。schema や prompt を弱くする前に output length を増やしてください。
 
 ---
-
 ## 8. シーン、手動Memory、自動Memory、Catch-Up
 
-### 8.1 シーン
+### 8.1 scene とは
 
-STMBが1 Memoryに処理するinclusive message range。
+**scene** は、STMB が1つの Memory に処理する inclusive chat-message range です。
 
-よいboundary:
+有用な boundary は通常、1つのまとまった単位を含みます:
 
 - event;
 - conversation;
 - investigation step;
-- emotional/relationship development;
-- location/goal change;
+- emotional または relationship development;
+- location または goal change;
 - connected action sequence。
 
-小さすぎると価値が少なく、大きすぎるとcost/context/混在問題。
+小さすぎる trivial range はほとんど価値を生まない場合があります。大きすぎる range は cost が増え、要約が難しく、context を超えやすく、unrelated events を混ぜやすくなります。
 
-### 8.2 手動mark
+### 8.2 scene を手動で mark する
 
-1. message actionsをexpand。
-2. first includedに**►**。
-3. last includedに**◄**。
-4. panelでstart/end/speakers/count/tokens確認。
+1. message actions を展開します。通常は three-dot などの control です。
+2. 最初に含める message で **►** をクリックします。
+3. 最後に含める message で **◄** をクリックします。
+4. Memory Books を開き、表示される start、end、speakers、message count、token estimate を確認します。
 
-両端含む。**Clear Scene**で解除。
+両方の boundary message が含まれます。
 
-### 8.3 Manual Memory
+selection を削除するには **Clear Scene** を使います。別の start/end marker を選ぶと、その boundary が置き換わります。
 
-1. scene確認。
-2. effective book。
-3. profile。
-4. **Create Memory**または`/creatememory`。
-5. confirmation/warning/participant/previewを確認。
-6. approve。
-7. new lorebook entryとMemory Status確認。
+### 8.3 手動 Memory を作成する
 
-通常title/content/keywords/STMB metadataを含む。
+1. scene を確認します。
+2. effective Memory Book を確認します。
+3. selected profile を確認します。
+4. **Create Memory** をクリックするか `/creatememory` を使います。
+5. 表示された場合は confirmation、token warning、participant confirmation、preview window を review します。
+6. result を approve します。
+7. 新しい lorebook entry が存在し、Memory Status が scene end まで進んだことを確認します。
 
-### 8.4 Preview
+valid Memory result には通常、次が含まれます:
 
-**Show memory previews**ならtitle/content/keywordsをreview/edit。names、attribution、facts、omissions、unrelated commentaryを確認。Previewなしならvalid result auto-save。
+- title;
+- content;
+- keywords;
+- source range と chat identity を含む STMB metadata。
+
+### 8.4 Memory previews
+
+**Show memory previews** が有効なら、次を review し、必要なら edit できます:
+
+- title;
+- memory content;
+- keywords。
+
+names、attribution、facts、omitted consequences、unrelated commentary を確認してください。preview なしでは、valid result は自動保存されます。
 
 ### 8.5 Automatic Memories
 
-**Auto-create memory summaries**:
+**Auto-create memory summaries** を有効にして次を設定します:
 
-- **Auto-Summary Interval** = messages per Memory;
-- **Auto-Summary Buffer** = newest messagesを保留。
+- **Auto-Summary Interval** — automatic Memory 1つあたりに処理する new messages 数;
+- **Auto-Summary Buffer** — 展開中の scene を早すぎる段階で要約しないため、最新側で除外する messages 数。
+
+例:
 
 ```text
 Interval: 30
 Buffer: 2
 ```
 
-32 messages beyond boundaryで、latestの2つ前までをMemory化。
+STMB は processed boundary より後に少なくとも32 messages が存在するまで待ち、その後 newest message の2つ前を end とする Memory を作成します。
 
-baselineなしは`-1`、message 0から開始可能。manual first推奨。
+processed baseline が存在しない場合、現在の STMB は baseline を `-1` として扱い、message 0 から開始できます。それでも手動の最初の Memory は、setup validation と deliberate starting point の選択のために推奨されます。
 
-小interval=focused/more requests。大interval=fewer/larger/mix risk。目安: detailed RP 20–40、short exchange 40–60。
+interval を低くすると Memories は focused になりますが request 数が増えます。高くすると request は少なくなりますが、larger Memory となり、unrelated material をまとめる risk が高まります。実用的な starting range は、detail-heavy roleplay で約20–40 messages、短く速い exchange で40–60です。
 
-required book未assignならpostpone可能。
+required Memory Book がまだ assign されていない場合、automatic generation は postpone されることがあります。
 
-### 8.6 Processed baseline
+### 8.6 Processed-message baseline
 
-`/nextmemory`、automatic start、boundary、already processedを決める。
+STMB は chat ごとに highest processed message を保存します。これは次を決めます:
 
-```text
-/stmb-highest
-/stmb-set-highest <N>
-/stmb-set-highest none
-```
+- `/nextmemory` の start;
+- automatic Memories の start;
+- memory-boundary indicator;
+- どの messages が already processed とみなされるか。
 
-manual変更はskip/duplicate risk。
+使用:
 
-### 8.7 Catch-Up
+- `/stmb-highest` — 表示;
+- `/stmb-set-highest <N>` — 手動設定;
+- `/stmb-set-highest none` — clear。
+
+手動変更すると skipped または repeated range が発生する可能性があるため、意図して行ってください。
+
+### 8.7 既存の長い chat の Catch-Up
+
+使用:
 
 ```text
 /stmb-catchup interval=<chunk size> start=<first message id> end=<last message id>
 ```
 
+例:
+
 ```text
 /stmb-catchup interval=40 start=0 end=245
 ```
 
-inclusive、consecutive chunks。
+range は inclusive です。chunks は順番に処理され、最後の chunk は小さくなる場合があります。
 
-事前にprofile test、**Always use default profile** ON、**Show memory previews** OFF、book確保、multi-character assignments修復、chunkをwarning threshold未満。
+Catch-up は intentionally non-interactive です。実行前に:
 
-preflight後順番に処理し、first failureまたは`/stmb-stop`で停止。completed chunksは残る。first unfinishedからresume。
+- intended profile を選び test;
+- **Always use default profile** を有効化;
+- **Show memory previews** を無効化;
+- effective Memory Book が存在することを確認するか、Automatic Mode で Auto-Create を許可;
+- required multi-character book assignments をすべて repair;
+- token-warning threshold 未満の chunk size を選ぶ。
+
+STMB は各 chunk を preflight し、順番に処理し、最初の failure または `/stmb-stop` で停止します。それまでに completed した chunks は保存されたままです。whole range を繰り返さず、最初の unfinished message から resume してください。
+
+Catch-up は broad conversion に向きます。literary または event boundary が重要なら manual scene boundary の方が適しています。
 
 ---
 
 ## 9. トークン節約、非表示メッセージ、Memory境界
 
-### 9.1 Hideはdeleteではない
+### 9.1 Hiding は deleting ではない
 
-chat fileに残り、active contextから除外されるだけ。
+hidden messages は chat file に残ります。再表示されるまで active chat context から除外されます。
 
-### 9.2 Auto-hide
+### 9.2 Auto-hide modes
 
-**Auto-hide messages after adding memory**:
+**Auto-hide messages after adding memory** は次から選べます:
 
 - Do not auto-hide;
 - Auto-hide all messages up to the last Memory;
-- Auto-hide only messages in the last Memory.
+- Auto-hide only messages in the last Memory。
 
-**Messages to leave unhidden**でrecent overlapを残す。
+**Messages to leave unhidden** は boundary 付近に recent overlap を少量残します。
 
-> **Presence拡張機能を使用する場合:** PresenceとSTMBはどちらもSillyTavernで共有されるmessage visibility stateを変更するため、PresenceがSTMBによってhideされたmessageを後からunhideすることがある。設定方法は[STMBと他の拡張機能](#23-stmbと他の拡張機能)を参照。
+> **Presence extension を使用している場合:** Presence と STMB は SillyTavern の shared message visibility state を両方変更するため、Presence が後から STMB によって hidden になった messages を reveal する場合があります。設定方法は [STMBと他の拡張機能](#23-stmbと他の拡張機能) を参照してください。
 
-### 9.3 Generation前にunhide
+### 9.3 generation 前に unhide
 
-**Unhide hidden messages for memory generation**はcompile前にrangeをshow。成功後の再hideはselected auto-hide modeに従う。
+**Unhide hidden messages for memory generation** は、STMB が range を compile する前に selected range を reveal します。以前に hidden にした range を regenerate/reprocess するときに使います。successful save 後に何が再び hidden になるかは selected auto-hide mode に従います。
 
-### 9.4 Boundary indicator
+### 9.4 Memory-boundary indicator
 
-highest processedでprocessed/unprocessed境界を表示。
+indicator は highest processed message を使い、processed history と unprocessed chat の境界を示します。
 
-Off / divider / draggable jump / both。
+modes:
 
-Jumpはfirst unprocessedへ。
+- Off;
+- Memory boundary divider;
+- draggable jump button;
+- divider plus jump button。
 
-### 9.5 学習向け設定
+jump button は first unprocessed message の方向に scroll し、drag した position を記憶します。
 
-divider+jump、2 messages visible、temporary unhide、最初はno auto-hideでsave確認後hide all processed。
+### 9.5 学習用の良い構成
+
+実用的な初期設定:
+
+- boundary divider と jump button を表示;
+- 2 messages を unhidden のまま残す;
+- generation 用 temporary unhide を有効;
+- Memory が正しく保存されたことを確認するまでは auto-hide なし;
+- その後 main token-saving benefit のため processed messages すべてを hide する設定へ切り替える。
 
 ---
 
@@ -532,31 +602,54 @@ divider+jump、2 messages visible、temporary unhide、最初はno auto-hideでs
 
 ### 10.1 Keywords
 
-具体的なnames/aliases、locations/orgs、objects、events、identifiers、discoveries/actions。
+通常の Memories は keyword-triggered が一般的です。良い keywords は具体的で distinct です:
 
-`important event`、`conversation`、`secret`は広すぎる。
+- character names と aliases;
+- named locations または organizations;
+- important objects;
+- event names;
+- identifiers;
+- specific discoveries または actions。
 
-Contentが何を学ぶか、keywordsがいつretrieveするか。
+`important event`、`conversation`、`secret` のような弱い keywords は広すぎます。
 
-### 10.2 Modes
+memory content は model が何を学ぶかを決めます。keywords は SillyTavern がいつそれを retrieve するかの判断を助けます。
 
-- **Normal** keyword/rules。
-- **Constant** always active、budget等に従う。
-- **Vectorized** vector retrieval対応時。
+### 10.2 Activation modes
 
-Vectorsは任意。
+- **Normal:** keyword/rule-driven activation。
+- **Constant:** applicable budget と entry controls の範囲で常時 active。
+- **Vectorized:** user setup が対応している場合 vector-related retrieval を使用。
 
-### 10.3 World Info推奨
+Vectors は optional です。STMB は Vectors extension がなくても keywords で動作します。
 
-Match Whole Words off、Scan Depth ~8、Max Recursion ~2、Context percentageは全体budgetに合わせる。必須ではない。
+### 10.3 推奨 global World Info settings
+
+一般的な starting recommendations:
+
+- Match Whole Words: off;
+- Scan Depth: 比較的高く、例 8;
+- Max Recursion Steps: 約 2;
+- Context percentage: total context と競合する prompt material に合わせた値。
+
+これは recommendations であり hard requirements ではありません。
 
 ### 10.4 Delay Until Recursion
 
-Memory Bookだけがactive sourceならOFF。そうでないとfirst recursionを始めるentryがなく、Memoryがactivateしない可能性。
+Memory Book が唯一の active lorebook/World Info source なら、**Delay Until Recursion** は無効のままにしてください。そうしないと first recursion cycle を開始する entry がなく、Memory が一度も activate しない可能性があります。
 
-### 10.5 Retrieval diagnosis
+### 10.5 Retrieval の診断
 
-entry exists → correct book active → entry enabled → keywords/mode → budget → recursion → inspector/logでsent確認 → sentだがignoredならmodel/competing context問題。
+AI が「覚えていない」とき:
+
+1. entry が存在することを確認。
+2. current chat で正しい Memory Book が active か確認。
+3. entry が enabled か確認。
+4. keywords または activation mode が current conversation と一致するか確認。
+5. lorebook budget が十分か確認。
+6. recursion settings を確認。
+7. World Info inspection tool または request log で entry が実際に送信されたか確認。
+8. 送信されたのに無視された場合、残る問題は model behavior または competing context であり、STMB storage ではありません。
 
 ---
 
@@ -564,7 +657,7 @@ entry exists → correct book active → entry enabled → keywords/mode → bud
 
 ### 11.1 定義
 
-2枚以上の別Character CardsからなるSillyTavern group。
+Group Chat Mode は、2つ以上の separate character cards を含む実際の SillyTavern group に適用されます。
 
 ```text
 SillyTavern Group
@@ -573,95 +666,152 @@ SillyTavern Group
 └── Clara character card
 ```
 
-各message authorがわかるのでspeaker attribution/participantsを扱える。別switch不要。
+SillyTavern は各 message をどの card が authored したか記録するため、STMB は speaker attribution を保持し、participating group members を検出できます。
+
+別の Group Chat Mode switch は不要です。group chat を開いて通常どおり STMB を使います。
 
 ### 11.2 Participant detection
 
-通常はscene内で1 message以上authorになったcard。
+通常、detected participant は selected scene 内で少なくとも1つ message を authored した character card です。
 
-Proseから物理的な全present charactersを推論しないため:
+STMB は prose から物理的に存在する全員を推測しません。したがって:
 
-- silent observer未検出;
-- mentioned onlyはparticipantでない;
-- absent discussed characterは選ばれない;
-- userはseparate group-character book targetではない;
-- unusual/duplicate speakerは修正必要な場合。
+- silent observer は検出されない場合がある;
+- merely mentioned character は participant ではない;
+- group が話題にした absent character は選択されない;
+- user は separate group-character Memory Book target として扱われない;
+- duplicate または unusual speaker identity は correction が必要な場合がある。
 
-0 participantsならauto accept ONでもconfirmationを表示。
+automatic participant detection が group characters を一人も見つけられなかった場合、automatic acceptance が有効でも STMB は participant confirmation を開きます。warning は detection failed を説明し、どの group characters が present だったか review するよう求めます。
 
-質問は**このMemoryをどのgroup charactersと関連付けるか**であり、各factのknowledge/presence証明ではない。
+participant prompt の意味は「この Memory をどの group characters に associate するか」です。誰がすべての fact を知っていたか、誰が物理的に present だったかを証明するものではありません。
 
-### 11.3 1 group Memory Book
+### 11.3 Group Memory Book 1つ
 
-推奨start。
+これは recommended starting layout です。
 
-Automatic/Auto-Create/main Manual book。sceneごとにcanonical entry。participant namesがあればinclusive ST character filter。
+Automatic Mode、Auto-Create、または main Manual Mode book を使います。各 scene は group Memory Book に canonical entry 1つを生成します。participant names が利用できる場合、その entry には inclusive SillyTavern character filter を付けられます。
 
-Alice+Bob filterはAlice **or** Bobで、synthetic “Alice and Bob”ではない。
+Alice と Bob の inclusive filter は、Alice **または** Bob が active なとき entry が activate できるという意味です。synthetic な「Alice and Bob」character や separate subset book を作るものではありません。
 
-shared story、group summaryで十分、simple、STLO不要の場合に最適。
+1 group book が適している場合:
 
-非対称knowledgeも保存可能:
+- cast が大部分で1つの story を共有する;
+- omniscient/group-oriented summary 1つで十分;
+- minimal setup と少ない duplicate entries を優先;
+- STLO が不要。
 
-> Aliceは送信機を見つけて隠した。Bobは部屋が空だと思っていた。
+single group Memory でも asymmetric knowledge を保持できます:
 
-### 11.4 Group book + character books
+> Alice found the transmitter and hid it. Bob believed the room was empty.
 
-必要:
+### 11.4 Group book 1つ + per-character books
 
-- canonical group book;
-- memberごとのcharacter book;
-- Manual Mode;
-- STLO;
-- valid assignments。
+advanced real-group layout では:
 
-group bookをcharacter bookにできない。複数charactersが1 shared character bookを使うことは可能でcopyは1つ。
+- canonical group Memory Book 1つ;
+- group member ごとに assigned character Memory Book 1つ。
 
-save時: canonical group → participant confirmation → selected booksへlinked copies → failure時可能ならrollback。
+要件:
 
-none selectedは全current group members。
+- Manual Lorebook Mode;
+- SillyTavern-LorebookOrdering (STLO) installed/enabled;
+- required group member 全員に valid assignment。
 
-### 11.5 Separate prompts
+canonical group book を character book と兼用することはできません。複数 character が同じ character book を共有することは可能で、その場合 STMB は duplicate ではなく shared book に copy 1つを書き込みます。
 
-defaultは同じgroup-oriented summaryをcopy。
+Memory 保存時:
 
-**Use separate group and character prompts in group chats**:
+1. canonical version を group book に書く;
+2. automatic acceptance が無効なら participant selection を確認;
+3. linked copies を selected participant books に書く;
+4. required save のどれかが失敗した場合、可能な範囲で partial writes を rollback。
 
-- Group Summary Prompt → canonical;
-- Character Summary Prompt → individual。
+real-group participant confirmation で participant を一人も選ばない場合、その Memory は current group member 全員に適用されます。
 
-private knowledge、mistaken beliefs、emotions、priorities、relationship-specific continuityを保持。追加AI requests。shared character bookは1 shared copy。
+### 11.5 Separate group and character prompts
 
-### 11.6 STLO
+default では同じ group-oriented Memory が participant books に copy されます。
 
-Memory Books: range、participants、content、target books、individual prompts。
-STLO: activation、which character、priority、position、budget、order。
+profile で **Use separate group and character prompts in group chats** を有効にすると:
 
-STMBは`stlo.characterOverrides`にavatar basename追加、`stlo.onlyWhenSpeaking`有効。既存設定保存。
+- Group Summary Prompt が canonical group version を作成;
+- Character Summary Prompt が single-character target book ごとに individualized version を作成。
 
-merge-onlyなのでassignment変更時old overrideは自動削除されない。
+character-focused version には次を保持できます:
 
-### 11.7 Privacyではない
+- private knowledge;
+- mistaken beliefs;
+- personal emotional reactions;
+- relationship-specific priorities;
+- one participant にとって重要だったこと。
 
-別books/filtersはrelevance routingで、情報隔離を保証しない。security boundaryとして使わない。
+追加 AI request が必要です。shared character book には、assigned character ごとの duplicate ではなく shared copy 1つが入ります。
 
-### 11.8 Linked copiesはlive syncしない
+### 11.6 STLO responsibilities
 
-origin metadataは共有するがedit/delete/compact/regenerateは独立。canonical group regenerationではonly clicked/all linkedを選べ、各entry別generation/approval。
+Memory Books が決めるもの:
 
-### 11.9 メンバー変更
+- scene range;
+- participants;
+- summary content;
+- copies を受け取る books;
+- individualized prompts を使うか。
 
-追加: next distributed Memory前にassign。old Memories/filtersはretroactive変更なし。
-削除: existing entries/filters/STLO overrides残る。
-reassign: future routingのみ。old overrideが残る場合。
+STLO が決めるもの:
+
+- lorebook がいつ active か;
+- どの character が activate できるか;
+- priority、position、budget、ordering。
+
+STMB が character book を assign すると、その character の avatar basename を `stlo.characterOverrides` に追加し、既存の STLO priorities、budgets、overrides を保持したまま `stlo.onlyWhenSpeaking` を有効にします。
+
+STMB は merge-only behavior を使います。assignment を clear/change しても old STLO character override は自動削除されません。obsolete override は STLO で手動削除してください。
+
+### 11.7 Filters と books は privacy controls ではない
+
+separate books と filters は relevance を改善しますが、次を保証しません:
+
+- one character が別 character の information を絶対に受け取らない;
+- model が canonical group version を絶対に見ない;
+- previous-memory context が完全に knowledge-partitioned される;
+- character book が conscious knowledge だけを表す。
+
+security boundary ではなく context-routing tool として使ってください。
+
+### 11.8 Linked copies は live-synchronized ではない
+
+linked entries は metadata を共有し、STMB が同じ original event を認識できますが、その後の edits は独立しています。
+
+one copy を edit/delete/compact しても他は自動変更されません。character copy を regenerate してもその copy だけが変わります。ただし canonical group entry を regenerate する場合、STMB はその entry だけを regenerate するか、linked character entries すべてと一緒に regenerate するか尋ねます。selected entry ごとに独自 generation と approval review があるため、character-focused prompts は character-focused のままです。
+
+### 11.9 Group member の追加・削除・reassign
+
+character を追加:
+
+- 次の distributed Memory 前に valid book を assign;
+- old Memories は retroactive に copy されない;
+- old filters は rewrite されない;
+- 必要なら historical context を手動提供。
+
+character を削除:
+
+- existing entries は残る;
+- old filters と STLO overrides は残る;
+- linked copies は自動削除されない。
+
+character の book を変更:
+
+- future routing が変わる;
+- old book の STLO overrides からその character が自動で消えるとは限らない。
 
 ### 11.10 Group consolidation
 
-canonical group bookはomniscient chronologyを目指しobjective eventsとindividual knowledgeを分離するgroup prompt。
+canonical group book は automatic group-chat consolidation analysis prompt を使います。これは objective events と individual knowledge を区別しながら omniscient chronology を作ることを目指します。
 
-character booksはpopup選択preset。source不足bookはwarning skip、他は継続。
+character books は popup で選択した consolidation preset を使います。book ごとに eligible source 数は異なる場合があります。material が不足する book は warning とともに skip され、ready books は続行できます。
 
-missing sceneはchronology gapでありabsence/ignorance/unconsciousness証明ではない。shared bookは1 consolidated entry。
+character book で scene が missing していることは chronology gap です。absence、ignorance、unconsciousness を証明しません。shared character book は consolidated entry 1つを受け取ります。
 
 ---
 
@@ -669,7 +819,7 @@ missing sceneはchronology gapでありabsence/ignorance/unconsciousness証明�
 
 ### 12.1 定義
 
-通常の1対1chatで1枚のNarrator cardが複数fictional charactersを書くケース。
+Narrator Mode は、1枚の Narrator character card が複数の fictional characters を書く通常の one-on-one SillyTavern chat 用です。
 
 ```text
 Normal SillyTavern Chat
@@ -679,93 +829,123 @@ Normal SillyTavern Chat
     └── writes Clara
 ```
 
-通常STは全AI responseをNarrator authorとして見るため、manual cast modelを追加。real group内では利用不可。
+Narrator Mode がなければ、SillyTavern はすべての AI response を Narrator card authored と認識します。Narrator Mode は manual cast model を提供し、STMB が Narrator prose 内の fictional characters と scene/Memory Book を associate できるようにします。
 
-### 12.2 必須layout
+Narrator Mode は real SillyTavern group chat 内では利用できません。
+
+### 12.2 Required storage layout
+
+Narrator Mode の要件:
 
 - Manual Lorebook Mode;
-- 1 selected omniscient/canonical Memory Book;
-- declared memberごとにunique Memory Book。
+- selected **omniscient/canonical Memory Book** 1つ;
+- declared cast member ごとに unique Memory Book 1つ。
 
-memberはomniscient book不可、2 members sharing不可、全員book必須、retired memberはidentity/book reservation維持。Auto-Create不可。
+rules:
 
-STLO不要。STMB自身がactive cast booksをcontextへinject。
+- cast member は omniscient book を使えない;
+- 2 cast members は同じ book を共有できない;
+- every declared member に available book が必要;
+- retired members は、restore または implementation 上別の方法で remove されるまで identity と reserved book assignment を保持;
+- Auto-Create は Manual Lorebook Mode に依存する Narrator Mode と incompatible。
+
+advanced real-group layout と異なり、Narrator Mode の active-character retrieval に STLO は不要です。STMB が selected cast members の books を generation 中の active lorebook context に inject します。
 
 ### 12.3 Setup
 
-1. Narrator normal chat。
-2. Manual Mode ON。
-3. main manual book = omniscient。
-4. **Narrator Mode** ON。
-5. **Manage Narrator Cast**。
-6. names + unique books。
-7. **Active Cast**でnext exchangeのpresent charactersを選択。
+1. Narrator card の normal chat を開きます。
+2. Manual Lorebook Mode を有効にします。
+3. main manual book を選びます。これが omniscient Memory Book です。
+4. **Narrator Mode** を有効にします。
+5. **Manage Narrator Cast** を開きます。
+6. fictional character を名前で追加し、それぞれ unique Memory Book を assign します。
+7. floating **Active Cast** drawer で next exchange に present な characters を選びます。
 
-Narrator ModeをOFFにしてからManual ModeをOFF。
+Manual Lorebook Mode を無効にする前に Narrator Mode を無効にする必要があります。
 
-### 12.4 Active Cast metadata
+### 12.4 Active Cast drawer と timeline metadata
 
-Drawerはexpand/collapse/move可能。
+floating Active Cast drawer は expand/collapse/move でき、current cast members を選択できます。
 
-generation時snapshot:
+generation 時に STMB は active cast を snapshot して message metadata に保存します:
 
-- user message = active snapshot;
-- Narrator response = generation snapshot;
-- continuation = merge;
-- swipeごとにmetadata;
-- swipe選択でrestore可能;
-- recent deleteでlast tagged Narrator messageからrestore可能。
+- user message は active-cast snapshot を受け取る;
+- Narrator response は generation snapshot を受け取る;
+- continuation は cast を existing cast metadata と merge;
+- swipe metadata は swipe ごとに別保存;
+- swipe 選択時、その timeline point から active cast を restore 可能;
+- recent messages 削除時、latest remaining tagged Narrator message から cast state を restore 可能。
 
-associationでありprose analysisではない。
+cast marker は association を記録するもので、prose の semantic analysis ではありません。
 
-### 12.5 Retrieval
+### 12.5 normal Narrator generation 中の retrieval
 
-generation開始時、active cast booksをloadしcharacter-loreへmerge、duplicate world/UID回避。
+Narrator generation 開始時、STMB は active cast の Memory Books を load し、その entries をその request 用 character-lore collection に merge します。duplicate world/UID pairs は避けます。
 
-active castのみ追加、omniscientは通常Manual Mode設定、STLO filters不要、generation前のcast selectionが重要。
+結果:
 
-### 12.6 Scene participants
+- この Narrator workflow では active-cast books だけが追加される;
+- omniscient book は通常の Manual Mode activation/configuration に従う;
+- per-character STLO filters は Narrator Mode では不要;
+- correct character books を context に入れるには generation 前の cast selection が正しい必要がある。
 
-tagged Narrator responsesがauthoritative。cast IDsをunion。
+### 12.6 Scene participant detection
 
-legacy untaggedがあればall messages continuityからfallbackしconfirmation。current activeがpreselected、emptyはno individual members。
+selected scene では tagged Narrator responses が authoritative です。STMB は Narrator-authored messages に stamped された cast IDs を combine します。
 
-fully taggedなら不要。
+scene に untagged legacy Narrator messages が含まれる場合、STMB は全 messages の continuity information に fallback し、scene cast の確認を求めます。current active cast members は preselected です。empty selection は individual cast members が present でなかったことを意味します。
 
-### 12.7 Distribution
+この confirmation は legacy または incomplete cast metadata 専用です。fully tagged scenes では不要です。
 
-- canonical omniscient entry;
-- selected participant unique booksにlinked copies。
+### 12.7 Memory distribution
 
-native character filtersは使わずNarrator participant/owner IDsをmetadata保存。
+Narrator scene Memory は次のように書き込まれます:
 
-separate prompts OFFならomniscient copies、ONならcharacter-focused generation。
+- main Memory Book に canonical omniscient entry 1つ;
+- selected participant ごとの unique Memory Book に linked copy 1つ。
 
-### 12.8 Consolidation/Regeneration
+Narrator copies は native SillyTavern character filters を使いません。代わりに STMB が Narrator participant/owner IDs を entry metadata に保存します。
 
-ownership/participant metadataがsourceを通じてhigher tierに残る。Regeneration target判定にも使用。linked entriesはsyncしない。
+separate multi-character prompts が disabled なら participant books は omniscient summary の copies を受け取ります。enabled なら各 single-character book が character-focused generation を受け取れます。
 
-### 12.9 Retire
+### 12.8 Narrator consolidation と regeneration
 
-retired memberはActive Cast choices/IDsから外れるがidentity/history/book reservationを保持。過去のMemory identityを壊さずactive castから離すため。
+Narrator ownership と participant metadata は consolidation sources に引き継がれます。これにより higher-tier entries は、どの character book が copy を owner とするか、underlying material にどの cast members が参加したかを保持できます。
+
+Regeneration はこの metadata を使い、replacement prompt target が omniscient/group-oriented か character-focused か判断します。
+
+real-group copies と同様、linked Narrator entries は作成後 live-synchronized されません。
+
+### 12.9 cast members の retire
+
+cast manager は member を retired にし、後で restore できます。retired members は:
+
+- active-cast choices から外れる;
+- active-cast ID set から外れる;
+- stable identity/history metadata を保持;
+- book reservation を保持し、identity を merge してしまう accidental reuse を防ぐ。
+
+active cast を離れた character でも historical Memory identity を保持すべき場合に retirement を使います。
 
 ---
 
 ## 13. チャットのブランチ
 
-native branchesは別continuityになり得る。parentと同じunlocked booksへ書くと矛盾が混ざる。
+SillyTavern native branches は別 continuity になる場合があります。branch と parent が同じ unlocked Memory Books に書き込むと、contradictory timelines が混ざる可能性があります。
 
-**Copy Memory Books when branching**はdefault ON。
+**Copy Memory Books when branching** は default で enabled です。
 
-### 13.1 Copy対象
+### 13.1 コピーされるもの
 
-Automatic: active chat-bound。
-Manual: main manual。
-Manual real group: unique unlocked character books。
-Narrator: omniscient + declared character books。
-persistent real-character locksはcopyせずshared継続。
+STMB が newly created native branch を認識すると:
 
-同じbranch operationは同じlineage number:
+- Automatic Mode は active chat-bound Memory Book を copy;
+- Manual Mode は main manual Memory Book を copy;
+- Manual Mode real group は unique unlocked character Memory Book ごとに copy;
+- Narrator Mode は omniscient book と declared character books を copy;
+- persistent real-character locks は「この同じ book を使い続ける」という意味なので copy せず preserve。
+
+1 branch operation で copy される全 books は同じ available lineage number を使います:
 
 ```text
 Group Memories Branch 1
@@ -773,103 +953,175 @@ Alice Memories Branch 1
 Bob Memories Branch 1
 ```
 
-branch from branchでもrootを維持。
+existing branch から branch しても original lineage root を保持し、`Branch 1 Branch 1` のような名前にはなりません。
 
-### 13.2 Metadata rewrite
+### 13.2 Rewritten metadata
 
-parent chat IDs→new branch ID、copied linked booksのcanonical links redirect、new branch bindings更新。内容cloneのみでMemory regenerationなし。
+copies 内で STMB は:
+
+- matching parent chat IDs を new branch chat ID に rewrite;
+- linked books が両方 copy された場合 canonical group/character links を redirect;
+- new branch の bindings を copies に point するよう update。
+
+existing contents を clone するだけで Memories を regenerate はしません。
 
 ### 13.3 Failure safety
 
-copy中chat switchしない。failureならnew branchのinherited writable bindingsをclearし、parent originalsへの誤writeを防ぐ。
+branch copying 中に chats を switch しないでください。
 
-### 13.4 Disable
+copy が失敗すると、STMB は new branch の inherited writable bindings を clear し、failure を記録します。branch が parent originals に silently 書き込むのを防ぐためです。
 
-branchが意図的にparentとsame books/historyを共有する場合のみOFF。
+### 13.4 Branch copies を無効にする場合
+
+branch が意図的に parent と同じ Memory Books と continuing history を共有すべき場合だけ setting を disable してください。
 
 ---
 
 ## 14. Clips
 
-highlighted chat textを直接`[STMB Clip]` entryに保存。AI callなし。
+Clip は selected chat text を `[STMB Clip]` lorebook entry に直接保存します。AI model は呼びません。
 
-### 14.1 用途
+### 14.1 Clips の用途
 
-preference、promise/secret、name/alias、item/pet、short relationship fact、ほぼ原文保存したいline、quick note。
+- preference;
+- promise または secret;
+- name または alias;
+- item または pet;
+- short relationship fact;
+- exact または nearly exact に保持すべき line;
+- scene Memory を作るほどではない quick “note to self”。
 
 ### 14.2 Workflow
 
-highlight → scissors → existing/new Clip → always-active/keyword → review → rename → save。
+1. chat message 内の text を highlight します。
+2. floating scissors button をクリックします。
+3. existing Clip entry を選ぶか new を作成します。
+4. new entry なら always-active または keyword-triggered behavior を選びます。
+5. current entry と updated preview を review します。
+6. 必要なら rename。
+7. Save。
 
-buttonはtext selection時のみ。
+floating scissors button は chat text 選択後だけ表示され、main panel で無効にできます。
 
-### 14.3 Format
+### 14.3 Entry format
+
+Title:
 
 ```text
 Seraphina Healed Me [STMB Clip]
 ```
 
+Content:
+
 ```markdown
 === Seraphina Healed Me ===
 
-- Seraphinaは魔法でユーザーの傷を治した。
+- Seraphina healed the user’s wounds with magic.
 
 === END Seraphina Healed Me ===
 ```
 
-1 Clip = 1 section。
+1 Clip entry には section 1つだけがあります。focused titles は focused activation keywords を助けます。
 
-### 14.4 Existing
+### 14.4 Existing entries
 
-title末尾に`[STMB Clip]`でClip扱い。長いentryはmanual edit/Compaction。
+existing entry の title 末尾に `[STMB Clip]` を追加すれば Clip entry として扱えます。長い Clip entry は手動 edit または compact できます。
 
-選んだtextだけ保存しsource attributionは自動追加しない。
+Clips は選んだ text だけを保存します。source attribution は自動追加しません。
 
 ---
 
 ## 15. Topical Clips
 
-confirmed STMB Memories、current chatのexplicit range、または両方からAIがtopic-focused entryを作る。eligible sourcesはScene Memories/consolidated summaries。Clip/Side Promptはsource除外。
+Topical Clip は confirmed STMB Memory entries、current chat の explicit message range、または両方を読み、AI に focused な「この topic について」の entry を作らせます。eligible Memory sources には scene Memories と consolidated summaries が含まれます。Clip と Side Prompt entries は source から除外されます。
 
-### 15.1 用途
+### 15.1 Topical Clip を使う場合
 
-recurring NPC、relationship history、location/faction、investigation/mystery、powers/injuries/promises/preferences/secrets、important object、unresolved plot thread。
+1つの subject に関する情報が複数 Memories に散らばっている場合。例:
 
-chronologyではなくtopicで整理。
+- recurring NPC;
+- relationship history;
+- location または faction;
+- investigation または mystery;
+- powers、injuries、promises、preferences、secrets;
+- important object;
+- unresolved plot thread。
 
-### 15.2 Sources
+Topical Clip は各 source Memory の chronology ではなく subject で整理します。
 
-selected bookのconfirmed Memories + explicit inclusive `X-Y` visible messages。
+### 15.2 Source restrictions
 
-**Include saved Memories**/**Include chat messages**別々/両方。message rangesはglobal unhide settingに従いhidden stateをrestore。
+Topical Clip が使うもの:
 
-range外messages、ordinary Clips、Side Prompts、unrelated lorebook entriesは使わない。
+- selected source book 内の confirmed STMB Memory entries。eligible consolidated summaries を含む。
+- current chat で explicit に selected した inclusive `X-Y` range の visible messages。
 
-### 15.3 作成
+**Include saved Memories** と **Include chat messages** は別々または一緒に使えます。message ranges は global unhide-before-memory setting に従い、compilation 後に previously hidden messages を元に戻します。
 
-Memory Books → Topical Clip → Source Book → Topic → Keywords/blank → new/existing target → sources → optional selected memories/range → profile → generate → review/edit → save。
+使わないもの:
 
-draft auto-saveなし。
+- selected range 外の chat messages;
+- ordinary Clip entries;
+- Side Prompt entries;
+- unrelated ordinary lorebook entries。
 
-### 15.4 Update
+### 15.3 Topical Clip を作る
 
-successful run後used sourcesと必要ならchat/range/IDs/hashesを保存。次回memory-based updateは通常new/changed sources + existing contentのみ。Message rangeは毎回explicit。
+1. Memory Books を開きます。
+2. **Topical Clip** をクリックします。
+3. source Memory Book を選びます。
+4. topic を入力します。
+5. activation keywords を入力するか、空欄なら topic を使用します。
+6. new entry または existing `[STMB Clip]` update target を選びます。
+7. sources として saved Memories、chat messages、または両方を選びます。
+8. 必要なら specific source Memories だけを選択し、exact message range を入力します。
+9. generation profile を選びます。
+10. draft を生成します。
+11. review/edit します。
+12. correct な場合だけ save します。
 
-**Rebuild from all source memories**はincomplete/disorganized、prompt changed、older memories heavily edited、full reconsideration時。
+generated draft は自動保存されません。
 
-### 15.5 Manual selection/token
+### 15.4 Existing Topical Clip の更新
 
-**Use only selected memories**はlarge book、limited story period、name overlap、strict evidence時。
+successful run 後、STMB は使用した source Memories を記録し、applicable な場合 source chat、message range、message IDs、hashes も記録します。後の Memory-based update では通常、new/changed source Memories だけを existing Clip content と一緒に送ります。message range は毎回 explicit に選びます。
 
-threshold超過でwarning。
+**Rebuild from all source memories** を使う場合:
 
-### 15.6 Review
+- current entry が incomplete/disorganized;
+- prompt が変更された;
+- older Memories が大幅 edit された;
+- whole topic を再検討したい。
 
-on-topic、names/relationships、major facts、contradictions、unsupported inventionなし、duplicateなし。
+### 15.5 Manual source selection と token warnings
 
-### 15.7 Placeholders
+book が大きい、topic が story の一期間に限定、names が overlap、strict evidence control が必要な場合は **Use only selected memories** を使います。
 
-saved Memories使用時`{{SOURCE_MEMORIES}}`、messages使用時`{{SOURCE_MESSAGES}}`必須。
+STMB は request size を estimate し、configured token threshold 超過時に warn します。sources を減らす、threshold を意図的に上げる、または今回だけ run してください。
+
+### 15.6 Review standard
+
+draft が次を満たすか確認:
+
+- topic に集中;
+- names と relationships を保持;
+- major relevant facts を含む;
+- contradictions を silently 片方に決めず明示;
+- source Memories にない explanation を invent しない;
+- unnecessary duplication なしで updates を merge。
+
+### 15.7 Prompt placeholders
+
+custom Topical Clip prompt には、saved Memories 選択時に `{{SOURCE_MEMORIES}}`、chat messages 選択時に `{{SOURCE_MESSAGES}}` が必要です。
+
+Source placeholders:
+
+```text
+{{SOURCE_MEMORIES}}
+{{SOURCE_MESSAGES}}
+```
+
+supported placeholders:
 
 ```text
 {{MODE}}
@@ -881,31 +1133,46 @@ saved Memories使用時`{{SOURCE_MEMORIES}}`、messages使用時`{{SOURCE_MESSAG
 {{SOURCE_MESSAGES}}
 ```
 
-問題時Reset to Default。
+custom prompt の output が有用でなくなったら Reset to Default を使ってください。
 
 ---
-
 ## 16. Side Prompts
 
-通常character replyとは別に動くnamed STMB prompt。通常は継続的なsupport entryを作成/更新。
+Side Prompt は通常の character reply とは別に実行される named STMB prompt です。通常は sequential scene Memory をもう1つ作るのではなく、継続する support entry 1つを作成または更新します。
 
-**Trackers & Side Prompts**のpower iconでprompt-wide **Enabled**を即変更。trigger自体は変えない。
+**Trackers & Side Prompts** list では、power icon が prompt-wide **Enabled** flag を即座に変更します。green は enabled、dim は disabled です。この control は prompt に設定された triggers を追加・削除・変更しません。
 
-### 16.1 用途
+### 16.1 適切な用途
 
-plot/unresolved tracker、relationship state、NPC/faction status、inventory/resources、injuries/stats/reputation、timeline/date/deadline/travel、clues/suspects/contradictions、research/projects、continuity risk、world state。
+- plot と unresolved-thread trackers;
+- relationship state;
+- NPC または faction status;
+- inventory と resources;
+- injuries、statistics、reputation;
+- timelines、dates、deadlines、travel;
+- mystery clues、suspects、contradictions;
+- inventions、research、projects;
+- continuity-risk reports;
+- world-state summaries。
 
-「everythingをtrack」やduplicate scene summary、next RP response内に必要なtaskは避ける。
+曖昧な「everything を track」prompt、scene summary の重複、次の roleplay response 内に出す必要がある task は避けてください。
 
-### 16.2 Output
+### 16.2 Output format
 
-通常final plain text/Markdown。Memory JSON不要。意図してJSONをtracker textとして保存する場合のみ。
+Side Prompts は通常、保存可能な final plain text または Markdown を期待します。Memory JSON は不要です。ユーザーが意図的に JSON を tracker text として保存したい場合だけ JSON を使います。
 
-### 16.3 Sequence
+### 16.3 Run sequence
 
-instructions → prior tracker → optional previous Memories → optional Additional Context → selected/since-last scene → optional Response Format。
+典型的な run は次を組み立てます:
 
-prior entryはrevise対象stateで、全旧情報を残す根拠ではない。stale/resolved/contradicted/duplicateを削除するよう明記。
+1. Side Prompt instructions;
+2. prior saved tracker entry（あれば）;
+3. optional previous Memories;
+4. optional Additional Context;
+5. selected または since-last scene text;
+6. optional Response Format instructions。
+
+prior entry は revise すべき existing state であり、古い statement がすべて残るべきという証拠ではありません。prompt は stale、resolved、contradicted、duplicate information を明示的に削除するよう指示すべきです。
 
 ### 16.4 Manual runs
 
@@ -915,53 +1182,81 @@ prior entryはrevise対象stateで、全旧情報を残す根拠ではない。s
 /sideprompt "Relationship Tracker" {{npc name}}="Alice" 10-20
 ```
 
-spaces含むnameはquotes。range inclusive。
+spaces を含む names は quote してください。range は inclusive です。
 
-### 16.5 Automatic after-Memory
+Manual run は targeted analysis と runtime macro values が必要な prompts に適しています。
 
-**Run automatically after memory**。
+### 16.5 Automatic after-Memory runs
 
-chatはindividual enabled promptsまたは1 selected setを使用。setはindividualを置換し加算しない。
+Side Prompt は **Run automatically after memory** を有効にできます。
 
-#### Memory Assistance
+chat は次の2つの automatic selection mode のどちらかを使います:
 
-reserved Side Prompt、4 modes。saved Memory後に普通のenable/setと独立してrun。Memory regeneration時はrunしない。
+- individually enabled Side Prompts; または
+- selected Side Prompt Set 1つ。
 
-raw sceneとtarget booksのordinary/Topical Clipsを比較し、title/topic、keywords、current content、stable ID、typeをAIへ。
+selected set は、その chat の individually enabled automatic prompts を置き換えます。追加するのではありません。
 
-Queueありならbookごとに**Memory Assistance** job。request/validation/report/apply errorはFailed。Memory本体はCompletedのまま。
+#### Memory Assistance Side Prompt
 
-- **Off**
-- **Update** ≤5 clips直接、>5 selection、manual approval。
-- **Update and Suggest** topic discovery後Update。
-- **Automatic** all clips token-batched、ordinary additions直接apply、Topical replacementsはpending。
+**Memory Assistance** は4つの独立した mode を持つ reserved Side Prompt です。ordinary Side Prompt enablement や selected Side Prompt Set に関係なく、successfully saved Memories の後に実行されます。Memory regeneration 中には実行されません。
 
-Query Selected/All。ordinary Clipにはmax1 exact excerpt、Topicalはfull replacement。AI outputはUID→suggestion JSON map、`{}`はnone。
+Memory Assistance は raw processed scene と、Memory を受け取った各 Memory Book 内の ordinary/Topical Clips を比較します。review する各 Clip について、title/topic、keywords、current content、stable ID、type を AI に送ります。
 
-Update結果は`Memory Assistance (STMB SidePrompt)`にpending。Automaticはapplied countとpending Topical/failuresを保持。Cancelでold suggestions clear。
+job queue が利用可能な場合、Memory 保存後、target Memory Book ごとに separate **Memory Assistance** job が作られます。request、response-validation、report-save、automatic-application の error はその job を **Failed** にし、queue に error を表示します。saved Memory は **Completed** のままで、Memory Assistance を retry しても Memory は regenerate されません。
 
-Discovery requestはscene + lightweight Topical titles/topics/keywordsだけ。0–5 topics、`{"topics":[]}` valid。
+- **Off** は Memory Assistance を無効にします。
+- **Update** は Clips が5個以下なら直接 review し、5個を超える場合は selection list を開きます。proposed changes は manual approval を待ちます。
+- **Update and Suggest** は最初に1回 topic-discovery request を行い、その後 Update と同じ existing-Clip review workflow を実行します。
+- **Automatic** は every Clip を token-based batches で review し、どの Clips を review するか尋ねません。valid ordinary Clip additions は直接適用し、Topical Clip replacements は **Memory Assistance Suggestions** で approval 待ちになります。
 
-**Review Topics**でcheck/edit/add。confirmed topicはstandard Topical draft。saveした時だけpendingからremove。
+- Update と Update and Suggest modes では、大きい selection list に **Query Selected** と **Query All** があります。
+- Query All と Automatic mode は全 Clip を1つの oversized request に押し込まず、token-based batches を使います。
+- ordinary Clip ごとに、addition として提案される exact message excerpt は最大1つです。
+- Topical Clips は complete replacement drafts を受け取ります。
+- AI response は affected Clip UID を suggested excerpt/replacement に直接 map する simple JSON object です。empty object は update が必要な Clip がないことを意味します。
+- Update result は `Memory Assistance (STMB SidePrompt)` に書かれ、**Memory Assistance Suggestions** で approve されるまで unapplied のままです。
+- Automatic-mode result は、適用された ordinary Clip additions の数を記録し、Topical Clip replacements と application failures を manual review 用に保持します。
+- selection を cancel すると older suggestions が clear され、latest scene の result と誤認されないようにします。
 
-completion popupはDismiss/Go to Suggestions。menuから開くとcurrent effective bookをfirst select。
+Update and Suggest は existing-Clip review batches の前に separate suggestion-only prompt を使います。request には processed scene と、existing Topical Clip titles、topics、keywords の lightweight list が入ります。discovery 中は ordinary Clips も existing Clip bodies も送りません。AI は topic と activation keywords を含む JSON objects として0〜5個の new topics を返します。`{"topics":[]}` は valid result です。
 
-prompts/profile override editable、response contracts fixed。Memory Assistanceはdelete/duplicate/set/manual不可。
+suggested topics は Memory Assistance report に保存されます。**Memory Assistance Suggestions** で **Review Topics** を選ぶと、checked/editable rows として表示されます。不要な topics の check を外す、topic names/keywords を edit する、additional topics を追加することができます。confirmed topics は standard Topical Clip draft workflow を1つずつ開きます。pending topic はその Topical Clip が保存された後だけ削除されます。draft を閉じても **Memory Assistance Suggestions** から利用可能なままです。
 
-### 16.6 Visible interval
+reviewable suggestions の準備ができると、STMB は updated Memory Book 用の completion popup を開きます。**Dismiss** は notice を閉じ、**Go to Suggestions** はその Memory Book が preselected された **Memory Assistance Suggestions** を開きます。extension menu から **Memory Assistance Suggestions** を開くと、current chat の effective Memory Book（Automatic Mode の chat-bound book、または Manual Mode の resolved manual book）が最初に選ばれます。
 
-**Run on visible message interval** + visible message count。hidden/systemはcountしない。setではappropriate triggerを持つrowだけ。
+Update と Topic Suggestions prompts、connection-profile override は個別に edit できますが、両方の structured response contracts は固定です。Memory Assistance は delete、duplicate、Side Prompt Set への配置、manual run ができません。
+
+### 16.6 Automatic visible-message intervals
+
+Side Prompt は **Run on visible message interval** を有効にし、checkpoint 以後の visible messages 数を指定できます。
+
+hidden と system messages は count されません。
+
+set が active の場合、appropriate interval trigger を持つ referenced prompt の rows だけが candidate です。
 
 ### 16.7 Side Prompt Sets
 
-ordered run listでfolderではない。同一templateを別macrosで複数回可能。
+Side Prompt Set は folder ではなく ordered run list です。同じ template を別の macro values で複数回入れられます。
+
+例:
 
 1. Relationship Tracker — Alice
 2. Relationship Tracker — Bob
 3. Plot Tracker
 4. Cleanup Report
 
-row: prompt ref、optional label、runtime macro values、order、duplicate/delete。
+rows は次を保存できます:
+
+- prompt reference;
+- optional label;
+- runtime macro values;
+- order;
+- duplicate または delete actions。
+
+rows は上から下へ実行されます。
+
+Manual set commands:
 
 ```text
 /sideprompt-set "Set Name"
@@ -969,24 +1264,37 @@ row: prompt ref、optional label、runtime macro values、order、duplicate/dele
 /sideprompt-macroset "Relationship Pass" {{npc_1}}="Alice" {{npc_2}}="Bob" 10-20
 ```
 
-### 16.8 Defaults/per-chat
+### 16.8 Default sets と per-chat selection
 
-General Settingsでsolo/group default set。
+General Settings では次を定義できます:
 
-chatはinherit、individual、named set。
+- solo chats 用 default set;
+- group chats 用 default set。
 
-empty default=individual。selected set deletedならwarning、silent fallbackなし。missing prompt/unresolved macroはrow skip。
+各 chat は:
 
-Automatic runには各prompt側triggerも必要。manual set commandには不要。
+1. applicable default を inherit;
+2. individually enabled prompts を明示的に使用;
+3. named set を選択。
+
+empty global default は individual mode を意味します。
+
+selected set が削除された場合、STMB は別 workflow を silently substitute せず warn します。missing row prompt または unresolved macro は warning とともにその row を skip します。
+
+set は candidate rows を選びます。referenced Side Prompt には after-Memory または interval execution 用の relevant automatic trigger が依然必要です。Manual set commands はそれら trigger checkboxes を必要としません。
 
 ### 16.9 Macros
+
+Side Prompts は通常の SillyTavern macros を使用できます:
 
 ```text
 {{user}}
 {{char}}
 ```
 
-nonstandard `{{...}}`はruntime macros。manualまたはset rowでvalues。
+non-standard `{{...}}` placeholders は runtime macros です。manual に supply するか set row に保存する必要があります。
+
+例:
 
 ```text
 {{npc name}}
@@ -994,79 +1302,148 @@ nonstandard `{{...}}`はruntime macros。manualまたはset rowでvalues。
 {{project_name}}
 ```
 
-unresolvedならauto run不可。
+unresolved runtime macros がある prompt は automatic run できません。automatic run は途中で値を尋ねるため pause できません。
 
-### 16.10 Count macros
+### 16.10 Memory-count macros
+
+STMB は effective main Memory Book 用 integer macros を register します:
 
 | Macro | Count |
 |---|---|
-| `{{memtier0}}` | Scene Memories |
+| `{{memtier0}}` | scene Memories |
 | `{{memtier1}}` | Arcs |
 | `{{memtier2}}` | Chapters |
 | `{{memtier3}}` | Books |
 | `{{memtier4}}` | Legends |
 | `{{memtier5}}` | Series |
 | `{{memtier6}}` | Epics |
-| `{{memclips}}` | Clips |
-| `{{memside}}` | Side Prompts |
+| `{{memclips}}` | Clip entries |
+| `{{memside}}` | Side Prompt entries |
 
-effective main bookのみ。multi-book character booksは合計しない。valueはnumberのみ。
+effective main book は Automatic Mode の chat-bound book、または Manual Mode の resolved main manual book です。multi-book group/Narrator setup では character books 全体を合算しません。
+
+count macro は数値だけを提供し、entry content は提供しません。
 
 ### 16.11 Message ranges
 
-explicitならexact inclusive。なしならsince-last checkpoint/cap。
+explicit range はその exact inclusive range を使用します。range なしでは Side Prompt の since-last checkpoint/cap behavior を使います。
 
-### 16.12 Additional Context/Previous Memories
+debugging、targeted cleanup、known section の rerun には explicit ranges を使います。
 
-previous scene Memories最大7。Additional Context source = none / **Follow chat** / fixed named setting。referenceとして使いblind copyしない。
+### 16.12 Additional Context と previous Memories
+
+Side Prompt は最大7つの previous scene Memories を含められます。
+
+Additional Context source は:
+
+- none;
+- **Follow chat** — chat の selected Context Setting を使用;
+- fixed named Context Setting 1つ。
+
+これらは reference material です。prompt は tracker に blindly copy すべきではありません。
 
 ### 16.13 Lorebook targets
 
-priority: per-chat override → template target → effective book fallback。shared campaign/dedicated trackerなど意図的用途。
+Side Prompt は通常 effective Memory Book に保存します。代わりに次を使えます:
 
-### 16.14 Entry controls
+1. per-chat target override;
+2. template-level target;
+3. fallback として effective Memory Book。
 
-title override、keywords、Normal/Constant/Vectorized、position/Outlet、order、Prevent Recursion、Delay Until Recursion、Ignore Budget。macros expand可能。Ignore Budget注意。
+valid per-chat override が優先します。
+
+alternate targets は deliberate shared campaign book または dedicated tracker book に使います。retrieval plan なしで trackers を散らさないでください。
+
+### 16.14 Side Prompt entry controls
+
+template は次を設定できます:
+
+- title override;
+- keywords;
+- Normal、Constant、Vectorized activation;
+- insertion position と Outlet name;
+- order mode/value;
+- Prevent Recursion;
+- Delay Until Recursion;
+- Ignore Budget。
+
+title/keyword fields は applicable macros を展開できます。**Ignore Budget** は慎重に使ってください。always-included trackers が複数あると大量の context を消費します。
 
 ### 16.15 Connection profile override
 
-normal resolution継承またはspecific STMB profile。組合せを増やしすぎない。
+Side Prompt は normal Memory Books connection resolution を inherit するか、specific STMB profile を bind できます。override は cheaper model や structured maintenance に強い model に便利です。profile combinations を増やしすぎると troubleshooting が難しくなります。
 
-### 16.16 Regeneration
+### 16.16 Side Prompt regeneration
 
-compatible saveはversion-2 snapshotを保存：template key、regeneration用prior content、run前にentryが存在したかとexact prior state（古いrollback snapshotを除外）、source chat/range、runtime macro values、STMBが書いたexact stateのfingerprint。
+compatible saves は現在、次を含む version-2 snapshot を保存します:
 
-lorebook editor → **Regenerate side prompt**。current template/profile/contextでreplacement。
+- Side Prompt template key;
+- regeneration 用 prior entry content;
+- run 前に entry が存在していたか、および older rollback snapshot を除く exact prior entry state;
+- source chat と inclusive range;
+- runtime macro values;
+- STMB が書き込んだ exact entry state の fingerprint。
 
-template deleted/source unavailable/target-source changedなら不可。contentのみ置換。legacy version-1 snapshotもregenerationには使えるが、Memory Auto-Rollbackには使えない。
+regenerate するには lorebook editor を開き **Regenerate side prompt** をクリックします。replacement は saved snapshot に current template と current profile/context settings を組み合わせて使用します。
 
-### 16.17 良いSide Prompt
+template が deleted、source chat/range が unavailable、generation 中に target/source が変化した場合、regeneration は完了できません。置き換わるのは content だけで、existing title、keywords、entry settings は維持されます。legacy version-1 snapshots も regeneration を引き続き support しますが、Memory Auto-Rollback には使用できません。
 
-exact job、sources、revise/replace/merge/append、stale removal、stable headings/order、strict length、final-onlyを指定。
+### 16.17 良い Side Prompt の書き方
+
+良い Side Prompt は次を定義します:
+
+- exact maintenance job;
+- review する source material;
+- revise、replace、merge、append のどれか;
+- remove する stale information;
+- stable output headings と ordering;
+- strict length limit;
+- final-output-only behavior。
+
+例:
 
 ```text
-提供されたシーンから関係trackerを更新してください。現在の事実を維持し、新しい展開を既存セクションへ統合し、解決済み・矛盾・古い・重複した内容を削除してください。各関係は簡潔な1～3項目にしてください。更新済みtrackerだけを出力してください。
+Update the relationship tracker from the supplied scene. Preserve current facts, merge new developments into the existing sections, and remove resolved, contradicted, stale, or duplicate details. Keep each relationship to 1–3 concise bullets. Output only the updated tracker.
 ```
+
+有用な guards:
 
 ```text
-本当に新しい情報がない限り新しいセクションを追加しないでください。
-解決済みのthreadと古い推測を削除してください。
-前置きや説明なしで更新済みreportのみ出力してください。
-全体を300語未満にしてください。
+Do not append a new section unless there is genuinely new information.
+Remove resolved threads and obsolete speculation.
+Output only the updated report; no preface or explanation.
+Keep the entire output under 300 words.
 ```
 
-### 16.18 Troubleshooting
+stable headings は repeated updates の drift を減らします。
 
-not run: event、selection mode/set、prompt exists、trigger、runtime values、stop/failure。
-twice: manual+auto、duplicate rows/prompts、multiple tabs/chats。
-wrong book: per-chat/template targets。
-grows forever: replace/prune/item/word limits。
+### 16.18 Side Prompt troubleshooting
+
+prompt が run しなかった場合:
+
+- Memory または interval event が実際に発生したか確認;
+- chat の individual/set selection を確認;
+- referenced prompt がまだ存在するか確認;
+- relevant automatic trigger が enabled か確認;
+- runtime macros の値がすべてあるか確認;
+- `/stmb-stop` または failed job が cancel したか確認。
+
+2回 run した場合:
+
+- manual + automatic invocation;
+- duplicate set rows;
+- duplicate prompt copies;
+- multiple tabs/chats が work を trigger していないか確認。
+
+wrong book に入った場合は per-chat と template-level target scopes の両方を確認します。
+
+output が無限に増える場合は explicit replacement、pruning、item-count、word-count rules を追加してください。
 
 ---
 
 ## 17. Consolidation
 
-lower-tier STMB Memories/summariesをhigher-tier chronological recapへ。
+Consolidation は lower-tier STMB Memories または summaries を higher-tier chronological recaps にまとめます。
 
 ### 17.1 Tiers
 
@@ -1074,23 +1451,38 @@ lower-tier STMB Memories/summariesをhigher-tier chronological recapへ。
 Scene Memory → Arc → Chapter → Book → Legend → Series → Epic
 ```
 
-raw chatではなくexisting STMB entriesがsource。
+Consolidation は raw chat ではなく existing STMB entries から動作します。
 
-### 17.2 用途
+### 17.2 Purpose
 
-scene Memories蓄積、old detailを減らす、relationship/plot/campaign phase終了、token reduction、clean chronology。
+次の場合に使います:
 
-lasting changes、turning points、goals、consequences、relationship shifts、unresolved threads、stable stateを重視。
+- scene Memories が蓄積;
+- old material に full scene detail が不要;
+- major relationship、plot、campaign phase が完了;
+- continuity を保持しつつ token use を削減;
+- cleaner higher-level chronology が必要。
 
-### 17.3 Manual
+Consolidated entries は lasting changes、turning points、goals、consequences、relationship shifts、unresolved threads、stable state を重視すべきです。
 
-**Consolidate Memories** → 表示されたSource Memory Bookを確認（必要ならこのrunだけ別bookを選択。chatのconfigured bookは変わらない）→ target tier → sources → prompt/profile → disable sources? → run/review → approve。
+### 17.3 Manual workflow
 
-### 17.4 Readiness prompt
+1. **Consolidate Memories** を開きます。
+2. 表示された source Memory Book を確認します。configured manual/chat-bound book が intended consolidation source でない場合は別 book を選びます。この selection は current run だけに適用され、chat の configured Memory Book は変更しません。
+3. target tier を選びます。
+4. eligible source entries を選びます。
+5. consolidation prompt/profile settings を選びます。
+6. successful consolidation 後に source entries を disable するか決めます。
+7. run して candidates を review します。
+8. desired summaries を approve します。
 
-**Prompt for consolidation when a tier is ready**はminimum到達時yes/later。YesはUIを開くだけで自動consolidateしない。
+### 17.4 Readiness prompts は automatic consolidation ではない
 
-### 17.5 Schema
+**Prompt for consolidation when a tier is ready** は selected target tiers を監視します。saved minimum eligible count に達すると yes/later prompt を表示します。Yes を選ぶと consolidation interface が開きます。silently consolidate はしません。
+
+### 17.5 Consolidation output schema
+
+ordinary consolidation は strict JSON を期待します:
 
 ```json
 {
@@ -1111,47 +1503,72 @@ lasting changes、turning points、goals、consequences、relationship shifts、
 }
 ```
 
-one/multiple summaries可。`member_ids`でsource assignment。outlierは`unassigned_items`。
+model は summary を1つまたは複数返せます。`member_ids` は各 source を returned summary に割り当てます。outliers は unrelated recap に無理に入れず `unassigned_items` に入れます。
 
 ### 17.6 Previous higher-tier summary
 
-canon contextとして提供可、source to rewriteではない。
+target tier の previous summary を canon context として supply できます。rewrite する source material ではありません。Consolidation prompt は、これと processing 対象の lower-tier entries を区別する必要があります。
 
-### 17.7 Previews/failures
+### 17.7 Previews と failed responses
 
-edit/accept/regenerate candidate/batch。malformed response inspect/manual correction対応時。
+Consolidation previews では edit、accept、same sources から candidate 1つを regenerate、pending batch を regenerate できる場合があります。
+
+malformed/failed AI responses は inspect でき、support される場合は commit 前に manual correction できます。
 
 ### 17.8 Source disabling
 
-success後sourceをdisableしてhigher summaryにretrievalを任せる。deleteではなくreversible。
+enabled の場合、successful consolidation 後に STMB は source entries を disable し、higher-tier summary が retrieval を引き継げるようにします。lorebook editing で reversible です。
 
-### 17.9 良いPrompt
+### 17.9 良い consolidation prompts
 
-compression target、smallest coherent number、chronology/grouping、must-survive details、outliers、exact JSON。major beats/consequences/promises/relationships/IDs/threads/keywords保持、repeated scene detail削減。
+次を定義します:
+
+- compression target;
+- recap 1つか smallest coherent number か;
+- chronology と grouping logic;
+- survive すべき details;
+- outliers の explicit handling;
+- exact JSON structure。
+
+major beats、consequences、promises、relationship changes、identifiers、unresolved threads、retrieval-friendly keywords を保持し、repeated scene-level detail は削除すべきです。
 
 ---
 
 ## 18. Compaction
 
-1つのSTMB-managed entryをAIで短縮し、originalとdraftを比較後置換。
+Compaction は AI に existing STMB-managed entry 1つを短くさせ、replacement 前に original と draft を表示します。
 
-### 18.1 Eligible
+### 18.1 Eligible entries
 
-`[STMB Clip]`、Side Prompt、STMB Memory。ordinary non-STMB entriesは対象外。
+- `[STMB Clip]` entries;
+- Side Prompt entries;
+- STMB Memory entries。
+
+ordinary non-STMB lorebook entries は list に表示されません。
 
 ### 18.2 Workflow
 
-Compaction → book → profile → optional prompt → entry → compare → edit → replace/copy/cancel。
+1. **Compaction** を開きます。
+2. Memory Book を選びます。
+3. Compaction Profile を選びます。
+4. optional で Compaction Prompt を edit します。
+5. entry 1つを選びます。
+6. original と compacted token estimates/content を比較します。
+7. 必要なら draft を edit します。
+8. replace、copy draft、cancel のいずれか。
 
-**Replace with Compacted Version**までoriginal不変。
+**Replace with Compacted Version** を選ぶまで original は変更されません。
 
-### 18.3 用途
+### 18.3 Good uses
 
-long Clips、repetitive/stale tracker、wordy Memories、expensive always-active entries。
+- long Clip collections;
+- repeated/stale tracker content;
+- wordy scene Memories;
+- always-active entries が context を消費しすぎる場合。
 
-adding facts/raw chat summary/new Memory/ordinary entriesには使わない。
+Compaction は facts 追加、raw chat 要約、新 Memory 作成、ordinary lorebook entries 処理には使いません。
 
-### 18.4 Placeholders
+### 18.4 Prompt placeholders
 
 ```text
 {{ENTRY_CONTENT}}  required current content
@@ -1159,104 +1576,110 @@ adding facts/raw chat summary/new Memory/ordinary entriesには使わない。
 {{ENTRY_TITLE}}    entry title
 ```
 
-facts/names/pronouns/macros/wrappers/end markersを保ち、redundancy削減。
+prompt は redundancy と low-value wording を削りながら facts、names、pronouns、macros、wrapper headings、end markers を保持すべきです。
 
 ---
 
 ## 19. Regeneration
 
-既存entryのレビュー可能なreplacementを作ります。2つ目のnumbered entryは作らず、approvalなしでoverwriteしません。
+Regeneration は existing entry の reviewable replacement を作成します。second numbered entry は作らず、approval なしに overwrite しません。
 
-### 19.1 Scene Memory Regeneration
+### 19.1 Scene Memory regeneration
 
-- source chatを開く;
-- Memory Bookをlorebook editorで開く;
-- **Regenerate memory**;
-- canonical group entryにlinked character entriesがある場合、clicked entryのみかall linkedか選択;
-- current profile、prompt、Previous Memories count、Additional Contextを選択;
-- 各entryのtitle/content/keywordsをreview。
+- source chat を開く;
+- lorebook editor で Memory Book を開く;
+- **Regenerate memory** をクリック;
+- linked character entries がある canonical group entry の場合、clicked entry だけか linked entries 全体か選ぶ;
+- current profile、prompt、previous-memory count、Additional Context を選ぶ;
+- selected entry ごとに title、content、keywords を review。
 
-original scene rangeとsequence numberは保持。linked entriesは同じselected settingsを使いますが、自分自身のbook contextとgroup/character targetで生成されます。STMBはdirect save前にすべてのapprovalを集めます。source messagesがhiddenならunhideするか設定をON。
+original scene range と sequence number は保持されます。linked entries は同じ selected regeneration settings を使いますが、それぞれ own Memory Book context と group/character prompt target で生成されます。STMB は direct regenerations の save を開始する前に all approvals を集めます。source messages が全て hidden なら reveal するか unhide-before-generation を有効にします。
 
-### 19.2 Consolidation Regeneration
+### 19.2 Consolidation regeneration
 
-higher-tier summaryをexact linked lower-tier sourcesから専用**Regenerate Consolidation** presetで再生成。
+higher-tier summary は dedicated **Regenerate Consolidation** preset を使い、その exact linked lower-tier sources から regenerate されます。
 
-full source setが正しいtierに残っている必要があります。active parent summaryが依存するlower sourceはregenerate不可。意図的にlower tierを再構築するならparentを先にdelete。
+full source set が correct tier に存在する必要があります。active parent summary が依存している lower-tier source は regenerate できません。意図して lower tier を rebuild するなら parent を先に delete します。
 
-### 19.3 Side Prompt Regeneration
+### 19.3 Side Prompt regeneration
 
-16.16参照。
+Section 16.16 の Side Prompt snapshot rules を参照してください。
 
 ### 19.4 Safety checks
 
-replacement直前に:
+replacement 直前に STMB は次を確認します:
 
-- target entry unchanged;
-- source chat range unchanged;
-- required consolidation sources unchanged/available;
-- entry still eligible。
+- target entry が unchanged;
+- source chat range が unchanged;
+- required consolidation sources が unchanged/available;
+- entry が eligible のまま。
 
-失敗時overwriteなし。
+check 失敗時は何も overwrite されません。
 
-linked group/character/Narrator copiesは独立。
+linked group、character、Narrator copies は独立したままです。
 
 ---
 
 ## 20. 生成用コンテキスト
 
-複数のcontext sourceは互換ではありません。
+STMB request には複数種類の context source が現れます。互いに同じではありません。
 
 ### 20.1 Current scene
 
-現在処理するrange。ordinary Scene Memoryのtarget material。
+今処理する message range。ordinary scene Memory の target material です。
 
 ### 20.2 Previous Memories
 
-effective Memory Book内のearlier Scene Memories。read-only continuity contextとして0～7件。current sceneより前にあるだけで再要約しない。
+effective Memory Book の earlier scene Memories。read-only continuity context として含まれます。通常0〜7個を選べます。
+
+current scene より前にあるというだけで再度 summarize してはいけません。
 
 ### 20.3 Additional Context
 
-stable referenceとして選ぶlorebook entries:
+stable reference material として supplied lorebook entries。例:
 
 - character/setting rules;
-- canonical names/terms;
+- canonical names/terminology;
 - campaign constraints;
 - authoritative timeline;
-- location refs;
-- scene内で繰り返されていないknown facts。
+- location references;
+- scene で繰り返されない assumed facts。
 
-Previous Memoriesとscene transcriptより前。別sceneではない。
+Additional Context は previous Memories と scene transcript より前に入ります。別の scene ではなく reference material です。
 
 ### 20.4 Context Settings
 
-reusable ordered Additional Context collection。
+Context Setting は reusable ordered collection of Additional Context entries です。
 
-1. **Context Settings**。
-2. named setting作成。
-3. entries選択。
-4. order。
-5. chat用settingまたはNo Context。
+Workflow:
 
-per-chat stored、Current ST Settingsとsaved profiles双方で利用。
+1. **Context Settings** を開く;
+2. named setting を作成;
+3. lorebook entries を選択;
+4. order する;
+5. current chat 用 setting を選ぶか No Context を明示的に選ぶ。
 
-referenced book/entry missingならwarning+skip。setting自体deletedなら別選択までAdditional Contextなし。
+selection は per chat で保存され、Current SillyTavern Settings と saved profiles の両方で動作します。
 
-`stmb-context-settings.json`としてduplicate/import/export。
+referenced book/entry が消えた場合、STMB は warn して stale reference を skip し続行します。Context Setting 全体が deleted の場合、それを参照する chats は別 selection まで Additional Context なしで続行します。
+
+Context Settings は duplicate、import、`stmb-context-settings.json` として export できます。
 
 ### 20.5 Prior Side Prompt entry
 
-reviseするcurrent tracker state。古い全statementがtrueである証拠ではない。
+revise する current tracker text。古い statements が全て valid のままという evidence ではなく state です。
 
 ### 20.6 Consolidation sources
 
-実際にgroup/compressするlower-tier entries。
+group/compress 対象の actual material である lower-tier entries。
 
 ### 20.7 Previous higher-tier summary
 
-carry-forward canon。rewrite sourceではない。
+consolidation 中に carry forward される canon。rewrite する source ではありません。
 
-### 20.8 Workflow ordering
+### 20.8 Workflow ごとの correct ordering
+
+Ordinary Memory:
 
 ```text
 Memory prompt
@@ -1264,6 +1687,8 @@ Additional Context
 Previous Memories
 Current scene transcript
 ```
+
+Side Prompt:
 
 ```text
 Side Prompt instructions
@@ -1274,21 +1699,24 @@ Scene text
 Response Format
 ```
 
+Consolidation:
+
 ```text
 Consolidation prompt
 Previous higher-tier summary
 Selected lower-tier source entries
 ```
 
-target materialとreference-only materialを明確にlabel。
+prompt は target material と reference-only material を明確に label すべきです。
 
 ---
-
 ## 21. Prompt構造、組み込みSummary Prompt、作成ルール
 
-### 21.1 Ordinary Memory
+STMB には3つの主要な structured generation system と、複数の focused auxiliary workflow があります。
 
-期待JSON:
+### 21.1 Ordinary Memory generation
+
+STMB は1つの JSON object を期待します:
 
 ```json
 {
@@ -1298,295 +1726,498 @@ target materialとreference-only materialを明確にlabel。
 }
 ```
 
-rules: JSON objectのみ、exact keys、keywordsはstring array、short title、concrete retrieval terms、Markdownはcontent string内、quotesをescape。
+rules:
 
-STMBは一部のfence/trailing comma/think tag/wrapper/minor malformedをrepairできますが依存しない。
+- JSON object だけを返す;
+- exact keys `title`、`content`、`keywords` を使う;
+- `keywords` は JSON array of strings;
+- title は短く readable に;
+- concrete retrieval terms を使う;
+- desired Markdown は `content` string 内に置く;
+- quotation marks を正しく escape。
 
-強いPromptはstyle/compression、must-preserve continuity、omit content、exact schemaを定義。
+STMB は fences、trailing commas、think tags、wrappers、minor malformed output の一部を repair できますが、prompt は recovery に依存すべきではありません。
 
-### 21.2 Built-in Summary Prompts
+強い Memory prompt は次を明示します:
 
-ordinary Memory専用。Consolidation/Side Prompt/Topical/Compactionには影響しない。Profileの**Memory Creation Method**で選択。**Summary**が普通のdefault/fallback。
+1. desired memory style と compression level;
+2. preserve すべき continuity-relevant information;
+3. omit すべき filler、OOC、unsupported material;
+4. exact JSON schema。
 
-- **Summary**: ほとんどのユーザーのbest start。
-- **Comprehensive**: continuity-heavy long RP。causality/continuity/keywordsを強く管理するが要求が高い。
-- **Minimal**: token saving優先。nuanceを失う。
-- **Group + Character**: separate real-group/Narrator books向けtargeting。
+弱い prompt は style だけ指定して structure を指定しない、final object ではなく analysis を求める、previous context と current scene を混同する、abstract keywords を使う、といったものです。
 
-| Preset | 最適用途 | Trade-off |
+### 21.2 Built-in Summary Prompts と選び方
+
+これら presets は ordinary Memory generation 専用です。Consolidation、Side Prompts、Topical Clips、Compaction は制御しません。profile の **Memory Creation Method** で1つを選びます。profile が別 preset を指定しない場合、**Summary** が通常の fallback/default です。Built-in とは STMB が提供するという意味であり、全 preset が実行される、または全てが1つの chat に同程度適しているという意味ではありません。
+
+universal best prompt はありません。detail、readability、retrieval quality、token cost が互いに競合するためです。実用上の短い答え:
+
+- **多くのユーザーの最初の default: Summary。** balanced/general-purpose で、新 model の最初の test に適します。
+- **continuity-heavy long-running roleplay: Comprehensive。** filtering、causality、continuity、keyword guidance が最も強いですが、model への要求が高く、structured Memory が大きくなる場合があります。
+- **context tokens の節約が最優先: Minimal。** 意図的に brief で nuance を失います。
+- **separate real-group または Narrator character books: Group と Character。** profile の separate group/character prompt setting で組み合わせます。general-purpose styles の競合ではなく targeting prompts です。
+
+| Built-in prompt | 最適な用途 | 主な trade-off |
 |---|---|---|
-| **Summary** | solo/first setup。詳細なchronological narrativeとevents/interactions/developments/revelations/outcomes/keywords。 | token-minimalより詳細だが扱いやすい。 |
-| **Comprehensive** | long-running continuity-sensitive stories。causal chains、dynamics、facts、exchanges、threads、keywords。 | 最も長く高要求。能力あるmodelと十分なtokens。 |
-| **Summarize** | Timeline、Story Beats、Key Interactions、Notable Details、Outcomeのscannable Markdown。 | bullet-heavyで重複可能。 |
-| **Synopsis** | ほぼ全significant beat/detail/outcomeを残す。 | 長い。tight budget不向き。 |
-| **Sum Up** | heading/timeline付きchronological narrative、section overhead少なめ。 | category separation弱め。 |
-| **Minimal** | high-volume/low context、2～5文。 | motives/emotion/causality/minor continuityを落としうる。 |
-| **Northgate** | third-person past-tense literary record、actions/emotion/dialogue。SillyTavern DiscordのNorthgate由来。 | readability重視、OOC除外を明示しない。 |
-| **Aelemar** | major plot/emotional scenesをstandalone record化。Aelemar由来。 | 300語以上、token-saving不向き、OOC明示除外なし。 |
-| **Group** | shared/omniscient book、正しいmember attribution。 | individual character Memoryには不向き。 |
-| **Character** | target characterがdid/knew/felt/learned/concealed/misunderstood/affectedした内容。 | target無関係・unsupported private knowledgeを除外。 |
+| **Summary** | 多くの solo chats と初回 setup。important events、interactions、developments、revelations、outcomes、concrete retrieval keywords を含む detailed chronological narrative prose を生成。 | token-minimal user が必要とするより detail を保持するが、最も structured な presets より simple で demand が低い。 |
+| **Comprehensive** | causal chains、character dynamics、established facts、key exchanges、unresolved threads、disciplined keywords が重要な long-running continuity-sensitive stories。incidental detail を明示的に filter し keyword construction も改善。 | instructions が最長で demanding。instruction-following model と十分な response tokens が必要。 |
+| **Summarize** | Timeline、Story Beats、Key Interactions、Notable Details、Outcome に分けた highly scannable Markdown record を好む場合。 | bullet-heavy output は natural memory より reference notes に見えやすく、headings 間で facts が repeat する場合がある。 |
+| **Synopsis** | source scene がなくても nearly every significant beat、interaction、detail、outcome を残すことが compactness より重要な scene。 | intentionally long/comprehensive。lorebook/context budget が tight な場合に最も不向きな選択肢の1つ。 |
+| **Sum Up** | visible scene heading と timeline を持つ chronological narrative beat record が必要だが、Summarize/Synopsis ほど sectional overhead はいらない場合。 | events、character dynamics、facts、continuity state の explicit separation は少ない。 |
+| **Minimal** | high-volume chats、inexpensive archival coverage、または Memories が極めて少ない context しか使えない setup。brief 2〜5 sentence Memory を生成。 | motives、emotional shifts、causality、minor continuity details が失われる可能性。 |
+| **Northgate** | actions、emotional shifts、development、significant dialogue を重視した coherent third-person past-tense literary record を望む creative-writing users。この community style は SillyTavern Discord の Northgate に credit。 | maximum compression や明確に分離された reference categories より readable narrative を optimize。多くの general presets と違い built-in text が OOC を明示的に exclude しないため、OOC が多い場合は review。 |
+| **Aelemar** | major plot scenes と emotionally consequential character moments を、source scene がなくても standalone record として理解できるよう残す場合。この community style は SillyTavern Discord の Aelemar に credit。 | 最低300 words を要求し intentionally detailed。aggressive token saving には不向き。built-in text は OOC を明示的に exclude しない。 |
+| **Group** | real group の shared/omniscient Memory Book、または multi-book workflow の omniscient target。group decisions/state を保持しつつ actions、emotions、knowledge を正しい member に attribute。 | individual character の Memory として使わない。shared group continuity に意図的に focus。 |
+| **Character** | real-group/multi-character workflow の individual character-focused Memory Book。その character が何を did、knew、felt、learned、concealed、misunderstood、または何に affected されたか記録。 | target character に irrelevant な scene material を意図的に omit し、unsupported private knowledge を制限。 |
 
-新規installでは**Summary**でgeneration/retrievalを安定させ、Promptだけ変えて比較。omissionならComprehensive、sizeならMinimal。Promptはweak model、truncation、bad scene boundaries、bad retrievalを補えない。
+new installation では generation/retrieval が reliable に動くまで **Summary** を使ってください。その後 prompt だけ変更し、similar scenes の Memories を複数比較します。omitted causality、continuity state、weak keywords が問題なら **Comprehensive**、Memory size が問題なら **Minimal** を優先します。prompt 変更では weak model、truncated output、poor scene boundaries、incorrect retrieval settings は補えません。
 
-Built-insはactive localeでrecreate可能。customized built-inは先にduplicate/export。
+exact built-in text は current SillyTavern locale 用に recreate できます。recreate すると built-ins に対する local edits は失われますが、unrelated custom presets は削除されるべきではありません。modified built-in は recreate 前に duplicate/export してください。
 
-### 21.3 Multi-character target
+### 21.3 Multi-character prompt targeting
 
-`group` = canonical real-group/omniscient Narrator、`character` = individual book。scene/context未支持のknowledgeをinventしない。
+separate group/character prompts が enabled の場合、STMB は request target を次のように mark します:
+
+- canonical real-group または omniscient Narrator Memory では `group`;
+- individual character-book version では `character`。
+
+prompt は scene と supplied context にない knowledge を invent せず、target perspective を明示的に使うべきです。
 
 ### 21.4 Side Prompt authoring
 
-maintenance instructionとして、narrow job、prior tracker handling、stale removal、stable headings/length、final-only。
+Side Prompts は通常 plain text/Markdown を返します。Memory prompt ではなく maintenance instructions として書きます。
+
+強い Side Prompt は:
+
+- narrow job 1つを定義;
+- previous tracker の使い方を説明;
+- stale state を削除;
+- stable headings/length limits を強制;
+- final tracker だけを返す。
 
 ### 21.5 Consolidation authoring
 
-17.5 schema。chronology、smallest coherent summaries、`member_ids`、`unassigned_items`、major continuity、concrete keywords。**Regenerate Consolidation**はreplacement専用。
+ordinary consolidation は Section 17.5 の schema が必要です。強い prompt は:
+
+- chronology を保持;
+- smallest coherent number of summaries を作る;
+- used source 全てを `member_ids` で割り当て;
+- leftovers を `unassigned_items` で識別;
+- major changes と unresolved continuity を保持;
+- concrete keywords を使う。
+
+dedicated **Regenerate Consolidation** preset は replacement summary 1つ用で、normal consolidation default として選択できません。
 
 ### 21.6 Topical Clip authoring
 
-`{{SOURCE_MEMORIES}}`必須（使用時）。topic focus、evidence/inference、existing content merge、contradictions。
+prompt は `{{SOURCE_MEMORIES}}` を含み、requested topic に focused、source evidence と inference を区別し、new material を existing Clip content に merge し、contradictions を表面化する必要があります。
 
 ### 21.7 Compaction authoring
 
-`{{ENTRY_CONTENT}}`必須。unsupported factsを増やさず、required wrappers/macros保持。
+prompt には `{{ENTRY_CONTENT}}` が必須で、unsupported facts を追加せず短縮すべきです。entry が必要とする structural wrappers と macros を保持します。
 
-### 21.8 Checklist
+### 21.8 Prompt-writing checklist
 
-1. analysis target?
-2. reference-only?
-3. strict JSON or final text?
-4. later retrievalに何を残す?
-5. omit/merge/carry/unassignは?
+STMB prompt を final にする前に答えること:
 
-format correctnessがstyleより先。
+1. actual analysis target はどの material か。
+2. reference-only material は何か。
+3. この path は strict JSON か final plain text のどちらを期待するか。
+4. later retrieval 用に何を survive させる必要があるか。
+5. 何を omit、merge、carry forward、または unassigned にするか。
+
+return-format correctness は style より優先します。
 
 ---
 
 ## 22. Summary Prompt ManagerとConsolidation Prompt Manager
 
-Summary Manager: ordinary Memory presetsのcreate/edit/duplicate/delete/import/export。profileからassign。required JSON schema維持。
+### Summary Prompt Manager
 
-Consolidation Manager: lower→higher promptsとnormal default。regeneration-only presetはordinary default不可。
+ordinary Memory prompt presets を create、edit、duplicate、delete、import、export できます。Memory Books profile から preset を assign します。
 
-Built-insはlocaleでrecreate可能。custom editsはbackup。
+ordinary Memory presets は全て required Memory JSON schema を維持する必要があります。
+
+built-in Summary Prompt selection guide と best-use cases は Section 21.2 を参照してください。
+
+### Consolidation Prompt Manager
+
+lower-tier entries を higher-tier summaries に group する prompts を制御し、normal default consolidation prompt を選択します。
+
+regeneration-only consolidation preset は ordinary consolidation には使用できません。
+
+### Import と localization behavior
+
+built-in prompts は current app locale で recreate できます。locally modified built-ins は recreate 前に backup してください。
 
 ---
 
 ## 23. STMBと他の拡張機能
 
-SillyTavernの拡張機能は並行して動作し、同じSillyTavern dataを読み取ったり変更したりすることがある。STMBが他の拡張機能をoverrideまたはdisableしたり、他の拡張機能より高いpriorityを持ったりすることはない。拡張機能の動作が重なる場合、最終結果は関係する各拡張機能の設定と実行タイミングによって決まる。
+SillyTavern extensions は並行して動作し、同じ SillyTavern data を読み書きする場合があります。STMB は別 extension を override、disable、または優先順位付けしません。behavior が overlap する場合、最終結果は関係する全 extension の settings と timing に依存します。
 
-### 23.1 共有されるmessage visibility
+### 23.1 Shared message visibility
 
-Chat messageがhiddenかどうかは、SillyTavernで共有されるmessage stateの一部である。STMBだけが所有するstateではない。
+chat message が hidden かどうかは SillyTavern の shared message state の一部です。STMB 専有 state ではありません。
 
-STMBの**Token Saving**設定は、Memoryの保存後に処理済みmessageをhideできる。別の拡張機能がそのmessageを後からunhideすることがあり、STMBはそれを阻止しない。同様に、**Unhide hidden messages for memory generation**は、STMBがselected rangeを処理またはregenerateしている間にmessageをunhideすることがある。
+STMB の **Token Saving** settings は Memory 保存後に processed messages を hide できます。その後別 extension が reveal でき、STMB はそれを防ぎません。同様に **Unhide hidden messages for memory generation** は selected range を STMB が process/regenerate 中に reveal する場合があります。
 
 ### 23.2 Presence
 
-Presence拡張機能とSTMBはどちらも、chat messageのhidden/visible stateを変更できる。PresenceがSTMBによってhideされたmessageをunhideしても、STMBのToken Saving設定が消去または無視されたわけではない。Presenceの後続actionが、同じSillyTavern message stateを変更した結果である。
+Presence extension と STMB はどちらも chat message の hidden/visible state を変更できます。Presence が STMB により hidden になった messages を reveal しても、STMB の Token Saving setting が erased/ignored されたわけではありません。Presence の later action が同じ SillyTavern message state を変更したということです。
 
-Presenceを使用し、STMBによってhideされたmessageをhiddenのまま維持したい場合は、Presence自身のhidden-message lock機能を使用する。Presenceは現在、この目的のために`/presenceLockHiddenMessages` commandを提供している。対象message rangeに対して実行し、そのrangeが広がったら再度実行する。現在のcommand動作はPresenceのdocumentationを参照。
+Presence を使い、STMB により hidden になった messages を hidden のままにしたい場合は Presence 独自の hidden-message locking feature を使います。Presence は現在この用途に `/presenceLockHiddenMessages` command を提供しています。applicable message range に対して実行し、range が伸びるにつれて繰り返してください。current command behavior は Presence documentation を参照してください。
 
-STMBがPresenceを自動で設定または呼び出すことはない。また、STMBのgroup chat participant管理はToken Savingとは無関係である。
+STMB は Presence を自動設定/実行せず、group-chat participant handling は Token Saving と無関係です。
 
-### 23.3 Regex連携
+### 23.3 Regex integration
 
-1. **Outgoing/User Input**: send前にassembled promptをtransform。
-2. **Incoming/AI Output**: parse/save前にraw responseをclean。
+STMB は SillyTavern Regex extension と2段階で統合します:
 
-**Use regex (advanced)** → **Configure regex** → scripts。
+1. **Outgoing/User Input:** assembled prompt を送信前に transform。
+2. **Incoming/AI Output:** raw response を parsing/saving 前に clean/standardize。
 
-STMB selectionがexecutionを制御し、通常Regex UIでdisabledでもrunしうる。
+**Use regex (advanced)** を有効にし、**Configure regex** を開き、各 direction に script を1つ以上選択します。
 
-bad outgoingはschema instructionsを、bad incomingはvalid JSONを破壊する可能性。
+重要: STMB 独自の selection が execution を制御します。STMB で selected な script は Regex extension の normal interface で disabled でも実行できます。
+
+Regex は transformation を理解している場合だけ使ってください。bad outgoing rule は required schema instructions を corrupt し、bad incoming rule は valid JSON を corrupt する可能性があります。
 
 ---
 
 ## 24. Lorebookエントリのタイトルと文字ポリシー
 
-### 24.1 Placeholders
+### 24.1 Title placeholders
 
-`{{title}}`、`{{scene}}`、`{{char}}`、`{{groupname}}`（current group display name。group外は`Unknown`）、`{{present}}`（sceneにいるcharactersのcomma-separated list。groupのspeakers、Narrator Modeのselected Active Cast、通常chatのcurrent character）、`{{user}}`、`{{messages}}`、`{{profile}}`、date/time placeholders。
+profile title formats は次を使用できます:
 
-### 24.2 Numbering
+- `{{title}}` — AI-generated title;
+- `{{scene}}` — source range;
+- `{{char}}` — character/group name;
+- `{{groupname}}` — current group の display name。group chat 外では `Unknown`;
+- `{{present}}` — scene に present な characters の comma-separated list。group chat では individual speakers、Narrator Mode では scene の selected Active Cast、regular character chat では current character;
+- `{{user}}` — user name;
+- `{{messages}}` — scene message count;
+- `{{profile}}` — profile name;
+- supported date/time placeholders。
+
+### 24.2 Auto-numbering
+
+supported numbering tokens には次の形式があります:
 
 ```text
 [0] [00] (0) {0} #0
 #[000] ([000]) {[000]}
 ```
 
-sequential zero-padded。
+STMB は chosen format に従い sequential、zero-padded numbers を assign します。
 
-### 24.3 Unicode
+### 24.3 Printable Unicode
 
-printable Unicodeすべて可（emoji、accented、CJK、symbols）。U+0000–U+001F/U+007F–U+009F control charsはremove。Auto-Create filenamesは別途sanitize。
+emoji、accented text、CJK、symbols を含む printable Unicode characters は全て title で使用できます。U+0000–U+001F と U+007F–U+009F の Unicode control characters は削除されます。
+
+Auto-Create が使う lorebook filenames は filesystem-reserved characters と length について別途 sanitize されます。
 
 ---
 
 ## 25. Job QueueとRetry操作
 
-optional Chat Top Barが必要。Memory/Consolidation/Side Prompt regenerationでjob作成、replacementはapprovalまでreview。
+optional queue には Chat Top Bar / Chat Top Info Bar が必要です。queue が利用可能な場合、Memory、consolidation、Side Prompt の regeneration は regeneration job を作成し、replacement は approve されるまで review のままです。
 
-statuses: queued、active、completed、failed、canceled、blocked、Needs Review。
+**Memory Books Jobs** drawer は次を表示できます:
 
-range jobsはstart/end numbers表示。cancel、reopen review、inspect failure、retry、dismiss可能。
+- queued;
+- active;
+- completed;
+- failed;
+- canceled;
+- blocked;
+- Needs Review。
 
-- **Retry**: non-Memory job。
-- **Retry All**: Memory + after-Memory Side Prompts。Memory already savedならduplicateせずresume可。
-- **Retry Memory**: Memoryのみ、after prompts skip。
+chat range を process する jobs は queue rows に starting/ending message numbers を表示します。drawer では active work を cancel、review jobs を reopen、failures を inspect、work を retry、terminal history rows を dismiss できます。
 
-Top Barなしでもworkflow自体は動く。
+Retry scopes:
+
+- **Retry:** Side Prompt/consolidation など non-Memory job 1つを rerun。
+- **Retry All:** Memory と associated after-Memory Side Prompt work を rerun/resume。Memory が既に saved なら duplicate せずその result から resume できる。
+- **Retry Memory:** Memory だけを rerun/resume し、after-Memory Side Prompts は intentional に skip。
+
+combined workflow を restore するなら Retry All、tracker work を走らせたくないなら Retry Memory を使います。
+
+Chat Top Bar がなくても STMB は normal workflows を実行しますが queue UI はありません。
 
 ---
 
 ## 26. 視覚的フィードバックとアクセシビリティ
 
-scene controlsのinactive/selected/valid/in-scene/processing states。colorsはtheme依存。
+STMB は scene controls に inactive、selected、valid range、in-scene、processing などの visual states を提供します。exact colors は SillyTavern theme に依存します。
 
-keyboard、focus indicators、ARIA、reduced motion、mobile-friendly。
+accessibility support:
 
-Screenshot案内では色でなくvisible icon/label。
+- keyboard navigation;
+- focus indicators;
+- ARIA attributes;
+- reduced-motion behavior;
+- mobile-friendly controls。
+
+screenshot から教えるときは specific color に頼らず、visible icon と label を説明してください。
 
 ---
-
 ## 27. 設定マップと現行設定リファレンス
 
-基本path: **magic-wand Extensions → Memory Books**。
+この section は settings map です。user-facing STMB configuration controls がどこにあり、何を制御するかを示します。また specialized interfaces にある重要な saved controls と one-run controls も一覧化します。特定の Clip、Topical Clip、Compaction、preview を作るためだけに使う one-time content fields は、それぞれの workflow section に記載し、ここでは繰り返しません。
 
-scope: Global / Per chat / Per character / Per profile-template-setting / Per run。
+一般的な開始 path:
 
-### 27.1 Main panel
+**chat input 横の magic-wand Extensions menu → Memory Books**
 
-| Setting | Location | Scope | 機能 |
+以下の paths は、明示的に **SillyTavern** と書かれていない限り、**Memory Books** main panel から始まります。control は current chat、provider、profile、storage mode に適用されない場合 hidden/disabled になることがあります。
+
+以下で使う scope:
+
+- **Global:** narrower setting が override しない限り STMB 全体に適用。
+- **Per chat:** current chat/group に保存。
+- **Per character:** compatible chats 間で character card に追従。
+- **Per profile/template/setting:** reusable object 内に保存。
+- **Per run:** 現在準備中の operation だけに適用。
+
+### 27.1 Main panel: storage、chat mode、active profile
+
+| Setting | Location | Scope | What it does |
 |---|---|---|---|
-| **Enable Manual Lorebook Mode** | Current Lorebook Configuration | global mode; book per chat | chat-bound targetをやめmanual book必須。Auto-Createと排他。 |
-| **Selected manual Memory Book** | manual controls | per chat | main book。Narratorではomniscient。 |
-| **Group-character Memory Book assignments** | group rows | per chat | characterごとのbook。STLO必要。 |
-| **Character Memory Book lock** | lock icon | per character | compatible chats間でassignment固定。 |
-| **Narrator Mode** | current config | per chat | main manualをomniscientにしdeclared unique booksを有効化。 |
-| **Manage Narrator Cast** | Narrator/Active Cast | per chat | add/retire/restore/assign。 |
-| **Auto-create lorebook if none exists** | current config | global | Automatic Modeでbook作成/bind。 |
-| **Lorebook Name Template** | Auto-Create下 | global | `{{char}}`, `{{user}}`, `{{chat}}`。 |
-| **Memory profile selection** | Memory Profiles | per run | next Memory profile。 |
-| **Set as Default** | Profile Actions | global | default profile。 |
-| **Memory Title Format** | Profiles/Edit | per profile | title/numbering。 |
+| **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Global mode; book choice は per chat | normal chat-bound lorebook を STMB automatic target として使うのをやめ、current chat 用 Memory Book の選択を要求します。Auto-Create Lorebook Mode と同時に有効にできません。 |
+| **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls**; Manual Mode で表示 | Per chat | この chat で Memories を受け取る main Memory Book を選びます。Narrator Mode では omniscient book です。 |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; Manual Mode の real group で表示 | Per chat | real-group member ごとに separate Memory Book を assign します。これら assignments の設定と corresponding character-filtered retrieval behavior には STLO が必要です。 |
+| **Character Memory Book lock** | character の Memory Book assignment 横の lock icon | Per character | compatible Manual Mode chats 間で character card に同じ Memory Book を assign し続けます。assignment を変更する前に unlock してください。 |
+| **Narrator Mode** | **Current Lorebook Configuration**; normal non-group chats only | Per chat | selected manual book を omniscient Memory Book として使い、それぞれ unique book を持つ declared fictional cast members を有効にします。Manual Mode と omniscient book が必要です。 |
+| **Manage Narrator Cast** | **Narrator Mode** 下; Active Cast drawer からも利用可能 | Per chat | declared Narrator characters を add、retire、restore し、unique Memory Books を assign します。 |
+| **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | Automatic Mode で chat に lorebook がないとき作成して bind します。Manual Mode と同時に有効にできません。 |
+| **Lorebook Name Template** | **Auto-create lorebook if none exists** の直下 | Global | auto-created books を命名します。`{{char}}`、`{{user}}`、`{{chat}}` を support。Auto-Create Lorebook Mode 有効時だけ使用されます。 |
+| **Memory profile selection** | **Memory Profiles** selector | Per run | next Memory と隣接 profile actions 用 profile を選びます。この selection だけでは saved default は変わりません。 |
+| **Set as Default** | **Memory Profiles → Profile Actions** | Global default | selected profile を automatic Memories その他 workflows の default にします。confirmation、Side Prompt override、workflow-specific choice が別 profile を選ぶ場合を除きます。 |
+| **Memory Title Format** | **Memory Profiles → Memory Title Format** または **Profile Actions → Edit Profile** | Per profile | new Memory entry titles と optional numbering を listed title macros で format。main-panel control は default profile の format を edit し、**Edit Profile** は selected profile を直接変更します。 |
 
 ### 27.2 General Settings
 
-| Setting | Scope | 機能 |
+main panel の **Settings → General Settings** を開きます。
+
+| Setting | Scope | What it does |
 |---|---|---|
-| **Always use default profile (no confirmation prompt)** | Global | confirmation skip、Catch-Up必須。 |
-| **Automatically accept detected participants in future** | Global | group participants自動accept。 |
-| **Show memory previews** | Global | editable review。 |
-| **Show consolidation previews** | Global | consolidation review。 |
-| **Show notifications** | Global | toasts。 |
-| **Show floating Clip button when text is highlighted** | Global | scissors。 |
-| **Memory boundary indicator** | Global | divider/jump。 |
-| **Allow scene overlap** | Global | existing Memory range overlap許可。 |
-| **Refresh lorebook editor after adding memories** | Global | write後editor refresh。 |
-| **Copy Memory Books when branching** | Global | unlocked books copy、locked shared。 |
-| **Auto-rollback after message deletion** | Global | processed chatにmessage deletion/truncationがかかった時のcoordinated rollback。default off。通常edit/swipeは対象外。 |
-| **Update last message ID processed** | Global; Auto-Rollback action | processed checkpointを最新surviving Memory末尾へ。Memoryがなければclear。 |
-| **Delete last Memory** | Global; Auto-Rollback action | rollback scopeでinvalidになったMemoriesとlinked copiesを削除。Memory/consolidation deleteは不可逆。 |
-| **Restore previous Side Prompts** | Global; Auto-Rollback action | unchanged affected Side Promptをlatest exact before-stateへrestore。1 rollback levelのみ。 |
-| **Default for solo chats** | Global | solo Side Prompt Set。 |
-| **Default for group chats** | Global | group set。 |
-| **Max Response Tokens** | Global | STMB output override、`0` fallback。 |
-| **Token Warning Threshold** | Global | input size warning。 |
-| **Default Previous Memories Count** | Global | 0–7。 |
-| **Use regex (advanced)** | Global | Regex enable。 |
-| **Configure regex… → Outgoing scripts** | Global | pre-send。 |
-| **Configure regex… → Incoming scripts** | Global | pre-parse/save。 |
+| **Always use default profile (no confirmation prompt)** | Global | normal pre-generation confirmation window を skip。non-interactive catch-up に必須です。independent warnings と enabled previews は引き続き表示される場合があります。 |
+| **Automatically accept detected participants in future** | Global | real-group participant confirmation を今後表示せず、STMB の detected participant set を受け入れます。 |
+| **Show memory previews** | Global | generated Memories と applicable Side Prompt output を save 前に editable review で表示します。 |
+| **Show consolidation previews** | Global | generated consolidation candidates を commit 前に review します。 |
+| **Show notifications** | Global | STMB toast notifications を有効にします。 |
+| **Show floating Clip button when text is highlighted** | Global | chat text 選択後に floating scissors control を表示します。 |
+| **Memory boundary indicator** | Global | control なし、processed-boundary divider、draggable jump button、または両方を表示します。 |
+| **Allow scene overlap** | Global | selected scene range が existing Memory にすでに represented message IDs と overlap することを許可します。 |
+| **Refresh lorebook editor after adding memories** | Global | STMB が entry を書いた後、open lorebook editor を refresh し new content を即表示します。 |
+| **Copy Memory Books when branching** | Global | native chat branch に active unlocked chat-bound/manual Memory Books の independent copies を与えます。character-locked books は design 上 shared のままです。 |
+| **Auto-rollback after message deletion** | Global | deletion/truncation が already processed chat material と intersect したとき coordinated rollback を有効にします。default は disabled。ordinary message edits と swipes は trigger しません。 |
+| **Update last message ID processed** | Global; Auto-rollback action | processed checkpoint を newest surviving Memory の end に移動し、surviving Memory がなければ clear します。 |
+| **Delete last Memory** | Global; Auto-rollback action | rollback scope で selected な invalidated Memory 全てと linked copies を delete します。Memory/consolidation deletion は irreversible です。 |
+| **Restore previous Side Prompts** | Global; Auto-rollback action | unchanged affected Side Prompt ごとに latest exact saved before-state を restore します。rollback level は1つだけ保持されます。 |
+| **Default for solo chats** | Global | Memory 後に solo chats が inherit する Side Prompt Set を選びます。empty selection は individually enabled after-Memory Side Prompts を使用します。 |
+| **Default for group chats** | Global | Memory 後に real group chats が inherit する Side Prompt Set を選びます。empty selection は individually enabled after-Memory Side Prompts を使用します。 |
+| **Max Response Tokens** | Global | STMB generation の maximum output length を override。otherwise valid JSON が cut off する場合増やします。`0` は normal provider/SillyTavern behavior を fallback として残します。 |
+| **Token Warning Threshold** | Global | estimated input request が threshold を超えた場合 confirmation warning を表示します。model context limit 自体は変更しません。 |
+| **Default Previous Memories Count** | Global | new Memory に continuity context として供給する prior Memories の normal default を0–7で設定。run ごとに **Advanced Memory Options** で override 可能。 |
+| **Use regex (advanced)** | Global | STMB 独自の regex-processing selection を有効にします。underlying SillyTavern regex script の一般 enablement とは別です。 |
+| **Configure regex… → Outgoing scripts** | Global | generation provider に送る前に STMB が material に実行する scripts を選びます。 |
+| **Configure regex… → Incoming scripts** | Global | returned material を parse/save する前に STMB が実行する scripts を選びます。 |
 
-#### Memory Auto-Rollback
+#### General Settings 内の Memory Auto-Rollback
 
-**Auto-rollback after message deletion**がmaster。3 action checkboxは独立選択、default enabledだがmaster off中はdisabled表示なので、upgradeだけで削除は始まらない。
+**Auto-rollback after message deletion** は master preference です。3つの action checkboxes は independently selectable、default enabled で、master switch が off の間は visually disabled です。したがって existing installation は upgrade しただけでは何も delete し始めません。
 
-対象はmessage deletion/truncation（response regenerationのdeletion phase含む）のみ。edit/swipeは対象外。middle deletionを正確に扱うためSTMBはactual message identitiesを追跡する。
+Auto-rollback は message deletion/truncation にだけ反応し、response regeneration の deletion phase も含みます。ordinary edit または swipe には反応しません。SillyTavern の deletion event value は middle deletion を reliably identify しないため、STMB は各 chat の actual message identities を track します。
 
-Tail deletionはremoved suffixとsource rangeが重なるMemoriesが対象。Middle deletionは **Full rollback**（affected + newer Memoriesを削除）、**Affected only**（overlapのみ削除しnewerを維持、ranges/Side Prompt checkpoints/processed checkpointをshift。coverage gapが残る）、**Cancel**。
+tail deletion では removed suffix と stored source range が intersect する全 Memory が affected です。chat middle の deletion では STMB は3つの choices を尋ねます:
 
-Rollbackはexact `STMB_chatId`、source-range、canonical/link metadataを使用。canonical group/Narrator Memory + discoverable linked copiesは1 deletion unit。missing canonical、ambiguous legacy identity、malformed range、incomplete consolidation dependencyなら全体停止してrepair guidance。ownershipは推測しない。
+- **Full rollback** — affected Memory とそれ以降の newer Memories 全てを delete。
+- **Affected only** — overlapping Memories だけ delete、newer Memories は preserve し、stored ranges、relevant Side Prompt checkpoints、processed checkpoint を deletion count 分 shift。これは意図的に Memory coverage に permanent gap を残します。
+- **Cancel** — Memory Books の変更なし。
 
-**Delete last Memory**時はdirect/transitive consolidation parentsをpreflightし、必要なconsolidationsをcombined confirmation。Cancelなら全変更を中止。Approveならancestors削除、deleted consolidationがdisabledにしたexisting direct sourcesをre-enableして`disabledBySummaryId`をclearし、base Memoriesを削除。user独自disableは触らない。
+rollback は available Memory Books 全体で exact `STMB_chatId`、source-range、canonical/link metadata を使います。canonical group/Narrator Memory と discoverable linked copies 全てが1つの deletion unit です。missing canonical copies、十分な chat identity がない ambiguous legacy entries、malformed ranges、incomplete consolidation dependencies がある場合、entire rollback を stop して repair guidance を示します。STMB は ownership を推測しません。
 
-Save前にcomplete lorebook fingerprintsを再確認し、serialized write lanesでsorted write。後続失敗用のunchanged pre-write cloneを保持。chat checkpointは全lorebook write成功後のみ変更。queued workはpreflight前cancel、active non-queued Memory creationは完了待ち。
+**Delete last Memory** を選んだ場合、STMB は affected Memory Book ごとに direct/transitive consolidation parent 全てを preflight します。1つの combined confirmation に delete が必要な consolidations が表示されます。その confirmation を cancel すると checkpoint、Memory、Side Prompt changes も全て cancel されます。approve すると consolidation ancestors を delete し、deleted consolidation によって disabled だった existing direct source を re-enable して `disabledBySummaryId` backlink を clear し、その後 selected base Memories を delete します。user が independently disabled にした entries は enable されません。
 
-Side Prompt rollbackはversion-2 snapshotを使用。entry existed、exact prior state、source chat/range、written-state fingerprintを記録。rolled-back runが作成したentryはdelete。current entryがfingerprint不一致ならuser/later run変更とみなし保持。version-1はregeneration可だがrollback不可。restore成功でsnapshotをconsumeするため次runまでは再rollback不可。複数Memories同時rollbackでは各Side Promptのlatest before-stateのみ戻せる。
+save 前に STMB は complete lorebook fingerprints を recheck します。lorebooks は normal serialized write lanes を通じて sorted order で書かれ、later book が失敗した場合の compensating saves 用に unchanged pre-write clones が保持されます。Chat checkpoint metadata は every lorebook write が成功した後だけ変更されます。chat の queued work は preflight 前に cancel され、active non-queued Memory creation は rollback 開始前に finish することを許可されます。
 
-Token Saving:
-- **Auto-hide messages after adding memory**: none/all processed/last range。
-- **Messages to leave unhidden**: recent overlap、0ならendまで。
-- **Unhide hidden messages for memory generation**: `/unhide X-Y`相当。
+Side Prompt rollback は version-2 regeneration snapshots を使います。各 snapshot は entry が存在していたか、older rollback snapshot を除く exact prior state、source chat/range、STMB が書いた state の fingerprint を記録します。rolled-back run が entry を作成した場合は rollback が delete します。current entry が saved fingerprint と一致しない場合、STMB は user または later run が変更したと判断し、そのまま残します。Version-1 snapshots は regeneration を support しますが rollback には安全性が不十分なため warning とともに skip されます。successful restore は snapshot を consume するため、その Side Prompt は再び run するまで2回目の rollback はできません。複数 Memories をまとめて rollback する場合、各 Side Prompt について restore できるのは latest available before-state だけです。older rolled-back runs が導入した information が残る場合があります。
 
-### 27.3 Automatic Memories
+#### General Settings 内の Token Saving
 
-**Auto-create memory summaries**、**Auto-Summary Interval**、**Auto-Summary Buffer**、**Prompt for consolidation when a tier is ready**（yes/laterのみ）、**Auto-Consolidation Tiers**。
+これら controls は同じ **General Settings** popup の下部、**Token Saving (Hide/Unhide Messages)** にあります。
 
-### 27.4 Profile Editor
+| Setting | Scope | What it does |
+|---|---|---|
+| **Auto-hide messages after adding memory** | Global | no automatic hiding、latest Memory までの全 processed messages、latest Memory が使った range だけ、から選びます。Hiding は reversible で message を delete しません。 |
+| **Messages to leave unhidden** | Global | auto-hide 時にこの数の recent messages を visible のまま残し、Memory boundary 近くの overlap を維持します。`0` は applicable scene end まで hide。 |
+| **Unhide hidden messages for memory generation** | Global | STMB が source range を compile する前に `/unhide X-Y` 相当を実行。successful save 後に何を hide するかは selected auto-hide mode に従います。 |
 
-| Setting | 機能 |
+### 27.3 Automatic Memories と consolidation reminders
+
+main panel の **Settings → Automatic Memories** を開きます。
+
+| Setting | Scope | What it does |
+|---|---|---|
+| **Auto-create memory summaries** | Global | automatic `/nextmemory`-style Memory creation を有効にします。processed baseline がなくても current STMB は message 0 から開始可能。最初の manual Memory は setup validation と deliberate starting boundary のため依然推奨。 |
+| **Auto-Summary Interval** | Global | normal automatic cadence 1回あたりの message 数を設定します。 |
+| **Auto-Summary Buffer** | Global | otherwise ready automatic range から newest messages をこの数だけ除外し、live conversation より少し遅れて generation します。 |
+| **Prompt for consolidation when a tier is ready** | Global | monitored tier が saved eligible-source minimum に達すると yes/later prompt を表示。silently consolidation はしません。 |
+| **Auto-Consolidation Tiers** | Global | readiness prompts を監視する target tiers を選びます。各 tier の minimum は **Consolidate Memories** で保存されます。 |
+
+### 27.4 Profile editor
+
+**Memory Profiles** で profile を選び、**Profile Actions → Edit Profile** を開きます。特記がなければこれらは **per profile** settings です。built-in **Current SillyTavern Settings** profile は SillyTavern が制御する fields を意図的に lock しています。
+
+| Setting | What it does |
 |---|---|
-| **Profile Name** | reusable name |
-| **API/Provider** | Current ST/provider/Custom/Full Manual |
-| **Use this connection profile** | active/named Custom |
-| **Skip structured output and use plain-text completion** | schema送信なし、JSONは必要 |
-| **Use ST's ChatCompletionService** | ST helper |
-| **Chat Completion Preset** | optional preset |
-| **Model** | exact ID |
-| **Temperature** | randomness |
-| **Use reverse proxy** | ST proxy |
-| **API Endpoint URL / API Key** | Full Manual only |
-| **Memory Creation Method** | Summary preset |
-| **Use separate group and character prompts in group chats** | separate presets |
-| **Group Summary Prompt / Character Summary Prompt** | selections |
-| **Memory Title Format** | title |
-| **Activation Mode** | Normal/Constant/Vectorized |
-| **Insertion Position** | Character/Example/Author's Note/Outlet |
-| **Outlet Name** | Outlet |
-| **Insertion Order** | Auto/Manual/Reverse |
-| **Prevent Recursion** | recursive trigger防止 |
-| **Delay Until Recursion** | first scan activation防止 |
-| **Also include** | legacy profile only |
+| **Profile Name** | reusable STMB profile の名前。built-in profile name は locked。 |
+| **API/Provider** | current SillyTavern routing、supported provider、Custom OpenAI-compatible connection、Full Manual Configuration のいずれかを選びます。 |
+| **Use this connection profile** | **Custom OpenAI-Compatible API** では active SillyTavern Custom connection または named Custom connection 1つを使用。saved URL/secret が使われ、STMB **Model** は model override のまま。 |
+| **Skip structured output and use plain-text completion** | provider が schema を拒否する場合 structured-output schema を送らなくします。selected prompt は引き続き STMB required valid JSON を model に返させる必要があります。 |
+| **Use ST's ChatCompletionService** | supported requests を SillyTavern built-in Chat Completion request helper 経由で route。Full Manual profiles では unavailable。 |
+| **Chat Completion Preset** | ChatCompletionService 経由で SillyTavern Chat Completion preset を optional 適用。 |
+| **Model** | profile の exact model ID。**Current SillyTavern Settings** は代わりに SillyTavern active model を読みます。 |
+| **Temperature** | profile generation randomness。**Current SillyTavern Settings** は SillyTavern active temperature を読みます。 |
+| **Use reverse proxy** | supported providers に SillyTavern configured reverse-proxy details を渡します。Full Manual Configuration では secret field は proxy password と表示。 |
+| **API Endpoint URL / API Key** | **Full Manual Configuration** 専用 separate direct endpoint/credential。normal use は SillyTavern で設定・test 済み connection を優先。 |
+| **Memory Creation Method** | ordinary Memory generation に使う Summary Prompt preset。prompt content は **Settings → Summary Prompt Manager** で管理。 |
+| **Use separate group and character prompts in group chats** | group Memory Book と character-focused Memory Books に distinct prompt presets を使います。 |
+| **Group Summary Prompt / Character Summary Prompt** | separate group/character prompting enabled 時の2 presets を選びます。 |
+| **Memory Title Format** | profile 生成 Memories の title text、macros、automatic numbering を制御。 |
+| **Activation Mode** | new entries を **Normal** keyword activation、**Constant**、**Vectorized** で保存。 |
+| **Insertion Position** | generated entry を Character、Example Messages、Author's Note、named Outlet に対してどこへ insert するか選択。 |
+| **Outlet Name** | **Insertion Position** が **Outlet** のとき target Outlet を指定。 |
+| **Insertion Order** | **Auto** は Memory number から order を derive、**Manual** は fixed value、**Reverse** は starting value から countdown し Outlets 専用。 |
+| **Prevent Recursion** | generated entry content が recursive scan 中に別 lorebook entries を trigger するのを防ぎます。 |
+| **Delay Until Recursion** | generated entry が first scan pass で activate するのを防ぎます。recursion を開始できる他のものがない場合は off。 |
+| **Also include** | legacy-profile compatibility 専用。older profiles では ordered lorebook references が表示される場合があります。current configuration は per-chat **Context Settings** を使います。 |
 
-Current ST live valuesはSillyTavern側。
+active SillyTavern provider、model、temperature、connection preset、reverse proxy は STMB ではなく SillyTavern 自身の connection controls で設定します。**Current SillyTavern Settings** profile はそれら live values を読みます。
 
 ### 27.5 Context Settings
 
-**Additional Context for this chat**、**Context Setting Name**、**Additional Context entries and order**。New/Duplicate/Delete/Import/Exportは管理操作。
+main panel の **Settings → Context Settings** を開きます。
+
+| Setting | Scope | What it does |
+|---|---|---|
+| **Additional Context for this chat** | Per chat | named Context Setting 1つを選ぶ、明示的に **No Context** を保存、または choice を unset のままにして migrated context に decision が必要な場合 STMB に prompt させます。 |
+| **Context Setting Name** | Per Context Setting | reusable Additional Context collection を命名。 |
+| **Additional Context entries and order** | Per Context Setting | stable reference material として送る lorebook entries を選び、その order を決めます。missing entries は warn され skip。 |
+
+**New**、**Duplicate**、**Delete**、**Import JSON**、**Export JSON** は Context Settings を管理します。chat または Side Prompt が setting を select するまでは generation behavior は変えません。
 
 ### 27.6 Trackers & Side Prompts
 
-after-memory mode per chat、concurrency 1–10、Set Name、Row template/label/macros/order、Enabled、visible interval、auto-after-memory、manual `/sideprompt`、Prompt/Response Format、Previous Memories 0–7、Additional Context follow/fixed、Lorebook Target、title/keywords、activation/insertion/outlet、order、recursion/Ignore Budget、profile override、Memory Assistance Mode、Update/Topic prompts、Memory Assistance profile override。
+main panel の **Settings → Trackers & Side Prompts** を開きます。
+
+| Setting | Location and scope | What it does |
+|---|---|---|
+| **After-memory side prompt mode for this chat** | Manager main screen; per chat | matching solo/group default、明示的な individually enabled after-Memory prompts、または named Side Prompt Set 1つをこの chat に使用します。 |
+| **How many concurrent prompts to run at once** | Manager main screen; global | simultaneous Side Prompt jobs を1–10に制限。 |
+| **Side Prompt Set Name** | **New Set** または edit set; per set | reusable ordered group of Side Prompt runs を命名。 |
+| **Side Prompt / Row Label / Macro Values** | Side Prompt Set row; per set | row の template、optional display/title label、literal または set-level runtime macro values を設定し、row order を execution order として使用。 |
+| **Enabled** | **New** または ordinary Side Prompt edit; per template | chat が individually enabled after-Memory prompts を使う場合 template を eligible にします。trigger settings は依然 when it runs を決定。 |
+| **Run on visible message interval / Interval** | Side Prompt editor; per template | configured visible message count 後に実行。template が unresolved runtime macros を必要とする場合 automatic triggers は unavailable。 |
+| **Run automatically after memory** | Side Prompt editor; per template | successful Memory 後に template を実行。chat の Side Prompt mode/selected set に従います。 |
+| **Allow manual run via `/sideprompt`** | Side Prompt editor; per template | explicit manual execution を許可。 |
+| **Prompt / Response Format** | Side Prompt editor; per template | instruction と optional output structure を定義。両 field は supported Side Prompt macros を使用可能。 |
+| **Previous memories for context** | Side Prompt editor; per template | selected source messages の前に0–7 previous Memory entries を含めます。 |
+| **Use additional context / Additional Context Source** | Side Prompt editor; per template | Additional Context を含め、current chat Context Setting に follow するか fixed named setting 1つを常に使用。 |
+| **Lorebook Target** | Side Prompt editor; per template または per chat | normal Memory Book または別 lorebook に output を保存。変更時、choice を this chat only か template going forward か尋ねます。 |
+| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | upserted entry title template と comma-separated activation keywords を optional 制御。 |
+| **Activation Mode / Insertion Position / Outlet Name** | Side Prompt editor; per template | Side Prompt lorebook entry の activation/placement を制御。 |
+| **Insertion Order / Order Value** | Side Prompt editor; per template | automatic Memory-number ordering または fixed manual order value。 |
+| **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Side Prompt editor; per template | corresponding SillyTavern lorebook-entry recursion/budget flags を適用。 |
+| **Override default memory profile / Connection Profile** | Side Prompt editor; per template | current default profile の代わりに selected STMB profile で Side Prompt を route。 |
+| **Memory Assistance Mode** | **Memory Assistance** edit; global | **Off** disables; **Update** existing Clips の changes を提案; **Update and Suggest** は Topical Clip topics も discover; **Automatic** は ordinary Clip additions を直接適用し Topical Clip replacements は approval に残す。 |
+| **Update Prompt / Topic Suggestions Prompt** | **Memory Assistance** edit; per built-in template | 2つの AI tasks を制御。response contracts は fixed のまま。 |
+| **Use a connection profile override** | **Memory Assistance** edit; per built-in template | Memory Assistance に default ではなく selected STMB profile を使用。 |
 
 ### 27.7 Prompt managers
 
-Summary prompt name/text、default consolidation prompt、Consolidation prompt name/text。
+| Setting | Location | Scope | What it does |
+|---|---|---|---|
+| **Summary Prompt name and prompt text** | **Settings → Summary Prompt Manager → New Preset** または edit | Per preset | reusable ordinary-Memory prompt を定義。profile の **Memory Creation Method** または group/character prompt selection がその preset を指した後だけ使用。 |
+| **Default consolidation prompt** | **Settings → Consolidation Prompt Manager → Set Default** | Global | **Consolidate Memories** で normal prompt として preselected されるものを選択。regeneration-only/group-only presets は選べません。 |
+| **Consolidation Prompt name and prompt text** | **Settings → Consolidation Prompt Manager → New Consolidation Preset** または edit | Per preset | reusable consolidation instructions を定義。dedicated regeneration/group presets は respective workflows に制限。 |
 
-### 27.8 Topical/Compaction defaults
+### 27.8 Topical Clip と Compaction defaults
 
-shared **Generation Profile / Compaction Profile**。global Topical Clip Prompt。global Compaction Prompt（`{{ENTRY_CONTENT}}`必須）。
+main panel の **Settings → Topical Clip** または **Settings → Compaction** を開きます。
 
-### 27.9 Consolidate Memories
+| Setting | Location | Scope | What it does |
+|---|---|---|---|
+| **Generation Profile / Compaction Profile** | **Topical Clip → Generation Profile** または **Compaction → Compaction Profile** | Global shared default | Topical Clip generation と Compaction 用 STMB profile を選択。どちらかで変更すると両 workflows が共有する selection が変わります。 |
+| **Topical Clip Prompt** | **Topical Clip → Edit Topical Clip Prompt** | Global | Topical Clip generation 用 custom prompt template を保存。**Reset to Default** で current built-in prompt に戻る。required source macros は save/generation 前に validate。 |
+| **Compaction Prompt** | **Compaction → Edit Compaction Prompt** | Global | existing Memory、Clip、Side Prompt entries を短縮する custom prompt template を保存。**Reset to Default** で current built-in prompt に戻る。`{{ENTRY_CONTENT}}` 必須。 |
 
-**Source Memory Book**（Per run。表示中のconsolidation source bookを別のavailable bookへ変更できる。eligible listはreloadするがchatのmanual/chat-bound設定は変えない）、 Target tier、prompt、max entries/pass、Token Budget、automatic summary attempts、saved minimum per tier、consolidated-entry activation/position/order/recursion defaults、disable sources、selected sources。
+Memory Book、topic、keywords、source inclusion/selection、message range、draft、Compaction で選ぶ entry は persistent settings ではなく per-run workflow choices です。
 
+### 27.9 Consolidate Memories controls
 
-### 27.10 SillyTavern World Info
+main panel 下部 buttons から **Consolidate Memories** を開きます。この interface は saved defaults と one-run choices を混在させています。
 
-Match Whole Words offが一般的、Scan Depth ~8、Max Recursion ~2、Context percentage/lorebook budget。推奨で必須ではない。
+| Setting | Scope | What it does |
+|---|---|---|
+| **Source Memory Book** | Per run | 現在 consolidate する Memory Book を表示し、別 available book を選べます。変更すると chat の manual/chat-bound Memory Book configuration を変えず eligible-entry list を reload。 |
+| **Target tier** | Per run | 作成する higher tier と、その直下の eligible source tier を選択。 |
+| **Consolidation Prompt** | Per run | この consolidation 用 prompt を選択。initially Consolidation Prompt Manager の default を使用。 |
+| **Maximum entries per pass** | Per run | 1 analysis pass に送る lower-tier entries 数を制限。 |
+| **Token Budget** | Per run | consolidation batching に使う approximate input budget。 |
+| **Number of automatic summary attempts** | Per run | usable assignments/summaries を得るための repeated analysis passes を制限。 |
+| **Saved minimum eligible entries** | Global, target tier ごとに別保存 | chosen tier が ready とみなされる threshold。tier の automatic readiness prompt も制御。 |
+| **Activation Mode / Insertion Position / Outlet / Insertion Order / Recursion Settings** | Global consolidation-entry defaults | newly consolidated entries の save behavior を制御。ordinary Memory profile entry settings とは別。 |
+| **Disable selected source entries after creating summaries** | Per run | commit 後 successfully consolidated sources を disable し higher-tier summaries に retrieval を引き継がせます。delete はしません。 |
+| **Selected source entries** | Per run | processing 対象の eligible lower-tier entries を選択。unchecked entries は untouched。 |
+
+### 27.10 Related SillyTavern World Info settings
+
+これらは STMB 外、SillyTavern の World Info/lorebook settings にありますが、saved Memories が ordinary chat generation 中に retrieve されるかに影響します。
+
+| Setting | What it does |
+|---|---|
+| **Match Whole Words** | keyword boundary matching を制御。flexible Memory keywords では Off が common starting point。 |
+| **Scan Depth** | lorebook activation 用に scan する recent text 量を制御。8 など比較的高い値が common starting point。 |
+| **Max Recursion Steps** | recursive World Info activation を制限。約2が common starting point。 |
+| **Context percentage / lorebook budget** | lorebook entries が占められる context を制限。model total context と他 prompt material との balance を見て増やします。 |
+
+これらは recommendations であり hard requirements ではありません。retrieval diagnosis は Section 10 を参照してください。
 
 ---
-
 ## 28. Slash Commandリファレンス
+
+### Memory commands
 
 ```text
 /creatememory
+```
+
+現在 mark されている scene から Memory を作成します。
+
+```text
 /scenememory X-Y
+```
+
+inclusive range を設定して Memory を作成します。例: `/scenememory 10-15`。
+
+```text
 /nextmemory
+```
+
+highest processed boundary の次の message から current eligible end までを Memory にします。
+
+```text
 /stmb-catchup interval=x start=y end=z
 ```
+
+既存の長い chat を consecutive chunks で処理します。
+
+### Side Prompt commands
 
 ```text
 /sideprompt "Name" {{macro}}="value" [X-Y]
@@ -1596,206 +2227,370 @@ Match Whole Words offが一般的、Scan Depth ~8、Max Recursion ~2、Context p
 /sideprompt-off "Name" | all
 ```
 
+### Processed-boundary commands
+
 ```text
 /stmb-highest
 /stmb-set-highest <N|none>
 ```
 
+### Emergency stop
+
 ```text
 /stmb-stop
 ```
 
-`/stmb-stop`は全in-flight STMB generation（Side Prompts含む）を停止。committed workは残る。
+Side Prompts を含む in-flight STMB generation を everywhere で停止します。すでに committed された work は保存されたままです。
 
 ---
 
 ## 29. 段階別トラブルシューティング
 
-### 29.1 UIなし
+### 29.1 Extension/UI が load しない
 
-install/enabled → reload → chat open → 10s → message actions → console。
+症状:
 
-### 29.2 Sceneなし
+- magic-wand menu に Memory Books がない;
+- chevrons がない;
+- selection 後 floating Clip button がない。
 
-**►**/**◄**両方。Current Scene確認。overlapならrange変更またはAllow Scene Overlap。
+checks:
 
-### 29.3 Valid bookなし
+1. extension が installed/enabled;
+2. page reload;
+3. character/group chat が open;
+4. 最大10秒待つ;
+5. message actions を expand;
+6. それでも失敗してから console を inspect。
 
-Automatic: bind/Auto-Create。
-Manual: main選択、deleted selection修復、broken lock解除。
-Multi-book group: STLO、all assignments、group book≠character book。
-Narrator: Manual、omniscient、unique books。
+### 29.2 Scene が selected されていない
 
-### 29.4 Invalid AI Memory
+marked scene には **►** と **◄** の両方が必要です。panel の Current Scene を確認してください。
 
-provider/model/profile → truncation → response tokens → exact JSON prompt → Regex → structured support → providerがschema reject時だけSkip Structured Output → better model → **Raw response from AI**とmanual correction。
+range が existing Memory と overlap する場合、別 range を選ぶか Allow Scene Overlap を有効にします。
 
-### 29.5 Messages消えた
+### 29.3 Valid Memory Book がない
 
-auto-hidden。deleteされていない。
+Automatic Mode:
 
-### 29.6 Automatic動かない
+- lorebook を chat に bind; または
+- Auto-Create を有効。
 
-enabled、enough messages、interval+buffer、postpone、valid book、blocking job、chat switch、group generation complete。
+Manual Mode:
 
-manual firstは推奨だが必須でない。
+- main manual book を選ぶ;
+- deleted selection を repair;
+- broken character lock は変更前に unlock。
 
-### 29.7 Entry activateしない
+Real multi-book group:
 
-book active、entry enabled、keywords、mode、budget、recursion、STLO、World Info inspector/logs。retrieval確認前にregenerateしない。
+- STLO が available であること;
+- required member 全員に valid assignment;
+- group book を character book として再利用できない。
 
-### 29.8 Sentだがignored
+Narrator Mode:
 
-model behavior。短く明確に、placement改善、competing context削減、OOC reminder、better model。
+- Manual Mode が enabled;
+- omniscient book selected;
+- declared member ごとに unique non-omniscient book。
 
-### 29.9 Side Prompt
+### 29.4 AI が valid Memory を作れない
 
-16.18。selected setはset外individual promptsを抑制。
+この順番で確認:
 
-### 29.10 Consolidation promptなし
+1. provider/model/profile が valid;
+2. response が truncated していない;
+3. maximum response tokens が十分;
+4. selected prompt が exact JSON を要求している;
+5. Regex が schema を corrupt していない;
+6. provider が selected structured-output mode を support;
+7. provider が schemas を reject する場合だけ Skip Structured Output を試す;
+8. prompt を rewrite する前により instruction-following model を試す;
+9. persistent error notification の **Raw response from AI** をクリックして captured provider response を inspect し、利用可能なら manual JSON correction interface を使う。
 
-readiness enabled、tier monitored、eligible sources/minimum。
+common causes: code fences、commentary、missing key、keywords が array でない、refusal text、cut-off output。
 
-### 29.11 Regeneration disabled
+### 29.5 Memory は保存されたが messages が消えた
 
-old metadata、source unavailable、sources missing/wrong tier、active parent、unknown sequence、template deleted。
+おそらく auto-hidden です。Token Saving settings を変更してください。Hidden messages は deleted ではありません。
 
-### 29.12 Branch copyなし
+### 29.6 Automatic Memories が run しない
 
-settingがbranch前ON、native branch、books available、copy中chat switchなし、already handledでない、locksは意図的にshared。
+check:
 
-### 29.13 Narrator cast wrong
+- Auto-create memory summaries enabled;
+- highest processed boundary 以後に十分な messages;
+- interval + buffer requirement を満たす;
+- postpone checkpoint が active でない;
+- valid Memory Book available;
+- trigger を block する別 Memory job がない;
+- work 中に current chat を switch していない;
+- trigger が期待される前に group generation が finish している。
 
-Active Cast、continuation merge、swipe restore、legacy confirmation、retired、books exist。
+current version では first manual Memory は recommended ですが technically required ではありません。
+
+### 29.7 Memory は存在するが activate しない
+
+check:
+
+- correct book active;
+- entry enabled;
+- relevant keywords;
+- activation mode;
+- budget;
+- recursion と Delay Until Recursion;
+- STLO routing（使用時）;
+- World Info inspection/logs。
+
+retrieval を test する前に Memory を regenerate しないでください。
+
+### 29.8 Entry は送られたが無視される
+
+これは model-use behavior です。対策:
+
+- Memory を短く明確に;
+- insertion position/priority を改善;
+- competing context を減らす;
+- OOC reminder を使う;
+- supplied context をより reliably follow する model を選ぶ。
+
+### 29.9 Side Prompt が run しない
+
+Section 16.18 を参照。特に selected set はその set 外の individually enabled prompts を suppress します。
+
+### 29.10 Consolidation prompt が出ない
+
+verify:
+
+- readiness prompt enabled;
+- target tier selected for monitoring;
+- eligible source entries が十分;
+- sources が already disabled/ineligible でない;
+- saved minimum count を満たす。
+
+### 29.11 Regeneration button が disabled
+
+hover または stated reason を inspect。common causes:
+
+- entry が required snapshot metadata より古い;
+- source chat/range unavailable;
+- source entries missing/wrong tier;
+- active parent consolidation が lower source を block;
+- original sequence number を determine できない;
+- Side Prompt template deleted。
+
+### 29.12 Branch が books を copy しなかった
+
+check:
+
+- branch creation 前に Copy Memory Books when branching が enabled;
+- native SillyTavern branch だった;
+- source books が存在し load 可能;
+- copying 中に chat switch していない;
+- branch が以前 completed/failed と mark されていない;
+- locked books が意図的に copy ではなく preserved されたこと。
+
+### 29.13 Narrator Mode cast が wrong
+
+check:
+
+- generation 前の Active Cast selection;
+- message が cast metadata を merge した continuation か;
+- swipe が older cast state を restore したか;
+- scene に confirmation が必要な legacy untagged messages があるか;
+- declared character が retired か;
+- each character book がまだ存在するか。
 
 ---
 
 ## 30. FAQ
 
-**Vectors必要?** いいえ。Keywordsで十分。Vectorsはoptional。
+### Vectors は必要ですか?
 
-**Memory用に別lorebook?** 通常は整理/budget/reuse/diagnosisのため推奨、必須ではない。
+いいえ。Keyword activation だけで十分で、自動生成されます。Vectors は optional です。
 
-**STMBはmessagesを削除?** しない。active contextからhide可能。
+### Memories は separate lorebook を使うべきですか?
 
-**完全manual?** 可能。
+organization、budgeting、reuse、diagnosis のため通常は yes ですが、mandatory ではありません。
 
-**Automaticで最初のMemory?** 現行は可能。baselineなしでinterval+buffer到達後message 0から。manual firstは推奨。
+### STMB は messages を delete しますか?
 
-**Consolidationはautomatic?** いいえ。ready promptは出せるがuser confirmation/reviewが必要。
+いいえ。processed messages を active context から hide できます。
 
-**Real groupで1 book?** はい、推奨start、STLO不要。
+### STMB を完全に manual で使えますか?
 
-**Separate character booksはいつ?** individual continuity/knowledge/retrievalがextra setup/requestsに見合うとき。
+はい。必要なときだけ scenes を mark して Memories を作れます。
 
-**Narrator=Group?** いいえ。Groupはseparate Character Cards、Narratorは1 cardがmultiple fictional characters。
+### Automatic Memories は first Memory を作れますか?
 
-**NarratorはSTLO必要?** Active Cast retrievalには不要。Manual Mode、omniscient、unique booksは必要。
+current STMB では yes。processed baseline がない場合、interval + buffer を満たすと message 0 から始まります。それでも setup verification と desired starting boundary 選択のため manual first run を推奨します。
 
-**Linked copies sync?** しない。
+### Consolidation は automatic に実行されますか?
 
-**Delay Until Recursionなぜ通常OFF?** 他のentryがrecursionを開始しないとMemoryが一度もactivateしない可能性。
+いいえ。tier が ready なとき STMB が prompt できますが、user が confirm/review します。
 
-**最初の成功後?** retrieval確認 → automatic/interval/buffer → hide → 必要に応じClip/Side Prompt → 十分なMemories後Topical/Consolidation。
+### Real group は Memory Book 1つだけでも使えますか?
+
+はい。recommended starting setup で STLO は不要です。
+
+### Separate real-group character books はいつ有用ですか?
+
+individual continuity、knowledge、speaker-specific retrieval、character-focused summaries が extra setup/AI requests に見合う場合です。
+
+### Narrator Mode と Group Chat Mode は同じですか?
+
+いいえ。Group Chat Mode は separate SillyTavern character-card authors を読みます。Narrator Mode は1枚の Narrator card が書く fictional characters を manual declare します。
+
+### Narrator Mode は STLO が必要ですか?
+
+active-cast retrieval path には不要です。Manual Lorebook Mode、omniscient book 1つ、unique per-character books は必要です。
+
+### Linked copies は synchronized されますか?
+
+いいえ。origin/consolidation metadata で linked されるだけで continuous mirroring ではありません。
+
+### Delay Until Recursion はなぜ通常 off にすべきですか?
+
+別 lorebook entry が recursion を開始しなければ、delayed Memory entry は activate しない可能性があるためです。
+
+### 最初の successful Memory の後は何をすべきですか?
+
+entry retrieval を verify し、その後 automatic Memories を enable、interval/buffer を選び、token hiding を有効にします。Clips や narrowly defined Side Prompt は必要が生じてから追加し、Topical Clip/Consolidation は十分な Memories が蓄積した後に使います。
 
 ---
 
 ## 31. 互換性、移行、現行の履歴メモ
 
-- 現行document: v8.5.0、2026-08-01。
-- SillyTavern requirement: 1.14.0+。
-- Narrator Mode: v8.5.0。
-- Branch copying、Side Prompt Regeneration、Character Locks: v8.4.0。
-- Multi-character real group: v8.0.0。
-- Additional Context → per-chat Context Settings: v7.0.0。
-- Topical Clip: v6.10.0。
-- Compaction/Clips: v6.6.0。
-- Side Prompt Sets/targets: v6.4–v6.5。
-- Multi-tier Consolidation: v6.0.0。
-- Job Queue: v6.8.0 optional。
-- current defaultsはDelay Until Recursion OFF。
+この section は current use に影響する history だけを保持します。
 
-Older entriesは`stmemorybooks` flagとrequired metadataがあるものだけSTMB Memoryとして認識。古いものはconverter。
+### Current baseline
 
-Bookmark機能はv4.0.0でcoreからremoved。現行として案内しない。
+- Current documented release: v8.5.0, August 1, 2026.
+- SillyTavern requirement: 1.14.0 or later.
+- Narrator Mode was added in v8.5.0.
+- Branch book copying, Side Prompt regeneration, and character Memory Book locks were added in v8.4.0.
+- Multi-character real-group Memory distribution arrived in v8.0.0.
+- Additional Context moved from profiles to reusable per-chat Context Settings in v7.0.0; older profile context is migrated.
+- Topical Clip was added in v6.10.0.
+- Compaction and Clips were added in v6.6.0.
+- Side Prompt Sets and per-prompt targets were added in the v6.4–v6.5 period.
+- Consolidation became a multi-tier Arc-through-Epic system in v6.0.0; older Arc metadata is migrated.
+- Job Queue integration was added in v6.8.0 and remains optional.
+- Current profile defaults use Delay Until Recursion disabled unless a user/profile explicitly changes it.
 
-Built-in promptsはactive localeでregenerate可能。custom backup。
+### Older versions の existing Memories
 
-Side Prompt importはadditive。key conflictはrenameしoverwriteしない。
+`stmemorybooks` flag と required metadata を持つ entries だけが STMB Memories として認識されます。current metadata より前の older entries は supplied lorebook converter を使ってください。
+
+### Removed functionality
+
+old bookmark feature は Memory Books v4.0.0 で削除され、core extension から分離されました。Memory Books bookmark controls を current behavior として教えないでください。
+
+### Localized built-ins
+
+Built-in prompts は active SillyTavern language に応じて regenerate できます。customized built-ins は recreation 前に backup してください。
+
+### Import behavior
+
+Side Prompt import は additive です。existing prompts は保持され、imported key conflicts は existing prompt を overwrite せず rename されます。
 
 ---
 
 ## 32. 開発者向け・ライセンス情報
 
+Memory Books は bundling/minification に Bun を使います。
+
 ```sh
 bun run build
 ```
+
+repository の pre-commit build hook を install:
 
 ```sh
 bun run install-hooks
 ```
 
-pre-commit hookはbuild、artifacts stage、failure時abort。
+hook は commit 前に build し、build artifacts を stage し、build failure なら abort します。
 
-Copyright © 2024–2026 Aiko Hanasaki。GNU Affero General Public License v3.0。modified versionsはnotice保持、modifications識別、AGPL source availability要件に従う。
+Memory Books は Copyright © 2024–2026 Aiko Hanasaki、GNU Affero General Public License v3.0 の下で licensed されています。modified versions は applicable notices を保持し、modifications を identify し、AGPL source-availability requirements に従う必要があります。
 
 ---
 
 ## 33. 簡易診断ツリー
 
 ```text
-「Memory Booksが動かない」
+User says “Memory Books is not working.”
 │
-├─ UI visible?
-│  ├─ No → install/loading/UI
+├─ Is the menu/control visible?
+│  ├─ No → installation/loading/UI checks.
 │  └─ Yes
-├─ Scene selectable?
-│  ├─ No → actions、両chevrons、overlap
+│
+├─ Can a scene be selected?
+│  ├─ No → expand message actions; set both chevrons; inspect overlap.
 │  └─ Yes
-├─ Valid effective book?
-│  ├─ No → bind/auto-create/manual/repair
+│
+├─ Is there a valid effective Memory Book?
+│  ├─ No → bind, auto-create, select manual, or repair multi-book bindings.
 │  └─ Yes
-├─ Valid complete generation?
-│  ├─ No → profile/provider/tokens/JSON/Regex/model
+│
+├─ Does generation return valid complete output?
+│  ├─ No → profile, provider, output tokens, JSON schema, Regex, model.
 │  └─ Yes
-├─ Entry saved?
-│  ├─ No → save/rollback/permission/job
+│
+├─ Does the entry exist in the intended book?
+│  ├─ No → save/rollback/permission/job failure.
 │  └─ Yes
-├─ ST activates/sends?
-│  ├─ No → keywords/mode/binding/budget/recursion/STLO
+│
+├─ Does SillyTavern activate and send it later?
+│  ├─ No → keywords, activation mode, book binding, budget, recursion, STLO.
 │  └─ Yes
-└─ Model uses entry?
-   ├─ No → compliance/placement/context/clarity
-   └─ Yes → workflow正常
+│
+└─ Does the model use the supplied entry?
+   ├─ No → model compliance, placement, competing context, entry clarity.
+   └─ Yes → workflow is functioning.
 ```
 
 ---
 
 ## 34. 推奨される最小の学習順序
 
-1. magic-wandからMemory Books。
-2. Automatic Mode + bound book、またはAuto-Create。
-3. Current SillyTavern Settings。
-4. **►**/**◄**で短いcomplete scene。
-5. Memory create/preview。
-6. bookでsaved entry確認。
-7. retrieval確認。
-8. Automatic + interval/buffer。
-9. hidden≠deletedを説明してからAuto-Hide。
-10. Clips → Side Prompts → 必要になったらTopical/Consolidation。
+new user にはまずこの sequence だけを教えます:
 
-custom prompts、Full Manual、multiple character books、Regex、Consolidationから始めない。
+1. magic-wand menu を開いて Memory Books を見つける。
+2. bound book の Automatic Mode を使うか Auto-Create を enable。
+3. Current SillyTavern Settings を選ぶ。
+4. message actions を expand し、短く complete な scene を **►** と **◄** で mark。
+5. Memory 1つを create/preview。
+6. Memory Book を開き saved entry を verify。
+7. entry が後で activate できることを verify。
+8. automatic Memories を enable し interval/buffer を選ぶ。
+9. hidden messages は deleted ではないと説明してから auto-hide を enable。
+10. concrete need が生じたとき Clips、次に Side Prompts、その後 Topical Clip/Consolidation を紹介。
+
+user の actual problem が要求しない限り、custom prompts、Full Manual endpoints、multiple character books、Regex、consolidation から始めないでください。
 
 ---
 
 ## 35. 最終概念まとめ
 
+Memory Books は SillyTavern lorebooks 上に構築された external continuity pipeline です:
+
 ```text
-chat materialを選択/スケジュール
-→ structured representation生成
-→ retrieval metadata付きで保存
-→ 必要ならprocessed transcriptをhide
-→ 後にSillyTavernがrelevant entriesをretrieve
+Select or schedule chat material
+→ generate a structured representation
+→ save it with retrieval metadata
+→ optionally hide processed transcript
+→ let SillyTavern retrieve relevant entries later
 ```
 
-coherent scenes、target/reference区別、exact JSON schemas、concrete keywords、deliberate book assignment/activation、stale tracker pruning、continuityを失わないConsolidation、saved=sentと仮定せずretrieval確認、精度が複雑さに見合う場合のみadvanced multi-book routing、が重要です。
+system が最もよく機能する条件:
+
+- scenes が coherent;
+- prompts が target と reference context を明確に区別;
+- JSON workflows が exact schemas を返す;
+- keywords が concrete;
+- Memory Books が deliberate に assigned/activated;
+- long-running trackers が stale state を prune;
+- consolidation が continuity を消さず old detail を減らす;
+- users が saved = sent と仮定せず retrieval を verify;
+- advanced multi-book routing は precision が complexity に見合う場合だけ使用。
