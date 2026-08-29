@@ -4,7 +4,8 @@
 import { CONSOLIDATION_REGENERATION_PRESET_KEY } from './constants.js';
 
 export const SIDE_PROMPT_REGENERATION_METADATA_KEY = 'STMB_sidePromptRegeneration';
-export const SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION = 1;
+export const SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION = 2;
+export const LEGACY_SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION = 1;
 
 const CONSOLIDATION_TYPE_TIERS = Object.freeze({
     arc: 1,
@@ -26,6 +27,8 @@ export function getEntryUid(entry) {
 export function buildSidePromptRegenerationSnapshot({
     templateKey,
     priorContent = '',
+    priorEntry = null,
+    writtenEntry = null,
     compiledScene,
     runtimeMacros = {},
 } = {}) {
@@ -33,10 +36,23 @@ export function buildSidePromptRegenerationSnapshot({
     const normalizedRuntimeMacros = Object.fromEntries(
         Object.entries(runtimeMacros || {}).map(([key, value]) => [String(key), String(value ?? '')]),
     );
+    const priorEntryState = priorEntry && typeof priorEntry === 'object'
+        ? structuredClone(priorEntry)
+        : null;
+    if (priorEntryState) delete priorEntryState[SIDE_PROMPT_REGENERATION_METADATA_KEY];
+    const writtenState = writtenEntry && typeof writtenEntry === 'object'
+        ? structuredClone(writtenEntry)
+        : null;
+    if (writtenState) {
+        delete writtenState[SIDE_PROMPT_REGENERATION_METADATA_KEY];
+    }
     return {
         version: SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION,
         templateKey: String(templateKey || '').trim(),
         priorContent: String(priorContent || ''),
+        priorEntryExisted: !!priorEntryState,
+        priorEntryState,
+        writtenFingerprint: writtenState ? fingerprintRegenerationValue(writtenState) : '',
         sceneStart: Number(metadata.sceneStart),
         sceneEnd: Number(metadata.sceneEnd),
         chatId: String(metadata.chatId || ''),
@@ -50,7 +66,7 @@ export function buildSidePromptRegenerationSnapshot({
 export function getSidePromptRegenerationSnapshot(entry) {
     const snapshot = entry?.[SIDE_PROMPT_REGENERATION_METADATA_KEY];
     if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return null;
-    if (snapshot.version !== SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION) return null;
+    if (![LEGACY_SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION, SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION].includes(snapshot.version)) return null;
     if (typeof snapshot.templateKey !== 'string' || !snapshot.templateKey.trim()) return null;
     if (typeof snapshot.priorContent !== 'string') return null;
     if (!Number.isInteger(snapshot.sceneStart) || snapshot.sceneStart < 0) return null;
@@ -58,6 +74,12 @@ export function getSidePromptRegenerationSnapshot(entry) {
     if (typeof snapshot.chatId !== 'string' || !snapshot.chatId.trim()) return null;
     if (!snapshot.runtimeMacros || typeof snapshot.runtimeMacros !== 'object' || Array.isArray(snapshot.runtimeMacros)) return null;
     if (Object.values(snapshot.runtimeMacros).some(value => typeof value !== 'string')) return null;
+    if (snapshot.version === SIDE_PROMPT_REGENERATION_SNAPSHOT_VERSION) {
+        if (typeof snapshot.priorEntryExisted !== 'boolean') return null;
+        if (snapshot.priorEntryExisted && (!snapshot.priorEntryState || typeof snapshot.priorEntryState !== 'object' || Array.isArray(snapshot.priorEntryState))) return null;
+        if (!snapshot.priorEntryExisted && snapshot.priorEntryState !== null) return null;
+        if (typeof snapshot.writtenFingerprint !== 'string' || !snapshot.writtenFingerprint) return null;
+    }
     return snapshot;
 }
 

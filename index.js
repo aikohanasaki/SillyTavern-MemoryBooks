@@ -236,6 +236,7 @@ import {
   areStmbJobsEnabled,
   awaitStmbJobApproval,
   cancelAllStmbJobs,
+  cancelStmbJobsForChat,
   enqueueStmbJob,
   getCurrentStmbChatRef,
   getStmbChatKey,
@@ -246,6 +247,19 @@ import {
   updateHighestMemoryProcessedForChatRef,
   withStmbWriteLane,
 } from "./stmbJobs.js";
+import {
+  ROLLBACK_SCOPE_AFFECTED,
+  ROLLBACK_SCOPE_FULL,
+  applyLorebookRollback,
+  applySidePromptRestoration,
+  collectConsolidationRollbackPlan,
+  collectRollbackMemories,
+  computeRollbackCheckpoint,
+  createMessageDeletionTracker,
+  fingerprintRollbackEntry,
+  planSidePromptRestorations,
+  validateAndExpandLinkedRollbackSelections,
+} from "./memoryRollback.js";
 import {
   buildSidePromptMacroSuggestion,
   collectTemplateRuntimeMacros,
@@ -566,6 +580,10 @@ const defaultSettings = {
     autoCreateLorebook: false,
     copyMemoryBooksOnBranch: true,
     autoAcceptGroupParticipants: false,
+    autoRollbackEnabled: false,
+    autoRollbackUpdateLastProcessed: true,
+    autoRollbackDeleteLastMemory: true,
+    autoRollbackRestorePreviousSidePrompts: true,
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     compactionPromptTemplate: "",
     topicalClipPromptTemplate: "",
@@ -680,6 +698,8 @@ let narratorCastDrawerDragState = null;
 let narratorGenerationSnapshot = null;
 let narratorGenerationType = null;
 let lorebookRegenerationObserver = null;
+const memoryRollbackDeletionTracker = createMessageDeletionTracker();
+const memoryRollbackChains = new Map();
 let lorebookRegenerationRefreshTimer = null;
 
 function normalizeMemoryBoundaryMode(mode) {
@@ -1336,6 +1356,7 @@ async function handleChatChanged(chatId) {
   refreshMemoryBoundaryUi();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
+  memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
   void refreshMemoryTierMacroCache();
   void maybePromptContextSettingForChatOpen();
 
@@ -2521,6 +2542,22 @@ function validateSettings(settings) {
   if (settings.moduleSettings.autoAcceptGroupParticipants === undefined) {
     settings.moduleSettings.autoAcceptGroupParticipants = false;
   }
+  let autoRollbackSettingsMigrated = false;
+  if (typeof settings.moduleSettings.autoRollbackEnabled !== "boolean") {
+    settings.moduleSettings.autoRollbackEnabled = false;
+    autoRollbackSettingsMigrated = true;
+  }
+  for (const key of [
+    "autoRollbackUpdateLastProcessed",
+    "autoRollbackDeleteLastMemory",
+    "autoRollbackRestorePreviousSidePrompts",
+  ]) {
+    if (typeof settings.moduleSettings[key] !== "boolean") {
+      settings.moduleSettings[key] = true;
+      autoRollbackSettingsMigrated = true;
+    }
+  }
+  if (autoRollbackSettingsMigrated) saveSettingsDebounced();
 
   // Validate unhide-before-memory setting (defaults to false)
   if (settings.moduleSettings.unhideBeforeMemory === undefined) {
@@ -10602,6 +10639,13 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
     autoAcceptGroupParticipants:
       settings.moduleSettings.autoAcceptGroupParticipants === true,
+    autoRollbackEnabled: settings.moduleSettings.autoRollbackEnabled === true,
+    autoRollbackUpdateLastProcessed:
+      settings.moduleSettings.autoRollbackUpdateLastProcessed !== false,
+    autoRollbackDeleteLastMemory:
+      settings.moduleSettings.autoRollbackDeleteLastMemory !== false,
+    autoRollbackRestorePreviousSidePrompts:
+      settings.moduleSettings.autoRollbackRestorePreviousSidePrompts !== false,
     showMemoryPreviews: settings.moduleSettings.showMemoryPreviews,
     showConsolidationPreviews: settings.moduleSettings.showConsolidationPreviews,
     showNotifications: settings.moduleSettings.showNotifications,
@@ -10952,6 +10996,29 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
 
     if (e.target.matches("#stmb-auto-accept-group-participants")) {
       settings.moduleSettings.autoAcceptGroupParticipants = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-auto-rollback-enabled")) {
+      settings.moduleSettings.autoRollbackEnabled = e.target.checked;
+      const rollbackOptions = popupElement.querySelector("#stmb-auto-rollback-options");
+      rollbackOptions?.classList.toggle("opacity50p", !e.target.checked);
+      for (const control of rollbackOptions?.querySelectorAll("input[type='checkbox']") || []) {
+        control.disabled = !e.target.checked;
+      }
+      saveSettingsDebounced();
+      return;
+    }
+
+    const rollbackSettingBySelector = {
+      "#stmb-auto-rollback-update-last-processed": "autoRollbackUpdateLastProcessed",
+      "#stmb-auto-rollback-delete-last-memory": "autoRollbackDeleteLastMemory",
+      "#stmb-auto-rollback-restore-side-prompts": "autoRollbackRestorePreviousSidePrompts",
+    };
+    for (const [selector, settingKey] of Object.entries(rollbackSettingBySelector)) {
+      if (!e.target.matches(selector)) continue;
+      settings.moduleSettings[settingKey] = e.target.checked;
       saveSettingsDebounced();
       return;
     }
@@ -11471,6 +11538,20 @@ function persistMainPopupSettings(popupElement) {
   const autoAcceptGroupParticipants =
     popupElement.querySelector("#stmb-auto-accept-group-participants")?.checked ??
     settings.moduleSettings.autoAcceptGroupParticipants;
+  const autoRollbackValues = {
+    autoRollbackEnabled:
+      popupElement.querySelector("#stmb-auto-rollback-enabled")?.checked ??
+      settings.moduleSettings.autoRollbackEnabled,
+    autoRollbackUpdateLastProcessed:
+      popupElement.querySelector("#stmb-auto-rollback-update-last-processed")?.checked ??
+      settings.moduleSettings.autoRollbackUpdateLastProcessed,
+    autoRollbackDeleteLastMemory:
+      popupElement.querySelector("#stmb-auto-rollback-delete-last-memory")?.checked ??
+      settings.moduleSettings.autoRollbackDeleteLastMemory,
+    autoRollbackRestorePreviousSidePrompts:
+      popupElement.querySelector("#stmb-auto-rollback-restore-side-prompts")?.checked ??
+      settings.moduleSettings.autoRollbackRestorePreviousSidePrompts,
+  };
   const showMemoryPreviews =
     popupElement.querySelector("#stmb-show-memory-previews")?.checked ??
     settings.moduleSettings.showMemoryPreviews;
@@ -11585,6 +11666,11 @@ function persistMainPopupSettings(popupElement) {
   ) {
     settings.moduleSettings.autoAcceptGroupParticipants =
       autoAcceptGroupParticipants;
+    hasChanges = true;
+  }
+  for (const [key, value] of Object.entries(autoRollbackValues)) {
+    if (value === settings.moduleSettings[key]) continue;
+    settings.moduleSettings[key] = value;
     hasChanges = true;
   }
   if (showMemoryPreviews !== settings.moduleSettings.showMemoryPreviews) {
@@ -12134,6 +12220,379 @@ function createUI() {
   }
 }
 
+function getMemoryRollbackChatId() {
+  return String(getCurrentChatId() || getCurrentStmbChatRef()?.chatId || getCurrentStmbChatRef()?.fileName || "").trim();
+}
+
+function getLorebookDataFingerprint(data) {
+  return fingerprintRollbackEntry(data);
+}
+
+async function loadMemoryRollbackLorebooks() {
+  const names = Array.from(new Set((world_names || [])
+    .map(name => String(name || "").trim())
+    .filter(Boolean)))
+    .sort((left, right) => left.localeCompare(right));
+  const states = [];
+  for (const name of names) {
+    const data = await loadWorldInfo(name);
+    if (!data || typeof data !== "object") {
+      throw new Error(tr(
+        "STMemoryBooks_AutoRollback_LoadFailed",
+        "Memory rollback could not safely load Memory Book {{name}}. Repair or remove the unavailable book, then try again.",
+        { name },
+      ));
+    }
+    states.push({
+      name,
+      data,
+      originalData: deepClone(data),
+      originalFingerprint: getLorebookDataFingerprint(data),
+    });
+  }
+  return states;
+}
+
+function describeRollbackMemory(item, lorebookName) {
+  const title = String(item?.entry?.comment || item?.entry?.key?.[0] || item?.uid || "Memory").trim();
+  return `${title} (${lorebookName}, #${item.range.start}-${item.range.end})`;
+}
+
+async function chooseMiddleDeletionRollbackScope(deletion, affectedCount) {
+  const content = DOMPurify.sanitize(`
+    <h3>${escapeHtml(translate("Choose memory rollback scope", "STMemoryBooks_AutoRollback_ScopeTitle"))}</h3>
+    <p>${escapeHtml(tr(
+      "STMemoryBooks_AutoRollback_ScopeBody",
+      "Deleting {{count}} message(s) from the middle of the chat affects {{memories}} Memory entry or entries.",
+      { count: deletion.count, memories: affectedCount },
+    ))}</p>
+    <p><strong>${escapeHtml(translate("Full rollback", "STMemoryBooks_AutoRollback_Full"))}:</strong> ${escapeHtml(translate(
+      "Delete affected and newer Memories.",
+      "STMemoryBooks_AutoRollback_FullDesc",
+    ))}</p>
+    <p><strong>${escapeHtml(translate("Affected only", "STMemoryBooks_AutoRollback_Affected"))}:</strong> ${escapeHtml(translate(
+      "Delete only overlapping Memories and shift newer ranges. This leaves a permanent Memory gap.",
+      "STMemoryBooks_AutoRollback_AffectedDesc",
+    ))}</p>
+  `);
+  const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    okButton: false,
+    cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
+    customButtons: [
+      {
+        text: translate("Full rollback", "STMemoryBooks_AutoRollback_Full"),
+        result: POPUP_RESULT.CUSTOM1,
+        classes: ["menu_button"],
+        action: null,
+      },
+      {
+        text: translate("Affected only", "STMemoryBooks_AutoRollback_Affected"),
+        result: POPUP_RESULT.CUSTOM2,
+        classes: ["menu_button"],
+        action: null,
+      },
+    ],
+  });
+  markStmbPopup(popup);
+  const result = await popup.show();
+  if (result === POPUP_RESULT.CUSTOM1) return ROLLBACK_SCOPE_FULL;
+  if (result === POPUP_RESULT.CUSTOM2) return ROLLBACK_SCOPE_AFFECTED;
+  return null;
+}
+
+async function confirmConsolidationRollback(parentItems) {
+  if (parentItems.length === 0) return true;
+  const rows = parentItems.map(({ state, parent, plan }) => {
+    const title = String(parent.entry?.comment || parent.uid || "Consolidation").trim();
+    const sourceTitles = parent.sourceUids
+      .map(uid => plan.byUid.get(String(uid))?.entry)
+      .filter(source => source && String(source.disabledBySummaryId ?? "") === String(parent.uid))
+      .map(source => String(source.comment || source.uid || "Memory").trim());
+    const sourceLine = sourceTitles.length > 0
+      ? `<br><small>↳ ${sourceTitles.map(escapeHtml).join(", ")}</small>`
+      : "";
+    return `<li>${escapeHtml(title)} — ${escapeHtml(state.name)} (${escapeHtml(tr(
+      "STMemoryBooks_AutoRollback_Tier",
+      "tier {{tier}}",
+      { tier: parent.tier },
+    ))})${sourceLine}</li>`;
+  }).join("");
+  const content = DOMPurify.sanitize(`
+    <h3>${escapeHtml(translate("Delete dependent consolidations?", "STMemoryBooks_AutoRollback_ConsolidationTitle"))}</h3>
+    <p>${escapeHtml(translate(
+      "Rollback requires deleting the following consolidations and re-enabling their existing direct sources. Memory deletion is irreversible.",
+      "STMemoryBooks_AutoRollback_ConsolidationBody",
+    ))}</p>
+    <ul>${rows}</ul>
+  `);
+  const popup = new Popup(content, POPUP_TYPE.CONFIRM, "", {
+    okButton: translate("Delete and roll back", "STMemoryBooks_AutoRollback_ConfirmDelete"),
+    cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
+  });
+  markStmbPopup(popup);
+  return await popup.show() === POPUP_RESULT.AFFIRMATIVE;
+}
+
+async function saveMemoryRollbackLorebooks(changedStates) {
+  const saved = [];
+  try {
+    for (const state of changedStates.slice().sort((left, right) => left.name.localeCompare(right.name))) {
+      await withStmbWriteLane({ type: "lorebook", name: state.name }, async () => {
+        const fresh = await loadWorldInfo(state.name);
+        if (getLorebookDataFingerprint(fresh) !== state.originalFingerprint) {
+          throw new Error(tr(
+            "STMemoryBooks_AutoRollback_Conflict",
+            "Memory Book {{name}} changed while rollback was being prepared. Nothing else was changed.",
+            { name: state.name },
+          ));
+        }
+        await saveWorldInfo(state.name, state.data, true);
+      });
+      saved.push(state);
+    }
+  } catch (error) {
+    const compensationFailures = [];
+    for (const state of saved.reverse()) {
+      try {
+        await withStmbWriteLane({ type: "lorebook", name: state.name }, async () => {
+          await saveWorldInfo(state.name, state.originalData, true);
+        });
+      } catch (compensationError) {
+        compensationFailures.push(`${state.name}: ${compensationError?.message || compensationError}`);
+      }
+    }
+    if (compensationFailures.length > 0) {
+      throw new Error(`${error?.message || error} ${tr(
+        "STMemoryBooks_AutoRollback_CompensationFailed",
+        "Rollback recovery also failed for: {{books}}. Restore these Memory Books from backup before continuing.",
+        { books: compensationFailures.join(", ") },
+      )}`);
+    }
+    throw error;
+  }
+}
+
+async function revalidateMemoryRollbackLorebooks(states) {
+  for (const state of states.slice().sort((left, right) => left.name.localeCompare(right.name))) {
+    await withStmbWriteLane({ type: "lorebook", name: state.name }, async () => {
+      const fresh = await loadWorldInfo(state.name);
+      if (getLorebookDataFingerprint(fresh) !== state.originalFingerprint) {
+        throw new Error(tr(
+          "STMemoryBooks_AutoRollback_Conflict",
+          "Memory Book {{name}} changed while rollback was being prepared. Nothing else was changed.",
+          { name: state.name },
+        ));
+      }
+    });
+  }
+}
+
+async function waitForMemoryRollbackIdle(chatKey) {
+  cancelStmbJobsForChat(chatKey, "memory-auto-rollback");
+  while (isProcessingMemory || hasActiveStmbJobs(chatKey)) {
+    if (getStmbChatKey() !== chatKey) return false;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  return getStmbChatKey() === chatKey;
+}
+
+async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
+  const settings = initializeSettings();
+  const options = {
+    autoRollbackEnabled: settings.moduleSettings?.autoRollbackEnabled === true,
+    autoRollbackUpdateLastProcessed: settings.moduleSettings?.autoRollbackUpdateLastProcessed === true,
+    autoRollbackDeleteLastMemory: settings.moduleSettings?.autoRollbackDeleteLastMemory === true,
+    autoRollbackRestorePreviousSidePrompts:
+      settings.moduleSettings?.autoRollbackRestorePreviousSidePrompts === true,
+    refreshEditor: settings.moduleSettings?.refreshEditor !== false,
+  };
+  if (!options.autoRollbackEnabled) return;
+  if (!options.autoRollbackUpdateLastProcessed
+    && !options.autoRollbackDeleteLastMemory
+    && !options.autoRollbackRestorePreviousSidePrompts) return;
+
+  const markers = getSceneMarkers() || {};
+  const oldCheckpoint = markers.highestMemoryProcessed;
+  if (!Number.isFinite(oldCheckpoint) || deletion.start > oldCheckpoint) return;
+  if (!await waitForMemoryRollbackIdle(chatKey)) return;
+
+  const states = await loadMemoryRollbackLorebooks();
+  if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  const affectedPreview = states.flatMap(state => {
+    const result = collectRollbackMemories(state.data, {
+      chatId,
+      deletion,
+      scope: ROLLBACK_SCOPE_AFFECTED,
+    });
+    return result.selected.map(item => ({ state, item }));
+  });
+
+  let scope = ROLLBACK_SCOPE_AFFECTED;
+  if (!deletion.isTail) {
+    scope = await chooseMiddleDeletionRollbackScope(deletion, affectedPreview.length);
+    if (!scope || getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  }
+
+  const selectionsByBook = new Map();
+  const ambiguous = [];
+  for (const state of states) {
+    const result = collectRollbackMemories(state.data, { chatId, deletion, scope });
+    selectionsByBook.set(state.name, new Set(result.selected.map(item => item.uid)));
+    ambiguous.push(...result.ambiguous.map(item => ({ state, item })));
+  }
+  if (ambiguous.length > 0) {
+    const sample = ambiguous.slice(0, 5).map(({ state, item }) => describeRollbackMemory(item, state.name)).join("; ");
+    throw new Error(tr(
+      "STMemoryBooks_AutoRollback_Ambiguous",
+      "Rollback found Memories without sufficient chat/range metadata: {{entries}}. Repair their STMB_chatId, STMB_start, and STMB_end metadata before retrying.",
+      { entries: sample },
+    ));
+  }
+
+  const linkedIssues = validateAndExpandLinkedRollbackSelections(states, selectionsByBook, chatId);
+  if (linkedIssues.length > 0) {
+    throw new Error(tr(
+      "STMemoryBooks_AutoRollback_LinkedIncomplete",
+      "Rollback found incomplete linked Memory copies: {{details}}. Repair the canonical/link metadata before retrying.",
+      { details: linkedIssues.slice(0, 5).join("; ") },
+    ));
+  }
+
+  const selectedCount = Array.from(selectionsByBook.values()).reduce((total, set) => total + set.size, 0);
+  const knownCheckpoint = computeRollbackCheckpoint(states, chatId);
+  if (selectedCount === 0 && knownCheckpoint === null && !markers.highestMemoryProcessedManuallySet) {
+    throw new Error(translate(
+      "No exact Memory entries were found for the processed range. Repair legacy or missing Memory metadata before retrying.",
+      "STMemoryBooks_AutoRollback_NoMemories",
+    ));
+  }
+
+  const consolidationPlans = new Map();
+  const consolidationParents = [];
+  if (options.autoRollbackDeleteLastMemory) {
+    const dependencyIssues = [];
+    for (const state of states) {
+      const plan = collectConsolidationRollbackPlan(state.data, selectionsByBook.get(state.name));
+      consolidationPlans.set(state.name, plan);
+      consolidationParents.push(...plan.parents.map(parent => ({ state, parent, plan })));
+      dependencyIssues.push(...plan.issues.map(issue => `${state.name}: ${issue.reason} ${issue.uid}`));
+    }
+    if (dependencyIssues.length > 0) {
+      throw new Error(tr(
+        "STMemoryBooks_AutoRollback_ConsolidationIncomplete",
+        "Rollback found incomplete consolidation dependencies: {{details}}. Repair them before retrying.",
+        { details: dependencyIssues.slice(0, 8).join("; ") },
+      ));
+    }
+    if (!await confirmConsolidationRollback(consolidationParents)
+      || getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  }
+
+  await revalidateMemoryRollbackLorebooks(states);
+  if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+
+  const rollbackRanges = states.flatMap(state => Object.entries(state.data?.entries || {})
+    .filter(([entryKey, entry]) => selectionsByBook.get(state.name)?.has(String(entry.uid ?? entryKey)))
+    .map(([, entry]) => getRangeFromMemoryEntry(entry))
+    .filter(Boolean))
+    .filter((range, index, all) => all.findIndex(candidate =>
+      candidate.start === range.start && candidate.end === range.end) === index);
+  let restoredSidePrompts = 0;
+  let skippedChangedSidePrompts = 0;
+  let legacySidePrompts = 0;
+  if (options.autoRollbackRestorePreviousSidePrompts) {
+    for (const state of states) {
+      const plan = planSidePromptRestorations(state.data, { chatId, rollbackRanges });
+      legacySidePrompts += plan.legacy.length;
+      for (const item of plan.restorable) {
+        const result = applySidePromptRestoration(state.data, item);
+        if (result.changed) restoredSidePrompts++;
+        else if (result.reason === "entry-changed") skippedChangedSidePrompts++;
+      }
+    }
+  }
+
+  const affectedOnlyMiddle = !deletion.isTail && scope === ROLLBACK_SCOPE_AFFECTED;
+  for (const state of states) {
+    applyLorebookRollback(state.data, {
+      selectedMemoryUids: options.autoRollbackDeleteLastMemory
+        ? selectionsByBook.get(state.name)
+        : new Set(),
+      consolidationPlan: options.autoRollbackDeleteLastMemory
+        ? consolidationPlans.get(state.name)
+        : null,
+      deletion,
+      chatId,
+      reindexLaterEntries: affectedOnlyMiddle,
+    });
+  }
+
+  const changedStates = states.filter(state =>
+    getLorebookDataFingerprint(state.data) !== state.originalFingerprint);
+  await saveMemoryRollbackLorebooks(changedStates);
+
+  if (options.autoRollbackUpdateLastProcessed) {
+    const checkpoint = computeRollbackCheckpoint(states, chatId, selectionsByBook);
+    if (checkpoint === null) delete markers.highestMemoryProcessed;
+    else markers.highestMemoryProcessed = checkpoint;
+    delete markers.highestMemoryProcessedManuallySet;
+    saveMetadataForCurrentContext();
+  }
+
+  if (options.refreshEditor) {
+    for (const state of changedStates) {
+      try {
+        await Promise.resolve(reloadEditor(state.name));
+      } catch (error) {
+        console.warn(`STMemoryBooks: rollback saved ${state.name}, but its editor did not refresh:`, error);
+      }
+    }
+  }
+  eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT);
+  refreshMemoryBoundaryUi();
+  await refreshPopupContent();
+
+  if (legacySidePrompts > 0) {
+    toastr.warning(translate(
+      "Legacy Side Prompt snapshots cannot be rolled back and were skipped.",
+      "STMemoryBooks_AutoRollback_LegacySidePrompts",
+    ), "STMemoryBooks");
+  }
+  if (skippedChangedSidePrompts > 0) {
+    toastr.warning(translate(
+      "Some Side Prompts changed after Memory creation and were left unchanged.",
+      "STMemoryBooks_AutoRollback_ChangedSidePrompts",
+    ), "STMemoryBooks");
+  }
+  if (rollbackRanges.length > 1 && restoredSidePrompts > 0) {
+    toastr.warning(translate(
+      "Only the latest available before-state was restored for each Side Prompt; older rolled-back information may remain.",
+      "STMemoryBooks_AutoRollback_MultipleSidePrompts",
+    ), "STMemoryBooks");
+  }
+  toastr.success(tr(
+    "STMemoryBooks_AutoRollback_Complete",
+    "Memory rollback completed for {{count}} Memory entry or entries.",
+    { count: selectedCount },
+  ), "STMemoryBooks");
+}
+
+function queueMemoryAutoRollback({ chatKey, chatId, deletion }) {
+  const previous = memoryRollbackChains.get(chatKey) || Promise.resolve();
+  const current = previous.catch(() => {}).then(() =>
+    executeMemoryAutoRollback({ chatKey, chatId, deletion }));
+  memoryRollbackChains.set(chatKey, current);
+  current.catch(error => {
+    console.error("STMemoryBooks: Memory auto-rollback failed:", error);
+    toastr.error(error?.message || String(error), translate("Memory rollback failed", "STMemoryBooks_AutoRollback_Failed"), {
+      timeOut: 0,
+      extendedTimeOut: 0,
+    });
+  }).finally(() => {
+    if (memoryRollbackChains.get(chatKey) === current) memoryRollbackChains.delete(chatKey);
+  });
+}
+
 /**
  * Setup event listeners
  */
@@ -12198,12 +12657,29 @@ function setupEventListeners() {
   });
   eventSource.on(event_types.MESSAGE_DELETED, (deletedId) => {
     const settings = initializeSettings();
-    handleMessageDeletion(deletedId, settings);
+    const chatKey = getStmbChatKey();
+    const deletion = memoryRollbackDeletionTracker.detect(chatKey, chat) || {
+      start: Number(deletedId),
+      end: Number(deletedId),
+      count: 1,
+      previousLength: chat.length + 1,
+      currentLength: chat.length,
+      isTail: Number(deletedId) === chat.length,
+    };
+    handleMessageDeletion(deletion, settings);
     refreshMemoryBoundaryUi();
-    if (Number(deletedId) >= chat.length) restoreNarratorCastFromTimeline();
+    if (deletion.isTail) restoreNarratorCastFromTimeline();
     else refreshNarratorCastDrawer();
+    if (settings.moduleSettings?.autoRollbackEnabled) {
+      queueMemoryAutoRollback({
+        chatKey,
+        chatId: getMemoryRollbackChatId(),
+        deletion,
+      });
+    }
   });
   eventSource.on(event_types.MESSAGE_SENT, (messageId) => {
+    memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
     if (!getCurrentMemoryBooksContext().isNarratorMode) return;
     const message = chat?.[messageId];
     if (!message) return;
@@ -12211,6 +12687,7 @@ function setupEventListeners() {
     saveChatDebounced();
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, (messageId, type) => {
+    memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
     if (!narratorGenerationSnapshot || !getCurrentMemoryBooksContext().isNarratorMode) return;
     const message = chat?.[messageId];
     if (!message || message.is_system) return;
@@ -12218,7 +12695,11 @@ function setupEventListeners() {
     saveChatDebounced();
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
+  eventSource.on(event_types.MESSAGE_EDITED, () => {
+    memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
+  });
   eventSource.on(event_types.MESSAGE_SWIPED, (messageId) => {
+    memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
     restoreNarratorCastFromTimeline(messageId);
   });
 
@@ -13323,6 +13804,7 @@ async function init() {
   }
 
   // Setup event listeners
+  memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
   setupEventListeners();
   initializeLorebookRegenerationObserver();
   registerMemoryTierMacros();

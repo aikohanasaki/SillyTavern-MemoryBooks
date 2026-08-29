@@ -258,6 +258,28 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_CopyMemoryBooksOnBranch">Copy Memory Books when branching</span>
         </label>
         <small class="opacity50p" data-i18n="STMemoryBooks_CopyMemoryBooksOnBranchDesc">When enabled, new chat branches receive independent copies of their active chat-bound or manual Memory Books.</small>
+        <div class="padding10 marginTop5 stmb-box">
+            <label class="checkbox_label">
+                <input type="checkbox" id="stmb-auto-rollback-enabled" {{#if autoRollbackEnabled}}checked{{/if}}>
+                <span data-i18n="STMemoryBooks_AutoRollbackEnabled">Auto-rollback after message deletion</span>
+            </label>
+            <small class="opacity50p" data-i18n="STMemoryBooks_AutoRollbackDesc">When deleted messages invalidate processed Memories, apply the selected rollback actions. Deleting Memories or consolidations is irreversible.</small>
+            <div id="stmb-auto-rollback-options" class="padding10 {{#unless autoRollbackEnabled}}opacity50p{{/unless}}">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-auto-rollback-update-last-processed" {{#if autoRollbackUpdateLastProcessed}}checked{{/if}} {{#unless autoRollbackEnabled}}disabled{{/unless}}>
+                    <span data-i18n="STMemoryBooks_AutoRollbackUpdateLastProcessed">Update last message ID processed</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-auto-rollback-delete-last-memory" {{#if autoRollbackDeleteLastMemory}}checked{{/if}} {{#unless autoRollbackEnabled}}disabled{{/unless}}>
+                    <span data-i18n="STMemoryBooks_AutoRollbackDeleteLastMemory">Delete last Memory</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-auto-rollback-restore-side-prompts" {{#if autoRollbackRestorePreviousSidePrompts}}checked{{/if}} {{#unless autoRollbackEnabled}}disabled{{/unless}}>
+                    <span data-i18n="STMemoryBooks_AutoRollbackRestoreSidePrompts">Restore previous Side Prompts</span>
+                </label>
+                <small class="warning" data-i18n="STMemoryBooks_AutoRollbackSidePromptLimit">Side Prompts can be rolled back only once, to their latest exact saved state. Older rollback layers are not retained.</small>
+            </div>
+        </div>
     </div>
 
     <div class="world_entry_form_control">

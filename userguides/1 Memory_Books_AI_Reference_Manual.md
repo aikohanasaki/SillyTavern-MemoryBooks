@@ -1377,16 +1377,18 @@ A Side Prompt can inherit normal Memory Books connection resolution or bind a sp
 
 ### 16.16 Side Prompt regeneration
 
-Compatible saves store a compact snapshot containing:
+Compatible saves now store a version-2 snapshot containing:
 
 - Side Prompt template key;
-- prior entry content;
+- prior entry content for regeneration;
+- whether the entry existed before the run and its exact prior entry state, excluding an older rollback snapshot;
 - source chat and inclusive range;
-- runtime macro values.
+- runtime macro values;
+- a fingerprint of the exact entry state written by STMB.
 
 To regenerate, open the lorebook editor and click **Regenerate side prompt**. The replacement uses the saved snapshot with the current template and current profile/context settings.
 
-Regeneration cannot complete when the template was deleted, the source chat/range is unavailable, or the target/source changed during generation. Only the content is replaced; existing title, keywords, and entry settings remain.
+Regeneration cannot complete when the template was deleted, the source chat/range is unavailable, or the target/source changed during generation. Only the content is replaced; existing title, keywords, and entry settings remain. Legacy version-1 snapshots continue to support regeneration, although they cannot be used by Memory Auto-Rollback.
 
 ### 16.17 Writing good Side Prompts
 
@@ -2016,6 +2018,10 @@ Open **Settings → General Settings** in the main panel.
 | **Allow scene overlap** | Global | Permits a selected scene range to overlap message IDs already represented by an existing Memory. |
 | **Refresh lorebook editor after adding memories** | Global | Refreshes an open lorebook editor after STMB writes entries so the new content appears immediately. |
 | **Copy Memory Books when branching** | Global | Gives a native chat branch independent copies of its active unlocked chat-bound or manual Memory Books. Character-locked books remain shared by design. |
+| **Auto-rollback after message deletion** | Global | Enables coordinated rollback when deletion or truncation intersects already processed chat material. It is disabled by default. Ordinary message edits and swipes do not trigger it. |
+| **Update last message ID processed** | Global; Auto-rollback action | Moves the processed checkpoint to the end of the newest surviving Memory, or clears it when none survives. |
+| **Delete last Memory** | Global; Auto-rollback action | Deletes every invalidated Memory selected by the rollback scope and its linked copies. Memory and consolidation deletion is irreversible. |
+| **Restore previous Side Prompts** | Global; Auto-rollback action | Restores each unchanged affected Side Prompt to its latest exact saved before-state. Only one rollback level is retained. |
 | **Default for solo chats** | Global | Selects the Side Prompt Set inherited by solo chats after a Memory. An empty selection uses individually enabled after-Memory Side Prompts. |
 | **Default for group chats** | Global | Selects the Side Prompt Set inherited by real group chats after a Memory. An empty selection uses individually enabled after-Memory Side Prompts. |
 | **Max Response Tokens** | Global | Overrides the maximum output length for STMB generation. Increase it when otherwise valid JSON is cut off; `0` leaves the normal provider/SillyTavern behavior available as the fallback. |
@@ -2024,6 +2030,26 @@ Open **Settings → General Settings** in the main panel.
 | **Use regex (advanced)** | Global | Enables STMB's own regex-processing selection. These selections are separate from whether the underlying SillyTavern regex script is generally enabled. |
 | **Configure regex… → Outgoing scripts** | Global | Selects scripts STMB runs on material before sending it to the generation provider. |
 | **Configure regex… → Incoming scripts** | Global | Selects scripts STMB runs on returned material before parsing and saving it. |
+
+#### Memory Auto-Rollback inside General Settings
+
+**Auto-rollback after message deletion** is a master preference. Its three action checkboxes are independently selectable, enabled by default, and visually disabled while the master switch is off. Existing installations therefore do not begin deleting anything merely by upgrading.
+
+Auto-rollback reacts only to message deletion or truncation, including the deletion phase of response regeneration. It does not react to an ordinary edit or swipe. STMB tracks the actual message identities in each chat because SillyTavern's deletion event value does not reliably identify a middle deletion.
+
+For a tail deletion, every Memory whose stored source range intersects the removed suffix is affected. For a deletion in the middle of a chat, STMB asks for one of three choices:
+
+- **Full rollback** deletes the affected Memory and every newer Memory.
+- **Affected only** deletes only overlapping Memories, preserves newer Memories, and shifts their stored ranges, relevant Side Prompt checkpoints, and the processed checkpoint by the deletion count. This deliberately leaves a permanent gap in Memory coverage.
+- **Cancel** makes no Memory Books changes.
+
+Rollback uses exact `STMB_chatId`, source-range, and canonical/link metadata across available Memory Books. A canonical group or Narrator Memory and all discoverable linked copies are one deletion unit. Missing canonical copies, ambiguous legacy entries without enough chat identity, malformed ranges, or incomplete consolidation dependencies stop the entire rollback and produce repair guidance; STMB does not guess ownership.
+
+When **Delete last Memory** is selected, STMB preflights every direct and transitive consolidation parent in each affected Memory Book. One combined confirmation lists the consolidations that must be deleted. Canceling that confirmation cancels checkpoint, Memory, and Side Prompt changes as well. Approval deletes the consolidation ancestors, re-enables each existing direct source that was disabled by a deleted consolidation and clears its `disabledBySummaryId` backlink, then deletes the selected base Memories. Entries disabled independently by the user are not enabled.
+
+Before saving, STMB rechecks complete lorebook fingerprints. Lorebooks are written through their normal serialized write lanes in sorted order, and unchanged pre-write clones are retained for compensating saves if a later book fails. Chat checkpoint metadata is changed only after every lorebook write succeeds. Queued work for the chat is canceled before preflight; active non-queued Memory creation is allowed to finish before rollback proceeds.
+
+Side Prompt rollback uses version-2 regeneration snapshots. Each snapshot records whether the entry existed, its exact prior state without an older rollback snapshot, source chat/range, and a fingerprint of the state STMB wrote. If the rolled-back run created the entry, rollback deletes it. If the current entry no longer matches the saved fingerprint, STMB assumes a user or later run changed it and leaves it alone. Version-1 snapshots still support regeneration but are not safe enough for rollback and are skipped with a warning. A successful restore consumes the snapshot, so that Side Prompt cannot be rolled back a second time until it runs again. If several Memories are rolled back together, only the latest available before-state for each Side Prompt can be restored; information introduced by older rolled-back runs may remain.
 
 #### Token Saving inside General Settings
 

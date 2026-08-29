@@ -615,6 +615,39 @@ export function cancelAllStmbJobs(reason = 'stmb-stop') {
     return count;
 }
 
+export function cancelStmbJobsForChat(chatKey = null, reason = 'stmb-chat-rollback') {
+    const key = String(chatKey || getStmbChatKey()).trim();
+    const store = jobStores.get(key);
+    if (!store) return 0;
+    const runningJobs = getRunningJobs(store);
+    let count = 0;
+    for (const job of runningJobs) {
+        count++;
+        job.cancelled = true;
+        try {
+            job.abortController.abort(reason);
+        } catch {}
+        const approval = pendingApprovals.get(job.id);
+        if (approval) {
+            pendingApprovals.delete(job.id);
+            approval.resolve({ decision: 'cancel' });
+        }
+    }
+    for (const job of store.queue) {
+        count++;
+        job.cancelled = true;
+        job.state = 'canceled';
+        job.finishedAt = Date.now();
+        store.recentHistory.unshift(job);
+    }
+    for (const memoryJob of runningJobs.filter(job => String(job.type || '') === 'memory')) {
+        captureCanceledAfterMemoryJobsForRetry(memoryJob, store.queue);
+    }
+    store.queue = [];
+    touchStore(store);
+    return count;
+}
+
 function isCurrentJobChat(job) {
     return isSameChatRef(job?.chatRef, getCurrentStmbChatRef());
 }

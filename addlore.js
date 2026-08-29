@@ -1244,7 +1244,7 @@ export function getEntryByTitle(lorebookData, title) {
  *
  * @param {string} lorebookName
  * @param {Object} lorebookData
- * @param {Array<{title: string, content: string, defaults?: Object, metadataUpdates?: Object, entryOverrides?: Object}>} items
+ * @param {Array<{title: string, content: string, defaults?: Object, metadataUpdates?: Object, entryOverrides?: Object, metadataFactory?: Function}>} items
  * @param {Object} [options]
  * @param {boolean} [options.refreshEditor=true]
  * @returns {Promise<Array<{title:string, uid:number, created:boolean}>>}
@@ -1270,6 +1270,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
         const entryOverrides = it.entryOverrides || {};
 
         let entry = getEntryByTitle(lorebookData, title);
+        const priorEntry = entry ? structuredClone(entry) : null;
         let created = false;
 
         if (!entry) {
@@ -1306,6 +1307,13 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
             entry[k] = v;
         }
 
+        if (typeof it.metadataFactory === 'function') {
+            const generatedMetadata = it.metadataFactory({ entry, priorEntry, created }) || {};
+            for (const [k, v] of Object.entries(generatedMetadata)) {
+                entry[k] = v;
+            }
+        }
+
         results.push({ title, uid: entry.uid, created });
     }
 
@@ -1332,6 +1340,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
  * @param {Object} [options.defaults]  Defaults for new entries (vectorized, selective, order, position, etc.)
  * @param {Object} [options.metadataUpdates]  Key/value pairs to set on entry (e.g., STMB_tracker_lastMsgId)
  * @param {Object} [options.entryOverrides]  Fields to set/update on the entry for both create and update (e.g., constant, vectorized, preventRecursion, delayUntilRecursion, order)
+ * @param {Function} [options.metadataFactory] Called after core updates with {entry, priorEntry, created}.
  * @param {boolean} [options.refreshEditor=true]
  * @returns {Promise<{uid:number, created:boolean}>}
  */
@@ -1346,6 +1355,7 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
         metadataUpdates = {},
         refreshEditor = true,
         entryOverrides = {},
+        metadataFactory = null,
     } = options;
 
     if (!lorebookName || !lorebookData || !title) {
@@ -1353,6 +1363,7 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
     }
 
     let entry = getEntryByTitle(lorebookData, title);
+    const priorEntry = entry ? structuredClone(entry) : null;
     let created = false;
 
     if (!entry) {
@@ -1385,6 +1396,13 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
     // Apply entry overrides (both on create and update)
     for (const [k, v] of Object.entries(entryOverrides || {})) {
         entry[k] = v;
+    }
+
+    if (typeof metadataFactory === 'function') {
+        const generatedMetadata = metadataFactory({ entry, priorEntry, created }) || {};
+        for (const [k, v] of Object.entries(generatedMetadata)) {
+            entry[k] = v;
+        }
     }
 
     await saveWorldInfo(lorebookName, lorebookData, true);
