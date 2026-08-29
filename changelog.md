@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 ← [Back to README](readme.md)
 
 ## v9.0.0 (August 29, 2026)
-BREAKING CHANGE: MEMORY ROLLBACK
+- **Breaking:** Added opt-in Memory Auto-Rollback for deleted or truncated messages, covering checkpoints, Memories and consolidations, linked copies, and Side Prompts. Side Prompt rollback snapshots now use v2; legacy snapshots remain regeneration-only.
 
 ## v8.6.10 (August 27, 2026)
 - Add {{groupname}} and {{present}} title macros.
