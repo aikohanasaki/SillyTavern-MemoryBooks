@@ -1377,16 +1377,18 @@ Side Prompt boleh mewarisi biasa Memory Books connection resolution atau bind sp
 
 ### 16.16 Side Prompt regeneration
 
-Compatible saves menyimpan compact snapshot mengandungi:
+Compatible saves kini menyimpan version-2 snapshot yang mengandungi:
 
 - Side Prompt templat key;
-- prior entry content;
+- prior entry content untuk regeneration;
+- sama ada entry wujud sebelum run dan exact prior entry state, tanpa rollback snapshot yang lebih lama;
 - source chat dan inclusive range;
-- runtime macro values.
+- runtime macro values;
+- fingerprint bagi exact entry state yang ditulis oleh STMB.
 
 Untuk regenerate, buka lorebook editor dan klik **Regenerate side prompt**. Replacement memakai saved snapshot dengan current templat dan current profile/context settings.
 
-Regeneration tidak boleh selesai jika templat dipadam, source chat/range tidak tersedia, atau sasaran/source berubah selama generation. Hanya content yang digantikan; existing title, keywords, dan entry settings masih.
+Regeneration tidak boleh selesai jika templat dipadam, source chat/range tidak tersedia, atau sasaran/source berubah semasa generation. Hanya content yang digantikan; existing title, keywords, dan entry settings kekal. Legacy version-1 snapshots masih menyokong regeneration, tetapi tidak boleh digunakan oleh Memory Auto-Rollback.
 
 ### 16.17 Menulis Side Prompt yang baik
 
@@ -1468,12 +1470,13 @@ Consolidated entries mesti menekankan lasting changes, turning points, goals, co
 ### 17.3 Manual workflow
 
 1. Buka **Consolidate Memories**.
-2. Pilih sasaran tier.
-3. Pilih eligible source entries.
-4. Pilih consolidation prompt/profile settings.
-5. Tentukan adakah source entries akan disabled selepas consolidation berjaya.
-6. Run dan review candidates.
-7. Approve summaries yang dikehendaki.
+2. Sahkan Source Memory Book yang dipaparkan. Pilih book lain jika configured manual atau chat-bound book bukan consolidation source yang dikehendaki. Pilihan ini hanya digunakan untuk current run dan tidak mengubah configured Memory Book chat.
+3. Pilih sasaran tier.
+4. Pilih eligible source entries.
+5. Pilih consolidation prompt/profile settings.
+6. Tentukan adakah source entries akan disabled selepas consolidation berjaya.
+7. Run dan review candidates.
+8. Approve summaries yang dikehendaki.
 
 ### 17.4 Readiness prompts bukan automatic consolidation
 
@@ -1895,10 +1898,12 @@ Format title profile boleh memakai:
 - `{{title}}` — title buatan AI;
 - `{{scene}}` — source range;
 - `{{char}}` — nama character/group;
+- `{{groupname}}` — display name group semasa; menjadi `Unknown` di luar group chat;
+- `{{present}}` — comma-separated characters yang hadir dalam scene: individual speakers dalam group chat, selected Active Cast scene dalam Narrator Mode, atau current character dalam regular character chat;
 - `{{user}}` — nama user;
 - `{{messages}}` — bilangan message dalam scene;
 - `{{profile}}` — nama profile;
-- date dan time placeholders yang didukung.
+- date dan time placeholders yang disokong.
 
 ### 24.2 Auto-numbering
 
@@ -2013,6 +2018,10 @@ Buka **Settings → General Settings** di main panel.
 | **Allow scene overlap** | Global | Membenarkan selected scene range overlap dengan message IDs yang sudah diwakili existing Memory. |
 | **Refresh lorebook editor after adding memories** | Global | Refresh lorebook editor terbuka selepas STMB menulis entries agar content baharu terus kelihatan. |
 | **Copy Memory Books when branching** | Global | Memberi native chat branch independent copies dari active unlocked chat-bound atau manual Memory Books. Character-locked books masih shared sesuai desain. |
+| **Auto-rollback after message deletion** | Global | Mengaktifkan coordinated rollback apabila message deletion atau truncation mengenai chat material yang telah processed. Disabled secara default. Ordinary message edits dan swipes tidak mencetuskannya. |
+| **Update last message ID processed** | Global; Auto-Rollback action | Memindahkan processed checkpoint ke hujung Memory terbaru yang masih wujud, atau membersihkannya jika tiada yang tinggal. |
+| **Delete last Memory** | Global; Auto-Rollback action | Memadam semua Memory yang invalid dalam rollback scope bersama linked copies. Pemadaman Memory dan consolidation adalah irreversible. |
+| **Restore previous Side Prompts** | Global; Auto-Rollback action | Memulihkan setiap affected Side Prompt yang tidak berubah kepada latest exact before-state. Hanya satu rollback level disimpan. |
 | **Default for solo chats** | Global | Memilih Side Prompt Set yang diwarisi solo chats selepas Memory. Empty selection memakai individually enabled after-Memory Side Prompts. |
 | **Default for group chats** | Global | Memilih Side Prompt Set yang diwarisi real group chats selepas Memory. Empty selection memakai individually enabled after-Memory Side Prompts. |
 | **Max Response Tokens** | Global | Mengoverride maximum output length untuk STMB generation. Naikkan jika JSON valid terpotong; `0` membiarkan biasa provider/SillyTavern behavior tersedia sebagai fallback. |
@@ -2021,6 +2030,26 @@ Buka **Settings → General Settings** di main panel.
 | **Use regex (advanced)** | Global | Mengaktifkan regex-processing selection milik STMB. Selection ini berasingan dari adakah underlying SillyTavern regex script enabled di interface biasa. |
 | **Configure regex… → Outgoing scripts** | Global | Memilih scripts yang dijalankan STMB pada material sebelum dihantar ke generation provider. |
 | **Configure regex… → Incoming scripts** | Global | Memilih scripts yang dijalankan STMB pada returned material sebelum parsing dan saving. |
+
+#### Memory Auto-Rollback dalam General Settings
+
+**Auto-rollback after message deletion** ialah master preference. Tiga action checkboxes boleh dipilih secara berasingan, enabled secara default, dan secara visual disabled ketika master switch off. Oleh itu existing installation tidak mula memadam apa-apa hanya kerana upgrade.
+
+Auto-Rollback hanya bertindak pada message deletion atau truncation, termasuk deletion phase semasa response regeneration. Ordinary edit atau swipe tidak mencetuskannya. STMB menjejak actual message identities dalam setiap chat kerana deletion event value SillyTavern tidak dapat mengenal pasti middle deletion dengan boleh dipercayai.
+
+Untuk tail deletion, setiap Memory yang stored source range bersilang dengan removed suffix akan affected. Untuk deletion di tengah chat, STMB meminta satu daripada tiga pilihan:
+
+- **Full rollback** memadam affected Memory dan semua Memory yang lebih baharu.
+- **Affected only** hanya memadam overlapping Memories, mengekalkan newer Memories, dan mengalihkan stored ranges, relevant Side Prompt checkpoints, dan processed checkpoint mengikut deletion count. Ini sengaja meninggalkan permanent gap dalam Memory coverage.
+- **Cancel** tidak membuat perubahan Memory Books.
+
+Rollback menggunakan exact `STMB_chatId`, source-range, dan canonical/link metadata merentasi available Memory Books. Canonical group atau Narrator Memory dan semua discoverable linked copies ialah satu deletion unit. Missing canonical copies, ambiguous legacy entries tanpa chat identity yang cukup, malformed ranges, atau incomplete consolidation dependencies menghentikan keseluruhan rollback dan memberikan repair guidance; STMB tidak meneka ownership.
+
+Apabila **Delete last Memory** dipilih, STMB melakukan preflight bagi setiap direct dan transitive consolidation parent dalam setiap affected Memory Book. Satu combined confirmation menyenaraikan consolidations yang mesti dipadam. Membatalkan confirmation turut membatalkan checkpoint, Memory, dan Side Prompt changes. Approval memadam consolidation ancestors, re-enable setiap existing direct source yang disabled oleh deleted consolidation dan membersihkan backlink `disabledBySummaryId`, kemudian memadam selected base Memories. Entries yang disabled secara bebas oleh user tidak di-enable.
+
+Sebelum save, STMB menyemak semula complete lorebook fingerprints. Lorebooks ditulis melalui normal serialized write lanes dalam sorted order, dan unchanged pre-write clones disimpan untuk compensating saves jika book kemudian gagal. Chat checkpoint metadata hanya berubah selepas semua lorebook writes berjaya. Queued work untuk chat dibatalkan sebelum preflight; active non-queued Memory creation dibenarkan selesai sebelum rollback diteruskan.
+
+Side Prompt rollback menggunakan version-2 regeneration snapshots. Setiap snapshot merekod sama ada entry existed, exact prior state tanpa older rollback snapshot, source chat/range, dan fingerprint state yang ditulis STMB. Jika rolled-back run mencipta entry, rollback memadamnya. Jika current entry tidak lagi sepadan dengan saved fingerprint, STMB menganggap user atau later run telah mengubahnya dan membiarkannya. Version-1 snapshots masih menyokong regeneration tetapi tidak cukup selamat untuk rollback dan dilangkau dengan warning. Successful restore menggunakan snapshot itu, jadi Side Prompt tersebut tidak boleh di-rollback lagi sehingga run seterusnya. Jika beberapa Memories di-rollback bersama, hanya latest available before-state bagi setiap Side Prompt boleh dipulihkan; maklumat daripada older rolled-back runs mungkin kekal.
 
 #### Token Saving di dalam General Settings
 
@@ -2135,7 +2164,7 @@ Memory Book, topic, keywords, source inclusion, source selection, message range,
 
 ### 27.9 Consolidate Memories controls
 
-Buka **Consolidate Memories** dari tombol di bahagian bawah main panel. Interface ini mencampurkan saved defaults dan one-run choices.
+| **Source Memory Book** | Per run | Memaparkan Memory Book yang sedang di-consolidate dan membolehkan anda memilih available book lain. Menukarnya reload eligible-entry list tanpa mengubah configured manual atau chat-bound Memory Book chat. | Buka **Consolidate Memories** dari tombol di bahagian bawah main panel. Interface ini mencampurkan saved defaults dan one-run choices.
 
 | Setting | Scope | Fungsi |
 |---|---|---|
@@ -2148,6 +2177,7 @@ Buka **Consolidate Memories** dari tombol di bahagian bawah main panel. Interfac
 | **Activation Mode / Insertion Position / Outlet / Insertion Order / Recursion Settings** | Global consolidation-entry defaults | Mengontrol cara newly consolidated entries disimpan. Berasingan dari ordinary Memory profile entry settings. |
 | **Disable selected source entries after creating summaries** | Per run | Menyahaktifkan successfully consolidated sources selepas commit agar higher-tier summaries boleh menggantikan mereka di retrieval. Tidak memadam. |
 | **Selected source entries** | Per run | Memilih eligible lower-tier entries yang diproses. Unchecked entries tidak ditukar. |
+
 
 ### 27.10 Related SillyTavern World Info settings
 

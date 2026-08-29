@@ -1385,16 +1385,18 @@ Side Prompt는 normal Memory Books connection resolution을 inherit하거나 특
 
 ### 16.16 Side Prompt regeneration
 
-compatible save는 다음 compact snapshot을 저장한다.
+compatible save는 이제 다음 version-2 snapshot을 저장한다.
 
 - Side Prompt template key
-- prior entry content
+- regeneration용 prior entry content
+- run 전에 entry가 존재했는지 여부와, 더 오래된 rollback snapshot을 제외한 exact prior entry state
 - source chat 및 inclusive range
 - runtime macro values
+- STMB가 실제로 쓴 exact entry state의 fingerprint
 
 regenerate하려면 lorebook editor에서 **Regenerate side prompt**를 클릭한다. replacement는 saved snapshot + current template/current profile/context settings를 사용한다.
 
-template 삭제, source chat/range unavailable, generation 중 target/source 변경이면 완료할 수 없다. content만 replace하며 기존 title/keywords/entry settings는 유지한다.
+template 삭제, source chat/range unavailable, generation 중 target/source 변경이면 완료할 수 없다. content만 replace하며 기존 title/keywords/entry settings는 유지한다. legacy version-1 snapshot도 regeneration에는 계속 사용할 수 있지만 Memory Auto-Rollback에는 사용할 수 없다.
 
 ### 16.17 좋은 Side Prompt 작성
 
@@ -1473,12 +1475,13 @@ consolidated entry는 lasting changes, turning points, goals, consequences, rela
 ### 17.3 Manual workflow
 
 1. **Consolidate Memories** 열기.
-2. target tier 선택.
-3. eligible source entries 선택.
-4. consolidation prompt/profile settings 선택.
-5. successful consolidation 후 source entries disable 여부 결정.
-6. 실행하고 candidates 검토.
-7. 원하는 summaries 승인.
+2. 표시된 Source Memory Book 확인. configured manual/chat-bound book이 의도한 consolidation source가 아니면 다른 book을 선택한다. 이 선택은 current run에만 적용되며 chat의 configured Memory Book은 바꾸지 않는다.
+3. target tier 선택.
+4. eligible source entries 선택.
+5. consolidation prompt/profile settings 선택.
+6. successful consolidation 후 source entries disable 여부 결정.
+7. 실행하고 candidates 검토.
+8. 원하는 summaries 승인.
 
 ### 17.4 Readiness prompt는 automatic consolidation이 아님
 
@@ -1900,6 +1903,8 @@ Profile title format에서 사용 가능:
 - `{{title}}` — AI-generated title
 - `{{scene}}` — source range
 - `{{char}}` — character/group name
+- `{{groupname}}` — 현재 group의 display name. group chat 밖에서는 `Unknown`
+- `{{present}}` — scene에 present한 characters의 comma-separated list: group chat의 individual speakers, Narrator Mode scene의 selected Active Cast, 또는 regular character chat의 current character
 - `{{user}}` — user name
 - `{{messages}}` — scene message count
 - `{{profile}}` — profile name
@@ -2018,6 +2023,10 @@ Scope:
 | **Allow scene overlap** | Global | existing Memory가 대표하는 message IDs와 selected scene overlap 허용. |
 | **Refresh lorebook editor after adding memories** | Global | STMB write 후 open lorebook editor refresh. |
 | **Copy Memory Books when branching** | Global | native chat branch에 active unlocked books의 independent copies 제공. character-locked books는 공유 유지. |
+| **Auto-rollback after message deletion** | Global | message deletion/truncation이 이미 processed된 chat material과 겹칠 때 coordinated rollback을 enable. default는 off. ordinary message edits/swipes는 trigger하지 않음. |
+| **Update last message ID processed** | Global; Auto-Rollback action | processed checkpoint를 가장 최신 surviving Memory의 끝으로 이동하거나, 남은 Memory가 없으면 clear. |
+| **Delete last Memory** | Global; Auto-Rollback action | rollback scope에서 invalidated된 모든 Memory와 linked copies 삭제. Memory/consolidation 삭제는 irreversible. |
+| **Restore previous Side Prompts** | Global; Auto-Rollback action | 변경되지 않은 affected Side Prompt를 latest exact before-state로 restore. rollback level은 하나만 유지. |
 | **Default for solo chats** | Global | solo after-Memory Side Prompt Set default. empty = individually enabled. |
 | **Default for group chats** | Global | real group after-Memory Side Prompt Set default. empty = individually enabled. |
 | **Max Response Tokens** | Global | STMB generation output max override. cut-off JSON이면 증가. `0`은 normal provider/ST fallback. |
@@ -2026,6 +2035,26 @@ Scope:
 | **Use regex (advanced)** | Global | STMB regex-processing selection enable. underlying Regex UI enabled state와 별도. |
 | **Configure regex… → Outgoing scripts** | Global | provider 전송 전 material에 적용. |
 | **Configure regex… → Incoming scripts** | Global | parsing/saving 전 returned material에 적용. |
+
+#### General Settings 안 Memory Auto-Rollback
+
+**Auto-rollback after message deletion**은 master preference다. 세 action checkbox는 독립적으로 선택할 수 있고 default enabled이며, master switch가 off일 때는 UI에서 disabled로 보인다. 따라서 기존 설치가 upgrade만으로 자동 삭제를 시작하지 않는다.
+
+Auto-Rollback은 message deletion/truncation에만 반응하며 response regeneration의 deletion phase도 포함한다. ordinary edit/swipe에는 반응하지 않는다. SillyTavern deletion event 값만으로는 middle deletion을 신뢰성 있게 식별할 수 없으므로 STMB는 각 chat의 actual message identities를 추적한다.
+
+Tail deletion에서는 stored source range가 removed suffix와 겹치는 모든 Memory가 affected된다. Middle deletion에서는 세 선택지가 나온다.
+
+- **Full rollback** — affected Memory와 그 이후 모든 Memory 삭제.
+- **Affected only** — overlapping Memories만 삭제하고 newer Memories는 유지하며, stored ranges/relevant Side Prompt checkpoints/processed checkpoint를 deletion count만큼 shift. 의도적으로 Memory coverage에 permanent gap이 남는다.
+- **Cancel** — Memory Books 변경 없음.
+
+Rollback은 available Memory Books 전체에서 exact `STMB_chatId`, source-range, canonical/link metadata를 사용한다. canonical group/Narrator Memory와 discoverable linked copies는 하나의 deletion unit이다. missing canonical copies, 충분한 chat identity가 없는 ambiguous legacy entries, malformed ranges, incomplete consolidation dependencies가 있으면 전체 rollback을 중단하고 repair guidance를 제공한다. STMB는 ownership을 추측하지 않는다.
+
+**Delete last Memory**가 선택되어 있으면 STMB는 affected Memory Book마다 direct/transitive consolidation parent를 모두 preflight한다. 하나의 combined confirmation에 삭제해야 할 consolidations가 표시된다. 이를 cancel하면 checkpoint/Memory/Side Prompt 변경도 전부 cancel된다. 승인하면 consolidation ancestors를 삭제하고, 삭제된 consolidation 때문에 disabled된 기존 direct source를 다시 enable하면서 `disabledBySummaryId` backlink를 clear한 다음 selected base Memories를 삭제한다. user가 독립적으로 disabled한 entry는 enable하지 않는다.
+
+저장 직전 STMB는 complete lorebook fingerprints를 다시 확인한다. lorebook은 normal serialized write lanes를 통해 sorted order로 저장하고, 이후 book 실패 시 compensating save를 위해 unchanged pre-write clone을 유지한다. chat checkpoint metadata는 모든 lorebook write 성공 후에만 변경된다. chat의 queued work는 preflight 전에 cancel되고, active non-queued Memory creation은 rollback 전에 완료될 수 있다.
+
+Side Prompt rollback은 version-2 regeneration snapshot을 사용한다. snapshot에는 entry 존재 여부, older rollback snapshot을 제외한 exact prior state, source chat/range, STMB가 쓴 state의 fingerprint가 저장된다. rolled-back run이 entry를 만들었다면 rollback이 삭제한다. current entry가 saved fingerprint와 다르면 user 또는 later run이 변경한 것으로 보고 그대로 둔다. version-1 snapshot은 regeneration에는 계속 쓸 수 있지만 rollback에는 충분히 안전하지 않아 warning과 함께 skip된다. successful restore는 snapshot을 consume하므로 해당 Side Prompt는 다시 run되기 전까지 두 번째 rollback을 할 수 없다. 여러 Memories를 함께 rollback하면 Side Prompt별 latest available before-state만 restore할 수 있어, 더 오래된 rolled-back run이 넣은 정보는 남을 수 있다.
 
 #### General Settings 안 Token Saving
 
@@ -2144,6 +2173,7 @@ main panel 아래 **Consolidate Memories**.
 
 | Setting | Scope | 기능 |
 |---|---|---|
+| **Source Memory Book** | Per run | 현재 consolidate 중인 Memory Book을 표시하고 다른 available book 선택을 허용한다. 변경하면 eligible-entry list를 reload하지만 chat의 configured manual/chat-bound Memory Book은 변경하지 않는다. |
 | **Target tier** | Per run | 만들 higher tier, 따라서 바로 lower eligible source tier 선택. |
 | **Consolidation Prompt** | Per run | 이번 consolidation prompt; manager default로 시작. |
 | **Maximum entries per pass** | Per run | analysis pass당 lower-tier entries 수. |

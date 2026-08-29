@@ -1379,16 +1379,18 @@ Side Prompt 可以继承正常 Memory Books connection resolution，也可以绑
 
 ### 16.16 Side Prompt regeneration
 
-兼容的储存会存储 compact snapshot：
+兼容的保存现在会存储 version-2 snapshot，其中包含：
 
 - Side Prompt template key；
-- prior entry content；
+- 用于 regeneration 的 prior entry content；
+- 本次 run 前 entry 是否存在，以及排除更早 rollback snapshot 后的 exact prior entry state；
 - source chat 与 inclusive range；
-- runtime macro values。
+- runtime macro values；
+- STMB 实际写入的 exact entry state fingerprint。
 
-要 regenerate，打开 lorebook editor 并点选 **Regenerate side prompt**。replacement 使用储存的 snapshot 与当前 template、profile/context settings。
+要 regenerate，打开 lorebook editor 并点击 **Regenerate side prompt**。replacement 使用保存的 snapshot，以及当前 template、profile/context settings。
 
-如果 template 已删除、source chat/range 不可用，或 target/source 在生成期间发生变化，就无法完成 regeneration。只有 content 被替换；现有 title、keywords 与 entry settings 保留。
+如果 template 已删除、source chat/range 不可用，或 target/source 在 generation 期间发生变化，就无法完成 regeneration。只替换 content；现有 title、keywords 与 entry settings 保留。Legacy version-1 snapshots 仍可用于 regeneration，但不能用于 Memory Auto-Rollback。
 
 ### 16.17 编写良好 Side Prompt
 
@@ -1470,12 +1472,13 @@ Consolidated entries 应强调 lasting changes、turning points、goals、conseq
 ### 17.3 手动工作流
 
 1. 打开 **Consolidate Memories**。
-2. 选择 target tier。
-3. 选择 eligible source entries。
-4. 选择 consolidation prompt/profile settings。
-5. 决定成功 consolidation 后是否禁用 source entries。
-6. 运行并审核 candidates。
-7. 批准需要的 summaries。
+2. 确认当前显示的 Source Memory Book。如果已配置的 manual 或 chat-bound book 不是本次想要的 consolidation source，请选择其他 book。该选择只对当前 run 生效，不会改变 chat 配置的 Memory Book。
+3. 选择 target tier。
+4. 选择 eligible source entries。
+5. 选择 consolidation prompt/profile settings。
+6. 决定成功 consolidation 后是否禁用 source entries。
+7. 运行并审核 candidates。
+8. 批准需要的 summaries。
 
 ### 17.4 Readiness prompts 不是自动 consolidation
 
@@ -1897,10 +1900,12 @@ Profile title format 可以使用：
 - `{{title}}` — AI 生成的 title；
 - `{{scene}}` — source range；
 - `{{char}}` — character/group name；
+- `{{groupname}}` — 当前 group 的 display name；在 group chat 之外解析为 `Unknown`；
+- `{{present}}` — scene 中 present 的 characters，以逗号分隔：group chat 中的 individual speakers、Narrator Mode scene 选中的 Active Cast，或普通 character chat 中的 current character；
 - `{{user}}` — user name；
 - `{{messages}}` — scene message count；
 - `{{profile}}` — profile name；
-- 支援的 date/time placeholders。
+- 支持的 date/time placeholders。
 
 ### 24.2 自动编号
 
@@ -2015,6 +2020,10 @@ Accessibility 支援包括：
 | **Allow scene overlap** | Global | 允许 selected scene range 与已由 existing Memory 表示的 message IDs 重叠。 |
 | **Refresh lorebook editor after adding memories** | Global | STMB 写入 entries 后重新整理已打开的 lorebook editor，以立即显示新内容。 |
 | **Copy Memory Books when branching** | Global | native chat branch 获得当前 active unlocked chat-bound 或 manual Memory Books 的独立副本。Character-locked books 按设计继续共享。 |
+| **Auto-rollback after message deletion** | Global | 当 message deletion 或 truncation 影响已经 processed 的 chat material 时启用 coordinated rollback。默认关闭。普通 message edits 与 swipes 不会触发。 |
+| **Update last message ID processed** | Global；Auto-Rollback action | 将 processed checkpoint 移到最新 surviving Memory 的结尾；如果没有剩余 Memory，则清除 checkpoint。 |
+| **Delete last Memory** | Global；Auto-Rollback action | 删除 rollback scope 中所有 invalidated Memories 及其 linked copies。Memory 与 consolidation 的删除不可逆。 |
+| **Restore previous Side Prompts** | Global；Auto-Rollback action | 将每个未发生额外修改的 affected Side Prompt 恢复到最新的 exact before-state。只保留一个 rollback level。 |
 | **Default for solo chats** | Global | 选择 solo chats 在 Memory 后继承的 Side Prompt Set。空选择使用 individually enabled after-Memory Side Prompts。 |
 | **Default for group chats** | Global | 选择 real group chats 在 Memory 后继承的 Side Prompt Set。空选择使用 individually enabled after-Memory Side Prompts。 |
 | **Max Response Tokens** | Global | 覆盖 STMB generation 的最大输出长度。有效 JSON 被截断时提高此值；`0` 允许正常 provider/SillyTavern behavior 作为 fallback。 |
@@ -2023,6 +2032,26 @@ Accessibility 支援包括：
 | **Use regex (advanced)** | Global | 启用 STMB 自己的 regex-processing selection。这些选择独立于底层 SillyTavern regex script 是否在普通界面启用。 |
 | **Configure regex… → Outgoing scripts** | Global | 选择 STMB 在 generation provider 发送前对 material 运行的 scripts。 |
 | **Configure regex… → Incoming scripts** | Global | 选择 STMB 在 parse/save 返回内容前运行的 scripts。 |
+
+#### General Settings 中的 Memory Auto-Rollback
+
+**Auto-rollback after message deletion** 是 master preference。三个 action checkboxes 可以独立选择，默认 enabled；master switch 关闭时它们会在界面中显示为 disabled。因此，现有安装不会仅因为升级就开始删除内容。
+
+Auto-Rollback 只响应 message deletion 或 truncation，也包括 response regeneration 的 deletion phase。普通 edit 或 swipe 不会触发。由于 SillyTavern 的 deletion event value 无法可靠识别 middle deletion，STMB 会跟踪每个 chat 中实际的 message identities。
+
+如果是在末尾删除，任何 stored source range 与 removed suffix 重叠的 Memory 都会受到影响。如果是在 chat 中间删除，STMB 会提供三个选择：
+
+- **Full rollback** 删除受影响的 Memory 以及之后所有较新的 Memories。
+- **Affected only** 只删除 overlapping Memories，保留 newer Memories，并按 deletion count 移动其 stored ranges、相关 Side Prompt checkpoints 与 processed checkpoint。这样会有意留下永久的 Memory coverage gap。
+- **Cancel** 不对 Memory Books 做任何更改。
+
+Rollback 会跨 available Memory Books 使用精确的 `STMB_chatId`、source-range 与 canonical/link metadata。canonical group 或 Narrator Memory 与所有可找到的 linked copies 视为一个 deletion unit。缺少 canonical copies、legacy entries 因 chat identity 不足而存在歧义、ranges malformed，或 consolidation dependencies 不完整时，整个 rollback 会停止并给出 repair guidance；STMB 不会猜测 ownership。
+
+选择 **Delete last Memory** 时，STMB 会预先检查每个 affected Memory Book 中所有 direct 与 transitive consolidation parents。一个 combined confirmation 会列出必须删除的 consolidations。取消该确认也会取消 checkpoint、Memory 与 Side Prompt 的全部更改。批准后，STMB 会删除 consolidation ancestors，重新启用每个因 deleted consolidation 而 disabled 的 existing direct source 并清除其 `disabledBySummaryId` backlink，然后删除 selected base Memories。用户自行 disabled 的 entries 不会被重新启用。
+
+保存前，STMB 会再次检查完整 lorebook fingerprints。Lorebooks 会通过正常 serialized write lanes 按排序顺序写入；如果后续 book 失败，会保留未修改的 pre-write clones 用于 compensating saves。只有所有 lorebook writes 都成功后，chat checkpoint metadata 才会修改。chat 的 queued work 会在 preflight 前取消；active non-queued Memory creation 可以先完成再继续 rollback。
+
+Side Prompt rollback 使用 version-2 regeneration snapshots。每个 snapshot 记录 entry 是否原先存在、排除更旧 rollback snapshot 后的 exact prior state、source chat/range，以及 STMB 写入 state 的 fingerprint。如果 rolled-back run 创建了 entry，rollback 会删除它。如果 current entry 已不再匹配 saved fingerprint，STMB 会认为用户或 later run 已经修改它，并保持不动。Version-1 snapshots 仍支持 regeneration，但对 rollback 不够安全，会在 warning 后跳过。成功 restore 会消费该 snapshot，因此该 Side Prompt 在再次运行前不能进行第二次 rollback。如果一次 rollback 多个 Memories，每个 Side Prompt 只能恢复 latest available before-state；更早 rolled-back runs 引入的信息可能仍会保留。
 
 #### General Settings 中的 Token Saving
 
@@ -2141,6 +2170,7 @@ Memory Book、topic、keywords、source inclusion、source selection、message r
 
 | Setting | Scope | 作用 |
 |---|---|---|
+| **Source Memory Book** | Per run | 显示当前正在 consolidate 的 Memory Book，并允许选择其他 available book。改变选择会重新加载 eligible-entry list，但不会修改 chat 的 configured manual 或 chat-bound Memory Book。 |
 | **Target tier** | Per run | 选择要建立的 higher tier，因此也确定其正下一级的 eligible source tier。 |
 | **Consolidation Prompt** | Per run | 选择本次 consolidation 的 prompt；初始使用 Consolidation Prompt Manager 的 default。 |
 | **Maximum entries per pass** | Per run | 限制一次 analysis pass 发送多少 lower-tier entries。 |

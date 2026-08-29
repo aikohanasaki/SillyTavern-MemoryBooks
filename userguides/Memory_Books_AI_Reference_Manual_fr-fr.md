@@ -1377,16 +1377,18 @@ Un Side Prompt peut hériter de la résolution de connexion Memory Books normale
 
 ### 16.16 Régénération de Side Prompt
 
-Les enregistrements compatibles stockent un instantané compact contenant :
+Les enregistrements compatibles stockent désormais un instantané de version 2 contenant :
 
 - la clé du template Side Prompt ;
-- le contenu précédent de l’entrée ;
+- le contenu précédent de l’entrée pour la régénération ;
+- l’indication que l’entrée existait ou non avant l’exécution, ainsi que son état précédent exact, sans instantané de rollback plus ancien ;
 - la discussion source et la plage inclusive ;
-- les valeurs de macros runtime.
+- les valeurs de macros runtime ;
+- une empreinte de l’état exact de l’entrée écrit par STMB.
 
 Pour régénérer, ouvrez l’éditeur de lorebook et cliquez sur **Regenerate side prompt**. Le remplacement utilise l’instantané enregistré avec le template actuel et les paramètres actuels de profil/contexte.
 
-La régénération ne peut pas aboutir si le template a été supprimé, si la discussion/plage source est indisponible, ou si la cible/source a changé durant la génération. Seul le contenu est remplacé ; le titre, les mots-clés et les paramètres d’entrée existants restent inchangés.
+La régénération ne peut pas aboutir si le template a été supprimé, si la discussion/plage source est indisponible, ou si la cible/source a changé durant la génération. Seul le contenu est remplacé ; le titre, les mots-clés et les paramètres d’entrée existants restent inchangés. Les anciens instantanés de version 1 continuent de permettre la régénération, mais ne peuvent pas être utilisés par Memory Auto-Rollback.
 
 ### 16.17 Rédiger de bons Side Prompts
 
@@ -1468,12 +1470,13 @@ Les entrées consolidées doivent mettre l’accent sur les changements durables
 ### 17.3 Flux manuel
 
 1. Ouvrez **Consolidate Memories**.
-2. Choisissez le niveau cible.
-3. Sélectionnez les entrées sources admissibles.
-4. Choisissez les paramètres de prompt/profil de consolidation.
-5. Décidez si les entrées sources doivent être désactivées après une consolidation réussie.
-6. Lancez l’opération et examinez les candidats.
-7. Approuvez les résumés souhaités.
+2. Vérifiez le Source Memory Book affiché. Sélectionnez un autre livre si le livre manuel configuré ou lié à la discussion n’est pas la source de consolidation souhaitée. Cette sélection vaut uniquement pour l’exécution actuelle et ne modifie pas le Memory Book configuré pour la discussion.
+3. Choisissez le niveau cible.
+4. Sélectionnez les entrées sources admissibles.
+5. Choisissez les paramètres de prompt/profil de consolidation.
+6. Décidez si les entrées sources doivent être désactivées après une consolidation réussie.
+7. Lancez l’opération et examinez les candidats.
+8. Approuvez les résumés souhaités.
 
 ### 17.4 Les prompts de disponibilité ne sont pas une consolidation automatique
 
@@ -1895,6 +1898,8 @@ Les formats de titre de profil peuvent utiliser :
 - `{{title}}` — titre généré par l’IA ;
 - `{{scene}}` — plage source ;
 - `{{char}}` — nom du personnage/groupe ;
+- `{{groupname}}` — nom d’affichage du groupe actuel ; devient `Unknown` hors d’une discussion de groupe ;
+- `{{present}}` — personnages présents dans la scène, séparés par des virgules : intervenants individuels d’une discussion de groupe, Active Cast sélectionné de la scène en Narrator Mode, ou personnage actuel dans une discussion normale avec un personnage ;
 - `{{user}}` — nom de l’utilisateur ;
 - `{{messages}}` — nombre de messages de scène ;
 - `{{profile}}` — nom du profil ;
@@ -2013,6 +2018,10 @@ Ouvrez **Settings → General Settings** dans le panneau principal.
 | **Allow scene overlap** | Global | Autorise une plage de scène sélectionnée à chevaucher des IDs de messages déjà représentés par une Memory existante. |
 | **Refresh lorebook editor after adding memories** | Global | Actualise un éditeur de lorebook ouvert après écriture d’entrées STMB afin d’afficher immédiatement le nouveau contenu. |
 | **Copy Memory Books when branching** | Global | Donne à une branche native des copies indépendantes de ses Memory Books actifs non verrouillés, liés à la discussion ou manuels. Les livres verrouillés par personnage restent partagés intentionnellement. |
+| **Auto-rollback after message deletion** | Global | Active un rollback coordonné lorsqu’une suppression ou troncature de messages touche du contenu de discussion déjà traité. Désactivé par défaut. Les modifications ordinaires et les swipes ne le déclenchent pas. |
+| **Update last message ID processed** | Global ; action Auto-Rollback | Déplace le checkpoint traité à la fin de la Memory survivante la plus récente, ou l’efface s’il n’en reste aucune. |
+| **Delete last Memory** | Global ; action Auto-Rollback | Supprime toutes les Memories invalidées par la portée du rollback ainsi que leurs copies liées. La suppression des Memories et Consolidations est irréversible. |
+| **Restore previous Side Prompts** | Global ; action Auto-Rollback | Restaure chaque Side Prompt affecté et inchangé vers son dernier état précédent exact. Un seul niveau de rollback est conservé. |
 | **Default for solo chats** | Global | Sélectionne le Side Prompt Set hérité par les discussions solo après une Memory. Une sélection vide utilise les Side Prompts après-Memory activés individuellement. |
 | **Default for group chats** | Global | Sélectionne le Side Prompt Set hérité par les groupes réels après une Memory. Une sélection vide utilise les Side Prompts après-Memory activés individuellement. |
 | **Max Response Tokens** | Global | Remplace la longueur de sortie maximale de génération STMB. Augmentez-la si un JSON autrement valide est tronqué ; `0` laisse le comportement normal fournisseur/SillyTavern comme fallback. |
@@ -2021,6 +2030,26 @@ Ouvrez **Settings → General Settings** dans le panneau principal.
 | **Use regex (advanced)** | Global | Active la sélection de traitement regex propre à STMB. Ces sélections sont distinctes du fait que le script Regex SillyTavern sous-jacent soit généralement activé. |
 | **Configure regex… → Outgoing scripts** | Global | Sélectionne les scripts exécutés par STMB sur le matériau avant envoi au fournisseur de génération. |
 | **Configure regex… → Incoming scripts** | Global | Sélectionne les scripts exécutés sur le matériau renvoyé avant analyse et enregistrement. |
+
+#### Memory Auto-Rollback dans General Settings
+
+**Auto-rollback after message deletion** est la préférence principale. Ses trois cases d’action sont sélectionnables indépendamment, activées par défaut et visuellement désactivées tant que l’interrupteur principal est coupé. Une installation existante ne commence donc pas à supprimer quoi que ce soit simplement à la suite d’une mise à niveau.
+
+Auto-Rollback réagit uniquement à la suppression ou à la troncature de messages, y compris la phase de suppression d’une régénération de réponse. Une modification ordinaire ou un swipe ne le déclenche pas. STMB suit les identités réelles des messages de chaque discussion car la valeur d’événement de suppression de SillyTavern n’identifie pas de manière fiable une suppression au milieu d’une discussion.
+
+Pour une suppression en fin de discussion, toute Memory dont la plage source enregistrée croise le suffixe supprimé est affectée. Pour une suppression au milieu de la discussion, STMB propose trois choix :
+
+- **Full rollback** supprime la Memory affectée et toutes les Memories plus récentes.
+- **Affected only** supprime uniquement les Memories qui se chevauchent, conserve les plus récentes et décale leurs plages enregistrées, les checkpoints Side Prompt concernés et le checkpoint traité du nombre de messages supprimés. Cela laisse volontairement un trou permanent dans la couverture des Memories.
+- **Cancel** ne modifie pas Memory Books.
+
+Le rollback utilise les métadonnées exactes `STMB_chatId`, plage source et canonical/link dans tous les Memory Books disponibles. Une Memory canonique de groupe ou Narrator et toutes les copies liées détectables forment une seule unité de suppression. Des copies canoniques manquantes, des entrées héritées ambiguës sans identité de discussion suffisante, des plages mal formées ou des dépendances de Consolidation incomplètes arrêtent tout le rollback et produisent des indications de réparation ; STMB ne devine pas l’appartenance.
+
+Lorsque **Delete last Memory** est sélectionné, STMB pré-vérifie chaque parent de Consolidation direct et transitif dans chaque Memory Book affecté. Une confirmation combinée liste les Consolidations qui doivent être supprimées. Annuler cette confirmation annule également les changements de checkpoint, Memory et Side Prompt. Après approbation, STMB supprime les ancêtres de Consolidation, réactive chaque source directe existante qui avait été désactivée par une Consolidation supprimée et efface son backlink `disabledBySummaryId`, puis supprime les Memories de base sélectionnées. Les entrées désactivées indépendamment par l’utilisateur ne sont pas réactivées.
+
+Avant l’enregistrement, STMB revérifie les empreintes complètes des lorebooks. Les lorebooks sont écrits via leurs files d’écriture sérialisées normales dans un ordre trié, et des clones inchangés d’avant écriture sont conservés pour des sauvegardes compensatoires si un livre ultérieur échoue. Les métadonnées de checkpoint de discussion ne changent qu’après la réussite de toutes les écritures de lorebook. Le travail en file d’attente pour la discussion est annulé avant le preflight ; une création de Memory active hors file peut se terminer avant la poursuite du rollback.
+
+Le rollback Side Prompt utilise les instantanés de régénération de version 2. Chaque instantané indique si l’entrée existait, son état précédent exact sans ancien instantané de rollback, la discussion/plage source et une empreinte de l’état écrit par STMB. Si l’exécution annulée avait créé l’entrée, le rollback la supprime. Si l’entrée actuelle ne correspond plus à l’empreinte enregistrée, STMB suppose qu’un utilisateur ou une exécution ultérieure l’a modifiée et la laisse intacte. Les instantanés de version 1 permettent toujours la régénération mais ne sont pas assez sûrs pour le rollback et sont ignorés avec un avertissement. Une restauration réussie consomme l’instantané ; ce Side Prompt ne peut donc pas être rollback à nouveau avant une nouvelle exécution. Si plusieurs Memories sont annulées ensemble, seul le dernier état précédent disponible de chaque Side Prompt peut être restauré ; des informations introduites par des exécutions annulées plus anciennes peuvent subsister.
 
 #### Token Saving dans General Settings
 
@@ -2139,6 +2168,7 @@ Ouvrez **Consolidate Memories** depuis les boutons au bas du panneau principal. 
 
 | Paramètre | Portée | Fonction |
 |---|---|---|
+| **Source Memory Book** | Per run | Affiche le Memory Book actuellement consolidé et permet d’en sélectionner un autre disponible. Le changement recharge la liste des entrées admissibles sans modifier la configuration du Memory Book manuel ou lié à la discussion. |
 | **Target tier** | Per run | Choisit le niveau supérieur à créer et donc le niveau source immédiatement inférieur admissible. |
 | **Consolidation Prompt** | Per run | Sélectionne le prompt de cette consolidation ; initialement le défaut du Consolidation Prompt Manager. |
 | **Maximum entries per pass** | Per run | Limite le nombre d’entrées de niveau inférieur envoyées dans un passage d’analyse. |

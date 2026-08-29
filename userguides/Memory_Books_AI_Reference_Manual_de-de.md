@@ -1377,16 +1377,18 @@ Ein Side Prompt kann normale Memory-Books-Verbindungsauflösung erben oder ein b
 
 ### 16.16 Side Prompt Regeneration
 
-Kompatible Saves speichern einen kompakten Snapshot mit:
+Kompatible Saves speichern jetzt einen Version-2-Snapshot mit:
 
 - Side-Prompt-Template-Key;
-- vorherigem Entry Content;
+- vorherigem Entry Content für die Regeneration;
+- der Information, ob der Entry vor dem Run bereits existierte, sowie seinem exakten vorherigen Entry State, ohne einen älteren Rollback-Snapshot;
 - Source Chat und inklusivem Range;
-- Runtime-Macro-Werten.
+- Runtime-Macro-Werten;
+- einem Fingerprint des exakten Entry State, den STMB geschrieben hat.
 
 Öffnen Sie zum Regenerieren den Lorebook Editor und klicken Sie **Regenerate side prompt**. Der Ersatz verwendet den gespeicherten Snapshot zusammen mit aktuellem Template und aktuellen Profile-/Context-Settings.
 
-Regeneration kann nicht abgeschlossen werden, wenn Template gelöscht wurde, Source Chat/Range fehlt oder Target/Source während der Generierung geändert wurde. Nur der Inhalt wird ersetzt; Titel, Keywords und Entry Settings bleiben bestehen.
+Regeneration kann nicht abgeschlossen werden, wenn das Template gelöscht wurde, Source Chat/Range nicht verfügbar ist oder Target/Source während der Generierung geändert wurde. Nur der Inhalt wird ersetzt; bestehende Titel, Keywords und Entry Settings bleiben erhalten. Legacy-Version-1-Snapshots unterstützen weiterhin Regeneration, können aber nicht von Memory Auto-Rollback verwendet werden.
 
 ### 16.17 Gute Side Prompts schreiben
 
@@ -1468,12 +1470,13 @@ Consolidated Entries sollten dauerhafte Veränderungen, Wendepunkte, Ziele, Kons
 ### 17.3 Manueller Ablauf
 
 1. **Consolidate Memories** öffnen.
-2. Target Tier wählen.
-3. geeignete Source Entries wählen.
-4. Consolidation-Prompt-/Profile-Settings wählen.
-5. entscheiden, ob Source Entries nach Erfolg deaktiviert werden.
-6. ausführen und Candidates prüfen.
-7. gewünschte Summaries genehmigen.
+2. Das angezeigte Source Memory Book prüfen. Wählen Sie ein anderes Book, wenn das konfigurierte manuelle oder chat-bound Book nicht die gewünschte Consolidation-Quelle ist. Diese Auswahl gilt nur für den aktuellen Run und ändert nicht das konfigurierte Memory Book des Chats.
+3. Target Tier wählen.
+4. geeignete Source Entries wählen.
+5. Consolidation-Prompt-/Profile-Settings wählen.
+6. entscheiden, ob Source Entries nach Erfolg deaktiviert werden.
+7. ausführen und Candidates prüfen.
+8. gewünschte Summaries genehmigen.
 
 ### 17.4 Readiness Prompts sind keine automatische Consolidation
 
@@ -1895,6 +1898,8 @@ Profile Title Formats können verwenden:
 - `{{title}}` — AI-generated title;
 - `{{scene}}` — Source Range;
 - `{{char}}` — Character-/Group-Name;
+- `{{groupname}}` — Anzeigename der aktuellen Group; außerhalb eines Group Chats wird `Unknown` eingesetzt;
+- `{{present}}` — kommaseparierte Characters, die in der Scene anwesend sind: einzelne Speaker in einem Group Chat, die ausgewählte Active Cast der Scene im Narrator Mode oder der aktuelle Character in einem normalen Character Chat;
 - `{{user}}` — Nutzername;
 - `{{messages}}` — Scene Message Count;
 - `{{profile}}` — Profilname;
@@ -2013,6 +2018,10 @@ Scopes:
 | **Allow scene overlap** | Global | Erlaubt Überschneidung mit Message IDs bestehender Memories. |
 | **Refresh lorebook editor after adding memories** | Global | Aktualisiert offenen Lorebook Editor nach Writes. |
 | **Copy Memory Books when branching** | Global | Branch erhält unabhängige Kopien aktiver ungesperrter Books; Character-Locked Books bleiben geteilt. |
+| **Auto-rollback after message deletion** | Global | Aktiviert koordiniertes Rollback, wenn Message-Löschung oder -Truncation bereits verarbeiteten Chat-Inhalt betrifft. Standardmäßig deaktiviert. Normale Message-Edits und Swipes lösen es nicht aus. |
+| **Update last message ID processed** | Global; Auto-Rollback-Aktion | Setzt den Processed Checkpoint auf das Ende der neuesten überlebenden Memory oder löscht ihn, wenn keine überlebt. |
+| **Delete last Memory** | Global; Auto-Rollback-Aktion | Löscht jede durch den Rollback-Scope ungültig gewordene Memory und ihre Linked Copies. Das Löschen von Memories und Consolidations ist irreversibel. |
+| **Restore previous Side Prompts** | Global; Auto-Rollback-Aktion | Stellt jeden unveränderten betroffenen Side Prompt auf seinen neuesten exakten Before-State zurück. Es wird nur eine Rollback-Ebene gespeichert. |
 | **Default for solo chats** | Global | Side Prompt Set für Solochats; leer = individually enabled. |
 | **Default for group chats** | Global | Side Prompt Set für Group Chats; leer = individually enabled. |
 | **Max Response Tokens** | Global | Überschreibt STMB-Max-Ausgabe; bei abgeschnittenem JSON erhöhen; `0` lässt Provider/ST-Fallback. |
@@ -2021,6 +2030,26 @@ Scopes:
 | **Use regex (advanced)** | Global | Aktiviert STMB-eigene Regex-Auswahl. |
 | **Configure regex… → Outgoing scripts** | Global | Scripts vor Provider-Send. |
 | **Configure regex… → Incoming scripts** | Global | Scripts vor Parsing/Saving. |
+
+#### Memory Auto-Rollback in General Settings
+
+**Auto-rollback after message deletion** ist die Master-Einstellung. Die drei Aktions-Checkboxes können unabhängig gewählt werden, sind standardmäßig aktiviert und werden optisch deaktiviert, solange der Master-Schalter aus ist. Bestehende Installationen beginnen daher nicht allein durch ein Upgrade mit Löschungen.
+
+Auto-Rollback reagiert nur auf Message-Löschung oder -Truncation, einschließlich der Löschphase einer Response Regeneration. Normale Edits oder Swipes lösen es nicht aus. STMB verfolgt die tatsächlichen Message-Identitäten jedes Chats, weil der von SillyTavern gelieferte Löschwert eine Löschung in der Mitte nicht zuverlässig identifiziert.
+
+Bei einer Löschung am Chat-Ende sind alle Memories betroffen, deren gespeicherter Source Range den gelöschten Suffix schneidet. Bei einer Löschung in der Mitte fragt STMB nach einer von drei Optionen:
+
+- **Full rollback** löscht die betroffene Memory und jede neuere Memory.
+- **Affected only** löscht nur überlappende Memories, erhält neuere Memories und verschiebt deren gespeicherte Ranges, relevante Side-Prompt-Checkpoints und den Processed Checkpoint um die Anzahl gelöschter Messages. Dadurch bleibt absichtlich eine dauerhafte Lücke in der Memory-Abdeckung.
+- **Cancel** nimmt keine Änderungen an Memory Books vor.
+
+Rollback verwendet exakte `STMB_chatId`-, Source-Range- und Canonical/Link-Metadaten über verfügbare Memory Books hinweg. Eine Canonical Group- oder Narrator-Memory und alle auffindbaren Linked Copies bilden eine Lösch-Einheit. Fehlende Canonical Copies, mehrdeutige Legacy Entries ohne ausreichende Chat-Identität, fehlerhafte Ranges oder unvollständige Consolidation-Abhängigkeiten stoppen den gesamten Rollback und geben Reparaturhinweise aus; STMB rät die Ownership nicht.
+
+Wenn **Delete last Memory** gewählt ist, prüft STMB vorab jeden direkten und transitiven Consolidation Parent in jedem betroffenen Memory Book. Eine kombinierte Bestätigung listet die Consolidations auf, die gelöscht werden müssen. Wird sie abgebrochen, werden auch Checkpoint-, Memory- und Side-Prompt-Änderungen abgebrochen. Bei Zustimmung löscht STMB die Consolidation Ancestors, aktiviert jede vorhandene direkte Source wieder, die durch eine gelöschte Consolidation deaktiviert wurde, entfernt deren `disabledBySummaryId`-Backlink und löscht anschließend die ausgewählten Base Memories. Entries, die der Nutzer unabhängig deaktiviert hat, werden nicht aktiviert.
+
+Vor dem Speichern prüft STMB vollständige Lorebook-Fingerprints erneut. Lorebooks werden über ihre normalen serialisierten Write Lanes in sortierter Reihenfolge geschrieben; unveränderte Pre-Write-Clones werden für kompensierende Saves behalten, falls ein späteres Book fehlschlägt. Chat-Checkpoint-Metadaten werden erst geändert, nachdem alle Lorebook-Writes erfolgreich waren. Queued Work des Chats wird vor Preflight abgebrochen; aktive nicht-gequeuete Memory Creation darf vor dem Rollback fertiglaufen.
+
+Side-Prompt-Rollback verwendet Version-2-Regeneration-Snapshots. Jeder Snapshot speichert, ob der Entry existierte, seinen exakten vorherigen State ohne älteren Rollback-Snapshot, Source Chat/Range und einen Fingerprint des von STMB geschriebenen States. Hat der zurückgerollte Run den Entry erstellt, wird er gelöscht. Entspricht der aktuelle Entry nicht mehr dem gespeicherten Fingerprint, nimmt STMB eine Nutzeränderung oder einen späteren Run an und lässt ihn unverändert. Version-1-Snapshots unterstützen weiterhin Regeneration, sind aber für Rollback nicht sicher genug und werden mit Warnung übersprungen. Eine erfolgreiche Wiederherstellung verbraucht den Snapshot; derselbe Side Prompt kann daher erst nach einem weiteren Run erneut zurückgerollt werden. Werden mehrere Memories gemeinsam zurückgerollt, kann für jeden Side Prompt nur der neueste verfügbare Before-State wiederhergestellt werden; Informationen aus älteren zurückgerollten Runs können bestehen bleiben.
 
 #### Token Saving in General Settings
 
@@ -2133,6 +2162,7 @@ Memory Book, Topic, Keywords, Sources, Message Range, Draft und Selected Compact
 
 | Einstellung | Scope | Wirkung |
 |---|---|---|
+| **Source Memory Book** | Per run | Zeigt das aktuell zu konsolidierende Memory Book und erlaubt die Auswahl eines anderen verfügbaren Books. Die Auswahl lädt die Eligible-Entry-Liste neu, ohne die Manual- oder Chat-bound-Memory-Book-Konfiguration des Chats zu ändern. |
 | **Target tier** | Per run | Higher Tier und damit direkt niedriger Source Tier. |
 | **Consolidation Prompt** | Per run | Prompt für diesen Run; startet mit Default. |
 | **Maximum entries per pass** | Per run | Max Lower-Tier Entries pro Analysis Pass. |

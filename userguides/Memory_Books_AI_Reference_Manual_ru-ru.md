@@ -1210,16 +1210,11 @@ Inheritance или fixed STMB profile. Слишком много combinations у
 
 ### 16.16 Regeneration
 
-Snapshot:
-
-- template key;
-- prior content;
-- source chat/range;
-- runtime macros.
+Version-2 snapshot хранит: template key; prior content для regeneration; существовала ли entry до run и её exact prior state без старого rollback snapshot; source chat/range; runtime macros; fingerprint exact state, записанного STMB.
 
 Lorebook editor → **Regenerate side prompt**. Использует current template/profile/context.
 
-Нельзя, если template deleted, source unavailable или target/source changed. Заменяется только content.
+Нельзя, если template deleted, source unavailable или target/source changed. Заменяется только content. Legacy version-1 snapshot всё ещё годится для regeneration, но не для Memory Auto-Rollback.
 
 ### 16.17 Хороший Side Prompt
 
@@ -1273,12 +1268,13 @@ Higher entries должны сохранять lasting changes, turning points, 
 ### 17.3 Manual workflow
 
 1. **Consolidate Memories**.
-2. Target tier.
-3. Source entries.
-4. Prompt/profile.
-5. Disable sources after success?
-6. Run/review.
-7. Approve.
+2. Проверить показанный Source Memory Book; при необходимости выбрать другой только для этого run. Configured manual/chat-bound book чата не меняется.
+3. Target tier.
+4. Source entries.
+5. Prompt/profile.
+6. Disable sources after success?
+7. Run/review.
+8. Approve.
 
 ### 17.4 Readiness != auto consolidation
 
@@ -1612,7 +1608,7 @@ STMB selection сама управляет execution, даже если script d
 
 ### 24.1 Placeholders
 
-`{{title}}`, `{{scene}}`, `{{char}}`, `{{user}}`, `{{messages}}`, `{{profile}}`, date/time.
+`{{title}}`, `{{scene}}`, `{{char}}`, `{{groupname}}` (display name текущей group; вне group chat → `Unknown`), `{{present}}` (comma-separated characters в scene: speakers группы, selected Active Cast в Narrator Mode или current character обычного чата), `{{user}}`, `{{messages}}`, `{{profile}}`, date/time.
 
 ### 24.2 Numbering
 
@@ -1691,6 +1687,10 @@ Scopes: Global, Per chat, Per character, Per profile/template/setting, Per run.
 | **Allow scene overlap** | Global | Allows overlap. |
 | **Refresh lorebook editor after adding memories** | Global | Refresh open editor. |
 | **Copy Memory Books when branching** | Global | Copy unlocked books; locked remain shared. |
+| **Auto-rollback after message deletion** | Global | Coordinated rollback при deletion/truncation уже processed chat material. Default off. Обычные edits/swipes не запускают. |
+| **Update last message ID processed** | Global; Auto-Rollback action | Переносит processed checkpoint к концу newest surviving Memory или очищает, если Memories не осталось. |
+| **Delete last Memory** | Global; Auto-Rollback action | Удаляет invalidated Memories в rollback scope и linked copies. Удаление Memory/consolidation необратимо. |
+| **Restore previous Side Prompts** | Global; Auto-Rollback action | Возвращает unchanged affected Side Prompt к latest exact before-state. Хранится один rollback level. |
 | **Default for solo chats** | Global | Solo Side Prompt Set. |
 | **Default for group chats** | Global | Group set. |
 | **Max Response Tokens** | Global | STMB output cap; `0` fallback. |
@@ -1699,6 +1699,22 @@ Scopes: Global, Per chat, Per character, Per profile/template/setting, Per run.
 | **Use regex (advanced)** | Global | Regex processing. |
 | **Configure regex… → Outgoing scripts** | Global | Before send. |
 | **Configure regex… → Incoming scripts** | Global | Before parse/save. |
+
+#### Memory Auto-Rollback
+
+**Auto-rollback after message deletion** — master. Три action checkbox независимы, default enabled, но disabled в UI пока master off; upgrade сам по себе ничего не удаляет.
+
+Триггер только message deletion/truncation, включая deletion phase response regeneration. Edit/swipe не триггерит. STMB отслеживает actual message identities, чтобы корректно определять middle deletion.
+
+Tail deletion затрагивает Memories, чьи source ranges пересекают removed suffix. Middle deletion: **Full rollback** удаляет affected + newer Memories; **Affected only** удаляет overlaps, сохраняет newer и сдвигает ranges/Side Prompt checkpoints/processed checkpoint, оставляя permanent coverage gap; **Cancel** ничего не меняет.
+
+Rollback использует exact `STMB_chatId`, source-range и canonical/link metadata. Canonical group/Narrator Memory + discoverable linked copies — одна deletion unit. Missing canonical, ambiguous legacy identity, malformed range или incomplete consolidation dependency останавливают весь rollback с repair guidance; ownership не угадывается.
+
+При **Delete last Memory** STMB preflight-ит direct/transitive consolidation parents и показывает одну confirmation. Cancel отменяет все изменения. Approve удаляет ancestors, re-enable direct sources, disabled удалённой consolidation, очищает `disabledBySummaryId`, затем удаляет base Memories. User-disabled entries не включаются.
+
+Перед save повторно проверяются complete lorebook fingerprints; writes идут через serialized lanes в sorted order с pre-write clones для compensating save. Chat checkpoint меняется только после успеха всех writes. Queued work cancel до preflight; active non-queued Memory creation может завершиться до rollback.
+
+Side Prompt rollback использует version-2 snapshot: existed state, exact prior state, source chat/range, written-state fingerprint. Entry, созданная rolled-back run, удаляется. Если current entry fingerprint изменён, предполагается user/later-run edit и entry сохраняется. Version-1 поддерживает regeneration, но не rollback. Successful restore consumes snapshot; повторный rollback возможен после следующего run. При rollback нескольких Memories восстанавливается только latest before-state каждого Side Prompt.
 
 Token Saving:
 
@@ -1783,7 +1799,8 @@ Shared **Generation Profile / Compaction Profile**; global Topical Clip Prompt; 
 
 ### 27.9 Consolidate controls
 
-Target tier; prompt; max entries/pass; token budget; attempts; saved minimum per tier; consolidated-entry activation/position/order/recursion; disable sources; selected sources.
+Source Memory Book (Per run; можно выбрать другой available book для этой consolidation. Eligible list reload, configured manual/chat-bound book чата не меняется); Target tier; prompt; max entries/pass; token budget; attempts; saved minimum per tier; consolidated-entry activation/position/order/recursion; disable sources; selected sources.
+
 
 ### 27.10 SillyTavern World Info
 

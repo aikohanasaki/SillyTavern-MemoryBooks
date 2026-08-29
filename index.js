@@ -12228,10 +12228,8 @@ function getLorebookDataFingerprint(data) {
   return fingerprintRollbackEntry(data);
 }
 
-async function loadMemoryRollbackLorebooks() {
-  const names = Array.from(new Set((world_names || [])
-    .map(name => String(name || "").trim())
-    .filter(Boolean)))
+async function loadMemoryRollbackLorebooks(settings) {
+  const names = Array.from(getCurrentChatLorebookNames(settings))
     .sort((left, right) => left.localeCompare(right));
   const states = [];
   for (const name of names) {
@@ -12416,7 +12414,7 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
   if (!Number.isFinite(oldCheckpoint) || deletion.start > oldCheckpoint) return;
   if (!await waitForMemoryRollbackIdle(chatKey)) return;
 
-  const states = await loadMemoryRollbackLorebooks();
+  const states = await loadMemoryRollbackLorebooks(settings);
   if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
   const affectedPreview = states.flatMap(state => {
     const result = collectRollbackMemories(state.data, {

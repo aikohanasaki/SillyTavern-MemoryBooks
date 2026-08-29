@@ -1355,16 +1355,18 @@ Pode herdar resolução normal ou fixar perfil STMB. Útil para modelo mais bara
 
 ### 16.16 Regeneration de Side Prompt
 
-Saves compatíveis armazenam snapshot compacto:
+Saves compatíveis agora armazenam snapshot version-2:
 
 - template key;
-- conteúdo anterior;
+- conteúdo anterior para regeneration;
+- se a entry existia antes do run e seu exact prior state, sem snapshot de rollback anterior;
 - source chat/range;
-- runtime macros.
+- runtime macros;
+- fingerprint do exact entry state gravado pelo STMB.
 
 No lorebook editor, clique **Regenerate side prompt**. Usa snapshot com template/profile/context atuais.
 
-Falha se template foi excluído, source indisponível ou target/source mudou durante geração. Só conteúdo é substituído; título, keywords e settings permanecem.
+Falha se template foi excluído, source indisponível ou target/source mudou durante geração. Só conteúdo é substituído; título, keywords e settings permanecem. Snapshots legacy version-1 continuam válidos para regeneration, mas não para Memory Auto-Rollback.
 
 ### 16.17 Escrevendo bons Side Prompts
 
@@ -1444,12 +1446,13 @@ Entradas consolidadas enfatizam mudanças duradouras, viradas, objetivos, conseq
 ### 17.3 Fluxo manual
 
 1. Abra **Consolidate Memories**.
-2. Escolha target tier.
-3. Selecione fontes elegíveis.
-4. Escolha prompt/profile.
-5. Decida se fontes serão desabilitadas após sucesso.
-6. Execute/revise.
-7. Aprove resumos.
+2. Confirme o Source Memory Book exibido. Se o book manual/chat-bound configurado não for a fonte desejada, selecione outro. Isso vale só para o run atual e não altera o Memory Book configurado do chat.
+3. Escolha target tier.
+4. Selecione fontes elegíveis.
+5. Escolha prompt/profile.
+6. Decida se fontes serão desabilitadas após sucesso.
+7. Execute/revise.
+8. Aprove resumos.
 
 ### 17.4 Readiness prompt não é automático
 
@@ -1840,6 +1843,8 @@ Use só quando entender. Regra outgoing pode quebrar schema; incoming pode quebr
 - `{{title}}` — título IA;
 - `{{scene}}` — range;
 - `{{char}}` — personagem/grupo;
+- `{{groupname}}` — display name do grupo atual; fora de group chat vira `Unknown`;
+- `{{present}}` — personagens presentes, separados por vírgulas: speakers do group chat, Active Cast selecionado da scene em Narrator Mode ou current character em chat normal;
 - `{{user}}` — usuário;
 - `{{messages}}` — contagem;
 - `{{profile}}` — perfil;
@@ -1948,6 +1953,10 @@ Escopos:
 | **Allow scene overlap** | Global | Permite overlap com Memories existentes. |
 | **Refresh lorebook editor after adding memories** | Global | Atualiza editor aberto. |
 | **Copy Memory Books when branching** | Global | Copia books desbloqueados em branch; locked continuam compartilhados. |
+| **Auto-rollback after message deletion** | Global | Ativa rollback coordenado quando deletion/truncation atinge chat já processado. Desativado por padrão. Edits/swipes normais não acionam. |
+| **Update last message ID processed** | Global; ação Auto-Rollback | Move processed checkpoint para o fim da Memory sobrevivente mais recente, ou limpa se nenhuma restar. |
+| **Delete last Memory** | Global; ação Auto-Rollback | Exclui Memories invalidadas no scope e linked copies. Exclusão de Memory/consolidation é irreversível. |
+| **Restore previous Side Prompts** | Global; ação Auto-Rollback | Restaura Side Prompts afetados e inalterados ao latest exact before-state. Só um rollback level. |
 | **Default for solo chats** | Global | Set padrão solo. |
 | **Default for group chats** | Global | Set padrão grupo. |
 | **Max Response Tokens** | Global | Override de saída; `0` = fallback normal. |
@@ -1956,6 +1965,22 @@ Escopos:
 | **Use regex (advanced)** | Global | Ativa seleção Regex STMB. |
 | **Configure regex… → Outgoing scripts** | Global | Pré-envio. |
 | **Configure regex… → Incoming scripts** | Global | Pré-parse/save. |
+
+#### Memory Auto-Rollback
+
+**Auto-rollback after message deletion** é o master. As três ações são independentes, ficam enabled por padrão mas visualmente disabled enquanto o master está off; portanto upgrade sozinho não começa a excluir nada.
+
+Só reage a message deletion/truncation, inclusive deletion phase de response regeneration; edit/swipe normal não conta. STMB rastreia actual message identities para lidar com middle deletion corretamente.
+
+Tail deletion afeta Memories cujo source range cruza o removed suffix. Middle deletion oferece **Full rollback** (apaga affected + newer Memories), **Affected only** (apaga só overlaps, preserva newer, ajusta ranges/Side Prompt checkpoints/processed checkpoint e deixa gap permanente) ou **Cancel**.
+
+Rollback usa `STMB_chatId`, source-range e canonical/link metadata exatos. Canonical group/Narrator Memory + discoverable linked copies formam uma unidade. Missing canonical, legacy ambíguo, range malformado ou consolidation dependency incompleta cancela todo rollback com repair guidance; STMB não adivinha ownership.
+
+Com **Delete last Memory**, STMB preflighta parents de consolidation diretos/transitivos e mostra confirmação única. Cancelar cancela todas as mudanças. Aprovar apaga ancestors, re-enable direct sources desabilitadas pela consolidation removida, limpa `disabledBySummaryId` e então apaga base Memories. Entries desabilitadas pelo user continuam assim.
+
+Antes de save, STMB revalida lorebook fingerprints e escreve em serialized write lanes; clones pre-write permitem compensating save se outro book falhar. Chat checkpoint só muda após todos os writes. Queued work é cancelado antes do preflight; active non-queued Memory creation pode terminar primeiro.
+
+Side Prompt rollback usa snapshot version-2: existed state, exact prior state, source chat/range e fingerprint. Entry criada pelo run revertido é excluída; fingerprint divergente indica alteração do user/later run e é preservado. Version-1 ainda serve para regeneration, não rollback. Restore consome o snapshot; novo rollback só após novo run. Em rollback de várias Memories, só o latest before-state de cada Side Prompt pode ser recuperado.
 
 #### Token Saving
 
@@ -2056,6 +2081,7 @@ New/Duplicate/Delete/Import/Export gerenciam objetos.
 
 | Setting | Escopo | O que faz |
 |---|---|---|
+| **Source Memory Book** | Per run | Mostra o Memory Book consolidado e permite escolher outro disponível. Trocar recarrega a lista elegível sem alterar a configuração manual/chat-bound do chat. |
 | **Target tier** | Per run | Tier a criar. |
 | **Consolidation Prompt** | Per run | Prompt deste run. |
 | **Maximum entries per pass** | Per run | Limite por análise. |

@@ -1379,16 +1379,18 @@ Side Prompt 可以繼承正常 Memory Books connection resolution，也可以綁
 
 ### 16.16 Side Prompt regeneration
 
-兼容的儲存會存儲 compact snapshot：
+相容的儲存現在會保存 version-2 snapshot，其中包含：
 
 - Side Prompt template key；
-- prior entry content；
+- 用於 regeneration 的 prior entry content；
+- 本次 run 前 entry 是否存在，以及排除更早 rollback snapshot 後的 exact prior entry state；
 - source chat 與 inclusive range；
-- runtime macro values。
+- runtime macro values；
+- STMB 實際寫入的 exact entry state fingerprint。
 
-要 regenerate，打開 lorebook editor 並點選 **Regenerate side prompt**。replacement 使用儲存的 snapshot 與當前 template、profile/context settings。
+要 regenerate，打開 lorebook editor 並點選 **Regenerate side prompt**。replacement 使用保存的 snapshot，以及當前 template、profile/context settings。
 
-如果 template 已刪除、source chat/range 不可用，或 target/source 在生成期間發生變化，就無法完成 regeneration。只有 content 被替換；現有 title、keywords 與 entry settings 保留。
+如果 template 已刪除、source chat/range 不可用，或 target/source 在 generation 期間發生變化，就無法完成 regeneration。只替換 content；現有 title、keywords 與 entry settings 保留。Legacy version-1 snapshots 仍可用於 regeneration，但不能用於 Memory Auto-Rollback。
 
 ### 16.17 編寫良好 Side Prompt
 
@@ -1470,12 +1472,13 @@ Consolidated entries 應強調 lasting changes、turning points、goals、conseq
 ### 17.3 手動工作流
 
 1. 打開 **Consolidate Memories**。
-2. 選擇 target tier。
-3. 選擇 eligible source entries。
-4. 選擇 consolidation prompt/profile settings。
-5. 決定成功 consolidation 後是否禁用 source entries。
-6. 運行並審核 candidates。
-7. 批准需要的 summaries。
+2. 確認目前顯示的 Source Memory Book。如果已設定的 manual 或 chat-bound book 不是本次要使用的 consolidation source，請選擇其他 book。此選擇只對目前 run 生效，不會改變 chat 設定的 Memory Book。
+3. 選擇 target tier。
+4. 選擇 eligible source entries。
+5. 選擇 consolidation prompt/profile settings。
+6. 決定成功 consolidation 後是否停用 source entries。
+7. 運行並審核 candidates。
+8. 批准需要的 summaries。
 
 ### 17.4 Readiness prompts 不是自動 consolidation
 
@@ -1897,6 +1900,8 @@ Profile title format 可以使用：
 - `{{title}}` — AI 生成的 title；
 - `{{scene}}` — source range；
 - `{{char}}` — character/group name；
+- `{{groupname}}` — 目前 group 的 display name；在 group chat 之外解析為 `Unknown`；
+- `{{present}}` — scene 中 present 的 characters，以逗號分隔：group chat 中的 individual speakers、Narrator Mode scene 選取的 Active Cast，或一般 character chat 中的 current character；
 - `{{user}}` — user name；
 - `{{messages}}` — scene message count；
 - `{{profile}}` — profile name；
@@ -2015,6 +2020,10 @@ Accessibility 支援包括：
 | **Allow scene overlap** | Global | 允許 selected scene range 與已由 existing Memory 表示的 message IDs 重疊。 |
 | **Refresh lorebook editor after adding memories** | Global | STMB 寫入 entries 後重新整理已打開的 lorebook editor，以立即顯示新內容。 |
 | **Copy Memory Books when branching** | Global | native chat branch 獲得當前 active unlocked chat-bound 或 manual Memory Books 的獨立副本。Character-locked books 按設計繼續共享。 |
+| **Auto-rollback after message deletion** | Global | 當 message deletion 或 truncation 影響已經 processed 的 chat material 時啓用 coordinated rollback。預設關閉。一般 message edits 與 swipes 不會觸發。 |
+| **Update last message ID processed** | Global；Auto-Rollback action | 將 processed checkpoint 移到最新 surviving Memory 的結尾；如果沒有剩餘 Memory，則清除 checkpoint。 |
+| **Delete last Memory** | Global；Auto-Rollback action | 刪除 rollback scope 中所有 invalidated Memories 及其 linked copies。Memory 與 consolidation 的刪除不可逆。 |
+| **Restore previous Side Prompts** | Global；Auto-Rollback action | 將每個未另行變更的 affected Side Prompt 恢復到最新 exact before-state。只保留一個 rollback level。 |
 | **Default for solo chats** | Global | 選擇 solo chats 在 Memory 後繼承的 Side Prompt Set。空選擇使用 individually enabled after-Memory Side Prompts。 |
 | **Default for group chats** | Global | 選擇 real group chats 在 Memory 後繼承的 Side Prompt Set。空選擇使用 individually enabled after-Memory Side Prompts。 |
 | **Max Response Tokens** | Global | 覆蓋 STMB generation 的最大輸出長度。有效 JSON 被截斷時提高此值；`0` 允許正常 provider/SillyTavern behavior 作為 fallback。 |
@@ -2023,6 +2032,26 @@ Accessibility 支援包括：
 | **Use regex (advanced)** | Global | 啓用 STMB 自己的 regex-processing selection。這些選擇獨立於底層 SillyTavern regex script 是否在普通界面啓用。 |
 | **Configure regex… → Outgoing scripts** | Global | 選擇 STMB 在 generation provider 發送前對 material 運行的 scripts。 |
 | **Configure regex… → Incoming scripts** | Global | 選擇 STMB 在 parse/save 返回內容前運行的 scripts。 |
+
+#### General Settings 中的 Memory Auto-Rollback
+
+**Auto-rollback after message deletion** 是 master preference。三個 action checkboxes 可以獨立選擇，預設 enabled；master switch 關閉時它們在界面中會顯示為 disabled。因此，既有安裝不會只因升級就開始刪除內容。
+
+Auto-Rollback 只回應 message deletion 或 truncation，也包括 response regeneration 的 deletion phase。一般 edit 或 swipe 不會觸發。由於 SillyTavern 的 deletion event value 無法可靠識別 middle deletion，STMB 會追蹤每個 chat 中實際的 message identities。
+
+如果是在末尾刪除，任何 stored source range 與 removed suffix 重疊的 Memory 都會受到影響。如果是在 chat 中間刪除，STMB 會提供三個選擇：
+
+- **Full rollback** 刪除受影響的 Memory 以及之後所有較新的 Memories。
+- **Affected only** 只刪除 overlapping Memories，保留 newer Memories，並依 deletion count 移動其 stored ranges、相關 Side Prompt checkpoints 與 processed checkpoint。這會刻意留下永久的 Memory coverage gap。
+- **Cancel** 不對 Memory Books 做任何變更。
+
+Rollback 會跨 available Memory Books 使用精確的 `STMB_chatId`、source-range 與 canonical/link metadata。canonical group 或 Narrator Memory 與所有可找到的 linked copies 視為一個 deletion unit。缺少 canonical copies、legacy entries 因 chat identity 不足而有歧義、ranges malformed，或 consolidation dependencies 不完整時，整個 rollback 會停止並提供 repair guidance；STMB 不會猜測 ownership。
+
+選擇 **Delete last Memory** 時，STMB 會預先檢查每個 affected Memory Book 中所有 direct 與 transitive consolidation parents。一個 combined confirmation 會列出必須刪除的 consolidations。取消該確認也會取消 checkpoint、Memory 與 Side Prompt 的全部變更。批准後，STMB 會刪除 consolidation ancestors，重新啓用每個因 deleted consolidation 而 disabled 的 existing direct source 並清除其 `disabledBySummaryId` backlink，然後刪除 selected base Memories。使用者自行 disabled 的 entries 不會被重新啓用。
+
+儲存前，STMB 會再次檢查完整 lorebook fingerprints。Lorebooks 會透過正常 serialized write lanes 按排序順序寫入；若後續 book 失敗，會保留未修改的 pre-write clones 用於 compensating saves。只有所有 lorebook writes 都成功後，chat checkpoint metadata 才會修改。chat 的 queued work 會在 preflight 前取消；active non-queued Memory creation 可以先完成再繼續 rollback。
+
+Side Prompt rollback 使用 version-2 regeneration snapshots。每個 snapshot 記錄 entry 原先是否存在、排除更舊 rollback snapshot 後的 exact prior state、source chat/range，以及 STMB 寫入 state 的 fingerprint。如果 rolled-back run 建立了 entry，rollback 會刪除它。如果 current entry 已不再符合 saved fingerprint，STMB 會認為使用者或 later run 已修改它，並保持不動。Version-1 snapshots 仍支援 regeneration，但對 rollback 不夠安全，會在 warning 後略過。成功 restore 會消耗該 snapshot，因此該 Side Prompt 在再次執行前不能進行第二次 rollback。如果一次 rollback 多個 Memories，每個 Side Prompt 只能恢復 latest available before-state；較早 rolled-back runs 引入的資訊可能仍會保留。
 
 #### General Settings 中的 Token Saving
 
@@ -2141,6 +2170,7 @@ Memory Book、topic、keywords、source inclusion、source selection、message r
 
 | Setting | Scope | 作用 |
 |---|---|---|
+| **Source Memory Book** | Per run | 顯示目前正在 consolidate 的 Memory Book，並允許選擇其他 available book。改變選擇會重新載入 eligible-entry list，但不會修改 chat 的 configured manual 或 chat-bound Memory Book。 |
 | **Target tier** | Per run | 選擇要建立的 higher tier，因此也確定其正下一級的 eligible source tier。 |
 | **Consolidation Prompt** | Per run | 選擇本次 consolidation 的 prompt；初始使用 Consolidation Prompt Manager 的 default。 |
 | **Maximum entries per pass** | Per run | 限制一次 analysis pass 發送多少 lower-tier entries。 |

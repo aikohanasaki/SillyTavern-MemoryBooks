@@ -1034,11 +1034,11 @@ normal resolution継承またはspecific STMB profile。組合せを増やしす
 
 ### 16.16 Regeneration
 
-snapshotにtemplate key、prior content、source chat/range、runtime macro values。
+compatible saveはversion-2 snapshotを保存：template key、regeneration用prior content、run前にentryが存在したかとexact prior state（古いrollback snapshotを除外）、source chat/range、runtime macro values、STMBが書いたexact stateのfingerprint。
 
 lorebook editor → **Regenerate side prompt**。current template/profile/contextでreplacement。
 
-template deleted/source unavailable/target-source changedなら不可。contentのみ置換。
+template deleted/source unavailable/target-source changedなら不可。contentのみ置換。legacy version-1 snapshotもregenerationには使えるが、Memory Auto-Rollbackには使えない。
 
 ### 16.17 良いSide Prompt
 
@@ -1084,7 +1084,7 @@ lasting changes、turning points、goals、consequences、relationship shifts、
 
 ### 17.3 Manual
 
-Consolidate Memories → target tier → sources → prompt/profile → disable sources? → run/review → approve。
+**Consolidate Memories** → 表示されたSource Memory Bookを確認（必要ならこのrunだけ別bookを選択。chatのconfigured bookは変わらない）→ target tier → sources → prompt/profile → disable sources? → run/review → approve。
 
 ### 17.4 Readiness prompt
 
@@ -1407,7 +1407,7 @@ bad outgoingはschema instructionsを、bad incomingはvalid JSONを破壊する
 
 ### 24.1 Placeholders
 
-`{{title}}`、`{{scene}}`、`{{char}}`、`{{user}}`、`{{messages}}`、`{{profile}}`、date/time placeholders。
+`{{title}}`、`{{scene}}`、`{{char}}`、`{{groupname}}`（current group display name。group外は`Unknown`）、`{{present}}`（sceneにいるcharactersのcomma-separated list。groupのspeakers、Narrator Modeのselected Active Cast、通常chatのcurrent character）、`{{user}}`、`{{messages}}`、`{{profile}}`、date/time placeholders。
 
 ### 24.2 Numbering
 
@@ -1486,6 +1486,10 @@ scope: Global / Per chat / Per character / Per profile-template-setting / Per ru
 | **Allow scene overlap** | Global | existing Memory range overlap許可。 |
 | **Refresh lorebook editor after adding memories** | Global | write後editor refresh。 |
 | **Copy Memory Books when branching** | Global | unlocked books copy、locked shared。 |
+| **Auto-rollback after message deletion** | Global | processed chatにmessage deletion/truncationがかかった時のcoordinated rollback。default off。通常edit/swipeは対象外。 |
+| **Update last message ID processed** | Global; Auto-Rollback action | processed checkpointを最新surviving Memory末尾へ。Memoryがなければclear。 |
+| **Delete last Memory** | Global; Auto-Rollback action | rollback scopeでinvalidになったMemoriesとlinked copiesを削除。Memory/consolidation deleteは不可逆。 |
+| **Restore previous Side Prompts** | Global; Auto-Rollback action | unchanged affected Side Promptをlatest exact before-stateへrestore。1 rollback levelのみ。 |
 | **Default for solo chats** | Global | solo Side Prompt Set。 |
 | **Default for group chats** | Global | group set。 |
 | **Max Response Tokens** | Global | STMB output override、`0` fallback。 |
@@ -1494,6 +1498,22 @@ scope: Global / Per chat / Per character / Per profile-template-setting / Per ru
 | **Use regex (advanced)** | Global | Regex enable。 |
 | **Configure regex… → Outgoing scripts** | Global | pre-send。 |
 | **Configure regex… → Incoming scripts** | Global | pre-parse/save。 |
+
+#### Memory Auto-Rollback
+
+**Auto-rollback after message deletion**がmaster。3 action checkboxは独立選択、default enabledだがmaster off中はdisabled表示なので、upgradeだけで削除は始まらない。
+
+対象はmessage deletion/truncation（response regenerationのdeletion phase含む）のみ。edit/swipeは対象外。middle deletionを正確に扱うためSTMBはactual message identitiesを追跡する。
+
+Tail deletionはremoved suffixとsource rangeが重なるMemoriesが対象。Middle deletionは **Full rollback**（affected + newer Memoriesを削除）、**Affected only**（overlapのみ削除しnewerを維持、ranges/Side Prompt checkpoints/processed checkpointをshift。coverage gapが残る）、**Cancel**。
+
+Rollbackはexact `STMB_chatId`、source-range、canonical/link metadataを使用。canonical group/Narrator Memory + discoverable linked copiesは1 deletion unit。missing canonical、ambiguous legacy identity、malformed range、incomplete consolidation dependencyなら全体停止してrepair guidance。ownershipは推測しない。
+
+**Delete last Memory**時はdirect/transitive consolidation parentsをpreflightし、必要なconsolidationsをcombined confirmation。Cancelなら全変更を中止。Approveならancestors削除、deleted consolidationがdisabledにしたexisting direct sourcesをre-enableして`disabledBySummaryId`をclearし、base Memoriesを削除。user独自disableは触らない。
+
+Save前にcomplete lorebook fingerprintsを再確認し、serialized write lanesでsorted write。後続失敗用のunchanged pre-write cloneを保持。chat checkpointは全lorebook write成功後のみ変更。queued workはpreflight前cancel、active non-queued Memory creationは完了待ち。
+
+Side Prompt rollbackはversion-2 snapshotを使用。entry existed、exact prior state、source chat/range、written-state fingerprintを記録。rolled-back runが作成したentryはdelete。current entryがfingerprint不一致ならuser/later run変更とみなし保持。version-1はregeneration可だがrollback不可。restore成功でsnapshotをconsumeするため次runまでは再rollback不可。複数Memories同時rollbackでは各Side Promptのlatest before-stateのみ戻せる。
 
 Token Saving:
 - **Auto-hide messages after adding memory**: none/all processed/last range。
@@ -1550,7 +1570,8 @@ shared **Generation Profile / Compaction Profile**。global Topical Clip Prompt�
 
 ### 27.9 Consolidate Memories
 
-Target tier、prompt、max entries/pass、Token Budget、automatic summary attempts、saved minimum per tier、consolidated-entry activation/position/order/recursion defaults、disable sources、selected sources。
+**Source Memory Book**（Per run。表示中のconsolidation source bookを別のavailable bookへ変更できる。eligible listはreloadするがchatのmanual/chat-bound設定は変えない）、 Target tier、prompt、max entries/pass、Token Budget、automatic summary attempts、saved minimum per tier、consolidated-entry activation/position/order/recursion defaults、disable sources、selected sources。
+
 
 ### 27.10 SillyTavern World Info
 

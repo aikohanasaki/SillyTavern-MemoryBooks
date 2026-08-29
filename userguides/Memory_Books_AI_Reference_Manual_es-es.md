@@ -1377,16 +1377,18 @@ Un Side Prompt puede heredar la resolución normal de conexión de Memory Books 
 
 ### 16.16 Regeneración de Side Prompt
 
-Los guardados compatibles almacenan una instantánea compacta que contiene:
+Los guardados compatibles ahora almacenan una instantánea de versión 2 que contiene:
 
-- clave de plantilla de Side Prompt;
-- contenido anterior de la entrada;
-- chat de origen y rango inclusivo;
-- valores de macros en tiempo de ejecución.
+- la clave de plantilla de Side Prompt;
+- el contenido anterior de la entrada para regeneración;
+- si la entrada existía antes de la ejecución y su estado anterior exacto, excluyendo una instantánea de rollback anterior;
+- el chat de origen y el rango inclusivo;
+- los valores de macros en tiempo de ejecución;
+- una huella del estado exacto de la entrada escrito por STMB.
 
 Para regenerar, abra el editor de lorebook y haga clic en **Regenerate side prompt**. El reemplazo usa la instantánea guardada con la plantilla actual y los ajustes actuales de perfil/contexto.
 
-La regeneración no puede completarse si se eliminó la plantilla, no está disponible el chat/rango de origen o el objetivo/origen cambió durante la generación. Solo se reemplaza el contenido; el título, palabras clave y ajustes existentes de la entrada permanecen.
+La regeneración no puede completarse si se eliminó la plantilla, no está disponible el chat/rango de origen o el objetivo/origen cambió durante la generación. Solo se reemplaza el contenido; el título, las palabras clave y los ajustes existentes de la entrada permanecen. Las instantáneas heredadas de versión 1 siguen permitiendo regeneración, pero Memory Auto-Rollback no puede utilizarlas.
 
 ### 16.17 Escribir buenos Side Prompts
 
@@ -1468,12 +1470,13 @@ Las entradas consolidadas deben enfatizar cambios duraderos, puntos de giro, obj
 ### 17.3 Flujo manual
 
 1. Abra **Consolidate Memories**.
-2. Elija el nivel objetivo.
-3. Seleccione las entradas fuente elegibles.
-4. Elija el prompt/perfil de consolidación.
-5. Decida si las fuentes deben deshabilitarse tras una consolidación correcta.
-6. Ejecute y revise los candidatos.
-7. Apruebe los resúmenes deseados.
+2. Confirme el Source Memory Book mostrado. Seleccione otro libro si el libro manual o vinculado al chat configurado no es la fuente de consolidación deseada. Esta selección solo se aplica a la ejecución actual y no cambia el Memory Book configurado para el chat.
+3. Elija el nivel objetivo.
+4. Seleccione las entradas fuente elegibles.
+5. Elija el prompt/perfil de consolidación.
+6. Decida si las fuentes deben deshabilitarse tras una consolidación correcta.
+7. Ejecute y revise los candidatos.
+8. Apruebe los resúmenes deseados.
 
 ### 17.4 Los avisos de preparación no son consolidación automática
 
@@ -1895,6 +1898,8 @@ Los formatos de título del perfil pueden usar:
 - `{{title}}` — título generado por IA;
 - `{{scene}}` — rango fuente;
 - `{{char}}` — nombre de personaje/grupo;
+- `{{groupname}}` — nombre visible del grupo actual; se resuelve como `Unknown` fuera de un chat de grupo;
+- `{{present}}` — personajes presentes en la escena separados por comas: hablantes individuales en un chat de grupo, el Active Cast seleccionado de la escena en Narrator Mode o el personaje actual en un chat normal de personaje;
 - `{{user}}` — nombre del usuario;
 - `{{messages}}` — cantidad de mensajes de la escena;
 - `{{profile}}` — nombre del perfil;
@@ -2013,6 +2018,10 @@ Abra **Settings → General Settings**.
 | **Allow scene overlap** | Global | Permite que un rango de escena se solape con IDs ya representados por una Memory. |
 | **Refresh lorebook editor after adding memories** | Global | Actualiza un editor abierto después de escribir entradas. |
 | **Copy Memory Books when branching** | Global | Da a una rama nativa copias independientes de libros activos desbloqueados. Los libros bloqueados por personaje siguen compartidos por diseño. |
+| **Auto-rollback after message deletion** | Global | Habilita rollback coordinado cuando una eliminación o truncado de mensajes afecta material del chat ya procesado. Está deshabilitado de forma predeterminada. Las ediciones normales y los swipes no lo activan. |
+| **Update last message ID processed** | Global; acción de Auto-Rollback | Mueve el checkpoint procesado al final de la Memory superviviente más reciente, o lo borra si no queda ninguna. |
+| **Delete last Memory** | Global; acción de Auto-Rollback | Elimina todas las Memories invalidadas por el alcance del rollback y sus copias enlazadas. La eliminación de Memory y Consolidation es irreversible. |
+| **Restore previous Side Prompts** | Global; acción de Auto-Rollback | Restaura cada Side Prompt afectado y sin cambios a su estado anterior exacto más reciente. Solo se conserva un nivel de rollback. |
 | **Default for solo chats** | Global | Selecciona el Side Prompt Set heredado por chats individuales después de Memory. Vacío usa prompts after-Memory habilitados individualmente. |
 | **Default for group chats** | Global | Igual para grupos reales. |
 | **Max Response Tokens** | Global | Sustituye longitud máxima de salida de generación STMB. Auméntelo si JSON válido se corta; `0` deja el comportamiento normal como fallback. |
@@ -2021,6 +2030,26 @@ Abra **Settings → General Settings**.
 | **Use regex (advanced)** | Global | Habilita selección propia de procesamiento Regex de STMB. |
 | **Configure regex… → Outgoing scripts** | Global | Selecciona scripts aplicados antes de enviar material. |
 | **Configure regex… → Incoming scripts** | Global | Selecciona scripts aplicados a la respuesta antes de analizar/guardar. |
+
+#### Memory Auto-Rollback dentro de General Settings
+
+**Auto-rollback after message deletion** es la preferencia principal. Sus tres casillas de acción pueden seleccionarse de forma independiente, vienen habilitadas por defecto y aparecen deshabilitadas visualmente mientras el interruptor principal está apagado. Por eso una instalación existente no empieza a borrar nada simplemente al actualizar.
+
+Auto-Rollback reacciona solo a la eliminación o truncado de mensajes, incluida la fase de borrado de una regeneración de respuesta. No reacciona a una edición normal ni a un swipe. STMB rastrea las identidades reales de los mensajes de cada chat porque el valor del evento de eliminación de SillyTavern no identifica de forma fiable una eliminación en medio del chat.
+
+Para una eliminación al final, se ve afectada toda Memory cuyo rango fuente almacenado se solape con el sufijo eliminado. Para una eliminación en medio del chat, STMB ofrece tres opciones:
+
+- **Full rollback** elimina la Memory afectada y todas las Memories posteriores.
+- **Affected only** elimina solo las Memories solapadas, conserva las posteriores y desplaza sus rangos guardados, los checkpoints de Side Prompt pertinentes y el checkpoint procesado según la cantidad de mensajes eliminados. Esto deja deliberadamente un hueco permanente en la cobertura de Memories.
+- **Cancel** no realiza cambios en Memory Books.
+
+El rollback usa metadatos exactos de `STMB_chatId`, rango fuente y canonical/link en todos los Memory Books disponibles. Una Memory canónica de grupo o Narrator y todas las copias enlazadas detectables forman una sola unidad de eliminación. Si faltan copias canónicas, hay entradas heredadas ambiguas sin identidad de chat suficiente, rangos malformados o dependencias de Consolidation incompletas, se detiene todo el rollback y se muestran instrucciones de reparación; STMB no adivina la pertenencia.
+
+Cuando está seleccionado **Delete last Memory**, STMB precomprueba cada parent de Consolidation directo y transitivo en cada Memory Book afectado. Una sola confirmación enumera las Consolidations que deben eliminarse. Cancelarla cancela también los cambios de checkpoint, Memory y Side Prompt. Al aprobar, se eliminan los ancestros de Consolidation, se vuelven a habilitar las fuentes directas existentes que fueron deshabilitadas por una Consolidation eliminada y se borra su backlink `disabledBySummaryId`; después se eliminan las Memories base seleccionadas. Las entradas deshabilitadas de forma independiente por el usuario no se vuelven a habilitar.
+
+Antes de guardar, STMB vuelve a comprobar las huellas completas de los lorebooks. Los lorebooks se escriben por sus carriles de escritura serializados normales y en orden, conservando clones previos sin cambios para guardados compensatorios si falla un libro posterior. Los metadatos del checkpoint del chat cambian solo después de que todas las escrituras de lorebook tengan éxito. El trabajo en cola del chat se cancela antes del preflight; una creación de Memory activa que no esté en cola puede terminar antes de que continúe el rollback.
+
+El rollback de Side Prompt usa instantáneas de regeneración de versión 2. Cada instantánea registra si la entrada existía, su estado anterior exacto sin otra instantánea de rollback, el chat/rango fuente y una huella del estado escrito por STMB. Si la ejecución revertida creó la entrada, el rollback la elimina. Si la entrada actual ya no coincide con la huella guardada, STMB asume que el usuario o una ejecución posterior la modificó y la deja intacta. Las instantáneas de versión 1 siguen permitiendo regeneración, pero no son suficientemente seguras para rollback y se omiten con una advertencia. Una restauración correcta consume la instantánea, por lo que ese Side Prompt no puede revertirse otra vez hasta que vuelva a ejecutarse. Si se revierten varias Memories juntas, solo puede restaurarse el estado anterior disponible más reciente de cada Side Prompt; puede permanecer información introducida por ejecuciones revertidas más antiguas.
 
 #### Token Saving dentro de General Settings
 
@@ -2137,6 +2166,7 @@ Abra **Consolidate Memories** desde los botones inferiores del panel principal.
 
 | Ajuste | Ámbito | Qué hace |
 |---|---|---|
+| **Source Memory Book** | Per run | Muestra el Memory Book que se está consolidando y permite elegir otro libro disponible. Cambiarlo recarga la lista de entradas elegibles sin modificar la configuración del Memory Book manual o vinculado al chat. |
 | **Target tier** | Per run | Elige nivel superior y, por tanto, nivel fuente inmediatamente inferior elegible. |
 | **Consolidation Prompt** | Per run | Elige prompt para esta ejecución; inicialmente usa el default del manager. |
 | **Maximum entries per pass** | Per run | Limita entradas enviadas en un pase. |
