@@ -286,7 +286,7 @@
   "STMemoryBooks_NoChatBound": "チャットにバインドされたロアブックがありません。メモリにはロアブックの選択が必要です。",
   "STMemoryBooks_Clear": "クリア",
   "STMemoryBooks_GroupCharacterLorebooks": "グループキャラクターのロアブック",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "各グループメンバーのロアブックを選択します。同じキャラクターロアブックを複数回選択できます。選択すると STLO の話者フィルターが追加され、選択をクリアしても STLO フィルターは保持されます。",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "各グループメンバーのロアブックを選択します。同じキャラクターロアブックを複数回選択できます。STLO が利用可能な場合、個別のキャラクターロアブックにも話者フィルターが追加されます。選択をクリアしても既存の STLO フィルターは保持されます。",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "個別のロアブック指定には STLO が必要です。",
   "STMemoryBooks_GroupLorebooksNoMembers": "手動ロアブック設定に使用できるグループメンバーがいません。",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "グループの手動ロアブックが未完了です: {{details}}",

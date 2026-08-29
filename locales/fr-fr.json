@@ -286,7 +286,7 @@
   "STMemoryBooks_NoChatBound": "Aucun lorebook lié. La sélection manuelle sera requise.",
   "STMemoryBooks_Clear": "Effacer",
   "STMemoryBooks_GroupCharacterLorebooks": "Lorebooks des personnages du groupe",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "Sélectionnez un lorebook pour chaque membre du groupe. Le même lorebook de personnage peut être sélectionné plusieurs fois. Les sélections ajoutent des filtres de locuteur STLO ; effacer une sélection conserve son filtre STLO.",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "Sélectionnez un lorebook pour chaque membre du groupe. Le même lorebook de personnage peut être sélectionné plusieurs fois. Si STLO est disponible, les lorebooks de personnage distincts reçoivent aussi des filtres de locuteur ; effacer une sélection conserve tout filtre STLO existant.",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "La désignation individuelle des lorebooks nécessite STLO.",
   "STMemoryBooks_GroupLorebooksNoMembers": "Aucun membre de groupe disponible pour la configuration manuelle des lorebooks.",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "Les lorebooks manuels du groupe sont incomplets : {{details}}",

@@ -1302,6 +1302,7 @@ export async function commitSummaryEntries({
   summaryCandidates,
   targetTier = 1,
   disableOriginals = false,
+  entryMetadata = null,
   summaryEntrySettings = null,
   orderMode = "auto",
   orderValue = 100,
@@ -1404,6 +1405,9 @@ export async function commitSummaryEntries({
           Object.values(lorebookData?.entries || {}),
           summary.memberIds || [],
         ),
+        ...(entryMetadata && typeof entryMetadata === "object" && !Array.isArray(entryMetadata)
+          ? entryMetadata
+          : {}),
       };
       const characterFilter = summary.characterFilterNames
         ? makeCharacterFilter(false, summary.characterFilterNames)

@@ -285,7 +285,7 @@
   "STMemoryBooks_NoChatBound": "无聊天绑定的故事书。记忆将需要选择故事书。",
   "STMemoryBooks_Clear": "清除",
   "STMemoryBooks_GroupCharacterLorebooks": "群组角色故事书",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "为每个群组成员选择一本故事书。同一本角色故事书可以重复选择。选择后会添加 STLO 发言者筛选；清除选择时会保留其 STLO 筛选。",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "为每个群组成员选择一本故事书。同一本角色故事书可以重复选择。如果 STLO 可用，单独的角色故事书也会添加发言者筛选；清除选择时会保留任何现有的 STLO 筛选。",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "单独指定故事书需要 STLO。",
   "STMemoryBooks_GroupLorebooksNoMembers": "没有可用于手动故事书设置的群组成员。",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "群组手动故事书尚未完整：{{details}}",

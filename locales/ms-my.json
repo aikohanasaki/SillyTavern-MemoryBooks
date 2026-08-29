@@ -286,7 +286,7 @@
   "STMemoryBooks_NoChatBound": "Tiada buku legenda terikat sembang. Memori akan memerlukan pemilihan buku legenda.",
   "STMemoryBooks_Clear": "Kosongkan",
   "STMemoryBooks_GroupCharacterLorebooks": "Buku Legenda Watak Kumpulan",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "Pilih buku legenda untuk setiap ahli kumpulan. Buku legenda watak yang sama boleh dipilih lebih daripada sekali. Pilihan menambah penapis penutur STLO; mengosongkan pilihan mengekalkan penapis STLO tersebut.",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "Pilih buku legenda untuk setiap ahli kumpulan. Buku legenda watak yang sama boleh dipilih lebih daripada sekali. Jika STLO tersedia, buku legenda watak yang berasingan turut menerima penapis penutur; mengosongkan pilihan mengekalkan sebarang penapis STLO yang sedia ada.",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "Penetapan buku legenda individu memerlukan STLO.",
   "STMemoryBooks_GroupLorebooksNoMembers": "Tiada ahli kumpulan tersedia untuk persediaan buku legenda manual.",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "Buku legenda manual kumpulan belum lengkap: {{details}}",

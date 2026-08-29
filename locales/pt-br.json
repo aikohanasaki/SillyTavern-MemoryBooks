@@ -347,7 +347,7 @@
   "STMemoryBooks_Error_NoValidLorebookAvailable": "Nenhum lorebook válido disponível.",
   "STMemoryBooks_Clear": "Limpar",
   "STMemoryBooks_GroupCharacterLorebooks": "Lorebooks dos Personagens do Grupo",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "Selecione um lorebook para cada membro do grupo. O mesmo lorebook de personagem pode ser selecionado mais de uma vez. As seleções adicionam filtros de fala do STLO; limpar uma seleção preserva o filtro do STLO.",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "Selecione um lorebook para cada membro do grupo. O mesmo lorebook de personagem pode ser selecionado mais de uma vez. Se o STLO estiver disponível, lorebooks de personagem separados também recebem filtros de fala; limpar uma seleção preserva qualquer filtro existente do STLO.",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "A designação individual de lorebooks exige o SillyTavern-LorebookOrdering.",
   "STMemoryBooks_GroupLorebooksNoMembers": "Nenhum membro do grupo está disponível para configurar lorebooks manualmente.",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "Os lorebooks manuais do grupo estão incompletos: {{details}}",

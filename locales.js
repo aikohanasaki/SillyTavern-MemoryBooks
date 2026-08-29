@@ -484,7 +484,7 @@ export const localeData_en = {
     'STMemoryBooks_Error_NoValidLorebookAvailable': 'No valid lorebook available.',
     'STMemoryBooks_Clear': 'Clear',
     'STMemoryBooks_GroupCharacterLorebooks': 'Group Character Lorebooks',
-    'STMemoryBooks_GroupCharacterLorebooksDesc': 'Select a lorebook for every group member. The same character lorebook may be selected more than once. Selections add STLO speaking filters; clearing a selection retains its STLO filter.',
+    'STMemoryBooks_GroupCharacterLorebooksDesc': 'Select a lorebook for every group member. The same character lorebook may be selected more than once. If STLO is available, separate character books also receive speaking filters; clearing a selection retains any existing STLO filter.',
     'STMemoryBooks_GroupCharacterLorebooksRequiresSTLO': 'Individual lorebook designation requires SillyTavern-LorebookOrdering.',
     'STMemoryBooks_GroupLorebooksNoMembers': 'No group members are available for manual lorebook setup.',
     'STMemoryBooks_GroupManualLorebooksIncomplete': 'Group manual lorebooks are incomplete: {{details}}',

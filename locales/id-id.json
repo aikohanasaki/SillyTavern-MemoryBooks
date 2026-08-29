@@ -285,7 +285,7 @@
   "STMemoryBooks_NoChatBound": "Tidak ada buku latar yang terikat obrolan. Memori akan memerlukan pemilihan buku latar.",
   "STMemoryBooks_Clear": "Hapus",
   "STMemoryBooks_GroupCharacterLorebooks": "Buku Latar Karakter Grup",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "Pilih buku latar untuk setiap anggota grup. Buku latar karakter yang sama dapat dipilih lebih dari sekali. Pilihan menambahkan filter pembicara STLO; menghapus pilihan tetap mempertahankan filter STLO-nya.",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "Pilih buku latar untuk setiap anggota grup. Buku latar karakter yang sama dapat dipilih lebih dari sekali. Jika STLO tersedia, buku latar karakter terpisah juga menerima filter pembicara; menghapus pilihan tetap mempertahankan filter STLO yang sudah ada.",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "Penetapan buku latar individual memerlukan STLO.",
   "STMemoryBooks_GroupLorebooksNoMembers": "Tidak ada anggota grup yang tersedia untuk penyiapan buku latar manual.",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "Buku latar manual grup belum lengkap: {{details}}",

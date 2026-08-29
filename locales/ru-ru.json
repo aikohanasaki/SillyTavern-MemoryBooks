@@ -286,7 +286,7 @@
   "STMemoryBooks_NoChatBound": "К чату не привязан лорбук. Для памятей потребуется выбор лорбука.",
   "STMemoryBooks_Clear": "Очистить",
   "STMemoryBooks_GroupCharacterLorebooks": "Лорбуки персонажей группы",
-  "STMemoryBooks_GroupCharacterLorebooksDesc": "Выберите лорбук для каждого участника группы. Один лорбук персонажа можно выбрать несколько раз. Выбор добавляет фильтры говорящего STLO; при очистке выбора фильтр STLO сохраняется.",
+  "STMemoryBooks_GroupCharacterLorebooksDesc": "Выберите лорбук для каждого участника группы. Один лорбук персонажа можно выбрать несколько раз. Если STLO доступен, отдельные лорбуки персонажей также получают фильтры говорящего; при очистке выбора существующие фильтры STLO сохраняются.",
   "STMemoryBooks_GroupCharacterLorebooksRequiresSTLO": "Индивидуальное назначение лорбуков требует STLO.",
   "STMemoryBooks_GroupLorebooksNoMembers": "Нет участников группы для настройки ручных лорбуков.",
   "STMemoryBooks_GroupManualLorebooksIncomplete": "Ручные лорбуки группы не заполнены: {{details}}",

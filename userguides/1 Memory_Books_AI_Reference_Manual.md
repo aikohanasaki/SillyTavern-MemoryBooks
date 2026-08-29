@@ -716,10 +716,9 @@ The advanced real-group layout uses:
 Requirements:
 
 - Manual Lorebook Mode;
-- SillyTavern-LorebookOrdering (STLO) installed and enabled;
 - a valid assignment for every required group member.
 
-The canonical group book cannot also be a character book. More than one character may share the same character book; STMB writes one copy to that shared book rather than duplicates.
+The canonical group book may also be selected as a character book. STMB stores the canonical group entry and its linked character copy as separate entries in that book. The character copy is filtered to its assigned character and takes precedence over the canonical version on that character’s turn. More than one character may share the same character book; STMB writes one shared copy rather than duplicates.
 
 When a Memory is saved:
 
@@ -749,7 +748,7 @@ Character-focused versions can preserve:
 
 This requires additional AI requests. A shared character book receives one shared copy rather than one duplicate per assigned character.
 
-### 11.6 STLO responsibilities
+### 11.6 Optional STLO integration
 
 Memory Books decides:
 
@@ -759,13 +758,13 @@ Memory Books decides:
 - which books receive copies;
 - whether individualized prompts are used.
 
-STLO decides:
+When installed, STLO additionally decides:
 
 - when a lorebook is active;
 - which character can activate it;
 - priority, position, budget, and ordering.
 
-When STMB assigns a character book, it adds the character’s avatar basename to `stlo.characterOverrides` and enables `stlo.onlyWhenSpeaking`, while preserving existing STLO priorities, budgets, and overrides.
+STLO is not required for a real group chat. STMB injects the speaking native group member’s assigned book into that generation and uses native entry-level character filters. When STLO is available and STMB assigns a separate character book, it also adds the character’s avatar basename to `stlo.characterOverrides` and enables `stlo.onlyWhenSpeaking`, while preserving existing STLO priorities, budgets, and overrides. STMB does not apply a lorebook-wide STLO speaking filter when the character assignment is the canonical group book.
 
 STMB uses merge-only behavior. Clearing or changing an assignment does not automatically remove the old STLO character override. Remove obsolete overrides in STLO manually.
 
@@ -850,7 +849,7 @@ Rules:
 - retired members retain their identity and reserved book assignment until restored or otherwise removed by the implementation;
 - Auto-Create is incompatible because Narrator Mode depends on Manual Lorebook Mode.
 
-Unlike the advanced real-group layout, Narrator Mode does not require STLO for active-character retrieval. STMB injects the selected cast members’ books into the active lorebook context during generation.
+Like the advanced real-group layout, Narrator Mode does not require STLO for active-character retrieval. STMB injects the selected cast members’ books into the active lorebook context during generation.
 
 ### 12.3 Setup
 
@@ -1992,7 +1991,7 @@ Scopes used below:
 |---|---|---|---|
 | **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Global mode; book choice is per chat | Stops using the normal chat-bound lorebook as STMB's automatic target and requires a Memory Book to be selected for the current chat. It cannot be enabled with Auto-Create Lorebook Mode. |
 | **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls**; visible in Manual Mode | Per chat | Chooses the main Memory Book that receives Memories for this chat. In Narrator Mode this is the omniscient book. |
-| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; visible in a real group using Manual Mode | Per chat | Assigns a separate Memory Book to each real-group member. STLO is required to configure these assignments and provide the corresponding character-filtered retrieval behavior. |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; visible in a real group using Manual Mode | Per chat | Assigns a Memory Book to each real-group member. STMB injects the current native speaker’s assigned book; STLO integration is optional. The canonical group book may also be assigned and then stores both group and character-focused entries. |
 | **Character Memory Book lock** | Lock icon beside a character's Memory Book assignment | Per character | Keeps that character card assigned to the same Memory Book across compatible Manual Mode chats. Unlock before changing the assignment. |
 | **Narrator Mode** | **Current Lorebook Configuration**; normal non-group chats only | Per chat | Uses the selected manual book as an omniscient Memory Book and enables declared fictional cast members with their own unique books. Manual Mode and an omniscient book are required. |
 | **Manage Narrator Cast** | Under **Narrator Mode**; also available from the Active Cast drawer | Per chat | Adds, retires, restores, and assigns unique Memory Books to declared Narrator characters. |
@@ -2289,9 +2288,9 @@ Manual Mode:
 
 Real multi-book group:
 
-- STLO must be available;
 - every required member needs a valid assignment;
-- the group book cannot be reused as a character book.
+- the group book may be reused as a character book;
+- if STLO is installed, verify its optional activation and ordering rules.
 
 Narrator Mode:
 
