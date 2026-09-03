@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.0.1 (September 3, 2026)
+- Fix narrator mode lorebook edit bug.
+
 ## v9.0.0 (August 29, 2026)
 - **Breaking:** Added opt-in Memory Auto-Rollback for deleted or truncated messages, covering checkpoints, Memories and consolidations, linked copies, and Side Prompts. Side Prompt rollback snapshots now use v2; legacy snapshots remain regeneration-only.
 - Tweak: Non-narrator group chats now allow reselecting a lorebook for character use.

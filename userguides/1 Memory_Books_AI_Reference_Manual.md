@@ -859,7 +859,8 @@ Like the advanced real-group layout, Narrator Mode does not require STLO for act
 4. Enable **Narrator Mode**.
 5. Open **Manage Narrator Cast**.
 6. Add each fictional character by name and assign a unique Memory Book.
-7. Use the floating **Active Cast** drawer to select characters present in the next exchange.
+7. Use **Edit** beside an existing cast member to correct or change that member's assigned Memory Book.
+8. Use the floating **Active Cast** drawer to select characters present in the next exchange.
 
 Narrator Mode must be disabled before Manual Lorebook Mode can be disabled.
 
@@ -926,6 +927,8 @@ The cast manager can mark a member retired and later restore them. Retired membe
 - retain their book reservation, preventing accidental reuse that would merge identities.
 
 Use retirement for a character who leaves the active cast but whose historical Memory identity must remain intact.
+
+Editing a cast member's Memory Book preserves the member's stable identity and retired state. The new assignment controls future retrieval and Memory writes; it does not move entries that were already written to the previous book.
 
 ---
 

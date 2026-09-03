@@ -13,6 +13,7 @@ import {
     mergeNarratorLorebookEntries,
     normalizeNarratorConfig,
     setNarratorActiveCast,
+    setNarratorMemberLorebook,
     stampNarratorCast,
     validateNarratorBindings,
 } from './narratorMode.js';
@@ -67,6 +68,16 @@ test('retirement preserves identity and does not permit lorebook reuse', () => {
     assert.equal(normalized.config.members[0].id, 'old');
     assert.deepEqual(normalized.config.activeCastIds, []);
     assert.equal(validateNarratorBindings({ members: [retired, replacement] }, 'Canonical', ['Old Book']).issues[0].type, 'duplicate');
+});
+
+test('changes a narrator member book without replacing its identity or retirement state', () => {
+    const member = { id: 'alice-id', name: 'Alice', lorebookName: 'Wrong Book', retired: true };
+    const config = { members: [member], activeCastIds: [] };
+
+    assert.equal(setNarratorMemberLorebook(config, 'alice-id', ' Correct Book '), true);
+    assert.deepEqual(member, { id: 'alice-id', name: 'Alice', lorebookName: 'Correct Book', retired: true });
+    assert.equal(setNarratorMemberLorebook(config, 'alice-id', 'Correct Book'), false);
+    assert.equal(setNarratorMemberLorebook(config, 'missing-id', 'Other Book'), false);
 });
 
 test('accepts write-in characters without character-card avatars', () => {

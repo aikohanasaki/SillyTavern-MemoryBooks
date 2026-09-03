@@ -104,6 +104,18 @@ export function setNarratorActiveCast(config, memberIds) {
     return true;
 }
 
+export function setNarratorMemberLorebook(config, memberId, lorebookName) {
+    const id = cleanString(memberId);
+    const book = cleanString(lorebookName);
+    if (!id || !book) return false;
+
+    const member = (config?.members || []).find(item => item?.id === id);
+    if (!member || member.lorebookName === book) return false;
+
+    member.lorebookName = book;
+    return true;
+}
+
 export function validateNarratorBindings(config, canonicalLorebookName, availableLorebooks = []) {
     const canonical = cleanString(canonicalLorebookName);
     const available = new Set((availableLorebooks || []).map(cleanString).filter(Boolean));

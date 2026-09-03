@@ -295,6 +295,7 @@ import {
   getNarratorSceneParticipants,
   mergeNarratorLorebookEntries,
   setNarratorActiveCast,
+  setNarratorMemberLorebook,
   stampNarratorCast,
   validateNarratorBindings,
 } from "./narratorMode.js";
@@ -976,15 +977,65 @@ function formatNarratorBindingIssue(issue) {
   return translate("A declared cast Memory Book is missing.", "STMemoryBooks_NarratorMissingBook");
 }
 
+async function editNarratorCastMember(member, config, canonicalLorebookName) {
+  const bookOptions = (world_names || []).map(name => {
+    const selected = name === member.lorebookName ? " selected" : "";
+    return `<option value="${escapeHtml(name)}"${selected}>${escapeHtml(name)}</option>`;
+  }).join("");
+  const content = DOMPurify.sanitize(`
+    <h3>${escapeHtml(translate("Edit", "STMemoryBooks_Edit"))}: ${escapeHtml(member.name)}</h3>
+    <label for="stmb-narrator-edit-book">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</label>
+    <select id="stmb-narrator-edit-book" class="text_pole">
+      <option value="">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</option>
+      ${bookOptions}
+    </select>
+  `);
+  const popup = new Popup(content, POPUP_TYPE.TEXT, "", {
+    okButton: translate("Save", "STMemoryBooks_Save"),
+    cancelButton: translate("Cancel", "STMemoryBooks_Cancel"),
+  });
+  markStmbPopup(popup);
+
+  if (await popup.show() !== POPUP_RESULT.AFFIRMATIVE) return false;
+
+  const lorebookName = String(popup.dlg.querySelector("#stmb-narrator-edit-book")?.value || "").trim();
+  if (!lorebookName) {
+    toastr.error(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"), "STMemoryBooks");
+    return false;
+  }
+  const proposedMembers = config.members.map(item => item.id === member.id
+    ? { ...item, lorebookName }
+    : item);
+  const validation = validateNarratorBindings({ ...config, members: proposedMembers }, canonicalLorebookName, world_names);
+  if (!validation.valid) {
+    toastr.error(formatNarratorBindingIssue(validation.issues[0]), "STMemoryBooks");
+    return false;
+  }
+
+  if (!setNarratorMemberLorebook(config, member.id, lorebookName)) return false;
+  saveMetadataForCurrentContext();
+  return true;
+}
+
 async function showNarratorCastManager() {
   const config = getCurrentNarratorConfig();
   const canonical = getCurrentCanonicalLorebookName();
   const bookOptions = (world_names || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
-  const rows = config.members.map(member => `<div class="stmb-narrator-manager-row"><span>${escapeHtml(member.name)}</span><span>${escapeHtml(member.lorebookName)}</span><button type="button" class="menu_button" data-retire-narrator-member="${escapeHtml(member.id)}">${escapeHtml(translate(member.retired ? "Restore" : "Remove", member.retired ? "STMemoryBooks_Restore" : "STMemoryBooks_Remove"))}</button></div>`).join("");
+  const rows = config.members.map(member => `<div class="stmb-narrator-manager-row"><span>${escapeHtml(member.name)}</span><span>${escapeHtml(member.lorebookName)}</span><span class="stmb-button-row"><button type="button" class="menu_button" data-edit-narrator-member="${escapeHtml(member.id)}">${escapeHtml(translate("Edit", "STMemoryBooks_Edit"))}</button><button type="button" class="menu_button" data-retire-narrator-member="${escapeHtml(member.id)}">${escapeHtml(translate(member.retired ? "Restore" : "Remove", member.retired ? "STMemoryBooks_Restore" : "STMemoryBooks_Remove"))}</button></span></div>`).join("");
   const content = DOMPurify.sanitize(`<h3>${escapeHtml(translate("Narrator Cast", "STMemoryBooks_NarratorCast"))}</h3><p class="opacity50p">${escapeHtml(translate("Each declared character must use a unique Memory Book separate from the omniscient book.", "STMemoryBooks_NarratorCastDesc"))}</p><div class="stmb-narrator-manager-add"><input id="stmb-narrator-character-name" class="text_pole" type="text" placeholder="${escapeHtml(translate("Character name", "STMemoryBooks_CharacterName"))}"><select id="stmb-narrator-book" class="text_pole"><option value="">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</option>${bookOptions}</select><button type="button" id="stmb-narrator-add" class="menu_button">${escapeHtml(translate("Add", "STMemoryBooks_Add"))}</button></div><div class="stmb-narrator-manager-list">${rows || `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div>`);
   const popup = new Popup(content, POPUP_TYPE.TEXT, "", { wide: true, cancelButton: translate("Close", "STMemoryBooks_Close"), okButton: false });
   markStmbPopup(popup);
   popup.dlg.addEventListener("click", async event => {
+    const editButton = event.target.closest("[data-edit-narrator-member]");
+    if (editButton) {
+      const member = config.members.find(item => item.id === editButton.dataset.editNarratorMember);
+      if (member && await editNarratorCastMember(member, config, canonical)) {
+        await popup.complete(POPUP_RESULT.CANCELLED);
+        await showNarratorCastManager();
+        refreshNarratorCastDrawer();
+      }
+      return;
+    }
     const retireButton = event.target.closest("[data-retire-narrator-member]");
     if (retireButton) {
       const member = config.members.find(item => item.id === retireButton.dataset.retireNarratorMember);
