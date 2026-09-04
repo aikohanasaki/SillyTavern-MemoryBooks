@@ -859,7 +859,7 @@ Like the advanced real-group layout, Narrator Mode does not require STLO for act
 4. Enable **Narrator Mode**.
 5. Open **Manage Narrator Cast**.
 6. Add each fictional character by name and assign a unique Memory Book.
-7. Use **Edit** beside an existing cast member to correct or change that member's assigned Memory Book.
+7. Use **Edit** beside an existing cast member to correct the character name or change that member's assigned Memory Book.
 8. Use the floating **Active Cast** drawer to select characters present in the next exchange.
 
 Narrator Mode must be disabled before Manual Lorebook Mode can be disabled.
@@ -928,7 +928,7 @@ The cast manager can mark a member retired and later restore them. Retired membe
 
 Use retirement for a character who leaves the active cast but whose historical Memory identity must remain intact.
 
-Editing a cast member's Memory Book preserves the member's stable identity and retired state. The new assignment controls future retrieval and Memory writes; it does not move entries that were already written to the previous book.
+Editing a cast member's character name or Memory Book preserves the member's stable identity and retired state. A corrected name is used wherever that member is displayed and in future Memory output. A new book assignment controls future retrieval and Memory writes; it does not move entries that were already written to the previous book.
 
 ---
 
@@ -1997,7 +1997,7 @@ Scopes used below:
 | **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; visible in a real group using Manual Mode | Per chat | Assigns a Memory Book to each real-group member. STMB injects the current native speaker’s assigned book; STLO integration is optional. The canonical group book may also be assigned and then stores both group and character-focused entries. |
 | **Character Memory Book lock** | Lock icon beside a character's Memory Book assignment | Per character | Keeps that character card assigned to the same Memory Book across compatible Manual Mode chats. Unlock before changing the assignment. |
 | **Narrator Mode** | **Current Lorebook Configuration**; normal non-group chats only | Per chat | Uses the selected manual book as an omniscient Memory Book and enables declared fictional cast members with their own unique books. Manual Mode and an omniscient book are required. |
-| **Manage Narrator Cast** | Under **Narrator Mode**; also available from the Active Cast drawer | Per chat | Adds, retires, restores, and assigns unique Memory Books to declared Narrator characters. |
+| **Manage Narrator Cast** | Under **Narrator Mode**; also available from the Active Cast drawer | Per chat | Adds, renames, retires, restores, and assigns unique Memory Books to declared Narrator characters. |
 | **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | In Automatic Mode, creates and binds a lorebook when the chat has none. It cannot be enabled with Manual Mode. |
 | **Lorebook Name Template** | Directly below **Auto-create lorebook if none exists** | Global | Names auto-created books. Supports `{{char}}`, `{{user}}`, and `{{chat}}`. It is used only while Auto-Create Lorebook Mode is enabled. |
 | **Memory profile selection** | **Memory Profiles** selector | Per run | Chooses the profile for the next Memory and for the adjacent profile actions. This selection alone does not change the saved default. |

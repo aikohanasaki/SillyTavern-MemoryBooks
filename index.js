@@ -296,6 +296,7 @@ import {
   mergeNarratorLorebookEntries,
   setNarratorActiveCast,
   setNarratorMemberLorebook,
+  setNarratorMemberName,
   stampNarratorCast,
   validateNarratorBindings,
 } from "./narratorMode.js";
@@ -984,6 +985,8 @@ async function editNarratorCastMember(member, config, canonicalLorebookName) {
   }).join("");
   const content = DOMPurify.sanitize(`
     <h3>${escapeHtml(translate("Edit", "STMemoryBooks_Edit"))}: ${escapeHtml(member.name)}</h3>
+    <label for="stmb-narrator-edit-name">${escapeHtml(translate("Character name", "STMemoryBooks_CharacterName"))}</label>
+    <input id="stmb-narrator-edit-name" class="text_pole" type="text" value="${escapeHtml(member.name)}">
     <label for="stmb-narrator-edit-book">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</label>
     <select id="stmb-narrator-edit-book" class="text_pole">
       <option value="">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</option>
@@ -998,13 +1001,18 @@ async function editNarratorCastMember(member, config, canonicalLorebookName) {
 
   if (await popup.show() !== POPUP_RESULT.AFFIRMATIVE) return false;
 
+  const name = String(popup.dlg.querySelector("#stmb-narrator-edit-name")?.value || "").trim();
   const lorebookName = String(popup.dlg.querySelector("#stmb-narrator-edit-book")?.value || "").trim();
-  if (!lorebookName) {
-    toastr.error(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"), "STMemoryBooks");
+  if (!name || !lorebookName) {
+    toastr.error(translate("Enter a character name and select a Memory Book.", "STMemoryBooks_EnterCharacterAndBook"), "STMemoryBooks");
+    return false;
+  }
+  if (config.members.some(item => item.id !== member.id && item.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) {
+    toastr.error(translate("That character is already declared.", "STMemoryBooks_NarratorCharacterExists"), "STMemoryBooks");
     return false;
   }
   const proposedMembers = config.members.map(item => item.id === member.id
-    ? { ...item, lorebookName }
+    ? { ...item, name, lorebookName }
     : item);
   const validation = validateNarratorBindings({ ...config, members: proposedMembers }, canonicalLorebookName, world_names);
   if (!validation.valid) {
@@ -1012,7 +1020,9 @@ async function editNarratorCastMember(member, config, canonicalLorebookName) {
     return false;
   }
 
-  if (!setNarratorMemberLorebook(config, member.id, lorebookName)) return false;
+  const nameChanged = setNarratorMemberName(config, member.id, name);
+  const lorebookChanged = setNarratorMemberLorebook(config, member.id, lorebookName);
+  if (!nameChanged && !lorebookChanged) return false;
   saveMetadataForCurrentContext();
   return true;
 }

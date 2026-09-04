@@ -14,6 +14,7 @@ import {
     normalizeNarratorConfig,
     setNarratorActiveCast,
     setNarratorMemberLorebook,
+    setNarratorMemberName,
     stampNarratorCast,
     validateNarratorBindings,
 } from './narratorMode.js';
@@ -78,6 +79,21 @@ test('changes a narrator member book without replacing its identity or retiremen
     assert.deepEqual(member, { id: 'alice-id', name: 'Alice', lorebookName: 'Correct Book', retired: true });
     assert.equal(setNarratorMemberLorebook(config, 'alice-id', 'Correct Book'), false);
     assert.equal(setNarratorMemberLorebook(config, 'missing-id', 'Other Book'), false);
+});
+
+test('changes a narrator member name without replacing its identity or retirement state', () => {
+    const member = { id: 'alice-id', name: 'Alcie', lorebookName: 'Alice Book', retired: true };
+    const config = {
+        members: [member, { id: 'bob-id', name: 'Bob', lorebookName: 'Bob Book', retired: false }],
+        activeCastIds: [],
+    };
+
+    assert.equal(setNarratorMemberName(config, 'alice-id', ' Alice '), true);
+    assert.deepEqual(member, { id: 'alice-id', name: 'Alice', lorebookName: 'Alice Book', retired: true });
+    assert.equal(setNarratorMemberName(config, 'alice-id', 'Alice'), false);
+    assert.equal(setNarratorMemberName(config, 'alice-id', 'bob'), false);
+    assert.equal(setNarratorMemberName(config, 'alice-id', '  '), false);
+    assert.equal(setNarratorMemberName(config, 'missing-id', 'Other'), false);
 });
 
 test('accepts write-in characters without character-card avatars', () => {

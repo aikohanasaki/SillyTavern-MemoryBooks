@@ -116,6 +116,20 @@ export function setNarratorMemberLorebook(config, memberId, lorebookName) {
     return true;
 }
 
+export function setNarratorMemberName(config, memberId, name) {
+    const id = cleanString(memberId);
+    const nextName = cleanString(name);
+    if (!id || !nextName) return false;
+
+    const members = config?.members || [];
+    const member = members.find(item => item?.id === id);
+    if (!member || member.name === nextName) return false;
+    if (members.some(item => item?.id !== id && cleanString(item?.name).localeCompare(nextName, undefined, { sensitivity: 'base' }) === 0)) return false;
+
+    member.name = nextName;
+    return true;
+}
+
 export function validateNarratorBindings(config, canonicalLorebookName, availableLorebooks = []) {
     const canonical = cleanString(canonicalLorebookName);
     const available = new Set((availableLorebooks || []).map(cleanString).filter(Boolean));
