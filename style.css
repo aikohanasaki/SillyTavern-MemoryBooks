@@ -307,6 +307,7 @@
 
 .stmb-help-drawer-content {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -314,7 +315,10 @@
 }
 
 .stmb-help-drawer-copy {
+    flex: 1 1 14rem;
     min-width: 0;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 p.stmb-help-drawer-copy {
@@ -322,7 +326,11 @@ p.stmb-help-drawer-copy {
 }
 
 .stmb-help-drawer-link {
-    flex: 0 0 auto;
+    box-sizing: border-box;
+    flex: 0 1 auto;
+    max-width: 100%;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 .stmb-help-languages {
@@ -338,6 +346,10 @@ p.stmb-help-drawer-copy {
     .stmb-help-drawer-content {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .stmb-help-drawer-copy {
+        flex-basis: auto;
     }
 }
 

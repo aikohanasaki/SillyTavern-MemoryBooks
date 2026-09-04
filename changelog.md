@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.0.2 (September 3, 2026)
+- Fix formatting.
+
 ## v9.0.1 (September 3, 2026)
 - Fix narrator mode lorebook edit bug.
 
