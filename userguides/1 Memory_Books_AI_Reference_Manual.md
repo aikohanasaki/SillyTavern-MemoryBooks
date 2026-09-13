@@ -1952,6 +1952,18 @@ Use Retry All to restore the combined workflow; use Retry Memory when tracker wo
 
 Without Chat Top Bar, STMB still performs its normal workflows but lacks the queue UI.
 
+### Deferred last-processed progress
+
+When a queued Memory finishes after its source chat is no longer open, the Memory is still saved to its Memory Book. STMB records the last-processed marker update in `extension_settings.STMemoryBooks.pendingProgress` instead of fetching and rewriting the inactive character or group chat. Already-queued jobs can finish; new manual and automatic base-memory requests for that chat wait until its pending updates are applied or explicitly discarded. Other chats remain usable.
+
+The notification asks the user to reopen the source chat manually. Once that chat is loaded and idle, a popup offers **OK**, **Later**, and **Discard pending update**. OK displays **Processing…**, applies the marker through SillyTavern's current-chat save, reads back the saved marker, and removes the confirmed pending records from settings before displaying **Done**. Later, Escape, or closing the popup preserves the records. The main STMB panel has a **Pending progress updates (N)** button for reopening this management popup, including after refreshing or disabling Chat Top Bar. It never switches chats automatically. Discard requires confirmation and leaves saved lorebook memories untouched.
+
+Each pending record contains a chat reference, operation/job identity, target message index, original marker state/revision, chat integrity identifier, and SHA-256 fingerprint of the source message prefix. It does not persist conversation text. Appended messages and hide/unhide changes are allowed; edits, deletions, changed identity, manual marker changes, or rollback can make an update unsafe. In those cases STMB preserves the current marker and offers Later or Discard rather than forcing the old progress. Explicit chat/character rename events remap pending references; missing or unrecognized references remain available for review and discard.
+
+Pending records are saved using ST's settings API and verified by reading settings back, with a ten-second confirmation limit. A settings failure leaves the update in memory and offers a retry. There is no browser recovery backup: refreshing before a successful settings save can lose an unpersisted update. If the chat save succeeded but settings cleanup failed, retrying verifies the already-saved marker and completes cleanup without generating another Memory. Failed marker verification must never be interpreted as successful completion.
+
+This removes STMB's separate inactive-chat replacement write. ST's normal current-chat save still writes a complete chat, and concurrent settings saves from other tabs/devices are not transactional. The change does not identify the cause of previously reported chat loss or guarantee protection from all core/other-extension save races.
+
 ---
 
 ## 26. Visual Feedback and Accessibility

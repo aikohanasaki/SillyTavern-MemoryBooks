@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.0.3 (September 13, 2026)
+- Slight rewrite to stale-chat handling.
+
 ## v9.0.2 (September 3, 2026)
 - Fix formatting.
 

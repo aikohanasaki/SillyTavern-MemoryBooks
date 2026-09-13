@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import {
-    chat_metadata,
     eventSource,
     event_types,
-    getRequestHeaders,
     name2,
     saveSettingsDebounced,
 } from '../../../../script.js';
@@ -13,11 +11,11 @@ import {
     extension_settings,
     getContext,
     openThirdPartyExtensionMenu,
-    saveMetadataDebounced,
 } from '../../../extensions.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
+import { guardPendingProgress, isProgressChatLoaded, updateProgress } from './stmbProgress.js';
 import {
     buildJobRetryPlan,
     buildMemoryOnlyRetryPlan,
@@ -501,6 +499,7 @@ export function enqueueStmbJob(input = {}) {
         return null;
     }
     const job = normalizeJobInput(input);
+    if (job.type === 'memory' && !job.payload?.resumeSavedMemory && guardPendingProgress(job.chatKey)) return null;
     const store = ensureStore(job.chatKey);
     store.queue.push(job);
     touchStore(store);
@@ -1018,165 +1017,29 @@ export function areStmbJobsEnabled() {
     return jobsEnabled && Boolean(document.getElementById(TOP_INFO_BAR_ID));
 }
 
-async function fetchCharacterChat(chatRef) {
-    const response = await fetch('/api/chats/get', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        cache: 'no-cache',
-        body: JSON.stringify({
-            ch_name: chatRef.characterName || '',
-            file_name: chatRef.fileName,
-            avatar_url: chatRef.avatarUrl,
-        }),
-    });
-    if (!response.ok) {
-        throw new Error(`Unable to fetch character chat "${chatRef.fileName}".`);
-    }
-    const chatData = await response.json();
-    if (!Array.isArray(chatData) || chatData.length === 0 || !chatData[0]) {
-        throw new Error(`Character chat "${chatRef.fileName}" no longer exists.`);
-    }
-    return chatData;
-}
-
-async function saveCharacterChat(chatRef, chatData) {
-    const response = await fetch('/api/chats/save', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        cache: 'no-cache',
-        body: JSON.stringify({
-            ch_name: chatRef.characterName || '',
-            file_name: chatRef.fileName,
-            avatar_url: chatRef.avatarUrl,
-            chat: chatData,
-        }),
-    });
-    if (!response.ok) {
-        throw new Error(`Unable to save character chat "${chatRef.fileName}".`);
-    }
-}
-
-async function fetchGroupChat(chatRef) {
-    const response = await fetch('/api/chats/group/get', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        cache: 'no-cache',
-        body: JSON.stringify({
-            id: chatRef.chatId || chatRef.fileName,
-            with_metadata: true,
-        }),
-    });
-    if (!response.ok) {
-        throw new Error(`Unable to fetch group chat "${chatRef.chatId || chatRef.fileName}".`);
-    }
-    const data = await response.json();
-    if (!Array.isArray(data) || data.length === 0 || !data[0]) {
-        throw new Error(`Group chat "${chatRef.chatId || chatRef.fileName}" no longer exists.`);
-    }
-    return data;
-}
-
-async function saveGroupChatRef(chatRef, chatData) {
-    const response = await fetch('/api/chats/group/save', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        cache: 'no-cache',
-        body: JSON.stringify({
-            id: chatRef.chatId || chatRef.fileName,
-            chat: chatData,
-        }),
-    });
-    if (!response.ok) {
-        throw new Error(`Unable to save group chat "${chatRef.chatId || chatRef.fileName}".`);
-    }
-}
-
 export async function patchStmbMetadataForChatRef(chatRef, patcher) {
-    if (!chatRef || typeof patcher !== 'function') {
-        throw new Error('Invalid STMB metadata patch request.');
-    }
-    const chatKey = getStmbChatKey(chatRef);
-    return await withStmbWriteLane({ type: 'chat-metadata', chatKey }, async () => {
-        const currentRef = getCurrentStmbChatRef();
-        if (isSameChatRef(chatRef, currentRef)) {
-            const context = getContext();
-            const metadata = context?.chatMetadata || chat_metadata;
-            if (!metadata) {
-                throw new Error('Current chat metadata is unavailable.');
-            }
-            const current = metadata.STMemoryBooks && typeof metadata.STMemoryBooks === 'object'
-                ? { ...metadata.STMemoryBooks }
-                : {};
-            const patched = await patcher(current);
-            metadata.STMemoryBooks = patched && typeof patched === 'object' ? patched : current;
-            if (typeof context?.saveMetadata === 'function') {
-                await context.saveMetadata();
-            } else {
-                saveMetadataDebounced();
-            }
-            return metadata.STMemoryBooks;
+    if (!chatRef || typeof patcher !== 'function') throw new Error('Invalid STMB metadata patch request.');
+    return withStmbWriteLane({ type: 'chat-metadata', chatKey: getStmbChatKey(chatRef) }, async () => {
+        if (!isProgressChatLoaded(chatRef)) throw new Error('Chat must be loaded before updating metadata.');
+        const context = getContext();
+        const metadata = context.chatMetadata;
+        const previous = metadata.STMemoryBooks;
+        const current = previous && typeof previous === 'object' ? { ...previous } : {};
+        const patched = await patcher(current);
+        if (!isProgressChatLoaded(chatRef) || getContext().chatMetadata !== metadata || metadata.STMemoryBooks !== previous) {
+            throw new Error('Chat metadata changed during the update.');
         }
-
-        if (chatRef.type === 'character') {
-            if (!chatRef.avatarUrl || !chatRef.fileName) {
-                throw new Error('Character chat reference is incomplete.');
-            }
-            const chatData = await fetchCharacterChat(chatRef);
-            const header = chatData[0];
-            const metadata = header.chat_metadata && typeof header.chat_metadata === 'object'
-                ? header.chat_metadata
-                : {};
-            const current = metadata.STMemoryBooks && typeof metadata.STMemoryBooks === 'object'
-                ? { ...metadata.STMemoryBooks }
-                : {};
-            const patched = await patcher(current);
-            header.chat_metadata = {
-                ...metadata,
-                STMemoryBooks: patched && typeof patched === 'object' ? patched : current,
-            };
-            await saveCharacterChat(chatRef, chatData);
-            return header.chat_metadata.STMemoryBooks;
-        }
-
-        if (chatRef.type === 'group') {
-            if (!chatRef.chatId && !chatRef.fileName) {
-                throw new Error('Group chat reference is incomplete.');
-            }
-            const chatData = await fetchGroupChat(chatRef);
-            const header = chatData[0];
-            const metadata = header.chat_metadata && typeof header.chat_metadata === 'object'
-                ? header.chat_metadata
-                : {};
-            const current = metadata.STMemoryBooks && typeof metadata.STMemoryBooks === 'object'
-                ? { ...metadata.STMemoryBooks }
-                : {};
-            const patched = await patcher(current);
-            header.chat_metadata = {
-                ...metadata,
-                STMemoryBooks: patched && typeof patched === 'object' ? patched : current,
-            };
-            await saveGroupChatRef(chatRef, chatData);
-            return header.chat_metadata.STMemoryBooks;
-        }
-
-        throw new Error('Unsupported chat reference type.');
+        metadata.STMemoryBooks = patched && typeof patched === 'object' ? patched : current;
+        await getContext().saveMetadata();
+        return metadata.STMemoryBooks;
     });
 }
 
-export async function updateHighestMemoryProcessedForChatRef(chatRef, sceneEnd) {
+export async function updateHighestMemoryProcessedForChatRef(chatRef, sceneEnd, options = {}) {
     const completedEnd = Number(sceneEnd);
-    if (!Number.isFinite(completedEnd)) {
-        return null;
-    }
-    return await patchStmbMetadataForChatRef(chatRef, (metadata) => {
-        const next = { ...(metadata || {}) };
-        const existing = Number(next.highestMemoryProcessed);
-        next.highestMemoryProcessed = Number.isFinite(existing)
-            ? Math.max(existing, completedEnd)
-            : completedEnd;
-        delete next.highestMemoryProcessedManuallySet;
-        return next;
-    });
+    if (!Number.isInteger(completedEnd) || completedEnd < 0) return { status: 'conflict', reason: 'invalid' };
+    return withStmbWriteLane({ type: 'chat-metadata', chatKey: getStmbChatKey(chatRef) },
+        () => updateProgress(chatRef, completedEnd, options));
 }
 
 export async function loadLatestLorebookForJob(lorebookName) {

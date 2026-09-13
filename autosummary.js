@@ -14,6 +14,7 @@ import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
+import { hasPendingProgress } from './stmbProgress.js';
 
 let autoSummarySkippedForProcessing = false;
 let autoSummarySkippedMarkersRef = null;
@@ -116,6 +117,7 @@ async function validateLorebookForAutoSummary() {
  */
 async function checkAutoSummaryTrigger() {
     try {
+        if (hasPendingProgress()) return;
         const settings = extension_settings.STMemoryBooks;
         if (!settings?.moduleSettings?.autoSummaryEnabled) {
             return;
@@ -167,6 +169,7 @@ async function checkAutoSummaryTrigger() {
 
         // Auto-summary will set new scene markers - no need to clear existing ones
         const lorebookValidation = await validateLorebookForAutoSummary();
+        if (hasPendingProgress()) return;
         if (!lorebookValidation.valid) {
             console.log(i18n('autosummary.log.blocked', 'STMemoryBooks: Auto-summary blocked - lorebook validation failed: {{error}}', { error: lorebookValidation.error }));
             return; // No lorebook available or user cancelled

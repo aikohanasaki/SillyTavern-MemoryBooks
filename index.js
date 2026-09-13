@@ -57,6 +57,10 @@ import {
 import { autoCreateLorebook } from "./autocreate.js";
 import { createBranchLorebookController } from "./branchLorebooks.js";
 import {
+  initializePendingProgress, progressChatLoaded, captureProgressSource, buildProgressOrigin,
+  guardPendingProgress, hasPendingProgress, invalidatePendingProgress, showPendingProgress, pendingProgressLabel,
+} from "./stmbProgress.js";
+import {
   handleAutoSummaryMessageReceived,
   clearAutoSummaryState,
   retryAutoSummaryAfterJobIdle,
@@ -378,6 +382,7 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
   const lastIndex = chat.length - 1;
 
   if (raw.toLowerCase() === "none") {
+    invalidatePendingProgress();
     delete stmbData.highestMemoryProcessed;
     delete stmbData.highestMemoryProcessedManuallySet;
     saveMetadataForCurrentContext();
@@ -440,6 +445,7 @@ async function handleSetHighestMemoryProcessedCommand(namedArgs, unnamedArgs) {
     );
   }
 
+  invalidatePendingProgress();
   stmbData.highestMemoryProcessed = clamped;
   stmbData.highestMemoryProcessedManuallySet = true;
   saveMetadataForCurrentContext();
@@ -1404,6 +1410,7 @@ async function maybePromptContextSettingForChatOpen() {
 }
 
 async function handleChatChanged(chatId) {
+  progressChatLoaded();
   await getBranchLorebookController().handleChatChanged(chatId);
   console.log(
     translate(
@@ -1489,6 +1496,7 @@ async function handleMessageReceived() {
 
 function handleStmbJobStateChanged() {
   if (autoSummaryJobRetryInFlight) return;
+  if (hasPendingProgress()) return;
   if (hasActiveStmbJobs(getStmbChatKey())) return;
 
   autoSummaryJobRetryInFlight = true;
@@ -1581,6 +1589,7 @@ function validateSceneMemoryRange(startId, endId) {
 }
 
 async function runSceneMemoryRange(startId, endId, options = {}) {
+  if (guardPendingProgress()) return false;
   const { showSceneToast = true } = options;
 
   if (!validateSceneMemoryRange(startId, endId)) {
@@ -1766,6 +1775,7 @@ async function handleSceneMemoryCommand(namedArgs, unnamedArgs) {
 }
 
 async function handleStmbCatchupCommand(namedArgs) {
+  if (guardPendingProgress()) return "";
   try {
     if (isProcessingMemory) {
       toastr.info(
@@ -1933,6 +1943,7 @@ async function handleStmbCatchupCommand(namedArgs) {
 }
 
 async function handleNextMemoryCommand(namedArgs, unnamedArgs) {
+  if (guardPendingProgress()) return "";
   try {
     // Prevent re-entrancy
     if (isProcessingMemory) {
@@ -5252,6 +5263,7 @@ function captureMemoryOriginSnapshot(sceneContext = null) {
     chatKey: getStmbChatKey(chatRef),
     sceneContext: deepClone(sceneContext || getCurrentMemoryBooksContext()),
     sceneMarkers: deepClone(getSceneMarkers() || {}),
+    progressSource: captureProgressSource(),
   };
 }
 
@@ -5932,6 +5944,7 @@ async function buildQueuedMemoryJob(
       manualGroupLorebookValidation?.memoryBooksContext,
     );
   const chatRef = originSnapshot.chatRef;
+  const progressOrigin = buildProgressOrigin(originSnapshot.progressSource, sceneData.sceneEnd);
   const memoryBooksContext =
     manualGroupLorebookValidation?.memoryBooksContext ||
     originSnapshot.sceneContext;
@@ -6009,6 +6022,7 @@ async function buildQueuedMemoryJob(
     payload: {
       sceneData: deepClone(sceneData),
       compiledScene: deepClone(compiledScene),
+      progressOrigin,
       lorebookName,
       profileSettings: profileSnapshot,
       summaryCount,
@@ -6362,15 +6376,24 @@ async function executeQueuedMemoryJob(job, jobContext) {
     latestLorebookData = freshLorebook;
   });
 
-  jobContext.throwIfCancelled();
-  await applyQueuedMemoryAutoHide(job, finalMemoryResult, settings);
-  jobContext.throwIfCancelled();
-  await updateHighestMemoryProcessedForChatRef(job.chatRef, sceneData.sceneEnd);
-  jobContext.setResult({
+  // Preserve the saved-memory receipt even if cancellation arrived during the lorebook write.
+  job.result = {
     lorebookName,
     lorebookNames: lorebookWriteLaneNames,
     entryTitle: addResult?.entryTitle || "",
+    memorySaved: true,
+  };
+  payload.resumeSavedMemory = true;
+  payload.retryMemoryResult = deepClone(job.result);
+  const progressResult = await updateHighestMemoryProcessedForChatRef(job.chatRef, sceneData.sceneEnd, {
+    jobId: job.id,
+    operationId: payload.progressOperationId || (payload.progressOperationId = job.id),
+    origin: payload.progressOrigin,
   });
+  jobContext.patch({ result: { ...job.result, progressStatus: progressResult.status } });
+  jobContext.throwIfCancelled();
+  await applyQueuedMemoryAutoHide(job, finalMemoryResult, settings);
+  jobContext.throwIfCancelled();
 
   await completeQueuedMemoryPostSave({
     job,
@@ -6739,6 +6762,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
 }
 
 async function initiateMemoryCreation(selectedProfileIndex = null) {
+  if (guardPendingProgress()) return false;
   // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
   const context = getCurrentMemoryBooksContext();
   const memoryOriginSnapshot = captureMemoryOriginSnapshot(context);
@@ -6897,6 +6921,10 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       isProcessingMemory = false;
       return false; // User cancelled
     }
+    if (guardPendingProgress(memoryOriginSnapshot.chatKey)) {
+      isProcessingMemory = false;
+      return false;
+    }
 
     // Close settings popup if open
     if (currentPopupInstance) {
@@ -6915,6 +6943,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
       if (!job) {
         return false;
       }
+      if (guardPendingProgress(job.chatKey)) return false;
       enqueueStmbJob(job);
       toastr.info(
         translate("Memory job queued.", "STMemoryBooks_Jobs_MemoryQueued"),
@@ -7659,6 +7688,14 @@ function populateInlineButtons() {
 
   // Create additional function buttons
   const promptManagerButtons = [
+    {
+      text: pendingProgressLabel(),
+      id: "stmb-pending-progress",
+      action: async () => {
+        if (currentPopupInstance) await currentPopupInstance.completeCancelled();
+        await showPendingProgress();
+      },
+    },
     {
       text: "⚙️ " + translate("General Settings", "STMemoryBooks_Preferences"),
       id: "stmb-general-settings",
@@ -12613,6 +12650,7 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
   await saveMemoryRollbackLorebooks(changedStates);
 
   if (options.autoRollbackUpdateLastProcessed) {
+    invalidatePendingProgress();
     const checkpoint = computeRollbackCheckpoint(states, chatId, selectionsByBook);
     if (checkpoint === null) delete markers.highestMemoryProcessed;
     else markers.highestMemoryProcessed = checkpoint;
@@ -13863,6 +13901,15 @@ async function init() {
   // Initialize settings with validation
   const settings = initializeSettings();
   const profileValidation = validateAndFixProfiles(settings);
+  initializePendingProgress({
+    getChatRef: getCurrentStmbChatRef,
+    getChatKey: getStmbChatKey,
+    resolved: (chatKey) => {
+      if (getStmbChatKey() !== chatKey) return;
+      refreshMemoryBoundaryUi();
+      if (!hasPendingProgress()) void handleAutoSummaryMessageReceived();
+    },
+  });
 
   if (!profileValidation.valid) {
     console.warn(
@@ -13928,6 +13975,7 @@ async function init() {
   // Process any messages that are already on the screen at initialization time
   // This handles cases where a chat is already loaded when the extension initializes
   try {
+    progressChatLoaded();
     processExistingMessages();
     void maybePromptContextSettingForChatOpen();
     console.log(

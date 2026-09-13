@@ -10,6 +10,17 @@ import {
     collectCanceledAfterMemoryJobs,
 } from './stmbJobRetryPolicy.js';
 
+test('memory-only retry resumes a saved memory after post-save failure', () => {
+    const plan = buildMemoryOnlyRetryPlan({
+        id: 'saved-memory', type: 'memory', state: 'failed',
+        result: { memorySaved: true, lorebookName: 'Book' },
+        payload: { progressOperationId: 'saved-memory', resumeSavedMemory: true },
+    });
+    assert.equal(plan.retryInput.payload.resumeSavedMemory, true);
+    assert.equal(plan.retryInput.payload.progressOperationId, 'saved-memory');
+    assert.equal(plan.retryInput.payload.retryMemoryResult.memorySaved, true);
+});
+
 test('collects only canceled after-memory children from the retried memory', () => {
     const memory = { id: 'memory-1', type: 'memory' };
     const history = [

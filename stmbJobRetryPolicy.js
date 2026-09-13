@@ -84,7 +84,8 @@ export function buildJobRetryPlan(job, recentHistory = []) {
 
 export function buildMemoryOnlyRetryPlan(job) {
     const retryInput = buildRetryJobInput(job);
-    const resumeSavedMemory = String(job?.state || '') === 'canceled' && !!job?.result;
+    const resumeSavedMemory = (String(job?.state || '') === 'canceled' && !!job?.result)
+        || job?.result?.memorySaved === true;
     retryInput.payload = {
         ...(retryInput.payload || {}),
         skipAfterMemoryJobs: true,
