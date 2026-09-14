@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { getContext } from '../../../extensions.js';
+import { isCharacterAwarenessDisabled } from './groupChatPolicy.js';
 import {
     METADATA_KEY,
     loadWorldInfo,
@@ -551,6 +552,9 @@ export async function addMemoryToLorebook(memoryResult, lorebookValidation, opti
                 newEntry[key] = value;
             }
         }
+        if (options.applyCharacterFilters === false || isCharacterAwarenessDisabled({}, effectiveMemoryResult.metadata)) {
+            delete newEntry.characterFilter;
+        }
         await saveWorldInfo(lorebookValidation.name, lorebookValidation.data, true);
 
         if (options.showNotification !== false && settings.moduleSettings?.showNotifications !== false) {
@@ -659,6 +663,10 @@ function populateLorebookEntry(entry, memoryResult, entryTitle, lorebookSettings
 }
 
 function applyMemoryCharacterFilter(entry, memoryResult) {
+    if (isCharacterAwarenessDisabled({}, memoryResult?.metadata)) {
+        delete entry.characterFilter;
+        return;
+    }
     const names = normalizeCharacterFilterNames(memoryResult?.metadata?.characterFilterNames);
     if (names.length === 0) {
         return;

@@ -7,6 +7,7 @@ import {
     createGroupParticipantResolver,
     estimateTokens,
     resolveGroupParticipantFilterName,
+    getCurrentMemoryBooksContext,
 } from './utils.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 
@@ -121,6 +122,8 @@ export function compileScene(sceneRequest, { includeHiddenMessages = false } = {
         metadata,
         messages: sceneMessages
     };
+    // Keep detected participants until the operation applies its captured policy.
+    metadata.groupChatPolicy = getCurrentMemoryBooksContext().groupChatPolicy;
     
     // Validate that we have at least some visible messages
     if (sceneMessages.length === 0) {

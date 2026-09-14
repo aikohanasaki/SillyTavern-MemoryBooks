@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "Memory-Rollback für {{count}} Memory-Eintrag bzw. -Einträge abgeschlossen."
   ,"STMemoryBooks_AutoRollback_Failed": "Memory-Rollback fehlgeschlagen"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "Szenenmarkierung aufgrund der Nachrichtenlöschung gelöscht."
+  ,"STMemoryBooks_GroupChatSettings": "Gruppenchat"
+  ,"STMemoryBooks_CharacterAwareMemories": "Charakterbezogene Erinnerungen"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "Filtert Erinnerungen aus Gruppenchats nach den beteiligten Charakteren. Ohne Häkchen erfolgt die normale Verarbeitung in einem einzigen Memory Book, ohne Charakterfilter, Teilnehmerauswahl, Charakterkopien oder separate Gruppen-/Charakter-Prompts. Bestehende Einträge behalten ihre Filter, bis sie neu geschrieben werden."
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "Separate Gruppen-Side-Prompts verwenden"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "Verwendet bei automatischen Ausführungen den Side-Prompt-Standard für Gruppen. Ohne Häkchen gilt der Solo-Standard. Explizite Auswahlen pro Chat gelten weiterhin. Unabhängig von charakterbezogenen Erinnerungen."
+  ,"STMemoryBooks_CharacterAwareDisabled": "Deaktiviert und nicht angewendet, weil „Charakterbezogene Erinnerungen“ in den Allgemeinen Einstellungen nicht angehakt ist."
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "Deaktiviert und nicht angewendet, weil „Separate Gruppen-Side-Prompts verwenden“ in den Allgemeinen Einstellungen nicht angehakt ist."
 }

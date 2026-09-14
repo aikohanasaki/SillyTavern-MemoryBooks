@@ -5,6 +5,7 @@ import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { escapeHtml } from '../../../utils.js';
 import { extension_settings } from '../../../extensions.js';
+import { usesGroupSidePromptDefault } from './groupChatPolicy.js';
 import { chat_metadata, saveSettingsDebounced } from '../../../../script.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import {
@@ -564,7 +565,7 @@ function renderAfterMemorySetMode(sets) {
         sceneContext,
     );
     const defaultSet = (sets || []).find(set => set.key === defaultSetKey);
-    const inheritLabel = sceneContext?.isGroupChat
+    const inheritLabel = usesGroupSidePromptDefault(extension_settings?.STMemoryBooks?.moduleSettings, sceneContext)
         ? translate('Inherit group chat default', 'STMemoryBooks_InheritGroupSidePromptDefault')
         : translate('Inherit solo chat default', 'STMemoryBooks_InheritSoloSidePromptDefault');
     const inheritedMissingLabel = !defaultSet && defaultSetKey

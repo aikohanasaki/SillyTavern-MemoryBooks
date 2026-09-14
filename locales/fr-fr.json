@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "Restauration de Mémoire terminée pour {{count}} entrée(s) de Mémoire."
   ,"STMemoryBooks_AutoRollback_Failed": "Échec de la restauration de Mémoire"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "Marqueur de scène effacé à cause de la suppression de messages."
+  ,"STMemoryBooks_GroupChatSettings": "Discussion de groupe"
+  ,"STMemoryBooks_CharacterAwareMemories": "Mémoires par personnage"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "Filtre les mémoires des discussions de groupe selon les personnages participants. Si la case est décochée, utilise le traitement habituel dans un seul Memory Book, sans filtres de personnage, sélection des participants, copies par personnage ni prompts séparés de groupe/personnage. Les entrées existantes conservent leurs filtres jusqu’à leur réécriture."
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "Utiliser des side prompts de groupe séparés"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "Utilise le réglage par défaut des side prompts de groupe pour les exécutions automatiques. Si la case est décochée, hérite du réglage solo. Les sélections explicites par chat restent appliquées. Indépendant des mémoires par personnage."
+  ,"STMemoryBooks_CharacterAwareDisabled": "Désactivé et non appliqué car « Mémoires par personnage » est décoché dans les Paramètres généraux."
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "Désactivé et non appliqué car « Utiliser des side prompts de groupe séparés » est décoché dans les Paramètres généraux."
 }

@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "已完成 {{count}} 個記憶項目的回復。"
   ,"STMemoryBooks_AutoRollback_Failed": "記憶回復失敗"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "場景標記已因訊息刪除而清除。"
+  ,"STMemoryBooks_GroupChatSettings": "群組聊天"
+  ,"STMemoryBooks_CharacterAwareMemories": "依角色區分記憶"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "依參與角色篩選群聊記憶。取消勾選後，使用一般的單一記憶書處理方式，不使用角色篩選、參與者選擇、角色副本或單獨的群組/角色提示詞。現有條目在重寫前保留原有篩選。"
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "使用獨立的群組側邊提示"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "自動執行時使用群組側邊提示預設值。取消勾選後，繼承單人聊天預設值。每個聊天的明確選擇仍然有效。此設定獨立於依角色區分記憶。"
+  ,"STMemoryBooks_CharacterAwareDisabled": "已停用且不套用，因為一般設定中的「依角色區分記憶」未勾選。"
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "已停用且不套用，因為一般設定中的「使用獨立的群組側邊提示」未勾選。"
 }

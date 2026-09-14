@@ -305,6 +305,8 @@ import {
   validateNarratorBindings,
 } from "./narratorMode.js";
 import "../../../../lib/select2.min.js";
+import { applyGroupMemoryPolicy, getGroupMemoryProfile, isCharacterAwarenessDisabled } from "./groupChatPolicy.js";
+import { setGroupSettingDisabled } from "./groupChatSettingsUi.js";
 
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
@@ -344,8 +346,8 @@ async function getEffectivePromptAsync(profile, targetKind = "") {
   return getDefaultPrompt();
 }
 
-async function snapshotProfilePrompts(profile) {
-  const snapshot = deepClone(profile || null);
+async function snapshotProfilePrompts(profile, context = getCurrentMemoryBooksContext()) {
+  const snapshot = deepClone(profile ? getGroupMemoryProfile(profile, {}, context) : null);
   if (!snapshot) return snapshot;
 
   if (snapshot.useGroupSpecificPrompts) {
@@ -594,6 +596,8 @@ const defaultSettings = {
     autoCreateLorebook: false,
     copyMemoryBooksOnBranch: true,
     autoAcceptGroupParticipants: false,
+    characterAwareMemories: true,
+    useSeparateGroupSidePrompts: true,
     autoRollbackEnabled: false,
     autoRollbackUpdateLastProcessed: true,
     autoRollbackDeleteLastMemory: true,
@@ -2621,6 +2625,9 @@ function validateSettings(settings) {
   if (settings.moduleSettings.autoAcceptGroupParticipants === undefined) {
     settings.moduleSettings.autoAcceptGroupParticipants = false;
   }
+  for (const key of ["characterAwareMemories", "useSeparateGroupSidePrompts"]) {
+    if (settings.moduleSettings[key] === undefined) settings.moduleSettings[key] = true;
+  }
   let autoRollbackSettingsMigrated = false;
   if (typeof settings.moduleSettings.autoRollbackEnabled !== "boolean") {
     settings.moduleSettings.autoRollbackEnabled = false;
@@ -2922,6 +2929,10 @@ function applyGroupMemoryParticipantFilters(compiledScene, names) {
 }
 
 function getAutomaticGroupMemoryAddOptions(memoryResult, compiledScene, context) {
+  const policyContext = compiledScene?.metadata?.groupChatPolicy ? compiledScene.metadata : context;
+  if (isCharacterAwarenessDisabled({}, policyContext)) {
+    return { characterFilterNames: [], applyCharacterFilters: false };
+  }
   if (!context?.isGroupChat) {
     return {};
   }
@@ -2938,6 +2949,7 @@ function getAutomaticGroupMemoryAddOptions(memoryResult, compiledScene, context)
 }
 
 async function confirmGroupMemoryParticipants(compiledScene, settings, manualGroupLorebooks) {
+  if (isCharacterAwarenessDisabled(settings?.moduleSettings, compiledScene?.metadata)) return true;
   if (
     !settings?.moduleSettings?.manualModeEnabled ||
     !manualGroupLorebooks?.valid ||
@@ -3311,6 +3323,9 @@ async function syncManualGroupStloCharacterFilters({
 
 async function reconcileCurrentManualGroupStloFilters(settings, context = null) {
   const resolvedContext = context || getCurrentMemoryBooksContext();
+  if (isCharacterAwarenessDisabled(settings?.moduleSettings, resolvedContext)) {
+    return { targets: [], conflicts: [], results: [] };
+  }
   if (
     !settings?.moduleSettings?.manualModeEnabled ||
     !resolvedContext?.isGroupChat ||
@@ -3571,9 +3586,8 @@ function formatManualGroupMemberNames(members, fallback = "{{char}}") {
   }
 }
 
-async function getManualGroupConsolidationLorebooks(primaryLorebookName, lorebookData, manualGroupLorebooks = null) {
+async function getManualGroupConsolidationLorebooks(primaryLorebookName, lorebookData, manualGroupLorebooks = null, context = getCurrentMemoryBooksContext()) {
   const settings = initializeSettings();
-  const context = getCurrentMemoryBooksContext();
   if (!shouldWriteMultiCharacterLorebooks(settings, context)) {
     return [{
       role: "group",
@@ -4137,6 +4151,7 @@ function hasManualGroupCharacterLorebookBindings(context) {
 
 function shouldUseManualGroupCharacterLorebooks(settings, context) {
   return !!(
+    !isCharacterAwarenessDisabled(settings?.moduleSettings, context) &&
     settings?.moduleSettings?.manualModeEnabled &&
     context?.isGroupChat &&
     (
@@ -4526,11 +4541,11 @@ async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, e
 
   const { profileSettings, summaryCount, tokenThreshold } = effectiveSettings;
   const preparedProfileSettings = options.snapshotProfile && !options.regenerationSettings
-    ? await snapshotProfilePrompts(profileSettings)
+    ? await snapshotProfilePrompts(profileSettings, options.memoryBooksContext)
     : profileSettings;
   const fallbackTitleFormat = effectiveSettings.titleFormat || effectiveSettings.settings?.titleFormat;
-  const context = getCurrentMemoryBooksContext();
-  const characterNames = Array.isArray(entry?.characterFilter?.names)
+  const context = options.memoryBooksContext || getCurrentMemoryBooksContext();
+  const characterNames = !isCharacterAwarenessDisabled({}, context) && Array.isArray(entry?.characterFilter?.names)
     ? entry.characterFilter.names.filter(Boolean)
     : [];
   const narratorOwnerIds = Array.isArray(entry?.STMB_narratorOwnerIds)
@@ -4557,6 +4572,7 @@ async function prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, e
   });
   if (additionalContext.cancelled) return null;
   compiledScene.additionalContextEntries = additionalContext.entries;
+  applyGroupMemoryPolicy(compiledScene, {}, context);
   compiledScene.previousSummariesContext = selectPreviousMemoryContext(
     lorebookData,
     entry.uid,
@@ -4637,6 +4653,7 @@ async function prepareConsolidationRegenerationDraft(lorebookData, eligibility, 
     const settings = initializeSettings();
     profileSettings = await snapshotProfilePrompts(
       settings.profiles?.[settings.defaultProfile] || null,
+      options.memoryBooksContext,
     );
     analysisOptions.promptText = await ArcPrompts.getPrompt(
       CONSOLIDATION_REGENERATION_PRESET_KEY,
@@ -4797,23 +4814,30 @@ async function generateSidePromptRegenerationDraft(prepared, task) {
 }
 
 async function prepareLorebookRegenerationDraft(lorebookName, lorebookData, entry, eligibility, options = {}) {
+  options = { ...options, memoryBooksContext: options.memoryBooksContext || getCurrentMemoryBooksContext() };
+  let prepared;
   if (eligibility.kind === "memory") {
-    return await prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, options);
+    prepared = await prepareBaseRegenerationDraft(lorebookName, lorebookData, entry, eligibility, options);
+  } else if (eligibility.kind === "sidePrompt") {
+    prepared = await prepareSidePromptRegenerationDraft(entry, eligibility, options);
+  } else {
+    prepared = await prepareConsolidationRegenerationDraft(lorebookData, eligibility, options);
   }
-  if (eligibility.kind === "sidePrompt") {
-    return await prepareSidePromptRegenerationDraft(entry, eligibility, options);
-  }
-  return await prepareConsolidationRegenerationDraft(lorebookData, eligibility, options);
+  if (prepared) prepared.removeCharacterFilter = eligibility.kind !== "sidePrompt"
+    && isCharacterAwarenessDisabled({}, options.memoryBooksContext);
+  return prepared;
 }
 
 async function generateLorebookRegenerationDraft(prepared, task) {
+  let draft;
   if (prepared.kind === "memory") {
-    return await generateBaseRegenerationDraft(prepared, task);
+    draft = await generateBaseRegenerationDraft(prepared, task);
+  } else if (prepared.kind === "sidePrompt") {
+    draft = await generateSidePromptRegenerationDraft(prepared, task);
+  } else {
+    draft = await generateConsolidationRegenerationDraft(prepared, task);
   }
-  if (prepared.kind === "sidePrompt") {
-    return await generateSidePromptRegenerationDraft(prepared, task);
-  }
-  return await generateConsolidationRegenerationDraft(prepared, task);
+  return { ...draft, removeCharacterFilter: prepared.removeCharacterFilter === true };
 }
 
 async function commitRegeneratedLorebookEntry({
@@ -4826,6 +4850,7 @@ async function commitRegeneratedLorebookEntry({
   sourceChatFingerprint,
   review,
   contentOnly = false,
+  removeCharacterFilter = false,
   refreshEditor = true,
 }) {
   await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
@@ -4873,6 +4898,7 @@ async function commitRegeneratedLorebookEntry({
       sourceUids,
       lorebookData: freshData,
       contentOnly,
+      removeCharacterFilter,
     });
     await saveWorldInfo(lorebookName, freshData, true);
     if (refreshEditor) {
@@ -4944,6 +4970,7 @@ async function executeQueuedLorebookRegenerationJob(job, jobContext) {
     sourceChatFingerprint: draft.sourceChatFingerprint,
     review: approval.review,
     contentOnly: draft.contentOnly === true,
+    removeCharacterFilter: draft.removeCharacterFilter === true,
     refreshEditor: payload.refreshEditor !== false,
   });
   jobContext.setResult({
@@ -4954,6 +4981,7 @@ async function executeQueuedLorebookRegenerationJob(job, jobContext) {
 }
 
 async function handleLorebookEntryRegeneration(button) {
+  const memoryBooksContext = getCurrentMemoryBooksContext();
   if (isProcessingMemory || isProcessingArc) {
     toastr.warning(
       translate("Memory generation is already in progress.", "STMemoryBooks_ManualFix_InProgress"),
@@ -4982,7 +5010,7 @@ async function handleLorebookEntryRegeneration(button) {
 
     let linkedEntries = [];
     let regenerationScope = "entry";
-    if (hasLinkedManualGroupMetadata(entry)) {
+    if (!isCharacterAwarenessDisabled({}, memoryBooksContext) && hasLinkedManualGroupMetadata(entry)) {
       linkedEntries = await findLinkedManualGroupEntries(lorebookName, entry);
       if (linkedEntries.length > 0 && isCanonicalLinkedGroupMemory(entry, lorebookName)) {
         regenerationScope = await showGroupRegenerationScopePopup(linkedEntries);
@@ -5031,6 +5059,7 @@ async function handleLorebookEntryRegeneration(button) {
         {
           snapshotProfile: areStmbJobsEnabled(),
           regenerationSettings,
+          memoryBooksContext,
         },
       );
       if (!prepared) return;
@@ -5120,6 +5149,7 @@ async function handleLorebookEntryRegeneration(button) {
         sourceChatFingerprint: draft.sourceChatFingerprint,
         review,
         contentOnly: draft.contentOnly === true,
+        removeCharacterFilter: draft.removeCharacterFilter === true,
         refreshEditor: approvedTargets.length === 1,
       });
     }
@@ -5379,13 +5409,14 @@ async function executeMemoryGeneration(
       sceneData.sceneEnd,
     );
     compiledScene = compileScene(sceneRequest);
-    const promptContext = getCurrentMemoryBooksContext();
+    const promptContext = memoryOriginSnapshot.sceneContext;
     compiledScene.metadata = {
       ...(compiledScene.metadata || {}),
       groupName: promptContext?.groupName || compiledScene.metadata?.groupName,
       stmbPromptTarget: promptContext?.isMultiCharacter ? "group" : "character",
     };
     applyNarratorSceneMetadata(compiledScene, promptContext);
+    applyGroupMemoryPolicy(compiledScene, settings.moduleSettings, promptContext);
 
     // Validate compiled scene
     const validation = validateCompiledScene(compiledScene);
@@ -5598,7 +5629,7 @@ async function executeMemoryGeneration(
     throwIfStmbStopped(runEpoch);
 
     // Add to lorebook silently
-    const saveContext = getCurrentMemoryBooksContext();
+    const saveContext = memoryOriginSnapshot.sceneContext;
     const resolvedManualGroupLorebooks =
       manualGroupLorebookValidation ||
       await validateMultiCharacterLorebookBindingsForMemory(settings, saveContext);
@@ -5964,6 +5995,7 @@ async function buildQueuedMemoryJob(
     stmbPromptTarget: promptContext?.isMultiCharacter ? "group" : "character",
   };
   applyNarratorSceneMetadata(compiledScene, promptContext);
+  applyGroupMemoryPolicy(compiledScene, settings.moduleSettings, promptContext);
   const validation = validateCompiledScene(compiledScene);
   if (!validation.valid) {
     throw new Error(`Scene compilation failed: ${validation.errors.join(", ")}`);
@@ -5998,7 +6030,7 @@ async function buildQueuedMemoryJob(
     ? memoryFetchResult.summaries
     : [];
 
-  const profileSnapshot = await snapshotProfilePrompts(profileSettings);
+  const profileSnapshot = await snapshotProfilePrompts(profileSettings, promptContext);
   const additionalContextSnapshot = await resolveAdditionalContextSnapshot(profileSnapshot, {
     blockingPrompt: true,
   });
@@ -6681,6 +6713,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
                   orderValue: payload.summaryOrderValue,
                   reverseStart: payload.summaryReverseStart,
                   entryMetadata: payload.entryMetadata,
+                  applyCharacterFilters: payload.applyCharacterFilters,
                 });
                 latestCommittedLorebookData = freshLorebook;
               });
@@ -6743,6 +6776,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
       orderValue: payload.summaryOrderValue,
       reverseStart: payload.summaryReverseStart,
       entryMetadata: payload.entryMetadata,
+      applyCharacterFilters: payload.applyCharacterFilters,
     });
     created = Array.isArray(result?.results) ? result.results.length : summaryCandidates.length;
     latestCommittedLorebookData = freshLorebook;
@@ -7387,6 +7421,7 @@ function renderManualGroupLorebookBindings(container, stmbData) {
   }
 
   container.appendChild(rows);
+  setGroupSettingDisabled(rows, isCharacterAwarenessDisabled(settings.moduleSettings, context), getCharacterAwareDisabledReason());
 }
 
 /**
@@ -9296,6 +9331,8 @@ async function runPostConsolidationCommitFlow({
  * Show summary consolidation popup
  */
 async function showSummaryConsolidationPopup(popupOptions = {}) {
+  const memoryBooksContext = getCurrentMemoryBooksContext();
+  const applyCharacterFilters = !isCharacterAwarenessDisabled({}, memoryBooksContext);
   try {
     // Do not auto-create a lorebook for this path; allow UI to render
     const lorebookValidation = popupOptions?.lorebookValidation?.valid
@@ -9580,7 +9617,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         isEligibleSummarySourceEntry(entry, getSourceTierForTarget(targetTier)),
       );
       const isConfiguredGroupLorebook =
-        getCurrentMemoryBooksContext().isGroupChat &&
+        applyCharacterFilters && memoryBooksContext.isGroupChat &&
         lorebookName === configuredLorebookName;
       return sortEntries(filterManualGroupEntriesForRole(eligibleEntries, {
         role: "group",
@@ -10055,13 +10092,13 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       count: selectedEntries.length,
       requiredMin,
       role: "group",
-      entryMetadata: buildManualGroupRoleMetadata("group"),
+      entryMetadata: applyCharacterFilters ? buildManualGroupRoleMetadata("group") : null,
     }];
     let useGroupChatPrompt = false;
 
     try {
       const boundLorebooks = lorebookName === configuredLorebookName
-        ? await getManualGroupConsolidationLorebooks(lorebookName, lorebookData)
+        ? await getManualGroupConsolidationLorebooks(lorebookName, lorebookData, null, memoryBooksContext)
         : [{ role: "group", lorebookName, lorebookData, member: null, members: [] }];
       useGroupChatPrompt = hasGroupAndCharacterConsolidationTopology(boundLorebooks);
       if (boundLorebooks.length > 1) {
@@ -10147,7 +10184,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
     if (areStmbJobsEnabled()) {
       const chatRef = getCurrentStmbChatRef();
-      const profileSettings = await snapshotProfilePrompts(settings.profiles?.[settings.defaultProfile] || null);
+      const profileSettings = await snapshotProfilePrompts(settings.profiles?.[settings.defaultProfile] || null, memoryBooksContext);
       if (profileSettings) {
         profileSettings.effectiveConnection = profileSettings.connection
           ? { ...profileSettings.connection }
@@ -10180,6 +10217,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
             summaryOrderValue: chosenArcOrderValue,
             summaryReverseStart: chosenArcReverseStart,
             entryMetadata: workItem.entryMetadata,
+            applyCharacterFilters,
           },
         });
       }
@@ -10241,6 +10279,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
               orderValue: chosenArcOrderValue,
               reverseStart: chosenArcReverseStart,
               entryMetadata: workItem.entryMetadata,
+              applyCharacterFilters,
             });
             await runPostConsolidationCommitFlow({
               created: Array.isArray(result?.results) ? result.results.length : itemCandidates.length,
@@ -10328,6 +10367,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                   orderValue: chosenArcOrderValue,
                   reverseStart: chosenArcReverseStart,
                   entryMetadata: workItem.entryMetadata,
+                  applyCharacterFilters,
                 });
                 latestCommittedLorebookData = freshLorebook;
               });
@@ -10388,6 +10428,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         summaryOrderValue: chosenArcOrderValue,
         summaryReverseStart: chosenArcReverseStart,
         entryMetadata: primaryEntryMetadata,
+        applyCharacterFilters,
       };
 
       if (e?.name === "ArcAIResponseError") {
@@ -10445,6 +10486,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         summaryOrderValue: chosenArcOrderValue,
         summaryReverseStart: chosenArcReverseStart,
         entryMetadata: primaryEntryMetadata,
+        applyCharacterFilters,
       };
       try {
         toastr.clear(lastArcFailureToast);
@@ -10517,6 +10559,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                 orderValue: chosenArcOrderValue,
                 reverseStart: chosenArcReverseStart,
                 entryMetadata: primaryEntryMetadata,
+                applyCharacterFilters,
               });
               latestCommittedLorebookData = freshLorebook;
             });
@@ -10574,6 +10617,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         orderValue: chosenArcOrderValue,
         reverseStart: chosenArcReverseStart,
         entryMetadata: primaryEntryMetadata,
+        applyCharacterFilters,
       });
       const created = Array.isArray(res2?.results)
         ? res2.results.length
@@ -10759,6 +10803,8 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     alwaysUseDefault: settings.moduleSettings.alwaysUseDefault,
     autoAcceptGroupParticipants:
       settings.moduleSettings.autoAcceptGroupParticipants === true,
+    characterAwareMemories: settings.moduleSettings.characterAwareMemories !== false,
+    useSeparateGroupSidePrompts: settings.moduleSettings.useSeparateGroupSidePrompts !== false,
     autoRollbackEnabled: settings.moduleSettings.autoRollbackEnabled === true,
     autoRollbackUpdateLastProcessed:
       settings.moduleSettings.autoRollbackUpdateLastProcessed !== false,
@@ -11040,13 +11086,30 @@ async function showAutomaticMemoriesSettingsPopup() {
   }
 }
 
-/**
- * Setup event listeners for settings popup using full event delegation
- */
+function getCharacterAwareDisabledReason() {
+  return translate("Disabled and not applied because ‘character-aware memories’ is unchecked in General Settings.", "STMemoryBooks_CharacterAwareDisabled");
+}
+
+function syncGroupSettingsControls(popupElement) {
+  const settings = initializeSettings().moduleSettings;
+  setGroupSettingDisabled(
+    popupElement.querySelector("#stmb-auto-accept-group-participants")?.closest("label"),
+    settings.characterAwareMemories === false,
+    getCharacterAwareDisabledReason(),
+  );
+  setGroupSettingDisabled(
+    popupElement.querySelector("#stmb-default-group-side-prompt-set")?.closest("label"),
+    settings.useSeparateGroupSidePrompts === false,
+    translate("Disabled and not applied because ‘Use separate group side prompts’ is unchecked in General Settings.", "STMemoryBooks_SeparateGroupSidePromptsDisabled"),
+  );
+}
+
+/** Setup event listeners for settings popups using full event delegation. */
 function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
   if (!popupInstance?.dlg) return;
 
   const popupElement = popupInstance.dlg;
+  syncGroupSettingsControls(popupElement);
 
   // Use full event delegation for all interactions
   popupElement.addEventListener("click", async (e) => {
@@ -11105,6 +11168,19 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
         .querySelector("#stmb-manage-narrator-cast-container")
         ?.classList.toggle("displayNone", !config.enabled);
       refreshNarratorCastDrawer();
+      return;
+    }
+
+    if (e.target.matches("#stmb-character-aware-memories, #stmb-use-separate-group-side-prompts")) {
+      const key = e.target.id === "stmb-character-aware-memories"
+        ? "characterAwareMemories" : "useSeparateGroupSidePrompts";
+      settings.moduleSettings[key] = e.target.checked;
+      saveSettingsDebounced();
+      syncGroupSettingsControls(popupElement);
+      if (currentPopupInstance?.content) {
+        const container = currentPopupInstance.content.querySelector("#stmb-manual-group-lorebook-bindings");
+        if (container) renderManualGroupLorebookBindings(container, getSceneMarkers() || {});
+      }
       return;
     }
 
@@ -11651,6 +11727,16 @@ function persistMainPopupSettings(popupElement) {
 
   const settings = initializeSettings();
   let hasChanges = false;
+  for (const [key, selector] of [
+    ["characterAwareMemories", "#stmb-character-aware-memories"],
+    ["useSeparateGroupSidePrompts", "#stmb-use-separate-group-side-prompts"],
+  ]) {
+    const control = popupElement.querySelector(selector);
+    if (control && settings.moduleSettings[key] !== control.checked) {
+      settings.moduleSettings[key] = control.checked;
+      hasChanges = true;
+    }
+  }
 
   const alwaysUseDefault =
     popupElement.querySelector("#stmb-always-use-default")?.checked ??
@@ -12843,7 +12929,7 @@ function setupEventListeners() {
       ? [...getCurrentNarratorConfig().activeCastIds]
       : null;
     manualGroupGenerationSnapshot =
-      context.isGroupChat && initializeSettings()?.moduleSettings?.manualModeEnabled
+      context.isGroupChat && !isCharacterAwarenessDisabled({}, context) && initializeSettings()?.moduleSettings?.manualModeEnabled
         ? createManualGroupLorebookBindingSnapshot()
         : null;
   });
@@ -13087,6 +13173,7 @@ async function applyManualFixedJson(correctedRaw) {
         groupName: compiledScene.metadata?.groupName,
         userName: compiledScene.metadata?.userName,
         chatId: compiledScene.metadata?.chatId,
+        groupChatPolicy: compiledScene.metadata?.groupChatPolicy,
         characterFilterNames: Array.isArray(compiledScene.metadata?.characterFilterNames)
           ? [...compiledScene.metadata.characterFilterNames]
           : undefined,
@@ -13427,6 +13514,7 @@ async function applyManualFixedSummaryJson(correctedRaw) {
           ? clampInt(Number(context.summaryReverseStart), 100, 9999)
           : fallbackReverseStart,
       entryMetadata: context.entryMetadata,
+      applyCharacterFilters: context.applyCharacterFilters,
     });
 
     const created = Array.isArray(res?.results)

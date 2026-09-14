@@ -671,6 +671,21 @@ SillyTavern records which card authored each message, so STMB can preserve speak
 
 No separate Group Chat Mode switch is required. Open a group chat and use STMB normally.
 
+**General Settings → Group Chat** contains two independent controls, both checked by default:
+
+| Setting | Checked | Unchecked |
+|---|---|---|
+| **character-aware memories** | Enables participant-based memory filters and configured character-specific memory processing. | Uses ordinary single-book processing for new memories, regeneration, and consolidation. No participant confirmation, character filters, character-book copies, linked regeneration, character-based consolidation streams, or automatic group/character prompt routing. |
+| **Use separate group side prompts** | Automatic side prompts inherit the group default. | Automatic side prompts inherit the solo default. |
+
+The memory checkbox does not affect the side-prompt checkbox. Side-prompt default routing applies to both after-memory and interval triggers; explicit per-chat set selections or individually enabled prompts still take precedence, and manual runs remain available.
+
+When character-aware memories is off, **Automatically accept detected participants in future**, **Group Character Lorebooks** assignments, **Use separate group and character prompts in group chats**, and its **Group Summary Prompt / Character Summary Prompt** selectors remain visible but grayed out. Their tooltips explain that they are disabled and not applied because the General Settings checkbox is unchecked. When separate group side prompts is off, only the group side-prompt default selector is grayed out for that reason. Saved choices are retained and restored when re-enabled.
+
+These switches do not migrate existing entries or STLO configuration. Existing filters continue to apply until an entry is explicitly regenerated; regeneration with character-aware memories off removes that entry's character filter without rewriting its linked copies. New consolidated entries are unfiltered, while source entries retain their filters. Operations already started, including queued jobs and retries, retain their captured settings. Native group identity, speaker names, and primary Memory Book selection remain intact. Narrator Mode is independent of these native-group controls.
+
+The character-aware behavior described below applies while **character-aware memories** is checked.
+
 ### 11.2 Participant detection
 
 A detected participant is normally a character card that authored at least one message inside the selected scene.

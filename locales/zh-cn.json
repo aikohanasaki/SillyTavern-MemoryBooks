@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "已完成 {{count}} 个记忆条目的回滚。"
   ,"STMemoryBooks_AutoRollback_Failed": "记忆回滚失败"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "场景标记已因消息删除而清除。"
+  ,"STMemoryBooks_GroupChatSettings": "群组聊天"
+  ,"STMemoryBooks_CharacterAwareMemories": "按角色区分记忆"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "按参与角色筛选群聊记忆。取消勾选后，使用普通的单记忆书处理方式，不使用角色筛选、参与者选择、角色副本或单独的群组/角色提示词。现有条目在重写前保留原有筛选。"
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "使用单独的群组侧边提示"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "自动运行时使用群组侧边提示默认值。取消勾选后，继承单人聊天默认值。每个聊天的明确选择仍然有效。此设置独立于按角色区分记忆。"
+  ,"STMemoryBooks_CharacterAwareDisabled": "已禁用且不生效，因为通用设置中的“按角色区分记忆”未勾选。"
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "已禁用且不生效，因为通用设置中的“使用单独的群组侧边提示”未勾选。"
 }

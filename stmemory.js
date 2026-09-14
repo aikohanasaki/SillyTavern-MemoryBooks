@@ -10,6 +10,7 @@ import { groups } from '../../../group-chats.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { translate } from '../../../i18n.js';
 import dirtyJson from 'dirty-json';
+import { applyGroupMemoryPolicy, getGroupMemoryProfile } from './groupChatPolicy.js';
 import { getSceneMarkers } from './sceneManager.js';
 import {
     CONTEXT_NONE_KEY,
@@ -1285,6 +1286,8 @@ async function generateMemoryWithAI(promptString, profile, options = {}) {
  * @throws {Error} For other general failures
  */
 export async function createMemory(compiledScene, profile, options = {}) {
+    if (compiledScene?.metadata) applyGroupMemoryPolicy(compiledScene, {}, compiledScene.metadata);
+    profile = getGroupMemoryProfile(profile, {}, compiledScene?.metadata);
     
     try {
         validateInputs(compiledScene, profile);
@@ -1311,6 +1314,7 @@ export async function createMemory(compiledScene, profile, options = {}) {
                 groupName: compiledScene.metadata.groupName,
                 userName: compiledScene.metadata.userName,
                 chatId: compiledScene.metadata.chatId,
+                groupChatPolicy: compiledScene.metadata.groupChatPolicy,
                 characterFilterNames: Array.isArray(compiledScene.metadata.characterFilterNames)
                     ? [...compiledScene.metadata.characterFilterNames]
                     : undefined,
@@ -1593,7 +1597,7 @@ async function buildPrompt(compiledScene, profile) {
     
     // Use utils.js to get the effective prompt (now designed for JSON output)
     const promptProfile = {
-        ...(profile || {}),
+        ...getGroupMemoryProfile(profile || {}, {}, metadata),
         stmbPromptTarget: metadata?.stmbPromptTarget || profile?.stmbPromptTarget || '',
     };
     const systemPrompt = await getEffectivePrompt(promptProfile);

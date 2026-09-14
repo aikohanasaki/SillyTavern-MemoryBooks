@@ -9,6 +9,7 @@ import {
     validateProfile,
     generateSafeProfileName,
     getCurrentApiInfo,
+    getCurrentMemoryBooksContext,
     createProfileObject,
     clampInt,
     readIntInput,
@@ -25,6 +26,7 @@ import { getPresetManager } from '../../../preset-manager.js';
 import { loadWorldInfo, world_names } from '../../../world-info.js';
 import { escapeHtml, getSortableDelay } from '../../../utils.js';
 import { listCustomConnectionProfiles } from './customConnectionProfiles.js';
+import { setGroupSettingDisabled } from './groupChatSettingsUi.js';
 
 const MODULE_NAME = 'STMemoryBooks-ProfileManager';
 const BUILTIN_CURRENT_ST_NAME = 'Current SillyTavern Settings';
@@ -1001,8 +1003,16 @@ function setupProfileEditEventHandlers(popupInstance, settings, options = {}) {
     }
 
     function syncGroupSpecificPromptFields() {
+        const disabled = extension_settings?.STMemoryBooks?.moduleSettings?.characterAwareMemories === false
+            && !getCurrentMemoryBooksContext().isNarratorMode;
         const enabled = !!popupElement.querySelector('#stmb-profile-use-group-specific-prompts')?.checked;
-        popupElement.querySelector('#stmb-profile-group-specific-prompts')?.classList.toggle('displayNone', !enabled);
+        const fields = popupElement.querySelector('#stmb-profile-group-specific-prompts');
+        fields?.classList.toggle('displayNone', !enabled && !disabled);
+        const reason = translate("Disabled and not applied because ‘character-aware memories’ is unchecked in General Settings.", 'STMemoryBooks_CharacterAwareDisabled');
+        setGroupSettingDisabled(popupElement.querySelector('#stmb-profile-use-group-specific-prompts')?.closest('label'), disabled, reason);
+        for (const label of fields?.querySelectorAll('label') || []) {
+            setGroupSettingDisabled(label, disabled, reason);
+        }
     }
 
     async function refreshSummaryPresetSelects(showToast = false) {

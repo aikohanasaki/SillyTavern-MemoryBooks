@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "메모리 항목 {{count}}개의 롤백을 완료했습니다."
   ,"STMemoryBooks_AutoRollback_Failed": "메모리 롤백 실패"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "메시지 삭제로 인해 장면 마커가 지워졌습니다."
+  ,"STMemoryBooks_GroupChatSettings": "그룹 채팅"
+  ,"STMemoryBooks_CharacterAwareMemories": "캐릭터별 메모리"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "그룹 채팅 메모리를 참여 캐릭터로 필터링합니다. 선택을 해제하면 캐릭터 필터, 참여자 선택, 캐릭터별 복사본, 별도의 그룹/캐릭터 프롬프트 없이 일반적인 단일 메모리 북 처리를 사용합니다. 기존 항목은 다시 작성될 때까지 필터를 유지합니다."
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "그룹 사이드 프롬프트 따로 사용"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "자동 실행 시 그룹 사이드 프롬프트 기본값을 사용합니다. 선택을 해제하면 솔로 기본값을 상속합니다. 채팅별 명시적 선택은 계속 적용됩니다. 캐릭터별 메모리와 독립적인 설정입니다."
+  ,"STMemoryBooks_CharacterAwareDisabled": "일반 설정에서 “캐릭터별 메모리”가 선택 해제되어 비활성화되었으며 적용되지 않습니다."
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "일반 설정에서 “그룹 사이드 프롬프트 따로 사용”이 선택 해제되어 비활성화되었으며 적용되지 않습니다."
 }

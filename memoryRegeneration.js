@@ -530,6 +530,7 @@ export function applyRegenerationReplacement(entry, review, options = {}) {
     entry.comment = review.formattedTitle;
     entry.content = review.content;
     entry.key = Array.isArray(review.keywords) ? [...review.keywords] : [];
+    if (options.removeCharacterFilter === true) delete entry.characterFilter;
     const sourceUids = Array.isArray(options.sourceUids)
         ? options.sourceUids.map(String)
         : [];

@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "Rollback Memory selesai untuk {{count}} entri Memory."
   ,"STMemoryBooks_AutoRollback_Failed": "Rollback Memory gagal"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "Penanda adegan dihapus karena penghapusan pesan."
+  ,"STMemoryBooks_GroupChatSettings": "Obrolan Grup"
+  ,"STMemoryBooks_CharacterAwareMemories": "Memori berbasis karakter"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "Memfilter memori obrolan grup berdasarkan karakter yang berpartisipasi. Jika tidak dicentang, gunakan pemrosesan biasa dalam satu Buku Memori, tanpa filter karakter, pemilihan peserta, salinan per karakter, atau prompt grup/karakter terpisah. Entri yang sudah ada tetap memiliki filter hingga ditulis ulang."
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "Gunakan prompt sampingan grup terpisah"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "Gunakan default prompt sampingan grup untuk proses otomatis. Jika tidak dicentang, gunakan default obrolan solo. Pilihan eksplisit per obrolan tetap berlaku. Tidak bergantung pada memori berbasis karakter."
+  ,"STMemoryBooks_CharacterAwareDisabled": "Dinonaktifkan dan tidak diterapkan karena “Memori berbasis karakter” tidak dicentang di Pengaturan Umum."
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "Dinonaktifkan dan tidak diterapkan karena “Gunakan prompt sampingan grup terpisah” tidak dicentang di Pengaturan Umum."
 }

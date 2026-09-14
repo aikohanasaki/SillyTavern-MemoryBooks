@@ -216,10 +216,6 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
         </label>
         <label class="checkbox_label">
-            <input type="checkbox" id="stmb-auto-accept-group-participants" {{#if autoAcceptGroupParticipants}}checked{{/if}}>
-            <span data-i18n="STMemoryBooks_GroupParticipants_AutoAccept">Automatically accept detected participants in future</span>
-        </label>
-        <label class="checkbox_label">
             <input type="checkbox" id="stmb-show-memory-previews" {{#if showMemoryPreviews}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_ShowMemoryPreviews;[title]STMemoryBooks_ShowMemoryPreviewsTooltip" title="Shows previews for memories and side prompts returned from the AI.">Show memory previews</span>
         </label>
@@ -280,6 +276,22 @@ export const generalSettingsTemplate = Handlebars.compile(`
                 <small class="warning" data-i18n="STMemoryBooks_AutoRollbackSidePromptLimit">Side Prompts can be rolled back only once, to their latest exact saved state. Older rollback layers are not retained.</small>
             </div>
         </div>
+    </div>
+
+    <div class="world_entry_form_control">
+        <h4 class="stmb-section-title" data-i18n="STMemoryBooks_GroupChatSettings">Group Chat</h4>
+        <label class="checkbox_label" title="Filter group-chat memories to participating characters. When unchecked, use ordinary single-book processing without character filters, participant selection, character copies, or separate group/character prompts. Existing entries keep their filters until rewritten." data-i18n="[title]STMemoryBooks_CharacterAwareMemoriesTooltip">
+            <input type="checkbox" id="stmb-character-aware-memories" {{#if characterAwareMemories}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_CharacterAwareMemories">character-aware memories</span>
+        </label>
+        <label class="checkbox_label" title="Use the group side-prompt default for automatic runs. When unchecked, inherit the solo default. Explicit per-chat selections still apply. Independent of character-aware memories." data-i18n="[title]STMemoryBooks_SeparateGroupSidePromptsTooltip">
+            <input type="checkbox" id="stmb-use-separate-group-side-prompts" {{#if useSeparateGroupSidePrompts}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_SeparateGroupSidePrompts">Use separate group side prompts</span>
+        </label>
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-auto-accept-group-participants" {{#if autoAcceptGroupParticipants}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_GroupParticipants_AutoAccept">Automatically accept detected participants in future</span>
+        </label>
     </div>
 
     <div class="world_entry_form_control">

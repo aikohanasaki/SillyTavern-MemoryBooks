@@ -1303,6 +1303,7 @@ export async function commitSummaryEntries({
   targetTier = 1,
   disableOriginals = false,
   entryMetadata = null,
+  applyCharacterFilters = true,
   summaryEntrySettings = null,
   orderMode = "auto",
   orderValue = 100,
@@ -1409,12 +1410,13 @@ export async function commitSummaryEntries({
           ? entryMetadata
           : {}),
       };
-      const characterFilter = summary.characterFilterNames
+      const characterFilter = !applyCharacterFilters ? null : summary.characterFilterNames
         ? makeCharacterFilter(false, summary.characterFilterNames)
         : collectSummarySourceCharacterFilter(summary, lorebookData);
       if (characterFilter) {
         entryOverrides.characterFilter = characterFilter;
       }
+      if (!applyCharacterFilters) delete entryOverrides.characterFilter;
       if (summary.inclusionGroup) {
         entryOverrides.group = String(summary.inclusionGroup);
         entryOverrides.STMB_inclusionGroup = String(summary.inclusionGroup);

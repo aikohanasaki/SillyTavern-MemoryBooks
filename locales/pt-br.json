@@ -1483,4 +1483,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "Reversão de Memória concluída para {{count}} entrada(s) de Memória."
   ,"STMemoryBooks_AutoRollback_Failed": "Falha na reversão de Memória"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "Marcador de cena apagado devido à exclusão de mensagens."
+  ,"STMemoryBooks_GroupChatSettings": "Chat em Grupo"
+  ,"STMemoryBooks_CharacterAwareMemories": "Memórias por personagem"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "Filtra as memórias do chat em grupo pelos personagens participantes. Quando desmarcado, usa o processamento comum em um único Livro de Memória, sem filtros de personagem, seleção de participantes, cópias por personagem ou prompts separados de grupo/personagem. As entradas existentes mantêm seus filtros até serem reescritas."
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "Usar prompts laterais de grupo separados"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "Usa o padrão de prompts laterais de grupo nas execuções automáticas. Quando desmarcado, herda o padrão de chats individuais. Seleções explícitas por chat continuam valendo. Independente das memórias por personagem."
+  ,"STMemoryBooks_CharacterAwareDisabled": "Desativado e não aplicado porque “Memórias por personagem” está desmarcado nas Configurações Gerais."
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "Desativado e não aplicado porque “Usar prompts laterais de grupo separados” está desmarcado nas Configurações Gerais."
 }

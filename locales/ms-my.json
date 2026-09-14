@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "Rollback Memory selesai untuk {{count}} entri Memory."
   ,"STMemoryBooks_AutoRollback_Failed": "Rollback Memory gagal"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "Penanda babak dikosongkan kerana pemadaman mesej."
+  ,"STMemoryBooks_GroupChatSettings": "Sembang Kumpulan"
+  ,"STMemoryBooks_CharacterAwareMemories": "Memori mengikut watak"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "Menapis memori sembang kumpulan mengikut watak yang mengambil bahagian. Jika dinyahtanda, gunakan pemprosesan biasa dalam satu Buku Memori tanpa penapis watak, pemilihan peserta, salinan watak atau prom kumpulan/watak berasingan. Entri sedia ada mengekalkan penapis sehingga ditulis semula."
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "Gunakan prom sampingan kumpulan berasingan"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "Gunakan lalai prom sampingan kumpulan untuk pelaksanaan automatik. Jika dinyahtanda, warisi lalai solo. Pilihan khusus bagi setiap sembang masih digunakan. Tidak bergantung pada memori mengikut watak."
+  ,"STMemoryBooks_CharacterAwareDisabled": "Dilumpuhkan dan tidak digunakan kerana “Memori mengikut watak” dinyahtanda dalam Tetapan Umum."
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "Dilumpuhkan dan tidak digunakan kerana “Gunakan prom sampingan kumpulan berasingan” dinyahtanda dalam Tetapan Umum."
 }

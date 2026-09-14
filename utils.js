@@ -3,6 +3,7 @@
 
 import { chat_metadata, characters, eventSource, name2, this_chid } from '../../../../script.js';
 import { getContext, extension_settings } from '../../../extensions.js';
+import { getGroupChatPolicy, isCharacterAwarenessDisabled } from './groupChatPolicy.js';
 import { selected_group, groups } from '../../../group-chats.js';
 import { METADATA_KEY, world_names } from '../../../world-info.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
@@ -326,6 +327,10 @@ export function getCurrentMemoryBooksContext() {
             lorebookName,
             modelSettings
         };
+        result.groupChatPolicy = getGroupChatPolicy(
+            extension_settings?.STMemoryBooks?.moduleSettings,
+            result,
+        );
 
         // Add group-specific properties when in group chat
         if (isGroupChat) {
@@ -453,6 +458,7 @@ export async function getEffectiveLorebookName() {
  */
 export async function showLorebookSelectionPopup(currentLorebook = null, options = {}) {
     const markers = getSceneMarkers() || {};
+    const ignoreCharacterBindings = isCharacterAwarenessDisabled({}, getCurrentMemoryBooksContext());
     const currentCharacterLorebooks = markers.manualCharacterLorebooks
         && typeof markers.manualCharacterLorebooks === 'object'
         && !Array.isArray(markers.manualCharacterLorebooks)
@@ -465,8 +471,8 @@ export async function showLorebookSelectionPopup(currentLorebook = null, options
         )?.lorebookName)
         .filter(Boolean);
     const excludedLorebooks = new Set([
-        ...currentCharacterLorebooks,
-        ...lockedGroupLorebooks,
+        ...(ignoreCharacterBindings ? [] : currentCharacterLorebooks),
+        ...(ignoreCharacterBindings ? [] : lockedGroupLorebooks),
         ...(Array.isArray(options.excludedLorebookNames) ? options.excludedLorebookNames : []),
     ].map(name => String(name || '').trim()).filter(Boolean));
     const availableLorebooks = world_names.filter(name => !excludedLorebooks.has(name));

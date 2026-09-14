@@ -1486,4 +1486,11 @@
   ,"STMemoryBooks_AutoRollback_Complete": "{{count}}件のメモリエントリのロールバックが完了しました。"
   ,"STMemoryBooks_AutoRollback_Failed": "メモリのロールバックに失敗しました"
   ,"STMemoryBooks_Toast_SceneMarkerCleared": "メッセージの削除によりシーンマーカーがクリアされました。"
+  ,"STMemoryBooks_GroupChatSettings": "グループチャット"
+  ,"STMemoryBooks_CharacterAwareMemories": "キャラクター別メモリ"
+  ,"STMemoryBooks_CharacterAwareMemoriesTooltip": "グループチャットのメモリを参加キャラクターでフィルタリングします。オフの場合、通常の単一メモリーブック処理を使用し、キャラクターフィルター、参加者選択、キャラクター別コピー、グループ用・キャラクター用の個別プロンプトは使用しません。既存のエントリは書き直されるまでフィルターを保持します。"
+  ,"STMemoryBooks_SeparateGroupSidePrompts": "グループ用サイドプロンプトを分ける"
+  ,"STMemoryBooks_SeparateGroupSidePromptsTooltip": "自動実行時にグループ用サイドプロンプトのデフォルトを使用します。オフの場合はソロ用のデフォルトを継承します。チャットごとの明示的な選択は引き続き適用されます。キャラクター別メモリとは独立した設定です。"
+  ,"STMemoryBooks_CharacterAwareDisabled": "一般設定の「キャラクター別メモリ」がオフのため、無効になっており適用されません。"
+  ,"STMemoryBooks_SeparateGroupSidePromptsDisabled": "一般設定の「グループ用サイドプロンプトを分ける」がオフのため、無効になっており適用されません。"
 }
