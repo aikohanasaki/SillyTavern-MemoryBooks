@@ -590,6 +590,8 @@ const defaultSettings = {
     unhiddenEntriesCount: 2,
     autoSummaryEnabled: false,
     autoSummaryInterval: 50,
+    autoSummaryTriggerMode: 'messages',
+    autoSummaryTokenThreshold: 4000,
     autoSummaryBuffer: 2,
     autoConsolidationPromptEnabled: false,
     autoConsolidationTargetTiers: [1],
@@ -2571,6 +2573,8 @@ function validateSettings(settings) {
   }
 
   settings.moduleSettings.autoSummaryBuffer = clampInt(settings.moduleSettings.autoSummaryBuffer ?? 0, 0, 50);
+  settings.moduleSettings.autoSummaryTriggerMode = settings.moduleSettings.autoSummaryTriggerMode === 'tokens' ? 'tokens' : 'messages';
+  settings.moduleSettings.autoSummaryTokenThreshold = clampInt(settings.moduleSettings.autoSummaryTokenThreshold ?? 4000, 1, 1000000);
   if (settings.moduleSettings.autoConsolidationPromptEnabled === undefined) {
     settings.moduleSettings.autoConsolidationPromptEnabled = false;
   }
@@ -10848,6 +10852,10 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     ),
     autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
+    autoSummaryTriggerMode: settings.moduleSettings.autoSummaryTriggerMode ?? 'messages',
+    autoSummaryTriggerMessages: (settings.moduleSettings.autoSummaryTriggerMode ?? 'messages') === 'messages',
+    autoSummaryTriggerTokens: (settings.moduleSettings.autoSummaryTriggerMode ?? 'messages') === 'tokens',
+    autoSummaryTokenThreshold: settings.moduleSettings.autoSummaryTokenThreshold ?? 4000,
     autoSummaryBuffer: settings.moduleSettings.autoSummaryBuffer ?? 2,
     autoConsolidationPromptEnabled:
       settings.moduleSettings.autoConsolidationPromptEnabled ?? false,
@@ -11622,6 +11630,18 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       return;
     }
 
+    if (e.target.matches("#stmb-auto-summary-trigger-mode")) {
+      settings.moduleSettings.autoSummaryTriggerMode = e.target.value === 'tokens' ? 'tokens' : 'messages';
+      saveSettingsDebounced();
+      return;
+    }
+
+    if (e.target.matches("#stmb-auto-summary-token-threshold")) {
+      settings.moduleSettings.autoSummaryTokenThreshold = clampInt(readIntInput(e.target) ?? 4000, 1, 1000000);
+      saveSettingsDebounced();
+      return;
+    }
+
     if (e.target.matches("#stmb-auto-summary-buffer")) {
       const value = readIntInput(e.target);
       settings.moduleSettings.autoSummaryBuffer = clampInt(value ?? 0, 0, 50);
@@ -11830,6 +11850,8 @@ function persistMainPopupSettings(popupElement) {
     popupElement.querySelector("#stmb-auto-summary-interval"),
     settings.moduleSettings.autoSummaryInterval ?? 50,
   );
+  const autoSummaryTriggerMode = popupElement.querySelector("#stmb-auto-summary-trigger-mode")?.value === 'tokens' ? 'tokens' : 'messages';
+  const autoSummaryTokenThreshold = clampInt(readIntInput(popupElement.querySelector("#stmb-auto-summary-token-threshold"), settings.moduleSettings.autoSummaryTokenThreshold ?? 4000), 1, 1000000);
   const autoSummaryBuffer = clampInt(
     readIntInput(
       popupElement.querySelector("#stmb-auto-summary-buffer"),
@@ -12003,6 +12025,12 @@ function persistMainPopupSettings(popupElement) {
   if (autoSummaryInterval !== settings.moduleSettings.autoSummaryInterval) {
     settings.moduleSettings.autoSummaryInterval = autoSummaryInterval;
     hasChanges = true;
+  }
+  if (autoSummaryTriggerMode !== settings.moduleSettings.autoSummaryTriggerMode) {
+    settings.moduleSettings.autoSummaryTriggerMode = autoSummaryTriggerMode;
+  }
+  if (autoSummaryTokenThreshold !== settings.moduleSettings.autoSummaryTokenThreshold) {
+    settings.moduleSettings.autoSummaryTokenThreshold = autoSummaryTokenThreshold;
   }
 
   if (autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer) {

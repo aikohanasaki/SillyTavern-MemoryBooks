@@ -15,6 +15,7 @@ import { isMemoryProcessing } from './index.js';
 import { translate } from '../../../i18n.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { hasPendingProgress } from './stmbProgress.js';
+import { createSceneRequest, compileScene, estimateTokenCount } from './chatcompile.js';
 
 let autoSummarySkippedForProcessing = false;
 let autoSummarySkippedMarkersRef = null;
@@ -126,15 +127,18 @@ async function checkAutoSummaryTrigger() {
         const stmbData = getSceneMarkers() || {};
         const currentMessageCount = chat.length;
         const currentLastMessage = currentMessageCount - 1;
+        const triggerMode = settings.moduleSettings.autoSummaryTriggerMode || 'messages';
         const requiredInterval = settings.moduleSettings.autoSummaryInterval;
+        const tokenThreshold = settings.moduleSettings.autoSummaryTokenThreshold;
         const rawBuf = settings?.moduleSettings?.autoSummaryBuffer;
         const buffer = clampInt(parseInt(rawBuf) || 0, 0, 50);
-        const requiredTotal = requiredInterval + buffer;
         const rawHighestProcessed = stmbData.highestMemoryProcessed;
         const hasHighestProcessed =
             typeof rawHighestProcessed === 'number' && Number.isFinite(rawHighestProcessed);
         // Treat "no baseline" as -1 (none processed yet) so the next range starts at 0.
         const highestProcessed = hasHighestProcessed ? rawHighestProcessed : -1;
+        const eligibleStart = highestProcessed + 1;
+        const eligibleEnd = Math.max(-1, currentLastMessage - buffer);
 
         // Check if memory creation is in progress
         if (isMemoryProcessing()) {
@@ -154,9 +158,22 @@ async function checkAutoSummaryTrigger() {
             console.log(i18n('autosummary.log.sinceLast', 'STMemoryBooks: Messages since last memory ({{highestProcessed}}): {{count}}', { highestProcessed, count: messagesSinceLastMemory }));
         }
 
-        console.log(i18n('autosummary.log.triggerCheck', 'STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?', { count: messagesSinceLastMemory, required: requiredTotal }));
+        let thresholdMet = false;
+        let triggerCount = messagesSinceLastMemory;
+        let required = requiredInterval + buffer;
+        if (triggerMode === 'tokens' && eligibleStart <= eligibleEnd) {
+            try {
+                const compiled = compileScene(createSceneRequest(eligibleStart, eligibleEnd), {
+                    includeHiddenMessages: !!settings.moduleSettings.unhideBeforeMemory,
+                });
+                triggerCount = await estimateTokenCount(compiled);
+                required = tokenThreshold;
+            } catch (_) { triggerCount = 0; }
+        }
+        thresholdMet = triggerCount >= required;
+        console.log(i18n('autosummary.log.triggerCheck', 'STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?', { count: triggerCount, required }));
 
-        if (messagesSinceLastMemory < requiredTotal) {
+        if (!thresholdMet) {
             console.log(i18n('autosummary.log.notTriggered', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages', { needed: requiredTotal - messagesSinceLastMemory }));
             return;
         }
