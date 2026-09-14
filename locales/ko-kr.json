@@ -1165,6 +1165,7 @@
   "STMemoryBooks_SetHighest_SetTo": "마지막으로 처리된 메시지가 수동으로 #{{value}}로 설정되었습니다.",
   "addlore.toast.orderClamped": "순서 범위는 0~9999로 제한됩니다. 현재 {{source}} 값은 {{requested}}이지만, {{clamped}}으로 조정되었습니다.",
   "STMemoryBooks_ReverseOrder": "역순 (아웃렛에서만 사용 가능)",
+  "STMemoryBooks_Reverse": "역순",
   "STMemoryBooks_SummaryTier_Label": "요약 단계",
   "STMemoryBooks_ArcAnalysis_NoUsableArcs": "모델 응답에서 사용할 수 있는 요약이 생성되지 않았습니다.",
   "STMemoryBooks_ReviewFailedArc_Title": "검토 실패한 요약 응답",

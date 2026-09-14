@@ -1180,6 +1180,7 @@
   "STMemoryBooks_SetHighest_SetTo": "Último mensaje procesado establecido manualmente en #{{value}}.",
   "addlore.toast.orderClamped": "El rango de entrada está limitado a 0-9999. El valor actual de {{source}} es {{requested}}; se ha ajustado a {{clamped}}.",
   "STMemoryBooks_ReverseOrder": "Orden inverso (solo para usar con salidas)",
+  "STMemoryBooks_Reverse": "Inverso",
   "STMemoryBooks_ArcManualFix_EmptyJson": "El JSON corregido está vacío.",
   "STMemoryBooks_ArcManualFix_InProgress": "La consolidación de resúmenes ya está en curso.",
   "STMemoryBooks_ArcManualFix_MissingArcs": "Al JSON corregido le faltan resúmenes.",

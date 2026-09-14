@@ -828,6 +828,7 @@
   "STMemoryBooks_InsertionOrder": "Ordem de Inserção:",
   "STMemoryBooks_AutoOrder": "Automática (usa o nº da memória)",
   "STMemoryBooks_ReverseOrder": "Inversa (use somente com Outlets)",
+  "STMemoryBooks_Reverse": "Inversa",
   "STMemoryBooks_ManualOrder": "Manual",
   "STMemoryBooks_RecursionSettings": "Configurações de Recursão:",
   "STMemoryBooks_PreventRecursion": "Impedir Recursão",

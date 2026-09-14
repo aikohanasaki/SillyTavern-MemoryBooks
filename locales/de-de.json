@@ -1180,6 +1180,7 @@
   "STMemoryBooks_SetHighest_SetTo": "Zuletzt verarbeitete Nachricht manuell auf #{{value}} festgelegt.",
   "addlore.toast.orderClamped": "Der Eingabebereich ist auf 0–9999 begrenzt. Der aktuelle Wert {{source}} ist {{requested}}; er wurde auf {{clamped}} begrenzt.",
   "STMemoryBooks_ReverseOrder": "Umgekehrte Reihenfolge (nur in Verbindung mit Ausgängen verwenden)",
+  "STMemoryBooks_Reverse": "Umgekehrt",
   "STMemoryBooks_ArcManualFix_EmptyJson": "Korrigiertes JSON ist leer.",
   "STMemoryBooks_ArcManualFix_InProgress": "Zusammenfassungskonsolidierung läuft bereits.",
   "STMemoryBooks_ArcManualFix_MissingArcs": "Korrigiertes JSON enthält keine Zusammenfassungen.",

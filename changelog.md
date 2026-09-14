@@ -7,6 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.1.0 (September 14, 2026)
+- Add ability to disable character-aware memories and side prompts.
+- Add Topical Clips position/order overrides.
+
 ## v9.0.3 (September 13, 2026)
 - Slight rewrite to stale-chat handling.
 

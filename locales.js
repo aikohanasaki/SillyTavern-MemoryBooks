@@ -987,6 +987,7 @@ export const localeData_en = {
     'STMemoryBooks_InsertionOrder': 'Insertion Order:',
     'STMemoryBooks_AutoOrder': 'Auto (uses memory #)',
     'STMemoryBooks_ReverseOrder': 'Reverse (only use with Outlets)',
+    'STMemoryBooks_Reverse': 'Reverse',
     'STMemoryBooks_ManualOrder': 'Manual',
     'STMemoryBooks_RecursionSettings': 'Recursion Settings:',
     'STMemoryBooks_PreventRecursion': 'Prevent Recursion',

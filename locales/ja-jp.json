@@ -1165,6 +1165,7 @@
   "STMemoryBooks_SetHighest_SetTo": "最後に手動で処理されたメッセージは#{{value}}に設定されました。",
   "addlore.toast.orderClamped": "入力範囲は0～9999に制限されています。現在の{{source}}は{{requested}}ですが、{{clamped}}に制限されました。",
   "STMemoryBooks_ReverseOrder": "逆順（アウトレットでのみ使用）",
+  "STMemoryBooks_Reverse": "逆順",
   "STMemoryBooks_SummaryTier_Label": "要約階層",
   "STMemoryBooks_ArcAnalysis_NoUsableArcs": "利用可能な統合要約が生成されませんでした",
   "STMemoryBooks_ReviewFailedArc_Title": "要約応答の確認に失敗",

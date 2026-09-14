@@ -1165,6 +1165,7 @@
   "STMemoryBooks_SetHighest_SetTo": "Mesej terakhir diproses secara manual ditetapkan kepada #{{value}}.",
   "addlore.toast.orderClamped": "Julat pesanan terhad kepada 0–9999. {{source}} semasa ialah {{requested}}; diapit kepada {{clamped}}.",
   "STMemoryBooks_ReverseOrder": "Terbalik (hanya digunakan dengan Outlet)",
+  "STMemoryBooks_Reverse": "Terbalik",
   "STMemoryBooks_SummaryTier_Label": "Tahap Ringkasan",
   "STMemoryBooks_ArcAnalysis_NoUsableArcs": "Model tidak menghasilkan ringkasan yang boleh digunakan.",
   "STMemoryBooks_ReviewFailedArc_Title": "Semak Respons Ringkasan yang Gagal",

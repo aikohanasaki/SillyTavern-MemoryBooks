@@ -1165,6 +1165,7 @@
   "STMemoryBooks_SetHighest_SetTo": "Последнее обработанное сообщение вручную установлено на #{{value}}.",
   "addlore.toast.orderClamped": "Диапазон порядка ограничен от 0 до 9999. Текущее значение {{source}} равно {{requested}}; ограничено до {{clamped}}.",
   "STMemoryBooks_ReverseOrder": "Обратный порядок (использовать только с выходами)",
+  "STMemoryBooks_Reverse": "Обратный",
   "STMemoryBooks_SummaryTier_Label": "Уровень сводки",
   "STMemoryBooks_ArcAnalysis_NoUsableArcs": "Не удалось получить пригодные сводки консолидации",
   "STMemoryBooks_ReviewFailedArc_Title": "Проверка ответа на сводку не удалась",

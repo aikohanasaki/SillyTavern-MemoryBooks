@@ -1165,6 +1165,7 @@
   "STMemoryBooks_SetHighest_SetTo": "已手動將最後處理的訊息 ID 設為 #{{value}}。",
   "addlore.toast.orderClamped": "順序值範圍限制為 0–9999。目前 {{source}} 為 {{requested}}；已限制為 {{clamped}}。",
   "STMemoryBooks_ReverseOrder": "逆序（僅與 Outlet 一起使用）",
+  "STMemoryBooks_Reverse": "逆序",
   "STMemoryBooks_SummaryTier_Label": "摘要階層",
   "STMemoryBooks_ArcAnalysis_NoUsableArcs": "未產生可用的整合摘要",
   "STMemoryBooks_ReviewFailedArc_Title": "檢查摘要回應失敗",

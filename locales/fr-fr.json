@@ -1174,6 +1174,7 @@
   "STMemoryBooks_SetHighest_SetTo": "Dernier message traité défini manuellement sur #{{value}}.",
   "addlore.toast.orderClamped": "La plage de numéros de commande est limitée à 0-9999. La valeur actuelle de {{source}} est {{requested}} ; elle a été ramenée à {{clamped}}.",
   "STMemoryBooks_ReverseOrder": "Ordre inverse (à utiliser uniquement avec les Outlets)",
+  "STMemoryBooks_Reverse": "Inverse",
   "STMemoryBooks_ArcManualFix_EmptyJson": "Le JSON corrigé est vide.",
   "STMemoryBooks_ArcManualFix_InProgress": "La consolidation des résumés est déjà en cours.",
   "STMemoryBooks_ArcManualFix_MissingArcs": "Le JSON corrigé ne contient pas de résumés.",
