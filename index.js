@@ -605,6 +605,7 @@ const defaultSettings = {
     lorebookNameTemplate: "LTM - {{char}} - {{chat}}",
     compactionPromptTemplate: "",
     topicalClipPromptTemplate: "",
+    topicalClipEntrySettings: { enabled: false, position: 0, orderMode: "auto", orderValue: 100, reverseStart: 9999 },
     memoryAssistanceMode: "off",
     compactionProfileIndex: 0,
     useRegex: false,

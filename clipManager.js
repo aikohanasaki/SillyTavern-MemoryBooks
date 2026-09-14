@@ -16,7 +16,7 @@ import { DOMPurify } from '../../../../lib.js';
 import { oai_settings } from '../../../openai.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
-import { getEntryByTitle, isMemoryEntry } from './addlore.js';
+import { getEntryByTitle, isMemoryEntry, normalizeLorebookEntrySettings } from './addlore.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
@@ -68,6 +68,11 @@ function tr(key, fallback, params = null) {
         });
     }
     return value;
+}
+
+function getTopicalClipEntrySettings() {
+    const raw = extension_settings.STMemoryBooks?.moduleSettings?.topicalClipEntrySettings || {};
+    return normalizeLorebookEntrySettings(raw, { position: 0, orderMode: 'auto', orderValue: 100, reverseStart: 9999 });
 }
 
 function populateCompactionPromptButton(popup) {
@@ -1758,6 +1763,7 @@ async function saveTopicalClipDraft(context, draft, options = {}) {
     const keywordsArray = Array.isArray(keywords) ? keywords : [];
 
     let result = null;
+    const entrySettings = context.entrySettings?.enabled ? context.entrySettings : null;
     await withStmbWriteLane({ type: 'lorebook', name: lorebookName }, async () => {
         const freshLorebook = await loadWorldInfo(lorebookName);
         if (!freshLorebook?.entries) {
@@ -1784,6 +1790,11 @@ async function saveTopicalClipDraft(context, draft, options = {}) {
             target.vectorized = true;
             target.selective = true;
             target.disable = false;
+            if (entrySettings) {
+                target.position = entrySettings.position;
+                if (entrySettings.orderMode === 'manual') target.order = entrySettings.orderValue;
+                if (entrySettings.orderMode === 'reverse') target.order = entrySettings.reverseStart;
+            }
             setTopicalClipMetadata(target, createTopicalClipRunMetadata({
                 topic,
                 keywords: keywordsArray,
@@ -1815,8 +1826,8 @@ async function saveTopicalClipDraft(context, draft, options = {}) {
         entry.vectorized = true;
         entry.selective = true;
         entry.disable = false;
-        entry.position = typeof entry.position === 'number' ? entry.position : 0;
-        entry.order = typeof entry.order === 'number' ? entry.order : 100;
+        entry.position = entrySettings?.position ?? (typeof entry.position === 'number' ? entry.position : 0);
+        entry.order = entrySettings?.orderMode === 'manual' ? entrySettings.orderValue : entrySettings?.orderMode === 'reverse' ? entrySettings.reverseStart : (typeof entry.order === 'number' ? entry.order : 100);
         setTopicalClipMetadata(entry, createTopicalClipRunMetadata({
             topic,
             keywords: keywordsArray,
@@ -1994,6 +2005,14 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
             ${buildCompactionProfileControl('stmb-topical-clip-profile-select', {
                 label: tr('STMemoryBooks_TopicalClip_Profile', 'Generation Profile'),
             })}
+            <div class="world_entry_form_control">
+                <label class="checkbox_label"><input id="stmb-topical-clip-entry-settings-enabled" type="checkbox" /> <span>${escapeHtml(tr('STMemoryBooks_TopicalClip_OverrideEntrySettings', 'Override insertion position and order'))}</span></label>
+                <div id="stmb-topical-clip-entry-settings" hidden>
+                    <label><span>${escapeHtml(tr('STMemoryBooks_InsertionPosition', 'Insertion Position'))}</span><select id="stmb-topical-clip-entry-position" class="text_pole"><option value="0">↑Char</option><option value="1">↓Char</option><option value="5">↑EM</option><option value="6">↓EM</option><option value="2">↑AN</option><option value="3">↓AN</option><option value="7">Outlet</option></select></label>
+                    <label><span>${escapeHtml(tr('STMemoryBooks_Order', 'Order'))}</span><select id="stmb-topical-clip-entry-order-mode" class="text_pole"><option value="auto">Automatic</option><option value="reverse">Reverse</option><option value="manual">Manual</option></select></label>
+                    <label><span>${escapeHtml(tr('STMemoryBooks_OrderValue', 'Order value'))}</span><input id="stmb-topical-clip-entry-order-value" type="number" class="text_pole" min="0" max="9999" /></label>
+                </div>
+            </div>
             <div class="buttons_block justifyCenter gap10px whitespacenowrap">
                 <button id="stmb-topical-clip-edit-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_EditPrompt', 'Edit Topical Clip Prompt'))}</button>
             </div>
@@ -2072,6 +2091,19 @@ export async function showTopicalClipPopup(options = {}) {
     const diagnostics = dlg?.querySelector('#stmb-topical-clip-diagnostics');
     const draftTextarea = dlg?.querySelector('#stmb-topical-clip-draft');
     const saveButton = dlg?.querySelector('#stmb-topical-clip-save');
+    const entrySettingsEnabled = dlg?.querySelector('#stmb-topical-clip-entry-settings-enabled');
+    const entrySettingsPanel = dlg?.querySelector('#stmb-topical-clip-entry-settings');
+    const entryPosition = dlg?.querySelector('#stmb-topical-clip-entry-position');
+    const entryOrderMode = dlg?.querySelector('#stmb-topical-clip-entry-order-mode');
+    const entryOrderValue = dlg?.querySelector('#stmb-topical-clip-entry-order-value');
+    const storedEntrySettings = getTopicalClipEntrySettings();
+    entrySettingsEnabled.checked = !!extension_settings.STMemoryBooks?.moduleSettings?.topicalClipEntrySettings?.enabled;
+    entryPosition.value = String(storedEntrySettings.position);
+    entryOrderMode.value = storedEntrySettings.orderMode;
+    entryOrderValue.value = String(storedEntrySettings.orderValue);
+    const refreshEntrySettings = () => { entrySettingsPanel.hidden = !entrySettingsEnabled.checked; };
+    entrySettingsEnabled.addEventListener('change', refreshEntrySettings);
+    refreshEntrySettings();
     const generateButton = dlg?.querySelector('#stmb-topical-clip-generate');
 
     if (modeSelect && ['create', 'update'].includes(String(options.mode || ''))) modeSelect.value = options.mode;
@@ -2363,6 +2395,16 @@ export async function showTopicalClipPopup(options = {}) {
             const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-topical-clip-profile-select');
             setCompactionProfileIndex(profileIndex);
             const draft = await requestTopicalClipDraft(prompt, profileIndex);
+            const selectedEntrySettings = {
+                ...normalizeLorebookEntrySettings({
+                ...getTopicalClipEntrySettings(), enabled: entrySettingsEnabled.checked,
+                position: readIntInput(entryPosition, 0), orderMode: entryOrderMode.value,
+                orderValue: readIntInput(entryOrderValue, 100),
+                }, getTopicalClipEntrySettings()),
+                enabled: entrySettingsEnabled.checked,
+            };
+            extension_settings.STMemoryBooks.moduleSettings.topicalClipEntrySettings = selectedEntrySettings;
+            saveSettingsDebounced();
             const draftHeadline = mode === 'update'
                 ? getClipHeadlineFromTitle(target.comment || makeTopicalClipHeadline(topic))
                 : makeTopicalClipHeadline(topic);
@@ -2377,6 +2419,7 @@ export async function showTopicalClipPopup(options = {}) {
                 keywords,
                 targetUid: target ? getEntryStableId(target) : null,
                 targetContentHash: target ? stableHashString(String(target.content || '')) : null,
+                entrySettings: selectedEntrySettings,
                 sourceSnapshot: includeMemories
                     ? snapshotTopicalSourceEntries(allEligibleSources)
                     : (getTopicalClipMetadata(target)?.last_source_snapshot || []),
