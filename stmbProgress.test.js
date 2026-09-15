@@ -111,16 +111,16 @@ test('adapter defers without any chat save, prompts once on return, supports Lat
     assert.equal(f.state.popups.length, 1);
     const showing = f.api.showPendingProgress();
     const popup = f.state.popups.at(-1);
-    const ok = popup.content.querySelectorAll('button').find(button => button.textContent === 'OK');
-    const saving = ok.onclick();
+    const apply = popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply');
+    const saving = apply.onclick();
     assert.equal(popup.content.children[0].textContent, 'Processing…');
     await saving;
     assert.equal(popup.content.children[0].textContent, 'Done.');
     assert.equal(f.api.hasPendingProgress(), false);
     assert.equal(f.state.saved, 1);
     assert.equal(f.state.resolved, 1);
-    assert.equal(popup.content.querySelectorAll('button').some(button => button.textContent === 'OK'), false);
-    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Retry saving pending updates').hidden, true);
+    assert.equal(popup.content.querySelectorAll('button').some(button => button.textContent === 'Apply'), false);
+    assert.equal(popup.content.querySelectorAll('button').length, 0);
     await popup.close(); await showing;
 });
 
@@ -159,13 +159,13 @@ test('manual reset disables application while still allowing explicit discard', 
     await new Promise(resolve => setImmediate(resolve));
     const showing = f.api.showPendingProgress();
     const popup = f.state.popups.at(-1);
-    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'OK').disabled, true);
+    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply').disabled, true);
     const discard = popup.content.querySelectorAll('button').find(button => button.textContent === 'Discard pending update');
     await discard.onclick();
     assert.equal(f.api.hasPendingProgress(), false);
     assert.equal(f.state.saved, 0);
     assert.equal(popup.content.querySelectorAll('button').includes(discard), false);
-    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Retry saving pending updates').hidden, true);
+    assert.equal(popup.content.querySelectorAll('button').length, 0);
     await popup.close(); await showing;
 });
 
@@ -177,7 +177,7 @@ test('group application waits for an existing save and verifies through the grou
     const showing = f.api.showPendingProgress();
     const popup = f.state.popups.at(-1);
     f.deps.isChatSaving = true;
-    const applying = popup.content.querySelectorAll('button').find(button => button.textContent === 'OK').onclick();
+    const applying = popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply').onclick();
     assert.equal(f.state.saved, 0);
     f.deps.isChatSaving = false;
     await f.tick(250);
@@ -187,16 +187,15 @@ test('group application waits for an existing save and verifies through the grou
     await popup.close(); await showing;
 });
 
-test('settings retry preserves pending work; failed discard stays visible until confirmed saved', async () => {
+test('popup offers Apply and Discard; failed discard stays visible until confirmed saved', async () => {
     const f = adapter();
     await f.defer();
     f.state.ref = f.originalRef;
     const showing = f.api.showPendingProgress();
     const popup = f.state.popups.at(-1);
     const buttons = popup.content.querySelectorAll('button');
-    const retry = buttons.find(button => button.textContent === 'Retry saving pending updates');
+    assert.deepEqual(buttons.map(button => button.textContent), ['Apply', 'Discard pending update']);
     const discard = buttons.find(button => button.textContent === 'Discard pending update');
-    await retry.onclick();
     assert.equal(f.api.hasPendingProgress(), true);
     assert.equal(f.state.saved, 0);
     f.state.failSettings = true;
@@ -211,7 +210,7 @@ test('settings retry preserves pending work; failed discard stays visible until 
     await discard.onclick();
     assert.equal(f.api.hasPendingProgress(), false);
     assert.equal(popup.content.querySelectorAll('button').includes(discard), false);
-    assert.equal(retry.hidden, true);
+    assert.equal(popup.content.querySelectorAll('button').length, 0);
     assert.equal(f.state.saved, 0);
     await popup.close(); await showing;
 });

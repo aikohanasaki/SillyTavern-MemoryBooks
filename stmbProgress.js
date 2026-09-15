@@ -226,8 +226,6 @@ export async function showPendingProgress(onlyChatKey = null) {
             const result = await action();
             status.textContent = result?.status === 'applied'
                 ? text('Done', 'Done.')
-                : result?.status === 'settings-saved'
-                    ? text('SettingsSaved', 'Pending updates saved to settings. Open the affected chat to finish updating its marker.')
                 : result?.reason === 'cleanup'
                     ? text('CleanupError', 'The chat was updated, but pending-update cleanup could not be saved. Retry to finish.')
                     : result?.status === 'conflict'
@@ -235,7 +233,6 @@ export async function showPendingProgress(onlyChatKey = null) {
                         : text('RetryError', 'Update still pending. Make sure this chat is loaded and idle, then retry.');
             if (result?.status === 'applied') {
                 completedRow?.remove();
-                retry.hidden = rows.children.length === 1;
                 changed();
                 const resolvedKey = completedRow?.dataset.chatKey;
                 hooks?.resolved?.(resolvedKey === '__invalid__' ? current()?.chatKey : resolvedKey);
@@ -269,7 +266,7 @@ export async function showPendingProgress(onlyChatKey = null) {
             }
             const apply = document.createElement('button');
             apply.className = 'menu_button';
-            apply.textContent = text('OK', 'OK');
+            apply.textContent = tr('STMemoryBooks_Apply', 'Apply');
             apply.disabled = conflict;
             apply.dataset.conflict = String(conflict);
             apply.onclick = () => run(async () => {
@@ -297,11 +294,6 @@ export async function showPendingProgress(onlyChatKey = null) {
         rows.append(row);
     }
     if (!records.length) status.textContent = text('Empty', 'No pending progress updates.');
-    const retry = document.createElement('button');
-    retry.className = 'menu_button';
-    retry.textContent = text('RetrySettings', 'Retry saving pending updates');
-    retry.onclick = () => run(async () => { await controller.retryPersistence(); return { status: 'settings-saved' }; });
-    if (records.length) rows.append(retry);
     try { await popup.show(); }
     finally { activePopup = null; }
 }
