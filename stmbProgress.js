@@ -5,6 +5,7 @@ import { eventSource, event_types, getRequestHeaders, saveSettings, isChatSaving
 import { sha256 } from '../../../../lib.js';
 import { extension_settings, getContext } from '../../../extensions.js';
 import { Popup, POPUP_TYPE, POPUP_RESULT } from '../../../popup.js';
+import { executeSlashCommands } from '../../../slash-commands.js';
 import { escapeHtml } from '../../../utils.js';
 import { tr } from './i18nHelpers.js';
 import { createPendingProgressController, progressFingerprint, progressSourceMessages } from './pendingProgress.js';
@@ -258,24 +259,27 @@ export async function showPendingProgress(onlyChatKey = null) {
             : text('OpenChat', 'Open this chat manually to apply its pending update.'))}</p>`;
         const ids = group.map(record => record.id);
         if (isCurrent) {
-            const conflict = group.some(record => controller.check(record));
-            if (conflict) {
-                const explanation = document.createElement('p');
-                explanation.textContent = text('Conflict', 'The chat or its last-processed marker changed. Keep the current marker and discard this pending update, or choose Later.');
-                row.append(explanation);
-            }
             const apply = document.createElement('button');
             apply.className = 'menu_button';
             apply.textContent = tr('STMemoryBooks_Apply', 'Apply');
-            apply.disabled = conflict;
-            apply.dataset.conflict = String(conflict);
             apply.onclick = () => run(async () => {
                 const deadline = Date.now() + 10000;
                 while (current()?.busy) {
                     if (current()?.chatKey !== key || Date.now() >= deadline) return { status: 'pending' };
                     await new Promise(resolve => setTimeout(resolve, 250));
                 }
-                return controller.apply(ids);
+                const live = current();
+                if (!live?.loaded || live.chatKey !== key || !Number.isInteger(target) || target < 0) {
+                    return { status: 'pending' };
+                }
+                await executeSlashCommands(`/stmb-set-highest ${target}`);
+                const after = current();
+                if (after?.chatKey !== key || after.metadata !== live.metadata
+                    || after.metadata.STMemoryBooks?.highestMemoryProcessed !== Math.min(target, live.messages.length - 1)) {
+                    return { status: 'pending' };
+                }
+                await controller.discard(ids);
+                return { status: 'applied' };
             }, row);
             row.append(apply);
         }

@@ -67,16 +67,24 @@ for (const type of ['character', 'group']) {
     });
 }
 
-test('fingerprints survive projection and hiding, allow appends, detect text and attachment changes', () => {
+test('fingerprints survive projection and hiding, allow appends, detect text changes without inspecting attachments', () => {
     const f = fixture();
     assert.equal(progressFingerprint(progressSourceMessages(f.original.messages), 1, hash), f.record().origin.fingerprint);
     f.state.live.messages[0].is_system = true;
     f.state.live.messages.push(message('append', 3));
     assert.equal(validatePendingProgress(f.record(), f.state.live, hash), null);
     f.state.live.messages[0].extra.media = [{ url: 'changed.png' }];
-    assert.equal(validatePendingProgress(f.record(), f.state.live, hash), 'messages');
+    assert.equal(validatePendingProgress(f.record(), f.state.live, hash), null);
     f.state.live.messages = [message('edited', 1), message('second', 2)];
     assert.equal(validatePendingProgress(f.record(), f.state.live, hash), 'messages');
+});
+
+test('progress capture never reads attachment fields', () => {
+    const f = fixture();
+    Object.defineProperty(f.state.live.messages[0], 'extra', {
+        get() { throw new Error('Attachments must not be read'); },
+    });
+    assert.equal(progressFingerprint(f.state.live.messages, 1, hash), f.record().origin.fingerprint);
 });
 
 test('empty, loading, different identity, deletion, reset, and rollback cannot apply', async () => {

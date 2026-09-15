@@ -46,6 +46,12 @@ function adapter(type = 'character') {
     }
     const deps = {
         eventSource, event_types: { SETTINGS_UPDATED: 'settings', CHAT_RENAMED: 'rename', CHARACTER_RENAMED: 'character-rename' },
+        executeSlashCommands: async command => {
+            state.commands ||= [];
+            state.commands.push(command);
+            state.metadata.STMemoryBooks.highestMemoryProcessed = Math.min(Number(command.split(' ')[1]), state.messages.length - 1);
+            state.metadata.STMemoryBooks.highestMemoryProcessedManuallySet = true;
+        },
         getRequestHeaders: () => ({}), isChatSaving: false, isGenerating: () => false,
         extension_settings: { STMemoryBooks: state.settings },
         getContext: () => ({ chatMetadata: state.metadata, chat: state.messages, saveMetadata: async () => {
@@ -117,7 +123,8 @@ test('adapter defers without any chat save, prompts once on return, supports Lat
     await saving;
     assert.equal(popup.content.children[0].textContent, 'Done.');
     assert.equal(f.api.hasPendingProgress(), false);
-    assert.equal(f.state.saved, 1);
+    assert.deepEqual(f.state.commands, ['/stmb-set-highest 0']);
+    assert.equal(f.state.saved, 0);
     assert.equal(f.state.resolved, 1);
     assert.equal(popup.content.querySelectorAll('button').some(button => button.textContent === 'Apply'), false);
     assert.equal(popup.content.querySelectorAll('button').length, 0);
@@ -151,7 +158,7 @@ test('load identity prevents capture during switching; other popups postpone the
     await f.state.popups[1].close();
 });
 
-test('manual reset disables application while still allowing explicit discard', async () => {
+test('manual reset still allows explicit Apply or discard', async () => {
     const f = adapter();
     await f.defer();
     f.state.ref = f.originalRef;
@@ -159,7 +166,7 @@ test('manual reset disables application while still allowing explicit discard', 
     await new Promise(resolve => setImmediate(resolve));
     const showing = f.api.showPendingProgress();
     const popup = f.state.popups.at(-1);
-    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply').disabled, true);
+    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply').disabled, undefined);
     const discard = popup.content.querySelectorAll('button').find(button => button.textContent === 'Discard pending update');
     await discard.onclick();
     assert.equal(f.api.hasPendingProgress(), false);
@@ -169,7 +176,7 @@ test('manual reset disables application while still allowing explicit discard', 
     await popup.close(); await showing;
 });
 
-test('group application waits for an existing save and verifies through the group read endpoint', async () => {
+test('group application waits for an existing save and runs the set-highest command', async () => {
     const f = adapter('group');
     await f.defer();
     f.state.ref = f.originalRef;
@@ -183,7 +190,8 @@ test('group application waits for an existing save and verifies through the grou
     await f.tick(250);
     await applying;
     assert.equal(popup.content.children[0].textContent, 'Done.');
-    assert.ok(f.state.requests.includes('/api/chats/group/get'));
+    assert.deepEqual(f.state.commands, ['/stmb-set-highest 0']);
+    assert.equal(f.state.requests.some(url => url.includes('/api/chats/')), false);
     await popup.close(); await showing;
 });
 
@@ -212,5 +220,20 @@ test('popup offers Apply and Discard; failed discard stays visible until confirm
     assert.equal(popup.content.querySelectorAll('button').includes(discard), false);
     assert.equal(popup.content.querySelectorAll('button').length, 0);
     assert.equal(f.state.saved, 0);
+    await popup.close(); await showing;
+});
+
+test('explicit Apply runs the command despite changed message text and marker revision', async () => {
+    const f = adapter();
+    await f.defer();
+    f.state.ref = f.originalRef;
+    f.state.messages[0].mes = 'edited after memory creation';
+    f.state.metadata.STMemoryBooks.progressRevision = 'changed';
+    const showing = f.api.showPendingProgress();
+    const popup = f.state.popups.at(-1);
+    await popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply').onclick();
+    assert.deepEqual(f.state.commands, ['/stmb-set-highest 0']);
+    assert.equal(f.api.hasPendingProgress(), false);
+    assert.equal(f.state.requests.some(url => url.includes('/api/chats/')), false);
     await popup.close(); await showing;
 });

@@ -12,11 +12,6 @@ export function progressSourceMessages(messages) {
         send_date: message?.send_date ?? null,
         original_avatar: message?.original_avatar ?? null,
         mes: message?.mes ?? null,
-        extra: {
-            media: message?.extra?.media ?? null,
-            image: message?.extra?.image ?? null,
-            file: message?.extra?.file ?? null,
-        },
     }));
 }
 
