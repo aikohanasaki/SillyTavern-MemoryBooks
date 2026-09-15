@@ -234,7 +234,8 @@ export async function showPendingProgress(onlyChatKey = null) {
                         ? text('Conflict', 'The chat or its last-processed marker changed. Keep the current marker and discard this pending update, or choose Later.')
                         : text('RetryError', 'Update still pending. Make sure this chat is loaded and idle, then retry.');
             if (result?.status === 'applied') {
-                completedRow?.querySelectorAll('button').forEach(button => button.dataset.completed = 'true');
+                completedRow?.remove();
+                retry.hidden = rows.children.length === 1;
                 changed();
                 const resolvedKey = completedRow?.dataset.chatKey;
                 hooks?.resolved?.(resolvedKey === '__invalid__' ? current()?.chatKey : resolvedKey);
@@ -244,7 +245,7 @@ export async function showPendingProgress(onlyChatKey = null) {
             status.textContent = text('RetryError', 'Update still pending. Make sure this chat is loaded and idle, then retry.');
         } finally {
             busy = false;
-            rows.querySelectorAll('button').forEach(button => button.disabled = button.dataset.conflict === 'true' || button.dataset.completed === 'true');
+            rows.querySelectorAll('button').forEach(button => button.disabled = button.dataset.conflict === 'true');
         }
     }
     for (const [key, group] of grouped) {

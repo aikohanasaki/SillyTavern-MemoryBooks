@@ -10,7 +10,8 @@ import { createPendingProgressController, progressFingerprint, progressSourceMes
 
 class Element {
     constructor(tag) { this.tag = tag; this.children = []; this.dataset = {}; this.textContent = ''; }
-    append(...children) { this.children.push(...children); }
+    append(...children) { for (const child of children) child.parent = this; this.children.push(...children); }
+    remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); }
     setAttribute() {}
     querySelectorAll(tag) { return this.children.flatMap(child => [...(child.tag === tag ? [child] : []), ...child.querySelectorAll(tag)]); }
 }
@@ -118,6 +119,8 @@ test('adapter defers without any chat save, prompts once on return, supports Lat
     assert.equal(f.api.hasPendingProgress(), false);
     assert.equal(f.state.saved, 1);
     assert.equal(f.state.resolved, 1);
+    assert.equal(popup.content.querySelectorAll('button').some(button => button.textContent === 'OK'), false);
+    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Retry saving pending updates').hidden, true);
     await popup.close(); await showing;
 });
 
@@ -161,6 +164,8 @@ test('manual reset disables application while still allowing explicit discard', 
     await discard.onclick();
     assert.equal(f.api.hasPendingProgress(), false);
     assert.equal(f.state.saved, 0);
+    assert.equal(popup.content.querySelectorAll('button').includes(discard), false);
+    assert.equal(popup.content.querySelectorAll('button').find(button => button.textContent === 'Retry saving pending updates').hidden, true);
     await popup.close(); await showing;
 });
 
@@ -179,5 +184,34 @@ test('group application waits for an existing save and verifies through the grou
     await applying;
     assert.equal(popup.content.children[0].textContent, 'Done.');
     assert.ok(f.state.requests.includes('/api/chats/group/get'));
+    await popup.close(); await showing;
+});
+
+test('settings retry preserves pending work; failed discard stays visible until confirmed saved', async () => {
+    const f = adapter();
+    await f.defer();
+    f.state.ref = f.originalRef;
+    const showing = f.api.showPendingProgress();
+    const popup = f.state.popups.at(-1);
+    const buttons = popup.content.querySelectorAll('button');
+    const retry = buttons.find(button => button.textContent === 'Retry saving pending updates');
+    const discard = buttons.find(button => button.textContent === 'Discard pending update');
+    await retry.onclick();
+    assert.equal(f.api.hasPendingProgress(), true);
+    assert.equal(f.state.saved, 0);
+    f.state.failSettings = true;
+    const discarding = discard.onclick();
+    await new Promise(resolve => setImmediate(resolve));
+    await f.tick(10000);
+    await discarding;
+    assert.equal(f.api.hasPendingProgress(), true);
+    assert.equal(popup.content.querySelectorAll('button').includes(discard), true);
+    assert.equal(discard.disabled, false);
+    f.state.failSettings = false;
+    await discard.onclick();
+    assert.equal(f.api.hasPendingProgress(), false);
+    assert.equal(popup.content.querySelectorAll('button').includes(discard), false);
+    assert.equal(retry.hidden, true);
+    assert.equal(f.state.saved, 0);
     await popup.close(); await showing;
 });
