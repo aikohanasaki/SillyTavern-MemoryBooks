@@ -985,6 +985,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: Mesej sejak memori terakhir ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: Semakan pencetus auto-ringkasan: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: Auto-ringkasan tidak dicetuskan - perlukan {{needed}} lagi mesej",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: Auto-ringkasan tidak dicetuskan - perlukan {{needed}} lagi token",
   "autosummary.log.postponedUntil": "STMemoryBooks: Auto-ringkasan ditangguhkan sehingga mesej {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: Auto-ringkasan disekat - pengesahan buku legenda gagal: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: Mengosongkan bendera penangguhan auto-ringkasan",

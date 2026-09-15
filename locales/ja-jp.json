@@ -985,6 +985,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: 最後のメモリ（{{highestProcessed}}）からのメッセージ: {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: 自動要約トリガーチェック: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: 自動要約はトリガーされませんでした - さらに{{needed}}メッセージが必要です",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: 自動要約はトリガーされませんでした - さらに{{needed}}トークンが必要です",
   "autosummary.log.postponedUntil": "STMemoryBooks: 自動要約はメッセージ{{until}}まで延期されました",
   "autosummary.log.blocked": "STMemoryBooks: 自動要約はブロックされました - ロアブックの検証に失敗しました: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: 自動要約延期フラグをクリアしました",

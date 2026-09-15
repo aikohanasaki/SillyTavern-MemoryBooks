@@ -985,6 +985,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: Сообщения с момента последней памяти ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: Проверка триггера авто-сводки: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: Авто-сводка не запущена - нужно еще {{needed}} сообщений",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: Авто-сводка не запущена - нужно еще {{needed}} токенов",
   "autosummary.log.postponedUntil": "STMemoryBooks: Авто-сводка отложена до сообщения {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: Авто-сводка заблокирована - валидация лорбука не удалась: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: Сброшен флаг отсрочки авто-сводки",

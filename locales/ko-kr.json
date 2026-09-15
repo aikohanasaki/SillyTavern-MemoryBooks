@@ -960,6 +960,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: 마지막 메모리 이후 메시지 ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: 자동 요약 트리거 확인: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: 자동 요약이 트리거되지 않음 - {{needed}} 메시지 더 필요",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: 자동 요약이 트리거되지 않음 - 토큰 {{needed}}개 더 필요",
   "autosummary.log.postponedUntil": "STMemoryBooks: 자동 요약이 메시지 {{until}}까지 연기되었습니다",
   "autosummary.log.blocked": "STMemoryBooks: 자동 요약 차단됨 - 로어북 유효성 검사 실패: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: 자동 요약 연기 플래그 지워짐",

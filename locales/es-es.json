@@ -986,6 +986,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: Mensajes desde la última memoria ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: Comprobación del disparador de auto-resumen: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: Auto-resumen no activado - se necesitan {{needed}} mensajes más",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: Auto-resumen no activado - se necesitan {{needed}} tokens más",
   "autosummary.log.postponedUntil": "STMemoryBooks: Auto-resumen pospuesto hasta el mensaje {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: Auto-resumen bloqueado - la validación del lorebook falló: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: Se borró la bandera de posponer auto-resumen",

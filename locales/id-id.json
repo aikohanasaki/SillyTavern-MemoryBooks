@@ -984,6 +984,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: Pesan sejak memori terakhir ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: Pemeriksaan pemicu ringkasan otomatis: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: Ringkasan otomatis tidak terpicu - perlu {{needed}} pesan lagi",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: Ringkasan otomatis tidak terpicu - perlu {{needed}} token lagi",
   "autosummary.log.postponedUntil": "STMemoryBooks: Ringkasan otomatis ditunda hingga pesan {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: Ringkasan otomatis diblokir - validasi buku latar gagal: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: Menghapus bendera tunda ringkasan otomatis",

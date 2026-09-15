@@ -971,6 +971,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: 自上次記憶以來的訊息 ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: 自動摘要觸發檢查: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: 自動摘要未觸發 - 還需要 {{needed}} 則訊息",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: 自動摘要未觸發 - 還需要 {{needed}} 個 Token",
   "autosummary.log.postponedUntil": "STMemoryBooks: 自動摘要已推遲到訊息 {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: 自動摘要被阻止 - 故事書驗證失敗: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: 已清除自動摘要推遲旗標",

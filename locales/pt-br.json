@@ -1116,6 +1116,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: mensagens desde a última memória ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: verificação do gatilho do resumo automático: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: resumo automático não acionado — faltam {{needed}} mensagens",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: resumo automático não acionado — faltam {{needed}} tokens",
   "autosummary.log.postponedUntil": "STMemoryBooks: resumo automático adiado até a mensagem {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: resumo automático bloqueado — falha na validação do lorebook: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: sinalizador de adiamento do resumo automático limpo",

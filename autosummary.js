@@ -174,7 +174,9 @@ async function checkAutoSummaryTrigger() {
         console.log(i18n('autosummary.log.triggerCheck', 'STMemoryBooks: Auto-summary trigger check: {{count}} >= {{required}}?', { count: triggerCount, required }));
 
         if (!thresholdMet) {
-            console.log(i18n('autosummary.log.notTriggered', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages', { needed: requiredTotal - messagesSinceLastMemory }));
+            console.log(triggerMode === 'tokens'
+                ? i18n('autosummary.log.notTriggeredTokens', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more tokens', { needed: required - triggerCount })
+                : i18n('autosummary.log.notTriggered', 'STMemoryBooks: Auto-summary not triggered - need {{needed}} more messages', { needed: required - triggerCount }));
             return;
         }
 

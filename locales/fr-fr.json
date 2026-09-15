@@ -986,6 +986,7 @@
   "autosummary.log.sinceLast": "Depuis dernier : {{count}}",
   "autosummary.log.triggerCheck": "Vérif : {{count}} >= {{required}} ?",
   "autosummary.log.notTriggered": "Manque {{needed}}",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks : résumé automatique non déclenché - il manque {{needed}} tokens",
   "autosummary.log.postponedUntil": "Reporté jusqu'à {{until}}",
   "autosummary.log.blocked": "Bloqué : {{error}}",
   "autosummary.log.messageReceivedSingle": "Message reçu, compteur : {{count}}",

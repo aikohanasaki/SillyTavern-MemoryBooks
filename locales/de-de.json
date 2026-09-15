@@ -986,6 +986,7 @@
   "autosummary.log.sinceLast": "STMemoryBooks: Nachrichten seit letzter Erinnerung ({{highestProcessed}}): {{count}}",
   "autosummary.log.triggerCheck": "STMemoryBooks: Trigger-Check: {{count}} >= {{required}}?",
   "autosummary.log.notTriggered": "STMemoryBooks: Trigger nicht ausgelöst - {{needed}} weitere Nachrichten benötigt",
+  "autosummary.log.notTriggeredTokens": "STMemoryBooks: Trigger nicht ausgelöst - {{needed}} weitere Tokens benötigt",
   "autosummary.log.postponedUntil": "STMemoryBooks: Auto-Zusammenfassung verschoben bis Nachricht {{until}}",
   "autosummary.log.blocked": "STMemoryBooks: Auto-Zusammenfassung blockiert - Lorebook Validierung fehlgeschlagen: {{error}}",
   "autosummary.log.clearedPostpone": "STMemoryBooks: Postpone-Flag gelöscht",
