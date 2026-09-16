@@ -11850,7 +11850,9 @@ function persistMainPopupSettings(popupElement) {
     popupElement.querySelector("#stmb-auto-summary-interval"),
     settings.moduleSettings.autoSummaryInterval ?? 50,
   );
-  const autoSummaryTriggerMode = popupElement.querySelector("#stmb-auto-summary-trigger-mode")?.value === 'tokens' ? 'tokens' : 'messages';
+  const autoSummaryTriggerMode =
+    popupElement.querySelector("#stmb-auto-summary-trigger-mode")?.value ??
+    settings.moduleSettings.autoSummaryTriggerMode ?? 'messages';
   const autoSummaryTokenThreshold = clampInt(readIntInput(popupElement.querySelector("#stmb-auto-summary-token-threshold"), settings.moduleSettings.autoSummaryTokenThreshold ?? 4000), 1, 1000000);
   const autoSummaryBuffer = clampInt(
     readIntInput(
@@ -12028,9 +12030,11 @@ function persistMainPopupSettings(popupElement) {
   }
   if (autoSummaryTriggerMode !== settings.moduleSettings.autoSummaryTriggerMode) {
     settings.moduleSettings.autoSummaryTriggerMode = autoSummaryTriggerMode;
+    hasChanges = true;
   }
   if (autoSummaryTokenThreshold !== settings.moduleSettings.autoSummaryTokenThreshold) {
     settings.moduleSettings.autoSummaryTokenThreshold = autoSummaryTokenThreshold;
+    hasChanges = true;
   }
 
   if (autoSummaryBuffer !== settings.moduleSettings.autoSummaryBuffer) {

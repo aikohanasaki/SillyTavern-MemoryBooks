@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.2.2 (September 16, 2026)
+- Automatic summary settings move to correct tab.
+
 ## v9.2.1 (September 15, 2026)
 - Pending queue popup bugfix.
 

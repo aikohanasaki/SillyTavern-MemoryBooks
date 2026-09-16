@@ -2097,7 +2097,9 @@ Open **Settings → Automatic Memories** in the main panel.
 | Setting | Scope | What it does |
 |---|---|---|
 | **Auto-create memory summaries** | Global | Enables automatic `/nextmemory`-style Memory creation. With no processed baseline, current STMB can begin at message 0; a first manual Memory remains recommended for setup validation and a deliberate starting boundary. |
-| **Auto-Summary Interval** | Global | Sets how many messages make up the normal automatic cadence. |
+| **Auto-Summary Trigger** | Global | Chooses whether automatic Memory creation is triggered by message count or token count. |
+| **Auto-Summary Token Threshold** | Global | Sets the token count that triggers automatic Memory creation when the trigger is **Tokens**. |
+| **Auto-Summary Interval** | Global | Sets how many messages make up the normal automatic cadence when the trigger is **Messages**. |
 | **Auto-Summary Buffer** | Global | Excludes this many newest messages from an otherwise ready automatic range so generation happens slightly behind the live conversation. |
 | **Prompt for consolidation when a tier is ready** | Global | Shows a yes/later prompt when a monitored tier reaches its saved eligible-source minimum. It never silently performs consolidation. |
 | **Auto-Consolidation Tiers** | Global | Chooses which target tiers are monitored for readiness prompts. The minimum for each tier is saved in **Consolidate Memories**. |

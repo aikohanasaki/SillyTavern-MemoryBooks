@@ -211,23 +211,6 @@ export const generalSettingsTemplate = Handlebars.compile(`
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Preferences">General Settings</h3>
 
     <div class="world_entry_form_control">
-        <label for="stmb-auto-summary-trigger-mode">
-            <h4 data-i18n="STMemoryBooks_AutoSummaryTriggerMode">Auto-Summary Trigger:</h4>
-            <select id="stmb-auto-summary-trigger-mode" class="text_pole">
-                <option value="messages" data-i18n="STMemoryBooks_Messages" {{#if autoSummaryTriggerMessages}}selected{{/if}}>Messages</option>
-                <option value="tokens" data-i18n="STMemoryBooks_Tokens" {{#if autoSummaryTriggerTokens}}selected{{/if}}>Tokens</option>
-            </select>
-        </label>
-    </div>
-
-    <div class="world_entry_form_control">
-        <label for="stmb-auto-summary-token-threshold">
-            <h4 data-i18n="STMemoryBooks_AutoSummaryTokenThreshold">Auto-Summary Token Threshold:</h4>
-            <input type="number" id="stmb-auto-summary-token-threshold" class="text_pole" value="{{autoSummaryTokenThreshold}}" min="1" max="1000000" step="1">
-        </label>
-    </div>
-
-    <div class="world_entry_form_control">
         <label class="checkbox_label">
             <input type="checkbox" id="stmb-always-use-default" {{#if alwaysUseDefault}}checked{{/if}}>
             <span data-i18n="STMemoryBooks_AlwaysUseDefault">Always use default profile (no confirmation prompt)</span>
@@ -430,6 +413,23 @@ export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_AutoSummaryEnabled">Auto-create memory summaries</span>
         </label>
         <small class="opacity50p" data-i18n="STMemoryBooks_AutoSummaryDesc;[title]STMemoryBooks_AutoSummaryWarnTooltip" title="Warning: enabling Auto-Summary may create one large memory from the existing backlog. Use /stmb-set-highest &lt;N|none&gt; to control the baseline.">Automatically run /nextmemory after a specified number of messages.</small>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-summary-trigger-mode">
+            <h4 data-i18n="STMemoryBooks_AutoSummaryTriggerMode">Auto-Summary Trigger:</h4>
+            <select id="stmb-auto-summary-trigger-mode" class="text_pole">
+                <option value="messages" data-i18n="STMemoryBooks_Messages" {{#if autoSummaryTriggerMessages}}selected{{/if}}>Messages</option>
+                <option value="tokens" data-i18n="STMemoryBooks_Tokens" {{#if autoSummaryTriggerTokens}}selected{{/if}}>Tokens</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="world_entry_form_control">
+        <label for="stmb-auto-summary-token-threshold">
+            <h4 data-i18n="STMemoryBooks_AutoSummaryTokenThreshold">Auto-Summary Token Threshold:</h4>
+            <input type="number" id="stmb-auto-summary-token-threshold" class="text_pole" value="{{autoSummaryTokenThreshold}}" min="1" max="1000000" step="1">
+        </label>
     </div>
 
     <div class="world_entry_form_control">
