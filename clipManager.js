@@ -2232,6 +2232,8 @@ export async function showTopicalClipPopup(options = {}) {
         void loadSelectedLorebook(event.target.value || '');
     });
     targetSelect?.addEventListener('change', () => {
+        const target = getSelectedTargetEntry();
+        if (keywordsInput) keywordsInput.value = getEntryKeys(target).join(', ');
         renderSourcePicker();
         renderTargetMetadataMessage();
         renderDiagnostics();
