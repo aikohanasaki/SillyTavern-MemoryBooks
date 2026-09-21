@@ -705,7 +705,7 @@ Ide prompt contoh:
 ### 💬 **Tips Pro**
 
 Prompt Sampingan bekerja paling baik jika **kecil dan terfokus**.
-Alih-alih “lacak semuanya,” coba “lacak ketegangan romantis antara karakter utama.”
+Alih-alih “lacak semuanya,” coba “lacak perubahan kepercayaan dan kerja sama antara karakter utama.”
 
 ### ⌨️ **Sintaks Manual /sideprompt**
 

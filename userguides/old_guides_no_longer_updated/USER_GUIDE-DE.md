@@ -697,7 +697,7 @@ Beispielhafte Prompt-Ideen:
 
 ### 💬 **Pro-Tipp**
 
-Side-Prompts funktionieren am besten, wenn sie **klein und fokussiert** sind. Statt „verfolge alles“ versuche „verfolge die romantische Spannung zwischen den Hauptcharakteren“.
+Side-Prompts funktionieren am besten, wenn sie **klein und fokussiert** sind. Statt „verfolge alles“ versuche „verfolge Veränderungen im Vertrauen und in der Zusammenarbeit zwischen den Hauptcharakteren“.
 
 ### ⌨️ **Manuelle /sideprompt-Syntax**
 

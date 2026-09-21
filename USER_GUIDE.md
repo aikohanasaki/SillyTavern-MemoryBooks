@@ -1554,7 +1554,7 @@ Example prompt ideas:
 ### 💬 **Pro Tip**
 
 Side Prompts work best when they are **small and focused**.
-Instead of “track everything,” try “track romantic tension between the main characters.”
+Instead of “track everything,” try “track changes in trust and cooperation between the main characters.”
 
 ### ⌨️ **Manual /sideprompt Syntax**
 

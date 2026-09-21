@@ -44,6 +44,7 @@ import {
     normalizeSidePromptSetKey,
 } from './sidePromptSetDefaults.js';
 import { normalizeMemoryAssistanceMode } from './clipReviewPolicy.js';
+import { needsRelationshipPromptReview } from './relationshipPromptMigration.js';
 
 const SIDE_PROMPT_CONTEXT_FOLLOW_CHAT = '__follow_chat__';
 const SIDE_PROMPT_SET_MODE_INHERIT = 'mode:inherit';
@@ -481,7 +482,8 @@ function renderTemplatesTable(templates) {
         modeUpdate: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'update',
         modeUpdateAndSuggest: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'update_and_suggest',
         modeAutomatic: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'automatic',
-        badges: getTriggersSummary(t),
+        badges: [...getTriggersSummary(t), ...(needsRelationshipPromptReview(t)
+            ? [translate('Review relationship instructions', 'STMemoryBooks_RelationshipReviewBadge')] : [])],
     }));
     return sidePromptsTableTemplate({ items });
 }
@@ -890,6 +892,7 @@ async function openEditTemplate(parentPopup, key) {
 
         const content = `
             <h3>${escapeHtml(translate('Edit Side Prompt', 'STMemoryBooks_EditSidePrompt'))}</h3>
+            ${needsRelationshipPromptReview(tpl) ? `<div class="info_block">${escapeHtml(translate('This customized template still contains retired relationship instructions. Review both Prompt and Response Format. Unrecognized custom wording was preserved to avoid overwriting your edits.', 'STMemoryBooks_RelationshipReviewEditor'))}</div>` : ''}
             <div class="world_entry_form_control">
                 <small>${escapeHtml(translate('Key:', 'STMemoryBooks_Key'))} <code>${escapeHtml(tpl.key)}</code></small>
             </div>

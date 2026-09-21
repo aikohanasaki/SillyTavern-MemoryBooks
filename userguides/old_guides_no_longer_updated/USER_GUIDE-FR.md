@@ -689,7 +689,7 @@ Exemples d'idées :
 
 Les Side Prompts fonctionnent mieux quand ils sont **petits et ciblés**.
 
-Au lieu de « suivre tout », préférez quelque chose comme « suivre la tension romantique entre les personnages principaux ».
+Au lieu de « suivre tout », préférez quelque chose comme « suivre les changements de confiance et de coopération entre les personnages principaux ».
 
 ### ⌨️ **Syntaxe manuelle de `/sideprompt`**
 

@@ -7,6 +7,8 @@ import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, hasTemplateRuntimeMacros } from './sidePromptMacros.js';
 import { DEFAULT_CLIP_REVIEW_PROMPT, DEFAULT_CLIP_SUGGESTIONS_PROMPT } from './clipPromptDefaults.js';
 import { CLIP_REVIEW_TEMPLATE_KEY } from './clipReviewPolicy.js';
+import { DEFAULT_STATUS_PROMPT, DEFAULT_STATUS_RESPONSE_FORMAT } from './relationshipPromptDefaults.js';
+import { needsRelationshipPromptReview, saveRelationshipDocument } from './relationshipPromptMigration.js';
 
 const MODULE_NAME = 'STMemoryBooks-SidePromptsManager';
 const SIDE_PROMPTS_FILE = FILE_NAMES.SIDE_PROMPTS_FILE;
@@ -17,6 +19,7 @@ const SIDE_PROMPTS_FILE = FILE_NAMES.SIDE_PROMPTS_FILE;
  * @type {Object|null}
  */
 let cachedDoc = null;
+const relationshipReviewNotified = new Set();
 
 /**
  * Generate ISO timestamp
@@ -327,8 +330,8 @@ function getBuiltinTemplates() {
             key,
             name: translate('Status', 'STMemoryBooks_Status'),
             enabled: false,
-            prompt: translate("Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.", 'STMemoryBooks_StatusPrompt'),
-            responseFormat: translate("Follow this general format:\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR and LUSTFACTOR\n(!lovefactor and !lustfactor reports go here)\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)", 'STMemoryBooks_StatusResponseFormat'),
+            prompt: translate(DEFAULT_STATUS_PROMPT, 'STMemoryBooks_StatusPrompt'),
+            responseFormat: translate(DEFAULT_STATUS_RESPONSE_FORMAT, 'STMemoryBooks_StatusResponseFormat'),
             settings: {
                 overrideProfileEnabled: false,
                 lorebook: {
@@ -449,7 +452,7 @@ function createBaseDoc() {
 /**
  * Save document to server
  */
-async function saveDoc(doc) {
+async function uploadSidePromptDocument(name, doc) {
     const json = JSON.stringify(doc, null, 2);
     const base64 = btoa(unescape(encodeURIComponent(json)));
 
@@ -458,7 +461,7 @@ async function saveDoc(doc) {
         credentials: 'include',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            name: SIDE_PROMPTS_FILE,
+            name,
             data: base64,
         }),
     });
@@ -467,7 +470,29 @@ async function saveDoc(doc) {
         throw new Error(__st_t_tag`Failed to save side prompts: ${res.status} ${res.statusText}`);
     }
 
+}
+
+function notifyRelationshipReview(doc) {
+    const keys = Object.entries(doc.prompts || {})
+        .filter(([key, tpl]) => needsRelationshipPromptReview(tpl) && !relationshipReviewNotified.has(key))
+        .map(([key]) => key);
+    if (!keys.length) return;
+    keys.forEach(key => relationshipReviewNotified.add(key));
+    globalThis.toastr?.warning(translate('Some customized Side Prompts still contain retired relationship instructions. Review both Prompt and Response Format in their editor; your custom wording was preserved.', 'STMemoryBooks_RelationshipReviewNeeded'), 'STMemoryBooks');
+}
+
+async function saveDoc(doc, options = {}) {
+    const result = await saveRelationshipDocument(doc, {
+        writeDocument: uploadSidePromptDocument,
+        filename: SIDE_PROMPTS_FILE,
+        ...options,
+    });
+    Object.assign(doc, result.doc);
     cachedDoc = doc;
+    if (result.changedKeys.length) {
+        globalThis.toastr?.info(translate('Updated legacy Status instructions to neutral relationship summaries. A recovery copy was saved in your user files; its filename is listed in the Side Prompts export under relationshipPromptBackups.', 'STMemoryBooks_RelationshipMigrationComplete'), 'STMemoryBooks');
+    }
+    notifyRelationshipReview(doc);
     console.log(`${MODULE_NAME}: ${translate('Side prompts saved successfully', 'STMemoryBooks_SidePromptsSaved')}`);
 }
 
@@ -478,6 +503,8 @@ export async function loadSidePrompts() {
     if (cachedDoc) return cachedDoc;
 
     let data = null;
+    let needsSave = false;
+    let backupSource;
 
     try {
         const res = await fetch(`/user/files/${SIDE_PROMPTS_FILE}`, {
@@ -489,22 +516,23 @@ export async function loadSidePrompts() {
         if (!res.ok) {
             // Missing -> create base
             data = createBaseDoc();
-            await saveDoc(data);
+            needsSave = true;
         } else {
             const text = await res.text();
             const parsed = JSON.parse(text);
+            backupSource = JSON.parse(text);
 
             // If looks like old V1 -> migrate to V2
             if (looksLikeV1(parsed)) {
                 console.log(`${MODULE_NAME}: ${translate('Migrating side prompts file from V1(type) to V2(triggers)', 'STMemoryBooks_MigratingSidePrompts')}`);
                     data = normalizeDoc(migrateV1toV2(parsed));
-                    await saveDoc(data);
+                    needsSave = true;
                 } else {
                 // Validate as V2; if invalid generate base
                 if (!validateSidePromptsFileV2(parsed)) {
                     console.warn(`${MODULE_NAME}: ${translate('Invalid side prompts file structure; recreating with built-ins', 'STMemoryBooks_InvalidSidePromptsFile')}`);
                     data = createBaseDoc();
-                    await saveDoc(data);
+                    needsSave = true;
                 } else {
                     const beforeNormalize = JSON.stringify(parsed);
                     data = normalizeDoc(parsed);
@@ -512,17 +540,19 @@ export async function loadSidePrompts() {
                     if (Number(data.version || 1) < 2) {
                         data.version = 2;
                     }
-                    if (JSON.stringify(data) !== beforeNormalize) await saveDoc(data);
+                    needsSave = JSON.stringify(data) !== beforeNormalize;
                 }
             }
         }
     } catch (e) {
         console.warn(`${MODULE_NAME}: ${translate('Error loading side prompts; creating base doc', 'STMemoryBooks_ErrorLoadingSidePrompts')}`, e);
         data = createBaseDoc();
-        await saveDoc(data);
+        needsSave = true;
     }
 
-    cachedDoc = data;
+    // Outside the fallback catch: a backup/upload failure must preserve the
+    // existing document, rather than recreating every prompt from defaults.
+    await saveDoc(data, { backupSource: backupSource || data, onlyIfMigrated: !needsSave });
     return cachedDoc;
 }
 
@@ -704,6 +734,7 @@ export async function upsertTemplate(input) {
                 ? input.prompt
                 : (prev?.prompt || translate('This is a placeholder prompt.', 'STMemoryBooks_SidePrompt_PlaceholderPrompt'))),
             responseFormat: String(input.responseFormat != null ? input.responseFormat : (prev?.responseFormat || '')),
+            ...(prev?.relationshipPromptVersion === 1 ? { relationshipPromptVersion: 1 } : {}),
             ...(input.specialKind || prev?.specialKind ? { specialKind: String(input.specialKind || prev.specialKind) } : {}),
             settings: { ...(prev?.settings || {}), ...(input.settings || {}) },
             triggers: input.triggers ? input.triggers : (prev?.triggers || { commands: ['sideprompt'] }),
@@ -973,6 +1004,7 @@ export async function importFromJSON(jsonString) {
     // Load existing and merge additively
     const existing = await loadSidePrompts();
     const merged = {
+        ...existing,
         version: Math.max(2, Number(existing.version ?? 2), Number(incoming.version ?? 2)),
         prompts: { ...existing.prompts },
         sets: { ...(existing.sets || {}) },

@@ -1,0 +1,65 @@
+{
+  "date": "2026-09-21",
+  "provider": "OpenRouter",
+  "model": "google/gemma-4-31b-it",
+  "scope": "Real provider requests through the installed extension in the supplied clean SillyTavern instance. Synthetic QA scene only.",
+  "scene": [
+    {
+      "name": "STMB QA Alex",
+      "text": "Alex places the inventory sheet on the workbench. \"I brought the shipment totals and returned your borrowed wrench. Could you check the numbers? I can cover the front desk while you do.\""
+    },
+    {
+      "name": "User",
+      "text": "Thanks for covering the desk. I found two missing bolts in the shipment, so I will contact the supplier. Please ask before lending out my personal tools next time."
+    },
+    {
+      "name": "STMB QA Alex",
+      "text": "Understood. I will ask before borrowing your tools. I brought you some tea because the workshop is cold, and I updated the missing-items log."
+    },
+    {
+      "name": "User",
+      "text": "We work well together on inventory, but I still want to review the log before we sign off. I have not decided whether I can cover your Friday shift."
+    }
+  ],
+  "results": [
+    {
+      "case": "Initial professional-colleagues run before wording refinement",
+      "output": "### RELATIONSHIP DYNAMICS\n- **Established Relationship:** Professional colleagues.\n- **User's Perspective:** Views the partnership as efficient for inventory tasks (\"We work well together on inventory\") but maintains a level of oversight and a boundary regarding personal property.\n- **Alex's Perspective:** Proactive and supportive; Alex assists with the front desk, manages logs, and provides tea to improve the User's comfort in the cold workshop.\n\n### RECENT CHANGES AND EVIDENCE\n- **No significant change:** The interaction reflects a stable professional working relationship.\n\n### TRUST, BOUNDARIES, AND COMMUNICATION\n- **Trust and Cooperation:** There is a high level of operational cooperation. Alex provides shipment totals and covers the front desk, while the User manages supplier communications. However, the User does not fully trust Alex's independent logging, stating a need to review the log before signing off.\n- **Boundaries:** The User established a clear boundary regarding personal tools (\"Please ask before lending out my personal tools next time\"), which Alex acknowledged and agreed to follow.\n- **Communication:** Communication is direct and task-oriented, though Alex incorporates gestures of kindness (bringing tea).\n\n### GOALS\n- **Shared Goals:** Accurate inventory management and shipment verification. Both are working toward finalizing the missing-items log.\n- **Individual/Conflicting Goals:** Alex seeks to assist and streamline the process; the User seeks precision and control over their personal property and final approvals. There is an unresolved request regarding a Friday shift.\n\n### OBSERVATIONS AND UNRESOLVED QUESTIONS\n- **Observations:** Alex exhibits more initiative in providing supportive gestures (tea, covering the desk) than the User. The User maintains a more formal, supervisory tone.\n- **Unresolved Questions:** It is not established if the User will agree to cover Alex's Friday shift.\n\n### SUMMARY\nUser and STMB QA Alex are professional colleagues who cooperate effectively on inventory tasks. While Alex is proactive and supportive, providing assistance and refreshments, the User maintains strict professional boundaries regarding tool ownership and requires final verification of Alex's work. Their relationship is characterized by functional cooperation and clear communication, though the User retains a level of cautious oversight.",
+      "checkpoint": 3,
+      "assessment": "No romance, sexual framing, scores, or future plot suggestions. Overstated distrust from routine review, prompting stronger interpretation guidance."
+    },
+    {
+      "case": "Legacy report carryover with final neutral instructions",
+      "output": "### RELATIONSHIP DYNAMICS\n- **Nature of Relationship:** The User and Alex are professional colleagues working in a workshop environment.\n- **User's Perspective:** The User views the relationship as a cooperative professional partnership regarding inventory (\"We work well together on inventory\"), while maintaining a strict boundary regarding personal property.\n- **Alex's Perspective:** Alex demonstrates a supportive and helpful approach, providing assistance with desk coverage and bringing tea to the User.\n\n### RECENT CHANGES AND EVIDENCE\n- No significant changes in the relationship dynamic have occurred. The interaction remains centered on professional duties and workplace etiquette.\n\n### TRUST, BOUNDARIES, AND COMMUNICATION\n- **Trust and Cooperation:** The two cooperate on inventory tasks and shift coverage. Alex assists the User by covering the front desk and updating logs.\n- **Boundaries:** The User established a clear boundary regarding personal tools, stating, \"Please ask before lending out my personal tools next time.\" Alex explicitly acknowledged and accepted this boundary (\"I will ask before borrowing your tools\").\n- **Communication:** Communication is direct and task-oriented. It includes professional requests, the setting of boundaries, and gestures of workplace kindness.\n\n### GOALS\n- **Shared Goals:** Both participants are working toward the accurate completion of inventory totals and the signing off of the missing-items log.\n- **Individual Goals/Conflicts:** There is an unresolved matter regarding the Friday shift; the User has not yet decided if they can cover for Alex.\n\n### OBSERVATIONS AND UNRESOLVED QUESTIONS\n- **Observations:** Alex's act of bringing tea is a factual behavior; whether this indicates a personal fondness or is simply a gesture of professional courtesy is not established.\n- **Unresolved Questions:** It is not established if the User will agree to cover the Friday shift.\n\n### SUMMARY\nThe User and Alex are professional colleagues who cooperate effectively on inventory and workshop duties. Their relationship is characterized by mutual assistance and clear communication, although the User maintains a firm boundary regarding the use of their personal tools. While Alex performs supportive gestures, such as providing tea and desk coverage, the relationship remains centered on their shared professional responsibilities.",
+      "checkpoint": 3,
+      "verifiedPriorContentMatchesSeed": true,
+      "assessment": "Discarded unsupported love/sexual attraction claims, life-partner endpoint, scoring headings and plot suggestion. Kept professional cooperation, tool boundary and unresolved shift question; did not assert distrust from log review."
+    },
+    {
+      "case": "Fresh chat with final neutral instructions and no prior report",
+      "output": "### RELATIONSHIP DYNAMICS\n- **Nature:** Professional coworkers.\n- **User's Perspective:** The User acknowledges their effectiveness as a team regarding inventory but maintains a level of oversight and establishes clear boundaries regarding personal property.\n- **Alex's Perspective:** Alex demonstrates a supportive and cooperative approach, providing assistance with tasks (covering the desk) and small gestures (bringing tea).\n\n### RECENT CHANGES AND EVIDENCE\n- No meaningful changes occurred in this scene; the interaction focuses on routine workplace tasks and boundary reinforcement.\n\n### TRUST, BOUNDARIES, AND COMMUNICATION\n- **Trust/Distrust:** The User demonstrates a need for verification, stating they \"still want to review the log\" before signing off. It is tentative whether this indicates a lack of trust in Alex specifically or a standard professional procedure.\n- **Boundaries:** The User established a firm boundary regarding personal tools (\"Please ask before lending out my personal tools next time\"), which Alex explicitly accepted.\n- **Cooperation/Conflict:** Cooperation is high regarding workflow; Alex manages the front desk and updates logs to assist the User. There is no overt conflict, though the User's request regarding tools indicates a previous boundary violation.\n- **Communication:** Direct and task-oriented.\n\n### GOALS\n- **Shared Goals:** Accurately completing shipment totals and updating the missing-items log.\n- **Individual Goals:** Alex aims to assist with workload and maintenance; the User aims to ensure shipment accuracy and protect personal equipment.\n- **Obstacles:** The User has not yet decided if they can cover Alex's Friday shift.\n\n### OBSERVATIONS AND UNRESOLVED QUESTIONS\n- **Observations:** Alex performed several unprompted helpful actions (bringing tea, updating the log, covering the desk). The User responded with thanks for the help but maintained professional distance regarding the log and the Friday shift.\n- **Unresolved Questions:** It is not established whether the User's insistence on reviewing the log is a reaction to a specific past error by Alex or a general requirement of their role.\n\n### SUMMARY\nThe User and STMB QA Alex have a cooperative professional relationship characterized by efficient teamwork on inventory tasks. While Alex displays a supportive demeanor through helpful gestures and task assistance, the User maintains clear boundaries regarding personal property and a preference for verifying Alex's work before finalization.",
+      "checkpoint": 3,
+      "verifiedPriorEntryExisted": false,
+      "assessment": "Professional relationship, no attraction scores, romance/sexual claims, relationship ladder, or plot suggestions. Log-review interpretation is explicitly tentative; wording remains model-dependent and some interpretation of professional distance persists."
+    }
+  ],
+  "carryoverSeed": "### AFFINITY\n95/100.\n### LOVEFACTOR\n9/10. They are secretly in love, inferred from Alex bringing tea.\n### LUSTFACTOR\n8/10. Strong sexual attraction, inferred from sharing a workbench.\n### RELATIONSHIP STATUS\n100 = life partners.\n### STORY SUGGESTIONS\nAlex should confess love during the next shift.\n### ESTABLISHED EVENTS\nThey are workshop colleagues. Alex returned a wrench and covered the desk. User asked Alex to obtain permission before lending personal tools. Two bolts were missing. Friday shift coverage remains undecided.",
+  "responsiveCheck": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentScrollWidth": 390,
+    "promptAndFormatWidth": 293,
+    "promptAndFormatClientWidth": 281,
+    "promptAndFormatScrollWidth": 281,
+    "observed": "Editor text wraps and the dialog scrolls vertically; footer controls remain accessible. Desktop viewport restored. Not a physical-phone test."
+  },
+  "validation": {
+    "automatedTestsPassed": 213,
+    "build": "Bun 1.4.2 build.ts passed; deployed bundle hash matches canonical bundle",
+    "coreGitStatus": "clean",
+    "liveProviderRequests": 3,
+    "limits": "Live generation covered the manual Side Prompt path on one configured model using synthetic professional-colleague scenes. Automatic/set and regeneration paths used real extension modules with mocked provider/persistence boundaries. Personal custom prompts were not present."
+  }
+}
