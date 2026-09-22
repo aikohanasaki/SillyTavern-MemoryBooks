@@ -686,7 +686,7 @@ Contoh idea prom:
 ### 💬 **Tip Pro**
 
 Prom Sampingan berfungsi paling baik apabila ia **kecil dan fokus**.
-Daripada “jejak segalanya,” cuba “jejak ketegangan romantik antara watak utama.”
+Daripada “jejak segalanya,” cuba “jejak perubahan kepercayaan dan kerjasama antara watak utama.”
 
 ### ⌨️ **Sintaks Manual /sideprompt**
 

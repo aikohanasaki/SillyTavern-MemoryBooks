@@ -5,11 +5,14 @@
     "": {
       "dependencies": {
         "dirty-json": "^0.9.2",
+        "js-sha256": "^0.11.1",
       },
     },
   },
   "packages": {
     "dirty-json": ["dirty-json@0.9.2", "", { "dependencies": { "lex": "^1.7.9", "unescape-js": "^1.1.4", "utf8": "^3.0.0" } }, "sha512-7SCDfnQtBObcngVXNPZcnxGxqqPTK4UqeXeKAch+RGH5qpqadWbV9FmN71x9Bb4tTs0TNFb4FT/4Kz4P4Cjqcw=="],
+
+    "js-sha256": ["js-sha256@0.11.1", "", {}, "sha512-o6WSo/LUvY2uC4j7mO50a2ms7E/EAdbP0swigLV+nzHKTTaYnaLIWJ02VdXrsJX0vGedDESQnLsOekr94ryfjg=="],
 
     "lex": ["lex@1.7.9", "", {}, "sha512-vzaalVBmFLnMaedq0QAsBAaXsWahzRpvnIBdBjj7y+7EKTS6lnziU2y/PsU2c6rV5qYj2B5IDw0uNJ9peXD0vw=="],
 

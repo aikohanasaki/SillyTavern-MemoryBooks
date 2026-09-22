@@ -13,6 +13,7 @@ import {
     DEFAULT_TOPICAL_CLIP_PROMPT_TEMPLATE,
 } from './clipPromptDefaults.js';
 import { DEFAULT_CONSOLIDATION_KEYWORD_PROMPT } from './consolidationPromptDefaults.js';
+import { DEFAULT_STATUS_PROMPT, DEFAULT_STATUS_RESPONSE_FORMAT } from './relationshipPromptDefaults.js';
 
 /**
  * Runtime JSON loader for locales that don't support JSON import assertions
@@ -1195,13 +1196,13 @@ export const localeData_en = {
 	'STMemoryBooks_Plotpoints': 'Plotpoints',
     'STMemoryBooks_PlotpointsPrompt': "Analyze the accompanying scene for plot threads, story arcs, and other narrative movements. The previous scenes are there to provide context. Generate a story thread report. If a report already exists in context, update it instead of recreating.",
     'STMemoryBooks_Status': 'Status',
-    'STMemoryBooks_StatusPrompt': "Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.",
+    'STMemoryBooks_StatusPrompt': DEFAULT_STATUS_PROMPT,
     'STMemoryBooks_CastOfCharacters': 'Cast of Characters',
     'STMemoryBooks_CastOfCharactersPrompt': "You are a skilled reporter with a clear eye for judging the importance of NPCs to the plot.\nStep 1: Review the scene and either add or update plot-related NPCs to the NPC WHO'S WHO report. Please note that {{char}} and {{user}} are major characters and do NOT need to be included in this report.\nStep 2: This list should be kept in order of importance to the plot, so it may need to be reordered.\nStep 3: If your response would be more than 2000 tokens long, remove NPCs with the least impact to the plot.",
     'STMemoryBooks_Assess': 'Assess',
     'STMemoryBooks_AssessPrompt': "Assess the interaction between {{char}} and {{user}} to date. List all the information {{char}} has learned about {{user}} in a code block through observation, questioning, or drawing conclusions from interaction (similar to a mental \"note to self\"). If there is already a list, update it. Try to keep it token-efficient and compact, focused on the important things.",
     'STMemoryBooks_PlotpointsResponseFormat': "=== Plot Points ===\n(as of [point in the story when this analysis was done])\n\n[Overarching Plot Arc]\n(2-3 sentence summary of the superobjective or major plot)\n\n[Thread #1 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n\n[Thread #2 Title]\n- Summary: (1 sentence)\n- Status: (active / on hold)\n- At Stake: (how resolution will affect the ongoing story)\n- Last Known: (location or time)\n- Key Characters: ...\n\n...\n\n-- Plot Hooks --\n- (new or potential plot hooks)\n\n-- Character Dynamics --\n- current status of {{user}}'s/{{char}}'s relationships with NPCs\n\n===End Plot Points===\n",
-    'STMemoryBooks_StatusResponseFormat': "Follow this general format:\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR and LUSTFACTOR\n(!lovefactor and !lustfactor reports go here)\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)",
+    'STMemoryBooks_StatusResponseFormat': DEFAULT_STATUS_RESPONSE_FORMAT,
     'STMemoryBooks_CastOfCharactersResponseFormat': "===NPC WHO'S WHO===\n(In order of importance to the plot)\n\nPerson 1: 1-2 sentence desription\nPerson 2: 1-2 sentence desription\n===END NPC WHO'S WHO===",
     'STMemoryBooks_AssessResponseFormat': "Use this format:\n=== Things {{char}} has learned about {{user}} ===\n(detailed list, in {{char}}'s POV/tone of voice)\n===",
     'STMemoryBooks_FailedToSaveSidePrompts': 'Failed to save side prompts: {{status}} {{statusText}}',

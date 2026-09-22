@@ -1,0 +1,86 @@
+[
+  {
+    "locale": "en",
+    "prompt": "Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}} (including abbreviated !lovefactor and !lustfactor commands). Note: If there is a pre-existing !status report, update it, do not regurgitate it.",
+    "responseFormat": "Follow this general format:\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with !lovefactor and !lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR and LUSTFACTOR\n(!lovefactor and !lustfactor reports go here)\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)",
+    "source": "sidePromptsManager.js at upstream 0e9bdf9"
+  },
+  {
+    "locale": "de",
+    "prompt": "Analysiere den Kontext (vorherige Szenen, Erinnerungen, Lore, Historie), um eine detaillierte Analyse von {{user}} und {{char}} zu erstellen (einschließlich !lovefactor und !lustfactor). Vorhandene Berichte aktualisieren.",
+    "responseFormat": "Folge diesem Format:\n\n## Schlagzeile / Zusammenfassung\n\n### AFFINITÄT (0-100)\n- Score mit Belegen\n- Letzte Änderungen\n- Zitate\n\n### LOVEFACTOR und LUSTFACTOR\n(!lovefactor und !lustfactor Berichte hier einfügen)\n\n### BEZIEHUNGSSTATUS\n- Vertrauen/Grenzen/Kommunikation\n- Schlüsselereignisse\n\n### ZIELE\n- Kurz-/langfristig\n- Fortschritt\n\n### ANALYSE\n- Psychologie/Sichtweise\n- Entwicklung\n\n### ABSCHLUSS\n- OOC Zusammenfassung (1 Absatz)",
+    "source": "locales\\de-de.json"
+  },
+  {
+    "locale": "es",
+    "prompt": "Analice todo el contexto (escenas anteriores, memorias, lore, historial, interacciones) para generar un análisis detallado de {{user}} y {{char}} (incluyendo los comandos abreviados !lovefactor y !lustfactor). Nota: Si ya existe un informe de !status, actualícelo, no lo regurgite.",
+    "responseFormat": "Siga este formato general:\n\n## Titular Ingenioso o Resumen\n\n### AFINIDAD (0-100, con alguna relación con !lovefactor y !lustfactor)\n- Puntuación con evidencia\n- Cambios recientes \n- Citas de apoyo\n- Cualquier otra cosa que pueda ilustrar la afinidad actual\n\n### FACTOR DE AMOR y FACTOR DE LUJURIA\n(los informes de !lovefactor y !lustfactor van aquí)\n\n### ESTADO DE LA RELACIÓN (negativo = enemigos, 0 = extraños, 100 = compañeros de vida)\n- Confianza/límites/comunicación\n- Eventos clave\n- Problemas\n- Cualquier otro punto pertinente\n\n### METAS\n- Objetivos a corto/largo plazo\n- Progreso/obstáculos\n- Áreas de crecimiento\n- Cualquier otro punto pertinente\n\n### ANÁLISIS\n- Psicología/Punto de vista\n- Desarrollo/desencadenantes\n- Sugerencias para la historia\n- Cualquier otro punto pertinente\n\n### CONCLUSIÓN\n- Resumen OOC (1 párrafo)",
+    "source": "locales\\es-es.json"
+  },
+  {
+    "locale": "fr",
+    "prompt": "Analyse détaillée de {{user}} et {{char}} (incluant !lovefactor et !lustfactor). Mettez à jour le rapport existant.",
+    "responseFormat": "## Titre\n### AFFINITÉ\n### RELATION\n### OBJECTIFS...",
+    "source": "locales\\fr-fr.json"
+  },
+  {
+    "locale": "id",
+    "prompt": "Analisis semua konteks (adegan sebelumnya, memori, pengetahuan, sejarah, interaksi) untuk menghasilkan analisis terperinci tentang {{user}} dan {{char}} (termasuk perintah !lovefactor dan !lustfactor yang disingkat). Catatan: Jika ada laporan !status yang sudah ada sebelumnya, perbarui, jangan mengulanginya.",
+    "responseFormat": "Ikuti format umum ini:\n\n## Judul atau Ringkasan Cerdas\n\n### AFINITAS (0-100, memiliki beberapa hubungan dengan !lovefactor dan !lustfactor)\n- Skor dengan bukti\n- Perubahan terbaru \n- Kutipan pendukung\n- Hal lain yang mungkin menggambarkan afinitas saat ini\n\n### LOVEFACTOR dan LUSTFACTOR\n(laporan !lovefactor dan !lustfactor ada di sini)\n\n### STATUS HUBUNGAN (negatif = musuh, 0 = orang asing, 100 = pasangan hidup)\n- Kepercayaan/batas/komunikasi\n- Peristiwa penting\n- Masalah\n- Poin relevan lainnya\n\n### TUJUAN\n- Tujuan jangka pendek/panjang\n- Kemajuan/hambatan\n- Area pertumbuhan\n- Poin relevan lainnya\n\n### ANALISIS\n- Psikologi/POV\n- Perkembangan/pemicu\n- Saran cerita\n- Poin relevan lainnya\n\n### PENUTUP\n- Ringkasan OOC (1 paragraf)",
+    "source": "locales\\id-id.json"
+  },
+  {
+    "locale": "ja",
+    "prompt": "すべてのコンテキスト（以前のシーン、メモリ、伝承、履歴、相互作用）を分析して、{{user}}と{{char}}の詳細な分析を生成します（省略された!lovefactorおよび!lustfactorコマンドを含む）。注: 既存の!statusレポートがある場合は、それを更新し、そのまま再出力しないでください。",
+    "responseFormat": "この一般的な形式に従ってください：\n\n##気の利いた見出しまたは要約\n\n### 親和性（0-100、!lovefactorと!lustfactorと何らかの関係がある）\n- 証拠付きのスコア\n- 最近の変更\n- 支持する引用\n- 現在の親和性を示す可能性のあるその他の事項\n\n### LOVEFACTORとLUSTFACTOR\n（!lovefactorと!lustfactorのレポートはここに）\n\n### 関係状況（負=敵、0=他人、100=生涯のパートナー）\n- 信頼／境界／コミュニケーション\n- 主要な出来事\n- 問題点\n- その他の関連事項\n\n### 目標\n- 短期／長期の目標\n- 進捗／障害\n- 成長分野\n- その他の関連事項\n\n### 分析\n- 心理学／視点\n- 発達／トリガー\n- 物語の提案\n- その他の関連事項\n\n### まとめ\n- OOC要約（1段落）",
+    "source": "locales\\ja-jp.json"
+  },
+  {
+    "locale": "ko",
+    "prompt": "모든 컨텍스트(이전 장면, 메모리, 로어, 히스토리, 상호 작용)를 분석하여 {{user}} 및 {{char}}에 대한 상세 분석을 생성합니다(축약된 !lovefactor 및 !lustfactor 명령 포함). 참고: 기존 !status 보고서가 있는 경우, 그것을 업데이트하고 반복하지 마세요.",
+    "responseFormat": "이 일반적인 형식을 따르세요:\n\n## 재치 있는 헤드라인 또는 요약\n\n### 친밀도 (0-100, !lovefactor 및 !lustfactor와 어느 정도 관련 있음)\n- 증거가 있는 점수\n- 최근 변경 사항\n- 뒷받침하는 인용문\n- 현재 친밀도를 보여줄 수 있는 기타 사항\n\n### LOVEFACTOR 및 LUSTFACTOR\n(!lovefactor 및 !lustfactor 보고서는 여기에)\n\n### 관계 상태 (음수 = 적, 0 = 낯선 사람, 100 = 평생 파트너)\n- 신뢰/경계/소통\n- 주요 이벤트\n- 문제점\n- 기타 관련 사항\n\n### 목표\n- 단기/장기 목표\n- 진행/장애물\n- 성장 영역\n- 기타 관련 사항\n\n### 분석\n- 심리/관점\n- 발달/유발 요인\n- 이야기 제안\n- 기타 관련 사항\n\n### 요약\n- OOC 요약 (1 단락)",
+    "source": "locales\\ko-kr.json"
+  },
+  {
+    "locale": "ms",
+    "prompt": "Analisis semua konteks (babak sebelumnya, memori, pengetahuan, sejarah, interaksi) untuk menjana analisis terperinci {{user}} dan {{char}} (termasuk perintah singkatan !lovefactor dan !lustfactor). Nota: Jika terdapat laporan !status yang sedia ada, kemas kini ia, jangan mengeluarkannya semula.",
+    "responseFormat": "Ikuti format umum ini:\n\n## Tajuk atau Ringkasan yang Menarik\n\n### KEAkraban (0-100, mempunyai beberapa hubungan dengan !lovefactor dan !lustfactor)\n- Skor dengan bukti\n- Perubahan terkini \n- Petikan sokongan\n- Apa-apa lagi yang mungkin menggambarkan keakraban semasa\n\n### LOVEFACTOR dan LUSTFACTOR\n(laporan !lovefactor dan !lustfactor pergi ke sini)\n\n### STATUS HUBUNGAN (negatif = musuh, 0 = orang asing, 100 = pasangan seumur hidup)\n- Kepercayaan/sempadan/komunikasi\n- Peristiwa penting\n- Isu\n- Sebarang perkara lain yang berkaitan\n\n### MATLAMAT\n- Objektif jangka pendek/panjang\n- Kemajuan/halangan\n- Bidang pertumbuhan\n- Sebarang perkara lain yang berkaitan\n\n### ANALISIS\n- Psikologi/POV\n- Pembangunan/pencetus\n- Cadangan cerita\n- Sebarang perkara lain yang berkaitan\n\n### RUMUSAN\n- Ringkasan OOC (1 perenggan)",
+    "source": "locales\\ms-my.json"
+  },
+  {
+    "locale": "pt",
+    "prompt": "Analise todo o contexto (cenas anteriores, memórias, lore, histórico e interações) para gerar uma análise detalhada de {{user}} e {{char}} (incluindo os comandos abreviados !lovefactor e !lustfactor). Observação: se já houver um relatório !status, atualize-o; não o repita integralmente.",
+    "responseFormat": "Siga este formato geral:\n\n## Manchete ou Resumo Engraçado\n\n### AFINIDADE (0–100, com alguma relação com !lovefactor e !lustfactor)\n- Pontuação com evidências\n- Mudanças recentes\n- Citações de apoio\n- Qualquer outro elemento que ajude a ilustrar a afinidade atual\n\n### LOVEFACTOR e LUSTFACTOR\n(os relatórios !lovefactor e !lustfactor ficam aqui)\n\n### STATUS DA RELAÇÃO (negativo = inimigos, 0 = desconhecidos, 100 = parceiros para a vida)\n- Confiança/limites/comunicação\n- Eventos principais\n- Problemas\n- Outros pontos relevantes\n\n### OBJETIVOS\n- Objetivos de curto/longo prazo\n- Progresso/obstáculos\n- Áreas de crescimento\n- Outros pontos relevantes\n\n### ANÁLISE\n- Psicologia/POV\n- Desenvolvimento/gatilhos\n- Sugestões para a história\n- Outros pontos relevantes\n\n### CONCLUSÃO\n- Resumo OOC (1 parágrafo)",
+    "source": "locales\\pt-br.json"
+  },
+  {
+    "locale": "ru",
+    "prompt": "Проанализируйте весь контекст (предыдущие сцены, памяти, лор, историю, взаимодействия), чтобы создать подробный анализ {{user}} и {{char}} (включая сокращенные команды !lovefactor и !lustfactor). Примечание: Если уже существует отчет !status, обновите его, не повторяйте.",
+    "responseFormat": "Следуйте этому общему формату:\n\n## Остроумный заголовок или краткое содержание\n\n### СРОДСТВО (0-100, имеет некоторое отношение к !lovefactor и !lustfactor)\n- Оценка с доказательствами\n- Недавние изменения \n- Подтверждающие цитаты\n- Все, что может проиллюстрировать текущее сродство\n\n### ФАКТОР ЛЮБВИ и ФАКТОР ВОЖДЕЛЕНИЯ\n(отчеты !lovefactor и !lustfactor идут сюда)\n\n### СТАТУС ОТНОШЕНИЙ (отрицательный = враги, 0 = незнакомцы, 100 = спутники жизни)\n- Доверие/границы/коммуникация\n- Ключевые события\n- Проблемы\n- Любые другие важные моменты\n\n### ЦЕЛИ\n- Краткосрочные/долгосрочные цели\n- Прогресс/препятствия\n- Области роста\n- Любые другие важные моменты\n\n### АНАЛИЗ\n- Психология/Точка зрения\n- Развитие/триггеры\n- Предложения по сюжету\n- Любые другие важные моменты\n\n### ЗАКЛЮЧЕНИЕ\n- OOC Краткое содержание (1 абзац)",
+    "source": "locales\\ru-ru.json"
+  },
+  {
+    "locale": "zh-cn",
+    "prompt": "分析所有上下文（之前的场景、记忆、传说、历史、互动），生成对 {{user}} 和 {{char}} 的详细分析（包括缩写的 !lovefactor 和 !lustfactor 命令）。注意：如果已存在 !status 报告，请更新它，不要重复。",
+    "responseFormat": "请遵循以下通用格式：\n\n## 诙谐的标题或摘要\n\n### 亲和力 (0-100, 与!lovefactor和!lustfactor有一定关系)\n- 带有证据的分数\n- 最近的变化\n- 支持性引语\n- 其他任何可能说明当前亲和力的事情\n\n### LOVEFACTOR和LUSTFACTOR\n(!lovefactor和!lustfactor报告在此处)\n\n### 关系状态 (负数 = 敌人, 0 = 陌生人, 100 = 生活伴侣)\n- 信任/界限/沟通\n- 关键事件\n- 问题\n- 任何其他相关要点\n\n### 目标\n- 短期/长期目标\n- 进展/障碍\n- 成长领域\n- 任何其他相关要点\n\n### 分析\n- 心理学/视角\n- 发展/触发因素\n- 故事建议\n- 任何其他相关要点\n\n### 总结\n- OOC摘要 (1段)",
+    "source": "locales\\zh-cn.json"
+  },
+  {
+    "locale": "zh-tw",
+    "prompt": "分析所有上下文（之前的場景、記憶、傳說、歷史、互動），產生對 {{user}} 和 {{char}} 的詳細分析（包括縮寫的 !lovefactor 和 !lustfactor 命令）。注意：如果已存在 !status 報告，請更新它，不要重複。",
+    "responseFormat": "請遵循以下通用格式：\n\n## 詼諧的標題或摘要\n\n### 親和力 (0-100, 與!lovefactor和!lustfactor有一定關係)\n- 帶有證據的分數\n- 最近的變化\n- 支持性引語\n- 其他任何可能說明目前親和力的事情\n\n### LOVEFACTOR和LUSTFACTOR\n(!lovefactor和!lustfactor報告在此處)\n\n### 關係狀態 (負數 = 敵人, 0 = 陌生人, 100 = 生活伴侶)\n- 信任/界限/溝通\n- 關鍵事件\n- 問題\n- 任何其他相關要點\n\n### 目標\n- 短期/長期目標\n- 進展/障礙\n- 成長領域\n- 任何其他相關要點\n\n### 分析\n- 心理學/視角\n- 發展/觸發因素\n- 故事建議\n- 任何其他相關要點\n\n### 總結\n- OOC摘要 (1段)",
+    "source": "locales\\zh-tw.json"
+  },
+  {
+    "locale": "ja",
+    "prompt": "すべてのコンテキスト（以前のシーン、メモリ、伝承、履歴、相互作用）を分析して、{{user}}と{{char}}の詳細な分析を生成します（省略された!lovefactorおよび!lustfactorコマンドを含む）。注: 既存の!statusレポートがある場合は、それを更新し、再 regurgitate しないでください。",
+    "responseFormat": "この一般的な形式に従ってください：\n\n##気の利いた見出しまたは要約\n\n### 親和性（0-100、!lovefactorと!lustfactorと何らかの関係がある）\n- 証拠付きのスコア\n- 最近の変更\n- 支持する引用\n- 現在の親和性を示す可能性のあるその他の事項\n\n### LOVEFACTORとLUSTFACTOR\n（!lovefactorと!lustfactorのレポートはここに）\n\n### 関係状況（負=敵、0=他人、100=生涯のパートナー）\n- 信頼／境界／コミュニケーション\n- 主要な出来事\n- 問題点\n- その他の関連事項\n\n### 目標\n- 短期／長期の目標\n- 進捗／障害\n- 成長分野\n- その他の関連事項\n\n### 分析\n- 心理学／視点\n- 発達／トリガー\n- 物語の提案\n- その他の関連事項\n\n### まとめ\n- OOC要約（1段落）",
+    "source": "resources\\prompts\\side-prompts-ja.json"
+  },
+  {
+    "locale": "en",
+    "prompt": "You are a skilled relationship analysis expert. Analyze all context (previous scenes, memories, lore, history, interactions) to generate a detailed analysis of {{user}} and {{char}}. Note: If there is a pre-existing status report, you must update it with edits and changes as required.",
+    "responseFormat": "===STATUS REPORT===\n\n## Witty Headline or Summary\n\n### AFFINITY (0-100, have some relationship with lovefactor and lustfactor)\n- Score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the current affinity\n\n### LOVEFACTOR (0-10 where 0 is none and 10 is convinced they are The One)\n- Romantic attraction score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the score\n\n### LUSTFACTOR\n- Sexual attraction score with evidence\n- Recent changes \n- Supporting quotes\n- Anything else that might be illustrative of the score\n\n### RELATIONSHIP STATUS (negative = enemies, 0 = strangers, 100 = life partners)\n- Trust/boundaries/communication\n- Key events\n- Issues\n- Any other pertinent points\n\n### GOALS\n- Short/long-term objectives\n- Progress/obstacles\n- Growth areas\n- Any other pertinent points\n\n### ANALYSIS\n- Psychology/POV\n- Development/triggers\n- Story suggestions\n- Any other pertinent points\n\n### WRAP-UP\n- OOC Summary (1 paragraph)\n===END STATUS REPORT===",
+    "source": "resources\\SidePromptTemplateLibrary.json"
+  }
+]

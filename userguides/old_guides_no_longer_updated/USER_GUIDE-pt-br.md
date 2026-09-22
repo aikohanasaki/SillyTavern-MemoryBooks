@@ -701,7 +701,7 @@ Ideias de prompts:
 ### 💬 **Dica**
 
 Prompts Laterais funcionam melhor quando são **pequenos e específicos**.
-Em vez de “acompanhe tudo”, tente “acompanhe a tensão romântica entre os personagens principais”.
+Em vez de “acompanhe tudo”, tente “acompanhe as mudanças na confiança e na cooperação entre os personagens principais”.
 
 ### ⌨️ **Sintaxe Manual de /sideprompt**
 

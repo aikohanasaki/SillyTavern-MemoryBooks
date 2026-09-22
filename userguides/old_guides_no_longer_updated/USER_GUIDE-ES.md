@@ -727,7 +727,7 @@ Ideas de ejemplo para prompts:
 ### 💬 **Consejo Pro**
 
 Los Prompts Secundarios funcionan mejor cuando son **pequeños y enfocados**.
-En lugar de "rastrear todo", intente "rastrear la tensión romántica entre los personajes principales".
+En lugar de "rastrear todo", intente "rastrear los cambios en la confianza y la cooperación entre los personajes principales".
 
 ### ⌨️ **Sintaxis manual /sideprompt**
 
