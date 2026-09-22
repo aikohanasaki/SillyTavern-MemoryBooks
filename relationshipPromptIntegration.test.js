@@ -16,11 +16,12 @@ async function managerHarness(initial = baseDoc(), { failWrite = 0, withoutCrypt
     let saved = initial && structuredClone(initial);
     const writes = [];
     const warnings = [];
+    const notices = [];
     const module = await loadExtensionModule('sidePromptsManager.js', {
         values: { getRequestHeaders: () => ({}), FILE_NAMES: { SIDE_PROMPTS_FILE: 'stmb-side-prompts.json' }, SCHEMA: { CURRENT_VERSION: 1 },
             translate: identityTranslate, t: (strings, ...args) => strings.reduce((s, part, i) => s + part + (args[i] ?? ''), ''),
             substituteParamsExtended: substituteTestMacros, CLIP_REVIEW_TEMPLATE_KEY: 'clip-review', DEFAULT_CLIP_REVIEW_PROMPT: 'Review facts.', DEFAULT_CLIP_SUGGESTIONS_PROMPT: 'Find missing facts.' },
-        globals: { crypto: withoutCrypto ? undefined : crypto, toastr: { info() {}, warning: text => warnings.push(text) }, fetch: async (url, options = {}) => {
+        globals: { crypto: withoutCrypto ? undefined : crypto, toastr: { info: text => notices.push(text), warning: text => warnings.push(text) }, fetch: async (url, options = {}) => {
             if (options.method === 'GET') return { ok: !!saved, text: async () => JSON.stringify(saved) };
             const body = JSON.parse(options.body);
             const value = JSON.parse(Buffer.from(body.data, 'base64').toString('utf8'));
@@ -30,7 +31,7 @@ async function managerHarness(initial = baseDoc(), { failWrite = 0, withoutCrypt
             return { ok: true };
         } },
     });
-    return { module, writes, warnings, saved: () => saved };
+    return { module, writes, warnings, notices, saved: () => saved };
 }
 
 test('manager migrates saved defaults, preserves identity/settings, and reloads without another backup', async () => {
@@ -39,6 +40,7 @@ test('manager migrates saved defaults, preserves identity/settings, and reloads 
     await f.module.loadSidePrompts();
     assert.equal(f.writes.length, 2);
     assert.deepEqual(f.writes[0].value, before);
+    assert.equal(f.notices.length, 0, 'Migration still creates a backup without a startup success toast');
     const status = await f.module.getTemplate('status');
     assert.equal(status.prompt, RELATIONSHIP_DEFAULTS.en.prompt);
     assert.deepEqual(plain(status.settings), before.prompts.status.settings);
@@ -86,6 +88,46 @@ test('additive legacy imports migrate renamed copies and retain set linkage and 
     assert.equal(saved.sets['duo-2'].items[0].promptKey, 'status-2');
     assert.ok(saved.relationshipPromptBackups.includes(firstBackup));
     assert.equal(saved.relationshipPromptBackups.length, 2);
+});
+
+for (const key of ['status', 'custom-relationship']) {
+    test(`import preserves the review marker and custom content for ${key}`, async () => {
+        const f = await managerHarness(null);
+        await f.module.loadSidePrompts();
+        const originalStatus = structuredClone(f.saved().prompts.status);
+        const imported = {
+            ...baseTemplate(), key, relationshipPromptVersion: 1,
+            prompt: 'Summarize only established facts using my custom instructions.',
+            responseFormat: '### CUSTOM ANALYSIS\n- Story suggestions\n- My custom observations.',
+        };
+        const incoming = { version: 2, prompts: { [key]: imported },
+            sets: { duo: { key: 'duo', name: 'Duo', items: [{ id: 'original', promptKey: key }] } } };
+        const result = await f.module.importFromJSON(JSON.stringify(incoming));
+        const finalKey = key === 'status' ? 'status-2' : key;
+        assert.equal(result.renamed, key === 'status' ? 1 : 0);
+        const saved = f.saved();
+        const copy = saved.prompts[finalKey];
+        assert.equal(copy.relationshipPromptVersion, 1);
+        for (const field of ['name', 'enabled', 'prompt', 'responseFormat', 'settings', 'triggers']) {
+            assert.deepEqual(copy[field], imported[field], `Preserve imported ${field}`);
+        }
+        assert.deepEqual(saved.prompts.status, originalStatus);
+        assert.equal(saved.sets.duo.items[0].promptKey, finalKey);
+        assert.equal(f.warnings.length, 1, 'Custom legacy instructions remain flagged after import');
+        f.module.clearCache();
+        const exported = JSON.parse(await f.module.exportToJSON());
+        assert.equal(exported.prompts[finalKey].relationshipPromptVersion, 1);
+        assert.equal(f.warnings.length, 1, 'Reload must not repeat the warning in the same session');
+    });
+}
+
+test('import does not mark unrelated templates as relationship templates', async () => {
+    const f = await managerHarness(null);
+    const imported = { ...baseTemplate(), key: 'plot-helper', name: 'Plot helper',
+        prompt: 'Track plot possibilities.', responseFormat: '### NOTES\n- Story suggestions' };
+    await f.module.importFromJSON(JSON.stringify({ version: 2, prompts: { [imported.key]: imported }, sets: {} }));
+    assert.equal(Object.hasOwn(f.saved().prompts['plot-helper'], 'relationshipPromptVersion'), false);
+    assert.equal(f.warnings.length, 0);
 });
 
 test('editing, enabling, duplicating, and exporting keep neutral content and user settings', async () => {

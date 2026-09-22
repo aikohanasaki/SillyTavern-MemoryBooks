@@ -8,7 +8,7 @@
     "author": "aikohanasaki",
     "version": "9.2.3",
     "license": "AGPL-3.0",
-    "homePage": "https://github.com/aikohanasaki/SillyTavern-MemoryBooks",
-    "auto_update": true,
+    "homePage": "https://github.com/julez122/SillyTavern-MemoryBooks",
+    "auto_update": false,
     "description": "Creates and saves chat memories and trackers to SillyTavern lorebooks with keywords and numbered titles. Localized in multiple languages."
 }

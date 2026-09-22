@@ -478,7 +478,7 @@ function notifyRelationshipReview(doc) {
         .map(([key]) => key);
     if (!keys.length) return;
     keys.forEach(key => relationshipReviewNotified.add(key));
-    globalThis.toastr?.warning(translate('Some customized Side Prompts still contain retired relationship instructions. Review both Prompt and Response Format in their editor; your custom wording was preserved.', 'STMemoryBooks_RelationshipReviewNeeded'), 'STMemoryBooks');
+    globalThis.toastr?.warning(translate('Review custom relationship instructions in Side Prompts.', 'STMemoryBooks_RelationshipReviewNeeded'), 'STMemoryBooks');
 }
 
 async function saveDoc(doc, options = {}) {
@@ -489,9 +489,6 @@ async function saveDoc(doc, options = {}) {
     });
     Object.assign(doc, result.doc);
     cachedDoc = doc;
-    if (result.changedKeys.length) {
-        globalThis.toastr?.info(translate('Updated legacy Status instructions to neutral relationship summaries. A recovery copy was saved in your user files; its filename is listed in the Side Prompts export under relationshipPromptBackups.', 'STMemoryBooks_RelationshipMigrationComplete'), 'STMemoryBooks');
-    }
     notifyRelationshipReview(doc);
     console.log(`${MODULE_NAME}: ${translate('Side prompts saved successfully', 'STMemoryBooks_SidePromptsSaved')}`);
 }
@@ -1060,6 +1057,7 @@ export async function importFromJSON(jsonString) {
                 ? p.prompt
                 : translate('This is a placeholder prompt.', 'STMemoryBooks_SidePrompt_PlaceholderPrompt')),
             responseFormat: String(p.responseFormat || ''),
+            ...(p.relationshipPromptVersion === 1 ? { relationshipPromptVersion: 1 } : {}),
             settings: { ...(p.settings || {}) },
             triggers: p.triggers ? { ...p.triggers } : { commands: ['sideprompt'] },
             createdAt: p.createdAt || ts,
