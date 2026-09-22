@@ -12,16 +12,17 @@ const baseTemplate = () => ({ key: 'status', name: 'Status', enabled: true, prom
     settings: { previousMemoriesCount: 0, lorebook: { orderValue: 42 } }, triggers: { commands: ['sideprompt'], onAfterMemory: { enabled: true } } });
 const baseDoc = () => ({ version: 2, prompts: { status: baseTemplate() }, sets: { duo: { key: 'duo', name: 'Duo', items: [{ id: 'first', promptKey: 'status' }] } } });
 
-async function managerHarness(initial = baseDoc(), { failWrite = 0, withoutCrypto = false } = {}) {
+async function managerHarness(initial = baseDoc(), { failWrite = 0, withoutCrypto = false, withoutToastr = false } = {}) {
     let saved = initial && structuredClone(initial);
     const writes = [];
     const warnings = [];
     const notices = [];
+    const toastApi = { info: text => notices.push(text), warning: text => warnings.push(text) };
     const module = await loadExtensionModule('sidePromptsManager.js', {
         values: { getRequestHeaders: () => ({}), FILE_NAMES: { SIDE_PROMPTS_FILE: 'stmb-side-prompts.json' }, SCHEMA: { CURRENT_VERSION: 1 },
             translate: identityTranslate, t: (strings, ...args) => strings.reduce((s, part, i) => s + part + (args[i] ?? ''), ''),
             substituteParamsExtended: substituteTestMacros, CLIP_REVIEW_TEMPLATE_KEY: 'clip-review', DEFAULT_CLIP_REVIEW_PROMPT: 'Review facts.', DEFAULT_CLIP_SUGGESTIONS_PROMPT: 'Find missing facts.' },
-        globals: { crypto: withoutCrypto ? undefined : crypto, toastr: { info: text => notices.push(text), warning: text => warnings.push(text) }, fetch: async (url, options = {}) => {
+        globals: { crypto: withoutCrypto ? undefined : crypto, toastr: withoutToastr ? undefined : toastApi, fetch: async (url, options = {}) => {
             if (options.method === 'GET') return { ok: !!saved, text: async () => JSON.stringify(saved) };
             const body = JSON.parse(options.body);
             const value = JSON.parse(Buffer.from(body.data, 'base64').toString('utf8'));
@@ -31,7 +32,7 @@ async function managerHarness(initial = baseDoc(), { failWrite = 0, withoutCrypt
             return { ok: true };
         } },
     });
-    return { module, writes, warnings, notices, saved: () => saved };
+    return { module, writes, warnings, notices, toastApi, saved: () => saved };
 }
 
 test('manager migrates saved defaults, preserves identity/settings, and reloads without another backup', async () => {
@@ -155,6 +156,28 @@ test('manager preserves customized legacy wording with a visible review notifica
     const loaded = await f.module.loadSidePrompts();
     assert.equal(loaded.prompts.status.prompt, doc.prompts.status.prompt);
     assert.equal(f.warnings.length, 1);
+});
+
+test('review notification tolerates unavailable toasts and warns once when the handler becomes available', async () => {
+    const doc = baseDoc();
+    doc.prompts.status.prompt = 'My custom !lovefactor instructions.';
+    doc.prompts.status.responseFormat = 'My custom report format.';
+    const absent = await managerHarness(doc, { withoutToastr: true });
+    await absent.module.loadSidePrompts();
+    assert.equal((await absent.module.getTemplate('status')).prompt, doc.prompts.status.prompt);
+
+    const delayed = await managerHarness(doc);
+    const showWarning = delayed.toastApi.warning;
+    delete delayed.toastApi.warning;
+    await delayed.module.loadSidePrompts();
+    assert.equal(delayed.warnings.length, 0);
+    delayed.toastApi.warning = showWarning;
+    await delayed.module.upsertTemplate({ key: 'status', enabled: true });
+    assert.equal(delayed.warnings.length, 1, 'An unavailable handler must not consume the warning');
+    await delayed.module.upsertTemplate({ key: 'status', enabled: true });
+    assert.equal(delayed.warnings.length, 1, 'A displayed warning remains deduplicated');
+    assert.equal(delayed.saved().prompts.status.prompt, doc.prompts.status.prompt);
+    assert.equal(delayed.saved().prompts.status.responseFormat, doc.prompts.status.responseFormat);
 });
 
 async function pipelineHarness() {

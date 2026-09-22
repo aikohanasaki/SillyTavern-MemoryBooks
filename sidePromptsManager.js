@@ -477,8 +477,9 @@ function notifyRelationshipReview(doc) {
         .filter(([key, tpl]) => needsRelationshipPromptReview(tpl) && !relationshipReviewNotified.has(key))
         .map(([key]) => key);
     if (!keys.length) return;
+    if (typeof globalThis.toastr?.warning !== 'function') return;
+    globalThis.toastr.warning(translate('Review custom relationship instructions in Side Prompts.', 'STMemoryBooks_RelationshipReviewNeeded'), 'STMemoryBooks');
     keys.forEach(key => relationshipReviewNotified.add(key));
-    globalThis.toastr?.warning(translate('Review custom relationship instructions in Side Prompts.', 'STMemoryBooks_RelationshipReviewNeeded'), 'STMemoryBooks');
 }
 
 async function saveDoc(doc, options = {}) {
