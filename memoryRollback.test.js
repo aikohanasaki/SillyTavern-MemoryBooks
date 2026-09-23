@@ -14,6 +14,7 @@ import {
     createMessageDeletionTracker,
     fingerprintRollbackEntry,
     planSidePromptRestorations,
+    reconcileSidePromptHistoryStates,
     validateAndExpandLinkedRollbackSelections,
 } from './memoryRollback.js';
 
@@ -227,6 +228,22 @@ test('affected-only rollback reindexes later Memories, Side Prompt checkpoints, 
     assert.equal(computeRollbackCheckpoint([{ name: 'Book', data: lorebook }], 'chat-a'), 27);
 });
 
+test('child chat rollback selects only Memories extending past its retained message boundary', () => {
+    const lorebook = { entries: {
+        1: memory(1, 0, 9, { STMB_chatId: 'child' }),
+        2: memory(2, 8, 12, { STMB_chatId: 'child' }),
+        3: memory(3, 10, 19, { STMB_chatId: 'child' }),
+        4: memory(4, 8, 9, { STMB_chatId: 'child' }),
+    } };
+    const result = collectRollbackMemories(lorebook, {
+        chatId: 'child',
+        deletion: { start: 10, end: Number.MAX_SAFE_INTEGER },
+        scope: ROLLBACK_SCOPE_AFFECTED,
+    });
+    assert.deepEqual(result.selected.map(item => item.uid), ['3', '2']);
+    assert.equal(result.selected.some(item => item.uid === '1' || item.uid === '4'), false);
+});
+
 test('version-2 Side Prompt rollback restores or deletes once and protects changed entries', () => {
     const prior = { uid: 5, comment: 'Tracker', content: 'Before', key: ['old'], order: 100 };
     const current = { uid: 5, comment: 'Tracker', content: 'After', key: ['new'], order: 200 };
@@ -272,4 +289,31 @@ test('version-2 Side Prompt rollback restores or deletes once and protects chang
     });
     assert.equal(applySidePromptRestoration(lorebook, changedPlan.restorable[0]).reason, 'entry-changed');
     assert.equal(lorebook.entries[5].content, 'User edit');
+});
+
+test('rollback reconciliation enables the newest version and groups renamed name streams together', () => {
+    const makeVersion = (sequence, titleSource = 'name', titleBase = 'Prompt') => ({
+        comment: `${titleBase}-${sequence}`,
+        disable: sequence === 2,
+        STMB_sidePromptHistory: {
+            version: 1, templateKey: 'prompt', chatKey: '["character","avatar","chat"]',
+            titleSource, titleBase, sequence,
+        },
+    });
+    const older = makeVersion(1);
+    const newest = makeVersion(2, 'name', 'Renamed Prompt');
+    const separateOverride = makeVersion(1, 'override', 'Alice');
+    const book = { entries: { 1: older, 2: newest, 3: separateOverride } };
+    reconcileSidePromptHistoryStates(book);
+    assert.equal(older.disable, true);
+    assert.equal(newest.disable, false);
+    assert.equal(separateOverride.disable, false);
+
+    const duplicate = makeVersion(2);
+    const corruptBook = { entries: { 1: older, 2: newest, 4: duplicate } };
+    older.disable = false;
+    newest.disable = true;
+    reconcileSidePromptHistoryStates(corruptBook);
+    assert.equal(older.disable, false);
+    assert.equal(newest.disable, true);
 });

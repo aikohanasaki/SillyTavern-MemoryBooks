@@ -906,6 +906,10 @@ async function openEditTemplate(parentPopup, key) {
                 </label>
             </div>
             <div class="world_entry_form_control">
+                <label class="checkbox_label"><input type="checkbox" id="stmb-sp-edit-save-all-versions" ${s.saveAllVersions === true ? 'checked' : ''}> <span>${escapeHtml(translate('Save all versions', 'STMemoryBooks_SaveAllSidePromptVersions'))}</span></label>
+                <small class="opacity70p">${escapeHtml(translate('Requires Enable sideprompt versioning in the Side Prompt Manager. Older versions are kept disabled.', 'STMemoryBooks_SidePromptVersioningTemplateHelp'))}</small>
+            </div>
+            <div class="world_entry_form_control">
                 <h4>${escapeHtml(translate('Triggers:', 'STMemoryBooks_Triggers'))}</h4>
                 <label class="checkbox_label">
                     <input type="checkbox" id="stmb-sp-edit-trg-interval" ${intervalEnabled ? 'checked' : ''}>
@@ -1144,6 +1148,7 @@ async function openEditTemplate(parentPopup, key) {
 
             // Overrides in settings
             const settings = { ...(tpl.settings || {}) };
+            settings.saveAllVersions = !!dlg.querySelector('#stmb-sp-edit-save-all-versions')?.checked;
             const overrideEnabled2 = !!dlg.querySelector('#stmb-sp-edit-override-enabled')?.checked;
             settings.overrideProfileEnabled = overrideEnabled2;
             if (overrideEnabled2) {
@@ -1247,6 +1252,10 @@ async function openNewTemplate(parentPopup) {
                 <input type="checkbox" id="stmb-sp-new-enabled">
                 <span>${escapeHtml(translate('Enabled', 'STMemoryBooks_Enabled'))}</span>
             </label>
+        </div>
+        <div class="world_entry_form_control">
+            <label class="checkbox_label"><input type="checkbox" id="stmb-sp-new-save-all-versions"> <span>${escapeHtml(translate('Save all versions', 'STMemoryBooks_SaveAllSidePromptVersions'))}</span></label>
+            <small class="opacity70p">${escapeHtml(translate('Requires Enable sideprompt versioning in the Side Prompt Manager. Older versions are kept disabled.', 'STMemoryBooks_SidePromptVersioningTemplateHelp'))}</small>
         </div>
         <div class="world_entry_form_control">
             <h4>${escapeHtml(translate('Triggers:', 'STMemoryBooks_Triggers'))}</h4>
@@ -1488,6 +1497,7 @@ async function openNewTemplate(parentPopup) {
 
         // Settings - overrides
         const settings = {};
+        settings.saveAllVersions = !!dlg.querySelector('#stmb-sp-new-save-all-versions')?.checked;
         const overrideEnabled = !!dlg.querySelector('#stmb-sp-new-override-enabled')?.checked;
         settings.overrideProfileEnabled = overrideEnabled;
         if (overrideEnabled) {
@@ -1613,6 +1623,8 @@ export async function showSidePromptsPopup() {
 
         content += '<div id="stmb-sp-set-controls"></div>';
 
+        content += `<div class="world_entry_form_control"><label class="checkbox_label"><input type="checkbox" id="stmb-sp-versioning-enabled" ${extension_settings?.STMemoryBooks?.moduleSettings?.sidePromptVersioningEnabled === true ? 'checked' : ''}> <span>${escapeHtml(translate('Enable sideprompt versioning', 'STMemoryBooks_EnableSidePromptVersioning'))}</span></label><small class="opacity70p">${escapeHtml(translate('Check this box to enable individual sideprompt versioning settings. If this box is unchecked, no new versions will be created; existing version history is retained and the latest output is updated.', 'STMemoryBooks_SidePromptVersioningHelp'))}</small></div>`;
+
         // Search/filter box
         content += '<div class="world_entry_form_control">';
         content += '<input type="text" id="stmb-sp-search" class="text_pole" data-i18n="[placeholder]STMemoryBooks_SearchSidePrompts;[aria-label]STMemoryBooks_SearchSidePrompts" placeholder="Search side prompts..." aria-label="Search side prompts" />';
@@ -1655,6 +1667,12 @@ export async function showSidePromptsPopup() {
 
             // Max concurrent control
             const spMaxInput = dlg.querySelector('#stmb-sp-max-concurrent');
+            dlg.querySelector('#stmb-sp-versioning-enabled')?.addEventListener('change', (event) => {
+                if (!extension_settings.STMemoryBooks) extension_settings.STMemoryBooks = { moduleSettings: {} };
+                if (!extension_settings.STMemoryBooks.moduleSettings) extension_settings.STMemoryBooks.moduleSettings = {};
+                extension_settings.STMemoryBooks.moduleSettings.sidePromptVersioningEnabled = event.target.checked;
+                saveSettingsDebounced();
+            });
             if (spMaxInput) {
                 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
                 const current = clamp(Number(extension_settings?.STMemoryBooks?.moduleSettings?.sidePromptsMaxConcurrent ?? 2), 1, 10);

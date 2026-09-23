@@ -8,6 +8,7 @@ import {
     loadWorldInfo,
     createWorldInfoEntry,
     saveWorldInfo,
+    worldInfoCache,
     reloadEditor,
     newWorldInfoEntryTemplate,
 } from '../../../world-info.js';
@@ -20,8 +21,52 @@ import {
     applyFixedSequenceNumber,
     hasSequenceNumberPlaceholder,
 } from './memoryRegeneration.js';
+import { getRequestHeaders, eventSource, event_types } from '../../../../script.js';
+import { SIDE_PROMPT_HISTORY_KEY, formatSidePromptVersionTitle, resolveSidePromptHistory, validateSidePromptHistoryRequest } from './sidePromptHistory.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
+
+/** Save a staged side-prompt update and publish it only after SillyTavern accepts it. */
+async function saveSidePromptLorebookChecked(name, data) {
+    const response = await fetch('/api/worldinfo/edit', {
+        method: 'POST', headers: getRequestHeaders(), body: JSON.stringify({ name, data }),
+    });
+    if (!response.ok) throw new Error(`Failed to save lorebook: ${response.status} ${response.statusText}`);
+    worldInfoCache.set(name, data);
+    await eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
+}
+
+function applySidePromptHistory(data, title, history, entry, createEntry) {
+    validateSidePromptHistoryRequest(history);
+    const resolved = resolveSidePromptHistory(data, history);
+    const group = resolved.versions[0]?.group || history.group;
+    const stamp = (target, sequence) => {
+        target[SIDE_PROMPT_HISTORY_KEY] = { version: 1, templateKey: history.templateKey, chatKey: history.chatKey,
+            chatId: history.chatId, titleBase: history.titleBase, titleSource: history.titleSource, sequence };
+        target.group = group;
+    };
+    if (history.append) {
+        let sequence = resolved.latest?.[SIDE_PROMPT_HISTORY_KEY]?.sequence || 0;
+        if (resolved.legacy) { stamp(resolved.legacy, 1); resolved.legacy.comment = formatSidePromptVersionTitle(history.titleBase, 1); resolved.legacy.disable = true; sequence = 1; }
+        if (!Number.isSafeInteger(sequence + 1) || sequence + 1 < 1) throw new Error('Invalid side-prompt version sequence.');
+        for (const old of resolved.versions) { old.disable = true; old.group = group; }
+        const next = createEntry();
+        if (!next) throw new Error(i18n('addlore.upsert.errors.createFailed', 'Failed to create lorebook entry'));
+        stamp(next, sequence + 1); next.comment = formatSidePromptVersionTitle(history.titleBase, sequence + 1); next.disable = false;
+        return { entry: next, created: true };
+    }
+    const latest = resolved.latest;
+    if (latest) {
+        const priorEntry = structuredClone(latest);
+        latest.group = group;
+        for (const old of resolved.versions) { old.group = group; old.disable = old !== latest; }
+        return { entry: latest, created: false, priorEntry };
+    }
+    const next = createEntry();
+    if (!next) throw new Error(i18n('addlore.upsert.errors.createFailed', 'Failed to create lorebook entry'));
+    next.comment = title;
+    return { entry: next, created: true };
+}
 
 /**
  * Parse scene range from metadata string format "start-end"
@@ -1266,6 +1311,8 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
         throw new Error(i18n('addlore.upsert.errors.invalidArgs', 'Invalid arguments to upsertLorebookEntriesBatch'));
     }
 
+    if (items.some(item => item?.sidePromptHistory)) lorebookData = structuredClone(lorebookData);
+
     const results = [];
 
     for (const it of items) {
@@ -1276,10 +1323,22 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
         const defaults = it.defaults || {};
         const metadataUpdates = it.metadataUpdates || {};
         const entryOverrides = it.entryOverrides || {};
+        const sidePromptHistory = it.sidePromptHistory || null;
+        if (sidePromptHistory && !content.trim()) throw new Error('Side-prompt history cannot save blank content.');
 
-        let entry = getEntryByTitle(lorebookData, title);
-        const priorEntry = entry ? structuredClone(entry) : null;
-        let created = false;
+        let entry = sidePromptHistory ? null : getEntryByTitle(lorebookData, title);
+        let historyCreated = false;
+        let historyPriorEntry = undefined;
+        if (sidePromptHistory) {
+            const resolved = applySidePromptHistory(lorebookData, title, sidePromptHistory, entry, () => createWorldInfoEntry(lorebookName, lorebookData));
+            entry = resolved.entry;
+            historyCreated = resolved.created;
+            historyPriorEntry = resolved.priorEntry;
+        }
+        const protectedHistory = sidePromptHistory ? structuredClone(entry[SIDE_PROMPT_HISTORY_KEY] || null) : null;
+        const protectedGroup = sidePromptHistory ? (entry.group || sidePromptHistory.group) : null;
+        const priorEntry = historyCreated ? null : (historyPriorEntry || (entry ? structuredClone(entry) : null));
+        let created = historyCreated;
 
         if (!entry) {
             entry = createWorldInfoEntry(lorebookName, lorebookData);
@@ -1295,6 +1354,12 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
             entry.disable = false;
             created = true;
         }
+        if (historyCreated) {
+            entry.vectorized = !!defaults.vectorized;
+            entry.selective = !!defaults.selective;
+            if (typeof defaults.order === 'number') entry.order = defaults.order;
+            if (typeof defaults.position === 'number') entry.position = defaults.position;
+        }
 
         // Normalize expected fields for both new and existing entries
         entry.key = Array.isArray(entry.key) ? entry.key : [];
@@ -1302,7 +1367,7 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
         if (typeof entry.disable !== 'boolean') entry.disable = false;
 
         // Update core fields
-        entry.comment = title;
+        if (!sidePromptHistory) entry.comment = title;
         entry.content = content;
 
         // Apply metadata updates
@@ -1322,11 +1387,19 @@ export async function upsertLorebookEntriesBatch(lorebookName, lorebookData, ite
             }
         }
 
+        if (sidePromptHistory && protectedHistory) {
+            entry[SIDE_PROMPT_HISTORY_KEY] = protectedHistory;
+            entry.comment = formatSidePromptVersionTitle(sidePromptHistory.titleBase, protectedHistory.sequence);
+            entry.group = protectedGroup;
+            entry.disable = false;
+        }
+
         results.push({ title, uid: entry.uid, created });
     }
 
     // Single save for the whole batch
-    await saveWorldInfo(lorebookName, lorebookData, true);
+    if (items.some(item => item?.sidePromptHistory)) await saveSidePromptLorebookChecked(lorebookName, lorebookData);
+    else await saveWorldInfo(lorebookName, lorebookData, true);
 
     if (refreshEditor) {
         await Promise.resolve(reloadEditor(lorebookName));
@@ -1364,15 +1437,31 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
         refreshEditor = true,
         entryOverrides = {},
         metadataFactory = null,
+        sidePromptHistory = null,
     } = options;
 
     if (!lorebookName || !lorebookData || !title) {
         throw new Error(i18n('addlore.upsert.errors.invalidArgs', 'Invalid arguments to upsertLorebookEntryByTitle'));
     }
 
-    let entry = getEntryByTitle(lorebookData, title);
-    const priorEntry = entry ? structuredClone(entry) : null;
-    let created = false;
+    if (sidePromptHistory) {
+        if (!String(content ?? '').trim()) throw new Error('Side-prompt history cannot save blank content.');
+        lorebookData = structuredClone(lorebookData);
+    }
+
+    let entry = sidePromptHistory ? null : getEntryByTitle(lorebookData, title);
+    let historyCreated = false;
+    let historyPriorEntry = undefined;
+    if (sidePromptHistory) {
+        const resolved = applySidePromptHistory(lorebookData, title, sidePromptHistory, entry, () => createWorldInfoEntry(lorebookName, lorebookData));
+        entry = resolved.entry;
+        historyCreated = resolved.created;
+        historyPriorEntry = resolved.priorEntry;
+    }
+    const protectedHistory = sidePromptHistory ? structuredClone(entry[SIDE_PROMPT_HISTORY_KEY] || null) : null;
+    const protectedGroup = sidePromptHistory ? (entry.group || sidePromptHistory.group) : null;
+    const priorEntry = historyCreated ? null : (historyPriorEntry || (entry ? structuredClone(entry) : null));
+    let created = historyCreated;
 
     if (!entry) {
         entry = createWorldInfoEntry(lorebookName, lorebookData);
@@ -1391,9 +1480,15 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
 
         created = true;
     }
+    if (historyCreated) {
+        entry.vectorized = !!defaults.vectorized;
+        entry.selective = !!defaults.selective;
+        if (typeof defaults.order === 'number') entry.order = defaults.order;
+        if (typeof defaults.position === 'number') entry.position = defaults.position;
+    }
 
     // Update core fields
-    entry.comment = title;
+    if (!sidePromptHistory) entry.comment = title;
     entry.content = content != null ? String(content) : '';
 
     // Apply metadata updates
@@ -1413,7 +1508,15 @@ export async function upsertLorebookEntryByTitle(lorebookName, lorebookData, tit
         }
     }
 
-    await saveWorldInfo(lorebookName, lorebookData, true);
+    if (sidePromptHistory && protectedHistory) {
+        entry[SIDE_PROMPT_HISTORY_KEY] = protectedHistory;
+        entry.comment = formatSidePromptVersionTitle(sidePromptHistory.titleBase, protectedHistory.sequence);
+        entry.group = protectedGroup;
+        entry.disable = false;
+    }
+
+    if (sidePromptHistory) await saveSidePromptLorebookChecked(lorebookName, lorebookData);
+    else await saveWorldInfo(lorebookName, lorebookData, true);
     if (refreshEditor) {
         await Promise.resolve(reloadEditor(lorebookName));
     }

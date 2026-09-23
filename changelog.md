@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.0 (September 23, 2026)
+- Add Side Prompt versioning.
+
 ## v9.2.3 (September 16, 2026)
 - Fix Topical Clip keyword fill.
 

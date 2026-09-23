@@ -273,6 +273,11 @@ export const generalSettingsTemplate = Handlebars.compile(`
                     <input type="checkbox" id="stmb-auto-rollback-restore-side-prompts" {{#if autoRollbackRestorePreviousSidePrompts}}checked{{/if}} {{#unless autoRollbackEnabled}}disabled{{/unless}}>
                     <span data-i18n="STMemoryBooks_AutoRollbackRestoreSidePrompts">Restore previous Side Prompts</span>
                 </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" id="stmb-auto-rollback-branches" {{#if autoRollbackApplyToBranches}}checked{{/if}} {{#unless autoRollbackEnabled}}disabled{{/unless}}>
+                    <span data-i18n="STMemoryBooks_AutoRollbackBranches">Apply auto-rollback to branches/checkpoints</span>
+                </label>
+                <small class="opacity50p" data-i18n="STMemoryBooks_AutoRollbackBranchesDesc">When a branch or checkpoint is opened, roll back Memories beyond its retained messages. This requires independent Memory Book copies.</small>
                 <small class="warning" data-i18n="STMemoryBooks_AutoRollbackSidePromptLimit">Side Prompts can be rolled back only once, to their latest exact saved state. Older rollback layers are not retained.</small>
             </div>
         </div>

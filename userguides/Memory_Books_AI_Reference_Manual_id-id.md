@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 # Memory Books: Manual Referensi AI Lengkap
 
 **Produk:** SillyTavern Memory Books (STMB)  
-**Versi referensi:** v8.5.0, 1 Agustus 2026  
+**Versi referensi:** v8.5.0 dengan versioning Side Prompt terintegrasi Aikobots  
 **Tujuan:** Satu sumber kebenaran yang padat untuk asisten AI yang mengajar, menjelaskan, dan memecahkan masalah Memory Books.
 
 ---
@@ -166,7 +166,7 @@ Menyembunyikan processed messages tidak menghapusnya. Ini mencegah pesan tersebu
 - **Clip vs Topical Clip:** Clip dimulai dari teks yang disorot dalam chat saat ini. Topical Clip dimulai dari STMB Memories yang sudah dikonfirmasi.
 - **Topical Clip vs Side Prompt:** Topical Clip dijalankan manual untuk mengumpulkan satu topik. Side Prompt dapat memelihara tracker yang berubah secara berulang.
 - **Compaction vs Consolidation:** Compaction menulis ulang satu entri. Consolidation membuat summary tier lebih tinggi dari beberapa entri.
-- **Memory vs Side Prompt:** Memories biasanya merupakan catatan scene berurutan. Side Prompts biasanya memperbarui atau menimpa satu dokumen pendukung yang berlanjut.
+- **Memory vs Side Prompt:** Memories biasanya merupakan catatan scene berurutan. Side Prompt biasanya memelihara satu dokumen pendukung yang berkelanjutan, tetapi optional Side Prompt version history dapat menyimpan setiap run yang berhasil sebagai entri lorebook bernomor.
 - **Generation vs retrieval:** Membuat entri tidak menjamin SillyTavern akan mengaktifkannya kemudian.
 
 ---
@@ -671,6 +671,22 @@ SillyTavern mencatat card mana yang menulis setiap message, sehingga STMB dapat 
 
 Tidak diperlukan switch Group Chat Mode terpisah. Buka group chat dan gunakan STMB seperti biasa.
 
+
+**General Settings → Group Chat** memiliki dua kontrol independen, dan keduanya dicentang secara default:
+
+| Setting | Dicentang | Tidak dicentang |
+|---|---|---|
+| **character-aware memories** | Mengaktifkan memory filter berbasis participant dan character-specific memory processing yang dikonfigurasi. | Menggunakan normal single-book processing untuk Memory baru, regeneration, dan consolidation. Tidak ada participant confirmation, character filters, character-book copies, linked regeneration, character-based consolidation streams, atau automatic group/character prompt routing. |
+| **Use separate group side prompts** | Automatic Side Prompt mewarisi group default. | Automatic Side Prompt mewarisi solo default. |
+
+Checkbox memory tidak memengaruhi checkbox side-prompt. Default routing Side Prompt berlaku untuk after-memory dan interval triggers; explicit per-chat set selections atau individually enabled prompts tetap memiliki prioritas, dan manual runs tetap tersedia.
+
+Saat **character-aware memories** dimatikan, **Automatically accept detected participants in future**, assignment **Group Character Lorebooks**, **Use separate group and character prompts in group chats**, serta selector **Group Summary Prompt / Character Summary Prompt** tetap terlihat tetapi digray-out. Tooltip menjelaskan bahwa kontrol tersebut disabled dan tidak diterapkan karena checkbox di General Settings tidak dicentang. Saat **Use separate group side prompts** dimatikan, hanya selector default group Side Prompt yang digray-out karena alasan tersebut. Pilihan yang tersimpan tetap dipertahankan dan dikembalikan saat fitur diaktifkan lagi.
+
+Switch ini tidak memigrasikan entri yang sudah ada atau konfigurasi STLO. Filter yang sudah ada tetap berlaku sampai entri diregenerate secara eksplisit; regeneration dengan **character-aware memories** off menghapus character filter entri tersebut tanpa menulis ulang linked copies-nya. Entri consolidation baru tidak memiliki filter, sementara source entries mempertahankan filternya. Operasi yang sudah dimulai, termasuk queued jobs dan retries, mempertahankan setting yang sudah dicapture. Native group identity, speaker names, dan primary Memory Book selection tetap utuh. Narrator Mode independen dari native-group controls ini.
+
+Perilaku character-aware yang dijelaskan di bawah berlaku selama **character-aware memories** dicentang.
+
 ### 11.2 Participant detection
 
 Detected participant biasanya adalah character card yang menulis setidaknya satu message di dalam selected scene.
@@ -716,10 +732,9 @@ Layout real-group lanjutan memakai:
 Persyaratan:
 
 - Manual Lorebook Mode;
-- SillyTavern-LorebookOrdering (STLO) terpasang dan enabled;
 - assignment valid untuk setiap group member yang diwajibkan.
 
-Canonical group book tidak boleh sekaligus menjadi character book. Lebih dari satu karakter boleh berbagi character book yang sama; STMB menulis satu copy ke shared book tersebut, bukan duplikat per karakter.
+Canonical group book juga dapat dipilih sebagai character book. STMB menyimpan canonical group entry dan linked character copy sebagai entri terpisah di book tersebut. Character copy difilter ke character yang ditetapkan dan memiliki prioritas atas canonical version pada giliran character tersebut. Lebih dari satu character dapat berbagi character book yang sama; STMB menulis satu shared copy alih-alih duplikat.
 
 Saat Memory disimpan:
 
@@ -749,7 +764,7 @@ Character-focused version dapat mempertahankan:
 
 Ini memerlukan AI requests tambahan. Shared character book menerima satu shared copy, bukan duplicate untuk setiap assigned character.
 
-### 11.6 Tanggung jawab STLO
+### 11.6 Optional STLO integration
 
 Memory Books menentukan:
 
@@ -759,13 +774,13 @@ Memory Books menentukan:
 - books mana yang menerima copies;
 - apakah individualized prompts digunakan.
 
-STLO menentukan:
+Jika terpasang, STLO juga menentukan:
 
 - kapan lorebook aktif;
 - character mana yang dapat mengaktifkannya;
 - priority, position, budget, dan ordering.
 
-Saat STMB menetapkan character book, ia menambahkan avatar basename karakter ke `stlo.characterOverrides` dan mengaktifkan `stlo.onlyWhenSpeaking`, sambil mempertahankan STLO priorities, budgets, dan overrides yang sudah ada.
+STLO tidak diperlukan untuk real group chat. STMB menginjeksikan assigned book milik native group member yang sedang berbicara ke generation tersebut dan menggunakan native entry-level character filters. Jika STLO tersedia dan STMB menetapkan separate character book, STMB juga menambahkan avatar basename character ke `stlo.characterOverrides` dan mengaktifkan `stlo.onlyWhenSpeaking`, sambil mempertahankan STLO priorities, budgets, dan overrides yang sudah ada. STMB tidak menerapkan lorebook-wide STLO speaking filter jika character assignment adalah canonical group book.
 
 STMB memakai merge-only behavior. Menghapus atau mengganti assignment tidak otomatis menghapus STLO character override lama. Hapus obsolete overrides secara manual di STLO.
 
@@ -850,7 +865,7 @@ Aturan:
 - retired members mempertahankan identity dan reserved book assignment sampai direstore atau ditangani lain oleh implementasi;
 - Auto-Create tidak kompatibel karena Narrator Mode bergantung pada Manual Lorebook Mode.
 
-Berbeda dari advanced real-group layout, Narrator Mode tidak memerlukan STLO untuk active-character retrieval. STMB menyuntikkan books milik selected cast members ke active lorebook context selama generation.
+Seperti advanced real-group layout, Narrator Mode tidak memerlukan STLO untuk active-character retrieval. STMB menginjeksikan book milik selected cast members ke active lorebook context selama generation.
 
 ### 12.3 Setup
 
@@ -860,7 +875,8 @@ Berbeda dari advanced real-group layout, Narrator Mode tidak memerlukan STLO unt
 4. Aktifkan **Narrator Mode**.
 5. Buka **Manage Narrator Cast**.
 6. Tambahkan setiap fictional character berdasarkan nama dan assign unique Memory Book.
-7. Gunakan floating **Active Cast** drawer untuk memilih karakter yang hadir dalam pertukaran berikutnya.
+7. Gunakan **Edit** di samping cast member yang sudah ada untuk memperbaiki character name atau mengganti Memory Book yang ditetapkan.
+8. Gunakan floating **Active Cast** drawer untuk memilih character yang hadir pada exchange berikutnya.
 
 Narrator Mode harus dinonaktifkan sebelum Manual Lorebook Mode dapat dinonaktifkan.
 
@@ -927,6 +943,8 @@ Cast manager dapat menandai member sebagai retired dan memulihkannya kemudian. R
 - mempertahankan book reservation sehingga book tidak dipakai ulang secara tidak sengaja dan menggabungkan identity.
 
 Gunakan retirement untuk karakter yang meninggalkan active cast tetapi historical Memory identity-nya harus tetap utuh.
+
+Mengedit character name atau Memory Book milik cast member mempertahankan stable identity dan retired state milik member tersebut. Nama yang dikoreksi digunakan di mana pun member itu ditampilkan dan pada output Memory berikutnya. Book assignment baru mengontrol future retrieval dan Memory writes; entri yang sudah ditulis ke book sebelumnya tidak dipindahkan.
 
 ---
 
@@ -1140,7 +1158,7 @@ Gunakan Reset to Default jika custom prompt berhenti menghasilkan output berguna
 
 ## 16. Prompt Sampingan
 
-Side Prompt atau **Prompt Sampingan** adalah prompt STMB bernama yang berjalan terpisah dari normal character reply. Biasanya ia membuat atau memperbarui satu continuing support entry, bukan scene Memory berurutan lainnya.
+Side Prompt adalah named STMB prompt yang berjalan terpisah dari normal character reply. Secara default, Side Prompt membuat atau memperbarui satu continuing support entry alih-alih scene Memory berurutan lainnya. Di Aikobots, optional Side Prompt version history dapat menyimpan setiap successful run sebagai entri lorebook bernomor sambil mempertahankan versi terbaru sebagai current output.
 
 Di daftar **Trackers & Side Prompts**, power icon langsung mengubah flag **Enabled** untuk seluruh prompt: hijau berarti enabled dan redup berarti disabled. Kontrol ini tidak menambah, menghapus, atau mengubah configured triggers milik prompt.
 
@@ -1375,7 +1393,46 @@ Title dan keyword fields dapat meng-expand applicable macros. **Ignore Budget** 
 
 Side Prompt dapat mewarisi normal Memory Books connection resolution atau bind specific STMB profile. Override berguna untuk model lebih murah atau yang lebih baik pada structured maintenance. Terlalu banyak kombinasi profile menyulitkan troubleshooting.
 
-### 16.16 Side Prompt regeneration
+### 16.16 Side Prompt version history
+
+Side Prompt biasanya memperbarui satu continuing output. Di Aikobots, Anda dapat menyimpan setiap successful run sebagai entri lorebook bernomor.
+
+#### Mengaktifkan version history
+
+1. Buka **Memory Books → Trackers & Side Prompts** lalu centang **Enable sideprompt versioning**. Setting ini berlaku untuk akun Anda di semua chat.
+2. Edit Side Prompt, centang **Save all versions**, lalu simpan. Pilih ini secara terpisah untuk setiap prompt yang history-nya ingin Anda simpan.
+
+Kedua checkbox default-nya off. Account setting menentukan apakah preference setiap prompt digunakan; mematikannya tidak menghapus preference tersebut. Side Prompt yang diekspor, diimpor, dan diduplikasi tetap mempertahankan setting **Save all versions**.
+
+#### Apa yang disimpan
+
+Jika kedua setting aktif, successful manual, automatic, dan Side Prompt Set runs akan menambahkan entri bernomor seperti:
+
+| Entri | Status |
+|---|---|
+| `Assess-001 (STMB SidePrompt)` | Disabled, retained |
+| `Assess-002 (STMB SidePrompt)` | Disabled, retained |
+| `Assess-003 (STMB SidePrompt)` | Enabled, current output |
+
+Title menggunakan entry-title override prompt jika dikonfigurasi, jika tidak menggunakan namanya. Nomor memiliki setidaknya tiga digit dan terus berjalan melewati 999. Setiap version mempertahankan configured insertion order; version lama dibuat disabled alih-alih diberi order berbeda.
+
+Version berbagi inclusion group yang namanya berasal dari Side Prompt dan chat, misalnya `Assess-MyChat`. Semua whitespace dihapus dan koma menjadi hyphen. Group tetap bersama ketika display name prompt berubah. Resolved title overrides yang berbeda, misalnya nama berbeda yang diberikan melalui macros, mempertahankan version sequence masing-masing.
+
+Jika output sudah ada saat versioning pertama kali digunakan, output itu menjadi version 001 dan successful output berikutnya menjadi 002. Jika belum ada output, successful run pertama membuat 001. Run yang canceled, rejected, blank, atau failed tidak mengarsipkan atau mengganti output yang sudah ada. Jika legacy entries tidak dapat dicocokkan secara tidak ambigu, saving berhenti alih-alih menebak entri mana yang harus diubah.
+
+#### Mematikan versioning
+
+Hilangkan centang pada salah satu checkbox. Run berikutnya memperbarui latest output in place dan mempertahankan older disabled entries. Side Prompt yang belum pernah menggunakan versioning terus memperbarui ordinary unnumbered output. Mengaktifkan kembali kedua checkbox melanjutkan penambahan version.
+
+Setiap normal run menggunakan latest output untuk prior context dan checkpoint selection, termasuk saat versioning off. Saved history terkait dengan prompt, chat reference, dan target lorebook. Mengubah chat filename/ID atau memilih target lorebook lain memulai history terpisah; mengganti display name prompt tidak.
+
+#### Regeneration dan rollback dengan version history
+
+**Regenerate** hanya mengganti content milik selected version. Ini tidak menambahkan version, tidak mereset nomor entry, dan tidak mengaktifkan older disabled entry.
+
+Jika automatic rollback untuk ordinary book aktif, rollback menggunakan saved restoration snapshots yang sudah ada. Rollback memulihkan atau menghapus affected versions dan mengaktifkan newest surviving version. Manual edits yang membuat snapshot invalid tetap menghentikan automatic rollback untuk review.
+
+### 16.17 Side Prompt regeneration
 
 Compatible saves kini menyimpan version-2 snapshot berisi:
 
@@ -1390,7 +1447,7 @@ Untuk regenerate, buka lorebook editor dan klik **Regenerate side prompt**. Repl
 
 Regeneration tidak dapat selesai jika template dihapus, source chat/range tidak tersedia, atau target/source berubah selama generation. Hanya content yang diganti; existing title, keywords, dan entry settings tetap. Legacy version-1 snapshots masih mendukung regeneration, tetapi tidak dapat dipakai oleh Memory Auto-Rollback.
 
-### 16.17 Menulis Side Prompt yang baik
+### 16.18 Menulis Side Prompt yang baik
 
 Side Prompt yang baik menentukan:
 
@@ -1419,7 +1476,7 @@ Keep the entire output under 300 words.
 
 Stable headings mengurangi drift pada repeated updates.
 
-### 16.18 Side Prompt troubleshooting
+### 16.19 Side Prompt troubleshooting
 
 Jika prompt tidak berjalan:
 
@@ -1605,7 +1662,7 @@ Full source set harus masih ada pada tier yang benar. Lower-tier source tidak da
 
 ### 19.3 Side Prompt regeneration
 
-Lihat aturan Side Prompt snapshot di Bagian 16.16.
+Lihat aturan snapshot Side Prompt di Section 16.17 dan perilaku version history di Section 16.16.
 
 ### 19.4 Safety checks
 
@@ -1950,6 +2007,19 @@ Gunakan Retry All untuk memulihkan combined workflow; gunakan Retry Memory bila 
 
 Tanpa Chat Top Bar, STMB tetap menjalankan normal workflows tetapi tidak memiliki queue UI.
 
+
+### Deferred last-processed progress
+
+Jika queued Memory selesai setelah source chat-nya tidak lagi terbuka, Memory tetap disimpan ke Memory Book-nya. STMB merekam update last-processed marker di `extension_settings.STMemoryBooks.pendingProgress` alih-alih mengambil dan menulis ulang inactive character atau group chat. Job yang sudah masuk queue boleh selesai; request manual dan automatic base-memory baru untuk chat tersebut menunggu sampai pending update diterapkan atau secara eksplisit dibuang. Chat lain tetap dapat digunakan.
+
+Notification meminta pengguna membuka kembali source chat secara manual. Setelah chat itu dimuat dan idle, popup menawarkan **Apply**, **Later**, dan **Discard pending update**. Apply menampilkan **Processing…**, menjalankan `/stmb-set-highest <pending message number>` di chat terkait, lalu menghapus pending records dari settings sebelum menampilkan **Done**. Proses ini menggunakan normal manual-marker behavior dan range clamping milik command, tanpa membandingkan message content atau attachments dan tanpa membaca ulang chat. Later, Escape, atau menutup popup mempertahankan records. Main STMB panel memiliki tombol **Pending progress updates (N)** untuk membuka kembali management popup ini, termasuk setelah refresh atau menonaktifkan Chat Top Bar. STMB tidak pernah berpindah chat secara otomatis. Discard memerlukan konfirmasi dan tidak mengubah lorebook Memories yang sudah tersimpan.
+
+Setiap pending record berisi chat reference, operation/job identity, target message index, original marker state/revision, chat integrity identifier, dan SHA-256 fingerprint dari source message text dan identity fields. Attachment fields tidak dibaca atau dimasukkan ke fingerprint. Conversation text tidak disimpan. Appended messages dan perubahan hide/unhide diperbolehkan; edits, deletions, changed identity, manual marker changes, atau rollback dapat membuat update menjadi tidak aman. Pemeriksaan ini berlaku untuk automatic marker updates. Explicit Apply menggunakan slash command meskipun original fingerprint atau marker revision sudah tidak cocok; Later mempertahankan pending update dan Discard menghapusnya. Explicit chat/character rename events memetakan ulang pending references; reference yang hilang atau tidak dikenali tetap tersedia untuk review dan discard.
+
+Pending records disimpan menggunakan ST settings API dan diverifikasi dengan membaca kembali settings, dengan batas konfirmasi sepuluh detik. Settings failure meninggalkan update di memory. Gunakan Apply di chat terkait untuk menjalankan marker command, atau Discard pending update untuk menghapus pending record. Tidak ada tombol retry terpisah untuk settings-save. Tidak ada browser recovery backup: refresh sebelum settings berhasil disimpan dapat menghilangkan update yang belum dipersist. Jika settings cleanup gagal setelah Apply, pending record tetap tersedia; mengklik Apply lagi menjalankan command kembali dan mencoba cleanup lagi tanpa membuat Memory baru. Explicit Apply bergantung pada normal save behavior command; automatic updates tetap memverifikasi saved marker.
+
+Ini menghapus separate inactive-chat replacement write milik STMB. Normal current-chat save milik ST tetap menulis chat lengkap, dan concurrent settings saves dari tab/device lain tidak transactional. Perubahan ini tidak mengidentifikasi penyebab chat loss yang pernah dilaporkan atau menjamin perlindungan dari semua core/other-extension save races.
+
 ---
 
 ## 26. Umpan Balik Visual dan Aksesibilitas
@@ -1992,10 +2062,10 @@ Scope yang digunakan:
 |---|---|---|---|
 | **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Global mode; book choice per chat | Berhenti memakai normal chat-bound lorebook sebagai automatic target STMB dan mengharuskan Memory Book dipilih untuk current chat. Tidak dapat enabled bersama Auto-Create Lorebook Mode. |
 | **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls**; visible di Manual Mode | Per chat | Memilih main Memory Book yang menerima Memories untuk chat ini. Dalam Narrator Mode ini omniscient book. |
-| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; visible di real group dengan Manual Mode | Per chat | Menetapkan separate Memory Book bagi setiap real-group member. STLO dibutuhkan untuk mengonfigurasi assignment dan character-filtered retrieval behavior terkait. |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; terlihat di real group yang memakai Manual Mode | Per chat | Menetapkan Memory Book untuk setiap real-group member. STMB menginjeksikan assigned book milik current native speaker; integrasi STLO optional. Canonical group book juga dapat ditetapkan dan kemudian menyimpan group entries serta character-focused entries. |
 | **Character Memory Book lock** | Lock icon di samping character Memory Book assignment | Per character | Menjaga character card tetap assigned ke Memory Book yang sama di compatible Manual Mode chats. Unlock sebelum mengubah assignment. |
 | **Narrator Mode** | **Current Lorebook Configuration**; hanya normal non-group chats | Per chat | Memakai selected manual book sebagai omniscient Memory Book dan mengaktifkan declared fictional cast dengan unique books sendiri. Manual Mode dan omniscient book diwajibkan. |
-| **Manage Narrator Cast** | Di bawah **Narrator Mode**; juga dari Active Cast drawer | Per chat | Menambah, retire, restore, dan mengassign unique Memory Books ke declared Narrator characters. |
+| **Manage Narrator Cast** | Di bawah **Narrator Mode**; juga tersedia dari Active Cast drawer | Per chat | Menambah, mengganti nama, retire, restore, dan menetapkan unique Memory Books ke declared Narrator characters. |
 | **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | Dalam Automatic Mode, membuat dan bind lorebook bila chat belum memilikinya. Tidak dapat enabled bersama Manual Mode. |
 | **Lorebook Name Template** | Tepat di bawah **Auto-create lorebook if none exists** | Global | Memberi nama auto-created books. Mendukung `{{char}}`, `{{user}}`, `{{chat}}`. Hanya digunakan saat Auto-Create Lorebook Mode enabled. |
 | **Memory profile selection** | **Memory Profiles** selector | Per run | Memilih profile untuk Memory berikutnya dan profile actions di dekatnya. Selection saja tidak mengubah saved default. |
@@ -2068,7 +2138,9 @@ Buka **Settings → Automatic Memories**.
 | Setting | Scope | Fungsi |
 |---|---|---|
 | **Auto-create memory summaries** | Global | Mengaktifkan automatic `/nextmemory`-style Memory creation. Tanpa processed baseline, STMB saat ini dapat mulai pada message 0; first manual Memory tetap direkomendasikan untuk validasi setup dan deliberate starting boundary. |
-| **Auto-Summary Interval** | Global | Mengatur berapa messages membentuk normal automatic cadence. |
+| **Auto-Summary Trigger** | Global | Memilih apakah automatic Memory creation dipicu oleh jumlah message atau jumlah token. |
+| **Auto-Summary Token Threshold** | Global | Menetapkan token count yang memicu automatic Memory creation saat trigger adalah **Tokens**. |
+| **Auto-Summary Interval** | Global | Menetapkan berapa banyak messages yang membentuk normal automatic cadence saat trigger adalah **Messages**. |
 | **Auto-Summary Buffer** | Global | Mengecualikan sejumlah newest messages dari automatic range yang sudah siap agar generation sedikit tertinggal dari live conversation. |
 | **Prompt for consolidation when a tier is ready** | Global | Menampilkan yes/later prompt ketika monitored tier mencapai saved eligible-source minimum. Tidak pernah melakukan consolidation diam-diam. |
 | **Auto-Consolidation Tiers** | Global | Memilih target tiers yang dipantau readiness prompts. Minimum tiap tier disimpan di **Consolidate Memories**. |
@@ -2123,9 +2195,11 @@ Buka **Settings → Trackers & Side Prompts**.
 |---|---|---|
 | **After-memory side prompt mode for this chat** | Manager main screen; per chat | Memakai matching solo/group default, explicitly individually enabled after-Memory prompts, atau satu named Side Prompt Set. |
 | **How many concurrent prompts to run at once** | Manager main screen; global | Membatasi simultaneous Side Prompt jobs ke 1–10. |
+| **Enable sideprompt versioning** | Manager main screen; account-wide | Mengaktifkan penggunaan preference **Save all versions** yang disimpan untuk setiap Side Prompt. Default off. Mematikannya tidak menghapus per-prompt preferences atau retained history. |
 | **Side Prompt Set Name** | **New Set** atau edit set; per set | Menamai reusable ordered group dari Side Prompt runs. |
 | **Side Prompt / Row Label / Macro Values** | Side Prompt Set row; per set | Memilih template row, optional display/title label, literal atau set-level runtime macro values, dan menggunakan row order sebagai execution order. |
 | **Enabled** | **New** atau edit ordinary Side Prompt; per template | Membuat template eligible saat chat memakai individually enabled after-Memory prompts. Trigger settings tetap menentukan kapan berjalan. |
+| **Save all versions** | **New** atau edit ordinary Side Prompt; per template | Saat account-wide versioning aktif, menyimpan setiap successful run sebagai numbered version alih-alih menimpa latest output. Default off dan tetap dipertahankan melalui export, import, dan duplication. |
 | **Run on visible message interval / Interval** | Side Prompt editor; per template | Menjalankan setelah configured number visible messages. Automatic triggers tidak tersedia saat template membutuhkan unresolved runtime macros. |
 | **Run automatically after memory** | Side Prompt editor; per template | Menjalankan template setelah successful Memory, tunduk pada chat Side Prompt mode atau selected set. |
 | **Allow manual run via `/sideprompt`** | Side Prompt editor; per template | Mengizinkan explicit manual execution. |
@@ -2133,7 +2207,7 @@ Buka **Settings → Trackers & Side Prompts**.
 | **Previous memories for context** | Side Prompt editor; per template | Menyertakan 0–7 previous Memory entries sebelum selected source messages. |
 | **Use additional context / Additional Context Source** | Side Prompt editor; per template | Menyertakan Additional Context dan mengikuti current chat Context Setting atau selalu memakai fixed named setting. |
 | **Lorebook Target** | Side Prompt editor; per template atau per chat | Menyimpan output ke normal Memory Book atau chosen lorebook lain. Saat diubah, STMB bertanya apakah pilihan berlaku hanya untuk chat ini atau template ke depan. |
-| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | Opsional mengontrol upserted entry title template dan comma-separated activation keywords. |
+| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | Secara optional mengontrol Side Prompt entry title template dan comma-separated activation keywords. Saat version history aktif, resolved title menjadi dasar numbered version sequence untuk title tersebut. |
 | **Activation Mode / Insertion Position / Outlet Name** | Side Prompt editor; per template | Mengontrol activation dan placement entri lorebook Side Prompt. |
 | **Insertion Order / Order Value** | Side Prompt editor; per template | Memakai automatic Memory-number ordering atau fixed manual order value. |
 | **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Side Prompt editor; per template | Menerapkan corresponding SillyTavern lorebook-entry recursion dan budget flags. |
@@ -2289,9 +2363,9 @@ Manual Mode:
 
 Real multi-book group:
 
-- STLO harus tersedia;
 - setiap required member memerlukan valid assignment;
-- group book tidak boleh dipakai kembali sebagai character book.
+- group book dapat digunakan kembali sebagai character book;
+- jika STLO terpasang, verifikasi optional activation dan ordering rules-nya.
 
 Narrator Mode:
 
@@ -2361,7 +2435,7 @@ Ini model-use behavior. Kemungkinan tindakan:
 
 ### 29.9 Side Prompt tidak berjalan
 
-Lihat Bagian 16.18. Secara khusus, selected set menekan individually enabled prompts di luar set tersebut.
+Lihat Section 16.19. Secara khusus, selected set menekan individually enabled prompts di luar set tersebut.
 
 ### 29.10 Consolidation tidak memunculkan prompt
 

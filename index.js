@@ -256,6 +256,7 @@ import {
   ROLLBACK_SCOPE_FULL,
   applyLorebookRollback,
   applySidePromptRestoration,
+  reconcileSidePromptHistoryStates,
   collectConsolidationRollbackPlan,
   collectRollbackMemories,
   computeRollbackCheckpoint,
@@ -601,6 +602,7 @@ const defaultSettings = {
     characterAwareMemories: true,
     useSeparateGroupSidePrompts: true,
     autoRollbackEnabled: false,
+    autoRollbackApplyToBranches: false,
     autoRollbackUpdateLastProcessed: true,
     autoRollbackDeleteLastMemory: true,
     autoRollbackRestorePreviousSidePrompts: true,
@@ -615,6 +617,7 @@ const defaultSettings = {
     selectedRegexIncoming: [],
     defaultSoloSidePromptSetKey: "",
     defaultGroupSidePromptSetKey: "",
+    sidePromptVersioningEnabled: false,
     // Arc creation ordering (applies to newly created arcs)
     arcOrderMode: "auto",
     arcOrderValue: 100,
@@ -647,6 +650,8 @@ function getBranchLorebookController() {
   branchLorebookController = createBranchLorebookController({
     getCurrentChatId,
     getChatMessages: () => chat,
+    getMessageCount: () => chat?.length || 0,
+    getActiveLorebookNames: () => getCurrentChatLorebookNames(initializeSettings()),
     getChatMetadata: () => chat_metadata,
     getSettings: initializeSettings,
     isGroupChat: () => !!getCurrentMemoryBooksContext()?.isGroupChat,
@@ -694,6 +699,7 @@ function getBranchLorebookController() {
     },
     clearNotification: notification => toastr.clear(notification),
     afterSuccess: () => eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT),
+    afterChildReady: ({ chatId, boundary }) => executeChildChatAutoRollback({ chatId, boundary }),
     logger: console,
   });
   return branchLorebookController;
@@ -722,6 +728,7 @@ let manualGroupGenerationSnapshot = null;
 let lorebookRegenerationObserver = null;
 const memoryRollbackDeletionTracker = createMessageDeletionTracker();
 const memoryRollbackChains = new Map();
+const childMemoryRollbackInFlight = new Set();
 let lorebookRegenerationRefreshTimer = null;
 
 function normalizeMemoryBoundaryMode(mode) {
@@ -1435,6 +1442,10 @@ async function handleChatChanged(chatId) {
     );
   }
   hideFloatingClipButton();
+  narratorGenerationSnapshot = null;
+  narratorGenerationType = null;
+  manualGroupGenerationSnapshot = null;
+  refreshNarratorCastDrawer();
   refreshMemoryBoundaryUi();
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
@@ -2535,6 +2546,7 @@ function validateSettings(settings) {
   }
 
   normalizeDefaultSidePromptSetKeys(settings.moduleSettings);
+  settings.moduleSettings.sidePromptVersioningEnabled = settings.moduleSettings.sidePromptVersioningEnabled === true;
 
   // Validate maxTokens and fall back to the app default when unset or invalid.
   // A value of 0 is intentional: it means "inherit SillyTavern's Chat Completion setting".
@@ -2636,6 +2648,10 @@ function validateSettings(settings) {
   let autoRollbackSettingsMigrated = false;
   if (typeof settings.moduleSettings.autoRollbackEnabled !== "boolean") {
     settings.moduleSettings.autoRollbackEnabled = false;
+    autoRollbackSettingsMigrated = true;
+  }
+  if (typeof settings.moduleSettings.autoRollbackApplyToBranches !== "boolean") {
+    settings.moduleSettings.autoRollbackApplyToBranches = false;
     autoRollbackSettingsMigrated = true;
   }
   for (const key of [
@@ -10811,6 +10827,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     characterAwareMemories: settings.moduleSettings.characterAwareMemories !== false,
     useSeparateGroupSidePrompts: settings.moduleSettings.useSeparateGroupSidePrompts !== false,
     autoRollbackEnabled: settings.moduleSettings.autoRollbackEnabled === true,
+    autoRollbackApplyToBranches: settings.moduleSettings.autoRollbackApplyToBranches === true,
     autoRollbackUpdateLastProcessed:
       settings.moduleSettings.autoRollbackUpdateLastProcessed !== false,
     autoRollbackDeleteLastMemory:
@@ -11220,6 +11237,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       "#stmb-auto-rollback-update-last-processed": "autoRollbackUpdateLastProcessed",
       "#stmb-auto-rollback-delete-last-memory": "autoRollbackDeleteLastMemory",
       "#stmb-auto-rollback-restore-side-prompts": "autoRollbackRestorePreviousSidePrompts",
+      "#stmb-auto-rollback-branches": "autoRollbackApplyToBranches",
     };
     for (const [selector, settingKey] of Object.entries(rollbackSettingBySelector)) {
       if (!e.target.matches(selector)) continue;
@@ -11769,6 +11787,9 @@ function persistMainPopupSettings(popupElement) {
     autoRollbackEnabled:
       popupElement.querySelector("#stmb-auto-rollback-enabled")?.checked ??
       settings.moduleSettings.autoRollbackEnabled,
+    autoRollbackApplyToBranches:
+      popupElement.querySelector("#stmb-auto-rollback-branches")?.checked ??
+      settings.moduleSettings.autoRollbackApplyToBranches,
     autoRollbackUpdateLastProcessed:
       popupElement.querySelector("#stmb-auto-rollback-update-last-processed")?.checked ??
       settings.moduleSettings.autoRollbackUpdateLastProcessed,
@@ -12467,8 +12488,8 @@ function getLorebookDataFingerprint(data) {
   return fingerprintRollbackEntry(data);
 }
 
-async function loadMemoryRollbackLorebooks(settings) {
-  const names = Array.from(getCurrentChatLorebookNames(settings))
+async function loadMemoryRollbackLorebooks(settings, namesOverride = null) {
+  const names = Array.from(namesOverride || getCurrentChatLorebookNames(settings))
     .sort((left, right) => left.localeCompare(right));
   const states = [];
   for (const name of names) {
@@ -12633,7 +12654,8 @@ async function waitForMemoryRollbackIdle(chatKey) {
   return getStmbChatKey() === chatKey;
 }
 
-async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
+async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBoundary = null }) {
+  const isChildChatRollback = Number.isInteger(childBoundary) && childBoundary >= 0;
   const settings = initializeSettings();
   const options = {
     autoRollbackEnabled: settings.moduleSettings?.autoRollbackEnabled === true,
@@ -12644,13 +12666,16 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
     refreshEditor: settings.moduleSettings?.refreshEditor !== false,
   };
   if (!options.autoRollbackEnabled) return;
-  if (!options.autoRollbackUpdateLastProcessed
+  if (!isChildChatRollback && !options.autoRollbackUpdateLastProcessed
     && !options.autoRollbackDeleteLastMemory
     && !options.autoRollbackRestorePreviousSidePrompts) return;
 
+  if (isChildChatRollback) {
+    deletion = { start: childBoundary, end: Number.MAX_SAFE_INTEGER, count: 0, isTail: true };
+  }
   const markers = getSceneMarkers() || {};
   const oldCheckpoint = markers.highestMemoryProcessed;
-  if (!Number.isFinite(oldCheckpoint) || deletion.start > oldCheckpoint) return;
+  if (!isChildChatRollback && (!Number.isFinite(oldCheckpoint) || deletion.start > oldCheckpoint)) return;
   if (!await waitForMemoryRollbackIdle(chatKey)) return;
 
   const states = await loadMemoryRollbackLorebooks(settings);
@@ -12697,7 +12722,7 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
 
   const selectedCount = Array.from(selectionsByBook.values()).reduce((total, set) => total + set.size, 0);
   const knownCheckpoint = computeRollbackCheckpoint(states, chatId);
-  if (selectedCount === 0 && knownCheckpoint === null && !markers.highestMemoryProcessedManuallySet) {
+  if (!isChildChatRollback && selectedCount === 0 && knownCheckpoint === null && !markers.highestMemoryProcessedManuallySet) {
     throw new Error(translate(
       "No exact Memory entries were found for the processed range. Repair legacy or missing Memory metadata before retrying.",
       "STMemoryBooks_AutoRollback_NoMemories",
@@ -12734,6 +12759,7 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
     .filter(Boolean))
     .filter((range, index, all) => all.findIndex(candidate =>
       candidate.start === range.start && candidate.end === range.end) === index);
+  if (isChildChatRollback) rollbackRanges.push({ start: childBoundary, end: Number.MAX_SAFE_INTEGER });
   let restoredSidePrompts = 0;
   let skippedChangedSidePrompts = 0;
   let legacySidePrompts = 0;
@@ -12747,6 +12773,7 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
         else if (result.reason === "entry-changed") skippedChangedSidePrompts++;
       }
     }
+    for (const state of states) reconcileSidePromptHistoryStates(state.data);
   }
 
   const affectedOnlyMiddle = !deletion.isTail && scope === ROLLBACK_SCOPE_AFFECTED;
@@ -12767,6 +12794,7 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
   const changedStates = states.filter(state =>
     getLorebookDataFingerprint(state.data) !== state.originalFingerprint);
   await saveMemoryRollbackLorebooks(changedStates);
+  if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
 
   if (options.autoRollbackUpdateLastProcessed) {
     invalidatePendingProgress();
@@ -12785,6 +12813,19 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
         console.warn(`STMemoryBooks: rollback saved ${state.name}, but its editor did not refresh:`, error);
       }
     }
+  }
+  if (isChildChatRollback) {
+    const stmbMetadata = chat_metadata.STMemoryBooks && typeof chat_metadata.STMemoryBooks === "object"
+      ? chat_metadata.STMemoryBooks
+      : (chat_metadata.STMemoryBooks = {});
+    stmbMetadata.autoRollbackForChild = {
+      version: 1,
+      childChatId: chatId,
+      retainedBoundary: childBoundary,
+      status: "completed",
+      completedAt: new Date().toISOString(),
+    };
+    saveMetadataForCurrentContext();
   }
   eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT);
   refreshMemoryBoundaryUi();
@@ -12813,6 +12854,53 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion }) {
     "Memory rollback completed for {{count}} Memory entry or entries.",
     { count: selectedCount },
   ), "STMemoryBooks");
+}
+
+async function executeChildChatAutoRollback({ chatId, boundary }) {
+  const settings = initializeSettings();
+  if (settings.moduleSettings?.autoRollbackEnabled !== true
+    || settings.moduleSettings?.autoRollbackApplyToBranches !== true) return;
+  const stmbMetadata = chat_metadata?.STMemoryBooks;
+  const branchMarker = stmbMetadata?.branchLorebookCopies;
+  const mappingNames = new Set((branchMarker?.mappings || []).map(mapping => String(mapping?.copyName || "").trim()).filter(Boolean));
+  const activeNames = Array.from(getCurrentChatLorebookNames(settings));
+  if (branchMarker?.status !== "completed"
+    || String(branchMarker.branchChatId || "") !== String(chatId || "")
+    || activeNames.some(name => !mappingNames.has(name))) {
+    toastr.warning(translate(
+      "Branch/checkpoint auto-rollback was skipped because independent copies of every active Memory Book could not be verified.",
+      "STMemoryBooks_AutoRollbackBranchIsolation",
+    ), "STMemoryBooks");
+    return;
+  }
+  const prior = stmbMetadata.autoRollbackForChild;
+  if (prior?.version === 1 && prior.status === "completed"
+    && String(prior.childChatId || "") === String(chatId || "")
+    && prior.retainedBoundary === boundary) return;
+
+  const chatKey = getStmbChatKey();
+  const runKey = JSON.stringify([chatKey, chatId, boundary]);
+  if (childMemoryRollbackInFlight.has(runKey)) return;
+  childMemoryRollbackInFlight.add(runKey);
+  const previous = memoryRollbackChains.get(chatKey) || Promise.resolve();
+  const current = previous.catch(() => {}).then(() => executeMemoryAutoRollback({
+    chatKey,
+    chatId,
+    childBoundary: boundary,
+  }));
+  memoryRollbackChains.set(chatKey, current);
+  try {
+    await current;
+  } catch (error) {
+    console.error("STMemoryBooks: Branch/checkpoint auto-rollback failed:", error);
+    toastr.error(error?.message || String(error), translate("Memory rollback failed", "STMemoryBooks_AutoRollback_Failed"), {
+      timeOut: 0,
+      extendedTimeOut: 0,
+    });
+  } finally {
+    childMemoryRollbackInFlight.delete(runKey);
+    if (memoryRollbackChains.get(chatKey) === current) memoryRollbackChains.delete(chatKey);
+  }
 }
 
 function queueMemoryAutoRollback({ chatKey, chatId, deletion }) {
@@ -12844,12 +12932,6 @@ function setupEventListeners() {
 
   getBranchLorebookController().initialize();
   eventSource.on(event_types.CHAT_CHANGED, handleChatChanged);
-  eventSource.on(event_types.CHAT_CHANGED, () => {
-    narratorGenerationSnapshot = null;
-    narratorGenerationType = null;
-    manualGroupGenerationSnapshot = null;
-    refreshNarratorCastDrawer();
-  });
   eventSource.on(MEMORY_TIER_CACHE_REFRESH_EVENT, refreshMemoryTierMacroCache);
   eventSource.on(event_types.WORLDINFO_UPDATED, (name, data) => {
     updateMemoryTierMacroCache(name, data);

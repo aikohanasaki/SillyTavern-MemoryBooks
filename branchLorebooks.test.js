@@ -9,6 +9,7 @@ import {
     applyBranchLorebookBindings,
     cloneLorebookForBranch,
     createBranchLorebookController,
+    isChildChatForAutoRollback,
     planBranchLorebookCopies,
     resolveActiveLorebookBindings,
     shouldCopyForChatChange,
@@ -51,6 +52,47 @@ test('recognizes only a newly created native branch', () => {
             branchChatId: 'Parent - Branch #1',
         },
     })), false);
+});
+
+test('recognizes existing child chats for opt-in auto-rollback only when copies are enabled', () => {
+    assert.equal(isChildChatForAutoRollback(snapshot({
+        chatId: 'Checkpoint 1', mainChat: 'Parent', autoRollbackEnabled: true,
+    })), true);
+    assert.equal(isChildChatForAutoRollback(snapshot({
+        chatId: 'Checkpoint 1', mainChat: 'Parent', autoRollbackEnabled: false,
+    })), false);
+    assert.equal(isChildChatForAutoRollback(snapshot({
+        chatId: 'Checkpoint 1', mainChat: 'Parent', autoRollbackEnabled: true, copyEnabled: false,
+    })), false);
+});
+
+test('branch copies remap Side Prompt identities and retain edit detection', async () => {
+    const { fingerprintRollbackEntry, remapSidePromptChatIdentity } = await import('./memoryRollback.js');
+    const entry = { uid: 1, content: 'Saved child state', STMB_chatId: 'Parent' };
+    entry.STMB_sidePromptRegeneration = {
+        version: 2, chatId: 'Parent', sceneStart: 1, sceneEnd: 2,
+        priorEntryExisted: true,
+        priorEntryState: {
+            uid: 2,
+            STMB_sidePromptHistory: {
+                version: 1, chatId: 'Parent', chatKey: '["character","avatar","Parent"]',
+                group: 'Prompt-Parent', titleSource: 'name', templateKey: 'prompt', sequence: 1,
+            },
+        },
+        writtenFingerprint: '',
+    };
+    entry.STMB_sidePromptRegeneration.writtenFingerprint = fingerprintRollbackEntry(entry, { excludeSidePromptSnapshot: true });
+    remapSidePromptChatIdentity(entry, 'Parent', 'Parent - Branch #1');
+    assert.equal(entry.STMB_sidePromptRegeneration.chatId, 'Parent - Branch #1');
+    assert.equal(entry.STMB_sidePromptRegeneration.priorEntryState.STMB_sidePromptHistory.chatId, 'Parent - Branch #1');
+    assert.equal(JSON.parse(entry.STMB_sidePromptRegeneration.priorEntryState.STMB_sidePromptHistory.chatKey)[2], 'Parent - Branch #1');
+    assert.equal(fingerprintRollbackEntry(entry, { excludeSidePromptSnapshot: true }), entry.STMB_sidePromptRegeneration.writtenFingerprint);
+
+    entry.content = 'Edited by user';
+    const oldFingerprint = entry.STMB_sidePromptRegeneration.writtenFingerprint;
+    remapSidePromptChatIdentity(entry, 'Parent - Branch #1', 'Parent - Branch #2');
+    assert.notEqual(fingerprintRollbackEntry(entry, { excludeSidePromptSnapshot: true }), oldFingerprint);
+    assert.equal(entry.STMB_sidePromptRegeneration.writtenFingerprint, oldFingerprint);
 });
 
 test('plans one shared branch number and reuses lineage roots', () => {

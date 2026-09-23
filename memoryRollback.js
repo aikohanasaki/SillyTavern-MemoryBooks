@@ -1,10 +1,13 @@
 // Copyright (C) 2024–2026 Aiko Hanasaki
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import { getSidePromptHistoryStreamKey } from './sidePromptHistory.js';
+
 export const ROLLBACK_SCOPE_FULL = 'full';
 export const ROLLBACK_SCOPE_AFFECTED = 'affected';
 
 const SIDE_PROMPT_SNAPSHOT_KEY = 'STMB_sidePromptRegeneration';
+const SIDE_PROMPT_HISTORY_KEY = 'STMB_sidePromptHistory';
 
 function getEntryUid(entry, entryKey = '') {
     const value = entry?.uid ?? entryKey;
@@ -60,6 +63,51 @@ export function fingerprintRollbackEntry(entry, { excludeSidePromptSnapshot = fa
     const copy = clone(entry);
     if (excludeSidePromptSnapshot) delete copy[SIDE_PROMPT_SNAPSHOT_KEY];
     return JSON.stringify(stableValue(copy));
+}
+
+/** Remap copied Side Prompt history and rollback snapshots to the child chat. */
+export function remapSidePromptChatIdentity(entry, parentChatId, childChatId, options = {}) {
+    const parent = String(parentChatId || '').trim();
+    const child = String(childChatId || '').trim();
+    if (!entry || !parent || !child || parent === child) return entry;
+    const snapshotKey = SIDE_PROMPT_SNAPSHOT_KEY;
+    const historyKey = SIDE_PROMPT_HISTORY_KEY;
+    const snapshotWasCurrent = options.snapshotWasCurrent ?? (entry[snapshotKey]?.version === 2
+        && fingerprintRollbackEntry(entry, { excludeSidePromptSnapshot: true })
+            === entry[snapshotKey].writtenFingerprint);
+    const remapHistory = history => {
+        if (!history || typeof history !== 'object') return;
+        if (String(history.chatId || '') === parent) history.chatId = child;
+        if (typeof history.chatKey === 'string') {
+            try {
+                const identity = JSON.parse(history.chatKey);
+                if (Array.isArray(identity) && identity.length === 3 && String(identity[2]) === parent) {
+                    identity[2] = child;
+                    history.chatKey = JSON.stringify(identity);
+                }
+            } catch { /* Preserve malformed legacy identity for normal validation. */ }
+        }
+        const compactParent = parent.replace(/\s/g, '').replace(/,/g, '-');
+        const compactChild = child.replace(/\s/g, '').replace(/,/g, '-');
+        if (typeof history.group === 'string' && history.group.endsWith(`-${compactParent}`)) {
+            history.group = `${history.group.slice(0, -compactParent.length)}${compactChild}`;
+        }
+    };
+    const remapNested = candidate => {
+        if (!candidate || typeof candidate !== 'object') return;
+        const snapshot = candidate[snapshotKey];
+        if (snapshot && typeof snapshot === 'object') {
+            if (String(snapshot.chatId || '') === parent) snapshot.chatId = child;
+            remapNested(snapshot.priorEntryState);
+        }
+        remapHistory(candidate[historyKey]);
+    };
+    remapNested(entry);
+    const snapshot = entry[snapshotKey];
+    if (snapshotWasCurrent && snapshot?.version === 2) {
+        snapshot.writtenFingerprint = fingerprintRollbackEntry(entry, { excludeSidePromptSnapshot: true });
+    }
+    return entry;
 }
 
 /**
@@ -429,4 +477,44 @@ export function applySidePromptRestoration(lorebookData, item) {
     const uid = current.uid;
     lorebookData.entries[item.entryKey] = { ...priorState, uid };
     return { changed: true, deleted: false };
+}
+
+/** Restore the active entry for every retained side-prompt history stream. */
+export function reconcileSidePromptHistoryStates(lorebookData) {
+    const streams = new Map();
+    const invalidStreams = new Set();
+    for (const entry of Object.values(lorebookData?.entries || {})) {
+        const history = entry?.[SIDE_PROMPT_HISTORY_KEY];
+        if (!history || history.version !== 1) continue;
+        const key = getSidePromptHistoryStreamKey(history);
+        if (!key) continue;
+        if (!Number.isSafeInteger(history.sequence) || history.sequence < 1) {
+            invalidStreams.add(key);
+            continue;
+        }
+        const current = streams.get(key);
+        if (current?.sequences.has(history.sequence)) {
+            invalidStreams.add(key);
+            continue;
+        }
+        if (!current || history.sequence > current.history.sequence) {
+            streams.set(key, {
+                entry,
+                history,
+                sequences: new Set([...(current?.sequences || []), history.sequence]),
+            });
+        } else {
+            current.sequences.add(history.sequence);
+        }
+    }
+    for (const [streamKey, { entry: newest, history: newestHistory }] of streams) {
+        if (invalidStreams.has(streamKey)) continue;
+        for (const candidate of Object.values(lorebookData.entries || {})) {
+            const history = candidate?.[SIDE_PROMPT_HISTORY_KEY];
+            if (!history || history.version !== 1) continue;
+            if (getSidePromptHistoryStreamKey(history) === getSidePromptHistoryStreamKey(newestHistory)) {
+                candidate.disable = candidate !== newest;
+            }
+        }
+    }
 }

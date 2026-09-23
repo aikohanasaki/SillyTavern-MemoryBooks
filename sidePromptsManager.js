@@ -716,6 +716,7 @@ export async function upsertTemplate(input) {
         next.specialKind = 'clipReview';
         next.enabled = false;
         next.triggers = {};
+        delete next.settings.saveAllVersions;
     }
 
     data.prompts[key] = next;

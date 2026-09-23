@@ -2048,6 +2048,7 @@ Open **Settings → General Settings** in the main panel.
 | **Refresh lorebook editor after adding memories** | Global | Refreshes an open lorebook editor after STMB writes entries so the new content appears immediately. |
 | **Copy Memory Books when branching** | Global | Gives a native chat branch independent copies of its active unlocked chat-bound or manual Memory Books. Character-locked books remain shared by design. |
 | **Auto-rollback after message deletion** | Global | Enables coordinated rollback when deletion or truncation intersects already processed chat material. It is disabled by default. Ordinary message edits and swipes do not trigger it. |
+| **Apply auto-rollback to branches/checkpoints** | Global; Auto-rollback option | On the first opening of a branch or checkpoint, rolls back Memories beyond its retained messages. Requires independent copies of every active Memory Book; otherwise it skips the rollback. |
 | **Update last message ID processed** | Global; Auto-rollback action | Moves the processed checkpoint to the end of the newest surviving Memory, or clears it when none survives. |
 | **Delete last Memory** | Global; Auto-rollback action | Deletes every invalidated Memory selected by the rollback scope and its linked copies. Memory and consolidation deletion is irreversible. |
 | **Restore previous Side Prompts** | Global; Auto-rollback action | Restores each unchanged affected Side Prompt to its latest exact saved before-state. Only one rollback level is retained. |
@@ -2063,6 +2064,10 @@ Open **Settings → General Settings** in the main panel.
 #### Memory Auto-Rollback inside General Settings
 
 **Auto-rollback after message deletion** is a master preference. Its three action checkboxes are independently selectable, enabled by default, and visually disabled while the master switch is off. Existing installations therefore do not begin deleting anything merely by upgrading.
+
+**Apply auto-rollback to branches/checkpoints** is off by default. When enabled, STMB applies the selected actions the first time an eligible branch or checkpoint is opened, including existing child chats. Checkpoints are handled when opened, not when created. STMB uses the child chat's current message count as the first omitted message index, so a Memory ending at the last retained message remains intact while Memories crossing or following that boundary are eligible. Completion is recorded for that child and boundary, and changing settings does not repeat a completed rollback.
+
+Branch/checkpoint rollback requires isolated copies of every active Memory Book. When **Copy Memory Books when branching** is disabled or a shared/locked book cannot be isolated, STMB skips rollback and reports the reason to avoid changing the parent chat's data. Copy or rollback failures and canceled consolidation confirmations remain eligible for a later opening.
 
 Auto-rollback reacts only to message deletion or truncation, including the deletion phase of response regeneration. It does not react to an ordinary edit or swipe. STMB tracks the actual message identities in each chat because SillyTavern's deletion event value does not reliably identify a middle deletion.
 
@@ -2630,3 +2635,12 @@ The system works best when:
 - consolidation reduces old detail without erasing continuity;
 - users verify retrieval rather than assuming saved means sent;
 - advanced multi-book routing is used only when its precision is worth the complexity.
+### Side Prompt version history
+
+Enable **Enable sideprompt versioning** in **Trackers & Side Prompts**, then enable **Save all versions** on each ordinary Side Prompt that should retain history. Both settings default to off. The template setting is retained by editing, duplication, import, and export; Memory Assistance does not support version history.
+
+Each successful run is kept in its target lorebook as `Title-001 (STMB SidePrompt)`, then `002` and later versions. Existing unnumbered output is adopted as `001` when history is first enabled. Older versions are disabled and the newest is enabled. Versions share a sanitized Side Prompt/chat inclusion group; changing a display name updates that group on a later successful save. Streams are separated by template, chat, resolved title override, and target lorebook.
+
+If either setting is disabled, STMB updates the newest output in place and keeps the retained history. Regeneration updates its selected entry rather than appending a version. Rollback uses its existing snapshots and enables the newest surviving version after a successful restoration. Ambiguous legacy output is not changed. Failed, blank, canceled, or rejected runs do not create history.
+
+STMB serializes its participating lorebook writes in one browser tab. SillyTavern's existing concurrent-save limitation still applies to other clients and direct editor saves.

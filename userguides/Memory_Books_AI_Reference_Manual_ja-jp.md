@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 # Memory Books：AI向け完全リファレンスマニュアル
 
 **製品:** SillyTavern Memory Books (STMB)  
-**参照バージョン:** v8.5.0、2026年8月1日  
+**参照バージョン:** v8.5.0（Aikobots 統合 Side Prompt versioning 対応）  
 **目的:** Memory Books を教え、説明し、トラブルシューティングするAIアシスタント向けの、単一かつ高密度な情報源。
 
 ---
@@ -166,7 +166,7 @@ processed message を hidden にしても削除されません。それらの me
 - **Clip vs Topical Clip:** Clip は現在の chat で highlight した text から始まります。Topical Clip は既存の確認済み STMB Memories から始まります。
 - **Topical Clip vs Side Prompt:** Topical Clip は topic を集めるために手動実行します。Side Prompt は変化する tracker を繰り返し維持できます。
 - **Compaction vs Consolidation:** Compaction は entry 1つを書き換えます。Consolidation は複数 entry から新しい higher-tier summary を作成します。
-- **Memory vs Side Prompt:** Memory は通常 sequential scene record です。Side Prompt は通常、継続する support document 1つを update/overwrite します。
+- **Memory vs Side Prompt:** Memories は通常、連続する scene records です。Side Prompts は通常1つの継続的な support document を維持しますが、optional Side Prompt version history を使うと、成功した各 run を番号付き lorebook entry として保持できます。
 - **Generation vs retrieval:** entry を作成しただけでは、SillyTavern が後でそれを activate する保証はありません。
 
 ---
@@ -670,6 +670,22 @@ SillyTavern は各 message をどの card が authored したか記録するた�
 
 別の Group Chat Mode switch は不要です。group chat を開いて通常どおり STMB を使います。
 
+
+**General Settings → Group Chat** には独立した2つの controls があり、どちらも default で checked です:
+
+| Setting | Checked | Unchecked |
+|---|---|---|
+| **character-aware memories** | participant-based memory filters と、設定済み character-specific memory processing を有効にします。 | new Memories、regeneration、consolidation に通常の single-book processing を使用します。participant confirmation、character filters、character-book copies、linked regeneration、character-based consolidation streams、automatic group/character prompt routing は行いません。 |
+| **Use separate group side prompts** | automatic Side Prompts は group default を継承します。 | automatic Side Prompts は solo default を継承します。 |
+
+memory checkbox は side-prompt checkbox に影響しません。Side Prompt の default routing は after-memory triggers と interval triggers の両方に適用されます。explicit per-chat set selection や individually enabled prompts は引き続き優先され、manual runs も利用できます。
+
+**character-aware memories** が off の場合、**Automatically accept detected participants in future**、**Group Character Lorebooks** assignments、**Use separate group and character prompts in group chats**、および **Group Summary Prompt / Character Summary Prompt** selectors は表示されたままですが gray out されます。tooltips には、General Settings の checkbox が unchecked のため disabled で適用されないことが示されます。**Use separate group side prompts** が off の場合、この理由で gray out されるのは group Side Prompt default selector だけです。保存済みの選択は保持され、再び有効にすると復元されます。
+
+これらの switches は existing entries や STLO configuration を migrate しません。existing filters は entry が明示的に regenerate されるまで適用され続けます。**character-aware memories** off で regeneration すると、その entry の character filter は削除されますが linked copies は書き換えません。new consolidated entries は unfiltered で、source entries は filters を保持します。queued jobs や retries を含む開始済み operations は captured settings を保持します。native group identity、speaker names、primary Memory Book selection はそのままです。Narrator Mode はこれら native-group controls とは独立しています。
+
+以下の character-aware behavior は **character-aware memories** が checked の間に適用されます。
+
 ### 11.2 Participant detection
 
 通常、detected participant は selected scene 内で少なくとも1つ message を authored した character card です。
@@ -715,10 +731,9 @@ advanced real-group layout では:
 要件:
 
 - Manual Lorebook Mode;
-- SillyTavern-LorebookOrdering (STLO) installed/enabled;
 - required group member 全員に valid assignment。
 
-canonical group book を character book と兼用することはできません。複数 character が同じ character book を共有することは可能で、その場合 STMB は duplicate ではなく shared book に copy 1つを書き込みます。
+canonical group book を character book として選択することもできます。STMB は canonical group entry と linked character copy を、その book 内の別々の entries として保存します。character copy には assigned character の filter が付き、その character の turn では canonical version より優先されます。複数の characters が同じ character book を共有する場合、STMB は重複ではなく1つの shared copy を書き込みます。
 
 Memory 保存時:
 
@@ -748,7 +763,7 @@ character-focused version には次を保持できます:
 
 追加 AI request が必要です。shared character book には、assigned character ごとの duplicate ではなく shared copy 1つが入ります。
 
-### 11.6 STLO responsibilities
+### 11.6 Optional STLO integration
 
 Memory Books が決めるもの:
 
@@ -758,13 +773,13 @@ Memory Books が決めるもの:
 - copies を受け取る books;
 - individualized prompts を使うか。
 
-STLO が決めるもの:
+STLO が installed の場合、さらに次を決定します:
 
 - lorebook がいつ active か;
 - どの character が activate できるか;
 - priority、position、budget、ordering。
 
-STMB が character book を assign すると、その character の avatar basename を `stlo.characterOverrides` に追加し、既存の STLO priorities、budgets、overrides を保持したまま `stlo.onlyWhenSpeaking` を有効にします。
+real group chat に STLO は必須ではありません。STMB は現在発話中の native group member に assigned された book をその generation に inject し、native entry-level character filters を使用します。STLO が利用可能で、STMB が separate character book を assign した場合は、その character の avatar basename を `stlo.characterOverrides` に追加し、既存の STLO priorities、budgets、overrides を保持したまま `stlo.onlyWhenSpeaking` を有効にします。character assignment が canonical group book の場合、STMB は lorebook-wide の STLO speaking filter を適用しません。
 
 STMB は merge-only behavior を使います。assignment を clear/change しても old STLO character override は自動削除されません。obsolete override は STLO で手動削除してください。
 
@@ -849,7 +864,7 @@ rules:
 - retired members は、restore または implementation 上別の方法で remove されるまで identity と reserved book assignment を保持;
 - Auto-Create は Manual Lorebook Mode に依存する Narrator Mode と incompatible。
 
-advanced real-group layout と異なり、Narrator Mode の active-character retrieval に STLO は不要です。STMB が selected cast members の books を generation 中の active lorebook context に inject します。
+advanced real-group layout と同様に、Narrator Mode は active-character retrieval に STLO を必要としません。STMB は selected cast members の books を generation 中の active lorebook context に inject します。
 
 ### 12.3 Setup
 
@@ -859,7 +874,8 @@ advanced real-group layout と異なり、Narrator Mode の active-character ret
 4. **Narrator Mode** を有効にします。
 5. **Manage Narrator Cast** を開きます。
 6. fictional character を名前で追加し、それぞれ unique Memory Book を assign します。
-7. floating **Active Cast** drawer で next exchange に present な characters を選びます。
+7. existing cast member の横にある **Edit** を使って character name を修正するか、assigned Memory Book を変更します。
+8. floating **Active Cast** drawer を使って次の exchange に登場する characters を選択します。
 
 Manual Lorebook Mode を無効にする前に Narrator Mode を無効にする必要があります。
 
@@ -926,6 +942,8 @@ cast manager は member を retired にし、後で restore できます。retir
 - book reservation を保持し、identity を merge してしまう accidental reuse を防ぐ。
 
 active cast を離れた character でも historical Memory identity を保持すべき場合に retirement を使います。
+
+cast member の character name または Memory Book を編集しても、その member の stable identity と retired state は保持されます。修正された名前は、その member が表示されるすべての場所と今後の Memory output に使用されます。新しい book assignment は今後の retrieval と Memory writes を制御しますが、previous book にすでに書き込まれた entries は移動しません。
 
 ---
 
@@ -1138,7 +1156,7 @@ custom prompt の output が有用でなくなったら Reset to Default を使�
 ---
 ## 16. Side Prompts
 
-Side Prompt は通常の character reply とは別に実行される named STMB prompt です。通常は sequential scene Memory をもう1つ作るのではなく、継続する support entry 1つを作成または更新します。
+Side Prompt は通常の character reply とは別に実行される、名前付き STMB prompt です。default では、別の連続 scene Memory を作るのではなく、1つの継続的な support entry を作成または更新します。Aikobots では optional Side Prompt version history により、成功した各 run を番号付き lorebook entry として保持し、最新 version を current output として維持できます。
 
 **Trackers & Side Prompts** list では、power icon が prompt-wide **Enabled** flag を即座に変更します。green は enabled、dim は disabled です。この control は prompt に設定された triggers を追加・削除・変更しません。
 
@@ -1373,7 +1391,46 @@ title/keyword fields は applicable macros を展開できます。**Ignore Budg
 
 Side Prompt は normal Memory Books connection resolution を inherit するか、specific STMB profile を bind できます。override は cheaper model や structured maintenance に強い model に便利です。profile combinations を増やしすぎると troubleshooting が難しくなります。
 
-### 16.16 Side Prompt regeneration
+### 16.16 Side Prompt version history
+
+Side Prompts は通常、1つの継続的な output を更新します。Aikobots では代わりに、成功した各 run を番号付き lorebook entry として保持できます。
+
+#### Version history を有効にする
+
+1. **Memory Books → Trackers & Side Prompts** を開き、**Enable sideprompt versioning** を checked にします。この setting はすべての chats に対して account-wide に適用されます。
+2. Side Prompt を edit し、**Save all versions** を checked にして保存します。history を保持したい prompt ごとに個別に選択します。
+
+2つの checkboxes はどちらも default で off です。account setting は各 prompt の preference を使用するかどうかを制御します。off にしてもその preference は消去されません。export、import、duplicate された Side Prompts は **Save all versions** setting を保持します。
+
+#### 保存されるもの
+
+両方の settings が enabled の場合、successful manual、automatic、Side Prompt Set runs は次のような numbered entries を追加します:
+
+| Entry | State |
+|---|---|
+| `Assess-001 (STMB SidePrompt)` | Disabled, retained |
+| `Assess-002 (STMB SidePrompt)` | Disabled, retained |
+| `Assess-003 (STMB SidePrompt)` | Enabled, current output |
+
+title は prompt の entry-title override が設定されていればそれを使い、なければ prompt name を使います。numbers は最低3桁で、999を超えても継続します。各 version は configured insertion order を維持します。older versions は別の order を与えられるのではなく disabled になります。
+
+versions は Side Prompt と chat から命名された inclusion group を共有します。例: `Assess-MyChat`。すべての whitespace は削除され、commas は hyphens になります。prompt の display name が変わっても group は維持されます。macros から異なる name が供給される場合など、別々に resolve された title overrides は、それぞれ独自の version sequence を持ちます。
+
+versioning を初めて使用した時点ですでに output が存在する場合、それが version 001 になり、次の successful output が 002 になります。existing output がない場合、最初の successful run が 001 を作成します。canceled、rejected、blank、failed run は existing output を archive または replace しません。legacy entries を明確に match できない場合、どの entry を変更するか推測せず saving を停止します。
+
+#### Versioning を off にする
+
+どちらかの checkbox を unchecked にします。以後の runs は latest output を in place で更新し、older disabled entries は保持します。一度も versioning を使っていない Side Prompt は、通常の unnumbered output を引き続き更新します。両方の checkboxes を再び enabled にすると versions の append を再開します。
+
+通常の run は versioning が off の間も、latest output を prior context と checkpoint selection に使用します。saved history は prompt、chat reference、target lorebook に属します。chat filename/ID の変更や別 target lorebook の選択は別 history を開始しますが、prompt display name の変更は開始しません。
+
+#### Version history 使用時の regeneration と rollback
+
+**Regenerate** は selected version の content だけを置き換えます。version の append、entries の renumber、older disabled entry の enable は行いません。
+
+ordinary-book automatic rollback が enabled の場合、rollback は existing saved restoration snapshots を使います。affected versions を restore または remove し、newest surviving version を enable します。snapshot を invalid にする manual edit がある場合、automatic rollback は引き続き review のため停止します。
+
+### 16.17 Side Prompt regeneration
 
 compatible saves は現在、次を含む version-2 snapshot を保存します:
 
@@ -1388,7 +1445,7 @@ regenerate するには lorebook editor を開き **Regenerate side prompt** を
 
 template が deleted、source chat/range が unavailable、generation 中に target/source が変化した場合、regeneration は完了できません。置き換わるのは content だけで、existing title、keywords、entry settings は維持されます。legacy version-1 snapshots も regeneration を引き続き support しますが、Memory Auto-Rollback には使用できません。
 
-### 16.17 良い Side Prompt の書き方
+### 16.18 良い Side Prompt の書き方
 
 良い Side Prompt は次を定義します:
 
@@ -1417,7 +1474,7 @@ Keep the entire output under 300 words.
 
 stable headings は repeated updates の drift を減らします。
 
-### 16.18 Side Prompt troubleshooting
+### 16.19 Side Prompt troubleshooting
 
 prompt が run しなかった場合:
 
@@ -1603,7 +1660,7 @@ full source set が correct tier に存在する必要があります。active p
 
 ### 19.3 Side Prompt regeneration
 
-Section 16.16 の Side Prompt snapshot rules を参照してください。
+Section 16.17 の Side Prompt snapshot rules と、Section 16.16 の version-history behavior を参照してください。
 
 ### 19.4 Safety checks
 
@@ -1947,6 +2004,19 @@ combined workflow を restore するなら Retry All、tracker work を走らせ
 
 Chat Top Bar がなくても STMB は normal workflows を実行しますが queue UI はありません。
 
+
+### Deferred last-processed progress
+
+queued Memory が source chat を閉じた後に完了した場合でも、Memory 自体は Memory Book に保存されます。STMB は inactive character/group chat を取得して書き直す代わりに、last-processed marker update を `extension_settings.STMemoryBooks.pendingProgress` に記録します。すでに queue に入っている jobs は完了できますが、その chat に対する新しい manual/automatic base-memory requests は pending updates が apply または明示的に discard されるまで待機します。他の chats は引き続き使用できます。
+
+notification は user に source chat を手動で reopen するよう求めます。その chat が load 済みかつ idle になると、popup に **Apply**、**Later**、**Discard pending update** が表示されます。Apply は **Processing…** を表示し、対象 chat で `/stmb-set-highest <pending message number>` を実行し、settings から pending records を削除してから **Done** を表示します。message content や attachments を比較したり chat を再読したりせず、command の通常の manual-marker behavior と range clamping を使用します。Later、Escape、popup を閉じる操作は records を保持します。main STMB panel には **Pending progress updates (N)** button があり、refresh 後や Chat Top Bar を disable した後でもこの management popup を再度開けます。chat を自動で切り替えることはありません。Discard は confirmation が必要で、保存済み lorebook Memories には影響しません。
+
+各 pending record には chat reference、operation/job identity、target message index、original marker state/revision、chat integrity identifier、source message text と identity fields の SHA-256 fingerprint が含まれます。attachment fields は読まれず fingerprint にも含まれません。conversation text は保存しません。appended messages と hide/unhide changes は許可されますが、edits、deletions、changed identity、manual marker changes、rollback により update が unsafe になる場合があります。これらの checks は automatic marker updates に適用されます。explicit Apply は original fingerprint または marker revision が一致しなくても slash command を使用します。Later は pending update を保持し、Discard は削除します。explicit chat/character rename events は pending references を remap します。missing/unrecognized references は review/discard のため残ります。
+
+pending records は ST の settings API で保存され、settings を読み直して verify されます。confirmation limit は10秒です。settings failure の場合 update は memory 内に残ります。対象 chat で Apply を使って marker command を実行するか、Discard pending update で pending record を削除してください。settings-save 専用の retry button はありません。browser recovery backup もありません。settings save が成功する前に refresh すると、persist されていない update が失われる可能性があります。Apply 後に settings cleanup が失敗した場合、pending record は残ります。再度 Apply をクリックすると、別の Memory を生成せず command を再実行し cleanup を再試行します。explicit Apply は command の通常の save behavior に依存し、automatic updates は saved marker の verification を続けます。
+
+これにより STMB の separate inactive-chat replacement write は廃止されます。ST の通常の current-chat save は引き続き complete chat を書き込みます。また、他の tabs/devices からの concurrent settings saves は transactional ではありません。この変更は、過去に報告された chat loss の原因を特定するものでも、core/other-extension のすべての save races から保護することを保証するものでもありません。
+
 ---
 
 ## 26. 視覚的フィードバックとアクセシビリティ
@@ -1988,10 +2058,10 @@ screenshot から教えるときは specific color に頼らず、visible icon �
 |---|---|---|---|
 | **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Global mode; book choice は per chat | normal chat-bound lorebook を STMB automatic target として使うのをやめ、current chat 用 Memory Book の選択を要求します。Auto-Create Lorebook Mode と同時に有効にできません。 |
 | **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls**; Manual Mode で表示 | Per chat | この chat で Memories を受け取る main Memory Book を選びます。Narrator Mode では omniscient book です。 |
-| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; Manual Mode の real group で表示 | Per chat | real-group member ごとに separate Memory Book を assign します。これら assignments の設定と corresponding character-filtered retrieval behavior には STLO が必要です。 |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; Manual Mode の real group で visible | Per chat | 各 real-group member に Memory Book を assign します。STMB は current native speaker の assigned book を inject します。STLO integration は optional です。canonical group book も assign でき、その場合 group entries と character-focused entries の両方を保存します。 |
 | **Character Memory Book lock** | character の Memory Book assignment 横の lock icon | Per character | compatible Manual Mode chats 間で character card に同じ Memory Book を assign し続けます。assignment を変更する前に unlock してください。 |
 | **Narrator Mode** | **Current Lorebook Configuration**; normal non-group chats only | Per chat | selected manual book を omniscient Memory Book として使い、それぞれ unique book を持つ declared fictional cast members を有効にします。Manual Mode と omniscient book が必要です。 |
-| **Manage Narrator Cast** | **Narrator Mode** 下; Active Cast drawer からも利用可能 | Per chat | declared Narrator characters を add、retire、restore し、unique Memory Books を assign します。 |
+| **Manage Narrator Cast** | **Narrator Mode** 配下; Active Cast drawer からも利用可能 | Per chat | declared Narrator characters の追加、rename、retire、restore、unique Memory Books の assign を行います。 |
 | **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | Automatic Mode で chat に lorebook がないとき作成して bind します。Manual Mode と同時に有効にできません。 |
 | **Lorebook Name Template** | **Auto-create lorebook if none exists** の直下 | Global | auto-created books を命名します。`{{char}}`、`{{user}}`、`{{chat}}` を support。Auto-Create Lorebook Mode 有効時だけ使用されます。 |
 | **Memory profile selection** | **Memory Profiles** selector | Per run | next Memory と隣接 profile actions 用 profile を選びます。この selection だけでは saved default は変わりません。 |
@@ -2064,7 +2134,9 @@ main panel の **Settings → Automatic Memories** を開きます。
 | Setting | Scope | What it does |
 |---|---|---|
 | **Auto-create memory summaries** | Global | automatic `/nextmemory`-style Memory creation を有効にします。processed baseline がなくても current STMB は message 0 から開始可能。最初の manual Memory は setup validation と deliberate starting boundary のため依然推奨。 |
-| **Auto-Summary Interval** | Global | normal automatic cadence 1回あたりの message 数を設定します。 |
+| **Auto-Summary Trigger** | Global | automatic Memory creation を message count または token count のどちらで trigger するか選択します。 |
+| **Auto-Summary Token Threshold** | Global | trigger が **Tokens** の場合に automatic Memory creation を発火させる token count を設定します。 |
+| **Auto-Summary Interval** | Global | trigger が **Messages** の場合に normal automatic cadence を構成する message 数を設定します。 |
 | **Auto-Summary Buffer** | Global | otherwise ready automatic range から newest messages をこの数だけ除外し、live conversation より少し遅れて generation します。 |
 | **Prompt for consolidation when a tier is ready** | Global | monitored tier が saved eligible-source minimum に達すると yes/later prompt を表示。silently consolidation はしません。 |
 | **Auto-Consolidation Tiers** | Global | readiness prompts を監視する target tiers を選びます。各 tier の minimum は **Consolidate Memories** で保存されます。 |
@@ -2119,9 +2191,11 @@ main panel の **Settings → Trackers & Side Prompts** を開きます。
 |---|---|---|
 | **After-memory side prompt mode for this chat** | Manager main screen; per chat | matching solo/group default、明示的な individually enabled after-Memory prompts、または named Side Prompt Set 1つをこの chat に使用します。 |
 | **How many concurrent prompts to run at once** | Manager main screen; global | simultaneous Side Prompt jobs を1–10に制限。 |
+| **Enable sideprompt versioning** | Manager main screen; account-wide | 各 Side Prompt に保存されている **Save all versions** preference の使用を有効にします。default は off。off にしても per-prompt preferences や retained history は削除されません。 |
 | **Side Prompt Set Name** | **New Set** または edit set; per set | reusable ordered group of Side Prompt runs を命名。 |
 | **Side Prompt / Row Label / Macro Values** | Side Prompt Set row; per set | row の template、optional display/title label、literal または set-level runtime macro values を設定し、row order を execution order として使用。 |
 | **Enabled** | **New** または ordinary Side Prompt edit; per template | chat が individually enabled after-Memory prompts を使う場合 template を eligible にします。trigger settings は依然 when it runs を決定。 |
+| **Save all versions** | **New** または ordinary Side Prompt edit; per template | account-wide versioning が enabled の場合、latest output を overwrite せず、successful run ごとに numbered version を保持します。default は off で、export、import、duplication 後も保持されます。 |
 | **Run on visible message interval / Interval** | Side Prompt editor; per template | configured visible message count 後に実行。template が unresolved runtime macros を必要とする場合 automatic triggers は unavailable。 |
 | **Run automatically after memory** | Side Prompt editor; per template | successful Memory 後に template を実行。chat の Side Prompt mode/selected set に従います。 |
 | **Allow manual run via `/sideprompt`** | Side Prompt editor; per template | explicit manual execution を許可。 |
@@ -2129,7 +2203,7 @@ main panel の **Settings → Trackers & Side Prompts** を開きます。
 | **Previous memories for context** | Side Prompt editor; per template | selected source messages の前に0–7 previous Memory entries を含めます。 |
 | **Use additional context / Additional Context Source** | Side Prompt editor; per template | Additional Context を含め、current chat Context Setting に follow するか fixed named setting 1つを常に使用。 |
 | **Lorebook Target** | Side Prompt editor; per template または per chat | normal Memory Book または別 lorebook に output を保存。変更時、choice を this chat only か template going forward か尋ねます。 |
-| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | upserted entry title template と comma-separated activation keywords を optional 制御。 |
+| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | Side Prompt entry title template と comma-separated activation keywords を optional に制御します。version history が enabled の場合、resolved title がその title の numbered version sequence の base になります。 |
 | **Activation Mode / Insertion Position / Outlet Name** | Side Prompt editor; per template | Side Prompt lorebook entry の activation/placement を制御。 |
 | **Insertion Order / Order Value** | Side Prompt editor; per template | automatic Memory-number ordering または fixed manual order value。 |
 | **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Side Prompt editor; per template | corresponding SillyTavern lorebook-entry recursion/budget flags を適用。 |
@@ -2284,9 +2358,9 @@ Manual Mode:
 
 Real multi-book group:
 
-- STLO が available であること;
-- required member 全員に valid assignment;
-- group book を character book として再利用できない。
+- required member 全員に valid assignment が必要;
+- group book は character book として再利用可能;
+- STLO が installed の場合、その optional activation/ordering rules を確認。
 
 Narrator Mode:
 
@@ -2356,7 +2430,7 @@ retrieval を test する前に Memory を regenerate しないでください�
 
 ### 29.9 Side Prompt が run しない
 
-Section 16.18 を参照。特に selected set はその set 外の individually enabled prompts を suppress します。
+Section 16.19 を参照してください。特に selected set は、その set 外の individually enabled prompts を suppress します。
 
 ### 29.10 Consolidation prompt が出ない
 

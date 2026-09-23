@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 # Memory Books : Manuel de référence complet pour IA
 
 **Produit :** SillyTavern Memory Books (STMB)  
-**Version de référence :** v8.5.0, 1er août 2026  
+**Version de référence :** v8.5.0 avec versionnage des Side Prompts intégré à Aikobots  
 **Objectif :** Une source de vérité unique et dense pour un assistant IA chargé d’enseigner, d’expliquer et de dépanner Memory Books.
 
 ---
@@ -166,7 +166,7 @@ Masquer les messages traités ne les supprime pas. Cela empêche simplement leur
 - **Clip vs Topical Clip :** un Clip commence par du texte surligné dans la discussion actuelle. Un Topical Clip commence par des Memories STMB déjà confirmées.
 - **Topical Clip vs Side Prompt :** un Topical Clip est lancé manuellement pour rassembler un sujet. Un Side Prompt peut maintenir de manière répétée un suivi évolutif.
 - **Compaction vs Consolidation :** la Compaction réécrit une entrée. La Consolidation crée un nouveau résumé de niveau supérieur à partir de plusieurs entrées.
-- **Memory vs Side Prompt :** les Memories sont normalement des enregistrements de scène séquentiels. Les Side Prompts mettent généralement à jour ou remplacent un document de support continu.
+- **Memory vs Side Prompt :** les Memories sont normalement des enregistrements séquentiels de scènes. Les Side Prompts maintiennent généralement un document de suivi continu, mais l’historique de versions optionnel des Side Prompts peut conserver chaque exécution réussie sous forme d’entrée de lorebook numérotée.
 - **Génération vs récupération :** créer une entrée ne garantit pas que SillyTavern l’activera plus tard.
 
 ---
@@ -671,6 +671,22 @@ SillyTavern enregistre quelle carte a rédigé chaque message, ce qui permet à 
 
 Aucun interrupteur Group Chat Mode séparé n’est requis. Ouvrez une discussion de groupe et utilisez STMB normalement.
 
+
+**General Settings → Group Chat** contient deux contrôles indépendants, tous deux cochés par défaut :
+
+| Paramètre | Coché | Décoché |
+|---|---|---|
+| **character-aware memories** | Active les filtres de Memory basés sur les participants et le traitement configuré des Memories propres à chaque personnage. | Utilise le traitement ordinaire à livre unique pour les nouvelles Memories, la régénération et la consolidation. Pas de confirmation des participants, de filtres de personnage, de copies dans les livres de personnage, de régénération liée, de flux de consolidation par personnage ni de routage automatique des prompts groupe/personnage. |
+| **Use separate group side prompts** | Les Side Prompts automatiques héritent du réglage par défaut du groupe. | Les Side Prompts automatiques héritent du réglage par défaut solo. |
+
+La case des Memories n’affecte pas celle des Side Prompts. Le routage par défaut des Side Prompts s’applique à la fois aux déclencheurs après Memory et aux déclencheurs par intervalle ; les sélections explicites de sets par chat ou les prompts activés individuellement gardent la priorité, et les exécutions manuelles restent disponibles.
+
+Lorsque **character-aware memories** est désactivé, **Automatically accept detected participants in future**, les affectations **Group Character Lorebooks**, **Use separate group and character prompts in group chats** et ses sélecteurs **Group Summary Prompt / Character Summary Prompt** restent visibles mais grisés. Leurs info-bulles expliquent qu’ils sont désactivés et non appliqués parce que la case correspondante de General Settings est décochée. Lorsque **Use separate group side prompts** est désactivé, seul le sélecteur par défaut des Side Prompts de groupe est grisé pour cette raison. Les choix enregistrés sont conservés et restaurés lors de la réactivation.
+
+Ces commutateurs ne migrent ni les entrées existantes ni la configuration STLO. Les filtres existants continuent de s’appliquer jusqu’à ce qu’une entrée soit explicitement régénérée ; une régénération avec **character-aware memories** désactivé retire le filtre de personnage de cette entrée sans réécrire ses copies liées. Les nouvelles entrées consolidées ne sont pas filtrées, tandis que les entrées sources conservent leurs filtres. Les opérations déjà lancées, y compris les tâches en file et les nouvelles tentatives, conservent les paramètres capturés. L’identité native du groupe, les noms des locuteurs et la sélection du Memory Book principal restent inchangés. Narrator Mode est indépendant de ces contrôles natifs de groupe.
+
+Le comportement character-aware décrit ci-dessous s’applique tant que **character-aware memories** est coché.
+
 ### 11.2 Détection des participants
 
 Un participant détecté est normalement une carte de personnage ayant rédigé au moins un message dans la scène sélectionnée.
@@ -716,10 +732,9 @@ La disposition avancée pour groupe réel utilise :
 Exigences :
 
 - Manual Lorebook Mode ;
-- SillyTavern-LorebookOrdering (STLO) installé et activé ;
 - une affectation valide pour chaque membre du groupe requis.
 
-Le livre de groupe canonique ne peut pas également servir de livre de personnage. Plusieurs personnages peuvent partager le même livre de personnage ; STMB écrit alors une seule copie dans ce livre partagé plutôt que des doublons.
+Le livre canonique du groupe peut également être sélectionné comme livre de personnage. STMB stocke l’entrée canonique du groupe et sa copie liée de personnage comme deux entrées distinctes dans ce livre. La copie de personnage est filtrée pour le personnage qui lui est affecté et prend le pas sur la version canonique pendant le tour de ce personnage. Plusieurs personnages peuvent partager le même livre de personnage ; STMB écrit alors une seule copie partagée plutôt que des doublons.
 
 Lorsqu’une Memory est enregistrée :
 
@@ -749,7 +764,7 @@ Les versions centrées sur un personnage peuvent préserver :
 
 Cela nécessite des requêtes IA supplémentaires. Un livre de personnage partagé reçoit une seule copie partagée, pas un doublon par personnage attribué.
 
-### 11.6 Responsabilités de STLO
+### 11.6 Intégration STLO optionnelle
 
 Memory Books décide :
 
@@ -759,13 +774,13 @@ Memory Books décide :
 - des livres qui reçoivent des copies ;
 - de l’utilisation éventuelle de prompts individualisés.
 
-STLO décide :
+Lorsqu’il est installé, STLO décide en plus :
 
 - quand un lorebook est actif ;
 - quel personnage peut l’activer ;
 - de la priorité, de la position, du budget et de l’ordre.
 
-Lorsque STMB attribue un livre de personnage, il ajoute le basename de l’avatar du personnage à `stlo.characterOverrides` et active `stlo.onlyWhenSpeaking`, tout en préservant les priorités, budgets et overrides STLO existants.
+STLO n’est pas requis pour une véritable discussion de groupe. STMB injecte dans cette génération le livre affecté au membre natif du groupe qui parle et utilise les filtres de personnage natifs au niveau des entrées. Lorsque STLO est disponible et que STMB affecte un livre de personnage distinct, il ajoute également le nom de base de l’avatar du personnage à `stlo.characterOverrides` et active `stlo.onlyWhenSpeaking`, tout en préservant les priorités, budgets et overrides STLO existants. STMB n’applique pas de filtre de prise de parole STLO à l’ensemble du lorebook lorsque l’affectation du personnage correspond au livre canonique du groupe.
 
 STMB suit un comportement d’ajout/fusion uniquement. Supprimer ou modifier une affectation ne retire pas automatiquement l’ancien override de personnage STLO. Supprimez manuellement les overrides obsolètes dans STLO.
 
@@ -850,7 +865,7 @@ Règles :
 - les membres retirés conservent leur identité et leur affectation de livre réservée jusqu’à leur restauration ou autre suppression prévue par l’implémentation ;
 - Auto-Create est incompatible, car Narrator Mode dépend de Manual Lorebook Mode.
 
-Contrairement à la disposition avancée des groupes réels, Narrator Mode ne nécessite pas STLO pour la récupération par personnage actif. STMB injecte les livres des membres actifs de la distribution dans le contexte de lorebook actif durant la génération.
+Comme la disposition avancée d’un véritable groupe, Narrator Mode ne requiert pas STLO pour la récupération des personnages actifs. STMB injecte les livres des membres sélectionnés de la distribution dans le contexte actif des lorebooks pendant la génération.
 
 ### 12.3 Configuration
 
@@ -860,7 +875,8 @@ Contrairement à la disposition avancée des groupes réels, Narrator Mode ne n�
 4. Activez **Narrator Mode**.
 5. Ouvrez **Manage Narrator Cast**.
 6. Ajoutez chaque personnage fictif par son nom et attribuez-lui un Memory Book unique.
-7. Utilisez le panneau flottant **Active Cast** pour sélectionner les personnages présents dans le prochain échange.
+7. Utilisez **Edit** à côté d’un membre existant de la distribution pour corriger le nom du personnage ou modifier le Memory Book qui lui est affecté.
+8. Utilisez le tiroir flottant **Active Cast** pour sélectionner les personnages présents lors du prochain échange.
 
 Narrator Mode doit être désactivé avant de pouvoir désactiver Manual Lorebook Mode.
 
@@ -927,6 +943,8 @@ Le gestionnaire de distribution peut marquer un membre comme retiré puis le res
 - gardent leur réservation de livre, empêchant une réutilisation accidentelle qui fusionnerait des identités.
 
 Utilisez le retrait pour un personnage qui quitte la distribution active mais dont l’identité historique de Memory doit rester intacte.
+
+Modifier le nom de personnage ou le Memory Book d’un membre de la distribution conserve son identité stable et son état retiré. Le nom corrigé est utilisé partout où ce membre est affiché ainsi que dans les futures sorties de Memory. Une nouvelle affectation de livre contrôle les futures récupérations et écritures de Memory ; elle ne déplace pas les entrées déjà écrites dans le livre précédent.
 
 ---
 
@@ -1140,7 +1158,7 @@ Utilisez Reset to Default si un prompt personnalisé cesse de produire des résu
 
 ## 16. Side Prompts
 
-Un Side Prompt est un prompt STMB nommé qui s’exécute séparément de la réponse normale du personnage. Il crée ou met généralement à jour une seule entrée de support continue plutôt qu’une autre Memory de scène séquentielle.
+Un Side Prompt est un prompt STMB nommé qui s’exécute séparément de la réponse normale du personnage. Par défaut, il crée ou met à jour une entrée de suivi continue plutôt qu’une nouvelle Memory de scène séquentielle. Dans Aikobots, l’historique de versions optionnel des Side Prompts peut conserver chaque exécution réussie sous forme d’entrée de lorebook numérotée, la version la plus récente restant la sortie actuelle.
 
 Dans la liste **Trackers & Side Prompts**, l’icône d’alimentation modifie immédiatement le drapeau global **Enabled** du prompt : verte signifie activé, atténuée signifie désactivé. Ce contrôle n’ajoute, ne supprime ni ne modifie les déclencheurs configurés du prompt.
 
@@ -1375,7 +1393,46 @@ Les champs titre et mots-clés peuvent développer les macros applicables. **Ign
 
 Un Side Prompt peut hériter de la résolution de connexion Memory Books normale ou lier un profil STMB spécifique. Une surcharge est utile pour un modèle moins cher ou meilleur en maintenance structurée. Trop de combinaisons de profils rendent le dépannage plus difficile.
 
-### 16.16 Régénération de Side Prompt
+### 16.16 Historique des versions des Side Prompts
+
+Les Side Prompts mettent normalement à jour une seule sortie continue. Dans Aikobots, vous pouvez à la place conserver chaque exécution réussie sous forme d’entrée de lorebook numérotée.
+
+#### Activer l’historique des versions
+
+1. Ouvrez **Memory Books → Trackers & Side Prompts** et cochez **Enable sideprompt versioning**. Ce paramètre s’applique à votre compte dans tous les chats.
+2. Modifiez un Side Prompt, cochez **Save all versions**, puis enregistrez-le. Choisissez cette option séparément pour chaque prompt dont vous souhaitez conserver l’historique.
+
+Les deux cases sont décochées par défaut. Le paramètre du compte détermine si la préférence de chaque prompt est utilisée ; le désactiver n’efface pas ces préférences. Les Side Prompts exportés, importés et dupliqués conservent leur réglage **Save all versions**.
+
+#### Ce qui est enregistré
+
+Lorsque les deux paramètres sont activés, les exécutions manuelles, automatiques et via Side Prompt Set réussies ajoutent des entrées numérotées telles que :
+
+| Entrée | État |
+|---|---|
+| `Assess-001 (STMB SidePrompt)` | Désactivée, conservée |
+| `Assess-002 (STMB SidePrompt)` | Désactivée, conservée |
+| `Assess-003 (STMB SidePrompt)` | Activée, sortie actuelle |
+
+Le titre utilise l’override de titre d’entrée du prompt lorsqu’il est configuré, sinon son nom. Les numéros comportent au moins trois chiffres et continuent au-delà de 999. Chaque version conserve l’ordre d’insertion configuré ; les anciennes versions sont désactivées plutôt que de recevoir un ordre différent.
+
+Les versions partagent un groupe d’inclusion nommé à partir du Side Prompt et du chat, par exemple `Assess-MyChat`. Tous les espaces sont supprimés et les virgules deviennent des tirets. Le groupe reste uni lorsque le nom d’affichage du prompt change. Les overrides de titre résolus séparément, par exemple des noms différents fournis via des macros, conservent chacun leur propre séquence de versions.
+
+Si une sortie existe déjà lors de la première utilisation du versionnage, elle devient la version 001 et la prochaine sortie réussie devient 002. S’il n’existe aucune sortie, la première exécution réussie crée 001. Une exécution annulée, refusée, vide ou échouée n’archive ni ne remplace la sortie existante. Si des entrées héritées ne peuvent pas être appariées sans ambiguïté, l’enregistrement s’arrête au lieu de deviner quelle entrée modifier.
+
+#### Désactiver le versionnage
+
+Décochez l’une ou l’autre case. Les exécutions suivantes mettent à jour la sortie la plus récente sur place et conservent les anciennes entrées désactivées. Un Side Prompt qui n’a jamais utilisé le versionnage continue à mettre à jour sa sortie ordinaire non numérotée. Réactiver les deux cases reprend l’ajout de versions.
+
+Chaque exécution normale utilise la sortie la plus récente comme contexte précédent et pour la sélection du checkpoint, y compris lorsque le versionnage est désactivé. L’historique enregistré appartient au prompt, à la référence du chat et au lorebook cible. Changer le nom de fichier/ID du chat ou sélectionner un autre lorebook cible démarre un historique séparé ; renommer le nom d’affichage du prompt ne le fait pas.
+
+#### Régénération et rollback avec historique des versions
+
+**Regenerate** remplace uniquement le contenu de la version sélectionnée. Il n’ajoute pas de version, ne renumérote pas les entrées et n’active pas une ancienne entrée désactivée.
+
+Lorsque le rollback automatique des livres ordinaires est activé, le rollback utilise les snapshots de restauration déjà enregistrés. Il restaure ou supprime les versions concernées et active la version survivante la plus récente. Les modifications manuelles qui invalident un snapshot continuent d’arrêter le rollback automatique pour vérification.
+
+### 16.17 Régénération de Side Prompt
 
 Les enregistrements compatibles stockent désormais un instantané de version 2 contenant :
 
@@ -1390,7 +1447,7 @@ Pour régénérer, ouvrez l’éditeur de lorebook et cliquez sur **Regenerate s
 
 La régénération ne peut pas aboutir si le template a été supprimé, si la discussion/plage source est indisponible, ou si la cible/source a changé durant la génération. Seul le contenu est remplacé ; le titre, les mots-clés et les paramètres d’entrée existants restent inchangés. Les anciens instantanés de version 1 continuent de permettre la régénération, mais ne peuvent pas être utilisés par Memory Auto-Rollback.
 
-### 16.17 Rédiger de bons Side Prompts
+### 16.18 Rédiger de bons Side Prompts
 
 Un bon Side Prompt définit :
 
@@ -1419,7 +1476,7 @@ Limitez l’ensemble de la sortie à 300 mots.
 
 Des titres stables réduisent la dérive au fil des mises à jour répétées.
 
-### 16.18 Dépannage des Side Prompts
+### 16.19 Dépannage des Side Prompts
 
 Si un prompt ne s’est pas exécuté :
 
@@ -1605,7 +1662,7 @@ L’ensemble complet des sources doit encore exister au niveau correct. Une sour
 
 ### 19.3 Régénération de Side Prompt
 
-Voir les règles d’instantané Side Prompt dans la Section 16.16.
+Voir les règles de snapshot des Side Prompts à la section 16.17 et le comportement de l’historique des versions à la section 16.16.
 
 ### 19.4 Contrôles de sécurité
 
@@ -1950,6 +2007,19 @@ Utilisez Retry All pour restaurer le flux combiné ; utilisez Retry Memory lorsq
 
 Sans Chat Top Bar, STMB continue d’exécuter ses flux normaux mais n’a pas l’interface de file.
 
+
+### Progression différée du dernier message traité
+
+Lorsqu’une Memory en file se termine alors que son chat source n’est plus ouvert, la Memory est tout de même enregistrée dans son Memory Book. STMB enregistre la mise à jour du marqueur du dernier message traité dans `extension_settings.STMemoryBooks.pendingProgress` au lieu de récupérer et réécrire le chat inactif du personnage ou du groupe. Les tâches déjà en file peuvent se terminer ; les nouvelles demandes manuelles et automatiques de Memory de base pour ce chat attendent que ses mises à jour en attente soient appliquées ou explicitement supprimées. Les autres chats restent utilisables.
+
+La notification demande à l’utilisateur de rouvrir manuellement le chat source. Une fois ce chat chargé et inactif, une fenêtre propose **Apply**, **Later** et **Discard pending update**. Apply affiche **Processing…**, exécute `/stmb-set-highest <pending message number>` dans le chat concerné et retire les enregistrements en attente des paramètres avant d’afficher **Done**. Il utilise le comportement normal de marqueur manuel de la commande et l’ajustement des limites de plage, sans comparer le contenu ou les pièces jointes des messages ni relire le chat. Later, Escape ou la fermeture de la fenêtre conserve les enregistrements. Le panneau principal de STMB comporte un bouton **Pending progress updates (N)** permettant de rouvrir cette fenêtre de gestion, y compris après un rafraîchissement ou la désactivation de Chat Top Bar. Il ne change jamais automatiquement de chat. Discard demande une confirmation et laisse intactes les Memories déjà enregistrées dans les lorebooks.
+
+Chaque enregistrement en attente contient une référence de chat, l’identité de l’opération/tâche, l’index du message cible, l’état/révision initial du marqueur, un identifiant d’intégrité du chat et une empreinte SHA-256 du texte du message source et de ses champs d’identité. Les champs de pièces jointes ne sont ni lus ni inclus dans l’empreinte. Aucun texte de conversation n’est conservé. Les messages ajoutés et les changements masquer/afficher sont autorisés ; les modifications, suppressions, changements d’identité, modifications manuelles du marqueur ou un rollback peuvent rendre une mise à jour non sûre. Ces contrôles s’appliquent aux mises à jour automatiques du marqueur. Un Apply explicite utilise la commande slash même si l’empreinte d’origine ou la révision du marqueur ne correspond plus ; Later conserve la mise à jour en attente et Discard la supprime. Les événements explicites de renommage de chat/personnage remappent les références en attente ; les références manquantes ou non reconnues restent disponibles pour vérification et suppression.
+
+Les enregistrements en attente sont sauvegardés via l’API de paramètres de ST puis vérifiés en relisant ces paramètres, avec une limite de confirmation de dix secondes. Un échec de sauvegarde des paramètres laisse la mise à jour en mémoire. Utilisez Apply dans le chat concerné pour exécuter la commande du marqueur, ou Discard pending update pour supprimer l’enregistrement en attente. Il n’existe pas de bouton séparé pour réessayer l’enregistrement des paramètres. Il n’existe pas non plus de sauvegarde de récupération dans le navigateur : actualiser la page avant une sauvegarde réussie des paramètres peut faire perdre une mise à jour non persistée. Si le nettoyage des paramètres échoue après Apply, l’enregistrement en attente reste disponible ; cliquer à nouveau sur Apply réexécute la commande et retente le nettoyage sans générer une nouvelle Memory. L’Apply explicite repose sur le comportement normal de sauvegarde de la commande ; les mises à jour automatiques continuent de vérifier le marqueur enregistré.
+
+Cela supprime l’écriture de remplacement séparée de STMB pour les chats inactifs. La sauvegarde normale du chat courant de ST continue d’écrire un chat complet, et les sauvegardes simultanées des paramètres depuis d’autres onglets/appareils ne sont pas transactionnelles. Ce changement n’identifie pas la cause des pertes de chat signalées précédemment et ne garantit pas une protection contre toutes les courses de sauvegarde du cœur ou d’autres extensions.
+
 ---
 
 ## 26. Retour visuel et accessibilité
@@ -1992,10 +2062,10 @@ Portées utilisées ci-dessous :
 |---|---|---|---|
 | **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Mode global ; choix de livre par discussion | Cesse d’utiliser le lorebook normal lié à la discussion comme cible STMB automatique et exige la sélection d’un Memory Book pour la discussion actuelle. Incompatible avec Auto-Create Lorebook Mode. |
 | **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls** ; visible en Manual Mode | Per chat | Choisit le Memory Book principal recevant les Memories de cette discussion. En Narrator Mode, il s’agit du livre omniscient. |
-| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows** ; visible dans un groupe réel utilisant Manual Mode | Per chat | Attribue un Memory Book séparé à chaque membre du groupe réel. STLO est requis pour configurer ces affectations et fournir le comportement de récupération filtré par personnage correspondant. |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows** ; visible dans un véritable groupe en Manual Mode | Par chat | Affecte un Memory Book à chaque membre du véritable groupe. STMB injecte le livre affecté au locuteur natif actuel ; l’intégration STLO est optionnelle. Le livre canonique du groupe peut également être affecté et stocke alors à la fois les entrées de groupe et les entrées centrées sur les personnages. |
 | **Character Memory Book lock** | Icône de verrou près de l’affectation du Memory Book d’un personnage | Per character | Maintient cette carte de personnage affectée au même Memory Book entre discussions Manual Mode compatibles. Déverrouillez avant de modifier l’affectation. |
 | **Narrator Mode** | **Current Lorebook Configuration** ; discussions normales non-groupes uniquement | Per chat | Utilise le livre manuel sélectionné comme Memory Book omniscient et active des personnages fictifs déclarés avec leurs propres livres uniques. Manual Mode et un livre omniscient sont requis. |
-| **Manage Narrator Cast** | Sous **Narrator Mode** ; aussi disponible depuis le panneau Active Cast | Per chat | Ajoute, retire, restaure et attribue des Memory Books uniques aux personnages Narrator déclarés. |
+| **Manage Narrator Cast** | Sous **Narrator Mode** ; également disponible depuis le tiroir Active Cast | Par chat | Ajoute, renomme, retire, restaure et affecte des Memory Books uniques aux personnages Narrator déclarés. |
 | **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | En Automatic Mode, crée et lie un lorebook lorsque la discussion n’en possède aucun. Incompatible avec Manual Mode. |
 | **Lorebook Name Template** | Directement sous **Auto-create lorebook if none exists** | Global | Nomme les livres auto-créés. Prend en charge `{{char}}`, `{{user}}` et `{{chat}}`. Utilisé uniquement quand Auto-Create Lorebook Mode est activé. |
 | **Memory profile selection** | Sélecteur **Memory Profiles** | Per run | Choisit le profil de la prochaine Memory et pour les actions de profil adjacentes. Cette sélection seule ne modifie pas le défaut enregistré. |
@@ -2068,7 +2138,9 @@ Ouvrez **Settings → Automatic Memories** dans le panneau principal.
 | Paramètre | Portée | Fonction |
 |---|---|---|
 | **Auto-create memory summaries** | Global | Active la création automatique de Memory de type `/nextmemory`. Sans référence traitée, STMB actuel peut commencer au message 0 ; une première Memory manuelle reste recommandée pour valider la configuration et choisir une frontière de départ délibérée. |
-| **Auto-Summary Interval** | Global | Définit le nombre de messages constituant la cadence automatique normale. |
+| **Auto-Summary Trigger** | Global | Choisit si la création automatique de Memory est déclenchée par le nombre de messages ou le nombre de tokens. |
+| **Auto-Summary Token Threshold** | Global | Définit le nombre de tokens qui déclenche la création automatique de Memory lorsque le déclencheur est **Tokens**. |
+| **Auto-Summary Interval** | Global | Définit combien de messages constituent la cadence automatique normale lorsque le déclencheur est **Messages**. |
 | **Auto-Summary Buffer** | Global | Exclut ce nombre de messages les plus récents d’une plage autrement prête afin que la génération reste légèrement en retrait de la conversation live. |
 | **Prompt for consolidation when a tier is ready** | Global | Affiche un prompt yes/later lorsqu’un niveau surveillé atteint son minimum de sources admissibles. Ne consolide jamais silencieusement. |
 | **Auto-Consolidation Tiers** | Global | Choisit les niveaux cibles surveillés pour les prompts de disponibilité. Le minimum de chaque niveau est enregistré dans **Consolidate Memories**. |
@@ -2123,9 +2195,11 @@ Ouvrez **Settings → Trackers & Side Prompts** dans le panneau principal.
 |---|---|---|
 | **After-memory side prompt mode for this chat** | Écran principal du gestionnaire ; per chat | Utilise le défaut solo/groupe correspondant, les prompts après-Memory activés individuellement, ou un Side Prompt Set nommé pour cette discussion. |
 | **How many concurrent prompts to run at once** | Écran principal ; global | Limite à 1–10 le nombre de tâches Side Prompt simultanées. |
+| **Enable sideprompt versioning** | Écran principal du gestionnaire ; pour tout le compte | Active l’utilisation de la préférence enregistrée **Save all versions** de chaque Side Prompt. Désactivé par défaut. Le désactiver n’efface ni les préférences propres aux prompts ni l’historique conservé. |
 | **Side Prompt Set Name** | **New Set** ou modification d’un set ; per set | Nomme un groupe ordonné et réutilisable d’exécutions Side Prompt. |
 | **Side Prompt / Row Label / Macro Values** | Ligne du Side Prompt Set ; per set | Choisit le template de la ligne, fournit un libellé/titre facultatif, des valeurs runtime littérales ou au niveau du set et utilise l’ordre des lignes comme ordre d’exécution. |
 | **Enabled** | **New** ou modification d’un Side Prompt ordinaire ; per template | Rend le template admissible lorsque la discussion utilise les prompts après-Memory activés individuellement. Les réglages de trigger déterminent toujours quand il s’exécute. |
+| **Save all versions** | **New** ou modification d’un Side Prompt ordinaire ; par template | Lorsque le versionnage à l’échelle du compte est activé, conserve chaque exécution réussie comme une version numérotée au lieu d’écraser la sortie la plus récente. Désactivé par défaut et conservé lors de l’export, de l’import et de la duplication. |
 | **Run on visible message interval / Interval** | Éditeur Side Prompt ; per template | Exécute après le nombre configuré de messages visibles. Les triggers automatiques sont indisponibles lorsque le template nécessite des macros runtime non résolues. |
 | **Run automatically after memory** | Éditeur Side Prompt ; per template | Exécute le template après une Memory réussie, sous réserve du mode Side Prompt de la discussion ou du set sélectionné. |
 | **Allow manual run via `/sideprompt`** | Éditeur Side Prompt ; per template | Autorise l’exécution manuelle explicite. |
@@ -2133,7 +2207,7 @@ Ouvrez **Settings → Trackers & Side Prompts** dans le panneau principal.
 | **Previous memories for context** | Éditeur Side Prompt ; per template | Inclut 0–7 entrées Memory précédentes avant les messages sources sélectionnés. |
 | **Use additional context / Additional Context Source** | Éditeur Side Prompt ; per template | Inclut Additional Context et suit soit le Context Setting de la discussion actuelle, soit un réglage nommé fixe. |
 | **Lorebook Target** | Éditeur Side Prompt ; per template ou per chat | Enregistre la sortie dans le Memory Book normal ou un autre lorebook choisi. Lors du changement, STMB demande si le choix s’applique seulement à cette discussion ou au template à l’avenir. |
-| **Lorebook Entry Title Override / Keywords** | Éditeur Side Prompt ; per template | Contrôle éventuellement le modèle de titre de l’entrée upsert et les mots-clés d’activation séparés par virgules. |
+| **Lorebook Entry Title Override / Keywords** | Éditeur de Side Prompt ; par template | Contrôle éventuellement le modèle de titre de l’entrée Side Prompt et les mots-clés d’activation séparés par des virgules. Avec l’historique des versions activé, le titre résolu forme la base de la séquence de versions numérotées de ce titre. |
 | **Activation Mode / Insertion Position / Outlet Name** | Éditeur Side Prompt ; per template | Contrôle activation et placement de l’entrée de lorebook Side Prompt. |
 | **Insertion Order / Order Value** | Éditeur Side Prompt ; per template | Utilise un ordre automatique basé sur le numéro de Memory ou une valeur manuelle fixe. |
 | **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Éditeur Side Prompt ; per template | Applique les drapeaux correspondants de récursion et budget d’entrée SillyTavern. |
@@ -2287,11 +2361,11 @@ Manual Mode :
 - réparez une sélection supprimée ;
 - déverrouillez un verrou de personnage cassé avant de le modifier.
 
-Véritable groupe multi-livres :
+Véritable groupe avec plusieurs livres :
 
-- STLO doit être disponible ;
-- chaque membre requis a besoin d’une affectation valide ;
-- le livre de groupe ne peut pas être réutilisé comme livre de personnage.
+- chaque membre requis doit avoir une affectation valide ;
+- le livre du groupe peut être réutilisé comme livre de personnage ;
+- si STLO est installé, vérifiez ses règles optionnelles d’activation et d’ordre.
 
 Narrator Mode :
 
@@ -2361,7 +2435,7 @@ C’est un comportement d’utilisation du modèle. Réponses possibles :
 
 ### 29.9 Side Prompt non exécuté
 
-Voir Section 16.18. En particulier, un set sélectionné supprime les prompts activés individuellement hors de ce set.
+Voir la section 16.19. En particulier, un set sélectionné supprime les prompts activés individuellement qui se trouvent en dehors de ce set.
 
 ### 29.10 Consolidation n’a pas proposé de prompt
 
