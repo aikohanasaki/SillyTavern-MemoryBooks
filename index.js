@@ -12875,8 +12875,7 @@ async function executeChildChatAutoRollback({ chatId, boundary }) {
   }
   const prior = stmbMetadata.autoRollbackForChild;
   if (prior?.version === 1 && prior.status === "completed"
-    && String(prior.childChatId || "") === String(chatId || "")
-    && prior.retainedBoundary === boundary) return;
+    && String(prior.childChatId || "") === String(chatId || "")) return;
 
   const chatKey = getStmbChatKey();
   const runKey = JSON.stringify([chatKey, chatId, boundary]);

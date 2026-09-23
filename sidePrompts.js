@@ -9,7 +9,7 @@ import { compileMessageRange } from './messageRange.js';
 import { getCurrentApiInfo, getUIModelSettings, getCurrentMemoryBooksContext, normalizeCompletionSource, resolveEffectiveConnectionFromProfile, clampInt, createStmbInFlightTask, isStmbStopError, getStmbStopEpoch, throwIfStmbStopped } from './utils.js';
 import { appendAdditionalContextSection, applySelectedRegex, assertProviderDidNotTruncate, requestCompletion } from './stmemory.js';
 import { findSetByName, getTemplate, listByTrigger, findTemplateByName, resolveSetItemsForRun } from './sidePromptsManager.js';
-import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch, getEntryByTitle } from './addlore.js';
+import { upsertLorebookEntryByTitle, upsertLorebookEntriesBatch } from './addlore.js';
 import { fetchPreviousSummaries, showMemoryPreviewPopup } from './confirmationPopup.js';
 import { t as __st_t_tag, translate } from '../../../i18n.js';
 import { oai_settings } from '../../../openai.js';
@@ -618,14 +618,6 @@ function getSidePromptLookupTitles(tpl, runtimeMacros = {}, fallbackKinds = []) 
         }
     }
     return titles;
-}
-
-function findFirstLoreEntryByTitle(loreData, titles = []) {
-    for (const title of titles) {
-        const entry = getEntryByTitle(loreData, title);
-        if (entry) return entry;
-    }
-    return null;
 }
 
 function getHighestProcessedMessageBaseline() {
@@ -1289,8 +1281,7 @@ export async function evaluateTrackers() {
                 continue;
             }
 
-            const lookupTitles = getSidePromptLookupTitles(tpl, runtimeMacros, ['tracker']);
-            const existing = findFirstLoreEntryByTitle(lore.data, lookupTitles);
+            const existing = resolveSidePromptHistory(lore.data, getSidePromptHistory(tpl, runtimeMacros, ['tracker'])).latest;
             const lastMsgId = getSidePromptLastMessageId(tpl, existing);
             const lastRunAt = existing?.[`STMB_sp_${tpl.key}_lastRunAt`]
                 ? Date.parse(existing[`STMB_sp_${tpl.key}_lastRunAt`])
@@ -1863,7 +1854,7 @@ export async function runSidePrompt(args) {
                 toastr.info(translate('Tip: You can run a specific range with /sideprompt "Name" {{macro}}="value" X-Y (e.g., /sideprompt "Scoreboard" 100-120). Running without a range uses messages since the last checkpoint.', 'STMemoryBooks_Toast_SidePromptRangeTip'), 'STMemoryBooks');
                 hasShownSidePromptRangeTip = true;
             }
-            const existingForLast = findFirstLoreEntryByTitle(lore.data, getSidePromptLookupTitles(tpl, {}, ['scoreboard', 'plotpoints', 'tracker']));
+            const existingForLast = resolveSidePromptHistory(lore.data, getSidePromptHistory(tpl, runtimeMacros, ['scoreboard', 'plotpoints', 'tracker'])).latest;
             const lastMsgId = getSidePromptLastMessageId(tpl, existingForLast);
 
             const start = Math.max(0, lastMsgId + 1);
@@ -2073,7 +2064,7 @@ export async function runSidePromptSet(args, options = {}) {
                     console.warn(`${MODULE_NAME}: Unable to resolve lorebook for side prompt set item "${runItem.name}":`, err);
                     continue;
                 }
-                const existing = findFirstLoreEntryByTitle(lore.data, getSidePromptLookupTitles(runItem.tpl, runItem.runtimeMacros, ['scoreboard', 'plotpoints', 'tracker']));
+                const existing = resolveSidePromptHistory(lore.data, getSidePromptHistory(runItem.tpl, runItem.runtimeMacros, ['scoreboard', 'plotpoints', 'tracker'])).latest;
                 const lastMsgId = getSidePromptLastMessageId(runItem.tpl, existing);
                 earliestLastMsgId = earliestLastMsgId === null ? lastMsgId : Math.min(earliestLastMsgId, lastMsgId);
             }

@@ -19,6 +19,18 @@ test('sideprompt history rejects duplicate stream sequences and ambiguous legacy
     assert.throws(() => resolveSidePromptHistory({ entries: { 1: { comment: history.legacyTitles[0] }, 2: { comment: history.legacyTitles[0] } } }, history));
 });
 
+test('sideprompt history adopts the first matching legacy title by priority', () => {
+    const history = buildSidePromptHistoryRequest(template, {}, sceneContext, 'Assess State', [
+        'Assess State (STMB SidePrompt)', 'Assess State (STMB Scoreboard)',
+    ]);
+    const preferred = { comment: history.legacyTitles[0] };
+    const fallback = { comment: history.legacyTitles[1] };
+    const book = { entries: { 1: fallback, 2: preferred } };
+    assert.equal(resolveSidePromptHistory(book, history).legacy, preferred);
+    assert.equal(resolveSidePromptHistory({ entries: { 1: fallback } }, history).legacy, fallback);
+    assert.throws(() => resolveSidePromptHistory({ entries: { ...book.entries, 3: { ...preferred } } }, history));
+});
+
 test('renames keep name-based history while explicit resolved titles stay separate', () => {
     const original = buildSidePromptHistoryRequest(template, { moduleSettings: { sidePromptVersioningEnabled: true } }, sceneContext, 'Assess State', ['Assess State (STMB SidePrompt)']);
     const renamed = buildSidePromptHistoryRequest({ ...template, name: 'Renamed' }, {}, sceneContext, 'Renamed', ['Renamed (STMB SidePrompt)']);

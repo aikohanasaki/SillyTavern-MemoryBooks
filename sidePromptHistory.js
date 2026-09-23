@@ -72,14 +72,17 @@ export function resolveSidePromptHistory(lorebookData, history) {
     }
     versions.sort((a, b) => a[SIDE_PROMPT_HISTORY_KEY].sequence - b[SIDE_PROMPT_HISTORY_KEY].sequence);
     if (versions.length) return { versions, latest: versions.at(-1), legacy: null };
-    const legacy = entries.filter(entry => {
+    const candidates = entries.filter(entry => {
         if (entry?.[SIDE_PROMPT_HISTORY_KEY]) return false;
         const snapshot = entry?.STMB_sidePromptRegeneration;
-        if (snapshot && (snapshot.templateKey !== history.templateKey || snapshot.chatId !== history.chatId)) return false;
-        return history.legacyTitles.includes(String(entry?.comment || ''));
+        return !(snapshot && (snapshot.templateKey !== history.templateKey || snapshot.chatId !== history.chatId));
     });
-    if (legacy.length > 1) throw sidePromptHistoryError();
-    return { versions, latest: legacy[0] || null, legacy: legacy[0] || null };
+    for (const title of history.legacyTitles) {
+        const legacy = candidates.filter(entry => String(entry?.comment || '') === title);
+        if (legacy.length > 1) throw sidePromptHistoryError();
+        if (legacy.length === 1) return { versions, latest: legacy[0], legacy: legacy[0] };
+    }
+    return { versions, latest: null, legacy: null };
 }
 
 /** Formats a version title without truncating sequence numbers above 999. */
