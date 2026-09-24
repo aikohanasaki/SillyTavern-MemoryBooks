@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "Der Side-Prompt-Verlauf ist mehrdeutig. Es wurden keine Änderungen gespeichert.",
   "STMemoryBooks_Progress_Title": "Ausstehende Fortschrittsaktualisierungen ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Wende die ausstehende Fortschrittsaktualisierung für diesen Chat an oder verwirf sie, bevor du eine weitere Erinnerung erstellst.",
   "STMemoryBooks_Progress_PersistenceError": "Erinnerung gespeichert, aber die ausstehende Fortschrittsaktualisierung konnte nicht in den Einstellungen gespeichert werden. Versuche es vor dem Neuladen erneut, sonst kann die Aktualisierung verloren gehen.",

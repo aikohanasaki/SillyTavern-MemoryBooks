@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "Riwayat side prompt ambigu. Tidak ada perubahan yang disimpan.",
   "STMemoryBooks_Progress_Title": "Pembaruan progres tertunda ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Terapkan atau buang pembaruan progres tertunda untuk obrolan ini sebelum membuat memori lain.",
   "STMemoryBooks_Progress_PersistenceError": "Memori tersimpan, tetapi pembaruan progres tertundanya tidak dapat disimpan ke pengaturan. Coba lagi sebelum memuat ulang halaman agar pembaruan tidak hilang.",

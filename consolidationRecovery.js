@@ -84,6 +84,7 @@ export async function resumeConsolidationCheckpoint(checkpoint) {
 export async function commitSummaryEntriesRecoverable(options, onCheckpoint = null) {
     const { lorebookName, lorebookData, summaryCandidates = [], onCheckpoint: optionCheckpoint,
         chatRef, consolidationRunId = makeId(), ...commitOptions } = options;
+    if (commitOptions.targetTier === undefined) commitOptions.targetTier = 1;
     const results = [];
     for (const candidate of summaryCandidates) {
         const prepared = prepareSummaryCandidateTitle(

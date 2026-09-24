@@ -706,7 +706,7 @@ function getBranchLorebookController() {
     },
     clearNotification: notification => toastr.clear(notification),
     afterSuccess: () => eventSource.emit(MEMORY_TIER_CACHE_REFRESH_EVENT),
-    afterChildReady: ({ chatId, boundary }) => executeChildChatAutoRollback({ chatId, boundary }),
+    afterChildReady: ({ chatId, boundary }) => { void executeChildChatAutoRollback({ chatId, boundary }); },
     logger: console,
   });
   return branchLorebookController;
@@ -12980,11 +12980,7 @@ async function executeChildChatAutoRollback({ chatId, boundary }) {
     || settings.moduleSettings?.autoRollbackApplyToBranches !== true) return;
   const stmbMetadata = chat_metadata?.STMemoryBooks;
   const branchMarker = stmbMetadata?.branchLorebookCopies;
-  const mappingNames = new Set((branchMarker?.mappings || []).map(mapping => String(mapping?.copyName || "").trim()).filter(Boolean));
-  const activeNames = Array.from(getCurrentChatLorebookNames(settings));
-  if (branchMarker?.status !== "completed"
-    || String(branchMarker.branchChatId || "") !== String(chatId || "")
-    || activeNames.some(name => !mappingNames.has(name))) {
+  if (!getBranchLorebookController().hasVerifiedCopies(chatId)) {
     toastr.warning(translate(
       "Branch/checkpoint auto-rollback was skipped because independent copies of every active Memory Book could not be verified.",
       "STMemoryBooks_AutoRollbackBranchIsolation",

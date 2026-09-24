@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "L’historique du side prompt est ambigu. Aucune modification n’a été enregistrée.",
   "STMemoryBooks_Progress_Title": "Mises à jour de progression en attente ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Appliquez ou abandonnez la mise à jour de progression en attente pour ce chat avant de créer une autre mémoire.",
   "STMemoryBooks_Progress_PersistenceError": "Mémoire enregistrée, mais sa mise à jour de progression en attente n’a pas pu être enregistrée dans les paramètres. Réessayez avant de recharger la page, sinon la mise à jour risque d’être perdue.",

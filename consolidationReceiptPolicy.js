@@ -29,7 +29,7 @@ export function inspectConsolidationReceipt(lorebook, checkpoint) {
     if (Number(entry.stmbSummaryTier) !== Number(checkpoint.options.targetTier)
         || String(entry.content || '') !== String(checkpoint.candidate.summary || '')
         || JSON.stringify((entry.stmbSourceEntryUids || []).map(String).sort())
-            !== JSON.stringify((checkpoint.candidate.memberIds || []).map(String).sort())) {
+            !== JSON.stringify(Array.from(new Set((checkpoint.candidate.memberIds || []).map(String).filter(Boolean))).sort())) {
         return { kind: 'conflict', reason: 'A saved consolidation was edited. Review the Memory Book.' };
     }
     if (checkpoint.options.disableOriginals && checkpoint.sources.some(source => {

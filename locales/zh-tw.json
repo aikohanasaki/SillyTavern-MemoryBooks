@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "側邊提示詞歷史紀錄不明確。未儲存任何變更。",
   "STMemoryBooks_Progress_Title": "待處理的進度更新（{{count}}）",
   "STMemoryBooks_Progress_Blocked": "建立另一條記憶之前，請先套用或捨棄此聊天待處理的進度更新。",
   "STMemoryBooks_Progress_PersistenceError": "記憶已儲存，但無法將待處理的進度更新儲存至設定。請在重新整理頁面前重試，否則更新可能遺失。",

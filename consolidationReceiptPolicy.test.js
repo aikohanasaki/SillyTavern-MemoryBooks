@@ -30,6 +30,7 @@ test('reconciles missing and saved summaries without treating edited copies as r
 
 test('a lost save response reconciles its receipt without writing twice', async () => {
     const { source, checkpoint } = fixture();
+    checkpoint.candidate.memberIds = [1, '1', 1];
     let writes = 0;
     let persisted = 0;
     const lorebook = { entries: { 1: source } };

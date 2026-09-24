@@ -43,6 +43,13 @@ const MODULE_NAME = 'STMemoryBooks-SidePrompts';
 let hasShownSidePromptRangeTip = false;
 export const STMB_SIDE_PROMPT_TITLE_SUFFIX = ' (STMB SidePrompt)';
 
+function reportSidePromptHistoryConflict(err, name) {
+    if (err?.type !== 'StmbSidePromptHistoryConflict') return false;
+    console.warn(`${MODULE_NAME}: Side prompt history unresolved for "${name}":`, err);
+    toastr.error(translate('Side-prompt history is ambiguous. No changes were saved.', 'STMemoryBooks_SidePromptHistoryConflict'), 'STMemoryBooks', { preventDuplicates: true });
+    return true;
+}
+
 // Serialize preview popups to avoid overlap; enqueue in order of receipt
 let previewQueue = Promise.resolve();
 function enqueuePreview(task) {
@@ -1281,7 +1288,13 @@ export async function evaluateTrackers() {
                 continue;
             }
 
-            const existing = resolveSidePromptHistory(lore.data, getSidePromptHistory(tpl, runtimeMacros, ['tracker'])).latest;
+            let existing;
+            try {
+                existing = resolveSidePromptHistory(lore.data, getSidePromptHistory(tpl, runtimeMacros, ['tracker'])).latest;
+            } catch (err) {
+                if (!reportSidePromptHistoryConflict(err, displayName)) throw err;
+                continue;
+            }
             const lastMsgId = getSidePromptLastMessageId(tpl, existing);
             const lastRunAt = existing?.[`STMB_sp_${tpl.key}_lastRunAt`]
                 ? Date.parse(existing[`STMB_sp_${tpl.key}_lastRunAt`])
@@ -1314,14 +1327,20 @@ export async function evaluateTrackers() {
                 continue;
             }
 
-            const prepared = await prepareSidePromptRun({
-                tpl,
-                loreData: lore.data,
-                compiledScene: compiled,
-                defaultOverrides,
-                fallbackKinds: ['tracker'],
-                runtimeMacros,
-            });
+            let prepared;
+            try {
+                prepared = await prepareSidePromptRun({
+                    tpl,
+                    loreData: lore.data,
+                    compiledScene: compiled,
+                    defaultOverrides,
+                    fallbackKinds: ['tracker'],
+                    runtimeMacros,
+                });
+            } catch (err) {
+                if (!reportSidePromptHistoryConflict(err, displayName)) throw err;
+                continue;
+            }
 
             if (areStmbJobsEnabled()) {
                 ensureSidePromptJobExecutorRegistered();
@@ -1540,15 +1559,21 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
             const preparedItems = [];
             for (const runItem of runItems) {
                 const tpl = runItem.tpl;
-                const lore = await resolveSidePromptLorebook(tpl, lorebookResolveContext);
-                const prepared = await prepareSidePromptRun({
-                    tpl,
-                    loreData: lore.data,
-                    compiledScene,
-                    defaultOverrides,
-                    fallbackKinds: ['plotpoints', 'scoreboard'],
-                    runtimeMacros: runItem.runtimeMacros,
-                });
+                let lore, prepared;
+                try {
+                    lore = await resolveSidePromptLorebook(tpl, lorebookResolveContext);
+                    prepared = await prepareSidePromptRun({
+                        tpl,
+                        loreData: lore.data,
+                        compiledScene,
+                        defaultOverrides,
+                        fallbackKinds: ['plotpoints', 'scoreboard'],
+                        runtimeMacros: runItem.runtimeMacros,
+                    });
+                } catch (err) {
+                    if (!reportSidePromptHistoryConflict(err, runItem.name || tpl.name)) throw err;
+                    continue;
+                }
                 const lbs = getEffectiveLorebookSettingsForTemplate(tpl);
                 const { defaults, entryOverrides } = makeUpsertParamsFromLorebook(lbs, runItem.runtimeMacros || {});
                 preparedItems.push({
@@ -1633,6 +1658,9 @@ export async function runAfterMemory(compiledScene, profile = null, options = {}
                         conn: prepared.conn,
                     };
                 } catch (e) {
+                    if (reportSidePromptHistoryConflict(e, runItem.name || tpl.name)) {
+                        return { ok: false, runItem, tpl, error: e, cancelled: false };
+                    }
                     if (!isStmbStopError(e)) {
                         console.error(`${MODULE_NAME}: Wave LLM failed for "${tpl.name}":`, e);
                     }
@@ -1974,6 +2002,7 @@ export async function runSidePrompt(args) {
         return '';
     } catch (outer) {
         if (isStmbStopError(outer)) return '';
+        reportSidePromptHistoryConflict(outer, 'manual run');
         return '';
     } finally {
         parentTask.finish();
@@ -2032,6 +2061,7 @@ export async function runSidePromptSet(args, options = {}) {
 
         let compiled = null;
         const loreByItemId = new Map();
+        const conflictedItemIds = new Set();
         if (parsed.range) {
             const range = parseManualRange(parsed.range);
             if (range?.error === 'format') {
@@ -2064,7 +2094,14 @@ export async function runSidePromptSet(args, options = {}) {
                     console.warn(`${MODULE_NAME}: Unable to resolve lorebook for side prompt set item "${runItem.name}":`, err);
                     continue;
                 }
-                const existing = resolveSidePromptHistory(lore.data, getSidePromptHistory(runItem.tpl, runItem.runtimeMacros, ['scoreboard', 'plotpoints', 'tracker'])).latest;
+                let existing;
+                try {
+                    existing = resolveSidePromptHistory(lore.data, getSidePromptHistory(runItem.tpl, runItem.runtimeMacros, ['scoreboard', 'plotpoints', 'tracker'])).latest;
+                } catch (err) {
+                    if (!reportSidePromptHistoryConflict(err, runItem.name)) throw err;
+                    conflictedItemIds.add(runItem.item.id);
+                    continue;
+                }
                 const lastMsgId = getSidePromptLastMessageId(runItem.tpl, existing);
                 earliestLastMsgId = earliestLastMsgId === null ? lastMsgId : Math.min(earliestLastMsgId, lastMsgId);
             }
@@ -2090,6 +2127,7 @@ export async function runSidePromptSet(args, options = {}) {
             ensureSidePromptJobExecutorRegistered();
             let queued = 0;
             for (const runItem of runItems) {
+                if (conflictedItemIds.has(runItem.item.id)) continue;
                 const tpl = runItem.tpl;
                 let lore = loreByItemId.get(runItem.item.id);
                 try {
@@ -2116,6 +2154,7 @@ export async function runSidePromptSet(args, options = {}) {
                     queued++;
                 } catch (err) {
                     failCount++;
+                    if (reportSidePromptHistoryConflict(err, runItem.name)) continue;
                     console.error(`${MODULE_NAME}: side prompt set item queueing failed:`, err);
                     toastr.error(__st_t_tag`SidePrompt "${runItem.name}" failed: ${err.message}`, 'STMemoryBooks');
                 }
@@ -2127,6 +2166,7 @@ export async function runSidePromptSet(args, options = {}) {
         }
 
         for (const runItem of runItems) {
+            if (conflictedItemIds.has(runItem.item.id)) continue;
             const tpl = runItem.tpl;
             let lore = loreByItemId.get(runItem.item.id);
             try {
@@ -2213,6 +2253,7 @@ export async function runSidePromptSet(args, options = {}) {
             } catch (err) {
                 if (isStmbStopError(err)) return '';
                 failCount++;
+                if (reportSidePromptHistoryConflict(err, runItem.name)) continue;
                 console.error(`${MODULE_NAME}: side prompt set item failed:`, err);
                 toastr.error(__st_t_tag`SidePrompt "${runItem.name}" failed: ${err.message}`, 'STMemoryBooks');
             }

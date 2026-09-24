@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "侧边提示词历史记录存在歧义。未保存任何更改。",
   "STMemoryBooks_Progress_Title": "待处理的进度更新（{{count}}）",
   "STMemoryBooks_Progress_Blocked": "创建另一条记忆之前，请先应用或丢弃此聊天待处理的进度更新。",
   "STMemoryBooks_Progress_PersistenceError": "记忆已保存，但无法将待处理的进度更新保存到设置。请在刷新页面前重试，否则更新可能丢失。",

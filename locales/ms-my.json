@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "Sejarah side prompt tidak jelas. Tiada perubahan disimpan.",
   "STMemoryBooks_Progress_Title": "Kemas kini kemajuan tertangguh ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Gunakan atau buang kemas kini kemajuan tertangguh untuk sembang ini sebelum mencipta memori lain.",
   "STMemoryBooks_Progress_PersistenceError": "Memori disimpan, tetapi kemas kini kemajuan tertangguhnya tidak dapat disimpan dalam tetapan. Cuba semula sebelum memuat semula halaman atau kemas kini mungkin hilang.",

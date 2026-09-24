@@ -60,7 +60,7 @@ export function isBranchCopyProcessed(marker, chatId) {
         marker &&
         marker.version === BRANCH_LOREBOOK_METADATA_VERSION &&
         String(marker.branchChatId || '') === String(chatId || '') &&
-        ['completed', 'failed'].includes(marker.status)
+        ['completed', 'failed', 'skipped'].includes(marker.status)
     );
 }
 
@@ -414,6 +414,15 @@ export function createBranchLorebookController(dependencies) {
                     ? cloneValue(current.branchMarker.retryBindings || null)
                     : null);
             if (!bindings) {
+                assertActiveChat(current);
+                setMarker(deps.getChatMetadata?.() || {}, {
+                    status: 'skipped',
+                    parentChatId,
+                    branchChatId: current.chatId,
+                    skippedAt: new Date().toISOString(),
+                    mappings: [],
+                });
+                await deps.saveMetadata?.();
                 notify(
                     'warning',
                     translate(
@@ -518,12 +527,23 @@ export function createBranchLorebookController(dependencies) {
         }
     }
 
+    function hasVerifiedCopies(current) {
+        const marker = current.branchMarker;
+        if (marker?.status !== 'completed' || String(marker.branchChatId || '') !== current.chatId) return false;
+        const bindings = resolveActiveLorebookBindings(current);
+        return !!bindings && bindings.sourceNames.every(name =>
+            (marker.mappings || []).some(mapping => String(mapping?.copyName || '') === name));
+    }
+
     return {
         initialize() {
             previousSnapshot = capture();
         },
         getPreviousSnapshot() {
             return previousSnapshot;
+        },
+        hasVerifiedCopies(chatId) {
+            return hasVerifiedCopies(capture(chatId));
         },
         async handleChatChanged(chatId = null) {
             const current = capture(chatId);
@@ -532,11 +552,9 @@ export function createBranchLorebookController(dependencies) {
             const autoRollbackRequested = !!current.autoRollbackEnabled
                 && !!current.chatId && !!current.mainChat && current.chatId !== current.mainChat;
             const autoRollbackChild = isChildChatForAutoRollback(current);
-            const alreadyCopied = current.branchMarker?.status === 'completed'
-                && String(current.branchMarker.branchChatId || '') === current.chatId
-                && current.activeLorebookNames.every(name =>
-                    (current.branchMarker.mappings || []).some(mapping => String(mapping?.copyName || '') === name)
-                    || current.lockedLorebookNames.has(name));
+            const alreadyCopied = hasVerifiedCopies(current);
+            const alreadySkipped = current.branchMarker?.status === 'skipped'
+                && String(current.branchMarker.branchChatId || '') === current.chatId;
             if (autoRollbackRequested && !current.copyEnabled) {
                 notify('warning', translate(
                     'Auto-rollback for this branch or checkpoint was skipped because Memory Book copying is disabled.',
@@ -544,9 +562,9 @@ export function createBranchLorebookController(dependencies) {
                 ));
                 return false;
             }
-            if (autoRollbackChild && !alreadyCopied) {
+            if (autoRollbackChild && !alreadyCopied && !alreadySkipped) {
                 await processBranch(previous || current, current);
-            } else if (shouldCopyForChatChange(previous, current)) {
+            } else if (!alreadySkipped && shouldCopyForChatChange(previous, current)) {
                 await processBranch(previous, current);
             }
             const refreshed = capture();

@@ -1827,6 +1827,10 @@ async function saveTopicalClipDraft(context, draft, options = {}) {
         if (!freshLorebook?.entries) {
             throw new Error(tr('STMemoryBooks_Error_FailedToLoadLorebook', 'Failed to load lorebook'));
         }
+        if (context.messageSelection && !validateChatSelection(
+            context.messageSelection, chat, getStmbChatKey(getCurrentStmbChatRef()))) {
+            throw new Error(tr('STMemoryBooks_Extract_Changed', 'The chat or selected messages changed. Select them again.'));
+        }
 
         if (mode === 'update' && !options.forceCreateNew) {
             const target = findEntryByStableId(freshLorebook, targetUid);

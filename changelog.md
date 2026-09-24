@@ -8,8 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 ← [Back to README](readme.md)
 
 ## v9.3.0 (September 23, 2026)
-- Add Side Prompt versioning.Yes 
+- Add Side Prompt versioning.
 - Fix auto-rollback for branches and checkpoints.
+- Add Suggest mode to Memory Assistance for discovering Topical Clip topics without updating existing Clips.
+- Add Extract/Find to build Topical Clips from noncontiguous messages in the loaded chat, with checks for changed selections and messages.
+- Keep Topical Clip keywords in sync when switching the selected update target.
+- Add recoverable consolidation checkpoints with lorebook readback, safe retry handling, and review of uncertain saves after reload.
 
 ## v9.2.3 (September 16, 2026)
 - Fix Topical Clip keyword fill.

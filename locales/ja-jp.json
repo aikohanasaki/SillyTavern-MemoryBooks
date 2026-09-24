@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "サイドプロンプトの履歴が曖昧です。変更は保存されませんでした。",
   "STMemoryBooks_Progress_Title": "保留中の進捗更新（{{count}}）",
   "STMemoryBooks_Progress_Blocked": "別のメモリを作成する前に、このチャットの保留中の進捗更新を適用するか破棄してください。",
   "STMemoryBooks_Progress_PersistenceError": "メモリは保存されましたが、保留中の進捗更新を設定に保存できませんでした。ページを再読み込みする前に再試行してください。更新が失われる可能性があります。",

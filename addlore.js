@@ -23,6 +23,7 @@ import {
 } from './memoryRegeneration.js';
 import { getRequestHeaders, eventSource, event_types } from '../../../../script.js';
 import { SIDE_PROMPT_HISTORY_KEY, formatSidePromptVersionTitle, resolveSidePromptHistory, validateSidePromptHistoryRequest } from './sidePromptHistory.js';
+import { fingerprintRollbackEntry } from './memoryRollback.js';
 
 const MODULE_NAME = 'STMemoryBooks-AddLore';
 
@@ -45,11 +46,19 @@ function applySidePromptHistory(data, title, history, entry, createEntry) {
             chatId: history.chatId, titleBase: history.titleBase, titleSource: history.titleSource, sequence };
         target.group = group;
     };
+    const updateVersion = (old, disable) => {
+        const snapshot = old.STMB_sidePromptRegeneration;
+        const wasCurrent = snapshot?.version === 2
+            && fingerprintRollbackEntry(old, { excludeSidePromptSnapshot: true }) === snapshot.writtenFingerprint;
+        old.disable = disable;
+        old.group = group;
+        if (wasCurrent) snapshot.writtenFingerprint = fingerprintRollbackEntry(old, { excludeSidePromptSnapshot: true });
+    };
     if (history.append) {
         let sequence = resolved.latest?.[SIDE_PROMPT_HISTORY_KEY]?.sequence || 0;
         if (resolved.legacy) { stamp(resolved.legacy, 1); resolved.legacy.comment = formatSidePromptVersionTitle(history.titleBase, 1); resolved.legacy.disable = true; sequence = 1; }
         if (!Number.isSafeInteger(sequence + 1) || sequence + 1 < 1) throw new Error('Invalid side-prompt version sequence.');
-        for (const old of resolved.versions) { old.disable = true; old.group = group; }
+        for (const old of resolved.versions) updateVersion(old, true);
         const next = createEntry();
         if (!next) throw new Error(i18n('addlore.upsert.errors.createFailed', 'Failed to create lorebook entry'));
         stamp(next, sequence + 1); next.comment = formatSidePromptVersionTitle(history.titleBase, sequence + 1); next.disable = false;
@@ -58,8 +67,7 @@ function applySidePromptHistory(data, title, history, entry, createEntry) {
     const latest = resolved.latest;
     if (latest) {
         const priorEntry = structuredClone(latest);
-        latest.group = group;
-        for (const old of resolved.versions) { old.group = group; old.disable = old !== latest; }
+        for (const old of resolved.versions) updateVersion(old, old !== latest);
         return { entry: latest, created: false, priorEntry };
     }
     const next = createEntry();

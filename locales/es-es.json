@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_SidePromptHistoryConflict": "El historial del side prompt es ambiguo. No se guardaron cambios.",
   "STMemoryBooks_Progress_Title": "Actualizaciones de progreso pendientes ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Aplica o descarta la actualización de progreso pendiente de este chat antes de crear otra memoria.",
   "STMemoryBooks_Progress_PersistenceError": "Memoria guardada, pero no se pudo guardar su actualización de progreso pendiente en la configuración. Reinténtalo antes de recargar la página o podría perderse la actualización.",
