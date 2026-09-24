@@ -24,7 +24,7 @@ const MODULE_NAME = 'STMemoryBooks-ChatCompile';
  * @param {boolean} [options.includeHiddenMessages=false] - Include messages that are currently hidden
  * @returns {Object} Compiled scene data
  */
-export function compileScene(sceneRequest, { includeHiddenMessages = false } = {}) {
+export function compileScene(sceneRequest, { includeHiddenMessages = false, messageIndices = null } = {}) {
     const { sceneStart, sceneEnd, chatId, characterName } = sceneRequest;
     
     // Validate input parameters
@@ -48,7 +48,14 @@ export function compileScene(sceneRequest, { includeHiddenMessages = false } = {
     let hiddenMessagesSkipped = 0;
     let skippedMessageCount = 0;
     
-    for (let i = sceneStart; i <= sceneEnd; i++) {
+    if (messageIndices !== null && (!Array.isArray(messageIndices) || messageIndices.length === 0
+        || messageIndices.some(i => !Number.isInteger(i) || i < sceneStart || i > sceneEnd || !chat[i]))) {
+        throw new Error('Invalid selected message indices');
+    }
+    const indices = messageIndices === null ? null : [...new Set(messageIndices)].sort((a, b) => a - b);
+    const requestedCount = indices ? indices.length : sceneEnd - sceneStart + 1;
+    for (let offset = 0; offset < requestedCount; offset++) {
+        const i = indices ? indices[offset] : sceneStart + offset;
         const message = chat[i];
         
         // Handle missing messages gracefully
@@ -103,7 +110,8 @@ export function compileScene(sceneRequest, { includeHiddenMessages = false } = {
         chatId: chatId || 'unknown',
         characterName: characterName || name2 || translate('Unknown', 'common.unknown'),
         messageCount: sceneMessages.length,
-        totalRequestedRange: sceneEnd - sceneStart + 1,
+        totalRequestedRange: requestedCount,
+        ...(indices ? { sourceMode: 'selection', messageIndices: indices } : {}),
         hiddenMessagesSkipped,
         messagesSkipped: skippedMessageCount,
         compiledAt: new Date().toISOString(),
@@ -268,7 +276,9 @@ export function toReadableText(compiledScene) {
     
     let output = [];
     output.push(translate('=== SCENE METADATA ===', 'chatcompile.readable.headerMetadata'));
-    output.push(__st_t_tag`Range: ${metadata.sceneStart}-${metadata.sceneEnd}`);
+    output.push(metadata.sourceMode === 'selection'
+        ? `${translate('Selected messages', 'STMemoryBooks_Extract_Selected')}: ${messages.map(message => message.id).join(', ')}`
+        : __st_t_tag`Range: ${metadata.sceneStart}-${metadata.sceneEnd}`);
     output.push(__st_t_tag`Chat: ${metadata.chatId}`);
     output.push(__st_t_tag`Character: ${metadata.characterName}`);
     output.push(__st_t_tag`Compiled: ${metadata.messageCount}`);

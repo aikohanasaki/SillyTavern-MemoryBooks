@@ -81,6 +81,15 @@ test('retrying an individual side prompt preserves its parent linkage', () => {
     assert.equal(retryInput.state, 'queued');
 });
 
+test('consolidation retry retains checkpoint identities', () => {
+    const retry = buildRetryJobInput({
+        id: 'summary-1', type: 'consolidation', state: 'failed',
+        payload: { lorebookName: 'Book', consolidationCheckpointIds: ['commit-1'] },
+    });
+    assert.deepEqual(retry.payload.consolidationCheckpointIds, ['commit-1']);
+    assert.equal(retry.payload.lorebookName, 'Book');
+});
+
 test('a repeated memory retry preserves previously carried child snapshots', () => {
     const memory = {
         id: 'memory-retry',

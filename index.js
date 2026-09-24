@@ -185,10 +185,17 @@ import {
 } from "./contextSettingsPopup.js";
 import {
   runSummaryAnalysisSequential,
-  commitSummaryEntries,
   formatSummaryTitle,
   parseSummaryJsonResponse,
 } from "./arcanalysis.js";
+import {
+  commitSummaryEntriesRecoverable as commitSummaryEntries,
+  dismissConsolidationCheckpoint,
+  getConsolidationCheckpoint,
+  getUnfinishedConsolidationCheckpoints,
+  markConsolidationPostEffectsDone,
+  resumeConsolidationCheckpointById,
+} from "./consolidationRecovery.js";
 import * as ArcPrompts from "./arcAnalysisPromptManager.js";
 import {
   MIN_SUMMARY_CHILDREN,
@@ -6556,6 +6563,7 @@ async function runConsolidationPreviewWorkflow({
   commitCandidates,
   throwIfCancelled = null,
 }) {
+  const consolidationRunId = globalThis.crypto?.randomUUID?.() || `stmb-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const originalEntries = Array.isArray(selectedEntries) ? selectedEntries : [];
   const pendingIds = new Set(
     originalEntries
@@ -6618,7 +6626,7 @@ async function runConsolidationPreviewWorkflow({
       ? previewResult.acceptedCandidates
       : [];
     if (acceptedCandidates.length > 0) {
-      const commitResult = await commitCandidates(acceptedCandidates);
+      const commitResult = await commitCandidates(acceptedCandidates, consolidationRunId);
       const results = Array.isArray(commitResult?.results) ? commitResult.results : [];
       committedResults.push(...results);
       committedCandidates.push(...acceptedCandidates);
@@ -6644,6 +6652,27 @@ async function runConsolidationPreviewWorkflow({
 async function executeQueuedConsolidationJob(job, jobContext) {
   const payload = job?.payload || {};
   const lorebookName = String(payload.lorebookName || job.lorebookName || "").trim();
+  const checkpointIds = Array.isArray(payload.consolidationCheckpointIds) ? payload.consolidationCheckpointIds : [];
+  if (checkpointIds.length > 0) {
+    const results = [];
+    for (const id of checkpointIds) results.push(await resumeConsolidationCheckpointById(id));
+    const consumed = new Set(checkpointIds.flatMap(id => getConsolidationCheckpoint(id)?.candidate?.memberIds || []).map(String));
+    const leftovers = (payload.selectedEntries || []).map(getEntryUid).filter(id => id !== null && !consumed.has(String(id)));
+    jobContext.setResult({ lorebookName, targetTier: Number(payload.targetTier), created: results.length,
+      recovered: true, leftovers: leftovers.length });
+    if (leftovers.length) jobContext.setDetail(translate(
+      'Saved summaries recovered. Start a new consolidation for the remaining sources.',
+      'STMemoryBooks_Consolidation_RecoveryPartial'));
+    await runPostConsolidationCommitFlow({ created: results.length, targetTier: Number(payload.targetTier),
+      lorebookName, lorebookData: await loadWorldInfo(lorebookName), chatRef: job.chatRef });
+    return;
+  }
+  if (payload.consolidationSaveAttempted) {
+    throw new Error(translate(
+      "This consolidation has no save receipt. Review saved summaries in the Memory Book before starting a new consolidation.",
+      "STMemoryBooks_Consolidation_RetryNeedsReview",
+    ));
+  }
   const targetTier = clampInt(Number(payload.targetTier), 1, 6);
   const selectedEntries = Array.isArray(payload.selectedEntries) ? payload.selectedEntries : [];
   if (!lorebookName || selectedEntries.length === 0) {
@@ -6710,7 +6739,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
                 payload.profileSettings || null,
               );
             },
-            commitCandidates: async (candidates) => {
+            commitCandidates: async (candidates, consolidationRunId) => {
               jobContext.setState("saving", { detail: lorebookName });
               let result = null;
               await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
@@ -6724,6 +6753,12 @@ async function executeQueuedConsolidationJob(job, jobContext) {
                   collectSummaryMemberIds(candidates),
                 );
                 result = await commitSummaryEntries({
+                  consolidationRunId,
+                  chatRef: job.chatRef,
+                  onCheckpoint: id => jobContext.patch({ payload: {
+                    ...jobContext.job.payload,
+                    consolidationCheckpointIds: [...(jobContext.job.payload.consolidationCheckpointIds || []), id],
+                  } }),
                   lorebookName,
                   lorebookData: freshLorebook,
                   summaryCandidates: candidates,
@@ -6787,6 +6822,12 @@ async function executeQueuedConsolidationJob(job, jobContext) {
     }
     verifyConsolidationSourceFingerprints(freshLorebook, payload.sourceFingerprints || {});
     const result = await commitSummaryEntries({
+      consolidationRunId: job.id,
+      chatRef: job.chatRef,
+      onCheckpoint: id => jobContext.patch({ payload: {
+        ...jobContext.job.payload,
+        consolidationCheckpointIds: [...(jobContext.job.payload.consolidationCheckpointIds || []), id],
+      } }),
       lorebookName,
       lorebookData: freshLorebook,
       summaryCandidates,
@@ -6814,6 +6855,72 @@ async function executeQueuedConsolidationJob(job, jobContext) {
     lorebookData: latestCommittedLorebookData,
     chatRef: job.chatRef,
   });
+}
+
+async function showConsolidationRecoveryPopup() {
+  const checkpoints = getUnfinishedConsolidationCheckpoints();
+  if (checkpoints.length === 0) {
+    toastr.info(translate("No pending consolidation saves.", "STMemoryBooks_Consolidation_NoPending"), "STMemoryBooks");
+    return;
+  }
+  const rows = checkpoints.map(item => `<div class="info_block marginBot5" data-checkpoint-id="${escapeHtml(item.id)}">
+    <strong>${escapeHtml(item.lorebookName)}</strong> · ${escapeHtml(item.status === 'needsReview'
+      ? translate('Needs Review', 'STMemoryBooks_Jobs_NeedsReview')
+      : translate('Pending', 'STMemoryBooks_Consolidation_Pending'))}
+    <p>${escapeHtml(item.status === 'needsReview'
+      ? translate('Saved consolidation state could not be confirmed. Review the Memory Book before starting again.', 'STMemoryBooks_Consolidation_ReviewRequired')
+      : translate('Check the saved summary before resuming.', 'STMemoryBooks_Consolidation_RecoveryHint'))}</p>
+    <button type="button" class="menu_button stmb-review-consolidation">${escapeHtml(translate('Review details', 'STMemoryBooks_Consolidation_ReviewAction'))}</button>
+    ${item.status === 'needsReview' ? `<button type="button" class="menu_button stmb-dismiss-consolidation">${escapeHtml(translate('Dismiss after review', 'STMemoryBooks_Consolidation_DismissAction'))}</button>` : ''}
+    ${item.status === 'needsReview' ? '' : `<button type="button" class="menu_button stmb-resume-consolidation">${escapeHtml(translate('Resume', 'STMemoryBooks_Consolidation_Resume'))}</button>`}
+  </div>`).join('');
+  const popup = new Popup(DOMPurify.sanitize(`<h3>${escapeHtml(translate('Consolidation recovery', 'STMemoryBooks_Consolidation_RecoveryTitle'))}</h3>${rows}`),
+    POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true, okButton: false,
+      cancelButton: translate('Close', 'STMemoryBooks_Close') });
+  markStmbPopup(popup);
+  const shown = popup.show();
+  popup.dlg?.addEventListener('click', async event => {
+    const row = event.target.closest('[data-checkpoint-id]');
+    if (!row) return;
+    const checkpoint = checkpoints.find(item => item.id === row.dataset.checkpointId);
+    if (event.target.closest('.stmb-review-consolidation')) {
+      const details = new Popup(DOMPurify.sanitize(`<h3>${escapeHtml(checkpoint.lorebookName)}</h3>
+        <p>${escapeHtml(checkpoint.candidate.STMB_commitTitle || checkpoint.candidate.title || '')}</p>
+        <p>${escapeHtml((checkpoint.sources || []).map(source => source.uid).join(', '))}</p>
+        <p>${escapeHtml(checkpoint.error || '')}</p>`), POPUP_TYPE.TEXT, '', {
+        okButton: false, cancelButton: translate('Close', 'STMemoryBooks_Close') });
+      markStmbPopup(details);
+      await details.show();
+      return;
+    }
+    if (event.target.closest('.stmb-dismiss-consolidation')) {
+      await dismissConsolidationCheckpoint(row.dataset.checkpointId);
+      row.remove();
+      return;
+    }
+    const button = event.target.closest('.stmb-resume-consolidation');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await resumeConsolidationCheckpointById(row.dataset.checkpointId);
+      if (checkpoint && !checkpoint.postEffectsDone) {
+        if (checkpoint.chatKey === getStmbChatKey()) {
+          await runPostConsolidationCommitFlow({ created: 1, targetTier: checkpoint.options.targetTier,
+            lorebookName: checkpoint.lorebookName, lorebookData: await loadWorldInfo(checkpoint.lorebookName) });
+        } else {
+          await markConsolidationPostEffectsDone(checkpoint.lorebookName, checkpoint.options.targetTier, checkpoint.chatKey);
+        }
+      }
+      row.remove();
+      toastr.success(translate('Consolidation save confirmed.', 'STMemoryBooks_Consolidation_Confirmed'), 'STMemoryBooks');
+    } catch (error) {
+      const message = row.querySelector('p');
+      if (message) message.textContent = error?.code === 'STMB_CONSOLIDATION_NEEDS_REVIEW'
+        ? translate('Saved consolidation state could not be confirmed. Review the Memory Book before starting again.', 'STMemoryBooks_Consolidation_ReviewRequired')
+        : error.message;
+    } finally { button.disabled = false; }
+  });
+  await shown;
 }
 
 async function initiateMemoryCreation(selectedProfileIndex = null) {
@@ -7882,6 +7989,11 @@ function populateInlineButtons() {
           );
         }
       },
+    },
+    {
+      text: "🛠 " + translate("Consolidation recovery", "STMemoryBooks_Consolidation_RecoveryTitle"),
+      id: "stmb-consolidation-recovery",
+      action: showConsolidationRecoveryPopup,
     },
     {
       text: "🧭 " + translate("Memory Assistance Suggestions", "STMemoryBooks_ClipReview_SuggestionsTitle"),
@@ -9332,7 +9444,10 @@ async function runPostConsolidationCommitFlow({
   chatRef = null,
 } = {}) {
   if (Number(created || 0) <= 0) return;
-  if (chatRef && !isStmbJobChatCurrent(chatRef)) return;
+  if (chatRef && !isStmbJobChatCurrent(chatRef)) {
+    await markConsolidationPostEffectsDone(lorebookName, targetTier, getStmbChatKey(chatRef));
+    return;
+  }
 
   const normalizedTargetTier = clampInt(Number(targetTier), 1, 6);
   clearAutoConsolidationPromptState(normalizedTargetTier);
@@ -9346,6 +9461,7 @@ async function runPostConsolidationCommitFlow({
       },
     });
   }
+  await markConsolidationPostEffectsDone(lorebookName, normalizedTargetTier, getStmbChatKey(chatRef));
 }
 
 /**
@@ -10365,7 +10481,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                 null,
               );
             },
-            commitCandidates: async (candidates) => {
+            commitCandidates: async (candidates, consolidationRunId) => {
               let result = null;
               await withStmbWriteLane({ type: "lorebook", name: workItem.lorebookName }, async () => {
                 const freshLorebook = await loadWorldInfo(workItem.lorebookName);
@@ -10378,6 +10494,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                   collectSummaryMemberIds(candidates),
                 );
                 result = await commitSummaryEntries({
+                  consolidationRunId,
                   lorebookName: workItem.lorebookName,
                   lorebookData: freshLorebook,
                   summaryCandidates: candidates,
@@ -10557,7 +10674,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
               null,
             );
           },
-          commitCandidates: async (candidates) => {
+          commitCandidates: async (candidates, consolidationRunId) => {
             let result = null;
             await withStmbWriteLane({ type: "lorebook", name: lorebookName }, async () => {
               const freshLorebook = await loadWorldInfo(lorebookName);
@@ -10570,6 +10687,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                 collectSummaryMemberIds(candidates),
               );
               result = await commitSummaryEntries({
+                consolidationRunId,
                 lorebookName,
                 lorebookData: freshLorebook,
                 summaryCandidates: candidates,
@@ -10627,7 +10745,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
     }
 
     try {
-      const res2 = await commitSummaryEntries({
+      const res2 = await withStmbWriteLane({ type: "lorebook", name: lorebookName }, () => commitSummaryEntries({
         lorebookName,
         lorebookData,
         summaryCandidates,
@@ -10639,7 +10757,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
         reverseStart: chosenArcReverseStart,
         entryMetadata: primaryEntryMetadata,
         applyCharacterFilters,
-      });
+      }));
       const created = Array.isArray(res2?.results)
         ? res2.results.length
         : summaryCandidates.length;
@@ -13611,7 +13729,7 @@ async function applyManualFixedSummaryJson(correctedRaw) {
 
     const targetTier = clampInt(Number(context?.targetTier ?? 1), 1, 6);
     const targetLabel = getSummaryTierLabel(targetTier);
-    const res = await commitSummaryEntries({
+    const res = await withStmbWriteLane({ type: "lorebook", name: context.lorebookName }, () => commitSummaryEntries({
       lorebookName: context.lorebookName,
       lorebookData: context.lorebookData,
       summaryCandidates,
@@ -13629,7 +13747,7 @@ async function applyManualFixedSummaryJson(correctedRaw) {
           : fallbackReverseStart,
       entryMetadata: context.entryMetadata,
       applyCharacterFilters: context.applyCharacterFilters,
-    });
+    }));
 
     const created = Array.isArray(res?.results)
       ? res.results.length
@@ -14102,6 +14220,9 @@ async function init() {
 
   // Initialize settings with validation
   const settings = initializeSettings();
+  if (getUnfinishedConsolidationCheckpoints().length > 0) {
+    setTimeout(() => { void showConsolidationRecoveryPopup(); }, 1000);
+  }
   const profileValidation = validateAndFixProfiles(settings);
   initializePendingProgress({
     getChatRef: getCurrentStmbChatRef,

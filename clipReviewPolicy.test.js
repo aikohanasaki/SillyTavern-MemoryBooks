@@ -3,11 +3,11 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getMemoryAssistanceFailure, makeClipReviewRecord, normalizeMemoryAssistanceMode, packClipReviewBatches, parseClipReviewResponse, parseClipSuggestionsResponse, renderClipReviewReport, shouldPreserveClipReviewReport } from './clipReviewPolicy.js';
+import { getMemoryAssistanceFailure, makeClipReviewRecord, normalizeMemoryAssistanceMode, packClipReviewBatches, parseClipReviewResponse, parseClipSuggestionsResponse, planMemoryAssistance, renderClipReviewReport, shouldPreserveClipReviewReport } from './clipReviewPolicy.js';
 
 test('normalizes Memory Assistance modes and migrates the legacy checkbox', () => {
     assert.equal(normalizeMemoryAssistanceMode('off', true), 'off');
-    assert.equal(normalizeMemoryAssistanceMode('Suggest'), 'update');
+    assert.equal(normalizeMemoryAssistanceMode('Suggest'), 'suggest');
     assert.equal(normalizeMemoryAssistanceMode('update'), 'update');
     assert.equal(normalizeMemoryAssistanceMode('update and suggest'), 'update_and_suggest');
     assert.equal(normalizeMemoryAssistanceMode('update-and-suggest'), 'update_and_suggest');
@@ -15,6 +15,15 @@ test('normalizes Memory Assistance modes and migrates the legacy checkbox', () =
     assert.equal(normalizeMemoryAssistanceMode('automatic'), 'automatic');
     assert.equal(normalizeMemoryAssistanceMode('', true), 'update');
     assert.equal(normalizeMemoryAssistanceMode('invalid', false), 'off');
+});
+
+test('Suggest discovers topics without an update prompt or existing-Clip review', () => {
+    for (const records of [[], [{ uid: 1, title: 'Existing Clip' }]]) {
+        assert.deepEqual(planMemoryAssistance('suggest', records), {
+            suggestTopics: true, reviewRecords: [], requiresUpdatePrompt: false,
+        });
+    }
+    assert.equal(planMemoryAssistance('update_and_suggest', [{ uid: 1 }]).requiresUpdatePrompt, true);
 });
 
 test('normalizes and filters Topical Clip suggestions', () => {

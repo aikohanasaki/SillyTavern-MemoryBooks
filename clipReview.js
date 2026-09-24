@@ -24,10 +24,12 @@ import {
     LEGACY_CLIP_REVIEW_ENTRY_TITLE,
     MEMORY_ASSISTANCE_MODE_AUTOMATIC,
     MEMORY_ASSISTANCE_MODE_OFF,
+    MEMORY_ASSISTANCE_MODE_SUGGEST,
     MEMORY_ASSISTANCE_MODE_UPDATE_AND_SUGGEST,
     getMemoryAssistanceFailure,
     makeClipReviewRecord,
     normalizeMemoryAssistanceMode,
+    planMemoryAssistance,
     packClipReviewBatches,
     parseClipReviewResponse,
     parseClipSuggestionsResponse,
@@ -256,7 +258,7 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
     ].map(name => String(name || '').trim()).filter(Boolean)));
     if (names.length === 0) return [];
     const template = await getTemplate(CLIP_REVIEW_TEMPLATE_KEY);
-    if (!template?.prompt?.trim()) throw new Error('The Memory Assistance prompt is missing.');
+    if (planMemoryAssistance(mode).requiresUpdatePrompt && !template?.prompt?.trim()) throw new Error('The Memory Assistance prompt is missing.');
     const results = [];
 
     for (const lorebookName of names) {
@@ -271,7 +273,8 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
             continue;
         }
         const records = getClipEntries(lorebookData).map(makeClipReviewRecord);
-        const shouldSuggestTopics = mode === MEMORY_ASSISTANCE_MODE_UPDATE_AND_SUGGEST;
+        const plan = planMemoryAssistance(mode, records);
+        const shouldSuggestTopics = plan.suggestTopics;
         if (records.length === 0 && !shouldSuggestTopics) {
             if (getMemoryAssistanceReportEntry(lorebookData)) {
                 await saveClipReviewReport(lorebookName, compiledScene, [], 'complete');
@@ -279,7 +282,9 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
             results.push({ lorebookName, status: 'complete', candidates: [] });
             continue;
         }
-        const selection = mode === MEMORY_ASSISTANCE_MODE_AUTOMATIC
+        const selection = mode === MEMORY_ASSISTANCE_MODE_SUGGEST
+            ? { status: 'selected', records: plan.reviewRecords }
+            : mode === MEMORY_ASSISTANCE_MODE_AUTOMATIC
             ? { status: 'selected', records }
             : records.length > 0
                 ? await chooseClipRecords(records, lorebookName)
@@ -298,7 +303,7 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
         const errors = [];
         if (shouldSuggestTopics) {
             try {
-                const finalPrompt = buildClipSuggestionsPrompt(template.settings?.suggestionsPrompt, compiledScene, records);
+                const finalPrompt = buildClipSuggestionsPrompt(template?.settings?.suggestionsPrompt, compiledScene, records);
                 const estimatedTokens = Math.ceil(finalPrompt.length / 4) + 400;
                 if (estimatedTokens > tokenLimit && !await confirmOversizedBatch(estimatedTokens, tokenLimit)) {
                     suggestionPassFailed = true;
@@ -425,9 +430,11 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
             const topicMessage = topicSuggestions.length === 1
                 ? tr('STMemoryBooks_ClipReview_NewTopicOne', '1 new topic')
                 : tr('STMemoryBooks_ClipReview_NewTopicMany', '{{count}} new topics', { count: topicSuggestions.length });
-            toastr.info(shouldSuggestTopics
-                ? tr('STMemoryBooks_ClipReview_FoundUpdatesAndTopics', 'Memory Assistance found {{updateMessage}} and {{topicMessage}}.', { updateMessage, topicMessage })
-                : tr('STMemoryBooks_ClipReview_FoundUpdates', 'Memory Assistance found {{updateMessage}}.', { updateMessage }), 'STMemoryBooks');
+            toastr.info(mode === MEMORY_ASSISTANCE_MODE_SUGGEST
+                ? tr('STMemoryBooks_ClipReview_FoundTopics', 'Memory Assistance found {{topicMessage}}.', { topicMessage })
+                : shouldSuggestTopics
+                    ? tr('STMemoryBooks_ClipReview_FoundUpdatesAndTopics', 'Memory Assistance found {{updateMessage}} and {{topicMessage}}.', { updateMessage, topicMessage })
+                    : tr('STMemoryBooks_ClipReview_FoundUpdates', 'Memory Assistance found {{updateMessage}}.', { updateMessage }), 'STMemoryBooks');
         }
         if (candidates.length > 0 || suggestionPassCompleted) {
             await showClipReviewUpdatedPopup(lorebookName);

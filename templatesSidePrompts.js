@@ -32,6 +32,7 @@ export const sidePromptsTableTemplate = Handlebars.compile(`
                 <select class="text_pole stmb-sp-special-mode" aria-label="Memory Assistance mode" title="Memory Assistance mode" data-i18n="[title]STMemoryBooks_ClipReview_ModeLabel;[aria-label]STMemoryBooks_ClipReview_ModeLabel" style="width:auto;min-width:105px">
                   <option value="off" {{#if modeOff}}selected{{/if}} data-i18n="STMemoryBooks_ClipReview_ModeOff">Off</option>
                   <option value="update" {{#if modeUpdate}}selected{{/if}} data-i18n="STMemoryBooks_ClipReview_ModeUpdate">Update</option>
+                  <option value="suggest" {{#if modeSuggest}}selected{{/if}} data-i18n="STMemoryBooks_ClipReview_ModeSuggest">Suggest</option>
                   <option value="update_and_suggest" {{#if modeUpdateAndSuggest}}selected{{/if}} data-i18n="STMemoryBooks_ClipReview_ModeUpdateAndSuggest">Update and Suggest</option>
                   <option value="automatic" {{#if modeAutomatic}}selected{{/if}} data-i18n="STMemoryBooks_ClipReview_ModeAutomatic">Automatic</option>
                 </select>

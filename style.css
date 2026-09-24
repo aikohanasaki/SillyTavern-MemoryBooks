@@ -120,6 +120,7 @@
     z-index: 5;
     display: flex;
     align-items: center;
+    gap: 4px;
     gap: 8px;
     color: var(--SmartThemeQuoteColor);
     font-size: calc(var(--mainFontSize) * 0.78);

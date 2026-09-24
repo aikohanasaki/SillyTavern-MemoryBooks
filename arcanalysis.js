@@ -20,6 +20,7 @@ import {
   upsertLorebookEntriesBatch,
 } from "./addlore.js";
 import { extension_settings } from "../../../extensions.js";
+import { reloadEditor } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import {
   getDefaultSummaryTitleFormat,
@@ -383,6 +384,21 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
   }
   if (kw.length > 30) kw = kw.slice(0, 30);
   return kw;
+}
+
+/** Resolves optional summary keywords before a durable consolidation intent is recorded. */
+export async function prepareSummaryCandidateKeywords(candidate, targetTier) {
+  const prepared = structuredClone(candidate);
+  if (!Array.isArray(prepared.keywords) || prepared.keywords.length === 0) {
+    try {
+      prepared.keywords = await generateKeywordsForSummary(prepared.summary, resolveConnection(null), { targetTier });
+    } catch (error) {
+      if (isStmbStopError(error)) throw error;
+      console.warn('STMB ArcAnalysis: keyword generation failed:', error);
+      prepared.keywords = [];
+    }
+  }
+  return prepared;
 }
 
 async function generateKeywordsForArc(summary, conn, options = {}) {
@@ -1269,6 +1285,18 @@ export function getNextSummaryNumber(lorebookData, targetTier = 1) {
   return maxNum + 1;
 }
 
+export function prepareSummaryCandidateTitle(candidate, lorebookData, targetTier) {
+  const number = getNextSummaryNumber(lorebookData, targetTier);
+  const titleFormat = Number(targetTier) === 1
+    ? extension_settings?.STMemoryBooks?.arcTitleFormat || getDefaultSummaryTitleFormat(targetTier)
+    : getDefaultSummaryTitleFormat(targetTier);
+  return {
+    ...candidate,
+    STMB_commitNumber: number,
+    STMB_commitTitle: formatSummaryTitle(targetTier, titleFormat, candidate.title, number),
+  };
+}
+
 export function formatSummaryTitle(targetTier, format, baseTitle, seq) {
   const safeTitle = String(baseTitle || "").trim();
   let t =
@@ -1308,6 +1336,7 @@ export async function commitSummaryEntries({
   orderMode = "auto",
   orderValue = 100,
   reverseStart = 9999,
+  skipKeywordGeneration = false,
 }) {
   const parentTask = createStmbInFlightTask("ArcAnalysis:commit");
   const runEpoch = parentTask.epoch;
@@ -1349,8 +1378,9 @@ export async function commitSummaryEntries({
     } catch {}
     for (const summary of summaryCandidates) {
       throwIfStmbStopped(runEpoch);
-      const summaryNumber = nextSummaryNumber++;
-      const title = formatSummaryTitle(
+      const summaryNumber = entryMetadata?.STMB_consolidationCommitId && Number.isInteger(summary.STMB_commitNumber)
+        ? summary.STMB_commitNumber : nextSummaryNumber++;
+      const title = (entryMetadata?.STMB_consolidationCommitId && summary.STMB_commitTitle) || formatSummaryTitle(
         targetTier,
         titleFormat,
         summary.title,
@@ -1359,7 +1389,7 @@ export async function commitSummaryEntries({
       const content = summary.summary;
 
       let keywords = Array.isArray(summary.keywords) ? summary.keywords : [];
-      if (keywords.length === 0) {
+      if (keywords.length === 0 && !skipKeywordGeneration) {
         try {
           const conn = resolveConnection(null);
           const task = createStmbInFlightTask(`ArcAnalysis:keywords:${summaryNumber}`);
@@ -1422,6 +1452,12 @@ export async function commitSummaryEntries({
         entryOverrides.STMB_inclusionGroup = String(summary.inclusionGroup);
       }
       throwIfStmbStopped(runEpoch);
+      const existingTitle = Object.values(lorebookData.entries || {})
+        .find(entry => String(entry?.comment || '') === title);
+      if (entryMetadata?.STMB_consolidationCommitId && existingTitle
+          && existingTitle.STMB_consolidationCommitId !== entryMetadata.STMB_consolidationCommitId) {
+        throw new Error(translate('Saved consolidation state could not be confirmed. Review the Memory Book before starting again.', 'STMemoryBooks_Consolidation_ReviewRequired'));
+      }
       const res = await upsertLorebookEntriesBatch(
         lorebookName,
         lorebookData,
@@ -1431,6 +1467,18 @@ export async function commitSummaryEntries({
             content,
             defaults,
             entryOverrides,
+            metadataFactory: disableOriginals && summary.memberIds?.length
+              ? ({ entry }) => {
+                  const idSet = new Set(summary.memberIds.map(String));
+                  for (const source of Object.values(lorebookData.entries || {})) {
+                    if (String(source.uid) !== String(entry.uid) && idSet.has(String(source.uid))) {
+                      source.disable = true;
+                      source.disabledBySummaryId = entry.uid;
+                    }
+                  }
+                  return {};
+                }
+              : undefined,
           },
         ],
         { refreshEditor: false },
@@ -1441,24 +1489,15 @@ export async function commitSummaryEntries({
         throw new Error(translate("Arc upsert returned no entry (commitArcs failed)", "STMemoryBooks_ArcAnalysis_UpsertFailed"));
       }
 
-      if (disableOriginals && summaryEntryId) {
-        throwIfStmbStopped(runEpoch);
-        const idSet = new Set((summary.memberIds || []).map(String));
-        const entries = Object.values(lorebookData.entries || {});
-        for (const e of entries) {
-          if (idSet.has(String(e.uid))) {
-            e.disable = true;
-            e.disabledBySummaryId = summaryEntryId;
-          }
-        }
-      }
       results.push({ summaryEntryId, title, targetTier: Number(targetTier) });
     }
 
     throwIfStmbStopped(runEpoch);
-    await upsertLorebookEntriesBatch(lorebookName, lorebookData, [], {
-      refreshEditor: true,
-    });
+    if (entryMetadata?.STMB_consolidationCommitId) {
+      await Promise.resolve(reloadEditor(lorebookName));
+    } else {
+      await upsertLorebookEntriesBatch(lorebookName, lorebookData, [], { refreshEditor: true });
+    }
     try {
       console.info(
         "STMB ArcAnalysis: committed summary IDs: %o",

@@ -1092,13 +1092,15 @@ It does not use:
 5. Enter activation keywords, or leave them blank to use the topic.
 6. Choose a new entry or an existing `[STMB Clip]` update target.
 7. Choose saved Memories, chat messages, or both as sources.
-8. Optionally select only specific source Memories and/or enter an exact message range.
+8. Optionally select only specific source Memories. For chat messages, enter an exact range or click **Extract…** to search the loaded chat and select individual messages, including noncontiguous ones.
 9. Choose the generation profile.
 10. Generate the draft.
 11. Review and edit it.
 12. Save only when correct.
 
 The generated draft is never saved automatically.
+
+When text is highlighted in the chat, the floating control offers **Clip** and **Extract**. Extract opens the same current-chat message picker with the highlighted text as its search query. STMB records selected message identities and checks them again before generating or saving a Topical Clip. If the chat or a selected message changes, select the sources again. Extract does not search chats that are not loaded.
 
 ### 15.4 Updating an existing Topical Clip
 
@@ -1218,7 +1220,7 @@ A selected set replaces individually enabled automatic prompts for that chat. It
 
 #### Memory Assistance Side Prompt
 
-**Memory Assistance** is a reserved Side Prompt with four independent modes. It runs after successfully saved Memories regardless of ordinary Side Prompt enablement or the selected Side Prompt Set. It does not run during Memory regeneration.
+**Memory Assistance** is a reserved Side Prompt with five independent modes. It runs after successfully saved Memories regardless of ordinary Side Prompt enablement or the selected Side Prompt Set. It does not run during Memory regeneration.
 
 Memory Assistance compares the raw processed scene with ordinary and Topical Clips in each Memory Book that received the Memory. It sends each reviewed Clip's title/topic, keywords, current content, stable ID, and type to the AI.
 
@@ -1226,6 +1228,7 @@ When the job queue is available, each target Memory Book receives a separate **M
 
 - **Off** disables Memory Assistance.
 - **Update** reviews five or fewer Clips directly; more than five Clips open a selection list. Proposed changes wait for manual approval.
+- **Suggest** discovers new Topical Clip topics without reviewing or updating existing Clips.
 - **Update and Suggest** first performs one topic-discovery request, then runs the same existing-Clip review workflow as Update.
 - **Automatic** reviews every Clip in token-based batches without asking which Clips to review. It directly applies valid ordinary Clip additions, while Topical Clip replacements remain pending for approval in **Memory Assistance Suggestions**.
 
@@ -1964,6 +1967,10 @@ Retry scopes:
 - **Retry Memory:** rerun/resume only the Memory and intentionally skip after-Memory Side Prompts.
 
 Use Retry All to restore the combined workflow; use Retry Memory when tracker work should not run.
+
+Consolidation saves record a checkpoint in extension settings before writing each accepted summary. A summary and its source-disable changes are saved together. Retry checks the live Memory Book for the checkpoint marker before writing, so a confirmed summary is reused instead of duplicated. After a reload, **Consolidation recovery** in the extension menu lists unfinished checkpoints and offers **Resume** and **Review details**. A changed source, edited summary, duplicate marker, or unconfirmed save is marked **Needs Review** and is never replayed automatically; after checking the Memory Book, **Dismiss after review** removes the checkpoint notice without changing the book. This uses ST's settings and lorebook APIs; it does not provide a server transaction.
+
+Checkpoints store the accepted summary draft, generated keywords, source IDs and fingerprints, and save options in ST extension settings so a reload can resume the exact candidate. Keep settings backups as private as the Memory Books themselves.
 
 Without Chat Top Bar, STMB still performs its normal workflows but lacks the queue UI.
 

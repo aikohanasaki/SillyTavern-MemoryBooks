@@ -62,6 +62,8 @@ function getTriggersSummary(tpl) {
             ? translate('Automatic', 'STMemoryBooks_ClipReview_ModeAutomatic')
             : mode === 'update_and_suggest'
                 ? translate('Update and Suggest', 'STMemoryBooks_ClipReview_ModeUpdateAndSuggest')
+                : mode === 'suggest'
+                    ? translate('Suggest', 'STMemoryBooks_ClipReview_ModeSuggest')
                 : mode === 'update'
                     ? translate('Update', 'STMemoryBooks_ClipReview_ModeUpdate')
                     : translate('Off', 'STMemoryBooks_ClipReview_ModeOff');
@@ -479,6 +481,7 @@ function renderTemplatesTable(templates) {
         special: t.specialKind === 'clipReview',
         modeOff: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'off',
         modeUpdate: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'update',
+        modeSuggest: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'suggest',
         modeUpdateAndSuggest: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'update_and_suggest',
         modeAutomatic: t.specialKind === 'clipReview' && getMemoryAssistanceMode() === 'automatic',
         badges: getTriggersSummary(t),
@@ -495,12 +498,12 @@ async function openEditClipReviewTemplate(parentPopup, tpl) {
     const profileOptions = profiles.map((profile, index) => `<option value="${index}" ${index === profileIndex ? 'selected' : ''}>${escapeHtml(profile?.name || `Profile ${index + 1}`)}</option>`).join('');
     const popup = new Popup(DOMPurify.sanitize(`
         <h3>${escapeHtml(translate('Edit Memory Assistance', 'STMemoryBooks_ClipReview_EditTitle'))}</h3>
-        <label class="world_entry_form_control"><h4>${escapeHtml(translate('Mode', 'STMemoryBooks_ClipReview_Mode'))}</h4><select id="stmb-clip-review-mode" class="text_pole"><option value="off" ${mode === 'off' ? 'selected' : ''}>${escapeHtml(translate('Off', 'STMemoryBooks_ClipReview_ModeOff'))}</option><option value="update" ${mode === 'update' ? 'selected' : ''}>${escapeHtml(translate('Update', 'STMemoryBooks_ClipReview_ModeUpdate'))}</option><option value="update_and_suggest" ${mode === 'update_and_suggest' ? 'selected' : ''}>${escapeHtml(translate('Update and Suggest', 'STMemoryBooks_ClipReview_ModeUpdateAndSuggest'))}</option><option value="automatic" ${mode === 'automatic' ? 'selected' : ''}>${escapeHtml(translate('Automatic', 'STMemoryBooks_ClipReview_ModeAutomatic'))}</option></select></label>
+        <label class="world_entry_form_control"><h4>${escapeHtml(translate('Mode', 'STMemoryBooks_ClipReview_Mode'))}</h4><select id="stmb-clip-review-mode" class="text_pole"><option value="off" ${mode === 'off' ? 'selected' : ''}>${escapeHtml(translate('Off', 'STMemoryBooks_ClipReview_ModeOff'))}</option><option value="update" ${mode === 'update' ? 'selected' : ''}>${escapeHtml(translate('Update', 'STMemoryBooks_ClipReview_ModeUpdate'))}</option><option value="suggest" ${mode === 'suggest' ? 'selected' : ''}>${escapeHtml(translate('Suggest', 'STMemoryBooks_ClipReview_ModeSuggest'))}</option><option value="update_and_suggest" ${mode === 'update_and_suggest' ? 'selected' : ''}>${escapeHtml(translate('Update and Suggest', 'STMemoryBooks_ClipReview_ModeUpdateAndSuggest'))}</option><option value="automatic" ${mode === 'automatic' ? 'selected' : ''}>${escapeHtml(translate('Automatic', 'STMemoryBooks_ClipReview_ModeAutomatic'))}</option></select></label>
         <label class="world_entry_form_control"><h4>${escapeHtml(translate('Update Prompt', 'STMemoryBooks_ClipReview_UpdatePrompt'))}</h4><textarea id="stmb-clip-review-prompt" class="text_pole textarea_compact" rows="16">${escapeHtml(tpl.prompt || '')}</textarea></label>
         <label class="world_entry_form_control"><h4>${escapeHtml(translate('Topic Suggestions Prompt', 'STMemoryBooks_ClipSuggestions_Prompt'))}</h4><textarea id="stmb-clip-suggestions-prompt" class="text_pole textarea_compact" rows="16">${escapeHtml(tpl.settings?.suggestionsPrompt || '')}</textarea></label>
         <label class="checkbox_label"><input id="stmb-clip-review-override" type="checkbox" ${overrideEnabled ? 'checked' : ''}><span>${escapeHtml(translate('Use a connection profile override', 'STMemoryBooks_ClipReview_ProfileOverride'))}</span></label>
         <div id="stmb-clip-review-profile-row" class="world_entry_form_control" ${overrideEnabled ? '' : 'hidden'}><select id="stmb-clip-review-profile" class="text_pole">${profileOptions}</select></div>
-        <div class="info_block">${escapeHtml(translate('Update saves existing-Clip changes for approval. Update and Suggest first discovers new Topical Clip topics, then performs the same update review. Automatic directly applies ordinary Clip additions and leaves Topical Clip replacements for approval. Both response contracts remain fixed for safe validation.', 'STMemoryBooks_ClipReview_FixedContractHelp'))}</div>
+        <div class="info_block">${escapeHtml(translate('Update saves existing-Clip changes for approval. Update and Suggest first discovers new Topical Clip topics, then performs the same update review. Automatic directly applies ordinary Clip additions and leaves Topical Clip replacements for approval. Both response contracts remain fixed for safe validation.', 'STMemoryBooks_ClipReview_FixedContractHelp'))} ${escapeHtml(translate('Suggest discovers new Topical Clip topics without updating existing Clips.', 'STMemoryBooks_ClipReview_SuggestHelp'))}</div>
     `), POPUP_TYPE.TEXT, '', withGoBackButton({ wide: true, large: true, allowVerticalScrolling: true, okButton: translate('Save', 'STMemoryBooks_Save'), cancelButton: translate('Cancel', 'STMemoryBooks_Cancel') }));
     const showPromise = popup.show();
     popup.dlg?.querySelector('#stmb-clip-review-override')?.addEventListener('change', event => {
