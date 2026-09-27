@@ -413,7 +413,9 @@ The named connection supplies its saved URL and secret. The model field in the S
 
 ### 7.6 ChatCompletionService
 
-**Use ST’s ChatCompletionService** routes supported profile requests through SillyTavern’s request helper and can apply a selected SillyTavern Chat Completion preset. OpenRouter requests also inherit SillyTavern’s provider order, quantization filters, fallback controls, and middle-out routing setting. These OpenRouter controls remain in force if ChatCompletionService fails and STMB retries through its fallback request path. If that retry also fails, STMB retains and reports both the initial ChatCompletionService error and the fallback provider response. Full Manual profiles do not use this route.
+**Use ST’s ChatCompletionService** uses `ConnectionManagerRequestService` when a profile is selected in SillyTavern’s Connection Manager. That connection profile supplies the provider, credentials, endpoint, proxy, and Chat Completion preset. STMB overrides the model and temperature and retains its response-token limit and structured-output choice. The connection profile’s preset takes precedence over a separate Chat Completion preset selected in STMB. The selected connection profile must use Chat Completion. Failed connection-profile requests are reported without retrying through STMB’s direct request path, which would lose the connection settings.
+
+When no SillyTavern connection profile is selected, the existing ChatCompletionService behavior applies, including STMB’s optional Chat Completion preset. OpenRouter requests on this route inherit SillyTavern’s provider order, quantization filters, fallback controls, and middle-out routing setting. These controls remain in force if ChatCompletionService fails and STMB retries through its fallback request path. If that retry also fails, STMB reports both failures. Unchecking the option keeps STMB’s direct request behavior. Full Manual profiles do not use either service route.
 
 ### 7.7 Reverse proxy and Full Manual Configuration
 
@@ -2126,8 +2128,8 @@ Choose a profile under **Memory Profiles**, then open **Profile Actions → Edit
 | **API/Provider** | Chooses current SillyTavern routing, a supported provider, a Custom OpenAI-compatible connection, or Full Manual Configuration. |
 | **Use this connection profile** | For **Custom OpenAI-Compatible API**, uses either the active SillyTavern Custom connection or one named Custom connection. Its saved URL and secret are used while the STMB **Model** remains the model override. |
 | **Skip structured output and use plain-text completion** | Stops sending a structured-output schema when a provider rejects it. The selected prompt must still make the model return STMB's required valid JSON. |
-| **Use ST's ChatCompletionService** | Routes supported requests through SillyTavern's built-in Chat Completion request helper. It is unavailable to Full Manual profiles. |
-| **Chat Completion Preset** | Optionally applies a SillyTavern Chat Completion preset through ChatCompletionService. |
+| **Use ST's ChatCompletionService** | Uses the selected ST Connection Manager profile with STMB model and temperature overrides. Without a selected connection profile, uses the existing ChatCompletionService route. Unavailable to Full Manual profiles. |
+| **Chat Completion Preset** | Optionally applies a SillyTavern Chat Completion preset when no ST Connection Manager profile is selected. Otherwise, the connection profile supplies the preset. |
 | **Model** | Supplies the exact model ID for this profile. **Current SillyTavern Settings** instead reads the model active in SillyTavern. |
 | **Temperature** | Sets generation randomness for this profile. **Current SillyTavern Settings** instead reads SillyTavern's active temperature. |
 | **Use reverse proxy** | Passes SillyTavern's configured reverse-proxy details for supported providers; in Full Manual Configuration the secret field is labeled as a proxy password. |

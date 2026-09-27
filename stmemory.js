@@ -21,6 +21,7 @@ import {
 import { resolveCustomConnectionProfile } from './customConnectionProfiles.js';
 import { applyOpenRouterRoutingSettings } from './openRouterRouting.js';
 import { attachChatCompletionServiceError } from './chatCompletionServiceError.js';
+import { getSelectedConnectionProfile, prepareConnectionProfileRequest } from './connectionProfileRequest.js';
 import { tr } from './i18nHelpers.js';
 const $ = window.jQuery;
 
@@ -344,9 +345,9 @@ function getChatCompletionServiceOrNull() {
     return null;
 }
 
-async function sendViaChatCompletionService(body, signal, presetName = '') {
-    const service = getChatCompletionServiceOrNull();
-    if (!service) {
+async function sendViaChatCompletionService(body, signal, presetName = '', connection = null) {
+    const service = connection ? null : getChatCompletionServiceOrNull();
+    if (!connection && !service) {
         return {
             result: null,
             error: new Error('ChatCompletionService is unavailable.'),
@@ -358,9 +359,14 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
         ...body,
         stream: !!oai_settings?.stream_openai,
     };
+    const connectionRequest = prepareConnectionProfileRequest(
+        connection, serviceBody, signal,
+    );
     let full;
     try {
-        if (normalizedPresetName && typeof service.processRequest === 'function') {
+        if (connectionRequest) {
+            full = await connectionRequest();
+        } else if (normalizedPresetName && typeof service.processRequest === 'function') {
             full = await service.processRequest(serviceBody, { presetName: normalizedPresetName }, false, signal);
         } else {
             if (normalizedPresetName && typeof service.processRequest !== 'function') {
@@ -405,6 +411,12 @@ async function sendViaChatCompletionService(body, signal, presetName = '') {
     } catch (error) {
         if (signal?.aborted) {
             throw error;
+        }
+        if (connectionRequest) {
+            // A direct retry would discard the connection profile's key,
+            // routing and preset, and can compound a provider rate limit.
+            // ST wraps connection-profile provider failures in a generic error.
+            throw error?.cause instanceof Error ? error.cause : error;
         }
         console.warn(`${MODULE_NAME}: ChatCompletionService request failed; falling back to STMB request path.`, error);
         return { result: null, error };
@@ -454,6 +466,15 @@ export async function sendRawCompletionRequest({
 }) {
     let url = getCurrentCompletionEndpoint();
     let headers = getRequestHeaders();
+    const connection = api !== 'full-manual' && useChatCompletionService
+        ? getSelectedConnectionProfile(getContext(), tr)
+        : null;
+    if (connection) {
+        api = connection.source;
+        model = model || connection.profile.model;
+        // The active ST profile owns its URL and secret, including for Custom.
+        connectionProfileId = null;
+    }
     const selectedCustomConnection = api === 'custom' && connectionProfileId
         ? resolveCustomConnectionProfile(
             extension_settings?.connectionManager?.profiles,
@@ -601,7 +622,7 @@ export async function sendRawCompletionRequest({
     let chatCompletionServiceError = null;
     if (api !== 'full-manual' && useChatCompletionService) {
         const routedFallbackBody = applyOpenRouterRoutingSettings(body, oai_settings);
-        const serviceAttempt = await sendViaChatCompletionService(body, signal, chatCompletionPreset);
+        const serviceAttempt = await sendViaChatCompletionService(body, signal, chatCompletionPreset, connection);
         if (serviceAttempt.result) {
             return serviceAttempt.result;
         }

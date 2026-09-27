@@ -7,6 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.1 (September 27, 2026)
+- Fix **Use ST's ChatCompletionService** to use the selected SillyTavern Connection Manager profile, including its credentials, provider, and preset, while retaining STMB's model and temperature overrides. Existing behavior is preserved when no connection profile is selected.
+- Stop retrying failed connection-profile requests through the direct request path, preserving the original provider error and avoiding duplicate requests after rate-limit failures.
+
 ## v9.3.0 (September 23, 2026)
 - Add Side Prompt versioning.
 - Fix auto-rollback for branches and checkpoints.

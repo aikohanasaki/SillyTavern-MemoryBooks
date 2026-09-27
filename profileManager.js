@@ -174,11 +174,11 @@ const profileEditTemplate = Handlebars.compile(`
                 <input type="checkbox" id="stmb-profile-use-chat-completion-service" {{#if useChatCompletionService}}checked{{/if}}>
                 <span data-i18n="STMemoryBooks_UseChatCompletionService">Use ST's ChatCompletionService</span>
             </label>
-            <small class="opacity50p" data-i18n="STMemoryBooks_UseChatCompletionServiceDesc">Routes this profile through SillyTavern's built-in chat completion request helper. Full Manual profiles are not affected.</small>
+            <small class="opacity50p" data-i18n="STMemoryBooks_UseChatCompletionServiceDesc">Uses the selected SillyTavern Connection Manager profile, with STMB model and temperature overrides. Without a selected connection profile, uses the existing request helper. Full Manual profiles are not affected.</small>
             <div id="stmb-profile-chat-completion-preset-container" class="marginTop5 {{#unless useChatCompletionService}}displayNone{{/unless}}">
                 <label for="stmb-profile-chat-completion-preset">
                     <h4 data-i18n="STMemoryBooks_ChatCompletionPreset">Chat Completion Preset:</h4>
-                    <small class="opacity50p" data-i18n="STMemoryBooks_ChatCompletionPresetDesc">Optional. Applies a SillyTavern chat completion preset through ChatCompletionService.processRequest.</small>
+                    <small class="opacity50p" data-i18n="STMemoryBooks_ChatCompletionPresetDesc">Optional. Applies only when no SillyTavern Connection Manager profile is selected. Otherwise, the connection profile supplies the preset.</small>
                     <select id="stmb-profile-chat-completion-preset" class="text_pole">
                         {{#each chatCompletionPresetOptions}}
                         <option value="{{value}}" {{#if selected}}selected{{/if}}>{{displayName}}</option>
