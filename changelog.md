@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.2 (September 28, 2026)
+- Fixed: branch rollback now unhides retained messages from deleted memories after the Memory Books save successfully.
+
 ## v9.3.1 (September 27, 2026)
 - Fix **Use ST's ChatCompletionService** to use the selected SillyTavern Connection Manager profile, including its credentials, provider, and preset, while retaining STMB's model and temperature overrides. Existing behavior is preserved when no connection profile is selected.
 - Stop retrying failed connection-profile requests through the direct request path, preserving the original provider error and avoiding duplicate requests after rate-limit failures.
