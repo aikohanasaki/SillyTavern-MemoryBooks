@@ -2078,6 +2078,8 @@ Open **Settings → General Settings** in the main panel.
 
 When branch/checkpoint rollback deletes a Memory, it also unhides the retained messages in that Memory's source range after the Memory Books save successfully. For example, branching at message 36 with a Memory covering 33–44 deletes that Memory from the copy and unhides messages 33–36. This does not depend on the unhide-before-generation preference. Already completed child rollbacks are not automatically repeated after an upgrade; use `/unhide 33-36` to repair that example in an existing branch.
 
+Pending unhide ranges are saved in the same Memory Book writes as the deletions. If switching chats or an error interrupts unhiding, reopening the child with branch/checkpoint auto-rollback enabled retries those saved ranges, even though the deleted Memories no longer exist. Retrying may repeat already completed unhide commands; the recovery records are removed only after every range completes in the intended chat.
+
 Branch/checkpoint rollback requires isolated copies of every active Memory Book. When **Copy Memory Books when branching** is disabled or a shared/locked book cannot be isolated, STMB skips rollback and reports the reason to avoid changing the parent chat's data. Copy or rollback failures and canceled consolidation confirmations remain eligible for a later opening.
 
 Auto-rollback reacts only to message deletion or truncation, including the deletion phase of response regeneration. It does not react to an ordinary edit or swipe. STMB tracks the actual message identities in each chat because SillyTavern's deletion event value does not reliably identify a middle deletion.

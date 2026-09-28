@@ -12912,14 +12912,40 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBound
 
   const changedStates = states.filter(state =>
     getLorebookDataFingerprint(state.data) !== state.originalFingerprint);
+  // Keep recovery data in the same write as the deletions it describes. Chat
+  // metadata saves are debounced and cannot provide that guarantee.
+  const pendingUnhideKey = "STMB_pendingChildRollbackUnhide";
+  const pendingUnhideStates = isChildChatRollback ? states.filter(state =>
+    state.data[pendingUnhideKey]?.version === 1
+      && state.data[pendingUnhideKey].chatId === chatId) : [];
+  const unhideRanges = isChildChatRollback ? getChildRollbackUnhideRanges([
+    ...pendingUnhideStates.flatMap(state => state.data[pendingUnhideKey].ranges),
+    ...(options.autoRollbackDeleteLastMemory ? rollbackRanges : []),
+  ], childBoundary) : [];
+  if (unhideRanges.length > 0) {
+    for (const state of changedStates) {
+      state.data[pendingUnhideKey] = { version: 1, chatId, ranges: unhideRanges };
+      if (!pendingUnhideStates.includes(state)) pendingUnhideStates.push(state);
+    }
+  }
   await saveMemoryRollbackLorebooks(changedStates);
   if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
 
-  if (isChildChatRollback && options.autoRollbackDeleteLastMemory) {
-    for (const range of getChildRollbackUnhideRanges(rollbackRanges, childBoundary)) {
-      await executeSlashCommands(`/unhide ${range.start}-${range.end}`);
-      if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
-    }
+  for (const range of unhideRanges) {
+    await executeSlashCommands(`/unhide ${range.start}-${range.end}`);
+    if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  }
+  // Replay the whole receipt after interruption: /unhide is idempotent. Only
+  // discard receipts once every range has run in the intended chat.
+  if (pendingUnhideStates.length > 0) {
+    const cleanupStates = pendingUnhideStates.map(state => {
+      const data = structuredClone(state.data);
+      delete data[pendingUnhideKey];
+      return { ...state, data, originalData: state.data,
+        originalFingerprint: getLorebookDataFingerprint(state.data) };
+    });
+    await saveMemoryRollbackLorebooks(cleanupStates);
+    if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
   }
 
   if (options.autoRollbackUpdateLastProcessed) {
