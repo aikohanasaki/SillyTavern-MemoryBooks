@@ -11,6 +11,7 @@ import {
     collectConsolidationRollbackPlan,
     collectRollbackMemories,
     computeRollbackCheckpoint,
+    getChildRollbackUnhideRanges,
     createMessageDeletionTracker,
     fingerprintRollbackEntry,
     planSidePromptRestorations,
@@ -242,6 +243,36 @@ test('child chat rollback selects only Memories extending past its retained mess
     });
     assert.deepEqual(result.selected.map(item => item.uid), ['3', '2']);
     assert.equal(result.selected.some(item => item.uid === '1' || item.uid === '4'), false);
+});
+
+test('branch at message 36 restores only retained messages from the deleted 33-44 Memory', () => {
+    const lorebook = { entries: {
+        1: memory(1, 0, 20),
+        2: memory(2, 21, 32),
+        3: memory(3, 33, 44),
+    } };
+    const deletion = { start: 37, end: Number.MAX_SAFE_INTEGER, count: 0, isTail: true };
+    const { selected } = collectRollbackMemories(lorebook, {
+        chatId: 'chat-a', deletion, scope: ROLLBACK_SCOPE_FULL,
+    });
+    const ranges = [...selected.map(item => item.range), { start: 37, end: Number.MAX_SAFE_INTEGER }];
+    applyLorebookRollback(lorebook, {
+        selectedMemoryUids: new Set(selected.map(item => item.uid)), deletion, chatId: 'chat-a',
+    });
+    assert.deepEqual(Object.keys(lorebook.entries), ['1', '2']);
+    assert.deepEqual(getChildRollbackUnhideRanges(ranges, 37), [{ start: 33, end: 36 }]);
+});
+
+test('child unhide ranges merge linked overlaps, preserve gaps, and exclude omitted messages', () => {
+    const ranges = [{ start: 33, end: 44 }, { start: 33, end: 44 },
+        { start: 35, end: 50 }, { start: 40, end: 59 }, { start: 10, end: 12 }];
+    const before = structuredClone(ranges);
+    assert.deepEqual(getChildRollbackUnhideRanges(ranges, 37), [
+        { start: 10, end: 12 }, { start: 33, end: 36 },
+    ]);
+    assert.deepEqual(ranges, before);
+    assert.deepEqual(getChildRollbackUnhideRanges(ranges, 0), []);
+    assert.deepEqual(getChildRollbackUnhideRanges([{ start: 37, end: 44 }], 37), []);
 });
 
 test('version-2 Side Prompt rollback restores or deletes once and protects changed entries', () => {

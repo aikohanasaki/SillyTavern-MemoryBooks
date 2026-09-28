@@ -267,6 +267,7 @@ import {
   collectConsolidationRollbackPlan,
   collectRollbackMemories,
   computeRollbackCheckpoint,
+  getChildRollbackUnhideRanges,
   createMessageDeletionTracker,
   fingerprintRollbackEntry,
   planSidePromptRestorations,
@@ -12913,6 +12914,13 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBound
     getLorebookDataFingerprint(state.data) !== state.originalFingerprint);
   await saveMemoryRollbackLorebooks(changedStates);
   if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+
+  if (isChildChatRollback && options.autoRollbackDeleteLastMemory) {
+    for (const range of getChildRollbackUnhideRanges(rollbackRanges, childBoundary)) {
+      await executeSlashCommands(`/unhide ${range.start}-${range.end}`);
+      if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+    }
+  }
 
   if (options.autoRollbackUpdateLastProcessed) {
     invalidatePendingProgress();

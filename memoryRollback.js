@@ -46,6 +46,23 @@ function rangesIntersect(left, right) {
     return left.start <= right.end && right.start <= left.end;
 }
 
+/** Limit removed Memory ranges to messages retained in a branch/checkpoint. */
+export function getChildRollbackUnhideRanges(ranges, retainedBoundary) {
+    if (!Number.isInteger(retainedBoundary) || retainedBoundary <= 0) return [];
+    const retained = ranges
+        .filter(range => Number.isInteger(range?.start) && Number.isInteger(range?.end)
+            && range.start >= 0 && range.end >= range.start && range.start < retainedBoundary)
+        .map(range => ({ start: range.start, end: Math.min(range.end, retainedBoundary - 1) }))
+        .sort((left, right) => left.start - right.start);
+    const merged = [];
+    for (const range of retained) {
+        const previous = merged.at(-1);
+        if (previous && range.start <= previous.end + 1) previous.end = Math.max(previous.end, range.end);
+        else merged.push(range);
+    }
+    return merged;
+}
+
 function clone(value) {
     return structuredClone(value);
 }
