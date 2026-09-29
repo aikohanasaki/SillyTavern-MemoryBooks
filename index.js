@@ -1,6 +1,8 @@
 // Copyright (C) 2024–2026 Aiko Hanasaki
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import { MEMORY_REMINDER_DEFAULTS, normalizeReminderInterval, createMemoryReminderController } from './memoryReminders.js';
+
 import {
   eventSource,
   event_types,
@@ -597,6 +599,7 @@ const defaultSettings = {
     allowSceneOverlap: false,
     autoHideMode: "all",
     unhiddenEntriesCount: 2,
+    ...MEMORY_REMINDER_DEFAULTS,
     autoSummaryEnabled: false,
     autoSummaryInterval: 50,
     autoSummaryTriggerMode: 'messages',
@@ -1240,7 +1243,35 @@ function refreshMemoryBoundaryButton() {
   memoryBoundaryButton.style.display = "inline-flex";
 }
 
+let memoryReminderController;
+function getMemoryReminderController() {
+  return memoryReminderController ??= createMemoryReminderController({
+    current: () => ({
+      chatKey: getStmbChatKey(),
+      markers: getSceneMarkers(),
+      count: chat.length,
+      settings: extension_settings[MODULE_NAME]?.moduleSettings || {},
+      busy: isMemoryProcessing() || hasPendingProgress(),
+    }),
+    save: () => saveMetadataForCurrentContext(),
+    clear: toast => {
+      toast.stop(true, true);
+      toastr.clear(toast, { force: true });
+      // toastr.clear uses the global animation duration, not this toast's override.
+      toast.stop(true, true);
+    },
+    show: (mode, count, onHidden) => toastr.info(
+      mode === 'automatic'
+        ? tr('STMemoryBooks_Reminder_AutomaticToast', 'Automatic memory summaries are overdue: {{count}} unprocessed messages. Check your automatic memory settings or create a memory.', { count })
+        : tr('STMemoryBooks_Reminder_ManualToast', 'You have {{count}} messages since your last memory summary. Consider creating a memory.', { count }),
+      'STMemoryBooks',
+      { timeOut: 0, extendedTimeOut: 0, closeButton: true, tapToDismiss: false, hideDuration: 0, closeDuration: 0, preventDuplicates: false, onHidden },
+    ),
+  });
+}
+
 function refreshMemoryBoundaryUi() {
+  getMemoryReminderController().check();
   refreshMemoryBoundaryDivider();
   refreshMemoryBoundaryButton();
 }
@@ -1432,6 +1463,7 @@ async function maybePromptContextSettingForChatOpen() {
 }
 
 async function handleChatChanged(chatId) {
+  getMemoryReminderController().dismiss();
   progressChatLoaded();
   await getBranchLorebookController().handleChatChanged(chatId);
   console.log(
@@ -1504,10 +1536,12 @@ function validateAndCleanupSceneMarkers() {
 }
 
 async function handleMessageReceived() {
+  const reminderChatKey = getStmbChatKey();
   try {
     setTimeout(validateSceneMarkers, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     setTimeout(refreshMemoryBoundaryUi, SCENE_MANAGEMENT.VALIDATION_DELAY_MS);
     await handleAutoSummaryMessageReceived();
+    if (getStmbChatKey() === reminderChatKey) getMemoryReminderController().check({ notify: true });
     await evaluateTrackers();
   } catch (error) {
     console.error(
@@ -1526,7 +1560,11 @@ function handleStmbJobStateChanged() {
   if (hasActiveStmbJobs(getStmbChatKey())) return;
 
   autoSummaryJobRetryInFlight = true;
+  const reminderChatKey = getStmbChatKey();
   retryAutoSummaryAfterJobIdle()
+    .then(() => {
+      if (getStmbChatKey() === reminderChatKey) getMemoryReminderController().check({ notify: true });
+    })
     .catch((error) => {
       console.warn("STMemoryBooks: auto-summary retry after job idle failed:", error);
     })
@@ -2582,6 +2620,11 @@ function validateSettings(settings) {
   }
 
   // Validate auto-summary settings
+  for (const [key, fallback] of Object.entries(MEMORY_REMINDER_DEFAULTS)) {
+    settings.moduleSettings[key] = typeof fallback === 'boolean'
+      ? settings.moduleSettings[key] === true
+      : normalizeReminderInterval(settings.moduleSettings[key], fallback);
+  }
   if (settings.moduleSettings.autoSummaryEnabled === undefined) {
     settings.moduleSettings.autoSummaryEnabled = false;
   }
@@ -5010,6 +5053,7 @@ async function executeQueuedLorebookRegenerationJob(job, jobContext) {
 }
 
 async function handleLorebookEntryRegeneration(button) {
+  const reminderChatKey = getStmbChatKey();
   const memoryBooksContext = getCurrentMemoryBooksContext();
   if (isProcessingMemory || isProcessingArc) {
     toastr.warning(
@@ -5234,6 +5278,7 @@ async function handleLorebookEntryRegeneration(button) {
     isProcessingMemory = false;
     isProcessingArc = false;
     task.finish();
+    if (getStmbChatKey() === reminderChatKey) getMemoryReminderController().check({ notify: true });
     button.disabled = false;
     if (buttonLabel) {
       buttonLabel.textContent = entryKind === "sidePrompt"
@@ -6925,6 +6970,7 @@ async function showConsolidationRecoveryPopup() {
 }
 
 async function initiateMemoryCreation(selectedProfileIndex = null) {
+  const reminderChatKey = getStmbChatKey();
   if (guardPendingProgress()) return false;
   // Early validation checks (no flag set yet) - GROUP CHAT COMPATIBLE
   const context = getCurrentMemoryBooksContext();
@@ -7138,6 +7184,7 @@ async function initiateMemoryCreation(selectedProfileIndex = null) {
   } finally {
     // ALWAYS reset the flag, no matter how we exit
     isProcessingMemory = false;
+    if (getStmbChatKey() === reminderChatKey) getMemoryReminderController().check({ notify: true });
   }
 }
 
@@ -10986,6 +11033,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     defaultGroupSidePromptSetOptions: buildDefaultSidePromptSetOptions(
       settings.moduleSettings.defaultGroupSidePromptSetKey,
     ),
+    ...Object.fromEntries(Object.keys(MEMORY_REMINDER_DEFAULTS).map(key => [key, settings.moduleSettings[key]])),
     autoSummaryEnabled: settings.moduleSettings.autoSummaryEnabled ?? false,
     autoSummaryInterval: settings.moduleSettings.autoSummaryInterval ?? 50,
     autoSummaryTriggerMode: settings.moduleSettings.autoSummaryTriggerMode ?? 'messages',
@@ -11719,8 +11767,15 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       return;
     }
 
+    if (e.target.matches('[data-memory-reminder]')) {
+      if (persistMemoryReminderControls(popupElement, settings.moduleSettings)) saveSettingsDebounced();
+      getMemoryReminderController().check();
+      return;
+    }
+
     if (e.target.matches("#stmb-auto-summary-enabled")) {
       settings.moduleSettings.autoSummaryEnabled = e.target.checked;
+      getMemoryReminderController().check();
       saveSettingsDebounced();
       return;
     }
@@ -11762,6 +11817,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       const value = parseInt(e.target.value);
       if (!isNaN(value) && value >= 5 && value <= 200) {
         settings.moduleSettings.autoSummaryInterval = value;
+        getMemoryReminderController().check();
         saveSettingsDebounced();
       }
       return;
@@ -11782,6 +11838,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
     if (e.target.matches("#stmb-auto-summary-buffer")) {
       const value = readIntInput(e.target);
       settings.moduleSettings.autoSummaryBuffer = clampInt(value ?? 0, 0, 50);
+      getMemoryReminderController().check();
       saveSettingsDebounced();
       return;
     }
@@ -11875,16 +11932,28 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
   });
 }
 
-/**
- * Persist all main popup settings currently present in the DOM.
- */
+/** Persist the shared reminder controls from either settings popup. */
+function persistMemoryReminderControls(popupElement, settings) {
+  let changed = false;
+  for (const [key, fallback] of Object.entries(MEMORY_REMINDER_DEFAULTS)) {
+    const control = popupElement.querySelector('[data-memory-reminder="' + key + '"]');
+    if (!control) continue;
+    const value = typeof fallback === 'boolean' ? control.checked
+      : normalizeReminderInterval(control.value, settings[key] ?? fallback);
+    if (typeof fallback !== 'boolean') control.value = String(value);
+    if (settings[key] !== value) { settings[key] = value; changed = true; }
+  }
+  return changed;
+}
+
+/** Persist all main popup settings currently present in the DOM. */
 function persistMainPopupSettings(popupElement) {
   if (!popupElement) {
     return false;
   }
 
   const settings = initializeSettings();
-  let hasChanges = false;
+  let hasChanges = persistMemoryReminderControls(popupElement, settings.moduleSettings);
   for (const [key, selector] of [
     ["characterAwareMemories", "#stmb-character-aware-memories"],
     ["useSeparateGroupSidePrompts", "#stmb-use-separate-group-side-prompts"],
@@ -12238,6 +12307,7 @@ function persistMainPopupSettings(popupElement) {
     saveSettingsDebounced();
   }
 
+  getMemoryReminderController().check();
   return hasChanges;
 }
 
@@ -13303,6 +13373,7 @@ function setupEventListeners() {
  * Show a popup with details for a failed AI response, including raw response and provider body if available.
  */
 async function applyManualFixedJson(correctedRaw) {
+  const reminderChatKey = getStmbChatKey();
   if (isProcessingMemory) {
     toastr.warning(
       translate(
@@ -13588,6 +13659,7 @@ async function applyManualFixedJson(correctedRaw) {
     // ALWAYS reset the flag, no matter how we exit.
     // This clears the `isProcessingMemory` flag set inside the try block above.
     isProcessingMemory = false;
+    if (getStmbChatKey() === reminderChatKey) getMemoryReminderController().check({ notify: true });
   }
 }
 
@@ -14260,7 +14332,9 @@ async function init() {
     resolved: (chatKey) => {
       if (getStmbChatKey() !== chatKey) return;
       refreshMemoryBoundaryUi();
-      if (!hasPendingProgress()) void handleAutoSummaryMessageReceived();
+      if (!hasPendingProgress()) void handleAutoSummaryMessageReceived().then(() => {
+        if (getStmbChatKey() === chatKey) getMemoryReminderController().check({ notify: true });
+      });
     },
   });
 

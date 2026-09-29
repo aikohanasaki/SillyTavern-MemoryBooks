@@ -204,11 +204,39 @@ export const settingsTemplate = Handlebars.compile(`
 
 `);
 
-/**
- * General settings popup template
- */
+/** Automatic reminder controls are only shown in Automatic Memories. */
+const automaticMemoryReminderSettingsFragment = `
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" data-memory-reminder="automaticMemoryReminders" {{#if automaticMemoryReminders}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_Reminder_AutomaticEnabled">Turn on reminders for automatic memories</span>
+        </label>
+        <label>
+            <span data-i18n="STMemoryBooks_Reminder_AutomaticInterval">Automatic reminder interval (messages)</span>
+            <input type="number" class="text_pole" data-memory-reminder="automaticMemoryReminderInterval" value="{{automaticMemoryReminderInterval}}" min="1" step="1">
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_Reminder_AutomaticHelp">When auto-create is on, first remind at the message interval plus buffer plus this many messages, then repeat every this many additional messages. Always counts chat messages, even with token-triggered generation.</small>
+    </div>
+`;
+
+const manualMemoryReminderSettingsFragment = `
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" data-memory-reminder="manualMemoryReminders" {{#if manualMemoryReminders}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_Reminder_ManualEnabled">Turn on reminders to make memories manually</span>
+        </label>
+        <label>
+            <span data-i18n="STMemoryBooks_Reminder_ManualInterval">Manual reminder interval (messages)</span>
+            <input type="number" class="text_pole" data-memory-reminder="manualMemoryReminderInterval" value="{{manualMemoryReminderInterval}}" min="1" step="1">
+        </label>
+        <small class="opacity50p" data-i18n="STMemoryBooks_Reminder_ManualHelp">When auto-create is off, remind after this many unprocessed chat messages, then repeat every this many additional messages.</small>
+        <small class="opacity50p" data-i18n="STMemoryBooks_Reminder_CommonHelp">Reminders stay visible until dismissed and work independently of Show notifications.</small>
+    </div>
+`;
+
 export const generalSettingsTemplate = Handlebars.compile(`
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_Preferences">General Settings</h3>
+    ${manualMemoryReminderSettingsFragment}
 
     <div class="world_entry_form_control">
         <label class="checkbox_label">
@@ -411,6 +439,8 @@ export const generalSettingsTemplate = Handlebars.compile(`
  */
 export const automaticMemoriesSettingsTemplate = Handlebars.compile(`
     <h3 class="stmb-section-title" data-i18n="STMemoryBooks_AutoMemory">Automatic Memories</h3>
+    ${automaticMemoryReminderSettingsFragment}
+    ${manualMemoryReminderSettingsFragment}
 
     <div class="world_entry_form_control">
         <label class="checkbox_label">

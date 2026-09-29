@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.3 (September 29, 2026)
+- Added memory reminders to ~~nag~~ remind you to make memories.
+
 ## v9.3.2 (September 28, 2026)
 - Fixed: branch rollback now unhides retained messages from deleted memories after the Memory Books save successfully.
 

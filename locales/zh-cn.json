@@ -1531,4 +1531,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "查看详情"
   ,"STMemoryBooks_Consolidation_DismissAction": "检查后关闭"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "已恢复保存的摘要。请为剩余来源开始新的整合。"
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "开启自动记忆提醒"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "自动记忆提醒间隔（消息数）"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "开启自动创建时，首次提醒会在消息间隔加缓冲区再加上此消息数后出现，此后每增加相同数量的消息就再次提醒。即使使用词元阈值触发生成，也始终按聊天消息数计数。"
+  ,"STMemoryBooks_Reminder_ManualEnabled": "开启手动创建记忆提醒"
+  ,"STMemoryBooks_Reminder_ManualInterval": "手动记忆提醒间隔（消息数）"
+  ,"STMemoryBooks_Reminder_ManualHelp": "关闭自动创建时，未处理的聊天消息达到此数量后提醒，此后每增加相同数量的消息就再次提醒。"
+  ,"STMemoryBooks_Reminder_CommonHelp": "提醒会一直显示，直到手动关闭，且不受“显示通知”设置影响。"
+  ,"STMemoryBooks_Reminder_AutomaticToast": "自动记忆摘要已逾期：有 {{count}} 条未处理的消息。请检查自动记忆设置或创建记忆。"
+  ,"STMemoryBooks_Reminder_ManualToast": "自上次记忆摘要以来已有 {{count}} 条消息。请考虑创建记忆。"
 }

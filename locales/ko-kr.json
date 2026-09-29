@@ -1531,4 +1531,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "세부 정보 확인"
   ,"STMemoryBooks_Consolidation_DismissAction": "확인 후 닫기"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "저장된 요약을 복구했습니다. 남은 출처는 새 통합을 시작하세요."
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "자동 메모리 알림 켜기"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "자동 메모리 알림 간격(메시지 수)"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "자동 생성이 켜져 있으면 메시지 간격에 버퍼와 이 메시지 수를 더한 시점에 첫 알림을 표시하고, 이후 같은 수의 메시지가 추가될 때마다 반복합니다. 토큰 수로 생성을 시작하는 경우에도 항상 채팅 메시지 수를 셉니다."
+  ,"STMemoryBooks_Reminder_ManualEnabled": "수동 메모리 생성 알림 켜기"
+  ,"STMemoryBooks_Reminder_ManualInterval": "수동 메모리 알림 간격(메시지 수)"
+  ,"STMemoryBooks_Reminder_ManualHelp": "자동 생성이 꺼져 있으면 처리되지 않은 채팅 메시지가 이 수에 도달할 때 알리고, 이후 같은 수의 메시지가 추가될 때마다 반복합니다."
+  ,"STMemoryBooks_Reminder_CommonHelp": "알림은 직접 닫을 때까지 표시되며 알림 표시 설정과 독립적으로 작동합니다."
+  ,"STMemoryBooks_Reminder_AutomaticToast": "자동 메모리 요약이 지연되었습니다. 처리되지 않은 메시지가 {{count}}개 있습니다. 자동 메모리 설정을 확인하거나 메모리를 생성하세요."
+  ,"STMemoryBooks_Reminder_ManualToast": "마지막 메모리 요약 이후 메시지가 {{count}}개 있습니다. 메모리 생성을 고려해 보세요."
 }

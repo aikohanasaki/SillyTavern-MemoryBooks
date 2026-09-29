@@ -1531,4 +1531,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "Details prüfen"
   ,"STMemoryBooks_Consolidation_DismissAction": "Nach Prüfung schließen"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "Gespeicherte Zusammenfassungen wurden wiederhergestellt. Starte für die verbleibenden Quellen eine neue Konsolidierung."
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "Erinnerungen für automatische Erinnerungs-Zusammenfassungen einschalten"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "Intervall für automatische Erinnerungen (Nachrichten)"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "Bei aktivierter automatischer Erstellung erfolgt die erste Erinnerung nach dem Nachrichtenintervall plus Puffer plus dieser Nachrichtenanzahl, danach jeweils nach ebenso vielen weiteren Nachrichten. Es werden immer Chatnachrichten gezählt, auch bei tokenbasierter Erstellung."
+  ,"STMemoryBooks_Reminder_ManualEnabled": "Erinnerungen zum manuellen Erstellen von Erinnerungs-Zusammenfassungen einschalten"
+  ,"STMemoryBooks_Reminder_ManualInterval": "Intervall für manuelle Erinnerungen (Nachrichten)"
+  ,"STMemoryBooks_Reminder_ManualHelp": "Bei deaktivierter automatischer Erstellung erfolgt die Erinnerung nach dieser Anzahl unverarbeiteter Chatnachrichten, danach jeweils nach ebenso vielen weiteren Nachrichten."
+  ,"STMemoryBooks_Reminder_CommonHelp": "Erinnerungen bleiben sichtbar, bis sie geschlossen werden, und funktionieren unabhängig von „Benachrichtigungen anzeigen“."
+  ,"STMemoryBooks_Reminder_AutomaticToast": "Automatische Erinnerungs-Zusammenfassungen sind überfällig: {{count}} unverarbeitete Nachrichten. Prüfe die Einstellungen für automatische Erinnerungen oder erstelle eine Erinnerung."
+  ,"STMemoryBooks_Reminder_ManualToast": "Seit deiner letzten Erinnerungs-Zusammenfassung sind {{count}} Nachrichten hinzugekommen. Erwäge, eine Erinnerung zu erstellen."
 }

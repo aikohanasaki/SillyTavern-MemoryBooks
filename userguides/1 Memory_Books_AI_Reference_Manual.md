@@ -2122,6 +2122,17 @@ Open **Settings → Automatic Memories** in the main panel.
 | **Prompt for consolidation when a tier is ready** | Global | Shows a yes/later prompt when a monitored tier reaches its saved eligible-source minimum. It never silently performs consolidation. |
 | **Auto-Consolidation Tiers** | Global | Chooses which target tiers are monitored for readiness prompts. The minimum for each tier is saved in **Consolidate Memories**. |
 
+#### Memory reminder notifications
+
+Automatic-memory reminder controls appear only in **Automatic Memories**. Manual-memory reminder controls appear in both **General Settings** and **Automatic Memories**, backed by the same global preferences. Both reminder toggles default to **off** and operate independently of **Show notifications**.
+
+- **Turn on reminders for automatic memories** applies while **Auto-create memory summaries** is enabled. Its configurable interval X defaults to **10 messages**. The first reminder is due at **Auto-Summary Interval + Auto-Summary Buffer + X** unprocessed messages, with repeats every X additional messages. For example, interval 50, buffer 2, and X = 10 first reminds at 62 unprocessed messages, then 72, 82, and so on if checked at those counts.
+- **Turn on reminders to make memories manually** applies while auto-create is disabled. Its configurable interval Y defaults to **50 messages**. It first reminds at Y unprocessed messages, then every Y additional messages. Both preferences remain saved when switching auto-create on or off.
+
+Intervals accept positive whole numbers and count **chat messages**, including both user and assistant messages, using the existing last-processed Memory boundary. Automatic reminders remain message-based even when generation uses a token threshold. Checks run after assistant replies and when memory processing becomes idle; generation, pending progress, and an explicit auto-summary postponement suppress new reminders. A delayed reminder starts its repeat interval from the actual notification count.
+
+Reminder toasts have a close button and stay visible until dismissed. Repeats do not stack while a reminder is visible. Notification checkpoints are saved per chat, so reloading does not immediately repeat a delivered reminder. A changed processed boundary or reminder configuration resets the relevant schedule; deleted messages rebase repeat checkpoints. Changing chats, changing the boundary, or disabling/switching the active reminder mode clears the visible reminder. These reminders do not create memories or change automatic generation thresholds.
+
 ### 27.4 Profile editor
 
 Choose a profile under **Memory Profiles**, then open **Profile Actions → Edit Profile**. These settings are **per profile** unless noted otherwise. The built-in **Current SillyTavern Settings** profile intentionally locks fields that SillyTavern controls.

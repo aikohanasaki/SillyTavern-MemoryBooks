@@ -1531,4 +1531,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "詳細を確認"
   ,"STMemoryBooks_Consolidation_DismissAction": "確認後に閉じる"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "保存済みの要約を復旧しました。残りの情報源は新しい統合を開始してください。"
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "自動メモリのリマインダーを有効にする"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "自動メモリのリマインダー間隔（メッセージ数）"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "自動作成が有効な場合、メッセージ間隔＋バッファ＋このメッセージ数で最初のリマインダーを表示し、その後は同じ数のメッセージが増えるたびに繰り返します。トークン数で生成を開始する場合も、チャットのメッセージ数を数えます。"
+  ,"STMemoryBooks_Reminder_ManualEnabled": "手動でメモリを作成するリマインダーを有効にする"
+  ,"STMemoryBooks_Reminder_ManualInterval": "手動メモリのリマインダー間隔（メッセージ数）"
+  ,"STMemoryBooks_Reminder_ManualHelp": "自動作成が無効な場合、未処理のチャットメッセージがこの数に達すると通知し、その後は同じ数のメッセージが増えるたびに繰り返します。"
+  ,"STMemoryBooks_Reminder_CommonHelp": "リマインダーは閉じるまで表示され、「通知を表示」とは独立して動作します。"
+  ,"STMemoryBooks_Reminder_AutomaticToast": "自動メモリサマリーの作成が遅れています。未処理のメッセージが{{count}}件あります。自動メモリの設定を確認するか、メモリを作成してください。"
+  ,"STMemoryBooks_Reminder_ManualToast": "前回のメモリサマリー以降、{{count}}件のメッセージがあります。メモリの作成をご検討ください。"
 }

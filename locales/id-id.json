@@ -1531,4 +1531,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "Tinjau detail"
   ,"STMemoryBooks_Consolidation_DismissAction": "Tutup setelah ditinjau"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "Ringkasan tersimpan telah dipulihkan. Mulai konsolidasi baru untuk sumber yang tersisa."
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "Aktifkan pengingat untuk memori otomatis"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "Interval pengingat otomatis (pesan)"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "Saat pembuatan otomatis aktif, pengingat pertama muncul setelah interval pesan ditambah penyangga dan jumlah pesan ini, lalu berulang setiap jumlah pesan tambahan yang sama. Selalu menghitung pesan obrolan, termasuk saat pembuatan dipicu oleh token."
+  ,"STMemoryBooks_Reminder_ManualEnabled": "Aktifkan pengingat untuk membuat memori secara manual"
+  ,"STMemoryBooks_Reminder_ManualInterval": "Interval pengingat manual (pesan)"
+  ,"STMemoryBooks_Reminder_ManualHelp": "Saat pembuatan otomatis nonaktif, ingatkan setelah jumlah pesan obrolan yang belum diproses ini, lalu ulangi setiap jumlah pesan tambahan yang sama."
+  ,"STMemoryBooks_Reminder_CommonHelp": "Pengingat tetap terlihat hingga ditutup dan bekerja terlepas dari Tampilkan notifikasi."
+  ,"STMemoryBooks_Reminder_AutomaticToast": "Ringkasan memori otomatis terlambat: {{count}} pesan belum diproses. Periksa pengaturan memori otomatis atau buat memori."
+  ,"STMemoryBooks_Reminder_ManualToast": "Ada {{count}} pesan sejak ringkasan memori terakhir Anda. Pertimbangkan untuk membuat memori."
 }

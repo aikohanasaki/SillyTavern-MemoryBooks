@@ -1531,4 +1531,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "Semak butiran"
   ,"STMemoryBooks_Consolidation_DismissAction": "Tutup selepas semakan"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "Ringkasan yang disimpan telah dipulihkan. Mulakan penyatuan baharu untuk sumber yang berbaki."
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "Hidupkan peringatan untuk memori automatik"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "Selang peringatan automatik (mesej)"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "Apabila penciptaan automatik dihidupkan, peringatan pertama muncul selepas selang mesej ditambah penimbal dan bilangan mesej ini, kemudian berulang selepas setiap bilangan mesej tambahan yang sama. Sentiasa mengira mesej sembang, walaupun penjanaan dicetuskan oleh token."
+  ,"STMemoryBooks_Reminder_ManualEnabled": "Hidupkan peringatan untuk mencipta memori secara manual"
+  ,"STMemoryBooks_Reminder_ManualInterval": "Selang peringatan manual (mesej)"
+  ,"STMemoryBooks_Reminder_ManualHelp": "Apabila penciptaan automatik dimatikan, beri peringatan selepas bilangan mesej sembang yang belum diproses ini, kemudian ulang selepas setiap bilangan mesej tambahan yang sama."
+  ,"STMemoryBooks_Reminder_CommonHelp": "Peringatan kekal kelihatan sehingga ditutup dan berfungsi secara berasingan daripada Tunjukkan pemberitahuan."
+  ,"STMemoryBooks_Reminder_AutomaticToast": "Ringkasan memori automatik tertangguh: {{count}} mesej belum diproses. Semak tetapan memori automatik anda atau cipta memori."
+  ,"STMemoryBooks_Reminder_ManualToast": "Terdapat {{count}} mesej sejak ringkasan memori terakhir anda. Pertimbangkan untuk mencipta memori."
 }

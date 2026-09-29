@@ -1528,4 +1528,13 @@
   ,"STMemoryBooks_Consolidation_ReviewAction": "Revisar detalhes"
   ,"STMemoryBooks_Consolidation_DismissAction": "Dispensar após revisar"
   ,"STMemoryBooks_Consolidation_RecoveryPartial": "Os resumos salvos foram recuperados. Inicie outra consolidação para as fontes restantes."
+  ,"STMemoryBooks_Reminder_AutomaticEnabled": "Ativar lembretes para memórias automáticas"
+  ,"STMemoryBooks_Reminder_AutomaticInterval": "Intervalo dos lembretes automáticos (mensagens)"
+  ,"STMemoryBooks_Reminder_AutomaticHelp": "Com a criação automática ativada, o primeiro lembrete aparece após o intervalo de mensagens mais o buffer mais esta quantidade de mensagens; depois, repete-se a cada nova quantidade igual de mensagens. Sempre conta mensagens do chat, mesmo quando a geração é acionada por tokens."
+  ,"STMemoryBooks_Reminder_ManualEnabled": "Ativar lembretes para criar memórias manualmente"
+  ,"STMemoryBooks_Reminder_ManualInterval": "Intervalo dos lembretes manuais (mensagens)"
+  ,"STMemoryBooks_Reminder_ManualHelp": "Com a criação automática desativada, lembra após esta quantidade de mensagens do chat não processadas e repete-se a cada nova quantidade igual de mensagens."
+  ,"STMemoryBooks_Reminder_CommonHelp": "Os lembretes ficam visíveis até serem fechados e funcionam independentemente de Mostrar notificações."
+  ,"STMemoryBooks_Reminder_AutomaticToast": "Os resumos de memória automáticos estão atrasados: {{count}} mensagens não processadas. Verifique as configurações de memórias automáticas ou crie uma memória."
+  ,"STMemoryBooks_Reminder_ManualToast": "Há {{count}} mensagens desde seu último resumo de memória. Considere criar uma memória."
 }
