@@ -835,6 +835,67 @@ p.stmb-help-drawer-copy {
     background: color-mix(in srgb, var(--SmartThemeEmColor, #f0c36d) 12%, transparent);
 }
 
+.stmb-extract-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.stmb-extract-picker p {
+    margin: 0;
+}
+
+.stmb-extract-results {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.stmb-extract-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75em;
+    padding-block: 0.75em;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+}
+
+.stmb-extract-result > details {
+    flex: 1;
+    min-width: 0;
+}
+
+.stmb-extract-result > input {
+    margin-top: 0.25em;
+}
+
+.stmb-extract-result summary {
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.stmb-extract-result summary span {
+    display: block;
+}
+
+.stmb-extract-result details[open] summary span {
+    display: none;
+}
+
+.stmb-extract-result summary span,
+.stmb-extract-result .stmb-extract-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.stmb-extract-result .stmb-extract-text {
+    margin-block: 0.75em;
+}
+
+.stmb-extract-result mark {
+    color: var(--SmartThemeBodyColor);
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor) 45%, transparent);
+    border-radius: 0.15em;
+}
+
 .stmb-setting-focus-highlight {
     border-radius: 6px;
     outline: 2px solid var(--SmartThemeQuoteColor, #4f8cff);

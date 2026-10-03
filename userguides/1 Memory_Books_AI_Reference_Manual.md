@@ -1094,7 +1094,7 @@ It does not use:
 5. Enter activation keywords, or leave them blank to use the topic.
 6. Choose a new entry or an existing `[STMB Clip]` update target.
 7. Choose saved Memories, chat messages, or both as sources.
-8. Optionally select only specific source Memories. For chat messages, enter an exact range or click **Extract…** to search the loaded chat and select individual messages, including noncontiguous ones.
+8. Optionally select only specific source Memories. For chat messages, enter an exact range or click **Extract…** to search the full current chat and select individual messages, including noncontiguous and hidden messages.
 9. Choose the generation profile.
 10. Generate the draft.
 11. Review and edit it.
@@ -1102,7 +1102,13 @@ It does not use:
 
 The generated draft is never saved automatically.
 
-When text is highlighted in the chat, the floating control offers **Clip** and **Extract**. Extract opens the same current-chat message picker with the highlighted text as its search query. STMB records selected message identities and checks them again before generating or saving a Topical Clip. If the chat or a selected message changes, select the sources again. Extract does not search chats that are not loaded.
+When text is highlighted in the chat, the floating control offers **Clip** and **Extract**. Extract opens the same message picker with the highlighted text as its search query. It searches the full history of the current chat, including messages that are not rendered onscreen. An empty search lists all messages. Search matches literal text or speaker names, ignoring case; **Hidden only** restricts matches to hidden messages.
+
+Results appear in batches of 50. Use **Load more** to display more matches, expand a result to read its complete text with highlighted matches, or use **Previous message** and **Next message** to reveal surrounding context. Context messages are not selected automatically and can appear even when they do not match the search or Hidden only filter. Hidden messages are labeled; selecting one includes its text in the Topical Clip source without unhiding it in the chat.
+
+Selections are retained across searches and filter changes. The selection count includes messages outside the displayed results. **Select loaded results** selects every displayed result, including any revealed context messages; **Clear selection** removes all selections. Choose **Topical Clip** from standalone Extract or **Use selected messages** when returning to an existing editor. The query supplies the initial topic and keywords, which remain editable.
+
+STMB records source fingerprints when messages enter the picker and checks selected messages before accepting them, generating a draft, and saving it. If a selected source changes, **Refresh results** clears the selection and reloads the results so you can select sources again. Finish or cancel any unfinished message edit before searching. Switching chats closes the picker. Extract does not search other chats.
 
 ### 15.4 Updating an existing Topical Clip
 

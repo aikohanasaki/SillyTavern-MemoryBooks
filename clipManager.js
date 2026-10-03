@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
-import { chat, chat_metadata, saveSettingsDebounced } from '../../../../script.js';
+import { chat, chat_metadata, eventSource, event_types, saveSettingsDebounced } from '../../../../script.js';
 import { extension_settings } from '../../../extensions.js';
 import {
     createWorldInfoEntry,
@@ -23,7 +23,8 @@ import { isSidePromptEntryTitle } from './sidePrompts.js';
 import { requestCompletion } from './stmemory.js';
 import { compileScene, createSceneRequest, toReadableText } from './chatcompile.js';
 import { compileMessageRange } from './messageRange.js';
-import { captureChatSelection, validateChatSelection } from './chatSelection.js';
+import { validateChatSelection } from './chatSelection.js';
+import { showChatMessagePicker } from './chatMessagePicker.js';
 import {
     getCurrentApiInfo,
     getCurrentManualLorebookResolution,
@@ -794,54 +795,23 @@ function scheduleFloatingClipUpdate() {
     floatingClipUpdateTimer = setTimeout(updateFloatingClipButton, 60);
 }
 
-/** Finds messages in the loaded chat and returns stable identities for noncontiguous sources. */
+/** Searches the full current chat and returns fingerprinted, noncontiguous sources. */
 export async function openChatMessageExtractor({ query = '', initialSelection = null, selectOnly = false } = {}) {
-    const chatKey = getStmbChatKey(getCurrentStmbChatRef());
-    const selected = new Set(initialSelection?.chatKey === chatKey
-        ? initialSelection.messages.map(item => item.index) : []);
-    const popup = new Popup(DOMPurify.sanitize(`
-        <div class="world_entry_form_control">
-            <label><span>${escapeHtml(tr('STMemoryBooks_Extract_Search', 'Find chat messages'))}</span>
-                <input id="stmb-extract-query" class="text_pole" type="search" value="${escapeHtml(query || initialSelection?.query || '')}"></label>
-            <small>${escapeHtml(tr('STMemoryBooks_Extract_CurrentChat', 'Searches the currently loaded chat. Select any messages to use as Topical Clip sources.'))}</small>
-        </div>
-        <div id="stmb-extract-results" style="max-height:50vh;overflow-y:auto"></div>
-    `), POPUP_TYPE.TEXT, '', {
-        wide: true, large: true, allowVerticalScrolling: true,
-        okButton: tr('STMemoryBooks_Extract_UseSelected', 'Use selected messages'),
-        cancelButton: tr('STMemoryBooks_Cancel', 'Cancel'),
+    const selection = await showChatMessagePicker({
+        Popup, popupType: POPUP_TYPE.TEXT, affirmativeResult: POPUP_RESULT.AFFIRMATIVE,
+        tr, markPopup: markStmbPopup, query, initialSelection,
+        getMessages: () => chat,
+        getChatKey: () => getStmbChatKey(getCurrentStmbChatRef()),
+        hasUnfinishedEdit: () => Boolean(document.querySelector('#chat .edit_textarea')),
+        subscribeChatChanged: handler => {
+            eventSource.on(event_types.CHAT_CHANGED, handler);
+            return () => eventSource.removeListener(event_types.CHAT_CHANGED, handler);
+        },
+        acceptLabel: selectOnly
+            ? tr('STMemoryBooks_Extract_UseSelected', 'Use selected messages')
+            : tr('STMemoryBooks_TopicalClip_Title', 'Topical Clip'),
     });
-    markStmbPopup(popup);
-    const showPromise = popup.show();
-    const input = popup.dlg?.querySelector('#stmb-extract-query');
-    const results = popup.dlg?.querySelector('#stmb-extract-results');
-    const render = () => {
-        if (!results) return;
-        const term = String(input?.value || '').trim().toLocaleLowerCase();
-        const matches = chat.map((message, index) => ({ message, index }))
-            .filter(({ message }) => message && !message.is_system
-                && (!term || `${message.name || ''} ${message.mes || ''}`.toLocaleLowerCase().includes(term)));
-        results.innerHTML = matches.length ? matches.map(({ message, index }) => `
-            <label class="flex-container gap10px marginBot5"><input type="checkbox" data-message-index="${index}" ${selected.has(index) ? 'checked' : ''}>
-                <span><strong>#${index} ${escapeHtml(String(message.name || ''))}</strong><br>${escapeHtml(String(message.mes || '').slice(0, 300))}</span>
-            </label>`).join('') : `<p>${escapeHtml(tr('STMemoryBooks_Extract_NoMatches', 'No matching messages.'))}</p>`;
-    };
-    input?.addEventListener('input', render);
-    results?.addEventListener('change', event => {
-        const index = Number(event.target?.dataset?.messageIndex);
-        if (!Number.isInteger(index)) return;
-        if (event.target.checked) selected.add(index);
-        else selected.delete(index);
-    });
-    render();
-    if (await showPromise !== POPUP_RESULT.AFFIRMATIVE) return null;
-    if (getStmbChatKey(getCurrentStmbChatRef()) !== chatKey) {
-        toastr.error(tr('STMemoryBooks_Extract_Changed', 'The chat or selected messages changed. Select them again.'), 'STMemoryBooks');
-        return null;
-    }
-    let selection;
-    try { selection = captureChatSelection(chat, chatKey, [...selected], input?.value || ''); }
-    catch { toastr.error(tr('STMemoryBooks_Extract_Changed', 'The chat or selected messages changed. Select them again.'), 'STMemoryBooks'); return null; }
+    if (!selection) return null;
     if (selectOnly) return selection;
     return showTopicalClipPopup({ topic: selection.query, keywords: [selection.query], messageSelection: selection });
 }
@@ -2447,7 +2417,9 @@ export async function showTopicalClipPopup(options = {}) {
             }
             const indices = selectedMessages.messages.map(item => item.index);
             try {
-                sourceMessages = compileScene(createSceneRequest(indices[0], indices.at(-1)), { messageIndices: indices });
+                sourceMessages = compileScene(createSceneRequest(indices[0], indices.at(-1)), {
+                    messageIndices: indices, includeHiddenMessages: true,
+                });
             } catch (error) {
                 toastr.error(error.message, 'STMemoryBooks');
                 return;

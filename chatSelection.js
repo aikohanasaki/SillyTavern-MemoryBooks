@@ -13,7 +13,7 @@ export function fingerprintChatMessage(message) {
 
 export function captureChatSelection(messages, chatKey, indices, query = '') {
     const selected = [...new Set(indices)].sort((a, b) => a - b);
-    if (!chatKey || selected.length === 0 || selected.some(index => !Number.isInteger(index) || index < 0 || !messages[index] || messages[index].is_system)) {
+    if (!chatKey || selected.length === 0 || selected.some(index => !Number.isInteger(index) || index < 0 || !messages[index])) {
         throw new Error('Selected messages are unavailable');
     }
     return {
@@ -27,6 +27,6 @@ export function validateChatSelection(selection, messages, chatKey) {
     const indices = selection.messages.map(item => item.index);
     if (new Set(indices).size !== indices.length) return false;
     return selection.messages.every(item => Number.isInteger(item.index) && item.index >= 0
-        && messages[item.index] && !messages[item.index].is_system
+        && messages[item.index]
         && fingerprintChatMessage(messages[item.index]) === item.hash);
 }

@@ -17,5 +17,18 @@ test('captures noncontiguous visible messages and detects edits or chat switches
     assert.equal(validateChatSelection(selection, messages, 'chat-b'), false);
     messages[2].mes = 'edited';
     assert.equal(validateChatSelection(selection, messages, 'chat-a'), false);
-    assert.throws(() => captureChatSelection(messages, 'chat-a', [1]));
+    const hidden = captureChatSelection(messages, 'chat-a', [1]);
+    assert.equal(validateChatSelection(hidden, messages, 'chat-a'), true);
+    messages[1].is_system = false;
+    assert.equal(validateChatSelection(hidden, messages, 'chat-a'), false);
+});
+
+test('selection fingerprints reject deleted, shifted, or changed swipe sources', () => {
+    const messages = [{ mes: 'first' }, { mes: 'second' }, { mes: 'third' }];
+    const selection = captureChatSelection(messages, 'chat-a', [1, 2, 1]);
+    assert.deepEqual(selection.messages.map(item => item.index), [1, 2]);
+    assert.equal(validateChatSelection(selection, messages.slice(0, 2), 'chat-a'), false);
+    assert.equal(validateChatSelection(selection, [{ mes: 'inserted' }, ...messages], 'chat-a'), false);
+    assert.equal(validateChatSelection(selection, [messages[0], { mes: 'other swipe' }, messages[2]], 'chat-a'), false);
+    assert.throws(() => captureChatSelection(messages, 'chat-a', []));
 });
