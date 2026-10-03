@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
-## v9.3.4 (September 29, 2026)
+## v9.3.4 (October 3, 2026)
 - UI improvement for "Extract" function.
 - New feature: Combine Clips to combine multiple related STMB Clips into one. 
 
