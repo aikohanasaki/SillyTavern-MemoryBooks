@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "合併剪輯",
+  "STMemoryBooks_CombineClips_Select": "選擇至少兩個主題剪輯",
+  "STMemoryBooks_CombineClips_NewTitle": "新主題剪輯標題",
+  "STMemoryBooks_CombineClips_Disable": "儲存後停用原始剪輯",
+  "STMemoryBooks_CombineClips_Disabled": "已停用",
+  "STMemoryBooks_CombineClips_None": "此記憶書中沒有主題剪輯。",
+  "STMemoryBooks_CombineClips_Minimum": "請選擇至少兩個主題剪輯。",
+  "STMemoryBooks_CombineClips_SourcesChanged": "選取的剪輯已變更。請重新產生草稿。",
   "STMemoryBooks_Extract_HiddenOnly": "僅隱藏訊息",
   "STMemoryBooks_Extract_Hidden": "已隱藏",
   "STMemoryBooks_Extract_OutsideCount": "不在顯示結果中的選擇：{{count}}",

@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "合并摘录",
+  "STMemoryBooks_CombineClips_Select": "选择至少两个主题摘录",
+  "STMemoryBooks_CombineClips_NewTitle": "新主题摘录标题",
+  "STMemoryBooks_CombineClips_Disable": "保存后禁用原始摘录",
+  "STMemoryBooks_CombineClips_Disabled": "已禁用",
+  "STMemoryBooks_CombineClips_None": "此记忆书中没有主题摘录。",
+  "STMemoryBooks_CombineClips_Minimum": "请选择至少两个主题摘录。",
+  "STMemoryBooks_CombineClips_SourcesChanged": "选中的摘录已更改。请重新生成草稿。",
   "STMemoryBooks_Extract_HiddenOnly": "仅隐藏消息",
   "STMemoryBooks_Extract_Hidden": "已隐藏",
   "STMemoryBooks_Extract_OutsideCount": "不在显示结果中的选择：{{count}}",

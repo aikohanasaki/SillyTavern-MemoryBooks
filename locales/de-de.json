@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "Clips zusammenführen",
+  "STMemoryBooks_CombineClips_Select": "Mindestens zwei Themen-Clips auswählen",
+  "STMemoryBooks_CombineClips_NewTitle": "Titel des neuen Themen-Clips",
+  "STMemoryBooks_CombineClips_Disable": "Original-Clips nach dem Speichern deaktivieren",
+  "STMemoryBooks_CombineClips_Disabled": "deaktiviert",
+  "STMemoryBooks_CombineClips_None": "Keine Themen-Clips in diesem Memory Book gefunden.",
+  "STMemoryBooks_CombineClips_Minimum": "Wähle mindestens zwei Themen-Clips aus.",
+  "STMemoryBooks_CombineClips_SourcesChanged": "Ein ausgewählter Clip wurde geändert. Erstelle den Entwurf erneut.",
   "STMemoryBooks_Extract_HiddenOnly": "Nur ausgeblendete",
   "STMemoryBooks_Extract_Hidden": "Ausgeblendet",
   "STMemoryBooks_Extract_OutsideCount": "Außerhalb der angezeigten Ergebnisse: {{count}}",

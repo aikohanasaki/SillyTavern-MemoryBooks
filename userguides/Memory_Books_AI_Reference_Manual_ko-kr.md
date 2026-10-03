@@ -413,7 +413,9 @@ named connection은 저장된 URL과 secret을 제공한다. STMB profile의 mod
 
 ### 7.6 ChatCompletionService
 
-**Use ST's ChatCompletionService**는 지원 profile 요청을 SillyTavern request helper로 라우팅하며 선택한 SillyTavern Chat Completion preset을 적용할 수 있다. OpenRouter 요청은 provider order, quantization filters, fallback controls, middle-out routing도 상속한다. ChatCompletionService가 실패해 STMB fallback 경로를 사용해도 이 OpenRouter controls가 유지된다. 그 재시도까지 실패하면 STMB는 처음 오류와 fallback provider response를 모두 보존해 보고한다. Full Manual profile은 이 경로를 사용하지 않는다.
+**Use ST’s ChatCompletionService**는 SillyTavern의 Connection Manager에서 profile이 선택되어 있으면 `ConnectionManagerRequestService`를 사용합니다. 해당 connection profile이 provider, credentials, endpoint, proxy, Chat Completion preset을 제공합니다. STMB는 model과 temperature를 override하고, 자체 response-token limit과 structured-output 선택은 유지합니다. Connection profile의 preset은 STMB에서 별도로 선택한 Chat Completion preset보다 우선합니다. 선택된 connection profile은 Chat Completion을 사용해야 합니다. Connection-profile request가 실패하면 connection settings가 사라지는 STMB direct request path로 재시도하지 않고 오류를 보고합니다.
+
+SillyTavern connection profile이 선택되어 있지 않으면 STMB의 선택적 Chat Completion preset을 포함한 기존 ChatCompletionService 동작이 적용됩니다. 이 route의 OpenRouter request는 SillyTavern의 provider order, quantization filters, fallback controls, middle-out routing setting도 상속합니다. ChatCompletionService가 실패하여 STMB가 fallback request path로 재시도할 때도 이 control들은 유지됩니다. 그 재시도까지 실패하면 STMB는 두 실패를 모두 보고합니다. 옵션을 끄면 STMB의 direct request behavior를 유지합니다. Full Manual profile은 어느 service route도 사용하지 않습니다.
 
 ### 7.7 Reverse proxy 및 Full Manual Configuration
 
@@ -660,7 +662,7 @@ AI가 “기억하지 못한다”고 할 때:
 
 ### 11.1 정의
 
-Group Chat Mode는 둘 이상의 독립 character card로 구성된 실제 SillyTavern group에 적용된다.
+Group Chat Mode는 둘 이상의 별도 character card로 구성된 실제 SillyTavern group에 적용됩니다.
 
 ```text
 SillyTavern Group
@@ -669,9 +671,24 @@ SillyTavern Group
 └── Clara character card
 ```
 
-SillyTavern은 각 message를 어느 card가 작성했는지 기록하므로 STMB가 speaker attribution과 참여 group member를 감지할 수 있다.
+SillyTavern은 각 message를 어떤 card가 작성했는지 기록하므로 STMB는 speaker attribution을 보존하고 참여한 group member를 감지할 수 있습니다.
 
-별도 Group Chat Mode switch는 필요 없다. group chat을 열고 STMB를 평소처럼 사용한다.
+별도의 Group Chat Mode switch는 필요하지 않습니다. Group chat을 열고 STMB를 평소처럼 사용하면 됩니다.
+
+**General Settings → Group Chat**에는 서로 독립적인 두 control이 있으며 둘 다 기본적으로 체크되어 있습니다.
+
+| Setting | Checked | Unchecked |
+|---|---|---|
+| **character-aware memories** | participant 기반 memory filter와 설정된 character-specific memory processing을 활성화합니다. | 새 memory, regeneration, consolidation에 일반 single-book processing을 사용합니다. Participant confirmation, character filter, character-book copy, linked regeneration, character-based consolidation stream, automatic group/character prompt routing이 없습니다. |
+| **Use separate group side prompts** | Automatic side prompt가 group default를 상속합니다. | Automatic side prompt가 solo default를 상속합니다. |
+
+Memory checkbox는 side-prompt checkbox에 영향을 주지 않습니다. Side-prompt default routing은 after-memory와 interval trigger 모두에 적용됩니다. 명시적인 per-chat set 선택 또는 individually enabled prompt가 있으면 그것이 우선하며, manual run은 계속 사용할 수 있습니다.
+
+Character-aware memories가 off이면 **Automatically accept detected participants in future**, **Group Character Lorebooks** assignment, **Use separate group and character prompts in group chats**, **Group Summary Prompt / Character Summary Prompt** selector는 계속 표시되지만 회색으로 비활성화됩니다. Tooltip은 General Settings checkbox가 꺼져 있어 적용되지 않는다고 설명합니다. Separate group side prompts가 off이면 group side-prompt default selector만 같은 이유로 비활성화됩니다. 저장된 선택은 유지되며 다시 활성화하면 복원됩니다.
+
+이 switch들은 기존 entry나 STLO configuration을 migrate하지 않습니다. 기존 filter는 entry를 명시적으로 regenerate할 때까지 계속 적용됩니다. Character-aware memories가 off인 상태에서 regeneration하면 해당 entry의 character filter는 제거되지만 linked copy는 다시 쓰지 않습니다. 새 consolidated entry는 unfiltered이며 source entry는 기존 filter를 유지합니다. Queue job과 retry를 포함하여 이미 시작된 operation은 시작 시 캡처한 setting을 유지합니다. Native group identity, speaker name, primary Memory Book selection은 그대로 유지됩니다. Narrator Mode는 이 native-group control과 독립적입니다.
+
+아래 character-aware 동작은 **character-aware memories**가 체크되어 있을 때 적용됩니다.
 
 ### 11.2 Participant detection
 
@@ -710,27 +727,26 @@ Alice와 Bob의 inclusive filter는 Alice **또는** Bob이 active일 때 entry�
 
 ### 11.4 Group book 하나 + per-character books
 
-고급 real-group layout:
+고급 real-group layout은 다음을 사용합니다.
 
-- canonical group Memory Book 하나
-- group member마다 assigned character Memory Book 하나
+- 하나의 canonical group Memory Book;
+- 각 group member에 할당된 하나의 character Memory Book.
 
-요구:
+요구사항:
 
-- Manual Lorebook Mode
-- SillyTavern-LorebookOrdering (STLO) 설치/활성화
-- 모든 필요한 group member의 valid assignment
+- Manual Lorebook Mode;
+- 필요한 모든 group member에 대한 유효한 assignment.
 
-canonical group book은 character book으로 재사용할 수 없다. 여러 character가 같은 character book을 공유할 수 있으며, STMB는 그 shared book에 duplicate 대신 한 copy를 쓴다.
+Canonical group book을 character book으로도 선택할 수 있습니다. STMB는 canonical group entry와 linked character copy를 해당 book에 별도 entry로 저장합니다. Character copy는 할당된 character에 filter되고, 그 character의 turn에서는 canonical version보다 우선합니다. 여러 character가 같은 character book을 공유할 수 있으며, STMB는 duplicate 대신 하나의 shared copy를 작성합니다.
 
-Memory 저장 시:
+Memory가 저장될 때:
 
-1. canonical version을 group book에 씀
-2. automatic acceptance가 아니면 participant 확인
-3. 선택 participant books에 linked copies 작성
-4. 필요한 save 하나가 실패하면 가능한 한 partial write rollback
+1. canonical version을 group book에 기록합니다.
+2. automatic acceptance가 enabled가 아니면 participant selection을 확인합니다.
+3. 선택된 participant book에 linked copy를 기록합니다.
+4. 필수 save 중 하나가 실패하면 가능한 경우 partial write를 rollback합니다.
 
-real-group participant confirmation에서 아무도 선택하지 않으면 현재 group member 모두에게 적용한다.
+Real-group participant confirmation에서 아무 participant도 선택하지 않으면 해당 Memory를 현재 group member 모두에게 적용합니다.
 
 ### 11.5 별도 group/character prompts
 
@@ -751,25 +767,25 @@ character-focused version은 다음을 보존할 수 있다.
 
 추가 AI requests가 필요하다. shared character book은 assigned character마다 duplicate하지 않고 shared copy 하나를 받는다.
 
-### 11.6 STLO 역할
+### 11.6 선택적 STLO 통합
 
-Memory Books가 결정:
+Memory Books가 결정하는 항목:
 
-- scene range
-- participants
-- summary content
-- copy를 받을 books
-- individualized prompts 사용 여부
+- scene range;
+- participants;
+- summary content;
+- 어떤 book이 copy를 받을지;
+- individualized prompt를 사용할지.
 
-STLO가 결정:
+STLO가 설치되어 있으면 추가로 다음을 결정합니다.
 
-- lorebook 활성화 시점
-- 어느 character가 활성화할 수 있는지
-- priority, position, budget, ordering
+- lorebook이 언제 active인지;
+- 어떤 character가 그것을 activate할 수 있는지;
+- priority, position, budget, ordering.
 
-STMB가 character book을 assign하면 기존 STLO priorities/budgets/overrides를 보존하면서 character avatar basename을 `stlo.characterOverrides`에 추가하고 `stlo.onlyWhenSpeaking`을 켠다.
+STLO는 real group chat에 필수가 아닙니다. STMB는 말하고 있는 native group member의 assigned book을 해당 generation에 inject하고 native entry-level character filter를 사용합니다. STLO가 사용 가능하고 STMB가 별도의 character book을 할당하면 기존 STLO priority, budget, override를 유지하면서 character avatar basename을 `stlo.characterOverrides`에 추가하고 `stlo.onlyWhenSpeaking`을 활성화합니다. Character assignment가 canonical group book이면 STMB는 lorebook-wide STLO speaking filter를 적용하지 않습니다.
 
-STMB는 merge-only다. assignment를 clear/change해도 이전 STLO override를 자동 제거하지 않는다. 오래된 override는 STLO에서 수동 제거한다.
+STMB는 merge-only behavior를 사용합니다. Assignment를 지우거나 변경해도 이전 STLO character override는 자동으로 제거되지 않습니다. 오래된 override는 STLO에서 수동으로 제거하십시오.
 
 ### 11.7 Filter/book은 privacy control이 아님
 
@@ -838,33 +854,34 @@ Narrator Mode가 없으면 SillyTavern은 모든 AI response를 Narrator card가
 
 ### 12.2 필요한 storage layout
 
-Narrator Mode 요구:
+Narrator Mode에는 다음이 필요합니다.
 
-- Manual Lorebook Mode
-- 선택된 **omniscient/canonical Memory Book** 하나
-- declared cast member마다 고유 Memory Book 하나
+- Manual Lorebook Mode;
+- 선택된 하나의 **omniscient/canonical Memory Book**;
+- 선언된 각 cast member마다 고유한 Memory Book 하나.
 
 규칙:
 
-- cast member는 omniscient book 사용 불가
-- 두 cast member가 같은 book 공유 불가
-- 모든 declared member에게 available book 필요
-- retired member는 복구되거나 구현에서 제거될 때까지 identity와 reserved book assignment 유지
-- Auto-Create는 Manual Lorebook Mode와 상호 배타적이므로 호환되지 않음
+- cast member는 omniscient book을 사용할 수 없습니다.
+- 두 cast member가 같은 book을 공유할 수 없습니다.
+- 선언된 모든 member에는 사용 가능한 book이 있어야 합니다.
+- retired member는 restore되거나 implementation에 의해 다른 방식으로 제거될 때까지 identity와 reserved book assignment를 유지합니다.
+- Narrator Mode는 Manual Lorebook Mode에 의존하므로 Auto-Create와 호환되지 않습니다.
 
-advanced real-group layout과 달리 Narrator Mode는 active-character retrieval에 STLO가 필요하지 않다. generation 중 STMB가 selected cast members의 books를 active lorebook context에 주입한다.
+고급 real-group layout과 마찬가지로 Narrator Mode는 active-character retrieval에 STLO가 필요하지 않습니다. STMB는 선택된 cast member의 book을 generation 중 active lorebook context에 inject합니다.
 
 ### 12.3 설정
 
-1. Narrator card의 일반 chat을 연다.
-2. Manual Lorebook Mode를 켠다.
-3. main manual book을 선택한다. 이것이 omniscient Memory Book이다.
-4. **Narrator Mode**를 켠다.
-5. **Manage Narrator Cast**를 연다.
-6. fictional character를 이름으로 추가하고 각각 unique Memory Book assign.
-7. floating **Active Cast** drawer에서 다음 exchange에 present할 characters 선택.
+1. Narrator card의 일반 chat을 엽니다.
+2. Manual Lorebook Mode를 활성화합니다.
+3. Main manual book을 선택합니다. 이것이 omniscient Memory Book입니다.
+4. **Narrator Mode**를 활성화합니다.
+5. **Manage Narrator Cast**를 엽니다.
+6. 각 fictional character를 이름으로 추가하고 고유한 Memory Book을 할당합니다.
+7. 기존 cast member 옆의 **Edit**를 사용해 character name을 수정하거나 해당 member의 assigned Memory Book을 변경합니다.
+8. Floating **Active Cast** drawer를 사용해 다음 exchange에 등장하는 character를 선택합니다.
 
-Manual Lorebook Mode를 끄기 전에 Narrator Mode를 꺼야 한다.
+Manual Lorebook Mode를 비활성화하려면 먼저 Narrator Mode를 비활성화해야 합니다.
 
 ### 12.4 Active Cast drawer와 timeline metadata
 
@@ -921,14 +938,16 @@ real-group copy와 마찬가지로 linked Narrator entries는 생성 후 live sy
 
 ### 12.9 Cast member retire
 
-cast manager에서 member를 retired로 표시하고 나중에 restore할 수 있다. retired member는:
+Cast manager는 member를 retired로 표시하고 나중에 restore할 수 있습니다. Retired member는:
 
-- active-cast choices에서 제거
-- active-cast ID set에서 제거
-- stable identity/history metadata 유지
-- book reservation 유지하여 다른 identity와 우발적 merge 방지
+- active-cast choice에서 제거됩니다.
+- active-cast ID set에서 제거됩니다.
+- stable identity/history metadata를 유지합니다.
+- book reservation을 유지하여 실수로 재사용해 identity가 섞이는 일을 방지합니다.
 
-활성 cast를 떠났지만 historical Memory identity를 유지해야 할 때 retirement를 사용한다.
+Active cast에서 떠난 character의 historical Memory identity를 유지해야 할 때 retirement를 사용하십시오.
+
+Cast member의 character name 또는 Memory Book을 편집해도 member의 stable identity와 retired state는 유지됩니다. 수정된 name은 해당 member가 표시되는 곳과 이후 Memory output에 사용됩니다. 새 book assignment는 이후 retrieval과 Memory write를 제어하며, 이전 book에 이미 쓰인 entry를 이동하지는 않습니다.
 
 ---
 
@@ -1079,13 +1098,30 @@ Topical Clip은:
 5. activation keywords 입력 또는 비워 topic 사용.
 6. 새 entry 또는 기존 `[STMB Clip]` update target 선택.
 7. saved Memories, chat messages 또는 둘 다 sources로 선택.
-8. 선택적으로 특정 source Memories만 선택 및/또는 exact message range 입력.
+8. 필요하면 특정 source Memories만 선택합니다. Chat messages는 exact range를 입력하거나 **Extract…**를 클릭해 현재 chat 전체를 검색하고, 서로 연속되지 않은 message와 hidden message를 포함하여 개별 message를 선택할 수 있습니다.
 9. generation profile 선택.
 10. draft 생성.
 11. review/edit.
 12. 올바를 때만 save.
 
 생성된 draft는 절대 자동 저장되지 않는다.
+
+
+### 기존 Topical Clips 결합
+
+**Topical Clip** 창에서 **Combine Clips**를 클릭합니다. Memory Book을 선택하고, 필요하면 disabled clip을 포함해 Topical Clip을 최소 두 개 선택한 뒤 새 clip의 title을 입력합니다. STMB가 만든 Topical Clip만 표시되며 일반 Clip은 제외됩니다. 새 clip의 activation keywords는 선택한 clip들의 primary keywords를 중복 없이 합친 값입니다. Secondary keyword conditions는 복사되지 않습니다.
+
+Generation profile을 선택하고 **Generate Draft**를 클릭합니다. AI에는 선택한 각 clip의 title과 전체 content가 전달되며, 근거가 있는 사실을 통합하고 반복을 제거하며 해결되지 않은 충돌은 유지하도록 요청됩니다. 저장하기 전에 draft를 검토하고 편집하십시오. Selected sources, title 또는 Memory Book을 변경하면 draft가 지워집니다. 저장 전에 source가 변경되면 새 draft를 생성하십시오.
+
+**Disable original clips after saving**은 기본적으로 체크되어 있습니다. 원본의 현재 activation state를 유지하려면 체크를 해제하십시오. 저장하면 새 Topical Clip이 enabled 상태로 생성되고, 옵션이 체크되어 있으면 같은 Memory Book update에서 원본이 disabled 됩니다. 원본은 삭제되지 않습니다. 결합된 clip은 source ID를 일반 Topical Clip Memory-source history와 별도로 기록합니다.
+
+Chat에서 text를 highlight하면 floating control에 **Clip**과 **Extract**가 표시됩니다. Extract는 highlight된 text를 search query로 사용해 같은 message picker를 엽니다. 화면에 render되지 않은 message까지 포함해 현재 chat의 전체 history를 검색합니다. 빈 search는 모든 message를 표시합니다. Search는 literal text 또는 speaker name을 대소문자 구분 없이 찾고, **Hidden only**는 hidden message만 남깁니다.
+
+결과는 50개씩 표시됩니다. **Load more**로 더 많은 결과를 표시하고, 결과를 펼쳐 match가 highlight된 전체 text를 읽거나, **Previous message**와 **Next message**로 주변 context를 표시할 수 있습니다. Context message는 자동으로 선택되지 않으며 search나 Hidden only filter에 맞지 않아도 표시될 수 있습니다. Hidden message에는 표시가 붙고, 선택하면 chat에서 unhide하지 않은 채 그 text를 Topical Clip source에 포함합니다.
+
+선택 상태는 search 및 filter 변경 후에도 유지됩니다. Selection count에는 현재 표시되지 않는 결과의 message도 포함됩니다. **Select loaded results**는 표시된 모든 결과와 펼쳐진 context message까지 선택하며, **Clear selection**은 모든 선택을 해제합니다. 독립 실행 Extract에서는 **Topical Clip**을 선택하고, 기존 editor로 돌아갈 때는 **Use selected messages**를 선택합니다. Query는 초기 topic과 keywords를 채우며 둘 다 편집할 수 있습니다.
+
+STMB는 message가 picker에 들어올 때 source fingerprint를 기록하고, 선택된 message를 수락하기 전, draft를 생성하기 전, 저장하기 전에 다시 확인합니다. 선택된 source가 변경되면 **Refresh results**가 selection을 지우고 결과를 다시 불러와 source를 다시 선택하게 합니다. 검색 전에 완료되지 않은 message edit를 끝내거나 취소하십시오. Chat을 바꾸면 picker가 닫힙니다. Extract는 다른 chat을 검색하지 않습니다.
 
 ### 15.4 Existing Topical Clip update
 
@@ -1205,7 +1241,7 @@ selected set은 individually enabled automatic prompts를 **대체**하며 추�
 
 #### Memory Assistance Side Prompt
 
-**Memory Assistance**는 네 개의 독립 mode를 가진 reserved Side Prompt다. ordinary Side Prompt enablement나 selected Side Prompt Set과 무관하게 successfully saved Memories 뒤에 실행된다. Memory regeneration 중에는 실행되지 않는다.
+**Memory Assistance**는 다섯 개의 독립 mode가 있는 예약 Side Prompt입니다. 일반 Side Prompt enablement나 선택된 Side Prompt Set과 관계없이 Memory가 성공적으로 저장된 뒤 실행됩니다. Memory regeneration 중에는 실행되지 않습니다.
 
 Memory Assistance는 processed raw scene과 해당 Memory가 저장된 각 Memory Book의 ordinary/Topical Clips를 비교한다. reviewed Clip마다 title/topic, keywords, current content, stable ID, type을 AI에 보낸다.
 
@@ -1213,6 +1249,7 @@ job queue 사용 시 target Memory Book마다 Memory save 후 별도 **Memory As
 
 - **Off** — Memory Assistance 비활성화.
 - **Update** — Clips 5개 이하 직접 review, 5개 초과 시 selection list. proposed changes는 manual approval 대기.
+- **Suggest**는 기존 Clip을 검토하거나 업데이트하지 않고 새로운 Topical Clip topic을 찾습니다.
 - **Update and Suggest** — 먼저 topic-discovery request 후 Update와 같은 existing-Clip review workflow.
 - **Automatic** — 어떤 Clip을 review할지 묻지 않고 token-based batches로 모든 Clip review. valid ordinary Clip additions는 직접 적용, Topical Clip replacements는 **Memory Assistance Suggestions**에서 approval pending.
 
@@ -1953,7 +1990,24 @@ Retry scopes:
 
 combined workflow 복구에는 Retry All, tracker work가 필요 없으면 Retry Memory를 사용한다.
 
+Consolidation 저장은 수락된 각 summary를 쓰기 전에 extension settings에 checkpoint를 기록합니다. Summary와 source-disable 변경은 함께 저장됩니다. Retry는 쓰기 전에 live Memory Book에서 checkpoint marker를 확인하므로, 이미 확인된 summary는 중복 생성하지 않고 재사용합니다. Reload 후 Extensions 메뉴의 **Consolidation recovery**는 완료되지 않은 checkpoint를 표시하고 **Resume**과 **Review details**를 제공합니다. Source 변경, 편집된 summary, duplicate marker 또는 확인되지 않은 save는 **Needs Review**로 표시되며 자동 재실행되지 않습니다. Memory Book을 확인한 뒤 **Dismiss after review**를 누르면 book을 변경하지 않고 checkpoint 알림만 제거합니다. 이는 ST의 settings 및 lorebook API를 사용하며 server transaction을 제공하는 것은 아닙니다.
+
+Checkpoint는 수락된 summary draft, 생성된 keywords, source IDs와 fingerprints, save options를 ST extension settings에 저장하여 reload 후에도 정확히 같은 candidate에서 다시 시작할 수 있게 합니다. Settings backup도 Memory Books 자체와 같은 수준으로 비공개로 관리하십시오.
+
 Chat Top Bar가 없어도 정상 workflow는 작동하지만 queue UI가 없다.
+
+
+### Deferred last-processed progress
+
+Queued Memory가 source chat이 더 이상 열려 있지 않은 상태에서 끝나도 Memory 자체는 Memory Book에 저장됩니다. STMB는 inactive character/group chat을 가져와 다시 쓰는 대신 last-processed marker update를 `extension_settings.STMemoryBooks.pendingProgress`에 기록합니다. 이미 queue된 job은 완료될 수 있지만, 해당 chat의 새 manual/automatic base-memory request는 pending update가 적용되거나 명시적으로 discard될 때까지 대기합니다. 다른 chat은 계속 사용할 수 있습니다.
+
+Notification은 사용자가 source chat을 직접 다시 열도록 요청합니다. Chat이 load되고 idle 상태가 되면 popup에 **Apply**, **Later**, **Discard pending update**가 표시됩니다. Apply는 **Processing…**을 표시하고 affected chat에서 `/stmb-set-highest <pending message number>`를 실행한 뒤 settings에서 pending record를 제거하고 **Done**을 표시합니다. Message content나 attachment를 비교하거나 chat을 다시 읽지 않고 command의 일반 manual-marker behavior와 range clamping을 사용합니다. Later, Escape, popup 닫기는 record를 유지합니다. Main STMB panel에는 **Pending progress updates (N)** button이 있어 refresh 후나 Chat Top Bar를 disabled한 뒤에도 이 management popup을 다시 열 수 있습니다. Chat을 자동으로 전환하지 않습니다. Discard는 confirmation이 필요하며 저장된 lorebook memory에는 영향을 주지 않습니다.
+
+각 pending record에는 chat reference, operation/job identity, target message index, original marker state/revision, chat integrity identifier, source message text와 identity fields의 SHA-256 fingerprint가 포함됩니다. Attachment field는 읽거나 fingerprint하지 않습니다. Conversation text 자체는 저장하지 않습니다. Appended message와 hide/unhide 변경은 허용되지만 edit, deletion, identity 변경, manual marker 변경 또는 rollback은 update를 unsafe하게 만들 수 있습니다. 이 check는 automatic marker update에 적용됩니다. Explicit Apply는 original fingerprint나 marker revision이 더 이상 일치하지 않아도 slash command를 사용합니다. Later는 pending update를 보존하고 Discard는 제거합니다. 명시적인 chat/character rename event는 pending reference를 remap합니다. Missing/unrecognized reference는 review 및 discard를 위해 남아 있습니다.
+
+Pending record는 ST settings API로 저장되고 settings를 다시 읽어 검증하며 confirmation limit은 10초입니다. Settings failure가 나면 update는 memory에 남습니다. Affected chat에서 Apply를 사용해 marker command를 실행하거나 Discard pending update로 pending record를 제거하십시오. 별도의 settings-save retry button은 없습니다. Browser recovery backup도 없습니다. Settings save 성공 전에 refresh하면 아직 persist되지 않은 update를 잃을 수 있습니다. Apply 후 settings cleanup이 실패하면 pending record가 남으며, Apply를 다시 클릭하면 Memory를 새로 생성하지 않고 command를 다시 실행하고 cleanup을 재시도합니다. Explicit Apply는 command의 일반 save behavior에 의존하며 automatic update는 저장된 marker를 계속 검증합니다.
+
+이 방식은 STMB의 별도 inactive-chat replacement write를 제거합니다. ST의 일반 current-chat save는 여전히 전체 chat을 쓰며 다른 tab/device에서 동시에 일어나는 settings save는 transactional하지 않습니다. 이 변경은 과거에 보고된 chat loss의 원인을 특정하거나 모든 core/other-extension save race로부터 보호한다고 보장하지 않습니다.
 
 ---
 
@@ -1997,10 +2051,10 @@ Scope:
 |---|---|---|---|
 | **Enable Manual Lorebook Mode** | **Current Lorebook Configuration** | Global mode; book choice는 per chat | normal chat-bound lorebook을 automatic target으로 쓰지 않고 current chat용 Memory Book 선택을 요구. Auto-Create와 동시 불가. |
 | **Selected manual Memory Book** | **Current Lorebook Configuration → manual lorebook controls** | Per chat | 이 chat의 main Memory Book. Narrator Mode에서는 omniscient book. |
-| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows** | Per chat | real-group member별 separate Memory Book. configure/retrieval에 STLO 필요. |
+| **Group-character Memory Book assignments** | **Current Lorebook Configuration → group-character rows**; Manual Mode를 사용하는 real group에서 표시 | Per chat | 각 real-group member에 Memory Book을 할당합니다. STMB는 현재 native speaker의 assigned book을 inject하며 STLO integration은 선택 사항입니다. Canonical group book도 할당할 수 있고, 이 경우 group entry와 character-focused entry를 모두 저장합니다. |
 | **Character Memory Book lock** | assignment 옆 lock icon | Per character | compatible Manual Mode chats에서 같은 Memory Book assignment 유지. 변경 전 unlock. |
 | **Narrator Mode** | **Current Lorebook Configuration**; normal non-group chats only | Per chat | selected manual book을 omniscient Memory Book으로 사용하고 declared fictional cast의 unique books 활성화. |
-| **Manage Narrator Cast** | **Narrator Mode** 아래/Active Cast drawer | Per chat | declared Narrator characters add/retire/restore 및 unique book assign. |
+| **Manage Narrator Cast** | **Narrator Mode** 아래; Active Cast drawer에서도 사용 가능 | Per chat | 선언된 Narrator character를 추가, rename, retire, restore하고 고유한 Memory Book을 할당합니다. |
 | **Auto-create lorebook if none exists** | **Current Lorebook Configuration** | Global | Automatic Mode에서 chat에 book 없으면 create/bind. Manual Mode와 동시 불가. |
 | **Lorebook Name Template** | Auto-create 아래 | Global | `{{char}}`, `{{user}}`, `{{chat}}`로 auto-created book 이름 지정. |
 | **Memory profile selection** | **Memory Profiles** selector | Per run | 다음 Memory용 profile 선택. 이것만으로 saved default는 변경되지 않음. |
@@ -2023,7 +2077,8 @@ Scope:
 | **Allow scene overlap** | Global | existing Memory가 대표하는 message IDs와 selected scene overlap 허용. |
 | **Refresh lorebook editor after adding memories** | Global | STMB write 후 open lorebook editor refresh. |
 | **Copy Memory Books when branching** | Global | native chat branch에 active unlocked books의 independent copies 제공. character-locked books는 공유 유지. |
-| **Auto-rollback after message deletion** | Global | message deletion/truncation이 이미 processed된 chat material과 겹칠 때 coordinated rollback을 enable. default는 off. ordinary message edits/swipes는 trigger하지 않음. |
+| **Auto-rollback after message deletion** | Global | deletion 또는 truncation이 이미 처리된 chat material과 겹칠 때 coordinated rollback을 활성화합니다. 기본값은 disabled입니다. 일반 message edit와 swipe는 이를 trigger하지 않습니다. |
+| **Apply auto-rollback to branches/checkpoints** | Global; Auto-rollback option | branch 또는 checkpoint를 처음 열 때 보존된 message 범위를 넘어가는 Memories를 rollback합니다. 모든 active Memory Book의 독립 copy가 필요하며, 그렇지 않으면 rollback을 건너뜁니다. |
 | **Update last message ID processed** | Global; Auto-Rollback action | processed checkpoint를 가장 최신 surviving Memory의 끝으로 이동하거나, 남은 Memory가 없으면 clear. |
 | **Delete last Memory** | Global; Auto-Rollback action | rollback scope에서 invalidated된 모든 Memory와 linked copies 삭제. Memory/consolidation 삭제는 irreversible. |
 | **Restore previous Side Prompts** | Global; Auto-Rollback action | 변경되지 않은 affected Side Prompt를 latest exact before-state로 restore. rollback level은 하나만 유지. |
@@ -2039,6 +2094,14 @@ Scope:
 #### General Settings 안 Memory Auto-Rollback
 
 **Auto-rollback after message deletion**은 master preference다. 세 action checkbox는 독립적으로 선택할 수 있고 default enabled이며, master switch가 off일 때는 UI에서 disabled로 보인다. 따라서 기존 설치가 upgrade만으로 자동 삭제를 시작하지 않는다.
+
+**Apply auto-rollback to branches/checkpoints**는 기본적으로 off입니다. 활성화하면 STMB는 기존 child chat을 포함하여 eligible branch 또는 checkpoint를 처음 열 때 선택된 action을 적용합니다. Checkpoint는 생성 시가 아니라 열 때 처리됩니다. STMB는 child chat의 현재 message count를 첫 번째 생략 message index로 사용하므로 마지막으로 보존된 message에서 끝나는 Memory는 그대로 유지되고, 그 boundary를 가로지르거나 이후에 있는 Memories가 대상이 됩니다. Completion은 해당 child와 boundary에 대해 기록되며, settings를 변경해도 완료된 rollback은 다시 실행되지 않습니다.
+
+Branch/checkpoint rollback이 Memory를 삭제하면 Memory Books가 성공적으로 저장된 뒤 그 Memory source range 안에서 보존된 message도 unhide합니다. 예를 들어 message 36에서 branch를 만들고 Memory가 33–44를 포함하면 그 Memory를 copy에서 삭제하고 message 33–36을 unhide합니다. 이는 unhide-before-generation preference와 무관합니다. 이미 완료된 child rollback은 upgrade 후 자동으로 다시 실행되지 않습니다. 기존 branch에서 이 예를 복구하려면 `/unhide 33-36`을 사용하십시오.
+
+Pending unhide range는 deletion과 동일한 Memory Book write에 저장됩니다. Chat 전환이나 오류로 unhide가 중단되면 branch/checkpoint auto-rollback이 켜진 child를 다시 열 때, 삭제된 Memories가 더 이상 없어도 저장된 range를 재시도합니다. Retry 중 이미 완료된 unhide command가 다시 실행될 수 있으며, recovery record는 대상 chat에서 모든 range가 완료된 뒤에만 제거됩니다.
+
+Branch/checkpoint rollback에는 모든 active Memory Book의 isolated copy가 필요합니다. **Copy Memory Books when branching**이 disabled이거나 shared/locked book을 isolate할 수 없으면 STMB는 parent chat data를 변경하지 않기 위해 rollback을 건너뛰고 이유를 보고합니다. Copy/rollback failure와 취소된 consolidation confirmation은 나중에 다시 열 때도 처리 대상이 될 수 있습니다.
 
 Auto-Rollback은 message deletion/truncation에만 반응하며 response regeneration의 deletion phase도 포함한다. ordinary edit/swipe에는 반응하지 않는다. SillyTavern deletion event 값만으로는 middle deletion을 신뢰성 있게 식별할 수 없으므로 STMB는 각 chat의 actual message identities를 추적한다.
 
@@ -2073,10 +2136,23 @@ Side Prompt rollback은 version-2 regeneration snapshot을 사용한다. snapsho
 | Setting | Scope | 기능 |
 |---|---|---|
 | **Auto-create memory summaries** | Global | automatic `/nextmemory` style creation. baseline 없으면 message 0 가능. first manual Memory는 여전히 권장. |
-| **Auto-Summary Interval** | Global | normal automatic cadence의 message 수. |
+| **Auto-Summary Trigger** | Global | Automatic Memory creation을 message count 또는 token count 중 무엇으로 trigger할지 선택합니다. |
+| **Auto-Summary Token Threshold** | Global | Trigger가 **Tokens**일 때 automatic Memory creation을 시작하는 token count를 설정합니다. |
+| **Auto-Summary Interval** | Global | Trigger가 **Messages**일 때 일반 automatic cadence를 구성하는 message 수를 설정합니다. |
 | **Auto-Summary Buffer** | Global | ready range의 newest messages 제외. live conversation보다 약간 뒤에서 generation. |
 | **Prompt for consolidation when a tier is ready** | Global | monitored tier가 saved minimum에 도달하면 yes/later. silent consolidation 아님. |
 | **Auto-Consolidation Tiers** | Global | readiness prompt로 monitor할 target tiers. minimum은 **Consolidate Memories**에 저장. |
+
+#### Memory reminder notifications
+
+Automatic-memory reminder control은 **Automatic Memories**에만 표시됩니다. Manual-memory reminder control은 **General Settings**와 **Automatic Memories** 모두에 표시되며 동일한 global preference를 사용합니다. 두 reminder toggle은 기본값이 **off**이고 **Show notifications**와 독립적으로 동작합니다.
+
+- **Turn on reminders for automatic memories**는 **Auto-create memory summaries**가 enabled인 동안 적용됩니다. 설정 가능한 interval X의 기본값은 **10 messages**입니다. 첫 reminder는 **Auto-Summary Interval + Auto-Summary Buffer + X**개의 unprocessed messages에서 발생하고, 이후 X개가 추가될 때마다 반복됩니다. 예를 들어 interval 50, buffer 2, X = 10이면 62개의 unprocessed messages에서 처음 알리고, 해당 count에서 check가 이루어진다면 72, 82…에서 다시 알립니다.
+- **Turn on reminders to make memories manually**는 auto-create가 disabled인 동안 적용됩니다. 설정 가능한 interval Y의 기본값은 **50 messages**입니다. Y개의 unprocessed messages에서 처음 알리고 이후 Y개가 추가될 때마다 반복합니다. Auto-create를 켜거나 꺼도 두 preference는 저장된 상태로 유지됩니다.
+
+Interval은 양의 정수만 허용하며 기존 last-processed Memory boundary를 기준으로 user와 assistant message를 모두 포함한 **chat messages**를 계산합니다. Generation이 token threshold를 사용해도 automatic reminder는 message-based로 유지됩니다. Check는 assistant reply 후와 memory processing이 idle 상태가 될 때 수행됩니다. Generation, pending progress, 명시적으로 미룬 auto-summary가 있으면 새 reminder는 억제됩니다. 지연된 reminder는 실제 notification이 표시된 count부터 repeat interval을 시작합니다.
+
+Reminder toast에는 close button이 있으며 dismiss할 때까지 표시됩니다. Reminder가 표시된 동안 repeat는 쌓이지 않습니다. Notification checkpoint는 chat별로 저장되므로 reload 직후 이미 전달된 reminder가 다시 표시되지 않습니다. Processed boundary 또는 reminder configuration이 변경되면 해당 schedule이 reset되고, 삭제된 message는 repeat checkpoint를 rebase합니다. Chat 변경, boundary 변경, active reminder mode 비활성화/전환은 표시 중인 reminder를 지웁니다. 이 reminder는 Memory를 생성하지 않으며 automatic generation threshold도 변경하지 않습니다.
 
 ### 27.4 Profile editor
 
@@ -2088,8 +2164,8 @@ Side Prompt rollback은 version-2 regeneration snapshot을 사용한다. snapsho
 | **API/Provider** | current ST routing, supported provider, Custom OpenAI-compatible, Full Manual 선택. |
 | **Use this connection profile** | Custom API에서 active ST Custom connection 또는 named Custom connection 선택. saved URL/secret 사용, STMB **Model**은 override 유지. |
 | **Skip structured output and use plain-text completion** | schema 거부 provider에 structured-output schema를 보내지 않음. prompt는 여전히 valid JSON 요구. |
-| **Use ST's ChatCompletionService** | supported request를 ST Chat Completion helper로 routing. Full Manual에는 unavailable. |
-| **Chat Completion Preset** | ChatCompletionService를 통해 ST preset 선택 적용. |
+| **Use ST's ChatCompletionService** | 선택된 ST Connection Manager profile을 사용하고 model 및 temperature는 STMB override를 적용합니다. Connection profile이 선택되지 않으면 기존 ChatCompletionService route를 사용합니다. Full Manual profile에서는 사용할 수 없습니다. |
+| **Chat Completion Preset** | ST Connection Manager profile이 선택되지 않은 경우에만 SillyTavern Chat Completion preset을 선택적으로 적용합니다. 그 외에는 connection profile이 preset을 제공합니다. |
 | **Model** | exact model ID. Current ST profile은 active model 읽음. |
 | **Temperature** | profile randomness. Current ST profile은 active temperature 읽음. |
 | **Use reverse proxy** | supported provider에 ST reverse-proxy details 전달. |
@@ -2604,3 +2680,12 @@ Select or schedule chat material
 - consolidation이 continuity를 지우지 않고 old detail 감소
 - 사용자가 “saved = sent”라고 가정하지 않고 retrieval 확인
 - advanced multi-book routing은 precision이 complexity보다 가치 있을 때만 사용
+### Side Prompt version history
+
+**Trackers & Side Prompts**에서 **Enable sideprompt versioning**을 활성화한 뒤, history를 보존할 각 일반 Side Prompt에서 **Save all versions**를 활성화합니다. 두 setting은 기본적으로 off입니다. Template setting은 edit, duplication, import, export 후에도 유지됩니다. Memory Assistance는 version history를 지원하지 않습니다.
+
+성공한 각 run은 target lorebook에 `Title-001 (STMB SidePrompt)`, 그 다음 `002`와 이후 version으로 보존됩니다. 기존 unnumbered output이 있으면 history를 처음 켤 때 `001`로 채택됩니다. 이전 version은 disabled되고 최신 version은 enabled됩니다. Version은 sanitized Side Prompt/chat inclusion group을 공유하며 display name을 바꾸면 이후 successful save 때 해당 group이 업데이트됩니다. Stream은 template, chat, resolved title override, target lorebook별로 분리됩니다.
+
+두 setting 중 하나라도 disabled이면 STMB는 보존된 history를 유지하면서 최신 output을 in place로 업데이트합니다. Regeneration은 version을 추가하지 않고 선택된 entry를 업데이트합니다. Rollback은 기존 snapshot을 사용하며 successful restoration 후 가장 최신 surviving version을 enabled합니다. Ambiguous legacy output은 변경하지 않습니다. Failed, blank, canceled, rejected run은 history를 만들지 않습니다.
+
+STMB는 하나의 browser tab 안에서 자신이 참여하는 lorebook write를 serialize합니다. SillyTavern의 기존 concurrent-save 제한은 다른 client와 direct editor save에 계속 적용됩니다.

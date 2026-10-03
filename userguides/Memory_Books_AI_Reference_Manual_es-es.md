@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 # Memory Books: Manual de referencia completo para IA
 
 **Producto:** SillyTavern Memory Books (STMB)  
-**Versión de referencia:** v8.5.0 con versionado de Side Prompts integrado en Aikobots  
+**Versión de referencia:** v8.5.0, 1 de agosto de 2026  
 **Propósito:** Una única fuente de verdad, densa y completa, para un asistente de IA que enseña, explica y soluciona problemas de Memory Books.
 
 ---
@@ -166,7 +166,7 @@ Ocultar mensajes procesados no los elimina. Evita que esos mensajes se envíen a
 - **Clip vs. Topical Clip:** un Clip parte de texto resaltado en el chat actual. Un Topical Clip parte de Memorias STMB existentes y confirmadas.
 - **Topical Clip vs. Side Prompt:** un Topical Clip se ejecuta manualmente para reunir información de un tema. Un Side Prompt puede mantener repetidamente un registro que cambia.
 - **Compaction vs. Consolidation:** Compaction reescribe una entrada. Consolidation crea un nuevo resumen de nivel superior a partir de varias entradas.
-- **Memory vs Side Prompt:** Las Memories suelen ser registros secuenciales de escenas. Los Side Prompts normalmente mantienen un único documento de apoyo continuo, pero el historial de versiones opcional de Side Prompts puede conservar cada ejecución correcta como una entrada numerada de lorebook.
+- **Memory vs Side Prompt:** Las Memories normalmente son registros secuenciales de escenas. Los Side Prompts suelen actualizar o sobrescribir un único documento de apoyo continuo.
 - **Generación vs. recuperación:** crear una entrada no garantiza que SillyTavern la active más tarde.
 
 ---
@@ -413,7 +413,9 @@ La conexión con nombre aporta su URL y secreto guardados. El campo model del pe
 
 ### 7.6 ChatCompletionService
 
-**Use ST’s ChatCompletionService** enruta solicitudes de perfiles compatibles mediante el helper de solicitudes de SillyTavern y puede aplicar un preset de Chat Completion seleccionado. Las solicitudes de OpenRouter también heredan el orden de proveedores de SillyTavern, filtros de cuantización, controles de fallback y la opción de routing middle-out. Estos controles de OpenRouter siguen aplicándose si ChatCompletionService falla y STMB vuelve a intentarlo por su ruta de fallback. Si ese reintento también falla, STMB conserva e informa tanto del error inicial de ChatCompletionService como de la respuesta de fallback del proveedor. Los perfiles Full Manual no utilizan esta ruta.
+**Use ST’s ChatCompletionService** usa `ConnectionManagerRequestService` cuando hay un perfil seleccionado en el Connection Manager de SillyTavern. Ese perfil de conexión proporciona el proveedor, las credenciales, el endpoint, el proxy y el preset de Chat Completion. STMB sobrescribe el modelo y la temperatura, y conserva su límite de tokens de respuesta y su elección de structured output. El preset del perfil de conexión tiene prioridad sobre cualquier preset de Chat Completion seleccionado por separado en STMB. El perfil de conexión seleccionado debe usar Chat Completion. Las solicitudes fallidas mediante el perfil de conexión se informan sin volver a intentarlas por la ruta directa de solicitudes de STMB, ya que eso perdería la configuración de conexión.
+
+Cuando no hay ningún perfil de conexión de SillyTavern seleccionado, se aplica el comportamiento existente de ChatCompletionService, incluido el preset opcional de Chat Completion de STMB. Las solicitudes de OpenRouter por esta ruta también heredan el orden de proveedores, los filtros de cuantización, los controles de fallback y la opción de enrutamiento middle-out de SillyTavern. Estos controles siguen vigentes si ChatCompletionService falla y STMB vuelve a intentarlo mediante su ruta de solicitud fallback. Si ese intento también falla, STMB informa ambos errores. Desmarcar la opción mantiene el comportamiento de solicitud directa de STMB. Los perfiles Full Manual no usan ninguna de las dos rutas del servicio.
 
 ### 7.7 Reverse proxy y Full Manual Configuration
 
@@ -1093,13 +1095,30 @@ No usa:
 5. Introduzca palabras clave de activación o déjelas vacías para usar el tema.
 6. Elija una entrada nueva o un objetivo existente `[STMB Clip]`.
 7. Elija Memorias guardadas, mensajes del chat o ambos como fuentes.
-8. Opcionalmente seleccione solo Memorias fuente concretas y/o introduzca un rango exacto de mensajes.
+8. Opcionalmente, seleccione solo Memories fuente concretas. Para mensajes del chat, introduzca un intervalo exacto o haga clic en **Extract…** para buscar en todo el chat actual y seleccionar mensajes individuales, incluidos mensajes no contiguos y ocultos.
 9. Elija el perfil de generación.
 10. Genere el borrador.
 11. Revíselo y edítelo.
 12. Guárdelo solo cuando sea correcto.
 
 El borrador generado nunca se guarda automáticamente.
+
+
+### Combinar Topical Clips existentes
+
+En la ventana **Topical Clip**, haga clic en **Combine Clips**. Seleccione un Memory Book, elija al menos dos Topical Clips (incluidos clips deshabilitados si es necesario) e introduzca el título del nuevo clip. Solo aparecen Topical Clips creados por STMB; los Clips normales quedan excluidos. Las keywords de activación del nuevo clip son la unión de las keywords primarias de los clips seleccionados, sin duplicados. Las condiciones secundarias de keywords no se copian.
+
+Elija un perfil de generación y haga clic en **Generate Draft**. La IA recibe el título y el contenido completo de cada clip seleccionado y se le pide que consolide los hechos respaldados, elimine repeticiones y conserve los conflictos no resueltos. Revise y edite el draft antes de guardarlo. Cambiar las fuentes seleccionadas, el título o el Memory Book borra el draft. Si una fuente cambia antes de guardar, genere un draft nuevo.
+
+**Disable original clips after saving** está marcado de forma predeterminada. Desmárquelo para conservar el estado de activación actual de los originales. Al guardar se crea el nuevo Topical Clip habilitado y, si la opción está marcada, se deshabilitan los originales en la misma actualización del Memory Book. Los originales nunca se eliminan. El clip combinado registra sus IDs de fuente por separado del historial normal de fuentes Memory de Topical Clip.
+
+Cuando hay texto resaltado en el chat, el control flotante ofrece **Clip** y **Extract**. Extract abre el mismo selector de mensajes usando el texto resaltado como consulta de búsqueda. Busca en todo el historial del chat actual, incluidos mensajes que no están renderizados en pantalla. Una búsqueda vacía muestra todos los mensajes. La búsqueda coincide con texto literal o nombres de hablantes sin distinguir mayúsculas de minúsculas; **Hidden only** limita los resultados a mensajes ocultos.
+
+Los resultados aparecen en lotes de 50. Use **Load more** para mostrar más coincidencias, expanda un resultado para leer su texto completo con las coincidencias resaltadas, o use **Previous message** y **Next message** para mostrar el contexto circundante. Los mensajes de contexto no se seleccionan automáticamente y pueden aparecer aunque no coincidan con la búsqueda o con el filtro Hidden only. Los mensajes ocultos están etiquetados; seleccionar uno incluye su texto en la fuente del Topical Clip sin mostrarlo de nuevo en el chat.
+
+Las selecciones se conservan entre búsquedas y cambios de filtro. El contador de selección incluye mensajes fuera de los resultados visibles. **Select loaded results** selecciona todos los resultados mostrados, incluidos los mensajes de contexto revelados; **Clear selection** elimina todas las selecciones. Elija **Topical Clip** desde Extract independiente o **Use selected messages** al volver a un editor existente. La consulta proporciona el tema y las keywords iniciales, que siguen siendo editables.
+
+STMB registra fingerprints de las fuentes cuando los mensajes entran en el selector y vuelve a comprobar los mensajes seleccionados antes de aceptarlos, generar un draft y guardarlo. Si cambia una fuente seleccionada, **Refresh results** borra la selección y vuelve a cargar los resultados para que pueda elegir las fuentes otra vez. Termine o cancele cualquier edición de mensaje pendiente antes de buscar. Cambiar de chat cierra el selector. Extract no busca en otros chats.
 
 ### 15.4 Actualizar un Topical Clip existente
 
@@ -1158,7 +1177,7 @@ Use Reset to Default si un prompt personalizado deja de producir resultados úti
 
 ## 16. Side Prompts
 
-Un Side Prompt es un prompt de STMB con nombre que se ejecuta por separado de la respuesta normal del personaje. De forma predeterminada crea o actualiza una entrada de apoyo continua en lugar de otra Memory de escena secuencial. En Aikobots, el historial de versiones opcional de Side Prompts puede conservar cada ejecución correcta como una entrada numerada de lorebook, manteniendo la versión más reciente como salida actual.
+Un Side Prompt es un prompt con nombre de STMB que se ejecuta por separado de la respuesta normal del personaje. Normalmente crea o actualiza una única entrada de apoyo continua en lugar de otra Memory secuencial de escena.
 
 En la lista **Trackers & Side Prompts**, el icono de encendido cambia inmediatamente el indicador global **Enabled** del prompt: verde significa habilitado y atenuado significa deshabilitado. Este control no añade, elimina ni modifica de otro modo los triggers configurados del prompt.
 
@@ -1219,7 +1238,7 @@ Un set seleccionado sustituye a los prompts automáticos habilitados individualm
 
 #### Memory Assistance Side Prompt
 
-**Memory Assistance** es un Side Prompt reservado con cuatro modos independientes. Se ejecuta después de Memorias guardadas correctamente, independientemente de la habilitación normal de Side Prompts o del Side Prompt Set seleccionado. No se ejecuta durante la regeneración de Memory.
+**Memory Assistance** es un Side Prompt reservado con cinco modos independientes. Se ejecuta después de Memories guardadas correctamente independientemente de la habilitación normal de Side Prompts o del Side Prompt Set seleccionado. No se ejecuta durante la regeneration de Memory.
 
 Memory Assistance compara la escena procesada sin resumir con los Clips normales y Topical Clips de cada Memory Book que recibió la Memoria. Envía a la IA el título/tema, palabras clave, contenido actual, ID estable y tipo de cada Clip revisado.
 
@@ -1227,6 +1246,7 @@ Cuando la cola de trabajos está disponible, cada Memory Book objetivo recibe un
 
 - **Off** deshabilita Memory Assistance.
 - **Update** revisa directamente cinco Clips o menos; con más de cinco se abre una lista de selección. Los cambios propuestos esperan aprobación manual.
+- **Suggest** descubre nuevos temas de Topical Clip sin revisar ni actualizar Clips existentes.
 - **Update and Suggest** primero realiza una solicitud de descubrimiento de temas y luego ejecuta el mismo flujo de revisión de Clips existentes que Update.
 - **Automatic** revisa todos los Clips en lotes basados en tokens sin pedir qué Clips revisar. Aplica directamente adiciones válidas a Clips normales, mientras que los reemplazos de Topical Clips permanecen pendientes de aprobación en **Memory Assistance Suggestions**.
 
@@ -1393,46 +1413,7 @@ Los campos de título y palabras clave pueden expandir macros aplicables. **Igno
 
 Un Side Prompt puede heredar la resolución normal de conexión de Memory Books o vincular un perfil STMB específico. Un override es útil para un modelo más barato o mejor en mantenimiento estructurado. Demasiadas combinaciones de perfiles dificultan la solución de problemas.
 
-### 16.16 Historial de versiones de Side Prompts
-
-Los Side Prompts normalmente actualizan una única salida continua. En Aikobots, puede conservar cada ejecución correcta como una entrada numerada de lorebook.
-
-#### Activar el historial de versiones
-
-1. Abra **Memory Books → Trackers & Side Prompts** y marque **Enable sideprompt versioning**. Este ajuste se aplica a su cuenta en todos los chats.
-2. Edite un Side Prompt, marque **Save all versions** y guárdelo. Elija esta opción por separado para cada prompt cuyo historial quiera conservar.
-
-Ambas casillas están desactivadas de forma predeterminada. El ajuste de cuenta controla si se usa la preferencia de cada prompt; desactivarlo no borra esas preferencias. Los Side Prompts exportados, importados y duplicados conservan su ajuste **Save all versions**.
-
-#### Qué se guarda
-
-Con ambos ajustes activados, las ejecuciones manuales, automáticas y de Side Prompt Set que terminan correctamente añaden entradas numeradas como estas:
-
-| Entrada | Estado |
-|---|---|
-| `Assess-001 (STMB SidePrompt)` | Desactivada, conservada |
-| `Assess-002 (STMB SidePrompt)` | Desactivada, conservada |
-| `Assess-003 (STMB SidePrompt)` | Activada, salida actual |
-
-El título usa el override del título de entrada del prompt cuando está configurado; de lo contrario usa su nombre. Los números tienen al menos tres dígitos y continúan más allá de 999. Cada versión conserva el orden de inserción configurado; las versiones antiguas se desactivan en lugar de recibir un orden diferente.
-
-Las versiones comparten un grupo de inclusión cuyo nombre se deriva del Side Prompt y del chat, por ejemplo `Assess-MyChat`. Se elimina todo el espacio en blanco y las comas se convierten en guiones. El grupo permanece unido cuando cambia el nombre visible del prompt. Los overrides de título resueltos por separado, como nombres distintos proporcionados mediante macros, mantienen sus propias secuencias de versiones.
-
-Si ya existe una salida cuando usa el versionado por primera vez, se convierte en la versión 001 y la siguiente salida correcta pasa a ser 002. Si no existe ninguna salida, la primera ejecución correcta crea 001. Una ejecución cancelada, rechazada, vacía o fallida no archiva ni reemplaza la salida existente. Si las entradas heredadas no pueden relacionarse de forma inequívoca, el guardado se detiene en lugar de adivinar qué entrada debe cambiarse.
-
-#### Desactivar el versionado
-
-Desmarque cualquiera de las dos casillas. Las ejecuciones posteriores actualizan la salida más reciente en el mismo lugar y conservan las entradas antiguas desactivadas. Un Side Prompt que nunca haya usado versionado sigue actualizando su salida normal sin numerar. Al volver a activar ambas casillas, se reanuda la creación de nuevas versiones.
-
-Cada ejecución normal usa la salida más reciente como contexto previo y para seleccionar checkpoints, incluso mientras el versionado está desactivado. El historial guardado pertenece al prompt, a la referencia del chat y al lorebook de destino. Cambiar el nombre de archivo/ID del chat o seleccionar otro lorebook de destino inicia un historial separado; cambiar el nombre visible del prompt no lo hace.
-
-#### Regeneración y rollback con historial de versiones
-
-**Regenerate** reemplaza únicamente el contenido de la versión seleccionada. No añade una versión, no renumera entradas ni habilita una entrada antigua desactivada.
-
-Cuando está habilitado el rollback automático para libros normales, el rollback usa los snapshots de restauración ya guardados. Restaura o elimina las versiones afectadas y habilita la versión superviviente más reciente. Las ediciones manuales que invaliden un snapshot siguen deteniendo el rollback automático para revisión.
-
-### 16.17 Regeneración de Side Prompt
+### 16.16 Regeneración de Side Prompt
 
 Los guardados compatibles ahora almacenan una instantánea de versión 2 que contiene:
 
@@ -1447,7 +1428,7 @@ Para regenerar, abra el editor de lorebook y haga clic en **Regenerate side prom
 
 La regeneración no puede completarse si se eliminó la plantilla, no está disponible el chat/rango de origen o el objetivo/origen cambió durante la generación. Solo se reemplaza el contenido; el título, las palabras clave y los ajustes existentes de la entrada permanecen. Las instantáneas heredadas de versión 1 siguen permitiendo regeneración, pero Memory Auto-Rollback no puede utilizarlas.
 
-### 16.18 Escribir buenos Side Prompts
+### 16.17 Escribir buenos Side Prompts
 
 Un buen Side Prompt define:
 
@@ -1476,7 +1457,7 @@ Mantén toda la salida por debajo de 300 palabras.
 
 Los encabezados estables reducen la deriva entre actualizaciones repetidas.
 
-### 16.19 Solución de problemas de Side Prompt
+### 16.18 Solución de problemas de Side Prompt
 
 Si un prompt no se ejecutó:
 
@@ -1662,7 +1643,7 @@ El conjunto completo de fuentes debe seguir existiendo en el nivel correcto. Una
 
 ### 19.3 Regeneración de Side Prompt
 
-Consulte las reglas de snapshot de Side Prompt en la Sección 16.17 y el comportamiento del historial de versiones en la Sección 16.16.
+Consulte las reglas de snapshot de Side Prompt en la Sección 16.16 y el comportamiento del historial de versiones en la Sección 16.16.
 
 ### 19.4 Comprobaciones de seguridad
 
@@ -2005,6 +1986,10 @@ Los trabajos que procesan un rango de chat muestran los números inicial y final
 
 Use Retry All para restaurar el flujo combinado; use Retry Memory cuando el trabajo de tracker no deba ejecutarse.
 
+Los guardados de Consolidation registran un checkpoint en la configuración de la extensión antes de escribir cada resumen aceptado. Un resumen y los cambios que deshabilitan sus fuentes se guardan juntos. Retry comprueba el Memory Book activo para buscar el marcador del checkpoint antes de escribir, de modo que un resumen confirmado se reutiliza en vez de duplicarse. Después de recargar, **Consolidation recovery** en el menú de Extensions enumera los checkpoints sin terminar y ofrece **Resume** y **Review details**. Una fuente cambiada, un resumen editado, un marcador duplicado o un guardado sin confirmar se marca como **Needs Review** y nunca se reproduce automáticamente; después de comprobar el Memory Book, **Dismiss after review** elimina el aviso del checkpoint sin modificar el book. Esto utiliza las APIs de settings y lorebook de ST; no proporciona una transacción de servidor.
+
+Los checkpoints guardan el draft de resumen aceptado, las keywords generadas, los IDs y fingerprints de las fuentes y las opciones de guardado en los settings de extensión de ST para que una recarga pueda reanudar exactamente el mismo candidato. Mantenga las copias de seguridad de settings tan privadas como los propios Memory Books.
+
 Sin Chat Top Bar, STMB sigue realizando sus flujos normales, pero carece de la interfaz de cola.
 
 
@@ -2088,7 +2073,8 @@ Abra **Settings → General Settings**.
 | **Allow scene overlap** | Global | Permite que un rango de escena se solape con IDs ya representados por una Memory. |
 | **Refresh lorebook editor after adding memories** | Global | Actualiza un editor abierto después de escribir entradas. |
 | **Copy Memory Books when branching** | Global | Da a una rama nativa copias independientes de libros activos desbloqueados. Los libros bloqueados por personaje siguen compartidos por diseño. |
-| **Auto-rollback after message deletion** | Global | Habilita rollback coordinado cuando una eliminación o truncado de mensajes afecta material del chat ya procesado. Está deshabilitado de forma predeterminada. Las ediciones normales y los swipes no lo activan. |
+| **Auto-rollback after message deletion** | Global | Habilita rollback coordinado cuando una eliminación o truncamiento cruza material de chat ya procesado. Está deshabilitado por defecto. Las ediciones normales de mensajes y los swipes no lo activan. |
+| **Apply auto-rollback to branches/checkpoints** | Global; opción de Auto-rollback | Al abrir por primera vez una branch o checkpoint, revierte las Memories que estén más allá de sus mensajes conservados. Requiere copias independientes de todos los Memory Books activos; de lo contrario omite el rollback. |
 | **Update last message ID processed** | Global; acción de Auto-Rollback | Mueve el checkpoint procesado al final de la Memory superviviente más reciente, o lo borra si no queda ninguna. |
 | **Delete last Memory** | Global; acción de Auto-Rollback | Elimina todas las Memories invalidadas por el alcance del rollback y sus copias enlazadas. La eliminación de Memory y Consolidation es irreversible. |
 | **Restore previous Side Prompts** | Global; acción de Auto-Rollback | Restaura cada Side Prompt afectado y sin cambios a su estado anterior exacto más reciente. Solo se conserva un nivel de rollback. |
@@ -2104,6 +2090,14 @@ Abra **Settings → General Settings**.
 #### Memory Auto-Rollback dentro de General Settings
 
 **Auto-rollback after message deletion** es la preferencia principal. Sus tres casillas de acción pueden seleccionarse de forma independiente, vienen habilitadas por defecto y aparecen deshabilitadas visualmente mientras el interruptor principal está apagado. Por eso una instalación existente no empieza a borrar nada simplemente al actualizar.
+
+**Apply auto-rollback to branches/checkpoints** está desactivado por defecto. Cuando se habilita, STMB aplica las acciones seleccionadas la primera vez que se abre una branch o checkpoint elegible, incluidos child chats existentes. Los checkpoints se procesan al abrirlos, no al crearlos. STMB usa el número actual de mensajes del child chat como índice del primer mensaje omitido, por lo que una Memory que termina en el último mensaje conservado permanece intacta, mientras que las Memories que cruzan o siguen ese límite pueden revertirse. La finalización se registra para ese child y ese límite, y cambiar los settings no repite un rollback ya completado.
+
+Cuando el rollback de branch/checkpoint elimina una Memory, también vuelve a mostrar los mensajes conservados dentro del intervalo fuente de esa Memory después de que los Memory Books se guarden correctamente. Por ejemplo, crear una branch en el mensaje 36 con una Memory que cubre 33–44 elimina esa Memory de la copia y vuelve a mostrar los mensajes 33–36. Esto no depende de la preferencia de unhide antes de la generación. Los rollbacks de child ya completados no se repiten automáticamente después de una actualización; use `/unhide 33-36` para reparar ese ejemplo en una branch existente.
+
+Los intervalos pendientes de unhide se guardan en las mismas escrituras de Memory Book que las eliminaciones. Si cambiar de chat o un error interrumpe el unhide, volver a abrir el child con el auto-rollback de branch/checkpoint habilitado reintenta esos intervalos guardados aunque las Memories eliminadas ya no existan. El reintento puede repetir comandos de unhide ya completados; los registros de recovery se eliminan solo después de que todos los intervalos terminen en el chat previsto.
+
+El rollback de branch/checkpoint requiere copias aisladas de todos los Memory Books activos. Cuando **Copy Memory Books when branching** está deshabilitado o un book compartido/bloqueado no puede aislarse, STMB omite el rollback e informa el motivo para evitar cambiar los datos del chat padre. Los fallos de copia o rollback y las confirmaciones de consolidation canceladas siguen siendo elegibles para una apertura posterior.
 
 Auto-Rollback reacciona solo a la eliminación o truncado de mensajes, incluida la fase de borrado de una regeneración de respuesta. No reacciona a una edición normal ni a un swipe. STMB rastrea las identidades reales de los mensajes de cada chat porque el valor del evento de eliminación de SillyTavern no identifica de forma fiable una eliminación en medio del chat.
 
@@ -2143,6 +2137,17 @@ Abra **Settings → Automatic Memories**.
 | **Prompt for consolidation when a tier is ready** | Global | Muestra yes/later al alcanzar el mínimo de fuentes. Nunca consolida silenciosamente. |
 | **Auto-Consolidation Tiers** | Global | Elige niveles objetivo vigilados. El mínimo por nivel se guarda en Consolidate Memories. |
 
+#### Notificaciones de recordatorio de Memory
+
+Los controles de recordatorio de Memories automáticas aparecen solo en **Automatic Memories**. Los controles de recordatorio de Memories manuales aparecen tanto en **General Settings** como en **Automatic Memories**, respaldados por las mismas preferencias globales. Ambos interruptores de recordatorio están en **off** por defecto y funcionan independientemente de **Show notifications**.
+
+- **Turn on reminders for automatic memories** se aplica mientras **Auto-create memory summaries** está habilitado. Su intervalo configurable X es de **10 messages** por defecto. El primer recordatorio vence en **Auto-Summary Interval + Auto-Summary Buffer + X** mensajes sin procesar, con repeticiones cada X mensajes adicionales. Por ejemplo, con intervalo 50, buffer 2 y X = 10, el primer recordatorio aparece a los 62 mensajes sin procesar y después a los 72, 82 y así sucesivamente si se comprueba en esos conteos.
+- **Turn on reminders to make memories manually** se aplica mientras auto-create está deshabilitado. Su intervalo configurable Y es de **50 messages** por defecto. El primer recordatorio aparece a los Y mensajes sin procesar y después cada Y mensajes adicionales. Ambas preferencias permanecen guardadas al activar o desactivar auto-create.
+
+Los intervalos aceptan números enteros positivos y cuentan **chat messages**, incluidos mensajes del usuario y del asistente, utilizando el límite existente de la última Memory procesada. Los recordatorios automáticos siguen basándose en mensajes aunque la generación use un umbral de tokens. Las comprobaciones se ejecutan después de las respuestas del asistente y cuando el procesamiento de Memory queda inactivo; la generación, el progreso pendiente y un aplazamiento explícito de auto-summary suprimen recordatorios nuevos. Un recordatorio retrasado inicia su intervalo de repetición desde el conteo real en el que se mostró la notificación.
+
+Los toasts de recordatorio tienen botón de cierre y permanecen visibles hasta descartarlos. Las repeticiones no se acumulan mientras hay un recordatorio visible. Los checkpoints de notificación se guardan por chat, por lo que recargar no repite inmediatamente un recordatorio ya entregado. Un cambio del límite procesado o de la configuración de recordatorios reinicia el calendario correspondiente; los mensajes eliminados reajustan los checkpoints de repetición. Cambiar de chat, cambiar el límite o deshabilitar/cambiar el modo de recordatorio activo elimina el recordatorio visible. Estos recordatorios no crean Memories ni cambian los umbrales de generación automática.
+
 ### 27.4 Editor de perfiles
 
 Elija un perfil en **Memory Profiles** y abra **Profile Actions → Edit Profile**. Estos ajustes son **per profile** salvo indicación. El perfil integrado Current SillyTavern Settings bloquea deliberadamente campos controlados por SillyTavern.
@@ -2153,8 +2158,8 @@ Elija un perfil en **Memory Profiles** y abra **Profile Actions → Edit Profile
 | **API/Provider** | Elige routing de SillyTavern actual, proveedor compatible, Custom OpenAI-compatible o Full Manual Configuration. |
 | **Use this connection profile** | Para Custom OpenAI-Compatible API usa la conexión activa o una Custom con nombre. URL/secreto vienen de ella, mientras Model de STMB sigue siendo override. |
 | **Skip structured output and use plain-text completion** | Deja de enviar esquema estructurado si el proveedor lo rechaza. El prompt sigue debiendo producir JSON válido. |
-| **Use ST’s ChatCompletionService** | Enruta mediante helper de Chat Completion de ST. No disponible para Full Manual. |
-| **Chat Completion Preset** | Aplica opcionalmente un preset de SillyTavern mediante ChatCompletionService. |
+| **Use ST's ChatCompletionService** | Usa el perfil seleccionado de ST Connection Manager con overrides de modelo y temperatura de STMB. Sin un perfil de conexión seleccionado, usa la ruta existente de ChatCompletionService. No está disponible para perfiles Full Manual. |
+| **Chat Completion Preset** | Aplica opcionalmente un preset de Chat Completion de SillyTavern cuando no hay un perfil de ST Connection Manager seleccionado. En caso contrario, el perfil de conexión proporciona el preset. |
 | **Model** | ID exacto del modelo. Current SillyTavern Settings usa el modelo activo. |
 | **Temperature** | Aleatoriedad de generación. Current SillyTavern Settings usa la temperatura activa. |
 | **Use reverse proxy** | Pasa los detalles de reverse proxy de SillyTavern en proveedores compatibles. |
@@ -2193,11 +2198,9 @@ Abra **Settings → Trackers & Side Prompts**.
 |---|---|---|
 | **After-memory side prompt mode for this chat** | Pantalla principal; per chat | Usa default solo/grupo, prompts habilitados individualmente o un Side Prompt Set concreto. |
 | **How many concurrent prompts to run at once** | Principal; global | Limita trabajos simultáneos de Side Prompt a 1–10. |
-| **Enable sideprompt versioning** | Pantalla principal del manager; para toda la cuenta | Habilita el uso de la preferencia guardada **Save all versions** de cada Side Prompt. Está desactivado por defecto. Desactivarlo no borra las preferencias por prompt ni el historial conservado. |
 | **Side Prompt Set Name** | New Set o editar; per set | Nombra un grupo ordenado reutilizable. |
 | **Side Prompt / Row Label / Macro Values** | Fila de set; per set | Elige plantilla, etiqueta opcional, valores de macro y orden. |
 | **Enabled** | Editor de Side Prompt; per template | Hace la plantilla elegible en modo individual. Los triggers siguen decidiendo cuándo corre. |
-| **Save all versions** | **New** o edición de un Side Prompt normal; por plantilla | Cuando el versionado para toda la cuenta está activado, conserva cada ejecución correcta como una versión numerada en lugar de sobrescribir la salida más reciente. Está desactivado por defecto y se conserva al exportar, importar y duplicar. |
 | **Run on visible message interval / Interval** | Editor; per template | Ejecuta tras número configurado de mensajes visibles. |
 | **Run automatically after memory** | Editor; per template | Ejecuta tras Memory correcta, sujeto al modo/set del chat. |
 | **Allow manual run via `/sideprompt`** | Editor; per template | Permite ejecución manual explícita. |
@@ -2205,7 +2208,7 @@ Abra **Settings → Trackers & Side Prompts**.
 | **Previous memories for context** | Editor; per template | Incluye 0–7 Memorias previas. |
 | **Use additional context / Additional Context Source** | Editor; per template | Sigue el Context Setting del chat o usa uno fijo. |
 | **Lorebook Target** | Editor; per template o chat | Guarda en Memory Book normal u otro lorebook. Al cambiar pregunta alcance chat vs plantilla. |
-| **Lorebook Entry Title Override / Keywords** | Editor de Side Prompt; por plantilla | Controla opcionalmente la plantilla de título de la entrada de Side Prompt y las palabras clave de activación separadas por comas. Con el historial de versiones activado, el título resuelto forma la base de la secuencia de versiones numeradas de ese título. |
+| **Lorebook Entry Title Override / Keywords** | Editor de Side Prompt; por template | Controla opcionalmente el template del título de la entrada actualizada mediante upsert y las keywords de activación separadas por comas. |
 | **Activation Mode / Insertion Position / Outlet Name** | Editor; per template | Controla activación y colocación. |
 | **Insertion Order / Order Value** | Editor; per template | Orden automático o valor manual fijo. |
 | **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Editor; per template | Aplica flags correspondientes de lorebook. |
@@ -2433,7 +2436,7 @@ Es comportamiento del modelo. Posibles respuestas:
 
 ### 29.9 Side Prompt no se ejecutó
 
-Consulte la Sección 16.19. En particular, un set seleccionado suprime los prompts habilitados individualmente que estén fuera de ese set.
+Consulte la Sección 16.18. En particular, un set seleccionado suprime los prompts habilitados individualmente que estén fuera de ese set.
 
 ### 29.10 Consolidation no mostró aviso
 
@@ -2671,3 +2674,12 @@ El sistema funciona mejor cuando:
 - Consolidation reduce detalle antiguo sin borrar continuidad;
 - los usuarios verifican recuperación en vez de asumir que «guardado» significa «enviado»;
 - el routing avanzado multi-libro solo se usa cuando su precisión compensa la complejidad.
+### Historial de versiones de Side Prompt
+
+Active **Enable sideprompt versioning** en **Trackers & Side Prompts** y después active **Save all versions** en cada Side Prompt normal cuyo historial deba conservarse. Ambas opciones están desactivadas por defecto. La opción del template se conserva al editar, duplicar, importar y exportar; Memory Assistance no admite historial de versiones.
+
+Cada ejecución correcta se conserva en su lorebook de destino como `Title-001 (STMB SidePrompt)`, luego `002` y versiones posteriores. La salida existente sin numerar se adopta como `001` cuando se activa el historial por primera vez. Las versiones anteriores se deshabilitan y la más reciente queda habilitada. Las versiones comparten un inclusion group saneado de Side Prompt/chat; cambiar un nombre visible actualiza ese grupo en un guardado correcto posterior. Los streams se separan por template, chat, title override resuelto y lorebook de destino.
+
+Si cualquiera de las dos opciones se deshabilita, STMB actualiza la salida más reciente en el mismo lugar y conserva el historial retenido. Regeneration actualiza la entrada seleccionada en lugar de añadir una versión. Rollback usa sus snapshots existentes y habilita la versión superviviente más reciente después de una restauración correcta. La salida legacy ambigua no se modifica. Las ejecuciones fallidas, vacías, canceladas o rechazadas no crean historial.
+
+STMB serializa las escrituras de lorebook en las que participa dentro de una sola pestaña del navegador. La limitación existente de SillyTavern para guardados concurrentes sigue aplicándose a otros clientes y a guardados directos desde el editor.

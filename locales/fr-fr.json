@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "Combiner les clips",
+  "STMemoryBooks_CombineClips_Select": "Sélectionnez au moins deux clips thématiques",
+  "STMemoryBooks_CombineClips_NewTitle": "Titre du nouveau clip thématique",
+  "STMemoryBooks_CombineClips_Disable": "Désactiver les clips d'origine après l'enregistrement",
+  "STMemoryBooks_CombineClips_Disabled": "désactivé",
+  "STMemoryBooks_CombineClips_None": "Aucun clip thématique trouvé dans ce Memory Book.",
+  "STMemoryBooks_CombineClips_Minimum": "Sélectionnez au moins deux clips thématiques.",
+  "STMemoryBooks_CombineClips_SourcesChanged": "Un clip sélectionné a changé. Générez à nouveau le brouillon.",
   "STMemoryBooks_Extract_HiddenOnly": "Messages masqués uniquement",
   "STMemoryBooks_Extract_Hidden": "Masqué",
   "STMemoryBooks_Extract_OutsideCount": "Hors des résultats affichés : {{count}}",

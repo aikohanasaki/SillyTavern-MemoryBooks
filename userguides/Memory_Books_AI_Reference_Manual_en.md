@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 # Memory Books: Complete AI Reference Manual
 
 **Product:** SillyTavern Memory Books (STMB)  
-**Reference version:** v8.5.0 with Aikobots integrated Side Prompt versioning  
+**Reference version:** v8.5.0, August 1, 2026  
 **Purpose:** A single, dense source of truth for an AI assistant that teaches, explains, and troubleshoots Memory Books.
 
 ---
@@ -166,7 +166,7 @@ Hiding processed messages does not delete them. It prevents those messages from 
 - **Clip vs Topical Clip:** A Clip starts with text highlighted in the current chat. A Topical Clip starts with existing confirmed STMB Memories.
 - **Topical Clip vs Side Prompt:** A Topical Clip is run manually to gather a topic. A Side Prompt can repeatedly maintain a changing tracker.
 - **Compaction vs Consolidation:** Compaction rewrites one entry. Consolidation creates a new higher-tier summary from several entries.
-- **Memory vs Side Prompt:** Memories are normally sequential scene records. Side Prompts normally maintain one continuing support document, but optional Side Prompt version history can retain each successful run as a numbered lorebook entry.
+- **Memory vs Side Prompt:** Memories are normally sequential scene records. Side Prompts usually update or overwrite one continuing support document.
 - **Generation vs retrieval:** Creating an entry does not guarantee that SillyTavern later activates it.
 
 ---
@@ -413,7 +413,9 @@ The named connection supplies its saved URL and secret. The model field in the S
 
 ### 7.6 ChatCompletionService
 
-**Use ST’s ChatCompletionService** routes supported profile requests through SillyTavern’s request helper and can apply a selected SillyTavern Chat Completion preset. OpenRouter requests also inherit SillyTavern’s provider order, quantization filters, fallback controls, and middle-out routing setting. These OpenRouter controls remain in force if ChatCompletionService fails and STMB retries through its fallback request path. If that retry also fails, STMB retains and reports both the initial ChatCompletionService error and the fallback provider response. Full Manual profiles do not use this route.
+**Use ST’s ChatCompletionService** uses `ConnectionManagerRequestService` when a profile is selected in SillyTavern’s Connection Manager. That connection profile supplies the provider, credentials, endpoint, proxy, and Chat Completion preset. STMB overrides the model and temperature and retains its response-token limit and structured-output choice. The connection profile’s preset takes precedence over a separate Chat Completion preset selected in STMB. The selected connection profile must use Chat Completion. Failed connection-profile requests are reported without retrying through STMB’s direct request path, which would lose the connection settings.
+
+When no SillyTavern connection profile is selected, the existing ChatCompletionService behavior applies, including STMB’s optional Chat Completion preset. OpenRouter requests on this route inherit SillyTavern’s provider order, quantization filters, fallback controls, and middle-out routing setting. These controls remain in force if ChatCompletionService fails and STMB retries through its fallback request path. If that retry also fails, STMB reports both failures. Unchecking the option keeps STMB’s direct request behavior. Full Manual profiles do not use either service route.
 
 ### 7.7 Reverse proxy and Full Manual Configuration
 
@@ -1092,13 +1094,29 @@ It does not use:
 5. Enter activation keywords, or leave them blank to use the topic.
 6. Choose a new entry or an existing `[STMB Clip]` update target.
 7. Choose saved Memories, chat messages, or both as sources.
-8. Optionally select only specific source Memories and/or enter an exact message range.
+8. Optionally select only specific source Memories. For chat messages, enter an exact range or click **Extract…** to search the full current chat and select individual messages, including noncontiguous and hidden messages.
 9. Choose the generation profile.
 10. Generate the draft.
 11. Review and edit it.
 12. Save only when correct.
 
 The generated draft is never saved automatically.
+
+### Combine existing Topical Clips
+
+In the **Topical Clip** window, click **Combine Clips**. Select a Memory Book, choose at least two Topical Clips (including disabled clips if needed), and enter the new clip's title. Only Topical Clips created by STMB appear; ordinary Clips are excluded. The new clip's activation keywords are the union of the selected clips' primary keywords, without duplicates. Secondary keyword conditions are not copied.
+
+Choose a generation profile and click **Generate Draft**. The AI receives each selected clip's title and full content and is asked to consolidate supported facts, remove repetition, and retain unresolved conflicts. Review and edit the draft before saving. Changing the selected sources, title, or Memory Book clears the draft. If a source changes before saving, generate a fresh draft.
+
+**Disable original clips after saving** is checked by default. Uncheck it to preserve their current activation states. Saving creates the new enabled Topical Clip and, when checked, disables the originals in the same Memory Book update. The originals are never deleted. The combined clip records its source IDs separately from normal Topical Clip Memory-source history.
+
+When text is highlighted in the chat, the floating control offers **Clip** and **Extract**. Extract opens the same message picker with the highlighted text as its search query. It searches the full history of the current chat, including messages that are not rendered onscreen. An empty search lists all messages. Search matches literal text or speaker names, ignoring case; **Hidden only** restricts matches to hidden messages.
+
+Results appear in batches of 50. Use **Load more** to display more matches, expand a result to read its complete text with highlighted matches, or use **Previous message** and **Next message** to reveal surrounding context. Context messages are not selected automatically and can appear even when they do not match the search or Hidden only filter. Hidden messages are labeled; selecting one includes its text in the Topical Clip source without unhiding it in the chat.
+
+Selections are retained across searches and filter changes. The selection count includes messages outside the displayed results. **Select loaded results** selects every displayed result, including any revealed context messages; **Clear selection** removes all selections. Choose **Topical Clip** from standalone Extract or **Use selected messages** when returning to an existing editor. The query supplies the initial topic and keywords, which remain editable.
+
+STMB records source fingerprints when messages enter the picker and checks selected messages before accepting them, generating a draft, and saving it. If a selected source changes, **Refresh results** clears the selection and reloads the results so you can select sources again. Finish or cancel any unfinished message edit before searching. Switching chats closes the picker. Extract does not search other chats.
 
 ### 15.4 Updating an existing Topical Clip
 
@@ -1157,7 +1175,7 @@ Reset to Default if a custom prompt stops producing useful output.
 
 ## 16. Side Prompts
 
-A Side Prompt is a named STMB prompt that runs separately from the normal character reply. By default it creates or updates one continuing support entry rather than another sequential scene Memory. In Aikobots, optional Side Prompt version history can instead retain each successful run as a numbered lorebook entry while keeping the newest version as the current output.
+A Side Prompt is a named STMB prompt that runs separately from the normal character reply. It usually creates or updates one continuing support entry rather than another sequential scene Memory.
 
 In the **Trackers & Side Prompts** list, the power icon immediately changes the prompt-wide **Enabled** flag: green means enabled and dim means disabled. This control does not add, remove, or otherwise change the prompt's configured triggers.
 
@@ -1218,7 +1236,7 @@ A selected set replaces individually enabled automatic prompts for that chat. It
 
 #### Memory Assistance Side Prompt
 
-**Memory Assistance** is a reserved Side Prompt with four independent modes. It runs after successfully saved Memories regardless of ordinary Side Prompt enablement or the selected Side Prompt Set. It does not run during Memory regeneration.
+**Memory Assistance** is a reserved Side Prompt with five independent modes. It runs after successfully saved Memories regardless of ordinary Side Prompt enablement or the selected Side Prompt Set. It does not run during Memory regeneration.
 
 Memory Assistance compares the raw processed scene with ordinary and Topical Clips in each Memory Book that received the Memory. It sends each reviewed Clip's title/topic, keywords, current content, stable ID, and type to the AI.
 
@@ -1226,6 +1244,7 @@ When the job queue is available, each target Memory Book receives a separate **M
 
 - **Off** disables Memory Assistance.
 - **Update** reviews five or fewer Clips directly; more than five Clips open a selection list. Proposed changes wait for manual approval.
+- **Suggest** discovers new Topical Clip topics without reviewing or updating existing Clips.
 - **Update and Suggest** first performs one topic-discovery request, then runs the same existing-Clip review workflow as Update.
 - **Automatic** reviews every Clip in token-based batches without asking which Clips to review. It directly applies valid ordinary Clip additions, while Topical Clip replacements remain pending for approval in **Memory Assistance Suggestions**.
 
@@ -1392,46 +1411,7 @@ Title and keyword fields can expand applicable macros. **Ignore Budget** should 
 
 A Side Prompt can inherit normal Memory Books connection resolution or bind a specific STMB profile. An override is useful for a cheaper model or one better at structured maintenance. Excessive profile combinations make troubleshooting harder.
 
-### 16.16 Side Prompt version history
-
-Side Prompts normally update one continuing output. In Aikobots, you can instead keep each successful run as a numbered lorebook entry.
-
-#### Enable version history
-
-1. Open **Memory Books → Trackers & Side Prompts** and check **Enable sideprompt versioning**. This setting applies to your account across all chats.
-2. Edit a Side Prompt, check **Save all versions**, and save it. Choose this separately for each prompt whose history you want to keep.
-
-Both checkboxes default to off. The account setting controls whether each prompt's preference is used; turning it off does not clear those preferences. Exported, imported, and duplicated Side Prompts retain their **Save all versions** setting.
-
-#### What gets saved
-
-With both settings enabled, successful manual, automatic, and Side Prompt Set runs append numbered entries such as:
-
-| Entry | State |
-|---|---|
-| `Assess-001 (STMB SidePrompt)` | Disabled, retained |
-| `Assess-002 (STMB SidePrompt)` | Disabled, retained |
-| `Assess-003 (STMB SidePrompt)` | Enabled, current output |
-
-The title uses the prompt's entry-title override when configured, otherwise its name. Numbers have at least three digits and continue beyond 999. Every version keeps the configured insertion order; older versions are disabled rather than given a different order.
-
-Versions share an inclusion group named from the Side Prompt and chat, for example `Assess-MyChat`. All whitespace is removed and commas become hyphens. The group stays together when the prompt's display name changes. Separate resolved title overrides, such as different names supplied through macros, keep their own version sequences.
-
-If an output already exists when you first use versioning, it becomes version 001 and the next successful output becomes 002. With no existing output, the first successful run creates 001. A canceled, rejected, blank, or failed run does not archive or replace the existing output. If legacy entries cannot be matched unambiguously, saving stops instead of guessing which entry to change.
-
-#### Turn versioning off
-
-Uncheck either checkbox. Subsequent runs update the latest output in place and retain the older disabled entries. A Side Prompt that has never used versioning continues updating its ordinary unnumbered output. Re-enabling both checkboxes resumes appending versions.
-
-Every normal run uses the latest output for prior context and checkpoint selection, including while versioning is off. Saved history belongs to the prompt, chat reference, and target lorebook. Changing the chat filename/ID or selecting another target lorebook starts a separate history; renaming the prompt's display name does not.
-
-#### Regeneration and rollback with version history
-
-**Regenerate** replaces only the selected version's content. It does not append a version, renumber entries, or enable an older disabled entry.
-
-When ordinary-book automatic rollback is enabled, rollback uses the existing saved restoration snapshots. It restores or removes affected versions and enables the newest surviving version. Manual edits that invalidate a snapshot still stop automatic rollback for review.
-
-### 16.17 Side Prompt regeneration
+### 16.16 Side Prompt regeneration
 
 Compatible saves now store a version-2 snapshot containing:
 
@@ -1446,7 +1426,7 @@ To regenerate, open the lorebook editor and click **Regenerate side prompt**. Th
 
 Regeneration cannot complete when the template was deleted, the source chat/range is unavailable, or the target/source changed during generation. Only the content is replaced; existing title, keywords, and entry settings remain. Legacy version-1 snapshots continue to support regeneration, although they cannot be used by Memory Auto-Rollback.
 
-### 16.18 Writing good Side Prompts
+### 16.17 Writing good Side Prompts
 
 A good Side Prompt defines:
 
@@ -1475,7 +1455,7 @@ Keep the entire output under 300 words.
 
 Stable headings reduce drift across repeated updates.
 
-### 16.19 Side Prompt troubleshooting
+### 16.18 Side Prompt troubleshooting
 
 If a prompt did not run:
 
@@ -1661,7 +1641,7 @@ The full source set must still exist at the correct tier. A lower-tier source ca
 
 ### 19.3 Side Prompt regeneration
 
-See the Side Prompt snapshot rules in Section 16.17 and the version-history behavior in Section 16.16.
+See the Side Prompt snapshot rules in Section 16.16.
 
 ### 19.4 Safety checks
 
@@ -2004,6 +1984,10 @@ Retry scopes:
 
 Use Retry All to restore the combined workflow; use Retry Memory when tracker work should not run.
 
+Consolidation saves record a checkpoint in extension settings before writing each accepted summary. A summary and its source-disable changes are saved together. Retry checks the live Memory Book for the checkpoint marker before writing, so a confirmed summary is reused instead of duplicated. After a reload, **Consolidation recovery** in the extension menu lists unfinished checkpoints and offers **Resume** and **Review details**. A changed source, edited summary, duplicate marker, or unconfirmed save is marked **Needs Review** and is never replayed automatically; after checking the Memory Book, **Dismiss after review** removes the checkpoint notice without changing the book. This uses ST's settings and lorebook APIs; it does not provide a server transaction.
+
+Checkpoints store the accepted summary draft, generated keywords, source IDs and fingerprints, and save options in ST extension settings so a reload can resume the exact candidate. Keep settings backups as private as the Memory Books themselves.
+
 Without Chat Top Bar, STMB still performs its normal workflows but lacks the queue UI.
 
 ### Deferred last-processed progress
@@ -2087,6 +2071,7 @@ Open **Settings → General Settings** in the main panel.
 | **Refresh lorebook editor after adding memories** | Global | Refreshes an open lorebook editor after STMB writes entries so the new content appears immediately. |
 | **Copy Memory Books when branching** | Global | Gives a native chat branch independent copies of its active unlocked chat-bound or manual Memory Books. Character-locked books remain shared by design. |
 | **Auto-rollback after message deletion** | Global | Enables coordinated rollback when deletion or truncation intersects already processed chat material. It is disabled by default. Ordinary message edits and swipes do not trigger it. |
+| **Apply auto-rollback to branches/checkpoints** | Global; Auto-rollback option | On the first opening of a branch or checkpoint, rolls back Memories beyond its retained messages. Requires independent copies of every active Memory Book; otherwise it skips the rollback. |
 | **Update last message ID processed** | Global; Auto-rollback action | Moves the processed checkpoint to the end of the newest surviving Memory, or clears it when none survives. |
 | **Delete last Memory** | Global; Auto-rollback action | Deletes every invalidated Memory selected by the rollback scope and its linked copies. Memory and consolidation deletion is irreversible. |
 | **Restore previous Side Prompts** | Global; Auto-rollback action | Restores each unchanged affected Side Prompt to its latest exact saved before-state. Only one rollback level is retained. |
@@ -2102,6 +2087,14 @@ Open **Settings → General Settings** in the main panel.
 #### Memory Auto-Rollback inside General Settings
 
 **Auto-rollback after message deletion** is a master preference. Its three action checkboxes are independently selectable, enabled by default, and visually disabled while the master switch is off. Existing installations therefore do not begin deleting anything merely by upgrading.
+
+**Apply auto-rollback to branches/checkpoints** is off by default. When enabled, STMB applies the selected actions the first time an eligible branch or checkpoint is opened, including existing child chats. Checkpoints are handled when opened, not when created. STMB uses the child chat's current message count as the first omitted message index, so a Memory ending at the last retained message remains intact while Memories crossing or following that boundary are eligible. Completion is recorded for that child and boundary, and changing settings does not repeat a completed rollback.
+
+When branch/checkpoint rollback deletes a Memory, it also unhides the retained messages in that Memory's source range after the Memory Books save successfully. For example, branching at message 36 with a Memory covering 33–44 deletes that Memory from the copy and unhides messages 33–36. This does not depend on the unhide-before-generation preference. Already completed child rollbacks are not automatically repeated after an upgrade; use `/unhide 33-36` to repair that example in an existing branch.
+
+Pending unhide ranges are saved in the same Memory Book writes as the deletions. If switching chats or an error interrupts unhiding, reopening the child with branch/checkpoint auto-rollback enabled retries those saved ranges, even though the deleted Memories no longer exist. Retrying may repeat already completed unhide commands; the recovery records are removed only after every range completes in the intended chat.
+
+Branch/checkpoint rollback requires isolated copies of every active Memory Book. When **Copy Memory Books when branching** is disabled or a shared/locked book cannot be isolated, STMB skips rollback and reports the reason to avoid changing the parent chat's data. Copy or rollback failures and canceled consolidation confirmations remain eligible for a later opening.
 
 Auto-rollback reacts only to message deletion or truncation, including the deletion phase of response regeneration. It does not react to an ordinary edit or swipe. STMB tracks the actual message identities in each chat because SillyTavern's deletion event value does not reliably identify a middle deletion.
 
@@ -2143,6 +2136,17 @@ Open **Settings → Automatic Memories** in the main panel.
 | **Prompt for consolidation when a tier is ready** | Global | Shows a yes/later prompt when a monitored tier reaches its saved eligible-source minimum. It never silently performs consolidation. |
 | **Auto-Consolidation Tiers** | Global | Chooses which target tiers are monitored for readiness prompts. The minimum for each tier is saved in **Consolidate Memories**. |
 
+#### Memory reminder notifications
+
+Automatic-memory reminder controls appear only in **Automatic Memories**. Manual-memory reminder controls appear in both **General Settings** and **Automatic Memories**, backed by the same global preferences. Both reminder toggles default to **off** and operate independently of **Show notifications**.
+
+- **Turn on reminders for automatic memories** applies while **Auto-create memory summaries** is enabled. Its configurable interval X defaults to **10 messages**. The first reminder is due at **Auto-Summary Interval + Auto-Summary Buffer + X** unprocessed messages, with repeats every X additional messages. For example, interval 50, buffer 2, and X = 10 first reminds at 62 unprocessed messages, then 72, 82, and so on if checked at those counts.
+- **Turn on reminders to make memories manually** applies while auto-create is disabled. Its configurable interval Y defaults to **50 messages**. It first reminds at Y unprocessed messages, then every Y additional messages. Both preferences remain saved when switching auto-create on or off.
+
+Intervals accept positive whole numbers and count **chat messages**, including both user and assistant messages, using the existing last-processed Memory boundary. Automatic reminders remain message-based even when generation uses a token threshold. Checks run after assistant replies and when memory processing becomes idle; generation, pending progress, and an explicit auto-summary postponement suppress new reminders. A delayed reminder starts its repeat interval from the actual notification count.
+
+Reminder toasts have a close button and stay visible until dismissed. Repeats do not stack while a reminder is visible. Notification checkpoints are saved per chat, so reloading does not immediately repeat a delivered reminder. A changed processed boundary or reminder configuration resets the relevant schedule; deleted messages rebase repeat checkpoints. Changing chats, changing the boundary, or disabling/switching the active reminder mode clears the visible reminder. These reminders do not create memories or change automatic generation thresholds.
+
 ### 27.4 Profile editor
 
 Choose a profile under **Memory Profiles**, then open **Profile Actions → Edit Profile**. These settings are **per profile** unless noted otherwise. The built-in **Current SillyTavern Settings** profile intentionally locks fields that SillyTavern controls.
@@ -2153,8 +2157,8 @@ Choose a profile under **Memory Profiles**, then open **Profile Actions → Edit
 | **API/Provider** | Chooses current SillyTavern routing, a supported provider, a Custom OpenAI-compatible connection, or Full Manual Configuration. |
 | **Use this connection profile** | For **Custom OpenAI-Compatible API**, uses either the active SillyTavern Custom connection or one named Custom connection. Its saved URL and secret are used while the STMB **Model** remains the model override. |
 | **Skip structured output and use plain-text completion** | Stops sending a structured-output schema when a provider rejects it. The selected prompt must still make the model return STMB's required valid JSON. |
-| **Use ST's ChatCompletionService** | Routes supported requests through SillyTavern's built-in Chat Completion request helper. It is unavailable to Full Manual profiles. |
-| **Chat Completion Preset** | Optionally applies a SillyTavern Chat Completion preset through ChatCompletionService. |
+| **Use ST's ChatCompletionService** | Uses the selected ST Connection Manager profile with STMB model and temperature overrides. Without a selected connection profile, uses the existing ChatCompletionService route. Unavailable to Full Manual profiles. |
+| **Chat Completion Preset** | Optionally applies a SillyTavern Chat Completion preset when no ST Connection Manager profile is selected. Otherwise, the connection profile supplies the preset. |
 | **Model** | Supplies the exact model ID for this profile. **Current SillyTavern Settings** instead reads the model active in SillyTavern. |
 | **Temperature** | Sets generation randomness for this profile. **Current SillyTavern Settings** instead reads SillyTavern's active temperature. |
 | **Use reverse proxy** | Passes SillyTavern's configured reverse-proxy details for supported providers; in Full Manual Configuration the secret field is labeled as a proxy password. |
@@ -2193,11 +2197,9 @@ Open **Settings → Trackers & Side Prompts** in the main panel.
 |---|---|---|
 | **After-memory side prompt mode for this chat** | Manager main screen; per chat | Uses the matching solo/group default, explicitly uses individually enabled after-Memory prompts, or selects one named Side Prompt Set for this chat. |
 | **How many concurrent prompts to run at once** | Manager main screen; global | Limits simultaneous Side Prompt jobs to 1–10. |
-| **Enable sideprompt versioning** | Manager main screen; account-wide | Enables use of each Side Prompt's saved **Save all versions** preference. Defaults off. Turning it off does not clear per-prompt preferences or delete retained history. |
 | **Side Prompt Set Name** | **New Set** or edit a set; per set | Names a reusable ordered group of Side Prompt runs. |
 | **Side Prompt / Row Label / Macro Values** | Side Prompt Set row; per set | Chooses the template for a row, gives the row an optional display/title label, supplies literal or set-level runtime macro values, and uses row order as execution order. |
 | **Enabled** | **New** or edit an ordinary Side Prompt; per template | Makes the template eligible when the chat uses individually enabled after-Memory prompts. Trigger settings still determine when it runs. |
-| **Save all versions** | **New** or edit an ordinary Side Prompt; per template | When account-wide versioning is enabled, retains each successful run as a numbered version instead of overwriting the latest output. Defaults off and is retained through export, import, and duplication. |
 | **Run on visible message interval / Interval** | Side Prompt editor; per template | Runs after the configured number of visible messages. Automatic triggers are unavailable when the template requires unresolved runtime macros. |
 | **Run automatically after memory** | Side Prompt editor; per template | Runs the template after a successful Memory, subject to the chat's Side Prompt mode or selected set. |
 | **Allow manual run via `/sideprompt`** | Side Prompt editor; per template | Allows explicit manual execution. |
@@ -2205,7 +2207,7 @@ Open **Settings → Trackers & Side Prompts** in the main panel.
 | **Previous memories for context** | Side Prompt editor; per template | Includes 0–7 previous Memory entries before the selected source messages. |
 | **Use additional context / Additional Context Source** | Side Prompt editor; per template | Includes Additional Context and either follows the current chat's Context Setting or always uses one fixed named setting. |
 | **Lorebook Target** | Side Prompt editor; per template or per chat | Saves output to the normal Memory Book or another chosen lorebook. When changed, STMB asks whether the choice applies only to this chat or to the template going forward. |
-| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | Optionally controls the Side Prompt entry title template and comma-separated activation keywords. With version history enabled, the resolved title forms the base of that title's numbered version sequence. |
+| **Lorebook Entry Title Override / Keywords** | Side Prompt editor; per template | Optionally controls the upserted entry title template and comma-separated activation keywords. |
 | **Activation Mode / Insertion Position / Outlet Name** | Side Prompt editor; per template | Controls activation and placement for the Side Prompt's lorebook entry. |
 | **Insertion Order / Order Value** | Side Prompt editor; per template | Uses automatic Memory-number ordering or a fixed manual order value. |
 | **Prevent Recursion / Delay Until Recursion / Ignore Budget** | Side Prompt editor; per template | Applies the corresponding SillyTavern lorebook-entry recursion and budget flags. |
@@ -2433,7 +2435,7 @@ This is model-use behavior. Possible responses:
 
 ### 29.9 Side Prompt did not run
 
-See Section 16.19. In particular, a selected set suppresses individually enabled prompts outside that set.
+See Section 16.18. In particular, a selected set suppresses individually enabled prompts outside that set.
 
 ### 29.10 Consolidation did not prompt
 
@@ -2671,3 +2673,12 @@ The system works best when:
 - consolidation reduces old detail without erasing continuity;
 - users verify retrieval rather than assuming saved means sent;
 - advanced multi-book routing is used only when its precision is worth the complexity.
+### Side Prompt version history
+
+Enable **Enable sideprompt versioning** in **Trackers & Side Prompts**, then enable **Save all versions** on each ordinary Side Prompt that should retain history. Both settings default to off. The template setting is retained by editing, duplication, import, and export; Memory Assistance does not support version history.
+
+Each successful run is kept in its target lorebook as `Title-001 (STMB SidePrompt)`, then `002` and later versions. Existing unnumbered output is adopted as `001` when history is first enabled. Older versions are disabled and the newest is enabled. Versions share a sanitized Side Prompt/chat inclusion group; changing a display name updates that group on a later successful save. Streams are separated by template, chat, resolved title override, and target lorebook.
+
+If either setting is disabled, STMB updates the newest output in place and keeps the retained history. Regeneration updates its selected entry rather than appending a version. Rollback uses its existing snapshots and enables the newest surviving version after a successful restoration. Ambiguous legacy output is not changed. Failed, blank, canceled, or rejected runs do not create history.
+
+STMB serializes its participating lorebook writes in one browser tab. SillyTavern's existing concurrent-save limitation still applies to other clients and direct editor saves.

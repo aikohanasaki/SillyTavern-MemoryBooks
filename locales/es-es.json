@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "Combinar clips",
+  "STMemoryBooks_CombineClips_Select": "Selecciona dos o más clips temáticos",
+  "STMemoryBooks_CombineClips_NewTitle": "Título del nuevo clip temático",
+  "STMemoryBooks_CombineClips_Disable": "Desactivar los clips originales después de guardar",
+  "STMemoryBooks_CombineClips_Disabled": "desactivado",
+  "STMemoryBooks_CombineClips_None": "No se encontraron clips temáticos en este Libro de Memoria.",
+  "STMemoryBooks_CombineClips_Minimum": "Selecciona al menos dos clips temáticos.",
+  "STMemoryBooks_CombineClips_SourcesChanged": "Cambió un clip seleccionado. Genera el borrador de nuevo.",
   "STMemoryBooks_Extract_HiddenOnly": "Solo mensajes ocultos",
   "STMemoryBooks_Extract_Hidden": "Oculto",
   "STMemoryBooks_Extract_OutsideCount": "Fuera de los resultados mostrados: {{count}}",

@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "Объединить клипы",
+  "STMemoryBooks_CombineClips_Select": "Выберите два или более тематических клипа",
+  "STMemoryBooks_CombineClips_NewTitle": "Название нового тематического клипа",
+  "STMemoryBooks_CombineClips_Disable": "Отключить исходные клипы после сохранения",
+  "STMemoryBooks_CombineClips_Disabled": "отключён",
+  "STMemoryBooks_CombineClips_None": "В этой Книге памяти нет тематических клипов.",
+  "STMemoryBooks_CombineClips_Minimum": "Выберите не менее двух тематических клипов.",
+  "STMemoryBooks_CombineClips_SourcesChanged": "Один из выбранных клипов изменился. Создайте черновик заново.",
   "STMemoryBooks_Extract_HiddenOnly": "Только скрытые",
   "STMemoryBooks_Extract_Hidden": "Скрыто",
   "STMemoryBooks_Extract_OutsideCount": "Вне отображаемых результатов: {{count}}",

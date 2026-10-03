@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "Gabungkan klip",
+  "STMemoryBooks_CombineClips_Select": "Pilih dua atau lebih Klip Topikal",
+  "STMemoryBooks_CombineClips_NewTitle": "Tajuk Klip Topikal baharu",
+  "STMemoryBooks_CombineClips_Disable": "Nyahaktifkan klip asal selepas menyimpan",
+  "STMemoryBooks_CombineClips_Disabled": "dinyahaktifkan",
+  "STMemoryBooks_CombineClips_None": "Tiada Klip Topikal ditemui dalam Buku Memori ini.",
+  "STMemoryBooks_CombineClips_Minimum": "Pilih sekurang-kurangnya dua Klip Topikal.",
+  "STMemoryBooks_CombineClips_SourcesChanged": "Klip yang dipilih telah berubah. Jana semula draf.",
   "STMemoryBooks_Extract_HiddenOnly": "Mesej tersembunyi sahaja",
   "STMemoryBooks_Extract_Hidden": "Tersembunyi",
   "STMemoryBooks_Extract_OutsideCount": "Di luar hasil yang dipaparkan: {{count}}",

@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "클립 결합",
+  "STMemoryBooks_CombineClips_Select": "주제별 클립을 두 개 이상 선택",
+  "STMemoryBooks_CombineClips_NewTitle": "새 주제별 클립 제목",
+  "STMemoryBooks_CombineClips_Disable": "저장 후 원본 클립 비활성화",
+  "STMemoryBooks_CombineClips_Disabled": "비활성화됨",
+  "STMemoryBooks_CombineClips_None": "이 메모리 북에 주제별 클립이 없습니다.",
+  "STMemoryBooks_CombineClips_Minimum": "주제별 클립을 두 개 이상 선택하세요.",
+  "STMemoryBooks_CombineClips_SourcesChanged": "선택한 클립이 변경되었습니다. 초안을 다시 생성하세요.",
   "STMemoryBooks_Extract_HiddenOnly": "숨겨진 메시지만",
   "STMemoryBooks_Extract_Hidden": "숨김",
   "STMemoryBooks_Extract_OutsideCount": "표시된 결과 밖의 선택: {{count}}",

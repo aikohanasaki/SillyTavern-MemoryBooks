@@ -1,4 +1,12 @@
 {
+  "STMemoryBooks_CombineClips_Open": "クリップを統合",
+  "STMemoryBooks_CombineClips_Select": "トピッククリップを2つ以上選択",
+  "STMemoryBooks_CombineClips_NewTitle": "新しいトピッククリップのタイトル",
+  "STMemoryBooks_CombineClips_Disable": "保存後に元のクリップを無効にする",
+  "STMemoryBooks_CombineClips_Disabled": "無効",
+  "STMemoryBooks_CombineClips_None": "このメモリーブックにトピッククリップはありません。",
+  "STMemoryBooks_CombineClips_Minimum": "トピッククリップを2つ以上選択してください。",
+  "STMemoryBooks_CombineClips_SourcesChanged": "選択したクリップが変更されました。下書きを再生成してください。",
   "STMemoryBooks_Extract_HiddenOnly": "非表示のメッセージのみ",
   "STMemoryBooks_Extract_Hidden": "非表示",
   "STMemoryBooks_Extract_OutsideCount": "表示中の結果に含まれない選択: {{count}}",
