@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.5 (October 5, 2026)
+- Fix chat icon bound status bug.
+
 ## v9.3.4 (October 3, 2026)
 - UI improvement for "Extract" function.
 - New feature: Combine Clips to combine multiple related STMB Clips into one. 

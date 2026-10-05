@@ -17,11 +17,8 @@
 
 - Documentation has been consolidated into `userguides\'1 Memory_Books_AI_Reference_Manual.md'` and this is the sole technical manual to be updated going forward. 
 
-# Guide for AI Coding Agents
+# READ-ONLY References
 
-- Check existing configuration before changing code
-- Before making code changes, consult `userguides\'1 Memory_Books_AI_Reference_Manual.md'` and check whether the requested outcome is already supported through the UI, settings, editable prompts, or template import/duplication. Do not create PRs/code changes just to change defaults/preferences that can be edited in the UI.
-- If an existing workflow satisfies the request, explain that workflow first. For prompt customization, provide replacement text for all relevant fields, including Response Format where applicable.
-- Bundled prompts are customizable starting points. A preference for different prompt behavior does not by itself justify changing shared defaults, migrating saved templates, or warning about intentionally retained instructions.
-- If code changes are still needed, explain the limitation or defect in the existing workflow and keep the change scoped to it. An explicit request to change the implementation should still be assessed on its merits.
-
+- SillyTavern base/upstream: "D:\ST\SillyTavern"
+- Aikobots v2: "C:\Users\alcho\Aikobots Code\Aikobots"
+- SillyTavern-LorebookOrdering (STLO): "C:\Users\alcho\Aikobots Code\SillyTavern-LorebookOrdering"

@@ -74,6 +74,8 @@ export async function autoCreateLorebook(template, context = 'chat') {
             // Bind the new lorebook to the chat
             chat_metadata[METADATA_KEY] = newLorebookName;
             await saveMetadata();
+            // Match SillyTavern's chat-lorebook binding UI without emitting a chat change.
+            $('.chat_lorebook_button').addClass('world_set');
 
             console.log(i18n('autocreate.log.created', `${MODULE_NAME}: Successfully created and bound lorebook "{{name}}"`, { name: newLorebookName }));
             toastr.success(i18n('autocreate.toast.createdBound', 'Created and bound lorebook "{{name}}"', { name: newLorebookName }), i18n('autocreate.toast.title', 'STMemoryBooks'));
