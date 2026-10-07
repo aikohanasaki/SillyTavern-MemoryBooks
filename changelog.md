@@ -7,6 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.6 (October 7, 2026)
+- Refactor pending actions popup.
+- Fix narrator cast stamping bug.
+
 ## v9.3.5 (October 5, 2026)
 - Fix chat icon bound status bug.
 
