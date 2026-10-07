@@ -889,12 +889,14 @@ At generation time, STMB snapshots the active cast and stores it in message meta
 
 - the user message receives the active-cast snapshot;
 - the Narrator response receives the generation snapshot;
+- completed Narrator responses retain that snapshot until their message is finalized, even when generation ends first;
 - a continuation merges its cast with existing cast metadata;
 - swipe metadata is stored separately for each swipe;
 - selecting a swipe can restore the active cast from that timeline point;
 - deleting recent messages can restore cast state from the latest remaining tagged Narrator message.
 
 The cast marker records association, not a semantic analysis of prose.
+Stopped or failed partial replies are not automatically tagged. If a scene includes one, the legacy-message cast confirmation remains necessary.
 
 ### 12.5 Retrieval during normal Narrator generation
 

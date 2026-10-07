@@ -14,6 +14,7 @@ import {
   saveSettingsDebounced,
   characters,
   this_chid,
+  streamingProcessor,
   settings as st_settings,
 } from "../../../../script.js";
 import { Popup, POPUP_TYPE, POPUP_RESULT } from "../../../popup.js";
@@ -315,6 +316,7 @@ import {
   stampNarratorCast,
   validateNarratorBindings,
 } from "./narratorMode.js";
+import { createNarratorGenerationState } from "./narratorGenerationState.js";
 import "../../../../lib/select2.min.js";
 import { applyGroupMemoryPolicy, getGroupMemoryProfile, isCharacterAwarenessDisabled } from "./groupChatPolicy.js";
 import { setGroupSettingDisabled } from "./groupChatSettingsUi.js";
@@ -734,7 +736,7 @@ let memoryBoundaryButtonDragState = null;
 let narratorCastDrawer = null;
 let narratorCastDrawerDragState = null;
 let narratorGenerationSnapshot = null;
-let narratorGenerationType = null;
+const narratorResponseGeneration = createNarratorGenerationState();
 let manualGroupGenerationSnapshot = null;
 let lorebookRegenerationObserver = null;
 const memoryRollbackDeletionTracker = createMessageDeletionTracker();
@@ -1483,7 +1485,7 @@ async function handleChatChanged(chatId) {
   }
   hideFloatingClipButton();
   narratorGenerationSnapshot = null;
-  narratorGenerationType = null;
+  narratorResponseGeneration.clear();
   manualGroupGenerationSnapshot = null;
   refreshNarratorCastDrawer();
   refreshMemoryBoundaryUi();
@@ -13226,10 +13228,14 @@ function setupEventListeners() {
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, (messageId, type) => {
     memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
-    if (!narratorGenerationSnapshot || !getCurrentMemoryBooksContext().isNarratorMode) return;
+    const generation = narratorResponseGeneration.receive({
+      messageId, type, chatKey: getStmbChatKey(), chat,
+      narratorMode: getCurrentMemoryBooksContext().isNarratorMode,
+      processor: streamingProcessor,
+    });
+    if (!generation) return;
     const message = chat?.[messageId];
-    if (!message || message.is_system) return;
-    stampNarratorCast(message, narratorGenerationSnapshot, { merge: type === "continue" || narratorGenerationType === "continue" });
+    stampNarratorCast(message, generation.castIds, { merge: generation.merge });
     saveChatDebounced();
   });
   eventSource.on(event_types.MESSAGE_RECEIVED, handleMessageReceived);
@@ -13256,10 +13262,13 @@ function setupEventListeners() {
     lastFailedAIError = null;
     lastFailedAIContext = null;
     const context = getCurrentMemoryBooksContext();
-    narratorGenerationType = context.isNarratorMode ? type : null;
     narratorGenerationSnapshot = context.isNarratorMode
       ? [...getCurrentNarratorConfig().activeCastIds]
       : null;
+    narratorResponseGeneration.start({
+      castIds: narratorGenerationSnapshot || [], type, chatKey: getStmbChatKey(), chat,
+      dryRun, narratorMode: context.isNarratorMode,
+    });
     manualGroupGenerationSnapshot =
       context.isGroupChat && !isCharacterAwarenessDisabled({}, context) && initializeSettings()?.moduleSettings?.manualModeEnabled
         ? createManualGroupLorebookBindingSnapshot()
@@ -13268,11 +13277,16 @@ function setupEventListeners() {
 
   const clearGenerationLorebookSnapshots = () => {
     narratorGenerationSnapshot = null;
-    narratorGenerationType = null;
     manualGroupGenerationSnapshot = null;
   };
-  eventSource.on(event_types.GENERATION_ENDED, clearGenerationLorebookSnapshots);
-  eventSource.on(event_types.GENERATION_STOPPED, clearGenerationLorebookSnapshots);
+  eventSource.on(event_types.GENERATION_ENDED, () => {
+    narratorResponseGeneration.end({ processor: streamingProcessor, chat });
+    clearGenerationLorebookSnapshots();
+  });
+  eventSource.on(event_types.GENERATION_STOPPED, () => {
+    narratorResponseGeneration.clear();
+    clearGenerationLorebookSnapshots();
+  });
 
   eventSource.on(event_types.WORLDINFO_ENTRIES_LOADED, async ({ globalLore, characterLore, chatLore, personaLore }) => {
     const arrays = [globalLore, characterLore, chatLore, personaLore].filter(Array.isArray);
