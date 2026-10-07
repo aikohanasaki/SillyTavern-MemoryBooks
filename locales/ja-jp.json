@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "最後に処理されたメッセージのマーカーは、保存済みメモリに含まれるメッセージを記録します。これにより、次のメモリを適切な位置から作成し、自動処理のしきい値には新しいメッセージを数えます。保留中の更新は、対象のチャットが開かれていて処理中でなく、安全に適用できる場合に自動で適用されます。更新が保留中でも、保存済みメモリは保持されます。",
+  "STMemoryBooks_Progress_Reopen": "チャットを再度開いてマーカーを更新",
+  "STMemoryBooks_Progress_ReopenInfo": "このチャットを再度開き、メッセージ {{target}} までマーカーを更新します。アクティブなチャットが切り替わります。",
   "STMemoryBooks_CombineClips_Open": "クリップを統合",
   "STMemoryBooks_CombineClips_Select": "トピッククリップを2つ以上選択",
   "STMemoryBooks_CombineClips_NewTitle": "新しいトピッククリップのタイトル",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "保留中の進捗更新（{{count}}）",
   "STMemoryBooks_Progress_Blocked": "別のメモリを作成する前に、このチャットの保留中の進捗更新を適用するか破棄してください。",
   "STMemoryBooks_Progress_PersistenceError": "メモリは保存されましたが、保留中の進捗更新を設定に保存できませんでした。ページを再読み込みする前に再試行してください。更新が失われる可能性があります。",
-  "STMemoryBooks_Progress_Deferred": "メモリは保存されました。「{{chat}}」をもう一度開き、最後に処理されたメッセージのマーカー更新を完了してください。",
+  "STMemoryBooks_Progress_Deferred": "メモリは保存されました。「{{chat}}」の進捗更新は保留中です。チャットが開かれていて処理中でなければ、安全な更新は自動で適用されます。クリックして保留中の更新を確認してください。",
   "STMemoryBooks_Progress_Later": "後で",
   "STMemoryBooks_Progress_Processing": "処理中…",
   "STMemoryBooks_Progress_Done": "完了。",

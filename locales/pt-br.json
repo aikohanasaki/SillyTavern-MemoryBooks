@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "O marcador da última mensagem processada registra quais mensagens já estão cobertas pelas memórias salvas, para que a próxima memória comece no lugar certo e os limites automáticos contem as novas mensagens. Atualizações pendentes seguras são aplicadas automaticamente quando o chat correspondente está aberto e ocioso. As memórias salvas permanecem intactas enquanto uma atualização estiver pendente.",
+  "STMemoryBooks_Progress_Reopen": "Reabrir chat e atualizar marcador",
+  "STMemoryBooks_Progress_ReopenInfo": "Reabra este chat para atualizar seu marcador até a mensagem {{target}}. Isso muda o chat ativo.",
   "STMemoryBooks_CombineClips_Open": "Combinar clipes",
   "STMemoryBooks_CombineClips_Select": "Selecione dois ou mais Clipes Temáticos",
   "STMemoryBooks_CombineClips_NewTitle": "Título do novo Clipe Temático",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "Atualizações de progresso pendentes ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Aplique ou descarte a atualização de progresso pendente deste chat antes de criar outra memória.",
   "STMemoryBooks_Progress_PersistenceError": "Memória salva, mas não foi possível salvar sua atualização de progresso pendente nas configurações. Tente novamente antes de recarregar a página ou a atualização poderá ser perdida.",
-  "STMemoryBooks_Progress_Deferred": "Memória salva. Reabra “{{chat}}” para concluir a atualização do marcador da última mensagem processada.",
+  "STMemoryBooks_Progress_Deferred": "Memória salva. O progresso de “{{chat}}” está pendente. Atualizações seguras são aplicadas quando o chat está aberto e ocioso. Clique para revisar as atualizações pendentes.",
   "STMemoryBooks_Progress_Later": "Mais tarde",
   "STMemoryBooks_Progress_Processing": "Processando…",
   "STMemoryBooks_Progress_Done": "Concluído.",

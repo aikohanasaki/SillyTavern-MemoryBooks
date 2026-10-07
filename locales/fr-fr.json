@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "Le repère du dernier message traité indique quels messages sont déjà couverts par les mémoires enregistrées, pour que la prochaine mémoire commence au bon endroit et que les seuils automatiques comptent les nouveaux messages. Les mises à jour en attente sans conflit sont appliquées automatiquement lorsque leur chat est ouvert et qu’aucun traitement n’est en cours. Les mémoires enregistrées restent intactes pendant ce temps.",
+  "STMemoryBooks_Progress_Reopen": "Rouvrir le chat et mettre à jour le repère",
+  "STMemoryBooks_Progress_ReopenInfo": "Rouvrez ce chat pour mettre à jour son repère jusqu’au message {{target}}. Cela change le chat actif.",
   "STMemoryBooks_CombineClips_Open": "Combiner les clips",
   "STMemoryBooks_CombineClips_Select": "Sélectionnez au moins deux clips thématiques",
   "STMemoryBooks_CombineClips_NewTitle": "Titre du nouveau clip thématique",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "Mises à jour de progression en attente ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Appliquez ou abandonnez la mise à jour de progression en attente pour ce chat avant de créer une autre mémoire.",
   "STMemoryBooks_Progress_PersistenceError": "Mémoire enregistrée, mais sa mise à jour de progression en attente n’a pas pu être enregistrée dans les paramètres. Réessayez avant de recharger la page, sinon la mise à jour risque d’être perdue.",
-  "STMemoryBooks_Progress_Deferred": "Mémoire enregistrée. Rouvrez « {{chat}} » pour terminer la mise à jour du repère du dernier message traité.",
+  "STMemoryBooks_Progress_Deferred": "Mémoire enregistrée. La progression de « {{chat}} » est en attente. Les mises à jour sans conflit sont appliquées lorsque le chat est ouvert et qu’aucun traitement n’est en cours. Cliquez pour consulter les mises à jour en attente.",
   "STMemoryBooks_Progress_Later": "Plus tard",
   "STMemoryBooks_Progress_Processing": "Traitement en cours…",
   "STMemoryBooks_Progress_Done": "Terminé.",

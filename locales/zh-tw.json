@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "最後處理訊息標記記錄了哪些訊息已包含在儲存的記憶中，讓下一則記憶從正確的位置開始，並讓自動門檻只計算新訊息。當對應聊天已開啟且閒置時，可安全套用的待處理更新會自動套用。更新待處理期間，已儲存的記憶保持不變。",
+  "STMemoryBooks_Progress_Reopen": "重新開啟聊天並更新標記",
+  "STMemoryBooks_Progress_ReopenInfo": "重新開啟此聊天，將其標記更新至訊息 {{target}}。這會切換目前的聊天。",
   "STMemoryBooks_CombineClips_Open": "合併剪輯",
   "STMemoryBooks_CombineClips_Select": "選擇至少兩個主題剪輯",
   "STMemoryBooks_CombineClips_NewTitle": "新主題剪輯標題",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "待處理的進度更新（{{count}}）",
   "STMemoryBooks_Progress_Blocked": "建立另一條記憶之前，請先套用或捨棄此聊天待處理的進度更新。",
   "STMemoryBooks_Progress_PersistenceError": "記憶已儲存，但無法將待處理的進度更新儲存至設定。請在重新整理頁面前重試，否則更新可能遺失。",
-  "STMemoryBooks_Progress_Deferred": "記憶已儲存。請重新開啟「{{chat}}」，完成最後處理訊息標記的更新。",
+  "STMemoryBooks_Progress_Deferred": "記憶已儲存。「{{chat}}」的進度待更新。當聊天已開啟且閒置時，安全的更新會自動套用。點擊查看待處理的更新。",
   "STMemoryBooks_Progress_Later": "稍後",
   "STMemoryBooks_Progress_Processing": "處理中…",
   "STMemoryBooks_Progress_Done": "完成。",

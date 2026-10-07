@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "Die Markierung der zuletzt verarbeiteten Nachricht hält fest, welche Nachrichten bereits durch gespeicherte Erinnerungen abgedeckt sind. So beginnt die nächste Erinnerung an der richtigen Stelle und automatische Schwellenwerte zählen neue Nachrichten. Sichere ausstehende Aktualisierungen werden automatisch angewendet, sobald der zugehörige Chat geöffnet ist und keine Verarbeitung läuft. Gespeicherte Erinnerungen bleiben währenddessen erhalten.",
+  "STMemoryBooks_Progress_Reopen": "Chat erneut öffnen und Markierung aktualisieren",
+  "STMemoryBooks_Progress_ReopenInfo": "Öffne diesen Chat erneut, um seine Markierung bis Nachricht {{target}} zu aktualisieren. Dadurch wechselst du den aktiven Chat.",
   "STMemoryBooks_CombineClips_Open": "Clips zusammenführen",
   "STMemoryBooks_CombineClips_Select": "Mindestens zwei Themen-Clips auswählen",
   "STMemoryBooks_CombineClips_NewTitle": "Titel des neuen Themen-Clips",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "Ausstehende Fortschrittsaktualisierungen ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Wende die ausstehende Fortschrittsaktualisierung für diesen Chat an oder verwirf sie, bevor du eine weitere Erinnerung erstellst.",
   "STMemoryBooks_Progress_PersistenceError": "Erinnerung gespeichert, aber die ausstehende Fortschrittsaktualisierung konnte nicht in den Einstellungen gespeichert werden. Versuche es vor dem Neuladen erneut, sonst kann die Aktualisierung verloren gehen.",
-  "STMemoryBooks_Progress_Deferred": "Erinnerung gespeichert. Öffne „{{chat}}“ erneut, um die Markierung der zuletzt verarbeiteten Nachricht zu aktualisieren.",
+  "STMemoryBooks_Progress_Deferred": "Erinnerung gespeichert. Der Fortschritt für „{{chat}}“ ist noch nicht aktualisiert. Sichere Aktualisierungen werden angewendet, sobald der Chat geöffnet ist und keine Verarbeitung läuft. Klicke, um ausstehende Aktualisierungen anzusehen.",
   "STMemoryBooks_Progress_Later": "Später",
   "STMemoryBooks_Progress_Processing": "Wird verarbeitet…",
   "STMemoryBooks_Progress_Done": "Fertig.",

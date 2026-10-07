@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "마지막으로 처리된 메시지 표시는 저장된 메모리에 이미 포함된 메시지를 기록하여 다음 메모리가 올바른 위치에서 시작하고 자동 임계값이 새 메시지를 세도록 합니다. 안전하게 적용할 수 있는 대기 중인 업데이트는 해당 채팅이 열려 있고 처리 중이 아닐 때 자동으로 적용됩니다. 업데이트가 대기 중이어도 저장된 메모리는 그대로 유지됩니다.",
+  "STMemoryBooks_Progress_Reopen": "채팅을 다시 열고 표시 업데이트",
+  "STMemoryBooks_Progress_ReopenInfo": "이 채팅을 다시 열어 메시지 {{target}}까지 표시를 업데이트합니다. 활성 채팅이 전환됩니다.",
   "STMemoryBooks_CombineClips_Open": "클립 결합",
   "STMemoryBooks_CombineClips_Select": "주제별 클립을 두 개 이상 선택",
   "STMemoryBooks_CombineClips_NewTitle": "새 주제별 클립 제목",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "대기 중인 진행 상태 업데이트 ({{count}})",
   "STMemoryBooks_Progress_Blocked": "다른 메모리를 생성하기 전에 이 채팅의 대기 중인 진행 상태 업데이트를 적용하거나 삭제하세요.",
   "STMemoryBooks_Progress_PersistenceError": "메모리는 저장되었지만 대기 중인 진행 상태 업데이트를 설정에 저장하지 못했습니다. 새로고침 전에 다시 시도하세요. 업데이트가 손실될 수 있습니다.",
-  "STMemoryBooks_Progress_Deferred": "메모리가 저장되었습니다. “{{chat}}”을 다시 열어 마지막으로 처리된 메시지 표시 업데이트를 완료하세요.",
+  "STMemoryBooks_Progress_Deferred": "메모리가 저장되었습니다. “{{chat}}”의 진행 상태 업데이트가 대기 중입니다. 안전한 업데이트는 채팅이 열려 있고 처리 중이 아닐 때 적용됩니다. 클릭하여 대기 중인 업데이트를 확인하세요.",
   "STMemoryBooks_Progress_Later": "나중에",
   "STMemoryBooks_Progress_Processing": "처리 중…",
   "STMemoryBooks_Progress_Done": "완료.",

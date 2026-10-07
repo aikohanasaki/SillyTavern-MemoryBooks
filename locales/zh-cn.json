@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "最后处理消息标记记录了哪些消息已包含在保存的记忆中，让下一条记忆从正确的位置开始，并让自动阈值只计算新消息。当对应聊天已打开且空闲时，可安全应用的待处理更新会自动应用。更新待处理期间，已保存的记忆保持不变。",
+  "STMemoryBooks_Progress_Reopen": "重新打开聊天并更新标记",
+  "STMemoryBooks_Progress_ReopenInfo": "重新打开此聊天，将其标记更新至消息 {{target}}。这会切换当前聊天。",
   "STMemoryBooks_CombineClips_Open": "合并摘录",
   "STMemoryBooks_CombineClips_Select": "选择至少两个主题摘录",
   "STMemoryBooks_CombineClips_NewTitle": "新主题摘录标题",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "待处理的进度更新（{{count}}）",
   "STMemoryBooks_Progress_Blocked": "创建另一条记忆之前，请先应用或丢弃此聊天待处理的进度更新。",
   "STMemoryBooks_Progress_PersistenceError": "记忆已保存，但无法将待处理的进度更新保存到设置。请在刷新页面前重试，否则更新可能丢失。",
-  "STMemoryBooks_Progress_Deferred": "记忆已保存。请重新打开“{{chat}}”，完成最后处理消息标记的更新。",
+  "STMemoryBooks_Progress_Deferred": "记忆已保存。“{{chat}}”的进度待更新。当聊天已打开且空闲时，安全的更新会自动应用。点击查看待处理的更新。",
   "STMemoryBooks_Progress_Later": "稍后",
   "STMemoryBooks_Progress_Processing": "处理中…",
   "STMemoryBooks_Progress_Done": "完成。",

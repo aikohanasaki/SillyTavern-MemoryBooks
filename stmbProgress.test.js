@@ -99,13 +99,14 @@ function adapter(type = 'character') {
     return { state, api, origin, originalRef, defer, tick, deps, eventSource };
 }
 
-test('adapter defers without any chat save, prompts once on return, supports Later and manual reopen', async () => {
+test('adapter defers without any chat save, prompts once for changed messages, supports Later and manual reopen', async () => {
     const f = adapter();
     assert.equal((await f.defer()).status, 'pending');
     assert.equal(f.state.saved, 0);
     assert.deepEqual(f.state.requests, ['/api/settings/get']);
     assert.equal(f.api.guardPendingProgress(), false);
     f.state.ref = f.originalRef;
+    f.state.messages[0].mes = 'edited after memory creation';
     f.api.progressChatLoaded();
     f.api.progressChatLoaded();
     await f.tick(500);
@@ -119,9 +120,9 @@ test('adapter defers without any chat save, prompts once on return, supports Lat
     const popup = f.state.popups.at(-1);
     const apply = popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply');
     const saving = apply.onclick();
-    assert.equal(popup.content.children[0].textContent, 'Processing…');
+    assert.equal(popup.content.children[1].textContent, 'Processing…');
     await saving;
-    assert.equal(popup.content.children[0].textContent, 'Done.');
+    assert.equal(popup.content.children[1].textContent, 'Done.');
     assert.equal(f.api.hasPendingProgress(), false);
     assert.deepEqual(f.state.commands, ['/stmb-set-highest 0']);
     assert.equal(f.state.saved, 0);
@@ -143,7 +144,7 @@ test('settings timeout retains the pending entry and explains refresh loss', asy
     assert.ok(f.state.toasts.some(message => message.includes('before refreshing')));
 });
 
-test('load identity prevents capture during switching; other popups postpone the automatic prompt', async () => {
+test('load identity prevents capture during switching; other popups postpone automatic recovery', async () => {
     const f = adapter();
     await f.defer();
     assert.equal(f.api.captureProgressSource(), null);
@@ -154,8 +155,9 @@ test('load identity prevents capture during switching; other popups postpone the
     assert.equal(f.state.popups.length, 1);
     f.state.popups[0].open = false;
     await f.tick(500);
-    assert.equal(f.state.popups.length, 2);
-    await f.state.popups[1].close();
+    assert.equal(f.state.popups.length, 1);
+    assert.equal(f.api.hasPendingProgress(), false);
+    assert.equal(f.state.saved, 1);
 });
 
 test('manual reset still allows explicit Apply or discard', async () => {
@@ -189,7 +191,7 @@ test('group application waits for an existing save and runs the set-highest comm
     f.deps.isChatSaving = false;
     await f.tick(250);
     await applying;
-    assert.equal(popup.content.children[0].textContent, 'Done.');
+    assert.equal(popup.content.children[1].textContent, 'Done.');
     assert.deepEqual(f.state.commands, ['/stmb-set-highest 0']);
     assert.equal(f.state.requests.some(url => url.includes('/api/chats/')), false);
     await popup.close(); await showing;

@@ -1,4 +1,7 @@
 {
+  "STMemoryBooks_Progress_Explanation": "Penanda pesan terakhir yang diproses mencatat pesan mana yang sudah tercakup dalam memori tersimpan, agar memori berikutnya dimulai di tempat yang tepat dan ambang otomatis menghitung pesan baru. Pembaruan tertunda yang aman diterapkan otomatis saat obrolannya terbuka dan tidak sedang memproses. Memori tersimpan tetap utuh selama pembaruan tertunda.",
+  "STMemoryBooks_Progress_Reopen": "Buka kembali obrolan dan perbarui penanda",
+  "STMemoryBooks_Progress_ReopenInfo": "Buka kembali obrolan ini untuk memperbarui penandanya hingga pesan {{target}}. Ini akan mengganti obrolan aktif.",
   "STMemoryBooks_CombineClips_Open": "Gabungkan klip",
   "STMemoryBooks_CombineClips_Select": "Pilih dua atau lebih Klip Topikal",
   "STMemoryBooks_CombineClips_NewTitle": "Judul Klip Topikal baru",
@@ -26,7 +29,7 @@
   "STMemoryBooks_Progress_Title": "Pembaruan progres tertunda ({{count}})",
   "STMemoryBooks_Progress_Blocked": "Terapkan atau buang pembaruan progres tertunda untuk obrolan ini sebelum membuat memori lain.",
   "STMemoryBooks_Progress_PersistenceError": "Memori tersimpan, tetapi pembaruan progres tertundanya tidak dapat disimpan ke pengaturan. Coba lagi sebelum memuat ulang halaman agar pembaruan tidak hilang.",
-  "STMemoryBooks_Progress_Deferred": "Memori tersimpan. Buka kembali “{{chat}}” untuk menyelesaikan pembaruan penanda pesan terakhir yang diproses.",
+  "STMemoryBooks_Progress_Deferred": "Memori tersimpan. Progres untuk “{{chat}}” masih tertunda. Pembaruan yang aman diterapkan saat obrolan terbuka dan tidak sedang memproses. Klik untuk meninjau pembaruan tertunda.",
   "STMemoryBooks_Progress_Later": "Nanti",
   "STMemoryBooks_Progress_Processing": "Memproses…",
   "STMemoryBooks_Progress_Done": "Selesai.",
