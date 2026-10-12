@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.7 (October 12, 2026)
+- Combine Clip enhancements including format edits.
+
 ## v9.3.6 (October 7, 2026)
 - Refactor pending actions popup.
 - Fix narrator cast stamping bug.
