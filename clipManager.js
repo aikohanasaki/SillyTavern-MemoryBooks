@@ -44,10 +44,13 @@ import { stableHashString } from './clipReviewPolicy.js';
 import {
     areCombineSourcesCurrent,
     buildCombineClipsPrompt,
+    DEFAULT_COMBINE_CLIPS_PROMPT,
     isTopicalClipForCombination,
     snapshotCombineSource,
     unionClipKeywords,
+    validateCombineClipsPrompt,
 } from './combineClipsPolicy.js';
+import { DEFAULT_CLIP_FORMAT, getClipFormatKind, readFormattedClip, renderClipFormat, setClipFormat, validateClipFormat } from './clipFormatPolicy.js';
 
 export {
     DEFAULT_COMPACTION_PROMPT_TEMPLATE,
@@ -83,6 +86,112 @@ function tr(key, fallback, params = null) {
 function getTopicalClipEntrySettings() {
     const raw = extension_settings.STMemoryBooks?.moduleSettings?.topicalClipEntrySettings || {};
     return normalizeLorebookEntrySettings(raw, { position: 0, orderMode: 'auto', orderValue: 100, reverseStart: 9999 });
+}
+
+function getClipFormat(kind) {
+    const value = getModuleSettings()[kind === 'combined' ? 'combinedClipFormat' : 'topicalClipFormat'];
+    return typeof value === 'string' && value ? value : DEFAULT_CLIP_FORMAT;
+}
+
+function applyClipInsertion(entry, settings) {
+    if (!settings?.enabled) return;
+    entry.position = settings.position;
+    if (settings.position === 7) entry.outletName = settings.outletName;
+    else delete entry.outletName;
+    if (settings.orderMode === 'manual') entry.order = settings.orderValue;
+    if (settings.orderMode === 'reverse') entry.order = settings.reverseStart;
+}
+
+function readClipInsertionControls(dlg, prefix) {
+    const enabled = !!dlg.querySelector(`#${prefix}-entry-settings-enabled`)?.checked;
+    const position = Number(dlg.querySelector(`#${prefix}-entry-position`)?.value || 0);
+    const outletName = String(dlg.querySelector(`#${prefix}-entry-outlet-name`)?.value || '').trim();
+    if (enabled && position === 7 && !outletName) throw new Error(tr('STMemoryBooks_Clip_OutletNameRequired', 'Enter an Outlet Name.'));
+    return { ...normalizeLorebookEntrySettings({
+        ...getTopicalClipEntrySettings(), position, outletName,
+        orderMode: dlg.querySelector(`#${prefix}-entry-order-mode`)?.value || 'auto',
+        orderValue: readIntInput(dlg.querySelector(`#${prefix}-entry-order-value`), 100),
+    }, getTopicalClipEntrySettings()), enabled };
+}
+
+function setupClipInsertionControls(dlg, prefix) {
+    const settings = getTopicalClipEntrySettings();
+    const enabled = dlg.querySelector(`#${prefix}-entry-settings-enabled`);
+    const panel = dlg.querySelector(`#${prefix}-entry-settings`);
+    const position = dlg.querySelector(`#${prefix}-entry-position`);
+    const outlet = dlg.querySelector(`#${prefix}-entry-outlet-name-row`);
+    enabled.checked = !!getModuleSettings().topicalClipEntrySettings?.enabled;
+    position.value = String(settings.position);
+    dlg.querySelector(`#${prefix}-entry-outlet-name`).value = settings.outletName;
+    dlg.querySelector(`#${prefix}-entry-order-mode`).value = settings.orderMode;
+    dlg.querySelector(`#${prefix}-entry-order-value`).value = String(settings.orderValue);
+    const refresh = () => { panel.hidden = !enabled.checked; outlet.hidden = position.value !== '7'; };
+    enabled.addEventListener('change', refresh);
+    position.addEventListener('change', refresh);
+    refresh();
+}
+
+function buildClipInsertionControls(prefix) {
+    return `<div class="world_entry_form_control">
+        <label class="checkbox_label"><input id="${prefix}-entry-settings-enabled" type="checkbox" /> <span>${escapeHtml(tr('STMemoryBooks_TopicalClip_OverrideEntrySettings', 'Override insertion position and order'))}</span></label>
+        <div id="${prefix}-entry-settings" hidden>
+            <label><span>${escapeHtml(tr('STMemoryBooks_InsertionPosition', 'Insertion Position'))}</span><select id="${prefix}-entry-position" class="text_pole"><option value="0">${escapeHtml(tr('STMemoryBooks_CharUp', '↑Char'))}</option><option value="1">${escapeHtml(tr('STMemoryBooks_CharDown', '↓Char'))}</option><option value="5">${escapeHtml(tr('STMemoryBooks_EMUp', '↑EM'))}</option><option value="6">${escapeHtml(tr('STMemoryBooks_EMDown', '↓EM'))}</option><option value="2">${escapeHtml(tr('STMemoryBooks_ANUp', '↑AN'))}</option><option value="3">${escapeHtml(tr('STMemoryBooks_ANDown', '↓AN'))}</option><option value="7">${escapeHtml(tr('STMemoryBooks_Outlet', 'Outlet'))}</option></select></label>
+            <label id="${prefix}-entry-outlet-name-row" hidden><span>${escapeHtml(tr('STMemoryBooks_OutletName', 'Outlet Name'))}</span><input id="${prefix}-entry-outlet-name" class="text_pole" type="text" /></label>
+            <label><span>${escapeHtml(tr('STMemoryBooks_Order', 'Order'))}</span><select id="${prefix}-entry-order-mode" class="text_pole"><option value="auto">${escapeHtml(tr('STMemoryBooks_ClipReview_ModeAutomatic', 'Automatic'))}</option><option value="reverse">${escapeHtml(tr('STMemoryBooks_Reverse', 'Reverse'))}</option><option value="manual">${escapeHtml(tr('STMemoryBooks_Manual', 'Manual'))}</option></select></label>
+            <label><span>${escapeHtml(tr('STMemoryBooks_OrderValue', 'Order value'))}</span><input id="${prefix}-entry-order-value" type="number" class="text_pole" min="0" max="9999" /></label>
+        </div></div>`;
+}
+
+async function showClipTemplateEditor(kind) {
+    const isPrompt = kind === 'prompt';
+    const isCombined = kind === 'combined' || isPrompt;
+    const title = isPrompt
+        ? tr('STMemoryBooks_CombineClips_EditPrompt', 'Edit Combine Clips Prompt')
+        : isCombined ? tr('STMemoryBooks_CombineClips_EditFormat', 'Edit Combined Format')
+            : tr('STMemoryBooks_TopicalClip_EditFormat', 'Edit Topical Format');
+    const key = isPrompt ? 'combineClipsPromptTemplate' : isCombined ? 'combinedClipFormat' : 'topicalClipFormat';
+    const defaultValue = isPrompt ? DEFAULT_COMBINE_CLIPS_PROMPT : DEFAULT_CLIP_FORMAT;
+    const stored = getModuleSettings()[key];
+    const popup = new Popup(DOMPurify.sanitize(`
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(isPrompt
+            ? tr('STMemoryBooks_CombineClips_PromptHelp', 'Use {{SOURCE_CLIPS}} exactly once. {{TITLE}} is optional.')
+            : tr('STMemoryBooks_Clip_FormatHelp', 'Use {{CONTENT}} exactly once. {{TITLE}} is optional.'))}</p>
+        <textarea id="stmb-clip-template-text" class="text_pole textarea_compact" rows="14">${escapeHtml(stored || defaultValue)}</textarea>
+        ${isPrompt ? '' : `<label class="world_entry_form_control"><h4>${escapeHtml(tr('STMemoryBooks_Clip_FormatPreview', 'Preview'))}</h4><textarea id="stmb-clip-template-preview" class="text_pole stmb-clip-preview" rows="5" readonly></textarea></label>`}
+        <div class="buttons_block justifyCenter gap10px">
+            <button id="stmb-clip-template-save" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Clip_SaveTemplate', 'Save'))}</button>
+            <button id="stmb-clip-template-reset" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Compaction_ResetPrompt', 'Reset to Default'))}</button>
+            <button id="stmb-clip-template-cancel" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Cancel', 'Cancel'))}</button>
+        </div>`), POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: false, cancelButton: false });
+    markStmbPopup(popup);
+    const promise = popup.show();
+    const textarea = popup.dlg.querySelector('#stmb-clip-template-text');
+    const preview = popup.dlg.querySelector('#stmb-clip-template-preview');
+    const updatePreview = () => {
+        if (!preview) return;
+        try { preview.value = renderClipFormat(textarea.value,
+            tr('STMemoryBooks_TopicalClip_Title', 'Topical Clip'),
+            tr('STMemoryBooks_Clip_SelectedText', 'Selected text')); }
+        catch { preview.value = tr('STMemoryBooks_Clip_FormatRequired', 'The format must contain {{CONTENT}} exactly once.'); }
+    };
+    textarea.addEventListener('input', updatePreview);
+    updatePreview();
+    popup.dlg.querySelector('#stmb-clip-template-save').addEventListener('click', () => {
+        try {
+            const value = isPrompt ? validateCombineClipsPrompt(textarea.value) : validateClipFormat(textarea.value);
+            getModuleSettings()[key] = value === defaultValue ? '' : value;
+            saveSettingsDebounced();
+            popup.completeAffirmative();
+        } catch {
+            toastr.error(isPrompt
+                ? tr('STMemoryBooks_CombineClips_PromptRequired', 'The Combine Clips prompt must contain {{SOURCE_CLIPS}} exactly once.')
+                : tr('STMemoryBooks_Clip_FormatRequired', 'The format must contain {{CONTENT}} exactly once.'), 'STMemoryBooks');
+        }
+    });
+    popup.dlg.querySelector('#stmb-clip-template-reset').addEventListener('click', () => { textarea.value = defaultValue; updatePreview(); });
+    popup.dlg.querySelector('#stmb-clip-template-cancel').addEventListener('click', () => popup.completeCancelled());
+    await promise;
 }
 
 function populateCompactionPromptButton(popup) {
@@ -451,6 +560,8 @@ async function confirmMultipleWrapperConversion() {
 
 function buildUpdatedExistingContent(entry, bulletText, editedHeadline) {
     const headline = validateClipHeadline(editedHeadline ?? getClipHeadlineFromTitle(entry.comment || ''));
+    const formatted = readFormattedClip(entry);
+    if (formatted) return renderClipFormat(formatted.template, headline, `${formatted.body.trim()}\n\n${formatClipBullet(bulletText)}`.trim());
     const analysis = analyzeClipWrapper(entry.content || '', headline);
     if (analysis.type === 'valid') return appendBulletBeforeEndMarker(entry.content || '', headline, bulletText);
     if (analysis.type === 'multiple') return convertExistingContentToWrappedContent(stripWrapperMarkerLines(entry.content || ''), headline, bulletText);
@@ -462,6 +573,8 @@ function buildUpdatedExistingContent(entry, bulletText, editedHeadline) {
 }
 
 async function buildExistingContentForSave(entry, bulletText, headline) {
+    const formatted = readFormattedClip(entry);
+    if (formatted) return renderClipFormat(formatted.template, headline, `${formatted.body.trim()}\n\n${formatClipBullet(bulletText)}`.trim());
     const analysis = analyzeClipWrapper(entry.content || '', headline);
 
     if (analysis.type === 'valid') {
@@ -484,7 +597,7 @@ async function buildExistingContentForSave(entry, bulletText, headline) {
 }
 
 function buildClipModalHtml(selectedText, clipEntries) {
-    const entryOptions = clipEntries.map((entry) => {
+    const entryOptions = clipEntries.filter(entry => !entry.disable).map((entry) => {
         const title = String(entry.comment || '');
         return `<option value="${escapeHtml(title)}">${escapeHtml(getClipHeadlineFromTitle(title))}</option>`;
     }).join('');
@@ -496,13 +609,14 @@ function buildClipModalHtml(selectedText, clipEntries) {
                 <h4>${escapeHtml(tr('STMemoryBooks_Clip_SelectedText', 'Selected text'))}</h4>
                 <textarea id="stmb-clip-text" class="text_pole stmb-clip-textarea">${escapeHtml(selectedText)}</textarea>
             </label>
-            <label class="world_entry_form_control">
+            <div class="world_entry_form_control">
                 <h4>${escapeHtml(tr('STMemoryBooks_Clip_ExistingEntry', 'Existing clip entry'))}</h4>
+                <label class="checkbox_label"><input id="stmb-clip-show-disabled" type="checkbox" /> <span>${escapeHtml(tr('STMemoryBooks_Clip_ShowDisabled', 'Show disabled clips'))}</span></label>
                 <select id="stmb-clip-entry-select" class="text_pole">
                     ${entryOptions}
-                    <option value="${CREATE_NEW_VALUE}" ${clipEntries.length ? '' : 'selected'}>${escapeHtml(tr('STMemoryBooks_Clip_CreateNewEntry', 'Create new clip entry'))}</option>
+                    <option value="${CREATE_NEW_VALUE}" ${clipEntries.some(entry => !entry.disable) ? '' : 'selected'}>${escapeHtml(tr('STMemoryBooks_Clip_CreateNewEntry', 'Create new clip entry'))}</option>
                 </select>
-            </label>
+            </div>
             <label class="world_entry_form_control">
                 <h4>${escapeHtml(tr('STMemoryBooks_Clip_Headline', 'Entry title / section headline'))}</h4>
                 <input id="stmb-clip-headline" class="text_pole" type="text" />
@@ -538,6 +652,7 @@ function attachClipModalHandlers(popup, lorebookName, lorebookData, clipEntries)
     if (!dlg) return;
 
     const entrySelect = dlg.querySelector('#stmb-clip-entry-select');
+    const showDisabled = dlg.querySelector('#stmb-clip-show-disabled');
     const clipText = dlg.querySelector('#stmb-clip-text');
     const headlineInput = dlg.querySelector('#stmb-clip-headline');
     const keywordsRow = dlg.querySelector('#stmb-clip-keywords-row');
@@ -550,6 +665,16 @@ function attachClipModalHandlers(popup, lorebookName, lorebookData, clipEntries)
     const getMode = () => entrySelect?.value === CREATE_NEW_VALUE ? 'new' : 'existing';
     const getSelectedEntry = () => getEntryByTitle(lorebookData, entrySelect?.value || '');
     const getBulletText = () => clipText?.value || '';
+
+    showDisabled?.addEventListener('change', () => {
+        const selected = entrySelect.value;
+        entrySelect.innerHTML = clipEntries.filter(entry => showDisabled.checked || !entry.disable).map(entry =>
+            `<option value="${escapeHtml(entry.comment)}">${escapeHtml(getClipHeadlineFromTitle(entry.comment))}${entry.disable ? ` (${escapeHtml(tr('STMemoryBooks_CombineClips_Disabled', 'disabled'))})` : ''}</option>`,
+        ).join('') + `<option value="${CREATE_NEW_VALUE}">${escapeHtml(tr('STMemoryBooks_Clip_CreateNewEntry', 'Create new clip entry'))}</option>`;
+        entrySelect.value = Array.from(entrySelect.options).some(option => option.value === selected) ? selected : CREATE_NEW_VALUE;
+        syncHeadlineFromSelection();
+        refreshPreview();
+    });
 
     const syncHeadlineFromSelection = () => {
         if (!headlineInput) return;
@@ -667,8 +792,11 @@ async function saveExistingClip(lorebookName, lorebookData, title, bulletText, e
         return false;
     }
 
+    const originalFormat = readFormattedClip(entry);
     entry.comment = newTitle;
     entry.content = updatedContent;
+    if (originalFormat) setClipFormat(entry, originalFormat.template, headline);
+    else if (entry?.data?.extensions?.aikobots?.clip_format) delete entry.data.extensions.aikobots.clip_format;
     await saveLorebook(lorebookName, lorebookData);
     return true;
 }
@@ -1472,13 +1600,13 @@ function normalizeTopicalClipDraftBody(body, headline) {
     return stripWrapperMarkerLines(raw);
 }
 
-function createTopicalClipEntryContent(headline, body) {
+function createTopicalClipEntryContent(headline, body, template = DEFAULT_CLIP_FORMAT) {
     const cleanHeadline = validateClipHeadline(headline);
     const cleanBody = normalizeTopicalClipDraftBody(body, cleanHeadline);
     if (!cleanBody) {
         throw new Error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'));
     }
-    return `${makeClipStartMarker(cleanHeadline)}\n\n${cleanBody}\n\n${makeClipEndMarker(cleanHeadline)}`;
+    return renderClipFormat(template, cleanHeadline, cleanBody);
 }
 
 function getEntryStableId(entry) {
@@ -1602,6 +1730,8 @@ function formatSourceMessagesForPrompt(compiledScene) {
 }
 
 function extractClipInnerContent(entry) {
+    const formatted = readFormattedClip(entry);
+    if (formatted) return formatted.body.trim();
     const content = String(entry?.content || '');
     const headline = getClipHeadlineFromTitle(entry?.comment || '');
     const startMarker = makeClipStartMarker(headline);
@@ -1820,20 +1950,21 @@ async function saveTopicalClipDraft(context, draft, options = {}) {
                 staleError.code = 'TOPICAL_CLIP_TARGET_CHANGED';
                 throw staleError;
             }
+            if (!!target.disable !== !!context.targetDisabled) {
+                throw new Error(tr('STMemoryBooks_TopicalClip_TargetChanged', 'The selected Clip changed after draft generation.'));
+            }
 
             const headline = getClipHeadlineFromTitle(target.comment || makeTopicalClipHeadline(topic));
-            target.content = createTopicalClipEntryContent(headline, contentDraft);
+            const format = context.format || getClipFormat(getClipFormatKind(target));
+            target.content = createTopicalClipEntryContent(headline, contentDraft, format);
+            setClipFormat(target, format, headline);
             target.key = keywordsArray;
             target.keysecondary = Array.isArray(target.keysecondary) ? target.keysecondary : [];
             target.constant = false;
             target.vectorized = true;
             target.selective = true;
             target.disable = false;
-            if (entrySettings) {
-                target.position = entrySettings.position;
-                if (entrySettings.orderMode === 'manual') target.order = entrySettings.orderValue;
-                if (entrySettings.orderMode === 'reverse') target.order = entrySettings.reverseStart;
-            }
+            applyClipInsertion(target, entrySettings);
             setTopicalClipMetadata(target, createTopicalClipRunMetadata({
                 topic,
                 keywords: keywordsArray,
@@ -1858,15 +1989,18 @@ async function saveTopicalClipDraft(context, draft, options = {}) {
             throw new Error(tr('STMemoryBooks_Clip_ErrorCreateEntryFailed', 'Failed to create clip entry.'));
         }
         entry.comment = title;
-        entry.content = createTopicalClipEntryContent(headline, contentDraft);
+        const format = options.forceCreateNew ? getClipFormat('topical') : context.format || getClipFormat('topical');
+        entry.content = createTopicalClipEntryContent(headline, contentDraft, format);
+        setClipFormat(entry, format, headline);
         entry.key = keywordsArray;
         entry.keysecondary = Array.isArray(entry.keysecondary) ? entry.keysecondary : [];
         entry.constant = false;
         entry.vectorized = true;
         entry.selective = true;
         entry.disable = false;
-        entry.position = entrySettings?.position ?? (typeof entry.position === 'number' ? entry.position : 0);
-        entry.order = entrySettings?.orderMode === 'manual' ? entrySettings.orderValue : entrySettings?.orderMode === 'reverse' ? entrySettings.reverseStart : (typeof entry.order === 'number' ? entry.order : 100);
+        entry.position = typeof entry.position === 'number' ? entry.position : 0;
+        entry.order = typeof entry.order === 'number' ? entry.order : 100;
+        applyClipInsertion(entry, entrySettings);
         setTopicalClipMetadata(entry, createTopicalClipRunMetadata({
             topic,
             keywords: keywordsArray,
@@ -1886,6 +2020,7 @@ export async function applyClipReviewSuggestion(lorebookName, candidate, options
         const lorebookData = await loadWorldInfo(lorebookName);
         const entry = findEntryByStableId(lorebookData, candidate?.uid);
         if (!entry) throw new Error(tr('STMemoryBooks_ClipReview_TargetMissing', 'The suggested Clip no longer exists.'));
+        if (entry.disable) throw new Error(tr('STMemoryBooks_ClipReview_TargetDisabled', 'This Clip is disabled. Run Memory Assistance again after enabling it.'));
         if (!isClipEntryTitle(entry.comment || '')) {
             throw new Error(tr('STMemoryBooks_ClipReview_TargetNotClip', 'The suggestion target is no longer an STMB Clip.'));
         }
@@ -1911,7 +2046,9 @@ export async function applyClipReviewSuggestion(lorebookName, candidate, options
             entry.content = content;
         } else {
             const headline = getClipHeadlineFromTitle(entry.comment || '');
-            entry.content = createTopicalClipEntryContent(headline, candidate.proposedContent);
+            const format = getClipFormat(getClipFormatKind(entry));
+            entry.content = createTopicalClipEntryContent(headline, candidate.proposedContent, format);
+            setClipFormat(entry, format, headline);
             const prior = getTopicalClipMetadata(entry) || {};
             setTopicalClipMetadata(entry, {
                 ...prior,
@@ -1946,7 +2083,7 @@ function buildTopicalClipTargetOptions(entries) {
         const label = keys.length
             ? `${entry.comment || ''} (${keys.join(', ')})`
             : String(entry.comment || '');
-        return `<option value="${escapeHtml(uid || '')}">${escapeHtml(label)}</option>`;
+        return `<option value="${escapeHtml(uid || '')}">${escapeHtml(label)}${entry.disable ? ` (${escapeHtml(tr('STMemoryBooks_CombineClips_Disabled', 'disabled'))})` : ''}</option>`;
     }).join('');
 }
 
@@ -1964,9 +2101,9 @@ function buildTopicalSourceMemoryOptions(entries, selectedIds = null) {
     }).join('');
 }
 
-function getTopicalClipTargetEntries(lorebookData) {
+function getTopicalClipTargetEntries(lorebookData, showDisabled = false) {
     return Object.values(lorebookData?.entries || {})
-        .filter(entry => isClipEntryTitle(entry?.comment || ''))
+        .filter(entry => isClipEntryTitle(entry?.comment || '') && (showDisabled || !entry.disable))
         .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
 }
 
@@ -2003,8 +2140,10 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
             </label>
             <div id="stmb-topical-clip-target-row" class="world_entry_form_control" hidden>
                 <h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_TargetEntry', 'Entry to update'))}</h4>
+                <label class="checkbox_label"><input id="stmb-topical-clip-show-disabled" type="checkbox" /> <span>${escapeHtml(tr('STMemoryBooks_Clip_ShowDisabled', 'Show disabled clips'))}</span></label>
                 <select id="stmb-topical-clip-target-select" class="text_pole"></select>
                 <small id="stmb-topical-clip-metadata-message" class="opacity70p"></small>
+                <small class="opacity70p">${escapeHtml(tr('STMemoryBooks_TopicalClip_DisabledTargetHelp', 'Updating a disabled clip enables it when saved.'))}</small>
             </div>
             <div id="stmb-topical-clip-rebuild-row" class="world_entry_form_control" hidden>
                 <label class="checkbox_label">
@@ -2053,16 +2192,10 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
             ${buildCompactionProfileControl('stmb-topical-clip-profile-select', {
                 label: tr('STMemoryBooks_TopicalClip_Profile', 'Generation Profile'),
             })}
-            <div class="world_entry_form_control">
-                <label class="checkbox_label"><input id="stmb-topical-clip-entry-settings-enabled" type="checkbox" /> <span>${escapeHtml(tr('STMemoryBooks_TopicalClip_OverrideEntrySettings', 'Override insertion position and order'))}</span></label>
-                <div id="stmb-topical-clip-entry-settings" hidden>
-                    <label><span>${escapeHtml(tr('STMemoryBooks_InsertionPosition', 'Insertion Position'))}</span><select id="stmb-topical-clip-entry-position" class="text_pole"><option value="0">${escapeHtml(tr('STMemoryBooks_CharUp', '↑Char'))}</option><option value="1">${escapeHtml(tr('STMemoryBooks_CharDown', '↓Char'))}</option><option value="5">${escapeHtml(tr('STMemoryBooks_EMUp', '↑EM'))}</option><option value="6">${escapeHtml(tr('STMemoryBooks_EMDown', '↓EM'))}</option><option value="2">${escapeHtml(tr('STMemoryBooks_ANUp', '↑AN'))}</option><option value="3">${escapeHtml(tr('STMemoryBooks_ANDown', '↓AN'))}</option><option value="7">${escapeHtml(tr('STMemoryBooks_Outlet', 'Outlet'))}</option></select></label>
-                    <label><span>${escapeHtml(tr('STMemoryBooks_Order', 'Order'))}</span><select id="stmb-topical-clip-entry-order-mode" class="text_pole"><option value="auto">${escapeHtml(tr('STMemoryBooks_ClipReview_ModeAutomatic', 'Automatic'))}</option><option value="reverse">${escapeHtml(tr('STMemoryBooks_Reverse', 'Reverse'))}</option><option value="manual">${escapeHtml(tr('STMemoryBooks_Manual', 'Manual'))}</option></select></label>
-                    <label><span>${escapeHtml(tr('STMemoryBooks_OrderValue', 'Order value'))}</span><input id="stmb-topical-clip-entry-order-value" type="number" class="text_pole" min="0" max="9999" /></label>
-                </div>
-            </div>
+            ${buildClipInsertionControls('stmb-topical-clip')}
             <div class="buttons_block justifyCenter gap10px whitespacenowrap">
                 <button id="stmb-topical-clip-edit-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_EditPrompt', 'Edit Topical Clip Prompt'))}</button>
+                <button id="stmb-topical-clip-edit-format" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_EditFormat', 'Edit Topical Format'))}</button>
                 <button id="stmb-combine-clips-open" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_CombineClips_Open', 'Combine Clips'))}</button>
             </div>
             <div id="stmb-topical-clip-diagnostics" class="info_block info-block"></div>
@@ -2150,19 +2283,9 @@ export async function showTopicalClipPopup(options = {}) {
     const diagnostics = dlg?.querySelector('#stmb-topical-clip-diagnostics');
     const draftTextarea = dlg?.querySelector('#stmb-topical-clip-draft');
     const saveButton = dlg?.querySelector('#stmb-topical-clip-save');
-    const entrySettingsEnabled = dlg?.querySelector('#stmb-topical-clip-entry-settings-enabled');
-    const entrySettingsPanel = dlg?.querySelector('#stmb-topical-clip-entry-settings');
-    const entryPosition = dlg?.querySelector('#stmb-topical-clip-entry-position');
-    const entryOrderMode = dlg?.querySelector('#stmb-topical-clip-entry-order-mode');
-    const entryOrderValue = dlg?.querySelector('#stmb-topical-clip-entry-order-value');
-    const storedEntrySettings = getTopicalClipEntrySettings();
-    entrySettingsEnabled.checked = !!extension_settings.STMemoryBooks?.moduleSettings?.topicalClipEntrySettings?.enabled;
-    entryPosition.value = String(storedEntrySettings.position);
-    entryOrderMode.value = storedEntrySettings.orderMode;
-    entryOrderValue.value = String(storedEntrySettings.orderValue);
-    const refreshEntrySettings = () => { entrySettingsPanel.hidden = !entrySettingsEnabled.checked; };
-    entrySettingsEnabled.addEventListener('change', refreshEntrySettings);
-    refreshEntrySettings();
+    setupClipInsertionControls(dlg, 'stmb-topical-clip');
+    dlg?.querySelector('#stmb-topical-clip-edit-format')?.addEventListener('click', () => { void showClipTemplateEditor('topical'); });
+    const showDisabledInput = dlg?.querySelector('#stmb-topical-clip-show-disabled');
     const generateButton = dlg?.querySelector('#stmb-topical-clip-generate');
     dlg?.querySelector('#stmb-combine-clips-open')?.addEventListener('click', () => {
         void showCombineClipsPopup({ lorebookName: currentLorebookName });
@@ -2208,6 +2331,9 @@ export async function showTopicalClipPopup(options = {}) {
         if (draftTextarea) draftTextarea.value = '';
         if (saveButton) saveButton.disabled = true;
     };
+    dlg.querySelector('#stmb-topical-clip-entry-settings')?.addEventListener('change', clearDraft);
+    dlg.querySelector('#stmb-topical-clip-entry-settings')?.addEventListener('input', clearDraft);
+    dlg.querySelector('#stmb-topical-clip-entry-settings-enabled')?.addEventListener('change', clearDraft);
     const renderSourcePicker = (preserveSelection = true) => {
         if (!sourceList) return;
         const selectedIds = preserveSelection ? getSelectedSourceIds() : null;
@@ -2257,7 +2383,7 @@ export async function showTopicalClipPopup(options = {}) {
         clearDraft();
     };
     const renderTargets = (preserveSourceSelection = true) => {
-        currentTargetEntries = getTopicalClipTargetEntries(currentLorebookData);
+        currentTargetEntries = getTopicalClipTargetEntries(currentLorebookData, showDisabledInput.checked);
         if (targetSelect) {
             targetSelect.innerHTML = [
                 '<option></option>',
@@ -2294,6 +2420,7 @@ export async function showTopicalClipPopup(options = {}) {
     };
 
     modeSelect?.addEventListener('change', renderMode);
+    showDisabledInput?.addEventListener('change', () => { renderTargets(); clearDraft(); });
     addCompactionSelectChangeListener(lorebookSelect, event => {
         void loadSelectedLorebook(event.target.value || '');
     });
@@ -2495,19 +2622,13 @@ export async function showTopicalClipPopup(options = {}) {
         generateButton.textContent = tr('STMemoryBooks_Jobs_Generating', 'Generating');
         if (saveButton) saveButton.disabled = true;
         try {
+            const selectedEntrySettings = readClipInsertionControls(dlg, 'stmb-topical-clip');
+            const selectedFormat = getClipFormat(mode === 'update' ? getClipFormatKind(target) : 'topical');
             const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-topical-clip-profile-select');
             setCompactionProfileIndex(profileIndex);
             const draft = await requestTopicalClipDraft(prompt, profileIndex);
             if (requestedRevision !== draftRevision || (messageMode.value === 'selection'
                 && !validateChatSelection(selectedMessages, chat, getStmbChatKey(getCurrentStmbChatRef())))) return;
-            const selectedEntrySettings = {
-                ...normalizeLorebookEntrySettings({
-                ...getTopicalClipEntrySettings(), enabled: entrySettingsEnabled.checked,
-                position: readIntInput(entryPosition, 0), orderMode: entryOrderMode.value,
-                orderValue: readIntInput(entryOrderValue, 100),
-                }, getTopicalClipEntrySettings()),
-                enabled: entrySettingsEnabled.checked,
-            };
             extension_settings.STMemoryBooks.moduleSettings.topicalClipEntrySettings = selectedEntrySettings;
             saveSettingsDebounced();
             const draftHeadline = mode === 'update'
@@ -2524,7 +2645,9 @@ export async function showTopicalClipPopup(options = {}) {
                 keywords,
                 targetUid: target ? getEntryStableId(target) : null,
                 targetContentHash: target ? stableHashString(String(target.content || '')) : null,
+                targetDisabled: !!target?.disable,
                 entrySettings: selectedEntrySettings,
+                format: selectedFormat,
                 sourceSnapshot: includeMemories
                     ? snapshotTopicalSourceEntries(allEligibleSources)
                     : (getTopicalClipMetadata(target)?.last_source_snapshot || []),
@@ -2604,12 +2727,13 @@ async function saveCombinedClips(context, draft, disableOriginals) {
         }
         const title = makeClipEntryTitle(context.headline);
         if (getClipEntryByFinalTitle(lorebook, title)) throw new Error(getTopicalDuplicateCreateMessage());
-        const content = createTopicalClipEntryContent(context.headline, draft);
+        const content = createTopicalClipEntryContent(context.headline, draft, context.format);
         const sources = context.sources.map(source => entries.find(entry => getEntryStableId(entry) === source.uid));
         const entry = createWorldInfoEntry(context.lorebookName, lorebook);
         if (!entry) throw new Error(tr('STMemoryBooks_Clip_ErrorCreateEntryFailed', 'Failed to create clip entry.'));
         entry.comment = title;
         entry.content = content;
+        setClipFormat(entry, context.format, context.headline);
         entry.key = [...context.keywords];
         entry.keysecondary = [];
         entry.constant = false;
@@ -2618,6 +2742,7 @@ async function saveCombinedClips(context, draft, disableOriginals) {
         entry.disable = false;
         entry.position = typeof entry.position === 'number' ? entry.position : 0;
         entry.order = typeof entry.order === 'number' ? entry.order : 100;
+        applyClipInsertion(entry, context.entrySettings);
         setTopicalClipMetadata(entry, createTopicalClipRunMetadata({
             topic: context.headline,
             keywords: context.keywords,
@@ -2649,12 +2774,18 @@ export async function showCombineClipsPopup(options = {}) {
         <label class="world_entry_form_control"><h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_SourceMemoryBook', 'Source Memory Book'))}</h4>
             <select id="stmb-combine-lorebook" class="text_pole">${lorebookOptions}</select></label>
         <div class="world_entry_form_control"><h4>${escapeHtml(tr('STMemoryBooks_CombineClips_Select', 'Select two or more Topical Clips'))}</h4>
+            <label class="checkbox_label"><input id="stmb-combine-show-disabled" type="checkbox" /> <span>${escapeHtml(tr('STMemoryBooks_Clip_ShowDisabled', 'Show disabled clips'))}</span></label>
             <div id="stmb-combine-sources" style="max-height:300px; overflow-y:auto; border:1px solid var(--SmartHover2); padding:6px"></div></div>
         <label class="world_entry_form_control"><h4>${escapeHtml(tr('STMemoryBooks_CombineClips_NewTitle', 'New Topical Clip title'))}</h4>
             <input id="stmb-combine-title" class="text_pole" type="text" /></label>
         <div class="world_entry_form_control"><h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Keywords', 'Keywords'))}</h4>
             <div id="stmb-combine-keywords" class="opacity70p"></div></div>
         ${buildCompactionProfileControl('stmb-combine-profile', { label: tr('STMemoryBooks_TopicalClip_Profile', 'Generation Profile') })}
+        ${buildClipInsertionControls('stmb-combine')}
+        <div class="buttons_block justifyCenter gap10px">
+            <button id="stmb-combine-edit-prompt" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_CombineClips_EditPrompt', 'Edit Combine Clips Prompt'))}</button>
+            <button id="stmb-combine-edit-format" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_CombineClips_EditFormat', 'Edit Combined Format'))}</button>
+        </div>
         <div class="buttons_block justifyCenter gap10px"><button id="stmb-combine-generate" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_TopicalClip_GenerateDraft', 'Generate Draft'))}</button></div>
         <label class="world_entry_form_control"><h4>${escapeHtml(tr('STMemoryBooks_TopicalClip_Draft', 'Generated draft'))}</h4>
             <textarea id="stmb-combine-draft" class="text_pole stmb-clip-preview" rows="14"></textarea></label>
@@ -2676,6 +2807,10 @@ export async function showCombineClipsPopup(options = {}) {
     const generateButton = dlg.querySelector('#stmb-combine-generate');
     const saveButton = dlg.querySelector('#stmb-combine-save');
     const disableInput = dlg.querySelector('#stmb-combine-disable');
+    const showDisabledInput = dlg.querySelector('#stmb-combine-show-disabled');
+    setupClipInsertionControls(dlg, 'stmb-combine');
+    dlg.querySelector('#stmb-combine-edit-prompt').addEventListener('click', () => { void showClipTemplateEditor('prompt'); });
+    dlg.querySelector('#stmb-combine-edit-format').addEventListener('click', () => { void showClipTemplateEditor('combined'); });
     let entries = [];
     let context = null;
     let revision = 0;
@@ -2687,12 +2822,22 @@ export async function showCombineClipsPopup(options = {}) {
         draftInput.value = '';
         saveButton.disabled = true;
     };
+    dlg.querySelector('#stmb-combine-entry-settings')?.addEventListener('change', clearDraft);
+    dlg.querySelector('#stmb-combine-entry-settings')?.addEventListener('input', clearDraft);
+    dlg.querySelector('#stmb-combine-entry-settings-enabled')?.addEventListener('change', clearDraft);
     const selectedEntries = () => {
         const ids = new Set(Array.from(sourceList.querySelectorAll('input:checked'), input => input.value));
         return entries.filter(entry => ids.has(getEntryStableId(entry)));
     };
     const updateKeywords = () => {
         keywordsView.textContent = unionClipKeywords(selectedEntries()).join(', ');
+    };
+    const renderSources = () => {
+        sourceList.innerHTML = entries.filter(entry => showDisabledInput.checked || !entry.disable).map(entry =>
+            `<label class="flex-container flexGap10" style="align-items:center; margin:2px 0"><input type="checkbox" value="${escapeHtml(getEntryStableId(entry))}" />` +
+            `<span>${escapeHtml(entry.comment)}${entry.disable ? ` (${escapeHtml(tr('STMemoryBooks_CombineClips_Disabled', 'disabled'))})` : ''}</span></label>`,
+        ).join('') || escapeHtml(tr('STMemoryBooks_CombineClips_None', 'No Topical Clips found in this Memory Book.'));
+        updateKeywords();
     };
     const loadSources = async () => {
         const requestedLoad = ++loadRevision;
@@ -2709,15 +2854,13 @@ export async function showCombineClipsPopup(options = {}) {
             entries = Object.values(loaded.entries)
                 .filter(entry => getEntryStableId(entry) !== null && isTopicalClipForCombination(entry))
                 .sort((a, b) => String(a.comment).localeCompare(String(b.comment)));
-            sourceList.innerHTML = entries.length ? entries.map(entry =>
-                `<label class="flex-container flexGap10" style="align-items:center; margin:2px 0"><input type="checkbox" value="${escapeHtml(getEntryStableId(entry))}" />` +
-                `<span>${escapeHtml(entry.comment)}${entry.disable ? ` (${escapeHtml(tr('STMemoryBooks_CombineClips_Disabled', 'disabled'))})` : ''}</span></label>`,
-            ).join('') : escapeHtml(tr('STMemoryBooks_CombineClips_None', 'No Topical Clips found in this Memory Book.'));
+            renderSources();
         } catch (error) {
             toastr.error(error?.message || tr('STMemoryBooks_Error_FailedToLoadLorebook', 'Failed to load lorebook'), 'STMemoryBooks');
         }
     };
     addCompactionSelectChangeListener(lorebookSelect, () => { void loadSources(); });
+    showDisabledInput.addEventListener('change', () => { clearDraft(); renderSources(); });
     sourceList.addEventListener('change', () => { clearDraft(); updateKeywords(); });
     titleInput.addEventListener('input', clearDraft);
     generateButton.addEventListener('click', async () => {
@@ -2740,7 +2883,9 @@ export async function showCombineClipsPopup(options = {}) {
             if (!areCombineSourcesCurrent(selected.map(snapshotCombineSource), Object.values(fresh?.entries || {}))) {
                 throw new Error(tr('STMemoryBooks_CombineClips_SourcesChanged', 'A selected clip changed. Generate the draft again.'));
             }
-            const prompt = buildCombineClipsPrompt(selected, headline);
+            const entrySettings = readClipInsertionControls(dlg, 'stmb-combine');
+            const selectedFormat = getClipFormat('combined');
+            const prompt = buildCombineClipsPrompt(selected, headline, getModuleSettings().combineClipsPromptTemplate || DEFAULT_COMBINE_CLIPS_PROMPT);
             const threshold = Number.parseInt(extension_settings?.STMemoryBooks?.moduleSettings?.tokenWarningThreshold, 10) || 30000;
             if (estimateTokens(prompt) > threshold && !await confirmTopicalClipTokenException({
                 estimatedTokens: estimateTokens(prompt), threshold, eligibleCount: entries.length, usedCount: selected.length,
@@ -2751,7 +2896,9 @@ export async function showCombineClipsPopup(options = {}) {
             if (requestedRevision !== revision || lorebookSelect.value !== name) return;
             const body = normalizeTopicalClipDraftBody(draft, headline);
             if (!body) throw new Error(tr('STMemoryBooks_TopicalClip_EmptyDraft', 'Generated draft is empty.'));
-            context = { lorebookName: name, headline, keywords: unionClipKeywords(selected), sources: selected.map(snapshotCombineSource) };
+            getModuleSettings().topicalClipEntrySettings = entrySettings;
+            saveSettingsDebounced();
+            context = { lorebookName: name, headline, keywords: unionClipKeywords(selected), sources: selected.map(snapshotCombineSource), entrySettings, format: selectedFormat };
             draftInput.value = body;
             saveButton.disabled = false;
         } catch (error) {

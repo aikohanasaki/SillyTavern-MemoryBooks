@@ -1104,11 +1104,17 @@ It does not use:
 
 The generated draft is never saved automatically.
 
+**Edit Topical Format** controls the saved entry's outer text. Its default uses the existing `=== title ===` and `=== END title ===` borders. The format must contain `{{CONTENT}}` exactly once; `{{TITLE}}` is optional. For example, `## {{TITLE}}` followed by `{{CONTENT}}` saves a Markdown heading, while `{{CONTENT}}` alone saves the body without borders. The preview shows the result. Reset restores the built-in format. A new preference affects subsequent saves, not existing entries. Ordinary Clip appends preserve the format recorded on an entry; Topical Clip updates use the current preference for that clip type.
+
+The insertion override lets you select a position and order for this save. Selecting **Outlet** requires an **Outlet Name**. An update target or ordinary Clip target that is disabled is hidden by default; **Show disabled clips** reveals it. Saving an update to a disabled Topical Clip enables it.
+
 ### Combine existing Topical Clips
 
-In the **Topical Clip** window, click **Combine Clips**. Select a Memory Book, choose at least two Topical Clips (including disabled clips if needed), and enter the new clip's title. Only Topical Clips created by STMB appear; ordinary Clips are excluded. The new clip's activation keywords are the union of the selected clips' primary keywords, without duplicates. Secondary keyword conditions are not copied.
+In the **Topical Clip** window, click **Combine Clips**. Select a Memory Book, choose at least two Topical Clips (use **Show disabled clips** to include disabled clips), and enter the new clip's title. Only Topical Clips created by STMB appear; ordinary Clips are excluded. The new clip's activation keywords are the union of the selected clips' primary keywords, without duplicates. Secondary keyword conditions are not copied.
 
 Choose a generation profile and click **Generate Draft**. The AI receives each selected clip's title and full content and is asked to consolidate supported facts, remove repetition, and retain unresolved conflicts. Review and edit the draft before saving. Changing the selected sources, title, or Memory Book clears the draft. If a source changes before saving, generate a fresh draft.
+
+**Edit Combine Clips Prompt** changes the AI consolidation instructions. Its template requires `{{SOURCE_CLIPS}}` exactly once and can use `{{TITLE}}`. **Edit Combined Format** independently controls how the saved result is wrapped, using the same `{{CONTENT}}` and optional `{{TITLE}}` placeholders as Topical Format. Both editors offer Reset to Default. The insertion override includes position, Outlet Name when Outlet is chosen, and order.
 
 **Disable original clips after saving** is checked by default. Uncheck it to preserve their current activation states. Saving creates the new enabled Topical Clip and, when checked, disables the originals in the same Memory Book update. The originals are never deleted. The combined clip records its source IDs separately from normal Topical Clip Memory-source history.
 
@@ -1240,7 +1246,7 @@ A selected set replaces individually enabled automatic prompts for that chat. It
 
 **Memory Assistance** is a reserved Side Prompt with five independent modes. It runs after successfully saved Memories regardless of ordinary Side Prompt enablement or the selected Side Prompt Set. It does not run during Memory regeneration.
 
-Memory Assistance compares the raw processed scene with ordinary and Topical Clips in each Memory Book that received the Memory. It sends each reviewed Clip's title/topic, keywords, current content, stable ID, and type to the AI.
+Memory Assistance compares the raw processed scene with enabled ordinary and Topical Clips in each Memory Book that received the Memory. It sends each reviewed Clip's title/topic, keywords, current content, stable ID, and type to the AI. Disabled Clips are excluded from queries and hidden from pending suggestions without deleting saved reports.
 
 When the job queue is available, each target Memory Book receives a separate **Memory Assistance** job after the Memory is saved. A request, response-validation, report-save, or automatic-application error marks that job **Failed** and exposes the error in the queue. The saved Memory remains **Completed**, and retrying Memory Assistance does not regenerate the Memory.
 
@@ -2240,6 +2246,9 @@ Open **Settings → Topical Clip** or **Settings → Compaction** in the main pa
 |---|---|---|---|
 | **Generation Profile / Compaction Profile** | **Topical Clip → Generation Profile**, or **Compaction → Compaction Profile** | Global shared default | Selects the STMB profile used for Topical Clip generation and Compaction. Changing it in either interface changes the shared selection used by both workflows. |
 | **Topical Clip Prompt** | **Topical Clip → Edit Topical Clip Prompt** | Global | Saves a custom prompt template for Topical Clip generation. **Reset to Default** returns to the current built-in prompt. Required source macros are validated before save or generation. |
+| **Topical Format** | **Topical Clip → Edit Topical Format** | Global | Formats newly saved Topical Clips and later updates. Requires `{{CONTENT}}`; `{{TITLE}}` is optional. |
+| **Combined Format** | **Combine Clips → Edit Combined Format** | Global | Formats newly saved combined clips and later updates, separately from Topical Format. |
+| **Combine Clips Prompt** | **Combine Clips → Edit Combine Clips Prompt** | Global | Defines combination instructions. Requires `{{SOURCE_CLIPS}}`; `{{TITLE}}` is optional. |
 | **Compaction Prompt** | **Compaction → Edit Compaction Prompt** | Global | Saves a custom prompt template for shortening existing Memory, Clip, and Side Prompt entries. **Reset to Default** returns to the current built-in prompt. `{{ENTRY_CONTENT}}` is required. |
 
 The Memory Book, topic, keywords, source inclusion, source selection, message range, draft, and entry selected for Compaction are per-run workflow choices, not persistent settings.

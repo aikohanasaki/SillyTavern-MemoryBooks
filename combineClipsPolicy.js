@@ -13,6 +13,14 @@ Analyze and consolidate them into a single coherent informational entry.
 - Do not add facts that are not supported by the source snippets.
 - Condense wording aggressively for token efficiency while preserving unique facts, qualifications, and meaningful distinctions.`;
 
+export const DEFAULT_COMBINE_CLIPS_PROMPT = `${COMBINE_CLIPS_INSTRUCTION}\n\nNew entry title: {{TITLE}}\n\n{{SOURCE_CLIPS}}\n\nReturn only the consolidated entry body, without a title or wrapper markers.`;
+
+export function validateCombineClipsPrompt(template) {
+    const value = String(template ?? '');
+    if ((value.match(/{{SOURCE_CLIPS}}/g) || []).length !== 1) throw new Error('The Combine Clips prompt must contain {{SOURCE_CLIPS}} exactly once.');
+    return value;
+}
+
 export function isTopicalClipForCombination(entry) {
     return typeof entry?.comment === 'string'
         && entry.comment.trimEnd().endsWith('[STMB Clip]')
@@ -39,6 +47,7 @@ export function snapshotCombineSource(entry) {
         title: entry?.comment,
         content: entry?.content,
         keywords: Array.isArray(entry?.key) ? [...entry.key] : [],
+        disabled: !!entry?.disable,
         topical: isTopicalClipForCombination(entry),
     };
 }
@@ -50,9 +59,10 @@ export function areCombineSourcesCurrent(snapshots, entries) {
     });
 }
 
-export function buildCombineClipsPrompt(entries, title) {
+export function buildCombineClipsPrompt(entries, title, template = DEFAULT_COMBINE_CLIPS_PROMPT) {
     if (entries.length < 2) throw new Error('Select at least two Topical Clips.');
-    return `${COMBINE_CLIPS_INSTRUCTION}\n\nNew entry title: ${title}\n\n${entries.map((entry, index) =>
+    const sources = entries.map((entry, index) =>
         `=== SNIPPET ${index + 1}: ${entry.comment} ===\n${entry.content}\n=== END SNIPPET ${index + 1} ===`,
-    ).join('\n\n')}\n\nReturn only the consolidated entry body, without a title or wrapper markers.`;
+    ).join('\n\n');
+    return validateCombineClipsPrompt(template).replace(/{{(TITLE|SOURCE_CLIPS)}}/g, (_, key) => key === 'TITLE' ? title : sources);
 }

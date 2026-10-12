@@ -53,7 +53,7 @@ function tr(key, fallback, params = null) {
 
 function getClipEntries(lorebookData) {
     return Object.values(lorebookData?.entries || {})
-        .filter(entry => isClipEntryTitle(entry?.comment || ''))
+        .filter(entry => isClipEntryTitle(entry?.comment || '') && !entry.disable)
         .sort((a, b) => String(a.comment || '').localeCompare(String(b.comment || '')));
 }
 
@@ -659,7 +659,7 @@ export async function showClipReviewSuggestionsPopup(options = {}) {
     const render = () => {
         const container = popup.dlg?.querySelector('#stmb-clip-review-suggestions');
         if (!container) return;
-        const candidates = metadata?.candidates || [];
+        const candidates = (metadata?.candidates || []).filter(candidate => Object.values(lorebookData?.entries || {}).some(entry => String(entry?.uid ?? entry?.id ?? '') === String(candidate.uid) && !entry.disable));
         const candidateHtml = candidates.length ? candidates.map(candidate => {
             const currentEntry = Object.values(lorebookData?.entries || {}).find(entry => String(entry?.uid ?? entry?.id ?? '') === String(candidate.uid));
             return `

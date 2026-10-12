@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { areCombineSourcesCurrent, buildCombineClipsPrompt, isTopicalClipForCombination, snapshotCombineSource, unionClipKeywords } from './combineClipsPolicy.js';
+import { areCombineSourcesCurrent, buildCombineClipsPrompt, isTopicalClipForCombination, snapshotCombineSource, unionClipKeywords, validateCombineClipsPrompt } from './combineClipsPolicy.js';
 
 const topical = (uid, title, content, key = []) => ({
     uid, comment: `${title} [STMB Clip]`, content, key,
@@ -26,6 +26,15 @@ test('prompt labels every source and retains their full content', () => {
     assert.match(prompt, /do not invent a resolution/);
 });
 
+test('custom combination prompt requires and expands source clips', () => {
+    const sources = [topical(1, 'Alice', 'Fact A.'), topical(2, 'Bob', 'Fact B.')];
+    assert.throws(() => validateCombineClipsPrompt('Title {{TITLE}}'));
+    const prompt = buildCombineClipsPrompt(sources, 'Friends', '{{TITLE}}\n{{SOURCE_CLIPS}}');
+    assert.match(prompt, /^Friends\n/);
+    assert.match(prompt, /Fact A\./);
+    assert.match(prompt, /Fact B\./);
+});
+
 test('keywords preserve first occurrence and exact spelling', () => {
     assert.deepEqual(unionClipKeywords([
         topical(1, 'A', '', [' Alice ', 'Bob', '']),
@@ -46,4 +55,5 @@ test('source validation detects title, content, keyword, identity, and missing-s
         assert.equal(areCombineSourcesCurrent(snapshots, [changed, sources[1]]), false);
     }
     assert.equal(areCombineSourcesCurrent(snapshots, [sources[0]]), false);
+    assert.equal(areCombineSourcesCurrent(snapshots, [{ ...sources[0], disable: true }, sources[1]]), false);
 });
