@@ -2833,8 +2833,9 @@ export async function showCombineClipsPopup(options = {}) {
         keywordsView.textContent = unionClipKeywords(selectedEntries()).join(', ');
     };
     const renderSources = () => {
+        const selectedIds = new Set(selectedEntries().map(getEntryStableId));
         sourceList.innerHTML = entries.filter(entry => showDisabledInput.checked || !entry.disable).map(entry =>
-            `<label class="flex-container flexGap10" style="align-items:center; margin:2px 0"><input type="checkbox" value="${escapeHtml(getEntryStableId(entry))}" />` +
+            `<label class="flex-container flexGap10" style="align-items:center; margin:2px 0"><input type="checkbox" value="${escapeHtml(getEntryStableId(entry))}"${selectedIds.has(getEntryStableId(entry)) ? ' checked' : ''} />` +
             `<span>${escapeHtml(entry.comment)}${entry.disable ? ` (${escapeHtml(tr('STMemoryBooks_CombineClips_Disabled', 'disabled'))})` : ''}</span></label>`,
         ).join('') || escapeHtml(tr('STMemoryBooks_CombineClips_None', 'No Topical Clips found in this Memory Book.'));
         updateKeywords();
