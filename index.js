@@ -592,6 +592,7 @@ const defaultSettings = {
     narratorCastDrawerPosition: null,
     narratorCastDrawerCollapsed: true,
     unhideBeforeMemory: false,
+    topicalClipIncludeHiddenMessages: false,
     refreshEditor: true,
     maxTokens: DEFAULT_MAX_TOKENS,
     tokenWarningThreshold: 50000,
@@ -2725,6 +2726,9 @@ function validateSettings(settings) {
   // Validate unhide-before-memory setting (defaults to false)
   if (settings.moduleSettings.unhideBeforeMemory === undefined) {
     settings.moduleSettings.unhideBeforeMemory = false;
+  }
+  if (settings.moduleSettings.topicalClipIncludeHiddenMessages === undefined) {
+    settings.moduleSettings.topicalClipIncludeHiddenMessages = false;
   }
 
   // Validate lorebook name template
@@ -11012,6 +11016,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     memoryBoundaryMode: normalizeMemoryBoundaryMode(settings.moduleSettings.memoryBoundaryMode),
     memoryBoundaryModeOptions: getMemoryBoundaryModeOptions(settings.moduleSettings.memoryBoundaryMode),
     unhideBeforeMemory: settings.moduleSettings.unhideBeforeMemory || false,
+    topicalClipIncludeHiddenMessages: !!settings.moduleSettings.topicalClipIncludeHiddenMessages,
     refreshEditor: settings.moduleSettings.refreshEditor,
     allowSceneOverlap: settings.moduleSettings.allowSceneOverlap,
     manualModeEnabled: settings.moduleSettings.manualModeEnabled,
@@ -11541,6 +11546,12 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
       return;
     }
 
+    if (e.target.matches("#stmb-topical-clip-include-hidden-messages")) {
+      settings.moduleSettings.topicalClipIncludeHiddenMessages = e.target.checked;
+      saveSettingsDebounced();
+      return;
+    }
+
     if (e.target.matches("#stmb-copy-memory-books-on-branch")) {
       settings.moduleSettings.copyMemoryBooksOnBranch = e.target.checked;
       saveSettingsDebounced();
@@ -12012,6 +12023,9 @@ function persistMainPopupSettings(popupElement) {
   const unhideBeforeMemory =
     popupElement.querySelector("#stmb-unhide-before-memory")?.checked ??
     settings.moduleSettings.unhideBeforeMemory;
+  const topicalClipIncludeHiddenMessages =
+    popupElement.querySelector("#stmb-topical-clip-include-hidden-messages")?.checked ??
+    settings.moduleSettings.topicalClipIncludeHiddenMessages;
   const refreshEditor =
     popupElement.querySelector("#stmb-refresh-editor")?.checked ??
     settings.moduleSettings.refreshEditor;
@@ -12151,6 +12165,10 @@ function persistMainPopupSettings(popupElement) {
 
   if (unhideBeforeMemory !== settings.moduleSettings.unhideBeforeMemory) {
     settings.moduleSettings.unhideBeforeMemory = unhideBeforeMemory;
+    hasChanges = true;
+  }
+  if (topicalClipIncludeHiddenMessages !== settings.moduleSettings.topicalClipIncludeHiddenMessages) {
+    settings.moduleSettings.topicalClipIncludeHiddenMessages = topicalClipIncludeHiddenMessages;
     hasChanges = true;
   }
 

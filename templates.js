@@ -432,6 +432,12 @@ export const generalSettingsTemplate = Handlebars.compile(`
             <span data-i18n="STMemoryBooks_UnhideBeforeMemory">Unhide hidden messages for memory generation (runs /unhide X-Y)</span>
         </label>
     </div>
+    <div class="world_entry_form_control">
+        <label class="checkbox_label">
+            <input type="checkbox" id="stmb-topical-clip-include-hidden-messages" {{#if topicalClipIncludeHiddenMessages}}checked{{/if}}>
+            <span data-i18n="STMemoryBooks_TopicalClip_IncludeHiddenMessages">Also use hidden messages</span>
+        </label>
+    </div>
 `);
 
 /**

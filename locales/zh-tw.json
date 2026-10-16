@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "也使用隱藏的訊息",
   "STMemoryBooks_Clip_FormatRequired": "格式必須恰好包含一次 {{CONTENT}}。",
   "STMemoryBooks_CombineClips_PromptRequired": "合併 Clip 提示詞必須恰好包含一次 {{SOURCE_CLIPS}}。",
   "STMemoryBooks_Clip_OutletNameRequired": "請輸入 Outlet 名稱。",

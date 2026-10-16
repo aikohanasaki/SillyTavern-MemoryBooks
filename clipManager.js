@@ -22,7 +22,6 @@ import { getHighestMemoryProcessed, getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
 import { requestCompletion } from './stmemory.js';
 import { compileScene, createSceneRequest, toReadableText } from './chatcompile.js';
-import { compileMessageRange } from './messageRange.js';
 import { validateChatSelection } from './chatSelection.js';
 import { showChatMessagePicker } from './chatMessagePicker.js';
 import {
@@ -2161,6 +2160,10 @@ function buildTopicalClipPopupHtml(defaultLorebookName) {
                     <input id="stmb-topical-clip-include-messages" type="checkbox" />
                     <span>${escapeHtml(tr('STMemoryBooks_TopicalClip_IncludeMessages', 'Include chat messages'))}</span>
                 </label>
+                <label class="checkbox_label">
+                    <input id="stmb-topical-clip-include-hidden-messages" type="checkbox"${getModuleSettings().topicalClipIncludeHiddenMessages ? ' checked' : ''} />
+                    <span>${escapeHtml(tr('STMemoryBooks_TopicalClip_IncludeHiddenMessages', 'Also use hidden messages'))}</span>
+                </label>
                 <button id="stmb-topical-clip-extract" type="button" class="menu_button">${escapeHtml(tr('STMemoryBooks_Extract_Open', 'Extract…'))}</button>
                 <select id="stmb-topical-clip-message-mode" class="text_pole" hidden>
                     <option value="range">${escapeHtml(tr('STMemoryBooks_TopicalClip_MessageRange', 'Message range'))}</option>
@@ -2448,6 +2451,11 @@ export async function showTopicalClipPopup(options = {}) {
     });
     includeMemoriesInput?.addEventListener('change', renderMode);
     includeMessagesInput?.addEventListener('change', renderMode);
+    dlg?.querySelector('#stmb-topical-clip-include-hidden-messages')?.addEventListener('change', event => {
+        getModuleSettings().topicalClipIncludeHiddenMessages = event.target.checked;
+        saveSettingsDebounced();
+        clearDraft();
+    });
     messageMode?.addEventListener('change', renderMode);
     const pickMessages = async (edit = false) => {
         const selection = await openChatMessageExtractor({ selectOnly: true, initialSelection: edit ? selectedMessages : null });
@@ -2559,7 +2567,7 @@ export async function showTopicalClipPopup(options = {}) {
             const indices = selectedMessages.messages.map(item => item.index);
             try {
                 sourceMessages = compileScene(createSceneRequest(indices[0], indices.at(-1)), {
-                    messageIndices: indices, includeHiddenMessages: true,
+                    messageIndices: indices, includeHiddenMessages: !!getModuleSettings().topicalClipIncludeHiddenMessages,
                 });
             } catch (error) {
                 toastr.error(error.message, 'STMemoryBooks');
@@ -2567,7 +2575,9 @@ export async function showTopicalClipPopup(options = {}) {
             }
             messageSource = {
                 mode: 'selection', chat_id: sourceMessages.metadata?.chatId || '',
-                message_hashes: selectedMessages.messages.map(item => ({ id: item.index, hash: item.hash })),
+                message_hashes: selectedMessages.messages
+                    .filter(item => sourceMessages.messages.some(message => message.id === item.index))
+                    .map(item => ({ id: item.index, hash: item.hash })),
             };
         } else if (includeMessages) {
             const rawStart = String(messageStartInput?.value ?? '').trim();
@@ -2581,7 +2591,9 @@ export async function showTopicalClipPopup(options = {}) {
                 return;
             }
             try {
-                sourceMessages = await compileMessageRange(start, end);
+                sourceMessages = compileScene(createSceneRequest(start, end), {
+                    includeHiddenMessages: !!getModuleSettings().topicalClipIncludeHiddenMessages,
+                });
             } catch (error) {
                 toastr.error(error?.message || tr('STMemoryBooks_TopicalClip_MessageCompileFailed', 'Failed to compile the selected messages.'), 'STMemoryBooks');
                 return;

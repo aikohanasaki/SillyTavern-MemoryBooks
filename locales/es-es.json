@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "Usar también mensajes ocultos",
   "STMemoryBooks_Clip_FormatRequired": "El formato debe contener {{CONTENT}} exactamente una vez.",
   "STMemoryBooks_CombineClips_PromptRequired": "El prompt para combinar clips debe contener {{SOURCE_CLIPS}} exactamente una vez.",
   "STMemoryBooks_Clip_OutletNameRequired": "Introduce un nombre de Outlet.",

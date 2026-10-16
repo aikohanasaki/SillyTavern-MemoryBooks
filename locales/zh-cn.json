@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "也使用隐藏的消息",
   "STMemoryBooks_Clip_FormatRequired": "格式必须恰好包含一次 {{CONTENT}}。",
   "STMemoryBooks_CombineClips_PromptRequired": "合并剪辑提示词必须恰好包含一次 {{SOURCE_CLIPS}}。",
   "STMemoryBooks_Clip_OutletNameRequired": "请输入 Outlet 名称。",

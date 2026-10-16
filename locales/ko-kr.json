@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "숨겨진 메시지도 사용",
   "STMemoryBooks_Clip_FormatRequired": "형식에 {{CONTENT}}를 정확히 한 번 포함해야 합니다.",
   "STMemoryBooks_CombineClips_PromptRequired": "클립 합치기 프롬프트에 {{SOURCE_CLIPS}}를 정확히 한 번 포함해야 합니다.",
   "STMemoryBooks_Clip_OutletNameRequired": "Outlet 이름을 입력하세요.",

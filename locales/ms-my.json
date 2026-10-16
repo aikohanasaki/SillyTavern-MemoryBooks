@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "Gunakan juga mesej tersembunyi",
   "STMemoryBooks_Clip_FormatRequired": "Format mesti mengandungi {{CONTENT}} tepat sekali.",
   "STMemoryBooks_CombineClips_PromptRequired": "Prompt Gabung Klip mesti mengandungi {{SOURCE_CLIPS}} tepat sekali.",
   "STMemoryBooks_Clip_OutletNameRequired": "Masukkan Nama Outlet.",

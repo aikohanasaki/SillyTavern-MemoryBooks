@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "Также использовать скрытые сообщения",
   "STMemoryBooks_Clip_FormatRequired": "Формат должен содержать {{CONTENT}} ровно один раз.",
   "STMemoryBooks_CombineClips_PromptRequired": "Запрос объединения должен содержать {{SOURCE_CLIPS}} ровно один раз.",
   "STMemoryBooks_Clip_OutletNameRequired": "Укажите имя Outlet.",

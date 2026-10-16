@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "Gunakan juga pesan tersembunyi",
   "STMemoryBooks_Clip_FormatRequired": "Format harus memuat {{CONTENT}} tepat satu kali.",
   "STMemoryBooks_CombineClips_PromptRequired": "Prompt Gabungkan Clip harus memuat {{SOURCE_CLIPS}} tepat satu kali.",
   "STMemoryBooks_Clip_OutletNameRequired": "Masukkan Nama Outlet.",

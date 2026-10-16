@@ -1,4 +1,5 @@
 {
+  "STMemoryBooks_TopicalClip_IncludeHiddenMessages": "非表示のメッセージも使用する",
   "STMemoryBooks_Clip_FormatRequired": "形式には{{CONTENT}}を1回だけ含めてください。",
   "STMemoryBooks_CombineClips_PromptRequired": "クリップ結合プロンプトには{{SOURCE_CLIPS}}を1回だけ含めてください。",
   "STMemoryBooks_Clip_OutletNameRequired": "Outlet名を入力してください。",

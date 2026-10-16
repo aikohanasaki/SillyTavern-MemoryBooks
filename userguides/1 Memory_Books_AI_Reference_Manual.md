@@ -1078,7 +1078,7 @@ Topical Clip uses:
 - confirmed STMB Memory entries from the selected source book, including eligible consolidated summaries.
 - visible messages from an explicitly selected inclusive `X-Y` range in the current chat.
 
-The **Include saved Memories** and **Include chat messages** controls can be used separately or together. Message ranges follow the global unhide-before-memory setting and restore previously hidden messages after compilation.
+The **Include saved Memories** and **Include chat messages** controls can be used separately or together. **Also use hidden messages**, directly below **Include chat messages**, controls whether message ranges and Extract selections include hidden messages. It defaults to unchecked and is saved globally, with the same setting available in General Settings directly below **Unhide hidden messages for memory generation**. Topical Clip reads hidden messages without changing their visibility and independently of the unhide-before-memory setting.
 
 When the Topical Clip window opens, **Start message ID** defaults to the selected scene-start, otherwise the highest processed Memory message ID (the value returned by `/stmb-highest`), otherwise `0`. **End message ID** defaults to the selected scene-end, otherwise the current last message ID; it stays blank in an empty chat. Message IDs are zero-based, and the highest processed ID is used directly without adding one. These defaults are set once when the window opens. You can edit them, and changing modes, targets, or Memory Books preserves your edits. Invalid or reversed ranges must be corrected before generating.
 
@@ -1122,7 +1122,7 @@ Choose a generation profile and click **Generate Draft**. The AI receives each s
 
 When text is highlighted in the chat, the floating control offers **Clip** and **Extract**. Extract opens the same message picker with the highlighted text as its search query. It searches the full history of the current chat, including messages that are not rendered onscreen. An empty search lists all messages. Search matches literal text or speaker names, ignoring case; **Hidden only** restricts matches to hidden messages.
 
-Results appear in batches of 50. Use **Load more** to display more matches, expand a result to read its complete text with highlighted matches, or use **Previous message** and **Next message** to reveal surrounding context. Context messages are not selected automatically and can appear even when they do not match the search or Hidden only filter. Hidden messages are labeled; selecting one includes its text in the Topical Clip source without unhiding it in the chat.
+Results appear in batches of 50. Use **Load more** to display more matches, expand a result to read its complete text with highlighted matches, or use **Previous message** and **Next message** to reveal surrounding context. Context messages are not selected automatically and can appear even when they do not match the search or Hidden only filter. Hidden messages are labeled; selected hidden messages are included in the Topical Clip source only when **Also use hidden messages** is checked, without unhiding them in the chat.
 
 Selections are retained across searches and filter changes. The selection count includes messages outside the displayed results. **Select loaded results** selects every displayed result, including any revealed context messages; **Clear selection** removes all selections. Choose **Topical Clip** from standalone Extract or **Use selected messages** when returning to an existing editor. The query supplies the initial topic and keywords, which remain editable.
 
@@ -2137,6 +2137,7 @@ These controls are lower in the same **General Settings** popup under **Token Sa
 | **Auto-hide messages after adding memory** | Global | Chooses no automatic hiding, all processed messages through the latest Memory, or only the range used by the latest Memory. Hiding is reversible and does not delete messages. |
 | **Messages to leave unhidden** | Global | Keeps this many recent messages visible when auto-hiding, preserving overlap near the Memory boundary. `0` hides through the applicable scene end. |
 | **Unhide hidden messages for memory generation** | Global | Runs the equivalent of `/unhide X-Y` for the source range before STMB compiles it. The selected auto-hide mode determines what is hidden again after a successful save. |
+| **Also use hidden messages** | Global; also available in Topical Clip | Includes hidden messages in Topical Clip ranges and Extract selections without unhiding them. Defaults to unchecked; independent of unhide-before-memory. |
 
 ### 27.3 Automatic Memories and consolidation reminders
 

@@ -39,11 +39,76 @@ test('selected compilation includes exactly chosen hidden sources; ordinary rang
         createGroupParticipantResolver: () => null, estimateTokens: () => 1,
         translate: fallback => fallback, MODULE_NAME: 'Test', name1: 'User', name2: 'Bot',
         getCurrentMemoryBooksContext: () => ({}),
+        __st_t_tag: (strings, ...values) => strings.reduce((text, part, i) => text + part + (values[i] ?? ''), ''),
     };
     const compile = Function(...Object.keys(dependencies), `return (${source.slice(start, end)});`)(...Object.values(dependencies));
     const request = { sceneStart: 0, sceneEnd: 2, chatId: 'chat', characterName: 'Bot' };
     assert.deepEqual(compile(request, { messageIndices: [1, 2], includeHiddenMessages: true }).messages.map(item => item.id), [1, 2]);
     assert.deepEqual(compile(request).messages.map(item => item.id), [0, 2]);
+    assert.deepEqual(compile(request, { includeHiddenMessages: true }).messages.map(item => item.id), [0, 1, 2]);
+    assert.deepEqual(compile(request, { messageIndices: [1, 2], includeHiddenMessages: false }).messages.map(item => item.id), [2]);
+    for (const messageIndices of [null, [1]]) {
+        const hiddenRequest = { ...request, sceneStart: 1, sceneEnd: 1 };
+        assert.throws(() => compile(hiddenRequest, { messageIndices }), /No visible messages/);
+        assert.deepEqual(compile(hiddenRequest, { messageIndices, includeHiddenMessages: true }).messages.map(item => item.id), [1]);
+    }
+    assert.equal(chat[1].is_system, true);
+});
+
+test('Topical Clip uses its saved hidden preference for ranges and selections and records only used sources', async () => {
+    const source = readFileSync(new URL('./clipManager.js', import.meta.url), 'utf8');
+    const start = source.indexOf('        let sourceMessages = null;');
+    const end = source.indexOf('        const existingClip =', start);
+    assert.ok(start > 0 && end > start);
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    for (const mode of ['range', 'selection']) {
+        for (const includeHidden of [false, true]) {
+            for (const unhideBeforeMemory of [false, true]) {
+                const chat = [{ mes: 'visible' }, { mes: 'hidden', is_system: true }];
+                const before = structuredClone(chat);
+                const dependencies = {
+                    includeMessages: true, messageMode: { value: mode }, chat,
+                    selectedMessages: { messages: [{ index: 0, hash: 'visible-hash' }, { index: 1, hash: 'hidden-hash' }] },
+                    messageStartInput: { value: '0' }, messageEndInput: { value: '1' },
+                    getModuleSettings: () => ({ topicalClipIncludeHiddenMessages: includeHidden, unhideBeforeMemory }),
+                    getStmbChatKey: () => 'chat', getCurrentStmbChatRef: () => ({}), validateChatSelection: () => true,
+                    createSceneRequest: (start, end) => ({ start, end }),
+                    compileScene: (request, options) => {
+                        assert.deepEqual(request, { start: 0, end: 1 });
+                        assert.equal(options.includeHiddenMessages, includeHidden);
+                        if (mode === 'selection') assert.deepEqual(options.messageIndices, [0, 1]);
+                        return { metadata: { chatId: 'chat' }, messages: chat.flatMap((message, id) =>
+                            message.is_system && !options.includeHiddenMessages ? [] : [{ id, mes: message.mes }]) };
+                    },
+                    stableHashString: text => `hash:${text}`,
+                    tr: (_key, fallback) => fallback,
+                    toastr: { error: message => assert.fail(message) },
+                };
+                const run = AsyncFunction(...Object.keys(dependencies), source.slice(start, end) + '\nreturn { sourceMessages, messageSource };');
+                const result = await run(...Object.values(dependencies));
+                assert.deepEqual(result.messageSource.message_hashes.map(item => item.id), includeHidden ? [0, 1] : [0]);
+                assert.equal(result.messageSource.message_hashes[0].hash, mode === 'selection'
+                    ? 'visible-hash' : 'hash:' + JSON.stringify(result.sourceMessages.messages[0]));
+                assert.deepEqual(chat, before);
+            }
+        }
+    }
+});
+
+test('Topical Clip hidden preference is saved immediately and invalidates the draft', () => {
+    const source = readFileSync(new URL('./clipManager.js', import.meta.url), 'utf8');
+    const match = source.match(/querySelector\('#stmb-topical-clip-include-hidden-messages'\)\?\.addEventListener\('change', event => \{([\s\S]*?)\n    \}\);/);
+    assert.ok(match);
+    const settings = {};
+    let saves = 0;
+    let invalidations = 0;
+    const change = Function('event', 'getModuleSettings', 'saveSettingsDebounced', 'clearDraft', match[1]);
+    for (const checked of [true, false]) {
+        change({ target: { checked } }, () => settings, () => saves++, () => invalidations++);
+        assert.equal(settings.topicalClipIncludeHiddenMessages, checked);
+    }
+    assert.equal(saves, 2);
+    assert.equal(invalidations, 2);
 });
 
 // Minimal DOM services keep the picker's interaction regressions runnable with node --test.
