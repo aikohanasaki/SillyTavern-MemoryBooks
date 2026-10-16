@@ -1080,6 +1080,8 @@ Topical Clip uses:
 
 The **Include saved Memories** and **Include chat messages** controls can be used separately or together. Message ranges follow the global unhide-before-memory setting and restore previously hidden messages after compilation.
 
+When the Topical Clip window opens, **Start message ID** defaults to the selected scene-start, otherwise the highest processed Memory message ID (the value returned by `/stmb-highest`), otherwise `0`. **End message ID** defaults to the selected scene-end, otherwise the current last message ID; it stays blank in an empty chat. Message IDs are zero-based, and the highest processed ID is used directly without adding one. These defaults are set once when the window opens. You can edit them, and changing modes, targets, or Memory Books preserves your edits. Invalid or reversed ranges must be corrected before generating.
+
 It does not use:
 
 - chat messages outside the selected range;
@@ -1128,7 +1130,7 @@ STMB records source fingerprints when messages enter the picker and checks selec
 
 ### 15.4 Updating an existing Topical Clip
 
-After a successful run, STMB records which source Memories were used and, when applicable, the source chat, message range, message IDs, and hashes. A later Memory-based update normally sends only new or changed source Memories together with the existing Clip content. Message ranges are always chosen explicitly.
+After a successful run, STMB records which source Memories were used and, when applicable, the source chat, message range, message IDs, and hashes. A later Memory-based update normally sends only new or changed source Memories together with the existing Clip content. Review the pre-populated message range or enter a different range for each run.
 
 Use **Rebuild from all source memories** when:
 

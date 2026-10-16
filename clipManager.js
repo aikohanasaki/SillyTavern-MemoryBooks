@@ -18,7 +18,7 @@ import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
 import { getEntryByTitle, isMemoryEntry, normalizeLorebookEntrySettings } from './addlore.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
-import { getSceneMarkers } from './sceneManager.js';
+import { getHighestMemoryProcessed, getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
 import { requestCompletion } from './stmemory.js';
 import { compileScene, createSceneRequest, toReadableText } from './chatcompile.js';
@@ -2276,6 +2276,9 @@ export async function showTopicalClipPopup(options = {}) {
     }
     const messageStartInput = dlg?.querySelector('#stmb-topical-clip-message-start');
     const messageEndInput = dlg?.querySelector('#stmb-topical-clip-message-end');
+    const sceneMarkers = getSceneMarkers();
+    if (messageStartInput) messageStartInput.value = sceneMarkers.sceneStart ?? getHighestMemoryProcessed() ?? 0;
+    if (messageEndInput) messageEndInput.value = chat.length === 0 ? '' : sceneMarkers.sceneEnd ?? (chat.length - 1);
     const sourcePickerRow = dlg?.querySelector('#stmb-topical-clip-source-picker-row');
     const useSelectedSourcesInput = dlg?.querySelector('#stmb-topical-clip-use-selected-sources');
     const sourcePickerControls = dlg?.querySelector('#stmb-topical-clip-source-picker-controls');
