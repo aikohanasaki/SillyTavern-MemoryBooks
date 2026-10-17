@@ -890,12 +890,14 @@ Saat generation, STMB mengambil snapshot active cast dan menyimpannya di message
 
 - user message menerima active-cast snapshot;
 - Narrator response menerima generation snapshot;
+- respons Narrator yang telah selesai mempertahankan snapshot tersebut hingga pesannya diselesaikan, bahkan ketika pembuatannya berakhir terlebih dahulu;
 - continuation menggabungkan cast dengan existing cast metadata;
 - swipe metadata disimpan terpisah untuk setiap swipe;
 - memilih swipe dapat memulihkan active cast dari titik timeline tersebut;
 - menghapus recent messages dapat memulihkan cast state dari latest remaining tagged Narrator message.
 
 Cast marker mencatat asosiasi, bukan semantic analysis terhadap prose.
+Balasan parsial yang dihentikan atau gagal tidak diberi tag secara otomatis. Jika sebuah adegan menyertakannya, konfirmasi pemeran pesan warisan tetap diperlukan.
 
 ### 12.5 Retrieval selama normal Narrator generation
 
@@ -1075,9 +1077,11 @@ Topical Clip diorganisasi berdasarkan subjek, bukan chronology semua source Memo
 Topical Clip menggunakan:
 
 - confirmed STMB Memory entries dari selected source book, termasuk eligible consolidated summaries;
-- visible messages dari explicitly selected inclusive `X-Y` range di current chat.
+- pesan dari rentang `X-Y` inklusif yang dipilih secara eksplisit dalam obrolan saat ini. Pesan tersembunyi hanya disertakan ketika **Also use hidden messages** dicentang.
 
-Kontrol **Include saved Memories** dan **Include chat messages** dapat dipakai sendiri-sendiri atau bersama. Message ranges mengikuti global unhide-before-memory setting dan mengembalikan messages yang sebelumnya hidden setelah compilation.
+Kontrol **Include saved Memories** dan **Include chat messages** dapat digunakan secara terpisah atau bersamaan. **Also use hidden messages**, tepat di bawah **Include chat messages**, mengontrol apakah rentang pesan dan pilihan Ekstrak menyertakan pesan tersembunyi. Defaultnya adalah tidak dicentang dan disimpan secara global, dengan pengaturan yang sama tersedia di Pengaturan Umum tepat di bawah **Unhide hidden messages for memory generation**. Topical Clip membaca pesan tersembunyi tanpa mengubah visibilitasnya dan terlepas dari pengaturan sembunyikan sebelum memori.
+
+Saat jendela Topical Clip terbuka, **Start message ID** ditetapkan secara default ke adegan awal yang dipilih, jika tidak maka ID pesan Memory tertinggi yang diproses (nilai dikembalikan oleh `/stmb-highest`), jika tidak, `0`. **End message ID** default ke akhir adegan yang dipilih, jika tidak, ID pesan terakhir saat ini; itu tetap kosong dalam obrolan kosong. ID pesan berbasis nol, dan ID tertinggi yang diproses digunakan secara langsung tanpa menambahkan satu pun. Default ini disetel satu kali saat jendela terbuka. Anda dapat mengeditnya, dan mengubah mode, target, atau Memory Books akan mempertahankan hasil edit Anda. Rentang yang tidak valid atau terbalik harus diperbaiki sebelum dibuat.
 
 Tidak menggunakan:
 
@@ -1095,7 +1099,7 @@ Tidak menggunakan:
 5. Masukkan activation keywords, atau biarkan kosong untuk memakai topic.
 6. Pilih new entry atau existing `[STMB Clip]` update target.
 7. Pilih saved Memories, chat messages, atau keduanya sebagai sources.
-8. Secara opsional pilih hanya source Memories tertentu. Untuk chat messages, masukkan exact range atau klik **Extract…** untuk mencari seluruh current chat dan memilih message satu per satu, termasuk message yang tidak berurutan dan hidden.
+8. Secara opsional pilih hanya sumber tertentu Memories. Untuk pesan obrolan, masukkan rentang yang tepat atau klik **Extract…** untuk mencari seluruh obrolan saat ini dan pilih pesan individual, termasuk pesan yang tidak bersebelahan. Centang **Also use hidden messages** untuk menyertakan pesan tersembunyi yang dipilih.
 9. Pilih generation profile.
 10. Generate draft.
 11. Review dan edit.
@@ -1103,18 +1107,23 @@ Tidak menggunakan:
 
 Generated draft tidak pernah disimpan otomatis.
 
+**Edit Topical Format** mengontrol teks luar entri yang disimpan. Standarnya menggunakan batas `=== title ===` dan `=== END title ===` yang ada. Formatnya harus berisi `{{CONTENT}}` tepat satu kali; `{{TITLE}}` adalah opsional. Misalnya, `## {{TITLE}}` diikuti oleh `{{CONTENT}}` menyimpan judul Markdown, sedangkan `{{CONTENT}}` sendiri menyimpan isi tanpa batas. Pratinjau menunjukkan hasilnya. Reset mengembalikan format bawaan. Preferensi baru memengaruhi penyimpanan berikutnya, bukan entri yang sudah ada. Tambahan Clip biasa mempertahankan format yang direkam pada sebuah entri; Pembaruan Topical Clip menggunakan preferensi saat ini untuk jenis klip tersebut.
+
+Penyisipan penyisipan memungkinkan Anda memilih posisi dan memesan penyimpanan ini. Memilih **Outlet** memerlukan **Outlet Name**. Target pembaruan atau target Clip biasa yang dinonaktifkan disembunyikan secara default; **Show disabled clips** mengungkapkannya. Menyimpan pembaruan ke Topical Clip yang dinonaktifkan akan mengaktifkannya.
 
 ### Menggabungkan Topical Clip yang sudah ada
 
-Di window **Topical Clip**, klik **Combine Clips**. Pilih Memory Book, pilih setidaknya dua Topical Clip (termasuk clip yang disabled jika perlu), lalu masukkan judul clip baru. Hanya Topical Clip yang dibuat STMB yang muncul; Clip biasa tidak disertakan. Activation keywords clip baru adalah gabungan primary keywords dari clip yang dipilih tanpa duplikat. Secondary keyword conditions tidak disalin.
+Di jendela **Topical Clip**, klik **Combine Clips**. Pilih Memory Book, pilih setidaknya dua Topical Clips (gunakan **Show disabled clips** untuk menyertakan klip yang dinonaktifkan), dan masukkan judul klip baru. Hanya Topical Clips yang dibuat oleh STMB yang muncul; Clips biasa tidak termasuk. Kata kunci aktivasi klip baru adalah gabungan dari kata kunci utama klip yang dipilih, tanpa duplikat. Ketentuan kata kunci sekunder tidak disalin.
 
 Pilih generation profile lalu klik **Generate Draft**. AI menerima judul dan isi lengkap setiap clip yang dipilih dan diminta mengonsolidasikan fakta yang didukung, menghapus pengulangan, dan mempertahankan konflik yang belum terselesaikan. Review dan edit draft sebelum menyimpan. Mengubah source yang dipilih, judul, atau Memory Book akan menghapus draft. Jika source berubah sebelum disimpan, generate draft baru.
+
+**Edit Combine Clips Prompt** mengubah instruksi konsolidasi AI. Templatenya memerlukan `{{SOURCE_CLIPS}}` tepat satu kali dan dapat menggunakan `{{TITLE}}`. **Edit Combined Format** secara independen mengontrol bagaimana hasil yang disimpan dibungkus, menggunakan `{{CONTENT}}` yang sama dan placeholder `{{TITLE}}` opsional sebagai Format Topikal. Kedua editor menawarkan Reset ke Default. Penggantian penyisipan meliputi posisi, Nama Outlet saat Outlet dipilih, dan urutan.
 
 **Disable original clips after saving** dicentang secara default. Hapus centang untuk mempertahankan activation state clip asli. Saat disimpan, Topical Clip baru dibuat dalam keadaan enabled dan, jika opsi dicentang, clip asli dinonaktifkan dalam update Memory Book yang sama. Clip asli tidak pernah dihapus. Clip gabungan mencatat source ID-nya secara terpisah dari history source Memory Topical Clip biasa.
 
 Ketika teks di-highlight dalam chat, floating control menawarkan **Clip** dan **Extract**. Extract membuka message picker yang sama dengan teks yang di-highlight sebagai search query. Picker tersebut mencari seluruh history current chat, termasuk message yang tidak sedang dirender di layar. Search kosong menampilkan semua message. Search mencocokkan literal text atau speaker names tanpa membedakan huruf besar/kecil; **Hidden only** membatasi hasil pada hidden messages.
 
-Hasil muncul dalam batch 50. Gunakan **Load more** untuk menampilkan lebih banyak hasil, expand sebuah hasil untuk membaca teks lengkapnya dengan match yang disorot, atau gunakan **Previous message** dan **Next message** untuk menampilkan context di sekitarnya. Context messages tidak dipilih otomatis dan dapat muncul walaupun tidak cocok dengan search atau filter Hidden only. Hidden messages diberi label; memilihnya memasukkan teksnya ke source Topical Clip tanpa melakukan unhide di chat.
+Hasil muncul dalam kumpulan 50. Gunakan **Load more** untuk menampilkan lebih banyak kecocokan, perluas hasil untuk membaca teks lengkap dengan kecocokan yang disorot, atau gunakan **Previous message** dan **Next message** untuk mengungkapkan konteks sekitarnya. Pesan konteks tidak dipilih secara otomatis dan dapat muncul meskipun tidak cocok dengan pencarian atau filter Tersembunyi saja. Pesan tersembunyi diberi label; pesan tersembunyi yang dipilih disertakan dalam sumber Topical Clip hanya jika **Also use hidden messages** dicentang, tanpa menampilkannya kembali dalam obrolan.
 
 Selection dipertahankan saat search atau filter berubah. Jumlah selection mencakup message di luar hasil yang sedang ditampilkan. **Select loaded results** memilih semua hasil yang ditampilkan, termasuk context message yang ditampilkan; **Clear selection** menghapus semua selection. Pilih **Topical Clip** dari standalone Extract atau **Use selected messages** saat kembali ke editor yang sudah ada. Query menyediakan topic dan keywords awal, yang tetap dapat diedit.
 
@@ -1122,7 +1131,7 @@ STMB mencatat source fingerprints ketika message masuk ke picker dan memeriksa s
 
 ### 15.4 Memperbarui existing Topical Clip
 
-Setelah run berhasil, STMB mencatat source Memories yang digunakan dan, jika relevan, source chat, message range, message IDs, dan hashes. Update berbasis Memory berikutnya biasanya hanya mengirim source Memories yang baru atau berubah bersama existing Clip content. Message ranges selalu dipilih eksplisit.
+Setelah berhasil dijalankan, STMB mencatat sumber Memories mana yang digunakan dan, jika berlaku, obrolan sumber, rentang pesan, ID pesan, dan hash. Pembaruan berbasis Memory yang lebih baru biasanya hanya mengirimkan Memories sumber baru atau yang diubah bersama dengan konten Clip yang sudah ada. Tinjau rentang pesan yang telah diisi sebelumnya atau masukkan rentang berbeda untuk setiap proses.
 
 Gunakan **Rebuild from all source memories** ketika:
 
@@ -1240,7 +1249,7 @@ Selected set menggantikan individually enabled automatic prompts untuk chat ters
 
 **Memory Assistance** adalah Side Prompt khusus dengan lima mode independen. Ia berjalan setelah Memories berhasil disimpan terlepas dari enablement Side Prompt biasa atau Side Prompt Set yang dipilih. Ia tidak berjalan selama Memory regeneration.
 
-Memory Assistance membandingkan raw processed scene dengan ordinary dan Topical Clips di setiap Memory Book yang menerima Memory. Ia mengirim title/topic, keywords, current content, stable ID, dan type dari setiap reviewed Clip ke AI.
+Memory Assistance membandingkan raw processed scene dengan ordinary dan Topical Clips di setiap Memory Book yang menerima Memory. Ia mengirim title/topic, keywords, current content, stable ID, dan type dari setiap reviewed Clip ke AI. Hanya Clips yang diaktifkan yang ditinjau. Clips yang dinonaktifkan dikecualikan dari kueri AI dan disembunyikan dari saran yang tertunda tanpa menghapus laporan tersimpan.
 
 Saat job queue tersedia, setiap target Memory Book menerima job **Memory Assistance** terpisah setelah Memory disimpan. Error pada request, response-validation, report-save, atau automatic-application menandai job itu **Failed** dan menampilkan error di queue. Saved Memory tetap **Completed**, dan retrying Memory Assistance tidak meregenerate Memory.
 
@@ -1995,9 +2004,15 @@ Tanpa Chat Top Bar, STMB tetap menjalankan normal workflows tetapi tidak memilik
 
 ### Deferred last-processed progress
 
+Penanda yang terakhir diproses mencatat pesan obrolan tertinggi yang sudah tercakup oleh Memory yang disimpan. Ini memasok batas yang digunakan untuk rentang Memory berikutnya dan penghitungan ambang batas otomatis; ini bukan ambang batas yang dikonfigurasi itu sendiri. Ketika obrolan sumber dimuat dan tidak aktif serta validasi berhasil, STMB memperbarui dan memverifikasi penanda secara otomatis.
+
+Pembaruan yang tertunda tidak terbatas pada peralihan obrolan. Pembaruan juga dapat ditunda saat obrolan saat ini menghasilkan balasan, menyimpan, atau mengedit pesan, ketika validasi pesan sumber atau penanda gagal, atau ketika penyimpanan penanda otomatis tidak dapat diverifikasi. Saat obrolan sumber terbuka dan tidak aktif, STMB secara otomatis mencoba lagi pembaruan tertunda yang masih lolos validasi, memverifikasi penanda yang disimpan, dan menghapus catatan yang diselesaikan tanpa munculan. Membuka kembali obrolan sumber juga memicu pemulihan ini. Konflik atau penyimpanan yang gagal masih membuka popup pemulihan; STMB tidak berulang kali mencoba lagi pemulihan yang gagal pada kunjungan yang sama. Buang tetap menyimpan penanda yang ada, sehingga Memories berikutnya mungkin mencakup pesan yang sudah diringkas oleh Memory yang disimpan.
+
 Jika queued Memory selesai setelah source chat-nya tidak lagi terbuka, Memory tetap disimpan ke Memory Book-nya. STMB merekam update last-processed marker di `extension_settings.STMemoryBooks.pendingProgress` alih-alih mengambil dan menulis ulang inactive character atau group chat. Job yang sudah masuk queue boleh selesai; request manual dan automatic base-memory baru untuk chat tersebut menunggu sampai pending update diterapkan atau secara eksplisit dibuang. Chat lain tetap dapat digunakan.
 
-Notification meminta pengguna membuka kembali source chat secara manual. Setelah chat itu dimuat dan idle, popup menawarkan **Apply**, **Later**, dan **Discard pending update**. Apply menampilkan **Processing…**, menjalankan `/stmb-set-highest <pending message number>` di chat terkait, lalu menghapus pending records dari settings sebelum menampilkan **Done**. Proses ini menggunakan normal manual-marker behavior dan range clamping milik command, tanpa membandingkan message content atau attachments dan tanpa membaca ulang chat. Later, Escape, atau menutup popup mempertahankan records. Main STMB panel memiliki tombol **Pending progress updates (N)** untuk membuka kembali management popup ini, termasuk setelah refresh atau menonaktifkan Chat Top Bar. STMB tidak pernah berpindah chat secara otomatis. Discard memerlukan konfirmasi dan tidak mengubah lorebook Memories yang sudah tersimpan.
+Mengklik pemberitahuan pembaruan yang tertunda atau tombol **Pending progress updates (N)** di panel utama akan membuka popup manajemen, termasuk setelah menyegarkan atau menonaktifkan Bilah Atas Obrolan. Munculan menjelaskan apa yang dilakukan penanda dan mengapa Memories yang disimpan tetap utuh saat pembaruan tertunda. Untuk obrolan lainnya, **Reopen chat and update marker** beralih ke obrolan karakter atau grup tersebut dan menerapkan pembaruan yang tertunda menggunakan jalur penyimpanan yang tervalidasi dan terverifikasi dalam satu klik. File tersebut harus masih ada, dan STMB memeriksa apakah obrolan yang dimaksud telah dimuat sebelum memperbaruinya. Itu tidak akan mengalihkan obrolan tanpa klik ini. Jika validasi gagal setelah dibuka kembali, catatan tetap tersedia untuk ditinjau dalam obrolan yang sekarang aktif.
+
+Untuk obrolan aktif, **Apply** tetap merupakan penggantian manual yang eksplisit: ini menampilkan **Processing…**, menjalankan `/stmb-set-highest <pending message number>` di obrolan yang terpengaruh, dan menghapus catatan yang tertunda dari pengaturan sebelum menampilkan **Done**. Ini menggunakan perilaku penanda manual normal dan penjepitan rentang, tanpa membandingkan konten pesan atau lampiran atau membaca kembali obrolan. **Later**, Escape, atau menutup popup akan menyimpan catatan. **Discard pending update** memerlukan konfirmasi dan membiarkan kenangan buku pengetahuan yang tersimpan tidak tersentuh.
 
 Setiap pending record berisi chat reference, operation/job identity, target message index, original marker state/revision, chat integrity identifier, dan SHA-256 fingerprint dari source message text dan identity fields. Attachment fields tidak dibaca atau dimasukkan ke fingerprint. Conversation text tidak disimpan. Appended messages dan perubahan hide/unhide diperbolehkan; edits, deletions, changed identity, manual marker changes, atau rollback dapat membuat update menjadi tidak aman. Pemeriksaan ini berlaku untuk automatic marker updates. Explicit Apply menggunakan slash command meskipun original fingerprint atau marker revision sudah tidak cocok; Later mempertahankan pending update dan Discard menghapusnya. Explicit chat/character rename events memetakan ulang pending references; reference yang hilang atau tidak dikenali tetap tersedia untuk review dan discard.
 
@@ -2124,6 +2139,7 @@ Kontrol berikut ada lebih bawah dalam popup **General Settings** di bawah **Toke
 | **Auto-hide messages after adding memory** | Global | Memilih no automatic hiding, semua processed messages hingga latest Memory, atau hanya range yang dipakai latest Memory. Hiding reversible dan tidak menghapus messages. |
 | **Messages to leave unhidden** | Global | Membiarkan sejumlah recent messages tetap visible ketika auto-hiding untuk overlap dekat Memory boundary. `0` hide sampai applicable scene end. |
 | **Unhide hidden messages for memory generation** | Global | Menjalankan equivalent `/unhide X-Y` untuk source range sebelum STMB compile. Selected auto-hide mode menentukan apa yang dihide kembali setelah save berhasil. |
+| **Also use hidden messages** | Global; Topical Clip | Termasuk pesan obrolan tersembunyi dari rentang Topical Clip dan dari pilihan pesan yang dibuat dengan Extract, tanpa mengubah status tersembunyinya. Tidak dicentang secara default; independen dari pengaturan **Unhide hidden messages for memory generation**. |
 
 ### 27.3 Automatic Memories dan consolidation reminders
 
@@ -2235,6 +2251,9 @@ Buka **Settings → Topical Clip** atau **Settings → Compaction**.
 |---|---|---|---|
 | **Generation Profile / Compaction Profile** | **Topical Clip → Generation Profile**, atau **Compaction → Compaction Profile** | Global shared default | Memilih STMB profile untuk Topical Clip generation dan Compaction. Mengubah di salah satu interface mengubah shared selection bagi keduanya. |
 | **Topical Clip Prompt** | **Topical Clip → Edit Topical Clip Prompt** | Global | Menyimpan custom prompt template untuk Topical Clip generation. **Reset to Default** kembali ke current built-in prompt. Required source macros divalidasi sebelum save atau generation. |
+| **Topical Format** | **Topical Clip → Edit Topical Format** | Global | Memformat Topical Clips yang baru disimpan dan pembaruan selanjutnya. Membutuhkan `{{CONTENT}}`; `{{TITLE}}` adalah opsional. |
+| **Combined Format** | **Combine Clips → Edit Combined Format** | Global | Memformat klip gabungan yang baru disimpan dan pembaruan selanjutnya, terpisah dari Format Topikal. |
+| **Combine Clips Prompt** | **Combine Clips → Edit Combine Clips Prompt** | Global | Mendefinisikan instruksi kombinasi. Membutuhkan `{{SOURCE_CLIPS}}`; `{{TITLE}}` adalah opsional. |
 | **Compaction Prompt** | **Compaction → Edit Compaction Prompt** | Global | Menyimpan custom prompt template untuk memendekkan existing Memory, Clip, dan Side Prompt entries. **Reset to Default** kembali ke current built-in prompt. `{{ENTRY_CONTENT}}` wajib. |
 
 Memory Book, topic, keywords, source inclusion, source selection, message range, draft, dan entry yang dipilih untuk Compaction adalah per-run workflow choices, bukan persistent settings.

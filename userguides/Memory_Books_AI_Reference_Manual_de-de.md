@@ -890,12 +890,14 @@ Bei der Generierung nimmt STMB einen Snapshot des aktiven Casts und speichert ih
 
 - User Message erhält den Active-Cast-Snapshot;
 - Narrator Response erhält den Generation-Snapshot;
+- Abgeschlossene Narrator-Antworten behalten diesen Snapshot bei, bis ihre Nachricht finalisiert ist, auch wenn die Generierung zuerst endet;
 - eine Continuation verbindet ihren Cast mit bestehenden Cast-Metadaten;
 - Swipe-Metadaten werden je Swipe getrennt gespeichert;
 - Auswahl eines Swipe kann Active Cast aus diesem Timeline-Punkt wiederherstellen;
 - Löschen neuer Nachrichten kann Cast State aus der letzten verbleibenden markierten Narrator Message wiederherstellen.
 
 Der Cast-Marker speichert Zuordnung, keine semantische Analyse der Prosa.
+Gestoppte oder fehlgeschlagene Teilantworten werden nicht automatisch markiert. Wenn eine Szene eine solche enthält, ist die Bestätigung der Besetzung der Legacy-Nachricht weiterhin erforderlich.
 
 ### 12.5 Abruf bei normaler Narrator-Generierung
 
@@ -1075,9 +1077,11 @@ Topical Clip organisiert nach Thema, nicht nach Chronologie aller Source Memorie
 Topical Clip verwendet:
 
 - bestätigte STMB-Memory-Einträge aus dem gewählten Source Book, einschließlich geeigneter Consolidated Summaries;
-- sichtbare Nachrichten aus einem explizit gewählten inklusiven `X-Y`-Bereich des aktuellen Chats.
+- Nachrichten aus einem explizit ausgewählten inklusiven `X-Y`-Bereich im aktuellen Chat. Versteckte Nachrichten werden nur dann berücksichtigt, wenn **Also use hidden messages** aktiviert ist.
 
-**Include saved Memories** und **Include chat messages** können separat oder gemeinsam verwendet werden. Message Ranges folgen der globalen Unhide-before-memory-Einstellung und stellen zuvor ausgeblendete Nachrichten nach Kompilierung wieder her.
+Die Steuerungen **Include saved Memories** und **Include chat messages** können einzeln oder zusammen verwendet werden. **Also use hidden messages**, direkt unter **Include chat messages**, steuert, ob Nachrichtenbereiche und Extraktauswahlen ausgeblendete Nachrichten enthalten. Die Option ist standardmäßig deaktiviert und wird global gespeichert. Die gleiche Einstellung ist in den Allgemeinen Einstellungen direkt unter **Unhide hidden messages for memory generation** verfügbar. Topical Clip liest versteckte Nachrichten, ohne ihre Sichtbarkeit zu ändern und unabhängig von der Einstellung „Unhide-before-memory“.
+
+Wenn das Topical Clip-Fenster geöffnet wird, verwendet **Start message ID** standardmäßig den ausgewählten Szenenstart, andernfalls die höchste verarbeitete Memory-Nachrichten-ID (der von `/stmb-highest` zurückgegebene Wert), andernfalls `0`. **End message ID** verwendet standardmäßig das ausgewählte Szenenende, andernfalls die aktuell letzte Nachrichten-ID; In einem leeren Chat bleibt es leer. Nachrichten-IDs basieren auf Null und die höchste verarbeitete ID wird direkt verwendet, ohne dass eine hinzugefügt wird. Diese Standardwerte werden einmalig beim Öffnen des Fensters festgelegt. Sie können sie bearbeiten und beim Ändern von Modi, Zielen oder Memory Books bleiben Ihre Änderungen erhalten. Ungültige oder umgekehrte Bereiche müssen vor der Generierung korrigiert werden.
 
 Nicht verwendet werden:
 
@@ -1095,7 +1099,7 @@ Nicht verwendet werden:
 5. Geben Sie Activation Keywords ein oder lassen Sie sie leer, um das Thema zu verwenden.
 6. Wählen Sie neuen Eintrag oder vorhandenes `[STMB Clip]`-Update-Target.
 7. Wählen Sie gespeicherte Memories, Chat Messages oder beides als Quellen.
-8. Wählen Sie optional nur bestimmte Quell-Memories aus. Für Chatnachrichten geben Sie einen exakten Bereich ein oder klicken auf **Extract…**, um den gesamten aktuellen Chat zu durchsuchen und einzelne Nachrichten auszuwählen, einschließlich nicht zusammenhängender und ausgeblendeter Nachrichten.
+8. Wählen Sie optional nur die bestimmte Quelle Memories aus. Geben Sie für Chat-Nachrichten einen genauen Bereich ein oder klicken Sie auf **Extract…**, um den gesamten aktuellen Chat zu durchsuchen und einzelne Nachrichten, einschließlich nicht zusammenhängender Nachrichten, auszuwählen. Aktivieren Sie **Also use hidden messages**, um ausgewählte ausgeblendete Nachrichten einzuschließen.
 9. Generation Profile wählen.
 10. Draft generieren.
 11. Prüfen und bearbeiten.
@@ -1103,18 +1107,23 @@ Nicht verwendet werden:
 
 Der generierte Draft wird nie automatisch gespeichert.
 
+**Edit Topical Format** steuert den äußeren Text des gespeicherten Eintrags. Standardmäßig werden die vorhandenen Rahmen `=== title ===` und `=== END title ===` verwendet. Das Format muss `{{CONTENT}}` genau einmal enthalten; `{{TITLE}}` ist optional. Beispielsweise speichert `## {{TITLE}}` gefolgt von `{{CONTENT}}` eine Markdown-Überschrift, während `{{CONTENT}}` allein den Textkörper ohne Ränder speichert. Die Vorschau zeigt das Ergebnis. Durch Zurücksetzen wird das integrierte Format wiederhergestellt. Eine neue Einstellung wirkt sich auf nachfolgende Speicherungen aus, nicht auf bestehende Einträge. Gewöhnliche Clip-Anhänge bewahren das in einem Eintrag aufgezeichnete Format. Topical Clip-Updates verwenden die aktuelle Einstellung für diesen Cliptyp.
+
+Mit der Einfügeüberschreibung können Sie eine Position und Reihenfolge für diesen Speichervorgang auswählen. Für die Auswahl von **Outlet** ist ein **Outlet Name** erforderlich. Ein deaktiviertes Update-Ziel oder normales Clip-Ziel ist standardmäßig ausgeblendet. **Show disabled clips** verrät es. Durch das Speichern eines Updates auf einem deaktivierten Topical Clip wird dies aktiviert.
 
 ### Bestehende Topical Clips kombinieren
 
-Klicken Sie im Fenster **Topical Clip** auf **Combine Clips**. Wählen Sie ein Memory Book, mindestens zwei Topical Clips (bei Bedarf auch deaktivierte Clips) und geben Sie den Titel des neuen Clips ein. Es erscheinen nur von STMB erstellte Topical Clips; normale Clips sind ausgeschlossen. Die Aktivierungs-Keywords des neuen Clips sind die Vereinigung der primären Keywords der ausgewählten Clips ohne Duplikate. Sekundäre Keyword-Bedingungen werden nicht kopiert.
+Klicken Sie im Fenster **Topical Clip** auf **Combine Clips**. Wählen Sie einen Memory Book aus, wählen Sie mindestens zwei Topical Clips (verwenden Sie **Show disabled clips**, um deaktivierte Clips einzuschließen) und geben Sie den Titel des neuen Clips ein. Es werden nur Topical Clips angezeigt, die von STMB erstellt wurden. normale Clips sind ausgeschlossen. Die Aktivierungsschlüsselwörter des neuen Clips sind die Vereinigung der primären Schlüsselwörter der ausgewählten Clips ohne Duplikate. Sekundäre Schlüsselwortbedingungen werden nicht kopiert.
 
 Wählen Sie ein Generierungsprofil und klicken Sie auf **Generate Draft**. Die KI erhält Titel und vollständigen Inhalt jedes ausgewählten Clips und soll belegte Fakten zusammenführen, Wiederholungen entfernen und ungelöste Konflikte beibehalten. Prüfen und bearbeiten Sie den Draft vor dem Speichern. Änderungen an ausgewählten Quellen, Titel oder Memory Book löschen den Draft. Wenn sich eine Quelle vor dem Speichern ändert, erzeugen Sie einen neuen Draft.
+
+**Edit Combine Clips Prompt** ändert die AI-Konsolidierungsanweisungen. Seine Vorlage erfordert genau einmal `{{SOURCE_CLIPS}}` und kann `{{TITLE}}` verwenden. **Edit Combined Format** steuert unabhängig, wie das gespeicherte Ergebnis umgebrochen wird, indem es dieselben `{{CONTENT}}`- und optionalen `{{TITLE}}`-Platzhalter wie das Topical-Format verwendet. Beide Editoren bieten „Auf Standard zurücksetzen“ an. Die Einfügungsüberschreibung umfasst Position, Outlet-Name, wenn Outlet ausgewählt ist, und Reihenfolge.
 
 **Disable original clips after saving** ist standardmäßig aktiviert. Deaktivieren Sie die Option, um den aktuellen Aktivierungszustand der Originale beizubehalten. Beim Speichern wird der neue Topical Clip aktiviert angelegt und bei aktivierter Option werden die Originale im selben Memory-Book-Update deaktiviert. Die Originale werden nie gelöscht. Der kombinierte Clip speichert seine Quell-IDs getrennt von der normalen Topical-Clip-Historie der Memory-Quellen.
 
 Wenn Text im Chat markiert ist, bietet das schwebende Steuerelement **Clip** und **Extract** an. Extract öffnet denselben Nachrichten-Picker mit dem markierten Text als Suchanfrage. Er durchsucht die vollständige Historie des aktuellen Chats, einschließlich Nachrichten, die nicht auf dem Bildschirm gerendert sind. Eine leere Suche listet alle Nachrichten. Die Suche gleicht Literaltext oder Sprechernamen ohne Beachtung der Groß-/Kleinschreibung ab; **Hidden only** beschränkt die Treffer auf ausgeblendete Nachrichten.
 
-Ergebnisse erscheinen in Gruppen von 50. Verwenden Sie **Load more**, um weitere Treffer anzuzeigen, klappen Sie einen Treffer auf, um seinen vollständigen Text mit hervorgehobenen Treffern zu lesen, oder verwenden Sie **Previous message** und **Next message**, um umgebenden Kontext einzublenden. Kontextnachrichten werden nicht automatisch ausgewählt und können erscheinen, auch wenn sie nicht zur Suche oder zum Filter Hidden only passen. Ausgeblendete Nachrichten sind gekennzeichnet; ihre Auswahl nimmt den Text in die Topical-Clip-Quelle auf, ohne die Nachricht im Chat einzublenden.
+Ergebnisse werden in Stapeln von 50 angezeigt. Verwenden Sie **Load more**, um weitere Treffer anzuzeigen, erweitern Sie ein Ergebnis, um den vollständigen Text mit hervorgehobenen Treffern zu lesen, oder verwenden Sie **Previous message** und **Next message**, um den umgebenden Kontext anzuzeigen. Kontextmeldungen werden nicht automatisch ausgewählt und können auch dann angezeigt werden, wenn sie nicht mit der Suche oder dem Filter „Nur ausgeblendet“ übereinstimmen. Versteckte Nachrichten sind gekennzeichnet; Ausgewählte ausgeblendete Nachrichten werden nur dann in die Topical Clip-Quelle aufgenommen, wenn **Also use hidden messages** aktiviert ist, ohne sie im Chat einzublenden.
 
 Auswahlen bleiben über Suchvorgänge und Filteränderungen hinweg erhalten. Die Auswahlanzahl umfasst auch Nachrichten außerhalb der angezeigten Ergebnisse. **Select loaded results** wählt jedes angezeigte Ergebnis einschließlich eingeblendeter Kontextnachrichten; **Clear selection** entfernt alle Auswahlen. Wählen Sie **Topical Clip** aus einem eigenständigen Extract oder **Use selected messages**, wenn Sie zu einem bestehenden Editor zurückkehren. Die Suchanfrage liefert das anfängliche Thema und die Keywords; beide bleiben bearbeitbar.
 
@@ -1122,7 +1131,7 @@ STMB speichert Quell-Fingerprints, wenn Nachrichten in den Picker gelangen, und 
 
 ### 15.4 Bestehenden Topical Clip aktualisieren
 
-Nach erfolgreichem Lauf speichert STMB die verwendeten Source Memories und gegebenenfalls Source Chat, Message Range, Message IDs und Hashes. Ein späteres Memory-basiertes Update sendet normalerweise nur neue/geänderte Source Memories zusammen mit dem bestehenden Clip Content. Message Ranges werden immer explizit gewählt.
+Nach einer erfolgreichen Ausführung zeichnet STMB auf, welche Quelle Memories verwendet wurde und gegebenenfalls den Quell-Chat, den Nachrichtenbereich, die Nachrichten-IDs und Hashes. Ein späteres Memory-basiertes Update sendet normalerweise nur neue oder geänderte Quell-Memories zusammen mit dem vorhandenen Clip-Inhalt. Überprüfen Sie den vorab ausgefüllten Nachrichtenbereich oder geben Sie für jede Ausführung einen anderen Bereich ein.
 
 Verwenden Sie **Rebuild from all source memories**, wenn:
 
@@ -1240,7 +1249,7 @@ Ein ausgewählter Set ersetzt einzeln aktivierte automatische Prompts für diese
 
 **Memory Assistance** ist ein reservierter Side Prompt mit fünf unabhängigen Modi. Er läuft nach erfolgreich gespeicherten Memories unabhängig von gewöhnlicher Side-Prompt-Aktivierung oder dem ausgewählten Side Prompt Set. Während Memory Regeneration läuft er nicht.
 
-Memory Assistance vergleicht die rohe verarbeitete Szene mit normalen und Topical Clips in jedem Memory Book, das die Memory erhalten hat. An die KI werden für jeden geprüften Clip Titel/Thema, Keywords, aktueller Inhalt, stabile ID und Typ gesendet.
+Memory Assistance vergleicht die rohe verarbeitete Szene mit normalen und Topical Clips in jedem Memory Book, das die Memory erhalten hat. An die KI werden für jeden geprüften Clip Titel/Thema, Keywords, aktueller Inhalt, stabile ID und Typ gesendet. Es werden nur aktivierte Clips überprüft. Deaktivierte Clips werden von KI-Abfragen ausgeschlossen und aus ausstehenden Vorschlägen ausgeblendet, ohne dass gespeicherte Berichte gelöscht werden.
 
 Wenn die Job Queue verfügbar ist, erhält jedes Ziel-Memory-Book nach dem Speichern der Memory einen separaten **Memory Assistance**-Job. Fehler bei Anfrage, Response Validation, Report Save oder Automatic Application markieren diesen Job als **Failed** und zeigen den Fehler in der Queue. Die gespeicherte Memory bleibt **Completed**, und ein Retry von Memory Assistance regeneriert die Memory nicht.
 
@@ -1995,9 +2004,15 @@ Ohne Chat Top Bar laufen normale Workflows weiter, nur ohne Queue UI.
 
 ### Verzögerte Aktualisierung des zuletzt verarbeiteten Stands
 
+Der zuletzt verarbeitete Marker zeichnet die höchste Chat-Nachricht auf, die bereits von einem gespeicherten Memory abgedeckt wurde. Es liefert die Grenze, die für nachfolgende Memory-Bereiche und die automatische Schwellenwertzählung verwendet wird; es handelt sich nicht um den konfigurierten Schwellenwert selbst. Wenn der Quellchat geladen und inaktiv ist und die Validierung erfolgreich ist, aktualisiert und überprüft STMB die Markierung automatisch.
+
+Ausstehende Updates beschränken sich nicht nur auf das Wechseln von Chats. Eine Aktualisierung kann auch verschoben werden, während der aktuelle Chat eine Antwort generiert, eine Nachricht speichert oder bearbeitet, wenn die Validierung der Quellnachricht oder Markierung fehlschlägt oder wenn die automatische Markierungsspeicherung nicht überprüft werden kann. Wenn der Quellchat geöffnet und inaktiv ist, versucht STMB automatisch erneut, ausstehende Aktualisierungen durchzuführen, die die Validierung noch bestehen, überprüft die gespeicherte Markierung und löscht die aufgelösten Datensätze ohne Popup. Auch das erneute Öffnen des Quellchats löst diese Wiederherstellung aus. Konflikte oder fehlgeschlagene Speicherungen öffnen weiterhin das Wiederherstellungs-Popup; STMB versucht eine fehlgeschlagene Wiederherstellung während desselben Besuchs nicht wiederholt. Beim Verwerfen bleibt die vorhandene Markierung erhalten, sodass nachfolgende Memories möglicherweise Nachrichten überdecken, die bereits durch die gespeicherte Memory zusammengefasst wurden.
+
 Wenn eine Memory aus der Queue fertig wird, nachdem ihr Quell-Chat nicht mehr geöffnet ist, wird die Memory trotzdem in ihrem Memory Book gespeichert. STMB speichert die Aktualisierung des Last-Processed-Markers in `extension_settings.STMemoryBooks.pendingProgress`, statt den inaktiven Character- oder Group-Chat abzurufen und neu zu schreiben. Bereits eingereihte Jobs dürfen fertig werden; neue manuelle und automatische Base-Memory-Anfragen für diesen Chat warten, bis die ausstehenden Aktualisierungen angewendet oder ausdrücklich verworfen wurden. Andere Chats bleiben nutzbar.
 
-Die Benachrichtigung fordert den Nutzer auf, den Quell-Chat manuell wieder zu öffnen. Sobald dieser Chat geladen und inaktiv ist, bietet ein Popup **Apply**, **Later** und **Discard pending update** an. Apply zeigt **Processing…**, führt im betroffenen Chat `/stmb-set-highest <pending message number>` aus und entfernt die ausstehenden Datensätze aus den Einstellungen, bevor **Done** angezeigt wird. Dabei wird das normale manuelle Marker-Verhalten des Befehls einschließlich Range-Clamping verwendet, ohne Nachrichteninhalte oder Attachments zu vergleichen oder den Chat erneut zu lesen. Later, Escape oder das Schließen des Popups bewahrt die Datensätze. Im STMB-Hauptpanel kann die Schaltfläche **Pending progress updates (N)** dieses Verwaltungs-Popup erneut öffnen, auch nach einem Refresh oder nach dem Deaktivieren von Chat Top Bar. STMB wechselt niemals automatisch den Chat. Discard erfordert eine Bestätigung und lässt gespeicherte Lorebook-Memories unverändert.
+Durch Klicken auf die Benachrichtigung über ausstehende Updates oder auf die Schaltfläche **Pending progress updates (N)** im Hauptfenster wird das Verwaltungs-Popup geöffnet, auch nach dem Aktualisieren oder Deaktivieren der oberen Chat-Leiste. Das Popup erklärt, was der Marker tut und warum gespeicherte Memories intakt bleiben, während ein Update aussteht. Für einen anderen Chat wechselt **Reopen chat and update marker** zu diesem Charakter- oder Gruppenchat und wendet die ausstehenden Aktualisierungen mithilfe des validierten, verifizierten Speicherpfads mit einem Klick an. Die Datei muss noch vorhanden sein und STMB prüft, ob der gewünschte Chat geladen ist, bevor er aktualisiert wird. Ohne diesen Klick wird der Chat nicht gewechselt. Wenn die Validierung nach dem erneuten Öffnen fehlschlägt, bleiben die Datensätze im jetzt aktiven Chat zur Überprüfung verfügbar.
+
+Für den aktiven Chat bleibt **Apply** eine explizite manuelle Überschreibung: Es zeigt **Processing…** an, führt `/stmb-set-highest <pending message number>` im betroffenen Chat aus und entfernt die ausstehenden Datensätze aus den Einstellungen, bevor **Done** angezeigt wird. Es nutzt das normale manuelle Markierungsverhalten und die Bereichsbegrenzung des Befehls, ohne Nachrichteninhalte oder Anhänge zu vergleichen oder den Chat zurückzulesen. Durch **Later**, Escape oder das Schließen des Popups bleiben die Datensätze erhalten. **Discard pending update** erfordert eine Bestätigung und lässt gespeicherte Lorebook-Speicher unberührt.
 
 Jeder ausstehende Datensatz enthält eine Chat-Referenz, die Operation-/Job-Identität, den Ziel-Nachrichtenindex, den ursprünglichen Marker-Zustand bzw. dessen Revision, eine Chat-Integritätskennung und einen SHA-256-Fingerprint des Quell-Nachrichtentextes und der Identitätsfelder. Attachment-Felder werden weder gelesen noch in den Fingerprint einbezogen. Konversationstext wird nicht gespeichert. Angefügte Nachrichten sowie Hide/Unhide-Änderungen sind zulässig; Bearbeitungen, Löschungen, geänderte Identität, manuelle Marker-Änderungen oder Rollback können eine Aktualisierung unsicher machen. Diese Prüfungen gelten für automatische Marker-Aktualisierungen. Ein ausdrückliches Apply verwendet den Slash Command auch dann, wenn der ursprüngliche Fingerprint oder die Marker-Revision nicht mehr übereinstimmt; Later bewahrt die ausstehende Aktualisierung, Discard entfernt sie. Ausdrückliche Chat-/Character-Rename-Ereignisse ordnen ausstehende Referenzen neu zu; fehlende oder nicht erkannte Referenzen bleiben zur Prüfung und zum Verwerfen verfügbar.
 
@@ -2117,11 +2132,14 @@ Side-Prompt-Rollback verwendet Version-2-Regeneration-Snapshots. Jeder Snapshot 
 
 #### Token Saving in General Settings
 
+Diese Steuerelemente befinden sich weiter unten im selben Popup **General Settings** unter **Token Saving (Hide/Unhide Messages)**.
+
 | Einstellung | Scope | Wirkung |
 |---|---|---|
 | **Auto-hide messages after adding memory** | Global | Kein Auto-Hide, alle bis letzte Memory oder nur Last-Memory-Range. Reversibel, keine Löschung. |
 | **Messages to leave unhidden** | Global | Lässt n aktuelle Messages sichtbar; `0` blendet bis zum relevanten Scene End aus. |
 | **Unhide hidden messages for memory generation** | Global | Entspricht `/unhide X-Y` vor Compilation; Auto-Hide bestimmt erneutes Ausblenden nach Save. |
+| **Also use hidden messages** | Global; Topical Clip | Beinhaltet versteckte Chat-Nachrichten aus Topical Clip-Bereichen und aus Nachrichtenauswahlen, die mit Extract getroffen wurden, ohne ihren versteckten Status zu ändern. Standardmäßig deaktiviert; unabhängig von der **Unhide hidden messages for memory generation**-Einstellung. |
 
 ### 27.3 Automatic Memories und Consolidation Reminders
 
@@ -2227,15 +2245,22 @@ Provider, Modell, Temperatur, Connection Preset und Reverse Proxy für Current S
 
 ### 27.8 Topical Clip und Compaction Defaults
 
+Öffnen Sie im Hauptpanel **Settings → Topical Clip** oder **Settings → Compaction**.
+
 | Einstellung | Ort | Scope | Wirkung |
 |---|---|---|---|
 | **Generation Profile / Compaction Profile** | Topical Clip bzw. Compaction | Shared global default | Profil für beide Workflows; Auswahl wird geteilt. |
 | **Topical Clip Prompt** | Edit Topical Clip Prompt | Global | Custom Prompt; Reset to Default; Source Macros werden validiert. |
+| **Topical Format** | **Topical Clip → Edit Topical Format** | Global | Formatiert neu gespeicherte Topical Clips und spätere Updates. Erfordert `{{CONTENT}}`; `{{TITLE}}` ist optional. |
+| **Combined Format** | **Combine Clips → Edit Combined Format** | Global | Formatiert neu gespeicherte kombinierte Clips und spätere Aktualisierungen getrennt vom Topical Format. |
+| **Combine Clips Prompt** | **Combine Clips → Edit Combine Clips Prompt** | Global | Definiert Kombinationsanweisungen. Erfordert `{{SOURCE_CLIPS}}`; `{{TITLE}}` ist optional. |
 | **Compaction Prompt** | Edit Compaction Prompt | Global | Custom Prompt; `{{ENTRY_CONTENT}}` erforderlich. |
 
 Memory Book, Topic, Keywords, Sources, Message Range, Draft und Selected Compaction Entry sind Per-Run-Choices.
 
 ### 27.9 Consolidate-Memories-Controls
+
+Öffnen Sie **Consolidate Memories** über die Schaltflächen am unteren Rand des Hauptpanels. Diese Oberfläche kombiniert gespeicherte Standardwerte mit Einstellungen für den aktuellen Durchlauf.
 
 | Einstellung | Scope | Wirkung |
 |---|---|---|

@@ -889,12 +889,14 @@ Narrator Mode 要求：
 
 - 使用者訊息收到 active-cast snapshot；
 - Narrator 回復收到 generation snapshot；
+- 完成的 Narrator 回應保留該快照，直到其訊息最終確定，即使產生首先結束；
 - continuation 會把其 cast 與已有 cast metadata 合併；
 - swipe metadata 為每個 swipe 單獨儲存；
 - 選擇 swipe 可以從該 timeline point 恢復 active cast；
 - 刪除最近訊息可以從剩餘最新帶標籤 Narrator message 恢復 cast state。
 
 cast marker 記錄關聯關係，不是對 prose 的語義分析。
+不會自動標記已停止或失敗的部分回應。如果場景包含一個，則遺留訊息演員確認仍然是必要的。
 
 ### 12.5 正常 Narrator 生成時的檢索
 
@@ -1074,9 +1076,11 @@ Topical Clip 按主題組織，而不是按每個 source Memory 的時間順序�
 Topical Clip 使用：
 
 - 所選 source book 中已經確認的 STMB Memory entries，包括符合條件的 consolidated summaries；
-- 當前聊天中明確選擇的 inclusive `X-Y` 範圍內可見 messages。
+- 來自目前聊天中明確選擇的 `X-Y` 範圍的訊息。僅當選取 **Also use hidden messages** 時才包含隱藏訊息。
 
-**Include saved Memories** 和 **Include chat messages** 可以單獨或一起使用。message ranges 遵循全局 unhide-before-memory 設定，並在編譯後恢復之前隱藏的 messages。
+**Include saved Memories** 和 **Include chat messages** 控制可以單獨或一起使用。 **Also use hidden messages**（位於 **Include chat messages** 正下方）控制訊息範圍和提取選擇是否包含隱藏訊息。它預設為未選取狀態並全域保存，在 **Unhide hidden messages for memory generation** 正下方的常規設定中提供相同的設定。 Topical Clip 讀取隱藏訊息而不改變其可見性，並且獨立於記憶體前取消隱藏設定。
+
+當Topical Clip視窗開啟時，**Start message ID**預設為所選場景開始，否則為最高處理的Memory訊息ID（`/stmb-highest`傳回的值），否則為`0`。 **End message ID**預設為選擇的scene-end，否則為目前最後一則訊息ID；它在空聊天中保持空白。訊息ID從0開始，直接使用最高的處理ID，不加1。這些預設值在視窗開啟時設定一次。您可以編輯它們，並且更改模式、目標或 Memory Books 會保留您的編輯。生成之前必須修正無效或顛倒的範圍。
 
 它不使用：
 
@@ -1094,7 +1098,7 @@ Topical Clip 使用：
 5. 輸入 activation keywords，或留空使用 topic。
 6. 選擇新 entry，或已有 `[STMB Clip]` update target。
 7. 選擇 saved Memories、chat messages 或兩者作為來源。
-8. 可選：只選擇特定的 source Memories。對 chat messages，可以輸入精確範圍，或點擊 **Extract…** 搜尋目前完整 chat 並逐條選擇 message，包括不連續與 hidden messages。
+8. 可選擇僅選擇特定來源 Memories。對於聊天訊息，輸入準確的範圍或點擊 **Extract…** 搜尋完整的目前聊天並選擇單一訊息，包括不連續的訊息。檢查 **Also use hidden messages** 以包含選定的隱藏訊息。
 9. 選擇 generation profile。
 10. 生成 draft。
 11. 審核並編輯。
@@ -1102,18 +1106,23 @@ Topical Clip 使用：
 
 生成 draft 永遠不會自動儲存。
 
+**Edit Topical Format** 控制已儲存條目的外部文字。其預設使用現有的 `=== title ===` 和 `=== END title ===` 邊框。此格式必須包含 `{{CONTENT}}` 一次； `{{TITLE}}` 是可選的。例如，`## {{TITLE}}` 後跟 `{{CONTENT}}` 保存 Markdown 標題，而單獨 `{{CONTENT}}` 則保存無邊框的正文。預覽顯示結果。重置可恢復內建格式。新的首選項會影響後續保存，而不影響現有條目。普通Clip附加保留條目上記錄的格式； Topical Clip 更新使用該剪輯類型的當前首選項。
+
+插入覆蓋可讓您選擇此儲存的位置和順序。選擇 **Outlet** 需要 **Outlet Name**。禁用的更新目標或普通 Clip 目標預設隱藏； **Show disabled clips**揭示了它。將更新儲存到已停用的 Topical Clip 即可啟用它。
 
 ### 合併現有 Topical Clips
 
-在 **Topical Clip** 視窗中點擊 **Combine Clips**。選擇一個 Memory Book，至少選擇兩個 Topical Clips（需要時可包含 disabled clips），並輸入新 clip 的 title。這裡只顯示由 STMB 建立的 Topical Clips；普通 Clips 不會出現。新 clip 的 activation keywords 是所選 clips 的 primary keywords 去重後的聯集。Secondary keyword conditions 不會複製。
+在 **Topical Clip** 視窗中，按一下 **Combine Clips**。選擇一個 Memory Book，選擇至少兩個 Topical Clips（使用 **Show disabled clips** 包含已停用的剪輯），然後輸入新剪輯的標題。僅出現由STMB創建的Topical Clips；普通Clips除外。新剪輯的啟動關鍵字是所選剪輯的主要關鍵字的並集，沒有重複。不複製輔助關鍵字條件。
 
 選擇 generation profile 並點擊 **Generate Draft**。AI 會收到每個所選 clip 的 title 與完整 content，並被要求合併有依據的事實、移除重複內容，同時保留尚未解決的衝突。儲存前請 review 並編輯 draft。變更所選 sources、title 或 Memory Book 會清空 draft。如果某個 source 在儲存前發生變化，請重新生成 draft。
+
+**Edit Combine Clips Prompt**更改了AI合併指令。其模板需要 `{{SOURCE_CLIPS}}` 一次，並且可以使用 `{{TITLE}}`。 **Edit Combined Format** 獨立控制如何包裝保存的結果，使用與主題格式相同的 `{{CONTENT}}` 和可選的 `{{TITLE}}` 佔位符。兩個編輯器都提供重設為預設值。插入覆蓋包括位置、選擇插座時的插座名稱以及順序。
 
 **Disable original clips after saving** 預設勾選。取消勾選可保留原 clips 目前的 activation state。儲存會建立一個 enabled 的新 Topical Clip；如果該選項仍勾選，則會在同一次 Memory Book update 中 disable 原 clips。原 clips 永遠不會被刪除。合併後的 clip 會另外記錄 source IDs，與普通 Topical Clip 的 Memory-source history 分開。
 
 當 chat 中有文字被 highlight 時，浮動 control 會提供 **Clip** 與 **Extract**。Extract 會開啟同一個 message picker，並把反白文字作為 search query。它會搜尋目前 chat 的完整 history，包括目前沒有在畫面上 render 的 messages。空 search 會列出所有 messages。Search 會對 literal text 或 speaker names 做不區分大小寫的比對；**Hidden only** 會把結果限制為 hidden messages。
 
-結果每批顯示 50 筆。使用 **Load more** 顯示更多結果；展開某個結果可以閱讀帶有反白 match 的完整 text；也可以使用 **Previous message** 與 **Next message** 顯示相鄰 context。Context messages 不會自動被選取，即使它們不符合 search 或 Hidden only filter 也可能顯示。Hidden messages 會有標記；選取它們會把 text 加入 Topical Clip source，但不會在 chat 中 unhide。
+結果以 50 個為批次顯示。使用 **Load more** 顯示更多匹配項，展開結果以閱讀突出顯示匹配項的完整文本，或使用 **Previous message** 和 **Next message** 顯示周圍的上下文。上下文訊息不會自動選擇，即使它們與搜尋或僅隱藏過濾器不匹配，也會顯示。隱藏的訊息被標記；只有在選取 **Also use hidden messages** 時，所選隱藏訊息才會包含在 Topical Clip 來源中，而不會在聊天中取消隱藏它們。
 
 選擇會在不同 search 與 filter 變化之間保留。Selection count 包括目前結果清單之外的 messages。**Select loaded results** 會選擇所有已顯示結果，包括顯示出的 context messages；**Clear selection** 會清除全部選擇。獨立使用 Extract 時選擇 **Topical Clip**；返回已有 editor 時選擇 **Use selected messages**。Query 會提供初始 topic 與 keywords，兩者都仍可編輯。
 
@@ -1121,7 +1130,7 @@ STMB 會在 message 進入 picker 時記錄 source fingerprints，並在接受�
 
 ### 15.4 更新已有 Topical Clip
 
-成功運行後，STMB 會記錄使用了哪些 source Memories；如果使用聊天訊息，還會記錄 source chat、message range、message IDs 與 hashes。以後基於 Memory 的更新通常只發送新增或已變化的 source Memories，並帶上現有 Clip 內容。message ranges 始終需要明確選擇。
+成功運行後，STMB 記錄使用了哪個來源 Memories，以及來源聊天（如果適用）、訊息範圍、訊息 ID 和雜湊值。稍後基於 Memory 的更新通常僅發送新的或更改的來源 Memories 以及現有的 Clip 內容。查看預先填入的訊息範圍或為每次運行輸入不同的範圍。
 
 以下情況使用 **Rebuild from all source memories**：
 
@@ -1239,7 +1248,7 @@ Side Prompt 可以啓用 **Run automatically after memory**。
 
 **Memory Assistance** 是一個保留的 Side Prompt，共有五種彼此獨立的 mode。成功儲存 Memory 後，無論普通 Side Prompt 是否啟用、目前選擇了哪個 Side Prompt Set，它都會執行。Memory regeneration 期間不會執行。
 
-Memory Assistance 會把原始 processed scene 與收到該 Memory 的每本 Memory Book 中的 ordinary 和 Topical Clips 比較。對每個被審核 Clip，它會發送 title/topic、keywords、current content、stable ID 與 type 給 AI。
+Memory Assistance 會把原始 processed scene 與收到該 Memory 的每本 Memory Book 中的 ordinary 和 Topical Clips 比較。對每個被審核 Clip，它會發送 title/topic、keywords、current content、stable ID 與 type 給 AI。 僅審查已啟用的 Clips。已停用的 Clips 將從 AI 查詢中排除，並從待處理建議中隱藏，而無需刪除已儲存的報告。
 
 有 job queue 時，每個 target Memory Book 都會在 Memory 儲存後獲得一個獨立 **Memory Assistance** job。request、response-validation、report-save 或 automatic-application error 會把該 job 標為 **Failed** 並在佇列中顯示錯誤。已儲存 Memory 仍是 **Completed**；重試 Memory Assistance 不會重新生成 Memory。
 
@@ -1994,9 +2003,15 @@ Checkpoints 會把已接受的 summary draft、生成的 keywords、source IDs �
 
 ### Deferred last-processed progress
 
+最後處理的標記記錄已被儲存的 Memory 覆蓋的最高聊天訊息。它提供用於後續Memory範圍和自動閾值計數的邊界；它不是配置的閾值本身。當來源聊天載入並空閒且驗證成功時，STMB 會自動更新並驗證標記。
+
+待處理的更新不僅限於切換聊天。當目前聊天正在產生回應、儲存或編輯訊息時，當來源訊息或標記驗證失敗時，或無法驗證自動標記儲存時，也可以延遲更新。當來源聊天開啟且空閒時，STMB 會自動重試仍通過驗證的掛起更新，驗證已儲存的標記，並清除已解析的記錄，而不會彈出視窗。重新開啟來源聊天也會觸發此復原。衝突或失敗的保存仍然會開啟恢復彈出視窗； STMB 在同一訪問期間不會重複重試失敗的恢復。丟棄保留現有標記，因此後續 Memories 可能會覆蓋已由已儲存的 Memory 匯總的訊息。
+
 如果 queued Memory 在其 source chat 已經不再開啟之後完成，該 Memory 仍會儲存到 Memory Book。STMB 不再取得並重寫 inactive character/group chat，而是把 last-processed marker update 記錄到 `extension_settings.STMemoryBooks.pendingProgress`。已經 queued 的 jobs 可以繼續完成；該 chat 新的 manual 與 automatic base-memory requests 會等待，直到 pending updates 被套用或明確 discarded。其他 chats 仍可正常使用。
 
-Notification 會要求使用者手動重新開啟 source chat。當該 chat 已載入且 idle 時，popup 提供 **Apply**、**Later** 與 **Discard pending update**。Apply 會顯示 **Processing…**，在 affected chat 中執行 `/stmb-set-highest <pending message number>`，然後從 settings 中移除 pending records 並顯示 **Done**。它使用該 command 正常的 manual-marker behavior 與 range clamping，不比較 message content 或 attachments，也不重新讀取 chat。Later、Escape 或關閉 popup 會保留 records。STMB main panel 有 **Pending progress updates (N)** button，可重新開啟此 management popup，包括 refresh 或停用 Chat Top Bar 之後。它不會自動切換 chats。Discard 需要確認，而且不會改變已儲存的 lorebook memories。
+點擊待更新通知或主面板的 **Pending progress updates (N)** 按鈕將開啟管理彈出窗口，包括在刷新或停用聊天頂部欄之後。彈出視窗解釋了標記的作用以及為什麼保存的 Memories 在更新掛起時保持不變。另一次聊天，**Reopen chat and update marker** 切換到該角色或羣組聊天，並使用經過驗證的儲存路徑一鍵套用其掛起的更新。該檔案必須仍然存在，並且 STMB 在更新之前會檢查預期的聊天是否已載入。如果沒有此單擊，它不會切換聊天。如果重新開啟後驗證失敗，記錄仍可在目前活動的聊天中查看。
+
+對於活動聊天，**Apply** 仍然是明確手動覆蓋：它顯示 **Processing…**，在受影響的聊天中運行 `/stmb-set-highest <pending message number>`，並在顯示 **Done** 之前從設定中刪除待處理記錄。它使用命令的正常手動標記行為和範圍限制，而不比較訊息內容或附件或閱讀聊天內容。 **Later**、退出或關閉彈出視窗會保留記錄。 **Discard pending update** 需要確認並保持保存的知識簿記憶不變。
 
 每個 pending record 包含 chat reference、operation/job identity、target message index、original marker state/revision、chat integrity identifier，以及 source message text 與 identity fields 的 SHA-256 fingerprint。Attachment fields 不會讀取或 fingerprint。Conversation text 不會被持久化。追加 messages 與 hide/unhide changes 是允許的；edits、deletions、identity 變化、manual marker changes 或 rollback 可能使 update 不安全。這些檢查用於 automatic marker updates。Explicit Apply 即使在 original fingerprint 或 marker revision 已不相符時仍會使用 slash command；Later 保留 pending update，Discard 刪除它。明確的 chat/character rename events 會 remap pending references；missing 或 unrecognized references 仍保留供 review 與 discard。
 
@@ -2123,6 +2138,7 @@ Side Prompt rollback 使用 version-2 regeneration snapshots。每個 snapshot �
 | **Auto-hide messages after adding memory** | Global | 選擇不自動隱藏、隱藏到 latest Memory 為止的所有 processed messages，或只隱藏 latest Memory 使用的 range。隱藏可逆，不會刪除 messages。 |
 | **Messages to leave unhidden** | Global | auto-hide 時保留這麼多 recent messages 可見，以在 Memory boundary 附近保留 overlap。`0` 會一直隱藏到適用 scene end。 |
 | **Unhide hidden messages for memory generation** | Global | 在 STMB 編譯 source range 前執行相當於 `/unhide X-Y` 的操作。成功儲存後，由選定 auto-hide mode 決定哪些內容再次隱藏。 |
+| **Also use hidden messages** | Global; Topical Clip | 在 Topical Clip 訊息範圍和 Extract 選取的訊息中包含隱藏訊息，不改變其隱藏狀態。預設不勾選；獨立於 **Unhide hidden messages for memory generation** 設定。 |
 
 ### 27.3 Automatic Memories 與 consolidation reminders
 
@@ -2234,6 +2250,9 @@ Active SillyTavern provider、model、temperature、connection preset 與 revers
 |---|---|---|---|
 | **Generation Profile / Compaction Profile** | **Topical Clip → Generation Profile**，或 **Compaction → Compaction Profile** | Global shared default | 選擇 Topical Clip generation 與 Compaction 使用的 STMB profile。在任一界面改變它，都會改變兩個 workflows 共用的 selection。 |
 | **Topical Clip Prompt** | **Topical Clip → Edit Topical Clip Prompt** | Global | 儲存 custom Topical Clip prompt template。**Reset to Default** 返回當前 built-in prompt。儲存或 generation 前會驗證 required source macros。 |
+| **Topical Format** | **Topical Clip → Edit Topical Format** | Global | 設定新儲存的 Topical Clips 及後續更新的格式。必須包含 `{{CONTENT}}`；`{{TITLE}}` 可選。 |
+| **Combined Format** | **Combine Clips → Edit Combined Format** | Global |格式化新儲存的組合剪輯和以後的更新，與主題格式分開。 |
+| **Combine Clips Prompt** | **Combine Clips → Edit Combine Clips Prompt** | Global |定義組合指令。需要`{{SOURCE_CLIPS}}`； `{{TITLE}}` 是可選的。 |
 | **Compaction Prompt** | **Compaction → Edit Compaction Prompt** | Global | 儲存用於縮短 existing Memory、Clip 與 Side Prompt entries 的 custom prompt template。**Reset to Default** 返回當前 built-in prompt。必須包含 `{{ENTRY_CONTENT}}`。 |
 
 Memory Book、topic、keywords、source inclusion、source selection、message range、draft，以及 Compaction 選中的 entry 都是 per-run workflow choices，而不是 persistent settings。

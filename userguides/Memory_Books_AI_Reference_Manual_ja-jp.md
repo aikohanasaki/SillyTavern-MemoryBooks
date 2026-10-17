@@ -889,12 +889,14 @@ generation 時に STMB は active cast を snapshot して message metadata に�
 
 - user message は active-cast snapshot を受け取る;
 - Narrator response は generation snapshot を受け取る;
+- 完了した Narrator 応答は、生成が先に終了した場合でも、メッセージが完了するまでそのスナップショットを保持します。
 - continuation は cast を existing cast metadata と merge;
 - swipe metadata は swipe ごとに別保存;
 - swipe 選択時、その timeline point から active cast を restore 可能;
 - recent messages 削除時、latest remaining tagged Narrator message から cast state を restore 可能。
 
 cast marker は association を記録するもので、prose の semantic analysis ではありません。
+停止または失敗した部分応答には、自動的にはタグが付けられません。シーンにレガシー メッセージが含まれている場合、レガシー メッセージのキャスト確認は引き続き必要です。
 
 ### 12.5 normal Narrator generation 中の retrieval
 
@@ -1074,9 +1076,11 @@ Topical Clip は各 source Memory の chronology ではなく subject で整理�
 Topical Clip が使うもの:
 
 - selected source book 内の confirmed STMB Memory entries。eligible consolidated summaries を含む。
-- current chat で explicit に selected した inclusive `X-Y` range の visible messages。
+- 現在のチャットで明示的に選択された包括的な `X-Y` 範囲からのメッセージ。 **Also use hidden messages** にチェックを入れた場合のみ、隠しメッセージが含まれます。
 
-**Include saved Memories** と **Include chat messages** は別々または一緒に使えます。message ranges は global unhide-before-memory setting に従い、compilation 後に previously hidden messages を元に戻します。
+**Include saved Memories** および **Include chat messages** コントロールは、個別に使用することも、一緒に使用することもできます。 **Include chat messages** のすぐ下にある **Also use hidden messages** は、メッセージ範囲と抽出選択に非表示のメッセージが含まれるかどうかを制御します。デフォルトではオフになっており、グローバルに保存され、**Unhide hidden messages for memory generation** のすぐ下の一般設定でも同じ設定が利用可能です。 Topical Clip は、非表示のメッセージを、表示設定を変更せずに、メモリ前の非表示設定とは無関係に読み取ります。
+
+Topical Clip ウィンドウが開くと、**Start message ID** は選択されたシーン開始にデフォルト設定され、それ以外の場合は処理された最高の Memory メッセージ ID (`/stmb-highest` によって返された値)、それ以外の場合は `0` になります。 **End message ID** のデフォルトは選択されたシーンエンド、それ以外の場合は現在の最後のメッセージ ID です。空のチャットでは空白のままです。メッセージ ID は 0 から始まり、処理された最大の ID が 1 を追加せずに直接使用されます。これらのデフォルトは、ウィンドウが開いたときに一度設定されます。これらは編集でき、モード、ターゲット、または Memory Books を変更しても編集内容が保持されます。無効な範囲または逆の範囲は、生成する前に修正する必要があります。
 
 使わないもの:
 
@@ -1094,7 +1098,7 @@ Topical Clip が使うもの:
 5. activation keywords を入力するか、空欄なら topic を使用します。
 6. new entry または existing `[STMB Clip]` update target を選びます。
 7. sources として saved Memories、chat messages、または両方を選びます。
-8. 必要に応じて、特定の source Memories だけを選択します。Chat messages については exact range を入力するか **Extract…** をクリックし、現在の chat 全体を検索して、連続していない message や hidden message を含む個別の message を選択します。
+8. 必要に応じて、特定のソース Memories のみを選択します。チャット メッセージの場合は、正確な範囲を入力するか、**Extract…** をクリックして現在のチャット全体を検索し、連続していないメッセージを含む個別のメッセージを選択します。選択した非表示メッセージを含めるには、**Also use hidden messages** をチェックします。
 9. generation profile を選びます。
 10. draft を生成します。
 11. review/edit します。
@@ -1102,18 +1106,23 @@ Topical Clip が使うもの:
 
 generated draft は自動保存されません。
 
+**Edit Topical Format** は、保存されたエントリの外側のテキストを制御します。デフォルトでは、既存の `=== title ===` および `=== END title ===` の境界線が使用されます。形式には `{{CONTENT}}` が 1 回だけ含まれている必要があります。 `{{TITLE}}`はオプションです。たとえば、`## {{TITLE}}` に続いて `{{CONTENT}}` を指定すると、Markdown 見出しが保存されますが、`{{CONTENT}}` のみを指定すると、枠なしの本文が保存されます。プレビューに結果が表示されます。リセットすると、内蔵フォーマットが復元されます。新しい設定は、既存のエントリではなく、その後の保存に影響します。通常の Clip 追加では、エントリに記録された形式が保持されます。 Topical Clip アップデートでは、そのクリップ タイプの現在の設定が使用されます。
+
+挿入オーバーライドを使用すると、この保存の位置と順序を選択できます。 **Outlet** を選択するには、**Outlet Name** が必要です。無効になっている更新ターゲットまたは通常の Clip ターゲットは、デフォルトでは非表示になります。 **Show disabled clips**がそれを明らかにします。無効化された Topical Clip にアップデートを保存すると、有効化されます。
 
 ### 既存の Topical Clips を結合する
 
-**Topical Clip** window で **Combine Clips** をクリックします。Memory Book を選択し、少なくとも2つの Topical Clips（必要なら disabled clip も含む）を選び、新しい clip の title を入力します。STMB が作成した Topical Clips だけが表示され、通常の Clips は除外されます。新しい clip の activation keywords は、選択した clip の primary keywords を重複なしで統合したものになります。Secondary keyword conditions はコピーされません。
+**Topical Clip** ウィンドウで、**Combine Clips** をクリックします。 Memory Book を選択し、少なくとも 2 つの Topical Clips (無効なクリップを含めるには **Show disabled clips** を使用) を選択し、新しいクリップのタイトルを入力します。 STMB によって作成された Topical Clips のみが表示されます。通常のClipsは除きます。新しいクリップのアクティベーション キーワードは、選択したクリップのプライマリ キーワードを重複なく結合したものです。二次キーワード条件はコピーされません。
 
 Generation profile を選び、**Generate Draft** をクリックします。AI には、選択した各 clip の title と完全な content が渡され、裏付けられた facts を統合し、重複を除き、未解決の矛盾を保持するよう求められます。保存前に draft を確認・編集してください。Selected sources、title、Memory Book のいずれかを変更すると draft はクリアされます。保存前に source が変更された場合は、新しい draft を生成してください。
+
+**Edit Combine Clips Prompt** は AI 統合命令を変更します。そのテンプレートには `{{SOURCE_CLIPS}}` が 1 回だけ必要で、`{{TITLE}}` を使用できます。 **Edit Combined Format** は、トピック形式と同じ `{{CONTENT}}` およびオプションの `{{TITLE}}` プレースホルダーを使用して、保存された結果をラップする方法を個別に制御します。どちらのエディタもデフォルトにリセットを提供します。挿入オーバーライドには、位置、アウトレットが選択されている場合のアウトレット名、および順序が含まれます。
 
 **Disable original clips after saving** はデフォルトでオンです。元の clip の現在の activation state を保持したい場合はオフにします。保存すると、新しい Topical Clip が enabled で作成され、option がオンなら同じ Memory Book update の中で元の clip が disabled になります。元の clip は削除されません。結合された clip は、通常の Topical Clip の Memory-source history とは別に source IDs を記録します。
 
 Chat 内の text を highlight すると、floating control に **Clip** と **Extract** が表示されます。Extract は、highlight した text を search query として同じ message picker を開きます。画面上に render されていない message を含め、現在の chat の全 history を検索します。Search が空ならすべての message を表示します。Search は literal text または speaker names に大文字小文字を無視して一致し、**Hidden only** は hidden messages のみに絞り込みます。
 
-結果は50件ずつ表示されます。**Load more** で追加の結果を表示し、結果を展開して match が highlight された全文を読んだり、**Previous message** と **Next message** で前後の context を表示したりできます。Context messages は自動選択されず、search や Hidden only filter に一致しなくても表示されることがあります。Hidden messages には label が付き、選択すると chat 側で unhide せずに、その text を Topical Clip の source に含めます。
+結果は 50 件のバッチで表示されます。**Load more** を使用してさらに一致を表示したり、結果を展開して強調表示された一致を含む完全なテキストを読んだり、**Previous message** および **Next message** を使用して周囲のコンテキストを表示したりできます。コンテキスト メッセージは自動的に選択されず、検索または非表示のみフィルターに一致しない場合でも表示されることがあります。非表示のメッセージにはラベルが付けられます。選択した非表示メッセージは、**Also use hidden messages** がチェックされている場合にのみ、チャット内で再表示されず、Topical Clip ソースに含まれます。
 
 Selection は search や filter の変更後も保持されます。Selection count には表示中の結果外の message も含まれます。**Select loaded results** は、表示されているすべての結果と、表示した context messages を選択します。**Clear selection** はすべての選択を解除します。Standalone Extract では **Topical Clip** を選び、既存 editor に戻る場合は **Use selected messages** を選びます。Query は初期 topic と keywords を提供し、どちらも編集できます。
 
@@ -1121,7 +1130,7 @@ STMB は message が picker に入る時点で source fingerprints を記録し�
 
 ### 15.4 Existing Topical Clip の更新
 
-successful run 後、STMB は使用した source Memories を記録し、applicable な場合 source chat、message range、message IDs、hashes も記録します。後の Memory-based update では通常、new/changed source Memories だけを existing Clip content と一緒に送ります。message range は毎回 explicit に選びます。
+実行が成功すると、STMB は、使用されたソース Memories と、該当する場合はソース チャット、メッセージ範囲、メッセージ ID、およびハッシュを記録します。以降の Memory ベースのアップデートでは、通常、新規または変更されたソース Memories のみが既存の Clip コンテンツとともに送信されます。事前に入力されたメッセージ範囲を確認するか、実行ごとに異なる範囲を入力します。
 
 **Rebuild from all source memories** を使う場合:
 
@@ -1238,7 +1247,7 @@ selected set は、その chat の individually enabled automatic prompts を置
 
 **Memory Assistance** は5つの独立した mode を持つ予約済み Side Prompt です。通常の Side Prompt enablement や選択中の Side Prompt Set に関係なく、Memory が正常に保存された後に実行されます。Memory regeneration 中には実行されません。
 
-Memory Assistance は raw processed scene と、Memory を受け取った各 Memory Book 内の ordinary/Topical Clips を比較します。review する各 Clip について、title/topic、keywords、current content、stable ID、type を AI に送ります。
+Memory Assistance は raw processed scene と、Memory を受け取った各 Memory Book 内の ordinary/Topical Clips を比較します。review する各 Clip について、title/topic、keywords、current content、stable ID、type を AI に送ります。 有効な Clips のみがレビューされます。無効化された Clips は、保存されたレポートを削除せずに AI クエリから除外され、保留中の提案から非表示になります。
 
 job queue が利用可能な場合、Memory 保存後、target Memory Book ごとに separate **Memory Assistance** job が作られます。request、response-validation、report-save、automatic-application の error はその job を **Failed** にし、queue に error を表示します。saved Memory は **Completed** のままで、Memory Assistance を retry しても Memory は regenerate されません。
 
@@ -1992,9 +2001,15 @@ Chat Top Bar がなくても STMB は normal workflows を実行しますが que
 
 ### Deferred last-processed progress
 
+最後に処理されたマーカーは、保存された Memory ですでにカバーされている最高のチャット メッセージを記録します。これは、後続の Memory 範囲と自動しきい値カウントに使用される境界を提供します。設定されたしきい値そのものではありません。ソース チャットがロードされてアイドル状態になり、検証が成功すると、STMB はマーカーを自動的に更新して検証します。
+
+保留中の更新はチャットの切り替えに限定されません。現在のチャットが返信の生成中、メッセージの保存中、編集中に、ソース メッセージまたはマーカーの検証が失敗した場合、またはマーカーの自動保存が検証できない場合、更新を延期することもできます。ソース チャットが開いていてアイドル状態の場合、STMB は、まだ検証に合格している保留中の更新を自動的に再試行し、保存されたマーカーを検証し、ポップアップを表示せずに解決されたレコードをクリアします。ソース チャットを再度開くと、この回復もトリガーされます。競合または保存に失敗した場合でも、回復ポップアップが開きます。 STMB は、同じ訪問中に失敗したリカバリを繰り返し再試行しません。 Discard では既存のマーカーが保持されるため、後続の Memories は、保存された Memory によってすでに要約されているメッセージをカバーする可能性があります。
+
 queued Memory が source chat を閉じた後に完了した場合でも、Memory 自体は Memory Book に保存されます。STMB は inactive character/group chat を取得して書き直す代わりに、last-processed marker update を `extension_settings.STMemoryBooks.pendingProgress` に記録します。すでに queue に入っている jobs は完了できますが、その chat に対する新しい manual/automatic base-memory requests は pending updates が apply または明示的に discard されるまで待機します。他の chats は引き続き使用できます。
 
-notification は user に source chat を手動で reopen するよう求めます。その chat が load 済みかつ idle になると、popup に **Apply**、**Later**、**Discard pending update** が表示されます。Apply は **Processing…** を表示し、対象 chat で `/stmb-set-highest <pending message number>` を実行し、settings から pending records を削除してから **Done** を表示します。message content や attachments を比較したり chat を再読したりせず、command の通常の manual-marker behavior と range clamping を使用します。Later、Escape、popup を閉じる操作は records を保持します。main STMB panel には **Pending progress updates (N)** button があり、refresh 後や Chat Top Bar を disable した後でもこの management popup を再度開けます。chat を自動で切り替えることはありません。Discard は confirmation が必要で、保存済み lorebook Memories には影響しません。
+保留中の更新通知またはメイン パネルの **Pending progress updates (N)** ボタンをクリックすると、チャット トップ バーを更新または無効にした後など、管理ポップアップが開きます。ポップアップでは、マーカーの機能と、更新の保留中に保存された Memories がそのまま残る理由が説明されます。別のチャットの場合、**Reopen chat and update marker** はそのキャラクターまたはグループ チャットに切り替え、ワンクリックで検証済みの保存パスを使用して保留中の更新を適用します。ファイルはまだ存在している必要があり、STMB は、更新する前に目的のチャットが読み込まれていることを確認します。このクリックがないとチャットは切り替わりません。再度開いた後に検証が失敗した場合でも、レコードは現在アクティブなチャットで確認できる状態のままになります。
+
+アクティブなチャットの場合、**Apply** は明示的な手動オーバーライドのままです。**Processing…** が表示され、影響を受けるチャットで `/stmb-set-highest <pending message number>` が実行され、**Done** が表示される前に保留中のレコードが設定から削除されます。メッセージの内容や添付ファイルを比較したり、チャットを読み返したりすることなく、コマンドの通常の手動マーカー動作と範囲クランプが使用されます。 **Later**、エスケープするか、ポップアップを閉じると、レコードが保持されます。 **Discard pending update** は確認が必要で、保存された伝承書の記憶はそのまま残ります。
 
 各 pending record には chat reference、operation/job identity、target message index、original marker state/revision、chat integrity identifier、source message text と identity fields の SHA-256 fingerprint が含まれます。attachment fields は読まれず fingerprint にも含まれません。conversation text は保存しません。appended messages と hide/unhide changes は許可されますが、edits、deletions、changed identity、manual marker changes、rollback により update が unsafe になる場合があります。これらの checks は automatic marker updates に適用されます。explicit Apply は original fingerprint または marker revision が一致しなくても slash command を使用します。Later は pending update を保持し、Discard は削除します。explicit chat/character rename events は pending references を remap します。missing/unrecognized references は review/discard のため残ります。
 
@@ -2120,6 +2135,7 @@ Side Prompt rollback は version-2 regeneration snapshots を使います。各 
 | **Auto-hide messages after adding memory** | Global | no automatic hiding、latest Memory までの全 processed messages、latest Memory が使った range だけ、から選びます。Hiding は reversible で message を delete しません。 |
 | **Messages to leave unhidden** | Global | auto-hide 時にこの数の recent messages を visible のまま残し、Memory boundary 近くの overlap を維持します。`0` は applicable scene end まで hide。 |
 | **Unhide hidden messages for memory generation** | Global | STMB が source range を compile する前に `/unhide X-Y` 相当を実行。successful save 後に何を hide するかは selected auto-hide mode に従います。 |
+| **Also use hidden messages** | Global; Topical Clip | Topical Clip 範囲および Extract で選択されたメッセージの非表示チャット メッセージが、非表示状態を変更せずに含まれます。デフォルトではチェックされていません。 **Unhide hidden messages for memory generation** の設定とは独立しています。 |
 
 ### 27.3 Automatic Memories と consolidation reminders
 
@@ -2231,6 +2247,9 @@ main panel の **Settings → Topical Clip** または **Settings → Compaction
 |---|---|---|---|
 | **Generation Profile / Compaction Profile** | **Topical Clip → Generation Profile** または **Compaction → Compaction Profile** | Global shared default | Topical Clip generation と Compaction 用 STMB profile を選択。どちらかで変更すると両 workflows が共有する selection が変わります。 |
 | **Topical Clip Prompt** | **Topical Clip → Edit Topical Clip Prompt** | Global | Topical Clip generation 用 custom prompt template を保存。**Reset to Default** で current built-in prompt に戻る。required source macros は save/generation 前に validate。 |
+| **Topical Format** | **Topical Clip → Edit Topical Format** | Global |新しく保存された Topical Clips 以降のアップデートをフォーマットします。 `{{CONTENT}}`が必要です。 `{{TITLE}}`はオプションです。 |
+| **Combined Format** | **Combine Clips → Edit Combined Format** | Global |新しく保存された結合クリップとその後の更新を、トピック形式とは別に形式化します。 |
+| **Combine Clips Prompt** | **Combine Clips → Edit Combine Clips Prompt** | Global |組み合わせ命令を定義します。 `{{SOURCE_CLIPS}}`が必要です。 `{{TITLE}}`はオプションです。 |
 | **Compaction Prompt** | **Compaction → Edit Compaction Prompt** | Global | existing Memory、Clip、Side Prompt entries を短縮する custom prompt template を保存。**Reset to Default** で current built-in prompt に戻る。`{{ENTRY_CONTENT}}` 必須。 |
 
 Memory Book、topic、keywords、source inclusion/selection、message range、draft、Compaction で選ぶ entry は persistent settings ではなく per-run workflow choices です。
