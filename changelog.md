@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.8 (October 16, 2026)
+- Topical Clips: hidden message checkbox, start/end auto-populate. 
+
 ## v9.3.7 (October 12, 2026)
 - Combine Clip enhancements including format edits.
 

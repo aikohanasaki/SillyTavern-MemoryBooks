@@ -1076,7 +1076,7 @@ Topical Clip is organized by subject, not by the chronology of every source Memo
 Topical Clip uses:
 
 - confirmed STMB Memory entries from the selected source book, including eligible consolidated summaries.
-- visible messages from an explicitly selected inclusive `X-Y` range in the current chat.
+- messages from an explicitly selected inclusive `X-Y` range in the current chat. Hidden messages are included only when **Also use hidden messages** is checked.
 
 The **Include saved Memories** and **Include chat messages** controls can be used separately or together. **Also use hidden messages**, directly below **Include chat messages**, controls whether message ranges and Extract selections include hidden messages. It defaults to unchecked and is saved globally, with the same setting available in General Settings directly below **Unhide hidden messages for memory generation**. Topical Clip reads hidden messages without changing their visibility and independently of the unhide-before-memory setting.
 
@@ -1098,7 +1098,7 @@ It does not use:
 5. Enter activation keywords, or leave them blank to use the topic.
 6. Choose a new entry or an existing `[STMB Clip]` update target.
 7. Choose saved Memories, chat messages, or both as sources.
-8. Optionally select only specific source Memories. For chat messages, enter an exact range or click **Extract…** to search the full current chat and select individual messages, including noncontiguous and hidden messages.
+8. Optionally select only specific source Memories. For chat messages, enter an exact range or click **Extract…** to search the full current chat and select individual messages, including noncontiguous messages. Check **Also use hidden messages** to include selected hidden messages.
 9. Choose the generation profile.
 10. Generate the draft.
 11. Review and edit it.
