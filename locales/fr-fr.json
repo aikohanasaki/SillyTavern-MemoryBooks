@@ -1579,5 +1579,6 @@
   ,"STMemoryBooks_Reminder_ManualHelp": "Lorsque la création automatique est désactivée, affiche un rappel après ce nombre de messages du chat non traités, puis après chaque nouveau groupe de ce nombre de messages."
   ,"STMemoryBooks_Reminder_CommonHelp": "Les rappels restent visibles jusqu’à leur fermeture et fonctionnent indépendamment de l’option Afficher les notifications."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Les résumés de mémoire automatiques sont en retard : {{count}} messages non traités. Vérifiez les réglages des mémoires automatiques ou créez une mémoire."
-  ,"STMemoryBooks_Reminder_ManualToast": "Il y a {{count}} messages depuis votre dernier résumé de mémoire. Pensez à créer une mémoire."
+  ,"STMemoryBooks_Reminder_ManualToast": "Il y a {{count}} messages depuis votre dernier résumé de mémoire. Pensez à créer une mémoire.",
+  "STMemoryBooks_MemoryAssist_NoScene": "Aucune scène en cours. Indiquez une plage de messages : /memory-assist X-Y."
 }

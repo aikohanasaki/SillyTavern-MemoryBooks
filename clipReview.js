@@ -4,7 +4,9 @@
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { DOMPurify } from '../../../../lib.js';
 import { extension_settings } from '../../../extensions.js';
-import { chat_metadata } from '../../../../script.js';
+import { chat, chat_metadata } from '../../../../script.js';
+import { compileMessageRange } from './messageRange.js';
+import { getSceneMarkers } from './sceneManager.js';
 import { loadWorldInfo, METADATA_KEY, world_names } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
@@ -15,8 +17,8 @@ import { getTemplate } from './sidePromptsManager.js';
 import { resolveSidePromptConnection } from './sidePrompts.js';
 import { getEntryByTitle, upsertLorebookEntryByTitle } from './addlore.js';
 import { applyClipReviewSuggestion, isClipEntryTitle, showTopicalClipPopup } from './clipManager.js';
-import { getCurrentManualLorebookResolution, markStmbPopup, withGoBackButton } from './utils.js';
-import { withStmbWriteLane } from './stmbJobs.js';
+import { createStmbInFlightTask, isStmbStopError, getCurrentManualLorebookResolution, markStmbPopup, withGoBackButton } from './utils.js';
+import { areStmbJobsEnabled, enqueueStmbJob, withStmbWriteLane } from './stmbJobs.js';
 import {
     CLIP_REVIEW_ENTRY_TITLE,
     CLIP_REVIEW_METADATA_KEY,
@@ -24,6 +26,7 @@ import {
     LEGACY_CLIP_REVIEW_ENTRY_TITLE,
     MEMORY_ASSISTANCE_MODE_AUTOMATIC,
     MEMORY_ASSISTANCE_MODE_OFF,
+    MEMORY_ASSISTANCE_MODE_UPDATE,
     MEMORY_ASSISTANCE_MODE_SUGGEST,
     MEMORY_ASSISTANCE_MODE_UPDATE_AND_SUGGEST,
     getMemoryAssistanceFailure,
@@ -441,6 +444,56 @@ export async function runClipReviewAfterMemory(compiledScene, profile = null, op
         }
     }
     return results;
+}
+
+export async function runMemoryAssistanceCommand(args = '') {
+    const task = createStmbInFlightTask('MemoryAssistance:manual');
+    try {
+        const settings = extension_settings?.STMemoryBooks || {};
+        const selectedMode = normalizeMemoryAssistanceMode(settings.moduleSettings?.memoryAssistanceMode,
+            settings.moduleSettings?.clipReviewAlwaysAfterMemory === true);
+        const mode = selectedMode === MEMORY_ASSISTANCE_MODE_OFF ? MEMORY_ASSISTANCE_MODE_UPDATE : selectedMode;
+        const raw = String(args || '').trim();
+        const match = raw.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+        if (raw && !match) throw new Error(tr('STMemoryBooks_Toast_InvalidRangeFormat', 'Invalid range format. Use X-Y'));
+        if (!chat.length) throw new Error(tr('STMemoryBooks_Toast_NoMessagesAvailable', 'No messages available.'));
+        const markers = match ? null : getSceneMarkers();
+        if (!match && (markers?.sceneStart == null || markers?.sceneEnd == null)) {
+            throw new Error(tr('STMemoryBooks_MemoryAssist_NoScene', 'No current scene. Specify a message range: /memory-assist X-Y.'));
+        }
+        const start = match ? Number(match[1]) : markers.sceneStart;
+        const end = match ? Number(match[2]) : markers.sceneEnd;
+        if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || end >= chat.length) {
+            throw new Error(tr('STMemoryBooks_Toast_InvalidRangeFormat', 'Invalid range format. Use X-Y'));
+        }
+        const lorebookName = getDefaultReviewLorebookName();
+        if (!lorebookName) throw new Error(tr('STMemoryBooks_Compaction_NoLorebooks', 'No Memory Books were found.'));
+        const compiledScene = await compileMessageRange(start, end);
+        if (task.signal.aborted) return '';
+        if (areStmbJobsEnabled()) {
+            const jobs = buildQueuedMemoryAssistanceJobs({
+                lorebookNames: [lorebookName], compiledScene,
+                settings: { moduleSettings: { memoryAssistanceMode: mode } },
+            });
+            for (const job of jobs) {
+                job.payload.trigger = 'manual';
+                enqueueStmbJob(job);
+            }
+        } else {
+            const results = await runClipReviewAfterMemory(compiledScene, null, {
+                lorebookName, mode, signal: task.signal, requireLorebook: true,
+            });
+            for (const result of results) {
+                const failure = getMemoryAssistanceFailure(result);
+                if (failure) throw new Error(failure.message);
+            }
+        }
+    } catch (error) {
+        if (!isStmbStopError(error)) toastr.error(error.message, 'STMemoryBooks');
+    } finally {
+        task.finish();
+    }
+    return '';
 }
 
 export function buildQueuedMemoryAssistanceJobs({ lorebookNames = [], compiledScene, profile = null, settings = null } = {}) {

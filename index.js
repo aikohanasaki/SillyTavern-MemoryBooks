@@ -164,6 +164,7 @@ import {
   buildQueuedMemoryAssistanceJobs,
   executeQueuedMemoryAssistanceJob,
   runClipReviewAfterMemory,
+  runMemoryAssistanceCommand,
   showClipReviewSuggestionsPopup,
 } from "./clipReview.js";
 import { CLIP_REVIEW_METADATA_KEY, normalizeMemoryAssistanceMode } from "./clipReviewPolicy.js";
@@ -12429,6 +12430,16 @@ function processExistingMessages() {
  * Register slash commands using proper SlashCommand classes
  */
 function registerSlashCommands() {
+  SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: "memory-assist",
+    callback: (_namedArgs, unnamedArgs) => runMemoryAssistanceCommand(unnamedArgs),
+    helpString: translate("Memory Assistance", "STMemoryBooks_ClipReview_Name") + " — /memory-assist [X-Y]",
+    unnamedArgumentList: [SlashCommandArgument.fromProps({
+      description: "X-Y",
+      typeList: [ARGUMENT_TYPE.STRING],
+      isRequired: false,
+    })],
+  }));
   const createMemoryCmd = SlashCommand.fromProps({
     name: "creatememory",
     callback: handleCreateMemoryCommand,

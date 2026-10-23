@@ -1273,7 +1273,9 @@ Suggested topics are saved in the Memory Assistance report. In **Memory Assistan
 
 When reviewable suggestions are ready, STMB opens a completion popup for the updated Memory Book. **Dismiss** closes the notice, while **Go to Suggestions** opens **Memory Assistance Suggestions** with that Memory Book already selected. Opening **Memory Assistance Suggestions** from the extension menu selects the current chat's effective Memory Book first (the chat-bound book in Automatic Mode or the resolved manual book in Manual Mode).
 
-The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, placed in a Side Prompt Set, or run manually.
+The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, or placed in a Side Prompt Set.
+
+Run `/memory-assist` to run Memory Assistance independently, without creating a Memory or running other Side Prompts. It follows the selected Memory Assistance mode; when the setting is **Off**, this manual run uses **Update** without changing the saved setting. It targets the current chat's effective Memory Book (chat-bound in Automatic Mode, resolved manual book in Manual Mode). With no arguments, it reviews the current scene between its start and end markers. If there is no complete current scene, it reports an error asking for a message range. Use `/memory-assist X-Y` to review an inclusive message-ID range, for example `/memory-assist 10-30`. It uses the existing Memory Assistance connection override and suggestion approval behavior. When the job queue is enabled, it creates a standalone Memory Assistance job that can be retried independently.
 
 ### 16.6 Automatic visible-message intervals
 

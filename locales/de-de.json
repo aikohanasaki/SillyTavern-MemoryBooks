@@ -1579,5 +1579,6 @@
   ,"STMemoryBooks_Reminder_ManualHelp": "Bei deaktivierter automatischer Erstellung erfolgt die Erinnerung nach dieser Anzahl unverarbeiteter Chatnachrichten, danach jeweils nach ebenso vielen weiteren Nachrichten."
   ,"STMemoryBooks_Reminder_CommonHelp": "Erinnerungen bleiben sichtbar, bis sie geschlossen werden, und funktionieren unabhängig von „Benachrichtigungen anzeigen“."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Automatische Erinnerungs-Zusammenfassungen sind überfällig: {{count}} unverarbeitete Nachrichten. Prüfe die Einstellungen für automatische Erinnerungen oder erstelle eine Erinnerung."
-  ,"STMemoryBooks_Reminder_ManualToast": "Seit deiner letzten Erinnerungs-Zusammenfassung sind {{count}} Nachrichten hinzugekommen. Erwäge, eine Erinnerung zu erstellen."
+  ,"STMemoryBooks_Reminder_ManualToast": "Seit deiner letzten Erinnerungs-Zusammenfassung sind {{count}} Nachrichten hinzugekommen. Erwäge, eine Erinnerung zu erstellen.",
+  "STMemoryBooks_MemoryAssist_NoScene": "Keine aktuelle Szene. Nachrichtenbereich angeben: /memory-assist X-Y."
 }

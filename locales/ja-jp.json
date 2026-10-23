@@ -1579,5 +1579,6 @@
   ,"STMemoryBooks_Reminder_ManualHelp": "自動作成が無効な場合、未処理のチャットメッセージがこの数に達すると通知し、その後は同じ数のメッセージが増えるたびに繰り返します。"
   ,"STMemoryBooks_Reminder_CommonHelp": "リマインダーは閉じるまで表示され、「通知を表示」とは独立して動作します。"
   ,"STMemoryBooks_Reminder_AutomaticToast": "自動メモリサマリーの作成が遅れています。未処理のメッセージが{{count}}件あります。自動メモリの設定を確認するか、メモリを作成してください。"
-  ,"STMemoryBooks_Reminder_ManualToast": "前回のメモリサマリー以降、{{count}}件のメッセージがあります。メモリの作成をご検討ください。"
+  ,"STMemoryBooks_Reminder_ManualToast": "前回のメモリサマリー以降、{{count}}件のメッセージがあります。メモリの作成をご検討ください。",
+  "STMemoryBooks_MemoryAssist_NoScene": "現在のシーンがありません。メッセージ範囲を指定してください: /memory-assist X-Y。"
 }

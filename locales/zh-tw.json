@@ -1579,5 +1579,6 @@
   ,"STMemoryBooks_Reminder_ManualHelp": "關閉自動建立時，未處理的聊天訊息達到此數量後提醒，此後每增加相同數量的訊息就再次提醒。"
   ,"STMemoryBooks_Reminder_CommonHelp": "提醒會一直顯示，直到手動關閉，且不受「顯示通知」設定影響。"
   ,"STMemoryBooks_Reminder_AutomaticToast": "自動記憶摘要已逾期：有 {{count}} 則未處理的訊息。請檢查自動記憶設定或建立記憶。"
-  ,"STMemoryBooks_Reminder_ManualToast": "自上次記憶摘要以來已有 {{count}} 則訊息。請考慮建立記憶。"
+  ,"STMemoryBooks_Reminder_ManualToast": "自上次記憶摘要以來已有 {{count}} 則訊息。請考慮建立記憶。",
+  "STMemoryBooks_MemoryAssist_NoScene": "沒有目前場景。請指定訊息範圍：/memory-assist X-Y。"
 }

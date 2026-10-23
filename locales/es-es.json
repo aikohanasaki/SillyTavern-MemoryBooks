@@ -1579,5 +1579,6 @@
   ,"STMemoryBooks_Reminder_ManualHelp": "Con la creación automática desactivada, avisa tras esta cantidad de mensajes del chat sin procesar y se repite cada vez que llegan otros tantos mensajes."
   ,"STMemoryBooks_Reminder_CommonHelp": "Los recordatorios permanecen visibles hasta cerrarlos y funcionan independientemente de Mostrar notificaciones."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Los resúmenes de memoria automáticos están atrasados: {{count}} mensajes sin procesar. Revisa los ajustes de memorias automáticas o crea una memoria."
-  ,"STMemoryBooks_Reminder_ManualToast": "Hay {{count}} mensajes desde tu último resumen de memoria. Considera crear una memoria."
+  ,"STMemoryBooks_Reminder_ManualToast": "Hay {{count}} mensajes desde tu último resumen de memoria. Considera crear una memoria.",
+  "STMemoryBooks_MemoryAssist_NoScene": "No hay una escena actual. Indica un intervalo de mensajes: /memory-assist X-Y."
 }

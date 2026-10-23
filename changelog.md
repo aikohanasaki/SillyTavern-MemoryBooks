@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.9 (October 23, 2026)
+- Memory Assist manual trigger added: `/memory-assist x-y` (defaults to current scene if x-y is not specified)
+
 ## v9.3.8 (October 16, 2026)
 - Topical Clips: hidden message checkbox, start/end auto-populate. 
 

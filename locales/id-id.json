@@ -1579,5 +1579,6 @@
   ,"STMemoryBooks_Reminder_ManualHelp": "Saat pembuatan otomatis nonaktif, ingatkan setelah jumlah pesan obrolan yang belum diproses ini, lalu ulangi setiap jumlah pesan tambahan yang sama."
   ,"STMemoryBooks_Reminder_CommonHelp": "Pengingat tetap terlihat hingga ditutup dan bekerja terlepas dari Tampilkan notifikasi."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Ringkasan memori otomatis terlambat: {{count}} pesan belum diproses. Periksa pengaturan memori otomatis atau buat memori."
-  ,"STMemoryBooks_Reminder_ManualToast": "Ada {{count}} pesan sejak ringkasan memori terakhir Anda. Pertimbangkan untuk membuat memori."
+  ,"STMemoryBooks_Reminder_ManualToast": "Ada {{count}} pesan sejak ringkasan memori terakhir Anda. Pertimbangkan untuk membuat memori.",
+  "STMemoryBooks_MemoryAssist_NoScene": "Tidak ada adegan saat ini. Tentukan rentang pesan: /memory-assist X-Y."
 }
