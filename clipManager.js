@@ -20,7 +20,7 @@ import { getEntryByTitle, isMemoryEntry, normalizeLorebookEntrySettings } from '
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { getHighestMemoryProcessed, getSceneMarkers } from './sceneManager.js';
 import { isSidePromptEntryTitle } from './sidePrompts.js';
-import { requestCompletion } from './stmemory.js';
+import { applySelectedRegex, requestCompletion } from './stmemory.js';
 import { compileScene, createSceneRequest, toReadableText } from './chatcompile.js';
 import { validateChatSelection } from './chatSelection.js';
 import { showChatMessagePicker } from './chatMessagePicker.js';
@@ -1763,7 +1763,19 @@ function buildTopicalClipPrompt({ mode, topic, keywords, sourceEntries, sourceMe
     );
 }
 
-async function requestTopicalClipDraft(prompt, profileIndex) {
+async function requestTopicalClipDraft(prompt, profileIndex, hasMessageSource = false) {
+    if (hasMessageSource) {
+        try {
+            const settings = extension_settings?.STMemoryBooks?.moduleSettings;
+            const selectedKeys = settings?.selectedRegexOutgoing;
+            if (settings?.useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+                prompt = applySelectedRegex(prompt, selectedKeys, { throwOnError: true });
+            }
+        } catch (e) {
+            console.warn('STMemoryBooks: Topical Clip outgoing regex application failed', e);
+            throw e;
+        }
+    }
     const connection = resolveCompactionProfileConnection(profileIndex);
     const extra = {};
     const stmbMaxTokens = Number.parseInt(extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens, 10);
@@ -2641,7 +2653,7 @@ export async function showTopicalClipPopup(options = {}) {
             const selectedFormat = getClipFormat(mode === 'update' ? getClipFormatKind(target) : 'topical');
             const profileIndex = getCompactionProfileIndexFromSelect(popup, 'stmb-topical-clip-profile-select');
             setCompactionProfileIndex(profileIndex);
-            const draft = await requestTopicalClipDraft(prompt, profileIndex);
+            const draft = await requestTopicalClipDraft(prompt, profileIndex, !!sourceMessages);
             if (requestedRevision !== draftRevision || (messageMode.value === 'selection'
                 && !validateChatSelection(selectedMessages, chat, getStmbChatKey(getCurrentStmbChatRef())))) return;
             extension_settings.STMemoryBooks.moduleSettings.topicalClipEntrySettings = selectedEntrySettings;

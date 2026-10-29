@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.11 (October 29, 2026)
+- Additional regex processing added to Topical Clips creation and/or updates manually and/or with Memory Assistance.
+
 ## v9.3.10 (October 28, 2026)
 - Memory Assist now uses regex.
 

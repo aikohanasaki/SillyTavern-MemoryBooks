@@ -136,7 +136,7 @@ If no new topics are needed, return {"topics":[]}.
 Return only JSON. Do not return Markdown fences, reasons, message IDs, or explanations.`;
 }
 
-async function requestMemoryAssistanceCompletion(template, profile, prompt, temperature = 0.2, signal = null, preserveExactQuotes = false) {
+async function requestMemoryAssistanceCompletion(template, profile, prompt, temperature = 0.2, signal = null) {
     const overrideIndex = template?.settings?.overrideProfileEnabled
         ? Number(template.settings.overrideProfileIndex)
         : null;
@@ -150,7 +150,7 @@ async function requestMemoryAssistanceCompletion(template, profile, prompt, temp
     try {
         const settings = extension_settings?.STMemoryBooks?.moduleSettings;
         const selectedKeys = settings?.selectedRegexOutgoing;
-        if (!preserveExactQuotes && settings?.useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+        if (settings?.useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
             prompt = applySelectedRegex(prompt, selectedKeys, { throwOnError: true });
         }
     } catch (e) {
@@ -190,8 +190,6 @@ async function requestClipReviewBatch(template, compiledScene, records, profile,
         finalPrompt || buildClipReviewPrompt(template.prompt, compiledScene, records),
         0.2,
         signal,
-        // Ordinary Clips must quote the original messages used by validation.
-        records.some(record => record.type === 'ordinary'),
     );
     return parseClipReviewResponse(text, records, compiledScene.messages);
 }
