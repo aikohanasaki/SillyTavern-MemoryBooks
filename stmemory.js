@@ -73,13 +73,20 @@ function cloneScriptEnabled(script) {
  * Apply selected regex scripts (by flat index keys, e.g., "idx:0") in order.
  * Uses getRegexScripts({ allowedOnly: false }) as the single source of truth.
  * Bypasses engine gating; relies on explicit user selection.
+ * Outgoing callers use throwOnError to abort requests when a transformation fails.
  */
-export function applySelectedRegex(inputText, selectedKeys) {
+export function applySelectedRegex(inputText, selectedKeys, { throwOnError = false } = {}) {
     if (typeof inputText !== 'string') return '';
     if (!Array.isArray(selectedKeys) || selectedKeys.length === 0) return inputText;
 
     try {
         const all = getRegexScripts({ allowedOnly: false }) || [];
+        if (throwOnError && selectedKeys.some(k => {
+            const index = Number(String(k).replace(/^idx:/, ''));
+            return !Number.isInteger(index) || index < 0 || index >= all.length || !all[index];
+        })) {
+            throw new Error('Selected outgoing regex script is unavailable');
+        }
         const order = selectedKeys
             .map(k => Number(String(k).replace(/^idx:/, '')))
             .filter(i => Number.isInteger(i) && i >= 0 && i < all.length);
@@ -89,12 +96,15 @@ export function applySelectedRegex(inputText, selectedKeys) {
             const script = cloneScriptEnabled(all[i]);
             try {
                 out = runRegexScript(script, out);
+                if (throwOnError && typeof out !== 'string') throw new Error('Outgoing regex returned non-text output');
             } catch (e) {
+                if (throwOnError) throw e;
                 console.warn('applySelectedRegex: script failed', i, e);
             }
         }
         return out;
     } catch (e) {
+        if (throwOnError) throw e;
         console.warn('applySelectedRegex failed', e);
         return inputText;
     }
@@ -1640,10 +1650,11 @@ async function buildPrompt(compiledScene, profile) {
         const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
         const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexOutgoing;
         if (useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
-            return applySelectedRegex(finalPrompt, selectedKeys);
+            return applySelectedRegex(finalPrompt, selectedKeys, { throwOnError: true });
         }
     } catch (e) {
         console.warn('STMemoryBooks: outgoing regex application failed', e);
+        throw e;
     }
     return finalPrompt;
 }

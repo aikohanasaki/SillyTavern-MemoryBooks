@@ -11,7 +11,7 @@ import { loadWorldInfo, METADATA_KEY, world_names } from '../../../world-info.js
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
 import { oai_settings } from '../../../openai.js';
-import { requestCompletion } from './stmemory.js';
+import { applySelectedRegex, requestCompletion } from './stmemory.js';
 import { toReadableText } from './chatcompile.js';
 import { getTemplate } from './sidePromptsManager.js';
 import { resolveSidePromptConnection } from './sidePrompts.js';
@@ -136,7 +136,7 @@ If no new topics are needed, return {"topics":[]}.
 Return only JSON. Do not return Markdown fences, reasons, message IDs, or explanations.`;
 }
 
-async function requestMemoryAssistanceCompletion(template, profile, prompt, temperature = 0.2, signal = null) {
+async function requestMemoryAssistanceCompletion(template, profile, prompt, temperature = 0.2, signal = null, preserveExactQuotes = false) {
     const overrideIndex = template?.settings?.overrideProfileEnabled
         ? Number(template.settings.overrideProfileIndex)
         : null;
@@ -147,6 +147,16 @@ async function requestMemoryAssistanceCompletion(template, profile, prompt, temp
     const maxTokens = Number(extension_settings?.STMemoryBooks?.moduleSettings?.maxTokens);
     if (Number.isFinite(maxTokens) && maxTokens > 0) extra.max_tokens = maxTokens;
     else if (oai_settings?.openai_max_tokens) extra.max_tokens = oai_settings.openai_max_tokens;
+    try {
+        const settings = extension_settings?.STMemoryBooks?.moduleSettings;
+        const selectedKeys = settings?.selectedRegexOutgoing;
+        if (!preserveExactQuotes && settings?.useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            prompt = applySelectedRegex(prompt, selectedKeys, { throwOnError: true });
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: Memory Assistance outgoing regex application failed', e);
+        throw e;
+    }
     const { text } = await requestCompletion({
         api: conn.api,
         model: conn.model || '',
@@ -161,6 +171,15 @@ async function requestMemoryAssistanceCompletion(template, profile, prompt, temp
         chatCompletionPreset: conn.chatCompletionPreset || '',
         signal,
     });
+    try {
+        const settings = extension_settings?.STMemoryBooks?.moduleSettings;
+        const selectedKeys = settings?.selectedRegexIncoming;
+        if (settings?.useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
+            return applySelectedRegex(text || '', selectedKeys);
+        }
+    } catch (e) {
+        console.warn('STMemoryBooks: Memory Assistance incoming regex application failed', e);
+    }
     return text;
 }
 
@@ -171,6 +190,8 @@ async function requestClipReviewBatch(template, compiledScene, records, profile,
         finalPrompt || buildClipReviewPrompt(template.prompt, compiledScene, records),
         0.2,
         signal,
+        // Ordinary Clips must quote the original messages used by validation.
+        records.some(record => record.type === 'ordinary'),
     );
     return parseClipReviewResponse(text, records, compiledScene.messages);
 }

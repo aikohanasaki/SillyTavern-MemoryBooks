@@ -1275,6 +1275,8 @@ When reviewable suggestions are ready, STMB opens a completion popup for the upd
 
 The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, or placed in a Side Prompt Set.
 
+Memory Assistance honors **Use regex (advanced)** and the configured outgoing and incoming scripts. Outgoing scripts run on the complete prompt for topical-only Clip update batches and topic suggestions. Batches containing any ordinary Clips skip outgoing scripts so the scene sent to the AI preserves the original messages required for exact-quote validation; this also skips outgoing cleanup or redaction for those batches. Incoming scripts run on all responses before JSON parsing and validation. Ordinary Clip additions must still match an excerpt from an original scene message, so incoming transformations that rewrite those excerpts can cause suggestions to be rejected. Regex scripts must preserve the required JSON response structure.
+
 Run `/memory-assist` to run Memory Assistance independently, without creating a Memory or running other Side Prompts. It follows the selected Memory Assistance mode; when the setting is **Off**, this manual run uses **Update** without changing the saved setting. It targets the current chat's effective Memory Book (chat-bound in Automatic Mode, resolved manual book in Manual Mode). With no arguments, it reviews the current scene between its start and end markers. If there is no complete current scene, it reports an error asking for a message range. Use `/memory-assist X-Y` to review an inclusive message-ID range, for example `/memory-assist 10-30`. It uses the existing Memory Assistance connection override and suggestion approval behavior. When the job queue is enabled, it creates a standalone Memory Assistance job that can be retried independently.
 
 ### 16.6 Automatic visible-message intervals
@@ -1932,6 +1934,8 @@ STMB integrates with SillyTavern’s Regex extension at two stages:
 Enable **Use regex (advanced)**, then open **Configure regex** and select one or more scripts for each direction.
 
 Important: STMB’s own selection controls execution. A script selected by STMB can run even when that script is disabled in the Regex extension’s normal interface.
+
+If a selected outgoing script throws an error or is unavailable, STMB stops generation before sending the prompt. This applies to memories, Side Prompts, and Memory Assistance. Incoming script errors retain the existing best-effort behavior.
 
 Use Regex only when the transformation is understood. A bad outgoing rule can corrupt required schema instructions; a bad incoming rule can corrupt otherwise valid JSON.
 

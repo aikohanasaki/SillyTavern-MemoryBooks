@@ -288,10 +288,11 @@ function buildPrompt(templatePrompt, priorContent, compiledScene, responseFormat
         const useRegex = !!(extension_settings?.STMemoryBooks?.moduleSettings?.useRegex);
         const selectedKeys = extension_settings?.STMemoryBooks?.moduleSettings?.selectedRegexOutgoing;
         if (useRegex && Array.isArray(selectedKeys) && selectedKeys.length > 0) {
-            return applySelectedRegex(finalPrompt, selectedKeys);
+            return applySelectedRegex(finalPrompt, selectedKeys, { throwOnError: true });
         }
     } catch (e) {
         console.warn('STMemoryBooks: sideprompt outgoing regex application failed', e);
+        throw e;
     }
 
     return finalPrompt;
