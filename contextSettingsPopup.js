@@ -26,6 +26,7 @@ import {
     withGoBackButton,
 } from './utils.js';
 import { tr } from './i18nHelpers.js';
+import { getPopupSort, mountTableSort } from './viewSort.js';
 
 function hasChatContextSelection(markers = getSceneMarkers() || {}) {
     return Object.hasOwn(markers, 'contextSettingKey');
@@ -315,6 +316,11 @@ async function refreshContextSettingsPopup(popup) {
     const settings = await listContextSettings();
     container.innerHTML = DOMPurify.sanitize(renderCurrentChatSelector(settings) + renderSettingsList(settings));
     try { applyLocale(container); } catch {}
+    mountTableSort(container.querySelector('table'), getPopupSort(popup),
+        ['name', 'entries', null], {
+            name: row => row.cells[0]?.textContent.trim(),
+            entries: row => Number(row.cells[1]?.textContent.trim()) || 0,
+        });
     container.querySelector('#stmb-context-current-chat-select')?.addEventListener('change', event => {
         setChatContextSettingKey(event.target.value || '');
         toastr.success(translate('Context setting saved for this chat.', 'STMemoryBooks_ContextSettings_ChatSaved'), 'STMemoryBooks');

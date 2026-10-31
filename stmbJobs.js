@@ -16,6 +16,7 @@ import { loadWorldInfo } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from '../../../popup.js';
 import { guardPendingProgress, isProgressChatLoaded, updateProgress } from './stmbProgress.js';
+import { createViewSort } from './viewSort.js';
 import {
     buildJobRetryPlan,
     buildMemoryOnlyRetryPlan,
@@ -33,6 +34,20 @@ const INSTALL_TOP_INFO_BAR_RESULT = POPUP_RESULT.CUSTOM1;
 const ACTIVE_STATES = new Set(['queued', 'running', 'capturing_scene', 'assembling_prompt', 'generating', 'awaiting_approval', 'needs_review', 'saving', 'post_save']);
 const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled', 'blocked', 'skipped']);
 const RECENT_LIMIT = 25;
+const jobsViewSort = createViewSort();
+
+function updateJobsSortButtons() {
+    const bar = jobsRows?.previousElementSibling;
+    if (!bar?.classList.contains('stmb-sort-bar')) return;
+    for (const button of bar.querySelectorAll('[data-sort-field]')) {
+        const field = button.dataset.sortField;
+        const label = field === 'title' ? tr('STMemoryBooks_Jobs_SortTitle', 'Job title') : tr('STMemoryBooks_Jobs_SortStatus', 'Status');
+        button.textContent = `${label} ${jobsViewSort.field === field ? (jobsViewSort.direction === 1 ? '↑' : '↓') : '↕'}`;
+        button.setAttribute('aria-label', `${label}: ${jobsViewSort.field === field
+            ? jobsViewSort.direction === 1 ? tr('STMemoryBooks_SortAscending', 'ascending') : tr('STMemoryBooks_SortDescending', 'descending')
+            : tr('STMemoryBooks_SortUnsorted', 'unsorted')}`);
+    }
+}
 const CONCURRENT_JOB_TYPES = new Set(['sidePrompt']);
 
 const jobStores = new Map();
@@ -809,7 +824,10 @@ function renderStmbJobsUi() {
         return;
     }
 
-    jobsRows.innerHTML = rows.map(job => {
+    jobsRows.innerHTML = jobsViewSort.order(rows, {
+        title: getJobLabel,
+        status: getJobStateLabel,
+    }).map(job => {
         const canReview = job.state === 'needs_review' || job.state === 'awaiting_approval';
         const canCancel = ACTIVE_STATES.has(String(job.state)) && job.state !== 'needs_review';
         const canRetry = ['failed', 'blocked', 'canceled'].includes(String(job.state));
@@ -854,6 +872,7 @@ function renderStmbJobsUi() {
 function toggleJobsPanel() {
     if (!jobsPanel || !topBarButton) return;
     const nextOpen = !jobsPanel.classList.contains('visible');
+    if (!nextOpen) { jobsViewSort.reset(); updateJobsSortButtons(); }
     jobsPanel.classList.toggle('visible', nextOpen);
     topBarButton.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
     renderStmbJobsUi();
@@ -977,6 +996,20 @@ function ensureJobsUiElements() {
     jobsPanel = drawer;
     jobsSummary = drawer.querySelector('#stmb-jobs-summary');
     jobsRows = drawer.querySelector('#stmb-jobs-rows');
+    if (!jobsRows.previousElementSibling?.classList.contains('stmb-sort-bar')) {
+        const bar = document.createElement('div');
+        bar.className = 'stmb-sort-bar';
+        for (const field of ['title', 'status']) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'menu_button stmb-sort-button';
+            button.dataset.sortField = field;
+            button.addEventListener('click', () => { jobsViewSort.cycle(field); updateJobsSortButtons(); renderStmbJobsUi(); });
+            bar.append(button);
+        }
+        jobsRows.before(bar);
+    }
+    updateJobsSortButtons();
     jobsActions = drawer.querySelector('#stmb-jobs-actions');
     return Boolean(topBarButton && topBarBadge && jobsPanel && jobsSummary && jobsRows && jobsActions);
 }

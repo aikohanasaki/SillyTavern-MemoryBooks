@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "Los recordatorios permanecen visibles hasta cerrarlos y funcionan independientemente de Mostrar notificaciones."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Los resúmenes de memoria automáticos están atrasados: {{count}} mensajes sin procesar. Revisa los ajustes de memorias automáticas o crea una memoria."
   ,"STMemoryBooks_Reminder_ManualToast": "Hay {{count}} mensajes desde tu último resumen de memoria. Considera crear una memoria.",
-  "STMemoryBooks_MemoryAssist_NoScene": "No hay una escena actual. Indica un intervalo de mensajes: /memory-assist X-Y."
+  "STMemoryBooks_MemoryAssist_NoScene": "No hay una escena actual. Indica un intervalo de mensajes: /memory-assist X-Y.",
+  "STMemoryBooks_SortAscending": "ascendente",
+  "STMemoryBooks_SortDescending": "descendente",
+  "STMemoryBooks_SortUnsorted": "sin ordenar",
+  "STMemoryBooks_Jobs_SortTitle": "Título del trabajo",
+  "STMemoryBooks_Jobs_SortStatus": "Estado"
 }

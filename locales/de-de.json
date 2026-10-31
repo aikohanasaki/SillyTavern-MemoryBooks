@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "Erinnerungen bleiben sichtbar, bis sie geschlossen werden, und funktionieren unabhängig von „Benachrichtigungen anzeigen“."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Automatische Erinnerungs-Zusammenfassungen sind überfällig: {{count}} unverarbeitete Nachrichten. Prüfe die Einstellungen für automatische Erinnerungen oder erstelle eine Erinnerung."
   ,"STMemoryBooks_Reminder_ManualToast": "Seit deiner letzten Erinnerungs-Zusammenfassung sind {{count}} Nachrichten hinzugekommen. Erwäge, eine Erinnerung zu erstellen.",
-  "STMemoryBooks_MemoryAssist_NoScene": "Keine aktuelle Szene. Nachrichtenbereich angeben: /memory-assist X-Y."
+  "STMemoryBooks_MemoryAssist_NoScene": "Keine aktuelle Szene. Nachrichtenbereich angeben: /memory-assist X-Y.",
+  "STMemoryBooks_SortAscending": "aufsteigend",
+  "STMemoryBooks_SortDescending": "absteigend",
+  "STMemoryBooks_SortUnsorted": "unsortiert",
+  "STMemoryBooks_Jobs_SortTitle": "Auftragstitel",
+  "STMemoryBooks_Jobs_SortStatus": "Status"
 }

@@ -1886,6 +1886,8 @@ Return-format correctness comes before style.
 
 ## 22. Summary Prompt Manager and Consolidation Prompt Manager
 
+In manager tables and browsing lists, click a sortable heading or its sort button once for ascending order, again for descending order, and a third time to restore the list's usual order. The selected sort remains while the view is open, including after list refreshes. Sorting only changes what you see; it does not change the order used to save or process entries. Action columns, dropdowns, chat messages, and explicitly ordered editing lists have no sort control.
+
 ### Summary Prompt Manager
 
 Can create, edit, duplicate, delete, import, and export ordinary Memory prompt presets. Assign a preset through a Memory Books profile.

@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "알림은 직접 닫을 때까지 표시되며 알림 표시 설정과 독립적으로 작동합니다."
   ,"STMemoryBooks_Reminder_AutomaticToast": "자동 메모리 요약이 지연되었습니다. 처리되지 않은 메시지가 {{count}}개 있습니다. 자동 메모리 설정을 확인하거나 메모리를 생성하세요."
   ,"STMemoryBooks_Reminder_ManualToast": "마지막 메모리 요약 이후 메시지가 {{count}}개 있습니다. 메모리 생성을 고려해 보세요.",
-  "STMemoryBooks_MemoryAssist_NoScene": "현재 장면이 없습니다. 메시지 범위를 지정하세요: /memory-assist X-Y."
+  "STMemoryBooks_MemoryAssist_NoScene": "현재 장면이 없습니다. 메시지 범위를 지정하세요: /memory-assist X-Y.",
+  "STMemoryBooks_SortAscending": "오름차순",
+  "STMemoryBooks_SortDescending": "내림차순",
+  "STMemoryBooks_SortUnsorted": "정렬 안 함",
+  "STMemoryBooks_Jobs_SortTitle": "작업 제목",
+  "STMemoryBooks_Jobs_SortStatus": "상태"
 }

@@ -907,3 +907,8 @@ p.stmb-help-drawer-copy {
         grid-template-columns: 1fr;
     }
 }
+/* Sorting controls inherit the surrounding table and theme typography. */
+.stmb-sort-button { color: inherit; font: inherit; cursor: pointer; }
+th > .stmb-sort-button { background: none; border: 0; padding: 0; text-align: inherit; }
+.stmb-sort-button:focus-visible { outline: 2px solid var(--SmartThemeQuoteColor); outline-offset: 2px; }
+.stmb-sort-bar { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }

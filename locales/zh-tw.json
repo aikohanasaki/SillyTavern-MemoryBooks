@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "提醒會一直顯示，直到手動關閉，且不受「顯示通知」設定影響。"
   ,"STMemoryBooks_Reminder_AutomaticToast": "自動記憶摘要已逾期：有 {{count}} 則未處理的訊息。請檢查自動記憶設定或建立記憶。"
   ,"STMemoryBooks_Reminder_ManualToast": "自上次記憶摘要以來已有 {{count}} 則訊息。請考慮建立記憶。",
-  "STMemoryBooks_MemoryAssist_NoScene": "沒有目前場景。請指定訊息範圍：/memory-assist X-Y。"
+  "STMemoryBooks_MemoryAssist_NoScene": "沒有目前場景。請指定訊息範圍：/memory-assist X-Y。",
+  "STMemoryBooks_SortAscending": "遞增",
+  "STMemoryBooks_SortDescending": "遞減",
+  "STMemoryBooks_SortUnsorted": "未排序",
+  "STMemoryBooks_Jobs_SortTitle": "工作標題",
+  "STMemoryBooks_Jobs_SortStatus": "狀態"
 }

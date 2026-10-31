@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "リマインダーは閉じるまで表示され、「通知を表示」とは独立して動作します。"
   ,"STMemoryBooks_Reminder_AutomaticToast": "自動メモリサマリーの作成が遅れています。未処理のメッセージが{{count}}件あります。自動メモリの設定を確認するか、メモリを作成してください。"
   ,"STMemoryBooks_Reminder_ManualToast": "前回のメモリサマリー以降、{{count}}件のメッセージがあります。メモリの作成をご検討ください。",
-  "STMemoryBooks_MemoryAssist_NoScene": "現在のシーンがありません。メッセージ範囲を指定してください: /memory-assist X-Y。"
+  "STMemoryBooks_MemoryAssist_NoScene": "現在のシーンがありません。メッセージ範囲を指定してください: /memory-assist X-Y。",
+  "STMemoryBooks_SortAscending": "昇順",
+  "STMemoryBooks_SortDescending": "降順",
+  "STMemoryBooks_SortUnsorted": "並べ替えなし",
+  "STMemoryBooks_Jobs_SortTitle": "ジョブのタイトル",
+  "STMemoryBooks_Jobs_SortStatus": "状態"
 }

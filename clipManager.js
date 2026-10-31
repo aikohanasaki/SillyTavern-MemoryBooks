@@ -16,6 +16,7 @@ import { DOMPurify } from '../../../../lib.js';
 import { oai_settings } from '../../../openai.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
+import { getPopupSort, mountTableSort, mountListSort } from './viewSort.js';
 import { getEntryByTitle, isMemoryEntry, normalizeLorebookEntrySettings } from './addlore.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
 import { getHighestMemoryProcessed, getSceneMarkers } from './sceneManager.js';
@@ -2327,10 +2328,9 @@ export async function showTopicalClipPopup(options = {}) {
             .map(checkbox => String(checkbox.value)),
     );
     const getSelectedSourceEntries = (allEligibleSources) => {
-        const entryMap = new Map((allEligibleSources || []).map(entry => [String(getTopicalSourcePickerId(entry)), entry]));
-        return Array.from(getSelectedSourceIds())
-            .map(id => entryMap.get(String(id)))
-            .filter(Boolean);
+        const selectedIds = getSelectedSourceIds();
+        return (allEligibleSources || [])
+            .filter(entry => selectedIds.has(String(getTopicalSourcePickerId(entry))));
     };
     const getSourceEntriesToUse = (allEligibleSources) => {
         if (!includeMemoriesInput?.checked) return [];
@@ -2359,6 +2359,8 @@ export async function showTopicalClipPopup(options = {}) {
         sourceList.innerHTML = allEligible.length
             ? buildTopicalSourceMemoryOptions(allEligible, selectedIds)
             : `<div class="opacity70p">${escapeHtml(tr('STMemoryBooks_TopicalClip_NoMemories', 'No STMB memory entries were found in this Memory Book.'))}</div>`;
+        mountListSort(sourceList, getPopupSort(popup), { title: tr('STMemoryBooks_Entry', 'Entry') },
+            { title: row => row.textContent.trim() }, ':scope > label');
         if (sourcePickerControls) {
             sourcePickerControls.hidden = !includeMemoriesInput?.checked || !useSelectedSourcesInput?.checked;
         }
@@ -2865,6 +2867,8 @@ export async function showCombineClipsPopup(options = {}) {
             `<label class="flex-container flexGap10" style="align-items:center; margin:2px 0"><input type="checkbox" value="${escapeHtml(getEntryStableId(entry))}"${selectedIds.has(getEntryStableId(entry)) ? ' checked' : ''} />` +
             `<span>${escapeHtml(entry.comment)}${entry.disable ? ` (${escapeHtml(tr('STMemoryBooks_CombineClips_Disabled', 'disabled'))})` : ''}</span></label>`,
         ).join('') || escapeHtml(tr('STMemoryBooks_CombineClips_None', 'No Topical Clips found in this Memory Book.'));
+        mountListSort(sourceList, getPopupSort(popup), { title: tr('STMemoryBooks_Entry', 'Entry') },
+            { title: row => row.textContent.trim() }, ':scope > label');
         updateKeywords();
     };
     const loadSources = async () => {
@@ -3011,6 +3015,12 @@ export async function showStmbEntryReviewPopup(options = {}) {
         }
         tbody.innerHTML = buildCompactionEntryRows(currentEntries)
             || `<tr><td colspan="4" class="opacity70p">${escapeHtml(tr('STMemoryBooks_Compaction_NoEligibleEntries', 'No entries eligible for Compaction were found in this Memory Book.'))}</td></tr>`;
+        mountTableSort(tbody.closest('table'), getPopupSort(popup),
+            ['entry', 'type', 'tokens', null], {
+                entry: row => row.cells[0]?.textContent.trim(),
+                type: row => row.cells[1]?.textContent.trim(),
+                tokens: row => Number(row.cells[2]?.textContent.replace(/[^\d.-]/g, '')) || 0,
+            });
     };
 
     const loadSelectedLorebook = async (lorebookName) => {

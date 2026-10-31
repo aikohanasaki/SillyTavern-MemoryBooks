@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "Les rappels restent visibles jusqu’à leur fermeture et fonctionnent indépendamment de l’option Afficher les notifications."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Les résumés de mémoire automatiques sont en retard : {{count}} messages non traités. Vérifiez les réglages des mémoires automatiques ou créez une mémoire."
   ,"STMemoryBooks_Reminder_ManualToast": "Il y a {{count}} messages depuis votre dernier résumé de mémoire. Pensez à créer une mémoire.",
-  "STMemoryBooks_MemoryAssist_NoScene": "Aucune scène en cours. Indiquez une plage de messages : /memory-assist X-Y."
+  "STMemoryBooks_MemoryAssist_NoScene": "Aucune scène en cours. Indiquez une plage de messages : /memory-assist X-Y.",
+  "STMemoryBooks_SortAscending": "croissant",
+  "STMemoryBooks_SortDescending": "décroissant",
+  "STMemoryBooks_SortUnsorted": "non trié",
+  "STMemoryBooks_Jobs_SortTitle": "Titre de la tâche",
+  "STMemoryBooks_Jobs_SortStatus": "Statut"
 }

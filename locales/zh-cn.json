@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "提醒会一直显示，直到手动关闭，且不受“显示通知”设置影响。"
   ,"STMemoryBooks_Reminder_AutomaticToast": "自动记忆摘要已逾期：有 {{count}} 条未处理的消息。请检查自动记忆设置或创建记忆。"
   ,"STMemoryBooks_Reminder_ManualToast": "自上次记忆摘要以来已有 {{count}} 条消息。请考虑创建记忆。",
-  "STMemoryBooks_MemoryAssist_NoScene": "没有当前场景。请指定消息范围：/memory-assist X-Y。"
+  "STMemoryBooks_MemoryAssist_NoScene": "没有当前场景。请指定消息范围：/memory-assist X-Y。",
+  "STMemoryBooks_SortAscending": "升序",
+  "STMemoryBooks_SortDescending": "降序",
+  "STMemoryBooks_SortUnsorted": "未排序",
+  "STMemoryBooks_Jobs_SortTitle": "任务标题",
+  "STMemoryBooks_Jobs_SortStatus": "状态"
 }

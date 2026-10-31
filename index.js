@@ -236,6 +236,7 @@ import {
   updateMemoryTierMacroCache,
 } from "./memoryTierMacros.js";
 import { summaryPromptsTableTemplate } from "./templatesSummaryPrompts.js";
+import { getPopupSort, mountTableSort, mountListSort, createViewSort } from "./viewSort.js";
 import {
   t as __st_t_tag,
   translate,
@@ -321,6 +322,9 @@ import { createNarratorGenerationState } from "./narratorGenerationState.js";
 import "../../../../lib/select2.min.js";
 import { applyGroupMemoryPolicy, getGroupMemoryProfile, isCharacterAwarenessDisabled } from "./groupChatPolicy.js";
 import { setGroupSettingDisabled } from "./groupChatSettingsUi.js";
+
+const summaryPromptViewSort = createViewSort();
+const consolidationPromptViewSort = createViewSort();
 
 /**
  * Async effective prompt that respects Summary Prompt Manager overrides
@@ -1065,7 +1069,7 @@ async function editNarratorCastMember(member, config, canonicalLorebookName) {
   return true;
 }
 
-async function showNarratorCastManager() {
+async function showNarratorCastManager(sortState = createViewSort()) {
   const config = getCurrentNarratorConfig();
   const canonical = getCurrentCanonicalLorebookName();
   const bookOptions = (world_names || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
@@ -1073,13 +1077,20 @@ async function showNarratorCastManager() {
   const content = DOMPurify.sanitize(`<h3>${escapeHtml(translate("Narrator Cast", "STMemoryBooks_NarratorCast"))}</h3><p class="opacity50p">${escapeHtml(translate("Each declared character must use a unique Memory Book separate from the omniscient book.", "STMemoryBooks_NarratorCastDesc"))}</p><div class="stmb-narrator-manager-add"><input id="stmb-narrator-character-name" class="text_pole" type="text" placeholder="${escapeHtml(translate("Character name", "STMemoryBooks_CharacterName"))}"><select id="stmb-narrator-book" class="text_pole"><option value="">${escapeHtml(translate("Select Memory Book", "STMemoryBooks_SelectMemoryBook"))}</option>${bookOptions}</select><button type="button" id="stmb-narrator-add" class="menu_button">${escapeHtml(translate("Add", "STMemoryBooks_Add"))}</button></div><div class="stmb-narrator-manager-list">${rows || `<small class="opacity50p">${escapeHtml(translate("No cast members declared.", "STMemoryBooks_NoNarratorCast"))}</small>`}</div>`);
   const popup = new Popup(content, POPUP_TYPE.TEXT, "", { wide: true, cancelButton: translate("Close", "STMemoryBooks_Close"), okButton: false });
   markStmbPopup(popup);
+  mountListSort(popup.dlg?.querySelector('.stmb-narrator-manager-list'), sortState, {
+    character: translate('Character name', 'STMemoryBooks_CharacterName'),
+    book: translate('Memory Book', 'STMemoryBooks_Compaction_MemoryBook'),
+  }, {
+    character: row => row.children[0]?.textContent.trim(),
+    book: row => row.children[1]?.textContent.trim(),
+  }, ':scope > .stmb-narrator-manager-row');
   popup.dlg.addEventListener("click", async event => {
     const editButton = event.target.closest("[data-edit-narrator-member]");
     if (editButton) {
       const member = config.members.find(item => item.id === editButton.dataset.editNarratorMember);
       if (member && await editNarratorCastMember(member, config, canonical)) {
         await popup.complete(POPUP_RESULT.CANCELLED);
-        await showNarratorCastManager();
+        await showNarratorCastManager(sortState);
         refreshNarratorCastDrawer();
       }
       return;
@@ -1092,7 +1103,7 @@ async function showNarratorCastManager() {
         setNarratorActiveCast(config, config.activeCastIds);
         saveMetadataForCurrentContext();
         await popup.complete(POPUP_RESULT.CANCELLED);
-        await showNarratorCastManager();
+        await showNarratorCastManager(sortState);
         refreshNarratorCastDrawer();
       }
       return;
@@ -1108,7 +1119,7 @@ async function showNarratorCastManager() {
     config.members.push(candidate);
     saveMetadataForCurrentContext();
     await popup.complete(POPUP_RESULT.CANCELLED);
-    await showNarratorCastManager();
+    await showNarratorCastManager(sortState);
     refreshNarratorCastDrawer();
   });
   await popup.show();
@@ -6930,11 +6941,15 @@ async function showConsolidationRecoveryPopup() {
     ${item.status === 'needsReview' ? `<button type="button" class="menu_button stmb-dismiss-consolidation">${escapeHtml(translate('Dismiss after review', 'STMemoryBooks_Consolidation_DismissAction'))}</button>` : ''}
     ${item.status === 'needsReview' ? '' : `<button type="button" class="menu_button stmb-resume-consolidation">${escapeHtml(translate('Resume', 'STMemoryBooks_Consolidation_Resume'))}</button>`}
   </div>`).join('');
-  const popup = new Popup(DOMPurify.sanitize(`<h3>${escapeHtml(translate('Consolidation recovery', 'STMemoryBooks_Consolidation_RecoveryTitle'))}</h3>${rows}`),
+  const popup = new Popup(DOMPurify.sanitize(`<h3>${escapeHtml(translate('Consolidation recovery', 'STMemoryBooks_Consolidation_RecoveryTitle'))}</h3><div id="stmb-recovery-list">${rows}</div>`),
     POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true, okButton: false,
       cancelButton: translate('Close', 'STMemoryBooks_Close') });
   markStmbPopup(popup);
   const shown = popup.show();
+  const recoveryList = popup.dlg?.querySelector('#stmb-recovery-list');
+  mountListSort(recoveryList, getPopupSort(popup), {
+    book: translate('Memory Book', 'STMemoryBooks_Compaction_MemoryBook'),
+  }, { book: row => row.querySelector('strong')?.textContent.trim() }, ':scope > [data-checkpoint-id]');
   popup.dlg?.addEventListener('click', async event => {
     const row = event.target.closest('[data-checkpoint-id]');
     if (!row) return;
@@ -8176,9 +8191,12 @@ async function showPromptManagerPopup() {
       listEl.innerHTML = DOMPurify.sanitize(
         summaryPromptsTableTemplate({ items }),
       );
+      mountTableSort(listEl.querySelector('table'), summaryPromptViewSort, ['name'], {
+        name: row => row.querySelector('.stmb-preset-name')?.textContent.trim(),
+      });
     }
 
-    await popup.show();
+    if (await popup.show() !== POPUP_RESULT.AFFIRMATIVE) summaryPromptViewSort.reset();
   } catch (error) {
     console.error("STMemoryBooks: Error showing prompt manager:", error);
     toastr.error(
@@ -8847,9 +8865,12 @@ async function showArcPromptManagerPopup() {
       listEl.innerHTML = DOMPurify.sanitize(
         summaryPromptsTableTemplate({ items }),
       );
+      mountTableSort(listEl.querySelector('table'), consolidationPromptViewSort, ['name'], {
+        name: row => row.querySelector('.stmb-preset-name')?.textContent.trim(),
+      });
     }
 
-    await popup.show();
+    if (await popup.show() !== POPUP_RESULT.AFFIRMATIVE) consolidationPromptViewSort.reset();
   } catch (error) {
     console.error(
       "STMemoryBooks: Error showing Consolidation Prompt Manager:",

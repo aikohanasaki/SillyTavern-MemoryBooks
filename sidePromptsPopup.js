@@ -25,6 +25,7 @@ import {
     removeSet,
 } from './sidePromptsManager.js';
 import { sidePromptsTableTemplate } from './templatesSidePrompts.js';
+import { getPopupSort, mountTableSort } from './viewSort.js';
 import { translate, applyLocale } from '../../../i18n.js';
 import { tr } from './i18nHelpers.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens } from './sidePromptMacros.js';
@@ -549,6 +550,11 @@ async function refreshList(popup, preserveKey = null) {
 
     listContainer.innerHTML = DOMPurify.sanitize(renderTemplatesTable(filtered));
     try { applyLocale(listContainer); } catch (e) { /* no-op */ }
+    mountTableSort(listContainer.querySelector('table'), getPopupSort(popup, 'prompts'),
+        ['name', 'triggers', null], {
+            name: row => row.cells[0]?.textContent.trim(),
+            triggers: row => row.cells[1]?.textContent.trim(),
+        });
 
     // Restore selection
     if (preserveKey) {
@@ -641,6 +647,11 @@ async function refreshSetControls(popup) {
     const sets = await listSets();
     container.innerHTML = DOMPurify.sanitize(renderAfterMemorySetMode(sets) + renderSetsList(sets));
     try { applyLocale(container); } catch (e) { /* no-op */ }
+    mountTableSort(container.querySelector('table'), getPopupSort(popup, 'sets'),
+        ['name', 'items', null], {
+            name: row => row.cells[0]?.textContent.trim(),
+            items: row => Number(row.cells[1]?.textContent.trim()) || 0,
+        });
 
     container.querySelector('#stmb-sp-after-memory-set-mode')?.addEventListener('change', (e) => {
         setChatAfterMemorySetMode(e.target.value);

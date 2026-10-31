@@ -1273,7 +1273,11 @@ Suggested topics are saved in the Memory Assistance report. In **Memory Assistan
 
 When reviewable suggestions are ready, STMB opens a completion popup for the updated Memory Book. **Dismiss** closes the notice, while **Go to Suggestions** opens **Memory Assistance Suggestions** with that Memory Book already selected. Opening **Memory Assistance Suggestions** from the extension menu selects the current chat's effective Memory Book first (the chat-bound book in Automatic Mode or the resolved manual book in Manual Mode).
 
-The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, placed in a Side Prompt Set, or run manually.
+The Update and Topic Suggestions prompts and connection-profile override are independently editable, but both structured response contracts are fixed. Memory Assistance cannot be deleted, duplicated, or placed in a Side Prompt Set.
+
+Memory Assistance honors **Use regex (advanced)** and the configured outgoing and incoming scripts. Outgoing scripts run on the complete prompt for all Clip update batches (ordinary, topical, or mixed) and topic suggestions. They also run on Topical Clip generation prompts that include chat messages, whether selected individually or by range. A failing outgoing script stops the request before it is sent. Incoming scripts run on all responses before JSON parsing and validation. Ordinary Clip additions must still match an excerpt from an original scene message, so outgoing or incoming transformations that rewrite those excerpts can cause suggestions to be rejected. Regex scripts must preserve the required JSON response structure.
+
+Run `/memory-assist` to run Memory Assistance independently, without creating a Memory or running other Side Prompts. It follows the selected Memory Assistance mode; when the setting is **Off**, this manual run uses **Update** without changing the saved setting. It targets the current chat's effective Memory Book (chat-bound in Automatic Mode, resolved manual book in Manual Mode). With no arguments, it reviews the current scene between its start and end markers. If there is no complete current scene, it reports an error asking for a message range. Use `/memory-assist X-Y` to review an inclusive message-ID range, for example `/memory-assist 10-30`. It uses the existing Memory Assistance connection override and suggestion approval behavior. When the job queue is enabled, it creates a standalone Memory Assistance job that can be retried independently.
 
 ### 16.6 Automatic visible-message intervals
 
@@ -1882,6 +1886,8 @@ Return-format correctness comes before style.
 
 ## 22. Summary Prompt Manager and Consolidation Prompt Manager
 
+In manager tables and browsing lists, click a sortable heading or its sort button once for ascending order, again for descending order, and a third time to restore the list's usual order. The selected sort remains while the view is open, including after list refreshes. Sorting only changes what you see; it does not change the order used to save or process entries. Action columns, dropdowns, chat messages, and explicitly ordered editing lists have no sort control.
+
 ### Summary Prompt Manager
 
 Can create, edit, duplicate, delete, import, and export ordinary Memory prompt presets. Assign a preset through a Memory Books profile.
@@ -1930,6 +1936,8 @@ STMB integrates with SillyTavern’s Regex extension at two stages:
 Enable **Use regex (advanced)**, then open **Configure regex** and select one or more scripts for each direction.
 
 Important: STMB’s own selection controls execution. A script selected by STMB can run even when that script is disabled in the Regex extension’s normal interface.
+
+If a selected outgoing script throws an error or is unavailable, STMB stops generation before sending the prompt. This applies to memories, Side Prompts, and Memory Assistance. Incoming script errors retain the existing best-effort behavior.
 
 Use Regex only when the transformation is understood. A bad outgoing rule can corrupt required schema instructions; a bad incoming rule can corrupt otherwise valid JSON.
 

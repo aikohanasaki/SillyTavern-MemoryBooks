@@ -1580,5 +1580,10 @@
   ,"STMemoryBooks_Reminder_CommonHelp": "Peringatan kekal kelihatan sehingga ditutup dan berfungsi secara berasingan daripada Tunjukkan pemberitahuan."
   ,"STMemoryBooks_Reminder_AutomaticToast": "Ringkasan memori automatik tertangguh: {{count}} mesej belum diproses. Semak tetapan memori automatik anda atau cipta memori."
   ,"STMemoryBooks_Reminder_ManualToast": "Terdapat {{count}} mesej sejak ringkasan memori terakhir anda. Pertimbangkan untuk mencipta memori.",
-  "STMemoryBooks_MemoryAssist_NoScene": "Tiada babak semasa. Nyatakan julat mesej: /memory-assist X-Y."
+  "STMemoryBooks_MemoryAssist_NoScene": "Tiada babak semasa. Nyatakan julat mesej: /memory-assist X-Y.",
+  "STMemoryBooks_SortAscending": "menaik",
+  "STMemoryBooks_SortDescending": "menurun",
+  "STMemoryBooks_SortUnsorted": "tidak diisih",
+  "STMemoryBooks_Jobs_SortTitle": "Tajuk tugas",
+  "STMemoryBooks_Jobs_SortStatus": "Status"
 }

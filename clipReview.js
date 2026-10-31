@@ -10,6 +10,7 @@ import { getSceneMarkers } from './sceneManager.js';
 import { loadWorldInfo, METADATA_KEY, world_names } from '../../../world-info.js';
 import { translate } from '../../../i18n.js';
 import { escapeHtml } from '../../../utils.js';
+import { getPopupSort, mountListSort } from './viewSort.js';
 import { oai_settings } from '../../../openai.js';
 import { applySelectedRegex, requestCompletion } from './stmemory.js';
 import { toReadableText } from './chatcompile.js';
@@ -84,6 +85,9 @@ async function chooseClipRecords(records, lorebookName) {
             { text: tr('STMemoryBooks_ClipReview_QueryAll', 'Query All'), result: POPUP_RESULT.CUSTOM2, appendAtEnd: true },
         ],
     });
+    const choiceList = popup.dlg?.querySelector('.stmb-clip-review-choice')?.closest('div');
+    mountListSort(choiceList, getPopupSort(popup), { title: tr('STMemoryBooks_Entry', 'Entry') },
+        { title: row => row.querySelector('strong')?.textContent.trim() }, ':scope > label');
     markStmbPopup(popup);
     const result = await popup.show();
     if (result === POPUP_RESULT.CUSTOM2) return { status: 'selected', records };
@@ -641,7 +645,9 @@ function collectTopicSuggestionRows(container, existingRecords) {
         .filter(Boolean));
     const accepted = new Set();
     const selected = [];
-    for (const [index, row] of Array.from(container?.querySelectorAll('.stmb-clip-topic-row') || []).entries()) {
+    const canonicalRows = Array.from(container?.querySelectorAll('.stmb-clip-topic-row') || [])
+        .sort((a, b) => Number(a.dataset.originalIndex) - Number(b.dataset.originalIndex));
+    for (const [index, row] of canonicalRows.entries()) {
         if (!row.querySelector('.stmb-clip-topic-selected')?.checked) continue;
         const topic = String(row.querySelector('.stmb-clip-topic-name')?.value || '').replace(/\s+/g, ' ').trim();
         const normalizedTopic = topic.toLocaleLowerCase();
@@ -678,6 +684,9 @@ async function showClipTopicSuggestionsPopup(lorebookName, options = {}) {
     markStmbPopup(popup);
     const showPromise = popup.show();
     const rows = popup.dlg?.querySelector('#stmb-clip-topic-rows');
+    rows?.querySelectorAll('.stmb-clip-topic-row').forEach((row, index) => { row.dataset.originalIndex = String(index); });
+    mountListSort(rows, getPopupSort(popup), { topic: tr('STMemoryBooks_TopicalClip_Topic', 'Topic') },
+        { topic: row => row.querySelector('.stmb-clip-topic-name')?.value.trim() }, ':scope > .stmb-clip-topic-row');
     let addedRowCount = 0;
     popup.dlg?.querySelector('#stmb-clip-topic-add')?.addEventListener('click', () => {
         addedRowCount++;
@@ -686,7 +695,11 @@ async function showClipTopicSuggestionsPopup(lorebookName, options = {}) {
             topic: '',
             keywords: [],
         }])));
-        rows?.querySelector('.stmb-clip-topic-row:last-child .stmb-clip-topic-name')?.focus();
+        const addedRow = rows?.querySelector('.stmb-clip-topic-row:last-child');
+        if (addedRow) addedRow.dataset.originalIndex = String(metadata.topicSuggestions.length + addedRowCount - 1);
+        mountListSort(rows, getPopupSort(popup), { topic: tr('STMemoryBooks_TopicalClip_Topic', 'Topic') },
+            { topic: row => row.querySelector('.stmb-clip-topic-name')?.value.trim() }, ':scope > .stmb-clip-topic-row');
+        addedRow?.querySelector('.stmb-clip-topic-name')?.focus();
     });
     if (await showPromise !== POPUP_RESULT.AFFIRMATIVE) return;
 
@@ -758,6 +771,8 @@ export async function showClipReviewSuggestionsPopup(options = {}) {
         container.innerHTML = (candidateHtml || topicHtml)
             ? `${topicHtml}${candidateHtml}`
             : `<div class="opacity70p">${escapeHtml(tr('STMemoryBooks_ClipReview_NoSuggestions', 'There are no current Memory Assistance suggestions.'))}</div>`;
+        mountListSort(container, getPopupSort(popup), { title: tr('STMemoryBooks_Entry', 'Entry') },
+            { title: row => row.querySelector('h4')?.textContent.trim() }, ':scope > section[data-clip-review-uid]');
     };
     const saveRemaining = async () => {
         await persistClipReviewMetadata(lorebookName, metadata);
