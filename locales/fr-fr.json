@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "décroissant",
   "STMemoryBooks_SortUnsorted": "non trié",
   "STMemoryBooks_Jobs_SortTitle": "Titre de la tâche",
-  "STMemoryBooks_Jobs_SortStatus": "Statut"
+  "STMemoryBooks_Jobs_SortStatus": "Statut",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Les messages ont changé depuis l'annulation de la mémoire. Les messages masqués n'ont pas pu être réaffichés en toute sécurité. Vérifiez le chat restant avant de les réafficher manuellement."
 }

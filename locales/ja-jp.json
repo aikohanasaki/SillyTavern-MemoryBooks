@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "降順",
   "STMemoryBooks_SortUnsorted": "並べ替えなし",
   "STMemoryBooks_Jobs_SortTitle": "ジョブのタイトル",
-  "STMemoryBooks_Jobs_SortStatus": "状態"
+  "STMemoryBooks_Jobs_SortStatus": "状態",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "メモリーのロールバック後にメッセージが変更されました。非表示のメッセージを安全に再表示できませんでした。手動で再表示する前に、残っているチャットを確認してください。"
 }

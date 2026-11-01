@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "내림차순",
   "STMemoryBooks_SortUnsorted": "정렬 안 함",
   "STMemoryBooks_Jobs_SortTitle": "작업 제목",
-  "STMemoryBooks_Jobs_SortStatus": "상태"
+  "STMemoryBooks_Jobs_SortStatus": "상태",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "메모리 롤백 이후 메시지가 변경되었습니다. 숨겨진 메시지를 안전하게 다시 표시할 수 없습니다. 수동으로 표시하기 전에 남은 채팅을 확인하세요."
 }

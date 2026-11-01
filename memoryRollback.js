@@ -63,6 +63,55 @@ export function getChildRollbackUnhideRanges(ranges, retainedBoundary) {
     return merged;
 }
 
+/** Map removed Memories' original source ranges onto the chat after deletion. */
+export function getDeletedMessageRollbackUnhideRanges(ranges, deletion, currentLength) {
+    if (!Number.isInteger(deletion?.start) || !Number.isInteger(deletion?.end)
+        || !Number.isInteger(deletion?.count) || deletion.count < 1
+        || deletion.end !== deletion.start + deletion.count - 1
+        || !Number.isInteger(currentLength) || currentLength < 0) return [];
+    const retained = [];
+    for (const range of ranges || []) {
+        if (!Number.isInteger(range?.start) || !Number.isInteger(range?.end)
+            || range.start < 0 || range.end < range.start) continue;
+        const beforeEnd = Math.min(range.end, deletion.start - 1, currentLength - 1);
+        if (range.start <= beforeEnd) retained.push({ start: range.start, end: beforeEnd });
+        const afterStart = Math.max(range.start, deletion.end + 1) - deletion.count;
+        const afterEnd = Math.min(range.end - deletion.count, currentLength - 1);
+        if (afterStart <= afterEnd) retained.push({ start: afterStart, end: afterEnd });
+    }
+    retained.sort((left, right) => left.start - right.start);
+    const merged = [];
+    for (const range of retained) {
+        const previous = merged.at(-1);
+        if (previous && range.start <= previous.end + 1) previous.end = Math.max(previous.end, range.end);
+        else merged.push(range);
+    }
+    return merged;
+}
+
+/** Hash only stable chat content/identity, never visibility or attachment data. */
+export async function fingerprintRollbackChatPrefix(messages, end) {
+    if (!Number.isInteger(end) || end < 0 || !Array.isArray(messages) || messages.length <= end) return null;
+    const identity = messages.slice(0, end + 1).map(message => [
+        message?.send_date ?? null,
+        message?.name ?? null,
+        message?.is_user ?? null,
+        message?.original_avatar ?? null,
+        message?.mes ?? null,
+        message?.swipe_id ?? null,
+    ]);
+    const bytes = new TextEncoder().encode(JSON.stringify(identity));
+    if (!globalThis.crypto?.subtle) {
+        // FNV-1a detects accidental chat changes on HTTP/LAN installations.
+        // Prefix the non-cryptographic hash so it cannot match a SHA-256 record.
+        let hash = 0xcbf29ce484222325n;
+        for (const byte of bytes) hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
+        return `fnv1a64:${hash.toString(16).padStart(16, '0')}`;
+    }
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 function clone(value) {
     return structuredClone(value);
 }

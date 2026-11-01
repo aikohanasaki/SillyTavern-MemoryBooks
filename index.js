@@ -273,6 +273,9 @@ import {
   collectRollbackMemories,
   computeRollbackCheckpoint,
   getChildRollbackUnhideRanges,
+  getDeletedMessageRollbackUnhideRanges,
+  fingerprintRollbackChatPrefix,
+  isRollbackBaseMemory,
   createMessageDeletionTracker,
   fingerprintRollbackEntry,
   planSidePromptRestorations,
@@ -1508,6 +1511,7 @@ async function handleChatChanged(chatId) {
   updateSceneStateCache();
   validateAndCleanupSceneMarkers();
   memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
+  queueDeletedMessageRollbackUnhideRecovery(getStmbChatKey(), getMemoryRollbackChatId());
   void refreshMemoryTierMacroCache();
   void maybePromptContextSettingForChatOpen();
 
@@ -12732,18 +12736,25 @@ function getLorebookDataFingerprint(data) {
   return fingerprintRollbackEntry(data);
 }
 
-async function loadMemoryRollbackLorebooks(settings, namesOverride = null) {
+async function loadMemoryRollbackLorebooks(settings, namesOverride = null, { skipUnavailable = false } = {}) {
   const names = Array.from(namesOverride || getCurrentChatLorebookNames(settings))
     .sort((left, right) => left.localeCompare(right));
   const states = [];
   for (const name of names) {
-    const data = await loadWorldInfo(name);
-    if (!data || typeof data !== "object") {
-      throw new Error(tr(
-        "STMemoryBooks_AutoRollback_LoadFailed",
-        "Memory rollback could not safely load Memory Book {{name}}. Repair or remove the unavailable book, then try again.",
-        { name },
-      ));
+    let data;
+    try {
+      data = await loadWorldInfo(name);
+      if (!data || typeof data !== "object") {
+        throw new Error(tr(
+          "STMemoryBooks_AutoRollback_LoadFailed",
+          "Memory rollback could not safely load Memory Book {{name}}. Repair or remove the unavailable book, then try again.",
+          { name },
+        ));
+      }
+    } catch (error) {
+      if (!skipUnavailable) throw error;
+      console.warn("STMemoryBooks: Skipping unavailable Memory Book during rollback unhide recovery:", name, error);
+      continue;
     }
     states.push({
       name,
@@ -12898,6 +12909,102 @@ async function waitForMemoryRollbackIdle(chatKey) {
   return getStmbChatKey() === chatKey;
 }
 
+const pendingDeletedUnhideKey = "STMB_pendingDeletedMessageRollbackUnhide";
+
+function unsafeDeletedUnhideError(records) {
+  const error = new Error(translate(
+    "Messages changed since Memory rollback. Hidden messages could not be restored safely; review the remaining chat before unhiding them manually.",
+    "STMemoryBooks_AutoRollback_UnhideUnsafe",
+  ));
+  error.code = "STMB_UNSAFE_DELETED_UNHIDE";
+  error.records = records;
+  return error;
+}
+
+async function validateDeletedMessageUnhideRecords(records, chatKey, chatId) {
+  if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return false;
+  const unsafeRecords = [];
+  for (const record of records) {
+    const end = Array.isArray(record.ranges) ? record.ranges.at(-1)?.end : undefined;
+    if (!Number.isInteger(end) || record.prefixEnd !== end
+      || !Array.isArray(record.ranges)
+      || record.ranges.some(range => !range || !Number.isInteger(range.start)
+        || !Number.isInteger(range.end) || range.start < 0 || range.end < range.start)
+      || await fingerprintRollbackChatPrefix(chat, end) !== record.fingerprint) {
+      unsafeRecords.push(record);
+    }
+  }
+  if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return false;
+  if (unsafeRecords.length > 0) throw unsafeDeletedUnhideError(unsafeRecords);
+  return true;
+}
+
+async function replayDeletedMessageRollbackUnhide(states, chatKey, chatId) {
+  const pending = states.filter(state => state.data[pendingDeletedUnhideKey]?.version === 1
+    && state.data[pendingDeletedUnhideKey].chatId === chatId);
+  if (pending.length === 0) return;
+  const records = pending.map(state => state.data[pendingDeletedUnhideKey]);
+  if (!await validateDeletedMessageUnhideRecords(records, chatKey, chatId)) return;
+  const ranges = getChildRollbackUnhideRanges(records.flatMap(record => record.ranges), chat.length);
+  for (const range of ranges) {
+    if (!await validateDeletedMessageUnhideRecords(records, chatKey, chatId)) return;
+    await executeSlashCommands(`/unhide ${range.start}-${range.end}`);
+  }
+  if (!await validateDeletedMessageUnhideRecords(records, chatKey, chatId)) return;
+  await clearDeletedMessageRollbackUnhide(pending);
+}
+
+async function clearDeletedMessageRollbackUnhide(states) {
+  const cleanup = states.map(state => {
+    const data = structuredClone(state.data);
+    delete data[pendingDeletedUnhideKey];
+    return { ...state, data, originalData: state.data,
+      originalFingerprint: getLorebookDataFingerprint(state.data) };
+  });
+  await saveMemoryRollbackLorebooks(cleanup);
+}
+
+async function recoverDeletedMessageRollbackUnhide(chatKey, chatId) {
+  if (!chatKey || !chatId) return;
+  const settings = initializeSettings();
+  if (settings.moduleSettings?.autoRollbackEnabled !== true) return;
+  let states = await loadMemoryRollbackLorebooks(settings, null, { skipUnavailable: true });
+  if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  let warned = false;
+  while (states.length > 0) {
+    try {
+      await replayDeletedMessageRollbackUnhide(states, chatKey, chatId);
+      return;
+    } catch (error) {
+      if (error?.code !== "STMB_UNSAFE_DELETED_UNHIDE") throw error;
+      const unsafe = states.filter(state => error.records.includes(state.data[pendingDeletedUnhideKey]));
+      if (unsafe.length === 0) throw error;
+      if (!warned) {
+        toastr.warning(error.message, undefined, { timeOut: 10000, extendedTimeOut: 1000 });
+        warned = true;
+      }
+      await clearDeletedMessageRollbackUnhide(unsafe);
+      states = states.filter(state => !unsafe.includes(state));
+      if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+    }
+  }
+}
+
+function queueDeletedMessageRollbackUnhideRecovery(chatKey, chatId) {
+  if (!chatKey || !chatId) return;
+  const previous = memoryRollbackChains.get(chatKey) || Promise.resolve();
+  const current = previous.catch(() => {}).then(() => recoverDeletedMessageRollbackUnhide(chatKey, chatId));
+  memoryRollbackChains.set(chatKey, current);
+  current.catch(error => {
+    console.error("STMemoryBooks: Message rollback unhide recovery failed:", error);
+    toastr.error(error?.message || String(error), translate("Memory rollback failed", "STMemoryBooks_AutoRollback_Failed"), {
+      timeOut: 0, extendedTimeOut: 0,
+    });
+  }).finally(() => {
+    if (memoryRollbackChains.get(chatKey) === current) memoryRollbackChains.delete(chatKey);
+  });
+}
+
 async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBoundary = null }) {
   const isChildChatRollback = Number.isInteger(childBoundary) && childBoundary >= 0;
   const settings = initializeSettings();
@@ -12910,6 +13017,10 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBound
     refreshEditor: settings.moduleSettings?.refreshEditor !== false,
   };
   if (!options.autoRollbackEnabled) return;
+  if (!isChildChatRollback) {
+    await recoverDeletedMessageRollbackUnhide(chatKey, chatId);
+    if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  }
   if (!isChildChatRollback && !options.autoRollbackUpdateLastProcessed
     && !options.autoRollbackDeleteLastMemory
     && !options.autoRollbackRestorePreviousSidePrompts) return;
@@ -12998,12 +13109,20 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBound
   if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
 
   const rollbackRanges = states.flatMap(state => Object.entries(state.data?.entries || {})
-    .filter(([entryKey, entry]) => selectionsByBook.get(state.name)?.has(String(entry.uid ?? entryKey)))
+    .filter(([entryKey, entry]) => isRollbackBaseMemory(entry)
+      && selectionsByBook.get(state.name)?.has(String(entry.uid ?? entryKey)))
     .map(([, entry]) => getRangeFromMemoryEntry(entry))
     .filter(Boolean))
     .filter((range, index, all) => all.findIndex(candidate =>
       candidate.start === range.start && candidate.end === range.end) === index);
   if (isChildChatRollback) rollbackRanges.push({ start: childBoundary, end: Number.MAX_SAFE_INTEGER });
+  const deletedUnhideRanges = !isChildChatRollback && options.autoRollbackDeleteLastMemory
+    ? getDeletedMessageRollbackUnhideRanges(rollbackRanges, deletion, chat.length) : [];
+  const deletedUnhideFingerprint = deletedUnhideRanges.length > 0
+    ? await fingerprintRollbackChatPrefix(chat, deletedUnhideRanges.at(-1).end) : null;
+  if (deletedUnhideRanges.length > 0 && !deletedUnhideFingerprint) {
+    throw new Error("STMemoryBooks: Could not identify retained messages for rollback.");
+  }
   let restoredSidePrompts = 0;
   let skippedChangedSidePrompts = 0;
   let legacySidePrompts = 0;
@@ -13053,8 +13172,28 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBound
       if (!pendingUnhideStates.includes(state)) pendingUnhideStates.push(state);
     }
   }
+  if (deletedUnhideRanges.length > 0) {
+    const record = { version: 1, chatId, ranges: deletedUnhideRanges,
+      prefixEnd: deletedUnhideRanges.at(-1).end, fingerprint: deletedUnhideFingerprint };
+    for (const state of changedStates) state.data[pendingDeletedUnhideKey] = record;
+  }
   await saveMemoryRollbackLorebooks(changedStates);
   if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+
+  // Match the saved rollback before unhide replay can fail or switch chats.
+  if (options.autoRollbackUpdateLastProcessed) {
+    invalidatePendingProgress();
+    const checkpoint = computeRollbackCheckpoint(states, chatId, selectionsByBook);
+    if (checkpoint === null) delete markers.highestMemoryProcessed;
+    else markers.highestMemoryProcessed = checkpoint;
+    delete markers.highestMemoryProcessedManuallySet;
+    saveMetadataForCurrentContext();
+  }
+
+  if (deletedUnhideRanges.length > 0) {
+    await replayDeletedMessageRollbackUnhide(changedStates, chatKey, chatId);
+    if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
+  }
 
   for (const range of unhideRanges) {
     await executeSlashCommands(`/unhide ${range.start}-${range.end}`);
@@ -13071,15 +13210,6 @@ async function executeMemoryAutoRollback({ chatKey, chatId, deletion, childBound
     });
     await saveMemoryRollbackLorebooks(cleanupStates);
     if (getStmbChatKey() !== chatKey || getMemoryRollbackChatId() !== chatId) return;
-  }
-
-  if (options.autoRollbackUpdateLastProcessed) {
-    invalidatePendingProgress();
-    const checkpoint = computeRollbackCheckpoint(states, chatId, selectionsByBook);
-    if (checkpoint === null) delete markers.highestMemoryProcessed;
-    else markers.highestMemoryProcessed = checkpoint;
-    delete markers.highestMemoryProcessedManuallySet;
-    saveMetadataForCurrentContext();
   }
 
   if (options.refreshEditor) {
@@ -14450,6 +14580,7 @@ async function init() {
   // Setup event listeners
   memoryRollbackDeletionTracker.snapshot(getStmbChatKey(), chat);
   setupEventListeners();
+  queueDeletedMessageRollbackUnhideRecovery(getStmbChatKey(), getMemoryRollbackChatId());
   initializeLorebookRegenerationObserver();
   registerMemoryTierMacros();
   await refreshMemoryTierMacroCache();

@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "absteigend",
   "STMemoryBooks_SortUnsorted": "unsortiert",
   "STMemoryBooks_Jobs_SortTitle": "Auftragstitel",
-  "STMemoryBooks_Jobs_SortStatus": "Status"
+  "STMemoryBooks_Jobs_SortStatus": "Status",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Die Nachrichten haben sich seit dem Memory-Rollback geändert. Verborgene Nachrichten konnten nicht sicher wieder eingeblendet werden. Prüfe den verbleibenden Chat, bevor du sie manuell einblendest."
 }

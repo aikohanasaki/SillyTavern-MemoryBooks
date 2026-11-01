@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "遞減",
   "STMemoryBooks_SortUnsorted": "未排序",
   "STMemoryBooks_Jobs_SortTitle": "工作標題",
-  "STMemoryBooks_Jobs_SortStatus": "狀態"
+  "STMemoryBooks_Jobs_SortStatus": "狀態",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "記憶回滾後訊息已發生變更，無法安全地取消隱藏訊息。手動取消隱藏前，請先檢查剩餘聊天。"
 }

@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "降序",
   "STMemoryBooks_SortUnsorted": "未排序",
   "STMemoryBooks_Jobs_SortTitle": "任务标题",
-  "STMemoryBooks_Jobs_SortStatus": "状态"
+  "STMemoryBooks_Jobs_SortStatus": "状态",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "记忆回滚后消息已发生变化，无法安全地取消隐藏消息。手动取消隐藏前，请先检查剩余聊天。"
 }

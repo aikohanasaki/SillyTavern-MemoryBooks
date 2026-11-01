@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "по убыванию",
   "STMemoryBooks_SortUnsorted": "без сортировки",
   "STMemoryBooks_Jobs_SortTitle": "Название задачи",
-  "STMemoryBooks_Jobs_SortStatus": "Статус"
+  "STMemoryBooks_Jobs_SortStatus": "Статус",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Сообщения изменились после отката воспоминания. Не удалось безопасно показать скрытые сообщения. Проверьте оставшийся чат, прежде чем показывать их вручную."
 }

@@ -1582,5 +1582,6 @@
   "STMemoryBooks_SortDescending": "decrescente",
   "STMemoryBooks_SortUnsorted": "sem ordenação",
   "STMemoryBooks_Jobs_SortTitle": "Título da tarefa",
-  "STMemoryBooks_Jobs_SortStatus": "Status"
+  "STMemoryBooks_Jobs_SortStatus": "Status",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "As mensagens mudaram desde a reversão da Memória. Não foi possível reexibir as mensagens ocultas com segurança. Confira o chat restante antes de reexibi-las manualmente."
 }

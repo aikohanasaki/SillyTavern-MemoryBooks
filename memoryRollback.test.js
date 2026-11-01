@@ -12,12 +12,66 @@ import {
     collectRollbackMemories,
     computeRollbackCheckpoint,
     getChildRollbackUnhideRanges,
+    getDeletedMessageRollbackUnhideRanges,
+    fingerprintRollbackChatPrefix,
     createMessageDeletionTracker,
     fingerprintRollbackEntry,
     planSidePromptRestorations,
     reconcileSidePromptHistoryStates,
     validateAndExpandLinkedRollbackSelections,
 } from './memoryRollback.js';
+
+test('ordinary rollback maps surviving source messages around deleted ranges', () => {
+    const map = getDeletedMessageRollbackUnhideRanges;
+    assert.deepEqual(map([{ start: 0, end: 30 }],
+        { start: 24, end: 50, count: 27 }, 24), [{ start: 0, end: 23 }]);
+    assert.deepEqual(map([{ start: 31, end: 60 }],
+        { start: 50, end: 60, count: 11 }, 50), [{ start: 31, end: 49 }]);
+    assert.deepEqual(map([{ start: 10, end: 20 }],
+        { start: 14, end: 16, count: 3 }, 30), [{ start: 10, end: 17 }]);
+    assert.deepEqual(map([{ start: 0, end: 30 }, { start: 0, end: 30 }],
+        { start: 24, end: 50, count: 27 }, 24), [{ start: 0, end: 23 }]);
+    assert.deepEqual(map([{ start: 24, end: 50 }],
+        { start: 24, end: 50, count: 27 }, 24), []);
+    assert.deepEqual(map([{ start: 0, end: 30 }],
+        { start: 0, end: 50, count: 51 }, 0), []);
+});
+
+test('rollback chat prefix ignores visibility and appended messages but detects edits', async () => {
+    const messages = [{ mes: 'first', is_system: true }, { mes: 'second', is_system: true }];
+    const original = await fingerprintRollbackChatPrefix(messages, 1);
+    messages[0].is_system = false;
+    messages.push({ mes: 'new' });
+    assert.equal(await fingerprintRollbackChatPrefix(messages, 1), original);
+    messages[0].mes = 'edited';
+    assert.notEqual(await fingerprintRollbackChatPrefix(messages, 1), original);
+});
+
+test('rollback chat prefix works without secure-context crypto', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+    try {
+        for (const crypto of [undefined, {}]) {
+            Object.defineProperty(globalThis, 'crypto', { configurable: true, value: crypto });
+            const messages = [{ mes: '日本語 🐈', name: 'Alice', is_system: true }, { mes: 'second' }];
+            const original = await fingerprintRollbackChatPrefix(messages, 1);
+            assert.match(original, /^fnv1a64:[0-9a-f]{16}$/);
+            messages[0].is_system = false;
+            messages[0].extra = { attachment: 'ignored' };
+            messages.push({ mes: 'appended' });
+            assert.equal(await fingerprintRollbackChatPrefix(messages, 1), original);
+            for (const field of ['mes', 'name', 'send_date', 'is_user', 'original_avatar', 'swipe_id']) {
+                const edited = structuredClone(messages);
+                edited[0][field] = 'changed';
+                assert.notEqual(await fingerprintRollbackChatPrefix(edited, 1), original, field);
+            }
+            assert.equal(await fingerprintRollbackChatPrefix(messages, 3), null);
+            assert.equal(await fingerprintRollbackChatPrefix(messages, -1), null);
+        }
+    } finally {
+        if (descriptor) Object.defineProperty(globalThis, 'crypto', descriptor);
+        else delete globalThis.crypto;
+    }
+});
 
 function memory(uid, start, end, extra = {}) {
     return {

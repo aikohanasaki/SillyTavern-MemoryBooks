@@ -1585,5 +1585,6 @@
   "STMemoryBooks_SortDescending": "menurun",
   "STMemoryBooks_SortUnsorted": "tidak diurutkan",
   "STMemoryBooks_Jobs_SortTitle": "Judul tugas",
-  "STMemoryBooks_Jobs_SortStatus": "Status"
+  "STMemoryBooks_Jobs_SortStatus": "Status",
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Pesan berubah sejak rollback Memori. Pesan tersembunyi tidak dapat ditampilkan kembali dengan aman. Periksa chat yang tersisa sebelum menampilkannya secara manual."
 }

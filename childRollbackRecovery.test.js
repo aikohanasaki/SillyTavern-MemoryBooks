@@ -12,6 +12,7 @@ const receiptKey = 'STMB_pendingChildRollbackUnhide';
 function harness() {
     const state = {
         chat: 'child', commands: [], saves: [], stopAfter: null, switchOnSave: false,
+        markers: { highestMemoryProcessed: 44 }, metadataSaves: [],
         disk: { entries: { 1: { uid: 1, start: 10, end: 12 }, 2: { uid: 2, start: 33, end: 44 } } },
     };
     const context = vm.createContext({
@@ -19,8 +20,9 @@ function harness() {
         ROLLBACK_SCOPE_AFFECTED: 'affected',
         initializeSettings: () => ({ moduleSettings: {
             autoRollbackEnabled: true, autoRollbackDeleteLastMemory: state.deleteMemories !== false, refreshEditor: false,
+            autoRollbackUpdateLastProcessed: state.updateCheckpoint === true,
         } }),
-        getSceneMarkers: () => ({}), waitForMemoryRollbackIdle: async () => true,
+        getSceneMarkers: () => state.markers, waitForMemoryRollbackIdle: async () => true,
         getStmbChatKey: () => state.chat, getMemoryRollbackChatId: () => state.chat,
         loadMemoryRollbackLorebooks: async () => [{ name: 'book', data: structuredClone(state.disk),
             originalData: structuredClone(state.disk), originalFingerprint: JSON.stringify(state.disk) }],
@@ -30,6 +32,7 @@ function harness() {
         collectConsolidationRollbackPlan: () => ({ parents: [], issues: [] }),
         confirmConsolidationRollback: async () => true, revalidateMemoryRollbackLorebooks: async () => {},
         getRangeFromMemoryEntry: entry => ({ start: entry.start, end: entry.end }),
+        isRollbackBaseMemory: () => true,
         applyLorebookRollback: data => { data.entries = {}; },
         getLorebookDataFingerprint: JSON.stringify, getChildRollbackUnhideRanges,
         saveMemoryRollbackLorebooks: async states => {
@@ -46,7 +49,9 @@ function harness() {
             if (state.stopAfter === state.commands.length) state.chat = 'other';
             if (state.failCommand) throw new Error('unhide failed');
         },
-        chat_metadata: {}, saveMetadataForCurrentContext: () => {},
+        chat_metadata: {},
+        saveMetadataForCurrentContext: () => state.metadataSaves.push({ chatId: state.chat, ...state.markers }),
+        invalidatePendingProgress: () => {},
         eventSource: { emit: () => {} }, MEMORY_TIER_CACHE_REFRESH_EVENT: 'refresh',
         refreshMemoryBoundaryUi: () => {}, refreshPopupContent: async () => {},
         toastr: { success: () => {} }, tr: () => '',
@@ -55,6 +60,20 @@ function harness() {
     state.run = () => context.executeMemoryAutoRollback({ chatKey: 'child', chatId: 'child', childBoundary: 37 });
     return state;
 }
+
+test('child checkpoint is cleared before unhide failure or chat switch', async () => {
+    for (const interruption of ['failure', 'switch']) {
+        const state = harness();
+        state.updateCheckpoint = true;
+        state.failCommand = interruption === 'failure';
+        state.stopAfter = interruption === 'switch' ? 1 : null;
+        if (state.failCommand) await assert.rejects(state.run(), /unhide failed/);
+        else await state.run();
+        assert.equal(state.markers.highestMemoryProcessed, undefined);
+        assert.deepEqual(state.metadataSaves, [{ chatId: 'child' }]);
+        assert.ok(state.disk[receiptKey]);
+    }
+});
 
 for (const interruption of ['before first command', 'between commands', 'command failure']) {
     test(`child rollback recovers after ${interruption} with Memories already deleted`, async () => {
