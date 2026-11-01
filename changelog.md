@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.3.13 (November 1, 2026)
+- Rollback protection tweaks.
+
 ## v9.3.12 (October 31, 2026)
 - Added sorting to prompt manager lists.
 
