@@ -34,6 +34,9 @@ export const UI_SETTINGS = {
     CHAT_OBSERVER_DEBOUNCE_MS: 50,
 };
 
+// Maximum wait for pending progress saves, reads, and an idle chat (milliseconds).
+export const PROGRESS_TIMEOUT_MS = 60_000;
+
 export const MEMORY_TIER_CACHE_REFRESH_EVENT = 'stmb_memory_tier_cache_refresh';
 export const CONSOLIDATION_REGENERATION_PRESET_KEY = 'arc_regenerate';
 export const GROUP_CHAT_CONSOLIDATION_PRESET_KEY = 'arc_group_chat';

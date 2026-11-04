@@ -2022,7 +2022,7 @@ For the active chat, **Apply** remains an explicit manual override: it displays 
 
 Each pending record contains a chat reference, operation/job identity, target message index, original marker state/revision, chat integrity identifier, and SHA-256 fingerprint of the source message text and identity fields. Attachment fields are not read or fingerprinted. It does not persist conversation text. Appended messages and hide/unhide changes are allowed; edits, deletions, changed identity, manual marker changes, or rollback can make an update unsafe. Those checks apply to automatic marker updates. Explicit Apply uses the slash command even if the original fingerprint or marker revision no longer matches; Later preserves the pending update and Discard removes it. Explicit chat/character rename events remap pending references; missing or unrecognized references remain available for review and discard.
 
-Pending records are saved using ST's settings API and verified by reading settings back, with a ten-second confirmation limit. A settings failure leaves the update in memory. Use Apply in the affected chat to run the marker command, or Discard pending update to remove the pending record. There is no separate settings-save retry button. There is no browser recovery backup: refreshing before a successful settings save can lose an unpersisted update. If settings cleanup fails after Apply, the pending record remains available; clicking Apply again reruns the command and retries cleanup without generating another Memory. Explicit Apply relies on the command’s normal save behavior; automatic updates still verify the saved marker.
+Pending records are saved using ST's settings API and verified by reading settings back, with a shared confirmation limit of 60 seconds by default. A settings failure leaves the update in memory. Use Apply in the affected chat to run the marker command, or Discard pending update to remove the pending record. There is no separate settings-save retry button. There is no browser recovery backup: refreshing before a successful settings save can lose an unpersisted update. If settings cleanup fails after Apply, the pending record remains available; clicking Apply again reruns the command and retries cleanup without generating another Memory. Explicit Apply relies on the command’s normal save behavior; automatic updates still verify the saved marker.
 
 This removes STMB's separate inactive-chat replacement write. ST's normal current-chat save still writes a complete chat, and concurrent settings saves from other tabs/devices are not transactional. The change does not identify the cause of previously reported chat loss or guarantee protection from all core/other-extension save races.
 
@@ -2610,6 +2610,8 @@ Side Prompt import is additive. Existing prompts are preserved; imported key con
 ## 32. Developer and License Notes
 
 Memory Books uses Bun for bundling/minification.
+
+Progress operations use `PROGRESS_TIMEOUT_MS` in `constants.js`, measured in milliseconds and set to `60_000` (60 seconds) by default. It limits settings save confirmation and read-back together, chat reads, chat metadata saves, and Apply's wait for an idle chat. Edit the constant and rebuild to change it; this is a source configuration, not a settings control.
 
 ```sh
 bun run build

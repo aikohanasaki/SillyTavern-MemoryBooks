@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.4.0 (November 4, 2026)
+- Added configurable timeout to constants.js.
+
 ## v9.3.13 (November 1, 2026)
 - Rollback protection tweaks.
 

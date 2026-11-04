@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { createPendingProgressController, progressFingerprint, progressSourceMessages } from './pendingProgress.js';
+import { PROGRESS_TIMEOUT_MS } from './constants.js';
 
 class Element {
     constructor(tag) { this.tag = tag; this.children = []; this.dataset = {}; this.textContent = ''; }
@@ -60,6 +61,7 @@ function adapter(type = 'character') {
         } }),
         saveSettings: async () => {
             if (state.failSettings) return;
+            if (state.delaySettings) await new Promise(resolve => { state.releaseSettings = resolve; });
             state.durable = structuredClone(state.settings);
             await eventSource.emit('settings');
         },
@@ -78,7 +80,8 @@ function adapter(type = 'character') {
         },
         setTimeout: (fn, delay) => { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; },
         clearTimeout: id => timers.delete(id),
-        structuredClone, AbortController, console,
+        structuredClone, AbortController, console, PROGRESS_TIMEOUT_MS,
+        Date: { now: () => state.now ?? Date.now() },
     };
     const source = readFileSync(new URL('./stmbProgress.js', import.meta.url), 'utf8')
         .replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, '');
@@ -96,7 +99,7 @@ function adapter(type = 'character') {
         for (const [id, timer] of ready) { timers.delete(id); timer.fn(); }
         await new Promise(resolve => setImmediate(resolve));
     }
-    return { state, api, origin, originalRef, defer, tick, deps, eventSource };
+    return { state, api, origin, originalRef, defer, tick, deps, eventSource, timers, handlers };
 }
 
 test('adapter defers without any chat save, prompts once for changed messages, supports Later and manual reopen', async () => {
@@ -137,11 +140,26 @@ test('settings timeout retains the pending entry and explains refresh loss', asy
     f.state.failSettings = true;
     const pending = f.defer();
     await new Promise(resolve => setImmediate(resolve));
-    await f.tick(10000);
+    assert.equal([...f.timers.values()].some(timer => timer.delay === PROGRESS_TIMEOUT_MS), true);
+    await f.tick(PROGRESS_TIMEOUT_MS);
     assert.equal((await pending).status, 'persistence-error');
     f.state.ref = f.originalRef;
     assert.equal(f.api.hasPendingProgress(), true);
     assert.ok(f.state.toasts.some(message => message.includes('before refreshing')));
+    assert.equal(f.handlers.get('settings')?.size, 0);
+});
+
+test('delayed settings confirmation succeeds after the former ten-second limit', async () => {
+    const f = adapter();
+    f.state.delaySettings = true;
+    const pending = f.defer();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal([...f.timers.values()].some(timer => timer.delay === PROGRESS_TIMEOUT_MS), true);
+    await f.tick(10000);
+    f.state.releaseSettings();
+    assert.equal((await pending).status, 'pending');
+    assert.equal([...f.timers.values()].some(timer => timer.delay === PROGRESS_TIMEOUT_MS), false);
+    assert.equal(f.handlers.get('settings')?.size, 0);
 });
 
 test('load identity prevents capture during switching; other popups postpone automatic recovery', async () => {
@@ -197,6 +215,26 @@ test('group application waits for an existing save and runs the set-highest comm
     await popup.close(); await showing;
 });
 
+test('Apply keeps a busy chat pending at the configured deadline', async () => {
+    const f = adapter();
+    await f.defer();
+    f.state.ref = f.originalRef;
+    f.state.now = 0;
+    f.deps.isChatSaving = true;
+    const showing = f.api.showPendingProgress();
+    const popup = f.state.popups.at(-1);
+    const applying = popup.content.querySelectorAll('button').find(button => button.textContent === 'Apply').onclick();
+    f.state.now = PROGRESS_TIMEOUT_MS - 1;
+    await f.tick(250);
+    assert.equal(f.api.hasPendingProgress(), true);
+    f.state.now = PROGRESS_TIMEOUT_MS;
+    await f.tick(250);
+    await applying;
+    assert.match(popup.content.children[1].textContent, /Update still pending/);
+    assert.equal(f.api.hasPendingProgress(), true);
+    await popup.close(); await showing;
+});
+
 test('popup offers Apply and Discard; failed discard stays visible until confirmed saved', async () => {
     const f = adapter();
     await f.defer();
@@ -211,7 +249,7 @@ test('popup offers Apply and Discard; failed discard stays visible until confirm
     f.state.failSettings = true;
     const discarding = discard.onclick();
     await new Promise(resolve => setImmediate(resolve));
-    await f.tick(10000);
+    await f.tick(PROGRESS_TIMEOUT_MS);
     await discarding;
     assert.equal(f.api.hasPendingProgress(), true);
     assert.equal(popup.content.querySelectorAll('button').includes(discard), true);

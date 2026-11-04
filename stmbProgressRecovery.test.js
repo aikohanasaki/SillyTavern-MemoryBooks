@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { PROGRESS_TIMEOUT_MS } from './constants.js';
 import { createHash } from 'node:crypto';
 import { createPendingProgressController, progressFingerprint, progressSourceMessages } from './pendingProgress.js';
 
@@ -54,7 +55,7 @@ function fixture(type = 'character') {
         chat: state.live.messages, chatMetadata: state.live.metadata, characters, groups,
         characterId: characters.findIndex(character => character.avatar === state.live.ref.avatarUrl),
         groupId: state.live.ref.groupId,
-        saveMetadata: async () => { state.calls.push('save'); disk.set(key(state.live.ref), clone(state.live)); },
+        saveMetadata: async () => { state.calls.push('save'); await state.onSave?.(); disk.set(key(state.live.ref), clone(state.live)); },
     });
     const dependencies = {
         eventSource: { on: (event, listener) => listeners.set(event, listener), removeListener: event => listeners.delete(event) },
@@ -74,6 +75,7 @@ function fixture(type = 'character') {
         escapeHtml: value => String(value),
         tr: (_key, fallback, params) => fallback.replace(/\{\{(\w+)\}\}/g, (_, key) => params?.[key] ?? ''),
         createPendingProgressController, progressFingerprint, progressSourceMessages,
+        PROGRESS_TIMEOUT_MS,
         document: { getElementById: () => null, querySelector: () => state.edit, createElement: tag => new Element(tag) },
         toastr: { info() {}, error() {} },
         setTimeout: (callback, delay) => { state.timers.set(++nextTimer, { callback, delay }); return nextTimer; },
@@ -115,6 +117,21 @@ test('idle recovery verifies the saved marker and clears the gate without openin
     assert.equal(f.api.controller.has(f.key(f.refA)), false);
     assert.equal(f.state.popups.length, 0);
     assert.deepEqual(f.state.resolved, [f.key(f.refA)]);
+});
+
+test('chat metadata save stops at the configured deadline and retains progress', async () => {
+    const f = fixture();
+    f.state.onSave = () => new Promise(resolve => { f.state.releaseSave = resolve; });
+    f.load(f.refA);
+    const applying = f.api.controller.apply(['job']);
+    await new Promise(resolve => setImmediate(resolve));
+    const timer = [...f.state.timers].find(([, item]) => item.delay === PROGRESS_TIMEOUT_MS);
+    assert.ok(timer);
+    f.state.timers.delete(timer[0]);
+    timer[1].callback();
+    assert.equal((await applying).status, 'pending');
+    assert.equal(f.api.controller.has(f.key(f.refA)), true);
+    f.state.releaseSave();
 });
 
 test('message editing delays recovery; changed source text requires review without an automatic override', async () => {
@@ -177,7 +194,10 @@ test('missing chat, busy chat, refused selection, and navigation during lookup c
         if (scenario === 'missing') f.disk.delete(f.key(f.refA));
         if (scenario === 'busy') f.state.busy = true;
         if (scenario === 'refused') f.state.refuseSwitch = true;
-        if (scenario === 'switched') f.state.onRead = () => { f.load(f.refA); };
+        if (scenario === 'switched') f.state.onRead = () => {
+            assert.equal([...f.state.timers.values()].some(timer => timer.delay === PROGRESS_TIMEOUT_MS), true);
+            f.load(f.refA);
+        };
         assert.equal(await f.api.reopenProgressChat(f.refA), false, scenario);
         assert.equal(f.state.calls.includes('save'), false, scenario);
         assert.equal(f.api.controller.has(f.key(f.refA)), true, scenario);

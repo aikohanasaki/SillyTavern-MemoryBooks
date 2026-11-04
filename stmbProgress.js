@@ -9,6 +9,7 @@ import { executeSlashCommands } from '../../../slash-commands.js';
 import { openGroupById, openGroupChat } from '../../../group-chats.js';
 import { escapeHtml } from '../../../utils.js';
 import { tr } from './i18nHelpers.js';
+import { PROGRESS_TIMEOUT_MS } from './constants.js';
 import { createPendingProgressController, progressFingerprint, progressSourceMessages } from './pendingProgress.js';
 
 let hooks = null;
@@ -51,7 +52,7 @@ async function readJson(url, body, signal) {
 
 async function persist(expected) {
     const controller = new AbortController();
-    const deadline = setTimeout(() => controller.abort(), 10000);
+    const deadline = setTimeout(() => controller.abort(), PROGRESS_TIMEOUT_MS);
     let listener;
     let rejectWait;
     const saved = new Promise((resolve, reject) => {
@@ -75,7 +76,7 @@ async function persist(expected) {
 
 async function readChat(ref) {
     const controller = new AbortController();
-    const deadline = setTimeout(() => controller.abort(), 10000);
+    const deadline = setTimeout(() => controller.abort(), PROGRESS_TIMEOUT_MS);
     try {
         return ref.type === 'group'
             ? await readJson('/api/chats/group/get', { id: ref.chatId || ref.fileName, with_metadata: true }, controller.signal)
@@ -102,7 +103,7 @@ const controller = createPendingProgressController({
         try {
             await Promise.race([
                 getContext().saveMetadata(),
-                new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('Progress save timed out')), 10000); }),
+                new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('Progress save timed out')), PROGRESS_TIMEOUT_MS); }),
             ]);
         } finally { clearTimeout(timeout); }
     },
@@ -330,7 +331,7 @@ export async function showPendingProgress(onlyChatKey = null, initialStatus = ''
             apply.className = 'menu_button';
             apply.textContent = tr('STMemoryBooks_Apply', 'Apply');
             apply.onclick = () => run(async () => {
-                const deadline = Date.now() + 10000;
+                const deadline = Date.now() + PROGRESS_TIMEOUT_MS;
                 while (current()?.busy) {
                     if (current()?.chatKey !== key || Date.now() >= deadline) return { status: 'pending' };
                     await new Promise(resolve => setTimeout(resolve, 250));
