@@ -211,6 +211,32 @@ export function cloneLorebookForBranch(data, { parentChatId, branchChatId, copyN
     return copy;
 }
 
+function getEntryChatIds(entry) {
+    return [entry?.STMB_chatId, entry?.STMB_sidePromptHistory?.chatId]
+        .map(value => String(value ?? '').trim())
+        .filter(Boolean);
+}
+
+/**
+ * True when a lorebook is the child chat's own book rather than one it shares
+ * with its parent: it holds STMB entries written for `chatId` and none for
+ * `parentChatId`. New memories are stamped with the chat that created them,
+ * and branch copies restamp every parent entry to the branch, so a book that
+ * still carries the parent's id is still the parent's.
+ */
+export function isLorebookOwnedByChat(data, chatId, parentChatId) {
+    const id = String(chatId || '').trim();
+    const parentId = String(parentChatId || '').trim();
+    if (!id) return false;
+    let hasOwnEntry = false;
+    for (const entry of Object.values(data?.entries || {})) {
+        const ids = getEntryChatIds(entry);
+        if (parentId && ids.includes(parentId)) return false;
+        if (ids.includes(id)) hasOwnEntry = true;
+    }
+    return hasOwnEntry;
+}
+
 export function applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySource) {
     if (bindings.mode === 'chat-bound') {
         chatMetadata.world_info = copyNameBySource.get(bindings.primary);
@@ -445,6 +471,33 @@ export function createBranchLorebookController(dependencies) {
                         ));
                     }
                     sourceDataByName.set(sourceName, data);
+                }
+
+                // A child chat opened without a copy marker (e.g. a branch made before
+                // copying existed) may already be bound to its own books. Copying those
+                // would fork the child's own history, so record it as handled instead.
+                if (bindings.sourceNames.length > 0 && bindings.sourceNames.every(name =>
+                    isLorebookOwnedByChat(sourceDataByName.get(name), current.chatId, parentChatId))) {
+                    assertActiveChat(current);
+                    const chatMetadata = deps.getChatMetadata?.() || {};
+                    // Bindings may come from a failed attempt's retryBindings, which were
+                    // cleared from the chat; rebind each book to itself before skipping.
+                    applyBranchLorebookBindings(
+                        chatMetadata,
+                        bindings,
+                        new Map(bindings.sourceNames.map(name => [name, name])),
+                    );
+                    setMarker(chatMetadata, {
+                        status: 'skipped',
+                        reason: 'already-owned',
+                        parentChatId,
+                        branchChatId: current.chatId,
+                        skippedAt: new Date().toISOString(),
+                        mappings: [],
+                    });
+                    await deps.saveMetadata?.();
+                    deps.logger?.info?.('STMemoryBooks: Branch already owns its Memory Books; nothing copied:', bindings.sourceNames);
+                    return;
                 }
 
                 const plan = planBranchLorebookCopies(
