@@ -10,6 +10,7 @@ import {
     cloneLorebookForBranch,
     createBranchLorebookController,
     isChildChatForAutoRollback,
+    isLorebookOwnedByChat,
     planBranchLorebookCopies,
     resolveActiveLorebookBindings,
     shouldCopyForChatChange,
@@ -582,4 +583,57 @@ test('does not save failure state when the active chat changes during a failed l
     assert.equal(harness.metadataSaveCount, 0);
     assert.equal(harness.notifications.at(-1).level, 'warning');
     assert.match(harness.notifications.at(-1).message, /active chat changed/i);
+});
+
+test('detects lorebooks that already hold entries for a chat', () => {
+    const book = { entries: {
+        1: { STMB_chatId: 'Parent' },
+        2: { STMB_sidePromptHistory: { chatId: 'Side Chat' } },
+    } };
+    assert.equal(isLorebookOwnedByChat(book, 'Parent'), true);
+    assert.equal(isLorebookOwnedByChat(book, 'Side Chat'), true);
+    assert.equal(isLorebookOwnedByChat(book, 'Parent - Branch #1'), false);
+    assert.equal(isLorebookOwnedByChat({ entries: {} }, 'Parent'), false);
+    assert.equal(isLorebookOwnedByChat(book, ''), false);
+});
+
+test('does not fork a book an existing child chat already owns', async () => {
+    const harness = createHarness({
+        parentMetadata: { world_info: 'Parent Book' },
+        worlds: {
+            'Parent Book': { entries: { 1: { uid: 1, STMB_chatId: 'Parent', content: 'Parent past' } } },
+            'Own Book': { entries: { 1: { uid: 1, STMB_chatId: 'Old Branch', content: 'Own past' } } },
+        },
+    });
+    harness.switchChat('Old Branch', { world_info: 'Own Book', main_chat: 'Parent' });
+
+    await harness.controller.handleChatChanged('Old Branch');
+
+    assert.equal(harness.state.metadata.world_info, 'Own Book');
+    assert.equal(harness.books.has('Own Book Branch 1'), false);
+    const marker = harness.state.metadata.STMemoryBooks[BRANCH_LOREBOOK_METADATA_KEY];
+    assert.equal(marker.status, 'skipped');
+    assert.equal(marker.reason, 'already-owned');
+    assert.equal(marker.branchChatId, 'Old Branch');
+    assert.equal(harness.childReadyCount, 0);
+
+    // Re-opening the chat must not try again.
+    await harness.controller.handleChatChanged('Old Branch');
+    assert.equal(harness.books.has('Own Book Branch 1'), false);
+});
+
+test('still copies an inherited book when an existing child chat is first opened', async () => {
+    const harness = createHarness({
+        parentMetadata: { world_info: 'Parent Book' },
+        worlds: {
+            'Parent Book': { entries: { 1: { uid: 1, STMB_chatId: 'Parent', content: 'Parent past' } } },
+        },
+    });
+    harness.switchChat('Checkpoint #1', { world_info: 'Parent Book', main_chat: 'Parent' });
+
+    await harness.controller.handleChatChanged('Checkpoint #1');
+
+    assert.equal(harness.state.metadata.world_info, 'Parent Book Branch 1');
+    assert.equal(harness.books.get('Parent Book Branch 1').entries[1].STMB_chatId, 'Checkpoint #1');
+    assert.equal(harness.state.metadata.STMemoryBooks[BRANCH_LOREBOOK_METADATA_KEY].status, 'completed');
 });

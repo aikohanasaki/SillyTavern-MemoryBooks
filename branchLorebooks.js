@@ -211,6 +211,20 @@ export function cloneLorebookForBranch(data, { parentChatId, branchChatId, copyN
     return copy;
 }
 
+/**
+ * True when a lorebook already holds STMB entries written for `chatId`.
+ * Branch copies restamp the parent's entries to the branch, and new memories
+ * are stamped with the chat that created them, so a book that was merely
+ * inherited from the parent never carries the child's chat id.
+ */
+export function isLorebookOwnedByChat(data, chatId) {
+    const id = String(chatId || '').trim();
+    if (!id) return false;
+    return Object.values(data?.entries || {}).some(entry =>
+        String(entry?.STMB_chatId ?? '').trim() === id
+        || String(entry?.STMB_sidePromptHistory?.chatId ?? '').trim() === id);
+}
+
 export function applyBranchLorebookBindings(chatMetadata, bindings, copyNameBySource) {
     if (bindings.mode === 'chat-bound') {
         chatMetadata.world_info = copyNameBySource.get(bindings.primary);
@@ -445,6 +459,25 @@ export function createBranchLorebookController(dependencies) {
                         ));
                     }
                     sourceDataByName.set(sourceName, data);
+                }
+
+                // A child chat opened without a copy marker (e.g. a branch made before
+                // copying existed) may already be bound to its own books. Copying those
+                // would fork the child's own history, so record it as handled instead.
+                if (bindings.sourceNames.length > 0 && bindings.sourceNames.every(name =>
+                    isLorebookOwnedByChat(sourceDataByName.get(name), current.chatId))) {
+                    assertActiveChat(current);
+                    setMarker(deps.getChatMetadata?.() || {}, {
+                        status: 'skipped',
+                        reason: 'already-owned',
+                        parentChatId,
+                        branchChatId: current.chatId,
+                        skippedAt: new Date().toISOString(),
+                        mappings: [],
+                    });
+                    await deps.saveMetadata?.();
+                    deps.logger?.info?.('STMemoryBooks: Branch already owns its Memory Books; nothing copied:', bindings.sourceNames);
+                    return;
                 }
 
                 const plan = planBranchLorebookCopies(
