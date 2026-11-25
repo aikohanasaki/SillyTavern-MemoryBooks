@@ -125,6 +125,7 @@ import {
   throwIfStmbStopped,
   withGoBackButton,
 } from "./utils.js";
+import { CONSOLIDATION_PROFILE_KEY, resolveProfileIndex, getChatProfileSelection, setChatProfileSelection } from "./profileSelection.js";
 import * as SummaryPromptManager from "./summaryPromptManager.js";
 import {
   CONSOLIDATION_REGENERATION_PRESET_KEY,
@@ -189,6 +190,7 @@ import {
 } from "./contextSettingsPopup.js";
 import {
   runSummaryAnalysisSequential,
+  snapshotConsolidationProfile,
   formatSummaryTitle,
   parseSummaryJsonResponse,
 } from "./arcanalysis.js";
@@ -365,6 +367,10 @@ async function getEffectivePromptAsync(profile, targetKind = "") {
     );
   }
   return getDefaultPrompt();
+}
+
+function getChatProfileIndex(settings) {
+  return resolveProfileIndex(settings, getSceneMarkers());
 }
 
 async function snapshotProfilePrompts(profile, context = getCurrentMemoryBooksContext()) {
@@ -1470,7 +1476,7 @@ async function maybePromptContextSettingForChatOpen() {
       return;
     }
     const settings = initializeSettings();
-    const profile = settings.profiles?.[settings.defaultProfile] || null;
+    const profile = settings.profiles?.[getChatProfileIndex(settings)] || null;
     if (!profile) return;
     await maybePromptForMigratedContextSetting(profile, { blocking: false });
     lastContextPromptChatKey = chatKey;
@@ -1514,6 +1520,7 @@ async function handleChatChanged(chatId) {
   queueDeletedMessageRollbackUnhideRecovery(getStmbChatKey(), getMemoryRollbackChatId());
   void refreshMemoryTierMacroCache();
   void maybePromptContextSettingForChatOpen();
+  await refreshPopupContent();
 
   setTimeout(() => {
     try {
@@ -4113,7 +4120,7 @@ async function showAndGetMemorySettings(
     const profileIndex =
       selectedProfileIndex !== null
         ? selectedProfileIndex
-        : settings.defaultProfile;
+        : getChatProfileIndex(settings);
 
     // Show simplified confirmation popup with selected profile
     confirmationResult = await showConfirmationPopup(
@@ -4134,8 +4141,8 @@ async function showAndGetMemorySettings(
     const profileIndex =
       selectedProfileIndex !== null
         ? selectedProfileIndex
-        : settings.defaultProfile;
-    const selectedProfile = settings.profiles[profileIndex] || settings.profiles[settings.defaultProfile];
+        : getChatProfileIndex(settings);
+    const selectedProfile = settings.profiles[profileIndex] || settings.profiles[getChatProfileIndex(settings)];
     confirmationResult = {
       confirmed: true,
       profileSettings: {
@@ -4745,13 +4752,8 @@ async function prepareConsolidationRegenerationDraft(lorebookData, eligibility, 
     sources.map(source => [String(source.uid), fingerprintRegenerationEntry(source)]),
   );
   const analysisOptions = buildConsolidationRegenerationOptions(sources.length, eligibility.tier);
-  let profileSettings = null;
+  const profileSettings = snapshotConsolidationProfile();
   if (options.snapshotProfile) {
-    const settings = initializeSettings();
-    profileSettings = await snapshotProfilePrompts(
-      settings.profiles?.[settings.defaultProfile] || null,
-      options.memoryBooksContext,
-    );
     analysisOptions.promptText = await ArcPrompts.getPrompt(
       CONSOLIDATION_REGENERATION_PRESET_KEY,
     );
@@ -6824,6 +6826,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
                   collectSummaryMemberIds(candidates),
                 );
                 result = await commitSummaryEntries({
+                  profileOrConnection: payload.profileSettings || null,
                   consolidationRunId,
                   chatRef: job.chatRef,
                   onCheckpoint: id => jobContext.patch({ payload: {
@@ -6893,6 +6896,7 @@ async function executeQueuedConsolidationJob(job, jobContext) {
     }
     verifyConsolidationSourceFingerprints(freshLorebook, payload.sourceFingerprints || {});
     const result = await commitSummaryEntries({
+      profileOrConnection: payload.profileSettings || null,
       consolidationRunId: job.id,
       chatRef: job.chatRef,
       onCheckpoint: id => jobContext.patch({ payload: {
@@ -7793,7 +7797,7 @@ function populateInlineButtons() {
         );
         if (!profileSelect) return;
 
-        const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile ?? 0), 0, settings.profiles.length - 1);
+        const selectedIndex = clampInt(readIntInput(profileSelect, getChatProfileIndex(settings)), 0, settings.profiles.length - 1);
         if (selectedIndex === settings.defaultProfile) {
           return;
         }
@@ -7823,7 +7827,7 @@ function populateInlineButtons() {
           );
           if (!profileSelect) return;
 
-          const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile ?? 0), 0, settings.profiles.length - 1);
+          const selectedIndex = clampInt(readIntInput(profileSelect, getChatProfileIndex(settings)), 0, settings.profiles.length - 1);
           const selectedProfile = settings.profiles[selectedIndex];
 
           // Migrate legacy dynamic flag to provider-based current_st and allow editing of non-connection fields
@@ -7875,7 +7879,7 @@ function populateInlineButtons() {
           );
           if (!profileSelect) return;
 
-          const selectedIndex = readIntInput(profileSelect, settings.defaultProfile ?? 0);
+          const selectedIndex = readIntInput(profileSelect, getChatProfileIndex(settings));
           await deleteProfile(settings, selectedIndex, refreshPopupContent);
         } catch (error) {
           console.error(`${MODULE_NAME}: Error in delete profile:`, error);
@@ -8407,13 +8411,13 @@ function setupPromptManagerEventHandlers(popup) {
     }
 
     // Determine selected profile index from the main settings popup if available
-    let selectedIndex = settings.defaultProfile ?? 0;
+    let selectedIndex = getChatProfileIndex(settings);
     if (currentPopupInstance?.dlg) {
       const profileSelect = currentPopupInstance.dlg.querySelector(
         "#stmb-profile-select",
       );
       if (profileSelect) {
-        selectedIndex = readIntInput(profileSelect, settings.defaultProfile ?? 0);
+        selectedIndex = readIntInput(profileSelect, getChatProfileIndex(settings));
       }
     }
 
@@ -8797,7 +8801,7 @@ async function showArcPromptManagerPopup() {
     content += "</div>";
 
     content += '<div class="world_entry_form_control">';
-    content += `<label for="stmb-apm-default"><strong>${escapeHtml(translate("Set Default", "STMemoryBooks_ArcPromptManager_SetDefault"))}:</strong> `;
+    content += `<label for="stmb-apm-default"><strong>${escapeHtml(translate("Default consolidation prompt", "STMemoryBooks_Consolidation_DefaultPrompt"))}:</strong> `;
     content += '<select id="stmb-apm-default" class="text_pole">';
     for (const p of presets.filter(
       (preset) => !preset.regenerationOnly && !preset.groupChatOnly,
@@ -8808,6 +8812,24 @@ async function showArcPromptManagerPopup() {
       content += `<option value="${escapeHtml(key)}"${selected}>${escapeHtml(name)}</option>`;
     }
     content += "</select></label></div>";
+    content += `<p class="opacity50p">${escapeHtml(translate("Choose Single or Multi to set the initial prompt for future consolidation dialogs. You can change it for each run.", "STMemoryBooks_Consolidation_DefaultPromptHelp"))}</p>`;
+
+    const overrideKey = settings.moduleSettings?.[CONSOLIDATION_PROFILE_KEY] || "";
+    content += '<div class="world_entry_form_control">';
+    content += `<label for="stmb-apm-profile"><strong>${escapeHtml(translate("Consolidation connection profile", "STMemoryBooks_Consolidation_ConnectionProfile"))}</strong></label>`;
+    content += '<select id="stmb-apm-profile" class="text_pole">';
+    content += `<option value="" ${overrideKey ? "" : "selected"}>${escapeHtml(translate("Use chat/default profile", "STMemoryBooks_Consolidation_UseChatProfile"))}</option>`;
+    if (overrideKey && !settings.profiles.some(profile => profile.profileKey === overrideKey)) {
+      content += `<option value="${escapeHtml(overrideKey)}" selected>${escapeHtml(translate("Missing profile — using the default", "STMemoryBooks_Profile_MissingFallback"))}</option>`;
+    }
+    for (const profile of settings.profiles) {
+      const name = profile.isBuiltinCurrentST
+        ? translate("Current SillyTavern Settings", "STMemoryBooks_Profile_CurrentST")
+        : profile.name;
+      content += `<option value="${escapeHtml(profile.profileKey)}" ${profile.profileKey === overrideKey ? "selected" : ""}>${escapeHtml(name)}</option>`;
+    }
+    content += '</select></div>';
+    content += `<p class="opacity50p">${escapeHtml(translate("Applies to all consolidation prompts and consolidated-summary regeneration. Overrides the chat profile connection.", "STMemoryBooks_Consolidation_ConnectionProfileHelp"))}</p>`;
 
     // Search/filter box
     content += '<div class="world_entry_form_control">';
@@ -8950,6 +8972,15 @@ function setupArcPromptManagerEventHandlers(popup) {
         .textContent.toLowerCase();
       row.style.display = displayName.includes(term) ? "" : "none";
     });
+  });
+
+  dlg.querySelector("#stmb-apm-profile")?.addEventListener("change", (e) => {
+    const settings = initializeSettings();
+    const key = String(e.target.value || "");
+    if (key && !settings.profiles.some(profile => profile.profileKey === key)) return;
+    if (key) settings.moduleSettings[CONSOLIDATION_PROFILE_KEY] = key;
+    else delete settings.moduleSettings[CONSOLIDATION_PROFILE_KEY];
+    saveSettingsDebounced();
   });
 
   dlg.querySelector("#stmb-apm-default")?.addEventListener("change", async (e) => {
@@ -10236,6 +10267,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       return;
     }
 
+    const consolidationProfile = snapshotConsolidationProfile();
     const presetKey = String(
       dlg.querySelector("#stmb-arc-preset")?.value || defaultPresetKey,
     );
@@ -10404,12 +10436,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
     if (areStmbJobsEnabled()) {
       const chatRef = getCurrentStmbChatRef();
-      const profileSettings = await snapshotProfilePrompts(settings.profiles?.[settings.defaultProfile] || null, memoryBooksContext);
-      if (profileSettings) {
-        profileSettings.effectiveConnection = profileSettings.connection
-          ? { ...profileSettings.connection }
-          : profileSettings.effectiveConnection;
-      }
+      const profileSettings = consolidationProfile;
       for (const workItem of consolidationWorkItems) {
         const analysisOptions = workItem.analysisOptions || primaryAnalysisOptions;
         enqueueStmbJob({
@@ -10466,7 +10493,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           itemAnalysis = await runSummaryAnalysisSequential(
             workItem.selectedEntries,
             workItem.analysisOptions,
-            null,
+            consolidationProfile,
           );
         } catch (e) {
           if (isStmbStopError(e)) return;
@@ -10489,6 +10516,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
             }
             verifyConsolidationSourceFingerprints(freshLorebook, workItem.sourceFingerprints || {});
             result = await commitSummaryEntries({
+              profileOrConnection: consolidationProfile,
               lorebookName: workItem.lorebookName,
               lorebookData: freshLorebook,
               summaryCandidates: itemCandidates,
@@ -10530,7 +10558,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
           itemAnalysis = await runSummaryAnalysisSequential(
             workItem.selectedEntries,
             workItem.analysisOptions,
-            null,
+            consolidationProfile,
           );
         } catch (e) {
           if (isStmbStopError(e)) return;
@@ -10561,7 +10589,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                   ...workItem.analysisOptions,
                   lockedSummaries,
                 },
-                null,
+                consolidationProfile,
               );
             },
             commitCandidates: async (candidates, consolidationRunId) => {
@@ -10577,6 +10605,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                   collectSummaryMemberIds(candidates),
                 );
                 result = await commitSummaryEntries({
+                  profileOrConnection: consolidationProfile,
                   consolidationRunId,
                   lorebookName: workItem.lorebookName,
                   lorebookData: freshLorebook,
@@ -10627,7 +10656,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       analysis = await runSummaryAnalysisSequential(
         primarySelectedEntries,
         primaryAnalysisOptions,
-        null,
+        consolidationProfile,
       );
     } catch (e) {
       if (isStmbStopError(e)) {
@@ -10638,6 +10667,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       } catch (e2) {}
       lastFailedArcError = e;
       lastFailedArcContext = {
+        profileSettings: consolidationProfile,
         lorebookName,
         lorebookData,
         selectedEntries: primarySelectedEntries,
@@ -10696,6 +10726,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
       };
       lastFailedArcError = syntheticError;
       lastFailedArcContext = {
+        profileSettings: consolidationProfile,
         lorebookName,
         lorebookData,
         selectedEntries: primarySelectedEntries,
@@ -10754,7 +10785,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                 ...primaryAnalysisOptions,
                 lockedSummaries,
               },
-              null,
+              consolidationProfile,
             );
           },
           commitCandidates: async (candidates, consolidationRunId) => {
@@ -10770,6 +10801,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
                 collectSummaryMemberIds(candidates),
               );
               result = await commitSummaryEntries({
+                profileOrConnection: consolidationProfile,
                 consolidationRunId,
                 lorebookName,
                 lorebookData: freshLorebook,
@@ -10829,6 +10861,7 @@ async function showSummaryConsolidationPopup(popupOptions = {}) {
 
     try {
       const res2 = await withStmbWriteLane({ type: "lorebook", name: lorebookName }, () => commitSummaryEntries({
+        profileOrConnection: consolidationProfile,
         lorebookName,
         lorebookData,
         summaryCandidates,
@@ -10958,7 +10991,9 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
     console.warn("STMemoryBooks: Failed to enumerate Regex scripts for UI", e);
   }
 
-  const selectedProfile = settings.profiles[settings.defaultProfile];
+  const chatProfileSelection = getChatProfileSelection(settings, sceneMarkers);
+  const selectedProfileIndex = resolveProfileIndex(settings, sceneMarkers);
+  const selectedProfile = settings.profiles[selectedProfileIndex];
   const defaultProfileTitleFormat = getDefaultProfileTitleFormat(settings);
   const isCustomTitleFormat = !getDefaultTitleFormats().includes(defaultProfileTitleFormat);
   const isManualMode = settings.moduleSettings.manualModeEnabled;
@@ -11090,6 +11125,8 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
       ...option,
       isSelected: autoConsolidationTargetTiers.includes(Number(option.value)),
     })),
+    inheritChatProfile: chatProfileSelection === "inherit",
+    missingChatProfile: chatProfileSelection === "missing",
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
       name:
@@ -11100,6 +11137,7 @@ async function buildSettingsTemplateData({ includeSidePromptSets = false } = {})
             )
           : profile.name,
       isDefault: index === settings.defaultProfile,
+      isSelected: String(index) === chatProfileSelection,
     })),
     titleFormat: defaultProfileTitleFormat,
     // Regex selection UI
@@ -11186,14 +11224,14 @@ async function showSettingsPopup() {
       }
 
       // Capture the currently selected profile before proceeding
-      let selectedProfileIndex = settings.defaultProfile;
+      let selectedProfileIndex = getChatProfileIndex(settings);
       if (currentPopupInstance && currentPopupInstance.dlg) {
         const profileSelect = currentPopupInstance.dlg.querySelector(
           "#stmb-profile-select",
         );
         if (profileSelect) {
           selectedProfileIndex =
-            parseInt(profileSelect.value) || settings.defaultProfile;
+            readIntInput(profileSelect, getChatProfileIndex(settings));
           console.log(
             `STMemoryBooks: Using profile index ${selectedProfileIndex} (${settings.profiles[selectedProfileIndex]?.name}) from main popup selection`,
           );
@@ -11721,7 +11759,10 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
     }
 
     if (e.target.matches("#stmb-profile-select")) {
-      const newIndex = clampInt(readIntInput(e.target), 0, settings.profiles.length - 1);
+      if (e.isTrusted && setChatProfileSelection(settings, getSceneMarkers(), e.target.value)) {
+        saveMetadataForCurrentContext();
+      }
+      const newIndex = clampInt(readIntInput(e.target, getChatProfileIndex(settings)), 0, settings.profiles.length - 1);
       if (newIndex >= 0 && newIndex < settings.profiles.length) {
         const selectedProfile = settings.profiles[newIndex];
         const summaryApi = popupElement.querySelector("#stmb-summary-api");
@@ -11792,7 +11833,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
         // Update the preview
         if (summaryTitle) {
           const profileSelect = popupElement.querySelector("#stmb-profile-select");
-          const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile), 0, settings.profiles.length - 1);
+          const selectedIndex = clampInt(readIntInput(profileSelect, getChatProfileIndex(settings)), 0, settings.profiles.length - 1);
           summaryTitle.textContent =
             selectedIndex === settings.defaultProfile
               ? e.target.value
@@ -11942,7 +11983,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
         const summaryTitle = popupElement.querySelector("#stmb-summary-title");
         if (summaryTitle) {
           const profileSelect = popupElement.querySelector("#stmb-profile-select");
-          const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile), 0, settings.profiles.length - 1);
+          const selectedIndex = clampInt(readIntInput(profileSelect, getChatProfileIndex(settings)), 0, settings.profiles.length - 1);
           summaryTitle.textContent =
             selectedIndex === settings.defaultProfile
               ? value
@@ -11966,7 +12007,7 @@ function setupSettingsEventListeners(popupInstance = currentPopupInstance) {
     if (summaryTitle) {
       const settings = initializeSettings();
       const profileSelect = popupElement.querySelector("#stmb-profile-select");
-      const selectedIndex = clampInt(readIntInput(profileSelect, settings.defaultProfile), 0, settings.profiles.length - 1);
+      const selectedIndex = clampInt(readIntInput(profileSelect, getChatProfileIndex(settings)), 0, settings.profiles.length - 1);
       if (selectedIndex === settings.defaultProfile) {
         summaryTitle.textContent = value;
       }
@@ -12408,7 +12449,7 @@ async function refreshPopupContent() {
       "#stmb-profile-select",
     );
     if (profileSelect) {
-      profileSelect.value = settings.defaultProfile;
+      profileSelect.value = getChatProfileSelection(settings, getSceneMarkers());
       // Trigger change event to update profile summary
       profileSelect.dispatchEvent(new Event("change"));
     }
@@ -14029,6 +14070,7 @@ async function applyManualFixedSummaryJson(correctedRaw) {
     const targetTier = clampInt(Number(context?.targetTier ?? 1), 1, 6);
     const targetLabel = getSummaryTierLabel(targetTier);
     const res = await withStmbWriteLane({ type: "lorebook", name: context.lorebookName }, () => commitSummaryEntries({
+      profileOrConnection: context.profileSettings || null,
       lorebookName: context.lorebookName,
       lorebookData: context.lorebookData,
       summaryCandidates,

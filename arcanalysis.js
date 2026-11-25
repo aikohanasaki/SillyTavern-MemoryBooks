@@ -35,6 +35,8 @@ import {
   normalizeConsolidationRegenerationResponse,
 } from "./memoryRegeneration.js";
 import { tr } from "./i18nHelpers.js";
+import { resolveProfileIndex } from './profileSelection.js';
+import { getSceneMarkers } from './sceneManager.js';
 import { DEFAULT_CONSOLIDATION_KEYWORD_PROMPT } from "./consolidationPromptDefaults.js";
 import { collectNarratorSourceMetadata } from "./narratorMode.js";
 
@@ -387,11 +389,11 @@ export async function generateKeywordsForSummary(summary, conn, options = {}) {
 }
 
 /** Resolves optional summary keywords before a durable consolidation intent is recorded. */
-export async function prepareSummaryCandidateKeywords(candidate, targetTier) {
+export async function prepareSummaryCandidateKeywords(candidate, targetTier, profileOrConnection = null) {
   const prepared = structuredClone(candidate);
   if (!Array.isArray(prepared.keywords) || prepared.keywords.length === 0) {
     try {
-      prepared.keywords = await generateKeywordsForSummary(prepared.summary, resolveConnection(null), { targetTier });
+      prepared.keywords = await generateKeywordsForSummary(prepared.summary, resolveConnection(profileOrConnection), { targetTier });
     } catch (error) {
       if (isStmbStopError(error)) throw error;
       console.warn('STMB ArcAnalysis: keyword generation failed:', error);
@@ -1131,19 +1133,23 @@ export async function runArcAnalysisSequential(
   };
 }
 
+/** Capture the selected connection before queueing or opening a generation preview. */
+export function snapshotConsolidationProfile() {
+  const settings = extension_settings?.STMemoryBooks;
+  const index = resolveProfileIndex(settings, getSceneMarkers(), { consolidation: true });
+  const profile = structuredClone(settings?.profiles?.[index] || {});
+  profile.effectiveConnection = resolveConnection(profile);
+  return profile;
+}
+
 function resolveConnection(profileOrConnection) {
-  // If no profile/connection provided, fall back to extension settings default profile.
-  // (Arc analysis is typically invoked without an explicit profile from the UI flow.)
+  // Legacy callers without a snapshot inherit the consolidation override, chat profile, or global default.
   if (!profileOrConnection) {
     try {
       const settings = extension_settings?.STMemoryBooks;
       const profiles = settings?.profiles;
       if (Array.isArray(profiles) && profiles.length > 0) {
-        const rawIndex = settings?.defaultProfile;
-        const idx =
-          Number.isInteger(rawIndex) && rawIndex >= 0 && rawIndex < profiles.length
-            ? rawIndex
-            : 0;
+        const idx = resolveProfileIndex(settings, getSceneMarkers(), { consolidation: true });
         profileOrConnection = profiles[idx] || null;
       }
     } catch {}
@@ -1337,6 +1343,7 @@ export async function commitSummaryEntries({
   orderValue = 100,
   reverseStart = 9999,
   skipKeywordGeneration = false,
+  profileOrConnection = null,
 }) {
   const parentTask = createStmbInFlightTask("ArcAnalysis:commit");
   const runEpoch = parentTask.epoch;
@@ -1391,7 +1398,7 @@ export async function commitSummaryEntries({
       let keywords = Array.isArray(summary.keywords) ? summary.keywords : [];
       if (keywords.length === 0 && !skipKeywordGeneration) {
         try {
-          const conn = resolveConnection(null);
+          const conn = resolveConnection(profileOrConnection);
           const task = createStmbInFlightTask(`ArcAnalysis:keywords:${summaryNumber}`);
           try {
             keywords = await generateKeywordsForSummary(content, conn, {
@@ -1518,11 +1525,13 @@ export async function commitArcs({
   orderMode = "auto",
   orderValue = 100,
   reverseStart = 9999,
+  profileOrConnection = null,
 }) {
   const result = await commitSummaryEntries({
     lorebookName,
     lorebookData,
     summaryCandidates: arcCandidates,
+    profileOrConnection,
     targetTier: 1,
     disableOriginals,
     orderMode,

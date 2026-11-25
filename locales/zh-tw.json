@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "未排序",
   "STMemoryBooks_Jobs_SortTitle": "工作標題",
   "STMemoryBooks_Jobs_SortStatus": "狀態",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "記憶回滾後訊息已發生變更，無法安全地取消隱藏訊息。手動取消隱藏前，請先檢查剩餘聊天。"
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "記憶回滾後訊息已發生變更，無法安全地取消隱藏訊息。手動取消隱藏前，請先檢查剩餘聊天。",
+  "STMemoryBooks_Profile_UseGlobalDefault": "使用全域預設設定",
+  "STMemoryBooks_Profile_MissingFallback": "設定檔遺失 — 使用預設設定",
+  "STMemoryBooks_Profile_RememberChat": "此聊天會記住所選的設定檔。",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "預設整合提示",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "選擇單次或多次整合作為日後整合對話框的初始提示。每次執行時都可以變更。",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "整合連接設定檔",
+  "STMemoryBooks_Consolidation_UseChatProfile": "使用聊天／預設設定檔",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "適用於所有整合提示及已整合摘要的重新產生。覆蓋聊天設定檔的連接設定。"
 }

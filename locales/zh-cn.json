@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "未排序",
   "STMemoryBooks_Jobs_SortTitle": "任务标题",
   "STMemoryBooks_Jobs_SortStatus": "状态",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "记忆回滚后消息已发生变化，无法安全地取消隐藏消息。手动取消隐藏前，请先检查剩余聊天。"
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "记忆回滚后消息已发生变化，无法安全地取消隐藏消息。手动取消隐藏前，请先检查剩余聊天。",
+  "STMemoryBooks_Profile_UseGlobalDefault": "使用全局默认配置",
+  "STMemoryBooks_Profile_MissingFallback": "配置文件缺失 — 使用默认配置",
+  "STMemoryBooks_Profile_RememberChat": "此聊天会记住所选的配置文件。",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "默认整合提示",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "选择单次或多次整合作为今后整合对话框的初始提示。每次运行时都可以更改。",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "整合连接配置文件",
+  "STMemoryBooks_Consolidation_UseChatProfile": "使用聊天／默认配置文件",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "适用于所有整合提示和已整合摘要的重新生成。覆盖聊天配置文件的连接设置。"
 }

@@ -16,6 +16,7 @@ import { oai_settings } from '../../../openai.js';
 import { applySidePromptMacros, collectTemplateRuntimeMacros, extractMacroTokens, parseSidePromptCommandInput } from './sidePromptMacros.js';
 import { tr } from './i18nHelpers.js';
 import { validateLorebookRequirement } from './lorebookValidation.js';
+import { resolveProfileIndex } from './profileSelection.js';
 import { getSceneMarkers } from './sceneManager.js';
 import {
     CONTEXT_NONE_KEY,
@@ -433,8 +434,8 @@ export function resolveSidePromptConnection(profile = null, options = {}) {
             }
         }
 
-        // Otherwise: use STMB default profile (may be dynamic)
-        let idx = Number(settings?.defaultProfile ?? 0);
+        // Otherwise: inherit the chat profile, then the global default (either may be dynamic).
+        let idx = resolveProfileIndex(settings, getSceneMarkers());
         if (!Array.isArray(profiles) || profiles.length === 0) {
             // No profiles available: mirror UI
             const apiInfo = getCurrentApiInfo();

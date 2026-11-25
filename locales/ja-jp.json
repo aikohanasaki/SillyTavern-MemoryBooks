@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "並べ替えなし",
   "STMemoryBooks_Jobs_SortTitle": "ジョブのタイトル",
   "STMemoryBooks_Jobs_SortStatus": "状態",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "メモリーのロールバック後にメッセージが変更されました。非表示のメッセージを安全に再表示できませんでした。手動で再表示する前に、残っているチャットを確認してください。"
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "メモリーのロールバック後にメッセージが変更されました。非表示のメッセージを安全に再表示できませんでした。手動で再表示する前に、残っているチャットを確認してください。",
+  "STMemoryBooks_Profile_UseGlobalDefault": "全体のデフォルトを使用",
+  "STMemoryBooks_Profile_MissingFallback": "プロファイルが見つかりません — デフォルトを使用",
+  "STMemoryBooks_Profile_RememberChat": "プロファイルの選択はこのチャットに記憶されます。",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "デフォルトの統合プロンプト",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "単一統合または複数統合を選ぶと、今後の統合ダイアログの初期プロンプトになります。実行ごとに変更できます。",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "統合用の接続プロファイル",
+  "STMemoryBooks_Consolidation_UseChatProfile": "チャットのプロファイル／デフォルトを使用",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "すべての統合プロンプトと統合済み要約の再生成に適用されます。チャットのプロファイルの接続設定を上書きします。"
 }

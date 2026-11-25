@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "non trié",
   "STMemoryBooks_Jobs_SortTitle": "Titre de la tâche",
   "STMemoryBooks_Jobs_SortStatus": "Statut",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Les messages ont changé depuis l'annulation de la mémoire. Les messages masqués n'ont pas pu être réaffichés en toute sécurité. Vérifiez le chat restant avant de les réafficher manuellement."
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Les messages ont changé depuis l'annulation de la mémoire. Les messages masqués n'ont pas pu être réaffichés en toute sécurité. Vérifiez le chat restant avant de les réafficher manuellement.",
+  "STMemoryBooks_Profile_UseGlobalDefault": "Utiliser le profil global par défaut",
+  "STMemoryBooks_Profile_MissingFallback": "Profil manquant — utilisation du profil par défaut",
+  "STMemoryBooks_Profile_RememberChat": "Le profil sélectionné est mémorisé pour ce chat.",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "Prompt de consolidation par défaut",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "Choisissez la consolidation unique ou multiple comme prompt initial des prochaines fenêtres de consolidation. Vous pouvez le changer à chaque exécution.",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "Profil de connexion pour la consolidation",
+  "STMemoryBooks_Consolidation_UseChatProfile": "Utiliser le profil du chat ou par défaut",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "S’applique à tous les prompts de consolidation et à la régénération des résumés consolidés. Remplace la connexion du profil du chat."
 }

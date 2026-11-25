@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "без сортировки",
   "STMemoryBooks_Jobs_SortTitle": "Название задачи",
   "STMemoryBooks_Jobs_SortStatus": "Статус",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Сообщения изменились после отката воспоминания. Не удалось безопасно показать скрытые сообщения. Проверьте оставшийся чат, прежде чем показывать их вручную."
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Сообщения изменились после отката воспоминания. Не удалось безопасно показать скрытые сообщения. Проверьте оставшийся чат, прежде чем показывать их вручную.",
+  "STMemoryBooks_Profile_UseGlobalDefault": "Использовать глобальный профиль по умолчанию",
+  "STMemoryBooks_Profile_MissingFallback": "Профиль отсутствует — используется профиль по умолчанию",
+  "STMemoryBooks_Profile_RememberChat": "Выбор профиля запоминается для этого чата.",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "Промпт консолидации по умолчанию",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "Выберите одиночную или множественную консолидацию как начальный промпт для будущих диалогов консолидации. Его можно менять при каждом запуске.",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "Профиль подключения для консолидации",
+  "STMemoryBooks_Consolidation_UseChatProfile": "Использовать профиль чата / по умолчанию",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "Применяется ко всем промптам консолидации и повторной генерации консолидированных сводок. Переопределяет подключение профиля чата."
 }

@@ -162,11 +162,15 @@ export const settingsTemplate = Handlebars.compile(`
 
         <div class="world_entry_form_control">
             <select id="stmb-profile-select" class="text_pole">
+                <option value="inherit" {{#if inheritChatProfile}}selected{{/if}} data-i18n="STMemoryBooks_Profile_UseGlobalDefault">Use global default</option>
+                {{#if missingChatProfile}}<option value="missing" selected data-i18n="STMemoryBooks_Profile_MissingFallback">Missing profile — using the default</option>{{/if}}
                 {{#each profiles}}
-                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
+                <option value="{{@index}}" {{#if isSelected}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
                 {{/each}}
             </select>
         </div>
+
+        <small class="opacity50p" data-i18n="STMemoryBooks_Profile_RememberChat">Profile selections are remembered for this chat.</small>
 
         <div id="stmb-profile-summary" class="padding10 marginBot10">
             <div class="marginBot5" data-i18n="STMemoryBooks_ProfileSettings">Profile Settings:</div>
@@ -579,7 +583,7 @@ export const advancedOptionsTemplate = Handlebars.compile(`
             <small data-i18n="STMemoryBooks_ChangeProfileDesc">Change the profile to use different base settings.</small>
             <select id="stmb-profile-select-advanced" class="text_pole">
                 {{#each profiles}}
-                <option value="{{@index}}" {{#if isDefault}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
+                <option value="{{@index}}" {{#if isSelected}}selected{{/if}}>{{name}}{{#if isDefault}} (Default){{/if}}</option>
                 {{/each}}
             </select>
         </label>

@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "unsortiert",
   "STMemoryBooks_Jobs_SortTitle": "Auftragstitel",
   "STMemoryBooks_Jobs_SortStatus": "Status",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Die Nachrichten haben sich seit dem Memory-Rollback geändert. Verborgene Nachrichten konnten nicht sicher wieder eingeblendet werden. Prüfe den verbleibenden Chat, bevor du sie manuell einblendest."
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Die Nachrichten haben sich seit dem Memory-Rollback geändert. Verborgene Nachrichten konnten nicht sicher wieder eingeblendet werden. Prüfe den verbleibenden Chat, bevor du sie manuell einblendest.",
+  "STMemoryBooks_Profile_UseGlobalDefault": "Globalen Standard verwenden",
+  "STMemoryBooks_Profile_MissingFallback": "Profil fehlt — Standard wird verwendet",
+  "STMemoryBooks_Profile_RememberChat": "Die Profilauswahl wird für diesen Chat gespeichert.",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "Standard-Konsolidierungs-Prompt",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "Wählen Sie Einzel- oder Mehrfachkonsolidierung als anfänglichen Prompt für künftige Konsolidierungsdialoge. Sie können ihn für jeden Durchlauf ändern.",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "Verbindungsprofil für die Konsolidierung",
+  "STMemoryBooks_Consolidation_UseChatProfile": "Chat-/Standardprofil verwenden",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "Gilt für alle Konsolidierungs-Prompts und die Neugenerierung konsolidierter Zusammenfassungen. Überschreibt die Verbindung des Chat-Profils."
 }

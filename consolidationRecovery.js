@@ -83,12 +83,12 @@ export async function resumeConsolidationCheckpoint(checkpoint) {
 /** Creates durable intents and commits one candidate at a time. */
 export async function commitSummaryEntriesRecoverable(options, onCheckpoint = null) {
     const { lorebookName, lorebookData, summaryCandidates = [], onCheckpoint: optionCheckpoint,
-        chatRef, consolidationRunId = makeId(), ...commitOptions } = options;
+        chatRef, consolidationRunId = makeId(), profileOrConnection = null, ...commitOptions } = options;
     if (commitOptions.targetTier === undefined) commitOptions.targetTier = 1;
     const results = [];
     for (const candidate of summaryCandidates) {
         const prepared = prepareSummaryCandidateTitle(
-            await prepareSummaryCandidateKeywords(candidate, commitOptions.targetTier),
+            await prepareSummaryCandidateKeywords(candidate, commitOptions.targetTier, profileOrConnection),
             lorebookData, commitOptions.targetTier,
         );
         const checkpoint = {

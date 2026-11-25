@@ -8,6 +8,8 @@ import { simpleConfirmationTemplate, advancedOptionsTemplate, memoryPreviewTempl
 import { translate } from '../../../i18n.js';
 import { loadWorldInfo } from '../../../world-info.js';
 import { identifyMemoryEntries } from './addlore.js';
+import { resolveProfileIndex } from './profileSelection.js';
+import { getSceneMarkers } from './sceneManager.js';
 import { tr } from './i18nHelpers.js';
 import { createProfileObject, getUIModelSettings, getCurrentApiInfo, getEffectivePrompt, generateSafeProfileName, getEffectiveLorebookName, markStmbPopup } from './utils.js';
 import { playMessageSound } from '../../../power-user.js';
@@ -57,7 +59,7 @@ function safePlayMessageSound() {
  * Show simplified confirmation popup for memory creation
  */
 export async function showConfirmationPopup(sceneData, settings, currentModelSettings, currentApiInfo, chat_metadata, selectedProfileIndex = null, options = {}) {
-  const profileIndex = selectedProfileIndex !== null ? selectedProfileIndex : settings.defaultProfile;
+  const profileIndex = resolveProfileIndex(settings, getSceneMarkers(), { profileIndex: selectedProfileIndex });
   const selectedProfile = settings.profiles[profileIndex];
   const effectivePrompt = await getEffectivePrompt(selectedProfile);
   const templateData = {
@@ -159,7 +161,8 @@ export async function showAdvancedOptionsPopup(sceneData, settings, selectedProf
     profiles: settings.profiles.map((profile, index) => ({
       ...profile,
       name: (profile?.isBuiltinCurrentST) ? translate('Current SillyTavern Settings', 'STMemoryBooks_Profile_CurrentST') : profile.name,
-      isDefault: index === settings.defaultProfile
+      isDefault: index === settings.defaultProfile,
+      isSelected: profile === selectedProfile
     })),
     effectivePrompt: effectivePrompt,
     defaultMemoryCount: settings.moduleSettings.defaultMemoryCount ?? 0,
@@ -449,7 +452,7 @@ function setupTokenEstimation(popupElement, sceneData, settings, chat_metadata, 
  * Save new profile from advanced settings popup
  */
 async function saveNewProfileFromAdvancedSettings(popupElement, settings, profileName) {
-  const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || settings.defaultProfile);
+  const selectedProfileIndex = parseInt(popupElement.querySelector('#stmb-profile-select-advanced')?.value || resolveProfileIndex(settings, getSceneMarkers()));
   const baseProfile = settings.profiles[selectedProfileIndex];
 
   // Step 1: Gather base data from the form and the selected profile.

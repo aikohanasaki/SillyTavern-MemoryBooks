@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "tidak diisih",
   "STMemoryBooks_Jobs_SortTitle": "Tajuk tugas",
   "STMemoryBooks_Jobs_SortStatus": "Status",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Mesej telah berubah sejak rollback Memori. Mesej tersembunyi tidak dapat dinyahsembunyikan dengan selamat. Semak chat yang tinggal sebelum menyahsembunyikannya secara manual."
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Mesej telah berubah sejak rollback Memori. Mesej tersembunyi tidak dapat dinyahsembunyikan dengan selamat. Semak chat yang tinggal sebelum menyahsembunyikannya secara manual.",
+  "STMemoryBooks_Profile_UseGlobalDefault": "Gunakan lalai global",
+  "STMemoryBooks_Profile_MissingFallback": "Profil tiada — menggunakan lalai",
+  "STMemoryBooks_Profile_RememberChat": "Pilihan profil diingati untuk sembang ini.",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "Prom konsolidasi lalai",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "Pilih konsolidasi tunggal atau berbilang sebagai prom awal untuk dialog konsolidasi akan datang. Anda boleh mengubahnya bagi setiap pelaksanaan.",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "Profil sambungan konsolidasi",
+  "STMemoryBooks_Consolidation_UseChatProfile": "Gunakan profil sembang/lalai",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "Digunakan untuk semua prom konsolidasi dan penjanaan semula ringkasan terkonsolidasi. Menggantikan sambungan profil sembang."
 }

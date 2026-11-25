@@ -363,6 +363,12 @@ Use **Current SillyTavern Settings** first. It uses the provider, model, and tem
 
 Do not begin by rewriting prompts or configuring a Full Manual endpoint. First prove that one Memory can be generated and saved.
 
+### Remembering a profile for each chat
+
+Changing the profile selector in the main Memory Books panel immediately remembers that Memory Books profile for the current solo or group chat. Choose **Use global default** to clear the chat preference. **Set as Default** still changes the global default explicitly. Profile changes in Advanced Options apply only to that operation.
+
+The chat profile supplies the default for scene memories, Side Prompts, Memory Assistance, and consolidation. Explicit feature overrides take priority. Saved references survive renaming and reordering. A deleted profile is shown as missing and falls back to the next available default without selecting a different profile by list position.
+
 ### 7.2 Why create a saved STMB profile
 
 Create a separate profile when the user needs to:
@@ -1897,6 +1903,10 @@ All ordinary Memory presets must preserve the required Memory JSON schema.
 See Section 21.2 for the built-in Summary Prompt selection guide and best-use cases.
 
 ### Consolidation Prompt Manager
+
+**Default consolidation prompt** saves the initial preset for future consolidation dialogs. Select Single or Multi for that default behavior, or choose a custom preset. You can still change the prompt for an individual run. Automatic group prompts and the reserved regeneration prompt retain their existing routing.
+
+**Consolidation connection profile** selects one Memory Books profile for all consolidation generation, including consolidated-summary regeneration. **Use chat/default profile** inherits the remembered chat profile, then the global default. This override changes the connection, not the consolidation prompt or lorebook-entry settings. A missing override falls back to the chat/default profile and remains visibly missing until changed. Direct runs, queued jobs, and preview retries capture the resolved profile before generation; later chat or profile selection changes do not replace that captured profile. Missing-keyword generation uses that same captured profile, including when committing previews or manually corrected JSON. Candidates that already contain keywords do not trigger an extra keyword request.
 
 Controls prompts used to group lower-tier entries into higher-tier summaries and selects the normal default consolidation prompt.
 

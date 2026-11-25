@@ -1583,5 +1583,13 @@
   "STMemoryBooks_SortUnsorted": "sem ordenação",
   "STMemoryBooks_Jobs_SortTitle": "Título da tarefa",
   "STMemoryBooks_Jobs_SortStatus": "Status",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "As mensagens mudaram desde a reversão da Memória. Não foi possível reexibir as mensagens ocultas com segurança. Confira o chat restante antes de reexibi-las manualmente."
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "As mensagens mudaram desde a reversão da Memória. Não foi possível reexibir as mensagens ocultas com segurança. Confira o chat restante antes de reexibi-las manualmente.",
+  "STMemoryBooks_Profile_UseGlobalDefault": "Usar o padrão global",
+  "STMemoryBooks_Profile_MissingFallback": "Perfil ausente — usando o padrão",
+  "STMemoryBooks_Profile_RememberChat": "A seleção de perfil é lembrada para este chat.",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "Prompt de consolidação padrão",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "Escolha consolidação única ou múltipla como prompt inicial das próximas janelas de consolidação. Você pode alterá-lo a cada execução.",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "Perfil de conexão da consolidação",
+  "STMemoryBooks_Consolidation_UseChatProfile": "Usar perfil do chat/padrão",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "Aplica-se a todos os prompts de consolidação e à regeneração de resumos consolidados. Substitui a conexão do perfil do chat."
 }

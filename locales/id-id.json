@@ -1586,5 +1586,13 @@
   "STMemoryBooks_SortUnsorted": "tidak diurutkan",
   "STMemoryBooks_Jobs_SortTitle": "Judul tugas",
   "STMemoryBooks_Jobs_SortStatus": "Status",
-  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Pesan berubah sejak rollback Memori. Pesan tersembunyi tidak dapat ditampilkan kembali dengan aman. Periksa chat yang tersisa sebelum menampilkannya secara manual."
+  "STMemoryBooks_AutoRollback_UnhideUnsafe": "Pesan berubah sejak rollback Memori. Pesan tersembunyi tidak dapat ditampilkan kembali dengan aman. Periksa chat yang tersisa sebelum menampilkannya secara manual.",
+  "STMemoryBooks_Profile_UseGlobalDefault": "Gunakan default global",
+  "STMemoryBooks_Profile_MissingFallback": "Profil tidak ditemukan — menggunakan default",
+  "STMemoryBooks_Profile_RememberChat": "Pilihan profil diingat untuk chat ini.",
+  "STMemoryBooks_Consolidation_DefaultPrompt": "Prompt konsolidasi default",
+  "STMemoryBooks_Consolidation_DefaultPromptHelp": "Pilih konsolidasi tunggal atau multi sebagai prompt awal untuk dialog konsolidasi berikutnya. Anda dapat mengubahnya setiap kali dijalankan.",
+  "STMemoryBooks_Consolidation_ConnectionProfile": "Profil koneksi konsolidasi",
+  "STMemoryBooks_Consolidation_UseChatProfile": "Gunakan profil chat/default",
+  "STMemoryBooks_Consolidation_ConnectionProfileHelp": "Berlaku untuk semua prompt konsolidasi dan pembuatan ulang ringkasan terkonsolidasi. Menggantikan koneksi profil chat."
 }
