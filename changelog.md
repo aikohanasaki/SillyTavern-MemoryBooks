@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 ← [Back to README](readme.md)
 
+## v9.5.0 (November 25, 2026)
+- Memory Books now remembers profiles per chat. Added a consolidation connection override (including regeneration) and clarified Single/Multi default prompt selection.
+
 ## v9.4.0 (November 4, 2026)
 - Added configurable timeout to constants.js.
 
